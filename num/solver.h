@@ -573,6 +573,246 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 }
 
 
+// One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
+// of the Krylovspace of A for a given starting vector r. This is a three term
+// recursion, computing the next q_i from the two previous ones.
+// See Arnold Reusken, "Numerical methods for elliptic partial differential equations",
+// p. 148.
+// Returns false for 'lucky breakdown' (see below), true in the generic case.
+template <typename Mat, typename Vec>
+bool
+LanczosStep(const Mat& A,
+            const Vec& q0, const Vec& q1, Vec& q2,
+            double& a1,
+            const double b0, double& b1)
+{
+    q2.raw()= (A*q1).raw() - b0*q0.raw();
+    a1= q2*q1;
+    q2.raw()-= a1*q1.raw();
+    b1= q2.norm();
+    // Lucky breakdown; the Krylov-space K up to q1 is A-invariant. Thus,
+    // the correction dx needed to solve A(x0+dx)=b is in this space and
+    // the Minres-algo will terminate with the exact solution in the
+    // following step.
+    if (std::fabs(b1) < 1e-15) return false;
+    q2/= b1;
+    return true;
+}
+
+template <typename Mat, typename Vec>
+class LanczosONBCL
+{
+  private:
+    bool nobreakdown_;
+    double norm_r0_;
+
+  public:
+    const Mat& A;
+    SBufferCL<Vec, 3> q;
+    double a0;
+    SBufferCL<double, 2> b;
+
+    // Sets up initial values and computes q0.
+    LanczosONBCL(const Mat& A_, const Vec& r0)
+      :A( A_) {
+        q[-1].resize( r0.size(), 0.);
+        norm_r0_= r0.norm();
+        q[0].resize( r0.size(), 0.); q[0]= r0/norm_r0_;
+        q[1].resize( r0.size(), 0.);
+        b[-1]= 0.;
+        nobreakdown_= LanczosStep( A, q[-1], q[0], q[1], a0, b[-1], b[0]);
+    }
+
+    double norm_r0() const {
+        return norm_r0_; }
+    bool
+    breakdown() const {
+        return !nobreakdown_; }
+    // Computes new q_i, a_i, b_1, q_{i+1} in q0, a0, b0, q1 and moves old
+    // values to qm1, bm1.
+    bool
+    next() {
+        q.rotate(); b.rotate();
+        return (nobreakdown_= LanczosStep( A, q[-1], q[0], q[1], a0, b[-1], b[0]));
+    }
+};
+
+
+// One recursive step of the preconditioned Lanzcos algorithm for computing an ONB of
+// a Krylovspace. This is a three term
+// recursion, computing the next q_i from the two previous ones.
+// See Arnold Reusken, "Numerical methods for elliptic partial differential equations",
+// p. 153.
+// Returns false for 'lucky breakdown' (see below), true in the generic case.
+template <typename Mat, typename Vec, typename PreCon>
+bool
+PLanczosStep(const Mat& A,
+             const PreCon& M,
+             const Vec& q1, Vec& q2,
+             const Vec& t0, const Vec& t1, Vec& t2,
+             double& a1,
+             const double b0, double& b1)
+{
+    t2.raw()= (A*q1).raw() - b0*t0.raw();
+    a1= t2*q1;
+    t2.raw()-= a1*t1.raw();
+    M.Apply( A, q2, t2);
+    b1= std::sqrt( q2*t2);
+    if (b1 < 1e-15) return false;
+    t2.raw()*= 1./b1;
+    q2.raw()*= 1./b1;
+    return true;
+}
+
+template <typename Mat, typename Vec, typename PreCon>
+class PLanczosONBCL
+{
+  private:
+    bool nobreakdown_;
+    double norm_r0_;
+
+  public:
+    const Mat& A;
+    const PreCon& M;
+    SBufferCL<Vec, 2> q;
+    SBufferCL<Vec, 3> t;
+    double a0;
+    SBufferCL<double, 2> b;
+
+    // Sets up initial values and computes q0.
+    PLanczosONBCL(const Mat& A_, const PreCon& M_, const Vec& r0)
+      :A( A_), M( M_) {
+        t[-1].resize( r0.size(), 0.);
+        q[-1].resize( r0.size(), 0.); M.Apply( A, q[-1], r0);
+        norm_r0_= std::sqrt( q[-1]*r0);
+        t[0].resize( r0.size(), 0.); t[0]= r0/norm_r0_;
+        q[0].resize( r0.size(), 0.); q[0]= q[-1]/norm_r0_;
+        t[1].resize( r0.size(), 0.);
+        b[-1]= 0.;
+        nobreakdown_= PLanczosStep( A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]);
+    }
+
+    double norm_r0() const {
+        return norm_r0_; }
+    bool
+    breakdown() const {
+        return !nobreakdown_; }
+    // Computes new q_i, t_i, a_i, b_1, q_{i+1} in q0, t_0, a0, b0, q1 and moves old
+    // values to qm1, tm1, bm1.
+    bool
+    next() {
+        q.rotate(); t.rotate(); b.rotate();
+        return (nobreakdown_= PLanczosStep( A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]));
+    }
+};
+
+//-----------------------------------------------------------------------------
+// PMINRES: The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within max_iter iterations (false).
+// See Arnold Reusken, "Numerical methods for elliptic partial differential
+// equations", pp. 149 -- 154
+//
+// Upon successful return, output arguments have the following values:
+//
+//        x - approximate solution to Ax = rhs
+// max_iter - number of iterations performed before tolerance was reached
+//      tol - 2-norm of the last correction dx to x after the final iteration.
+//-----------------------------------------------------------------------------
+template <typename Mat, typename Vec, typename Lanczos>
+bool
+PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol)
+{
+    Vec dx= rhs - A*x; // First, the residual, later used as vector for
+                       // updating x, thus the name.
+    const double resid0= dx.norm();
+    double err= resid0*resid0;
+
+    tol*= tol;
+    if (err<=tol) {
+        tol= sqrt( err);
+        max_iter= 0;
+        return true;
+    }
+    const double norm_r0= q.norm_r0();
+    bool lucky= q.breakdown();
+    SBufferCL<double, 3> c;
+    SBufferCL<double, 3> s;
+    SBufferCL<SVectorCL<3>, 3> r;
+    SBufferCL<Vec, 3> p;
+    p[0].resize( x.size()); p[1].resize( x.size()); p[2].resize( x.size());
+    SBufferCL<SVectorCL<2>, 2> b;
+    
+    for (int k=1; k<=max_iter; ++k) {
+        switch (k) {
+          case 1:
+            // Compute r1
+            GMRES_GeneratePlaneRotation( q.a0, q.b[0], c[0], s[0]);
+            r[0][0]= std::sqrt( q.a0*q.a0 + q.b[0]*q.b[0]);
+            // Compute p1
+            // p[0]= q.q[0]/r[0][0];
+            p[0].raw()= q.q[0].raw()/r[0][0];
+            // Compute b11
+            b[0][0]= 1.; b[0][1]= 0.;
+            GMRES_ApplyPlaneRotation(b[0][0], b[0][1], c[0], s[0]);
+            break;
+          case 2:
+            // Compute r2
+            r[0][0]= q.b[-1]; r[0][1]= q.a0; r[0][2]= q.b[0];
+            GMRES_ApplyPlaneRotation( r[0][0], r[0][1], c[-1], s[-1]);
+            GMRES_GeneratePlaneRotation( r[0][1], r[0][2], c[0], s[0]);
+            GMRES_ApplyPlaneRotation( r[0][1], r[0][2], c[0], s[0]);
+            // Compute p2
+            // p[0]= (q.q[0] - r[0][0]*p[-1])/r[0][1];
+            p[0].raw()= (q.q[0].raw() - r[0][0]*p[-1].raw())/r[0][1];
+            // Compute b22
+            b[0][0]= b[-1][1]; b[0][1]= 0.;
+            GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
+            break;
+          default:
+            r[0][0]= 0.; r[0][1]= q.b[-1]; r[0][2]= q.a0;
+            double tmp= q.b[0];
+            GMRES_ApplyPlaneRotation( r[0][0], r[0][1], c[-2], s[-2]);
+            GMRES_ApplyPlaneRotation( r[0][1], r[0][2], c[-1], s[-1]);
+            GMRES_GeneratePlaneRotation( r[0][2], tmp, c[0], s[0]);
+            GMRES_ApplyPlaneRotation( r[0][2], tmp, c[0], s[0]);
+            // p[0]= (q.q[0] - r[0][0]*p[-2] -r[0][1]*p[-1])/r[0][2];
+            p[0].raw()= (q.q[0].raw() - r[0][0]*p[-2].raw() -r[0][1]*p[-1].raw())*(1/r[0][2]);
+            b[0][0]= b[-1][1]; b[0][1]= 0.;
+            GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
+        }
+        dx.raw()= (norm_r0*b[0][0])*p[0].raw();
+//std::cout << "q.q[0] " << q.q[0] << " q.a0 " << q.a0 << " q.b[0] " << q.b[0] << " c " << c[0] << " s " << s[0] << " r " << r[0] << " p " << p[0] << " b " << b[0]
+//          << std::endl;
+//std::cout << "dx\n" << dx;
+        x.raw()+= dx.raw();
+        err= dx.norm2();
+        if (err<=tol || lucky==true) {
+            tol= sqrt( err);
+            max_iter= k;
+            return true;
+        }
+        q.next();
+        if (q.breakdown()) {
+            lucky= true;
+            Comment( "MINRES: lucky breakdown\n", ~0);
+        }
+        c.rotate(); s.rotate(); r.rotate(); p.rotate(); b.rotate();
+    }
+    tol= sqrt( err);
+    return false;
+}
+
+
+template <typename Mat, typename Vec>
+bool
+MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol)
+{
+    Vec dx= rhs - A*x;
+    LanczosONBCL<Mat, Vec> q( A, dx);
+    return PMINRES( A,  x, rhs, q, max_iter, tol);
+}
+
+
 //=============================================================================
 //  Drivers
 //=============================================================================
@@ -604,8 +844,8 @@ class CGSolverCL : public SolverBaseCL
   public:
     CGSolverCL(int maxiter, double tol) : SolverBaseCL(maxiter,tol) {}
 
-    template <typename Vec>
-    void Solve(const MatrixCL& A, Vec& x, const Vec& b)
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
@@ -635,8 +875,8 @@ class PCGSolverCL : public SolverBaseCL
     PC&       GetPc ()       { return _pc; }
     const PC& GetPc () const { return _pc; }
 
-    template <typename Vec>
-    void Solve(const MatrixCL& A, Vec& x, const Vec& b)
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
@@ -651,6 +891,57 @@ class PCGSolverCL : public SolverBaseCL
     }
 };
 
+// Bare MINRES solver
+class MResSolverCL : public SolverBaseCL
+{
+  public:
+    MResSolverCL(int maxiter, double tol) : SolverBaseCL( maxiter,tol) {}
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        MINRES( A, x, b, _iter, _res);
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        MINRES( A, x, b, numIter, resid);
+    }
+};
+
+// Preconditioned MINRES solver
+template <typename Lanczos>
+class PMResSolverCL : public SolverBaseCL
+{
+  private:
+    Lanczos& q_;
+
+  public:
+    PMResSolverCL(Lanczos& q, int maxiter, double tol)
+      :SolverBaseCL( maxiter,tol), q_( q) {}
+
+    Lanczos&       GetONB ()       { return q_; }
+    const Lanczos& GetONB () const { return q_; }
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        PMINRES( A, x, b, q_, _iter, _res);
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        PMINRES( A, x, b, q_, numIter, resid);
+    }
+};
 
 // GMRES
 template <typename PC>
@@ -693,6 +984,7 @@ typedef PreGSCL<P_SOR>     SORsmoothCL;
 typedef PreGSCL<P_JAC>     JACsmoothCL;
 typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
+typedef PreGSCL<P_SSOR>    SSORPc2CL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
 typedef PreGSCL<P_DUMMY>   DummyPcCL;
 

@@ -7,7 +7,7 @@
 DIR = tests
 
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
-        tetrabuildertest sbuffer
+        tetrabuildertest sbuffer minres
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -75,6 +75,10 @@ testfe: \
 
 sbuffer: \
     ../tests/sbuffer.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+minres: \
+    ../tests/minres.o ../misc/utils.o 
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:
