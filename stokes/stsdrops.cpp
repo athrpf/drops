@@ -571,7 +571,6 @@ class MyDiagMGPreCL
         double omega= 1.; // relaxation parameter for smoother
         SSORsmoothCL smoother( omega);  // Gauss-Seidel with over-relaxation
         SSORPcCL P1;
-        SSORsmoothCL P2;
         PCG_SsorCL solver( P1, 200, 1e-12);
         v= 0.0;
         for (DROPS::Uint i= 0; i<iter_vel_; ++i)
