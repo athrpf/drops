@@ -62,9 +62,11 @@ class PoissonBndDataCL
     inline bool IsOnNeuBnd(const FaceCL&) const;
     
     inline bnd_type GetDirBndValue(const VertexCL&) const;
-//    inline bnd_type GetDirBndValue(const EdgeCL&) const;
-//    inline bnd_type GetDirBndValue(const FaceCL&) const;
+    inline bnd_type GetDirBndValue(const EdgeCL&) const;
+    inline bnd_type GetDirBndValue(const FaceCL&) const;
     inline bnd_type GetNeuBndValue(const VertexCL&) const;
+    inline bnd_type GetNeuBndValue(const EdgeCL&) const;
+    inline bnd_type GetNeuBndValue(const FaceCL&) const;
 
     bnd_val_fun GetBndFun(BndIdxT i) const { return _BndData[i].GetBndFun(); }
     const BndSegDataCL& GetSegData(BndIdxT i) const { return _BndData[i]; }
@@ -125,6 +127,55 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     DiscSolCL GetSolution() const
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
 };
+
+template <class Coeff>
+class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
+{
+  public:
+    typedef ProblemCL<Coeff, PoissonBndDataCL> _base;
+    typedef typename _base::BndDataCL               BndDataCL;
+    typedef typename _base::CoeffCL                 CoeffCL;
+    using                                           _base::_MG;
+    using                                           _base::_Coeff;
+    using                                           _base::_BndData;
+    using                                           _base::GetBndData;
+    using                                           _base::GetMG;
+    
+    typedef P2EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
+    typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
+
+    // new fields for the matrix A, the rhs b and the solution x
+    IdxDescCL idx;
+    VecDescCL x;
+    VecDescCL b;
+    MatDescCL A;
+    
+    //create an element of the class
+    PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff, 
+		const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(1) {}  
+		
+    // numbering of unknowns
+    void CreateNumbering(Uint, IdxDescCL*);
+    void DeleteNumbering(IdxDescCL*);
+    
+    // set up matrices and rhs
+    void SetupSystem         (MatDescCL&, VecDescCL&) const;
+    void SetupStiffnessMatrix(MatDescCL&) const;
+    
+    // check computed solution, etc.
+    double CheckSolution(const VecDescCL&, scalar_fun_ptr) const;
+    double CheckSolution(scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+//    void GetDiscError (const MatDescCL&, scalar_fun_ptr) const;
+//    void GetDiscError (scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
+
+//    bool          EstimateError         (const VecDescCL&, const double, double&, est_fun);
+//    static double ResidualErrEstimator  (const TetraCL&, const VecDescCL&, const BndDataCL&);
+//    static double ResidualErrEstimatorL2(const TetraCL&, const VecDescCL&, const BndDataCL&);
+
+//    DiscSolCL GetSolution() const
+//        { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
+};
+
 
 double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const PoissonBndDataCL&);
 
@@ -284,14 +335,34 @@ inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const VertexC
     throw DROPSErrCL("GetNeuBndValue(VertexCL): No Neumann Boundary Segment!");
 }
 
-/*
 inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const EdgeCL& e) const
 {
+//    std::cout << " GetDirBndValue --->>> " << std::endl;
     for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         if ( !_BndData[*it].IsNeumann() )
-            return _BndData[*it].GetBndVal( GetBaryCenter(e) );
+	{
+//    std::cout << " it = " << *it << std::endl;  
+	    Point2DCL bnd_pt;
+	    for (int i=0; i<2; ++i)
+	    {
+//    std::cout << " i = " << i << std::endl;  
+	        const VertexCL& v= *e.GetVertex(i);
+                for (VertexCL::const_BndVertIt bit= v.GetBndVertBegin(), bend=	v.GetBndVertEnd(); bit!=bend; ++bit)
+                    if ( bit->GetBndIdx()== *it)
+		    {
+//    std::cout << " bit->GetBndIdx() = " << bit->GetBndIdx() << std::endl;  
+		        bnd_pt+= 0.5*bit->GetCoord2D();
+//			bit= bend;
+			break;
+		    }
+            }
+//    std::cout << " bnd_pt " << bnd_pt << std::endl;  
+//    std::cout << " GetDirBndValue <<<--- " << std::endl;
+            return _BndData[*it].GetBndVal( bnd_pt);
+	}
     throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
 }
+
 
 inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const EdgeCL& e) const
 // Returns value of the Neumann boundary value. 
@@ -299,10 +370,25 @@ inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const EdgeCL&
 {
     for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         if ( _BndData[*it].IsNeumann() )
-            return _BndData[*it].GetBndVal( GetBaryCenter(e) );
+	{
+	    Point2DCL bnd_pt;
+	    for (int i=0; i<2; ++i)
+	    {
+	        const VertexCL& v= *e.GetVertex(i);
+                for (VertexCL::const_BndVertIt bit= v.GetBndVertBegin(), bend=	v.GetBndVertEnd(); bit!=bend; ++bit)
+                    if ( bit->GetBndIdx()== *it)
+		    {
+		        bnd_pt+= 0.5*bit->GetCoord2D();
+//			bit= bend;
+			break;
+		    }
+            }
+            return _BndData[*it].GetBndVal( bnd_pt);
+	}
     throw DROPSErrCL("GetNeuBndValue(EdgeCL): No Neumann Boundary Segment!");
 }
 
+/*
 inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const FaceCL& f) const
 {
     Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
@@ -317,7 +403,6 @@ inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const FaceCL&
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f) );
 }
 */
-
 } // end of namespace DROPS
 
 #include "poisson/poisson.tpp"

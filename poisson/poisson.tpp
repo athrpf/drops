@@ -551,6 +551,405 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
     return 4.*cc_radius*cc_radius*_err;
 }
 
+// PoissonP2CL
+template<class Coeff>
+void PoissonP2CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
+// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
+// sets up the description of the index idxnum in IdxDesc[idxnum],
+// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
+// Remark: expects, that IdxDesc[idxnr].NumUnknownsVertex etc. are set.
+{
+    // set up the index description
+    idx->TriangLevel = level;
+    idx->NumUnknowns = 0;
+
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
+
+    // allocate space for indices; number unknowns in TriangLevel level
+    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
+                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level), GetBndData() );
+    CreateNumbOnEdge( idxnum, idx->NumUnknowns, idx->NumUnknownsEdge,
+                      _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level), GetBndData() );
+}
+
+
+template<class Coeff>
+void PoissonP2CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
+{
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
+    const Uint level  = idx->TriangLevel;
+    idx->NumUnknowns = 0;
+
+    // delete memory allocated for indices
+    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
+    DeleteNumbOnSimplex( idxnum, _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level) );
+}
+
+// Copy of functions GetGradientsOnRef, MakeGradients, 
+// Quad(t,sf,i,j), Quad(t,sf,i)(new!!!) and QuadGrad (for P2P1) 
+// from stokes-Verzeichnis (stoks.tpp)
+
+inline void GetGradientsOnRef(SMatrixCL<3,5>* GRef)
+{
+    SVectorCL<3> vec;
+    
+    for(int i=0; i<10; ++i)
+    {
+        vec= FE_P2CL::DHRef(i,0,0,0);                // vertex 0
+        GRef[i](0,0)= vec[0];   GRef[i](1,0)= vec[1];   GRef[i](2,0)= vec[2];
+        vec= FE_P2CL::DHRef(i,1,0,0);                // vertex 1
+        GRef[i](0,1)= vec[0];   GRef[i](1,1)= vec[1];   GRef[i](2,1)= vec[2];
+        vec= FE_P2CL::DHRef(i,0,1,0);                // vertex 2
+        GRef[i](0,2)= vec[0];   GRef[i](1,2)= vec[1];   GRef[i](2,2)= vec[2];
+        vec= FE_P2CL::DHRef(i,0,0,1);                // vertex 3
+        GRef[i](0,3)= vec[0];   GRef[i](1,3)= vec[1];   GRef[i](2,3)= vec[2];
+        vec= FE_P2CL::DHRef(i,1./4.,1./4.,1./4.);    // barycenter
+        GRef[i](0,4)= vec[0];   GRef[i](1,4)= vec[1];   GRef[i](2,4)= vec[2];
+    }
+}        
+
+
+inline void MakeGradients (SMatrixCL<3,5>* G, const SMatrixCL<3,5>* GRef, const SMatrixCL<3,3>& T)
+{
+    for(int i=0; i<10; ++i)
+        G[i]= T*GRef[i];
+}
+
+
+inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
+{
+    double a[5];
+    if (i>j) std::swap(i,j);
+    switch(i*10+j)
+    {
+      case  0: a[0]= 1./1260.; a[1]= a[2]= a[3]= 0.; a[4]= 1./630.; break;
+      case  1: a[0]= a[1]= -1./8505.; a[2]= a[3]= 11./136080.; a[4]= 4./8505; break;
+      case  2: a[0]= a[2]= -1./8505.; a[1]= a[3]= 11./136080.; a[4]= 4./8505; break;
+      case  3: a[0]= a[3]= -1./8505.; a[1]= a[2]= 11./136080.; a[4]= 4./8505; break;
+      case  4: a[0]= 1./2520.; a[1]= -1./2520.; a[2]= a[3]= 0.; a[4]= -1./630.; break;
+      case  5: a[0]= 1./2520.; a[2]= -1./2520.; a[1]= a[3]= 0.; a[4]= -1./630.; break;
+      case  6: a[0]= a[3]= 1./8505.; a[1]= a[2]= -19./68040.; a[4]= -1./486.; break;
+      case  7: a[0]= 1./2520.; a[3]= -1./2520.; a[1]= a[2]= 0.; a[4]= -1./630.; break;
+      case  8: a[0]= a[2]= 1./8505.; a[1]= a[3]= -19./68040.; a[4]= -1./486.; break;
+      case  9: a[0]= a[1]= 1./8505.; a[2]= a[3]= -19./68040.; a[4]= -1./486.; break;
+      case 11: a[1]= 1./1260.; a[0]= a[2]= a[3]= 0.; a[4]= 1./630.; break;
+      case 12: a[1]= a[2]= -1./8505.; a[0]= a[3]= 11./136080.; a[4]= 4./8505; break;
+      case 13: a[1]= a[3]= -1./8505.; a[0]= a[2]= 11./136080.; a[4]= 4./8505; break;
+      case 14: a[1]= 1./2520.; a[0]= -1./2520.; a[2]= a[3]= 0.; a[4]= -1./630.; break;
+      case 15: a[1]= a[3]= 1./8505.; a[0]= a[2]= -19./68040.; a[4]= -1./486.; break;
+      case 16: a[1]= 1./2520.; a[2]= -1./2520.; a[0]= a[3]= 0.; a[4]= -1./630.; break;
+      case 17: a[1]= a[2]= 1./8505.; a[0]= a[3]= -19./68040.; a[4]= -1./486.; break;
+      case 18: a[1]= 1./2520.; a[3]= -1./2520.; a[0]= a[2]= 0.; a[4]= -1./630.; break;
+      case 19: a[0]= a[1]= 1./8505.; a[2]= a[3]= -19./68040.; a[4]= -1./486.; break;
+      case 22: a[2]= 1./1260.; a[0]= a[1]= a[3]= 0.; a[4]= 1./630.; break;
+      case 23: a[2]= a[3]= -1./8505.; a[0]= a[1]= 11./136080.; a[4]= 4./8505; break;
+      case 24: a[2]= a[3]= 1./8505.; a[0]= a[1]= -19./68040.; a[4]= -1./486.; break;
+      case 25: a[2]= 1./2520.; a[0]= -1./2520.; a[1]= a[3]= 0.; a[4]= -1./630.; break;
+      case 26: a[2]= 1./2520.; a[1]= -1./2520.; a[0]= a[3]= 0.; a[4]= -1./630.; break;
+      case 27: a[2]= a[1]= 1./8505.; a[0]= a[3]= -19./68040.; a[4]= -1./486.; break;
+      case 28: a[2]= a[0]= 1./8505.; a[1]= a[3]= -19./68040.; a[4]= -1./486.; break;
+      case 29: a[2]= 1./2520.; a[3]= -1./2520.; a[0]= a[1]= 0.; a[4]= -1./630.; break;
+      case 33: a[3]= 1./1260.; a[0]= a[1]= a[2]= 0.; a[4]= 1./630.; break;
+      case 34: a[3]= a[2]= 1./8505.; a[0]= a[1]= -19./68040.; a[4]= -1./486.; break;
+      case 35: a[3]= a[1]= 1./8505.; a[0]= a[2]= -19./68040.; a[4]= -1./486.; break;
+      case 36: a[3]= a[0]= 1./8505.; a[1]= a[2]= -19./68040.; a[4]= -1./486.; break;
+      case 37: a[3]= 1./2520.; a[0]= -1./2520.; a[1]= a[2]= 0.; a[4]= -1./630.; break;
+      case 38: a[3]= 1./2520.; a[1]= -1./2520.; a[0]= a[2]= 0.; a[4]= -1./630.; break;
+      case 39: a[3]= 1./2520.; a[2]= -1./2520.; a[0]= a[1]= 0.; a[4]= -1./630.; break;
+      case 44: a[0]= a[1]= 37./17010.; a[2]= a[3]= -17./17010.; a[4]= 88./8505.; break;
+      case 45: a[0]= 1./972.; a[1]= a[2]= 2./8505.; a[3]= -19./34020.; a[4]= 46./8505.; break;
+      case 46: a[1]= 1./972.; a[0]= a[2]= 2./8505.; a[3]= -19./34020.; a[4]= 46./8505.; break;
+      case 47: a[0]= 1./972.; a[1]= a[3]= 2./8505.; a[2]= -19./34020.; a[4]= 46./8505.; break;
+      case 48: a[1]= 1./972.; a[0]= a[3]= 2./8505.; a[2]= -19./34020.; a[4]= 46./8505.; break;
+      case 49: a[0]= a[1]= a[2]= a[3]= 1./11340.; a[4]= 8./2835.; break;
+      case 55: a[0]= a[2]= 37./17010.; a[1]= a[3]= -17./17010.; a[4]= 88./8505.; break;
+      case 56: a[2]= 1./972.; a[0]= a[1]= 2./8505.; a[3]= -19./34020.; a[4]= 46./8505.; break;
+      case 57: a[0]= 1./972.; a[2]= a[3]= 2./8505.; a[1]= -19./34020.; a[4]= 46./8505.; break;
+      case 58: a[0]= a[1]= a[2]= a[3]= 1./11340.; a[4]= 8./2835.; break;
+      case 59: a[2]= 1./972.; a[0]= a[3]= 2./8505.; a[1]= -19./34020.; a[4]= 46./8505.; break;
+      case 66: a[1]= a[2]= 37./17010.; a[0]= a[3]= -17./17010.; a[4]= 88./8505.; break;
+      case 67: a[0]= a[1]= a[2]= a[3]= 1./11340.; a[4]= 8./2835.; break;
+      case 68: a[1]= 1./972.; a[2]= a[3]= 2./8505.; a[0]= -19./34020.; a[4]= 46./8505.; break;
+      case 69: a[2]= 1./972.; a[1]= a[3]= 2./8505.; a[0]= -19./34020.; a[4]= 46./8505.; break;
+      case 77: a[0]= a[3]= 37./17010.; a[1]= a[2]= -17./17010.; a[4]= 88./8505.; break;
+      case 78: a[3]= 1./972.; a[0]= a[1]= 2./8505.; a[2]= -19./34020.; a[4]= 46./8505.; break;
+      case 79: a[3]= 1./972.; a[0]= a[2]= 2./8505.; a[1]= -19./34020.; a[4]= 46./8505.; break;
+      case 88: a[1]= a[3]= 37./17010.; a[0]= a[2]= -17./17010.; a[4]= 88./8505.; break;
+      case 89: a[3]= 1./972.; a[1]= a[2]= 2./8505.; a[0]= -19./34020.; a[4]= 46./8505.; break;
+      case 99: a[2]= a[3]= 37./17010.; a[0]= a[1]= -17./17010.; a[4]= 88./8505.; break;
+      default: throw DROPSErrCL("Quad(i,j): no such shape function");
+    }
+    double sum= a[4]*f(GetBaryCenter(t));
+    for(Uint i=0; i<4; ++i)
+        sum+= a[i]*f(t.GetVertex(i)->GetCoord());
+    return sum;
+}
+
+
+inline double Quad( const TetraCL& t, scalar_fun_ptr coeff, int i)
+{
+    double f[5];
+    
+    if (i<4) // hat function on vert
+    {
+        f[0]= coeff( t.GetVertex(i)->GetCoord() );
+        for (int k=0, l=1; k<4; ++k)
+            if (k!=i) f[l++]= coeff( t.GetVertex(k)->GetCoord() );
+        f[4]= coeff( GetBaryCenter(t) );
+        return f[0]/504. - (f[1] + f[2] + f[3])/1260. - f[4]/126.;
+    }
+    else  // hat function on edge
+    {
+        const double ve= 4./945.,  // coeff for verts of edge
+                     vn= -1./756.,  // coeff for other verts
+                     vs= 26./945.;   // coeff for barycenter
+        double a[4];
+        a[VertOfEdge(i-4,0)]= a[VertOfEdge(i-4,1)]= ve;
+        a[VertOfEdge(OppEdge(i-4),0)]= a[VertOfEdge(OppEdge(i-4),1)]= vn;
+
+        double sum= vs * coeff( GetBaryCenter(t) );
+        for(int k=0; k<4; ++k)
+            sum+= a[k] * coeff( t.GetVertex(k)->GetCoord() );
+
+        return sum;
+    }
+}
+
+
+inline double QuadGrad(const SMatrixCL<3,5>* G, int i, int j)
+// computes int( grad(phi_i) * grad(phi_j) ) for P2-elements on ref. tetra
+{
+    SVectorCL<5> tmp(0.0);
+    
+    for(int k=0; k<5; ++k)
+        for(int l=0; l<3; ++l)
+            tmp[k]+= G[i](l,k) * G[j](l,k);
+            
+    return ( tmp[0] + tmp[1] + tmp[2] + tmp[3] )/120. + 2./15.*tmp[4];
+}
+
+
+template<class Coeff>
+void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
+// Sets up the stiffness matrix and right hand side
+{
+    b.Clear();
+    
+    const Uint lvl    = Amat.RowIdx->TriangLevel,
+               idx    = Amat.RowIdx->GetIdx();
+    MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
+
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    
+    std::cerr << "entering SetupSystem: " << Amat.ColIdx->NumUnknowns 
+              << " unknowns, " << std::endl;                            
+	      
+// fill value part of matrices
+    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    SMatrixCL<3,3> T;
+    double coup[10][10];
+    double det, absdet;
+    double tmp;
+
+    GetGradientsOnRef(GradRef);
+   
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr(T,det,*sit);
+        MakeGradients(Grad, GradRef, T);
+        absdet= fabs(det);
+	
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i)
+        {
+            if(!(IsOnDirBnd[i]= _BndData.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(idx);
+        }
+
+	for(int i=0; i<6; ++i)
+        {
+            if (!(IsOnDirBnd[i+4]= _BndData.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
+        }
+	
+        // compute all couplings between HatFunctions on edges and verts
+        for(int i=0; i<10; ++i)
+            for(int j=0; j<=i; ++j)
+            {
+                // negative dot-product of the gradients
+                coup[i][j] = QuadGrad( Grad, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[j][i] = coup[i][j];
+            }
+
+        // assemble  
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+            {
+                for(int j=0; j<10; ++j)
+                {
+                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    {
+                        A ( Numb[i], Numb[j] ) += coup[j][i]; 
+                    }
+                    else // coupling with vert/edge j on right-hand-side
+                    {
+                        tmp= j<4 ? _BndData.GetDirBndValue(*sit->GetVertex(j))
+                                 : _BndData.GetDirBndValue(*sit->GetEdge(j-4));
+                        b.Data[Numb[i]]-=          coup[j][i] * tmp;
+                    }
+                }
+                tmp= Quad(*sit, &_Coeff.f, i)*absdet;
+                b.Data[Numb[i]]+=          tmp;
+
+                if ( i<4 ? _BndData.IsOnNeuBnd(*sit->GetVertex(i))
+                         : _BndData.IsOnNeuBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on Neumann boundary
+                {
+                    Uint face;
+                    for (int f=0; f < 3; ++f)
+                    {
+                        face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
+                        if ( sit->IsBndSeg(face))
+                        {   
+                            b.Data[Numb[i]]+=          tmp;
+                        }
+                    }
+                }
+            }      
+    }
+    std::cerr << "done: value part fill" << std::endl;
+    
+    A.Build();
+}
+
+
+template<class Coeff>
+void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
+// Sets up the stiffness matrix 
+{
+    const Uint lvl    = Amat.RowIdx->TriangLevel,
+               idx    = Amat.RowIdx->GetIdx();
+    MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
+
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    
+    std::cerr << "entering SetupStiffnessMatrix: " << Amat.ColIdx->NumUnknowns 
+              << " unknowns, " << std::endl;                            
+	      
+// fill value part of matrices
+    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    SMatrixCL<3,3> T;
+    double coup[10][10];
+    double det, absdet;
+    double tmp;
+
+    GetGradientsOnRef(GradRef);
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr(T,det,*sit);
+        MakeGradients(Grad, GradRef, T);
+        absdet= fabs(det);
+	
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i)
+        {
+            if(!(IsOnDirBnd[i]= _BndData.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(idx);
+        }
+
+	for(int i=0; i<6; ++i)
+        {
+            if (!(IsOnDirBnd[i+4]= _BndData.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
+        }
+
+        // compute all couplings between HatFunctions on edges and verts
+        for(int i=0; i<10; ++i)
+            for(int j=0; j<=i; ++j)
+            {
+                // negative dot-product of the gradients
+                coup[i][j] = QuadGrad( Grad, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[j][i] = coup[i][j];
+            }
+
+        // assemble  
+
+        for(int i=0; i<10; ++i)  // assemble row Numb[i]
+            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+            {
+                for(int j=0; j<10; ++j)
+                {
+                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    {
+                        A ( Numb[i], Numb[j] ) += coup[j][i]; 
+                    }
+                }
+
+            }      
+    }
+    std::cerr << "done: value part fill" << std::endl;
+    
+    A.Build();
+}
+
+
+template<class Coeff>
+double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
+{
+    double diff, maxdiff=0, norm2= 0, L2=0;
+    Uint lvl=lsg.RowIdx->TriangLevel,
+         Idx=lsg.RowIdx->GetIdx();
+    
+    DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
+    
+    std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        double absdet= sit->GetVolume()*6.,
+            sum= 0;
+        for(Uint i=0; i<4; ++i)
+        {
+            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord()));
+            sum+= diff*diff;
+        }
+        sum/= 120;
+        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter(*sit));
+        sum+= 2./15. * diff*diff;
+        L2+= sum*absdet;
+    }
+    L2= sqrt(L2);
+
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+         sit != send; ++sit)
+    {
+        if (sit->Unknowns.Exist())
+        {
+           diff= fabs( Lsg(sit->GetCoord()) - lsg.Data[sit->Unknowns(Idx)] );
+           norm2+= diff*diff;
+           if (diff>maxdiff)
+           {
+               maxdiff= diff;
+           }
+        }
+    }
+    std::cerr << "  2-Norm= " << ::sqrt(norm2)                 << std::endl
+              << "w-2-Norm= " << ::sqrt(norm2/lsg.Data.size()) << std::endl
+              << "max-Norm= " << maxdiff                       << std::endl
+              << " L2-Norm= " << L2                            << std::endl;
+    return L2;
+}
+
 
 //============================================================================
 //
