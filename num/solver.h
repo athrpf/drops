@@ -18,7 +18,7 @@
 
 #include "num/spmat.h"
 #include <algorithm>
-#include <string.h> // for memcpy
+#include <cstring> // for memcpy
 
 namespace DROPS
 {
@@ -62,7 +62,7 @@ CG(const Matrix& A, Vector& x, const Vector& b,
         {
             max_iter= 0;
             tol= sqrt(gamma);
-            std::cerr << "res= " << r.norm() 
+            std::cerr << "res= " << r.norm()
                       << ", gamma= " << gamma
                       << ", delta= " << delta << std::endl;
             return true;
@@ -74,7 +74,7 @@ CG(const Matrix& A, Vector& x, const Vector& b,
         axpy(alpha, Ad, r);
         Real beta= gamma;
 //        std::cerr << "aeussere Iteration "<<it<<" mit Res.= " << r.norm() <<std::endl;
-        if ( (gamma= r.norm2()) < tol ) 
+        if ( (gamma= r.norm2()) < tol )
         {
             max_iter= it;
             tol= sqrt(gamma);
@@ -113,18 +113,18 @@ PCG(const Matrix& A, Vector& x, const Vector& b,
     Vector r= b - A*x;
     tol*= tol;
 
-    if ( (resid= r.norm2()) <= tol) 
+    if ( (resid= r.norm2()) <= tol)
     {
         tol= sqrt(resid);
         max_iter= 0;
         return true;
     }
-    for (int i= 1; i <= max_iter; ++i) 
+    for (int i= 1; i <= max_iter; ++i)
     {
         M.Apply(A, z, r);
         rho= r*z;
         if (i == 1) p= z;
-        else 
+        else
         {
             beta= rho/rho_1;
 //            p= z + beta*p;
@@ -136,11 +136,11 @@ PCG(const Matrix& A, Vector& x, const Vector& b,
         axpy(alpha, p, x);
 //        r-= alpha*q;
         axpy(-alpha, q, r);
-        if ( (resid= r.norm2()) <= tol) 
+        if ( (resid= r.norm2()) <= tol)
         {
             tol= sqrt(resid);
             max_iter= i;
-            return true;     
+            return true;
         }
         rho_1= rho;
     }
@@ -271,47 +271,44 @@ void
 SSORPC(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b, Real omega)
 // performs one step of the Symmetric SOR method with start vector x
 {
-    typedef typename SparseMatBaseCL<Real>::subs_type*  coliterT;
-    typedef typename SparseMatBaseCL<Real>::value_type* valiterT;
+    typedef const size_t* coliterT;
+    typedef const Real*   valiterT;
 
     const size_t n= A.num_rows();
-    Real sum, *valit;
-    coliterT colit, diag,
-             *diagonal= new coliterT[n];
+    Real         sum;
+    valiterT     valit;
+    coliterT     colit, diag, *diagonal= new coliterT[n];
 //std::cerr << "SSOR-Preconditioner\n";
 //    Assert(n == x.size(), DROPSErrCL("SSOR: incompatible dimensions\n"));
-    for(size_t i=0; i<n; ++i)
+    for (size_t i=0; i<n; ++i)
     {
         x[i]= b[i];
         colit= A.GetFirstCol(i);
         valit= A.GetFirstVal(i);
         diag= diagonal[i]= std::lower_bound( colit, A.GetFirstCol(i+1), i);
-//std::cerr << i <<'='<< (*diag) <<"---------"<<std::endl; 
-        for( ; colit!=diag; ++colit, ++valit)
+        for (; colit!=diag; ++colit, ++valit)
             x[i]-= (*valit)*x[*colit];
 
         // now: a_ii = *valit
 	x[i]*= omega/(*valit);
     }
 
-    size_t i=n;
-    do
+    for (size_t i=n; i>0; )
     {
-        --i;
+        --i; // "i" is decremented after the comparison!
         sum= 0;
-        colit= A.GetFirstCol(i+1);
-        valit= A.GetFirstVal(i+1);
-        --colit; --valit;
-//        diag= std::lower_bound( A.GetFirstCol(i), A.GetFirstCol(i+1), i); 
-        for(diag= diagonal[i] ; colit != diag; --colit, --valit)
+        colit= A.GetFirstCol(i+1)-1;
+        valit= A.GetFirstVal(i+1)-1;
+        diag= diagonal[i];
+        for (; colit!=diag; --colit, --valit)
             sum+= (*valit)*x[*colit];
 
         // now: a_ii = *valit
         sum*= omega/(*valit);
-	x[i]*= 2. - omega;
+	x[i]*= 2.-omega;
         x[i]-= sum;
     }
-    while (i>0);
+
     delete[] diagonal;
 }
 
@@ -325,7 +322,7 @@ SSORPC(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b, Real omega)
 
 template<class Vec, class Real>
 class SsorPcCL
-{ 
+{
   private:
     Real _omega;
 
@@ -344,10 +341,10 @@ class SsorMassPcCL
 {
   private:
     typedef SparseMatBaseCL<double> MatrixCL;
-    typedef VectorBaseCL<double>    VectorCL;  
-  
+    typedef VectorBaseCL<double>    VectorCL;
+
     const MatrixCL& _M;
-    
+
   public:
     SsorMassPcCL( const MatrixCL& M)
         : _M( M) {}
@@ -359,13 +356,13 @@ class SsorMassPcCL
 
 template<class Vec, class Real>
 class ImprovedSsorPcCL
-{ 
+{
   private:
-    typedef typename SparseMatBaseCL<Real>::subs_type*  coliterT;
-    typedef typename SparseMatBaseCL<Real>::value_type* valiterT;
+    typedef const size_t* coliterT;
+    typedef const Real*   valiterT;
 
-    Real _omega;
-    size_t _n;
+    Real      _omega;
+    size_t    _n;
     coliterT* _diagonal;
 
   public:
@@ -383,7 +380,7 @@ class ImprovedSsorPcCL
         else _diagonal= 0;
     }
     ~ImprovedSsorPcCL() { delete[] _diagonal; }
-    
+
     void Init(const SparseMatBaseCL<Real>& A);
       // call Init before calls to Apply, do so when matrix has changed
     void Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b) const;
@@ -391,10 +388,10 @@ class ImprovedSsorPcCL
 
 template<class Vec, class Real>
 class SGSPcCL
-{ 
+{
   private:
-    typedef typename SparseMatBaseCL<Real>::subs_type*  coliterT;
-    typedef typename SparseMatBaseCL<Real>::value_type* valiterT;
+    typedef const size_t* coliterT;
+    typedef const Real*   valiterT;
 
   public:
     void Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b) const;
@@ -405,7 +402,7 @@ class WSGSSmootherCL
 {
   private:
     Real _omega;
-    
+
   public:
     WSGSSmootherCL( Real om=1.0) : _omega(om) {}
     inline void Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b) const
@@ -420,7 +417,7 @@ class WGSSmootherCL
 {
   private:
     Real _omega;
-    
+
   public:
     WGSSmootherCL( Real om=1.0) : _omega(om) {}
     inline void Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b) const
@@ -436,14 +433,14 @@ class CGSolverCL
   private:
     Real _tol, _res;
     int  _maxiter, _iter;
-  
+
   public:
     CGSolverCL(Real tol, int maxiter)
         : _tol(tol), _res( -1.), _maxiter(maxiter), _iter( -1) {}
-    
+
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    
+
     double GetTol    () const { return _tol; }
     int    GetMaxIter() const { return _maxiter; }
     double GetResid  () const { return _res; }
@@ -462,7 +459,7 @@ class CGSolverCL
         CG(A, x, b, numIter, resid);
     }
 };
-  
+
 template<class Vec, class Real, class PC>
 class PCGSolverCL
 {
@@ -470,14 +467,14 @@ class PCGSolverCL
     Real _tol, _res;
     int  _maxiter, _iter;
     PC   _pc;
-  
+
   public:
     PCGSolverCL(Real tol, int maxiter, const PC& pc)
         : _tol(tol), _res( -1.), _maxiter(maxiter), _iter( -1), _pc(pc) {}
-    
+
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    
+
     double GetTol    () const { return _tol; }
     int    GetMaxIter() const { return _maxiter; }
     double GetResid  () const { return _res; }
@@ -497,7 +494,7 @@ class PCGSolverCL
         PCG(A, x, b, _pc, numIter, resid);
     }
 };
-  
+
 
 /***********************************************************************************************************
 *
@@ -585,7 +582,7 @@ void ImprovedSsorPcCL<Vec,Real>::Init(const SparseMatBaseCL<Real>& A)
     _n= A.num_rows();
     if (_diagonal) delete[] _diagonal;
     _diagonal= new coliterT[_n];
-    
+
     for(size_t i=0; i<_n; ++i)
     {
         _diagonal[i]= std::lower_bound( A.GetFirstCol(i), A.GetFirstCol(i+1), i);
@@ -596,10 +593,9 @@ template <class Vec, class Real>
 void ImprovedSsorPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b) const
 {
     const size_t n= A.num_rows();
-    Real sum, *valit;
-    const Real tmp= 2.0 - _omega;
-
-    coliterT colit, diag;
+    Real         sum;
+    valiterT     valit;
+    coliterT     colit, diag;
 //std::cerr << "SSOR-Preconditioner\n";
 //    Assert(n == x.size(), DROPSErrCL("SSOR: incompatible dimensions\n"));
     for (size_t i=0; i<n; ++i)
@@ -607,40 +603,38 @@ void ImprovedSsorPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, c
         x[i]= b[i];
         colit= A.GetFirstCol(i);
         valit= A.GetFirstVal(i);
-//std::cerr << i <<'='<< (*diag) <<"---------"<<std::endl; 
-        for (diag= _diagonal[i]; colit!=diag; ++colit, ++valit)
+        diag= _diagonal[i];
+        for (; colit!=diag; ++colit, ++valit)
             x[i]-= (*valit)*x[*colit];
 
         // now: a_ii = *valit
 	x[i]*= _omega/(*valit);
     }
 
-    size_t i=n;
-    do
+    for (size_t i=n; i>0; )
     {
-        --i;
+        --i; // "i" is decremented after the comparison!
         sum= 0;
-        colit= A.GetFirstCol(i+1);
-        valit= A.GetFirstVal(i+1);
-        --colit; --valit;
+        colit= A.GetFirstCol(i+1)-1;
+        valit= A.GetFirstVal(i+1)-1;
         diag= _diagonal[i];
-        for (; colit != diag; --colit, --valit)
+        for (; colit!=diag; --colit, --valit)
             sum+= (*valit)*x[*colit];
 
         // now: a_ii = *valit
         sum*= _omega/(*valit);
-	x[i]*= tmp;
+	x[i]*= 2.-_omega;
         x[i]-= sum;
     }
-    while (i>0);
 }
 
 template <class Vec, class Real>
 void SGSPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b) const
 {
     const size_t n= A.num_rows();
-    Real sum, *valit;
-    coliterT colit, diag;
+    Real         sum;
+    valiterT     valit;
+    coliterT     colit, diag;
 //std::cerr << "SSOR-Preconditioner\n";
 //    Assert(n == x.size(), DROPSErrCL("SSOR: incompatible dimensions\n"));
     for (size_t i=0; i<n; ++i)
@@ -649,7 +643,6 @@ void SGSPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec&
         colit= A.GetFirstCol(i);
         valit= A.GetFirstVal(i);
         diag= std::lower_bound( colit, A.GetFirstCol(i+1), i);
-//std::cerr << i <<'='<< (*diag) <<"---------"<<std::endl; 
         for (; colit!=diag; ++colit, ++valit)
             x[i]-= (*valit)*x[*colit];
 
@@ -657,23 +650,21 @@ void SGSPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, const Vec&
 	x[i]/= *valit;
     }
 
-    size_t i=n;
-    do
+
+    for (size_t i=n; i>0; )
     {
-        --i;
+        --i; // "i" is decremented after the comparison!
         sum= 0;
-        colit= A.GetFirstCol(i+1);
-        valit= A.GetFirstVal(i+1);
-        diag= std::lower_bound( A.GetFirstCol(i), colit, i);
-        --colit; --valit;
-        for (; colit != diag; --colit, --valit)
+        colit= A.GetFirstCol(i+1)-1;
+        valit= A.GetFirstVal(i+1)-1;
+        diag= std::lower_bound( A.GetFirstCol(i), colit+1, i);
+        for (; colit!=diag; --colit, --valit)
             sum+= (*valit)*x[*colit];
 
         // now: a_ii = *valit
         sum/= *valit;
         x[i]-= sum;
     }
-    while (i>0);
 }
 
 } // end of namespace DROPS
