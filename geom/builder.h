@@ -112,6 +112,8 @@ class TetraBuilderCL : public MGBuilderCL
     TetraBuilderCL(Ubyte rule, const Point3DCL& p0, const Point3DCL& p1,
                                const Point3DCL& p2, const Point3DCL& p3);
 
+    static void
+    BogoReMark(DROPS::MultiGridCL& mg, DROPS::Uint rule);
     virtual void
     build(MultiGridCL*) const;
 };

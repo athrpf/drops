@@ -10,6 +10,9 @@ using namespace DROPS;
 
 typedef double (*fun_ptr)(const SVectorCL<3>&);
 
+enum  OutputModeT { SILENT, NOISY };
+
+
 double f(const SVectorCL<3>& p)
 { return p[0]*p[0] +10.*p[1]*p[1] +100.*p[2]*p[2] +1000.*p[0]*p[1] +10000.*p[0]*p[2] +100000.*p[1]*p[2]; }
 
@@ -60,6 +63,7 @@ class BndCL
         { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
 } Bnd;
 
+
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 {
     vd.Data.resize( vd.RowIdx->NumUnknowns);
@@ -75,36 +79,103 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
     }
 }
 
-int CheckResult(DROPS::P2EvalCL<double, BndCL, const DROPS::VecDescCL>& fun, fun_ptr f)
+
+int CheckResult(DROPS::P2EvalCL<double, BndCL,
+                const DROPS::VecDescCL>& fun, fun_ptr f, OutputModeT om)
 {
+    int ret= 0;
     const VertexCL* v= 0;
     const EdgeCL* e= 0;
     const DROPS::MultiGridCL& mg= fun.GetMG();
     const DROPS::Uint trilevel= fun.GetSolution()->RowIdx->TriangLevel;
-    std::cout << "Verts:" << std::endl;
+    if (om!=SILENT) std::cout << "Verts:" << std::endl;
     double diff, emaxdiff= 0., vmaxdiff= 0.;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),
          theend= mg.GetTriangVertexEnd( trilevel); sit!=theend; ++sit) {
         diff= fun.val( *sit) - f( sit->GetCoord());
-        if ( std::abs(diff) > vmaxdiff) { vmaxdiff= std::abs(diff); v= &*sit; }
-//        std::cout << diff << "\t";
-//        if (std::abs( diff) > 1e-9) { std::cout << std::endl; sit->DebugInfo( std::cout); return 1;}
+        if ( std::abs(diff) > vmaxdiff) { ++ret; vmaxdiff= std::abs(diff); v= &*sit; }
     }
-    std::cout << "\n\nEdges:" << std::endl;
+    if (om!=SILENT) std::cout << "\n\nEdges:" << std::endl;
     for (MultiGridCL::const_TriangEdgeIteratorCL sit=mg.GetTriangEdgeBegin( trilevel),
          theend= mg.GetTriangEdgeEnd( trilevel); sit!=theend; ++sit) {
         diff = fun.val( *sit, .5) - f( (sit->GetVertex( 0)->GetCoord() + sit->GetVertex( 1)->GetCoord())*0.5);
-        if ( std::abs(diff) > emaxdiff) { emaxdiff= std::abs(diff); e= &*sit; }
-//        std::cout << diff << "\t";
-//        if (std::abs( diff) > 1e-9) { std::cout << std::endl; sit->DebugInfo( std::cout); return 1;}
+        if ( std::abs(diff) > emaxdiff) { ++ret; emaxdiff= std::abs(diff); e= &*sit; }
     }
-    std::cout << "maximale Differenz Vertices: " << vmaxdiff << " auf\n";
-    if (v) v->DebugInfo( std::cout);
-    std::cout << "maximale Differenz Edges: " << emaxdiff << " auf\n";
-    if (e) e->DebugInfo( std::cout);
-    std::cout << std::endl;
-    return 0;
+    if (om!=SILENT) {
+        std::cout << "maximale Differenz Vertices: " << vmaxdiff << " auf\n";
+        if (v) v->DebugInfo( std::cout);
+        std::cout << "maximale Differenz Edges: " << emaxdiff << " auf\n";
+        if (e) e->DebugInfo( std::cout);
+        std::cout << std::endl;
+    }
+    return ret;
 }
+
+
+DROPS::Uint Rule(DROPS::Uint r)
+{
+    return r < 64 ? r : 127;
+}
+
+// True, iff every bit in p is also set in q.
+bool SubSuperPattern(DROPS::Uint p, DROPS::Uint q)
+{
+    return !((~q) & p);
+}
+
+
+// Checks every possible tetra-modification.
+int TestReMark()
+{
+    std::cout << "\n-----------------------------------------------------------------"
+                 "\nTesting repair on single tetra-combinations:\n";
+    int ttt, ret= 0;
+    for (DROPS::Uint i= 0; i<=64; ++i) {
+        for (DROPS::Uint j= 0; j<=64; ++j) {
+            DROPS::IdCL<DROPS::VertexCL>::ResetCounter();
+//            std::cout << Rule( i) << "\t-->\t" << Rule( j) << " ";
+            DROPS::TetraBuilderCL tet( Rule( i));
+            DROPS::MultiGridCL mg( tet);
+            DROPS::IdxDescCL i0, i1;
+            i0.Set( 1,1,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
+            DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,
+                                       mg.GetTriangVertexBegin( i0.TriangLevel),
+                                       mg.GetTriangVertexEnd( i0.TriangLevel),
+                                       Bnd);
+            DROPS::CreateNumbOnEdge( i0.GetIdx(), i0.NumUnknowns, 1,
+                                     mg.GetTriangEdgeBegin( i0.TriangLevel),
+                                     mg.GetTriangEdgeEnd( i0.TriangLevel),
+                                     Bnd);
+            DROPS::VecDescCL v0, v1;
+            v0.SetIdx( &i0);
+            SetFun( v0, mg, f);
+            tet.BogoReMark( mg, Rule( j));
+
+            i1.Set( 1,1,0,0);
+            i1.TriangLevel= i0.TriangLevel <= mg.GetLastLevel() ? i0.TriangLevel
+                                                                : mg.GetLastLevel();
+            i1.NumUnknowns= 0;
+            DROPS::CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1,
+                                       mg.GetTriangVertexBegin( i1.TriangLevel),
+                                       mg.GetTriangVertexEnd( i1.TriangLevel),
+                                       Bnd);
+            DROPS::CreateNumbOnEdge( i1.GetIdx(), i1.NumUnknowns, 1,
+                                     mg.GetTriangEdgeBegin( i1.TriangLevel),
+                                     mg.GetTriangEdgeEnd( i1.TriangLevel),
+                                     Bnd);
+            v1.SetIdx( &i1);
+            DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
+            DROPS::RepairAfterRefine( fun0, v1);
+            DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
+            ttt= CheckResult( fun1, f, SILENT);
+            ret+= ttt;
+            if (ttt != 0 && SubSuperPattern( Rule( i) & 63, Rule( j) & 63))
+                std::cout << "Aerger: " << Rule( i) << "\t-->\t" << Rule( j) << " " << std::endl;
+        }
+    }
+    return ret;
+}
+
 
 int TestRepairUniform()
 {
@@ -144,7 +215,7 @@ int TestRepairUniform()
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefine( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
-        ret+= CheckResult( fun1, f);
+        ret+= CheckResult( fun1, f, NOISY);
         DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( i0.TriangLevel),
                                     mg.GetAllVertexEnd( i0.TriangLevel));
         DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllEdgeBegin( i0.TriangLevel),
@@ -193,7 +264,7 @@ int TestRepairUniform()
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefine( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
-        ret+= CheckResult( fun1, g);
+        ret+= CheckResult( fun1, g, NOISY);
         if (mg.GetLastLevel() < i0.TriangLevel) {
             Uint level= mg.GetLastLevel();
             DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( level),
@@ -248,7 +319,7 @@ int TestRepair()
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefine( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
-        ret+= CheckResult( fun1, g);
+        ret+= CheckResult( fun1, g, NOISY);
         DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( i0.TriangLevel),
                                     mg.GetAllVertexEnd( i0.TriangLevel));
         DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllEdgeBegin( i0.TriangLevel),
@@ -297,7 +368,7 @@ int TestRepair()
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefine( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
-        ret+= CheckResult( fun1, g);
+        ret+= CheckResult( fun1, g, NOISY);
         if (mg.GetLastLevel() < i0.TriangLevel) {
             Uint level= mg.GetLastLevel();
             DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( level),
@@ -375,7 +446,7 @@ int main ()
     int ret= TestRepairUniform();
     ret+= TestRepair();
     ret+= TestInterpolateOld();
-    return ret;
+    return ret + TestReMark();
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }

@@ -40,7 +40,7 @@ class BndCL
     typedef BndCL self;
     typedef double bnd_type;
 
-    inline bool IsOnDirBnd (const VertexCL& v) const { return std::abs( v.GetCoord()[0]) < 1e-6; }
+    inline bool IsOnDirBnd (const VertexCL& v) const { return false; } //std::abs( v.GetCoord()[0]) < 1e-6; }
     inline bool IsOnNeuBnd (const VertexCL&) const { return false; }
     inline bool IsOnDirBnd (const EdgeCL&) const { return false; }
     inline bool IsOnNeuBnd (const EdgeCL&) const { return false; }
@@ -77,6 +77,52 @@ int CheckResult(DROPS::P1EvalCL<double, BndCL, const DROPS::VecDescCL>& fun)
     }
     std::cout << std::endl;
     return 0;
+}
+
+DROPS::Uint Rule(DROPS::Uint r)
+{
+    return r < 64 ? r : 127;
+}
+
+// Checks every possible tetra-modification.
+int TestReMark()
+{
+    int ttt, ret= 0;
+    for (DROPS::Uint i= 0; i<=64; ++i) {
+        for (DROPS::Uint j= 0; j<=64; ++j) {
+//            std::cout << Rule( i) << "\t-->\t" << Rule( j) << " ";
+            DROPS::TetraBuilderCL tet( Rule( i));
+            DROPS::MultiGridCL mg( tet);
+            DROPS::IdxDescCL i0, i1;
+            i0.Set( 1,0,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
+            DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,
+                                       mg.GetTriangVertexBegin( i0.TriangLevel),
+                                       mg.GetTriangVertexEnd( i0.TriangLevel),
+                                       Bnd);
+            DROPS::VecDescCL v0, v1;
+            v0.SetIdx(&i0);
+            SetFun(v0, mg);
+            tet.BogoReMark( mg, Rule( j));
+
+            i1.Set( 1,0,0,0);
+            i1.TriangLevel= i0.TriangLevel <= mg.GetLastLevel() ? i0.TriangLevel
+                                                                : mg.GetLastLevel();
+            i1.NumUnknowns= 0;
+            DROPS::CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1,
+                                       mg.GetTriangVertexBegin( i1.TriangLevel),
+                                       mg.GetTriangVertexEnd( i1.TriangLevel),
+                                       Bnd);
+            v1.SetIdx( &i1);
+            DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
+            DROPS::RepairAfterRefine( fun0, v1);
+            DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
+            ttt= CheckResult( fun1);
+            ret+= ttt;
+            if (ttt != 0)
+                std::cout << Rule( i) << "\t-->\t" << Rule( j) << " " << std::endl;
+        }
+    }
+    return ret;
 }
 
 
@@ -178,7 +224,7 @@ int TestInterpolateOld()
 int main (int argc, char** argv)
 {
   try {
-    return TestRepair() + TestInterpolateOld();
+    return TestRepair() + TestInterpolateOld() + TestReMark();
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }

@@ -975,6 +975,70 @@ if (!sit->Unknowns.Exist(old_idx)) continue;
                                      << std::endl;
 }
 
+// Helper function for RepairOnChildren.
+template<class Data, class _BndData, class _VD>
+bool TryGetValuesOnFace( const P2EvalBaseCL<Data, _BndData, const _VD>& f,
+                         std::vector<Data>& v, const TetraCL& t, Uint face)
+{
+    typedef typename P2EvalBaseCL<Data, _BndData, const _VD>::BndDataCL BndCL;
+    const BndCL* const bnd= f.GetBndData();
+    const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
+
+    for (Uint i=0; i<3; ++i) {
+        const VertexCL* const vp= t.GetVertex( VertOfFace( face, i));
+        if (bnd->IsOnDirBnd( *vp)
+            || (vp->Unknowns.Exist() && vp->Unknowns.Exist( idx)))
+            v[i]= f.val( *vp);
+        else return false;
+    }
+    for (Uint i=0; i<3; ++i) {
+        const EdgeCL* const ep= t.GetEdge( EdgeOfFace( face, i));
+        if (bnd->IsOnDirBnd( *ep)
+            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( idx)))
+            v[i+3]= f.val( *ep);
+        else { // Never on dirichlet-boundary: this is handled by the preceeding if.
+            if (ep->IsRefined()
+                && ep->GetMidVertex()->Unknowns.Exist()
+                && ep->GetMidVertex()->Unknowns.Exist( idx))
+                v[i+3]= f.val( *ep->GetMidVertex());
+            else return false;
+        }
+    }    
+    return true;
+}
+
+// Helper function for RepairOnChildren.
+template<class Data, class _BndData, class _VD>
+bool TryGetValuesOnTetra( const P2EvalBaseCL<Data, _BndData, const _VD>& f,
+                          std::vector<Data>& v, const TetraCL& t)
+{
+    typedef typename P2EvalBaseCL<Data, _BndData, const _VD>::BndDataCL BndCL;
+    const BndCL* const bnd= f.GetBndData();
+    const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
+
+    for (Uint i=0; i<4; ++i) {
+        const VertexCL* const vp= t.GetVertex( i);
+        if (bnd->IsOnDirBnd( *vp)
+            || (vp->Unknowns.Exist() && vp->Unknowns.Exist( idx)))
+            v[i]= f.val( *vp);
+        else return false;
+    }
+    for (Uint i=0; i<6; ++i) {
+        const EdgeCL* const ep= t.GetEdge( i);
+        if (bnd->IsOnDirBnd( *ep)
+            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( idx)))
+            v[i+4]= f.val( *ep);
+        else { // Never on dirichlet-boundary: this is handled by the preceeding if.
+            if (ep->IsRefined()
+                && ep->GetMidVertex()->Unknowns.Exist()
+                && ep->GetMidVertex()->Unknowns.Exist( idx))
+                v[i+4]= f.val( *ep->GetMidVertex());
+            else return false;
+        }
+    }    
+    return true;
+}
+
 
 // Used in RepairAfterRefine for P2-elements. The all possible parent tetras of
 // the new function f are walked over, and scanned for available indices of the
@@ -1031,8 +1095,9 @@ void RepairOnChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& f,
                 else if (IsSubInParFace( chedgeinparent)) { // Sub-edges in parent faces
                     Uint parface, pos;
                     WhichEdgeInFace(chedgeinparent, parface, pos);
-                    if (old_f.IsDefinedOn( t, parface)) {
-                        f.SetDoF( *edgep, old_f.val( t, parface,
+                    std::vector<Data> v( 6);
+                    if (TryGetValuesOnFace( old_f, v, t, parface)) {
+                        f.SetDoF( *edgep, old_f.val( v,
                                                      edgebary[pos][0], edgebary[pos][1]));
 //                        if (edgep->GetVertex( 0)->GetId() == 0 && edgep->GetVertex( 1)->GetId() == 128)
 //                            std::cout << "seven" << std::endl;
@@ -1050,8 +1115,10 @@ void RepairOnChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& f,
                     }
                 }
                 // space diagonal
-                else if (old_f.IsDefinedOn( t)) {
-                        f.SetDoF( *edgep, old_f.val(t, 0.25, 0.25, 0.25) );
+                else {
+                    std::vector<Data> v( 10);
+                    if (TryGetValuesOnTetra( old_f, v, t)) {
+                        f.SetDoF( *edgep, old_f.val( v, 0.25, 0.25, 0.25));
 //                        if (edgep->GetVertex( 0)->GetId() == 0 && edgep->GetVertex( 1)->GetId() == 128)
 //                           std::cout << "nine" << std::endl;
                     }
@@ -1061,11 +1128,11 @@ void RepairOnChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& f,
 //                        if (edgep->GetVertex( 0)->GetId() == 0 && edgep->GetVertex( 1)->GetId() == 128)
 //                            std::cout << "ten" << std::endl;
                     }
+                }
             }
         }
     }
 }
-
 
 //**************************************************************************
 // RepairAfterRefine: Repairs the P2-function old_f, which is possibly     *

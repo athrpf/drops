@@ -490,6 +490,67 @@ TetraBuilderCL::TetraBuilderCL(const Ubyte rule,  const Point3DCL& p0, const Poi
 {}
 
 
+// This is absolutely evil.
+// One can force the refinement algorithm to go from the current rule to rule.
+// This function only works for multigrids built by the current class.
+void TetraBuilderCL::BogoReMark(DROPS::MultiGridCL& mg, DROPS::Uint rule)
+{
+    TetraCL& t= *mg.GetTetrasBegin( 0);
+
+    if (rule == t.GetRefRule()) return;
+    switch (rule) {
+      case NoRefMarkC:
+        if (t.IsRegularlyRef()) {
+            for (Uint i=0; i<8; ++i)
+                t.GetChild( i)->SetRemoveMark();
+        }
+        else {
+            for (Uint i=0; i<6; ++i)
+                if (t.GetRefRule() & (1<<i))
+                    const_cast<EdgeCL*>( t.GetEdge( i))->DecMarkForRef();
+        }
+        break;
+      case RegRefMarkC:
+        if (t.IsUnrefined()) t.SetRegRefMark();
+        else {
+            for (Uint i=0; i<6; ++i)
+                if (t.GetRefRule() & (1<<i))
+                    const_cast<EdgeCL*>( t.GetEdge( i))->DecMarkForRef();
+            (*t.GetChildBegin())->SetRegRefMark();
+        }
+        break;
+      case GreenRegRefMarkC:
+        if (t.IsRegularlyRef()) {
+            for (Uint i=0; i<8; ++i)
+                t.GetChild( i)->SetRemoveMark();
+            for (Uint i=0; i<6; ++i)
+                const_cast<EdgeCL*>( t.GetEdge( i))->IncMarkForRef();
+        }
+        else if (t.IsUnrefined())
+                for (Uint i=0; i<6; ++i)
+                    const_cast<EdgeCL*>( t.GetEdge( i))->IncMarkForRef();
+            else
+                for (Uint i=0; i<6; ++i)
+                    if ( !(t.GetRefRule() & (1<<i)))
+                        const_cast<EdgeCL*>( t.GetEdge( i))->IncMarkForRef();
+        break;
+      default:
+        if (t.IsRegularlyRef()) {
+            for (Uint i=0; i<8; ++i)
+                t.GetChild( i)->SetRemoveMark();
+        }
+        else {
+            for (Uint i=0; i<6; ++i)
+                if (t.GetRefRule() & (1<<i))
+                    const_cast<EdgeCL*>( t.GetEdge( i))->DecMarkForRef();
+        }
+        for (Uint i=0; i<6; ++i)
+            if (rule & (1<<i))
+                const_cast<EdgeCL*>( t.GetEdge( i))->IncMarkForRef();
+    }
+    mg.Refine();
+}
+
 void TetraBuilderCL::build(MultiGridCL* mgp) const
 {
     AppendLevel( mgp);
