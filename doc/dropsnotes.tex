@@ -127,7 +127,8 @@ werden.
 
 \subsection{MultiGrid-Builder}
 Die Anfangstriangulierung $\mathcal T_0=\mathcal G_0$ wird mit Hilfe einer
-Builder-Klasse konstruiert. Derzeit gibt es in DROPS folgende Builder:
+Builder-Klasse konstruiert (siehe \verb|geom/builder.h/cpp|). 
+Derzeit gibt es in DROPS folgende Builder:
 \begin{itemize}
     \item \prg{BrickBuilder} zur Erzeugung eines Quaders.
     \item \prg{LBuilder} zur Erzeugung eines L-Gebietes.
@@ -354,7 +355,7 @@ f"ur $P_2$-Elemente.
 template<class StokesProblemT>
 class LevelsetP2CL
 {
-    LevelsetP2CL( MultiGridCL& mg, double theta= 0.5, double SD= 0.)
+    LevelsetP2CL( MultiGridCL& mg, double theta= 0.5, double SD= 0.);
     
     void CreateNumbering( Uint level, IdxDescCL*);
     void DeleteNumbering();
@@ -378,6 +379,89 @@ class LevelsetP2CL
 %============================================================================
 \section{{\tt num}: Numerik}
 %============================================================================
+
+\subsection{Vektoren und d"unnbesetzte Matrizen}
+
+Datentypen f"ur Vektoren und d"unnbesetzte Matrizen sind in der Datei
+\verb|num/spmat.h| definiert.
+
+Als Vektordatentyp dient die Template-Klasse \prg{VectorBaseCL<T>}, die direkt
+von \prg{std::valarray<T>} abgeleitet ist und so die \emph{expression templates}
+der Valarrays ausnutzt. Wenn \prg{DebugNumericC} als Debug-Option gesetzt ist,
+findet beim Zugriff auf Vektoreintr"age mit \prg{[]} sowie bei Benutzung der
+Operatoren \prg{+, -, =, +=, -=, *=, /=} eine Bereichspr"ufung statt (im Gegensatz zum reinen
+valarray). Folgende Funktionen sind f"ur Vektoren definiert:
+\begin{itemize}
+  \item \prg{dot(x,y)} berechnet das Skalarprodukt $x^T y$,
+  \item \prg{norm(x)} berechnet die euklidische Norm $\|x\|_2$, 
+    \verb|norm_sq(x)| dessen Quadrat $\|x\|_2^2$,
+  \item \prg{supnorm(x)} berechnet die Maximumsnorm $\|x\|_\infty$,
+  \item \verb|axpy(a,x,y)| f"ur \verb|y+= a*x|,
+  \item \verb|z_xpay(z,x,a,y)| f"ur \verb|z= x + a*y|,
+  \item \verb|z_xpaypby2(z,x,a,y,b,y2)| f"ur \verb|z= x + a*y + b*y2|.
+\end{itemize}
+
+Die d"unnbesetzten Matrizen werden in einem zeilenbasierten Format gespeichert
+und durch folgende Template-Klasse realisiert:
+
+\begin{Code}
+\begin{verbatim}
+template <typename T>
+class SparseMatBaseCL
+{
+    SparseMatBaseCL (size_t rows, size_t cols, size_t nz);
+
+    size_t num_rows     () const;
+    size_t num_cols     () const;
+    size_t num_nonzeros () const;
+
+    inline T  operator() (size_t i, size_t j) const;
+    SparseMatBaseCL& operator*= (T c);
+    SparseMatBaseCL& operator/= (T c);
+    SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&);
+    void clear();
+};
+\end{verbatim}
+\end{Code}
+Mit Hilfe der Funktion \verb|LinComb| wird die Matrix als Linearkombination
+zweier anderer Matrizen erzeugt (interessant bei der Zeitintegration: $M+\theta
+dtA$). Die Funktion \verb|clear| dagegen l"oscht den Inhalt der Matrix.
+
+Matrix-Vektor-Multiplikation erfolgt mit \verb|A*x| f"ur $Ax$ 
+und \verb|transp_mul(A,x)| f"ur $A^Tx$.
+
+Da das \emph{sparsity pattern} einer Matrix vorher meist nicht bekannt ist, wird
+beim Aufstellen der Matrizen zun"achst ein Zwischenformat, die
+\verb|SparseMatBuilderCL| erzeugt, in der das \emph{sparsity pattern} aufgebaut
+wird, bevor schlie"slich die endg"ultige Matrix mit dem Befehl \verb|Build|
+erzeugt wird. 
+\begin{Code}
+\begin{verbatim}
+template <typename T>
+class SparseMatBuilderCL
+{
+    SparseMatBuilderCL(spmatT* mat, size_t rows, size_t cols);
+
+    T& operator() (size_t i, size_t j);
+    void Build();
+};
+\end{verbatim}
+\end{Code}
+Besitzt die an den Builder "ubergebene Matrix bereits ein \emph{sparsity
+pattern}, so wird dieses aus Effizienzgr"unden wiederverwendet. Deswegen sollte
+nach jeder Gitter"anderung der Inhalt der Matrizen mit \verb|clear| gel"oscht
+werden, um das \emph{sparsity pattern} neu aufbauen zu lassen.
+
+Zur einfacheren Handhabung sind die folgenden typedefs definiert:
+\begin{Code}
+\begin{verbatim}
+typedef VectorBaseCL<double>       VectorCL;
+typedef SparseMatBaseCL<double>    MatrixCL;
+typedef SparseMatBuilderCL<double> MatrixBuilderCL;
+\end{verbatim}
+\end{Code}
+
 
 \subsection{Vorkonditionierer}
 \label{ss:vorkonditionierer}
@@ -804,13 +888,13 @@ template <class DiscVelT, class DiscPrT>
 class TecPlot2DSolOutCL: public MGOutCL
 {
     TecPlot2DSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, 
-                       const IdxDescCL& freeVertIdx, int lvl, Uint cutvar, double cutplane)
+                       const IdxDescCL& freeVertIdx, int lvl, Uint cutvar, double cutplane);
 };
 
 template <class DiscVelT, class DiscPrT>
 class TecPlotSolOutCL: public MGOutCL
 {
-    TecPlotSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, int lvl= -1)
+    TecPlotSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, int lvl= -1);
 };
 \end{verbatim}
 \end{Code}
@@ -839,7 +923,7 @@ m"oglich.
 \begin{verbatim}
 class EnsightP2SolOutCL
 {
-    EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx)
+    EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx);
     // call CaseBegin() before any other member function
     void CaseBegin ( const char casefileName[], Uint numsteps= 0);
     void DescribeGeom  ( const char geoName[], std::string fileName, bool timedep= false);
