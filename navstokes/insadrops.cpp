@@ -268,10 +268,10 @@ typedef double (*signed_dist_fun)(const DROPS::Point3DCL& p, double t);
 bool
 ModifyGridStep(DROPS::MultiGridCL& mg,
                const signed_dist_fun Dist,
-               const double width,         // Thickness of refined shell on each side of the interface
-               const DROPS::Uint c_level,  // Outside the shell, use this level
-               const DROPS::Uint f_level,  // Inside the shell, use this level
-               const double t)             // Time of evaluation
+               const double width,  // Thickness of refined shell on each side of the interface
+               const int c_level,   // Outside the shell, use this level
+               const int f_level,   // Inside the shell, use this level
+               const double t)      // Time of evaluation
 // One step of grid change; returns true if modifications were necessary,
 // false, if nothing changed.
 {
@@ -283,7 +283,7 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
             for (Uint j=0; j<4; ++j) {
                 d= std::min( d, std::abs( Dist( it->GetVertex( j)->GetCoord(), t)));
             }
-            const Uint l= it->GetLevel();
+            const int l= it->GetLevel();
             if (d<=width) { // In the shell; level should be f_level.
                 if (l < f_level) {
                     shell_not_ready= true;
@@ -309,9 +309,9 @@ void
 UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
                     const signed_dist_fun Dist,
                     const double t,
-                    const double width,         // Thickness of refined shell on eache side of the interface
-                    const DROPS::Uint c_level,  // Outside the shell, use this level
-                    const DROPS::Uint f_level,  // Inside the shell, use this level
+                    const double width,   // Thickness of refined shell on each side of the interface
+                    const int c_level,    // Outside the shell, use this level
+                    const int f_level,    // Inside the shell, use this level
                     DROPS::VelVecDescCL* v1,
                     DROPS::VecDescCL* p1)
 {
@@ -388,9 +388,9 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
 void
 MakeInitialTriangulation(DROPS::MultiGridCL& mg,
                          const signed_dist_fun Dist,
-                         const double width,         // Thickness of refined shell on eache side of the interface
-                         const DROPS::Uint c_level,  // Outside the shell, use this level
-                         const DROPS::Uint f_level)  // Inside the shell, use this level
+                         const double width,  // Thickness of refined shell on eache side of the interface
+                         const int c_level,   // Outside the shell, use this level
+                         const int f_level)   // Inside the shell, use this level
 {
     using namespace DROPS;
     Assert( 0<=c_level && c_level<=f_level, "MakeInitialTriangulation: Levels are cheesy.\n", ~0);
@@ -447,7 +447,7 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
          double poi_tol, int poi_maxiter,
          double theta,
          DROPS::Uint num_timestep,
-         double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
+         double shell_width, int c_level, int f_level)
 {
     using namespace DROPS;
     typedef InstatNavierStokesP2P1CL<Coeff> NavStokesCL;

@@ -18,7 +18,7 @@ class AdapTriangCL
   private:
     MultiGridCL& mg_;
     double width_;
-    Uint c_level_, f_level_;
+    int c_level_, f_level_;
     bool modified_;
     
     template <class DistFctT>
@@ -37,7 +37,7 @@ class AdapTriangCL
     // false, if nothing changed.
 
   public:
-    AdapTriangCL( MultiGridCL& mg, double width, Uint c_level, Uint f_level)
+    AdapTriangCL( MultiGridCL& mg, double width, int c_level, int f_level)
       : mg_(mg), width_(width), c_level_(c_level), f_level_(f_level), modified_(false) 
       { Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0); }
     
