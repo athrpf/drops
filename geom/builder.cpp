@@ -88,7 +88,6 @@ void BrickBuilderCL::build (MultiGridCL* mgp) const
     // Create tetras
     MultiGridCL::EdgeLevelCont& edges= GetEdges(mgp)[0];
     MultiGridCL::FaceLevelCont& faces= GetFaces(mgp)[0];
-//    MultiGridCL::FaceLevelCont faces;
     MultiGridCL::TetraLevelCont& tetras= GetTetras(mgp)[0];
     std::vector<TetraCL*> ta(_n3*_n2*_n1*6);
 
@@ -477,6 +476,87 @@ void BBuilderCL::build (MultiGridCL* mgp) const
                     tetras.back().BuildAndLinkFaces(faces);
                 }
     std::for_each( verts.begin(), verts.end(), std::mem_fun_ref( &VertexCL::DestroyRecycleBin ) );
+}
+
+
+TetraBuilderCL::TetraBuilderCL(const Ubyte rule)
+    :rule_(rule), p0_( std_basis<3>(0)), p1_( std_basis<3>(1)),
+                  p2_( std_basis<3>(2)), p3_( std_basis<3>(3))
+{}
+
+TetraBuilderCL::TetraBuilderCL(const Ubyte rule,  const Point3DCL& p0, const Point3DCL& p1,
+                                                  const Point3DCL& p2, const Point3DCL& p3)
+    :rule_(rule), p0_( p0), p1_( p1), p2_( p2), p3_( p3)
+{}
+
+
+void TetraBuilderCL::build(MultiGridCL* mgp) const
+{
+    AppendLevel( mgp);
+
+    // Create boundary
+    BoundaryCL::SegPtrCont& Bnd= GetBnd( mgp);
+    Bnd.push_back( new AffineTriangleCL( p0_, p1_, p2_)); // e1-e2-plane
+    Bnd.push_back( new AffineTriangleCL( p0_ ,p1_, p3_)); // e1-e3-plane
+    Bnd.push_back( new AffineTriangleCL( p0_, p2_, p3_)); // e1-e2-plane
+    Bnd.push_back( new AffineTriangleCL( p1_, p2_, p3_)); // lid
+
+    // Create vertices
+    MultiGridCL::VertexLevelCont& verts= GetVertices(mgp)[0];
+    std::vector<VertexCL*> va( 4);
+    // origin
+    verts.push_back( VertexCL( p0_, 0));
+    va[0]= &verts.back();
+    verts.back().AddBnd( BndPointCL( 0, std_basis<2>( 0)));
+    verts.back().AddBnd( BndPointCL( 1, std_basis<2>( 0)));
+    verts.back().AddBnd( BndPointCL( 2, std_basis<2>( 0)));
+    verts.back().BndSort();
+    // e1
+    verts.push_back( VertexCL( p1_, 0));
+    va[1]= &verts.back();
+    verts.back().AddBnd( BndPointCL( 0, std_basis<2>( 1)));
+    verts.back().AddBnd( BndPointCL( 1, std_basis<2>( 1)));
+    verts.back().AddBnd( BndPointCL( 3, std_basis<2>( 0)));
+    verts.back().BndSort();
+    // e2
+    verts.push_back( VertexCL( p2_, 0));
+    va[2]= &verts.back();
+    verts.back().AddBnd( BndPointCL( 0, std_basis<2>( 2)));
+    verts.back().AddBnd( BndPointCL( 2, std_basis<2>( 1)));
+    verts.back().AddBnd( BndPointCL( 3, std_basis<2>( 1)));
+    verts.back().BndSort();
+    // e3
+    verts.push_back( VertexCL( p3_, 0));
+    va[3]= &verts.back();
+    verts.back().AddBnd( BndPointCL( 1, std_basis<2>( 2)));
+    verts.back().AddBnd( BndPointCL( 2, std_basis<2>( 2)));
+    verts.back().AddBnd( BndPointCL( 3, std_basis<2>( 2)));
+    verts.back().BndSort();
+
+    // Create edges by calling BuildEdges() an BuildFaces() for every new tetrahedron; 
+    // this will search for all the ones needed and add missing edges automatically;
+    // Create tetras
+    MultiGridCL::EdgeLevelCont& edges= GetEdges(mgp)[0];
+    MultiGridCL::FaceLevelCont& faces= GetFaces(mgp)[0];
+    MultiGridCL::TetraLevelCont& tetras= GetTetras(mgp)[0];
+    TetraCL* tp;
+
+    // Add tetrahedron
+    tetras.push_back( TetraCL( va[0], va[1], va[2], va[3], 0));
+    tp= &tetras.back();
+    tetras.back().BuildEdges( edges);
+    tetras.back().BuildAndLinkFaces( faces);
+
+    // Clean up recycle bins, that are used by BuildEdges and BuildAndLinkFaces.
+    std::for_each( va.begin(), va.end(), std::mem_fun( &VertexCL::DestroyRecycleBin));
+
+    // The preceeding part was routine. Now, we artificially mark the edges
+    // of the desired refinement rule *regularly* and refine once.
+    if ( rule_ == RegRefMarkC) tp->SetRegRefMark();
+    else
+        for (Uint i= 0; i < 6; ++i)
+            if (rule_ & (1<<i)) const_cast<EdgeCL*>(tp->GetEdge( i))->IncMarkForRef();
+    mgp->Refine();
 }
 
 

@@ -96,6 +96,26 @@ class BBuilderCL : public MGBuilderCL
 };
 
 
+class TetraBuilderCL : public MGBuilderCL
+{
+  private:
+    const Ubyte rule_;
+
+    const Point3DCL p0_;
+    const Point3DCL p1_;
+    const Point3DCL p2_;
+    const Point3DCL p3_;
+    
+  public:
+
+    TetraBuilderCL(Ubyte rule);
+    TetraBuilderCL(Ubyte rule, const Point3DCL& p0, const Point3DCL& p1,
+                               const Point3DCL& p2, const Point3DCL& p3);
+
+    virtual void
+    build(MultiGridCL*) const;
+};
+
 } //end of namespace DROPS
 
 #endif
