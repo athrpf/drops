@@ -8,7 +8,7 @@ DIR = levelset
 
 EXEC = lsdrops reparam lsdrivcav lsshear curvDriven risingBubble \
     risingBubbleAdap mzelle_stat mzelle_instat mzelle_instat_ns \
-    surfTens
+    surfTens film
 
 DELETE = $(EXEC)
 
@@ -73,7 +73,7 @@ mzelle_instat: \
     ../levelset/mzelle_instat.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o ../num/stokessolver.o ../num/MGsolver.o
+    ../misc/params.o ../levelset/fastmarch.o ../num/MGsolver.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 mzelle_instat_ns: \
@@ -89,6 +89,15 @@ surfTens: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o
 	$(CC) -o $@ $^ $(LFLAGS)
+
+film: \
+    ../levelset/film.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
+    ../misc/params.o ../levelset/fastmarch.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+
 
 # include common rules:
 include ../Make.common
