@@ -40,7 +40,8 @@ drops_neumann: \
 MGdrops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/MGdrops.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o \
-    ../num/MGsolver.o ../poisson/poisson.o ../misc/problem.o ../misc/utils.o
+    ../num/MGsolver.o ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
+    ../num/fe.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 testdrops: \

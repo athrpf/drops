@@ -805,6 +805,22 @@ RepairAfterRefine( P2EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc);
 
 
 //**************************************************************************
+// SetupP1ProlongationMatrix: Standard prolongation for P1-elements.       *
+// Precondition: mg is a multigrid, that has the level given in fIdx.      *
+//     cIdx, fIdx are indices on mg, that are defined on consecutive levels*
+//     (or the same level). DoF on the boundary are assumed to contain     *
+//     function-values (opposed to fancier things like normal-derivatives  *
+//     and such). The prolongation is only correct for homogeneous         *
+//     Dirichlet boundary values. (Otherwise, one needs a full affine      *
+//     trafo.)                                                             *
+//     P is an uninitialized MatDescCL-object.                             *
+// Postcondition: P contains the row-index fIdx, the column-index cIdx and *
+//     the corresponding standard prolongation matrix for P2-elements.     *
+//**************************************************************************    
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
+                               IdxDescCL* cIdx, IdxDescCL* fIdx);
+
+//**************************************************************************
 // SetupP2ProlongationMatrix: Standard prolongation for P2-elements.       *
 // Precondition: mg is a multigrid, that has the level given in fIdx.      *
 //     cIdx, fIdx are indices on mg, that are defined on consecutive levels*
@@ -817,7 +833,8 @@ RepairAfterRefine( P2EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc);
 // Postcondition: P contains the row-index fIdx, the column-index cIdx and *
 //     the corresponding standard prolongation matrix for P2-elements.     *
 //**************************************************************************    
-void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx);
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
+                               IdxDescCL* cIdx, IdxDescCL* fIdx);
 
 
 } // end of namespace DROPS
