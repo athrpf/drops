@@ -776,8 +776,6 @@ bool
 PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol)
 {
     Vec dx( x.size());
-    double res= norm_r0;
-
     const double norm_r0= q.norm_r0();
     double res= norm_r0;
     bool lucky= q.breakdown();
