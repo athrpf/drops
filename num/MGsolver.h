@@ -1,5 +1,5 @@
 //**************************************************************************
-// File:    MGpoisson.h                                                    *
+// File:    MGsolver.h                                                    *
 // Content: classes that constitute the poisson-problem with MG-solver     *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
