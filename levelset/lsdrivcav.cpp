@@ -51,7 +51,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     typedef StokesP2P1CL<Coeff> StokesProblemT;
     
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL<StokesProblemT> lset( MG, sigma);
+    LevelsetP2CL lset( MG, sigma);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;

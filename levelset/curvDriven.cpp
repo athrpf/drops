@@ -13,12 +13,12 @@
 #include "num/stokessolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
-#include "levelset/levelset.h"
+#include "levelset/coupling.h"
 #include <fstream>
 
-double      delta_t= 0.1;
-DROPS::Uint num_steps= 50;
-const int         FPsteps= -1;
+double      delta_t= 0.01;
+DROPS::Uint num_steps= 5;
+const int   FPsteps= -1;
 
 // du/dt - q*u - nu*laplace u + Dp = f - okn
 //                          -div u = 0
@@ -45,7 +45,7 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVe
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     DROPS::Point3DCL d= Mitte-p;
-    d[0]/= 1.8;
+//    d[0]/= 1.8;
     return d.norm()-Radius;
 }
 
@@ -74,7 +74,7 @@ void Strategy( InstatStokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double 
     MatDescCL* M= &Stokes.M;
     MatDescCL prM;
 
-    LevelsetP2CL<StokesProblemT> lset( MG, sigma, 0.5, 0.1);
+    LevelsetP2CL lset( MG, sigma, 0.5, 0.1);
     
     vidx->Set( 3, 3);
     pidx->Set( 1);

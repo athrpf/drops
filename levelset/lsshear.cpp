@@ -12,7 +12,7 @@
 #include "num/stokessolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
-#include "levelset/levelset.h"
+#include "levelset/coupling.h"
 #include <fstream>
 
 const double      delta_t= 0.01;
@@ -75,7 +75,7 @@ void Strategy( InstatStokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double 
     typedef InstatStokesP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL<StokesProblemT> lset( MG, sigma, 0.5, 0.1);
+    LevelsetP2CL lset( MG, sigma, 0.5, 0.1);
     
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;

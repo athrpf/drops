@@ -60,7 +60,7 @@ template<class ProblemT>
 void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int bsp, int meth)
 {
     MultiGridCL& mg= prob.GetMG();
-    LevelsetP2CL<ProblemT> lset( mg, 0, 1.0, SD);
+    LevelsetP2CL lset( mg, 0, 1.0, SD);
 
     IdxDescCL& lidx= lset.idx;
     IdxDescCL& vidx= prob.vel_idx;

@@ -19,8 +19,7 @@ inline double SmoothedSign( double x, double alpha)
     return x/sqrt(x*x+alpha*alpha);
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::CreateNumbering(Uint level, IdxDescCL* idx)
+void LevelsetP2CL::CreateNumbering(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -42,8 +41,7 @@ void LevelsetP2CL<StokesProblemT>::CreateNumbering(Uint level, IdxDescCL* idx)
 }
 
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::DeleteNumbering( IdxDescCL* idx)
+void LevelsetP2CL::DeleteNumbering( IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -54,8 +52,7 @@ void LevelsetP2CL<StokesProblemT>::DeleteNumbering( IdxDescCL* idx)
     DeleteNumbOnSimplex( idxnum, _MG.GetAllEdgeBegin(level), _MG.GetAllEdgeEnd(level) );
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::Init( scalar_fun_ptr phi0)
+void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.RowIdx->TriangLevel,
                idx= Phi.RowIdx->GetIdx();
@@ -239,8 +236,7 @@ inline double QuadVelGrad( SVectorCL<3> f[10], SMatrixCL<3,5> g, SMatrixCL<3,5> 
     return sum;
 }
 /*
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::SetupSystem( const DiscVelSolCL& vel)
+void LevelsetP2CL::SetupSystem( const DiscVelSolCL& vel)
 // Sets up the stiffness matrices:
 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
@@ -302,8 +298,8 @@ void LevelsetP2CL<StokesProblemT>::SetupSystem( const DiscVelSolCL& vel)
               << _H.num_nonzeros() << " nonzeros in H! " << std::endl;
 }
 */
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::SetupSystem( const DiscVelSolCL& vel)
+template<class DiscVelSolT>
+void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 // Sets up the stiffness matrices:
 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
@@ -370,8 +366,7 @@ void LevelsetP2CL<StokesProblemT>::SetupSystem( const DiscVelSolCL& vel)
               << _H.num_nonzeros() << " nonzeros in H! " << std::endl;
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::Reparam( Uint steps, double dt)
+void LevelsetP2CL::Reparam( Uint steps, double dt)
 // Reparametrization of the levelset function Phi
 {
     VectorCL Psi= Phi.Data, b;
@@ -391,8 +386,7 @@ void LevelsetP2CL<StokesProblemT>::Reparam( Uint steps, double dt)
     Phi.Data= Psi;
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, VectorCL& b)
+void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, VectorCL& b)
 // R, b describe the following terms used for reparametrization:  
 // b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
 // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
@@ -473,29 +467,25 @@ void LevelsetP2CL<StokesProblemT>::SetupReparamSystem( MatrixCL& _R, const Vecto
     std::cerr << _R.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::ComputeRhs( VectorCL& rhs) const
+void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
     rhs= _E*Phi.Data - _dt*(1-_theta) * (_H*Phi.Data);
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::DoStep( const VectorCL& rhs)
+void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
     _gm.Solve( _L, Phi.Data, rhs);
     std::cout << "res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() <<std::endl;
 }
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::DoStep()
+void LevelsetP2CL::DoStep()
 {
     VectorCL rhs( Phi.Data.size());
     ComputeRhs( rhs);
     DoStep( rhs);
 }
 
-template<class StokesProblemT>
-bool LevelsetP2CL<StokesProblemT>::Intersects( const TetraCL& t) const
+bool LevelsetP2CL::Intersects( const TetraCL& t) const
 // Teste, ob Phi in allen DoFs das gleiche Vorzeichen hat
 {
     const Uint idx= Phi.RowIdx->GetIdx();
@@ -510,8 +500,7 @@ bool LevelsetP2CL<StokesProblemT>::Intersects( const TetraCL& t) const
 }
 
 /*
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::Reparam2()
+void LevelsetP2CL::Reparam2()
 // Reparametrisierung, die den 0-Levelset fest laesst
 // Idee: Phi auf T durch festes g=|grad Phi|>0 teilen -> 0-Levelset bleibt fest
 {
@@ -604,8 +593,7 @@ inline void Solve2x2( const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<
 }
 
 
-template<class StokesProblemT>
-void LevelsetP2CL<StokesProblemT>::AccumulateBndIntegral( VecDescCL& f) const
+void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
     BaryCoordCL BaryDoF[10];
     Point3DCL   Coord[10];
@@ -788,356 +776,6 @@ fil << "\n}\n";
 //fil << "}\n";    
 }
 
-// ==============================================
-//              CouplStokesLevelsetCL
-// ==============================================
-
-template <class StokesT, class SolverT>
-CouplStokesLevelsetCL<StokesT,SolverT>::CouplStokesLevelsetCL
-    ( StokesT& Stokes, LevelsetP2CL<StokesT>& ls, SolverT& solver, double theta)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
-    _rhs( Stokes.b.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta)
-{ 
-    _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
-    _old_curv->SetIdx( _b->RowIdx); _curv->SetIdx( _b->RowIdx);
-    _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
-    ls.AccumulateBndIntegral( *_old_curv);
-}
-
-template <class StokesT, class SolverT>
-CouplStokesLevelsetCL<StokesT,SolverT>::~CouplStokesLevelsetCL()
-{
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b; 
-    delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::InitStep()
-{
-// compute all terms that don't change during the following FP iterations
-
-    _LvlSet.ComputeRhs( _ls_rhs);
-
-    _Stokes.t+= _dt;
-    _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
-
-    _rhs=  _Stokes.A.Data * _Stokes.v.Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*(_old_b->Data + _old_curv->Data));
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::DoFPIter()
-// perform fixed point iteration
-{
-    TimerCL time;
-    time.Reset();
-    time.Start();
-
-    _curv->Clear();
-    _LvlSet.AccumulateBndIntegral( *_curv);
-
-    _Stokes.p.Data*= _dt;
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _dt*_theta*_curv->Data, _Stokes.c.Data);
-    _Stokes.p.Data/= _dt;
-
-    time.Stop();
-    std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
-
-    time.Reset();
-    time.Start();
-
-    // setup system for levelset eq. as velocity has changed
-    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( _dt);
-    _LvlSet.DoStep( _ls_rhs);
-
-    time.Stop();
-    std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::CommitStep()
-{
-    _curv->Clear();
-    _LvlSet.AccumulateBndIntegral( *_curv);
-
-    std::swap( _b, _old_b);
-    std::swap( _cplM, _old_cplM);
-    std::swap( _curv, _old_curv);
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::DoStep( int maxFPiter)
-{
-    if (maxFPiter==-1)
-        maxFPiter= 999;
-
-    InitStep();
-    for (int i=0; i<maxFPiter; ++i)
-    {
-        DoFPIter();
-        if (_LvlSet.GetSolver().GetIter()==0) // no change of Phi -> no change of vel
-            break;
-    }
-    CommitStep();
-}
-
-
-// ==============================================
-//              CouplLevelsetStokesCL
-// ==============================================
-
-template <class StokesT, class SolverT>
-CouplLevelsetStokesCL<StokesT,SolverT>::CouplLevelsetStokesCL
-    ( StokesT& Stokes, LevelsetP2CL<StokesT>& ls, SolverT& solver, double theta)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
-    _rhs( Stokes.b.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta)
-{ 
-    _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
-    _old_curv->SetIdx( _b->RowIdx); _curv->SetIdx( _b->RowIdx);
-    _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
-    ls.AccumulateBndIntegral( *_old_curv);
-}
-
-template <class StokesT, class SolverT>
-CouplLevelsetStokesCL<StokesT,SolverT>::~CouplLevelsetStokesCL()
-{
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b; 
-    delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokesCL<StokesT,SolverT>::InitStep()
-{
-// compute all terms that don't change during the following FP iterations
-
-    _LvlSet.ComputeRhs( _ls_rhs);
-
-    _Stokes.t+= _dt;
-    _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
-
-    _rhs=  _Stokes.A.Data * _Stokes.v.Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*(_old_b->Data + _old_curv->Data));
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
-// perform fixed point iteration
-{
-    TimerCL time;
-    time.Reset();
-    time.Start();
-
-    // setup system for levelset eq.
-    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( _dt);
-    _LvlSet.DoStep( _ls_rhs);
-
-    time.Stop();
-    std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
-
-    time.Reset();
-    time.Start();
-
-    _curv->Clear();
-    _LvlSet.AccumulateBndIntegral( *_curv);
-
-    _Stokes.p.Data*= _dt;
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _dt*_theta*_curv->Data, _Stokes.c.Data);
-    _Stokes.p.Data/= _dt;
-
-    time.Stop();
-    std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokesCL<StokesT,SolverT>::CommitStep()
-{
-    std::swap( _b, _old_b);
-    std::swap( _cplM, _old_cplM);
-    std::swap( _curv, _old_curv);
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokesCL<StokesT,SolverT>::DoStep( int maxFPiter)
-{
-    if (maxFPiter==-1)
-        maxFPiter= 999;
-
-    InitStep();
-    for (int i=0; i<maxFPiter; ++i)
-    {
-        DoFPIter();
-        if (_solver.GetIter()==0) // no change of vel -> no change of Phi
-            break;
-    }
-    CommitStep();
-}
-
-
-// ==============================================
-//              CouplLevelsetStokes2PhaseCL
-// ==============================================
-
-template <class StokesT, class SolverT>
-CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetStokes2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL<StokesT>& ls, SolverT& solver, double theta)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
-    _rhs( Stokes.v.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta)
-{ 
-    Update(); 
-}
-
-template <class StokesT, class SolverT>
-CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::~CouplLevelsetStokes2PhaseCL()
-{
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b; 
-    delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::InitStep()
-{
-// compute all terms that don't change during the following FP iterations
-
-    _LvlSet.ComputeRhs( _ls_rhs);
-
-    _Stokes.t+= _dt;
-    _Stokes.SetupRhs2( &_Stokes.c, _Stokes.t);
-
-    _rhs=  _Stokes.A.Data * _Stokes.v.Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data
-         + (_dt*(1.-_theta))*(_old_b->Data + _old_curv->Data);
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
-// perform fixed point iteration
-{
-    TimerCL time;
-    time.Reset();
-    time.Start();
-
-    // setup system for levelset eq.
-    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( _dt);
-
-    time.Stop();
-    std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
-    time.Reset();
-
-    _LvlSet.DoStep( _ls_rhs);
-
-    time.Stop();
-    std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
-
-    time.Reset();
-    time.Start();
-
-    _curv->Clear();
-    _LvlSet.AccumulateBndIntegral( *_curv);
-
-    _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _cplM, _LvlSet, _Stokes.t);
-    _mat.LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
-
-    time.Stop();
-    std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
-    time.Reset();
-
-    _Stokes.p.Data*= _dt;
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data), _Stokes.c.Data);
-    _Stokes.p.Data/= _dt;
-
-    time.Stop();
-    std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::CommitStep()
-{
-    std::swap( _b, _old_b);
-    std::swap( _cplM, _old_cplM);
-    std::swap( _curv, _old_curv);
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
-{
-    if (maxFPiter==-1)
-        maxFPiter= 999;
-
-    InitStep();
-    for (int i=0; i<maxFPiter; ++i)
-    {
-        DoFPIter();
-        if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
-        {
-            std::cerr << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
-            break;
-        }
-    }
-    CommitStep();
-}
-
-template <class StokesT, class SolverT>
-void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
-{
-    IdxDescCL* const vidx= &_Stokes.vel_idx;
-    IdxDescCL* const pidx= &_Stokes.pr_idx;
-    TimerCL time;
-    time.Reset();
-    time.Start();
-
-    std::cerr << "Updating discretization...\n";
-    // IndexDesc setzen
-    _b->SetIdx( vidx);       _old_b->SetIdx( vidx); 
-    _cplM->SetIdx( vidx);    _old_cplM->SetIdx( vidx);
-    _curv->SetIdx( vidx);    _old_curv->SetIdx( vidx);
-    _rhs.resize( vidx->NumUnknowns);
-    _ls_rhs.resize( _LvlSet.idx.NumUnknowns);
-    _Stokes.c.SetIdx( pidx);
-    _Stokes.A.SetIdx( vidx, vidx);
-    _Stokes.B.SetIdx( pidx, vidx);
-    _Stokes.M.SetIdx( vidx, vidx);
-
-    // Diskretisierung
-    _LvlSet.AccumulateBndIntegral( *_old_curv);
-    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_cplM, _LvlSet, _Stokes.t);
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _Stokes.t);
-    
-    time.Stop();
-    std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
-}
 
 } // end of namespace DROPS
 

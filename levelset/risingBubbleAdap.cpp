@@ -12,7 +12,7 @@
 #include "num/stokessolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
-#include "levelset/levelset.h"
+#include "levelset/coupling.h"
 #include <fstream>
 
 double      delta_t= 0.05;
@@ -68,9 +68,20 @@ class AdapTriangCL
         return dist.val( v);
     }
     
+    template <class DistFctT>
+    double GetValue( DistFctT& dist, const TetraCL& t)
+    {
+        return dist.val( t, 0.25, 0.25, 0.25);
+    }
+    
     double GetValue( scalar_fun_ptr dist, const VertexCL& v)
     {
         return dist( v.GetCoord() );
+    }
+
+    double GetValue( scalar_fun_ptr dist, const TetraCL& t)
+    {
+        return dist( GetBaryCenter( t) );
     }
 
   public:
@@ -108,6 +119,7 @@ class AdapTriangCL
             double d= 1.;
             for (Uint j=0; j<4; ++j) 
                 d= std::min( d, std::abs( GetValue( Dist, *it->GetVertex( j)) ));
+            d= std::min( d, std::abs( GetValue( Dist, *it)));
             const Uint l= it->GetLevel();
 	    // In the shell:      level should be f_level_.
             // Outside the shell: level should be c_level_.
@@ -128,7 +140,7 @@ class AdapTriangCL
     }
 
     template <class StokesT>
-    void UpdateTriang( StokesT& NS, LevelsetP2CL<StokesT>& lset)
+    void UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     {
         TimerCL time;
 
@@ -157,7 +169,7 @@ class AdapTriangCL
         
         for (i=0; i<2*min_ref_num; ++i)
         {            
-	    typename LevelsetP2CL<StokesT>::DiscSolCL sol(l1,&lset.GetBndData(),&mg_);
+	    LevelsetP2CL::DiscSolCL sol(l1,&lset.GetBndData(),&mg_);
             if (!ModifyGridStep(sol))
                 break;
             LastLevel= mg_.GetLastLevel();
@@ -194,7 +206,7 @@ class AdapTriangCL
             std::swap( lidx2, lidx1);
             lset.CreateNumbering( LastLevel, lidx1);
             l1->SetIdx( lidx1);
-            typename LevelsetP2CL<StokesT>::DiscSolCL funlset( l2, &lset.GetBndData(), &mg_);
+            LevelsetP2CL::DiscSolCL funlset( l2, &lset.GetBndData(), &mg_);
             RepairAfterRefineP2( funlset, *l1);
             l2->Clear();
             lset.DeleteNumbering( lidx2);
@@ -230,7 +242,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL<StokesProblemT> lset( MG, sigma, 0.5, 0.1); // Crank-Nicholson, SD=0.1
+    LevelsetP2CL lset( MG, sigma, 0.5, 0.1); // Crank-Nicholson, SD=0.1
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -258,6 +270,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
 
     double outer_tol;
     std::cerr << "tol = "; std::cin >> outer_tol;
+
+    lset.GetSolver().SetTol( 1e-14);
+    lset.GetSolver().SetMaxIter( 50000);
 
     IdxDescCL ens_idx( 1, 1);
     lset.CreateNumbering( MG.GetLastLevel(), &ens_idx);
@@ -301,14 +316,16 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
         ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
 	if (step<num_steps) // omit in last step
 	{
-//            typename LevelsetP2CL<StokesProblemT>::DiscSolCL sol= lset.GetSolution();
+//            LevelsetP2CL::DiscSolCL sol= lset.GetSolution();
             lset.DeleteNumbering( &ens_idx);
             adap.UpdateTriang( Stokes, lset);
             lset.CreateNumbering( MG.GetLastLevel(), &ens_idx);
+/*            
         ensight.putGeom( datgeo, (step+0.01)*delta_t);
         ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.01)*delta_t);
         ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.01)*delta_t);
         ensight.putScalar( datscl, lset.GetSolution(), (step+0.01)*delta_t);
+*/
             if (adap.WasModified() )
             {
                 cpl.Update();
@@ -363,7 +380,7 @@ int main (int argc, char** argv)
         
     StokesOnBrickCL prob(brick, ZeroFlowCL(), DROPS::InstatStokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
-    DROPS::AdapTriangCL adap( mg, 0.2, 0, 2);
+    DROPS::AdapTriangCL adap( mg, 0.2, 0, 3);
 
     adap.MakeInitialTriang( DistanceFct);
     Strategy( prob, adap, inner_iter_tol, sigma);

@@ -32,14 +32,12 @@ class DummyBndDataCL
         { throw DROPSErrCL("StokesBndDataPrCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
 };
 
-template<class StokesProblemT>
 class LevelsetP2CL
 // P2-discretization and solution of the levelset equation for two phase
 // flow problems.
 {
   public:
     typedef P2EvalCL<double, const DummyBndDataCL, const VecDescCL> DiscSolCL;
-    typedef typename StokesProblemT::DiscVelSolCL                   DiscVelSolCL;
 
     IdxDescCL           idx;
     VecDescCL           Phi;
@@ -73,7 +71,8 @@ class LevelsetP2CL
 
     void SetTimeStep( double dt) { _dt= dt; _L.LinComb( 1., _E, _theta*_dt, _H); }
     // call SetupSystem *before* calling SetTimeStep!
-    void SetupSystem( const DiscVelSolCL&);
+    template<class DiscVelSolT>
+    void SetupSystem( const DiscVelSolT&);
     void DoStep();
     void Reparam( Uint steps, double dt);
 //    void Reparam2();
@@ -89,117 +88,6 @@ class LevelsetP2CL
     // of the coupling navstokes-levelset. They should not be called by a common user.
     void ComputeRhs( VectorCL&) const;
     void DoStep    ( const VectorCL&);
-};
-
-
-template <class StokesT, class SolverT>
-class CouplStokesLevelsetCL
-{
-  private:
-    StokesT&               _Stokes;
-    SolverT&               _solver;
-    LevelsetP2CL<StokesT>& _LvlSet;
-    
-    VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
-    VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
-    VecDescCL    *_curv, *_old_curv;  // curvature terms
-    VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
-    
-    double _theta, _dt;
-    
-  public:
-    CouplStokesLevelsetCL( StokesT& Stokes, LevelsetP2CL<StokesT>& ls, 
-                           SolverT& solver, double theta= 0.5);
-    ~CouplStokesLevelsetCL();
-    
-    double GetTheta()    const { return _theta; }
-    double GetTime()     const { return _Stokes.t; }
-    double GetTimeStep() const { return _dt; }
-
-    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data); }
-       
-    void InitStep();
-    // perform fixed point iteration
-    void DoFPIter();
-    void CommitStep();
-    
-    void DoStep( int maxFPiter= -1);  // combines the 3 former routines
-};
-    
-
-template <class StokesT, class SolverT>
-class CouplLevelsetStokesCL
-{
-  private:
-    StokesT&               _Stokes;
-    SolverT&               _solver;
-    LevelsetP2CL<StokesT>& _LvlSet;
-    
-    VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
-    VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
-    VecDescCL    *_curv, *_old_curv;  // curvature terms
-    VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
-    
-    double _theta, _dt;
-    
-  public:
-    CouplLevelsetStokesCL( StokesT& Stokes, LevelsetP2CL<StokesT>& ls, 
-                           SolverT& solver, double theta= 0.5);
-    ~CouplLevelsetStokesCL();
-    
-    double GetTheta()    const { return _theta; }
-    double GetTime()     const { return _Stokes.t; }
-    double GetTimeStep() const { return _dt; }
-
-    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data); }
-       
-    void InitStep();
-    // perform fixed point iteration
-    void DoFPIter();
-    void CommitStep();
-    
-    void DoStep( int maxFPiter= -1);  // combines the 3 former routines
-};
-
-
-template <class StokesT, class SolverT>
-class CouplLevelsetStokes2PhaseCL
-{
-  private:
-    StokesT&               _Stokes;
-    SolverT&               _solver;
-    LevelsetP2CL<StokesT>& _LvlSet;
-    
-    VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
-    VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
-    VecDescCL    *_curv, *_old_curv;  // curvature terms
-    VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
-    
-    double _theta, _dt;
-    
-  public:
-    CouplLevelsetStokes2PhaseCL( StokesT& Stokes, LevelsetP2CL<StokesT>& ls, 
-                           SolverT& solver, double theta= 0.5);
-    ~CouplLevelsetStokes2PhaseCL();
-    
-    double GetTheta()    const { return _theta; }
-    double GetTime()     const { return _Stokes.t; }
-    double GetTimeStep() const { return _dt; }
-
-    void SetTimeStep( double dt) { _dt= dt; }
-       
-    void InitStep();
-    // perform fixed point iteration
-    void DoFPIter();
-    void CommitStep();
-    
-    void DoStep( int maxFPiter= -1);  // combines the 3 former routines
-    
-    // update after grid has changed
-    void Update();
 };
 
 

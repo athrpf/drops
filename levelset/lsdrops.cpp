@@ -34,7 +34,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int num_repa
 {
     MultiGridCL& mg= prob.GetMG();
 
-    LevelsetP2CL<ProblemT> lset( mg, 0, 0.5, SD);
+    LevelsetP2CL lset( mg, 0, 0.5, SD);
     IdxDescCL& lidx= lset.idx;
     IdxDescCL& vidx= prob.vel_idx;
     VecDescCL& vel=  prob.v;
