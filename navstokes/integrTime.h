@@ -9,7 +9,7 @@
 #ifndef DROPS_NS_INTEGRTIME_H
 #define DROPS_NS_INTEGRTIME_H
 
-#include "navstokes/instatnavstokes.h"
+#include "navstokes/navstokes.h"
 
 // TODO: FracStepScheme fuer instat. NavierStokes
 
@@ -89,8 +89,8 @@ class InstatNavStokesThetaSchemeCL
 template <class NavStokesT, class SolverT>
 void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, VectorCL& p)
 {
-    // _NS._t contains the new time!
-    _NS.SetupInstatRhs( _b, &_NS.c, _cplM, _NS._t, _b, _NS._t);
+    // _NS.t contains the new time!
+    _NS.SetupInstatRhs( _b, &_NS.c, _cplM, _NS.t, _b, _NS.t);
     const double alpha= _theta*_dt;
     const double beta= (_theta - 1.)*_dt;
     _rhs=  alpha*_b->Data

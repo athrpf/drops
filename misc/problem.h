@@ -126,6 +126,8 @@ class MatDescCL
     
     MatDescCL()
         :RowIdx(0), ColIdx(0) {}
+    MatDescCL(IdxDescCL* r, IdxDescCL* c)
+        { SetIdx( r, c); }
     IdxDescCL* RowIdx;
     IdxDescCL* ColIdx;
     DataType  Data;

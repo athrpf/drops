@@ -4,7 +4,7 @@
 #include "geom/builder.h"
 #include "stokes/stokes.h"
 #include "num/nssolver.h"
-#include "navstokes/instatnavstokes.h"
+#include "navstokes/navstokes.h"
 #include "navstokes/integrTime.h"
 #include <fstream>
 #include <sstream>
@@ -306,7 +306,7 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
 
 template<class Coeff>
 void
-UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
+UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
                     const signed_dist_fun Dist,
                     const double t,
                     const double width,   // Thickness of refined shell on each side of the interface
@@ -354,9 +354,6 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
         NS.DeleteNumberingVel( vidx2);
-//P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL, 
-//          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
-//CheckVel( funv1, &MyPdeCL::LsgVel);
         // Repair pressure
         std::swap( p2, p1);
         std::swap( pidx2, pidx1);
@@ -412,7 +409,7 @@ MakeInitialTriangulation(DROPS::MultiGridCL& mg,
 
 template<class Coeff>
 void
-SetMatVecIndices(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
+SetMatVecIndices(DROPS::NavierStokesP2P1CL<Coeff>& NS,
                  DROPS::IdxDescCL* const vidx,
                  DROPS::IdxDescCL* const pidx)
 {
@@ -430,7 +427,7 @@ SetMatVecIndices(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
 
 template<class Coeff>
 void
-ResetSystem(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS)
+ResetSystem(DROPS::NavierStokesP2P1CL<Coeff>& NS)
 {
     NS.A.Reset(); NS.B.Reset();
     NS.M.Reset(); NS.N.Reset();
@@ -441,7 +438,7 @@ ResetSystem(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS)
 
 template<class Coeff>
 void
-Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
+Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
          double fp_tol, int fp_maxiter, 
          double deco_red, int stokes_maxiter,
          double poi_tol, int poi_maxiter,
@@ -450,7 +447,7 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
          double shell_width, int c_level, int f_level)
 {
     using namespace DROPS;
-    typedef InstatNavierStokesP2P1CL<Coeff> NavStokesCL;
+    typedef NavierStokesP2P1CL<Coeff> NavStokesCL;
     
     MultiGridCL& MG= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
@@ -532,14 +529,14 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatNavStokesThetaSchemeCL<NavStokesCL,
                              FPDeCo_Uzawa_PCG_CL<NavStokesCL> >( NS, *statsolver, theta, t);
             if (timestep == 0) // check initial velocities
-                NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t);
+                NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
         }
         NS.SetTime( t+dt); // We have to set the new time!
         instatsolver->SetTimeStep( dt);
         std::cerr << "Before timestep." << std::endl;
         instatsolver->DoStep( *v1, p1->Data);
         std::cerr << "After timestep." << std::endl;
-        NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t+dt);
+        NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
         ensightout.WriteAtTime( NS, t+dt);
     }
     delete statsolver; statsolver= 0;
@@ -595,7 +592,7 @@ int main (int argc, char** argv)
     std::cerr << "c_level: " << c_level << ", ";
     std::cerr << "f_level: " << f_level << std::endl;
 
-    typedef DROPS::InstatNavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
+    typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyNavierStokesCL;
     MyNavierStokesCL prob(brick, MyPdeCL::StokesCoeffCL(),

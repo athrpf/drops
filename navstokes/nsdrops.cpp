@@ -19,7 +19,7 @@ struct NS1CL
         return ret;
     }
 
-    static double LsgPr(const DROPS::Point3DCL& p)
+    static double LsgPr(const DROPS::Point3DCL& p, double)
     {
         return -(p[0]*p[0]+p[1]*p[1]+p[2]*p[2])/2;
     }

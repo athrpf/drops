@@ -28,6 +28,7 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     using                            _base::c;
     using                            _base::A;
     using                            _base::B;
+    using                            _base::t; // Initialized with 0.0 by base-class.
 
     typedef Coeff                     CoeffCL;
     typedef typename _base::BndDataCL BndDataCL;
@@ -36,19 +37,26 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 
     MatDescCL    N;
     VelVecDescCL cplN;
-  
+    VelVecDescCL cplM;
+
     NavierStokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : StokesP2P1CL<Coeff>( mgb, coeff, bdata) {}  
     NavierStokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
         : StokesP2P1CL<Coeff>( mg, coeff, bdata) {}  
 
-    // Set up matrix for nonlinearity
-    void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*) const;
-//    void SetupNonlinearRhs(const VelVecDescCL*, VelVecDescCL*) const;
+    // Set up matrix and rhs for nonlinearity: use time t1 for the velocity in N,
+    // t2 for the boundary-data in the velocity unknowns
+    void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*, double, double) const;
+    // Set up matrix for nonlinearity, use time _t
+    void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
+    { this->SetupNonlinear(matN, velvec, vecb, t, t); }
 
-    // Check system and computed solution
-    void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr);
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, scalar_fun_ptr);
+    // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
+    void SetTime (double tt) { t= tt; }
+
+    // Check computed solution
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*,
+        instat_vector_fun_ptr, instat_scalar_fun_ptr, double= 0.0);
 };
 
 

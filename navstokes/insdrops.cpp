@@ -3,7 +3,7 @@
 #include "geom/builder.h"
 #include "stokes/stokes.h"
 #include "num/nssolver.h"
-#include "navstokes/instatnavstokes.h"
+#include "navstokes/navstokes.h"
 #include "navstokes/integrTime.h"
 #include <fstream>
 
@@ -77,12 +77,12 @@ using ::MyPdeCL;
 
 
 template<class Coeff>
-void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_maxiter, 
+void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_maxiter, 
               double deco_red, int stokes_maxiter, double poi_tol, int poi_maxiter,
 	      double theta, double dt)
 // flow control
 {
-    typedef InstatNavierStokesP2P1CL<Coeff> NavStokesCL;
+    typedef NavierStokesP2P1CL<Coeff> NavStokesCL;
     
     MultiGridCL& MG= NS.GetMG();
 
@@ -196,16 +196,13 @@ void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, i
 	    std::cerr << "------------------------------------------------------------------"
 	              << std::endl << "t: " << t << std::endl;
             NS.SetTime(t+dt); // We have to set the new time!
-	    // GetDiscError calls SetupNonlinear for exact solution, thus we call it
-	    // prior to the actual call for the time-evolution.
-//            NS.GetDiscError(&MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t);
             if (timestep==0) // Check the initial solution, at least velocities.
-	        NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t);
+	        NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
 	    instatsolver.SetTimeStep(dt);
             std::cerr << "Before timestep." << std::endl;
 	    instatsolver.DoStep(*v1, p1->Data);
             std::cerr << "After timestep." << std::endl;
-            NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t+dt);
+            NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
 	}
 	MarkAll(MG);
         
@@ -282,7 +279,7 @@ int main (int argc, char** argv)
     std::cerr << "theta: " << theta << ", ";
     std::cerr << "dt: " << dt << std::endl;
 
-    typedef DROPS::InstatNavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
+    typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyNavierStokesCL;
     MyNavierStokesCL prob(brick, MyPdeCL::StokesCoeffCL(),

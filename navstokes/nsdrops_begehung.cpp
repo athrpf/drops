@@ -14,7 +14,7 @@ struct NSDrCavCL
         return DROPS::SVectorCL<3>(0.);
     }
 
-    static double LsgPr(const DROPS::Point3DCL&)
+    static double LsgPr(const DROPS::Point3DCL&, double)
     {
         return 0;
     }
