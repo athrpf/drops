@@ -47,7 +47,7 @@ class IdxDescCL
     void swap( IdxDescCL&);
     
     void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
-    Uint GetIdx() const { return Idx; }
+    Uint GetIdx() const { if (Idx==NoIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index. Probably using copy instead of original IdxDescCL-object."); return Idx; }
 };
 
 
