@@ -703,6 +703,8 @@ class P2EvalCL: public P2EvalBaseCL<DataT, BndDataT, VecDescT>
 {
   private:
     typedef P2EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+    using _base::_bnd;
+    using _base::_sol;
     
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const VertexCL& s) const
@@ -731,6 +733,8 @@ class InstatP2EvalCL: public P2EvalBaseCL<DataT, BndDataT, VecDescT>
 {
   private:
     typedef P2EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+    using _base::_bnd;
+    using _base::_sol;
     
     double _t;
     
