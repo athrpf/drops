@@ -293,12 +293,14 @@ void FastMarchCL::Reparam( bool ModifyZero)
         
         std::set<IdxT> neighVerts;
         for (Uint n=0; n<neigh_[next].size(); ++n)
-        { // update all neighboring verts, mark as Close
+        { // collect all neighboring verts in neighVerts 
             for (Uint i=0; i<4; ++i)
                 neighVerts.insert( neigh_[next][n][i]);
-            for (std::set<IdxT>::iterator it= neighVerts.begin(), end= neighVerts.end();
-                it!=end; ++it)
-                Update( *it);
+        }
+        for (std::set<IdxT>::iterator it= neighVerts.begin(), end= neighVerts.end();
+            it!=end; ++it)
+        { // update all neighboring verts, mark as Close
+            Update( *it);
         }
         neigh_[next].clear(); // will not be needed anymore
     }
