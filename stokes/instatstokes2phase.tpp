@@ -40,7 +40,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
 
     MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl    = matM->RowIdx->TriangLevel;
+    const Uint lvl    = matM->GetRowLevel();
     const Uint pidx   = matM->RowIdx->GetIdx();
 
     IdxT prNumb[4];
@@ -81,7 +81,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr) const
 // boundary conditions.
 {
     MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
-    const Uint lvl= A_pr->RowIdx->TriangLevel;
+    const Uint lvl= A_pr->GetRowLevel();
     const Uint idx= A_pr->RowIdx->GetIdx();
     SMatrixCL<3,4> G;
     double coup[4][4];
@@ -116,7 +116,7 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
-    Uint lvl        = vec->RowIdx->TriangLevel,
+    Uint lvl        = vec->GetLevel(),
          vidx       = vec->RowIdx->GetIdx();
     
     SVectorCL<3> tmp;
@@ -156,7 +156,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     cplM->Clear();
     cplA->Clear();
     
-    const Uint lvl         = A->RowIdx->TriangLevel,
+    const Uint lvl         = A->GetRowLevel(),
                vidx        = A->RowIdx->GetIdx();
 
     IdxT Numb[10];
@@ -410,7 +410,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, 
     MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
     c->Clear();
     
-    const Uint lvl         = B->RowIdx->TriangLevel;
+    const Uint lvl         = B->GetRowLevel();
     const Uint pidx        = B->RowIdx->GetIdx(),
                vidx        = B->ColIdx->GetIdx();
 
@@ -480,7 +480,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, double t) const
 {
     c->Clear();
     
-    const Uint lvl         = c->RowIdx->TriangLevel;
+    const Uint lvl         = c->GetLevel();
     const Uint pidx        = c->RowIdx->GetIdx();
 
     IdxT prNumb[4];

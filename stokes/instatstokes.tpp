@@ -40,7 +40,7 @@ void InstatStokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 template <class Coeff>
 void InstatStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
 {
-    Uint lvl= A.RowIdx->TriangLevel,
+    Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
         pidx= B.RowIdx->GetIdx();
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
@@ -145,7 +145,7 @@ void InstatStokesP2P1CL<Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* vecA
                     B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
-    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint lvl    = matA->GetRowLevel();
     const Uint vidx   = matA->RowIdx->GetIdx(),
                pidx   = matB->RowIdx->GetIdx();
 
@@ -283,7 +283,7 @@ void InstatStokesP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
 
     MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl    = matM->RowIdx->TriangLevel;
+    const Uint lvl    = matM->GetRowLevel();
     const Uint pidx   = matM->RowIdx->GetIdx();
 
     IdxT prNumb[4];
@@ -324,7 +324,7 @@ void InstatStokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* ma
                     B(&matB->Data, num_unks_pr,  num_unks_vel),
                     I(&matI->Data, num_unks_vel, num_unks_vel);
 
-    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint lvl    = matA->GetRowLevel();
     const Uint vidx   = matA->RowIdx->GetIdx(),
                pidx   = matB->RowIdx->GetIdx();
 
@@ -432,7 +432,7 @@ void InstatStokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL
     VectorCL& c    = vecB->Data;
     VectorCL& f    = vecf->Data;
     VectorCL& id   = vecI->Data;
-    const Uint lvl = vecA->RowIdx->TriangLevel;
+    const Uint lvl = vecA->GetLevel();
     const Uint vidx= vecA->RowIdx->GetIdx(),
                pidx= vecB->RowIdx->GetIdx();
 
@@ -548,7 +548,7 @@ void InstatStokesP2P1CL<Coeff>::SetupStiffnessMatrix(MatDescCL* matA) const
 {
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel);
-    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint lvl    = matA->GetRowLevel();
     const Uint vidx   = matA->RowIdx->GetIdx();
     IdxT Numb[10];
     bool IsOnDirBnd[10];
@@ -609,7 +609,7 @@ void InstatStokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
 {
     const IdxT num_unks_vel= matI->RowIdx->NumUnknowns;
     MatrixBuilderCL I( &matI->Data, num_unks_vel, num_unks_vel);
-    const Uint lvl= matI->RowIdx->TriangLevel;
+    const Uint lvl= matI->GetRowLevel();
     const Uint vidx= matI->RowIdx->GetIdx();
     IdxT Numb[10];
     bool IsOnDirBnd[10];
@@ -654,7 +654,7 @@ template <class Coeff>
 void InstatStokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
-    Uint lvl        = vec->RowIdx->TriangLevel,
+    Uint lvl        = vec->GetLevel(),
          vidx       = vec->RowIdx->GetIdx();
     
     SVectorCL<3> tmp;
@@ -688,7 +688,7 @@ void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
                                  vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
 {
     double diff, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->RowIdx->TriangLevel,
+    Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
 
     {   // XXX still not correct as the system solved involves old values for v and p on the rhs.

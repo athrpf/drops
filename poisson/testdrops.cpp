@@ -84,7 +84,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
 //    std::ios_base::fmtflags old_format= os.flags(my_format);
     std::ios::fmtflags my_format= std::ios::fixed|std::ios::showpoint;
     std::ios::fmtflags old_format= os.flags(my_format);
-    Assert(_level==_discsol.GetSolution()->RowIdx->TriangLevel, DROPSErrCL("GeomSolOutCL::put: wrong level"), ~0);
+    Assert(_level==_discsol.GetLevel(), DROPSErrCL("GeomSolOutCL::put: wrong level"), ~0);
     os << "appearance {\n-concave\nshading smooth\n}\n";
     os << "LIST {\n";
     for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level);
@@ -441,7 +441,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
     } while ( true_err > stoperr /*&& step<14*/ );
     std::cout << "cumulative solving time: " << time2.GetTime() << std::endl;
     Poisson.idx.Set(1,0,0,0);
-    Poisson.CreateNumbering( Poisson.x.RowIdx->TriangLevel, &Poisson.idx);
+    Poisson.CreateNumbering( Poisson.x.GetLevel(), &Poisson.idx);
     Poisson.x.RowIdx= &Poisson.idx;
 }
 

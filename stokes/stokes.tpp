@@ -17,7 +17,7 @@ namespace DROPS
 template <class Coeff>
 void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
-    Uint lvl= A.RowIdx->TriangLevel,
+    Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
         pidx= B.RowIdx->GetIdx();
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
@@ -338,7 +338,7 @@ void StokesP2P1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDe
                     B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
-    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint lvl    = matA->GetRowLevel();
     const Uint vidx   = matA->RowIdx->GetIdx(),
                pidx   = matB->RowIdx->GetIdx();
 
@@ -476,7 +476,7 @@ void StokesP2P1CL<Coeff>::SetupStiffnessMatrix( MatDescCL* matA ) const
     
     MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel);
      
-    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint lvl    = matA->GetRowLevel();
     const Uint vidx   = matA->RowIdx->GetIdx();
 
     IdxT Numb[10]; 
@@ -551,7 +551,7 @@ void StokesP2P1CL<Coeff>::SetupMass(MatDescCL* matM) const
 
     MatrixBuilderCL M(&matM->Data, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl    = matM->RowIdx->TriangLevel;
+    const Uint lvl    = matM->GetRowLevel();
     const Uint pidx   = matM->RowIdx->GetIdx();
 
     IdxT prNumb[4];
@@ -583,7 +583,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
                                  vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
 {
     double mindiff=0, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->RowIdx->TriangLevel;
+    Uint lvl=lsgvel->GetLevel();
     
     VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;
     VectorCL res2= B.Data*lsgvel->Data - c.Data;
@@ -773,7 +773,7 @@ double StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrS
 
 
     // Sum over all hF*int( [nu*nE*grad(u) + p*nE]_jumpoverface^2, face) not on the boundary
-    const Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= vel.GetLevel();
     const Uint numpts2= FaceQuad2CL::GetNumPoints();
     vals= new double[numpts2];
     for (Uint f=0; f<NumFacesC; ++f)
@@ -832,7 +832,7 @@ double StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrS
 template <class Coeff>
 void StokesP1BubbleP1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
-    Uint lvl= A.RowIdx->TriangLevel,
+    Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
         pidx= B.RowIdx->GetIdx();
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
@@ -995,7 +995,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
                     B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
-    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint lvl    = matA->GetRowLevel();
     const Uint vidx   = matA->RowIdx->GetIdx(),
                pidx   = matB->RowIdx->GetIdx();
 
@@ -1121,7 +1121,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupMass(MatDescCL* matM) const
 
     MatrixBuilderCL M(&matM->Data, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl    = matM->RowIdx->TriangLevel;
+    const Uint lvl    = matM->GetRowLevel();
     const Uint pidx   = matM->RowIdx->GetIdx();
 
     IdxT prNumb[4];
@@ -1150,7 +1150,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupMass(MatDescCL* matM) const
 template <class Coeff>
 double StokesP1BubbleP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrSolCL& pr, const DiscVelSolCL& vel)
 {
-    Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
+    Uint lvl= vel.GetLevel();
     double err_sq= 0.0;
     double det, absdet, vol;
     SMatrixCL<3,3> M;
@@ -1249,7 +1249,7 @@ template <class _TetraEst, class _ProblemCL>
 void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const DiscPrSolCL& pr, const DiscVelSolCL& vel)
 {
     MultiGridCL& mg= _Problem.GetMG();
-    const Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= vel.GetLevel();
 
     double tmp;
     _InitGlobErr= 0.;
@@ -1273,7 +1273,7 @@ bool StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const DiscPrSolCL& pr
 {
     Err_ContCL err_est;
     const MultiGridCL& mg= _Problem.GetMG();
-    const Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= vel.GetLevel();
 //    const VecDescCL& lsg= *vel.GetSolution();
 
     _NumLastMarkedForRef= 0;
@@ -1316,7 +1316,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
                                               vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     double diff, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->RowIdx->TriangLevel,
+    Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
     
     VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;

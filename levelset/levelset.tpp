@@ -34,7 +34,7 @@ void LevelsetP2CL::DeleteNumbering( IdxDescCL* idx)
 
 void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
-    const Uint lvl= Phi.RowIdx->TriangLevel,
+    const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 	 
     for (MultiGridCL::TriangVertexIteratorCL it= _MG.GetTriangVertexBegin(lvl),
@@ -145,7 +145,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 // where v_i, v_j denote the ansatz functions.
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.RowIdx->TriangLevel,
+    const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 
     SparseMatBuilderCL<double> E(&_E, num_unks, num_unks), 
@@ -237,7 +237,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
 // and w(Psi) = sign(Phi0) * grad Psi / |grad Psi| the scaled gradient of Psi
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.RowIdx->TriangLevel,
+    const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 
     SparseMatBuilderCL<double> R(&_R, num_unks, num_unks);
@@ -566,7 +566,7 @@ fil << "\n}\n";
 
 double LevelsetP2CL::GetVolume( double translation) const
 {
-    const Uint lvl= Phi.RowIdx->TriangLevel;
+    const Uint lvl= Phi.GetLevel();
     DiscSolCL phi= GetSolution();
     SmoothedJumpCL H( JumpCL( 1, 0), DROPS::H_sm, 1e-4);
     Quad2CL<> Xi;    // 1 fuer phi<0, 0 sonst
@@ -641,7 +641,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 // A = stiffness matrix for P2 elements
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.RowIdx->TriangLevel,
+    const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 
     SparseMatBuilderCL<double> Mb(&M, num_unks, num_unks);

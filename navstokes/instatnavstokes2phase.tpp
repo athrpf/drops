@@ -19,7 +19,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     MatrixBuilderCL mN( &N->Data, num_unks_vel, num_unks_vel);
     cplN->Clear();
     
-    const Uint lvl         = N->RowIdx->TriangLevel,
+    const Uint lvl         = N->GetRowLevel(),
                vidx        = N->RowIdx->GetIdx();
 
     IdxT Numb[10];

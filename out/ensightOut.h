@@ -355,7 +355,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
 template <class BndT>
 void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, const BndT& bnd) const
 {
-    const Uint lvl= v.RowIdx->TriangLevel,
+    const Uint lvl= v.GetLevel(),
                idx= v.RowIdx->GetIdx();
     char buf[256];
     double d= 0;
@@ -384,7 +384,7 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
 template <class BndT>
 void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, const BndT& bnd) const
 {
-    const Uint lvl= v.RowIdx->TriangLevel,
+    const Uint lvl= v.GetLevel(),
                idx= v.RowIdx->GetIdx();
     char buf[256];
     double d0= 0, d1= 0, d2= 0;

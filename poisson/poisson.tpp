@@ -111,7 +111,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
 {
     b.Clear();
     
-    const Uint lvl    = Amat.RowIdx->TriangLevel,
+    const Uint lvl    = Amat.GetRowLevel(),
                idx    = Amat.RowIdx->GetIdx();
     MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
 
@@ -183,7 +183,7 @@ void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
 // Sets up the stiffness matrix
 {
     MatrixBuilderCL A(&Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
-    const Uint lvl    = Amat.RowIdx->TriangLevel;
+    const Uint lvl    = Amat.GetRowLevel();
     const Uint idx    = Amat.RowIdx->GetIdx();
 
     SMatrixCL<3,4> G;
@@ -242,7 +242,7 @@ template<class Coeff>
 double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
-    Uint lvl=lsg.RowIdx->TriangLevel,
+    Uint lvl=lsg.GetLevel(),
          Idx=lsg.RowIdx->GetIdx();
     
     DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
@@ -289,7 +289,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
 template<class Coeff>
 void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) const
 {
-    Uint lvl= A.ColIdx->TriangLevel,
+    Uint lvl= A.GetColLevel(),
          idx= A.ColIdx->GetIdx();
     VectorCL lsg(A.Data.num_cols());
 
@@ -312,7 +312,7 @@ void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) co
 template<class Coeff>
 bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg, const double rel_loc_tol, double& globalerr, est_fun est)
 {
-    const Uint lvl= lsg.RowIdx->TriangLevel;
+    const Uint lvl= lsg.GetLevel();
     Uint num_ref= 0;
     Uint num_un_ref= 0;
     const Uint num_tetra= std::distance(_MG.GetTriangTetraBegin(lvl), _MG.GetTriangTetraEnd(lvl));
@@ -356,7 +356,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
     Point3DCL cc_center;  // center of circum-circle
     double cc_radius;     // radius of circum-circle
     double cc_rad_Face;
-    Uint trilevel= sol.RowIdx->TriangLevel;
+    Uint trilevel= sol.GetLevel();
     const Uint Idx= sol.RowIdx->GetIdx();
 
     double det;
@@ -453,7 +453,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
     Point3DCL cc_center;  // center of circum-circle
     double cc_radius;     // radius of circum-circle
     double cc_rad_Face;
-    Uint trilevel= sol.RowIdx->TriangLevel;
+    Uint trilevel= sol.GetLevel();
     const Uint Idx= sol.RowIdx->GetIdx();
 
     double det;
@@ -723,7 +723,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
 {
     b.Clear();
     
-    const Uint lvl    = Amat.RowIdx->TriangLevel,
+    const Uint lvl    = Amat.GetRowLevel(),
                idx    = Amat.RowIdx->GetIdx();
     MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
 
@@ -819,7 +819,7 @@ template<class Coeff>
 void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
 // Sets up the stiffness matrix 
 {
-    const Uint lvl    = Amat.RowIdx->TriangLevel,
+    const Uint lvl    = Amat.GetRowLevel(),
                idx    = Amat.RowIdx->GetIdx();
     MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
 
@@ -894,7 +894,7 @@ template<class Coeff>
 double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
-    Uint lvl=lsg.RowIdx->TriangLevel,
+    Uint lvl=lsg.GetLevel(),
          Idx=lsg.RowIdx->GetIdx();
     
     DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
@@ -951,7 +951,7 @@ template <class _BndData, class _VD>
 void PoissonErrEstCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData, _VD>& sol)
 {
     MultiGridCL& mg= _Problem.GetMG();
-    const Uint lvl= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= sol.GetLevel();
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
 
     double tmp;
@@ -976,7 +976,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
 {
     const MultiGridCL& mg= _Problem.GetMG();
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
-    const Uint lvl= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= sol.GetLevel();
     const VecDescCL& lsg= *sol.GetSolution();
     const double exp_err= _InitGlobErr*_RelReduction/sqrt(_Meas);
     const double unref_bnd= exp_err/2./std::pow(2, _ConvExponent);
@@ -1048,7 +1048,7 @@ template <class _BndData, class _VD>
 void DoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData, _VD>& sol)
 {
     MultiGridCL& mg= _Problem.GetMG();
-    const Uint lvl= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= sol.GetLevel();
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
 
     _InitGlobErr= 0;
@@ -1072,7 +1072,7 @@ bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bnd
 {
     Err_ContCL err_est;
     const MultiGridCL& mg= _Problem.GetMG();
-    const Uint lvl= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint lvl= sol.GetLevel();
     const VecDescCL& lsg= *sol.GetSolution();
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
 

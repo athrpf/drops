@@ -81,7 +81,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   vM.Clear();
   vf.Clear();
 
-  const Uint lvl = vA.RowIdx->TriangLevel,
+  const Uint lvl = vA.GetLevel(),
              idx = vA.RowIdx->GetIdx();
   Point3DCL G[4];
 
@@ -148,7 +148,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
 	MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
 	 
-  const Uint lvl = Amat.RowIdx->TriangLevel;
+  const Uint lvl = Amat.GetRowLevel();
   const Uint idx = Amat.RowIdx->GetIdx();
 
   Point3DCL G[4];
@@ -203,7 +203,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
   vU.Clear();
   MatrixBuilderCL U( &Umat.Data, Umat.RowIdx->NumUnknowns, Umat.ColIdx->NumUnknowns);
 	 
-  const Uint lvl = Umat.RowIdx->TriangLevel;
+  const Uint lvl = Umat.GetRowLevel();
   const Uint idx = Umat.RowIdx->GetIdx();
 
   Point3DCL G[4];
@@ -263,7 +263,7 @@ void InstatPoissonP1CL<Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, 
 template<class Coeff>
 void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
-    Uint lvl= vec.RowIdx->TriangLevel,
+    Uint lvl= vec.GetLevel(),
          idx= vec.RowIdx->GetIdx();
     
     
@@ -289,7 +289,7 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   scalar_instat_fun_ptr Lsg, double t) const
 {
   double diff, maxdiff=0, norm2= 0, L2=0;
-  Uint lvl=lsg.RowIdx->TriangLevel,
+  Uint lvl=lsg.GetLevel(),
        Idx=lsg.RowIdx->GetIdx();
   
   DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);

@@ -174,7 +174,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   
   Point3DCL pt;
   VecDescCL& x= Poisson.x;
-  Uint lvl= x.RowIdx->TriangLevel;
+  Uint lvl= x.GetLevel();
   Uint indx= x.RowIdx->GetIdx();
     
   d_pair help;
@@ -273,7 +273,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   typedef node_map::const_iterator ci;
   
   Point3DCL pt;
-  Uint lvl= x.RowIdx->TriangLevel;
+  Uint lvl= x.GetLevel();
   Uint indx= x.RowIdx->GetIdx();
     
   d_pair help;

@@ -82,6 +82,8 @@ class MatDescCL
     IdxDescCL* ColIdx;
     DataType  Data;
 
+    Uint GetRowLevel() const { return RowIdx->TriangLevel; }
+    Uint GetColLevel() const { return ColIdx->TriangLevel; }
     void SetIdx(IdxDescCL*, IdxDescCL*);
     void Reset();
 };

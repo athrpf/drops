@@ -188,7 +188,7 @@ CheckVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
     const EdgeCL* e= 0;
     const DROPS::MultiGridCL& mg= fun.GetMG();
     const double t= fun.GetTime();
-    const DROPS::Uint trilevel= fun.GetSolution()->RowIdx->TriangLevel;
+    const DROPS::Uint trilevel= fun.GetLevel();
     std::cout << "Verts:" << std::endl;
     double diff, emaxdiff= 0., vmaxdiff= 0.;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),
@@ -219,7 +219,7 @@ SetVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
                               DROPS::VelVecDescCL>& fun,
        double t)
 {
-    const DROPS::Uint lvl= fun.GetSolution()->RowIdx->TriangLevel;
+    const DROPS::Uint lvl= fun.GetLevel();
     DROPS::MultiGridCL& mg= const_cast<DROPS::MultiGridCL&>( fun.GetMG());
     for (DROPS::MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
@@ -240,7 +240,7 @@ SetPr(DROPS::P1EvalCL< double,
                        DROPS::VecDescCL>& fun,
       double t)
 {
-    const DROPS::Uint lvl= fun.GetSolution()->RowIdx->TriangLevel;
+    const DROPS::Uint lvl= fun.GetLevel();
     DROPS::MultiGridCL& mg= const_cast<DROPS::MultiGridCL&>( fun.GetMG());
     for (DROPS::MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {

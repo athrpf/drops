@@ -677,8 +677,8 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
     const BndCL* const _bnd= old_sol.GetBndData();
 
     const MultiGridCL& _MG= old_sol.GetMG();    
-    const Uint old_level= old_sol.GetSolution()->RowIdx->TriangLevel;
-    const Uint level= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint old_level= old_sol.GetLevel();
+    const Uint level= sol.GetLevel();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     Uint counter1= 0, counter2= 0;
     
@@ -720,8 +720,7 @@ if (sit->Unknowns.Exist(old_idx))
 // Postcondition: vecdesc, together with the boundary-data of old_f,       *
 //     represents a P1-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
-//     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
-//     level of old_f.                                                     *
+//     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
 //**************************************************************************    
 template< class Data, class _BndData, class _VD,
           template<class, class, class> class P1T,
@@ -729,7 +728,7 @@ template< class Data, class _BndData, class _VD,
 Uint
 RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 {
-    Uint tl= old_f.GetSolution()->RowIdx->TriangLevel;
+    Uint tl= old_f.GetLevel();
     const MultiGridCL& MG= old_f.GetMG();
     const Uint maxlevel= MG.GetLastLevel();
 
@@ -743,7 +742,7 @@ RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
                 DebugNumericC);
         tl= maxlevel;
     }
-    Assert( tl == vecdesc.RowIdx->TriangLevel,
+    Assert( tl == vecdesc.GetLevel(),
             "RepairAfterRefine (P1): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
@@ -878,11 +877,11 @@ void Adapt( P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, c
 // Adapt should be very robust in all occuring situations!!!
 
     const MultiGridCL& _MG= old_sol.GetMG();    
-    const Uint level= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint level= sol.GetLevel();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     const Uint NumUnknowns=  old_sol.GetSolution()->RowIdx->NumUnknownsEdge;
     
-    Assert( level==old_sol.GetSolution()->RowIdx->TriangLevel, 
+    Assert( level==old_sol.GetLevel(),
         DROPSErrCL("Adapt: Same triang levels are expected\n"), ~0);
 
     // 1. Iterate tetras of triangulation: Interpolate missing unknowns
@@ -934,8 +933,8 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
       
     // All velocity-components use the same row-index and the same trianglevel
     const MultiGridCL& _MG= old_sol.GetMG();    
-    const Uint old_level= old_sol.GetSolution()->RowIdx->TriangLevel;
-    const Uint level= sol.GetSolution()->RowIdx->TriangLevel;
+    const Uint old_level= old_sol.GetLevel();
+    const Uint level= sol.GetLevel();
     Uint num_vert_copy= 0, num_edge_copy= 0, num_child_edge= 0;
     
 //    Assert( level==old_level || old_level==level-1, DROPSErrCL("Interpolate: successive triangs are expected\n"));
@@ -1195,8 +1194,7 @@ RepairOnChildren( const TetraCL& t,
 // Postcondition: vecdesc, together with the boundary-data of old_f,       *
 //     represents a P2-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
-//     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
-//     level of old_f.                                                     *
+//     tl ==  old_f.GetLevel -1; else tl is the level of old_f.            *
 //**************************************************************************    
 template< class Data, class _BndData, class _VD,
           template<class, class, class> class P2T,
@@ -1204,7 +1202,7 @@ template< class Data, class _BndData, class _VD,
 Uint
 RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 {
-    const Uint tl= vecdesc.RowIdx->TriangLevel;
+    const Uint tl= vecdesc.GetLevel();
     const MultiGridCL& MG= old_f.GetMG();
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();

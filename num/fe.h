@@ -912,8 +912,7 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
 // Postcondition: vecdesc, together with the boundary-data of old_f,       *
 //     represents a P1-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
-//     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
-//     level of old_f.                                                     *
+//     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
 //**************************************************************************    
 template< class Data, class _BndData, class _VD,
           template<class, class, class> class P1T,
@@ -955,8 +954,7 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
 // Postcondition: vecdesc, together with the boundary-data of old_f,       *
 //     represents a P2-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
-//     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
-//     level of old_f.                                                     *
+//     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
 //**************************************************************************    
 template< class Data, class _BndData, class _VD,
           template<class, class, class> class P2T,

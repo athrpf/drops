@@ -138,7 +138,7 @@ class MatConnect
     static void setNodeMap(DROPS::VecDescCL& x, DROPS::MultiGridCL& MG)
     {
       DROPS::Point3DCL pt;
-      DROPS::Uint lvl= x.RowIdx->TriangLevel;
+      DROPS::Uint lvl= x.GetLevel();
       DROPS::Uint indx= x.RowIdx->GetIdx();
   
       d_pair help;

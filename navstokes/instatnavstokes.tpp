@@ -15,7 +15,7 @@ void InstatNavierStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel,
                                                    scalar_instat_fun_ptr LsgPr,
 						   double t)
 {
-    Uint lvl= A.RowIdx->TriangLevel,
+    Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
         pidx= B.RowIdx->GetIdx();
     VecDescCL veldesc( A.RowIdx);
@@ -79,7 +79,7 @@ void InstatNavierStokesP2P1CL<Coeff>::CheckSolution(
     )
 {
     double diff, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->RowIdx->TriangLevel,
+    Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
     
     VecDescCL rhsN( lsgvel->RowIdx);
@@ -320,7 +320,7 @@ void InstatNavierStokesP2P1CL<Coeff>::SetupNonlinear( MatDescCL* matN, const Vel
 
     typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
     VectorCL& b= vecb->Data;
-    const Uint lvl    = matN->RowIdx->TriangLevel;
+    const Uint lvl    = matN->GetRowLevel();
     const Uint vidx   = matN->RowIdx->GetIdx();
 
     IdxT Numb[10];
@@ -405,7 +405,7 @@ void InstatNavierStokesP2P1CL<Coeff>::SetupNonlinearRhs( const VelVecDescCL* vel
     typename _base::DiscVelSolCL old_u( velvec, &_BndData.Vel, &_MG, t1);
 //    typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t2);
     VectorCL& b= vecb->Data;
-    const Uint lvl    = velvec->RowIdx->TriangLevel;
+    const Uint lvl    = velvec->GetLevel();
     const Uint vidx   = velvec->RowIdx->GetIdx();
 
     IdxT Numb[10];

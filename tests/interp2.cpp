@@ -72,7 +72,7 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 {
     vd.Data.resize( vd.RowIdx->NumUnknowns);
     P2EvalCL<double, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &Bnd, &mg);
-    const Uint lvl= vd.RowIdx->TriangLevel;
+    const Uint lvl= vd.GetLevel();
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
         fun.SetDoF( *sit, f( sit->GetCoord()));
@@ -91,7 +91,7 @@ int CheckResult(DROPS::P2EvalCL<double, BndCL,
     const VertexCL* v= 0;
     const EdgeCL* e= 0;
     const DROPS::MultiGridCL& mg= fun.GetMG();
-    const DROPS::Uint trilevel= fun.GetSolution()->RowIdx->TriangLevel;
+    const DROPS::Uint trilevel= fun.GetLevel();
     if (om!=SILENT) std::cout << "Verts:" << std::endl;
     double diff, emaxdiff= 0., vmaxdiff= 0.;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),

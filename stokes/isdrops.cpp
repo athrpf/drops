@@ -199,7 +199,7 @@ ZeroMean(DROPS::P1EvalCL< double,
                           const DROPS::InstatStokesPrBndDataCL,
                           DROPS::VecDescCL>& f)
 {
-    const DROPS::Uint lvl= f.GetSolution()->RowIdx->TriangLevel;
+    const DROPS::Uint lvl= f.GetLevel();
     DROPS::MultiGridCL& mg= const_cast<DROPS::MultiGridCL&>( f.GetMG());
     double MV= 0., vol= 0., sum;
     for (DROPS::MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin( lvl),
@@ -279,7 +279,7 @@ void
 SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
 {
     DROPS::MatrixBuilderCL A( &A_pr.Data, A_pr.RowIdx->NumUnknowns, A_pr.ColIdx->NumUnknowns);
-    const DROPS::Uint lvl= A_pr.RowIdx->TriangLevel;
+    const DROPS::Uint lvl= A_pr.GetRowLevel();
     const DROPS::Uint idx= A_pr.RowIdx->GetIdx();
     DROPS::SMatrixCL<3,4> G;
     double coup[4][4];
@@ -543,7 +543,7 @@ CheckVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
     const EdgeCL* e= 0;
     const DROPS::MultiGridCL& mg= fun.GetMG();
     const double t= fun.GetTime();
-    const DROPS::Uint trilevel= fun.GetSolution()->RowIdx->TriangLevel;
+    const DROPS::Uint trilevel= fun.GetLevel();
     std::cout << "Verts:" << std::endl;
     double diff, emaxdiff= 0., vmaxdiff= 0.;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),

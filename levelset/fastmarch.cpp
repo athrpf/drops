@@ -362,7 +362,7 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
     // Knoten an der Phasengrenze als Finished markieren
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
     const Uint idx= v_.RowIdx->GetIdx(),
-               lvl= v_.RowIdx->TriangLevel;
+               lvl= v_.GetLevel();
     int        sign[10];
     int        num_sign[3]; // - 0 + 
     IdxT       Numb[10];
@@ -548,7 +548,7 @@ void FastMarchCL::InitClosePer()
 {
     // an Finished angrenzende Knoten mit Close markieren und dort v_ updaten
     const Uint idx= v_.RowIdx->GetIdx(),
-               lvl= v_.RowIdx->TriangLevel;
+               lvl= v_.GetLevel();
 
 TimerCL tim;
 tim.Start();

@@ -122,7 +122,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 
             P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> vel2(v2, &VelBndData, &MG);
             P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL>       vel1(v1, &VelBndData, &MG);
-            Stokes.CreateNumberingVel( v2->RowIdx->TriangLevel, &corr_vidx);
+            Stokes.CreateNumberingVel( v2->GetLevel(), &corr_vidx);
             VelVecDescCL corr_v;
             corr_v.SetIdx( &corr_vidx);
             P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL>  corr_vel( &corr_v, &VelBndData, &MG);
@@ -161,7 +161,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 */ //        Stokes.GetDiscError(&LsgVel, &LsgPr);
 //std::cout << A->Data << std::endl << b->Data << std::endl;
 /*        double half= M_PI/8;
-        MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->RowIdx->TriangLevel);
+        MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->GetRowLevel());
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
         IdxT unk= vert->Unknowns(A->RowIdx->Idx);
         std::cerr << vert->GetCoord() << " has index " << unk << std::endl;

@@ -154,7 +154,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         Stokes.GetDiscError(&LsgVel, &LsgPr);
 //std::cout << A->Data << std::endl << b->Data << std::endl;
 /*        double half= M_PI/8;
-        MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->RowIdx->TriangLevel);
+        MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->GetRowLevel());
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
         IdxT unk= vert->Unknowns(A->RowIdx->Idx);
         std::cerr << vert->GetCoord() << " has index " << unk << std::endl;

@@ -12,7 +12,7 @@ namespace DROPS
 template <class Coeff>
 void NavierStokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
 {
-    Uint lvl= A.RowIdx->TriangLevel,
+    Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
         pidx= B.RowIdx->GetIdx();
     VecDescCL veldesc( A.RowIdx);
@@ -61,7 +61,7 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
                                  vector_fun_ptr LsgVel,      scalar_fun_ptr LsgPr)
 {
     double diff, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->RowIdx->TriangLevel,
+    Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
     
     VecDescCL rhsN( lsgvel->RowIdx);
@@ -273,7 +273,7 @@ void NavierStokesP2P1CL<Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDes
 
     typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
     VectorCL& b= vecb->Data;
-    const Uint lvl    = matN->RowIdx->TriangLevel;
+    const Uint lvl    = matN->GetRowLevel();
     const Uint vidx   = matN->RowIdx->GetIdx();
 
     IdxT Numb[10];
@@ -355,7 +355,7 @@ void NavierStokesP2P1CL<Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec, V
     
     typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
     VectorCL& b= vecb->Data;
-    const Uint lvl    = velvec->RowIdx->TriangLevel;
+    const Uint lvl    = velvec->GetLevel();
     const Uint vidx   = velvec->RowIdx->GetIdx();
 
     IdxT Numb[10];
