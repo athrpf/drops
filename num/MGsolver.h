@@ -110,7 +110,15 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
        ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) ) 
        || fine==begin)
     { // use direct solver
+        // We use relative residual-measurement, as otherwise the accuracy and
+        // correctness depend on the scaling of the matrix and geometry.
+        // This has bitten us in e.g. levelset/mzelle_instat.cpp.
+        const double r0= norm( b - fine->A.Data*x);
+        Solver.SetTol( 1e-5*r0);
         Solver.Solve( fine->A.Data, x, b);
+//        const double r1= norm( b - fine->A.Data*x);
+//        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
+//                  << "\treduction: " << r1/r0 << '\n';
         return;
     }
     VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
@@ -135,7 +143,7 @@ MGPreCL::Apply( const Mat&, Vec& x, const Vec& r) const
     int lvl= -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
     SSORsmoothCL smoother( omega);  // Symmetric-Gauss-Seidel with over-relaxation
-    SSORPcCL directpc; PCG_SsorCL solver( directpc, 200, 1e-12);
+    SSORPcCL directpc; PCG_SsorCL solver( directpc, 500, 1e-15);
     // XXX: It is usually up to the caller to provide a good start value,
     // but we get this wrong in some places. Once these are fixed, resetting
     // x here is superfluous.

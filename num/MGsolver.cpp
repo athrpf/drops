@@ -55,10 +55,14 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
     Uint   sm   =  1; // how many smoothing steps?
     int    lvl  = -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
-    double resid= 0.0;
-    double old_resid= 0.0; // Sink gcc-warning.
+    double resid;
+    double old_resid;
     VectorCL tmp;
-    if (residerr == false)
+    if (residerr == true) {
+        resid= norm( b - finest->A.Data * x);
+        std::cerr << "initial residual: " << resid << '\n';
+    }
+    else
         tmp.resize( x.size());
     
 //    JORsmoothCL smoother( omega); // Jacobi
@@ -71,15 +75,15 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
     int it;
     for (it= 0; it<maxiter; ++it) {
         if (residerr == true) {
-            old_resid= resid;
-            if ((resid= norm( b - finest->A.Data * x)) <= tol) break;
-//            if (it == 0) std::cerr << "initial residual: " << resid << '\n';
+            if (resid <= tol) break;
         }
         else tmp= x;
         MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
         if (residerr == true) {
+            old_resid= resid;
+            resid= norm( b - finest->A.Data * x);
 //            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
-//            if (it!=0) std::cerr << "\treduction: " << resid/old_resid;
+//            std::cerr << "\treduction: " << resid/old_resid;
 //            std::cerr << '\n';
         }
         else if ((resid= norm( tmp - x)) <= tol) break;
