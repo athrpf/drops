@@ -13,25 +13,14 @@
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
+#include "levelset/params.h"
 #include <fstream>
 
-double      delta_t= 1e-3;
-DROPS::Uint num_steps= 5;
-const int   FPsteps= -1;
+DROPS::ParamMesszelleNsCL C;
 
 // rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
 //                          -div u = 0
 //                               u = u0, t=t0
-
-// Tropfendaten:
-DROPS::Point3DCL Mitte;
-double           x_Mitte= 8e-3,
-                 Radius= 1.75e-3,
-                 Anstroem= 4e-2;
-
-// Glaettungszone fuer Dichte-/Viskositaetssprung
-const double sm_eps= Radius*0.05;
-
 
 class ZeroFlowCL
 {
@@ -39,17 +28,16 @@ class ZeroFlowCL
   public:
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
-    DROPS::SmoothedJumpCL rho, mu;
+    const DROPS::SmoothedJumpCL rho, mu;
     const double Re, We;
-    DROPS::Point3DCL g;
+    const DROPS::Point3DCL g;
 
-    ZeroFlowCL() 
-      : rho( DROPS::JumpCL( 955.,   1107. ), DROPS::H_sm, sm_eps),
-         mu( DROPS::JumpCL( 2.6e-3, 1.2e-3), DROPS::H_sm, sm_eps),
-        Re(1.), We(1.) 
-    { g[0]= 9.81; }
+    ZeroFlowCL( const DROPS::ParamMesszelleCL& c) 
+      : rho( DROPS::JumpCL( c.rhoD, c.rhoF ), DROPS::H_sm, c.sm_eps),
+         mu( DROPS::JumpCL( c.muD,  c.muF),   DROPS::H_sm, c.sm_eps),
+        Re(1.), We(1.), g( c.g)    {}
+
 };
-
 
 DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 { return DROPS::SVectorCL<3>(0.); }
@@ -57,16 +45,16 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 { 
     DROPS::SVectorCL<3> ret(0.); 
-    const double s= 0.02,    // Radius Messzelle Einlauf
-                 r= std::sqrt(p[1]*p[1]+p[2]*p[2]);
-    ret[0]= -(r-s)*(r+s)/s/s*Anstroem; 
+    const double s2= C.r_inlet*C.r_inlet,
+                 r2= p.norm_sq() - p[C.flow_dir]*p[C.flow_dir];
+    ret[C.flow_dir]= -(r2-s2)/s2*C.Anstroem; 
     return ret; 
 }
 
 double DistanceFct( const DROPS::Point3DCL& p)
 {
-    const DROPS::Point3DCL d= Mitte-p;
-    return d.norm()-Radius;
+    const DROPS::Point3DCL d= C.Mitte-p;
+    return d.norm()-C.Radius;
 }
 
 
@@ -137,14 +125,13 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
 };
 
 template<class Coeff>
-void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
+void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
 {
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    // Levelset-Disc.: Crank-Nicholson, SD=0.1
-    LevelsetP2CL lset( MG, sigma, 0.5, 0.1); 
+    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD); 
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -179,16 +166,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     Stokes.SetupPrMass(  &prM);
     Stokes.SetupPrStiff( &prA);
     MatrixCL prM_A;
-    ISPreCL ispc( prA.Data, prM.Data, 0.5*delta_t*1e-6);
+    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
    
-    double outer_tol;
-    std::cerr << "tol = "; std::cin >> outer_tol;
+    lset.GetSolver().SetTol( C.lset_tol);
+    lset.GetSolver().SetMaxIter( C.lset_iter);
 
-    lset.GetSolver().SetTol( outer_tol);
-    lset.GetSolver().SetMaxIter( 50000);
-
-    PSchur_PCG_CL schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
-//    Schur_GMRes_CL schurSolver( 1000, outer_tol, 1000, inner_iter_tol);
+    PSchur_PCG_CL schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//    Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
     // solve stationary problem for initial velocities    
     TimerCL time;
@@ -218,11 +202,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
     EnsightP2SolOutCL ensight( MG, lidx);
-    const char datgeo[]= "ensight/nsmzi.geo", 
-               datpr[] = "ensight/nsmzi.pr",
-               datvec[]= "ensight/nsmzi.vec",
-               datscl[]= "ensight/nsmzi.scl";
-    ensight.CaseBegin( "nsmzi.case", num_steps+1);
+    const string filename= "ensight/" + C.EnsCase;
+    const string datgeo= filename+".geo", 
+                 datpr = filename+".pr" ,
+                 datvec= filename+".vel",
+                 datscl= filename+".scl";
+    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
     ensight.DescribeScalar( "Levelset", datscl, true); 
     ensight.DescribeScalar( "Pressure", datpr,  true); 
@@ -233,50 +218,64 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    int meth;
-    std::cerr << "0=Baensch / 1=inner-outer-GMRes : "; std::cin >> meth;
-    if (meth)
+    if (C.scheme)
     {
-//        Schur_GMRes_CL ISPschurSolver( 1000, outer_tol, 1000, inner_iter_tol);
-        ISPSchur_GMRes_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
-//        ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
+//        Schur_GMRes_CL ISPschurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        ISPSchur_GMRes_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
 //        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, Schur_GMRes_CL> 
         CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_GMRes_CL> 
 //        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
-            cpl( Stokes, lset, ISPschurSolver, 0.1);
+            cpl( Stokes, lset, ISPschurSolver, C.theta, C.nonlinear);
 
-        cpl.SetTimeStep( delta_t);
+        cpl.SetTimeStep( C.dt);
 
-        for (Uint step= 1; step<=num_steps; ++step)
+        for (int step= 1; step<=C.num_steps; ++step)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
-            cpl.DoStep( FPsteps);
-    //            if ((step%10)==0) lset.Reparam( 5, 0.01);
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
-            ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+            cpl.DoStep( C.FPsteps);
+            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
+            ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
+            ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
+
+            if (C.RepFreq && step%C.RepFreq==0)
+            {
+                lset.Reparam( C.RepSteps, C.RepTau);
+                ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
+                ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
+                ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
+                ensight.Commit();
+            }
         }
     }
-    else
+    else // Baensch scheme
     {
-        ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
+        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
         CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
-            cpl( Stokes, lset, ISPschurSolver, 0.1);
+            cpl( Stokes, lset, ISPschurSolver, C.nonlinear);
 
-        cpl.SetTimeStep( delta_t);
+        cpl.SetTimeStep( C.dt);
 
-        for (Uint step= 1; step<=num_steps; ++step)
+        for (int step= 1; step<=C.num_steps; ++step)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
-            cpl.DoStep( FPsteps);
-    //            if ((step%10)==0) lset.Reparam( 5, 0.01);
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
-            ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+            cpl.DoStep( C.FPsteps);
+            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
+            ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
+            ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
+
+            if (C.RepFreq && step%C.RepFreq==0)
+            {
+                lset.Reparam( C.RepSteps, C.RepTau);
+                ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
+                ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
+                ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
+                ensight.Commit();
+            }
         }
     }
     ensight.CaseEnd();
@@ -291,7 +290,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
-        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(1.5*Radius,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
+        if ( (GetBaryCenter(*It)-C.Mitte).norm()<=std::max(1.5*C.Radius,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
             It->SetRegRefMark();
     }
 }
@@ -301,29 +300,34 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc<4)
+    if (argc>2)
     {
-        std::cerr << "You have to specify at least three parameters:\n\t" 
-                  << argv[0] << " <inner_iter_tol> <num_dropref> <surf.tension> [<dt> <num_steps>]" << std::endl;
+        std::cerr << "You have to specify at most one parameter:\n\t" 
+                  << argv[0] << " [<param_file>]" << std::endl;
         return 1;
     }
-    double inner_iter_tol= atof(argv[1]);
-    int num_dropref= atoi(argv[2]);
-    double sigma= atof(argv[3]);
-    if (argc>4) delta_t= atof(argv[4]);
-    if (argc>5) num_steps= atoi(argv[5]);
-    // bubble position
-    Mitte[0]= x_Mitte;
-//    Mitte[2]= 1e-3; // disturbance
-
-    std::cerr << "inner iter tol:  " << inner_iter_tol << std::endl;
-    std::cerr << "drop ref:   " << num_dropref << std::endl;
-    std::cerr << "surface tension: " << sigma << std::endl;
-    std::cerr << num_steps << " time steps of size " << delta_t << std::endl;
+    std::ifstream param;
+    if (argc>1)
+        param.open( argv[1]);
+    else
+        param.open( "NMRmzi.param");
+    if (!param)
+    {
+        std::cerr << "error while opening parameter file\n";
+        return 1;
+    }
+    param >> C;
+    param.close();
+    std::cerr << C << std::endl;
 
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
 
-    std::ifstream meshfile( "gambit/messzelle.msh");
+    std::ifstream meshfile( C.meshfile.c_str());
+    if (!meshfile)
+    {
+        std::cerr << "error while opening mesh file " << C.meshfile << "\n";
+        return 1;
+    }
     DROPS::ReadMeshBuilderCL builder( meshfile);
     
     
@@ -333,26 +337,25 @@ int main (int argc, char** argv)
     const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[3]= 
         { &Null, &Null, &Inflow}; 
         
-    MyStokesCL prob(builder, ZeroFlowCL(), DROPS::InstatStokesBndDataCL( 3, bc, bnd_fun));
+    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::InstatStokesBndDataCL( 3, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
     
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
-        std::cerr << "BC: " << dynamic_cast<const DROPS::MeshBoundaryCL*>(bnd.GetBndSeg( i))->GetBC() << std::endl;
+        std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
     
-    for (int i=0; i<num_dropref; ++i)
+    for (int i=0; i<C.num_dropref; ++i)
     {
         MarkDrop( mg);
         mg.Refine();
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-    std::ofstream geomout( "gambit/mzelle.off");
-    geomout << DROPS::GeomMGOutCL( mg, -1, false, 0);
 
-    Strategy(prob, inner_iter_tol, sigma);
+    Strategy( prob);    // do all the stuff
+
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;

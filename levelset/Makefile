@@ -71,13 +71,15 @@ mzelle_stat: \
 mzelle_instat: \
     ../levelset/mzelle_instat.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
+    ../misc/params.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 mzelle_instat_ns: \
     ../levelset/mzelle_instat_ns.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
+    ../misc/params.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 mzelle_rise: \
@@ -85,7 +87,6 @@ mzelle_rise: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
-
 
 # include common rules:
 include ../Make.common
