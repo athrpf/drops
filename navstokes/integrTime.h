@@ -63,7 +63,10 @@ class InstatNavStokesThetaSchemeCL
             delete _b;
         else
             delete _old_b; 
-        delete _old_cplM;
+        if (_old_cplM == &_NS.cplM)
+            delete _cplM;
+        else
+            delete _old_cplM;
     }
     
     double GetTheta()    const { return _theta; }
