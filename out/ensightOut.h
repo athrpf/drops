@@ -24,7 +24,8 @@ class EnsightP2SolOutCL
     char               _decDigits;
     Uint               _timestep, _numsteps;
     double             _lasttime;
-    std::ostringstream _timestr;
+    std::ostringstream _descstr,    // stores description info
+                       _timestr;    // stores time info
     std::ofstream      _case;
     std::string        _geom;
      
@@ -50,7 +51,8 @@ class EnsightP2SolOutCL
     void putScalar    ( std::string, const DiscScalT&, double t= -1);
     template<class DiscVecT>
     void putVector    ( std::string, const DiscVecT&, double t= -1);
-    // call putCaseEnd() after finishing all other output
+    void Commit    ();    // rewrites case file
+    // call CaseEnd() after finishing all other output
     void CaseEnd   ();
 };
 
@@ -61,7 +63,7 @@ class EnsightP2SolOutCL
 void EnsightP2SolOutCL::CaseBegin( const char casefileName[], Uint numsteps)
 {
     _case.open( casefileName);
-    _case << "FORMAT\ntype: ensight\n\n";
+    _descstr << "FORMAT\ntype: ensight\n\n";
     
     _numsteps= numsteps;
     _decDigits= 1;
@@ -71,46 +73,77 @@ void EnsightP2SolOutCL::CaseBegin( const char casefileName[], Uint numsteps)
 
 void EnsightP2SolOutCL::DescribeGeom( const char geomName[], std::string fileName, bool timedep)
 {
-    _case << "GEOMETRY\nmodel:\t\t\t";
+    _descstr << "GEOMETRY\nmodel:\t\t\t";
     if (timedep)
     {
-        _case << '1';
+        _descstr << '1';
         fileName+= std::string( _decDigits, '*');
     }
-    _case << "\t\t\t" << fileName << "\n\nVARIABLE\n";
+    _descstr << "\t\t\t" << fileName << "\n\nVARIABLE\n";
     _geom= geomName;
 }
 
 void EnsightP2SolOutCL::DescribeScalar( const char varName[], std::string fileName, bool timedep)
 {
-    _case << "scalar per node:\t";
+    _descstr << "scalar per node:\t";
     if (timedep)
     {
-        _case << '1';
+        _descstr << '1';
         fileName+= std::string( _decDigits, '*');
     }
-    _case << '\t' << varName << '\t' << fileName << std::endl;
+    _descstr << '\t' << varName << '\t' << fileName << std::endl;
 }
 
 void EnsightP2SolOutCL::DescribeVector( const char varName[], std::string fileName, bool timedep)
 {
-    _case << "vector per node:\t";
+    _descstr << "vector per node:\t";
     if (timedep)
     {
-        _case << '1';
+        _descstr << '1';
         fileName+= std::string( _decDigits, '*');
     }
-    _case << '\t' << varName << '\t' << fileName << std::endl;
+    _descstr << '\t' << varName << '\t' << fileName << std::endl;
 }
 
-void EnsightP2SolOutCL::CaseEnd()
+void EnsightP2SolOutCL::AppendTimecode( std::string& str) const
 {
+    char format[]= "%0Xi",
+         postfix[8];
+    format[2]= '0' + char(_decDigits);
+    sprintf( postfix, format, _timestep);
+    str+= postfix;
+}
+
+void EnsightP2SolOutCL::putTime( double t)
+{
+    if (t!=_lasttime)
+    {
+        _timestr << t << ' ';
+        _lasttime= t;
+        if (++_timestep%10==0)
+            _timestr << "\n\t\t\t";
+
+        Commit();    // rewrite case file
+    }
+}
+
+void EnsightP2SolOutCL::Commit()
+{
+    // rewrite case file
+    _case.seekp( 0, std::ios_base::beg);  // rewind to the very beginning
+    _case << _descstr.str();
     if (!_timestr.str().empty()) 
     {
         _case << "\nTIME\ntime set:\t\t1\nnumber of steps:\t" << _timestep+1
               << "\nfilename start number:\t0\nfilename increment:\t1\ntime values:\t\t";
         _case << _timestr.str() << "\n\n";
     }
+    _case.flush();
+}
+
+void EnsightP2SolOutCL::CaseEnd()
+{
+    Commit();
     _case.close();
 }
 
@@ -282,26 +315,6 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
         }
     }
     os << '\n';
-}
-
-void EnsightP2SolOutCL::AppendTimecode( std::string& str) const
-{
-    char format[]= "%0Xi",
-         postfix[8];
-    format[2]= '0' + char(_decDigits);
-    sprintf( postfix, format, _timestep);
-    str+= postfix;
-}
-
-void EnsightP2SolOutCL::putTime( double t)
-{
-    if (t!=_lasttime)
-    {
-        _timestr << t << ' ';
-        _lasttime= t;
-        if (++_timestep%10==0)
-            _timestr << "\n\t\t\t";
-    }
 }
 
 } // end of namespace DROPS
