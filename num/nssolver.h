@@ -34,24 +34,24 @@ class AdaptFixedPtDefectCorrCL
     double      _tol, _res, _red;
   
   public:
-    AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 1000.)
-        : _NS( NS), _solver( solver),
-          _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
+    AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 100.)
+        : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
-    ~AdaptFixedPtDefectCorrCL()    {}
+    ~AdaptFixedPtDefectCorrCL() {}
     
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( int iter  ) { _maxiter= iter; }
     void SetReduction( double red) { _red= red; }
     
-    double GetResid() const { return _res; }
-    int    GetIter () const { return _iter; }
+    double   GetResid()        const { return _res; }
+    int      GetIter ()        const { return _iter; }
+    SolverT& GetStokesSolver() const { return _solver; }
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p, VectorCL& b, VectorCL& c,
-                double alpha= 1.);
     // solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
     //                                 B v        = c
     // (param. alpha is used for time integr. schemes)
+    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+                VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
 };
 
 template<class NavStokesT, class SolverT>
@@ -73,24 +73,24 @@ class FixedPtDefectCorrCL
     double      _tol, _res, _red;
   
   public:
-    FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 1000.)
-        : _NS( NS), _solver( solver),
-          _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction)  {}
+    FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 100.)
+        : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
-    ~FixedPtDefectCorrCL()    {}
+    ~FixedPtDefectCorrCL() {}
     
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( Uint iter ) { _maxiter= iter; }
     void SetReduction( double red) { _red= red; }
     
-    double GetResid() const { return _res; }
-    Uint   GetIter () const { return _iter; }
+    double GetResid()          const { return _res; }
+    Uint   GetIter ()          const { return _iter; }
+    SolverT& GetStokesSolver() const { return _solver; }
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p, VectorCL& b, VectorCL& c,
-                double alpha= 1.);
     // solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
     //                                 B v        = c
     // (param. alpha is used for time integr. schemes)
+    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+                VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
 };
 
 
@@ -106,9 +106,9 @@ class AFPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PC
   
   public:
     AFPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                          int poiss_maxiter, double poiss_tol, double reduction= 1000.)
+                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
         : AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
-          _uzawaSolver( M, fp_tol, stokes_maxiter, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+          _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
 };
 
@@ -120,9 +120,37 @@ class AFPDeCo_Schur_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Schur_PC
   
   public:
     AFPDeCo_Schur_PCG_CL( NavStokesT& NS, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                          int poiss_maxiter, double poiss_tol, double reduction= 1000.)
+                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
         : AdaptFixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>( NS, _schurSolver, fp_maxiter, fp_tol, reduction),
-          _schurSolver( fp_tol, stokes_maxiter, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+          _schurSolver( stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+        {}
+};
+
+template <class NavStokesT>
+class FPDeCo_Uzawa_CG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_CG_CL>
+{
+  private:
+    Uzawa_CG_CL _uzawaSolver;
+  
+  public:
+    FPDeCo_Uzawa_CG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
+                         int poiss_maxiter, double poiss_tol, double reduction= 100.)
+        : FixedPtDefectCorrCL<NavStokesT, Uzawa_CG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
+          _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+        {}
+};
+
+template <class NavStokesT>
+class FPDeCo_Uzawa_SGSPCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_SGSPCG_CL>
+{
+  private:
+    Uzawa_SGSPCG_CL _uzawaSolver;
+  
+  public:
+    FPDeCo_Uzawa_SGSPCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
+                         int poiss_maxiter, double poiss_tol, double reduction= 100.)
+        : FixedPtDefectCorrCL<NavStokesT, Uzawa_SGSPCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
+          _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
 };
 
@@ -134,9 +162,9 @@ class FPDeCo_Uzawa_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
   
   public:
     FPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                         int poiss_maxiter, double poiss_tol, double reduction= 1000.)
+                         int poiss_maxiter, double poiss_tol, double reduction= 100.)
         : FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
-          _uzawaSolver( M, fp_tol, stokes_maxiter, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+          _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
 };
 
@@ -150,7 +178,7 @@ class FPDeCo_Schur_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>
     FPDeCo_Schur_PCG_CL( NavStokesT& NS, int fp_maxiter, double fp_tol, int stokes_maxiter,
                          int poiss_maxiter, double poiss_tol, double reduction= 1000.)
         : FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>( NS, _schurSolver, fp_maxiter, fp_tol, reduction),
-          _schurSolver( fp_tol, stokes_maxiter, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+          _schurSolver( stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
 };
 
@@ -159,10 +187,12 @@ class FPDeCo_Schur_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>
 //     template definitions
 //=================================
 
+
 template<class NavStokesT, class SolverT>
-void AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p, VectorCL& b, VectorCL& c,
-      double alpha)
+void
+AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve( 
+    const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+    VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
 {
         VecDescCL v_omw( v.RowIdx);
         VectorCL d( v.Data.size()), e( p.size()),
@@ -171,33 +201,31 @@ void AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve
         _iter= 0;
         for(;;++_iter) // ever
         {
-            _NS.SetupNonlinear( &_NS.N, &v, &_NS.cplN);
-            _AN.LinComb( 1., A, alpha, N->Data);
+            _NS.SetupNonlinear(&_NS.N, &v, &cplN);
+            _AN.LinComb( 1., A, alpha, _NS.N.Data);
             
             // calculate defect:
-            d= _AN*v + transp_mul( B, p) - b - alpha*_NS.cplN.Data;
-            e= B*v - c;
-            
-            std::cerr << _iter << ": res = " << (_res= sqrt(d*d + e*e) ) << std::endl; 
+            d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
+            e= B*v.Data - c;
+	    std::cerr << _iter << ": res = " << (_res= sqrt(d*d + e*e) ) << std::endl; 
             if (_res < _tol || _iter>=_maxiter)
                 break;
             
             // solve correction:
-            outer_tol= _res/_red;
-            if (outer_tol < _tol) outer_tol= _tol;
+            double outer_tol= _res/_red;
             
-            solver.SetTol( outer_tol);
-            solver.Solve( AN, B, w, q, d, e);
+            _solver.SetTol( outer_tol);
+            _solver.Solve( _AN, B, w, q, d, e);
             
             // calculate adaption:
-//            _NS.N.Data.clear();
-            v_omw.Data= v1->Data - omega*w;
-            _NS.SetupNonlinear( &_NS.N, &v_omw, &_NS.cplN);
+            _NS.N.Data.clear();
+            v_omw.Data= v.Data - omega*w;
+            _NS.SetupNonlinear( &_NS.N, &v_omw, &cplN);
             
             d= A*w + alpha*(_NS.N.Data*w) + transp_mul( B, q);
             e= B*w;
             omega= d*(A*v.Data) + alpha*(d*(_NS.N.Data*v.Data)) + d*transp_mul( B, p) + e*(B*v.Data)
-                 - d*b - alpha*(d*_NS.cplN.Data) - e*c;
+                  - d*b - alpha*(d*cplN.Data) - e*c;
             omega/= d*d + e*e;
             std::cerr << "omega = " << omega << std::endl;
             
@@ -208,33 +236,31 @@ void AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve
 }
 
 template<class NavStokesT, class SolverT>
-void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p, VectorCL& b, VectorCL& c,
-      double alpha)
+void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
+    const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+    VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
 {
-        VecDescCL v_omw( v.RowIdx);
         VectorCL d( v.Data.size()), e( p.size()),
                  w( v.Data.size()), q( p.size());
         _iter= 0;
         for(;;++_iter) // ever
         {
-            _NS.SetupNonlinear( &_NS.N, &v, &_NS.cplN);
-            _AN.LinComb( 1., A, alpha, N->Data);
-            
+            _NS.SetupNonlinear(&_NS.N, &v, &cplN);
+            _AN.LinComb( 1., A, alpha, _NS.N.Data);
+           
             // calculate defect:
-            d= _AN*v + transp_mul( B, p) - b - alpha*_NS.cplN.Data;
-            e= B*v - c;
+            d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
+            e= B*v.Data - c;
             
             std::cerr << _iter << ": res = " << (_res= sqrt(d*d + e*e) ) << std::endl; 
             if (_res < _tol || _iter>=_maxiter)
                 break;
             
             // solve correction:
-            outer_tol= _res/_red;
-            if (outer_tol < _tol) outer_tol= _tol;
+            double outer_tol= _res/_red;
             
-            solver.SetTol( outer_tol);
-            solver.Solve( AN, B, w, q, d, e);
+            _solver.SetTol( outer_tol);
+            _solver.Solve( _AN, B, w, q, d, e);
             
             // update solution:
             v.Data-= w;

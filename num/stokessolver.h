@@ -31,7 +31,8 @@ class SchurSolverCL : public SolverBaseCL
     SchurSolverCL (PoissonSolverT& solver, int maxiter, double tol)
         : SolverBaseCL(maxiter,tol), _poissonSolver(solver) {}
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
 };
 
 
@@ -46,7 +47,8 @@ class PSchurSolverCL : public SolverBaseCL
     PSchurSolverCL (PoissonSolverT& solver, MatrixCL& M, int maxiter, double tol)
         : SolverBaseCL(maxiter,tol), _poissonSolver(solver), _schurPc(M) {}
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
 };
 
 
@@ -62,7 +64,11 @@ class UzawaSolverCL : public SolverBaseCL
     UzawaSolverCL (PoissonSolverT& solver, MatrixCL& M, int maxiter, double tol, double tau= 1.)
         : SolverBaseCL(maxiter,tol), _poissonSolver(solver), _M(M), _tau(tau) {}
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
+    double GetTau()            const { return _tau; }
+    void   SetTau( double tau)       { _tau= tau; }
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
 };
 
 
@@ -85,13 +91,26 @@ class Uzawa_IPCG_CL : public SolverBaseCL
     // Always call this when A has changed, before Solve()!
     void Init_A_Pc(MatrixCL& A) { _A_IPCGsolver.GetPc().Init(A); }
 
-    inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
+    inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                       const VectorCL& b, const VectorCL& c);
 };
 
 
 //=============================================================================
 //  Derived classes for easier use
 //=============================================================================
+
+class Uzawa_CG_CL : public UzawaSolverCL<CGSolverCL>
+{
+  private:
+    CGSolverCL _CGsolver;
+  public:
+    // XXX M is not used!! Perhaps modify UzawaSolverCL. Or just live with it.
+    Uzawa_CG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
+        : UzawaSolverCL<CGSolverCL>( _CGsolver, M, outer_iter, outer_tol, tau),
+          _CGsolver( inner_iter, inner_tol)
+        {}
+};
 
 class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
 {
@@ -104,6 +123,16 @@ class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
         {}
 };
 
+class Uzawa_SGSPCG_CL : public UzawaSolverCL<PCG_SgsCL>
+{
+  private:
+    PCG_SgsCL _PCGsolver;
+  public:
+    Uzawa_SGSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
+        : UzawaSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
+          _PCGsolver(SGSPcCL(1.), inner_iter, inner_tol)
+        {}
+};
 
 class Schur_PCG_CL: public SchurSolverCL<PCG_SsorCL>
 {
@@ -162,9 +191,8 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 //=============================================================================
 
 template <class PoissonSolverT>
-void UzawaSolverCL<PoissonSolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
-
+void UzawaSolverCL<PoissonSolverT>::Solve(
+    const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 {
     VectorCL v_corr(v.size()),
              p_corr(p.size()),
@@ -178,7 +206,6 @@ void UzawaSolverCL<PoissonSolverT>::Solve
     double res1_norm= 0., res2_norm= 0.;
     for( _iter=0; _iter<_maxiter; ++_iter)
     {
-//        _poissonSolver.Solve( _M, p_corr, res2= B*v - c);
         z_xpay(res2, B*v, -1.0, c);
         _poissonSolver.Solve(_M, p_corr, res2);
 //        p+= _tau * p_corr;
@@ -206,17 +233,17 @@ void UzawaSolverCL<PoissonSolverT>::Solve
 
 
 template <class PoissonSolverT>
-void SchurSolverCL<PoissonSolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
-{
+void SchurSolverCL<PoissonSolverT>::Solve(
+    const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
-
+{
     VectorCL rhs= -c;
     {
         VectorCL tmp( v.size());
         _poissonSolver.Solve( A, tmp, b);
-        std::cerr << "Iterationen: " << _poissonSolver.GetIter() << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+        std::cerr << "Iterationen: " << _poissonSolver.GetIter()
+                  << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
@@ -230,19 +257,19 @@ void SchurSolverCL<PoissonSolverT>::Solve
     _poissonSolver.SetTol( _tol);  // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
     _poissonSolver.SetTol( tol);   // reset old tolerance, so that nothing has changed
-    std::cerr << "Iterationen: " << _poissonSolver.GetIter() << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+    std::cerr << "Iterationen: " << _poissonSolver.GetIter()
+              << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
-inline void Uzawa_IPCG_CL::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+inline void Uzawa_IPCG_CL::Solve(
+    const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 
 {
     VectorCL v_corr(v.size()),
              p_corr(p.size()),
              res1(v.size()),
              res2(p.size());
-
     double tol= _tol;
     tol*= tol;
     Uint output= 50;//max_iter/20;  // nur 20 Ausgaben pro Lauf
@@ -278,17 +305,17 @@ inline void Uzawa_IPCG_CL::Solve
 }
 
 template <class PoissonSolverT>
-void PSchurSolverCL<PoissonSolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
-{
+void PSchurSolverCL<PoissonSolverT>::Solve(
+    const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
-
+{
     VectorCL rhs= -c;
     {
         VectorCL tmp( v.size());
         _poissonSolver.Solve( A, tmp, b);
-        std::cerr << "Iterationen: " << _poissonSolver.GetIter() << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+        std::cerr << "Iterationen: " << _poissonSolver.GetIter()
+                  << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
@@ -302,7 +329,8 @@ void PSchurSolverCL<PoissonSolverT>::Solve
     _poissonSolver.SetTol( _tol);  // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
     _poissonSolver.SetTol( tol);   // reset old tolerance, so that nothing has changed
-    std::cerr << "Iterationen: " << _poissonSolver.GetIter() << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+    std::cerr << "Iterationen: " << _poissonSolver.GetIter()
+              << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
