@@ -14,6 +14,7 @@
 
 // #include <limits> // TODO: Do we have limits with gcc-snapshots or SGI-CC?
 #include <functional>
+#include <algorithm>
 #include <iosfwd>
 #include <string>
 #include <time.h>
