@@ -253,18 +253,12 @@ public:
                      const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
         : _rows(rows), _cols(cols), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
 
-    const T* raw_val() const {
-        return Addr( _val);}
-    T* raw_val() {
-        return &_val[0];}
-    const size_t* raw_row() const {
-        return Addr( _rowbeg);}
-    size_t* raw_row() {
-        return &_rowbeg[0];}
-    const size_t* raw_col() const {
-        return Addr( _colind);}
-    size_t* raw_col() {
-        return &_colind[0];}
+    const T*      raw_val() const { return Addr( _val); }
+    T*            raw_val()       { return &_val[0]; }
+    const size_t* raw_row() const { return Addr( _rowbeg); }
+    size_t*       raw_row()       { return &_rowbeg[0]; }
+    const size_t* raw_col() const { return Addr( _colind); }
+    size_t*       raw_col()       { return &_colind[0]; }
 
     size_t num_rows     () const { return _rows; }
     size_t num_cols     () const { return _cols; }
