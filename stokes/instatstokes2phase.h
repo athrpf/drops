@@ -74,6 +74,11 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
         { return DiscPrSolCL( &p, &GetBndData().Pr, &GetMG()); }
     DiscVelSolCL GetVelSolution() const
         { return DiscVelSolCL( &v, &GetBndData().Vel, &GetMG(), t); }
+
+    DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
+        { return DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
+    DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
+        { return DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
 };
 
 } // end of namespace DROPS
