@@ -364,14 +364,14 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
 
 template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetNavStokes2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta)
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear)
 
   : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
     _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL), 
     _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
     _rhs( Stokes.v.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta), _nonlinear( 0.1)
+    _theta( theta), _nonlinear( nonlinear)
 { 
     Update(); 
 }
@@ -519,7 +519,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
 
 template <class StokesT, class SolverT>
 CouplLsNsBaenschCL<StokesT,SolverT>::CouplLsNsBaenschCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver)
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double nonlinear)
 
   : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b),
     _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
@@ -527,7 +527,7 @@ CouplLsNsBaenschCL<StokesT,SolverT>::CouplLsNsBaenschCL
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL), 
     _curv( new VelVecDescCL),
     _rhs( Stokes.v.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( 1-std::sqrt(2.)/2), _alpha( (1-2*_theta)/(1-_theta)), _nonlinear( 0.1)
+    _theta( 1-std::sqrt(2.)/2), _alpha( (1-2*_theta)/(1-_theta)), _nonlinear( nonlinear)
 { 
 std::cerr << "theta = " << _theta << "\talpha = " << _alpha << std::endl;
     Update(); 
@@ -631,7 +631,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
     time.Reset();
     SSORPcCL pc;
 //    PCGSolverCL<SSORPcCL> gm( pc, 10, _solver.GetTol());
-    GMResSolverCL<SSORPcCL> gm( pc, 10, 1000, _solver.GetTol());
+    GMResSolverCL<SSORPcCL> gm( pc, 100, 1000, _solver.GetTol());
     std::cerr << "Starting fixed point iterations for solving nonlinear system...\n";
     _iter_nonlinear= 0;
     do
@@ -672,7 +672,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStep( int maxFPiter)
         DoStokesFPIter();
         if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
-            std::cerr << "---> frac.step A: Convergence after " << i+1 << " fixed point iterations!" << std::endl;
+            std::cerr << "===> frac.step A: Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
     }
@@ -685,7 +685,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStep( int maxFPiter)
         DoNonlinearFPIter();
         if (_iter_nonlinear==1 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
-            std::cerr << "---> frac.step B: Convergence after " << i+1 << " fixed point iterations!" << std::endl;
+            std::cerr << "===> frac.step B: Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
     }
@@ -698,7 +698,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStep( int maxFPiter)
         DoStokesFPIter();
         if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
-            std::cerr << "---> frac.step C: Convergence after " << i+1 << " fixed point iterations!" << std::endl;
+            std::cerr << "===> frac.step C: Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
     }

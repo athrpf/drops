@@ -144,7 +144,7 @@ class CouplLevelsetNavStokes2PhaseCL
     
   public:
     CouplLevelsetNavStokes2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, 
-                           SolverT& solver, double theta= 0.5);
+                           SolverT& solver, double theta= 0.5, double nonlinear= 1);
     ~CouplLevelsetNavStokes2PhaseCL();
     
     double GetTheta()    const { return _theta; }
@@ -188,7 +188,7 @@ class CouplLsNsBaenschCL
     
   public:
     CouplLsNsBaenschCL( StokesT& Stokes, LevelsetP2CL& ls, 
-                           SolverT& solver);
+                           SolverT& solver, double nonlinear= 1);
     ~CouplLsNsBaenschCL();
     
     double GetTime()     const { return _Stokes.t; }
