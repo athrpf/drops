@@ -112,49 +112,55 @@ struct RefRuleCL
 
 
 // Vertices of a given edge
-inline Ubyte VertOfEdge    (Ubyte edge, Ubyte num)       { return VertOfEdgeAr[edge][num]; }
+inline Ubyte VertOfEdge    (Ubyte edge, Ubyte num) { return VertOfEdgeAr[edge][num]; }
 // Edge with given vertices
-inline byte  EdgeByVert    (Ubyte v0, Ubyte v1)          { return EdgeByVertAr[v0][v1]; }
+inline byte  EdgeByVert    (Ubyte v0, Ubyte v1) { return EdgeByVertAr[v0][v1]; }
 // Edge opposing a given edge
-inline Ubyte OppEdge       (Ubyte edge)                 { return 5-edge; }
+inline Ubyte OppEdge       (Ubyte edge) { return 5-edge; }
 // Vertices of a given face
-inline Ubyte VertOfFace    (Ubyte face, Ubyte num)       { return VertOfFaceAr[face][num]; }
+inline Ubyte VertOfFace    (Ubyte face, Ubyte num) { return VertOfFaceAr[face][num]; }
 // Face with given vertices
 inline Ubyte FaceByVert    (Ubyte v0, Ubyte v1, Ubyte v2) { return 6-v0-v1-v2; }
 // Faces intersecting in a given vertex
-inline Ubyte FaceOfVert    (Ubyte vert, Ubyte num)       { return num < vert ? num : num+1; }
+inline Ubyte FaceOfVert    (Ubyte vert, Ubyte num) { return num < vert ? num : num+1; }
 // Edges of a given Face
-inline Ubyte EdgeOfFace    (Ubyte face, Ubyte num)       { return EdgeOfFaceAr[face][num]; }
+inline Ubyte EdgeOfFace    (Ubyte face, Ubyte num) { return EdgeOfFaceAr[face][num]; }
+// Returns, on which face of the parent chedge lies and also determines,
+// whether the barycenter of chedge lies at v0 (0), v1 (1) or v2 (2) of the face.
+// As to why why this works, take a look at topo.h, specifically the sorting
+// of VertOfEdgeAr. 
+inline void WhichEdgeInFace(Uint chedge, Uint& parface, Uint& pos)
+{ parface= chedge<30 ? chedge/3 -6 : chedge/3 -10; pos= chedge%3; }
 // Vertex opposing a given face
-inline Ubyte OppVert       (Ubyte face)                 { return face; }
+inline Ubyte OppVert       (Ubyte face) { return face; }
 // Face opposing a given vertex
-inline Ubyte OppFace       (Ubyte vert)                 { return vert; }
+inline Ubyte OppFace       (Ubyte vert) { return vert; }
 // Faces intersecting in a given edge
-inline Ubyte FaceOfEdge    (Ubyte edge, Ubyte num)       { return FaceOfEdgeAr[edge][num]; }
+inline Ubyte FaceOfEdge    (Ubyte edge, Ubyte num) { return FaceOfEdgeAr[edge][num]; }
 // Orientation of cross-product when iterating over VertOfFace for a given face
-inline byte OrientOfFace (Ubyte face)                 { return OrientOfFaceAr[face]; }
+inline byte OrientOfFace (Ubyte face) { return OrientOfFaceAr[face]; }
 // Number of the midvertex of a given edge
-inline Ubyte MidVertOfEdge (Ubyte edge)                 { return edge+NumVertsC; }
+inline Ubyte MidVertOfEdge (Ubyte edge) { return edge+NumVertsC; }
 // returns the edge to which this midvertex belongs
-inline Ubyte EdgeOfMidVert (Ubyte vert)                 { return vert-NumVertsC; }
+inline Ubyte EdgeOfMidVert (Ubyte vert) { return vert-NumVertsC; }
 // true, if the given vertex is a midvertex of an edge
-inline bool IsMidVert     (Ubyte vert)                 { return vert >= NumVertsC; }
+inline bool IsMidVert     (Ubyte vert) { return vert >= NumVertsC; }
 // true, if the edge is an edge of the parent-tetra
 inline bool IsParentEdge(Ubyte edge) { return edge < NumEdgesC; }
 // returns, if edge is a sub-edge of an edge in the parent-tetrahedron
-inline bool IsSubEdge     (Ubyte edge)                 { return edge < NumEdgesC+12 && edge > NumEdgesC-1; } 
+inline bool IsSubEdge     (Ubyte edge) { return edge < NumEdgesC+12 && edge > NumEdgesC-1; } 
 // First or second subedge of a given edge
-inline Ubyte SubEdge       (Ubyte edge, Ubyte num)       { return NumEdgesC+2*edge+num; }
+inline Ubyte SubEdge       (Ubyte edge, Ubyte num) { return NumEdgesC+2*edge+num; }
 // returns the number of the parent-edge
-inline Ubyte ParentEdge    (Ubyte subedge)              { return (subedge-NumEdgesC)/2; }
+inline Ubyte ParentEdge    (Ubyte subedge) { return (subedge-NumEdgesC)/2; }
 // returns, whether subedge is subedge zero or one in the parent-edge  
-inline Ubyte NumOfSubEdge  (Ubyte subedge)              { return subedge%2; }
+inline Ubyte NumOfSubEdge  (Ubyte subedge) { return subedge%2; }
 // true, if subedge is not an edge of the parent, not a subedge of a parent-edge and not a diagonal
-inline bool IsSubInParFace(Ubyte subedge)              { return subedge > 17 && subedge < 42; }
+inline bool IsSubInParFace(Ubyte subedge) { return subedge > 17 && subedge < 42; }
 // returns the number of the parent face for subedges, if IsSubInParFace is true
-inline Ubyte ParFaceOfEdge(Ubyte subedge)              { return (subedge - (subedge<30 ? 18 : 30))/3; }
+inline Ubyte ParFaceOfEdge(Ubyte subedge) { return (subedge - (subedge<30 ? 18 : 30))/3; }
 // true, if subedge is a diagonal of a tetrahedron
-inline bool IsDiagonal    (Ubyte subedge)              { return subedge > 41; }
+inline bool IsDiagonal    (Ubyte subedge) { return subedge > 41; }
 // true, if the face is a also face of the parent-tetra
 inline bool IsParentFace(Ubyte face) { return face < NumFacesC; }
 // true, if the face lies in the interior of the parent-tetra
@@ -165,13 +171,13 @@ inline bool IsSubFace(Ubyte face) { return face >= NumFacesC && face <= 55; }
 inline Ubyte ParentFace(Ubyte subface) { return (subface-NumFacesC)/NumAllSubFacesPerFaceC; }
 // returns the number of subface num of face 'face'; '13' is a kludge to refer to the
 // unrefined face 'face' itself
-inline Ubyte SubFaceOfFace   (Ubyte face, Ubyte num)       { return num == 13 ? face : 4 + face*NumAllSubFacesPerFaceC + num; }
+inline Ubyte SubFaceOfFace   (Ubyte face, Ubyte num) { return num == 13 ? face : 4 + face*NumAllSubFacesPerFaceC + num; }
 // returns the number of a subface relative to the numbering of subfaces in a face; thus a return value
 // of 13 refers to the unrefined parent-face itself
 inline Ubyte NumOfSubFace(Ubyte subface) { return (subface-NumFacesC)%NumAllSubFacesPerFaceC; }
 // returns the number of subface num of face 'face'; '13' is a kludge to refer to the
 // unrefined face 'face' itself
-inline Ubyte ChildOfFace   (Ubyte face, Ubyte num)       { return num == 13 ? face : 4 + face*NumAllSubFacesPerFaceC + num; }
+inline Ubyte ChildOfFace   (Ubyte face, Ubyte num) { return num == 13 ? face : 4 + face*NumAllSubFacesPerFaceC + num; }
 // True, iff refinement-rule refpat subdivides the edge 'edge'
 inline bool RefinesEdge(Ubyte refpat, Ubyte edge) { return (refpat>>edge) & 1; }
 // True, iff refinement-rule refpat subdivides the face 'face'
