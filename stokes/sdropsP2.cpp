@@ -166,8 +166,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
         Stokes.SetupMass( &M);
-        double err0= (A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data).norm2()
-                    +(B->Data*v1->Data - c->Data).norm2();
+        double err0= VectorCL( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data).norm2()
+                    +VectorCL( B->Data*v1->Data - c->Data).norm2();
         std::cerr << "000 residual: " << std::sqrt( err0) << std::endl;
 
         double outer_tol= tol;
@@ -181,8 +181,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //          << v1->Data << std::endl << p1->Data << std::endl;
             schurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
-            double err= (A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data).norm2()
-                        +(B->Data*v1->Data - c->Data).norm2();
+            double err= VectorCL( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data).norm2()
+                        +VectorCL( B->Data*v1->Data - c->Data).norm2();
             std::cerr << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
             break;
           }
@@ -252,8 +252,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             time.Start();
             MGschurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
-            double err= (A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data).norm2()
-                        +(B->Data*v1->Data - c->Data).norm2();
+            double err= VectorCL( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data).norm2()
+                        +VectorCL( B->Data*v1->Data - c->Data).norm2();
             std::cerr << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
             break;
           }

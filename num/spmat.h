@@ -13,6 +13,7 @@
 #include <valarray>
 #include <numeric>
 #include <map>
+#include <misc/utils.h>
 
 namespace DROPS
 {
@@ -23,128 +24,229 @@ namespace DROPS
 //                              based on std::valarray
 //
 //*****************************************************************************
+template <typename T>
+class VectorBaseCL: public std::valarray<T>
+{
+private:
+#if (DROPSDebugC & DebugNumericC)
+    void AssertDim (__UNUSED__ const std::valarray<T>& va,
+                    __UNUSED__ const char msg[]) const
+      { Assert( size()==va.size(), msg, DebugNumericC); }
+#endif
+
+public:
+    typedef T value_type;
+    typedef std::valarray<T> base_type;
+
+    // ctors
+    VectorBaseCL()                      : base_type()       {}
+#ifdef VALARRAY_BUG
+    VectorBaseCL (size_t s)             : base_type(T(),s)  {}
+#else
+    VectorBaseCL (size_t s)             : base_type(s)      {}
+#endif
+    VectorBaseCL (T c, size_t s)        : base_type(c, s)   {}
+    VectorBaseCL (const T* tp, size_t s): base_type(tp, s)  {}
+    template <class V>
+      VectorBaseCL (V exptpl)           : base_type(exptpl) {}
+
+    // member functions
+    T norm2  () const { return (*this)*(*this); }
+    T norm   () const { return std::sqrt( norm2()); }
+    T supnorm() const { return std::abs( *this).max(); }
+
+    // assignment
+    template <class VT>
+      VectorBaseCL&
+      operator=(const VT& v) {
+        *static_cast<base_type*>( this)= v;
+        return *this;
+      }
+
+    // computed assignment
+    template <class VT>
+    VectorBaseCL&
+      operator+=(const VT& v) {
+        *static_cast<base_type*>( this)+= v;
+        return *this;
+      }
+    template <class VT>
+    VectorBaseCL&
+      operator-=(const VT& v) {
+        *static_cast<base_type*>( this)-= v;
+        return *this;
+      }
+    template <class VT>
+    VectorBaseCL&
+      operator*=(const VT& v) {
+        *static_cast<base_type*>( this)*= v;
+        return *this;
+      }
+    template <class VT>
+    VectorBaseCL&
+      operator/=(const VT& v) {
+        *static_cast<base_type*>( this)/= v;
+        return *this;
+      }
+
+#if (DROPSDebugC & DebugNumericC)
+    // For checking new code; the following functions inhibit the expression
+    // template mechanism of std::valarray, but do some checks before the
+    // operations.
+
+    // element access
+    T  operator [] (size_t s) const;
+    T& operator [] (size_t s);
+
+    // assignment
+    VectorBaseCL& operator=(const std::valarray<T>& va);
+    VectorBaseCL& operator= (const VectorBaseCL& v);
+
+    // computed assignment
+    VectorBaseCL& operator+= (const VectorBaseCL& v);
+    VectorBaseCL& operator-= (const VectorBaseCL& v);
+    VectorBaseCL& operator*= (const VectorBaseCL& v);
+    VectorBaseCL& operator/= (const VectorBaseCL& v);
+
+    friend VectorBaseCL operator+ (const VectorBaseCL& v, const VectorBaseCL& w);
+    friend VectorBaseCL operator- (const VectorBaseCL& v, const VectorBaseCL& w);
+#endif
+};
+
+
+template <typename T>
+  void
+  axpy(T a, const VectorBaseCL<T>& x, VectorBaseCL<T>& y)
+{
+    Assert(x.size()==y.size(), "axpy: incompatible dimensions", DebugNumericC);
+    y+= a*x;
+}
+
+template <typename T>
+  void
+  z_xpay(VectorBaseCL<T>& z, const VectorBaseCL<T>& x, T a, const VectorBaseCL<T>& y)
+{
+    Assert(z.size()==x.size() && z.size()==y.size(),
+        "z_xpay: incompatible dimensions", DebugNumericC);
+    z= x + a*y;
+}
+
+template <typename T>
+  void
+  z_xpaypby2 (VectorBaseCL<T>& z, const VectorBaseCL<T>& x,
+    T a, const VectorBaseCL<T>& y, T b, const VectorBaseCL<T>& y2)
+{
+    Assert(z.size()==x.size() && z.size()==y.size() && z.size()==y2.size(),
+        "z_xpaypby2: incompatible dimensions", DebugNumericC);
+    z= x + a*y + b*y2;
+}
+
+template <typename T>
+  T
+  operator*(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
+{
+#if (DROPSDebugC & DebugNumericC)
+        v.AssertDim(w, "VectorBaseCL * VectorBaseCL: incompatible dimensions");
+#endif
+    const T* const vbegin= &(const_cast<VectorBaseCL<T>& >( v)[0]);
+    const T* const wbegin= &(const_cast<VectorBaseCL<T>& >( w)[0]);
+    return std::inner_product( vbegin, vbegin + v.size(), wbegin, T());
+}
+
+#if (DROPSDebugC & DebugNumericC)
+template <typename T>
+T  VectorBaseCL<T>::operator[](size_t s) const
+{
+    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    return (*static_cast<base_type*>( this))[s];
+}
+
+template <typename T>
+T& VectorBaseCL<T>::operator[](size_t s)
+{
+    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    return (*static_cast<base_type*>( this))[s];
+}
+
+// assignment
+template <typename T>
+VectorBaseCL<T>& VectorBaseCL<T>::operator=(const std::valarray<T>& va)
+{
+    AssertDim(va, "VectorBaseCL =: incompatible dimensions");
+    *static_cast<base_type*>( this)= va;
+    return *this;
+}
+
+template <typename T>
+VectorBaseCL<T>& VectorBaseCL<T>::operator=(const VectorBaseCL<T>& v)
+{
+    AssertDim(v, "VectorBaseCL =: incompatible dimensions");
+    *static_cast<base_type*>( this)= v;
+    return *this;
+}
+
+// computed assignment
+template <typename T>
+VectorBaseCL<T>& VectorBaseCL<T>::operator+=(const VectorBaseCL<T>& v)
+{
+    AssertDim(v, "VectorBaseCL +=: incompatible dimensions");
+    *static_cast<base_type*>( this)+= v;
+    return *this;
+}
+
+template <typename T>
+VectorBaseCL<T>& VectorBaseCL<T>::operator-=(const VectorBaseCL<T>& v)
+{
+    AssertDim(v, "VectorBaseCL -=: incompatible dimensions");
+    *static_cast<base_type*>( this)-= v;
+    return *this;
+}
+
+template <typename T>
+VectorBaseCL<T>& VectorBaseCL<T>::operator*=(const VectorBaseCL<T>& v)
+{
+    AssertDim(v, "VectorBaseCL *=: incompatible dimensions");
+    *static_cast<base_type*>( this)*= v;
+    return *this;
+}
+
+template <typename T>
+VectorBaseCL<T>& VectorBaseCL<T>::operator/=(const VectorBaseCL<T>& v)
+{
+    AssertDim(v, "VectorBaseCL /=: incompatible dimensions");
+    *static_cast<base_type*>( this)/= v;
+    return *this;
+}
+
+template <typename T>
+VectorBaseCL<T> operator+(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
+{
+    v.AssertDim(w, "VectorBaseCL + VectorBaseCL: incompatible dimensions");
+    return VectorBaseCL( static_cast<typename VectorBaseCL<T>::base_type>( v)
+        + static_cast<typename VectorBaseCL<T>::base_type>( w));
+}
+
+template <typename T>
+VectorBaseCL<T> operator-(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
+{
+    v.AssertDim(w, "VectorBaseCL - VectorBaseCL: incompatible dimensions");
+    return VectorBaseCL( static_cast<typename VectorBaseCL<T>::base_type>( v)
+        - static_cast<typename VectorBaseCL<T>::base_type>( w));
+}
+#endif
+
 
 // Get the address of the first element in a valarray
 // ("&x[0]" doesn't work, because "operator[] const" only returns a value)
 template <typename T>
-const T* Addr(const std::valarray<T>& x)
-  { return &(const_cast<std::valarray<T>&>(x)[0]); }
-template <typename T>
-T* Addr(std::valarray<T>& x)
-  { return &(x[0]); }
-
+  const T*
+  Addr(const std::valarray<T>& x)
+    { return &(const_cast<std::valarray<T>&>(x)[0]); }
 
 template <typename T>
-class VectorBaseCL
-{
-private:
-    std::valarray<T> _va;
-
-    void AssertDim (__UNUSED__ const std::valarray<T>& va,
-                    __UNUSED__ const char msg[]) const
-      { Assert(_va.size()==va.size(), msg, DebugNumericC); }
-
-public:
-    typedef T value_type;
-
-    // ctors
-    VectorBaseCL ()                                 : _va()      {}
-#ifdef VALARRAY_BUG
-    VectorBaseCL (size_t s)                         : _va(T(),s) {}
-#else
-    VectorBaseCL (size_t s)                         : _va(s)     {}
-#endif
-    VectorBaseCL (T c, size_t s)                    : _va(c, s)  {}
-    VectorBaseCL (const T* tp, size_t s)            : _va(tp, s) {}
-    VectorBaseCL (const std::valarray<T>& va)       : _va(va)    {}
-    VectorBaseCL (const VectorBaseCL& v)            : _va(v._va) {}
-
-    VectorBaseCL (const std::slice_array<T>& sla)   : _va(sla)   {}
-    VectorBaseCL (const std::gslice_array<T>& gsla) : _va(gsla)  {}
-    VectorBaseCL (const std::mask_array<T>& ma)     : _va(ma)    {}
-    VectorBaseCL (const std::indirect_array<T>& ia) : _va(ia)    {}
-
-    void resize (size_t s, T c = T()) { _va.resize(s, c); }
-
-    const std::valarray<T>& raw() const {
-        return _va;}
-    std::valarray<T>& raw() {
-        return _va;}
-
-    // element access
-    T  operator [] (size_t s) const
-      { Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC); return _va[s]; }
-    T& operator [] (size_t s)
-      { Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC); return _va[s]; }
-
-    // assignment
-    VectorBaseCL& operator= (const std::valarray<T>& va)
-      { AssertDim(va,   "VectorBaseCL =: incompatible dimensions"); _va = va;    return *this; }
-    VectorBaseCL& operator= (const VectorBaseCL& v)
-      { AssertDim(v._va,"VectorBaseCL =: incompatible dimensions"); _va = v._va; return *this; }
-
-    VectorBaseCL& operator= (T c)                              { _va = c;    return *this; }
-    VectorBaseCL& operator= (const std::slice_array<T>& sla)   { _va = sla;  return *this; }
-    VectorBaseCL& operator= (const std::gslice_array<T>& gsla) { _va = gsla; return *this; }
-    VectorBaseCL& operator= (const std::mask_array<T>& ma)     { _va = ma;   return *this; }
-    VectorBaseCL& operator= (const std::indirect_array<T>& ia) { _va = ia;   return *this; }
-
-    // computed assignment
-    VectorBaseCL& operator+= (T c) { _va += c; return *this; }
-    VectorBaseCL& operator-= (T c) { _va -= c; return *this; }
-    VectorBaseCL& operator*= (T c) { _va *= c; return *this; }
-    VectorBaseCL& operator/= (T c) { _va /= c; return *this; }
-    VectorBaseCL& operator+= (const VectorBaseCL& v)
-      { AssertDim(v._va,"VectorBaseCL +=: incompatible dimensions"); _va += v._va; return *this; }
-    VectorBaseCL& operator-= (const VectorBaseCL& v)
-      { AssertDim(v._va,"VectorBaseCL -=: incompatible dimensions"); _va -= v._va; return *this; }
-    VectorBaseCL& operator*= (const VectorBaseCL& v)
-      { AssertDim(v._va,"VectorBaseCL *=: incompatible dimensions"); _va *= v._va; return *this; }
-    VectorBaseCL& operator/= (const VectorBaseCL& v)
-      { AssertDim(v._va,"VectorBaseCL /=: incompatible dimensions"); _va /= v._va; return *this; }
-
-    // unary minus
-    VectorBaseCL operator- () const { return VectorBaseCL(-_va); }
-
-    // member functions
-    size_t size () const { return _va.size(); }
-    T sum       () const { return _va.sum(); }
-    T min       () const { return _va.min(); }
-    T max       () const { return _va.max(); }
-    T norm2     () const { return (*this)*(*this); }
-    T norm      () const { return std::sqrt(norm2()); }
-    T supnorm   () const { return std::abs(_va).max(); }
-
-    friend VectorBaseCL operator+ (const VectorBaseCL& v, const VectorBaseCL& w)
-      { v.AssertDim(w._va,"VectorBaseCL + VectorBaseCL: incompatible dimensions"); return VectorBaseCL(v._va+w._va); }
-    friend VectorBaseCL operator- (const VectorBaseCL& v, const VectorBaseCL& w)
-      { v.AssertDim(w._va,"VectorBaseCL - VectorBaseCL: incompatible dimensions"); return VectorBaseCL(v._va-w._va); }
-    friend T            operator* (const VectorBaseCL& v, const VectorBaseCL& w)
-    {
-        v.AssertDim(w._va,"VectorBaseCL * VectorBaseCL: incompatible dimensions");
-        return std::inner_product(Addr(v._va),Addr(v._va)+v.size(),Addr(w._va),T());
-    }
-
-    friend VectorBaseCL operator* (T c, const VectorBaseCL& v) { return VectorBaseCL(v._va*c); }
-    friend VectorBaseCL operator* (const VectorBaseCL& v, T c) { return VectorBaseCL(v._va*c); }
-    friend VectorBaseCL operator/ (const VectorBaseCL& v, T c) { return VectorBaseCL(v._va/c); }
-
-    friend void axpy (T a, const VectorBaseCL& x, VectorBaseCL& y)
-    {
-        Assert(x.size()==y.size(), "axpy: incompatible dimensions", DebugNumericC);
-        y._va+= a*x._va; // y+= a*x;
-    }
-    friend void z_xpay (VectorBaseCL& z, const VectorBaseCL& x, T a, const VectorBaseCL& y)
-    {
-        Assert(z.size()==x.size() && z.size()==y.size(), "z_xpay: incompatible dimensions", DebugNumericC);
-        z._va= x._va+a*y._va; // z= x+a*y;
-    }
-    friend void z_xpaypby2 (VectorBaseCL& z, const VectorBaseCL& x, T a, const VectorBaseCL& y, T b, const VectorBaseCL& y2)
-    {
-        Assert(z.size()==x.size() && z.size()==y.size() && z.size()==y2.size(), "z_xpaypby2: incompatible dimensions", DebugNumericC);
-        z._va= x._va+a*y._va+b*y2._va; // z= x+a*y+b*y2;
-    }
-};
+  T*
+  Addr(std::valarray<T>& x)
+    { return &(x[0]); }
 
 
 //*****************************************************************************
@@ -152,7 +254,6 @@ public:
 //  S p a r s e M a t B u i l d e r C L :  used for setting up sparse matrices
 //
 //*****************************************************************************
-
 template <typename T>
 class SparseMatBaseCL;
 
@@ -501,12 +602,12 @@ VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const V
 {
     VectorBaseCL<_VecEntry> ret( A.num_rows());
     Assert( A.num_cols()==x.size(), "SparseMatBaseCL * VectorBaseCL: incompatible dimensions", DebugNumericC);
-    y_Ax( &ret.raw()[0],
+    y_Ax( &ret[0],
           A.num_rows(),
           A.raw_val(),
           A.raw_row(),
           A.raw_col(),
-          Addr( x.raw()));
+          Addr( x));
     return ret;
 }
 
@@ -538,12 +639,12 @@ VectorBaseCL<_VecEntry> transp_mul (const SparseMatBaseCL<_MatEntry>& A, const V
 {
     VectorBaseCL<_VecEntry> ret( A.num_cols());
     Assert( A.num_rows()==x.size(), "transp_mul: incompatible dimensions", DebugNumericC);
-    y_ATx( &ret.raw()[0],
+    y_ATx( &ret[0],
            A.num_rows(),
            A.raw_val(),
            A.raw_row(),
            A.raw_col(),
-           Addr( x.raw()));
+           Addr( x));
     return ret;
 }
 

@@ -117,7 +117,7 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
     // presmoothing
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
     // restriction of defect
-    d= transp_mul( fine->P.Data, b - fine->A.Data*x );
+    d= transp_mul( fine->P.Data, VectorCL( b - fine->A.Data*x));
     // calculate coarse grid correction
     MGM( begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
     // add coarse grid correction

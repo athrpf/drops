@@ -197,7 +197,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
 
             tol= outer_tol;
             max_iter= 200;        
-            PCG(A->Data, v1->Data, b->Data - transp_mul(B->Data, p1->Data), pc, max_iter, tol);
+            PCG(A->Data, v1->Data, VectorCL( b->Data - transp_mul(B->Data, p1->Data)), pc, max_iter, tol);
             time.Stop();
         }
         else

@@ -193,7 +193,7 @@ void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B,
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
     tol= outer_tol;
     iter= max_iter;        
-    CG(M, u, b - transp_mul(B, p), iter, tol);
+    CG(M, u, VectorCL( b - transp_mul(B, p)), iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     p/=dt;
     std::cerr << "-----------------------------------------------------" << std::endl;
@@ -230,7 +230,7 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
     tol= outer_tol;
     iter= max_iter;        
-    PCG(M, u, b - transp_mul(B, p), pc, iter, tol);
+    PCG(M, u, VectorCL( b - transp_mul(B, p)), pc, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     p/= dt;
     std::cerr << "-----------------------------------------------------" << std::endl;

@@ -182,19 +182,19 @@ LanczosStep_SP(const Mat& A, const Mat& B,
                double& a1,
                const double b0, double& b1)
 {
-    qu2.raw()= (A*qu1).raw() + transp_mul( B, qpr1).raw() - b0*qu0.raw();
-    qpr2.raw()= (B*qu1).raw() - b0*qpr0.raw();
+    qu2= A*qu1 + transp_mul( B, qpr1) - b0*qu0;
+    qpr2= B*qu1 - b0*qpr0;
     a1= qu2*qu1 + qpr2*qpr1;
-    qu2.raw()-= a1*qu1.raw();
-    qpr2.raw()-= a1*qpr1.raw();
+    qu2-= a1*qu1;
+    qpr2-= a1*qpr1;
     b1= std::sqrt( qu2.norm2() + qpr2.norm2());
     // Lucky breakdown; the Krylov-space K up to q1 is A-invariant. Thus,
     // the correction dx needed to solve A(x0+dx)=b is in this space and
     // the Minres-algo will terminate with the exact solution in the
     // following step.
     if (b1 < 1e-15) return false;
-    qu2.raw()*= 1./b1;
-    qpr2.raw()*= 1./b1;
+    qu2*= 1./b1;
+    qpr2*= 1./b1;
     return true;
 }
 
@@ -223,8 +223,8 @@ class LanczosONB_SPCL
         qu[-1].resize( ru0.size(), 0.);
         qpr[-1].resize( rpr0.size(), 0.);
         norm_r0_= std::sqrt( ru0.norm2() + rpr0.norm2());
-        qu[0].resize( ru0.size(), 0.); qu[0].raw()= ru0.raw()*(1./norm_r0_);
-        qpr[0].resize( rpr0.size(), 0.); qpr[0].raw()= rpr0.raw()*(1./norm_r0_);
+        qu[0].resize( ru0.size(), 0.); qu[0]= ru0*(1./norm_r0_);
+        qpr[0].resize( rpr0.size(), 0.); qpr[0]= rpr0*(1./norm_r0_);
         qu[1].resize( ru0.size(), 0.);
         qpr[1].resize( rpr0.size(), 0.);
         b[-1]= 0.;
@@ -266,20 +266,20 @@ PLanczosStep_SP(const Mat& A, const Mat& B,
                 double& a1,
                 const double b0, double& b1)
 {
-    tu2.raw()= (A*qu1).raw() + transp_mul( B, qpr1).raw() - b0*tu0.raw();
-    tpr2.raw()= (B*qu1).raw() - b0*tpr0.raw();
+    tu2= A*qu1 + transp_mul( B, qpr1) - b0*tu0;
+    tpr2= B*qu1 - b0*tpr0;
     a1= tu2*qu1 + tpr2*qpr1;
-    tu2.raw()+= (-a1)*tu1.raw();
-    tpr2.raw()+= (-a1)*tpr1.raw();
+    tu2+= (-a1)*tu1;
+    tpr2+= (-a1)*tpr1;
     M.Apply( A, B, qu2, qpr2, tu2, tpr2);
     const double b1sq= qu2*tu2 + qpr2*tpr2;
     Assert( b1sq >= 0.0, "PLanczosStep_SP: b1sq is negative!\n", DebugNumericC);
     b1= std::sqrt( b1sq);
     if (b1 < 1e-15) return false;
-    tu2.raw()*= 1./b1;
-    tpr2.raw()*= 1./b1;
-    qu2.raw()*= 1./b1;
-    qpr2.raw()*= 1./b1;
+    tu2*= 1./b1;
+    tpr2*= 1./b1;
+    qu2*= 1./b1;
+    qpr2*= 1./b1;
     return true;
 }
 
@@ -314,10 +314,10 @@ class PLanczosONB_SPCL
         qpr[-1].resize( r0pr.size(), 0.);
         M.Apply( *A, *B, qu[-1], qpr[-1], r0u, r0pr);
         norm_r0_= std::sqrt( qu[-1]*r0u + qpr[-1]*r0pr);
-        tu[0].resize( r0u.size(), 0.); tu[0].raw()= r0u.raw()*(1./norm_r0_);
-        tpr[0].resize( r0pr.size(), 0.); tpr[0].raw()= r0pr.raw()*(1./norm_r0_);
-        qu[0].resize( r0u.size(), 0.); qu[0].raw()= qu[-1].raw()*(1./norm_r0_);
-        qpr[0].resize( r0pr.size(), 0.); qpr[0].raw()= qpr[-1].raw()*(1./norm_r0_);
+        tu[0].resize( r0u.size(), 0.); tu[0]= r0u*(1./norm_r0_);
+        tpr[0].resize( r0pr.size(), 0.); tpr[0]= r0pr*(1./norm_r0_);
+        qu[0].resize( r0u.size(), 0.); qu[0]= qu[-1]*(1./norm_r0_);
+        qpr[0].resize( r0pr.size(), 0.); qpr[0]= qpr[-1]*(1./norm_r0_);
         tu[1].resize( r0u.size(), 0.);
         tpr[1].resize( r0pr.size(), 0.);
         b[-1]= 0.;
@@ -395,8 +395,8 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
             r[0][0]= std::sqrt( q.a0*q.a0 + q.b[0]*q.b[0]);
             // Compute p1
             // p[0]= q.q[0]/r[0][0];
-            pu[0].raw()= q.qu[0].raw()/r[0][0];
-            ppr[0].raw()= q.qpr[0].raw()/r[0][0];
+            pu[0]= q.qu[0]/r[0][0];
+            ppr[0]= q.qpr[0]/r[0][0];
             // Compute b11
             b[0][0]= 1.; b[0][1]= 0.;
             GMRES_ApplyPlaneRotation(b[0][0], b[0][1], c[0], s[0]);
@@ -409,8 +409,8 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
             GMRES_ApplyPlaneRotation( r[0][1], r[0][2], c[0], s[0]);
             // Compute p2
             // p[0]= (q.q[0] - r[0][0]*p[-1])/r[0][1];
-            pu[0].raw()= (q.qu[0].raw() - r[0][0]*pu[-1].raw())/r[0][1];
-            ppr[0].raw()= (q.qpr[0].raw() - r[0][0]*ppr[-1].raw())/r[0][1];
+            pu[0]= (q.qu[0] - r[0][0]*pu[-1])/r[0][1];
+            ppr[0]= (q.qpr[0] - r[0][0]*ppr[-1])/r[0][1];
             // Compute b22
             b[0][0]= b[-1][1]; b[0][1]= 0.;
             GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
@@ -423,15 +423,15 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
             GMRES_GeneratePlaneRotation( r[0][2], tmp, c[0], s[0]);
             GMRES_ApplyPlaneRotation( r[0][2], tmp, c[0], s[0]);
             // p[0]= (q.q[0] - r[0][0]*p[-2] -r[0][1]*p[-1])/r[0][2];
-            pu[0].raw()= (q.qu[0].raw() - r[0][0]*pu[-2].raw() -r[0][1]*pu[-1].raw())*(1./r[0][2]);
-            ppr[0].raw()= (q.qpr[0].raw() - r[0][0]*ppr[-2].raw() -r[0][1]*ppr[-1].raw())*(1./r[0][2]);
+            pu[0]= (q.qu[0] - r[0][0]*pu[-2] -r[0][1]*pu[-1])*(1./r[0][2]);
+            ppr[0]= (q.qpr[0] - r[0][0]*ppr[-2] -r[0][1]*ppr[-1])*(1./r[0][2]);
             b[0][0]= b[-1][1]; b[0][1]= 0.;
             GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
         }
-        dxu.raw()= (norm_r0*b[0][0])*pu[0].raw();
-        dxpr.raw()= (norm_r0*b[0][0])*ppr[0].raw();
-        u.raw()+= dxu.raw();
-        pr.raw()+= dxpr.raw();
+        dxu= (norm_r0*b[0][0])*pu[0];
+        dxpr= (norm_r0*b[0][0])*ppr[0];
+        u+= dxu;
+        pr+= dxpr;
 
         // This is for fair comparisons of different solvers:
 //        err= std::sqrt( (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2());
@@ -1028,7 +1028,7 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
-    _poissonSolver.Solve( A, v, b - transp_mul(B, p));
+    _poissonSolver.Solve( A, v, VectorCL( b - transp_mul(B, p)));
     std::cerr << "iterations: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
@@ -1056,7 +1056,7 @@ void PSchurSolver2CL<InnerSolverT, OuterSolverT>::Solve(
     std::cerr << "pressure: iterations: " << outerSolver_.GetIter()
               << "\tresidual: " << outerSolver_.GetResid() << std::endl;
 
-    innerSolver_.Solve( A, v, b - transp_mul(B, p));
+    innerSolver_.Solve( A, v, VectorCL( b - transp_mul(B, p)));
     std::cerr << "velocity: iterations: " << innerSolver_.GetIter()
               << "\tresidual: " << innerSolver_.GetResid() << std::endl;
 
@@ -1086,8 +1086,8 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     VectorCL xuneu( f.size());
     VectorCL b( f.size());
     ApproximateSchurComplMatrixCL<PC1> asc( A, Apc, B);
-    PCGSolverCL<PC2> pcgsolver( Spc, 100, 0.5);
-    const double resid0= std::sqrt( ru.norm2() + (g - B*xu).norm2());
+    PCGSolverCL<PC2> pcgsolver( Spc, 100, 0.3);
+    const double resid0= std::sqrt( ru.norm2() + Vec( g - B*xu).norm2());
     double resid= 0.0;
     std::cerr << "residual (2-norm): " << resid0 << '\n';
     if (resid0<=tol) { // The fixed point iteration between levelset and Stokes
@@ -1104,23 +1104,23 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
 //                  << (B*w)*VectorCL( 1.0/std::sqrt( (double)g.size()), g.size())
 //                  << "\n";
         // Due to theory (see paper) we must use relative error of about 0.5. z==0.
-	pcgsolver.SetTol( 0.5*(B*w - g).norm());
-        pcgsolver.Solve( asc, z, B*w - g);
-//        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
-//                  << "\tresid: " << pcgsolver.GetResid() << '\n';
+	pcgsolver.SetTol( 0.5*Vec( B*w - g).norm());
+        pcgsolver.Solve( asc, z, Vec( B*w - g));
+        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
+                  << "\tresid: " << pcgsolver.GetResid() << '\n';
 
         b= transp_mul( B, z);
         a= 0.0;
         Apc.Apply( A, a, b);
         z_xpay( xuneu, w, -1.0, a); // xuneu= w - a;
         xp+= z;
-        z_xpaypby2(ru, ru, -1.0, A*(xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
+        z_xpaypby2(ru, ru, -1.0, A*Vec( xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
         xu= xuneu;
-        resid= std::sqrt( (f - A*xu - transp_mul( B, xp)).norm2() + (g - B*xu).norm2());
-//        std::cerr << "relative residual (2-norm): " << resid/resid0 
-//                  << "\tv: " << (f - A*xu - transp_mul( B, xp)).norm()
-//                  << "\tp: " << (g - B*xu).norm()
-//                  << '\n';
+        resid= std::sqrt( Vec( f - A*xu - transp_mul( B, xp)).norm2() + Vec( g - B*xu).norm2());
+        std::cerr << "relative residual (2-norm): " << resid/resid0 
+                  << "\tv: " << Vec( f - A*xu - transp_mul( B, xp)).norm()
+                  << "\tp: " << Vec( g - B*xu).norm()
+                  << '\n';
 /*
         if (resid<=tol*resid0) { // relative errors
             tol= resid0==0.0 ? 0.0 : resid/resid0;
@@ -1130,8 +1130,8 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
 */
         if (resid<=tol) { // absolute errors
             std::cerr << "relative residual (2-norm): " << resid/resid0 
-                      << "\tv: " << (f - A*xu - transp_mul( B, xp)).norm()
-                      << "\tp: " << (g - B*xu).norm()
+                      << "\tv: " << Vec( f - A*xu - transp_mul( B, xp)).norm()
+                      << "\tp: " << Vec( g - B*xu).norm()
                       << '\n';
             tol= resid;
             max_iter= k;

@@ -550,7 +550,7 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     for ( int i=0; i<m; ++i )
         v[i].resize(b.size());
 
-    M.Apply(A, r, b-A*x);
+    M.Apply(A, r, Vec( b-A*x));
     beta = r.norm();
 
     M.Apply(A, w, b);
@@ -601,7 +601,7 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         }
 
         GMRES_Update(x, m - 2, H, s, v);
-        M.Apply(A, r, b-A*x);
+        M.Apply(A, r, Vec( b-A*x));
         beta = r.norm();
         resid = beta/normb;
         if (resid<=tol)
@@ -630,9 +630,9 @@ LanczosStep(const Mat& A,
             double& a1,
             const double b0, double& b1)
 {
-    q2.raw()= (A*q1).raw() - b0*q0.raw();
+    q2= A*q1 - b0*q0;
     a1= q2*q1;
-    q2.raw()-= a1*q1.raw();
+    q2-= a1*q1;
     b1= q2.norm();
     // Lucky breakdown; the Krylov-space K up to q1 is A-invariant. Thus,
     // the correction dx needed to solve A(x0+dx)=b is in this space and
@@ -700,16 +700,16 @@ PLanczosStep(const Mat& A,
              double& a1,
              const double b0, double& b1)
 {
-    t2.raw()= (A*q1).raw() - b0*t0.raw();
+    t2= A*q1 - b0*t0;
     a1= t2*q1;
-    t2.raw()-= a1*t1.raw();
+    t2-= a1*t1;
     M.Apply( A, q2, t2);
     const double b1sq= q2*t2;
     Assert( b1sq >= 0.0, "PLanczosStep: b1sq is negative!\n", DebugNumericC);
     b1= std::sqrt( b1sq);
     if (b1 < 1e-15) return false;
-    t2.raw()*= 1./b1;
-    q2.raw()*= 1./b1;
+    t2*= 1./b1;
+    q2*= 1./b1;
     return true;
 }
 
@@ -795,7 +795,7 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
             r[0][0]= std::sqrt( q.a0*q.a0 + q.b[0]*q.b[0]);
             // Compute p1
             // p[0]= q.q[0]/r[0][0];
-            p[0].raw()= q.q[0].raw()/r[0][0];
+            p[0]= q.q[0]/r[0][0];
             // Compute b11
             b[0][0]= 1.; b[0][1]= 0.;
             GMRES_ApplyPlaneRotation(b[0][0], b[0][1], c[0], s[0]);
@@ -808,7 +808,7 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
             GMRES_ApplyPlaneRotation( r[0][1], r[0][2], c[0], s[0]);
             // Compute p2
             // p[0]= (q.q[0] - r[0][0]*p[-1])/r[0][1];
-            p[0].raw()= (q.q[0].raw() - r[0][0]*p[-1].raw())/r[0][1];
+            p[0]= (q.q[0] - r[0][0]*p[-1])/r[0][1];
             // Compute b22
             b[0][0]= b[-1][1]; b[0][1]= 0.;
             GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
@@ -821,12 +821,12 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
             GMRES_GeneratePlaneRotation( r[0][2], tmp, c[0], s[0]);
             GMRES_ApplyPlaneRotation( r[0][2], tmp, c[0], s[0]);
             // p[0]= (q.q[0] - r[0][0]*p[-2] -r[0][1]*p[-1])/r[0][2];
-            p[0].raw()= (q.q[0].raw() - r[0][0]*p[-2].raw() -r[0][1]*p[-1].raw())*(1/r[0][2]);
+            p[0]= (q.q[0] - r[0][0]*p[-2] -r[0][1]*p[-1])*(1/r[0][2]);
             b[0][0]= b[-1][1]; b[0][1]= 0.;
             GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
         }
-        dx.raw()= (norm_r0*b[0][0])*p[0].raw();
-        x.raw()+= dx.raw();
+        dx= norm_r0*b[0][0]*p[0];
+        x+= dx;
 
         res= std::fabs( norm_r0*b[0][1]);
 //        std::cerr << "PMINRES: residual: " << res << '\n';
@@ -1059,7 +1059,7 @@ class SSORPCG_PreCL
     template <typename Mat, typename Vec>                             // computed in Apply.
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
-        solver_.SetTol( reltol_*(b-A*x).norm());
+        solver_.SetTol( reltol_*Vec( b-A*x).norm());
 	solver_.Solve( A, x, b);
     }
 };

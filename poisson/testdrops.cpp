@@ -207,7 +207,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
             Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
 //            std::cerr << "initial error:" << std::endl;
 //            Poisson.CheckSolution(&::Lsg);
-            double resid= (Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
+            double resid= VectorCL( Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
             std::cerr << "initial residuum = " << resid << std::endl;
             time.Start();
             PCG(finest->A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, tol);
@@ -231,7 +231,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
                 // delete former solution
                 Poisson.x.Data.resize(0);
                 Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-                old_resid= resid= (Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
+                old_resid= resid= VectorCL( Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
 //                std::cerr << "initial error:" << std::endl;
 //                Poisson.CheckSolution(&::Lsg);
                 std::cerr << "initial residuum = " << old_resid << std::endl;
@@ -245,7 +245,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
 //                    time.Stop();
 //                    Poisson.CheckSolution(&::Lsg);
 //                    old_resid= resid;
-                    resid= (Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
+                    resid= VectorCL( Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
                     ++step;
 //                    std::cerr << "Step "<< step <<": residuum = " << resid << ", red. " << resid/old_resid << ", time = "<<time.GetTime()<<std::endl;
                 } while ( resid > tol);
@@ -366,7 +366,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
             // delete former solution
             Poisson.x.Data.resize(0);
             Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-            double resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
+            double resid= VectorCL( Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
 //            std::cerr << "initial error:" << std::endl;
 //            Poisson.CheckSolution(&::Lsg);
             std::cerr << "initial residuum = " << resid << std::endl;
@@ -391,7 +391,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
                 // delete former solution
                 Poisson.x.Data.resize(0);
                 Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-                old_resid= resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
+                old_resid= resid= VectorCL( Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
 //                std::cerr << "initial error:" << std::endl;
 //                Poisson.CheckSolution(&::Lsg);
                 std::cerr << "initial residuum = " << resid << std::endl;
@@ -406,7 +406,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
 //                        time.Stop();
 //                        Poisson.CheckSolution(&::Lsg);
 //                        old_resid= resid;
-                    resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
+                    resid= VectorCL( Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
                     ++step2;
 //                        std::cerr << "Step "<< step2 <<": residuum = " << resid << " (red. " << resid/old_resid << "), time = "<<time.GetTime()<<std::endl;
                 } while ( resid > tol);

@@ -292,7 +292,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     _Stokes.p.Data*= _dt;
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data), _Stokes.c.Data);
+                   VectorCL( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data)), _Stokes.c.Data);
     _Stokes.p.Data/= _dt;
 
     time.Stop();
@@ -641,9 +641,10 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
         _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _cplN, _LvlSet, _Stokes.t);
         _AN.LinComb( 1-_alpha, _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
         _mat.LinComb( 1., _Stokes.M.Data, frac_dt, _AN);
-        gm.Solve( _mat, _Stokes.v.Data, _rhs + _cplM->Data + frac_dt * 
-                       ( (1-_alpha)*_cplA->Data+_nonlinear*_cplN->Data+_curv->Data + _b->Data) 
-                 );
+        gm.Solve( _mat, _Stokes.v.Data, 
+            VectorCL( _rhs + _cplM->Data + frac_dt * ( (1-_alpha)*_cplA->Data
+            +_nonlinear*_cplN->Data+_curv->Data + _b->Data))
+        );
         std::cerr << "fp cycle " << ++_iter_nonlinear << ":\titerations: " 
                   << gm.GetIter() << "\tresidual: " << gm.GetResid() << std::endl;
     } while (gm.GetIter() > 0 && _iter_nonlinear<20);

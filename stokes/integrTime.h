@@ -261,7 +261,7 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
     // presmoothing
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
     // restriction of defect
-    d= transp_mul( fine->P.Data, b - fine->A.Data*x );
+    d= transp_mul( fine->P.Data, VectorCL( b - fine->A.Data*x));
     d-= (*(ones-1))*d;
     // calculate coarse grid correction
     MGMPr( ones-1, begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
