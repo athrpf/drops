@@ -34,6 +34,7 @@ void ParamMesszelleCL::RegisterParams()
 
     rp_.BeginGroup("Reparam");
     rp_.RegInt( RepFreq,      "Freq");
+    rp_.RegInt( RepMethod,    "Method");
     rp_.RegInt( RepSteps,     "NumSteps");
     rp_.RegDouble( RepTau,    "StepSize");
     rp_.RegDouble( RepDiff,   "Diffusion");

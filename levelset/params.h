@@ -42,7 +42,7 @@ class ParamMesszelleCL: public ParamBaseCL
            r_inlet;				// Radius am Einlass der Messzelle
     int    flow_dir;				// Stroemungsrichtung (x/y/z = 0/1/2)
 
-    int    RepFreq, RepSteps;			// Parameter fuer
+    int    RepFreq, RepSteps, RepMethod;	// Parameter fuer
     double RepTau, RepDiff;  			// Reparametrisierung
 
     string EnsCase,				// Ensight Case, 
