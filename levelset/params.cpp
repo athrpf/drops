@@ -85,6 +85,68 @@ void ParamMesszelleNsCL::RegisterParams()
     rp_.EndGroup();
 }
 
+void ParamFilmCL::RegisterParams()
+{
+    rp_.BeginGroup("Time");
+    rp_.RegInt( num_steps,    "NumSteps");
+    rp_.RegDouble( dt,        "StepSize");
+    rp_.RegDouble( theta,     "ThetaStokes");
+    rp_.RegDouble( lset_theta,"ThetaLevelset");
+    rp_.EndGroup();
+
+    rp_.BeginGroup("Stokes");
+    rp_.RegInt( inner_iter,   "InnerIter");
+    rp_.RegInt( outer_iter,   "OuterIter");
+    rp_.RegDouble( inner_tol, "InnerTol");
+    rp_.RegDouble( outer_tol, "OuterTol");
+    rp_.EndGroup();
+
+    rp_.BeginGroup("Levelset");
+    rp_.RegInt( lset_iter,    "Iter");
+    rp_.RegDouble( lset_tol,  "Tol");
+    rp_.RegDouble( lset_SD,   "SD");
+    rp_.RegDouble( CurvDiff,  "CurvDiff");
+    rp_.RegInt( VolCorr,      "VolCorrection");
+    rp_.EndGroup();
+
+    rp_.BeginGroup("Reparam");
+    rp_.RegInt( RepFreq,      "Freq");
+    rp_.RegInt( RepMethod,    "Method");
+    rp_.EndGroup();
+
+    rp_.BeginGroup("AdaptRef");
+    rp_.RegInt( ref_freq,     "Freq");
+    rp_.RegInt( ref_flevel,   "FinestLevel");
+    rp_.RegDouble( ref_width, "Width");
+    rp_.EndGroup();
+    
+    rp_.BeginGroup("Mat");
+    rp_.RegDouble( rhoF,      "DensFluid");
+    rp_.RegDouble( muF,       "ViscFluid");
+    rp_.RegDouble( rhoG,      "DensGas");
+    rp_.RegDouble( muG,       "ViscGas");
+    rp_.RegDouble( sm_eps,    "SmoothZone");
+    rp_.RegDouble( sigma,     "SurfTension");
+    rp_.EndGroup();
+    
+    rp_.BeginGroup("Exp");
+    rp_.RegDouble( Filmdicke, "Thickness");
+    rp_.RegCoord( g,          "Gravity");
+    rp_.RegDouble( PumpFreq,  "PumpFreq");
+    rp_.RegDouble( PumpAmpl,  "PumpAmpl");
+    rp_.EndGroup();
+    
+    rp_.RegInt( IniCond,      "InitialCond");
+    rp_.RegInt( num_ref,      "NumRef");
+    rp_.RegInt( FPsteps,      "CouplingSteps");
+    rp_.RegString( EnsCase,   "EnsightCase");
+    rp_.RegString( EnsDir,    "EnsightDir");
+    rp_.RegString( IniData,   "InitialFile");
+    rp_.RegString( BndCond,   "BndCond");
+    rp_.RegCoord( mesh_size,  "MeshSize");
+    rp_.RegCoord( mesh_res,   "MeshResolution");
+}
+
 } // end of namespace DROPS
     
 
