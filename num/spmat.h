@@ -40,10 +40,8 @@ class VectorBaseCL: public std::valarray<T>
 #endif
     VectorBaseCL (T c, size_t s)        : base_type( c, s)  {}
     VectorBaseCL (const T* tp, size_t s): base_type( tp, s) {}
-    template <class X>
-      VectorBaseCL (const X& x)         : base_type( x)     {}
 
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
+DROPS_DEFINE_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
 
 #if (DROPSDebugC & DebugNumericC)
     // For checking new code; the following functions interfere with the expression

@@ -66,6 +66,11 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 #endif
 
 
+#undef DROPS_EXP_TEMPL_CONSTR_FOR_VALARRAY_DERIVATIVE
+#define DROPS_EXP_TEMPL_CONSTR_FOR_VALARRAY_DERIVATIVE(theClass, thebase_type) \
+template <class X__>                                                           \
+  theClass (const X__& x__): thebase_type( x__) {}
+
 #undef  DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE
 #define DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(theOp, theClass, theT, thebase_type) \
 theClass& operator theOp (const theT s)                                                  \
@@ -91,6 +96,13 @@ DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(+=, theClass, theT, thebase_type)   
 DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(-=, theClass, theT, thebase_type)      \
 DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(*=, theClass, theT, thebase_type)      \
 DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(/=, theClass, theT, thebase_type)      \
+
+#undef  DROPS_DEFINE_VALARRAY_DERIVATIVE
+#define DROPS_DEFINE_VALARRAY_DERIVATIVE(theClass, theT, thebase_type)     \
+/*The expression template constructor*/                                    \
+DROPS_EXP_TEMPL_CONSTR_FOR_VALARRAY_DERIVATIVE(theClass, thebase_type)     \
+/*assignment and computed assignment*/                                     \
+DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(theClass, theT, thebase_type)
 
 
 template <class In, class T>

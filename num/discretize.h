@@ -95,10 +95,7 @@ class LocalP2CL: public std::valarray<T>
     template <class P2FunT> 
       LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
 
-    template <class X> // For valarray expression-templates
-      LocalP2CL(const X& x): base_type( x) {}
-
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
+DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
     // These "assignment-operators" correspond to the constructors
     // with multiple arguments
@@ -141,15 +138,13 @@ class Quad2CL: public std::valarray<T>
   public:
     Quad2CL(): base_type( value_type(), NumNodesC) {}
     Quad2CL(const value_type& t): base_type( t, NumNodesC) {}
-    template <class X> // For valarray expression-templates
-      Quad2CL(const X& x): base_type( x) {}
 
     Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad2CL(const LocalP2CL<value_type>&);
     template <class PFunT> 
       Quad2CL(const TetraCL&, const PFunT&, double= 0.0);
     
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
+DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
 
     inline self_&
     assign(const TetraCL&, value_type (*)(const Point3DCL&, double) , double= 0.0);
