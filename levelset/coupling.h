@@ -131,14 +131,16 @@ class CouplLevelsetNavStokes2PhaseCL
     SolverT&      _solver;
     LevelsetP2CL& _LvlSet;
     
-    VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
+    VelVecDescCL *_b, *_old_b;        // rhs + couplings with stiff matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
+    VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
     VecDescCL    *_curv, *_old_curv;  // curvature terms
     VectorCL      _rhs, _ls_rhs;
     MatrixCL      _AN,                // A + N
                   _mat;               // M + theta*dt*(A+N)
     
     double _theta, _dt;
+    const double _nonlinear;
     
   public:
     CouplLevelsetNavStokes2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, 
@@ -154,6 +156,50 @@ class CouplLevelsetNavStokes2PhaseCL
     void InitStep();
     // perform fixed point iteration
     void DoFPIter();
+    void CommitStep();
+    
+    void DoStep( int maxFPiter= -1);  // combines the 3 former routines
+    
+    // update after grid has changed
+    void Update();
+};
+
+
+template <class StokesT, class SolverT>
+class CouplLsNsBaenschCL
+{
+  private:
+    StokesT&      _Stokes;
+    SolverT&      _solver;
+    LevelsetP2CL& _LvlSet;
+    
+    VelVecDescCL *_b;                 // rhs
+    VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
+    VelVecDescCL *_cplA, *_old_cplA;  // couplings with stiff matrix A
+    VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
+    VecDescCL    *_curv;              // curvature term
+    VectorCL      _rhs, _ls_rhs;
+    MatrixCL      _AN,                // A + N
+                  _mat;               // M + theta*dt*(A+N)
+    
+    double        _theta, _alpha, _dt;
+    const double  _nonlinear;
+    Uint          _iter_nonlinear;
+    
+  public:
+    CouplLsNsBaenschCL( StokesT& Stokes, LevelsetP2CL& ls, 
+                           SolverT& solver);
+    ~CouplLsNsBaenschCL();
+    
+    double GetTime()     const { return _Stokes.t; }
+    double GetTimeStep() const { return _dt; }
+
+    void SetTimeStep( double dt) { _dt= dt; }
+       
+    void InitStep( bool StokesStep= true);
+    // perform fixed point iteration
+    void DoStokesFPIter();
+    void DoNonlinearFPIter();
     void CommitStep();
     
     void DoStep( int maxFPiter= -1);  // combines the 3 former routines
