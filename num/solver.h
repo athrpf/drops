@@ -849,7 +849,7 @@ class CGSolverCL : public SolverBaseCL
         _iter= _maxiter;
         CG(A, x, b, _iter, _res);
     }
-    template <typename Vec>
+    template <typename Mat, typename Vec>
     void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
@@ -880,8 +880,8 @@ class PCGSolverCL : public SolverBaseCL
         _iter= _maxiter;
         PCG(A, x, b, _pc, _iter, _res);
     }
-    template <typename Vec>
-    void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
@@ -959,15 +959,15 @@ class GMResSolverCL : public SolverBaseCL
     const PC& GetPc      () const { return pc_; }
     int       GetRestart () const { return restart_; }
 
-    template <typename Vec>
-    void Solve(const MatrixCL& A, Vec& x, const Vec& b)
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
         GMRES(A, x, b, pc_, restart_, _iter, _res);
     }
-    template <typename Vec>
-    void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
