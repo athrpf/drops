@@ -9,17 +9,17 @@
 #ifndef DROPS_INSTATNAVSTOKES_H
 #define DROPS_INSTATNAVSTOKES_H
 
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
 
 
 namespace DROPS
 {
 
 template <class Coeff>
-class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<Coeff>
+class InstatNavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 {
   private:
-    typedef InstatStokesP2P1CL<Coeff> _base;
+    typedef StokesP2P1CL<Coeff> _base;
 
   public:
     using _base::_MG;
@@ -40,7 +40,7 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<Coeff>
 	       // The base class already contains t for the same purpose!
   
     InstatNavierStokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : InstatStokesP2P1CL<Coeff>( mgb, coeff, bdata) {}  
+        : StokesP2P1CL<Coeff>( mgb, coeff, bdata) {}  
 
     // Set up matrix and rhs for nonlinearity
     void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*, double, double) const;

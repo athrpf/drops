@@ -1,7 +1,8 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "geom/builder.h"
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
+#include "num/stokessolver.h"
 #include <fstream>
 
 
@@ -166,6 +167,57 @@ typedef DROPS::InstatStokesCL MyPDE;
 namespace DROPS
 {
 
+class FracStepMatrixCL
+{
+  private:
+    const MatrixCL& _matA;
+    const MatrixCL& _matI;
+    double          _coeff;
+    
+  public:
+    FracStepMatrixCL( const MatrixCL& I, const MatrixCL& A, double coeff)
+        : _matA( A), _matI( I), _coeff( coeff) {}
+    
+    Uint num_cols() const { return _matA.num_cols(); }
+    
+    VectorCL operator* (const VectorCL& v) const
+    {
+        return VectorCL( _coeff*(_matA*v) + _matI*v);
+    }
+};
+
+class SchurComplNoPcMatrixCL
+{
+  private:
+    const FracStepMatrixCL& _matA;
+    const MatrixCL&         _matB;
+    double    _tol;
+    
+  public:
+    SchurComplNoPcMatrixCL( const FracStepMatrixCL& A, const MatrixCL& B, double tol)
+        : _matA(A), _matB(B), _tol(tol) {}
+    friend VectorCL operator*( const SchurComplNoPcMatrixCL& M, const VectorCL& v);
+};
+
+
+//==== SchurComplMatrixCL ====
+
+VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v)
+{
+    double tol= M._tol;
+    int maxiter= 1000;
+    VectorCL x( M._matA.num_cols());
+
+    CG(M._matA, x, transp_mul(M._matB, v), maxiter, tol);
+    if (maxiter > 990)
+        Comment(     "VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v): "
+                  << "Needed more than 990 iterations! tol: " << tol << std::endl,
+                  DebugNumericC);
+//    std::cerr << "Inner iteration took " << maxiter << " steps, residuum is " << tol << std::endl;
+    return M._matB*x;
+}    
+
+
 void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B, 
                 VectorCL& u, VectorCL& p, const VectorCL& b, const VectorCL& c,
                 const double inner_tol, const double outer_tol, const Uint max_iter, double dt)
@@ -237,7 +289,7 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
 }
 
 template<class Coeff>
-void Strategy(InstatStokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep)
+void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
@@ -620,7 +672,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= M_PI/4.;
 
-    typedef DROPS::InstatStokesP2P1CL<MyPDE::StokesCoeffCL> 
+    typedef DROPS::StokesP2P1CL<MyPDE::StokesCoeffCL> 
             InstatStokesOnBrickCL;
     typedef InstatStokesOnBrickCL MyStokesCL;
 

@@ -9,7 +9,7 @@
 #ifndef DROPS_INSTATSTOKES2PHASE_H
 #define DROPS_INSTATSTOKES2PHASE_H
 
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
 #include "levelset/levelset.h"
 
 namespace DROPS

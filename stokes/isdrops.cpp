@@ -3,7 +3,7 @@
 #include "out/ensightOut.h"
 #include "geom/builder.h"
 #include "num/stokessolver.h"
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
 #include "stokes/integrTime.h"
 #include <fstream>
 #include <sstream>
@@ -244,7 +244,7 @@ class PMinresSP_FullMG_CL : public PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, D
 template<class Coeff>
 void
 SetupPoissonVelocityMG(
-    DROPS::InstatStokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData,
+    DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData,
     const double theta, const double dt)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
@@ -311,7 +311,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
 // We know, there are only natural boundary conditions.
 template<class Coeff>
 void
-SetupPoissonPressureMG(DROPS::InstatStokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
+SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
     DROPS::IdxDescCL* c_idx= 0;
@@ -339,7 +339,7 @@ SetupPoissonPressureMG(DROPS::InstatStokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL
 
 template<class Coeff>
 void
-SetupPressureMassMG(DROPS::InstatStokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
+SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
     DROPS::IdxDescCL* c_idx= 0;
@@ -627,7 +627,7 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
 
 template<class Coeff>
 void
-UpdateTriangulation(DROPS::InstatStokesP2P1CL<Coeff>& NS,
+UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
                     const signed_dist_fun Dist,
                     const double t,
                     const double width,         // Thickness of refined shell on eache side of the interface
@@ -733,7 +733,7 @@ MakeInitialTriangulation(DROPS::MultiGridCL& mg,
 
 template<class Coeff>
 void
-SetMatVecIndices(DROPS::InstatStokesP2P1CL<Coeff>& NS,
+SetMatVecIndices(DROPS::StokesP2P1CL<Coeff>& NS,
                  DROPS::IdxDescCL* const vidx,
                  DROPS::IdxDescCL* const pidx)
 {
@@ -748,7 +748,7 @@ SetMatVecIndices(DROPS::InstatStokesP2P1CL<Coeff>& NS,
 
 template<class Coeff>
 void
-ResetSystem(DROPS::InstatStokesP2P1CL<Coeff>& NS)
+ResetSystem(DROPS::StokesP2P1CL<Coeff>& NS)
 {
     NS.A.Reset(); NS.B.Reset();
     NS.M.Reset();
@@ -758,7 +758,7 @@ ResetSystem(DROPS::InstatStokesP2P1CL<Coeff>& NS)
 
 template<class Coeff>
 void
-StrategyMRes(DROPS::InstatStokesP2P1CL<Coeff>& NS,
+StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
              int stokes_maxiter, double stokes_tol,
              double theta,
              DROPS::Uint num_timestep,
@@ -766,7 +766,7 @@ StrategyMRes(DROPS::InstatStokesP2P1CL<Coeff>& NS,
              double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
 {
     using namespace DROPS;
-    typedef InstatStokesP2P1CL<Coeff> StokesCL;
+    typedef StokesP2P1CL<Coeff> StokesCL;
     
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
@@ -857,7 +857,7 @@ StrategyMRes(DROPS::InstatStokesP2P1CL<Coeff>& NS,
 
 template<class Coeff>
 void
-StrategyUzawa(DROPS::InstatStokesP2P1CL<Coeff>& NS,
+StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
          double theta,
          DROPS::Uint num_timestep,
@@ -865,7 +865,7 @@ StrategyUzawa(DROPS::InstatStokesP2P1CL<Coeff>& NS,
          double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
 {
     using namespace DROPS;
-    typedef InstatStokesP2P1CL<Coeff> StokesCL;
+    typedef StokesP2P1CL<Coeff> StokesCL;
     
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
@@ -987,7 +987,7 @@ StrategyUzawa(DROPS::InstatStokesP2P1CL<Coeff>& NS,
 
 template<class Coeff>
 void
-Strategy(DROPS::InstatStokesP2P1CL<Coeff>& NS,
+Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
          int poi_maxiter, double poi_tol,
          double theta,
@@ -996,7 +996,7 @@ Strategy(DROPS::InstatStokesP2P1CL<Coeff>& NS,
          double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
 {
     using namespace DROPS;
-    typedef InstatStokesP2P1CL<Coeff> StokesCL;
+    typedef StokesP2P1CL<Coeff> StokesCL;
     
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
@@ -1149,7 +1149,7 @@ int main (int argc, char** argv)
     std::cerr << "f_level: " << f_level << ", ";
     std::cerr << "method: " << method << std::endl;
 
-    typedef DROPS::InstatStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
+    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL> 
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyStokesCL;
     MyStokesCL prob( brick, MyPdeCL::StokesCoeffCL(),

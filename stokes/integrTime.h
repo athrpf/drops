@@ -9,8 +9,8 @@
 #ifndef DROPS_STO_INTEGRTIME_H
 #define DROPS_STO_INTEGRTIME_H
 
-#include "stokes/instatstokes.h"
-#include "num/stokessolver.h"
+#include "stokes/stokes.h"
+#include "num/MGsolver.h"
 
 namespace DROPS
 {

@@ -3,7 +3,7 @@
 #include "out/ensightOut.h"
 #include "geom/builder.h"
 #include "num/stokessolver.h"
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
 #include "stokes/integrTime.h"
 #include <fstream>
 #include <sstream>

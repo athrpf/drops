@@ -8,7 +8,10 @@
 #define DROPS_LEVELSET_H
 
 #include "num/spmat.h"
+#include "num/discretize.h"
+#include "num/solver.h"
 #include "num/bndData.h"
+#include "num/fe.h"
 
 namespace DROPS
 {

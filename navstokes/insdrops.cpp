@@ -1,7 +1,7 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "geom/builder.h"
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
 #include "num/nssolver.h"
 #include "navstokes/instatnavstokes.h"
 #include "navstokes/integrTime.h"

@@ -55,20 +55,20 @@ drcavad: \
 FSdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/FSdrops.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o
+    ../misc/problem.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 isdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o \
+    ../misc/problem.o ../misc/utils.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 stsdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/stsdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o \
+    ../misc/problem.o ../misc/utils.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
 	$(CC) -o $@ $^ $(LFLAGS)
 

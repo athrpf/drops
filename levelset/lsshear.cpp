@@ -7,7 +7,7 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "geom/builder.h"
-#include "stokes/instatstokes.h"
+#include "stokes/stokes.h"
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
 #include "out/output.h"
@@ -69,10 +69,10 @@ namespace DROPS // for Strategy
 
 
 template<class Coeff>
-void Strategy( InstatStokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
+void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
 // flow control
 {
-    typedef InstatStokesP2P1CL<Coeff> StokesProblemT;
+    typedef StokesP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     LevelsetP2CL lset( MG, sigma, 0.5, 0.1);
@@ -220,7 +220,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
 
-    typedef DROPS::InstatStokesP2P1CL<ShearFlowCL> MyStokesCL;
+    typedef DROPS::StokesP2P1CL<ShearFlowCL> MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
 
