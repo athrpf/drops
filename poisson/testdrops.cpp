@@ -14,8 +14,8 @@ class PoissonCoeffCL
 {
   public:
     static const double a, b;
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double f(const DROPS::Point3DCL& p)
+    static double q(const DROPS::Point3DCL&, double= 0.0) { return 0.0; }
+    static double f(const DROPS::Point3DCL& p, double= 0.0)
     {
         const double t0= p.norm();
         const double t1= exp(a*(t0-b));
@@ -33,7 +33,7 @@ const double PoissonCoeffCL::a= -60.;
 const double PoissonCoeffCL::b= .3;
 
 
-inline double Lsg( const DROPS::Point3DCL& p)
+inline double Lsg( const DROPS::Point3DCL& p, double= 0.0)
 {
     return 1/(1.0+exp(PoissonCoeffCL::a*(p.norm()-PoissonCoeffCL::b)));
 }
@@ -489,9 +489,7 @@ void MarkPart( DROPS::MultiGridCL& mg, DROPS::Uint maxLevel, double ratio)
 }
 
 // boundary functions (neumann, dirichlet type)
-// used for BndSegCL-object of a UnitCube
-inline double neu_val(const DROPS::Point2DCL&) { throw("Don't use Neumann-values"); }
-inline double dir_val(const DROPS::Point2DCL&) { return 1.; }
+inline double dir_val(const DROPS::Point3DCL&, double= 0.0) { return 1.; }
 
 
 int main (int argc, char** argv)

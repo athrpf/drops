@@ -51,59 +51,23 @@ void PoissonP1CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
 inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
 // Integrate neu_val() * phi_vert over face
 {
-    const BndIdxT bidx= t.GetBndIdx(face);
-    Point2DCL vc2D[3];
+    Point3DCL vc3D[3];
     const VertexCL* v[3];
-    const BndPointSegEqCL comp(bidx);
     
-    v[0]= t.GetVertex(vert);
-    for (Uint i=0, k=1; i<3; ++i)
-    {
-        if (VertOfFace(face,i)!=vert)
-            v[k++]= t.GetVertex( VertOfFace(face,i) );
-        vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
-        //std::cerr << "\nVertex " << i << ": " << vc2D[i] << std::endl;
+    v[0]= t.GetVertex( vert);
+    for (Uint i= 0, k= 1; i < 3; ++i) {
+        if (VertOfFace( face, i) != vert)
+            v[k++]= t.GetVertex( VertOfFace( face, i));
+        vc3D[i]= v[i]->GetCoord();
     }
-    const double f0= bfun(vc2D[0]);
-    const double f1= bfun(vc2D[1]) +  bfun( vc2D[2]);
-    const double f2= bfun(1./3.*(vc2D[0] + vc2D[1] + vc2D[2]) );    //Barycenter of Face
-    const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
-    //std::cerr << '\n' << f0 << ' ' << f1 << ' ' << f2 << ' ' << absdet << std::endl;
-    //std::cerr << '\n' << v[0]->GetCoord() << ' ' << v[1]->GetCoord() << ' ' << v[2]->GetCoord() << ' ' << absdet << std::endl;
+    const double f0= bfun( vc3D[0], 0.0);
+    const double f1= bfun( vc3D[1], 0.0) +  bfun( vc3D[2], 0.0);
+    const double f2= bfun( 1./3.*(vc3D[0] + vc3D[1] + vc3D[2]), 0.0);    //Barycenter of Face
+    const double absdet= FuncDet2D( v[1]->GetCoord() - v[0]->GetCoord(),
+                                    v[2]->GetCoord() - v[0]->GetCoord());
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
 
-/*
-inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
-// Integrate neu_val() * phi_vert over face
-{
-    const BndIdxT bidx= t.GetBndIdx(face);
-    Point2DCL vc2D[3];
-    const VertexCL* v[3];
-    const BndPointSegEqCL comp(bidx);
-    
-    v[0]= t.GetVertex(vert);
-    
-    for (Uint i=0, k=1; i<3; ++i)
-    {
-        if (VertOfFace(face,i)!=vert)
-            v[k++]= t.GetVertex( VertOfFace(face,i) );
-        vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
-        //std::cerr << "\nVertex3D " << i << ": " << v[i]->GetCoord();
-        //std::cerr << "\nVertex2D " << i << ": " << vc2D[i];
-    }
-    const double f0= bfun(vc2D[0]);
-    const double f1= bfun(vc2D[1]);
-    const double f2= bfun(vc2D[2]);    
-    const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
-    //std::cerr << '\n' << f0 << ' ' << f1 << ' ' << f2 << ' ' << std::endl;
-    //std::cerr << '\n' << v[0]->GetCoord() << ' ' << v[1]->GetCoord() << ' ' << v[2]->GetCoord() << ' ' << absdet << std::endl;
-    //std::cerr << absdet <<"\n";
-    //std::cerr << (1./12.*f0 + 1./24.*f1 + 1./24.*f2) << "\n";
-    //std::cerr << (1./12.*f0 + 1./24.*f1 + 1./24.*f2)*absdet << "\n";
-    return (1./12.*f0 + 1./24.*f1 + 1./24.*f2) * absdet;
-}
-*/
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
@@ -115,10 +79,6 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                idx    = Amat.RowIdx->GetIdx();
     MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
 
-//    SMatrixCL<3,3> T;
-//    SMatrixCL<3,4> Gref(0.0); 
-//    Gref(0,1)= Gref(1,2)= Gref(2,3)= 1.; // gradients on ref. tetra
-//    Gref(0,0)= Gref(1,0)= Gref(2,0)= -1.;
     SMatrixCL<3,4> G;
 
     double coup[4][4];
@@ -130,14 +90,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
          sit != send; ++sit)
     {
         P1DiscCL::GetGradients(G,det,*sit);   
-//        SMatrixCL<3,4> G= T*Gref;
-/*        G(0,0)= -T(0,0)-T(0,1)-T(0,2);
-        G(0,1)= T(0,0); G(0,2)= T(0,1); G(0,3)= T(0,2);
-        G(1,0)= -T(1,0)-T(1,1)-T(1,2);
-        G(1,1)= T(1,0); G(1,2)= T(1,1); G(1,3)= T(1,2);
-        G(2,0)= -T(2,0)-T(2,1)-T(2,2);
-        G(2,1)= T(2,0); G(2,2)= T(2,1); G(2,3)= T(2,2);
-*/        absdet= fabs(det);
+        absdet= fabs(det);
 
         for(int i=0; i<4; ++i)
         {
@@ -145,7 +98,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
             {
                 // dot-product of the gradients
                 coup[i][j]= ( G(0,i)*G(0,j) + G(1,i)*G(1,j) + G(2,i)*G(2,j) )/6.0*absdet;
-                coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
                 coup[j][i]= coup[i][j];
             }
             UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
@@ -165,11 +118,11 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                         b.Data[UnknownIdx[i]]-= coup[j][i] * _BndData.GetDirBndValue(*sit->GetVertex(j));
                     }
                 }
-                b.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &_Coeff.f, i)*absdet;
+                b.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &_Coeff.f, i, 0.0)*absdet;
                 if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
                     for (int f=0; f < 3; ++f)
                         if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                            b.Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndFun(sit->GetBndIdx(FaceOfVert(i,f))) );
+                            b.Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun() );
             }
     }
     
@@ -204,7 +157,7 @@ void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
             {
                 // dot-product of the gradients
                 coup[i][j]= ( G(0,i)*G(0,j) + G(1,i)*G(1,j) + G(2,i)*G(2,j) )/6.0*absdet;
-                coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
                 coup[j][i]= coup[i][j];
             }
             UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
@@ -239,7 +192,7 @@ void PoissonP1CL<Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, IdxDes
 //===================================================
 
 template<class Coeff>
-double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
+double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun_ptr Lsg) const
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
     Uint lvl=lsg.GetLevel(),
@@ -256,11 +209,11 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
             sum= 0;
         for(Uint i=0; i<4; ++i)
         {
-            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord()));
+            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord(), 0.0));
             sum+= diff*diff;
         }
         sum/= 120;
-        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter(*sit));
+        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter( *sit), 0.0);
         sum+= 2./15. * diff*diff;
         L2+= sum*absdet;
     }
@@ -271,7 +224,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
     {
         if (sit->Unknowns.Exist(Idx))
         {
-           diff= fabs( Lsg(sit->GetCoord()) - lsg.Data[sit->Unknowns(Idx)] );
+           diff= fabs( Lsg( sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
            norm2+= diff*diff;
            if (diff>maxdiff)
            {
@@ -287,7 +240,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) const
+void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, instat_scalar_fun_ptr Lsg) const
 {
     Uint lvl= A.GetColLevel(),
          idx= A.ColIdx->GetIdx();
@@ -298,7 +251,7 @@ void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) co
     {
         if (sit->Unknowns.Exist(idx))
         {
-            lsg[sit->Unknowns(idx)]= Lsg(sit->GetCoord());
+            lsg[sit->Unknowns(idx)]= Lsg(sit->GetCoord(), 0.0);
         }
     }
     
@@ -310,7 +263,8 @@ void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) co
 
 
 template<class Coeff>
-bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg, const double rel_loc_tol, double& globalerr, est_fun est)
+bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
+   const double rel_loc_tol, double& globalerr, est_fun est)
 {
     const Uint lvl= lsg.GetLevel();
     Uint num_ref= 0;
@@ -366,9 +320,8 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
     const double absdet= fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
-    const double P0f= Quad3CL::Quad(t, &CoeffCL::f)*6.; // absdet/vol = 6.
+    const double P0f= Quad3CL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
     _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
-//    _err+= 4.*cc_radius*cc_radius*P1DiscCL::norm_L2_sq(t, &CoeffCL::f)*absdet;
 
     // Integrals over boundary - distinguish between inner-boundary and domain-boundary
     Point3DCL normal; // normal of face
@@ -380,31 +333,27 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
         {
             t.GetOuterNormal(face, normal);
             const BndIdxT bidx= t.GetBndIdx(face);
-            const typename BndDataCL::BndSegDataCL* bdat= &Bnd.GetSegData(bidx);
-            if ( bdat->IsNeumann() )
+            const typename BndDataCL::BndSegT bdat= Bnd.GetBndSeg( bidx);
+            if ( bdat.IsNeumann() )
             {
-//std::cerr << "neumann";
-                Point2DCL vc2D[3];
+                Point3DCL vc3D[3];
                 const VertexCL* v[4];
 
-                const BndPointSegEqCL comp(bidx);
                 double n_du= 0.0;  // scalar product of Du and the normal
                 for (int i=0; i<4; ++i)
                 {
                     v[i]= t.GetVertex(i);
                     n_du+= (v[i]->Unknowns.Exist(Idx) ? sol.Data[v[i]->Unknowns(Idx)]
-                               : Bnd.GetDirBndValue(*v[i]) )
+                               : Bnd.GetDirBndValue(*v[i]))
                           *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 }
                 for (int i=0; i<3; ++i)
-                    vc2D[i]= std::find_if( v[VertOfFace(face,i)]->GetBndVertBegin(),
-                                           v[VertOfFace(face,i)]->GetBndVertEnd(),
-                                           comp                                      )->GetCoord2D();
+                    vc3D[i]= v[VertOfFace(face,i)]->GetCoord();
 
-                const double f0= bdat->GetBndVal(vc2D[0]) - n_du;
-                const double f1= bdat->GetBndVal(vc2D[1]) - n_du;
-                const double f2= bdat->GetBndVal(vc2D[2]) - n_du;
-                const double fb= bdat->GetBndVal( 1./3.*(vc2D[0] + vc2D[1] + vc2D[2]) ) - n_du;    //Barycenter of Face
+                const double f0= bdat.GetBndVal(vc3D[0]) - n_du;
+                const double f1= bdat.GetBndVal(vc3D[1]) - n_du;
+                const double f2= bdat.GetBndVal(vc3D[2]) - n_du;
+                const double fb= bdat.GetBndVal( 1./3.*(vc3D[0] + vc3D[1] + vc3D[2]) ) - n_du;    //Barycenter of Face
                 const double absdet= FuncDet2D(v[VertOfFace(face,1)]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
                 _err+= 2.*cc_rad_Face * ( (f0*f0 + f1*f1 + f2*f2)/24. + 3./8.*fb*fb )*absdet/2.;
             }
@@ -422,7 +371,6 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
             double jump= 0.0;
             for (int i=0; i<4; ++i)
             {
-//                const Uint v_idx=  VertOfFace(face, i);
                 v[i]= t.GetVertex(i);
                 nv= neigh.GetVertex(i);
                 jump-= dir
@@ -434,8 +382,6 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-//            const double absdet= FuncDet2D( v[VertOfFace(face,1)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord(),
-//                                            v[VertOfFace(face,2)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord() );
             _err+= /* 0.5 * 2.* */cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
@@ -463,9 +409,8 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
     const double absdet= fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
-    const double P0f= Quad3CL::Quad(t, &CoeffCL::f)*6.; // absdet/vol = 6.
+    const double P0f= Quad3CL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
     _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
-//    _err+= 4.*cc_radius*cc_radius*P1DiscCL::norm_L2_sq(t, &CoeffCL::f)*absdet;
 
     // Integrals over boundary - distinguish between inner-boundary and domain-boundary
     Point3DCL normal; // normal of face
@@ -477,14 +422,12 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
         {
             t.GetOuterNormal(face, normal);
             const BndIdxT bidx= t.GetBndIdx(face);
-            const typename BndDataCL::BndSegDataCL* bdat= &Bnd.GetSegData(bidx);
-            if ( bdat->IsNeumann() )
+            const typename BndDataCL::BndSegT bdat= Bnd.GetBndSeg( bidx);
+            if ( bdat.IsNeumann() )
             {
-//std::cerr << "neumann";
-                Point2DCL vc2D[3];
+                Point3DCL vc3D[3];
                 const VertexCL* v[4];
 
-                const BndPointSegEqCL comp(bidx);
                 double n_du= 0.0;  // scalar product of Du and the normal
                 for (int i=0; i<4; ++i)
                 {
@@ -494,14 +437,12 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
                           *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 }
                 for (int i=0; i<3; ++i)
-                    vc2D[i]= std::find_if( v[VertOfFace(face,i)]->GetBndVertBegin(),
-                                           v[VertOfFace(face,i)]->GetBndVertEnd(),
-                                           comp                                      )->GetCoord2D();
+                    vc3D[i]= v[VertOfFace(face,i)]->GetCoord();
 
-                const double f0= bdat->GetBndVal(vc2D[0]) - n_du;
-                const double f1= bdat->GetBndVal(vc2D[1]) - n_du;
-                const double f2= bdat->GetBndVal(vc2D[2]) - n_du;
-                const double fb= bdat->GetBndVal( 1./3.*(vc2D[0] + vc2D[1] + vc2D[2]) ) - n_du;    //Barycenter of Face
+                const double f0= bdat.GetBndVal(vc3D[0]) - n_du;
+                const double f1= bdat.GetBndVal(vc3D[1]) - n_du;
+                const double f2= bdat.GetBndVal(vc3D[2]) - n_du;
+                const double fb= bdat.GetBndVal( 1./3.*(vc3D[0] + vc3D[1] + vc3D[2]) ) - n_du;    //Barycenter of Face
                 const double absdet= FuncDet2D(v[VertOfFace(face,1)]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
                 _err+= 2.*cc_rad_Face * ( (f0*f0 + f1*f1 + f2*f2)/24. + 3./8.*fb*fb )*absdet/2.;
             }
@@ -519,7 +460,6 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
             double jump= 0.0;
             for (int i=0; i<4; ++i)
             {
-//                const Uint v_idx=  VertOfFace(face, i);
                 v[i]= t.GetVertex(i);
                 nv= neigh.GetVertex(i);
                 jump-= dir
@@ -531,8 +471,6 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-//            const double absdet= FuncDet2D( v[VertOfFace(face,1)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord(),
-//                                            v[VertOfFace(face,2)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord() );
             _err+= /* 0.5 * 2.* */cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
@@ -604,7 +542,7 @@ inline void MakeGradients (SMatrixCL<3,5>* G, const SMatrixCL<3,5>* GRef, const 
 }
 
 
-inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
+inline double Quad( const TetraCL& s, instat_scalar_fun_ptr f, int i, int j, double t= 0.0)
 {
     double a[5];
     if (i>j) std::swap(i,j);
@@ -667,23 +605,23 @@ inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
       case 99: a[2]= a[3]= 37./17010.; a[0]= a[1]= -17./17010.; a[4]= 88./8505.; break;
       default: throw DROPSErrCL("Quad(i,j): no such shape function");
     }
-    double sum= a[4]*f(GetBaryCenter(t));
+    double sum= a[4]*f(GetBaryCenter(s), t);
     for(Uint i=0; i<4; ++i)
-        sum+= a[i]*f(t.GetVertex(i)->GetCoord());
+        sum+= a[i]*f(s.GetVertex(i)->GetCoord(), t);
     return sum;
 }
 
 
-inline double Quad( const TetraCL& t, scalar_fun_ptr coeff, int i)
+inline double Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, int i, double t= 0.0)
 {
     double f[5];
     
     if (i<4) // hat function on vert
     {
-        f[0]= coeff( t.GetVertex(i)->GetCoord() );
+        f[0]= coeff( s.GetVertex(i)->GetCoord(), t);
         for (int k=0, l=1; k<4; ++k)
-            if (k!=i) f[l++]= coeff( t.GetVertex(k)->GetCoord() );
-        f[4]= coeff( GetBaryCenter(t) );
+            if (k!=i) f[l++]= coeff( s.GetVertex(k)->GetCoord(), t );
+        f[4]= coeff( GetBaryCenter(s), t);
         return f[0]/504. - (f[1] + f[2] + f[3])/1260. - f[4]/126.;
     }
     else  // hat function on edge
@@ -695,9 +633,9 @@ inline double Quad( const TetraCL& t, scalar_fun_ptr coeff, int i)
         a[VertOfEdge(i-4,0)]= a[VertOfEdge(i-4,1)]= ve;
         a[VertOfEdge(OppEdge(i-4),0)]= a[VertOfEdge(OppEdge(i-4),1)]= vn;
 
-        double sum= vs * coeff( GetBaryCenter(t) );
+        double sum= vs * coeff( GetBaryCenter(s), t );
         for(int k=0; k<4; ++k)
-            sum+= a[k] * coeff( t.GetVertex(k)->GetCoord() );
+            sum+= a[k] * coeff( s.GetVertex(k)->GetCoord(), t );
 
         return sum;
     }
@@ -753,7 +691,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
         {
-            if(!(IsOnDirBnd[i]= _BndData.IsOnDirBnd( *sit->GetVertex(i) )))
+            if(!(IsOnDirBnd[i]= _BndData.IsOnDirBnd( *sit->GetVertex(i))))
                 Numb[i]= sit->GetVertex(i)->Unknowns(idx);
         }
 
@@ -769,7 +707,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
             {
                 // negative dot-product of the gradients
                 coup[i][j] = QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
                 coup[j][i] = coup[i][j];
             }
 
@@ -786,12 +724,12 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                     }
                     else // coupling with vert/edge j on right-hand-side
                     {
-                        tmp= j<4 ? _BndData.GetDirBndValue(*sit->GetVertex(j))
-                                 : _BndData.GetDirBndValue(*sit->GetEdge(j-4));
+                        tmp= j<4 ? _BndData.GetDirBndValue(*sit->GetVertex(j), 0.0)
+                                 : _BndData.GetDirBndValue(*sit->GetEdge(j-4), 0.0);
                         b.Data[Numb[i]]-=          coup[j][i] * tmp;
                     }
                 }
-                tmp= Quad(*sit, &_Coeff.f, i)*absdet;
+                tmp= Quad(*sit, &_Coeff.f, i, 0.0)*absdet;
                 b.Data[Numb[i]]+=          tmp;
 
                 if ( i<4 ? _BndData.IsOnNeuBnd(*sit->GetVertex(i))
@@ -834,7 +772,6 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
     SMatrixCL<3,3> T;
     double coup[10][10];
     double det, absdet;
-    double tmp;
 
     GetGradientsOnRef(GradRef);
     
@@ -865,7 +802,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
             {
                 // negative dot-product of the gradients
                 coup[i][j] = QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
                 coup[j][i] = coup[i][j];
             }
 
@@ -891,7 +828,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
 
 
 template<class Coeff>
-double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
+double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun_ptr Lsg) const
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
     Uint lvl=lsg.GetLevel(),
@@ -908,11 +845,11 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
             sum= 0;
         for(Uint i=0; i<4; ++i)
         {
-            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord()));
+            diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord(), 0.0));
             sum+= diff*diff;
         }
         sum/= 120;
-        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter(*sit));
+        diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter(*sit), 0.0);
         sum+= 2./15. * diff*diff;
         L2+= sum*absdet;
     }
@@ -921,9 +858,9 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
-        if (sit->Unknowns.Exist(idx))
+        if (sit->Unknowns.Exist(Idx))
         {
-           diff= fabs( Lsg(sit->GetCoord()) - lsg.Data[sit->Unknowns(Idx)] );
+           diff= fabs( Lsg(sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
            norm2+= diff*diff;
            if (diff>maxdiff)
            {

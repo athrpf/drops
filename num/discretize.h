@@ -393,14 +393,18 @@ class P1DiscCL
   public:
     // cubatur formula for int f(x) dx, exact up to degree 2
     static inline double Quad(const TetraCL&, scalar_fun_ptr);
+    static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint);
+    static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, Uint, double= 0.0);
     static inline SVectorCL<3> Quad(const TetraCL&, vector_fun_ptr, Uint);
     // cubatur formula for int f(x)*phi_i*phi_j dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint, Uint);
+    static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, Uint, Uint, double= 0.0);
     // computes the square of the L2-norm of a given function f: 
     // f^2 is integrated exact up to degree 2
     static inline double norm_L2_sq(const TetraCL&, scalar_fun_ptr);
+    static inline double norm_L2_sq(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
 
     // the gradient of hat function i is in column i of H
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
@@ -455,6 +459,14 @@ inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
 *
 ********************************************************************************/
 
+inline double P1DiscCL::Quad(const TetraCL& s, instat_scalar_fun_ptr coeff, double t)
+{
+    return ( coeff(s.GetVertex(0)->GetCoord(), t)
+            +coeff(s.GetVertex(1)->GetCoord(), t)
+            +coeff(s.GetVertex(2)->GetCoord(), t)
+            +coeff(s.GetVertex(3)->GetCoord(), t))/120. 
+            + 2./15.*coeff(GetBaryCenter(s), t);
+}
 
 inline double P1DiscCL::Quad(const TetraCL& t, scalar_fun_ptr coeff)
 {
@@ -465,6 +477,16 @@ inline double P1DiscCL::Quad(const TetraCL& t, scalar_fun_ptr coeff)
             + 2./15.*coeff(GetBaryCenter(t));
 }
 
+inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uint i, double t)
+{
+    double f_Vert_i= coeff( s.GetVertex(i)->GetCoord(), t ),
+           f_Bary  = coeff( GetBaryCenter(s), t ),
+           f_Other = 0;
+    
+    for (Uint k=0; k<4; ++k)
+        if (k!=i) f_Other+= coeff( s.GetVertex(k)->GetCoord(), t );
+    return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
+}
 
 inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i)
 {
@@ -487,6 +509,26 @@ inline SVectorCL<3> P1DiscCL::Quad( const TetraCL& t, vector_fun_ptr coeff, Uint
     return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
 }
 
+inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uint i, Uint j, double t)
+{
+    double f_Vert_ij= coeff( s.GetVertex(i)->GetCoord(), t ),
+           f_Bary  = coeff( GetBaryCenter(s), t ),
+           f_Other = 0;
+    
+    if (i==j)
+    {
+        for (Uint k=0; k<4; ++k)
+            if (k!=i) f_Other+= coeff( s.GetVertex(k)->GetCoord(), t );
+        return 43./7560.*f_Vert_ij + f_Other/7560. + 2./189.*f_Bary;
+    }
+    else
+    {
+        f_Vert_ij+= coeff( s.GetVertex(j)->GetCoord(), t );
+        for (Uint k=0; k<4; ++k)
+            if (k!=i && k!=j) f_Other+= coeff( s.GetVertex(k)->GetCoord(), t );
+        return 11./7560.*f_Vert_ij + f_Other/15120. + f_Bary/189.;
+    }
+}
 
 inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i, Uint j)
 {
@@ -507,6 +549,17 @@ inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i, Ui
             if (k!=i && k!=j) f_Other+= coeff( t.GetVertex(k)->GetCoord() );
         return 11./7560.*f_Vert_ij + f_Other/15120. + f_Bary/189.;
     }
+}
+
+inline double P1DiscCL::norm_L2_sq(const TetraCL& s, instat_scalar_fun_ptr coeff, double t)
+{
+    const double f0= coeff(s.GetVertex(0)->GetCoord(), t);
+    const double f1= coeff(s.GetVertex(1)->GetCoord(), t);
+    const double f2= coeff(s.GetVertex(2)->GetCoord(), t);
+    const double f3= coeff(s.GetVertex(3)->GetCoord(), t);
+    const double fb= coeff(GetBaryCenter(s), t);
+    return (f0*f0 + f1*f1 + f2*f2 + f3*f3)/120. + 2./15.*fb*fb;
+    
 }
 
 inline double P1DiscCL::norm_L2_sq(const TetraCL& t, scalar_fun_ptr coeff)

@@ -9,15 +9,15 @@
 class PoissonCoeffCL
 {
   public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double f(const DROPS::Point3DCL& p)
+    static double q(const DROPS::Point3DCL&, double= 0.0) { return 0.0; }
+    static double f(const DROPS::Point3DCL& p, double= 0.0)
         { return 128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
                                                      + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
-//    static double f(const Point3DCL& p) { return p[2]>0.49?-15.:0; }
+//    static double f(const Point3DCL& p, double= 0.0) { return p[2]>0.49?-15.:0; }
 };
 
 
-inline double Lsg( const DROPS::Point3DCL& p)
+inline double Lsg( const DROPS::Point3DCL& p, double= 0.0)
 {
     return 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
 }
@@ -176,9 +176,9 @@ int main (int argc, char** argv)
          false, false, false, false, false, false, false, false,
          false, false, false, false, false, false, false, false};
     const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[24]=
-        { &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val0,
-          &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val0,
-          &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val0 };
+        { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg,
+          &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg,
+          &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg };
  
     DROPS::PoissonBndDataCL bdata(24, isneumann, bnd_fun);
     PoissonOnBCL prob(brick, PoissonCoeffCL(), bdata);

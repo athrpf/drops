@@ -12,16 +12,16 @@
 class PoissonCoeffCL
 {
   public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double f(const DROPS::Point3DCL& p)
+    static double q(const DROPS::Point3DCL&, double= 0.0) { return 0.0; }
+    static double f(const DROPS::Point3DCL& p, double= 0.0)
         { return 128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
 	                                             + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
-//    static double f(const Point3DCL& p) { return p[2]>0.49?-15.:0; }
-//    static double f(const DROPS::Point3DCL& p) { return 0.0; }
+//    static double f(const Point3DCL& p, double= 0.0) { return p[2]>0.49?-15.:0; }
+//    static double f(const DROPS::Point3DCL& p, double= 0.0) { return 0.0; }
 };
 
 
-inline double Lsg( const DROPS::Point3DCL& p)
+inline double Lsg( const DROPS::Point3DCL& p, double= 0.0)
 {
     return 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
 }
@@ -83,7 +83,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     const_MGDataIterCL finest= --MGData.end();
 
     Uint sm;
-    Uint lvl;
+    int lvl;
     Uint nit;
     double tol;
     std::cerr << "tolerance: "; std::cin >> tol;
@@ -105,7 +105,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
         Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
         std::cerr << "initial error:" << std::endl;
         Poisson.CheckSolution(&::Lsg);
-        resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
+        resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
         std::cerr << "initial residuum: " << resid <<std::endl;
 	nit = 0;
         time.Reset();    
@@ -114,7 +114,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
             MGM( MGData.begin(), finest, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, lvl, -1);
             Poisson.CheckSolution(&::Lsg);
             old_resid= resid;
-            resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
+            resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
 	    nit = nit+1;
             std::cerr << "iteration: " << nit 
 	              << "\tresiduum: " << resid 
@@ -155,13 +155,7 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 }
 
 // boundary functions (neumann, dirichlet type)
-// used for BndSegCL-object of a UnitCube
-inline double neu_val(const DROPS::Point2DCL& p) { return -64.0*p[0]*p[1]*(1.0-p[0])*(1.0-p[1]); }
-inline double dir_val(const DROPS::Point2DCL&) { return 0.0; }
-
-// dirichlet value for planes of cube, that has been cut out
-inline double dir_val0(const DROPS::Point2DCL& p) { return (1. - p[0]*p[0])*(1. - p[1]*p[1]); }
-
+inline double Null(const DROPS::Point3DCL&, double= 0) { return 0.0; }
 
 int main (int argc, char** argv)
 {
@@ -183,7 +177,7 @@ int main (int argc, char** argv)
 
     bool isneumann[6]= {false, false, false, false, false, false};
     DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val };
+        { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg };
     DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
