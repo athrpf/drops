@@ -443,17 +443,17 @@ PCG(const Matrix& A, Vector& x, const Vector& b, const PreCon& M,
 //  Drivers for the CG methods
 //=============================================================================
 
-// Bare CG solver
-class CGSolverCL
+// What every iterative solver should have
+class SolverBaseCL
 {
   protected:
     double _tol, _res;
     int    _maxiter, _iter;
 
-  public:
-    CGSolverCL(double tol, int maxiter)
+    SolverBaseCL (double tol, int maxiter)
         : _tol(tol), _res( -1.), _maxiter(maxiter), _iter( -1) {}
 
+  public:
     void   SetTol    (double tol) { _tol= tol; }
     void   SetMaxIter(int iter)   { _maxiter= iter; }
 
@@ -461,6 +461,14 @@ class CGSolverCL
     int    GetMaxIter() const { return _maxiter; }
     double GetResid  () const { return _res; }
     int    GetIter   () const { return _iter; }
+};
+
+
+// Bare CG solver
+class CGSolverCL : public SolverBaseCL
+{
+  public:
+    CGSolverCL(double tol, int maxiter) : SolverBaseCL(tol,maxiter) {}
 
     template <typename Vec, typename Real>
     void Solve(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b)
@@ -479,16 +487,16 @@ class CGSolverCL
 };
 
 
-// Add the preconditioner
+// With preconditioner
 template <typename PC>
-class PCGSolverCL : public CGSolverCL
+class PCGSolverCL : public SolverBaseCL
 {
   private:
     PC _pc;
 
   public:
     PCGSolverCL(double tol, int maxiter, const PC& pc)
-        : CGSolverCL(tol,maxiter), _pc(pc) {}
+        : SolverBaseCL(tol,maxiter), _pc(pc) {}
 
     PC&       GetPc ()       { return _pc; }
     const PC& GetPc () const { return _pc; }

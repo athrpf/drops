@@ -14,140 +14,96 @@
 namespace DROPS
 {
 
-template <class PoissonSolverT>
-class UzawaSolverCL
+//=============================================================================
+//  The Stokes solvers solve systems of the form
+//    A v + BT p = b
+//    B v        = c
+//=============================================================================
+
+template <typename PoissonSolverT>
+class SchurSolverCL : public SolverBaseCL
 {
   private:
     PoissonSolverT& _poissonSolver;
-    MatrixCL&       _M; 
-    
-    double _tau, _tol, _res;
-    int    _maxiter, _iter;
-    
-  public:
-    UzawaSolverCL( PoissonSolverT& solver, MatrixCL& M, double tol, int maxiter, double tau= 1.)
-        : _poissonSolver( solver), _M( M), _tau( tau),
-          _tol( tol), _res( -1.), _maxiter( maxiter), _iter( -1)    {}
 
-    void SetTol      ( double tol) { _tol= tol; }
-    void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    
-    double GetTol    () const { return _tol; }
-    int    GetMaxIter() const { return _maxiter; }
-    double GetResid  () const { return _res; }
-    int    GetIter   () const { return _iter; }
-
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
-    // solves the system   A v + BT p = b
-    //                     B v        = c
-};
-
-template <class PoissonSolverT>
-class SchurSolverCL
-{
-  private:
-    PoissonSolverT&  _poissonSolver;
-    
-    double _tol, _res;
-    int    _maxiter, _iter;
-    
   public:
     SchurSolverCL( PoissonSolverT& solver, double tol, int maxiter)
-        : _poissonSolver( solver),
-          _tol( tol), _res( -1.), _maxiter( maxiter), _iter( -1)    {}
-    
-    void SetTol      ( double tol) { _tol= tol; }
-    void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    
-    double GetTol    () const { return _tol; }
-    int    GetMaxIter() const { return _maxiter; }
-    double GetResid  () const { return _res; }
-    int    GetIter   () const { return _iter; }
+        : SolverBaseCL(tol,maxiter), _poissonSolver(solver) {}
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
-    // solves the system   A v + BT p = b
-    //                     B v        = c
-};    
-    
-template <class PoissonSolverT>
-class PSchurSolverCL
+};
+
+
+template <typename PoissonSolverT>
+class PSchurSolverCL : public SolverBaseCL
 {
   private:
     PreGSOwnMatCL<P_SSOR0,double> _schurPc;
     PoissonSolverT&               _poissonSolver;
 
-    double _tol, _res;
-    int    _maxiter, _iter;
-    
   public:
     PSchurSolverCL( PoissonSolverT& solver, MatrixCL& M, double tol, int maxiter)
-        : _schurPc( M), _poissonSolver( solver),
-          _tol( tol), _res( -1.), _maxiter( maxiter), _iter( -1)    {}
-    
-    void SetTol      ( double tol) { _tol= tol; }
-    void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    
-    double GetTol    () const { return _tol; }
-    int    GetMaxIter() const { return _maxiter; }
-    double GetResid  () const { return _res; }
-    int    GetIter   () const { return _iter; }
+        : SolverBaseCL(tol,maxiter), _schurPc(M), _poissonSolver(solver) {}
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
-    // solves the system   A v + BT p = b
-    //                     B v        = c
-};    
+};
 
 
-//==================================================
-//        derived classes for easier use
-//==================================================
-
-class Uzawa_PCG_CL: public UzawaSolverCL<PCG_SsorCL>
+template <typename PoissonSolverT>
+class UzawaSolverCL : public SolverBaseCL
 {
   private:
-    PCG_SsorCL _PCGsolver;
+    PoissonSolverT& _poissonSolver;
+    MatrixCL&       _M;
+    double          _tau;
+
   public:
-    Uzawa_PCG_CL( MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter, double tau= 1.)
-        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver,  M, outer_tol, outer_iter, tau), 
-          _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
-        {}
-};    
+    UzawaSolverCL( PoissonSolverT& solver, MatrixCL& M, double tol, int maxiter, double tau= 1.)
+        : SolverBaseCL(tol,maxiter), _poissonSolver(solver), _M(M), _tau(tau) {}
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
+};
 
 
-class Uzawa_IPCG_CL
+class Uzawa_IPCG_CL : public SolverBaseCL
 {
   private:
     PCG_SsorDiagCL _M_IPCGsolver;
     PCG_SsorDiagCL _A_IPCGsolver;
-
-    MatrixCL&       _M; 
-    
-    double _tau, _tol, _res;
-    int    _maxiter, _iter;
+    MatrixCL&      _M;
+    double         _tau;
 
   public:
     Uzawa_IPCG_CL(MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter, double tau= 1.)
-        :  
+        : SolverBaseCL(outer_tol,outer_iter),
           _M_IPCGsolver( inner_tol, inner_iter, SSORDiagPcCL(1.) ),
           _A_IPCGsolver( inner_tol, inner_iter, SSORDiagPcCL(1.) ),
-          _M(M), _tau(tau), _tol(outer_tol), _res(-1.), _maxiter(outer_iter), _iter(-1)
+          _M(M), _tau(tau)
         { _M_IPCGsolver.GetPc().Init(_M); }
-
-    void SetTol      ( double tol) { _tol= tol; }
-    void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    
-    double GetTol    () const { return _tol; }
-    int    GetMaxIter() const { return _maxiter; }
-    double GetResid  () const { return _res; }
-    int    GetIter   () const { return _iter; }
 
     // Always call this when A has changed, before Solve()!
     void Init_A_Pc(MatrixCL& A) { _A_IPCGsolver.GetPc().Init(A); }
 
     inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
-};    
-    
-    
+};
+
+
+//=============================================================================
+//  Derived classes for easier use
+//=============================================================================
+
+class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    Uzawa_PCG_CL( MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter, double tau= 1.)
+        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver,  M, outer_tol, outer_iter, tau),
+          _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
+        {}
+};
+
+
 class Schur_PCG_CL: public SchurSolverCL<PCG_SsorCL>
 {
   private:
@@ -157,8 +113,9 @@ class Schur_PCG_CL: public SchurSolverCL<PCG_SsorCL>
         : SchurSolverCL<PCG_SsorCL>( _PCGsolver, outer_tol, outer_iter),
           _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
         {}
-};    
-    
+};
+
+
 class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
 {
   private:
@@ -168,8 +125,9 @@ class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
         : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_tol, outer_iter),
           _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
         {}
-};    
-    
+};
+
+
 class PSchur_IPCG_CL: public PSchurSolverCL<PCG_SsorDiagCL>
 {
   private:
@@ -180,8 +138,9 @@ class PSchur_IPCG_CL: public PSchurSolverCL<PCG_SsorDiagCL>
           _PCGsolver( inner_tol, inner_iter, SSORDiagPcCL(1.))
         {}
     PCG_SsorDiagCL& GetPoissonSolver() { return _PCGsolver; }
-};    
-    
+};
+
+
 class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 {
   private:
@@ -192,15 +151,14 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
           _PCGsolver( inner_tol, inner_iter, SGSPcCL() )
         {}
     PCG_SgsCL& GetPoissonSolver() { return _PCGsolver; }
-};    
-    
-// TODO: (P)Schur_MG_CL    
+};
+
+// TODO: (P)Schur_MG_CL
 
 
-
-//=================================
-//     template definitions
-//=================================
+//=============================================================================
+//  The "Solve" functions
+//=============================================================================
 
 template <class PoissonSolverT>
 void UzawaSolverCL<PoissonSolverT>::Solve
@@ -233,7 +191,7 @@ void UzawaSolverCL<PoissonSolverT>::Solve
         {
             _res= ::sqrt( res1_norm + res2_norm );
             return;
-        }   
+        }
 
         if( (_iter%output)==0 )
             std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
@@ -261,8 +219,8 @@ void SchurSolverCL<PoissonSolverT>::Solve
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
-    int iter= _maxiter;   
-    double tol= _tol;     
+    int iter= _maxiter;
+    double tol= _tol;
     CG( SchurComplMatrixCL( A, B, _poissonSolver.GetTol(), 1.), p, rhs, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
@@ -305,7 +263,7 @@ inline void Uzawa_IPCG_CL::Solve
         {
             _res= ::sqrt( res1_norm + res2_norm );
             return;
-        }   
+        }
 
         if( (_iter%output)==0 )
             std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
@@ -333,8 +291,8 @@ void PSchurSolverCL<PoissonSolverT>::Solve
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
-    int iter= _maxiter;   
-    double tol= _tol;     
+    int iter= _maxiter;
+    double tol= _tol;
     PCG( SchurComplMatrixCL( A, B, _poissonSolver.GetTol(), 1.), p, rhs, _schurPc, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
@@ -348,6 +306,6 @@ void PSchurSolverCL<PoissonSolverT>::Solve
 }
 
 
-}    // end of namespace DROPS
+} // end of namespace DROPS
 
 #endif
