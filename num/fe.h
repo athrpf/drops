@@ -418,7 +418,7 @@ protected:
     // the multigrid
     const MultiGridCL* _MG;
 
-    virtual inline DataT // helper-function to evaluate the degree of freedom in a vertex,
+    virtual DataT // helper-function to evaluate the degree of freedom in a vertex,
     GetDoF(const VertexCL&) const= 0;// use val() instead
        
 public:
@@ -664,9 +664,9 @@ protected:
     const MultiGridCL* _MG;
 
     // TODO: Ouch!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    virtual inline DataT // helper-function to evaluate on a vertex; use val() instead
+    virtual DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const VertexCL&) const= 0;
-    virtual inline DataT // helper-function to evaluate on an edge; use val() instead
+    virtual DataT // helper-function to evaluate on an edge; use val() instead
     GetDoF(const EdgeCL&) const= 0;
     
 public:
