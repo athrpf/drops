@@ -407,11 +407,6 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const Fac
 
 } // end of namespace DROPS
 
-//======================================
-//  definition of template functions 
-//======================================
 #include "stokes/stokes.tpp"
 
-
 #endif
-

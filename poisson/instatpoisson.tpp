@@ -7,9 +7,6 @@
 // History: begin - November, 11 2002                                      *
 //**************************************************************************
 
-#ifndef _INSTAT_POISSON_TPP_
-#define _INSTAT_POISSON_TPP_
-
 #include "num/discretize.h"
 
 namespace DROPS
@@ -277,6 +274,3 @@ void InstatPoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg,
 
 
 } // end of namespace DROPS
-
-#endif
-

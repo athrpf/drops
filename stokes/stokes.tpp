@@ -6,9 +6,6 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _STOKES_TPP_
-#define _STOKES_TPP_
-
 #include "num/discretize.h"
 #include "misc/problem.h"
 #include <vector>
@@ -1446,6 +1443,3 @@ inline double norm_L2_sq(const TetraCL& t, scalar_fun_ptr coeff)
 }
 
 } // end of namespace DROPS
-
-#endif
-

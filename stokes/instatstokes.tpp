@@ -6,9 +6,6 @@
 // History: begin - Sep, 13 2001                                           *
 //**************************************************************************
 
-#ifndef _INSTAT_STOKES_TPP_
-#define _INSTAT_STOKES_TPP_
-
 #include "num/discretize.h"
 
 namespace DROPS
@@ -757,8 +754,3 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
 }
 
 } // end of namespace DROPS
-
-#endif
-
-
-

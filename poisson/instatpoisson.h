@@ -265,9 +265,6 @@ inline InstatPoissonBndDataCL::bnd_type InstatPoissonBndDataCL::GetNeuBndValue( 
 
 } // end of namespace DROPS
 
-//======================================
-//  definition of template functions 
-//======================================
 #include "poisson/instatpoisson.tpp"
 
 #endif

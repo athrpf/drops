@@ -6,10 +6,6 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _NAVSTOKES_TPP_
-#define _NAVSTOKES_TPP_
-
-
 namespace DROPS
 {
 
@@ -349,5 +345,3 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
 }
 
 } // end of namespace DROPS
-
-#endif

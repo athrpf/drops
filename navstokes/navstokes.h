@@ -52,11 +52,6 @@ class NavierStokesP2P1CL : public StokesP2P1CL<MGB, Coeff>
 
 } // end of namespace DROPS
 
-//======================================
-//  definition of template functions 
-//======================================
 #include "navstokes/navstokes.tpp"
 
-
 #endif
-

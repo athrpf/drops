@@ -301,11 +301,6 @@ inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetNeuBndVal
 
 } // end of namespace DROPS
 
-//======================================
-//  definition of template functions 
-//======================================
 #include "stokes/instatstokes.tpp"
 
-
 #endif
-

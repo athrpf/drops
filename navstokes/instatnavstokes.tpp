@@ -6,10 +6,6 @@
 // History: begin - Nov, 22 2001                                         *
 //**************************************************************************
 
-#ifndef _INSTATNAVSTOKES_TPP_
-#define _INSTATNAVSTOKES_TPP_
-
-
 namespace DROPS
 {
 
@@ -349,6 +345,3 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
 }
 
 } // end of namespace DROPS
-
-#endif
-

@@ -6,9 +6,6 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _POISSON_TPP_
-#define _POISSON_TPP_
-
 #include "num/discretize.h"
 
 namespace DROPS
@@ -769,6 +766,3 @@ bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bnd
 
 
 } // end of namespace DROPS
-
-#endif
-
