@@ -9,7 +9,7 @@
 #ifndef DROPS_NS_INTEGRTIME_H
 #define DROPS_NS_INTEGRTIME_H
 
-#include "misc/problem.h"
+#include "navstokes/instatnavstokes.h"
 
 // TODO: FracStepScheme fuer instat. NavierStokes
 
@@ -78,6 +78,29 @@ class InstatNavStokesThetaSchemeCL
 //=================================
 
 template <class NavStokesT, class SolverT>
+void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, VectorCL& p)
+{
+//        _NS.SetupNonlinar( &_NS.N, v, &_NS.cplN, _t);
+// sollte vorher schon geschehen sein: im 1. Zeitschritt durch User, danach durch _solver!
+
+    _NS.t+= _dt;
+    _NS.SetupInstatRhs( _b, &_NS.c, _cplM, _NS.t, _b, _NS.t);
+
+    _rhs=  _NS.A.Data * v + _NS.N.Data * v;
+    _rhs*= (_theta-1.)*_dt;
+    _rhs+= _NS.M.Data*v + _cplM->Data - _old_cplM->Data
+         + _dt*( _theta*_b->Data + (1.-_theta)*(_old_b->Data + _NS.cplN.Data));
+
+    p*= _dt;
+    _solver.solve( _L, _NS.B.Data, v, p, _rhs, _NS.c.Data, _dt*_theta);
+    p/= _dt;
+
+    std::swap( _b, _old_b);
+    std::swap( _cplM, _old_cplM);
+}
+
+
+/*template <class NavStokesT, class SolverT>
 void InstatNavStokesFracStepSchemeCL<NavStokesT,SolverT>::DoStep( VectorCL& v, VectorCL& p)
 {
         double macrostep= _theta*_dt;
@@ -118,6 +141,7 @@ void InstatNavStokesFracStepSchemeCL<NavStokesT,SolverT>::DoStep( VectorCL& v, V
 
         _NS.t+= _dt;
 }
+*/
 
 }    // end of namespace DROPS
 
