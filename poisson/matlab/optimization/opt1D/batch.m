@@ -16,8 +16,10 @@ case 1
     % heat flux without noise
     clear;
     tf= 1.4
+    %tf= 7.0
 	L= 1
 	ntimes= 100
+    %ntimes= 500
 	N= 10
 	q_app= zeros(1,ntimes+1);
 	dt= tf/ntimes
@@ -27,8 +29,18 @@ case 1
         index= index+1;
 	end
  	sigma= 0
-    nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    nmax= 100
+    tol= 10^(-6)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
+    % method of nested iterations
+%     tol= 10^(-5)
+%     sol1= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
+%     pause;
+%     N= 100
+%     nmax= 200
+%     tol= 10^(-6)
+%     q_app= sol1;
+%     sol2= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 2
     % heat flux without noise
     % and different start approximation
@@ -46,7 +58,8 @@ case 2
 	end
 	sigma = 0
     nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 3
     % heat flux with noise
     clear;
@@ -63,7 +76,8 @@ case 3
 	end
 	sigma = 0.1
     nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 4
     % heat flux with noise
     % and different number of mesh points
@@ -81,7 +95,8 @@ case 4
 	end
 	sigma = 0.1
     nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 5
     % constant heat flux without noise
     clear;
@@ -92,8 +107,9 @@ case 5
 	q_app = 0.1*ones(1,ntimes+1);
 	exflux = ones(1,ntimes+1);
     sigma = 0
-    nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    nmax= 100
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 6
     % constant heat flux with noise
     clear;
@@ -105,7 +121,8 @@ case 6
 	exflux = ones(1,ntimes+1);
     sigma = 0.1
     nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 7
     % constant heat flux without noise
     % and different length L
@@ -118,7 +135,8 @@ case 7
 	exflux = ones(1,ntimes+1);
     sigma = 0
     nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 case 8
     % constant heat flux without noise
     % and more time steps
@@ -136,7 +154,8 @@ case 8
 	end
 	sigma = 0
     nmax= 10
-	ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax);
+    tol= 10^(-8)
+	sol= ihcp(tf,L,ntimes,N,q_app,exflux,sigma,nmax,tol);
 end
 
 return
