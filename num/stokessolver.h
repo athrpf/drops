@@ -966,7 +966,7 @@ void SchurSolverCL<PoissonSolverT>::Solve(
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
 {
-    VectorCL rhs= -c;
+    VectorCL rhs(-c);
     if (_tmp.size() != v.size())
         _tmp.resize( v.size());
     _poissonSolver.Solve( A, _tmp, b);
