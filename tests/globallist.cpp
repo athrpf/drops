@@ -3,7 +3,7 @@
 using namespace DROPS;
 using namespace std;
 
-typedef NewGlobalListCL<int> iList;
+typedef GlobalListCL<int> iList;
 
 
 
