@@ -290,7 +290,6 @@ class PreGSOwnMatCL<PM,false>
 
   public:
     PreGSOwnMatCL (const MatrixCL& M, double om= 1.0) : _M(M), _omega(om) {}
-    PreGSOwnMatCL (const PreGSOwnMatCL&); // not defined
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& x, const Vec& b) const
