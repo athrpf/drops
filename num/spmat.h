@@ -276,7 +276,6 @@ public:
     const size_t* GetFirstCol(size_t i) const { return Addr(_colind)+_rowbeg[i]; }
     const T*      GetFirstVal(size_t i) const { return Addr(_val)+_rowbeg[i]; }
 
-    inline T& operator() (size_t i, size_t j);
     inline T  operator() (size_t i, size_t j) const;
 
     SparseMatBaseCL& operator*= (T c) { _val*= c; return *this; }
@@ -290,25 +289,13 @@ public:
     friend class SparseMatBuilderCL<T>;
 };
 
-
-template <typename T>
-T& SparseMatBaseCL<T>::operator() (size_t i, size_t j)
-{
-    Assert(i<num_rows() && j<num_cols(), "SparseMatBaseCL (): index out of bounds", DebugNumericC);
-    size_t *pos= std::lower_bound( &_colind[_rowbeg[i]], &_colind[_rowbeg[i+1]], j);
-    // lower_bound returns the iterator to the next column entry, if col j is not found
-    Assert(pos!=&_colind[_rowbeg[i+1]] && *pos==j, "SparseMatBaseCL (): index not in sparsity pattern", DebugNumericC);
-    return _val[pos - &_colind[0]];
-}
-
-
 template <typename T>
 T SparseMatBaseCL<T>::operator() (size_t i, size_t j) const
 {
     Assert(i<num_rows() && j<num_cols(), "SparseMatBaseCL (): index out of bounds", DebugNumericC);
     const size_t *pos= std::lower_bound( GetFirstCol(i), GetFirstCol(i+1), j);
     // lower_bound returns the iterator to the next column entry, if col j is not found
-    return (pos != GetFirstCol(i+1) && *pos==j) ? _val[pos-GetFirstCol(0)] : 0;
+    return (pos != GetFirstCol(i+1) && *pos==j) ? _val[pos-GetFirstCol(0)] : T();
 }
 
 
