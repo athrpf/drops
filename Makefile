@@ -16,6 +16,8 @@ default: dep all
 all: $(PACKAGES:%=all_%)
 	@echo "--> All executables generated successfully!"
 
+strip: $(PACKAGES:%=strip_%)
+
 clean: $(PACKAGES:%=clean_%)
 	@echo "--> All object files and executables removed!"
 
@@ -31,6 +33,9 @@ check:
 
 all_%:
 	cd $* && $(MAKE) all
+
+strip_%:
+	cd $* && $(MAKE) strip
 
 clean_%:
 	cd $* && $(MAKE) clean

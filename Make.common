@@ -8,6 +8,10 @@ DROPS_ROOT = ..
 all: $(EXEC)
 	@echo "--> Made all executables in $(DIR)!"
 
+strip:
+	for F in $(EXEC); do if [ -x $$F ]; then strip $$F; fi; done
+	@echo "--> Stripped all executables in $(DIR)!"
+
 clean:
 	rm -f *.o $(DELETE)
 
