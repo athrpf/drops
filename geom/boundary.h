@@ -131,8 +131,8 @@ class BndPointSegEqCL : public std::unary_function<BndPointCL,bool>
 class AffineSquareCL : public BndSegCL
 {
   private:
-    Point3DCL _Orig, _D0, _D1;
-    double    _D0D1, _D0sq, _D1sq, _Det;
+    Point3DCL _Orig, _d0, _d1;
+    double    _d0d1, _d0sq, _d1sq, _Det;
 
   public:
     // Images of          (0,0),            (1,0),            (0,1).
@@ -156,8 +156,8 @@ class AffineSquareCL : public BndSegCL
 class AffineTriangleCL : public BndSegCL
 {
   private:
-    Point3DCL _Orig, _D0, _D1;
-    double    _D0D1, _D0sq, _D1sq, _Det;
+    Point3DCL _Orig, _d0, _d1;
+    double    _d0d1, _d0sq, _d1sq, _Det;
 
   public:
     // Images of            (0,0),            (1,0),            (0,1).

@@ -23,11 +23,11 @@ namespace DROPS
 
 
 AffineSquareCL::AffineSquareCL (const Point3DCL& p00, const Point3DCL& p10, const Point3DCL& p01)
-    : BndSegCL(false), _Orig(p00), _D0(p10-p00), _D1(p01-p00),
-      _D0D1(std::inner_product(_D0.begin(), _D0.end(), _D1.begin(), 0.0)),
-      _D0sq(std::inner_product(_D0.begin(), _D0.end(), _D0.begin(), 0.0)),
-      _D1sq(std::inner_product(_D1.begin(), _D1.end(), _D1.begin(), 0.0)),
-      _Det(_D0sq*_D1sq-_D0D1*_D0D1) {}
+    : BndSegCL(false), _Orig(p00), _d0(p10-p00), _d1(p01-p00),
+      _d0d1(std::inner_product(_d0.begin(), _d0.end(), _d1.begin(), 0.0)),
+      _d0sq(std::inner_product(_d0.begin(), _d0.end(), _d0.begin(), 0.0)),
+      _d1sq(std::inner_product(_d1.begin(), _d1.end(), _d1.begin(), 0.0)),
+      _Det(_d0sq*_d1sq-_d0d1*_d0d1) {}
 
 
 bool AffineSquareCL::IsInBounds (const Point2DCL& p2D) const
@@ -38,19 +38,19 @@ bool AffineSquareCL::IsInBounds (const Point2DCL& p2D) const
 
 Point3DCL AffineSquareCL::Map (const Point2DCL& p2D) const
 {
-    return _Orig + p2D[0]*_D0 + p2D[1]*_D1;
+    return _Orig + p2D[0]*_d0 + p2D[1]*_d1;
 }
 
 
 Point2DCL AffineSquareCL::ProjectRaw (const Point3DCL& p3D, const Point2DCL*) const
 {
     Point3DCL Diff(p3D-_Orig);
-    double    s0(std::inner_product(_D0.begin(), _D0.end(), Diff.begin(), 0.0));
-    double    s1(std::inner_product(_D1.begin(), _D1.end(), Diff.begin(), 0.0));
+    double    s0(std::inner_product(_d0.begin(), _d0.end(), Diff.begin(), 0.0));
+    double    s1(std::inner_product(_d1.begin(), _d1.end(), Diff.begin(), 0.0));
 
     Point2DCL Result;
-    Result[0] = (s0*_D1sq - s1*_D0D1) / _Det;
-    Result[1] = (s1*_D0sq - s0*_D0D1) / _Det;
+    Result[0] = (s0*_d1sq - s1*_d0d1) / _Det;
+    Result[1] = (s1*_d0sq - s0*_d0d1) / _Det;
     return Result;
 }
 
@@ -78,11 +78,11 @@ BndPairCL AffineSquareCL::MidProject (const BndPointCL& bp0, const BndPointCL& b
 //**************************************************************************
 
 AffineTriangleCL::AffineTriangleCL (const Point3DCL& p00, const Point3DCL& p10, const Point3DCL& p01)
-    : BndSegCL(false), _Orig(p00), _D0(p10-p00), _D1(p01-p00),
-      _D0D1(std::inner_product(_D0.begin(), _D0.end(), _D1.begin(), 0.0)),
-      _D0sq(std::inner_product(_D0.begin(), _D0.end(), _D0.begin(), 0.0)),
-      _D1sq(std::inner_product(_D1.begin(), _D1.end(), _D1.begin(), 0.0)),
-      _Det(_D0sq*_D1sq-_D0D1*_D0D1) {}
+    : BndSegCL(false), _Orig(p00), _d0(p10-p00), _d1(p01-p00),
+      _d0d1(std::inner_product(_d0.begin(), _d0.end(), _d1.begin(), 0.0)),
+      _d0sq(std::inner_product(_d0.begin(), _d0.end(), _d0.begin(), 0.0)),
+      _d1sq(std::inner_product(_d1.begin(), _d1.end(), _d1.begin(), 0.0)),
+      _Det(_d0sq*_d1sq-_d0d1*_d0d1) {}
 
 
 bool AffineTriangleCL::IsInBounds (const Point2DCL& p2D) const
@@ -93,19 +93,19 @@ bool AffineTriangleCL::IsInBounds (const Point2DCL& p2D) const
 
 Point3DCL AffineTriangleCL::Map (const Point2DCL& p2D) const
 {
-    return _Orig + p2D[0]*_D0 + p2D[1]*_D1;
+    return _Orig + p2D[0]*_d0 + p2D[1]*_d1;
 }
 
 
 Point2DCL AffineTriangleCL::ProjectRaw (const Point3DCL& p3D, const Point2DCL*) const
 {
     Point3DCL Diff(p3D-_Orig);
-    double    s0(std::inner_product(_D0.begin(), _D0.end(), Diff.begin(), 0.0));
-    double    s1(std::inner_product(_D1.begin(), _D1.end(), Diff.begin(), 0.0));
+    double    s0(std::inner_product(_d0.begin(), _d0.end(), Diff.begin(), 0.0));
+    double    s1(std::inner_product(_d1.begin(), _d1.end(), Diff.begin(), 0.0));
 
     Point2DCL Result;
-    Result[0] = (s0*_D1sq - s1*_D0D1) / _Det;
-    Result[1] = (s1*_D0sq - s0*_D0D1) / _Det;
+    Result[0] = (s0*_d1sq - s1*_d0d1) / _Det;
+    Result[1] = (s1*_d0sq - s0*_d0d1) / _Det;
     return Result;
 }
 
