@@ -6,17 +6,17 @@
 
 # time stepping
 Time {
-  NumSteps	=	40
-  StepSize	=	5e-4
+  NumSteps	=	500
+  StepSize	=	1e-4
   Theta		=	0.5	# Crank-Nicholson
 }
 
 # flow solver
 Stokes {
   InnerIter	=	1000
-  OuterIter	=	100
-  InnerTol	=	1e-14
-  OuterTol	=	1e-10
+  OuterIter	=	200
+  InnerTol	=	1e-15
+  OuterTol	=	1e-11
 }
 
 # levelset solver
@@ -65,3 +65,4 @@ CouplingSteps	=	-1	# -1 = till convergence
 
 MeshFile	=	gambit/messzelle.msh
 EnsightCase	=	mzi
+EnsightDir	=	ensight

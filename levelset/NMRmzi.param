@@ -6,22 +6,17 @@
 
 # time stepping
 Time {
-  NumSteps	=	40
-  StepSize	=	5e-4
+  NumSteps	=	500
+  StepSize	=	1e-4
   Theta		=	0.5	# Crank-Nicholson
 }
 
 # flow solver
 Stokes {
   InnerIter	=	1000
-  OuterIter	=	100
+  OuterIter	=	200
   InnerTol	=	1e-14
   OuterTol	=	1e-10
-}
-
-NavStokes {
-  Nonlinear	=	0.5
-  Scheme	=	0	# Baensch
 }
 
 # levelset solver
@@ -53,13 +48,13 @@ Mat {
 # experimental conditions
 Exp {
   RadDrop	=	1.75e-3
-  PosDrop	=	0	-8e-3	0
+  PosDrop	=	0	-8.25e-3	0
   
   Gravity	=	0	-9.81	0
   
   FlowDir	=	1	# flow in y-direction
   
-  InflowVel	=	-0.1
+  InflowVel	=	-0.14
   RadInlet	=	3.5e-3
 }  
 
@@ -68,5 +63,6 @@ Exp {
 NumDropRef	=	2
 CouplingSteps	=	-1	# -1 = till convergence
 
-MeshFile	=	gambit/NMR_messzelle.msh
+MeshFile	=	gambit/NMR_klein_grob.msh
 EnsightCase	=	NMRmzi
+EnsightDir	=	ensight

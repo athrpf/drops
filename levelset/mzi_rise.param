@@ -6,8 +6,8 @@
 
 # time stepping
 Time {
-  NumSteps	=	40
-  StepSize	=	5e-4
+  NumSteps	=	500
+  StepSize	=	1e-4
   Theta		=	0.5	# Crank-Nicholson
 }
 
@@ -65,3 +65,4 @@ CouplingSteps	=	-1	# -1 = till convergence
 
 MeshFile	=	gambit/messzelle.msh
 EnsightCase	=	mzi
+EnsightDir	=	ensight
