@@ -16,13 +16,16 @@ enum BndCondT
 // - boundary condition with lower number is superior
 // - odd number for boundary with unknowns
 // - valid boundary conditions have numbers in the range 0..99
+// - interior simplices have no boundary data and return NoBC
+//   in BndDataCL::GetBC
 {
     Dir0BC= 0, DirBC= 2,         // (in)hom. Dirichlet boundary conditions
     Per1BC= 11, Per2BC= 13,      // Periodic boundary condition
     Nat0BC= 21, NatBC= 23,       // (in)hom. natural   boundary conditions
     OutflowBC= 21, WallBC= 0,    // for convenience
     
-    UndefinedBC_= -1,            // ReadMeshBuilderCL: error, unknown bc
+    NoBC= -1,                    // interior simplices
+    UndefinedBC_= 99,            // ReadMeshBuilderCL: error, unknown bc
     MaxBC_= 100                  // upper bound for valid bc's
 };
 
@@ -103,7 +106,7 @@ class NoBndDataCL
     // default ctor, dtor, whatever
 
     template<class SimplexT>
-    static inline BndCondT GetBC  (const SimplexT&) { return UndefinedBC_; }
+    static inline BndCondT GetBC  (const SimplexT&) { return NoBC; }
     template<class SimplexT>
     static inline bool IsOnDirBnd (const SimplexT&) { return false; }
     template<class SimplexT>
@@ -186,7 +189,7 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const VertexCL& v) const
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v) const
 { // return BC on v with lowest number (i.e. the superior BC on v)
-    if ( !v.IsOnBoundary() ) return UndefinedBC_;
+    if ( !v.IsOnBoundary() ) return NoBC;
     BndCondT bc= MaxBC_;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
         bc= std::min( bc, BndData_[it->GetBndIdx()].GetBC());
@@ -246,7 +249,7 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const EdgeCL& e) const
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e) const
 { // return BC on e with lowest number (i.e. the superior BC on e)
-    if ( !e.IsOnBoundary() ) return UndefinedBC_;
+    if ( !e.IsOnBoundary() ) return NoBC;
     BndCondT bc= MaxBC_;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         bc= std::min( bc, BndData_[*it].GetBC());
@@ -288,7 +291,7 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const FaceCL& f) const
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const FaceCL& f) const
 { 
-    if ( !f.IsOnBoundary() ) return UndefinedBC_;
+    if ( !f.IsOnBoundary() ) return NoBC;
     return BndData_[f.GetBndIdx()].GetBC();
 }        
 
