@@ -118,12 +118,12 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     //@{
     /// Get solutions as FE-functions
     const_DiscPrSolCL GetPrSolution() const
-        { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
+        { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG(), t); }
     const_DiscVelSolCL GetVelSolution() const
         { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
 
     const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
-        { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
+        { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG(), t); }
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
         { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
     //@}
@@ -169,7 +169,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     
     // Set up matrices and rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;
-    void SetupMass(MatDescCL*) const;
+    void SetupPrMass(MatDescCL*) const;
 
     // Check system and computed solution
     void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
@@ -188,7 +188,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
         { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
-        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
+        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG()); }
     //@}
 };
 

@@ -168,10 +168,10 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         if (meth)
         {
             SSORPcCL  pc(omega);
-            MatDescCL M;
-            M.SetIdx( pidx1, pidx1);
-            Stokes.SetupMass( &M);
-            PreGSOwnMatCL<P_SSOR0> schur_pc(M.Data);
+            MatDescCL prM;
+            prM.SetIdx( pidx1, pidx1);
+            Stokes.SetupPrMass( &prM);
+            PreGSOwnMatCL<P_SSOR0> schur_pc(prM.Data);
             SSORPcCL poissonpc;
             PCG_SsorCL poissonsolver( poissonpc, 500, inner_iter_tol);
             SchurComplMatrixCL<PCG_SsorCL> BABT( poissonsolver, A->Data, B->Data);
@@ -208,11 +208,11 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             std::cerr << "tol = "; std::cin >> tol;
             std::cerr << "tau = "; std::cin >> tau;
             std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-            MatDescCL M;
-            M.SetIdx( pidx1, pidx1);
-            Stokes.SetupMass( &M);
+            MatDescCL prM;
+            prM.SetIdx( pidx1, pidx1);
+            Stokes.SetupPrMass( &prM);
             time.Start();
-            Uzawa_PCG_CL uzawaSolver( M.Data, max_iter, tol, inner_iter, inner_iter_tol, tau);
+            Uzawa_PCG_CL uzawaSolver( prM.Data, max_iter, tol, inner_iter, inner_iter_tol, tau);
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
 //            Uzawa( A->Data, B->Data, M.Data, v1->Data, p1->Data, b->Data, c->Data, tau, max_iter, tol, inner_iter, inner_iter_tol);
             time.Stop();

@@ -1598,8 +1598,8 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
 }
 
 template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::SetupMass(MatDescCL* matM) const
-// Sets up the mass matrix
+void StokesP1BubbleP1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
+// Sets up the pressure mass matrix
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
 
