@@ -261,6 +261,12 @@ class StokesDoerflerMarkCL
     bool Estimate(const DiscPrSolCL&, const DiscVelSolCL&);
 };
 
+template<typename>
+class SchurComplMatrixCL;
+
+template<typename T>
+VectorCL operator*(const SchurComplMatrixCL<T>&, const VectorCL&);
+
 template<class PoissonSolverT>
 class SchurComplMatrixCL
 {
@@ -272,8 +278,9 @@ class SchurComplMatrixCL
   public:
     SchurComplMatrixCL(PoissonSolverT& solver, const MatrixCL& A, const MatrixCL& B)
         : solver_( solver), A_( A), B_( B) {}
+
     friend VectorCL
-    operator*<PoissonSolverT>(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& v);
+    operator*<>(const SchurComplMatrixCL<PoissonSolverT>&, const VectorCL&);
 };
 
 void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& I, VectorCL& x, VectorCL& y, const VectorCL& f, const VectorCL& g, 
