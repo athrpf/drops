@@ -101,7 +101,7 @@ class NoBndDataCL
     static inline bnd_type GetDirBndValue (const VertexCL&)
         { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
     static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
+        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
 };
 
 
