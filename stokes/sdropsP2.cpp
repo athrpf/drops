@@ -222,7 +222,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           case 4: {	
             std::cerr << "MG_Schur!\n";
             MGDataCL MGData;
-	    IdxDescCL* c_idx;
+	    IdxDescCL* c_idx=0;
             time.Reset();
             time.Start();
             for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
@@ -260,7 +260,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           case 5: { // Stokes-MG-PMinres
             std::cerr << "Stokes-MG-PMINRES!\n";
             MGDataCL MGData;
-	    IdxDescCL* c_idx;
+	    IdxDescCL* c_idx=0;
             time.Reset();
             time.Start();
             for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
@@ -296,7 +296,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           case 6: { // MG-Uzawa
             std::cerr << "MG_Uzawa!\n";
             MGDataCL MGData;
-	    IdxDescCL* c_idx;
+	    IdxDescCL* c_idx=0;
             time.Reset();
             time.Start();
             for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {

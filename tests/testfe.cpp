@@ -170,7 +170,7 @@ scalar_coeff_ptr testFct(int i)
 
 void testHat( int i)
 {
-    double (*H)(double, double, double);
+    double (*H)(double, double, double)=0;
     switch(i)
     {
       case 0: H= &FE_P2CL::H0; break;

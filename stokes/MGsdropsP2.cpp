@@ -185,7 +185,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         time.Reset();
 	
 	MGDataCL MGData;
-	IdxDescCL* c_idx;
+	IdxDescCL* c_idx=0;
         for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl)
         {
            MGData.push_back(MGLevelDataCL());

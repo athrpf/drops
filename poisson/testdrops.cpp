@@ -128,7 +128,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     typedef PoissonP1CL<Coeff> MyPoissonCL;
     
     MultiGridCL& MG= Poisson.GetMG();
-    IdxDescCL* c_idx;
+    IdxDescCL* c_idx=0;
     TimerCL time;
     MGDataCL MGData;
 
@@ -271,7 +271,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
     Uint step= 0;
     double true_err= 0.0;
-    IdxDescCL *c_idx;
+    IdxDescCL *c_idx=0;
     TimerCL time, time2;
     MGDataCL MGData;
     

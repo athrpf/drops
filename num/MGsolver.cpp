@@ -55,7 +55,7 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
     Uint   sm   =  1; // how many smoothing steps?
     int    lvl  = -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
-    double resid;
+    double resid= -1;
     double old_resid;
     VectorCL tmp;
     if (residerr == true) {
