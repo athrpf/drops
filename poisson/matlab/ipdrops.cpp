@@ -57,14 +57,14 @@ class MatConnect
     static node_map _NodeMap;
     static double* _BndData[6];
     static double* _T0;
-    static double _DeltaT, _XLen, _YLen, _ZLen, _SpIncrX, _SpIncrY, _SpIncrZ;
-    static int _MeshRefX, _MeshRefY, _MeshRefZ, _Count, _CutPos, _FacePtsYZ;
+    static double _DeltaT, _XLen, _YLen, _ZLen, _SpIncrX, _SpIncrY, _SpIncrZ, _CutPos;
+    static int _MeshRefX, _MeshRefY, _MeshRefZ, _Count, _FacePtsYZ;
 	
   public:
     MatConnect(double DeltaT, 
       double xl, double yl, double zl,
       int mrx, int mry, int mrz,
-      int CutPos, int FacePtsYZ,  
+      double CutPos, int FacePtsYZ,  
       double* T0,
       double* S1, double* S2, double* S3,
       double* S4, double* S5, double* S6)
@@ -188,15 +188,23 @@ class MatConnect
     }
     
     static void setOutputData(double* sol2D)
-    {
+    {   
       ci p= _NodeMap.begin();
-      for (int i=0; i<_CutPos; i++)
-        for (int j=0; j<_FacePtsYZ; j++)
-          if (p!=_NodeMap.end())
-            p++;
+      double xc= p->first.first;
+      while ((xc<_CutPos)&&(p!=_NodeMap.end()))
+      {
+        p++;
+        xc= p->first.first;
+      }
+      //for (int i=0; i<_CutPos; i++)
+      //  for (int j=0; j<_FacePtsYZ; j++)
+      //    if (p!=_NodeMap.end())
+      //      p++;
       for (int k=0; k<_FacePtsYZ; k++)
       {
         *(sol2D+_Count)= *(p->second);
+        //mexPrintf("xc yc zc sol2D: %g %g %g %g\n", p->first.first, p->first.second.second,
+        //  p->first.second.first, *(p->second));
         p++;
         _Count++;
       }
@@ -215,7 +223,7 @@ class MatConnect
       mexPrintf("MeshRefY: %d\n", _MeshRefY);
       mexPrintf("MeshRefZ: %d\n", _MeshRefZ);
       mexPrintf("Count: %d\n", _Count);
-      mexPrintf("CutPos: %d\n", _CutPos);
+      mexPrintf("CutPos: %g\n", _CutPos);
       mexPrintf("FacePtsYZ: %d\n", _FacePtsYZ);
 
       for (ci p=_NodeMap.begin(); p!=_NodeMap.end(); p++)
@@ -241,7 +249,7 @@ int MatConnect::_MeshRefX= 0;
 int MatConnect::_MeshRefY= 0;
 int MatConnect::_MeshRefZ= 0;
 int MatConnect::_Count= 0;
-int MatConnect::_CutPos= 0;
+double MatConnect::_CutPos= 0;
 int MatConnect::_FacePtsYZ= 0;
 
 
@@ -303,7 +311,7 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
 void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
 {
   Point3DCL VertCoord(0.0);
-  double width= 0.001;
+  double width= 1.0;
   
   for (MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
     ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
@@ -323,7 +331,7 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
 
 
 template<class Coeff>
-void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* sol2D, 
+void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2D, 
   double nu, double dt, int time_steps, double theta, double cgtol, int cgiter, MatConnect* MatCon)
 {
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
@@ -382,10 +390,18 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* sol2D,
   
   MatCon->setNodeMap(x, MG);
   MatCon->setInitialData();
-      
+   
+  int MaxIterCG= 0;
+  double MaxResCG= 0.;
+     
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
+    if (MaxIterCG<=pcg_solver.GetIter())
+      MaxIterCG= pcg_solver.GetIter();
+    if (MaxResCG<=pcg_solver.GetResid())
+      MaxResCG= pcg_solver.GetResid();
+      
     //mexPrintf("t= %g\n", Poisson.t);
     //mexPrintf("Iterationen: %d", pcg_solver.GetIter());
     //mexPrintf("    Norm des Residuums: %g\n", pcg_solver.GetResid());
@@ -393,6 +409,10 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* sol2D,
     
     MatCon->setOutputData(sol2D);
   }
+  
+  *CGMaxIter= static_cast<double>(MaxIterCG);
+  mexPrintf("max. Anzahl CG-Iterationen tatsaechlich: %d\n", MaxIterCG);
+  mexPrintf("Norm des max. Residuums CG: %g\n", MaxResCG);
   
   //MatCon->printData();
   
@@ -404,10 +424,10 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* sol2D,
 
 
 static
-void ipdrops(double* sol2D, double* T0, double* S1, double* S2, 
-  double M, double xl, double yl, double zl, double nu, double mrx, 
-  double mry, double mrz, double dt, int time_steps, double theta, 
-  double cgtol, double cgiter, double Flag, double BndRef)
+void ipdrops(double* CGMaxIter, double* sol2D, double* T0, double* S1, 
+  double* S2, double M, double xl, double yl, double zl, double nu, 
+  double mrx, double mry, double mrz, double dt, int time_steps, 
+  double theta, double cgtol, double cgiter, double Flag, double BndRef)
 {
   try
   {
@@ -427,7 +447,7 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     int imrx= static_cast<int>(mrx+0.5);
     int imry= static_cast<int>(mry+0.5);
     int imrz= static_cast<int>(mrz+0.5);
-    int iM= static_cast<int>(M+0.5);
+    //int iM= static_cast<int>(M+0.5);
     int icgiter= static_cast<int>(cgiter+0.5);
     int iFlag= static_cast<int>(Flag+0.5);
     int iBndRef= static_cast<int>(BndRef+0.5);
@@ -451,8 +471,10 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, imrx, imry, imrz);
     
-    mexPrintf("\nRueckgabe der Daten fuer die Flaeche x=%g\n", 
-      M*xl/imrx);
+    //mexPrintf("\nRueckgabe der Daten fuer die Flaeche x=%g\n", 
+    //  M*xl/imrx);
+    
+    mexPrintf("\nRueckgabe der Daten fuer die Flaeche x=%g\n", M);
     mexPrintf("\nDelta t = %g", dt);
     mexPrintf("\nAnzahl der Zeitschritte = %d\n", time_steps);
     
@@ -464,7 +486,7 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     double* Sy= &VecXY[0];
     double* Sz= &VecXZ[0];
     
-    MatConnect MatCon(dt, xl, yl, zl, MeshRefX, MeshRefY, MeshRefZ, iM, FacePtsYZ, 
+    MatConnect MatCon(dt, xl, yl, zl, MeshRefX, MeshRefY, MeshRefZ, M, FacePtsYZ, 
       T0, S1, S2, Sy, Sy, Sz, Sz);  
     
     const bool isneumann[6]= { true, true, true, true, true, true };
@@ -490,7 +512,7 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     }
     
     // mg.SizeInfo();
-    DROPS::Strategy(prob, sol2D, nu, dt, time_steps, theta, cgtol, icgiter, &MatCon);
+    DROPS::Strategy(prob, CGMaxIter, sol2D, nu, dt, time_steps, theta, cgtol, icgiter, &MatCon);
     
     //time.Stop();
     //mexPrintf("Zeit fuer das Loesen des direkten Problems: %g sek\n", time.GetTime());
@@ -507,14 +529,14 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   double nu, dt, xl, yl, zl, M, mrx, mry, mrz, CGTol, CGIter, theta, Flag, BndRef;
-  double *T0, *S1, *S2, *sol2D;
+  double *T0, *S1, *S2, *sol2D, *CGMaxIter;
   int mrows, ncols;
   
   /* Check for proper number of arguments. */
   if(nrhs!=17)
     mexErrMsgTxt("(T0, S1, S2, M, xl, yl, zl, nu, mrx, mry, mrz, dt, Theta, CGTol, CGIter, Flag, BndRef) as input required.");
-  if(nlhs!=1)
-    mexErrMsgTxt("Solution on 2D-area as output required.");
+  if(nlhs!=2)
+    mexErrMsgTxt("Solution on 2D-area and maximum number of CG-iterations as output required.");
   
   /* Check to make sure the first input arguments are double matrices. */
   for (int index=0; index<3; index++)
@@ -601,14 +623,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //    mexPrintf("%g ", *(T0+count));
   // test end
   
-  /* Set the output pointer to the output matrix. */
-  plhs[0] = mxCreateDoubleMatrix(mrows, ncols-1, mxREAL);
+  /* Set the output pointer to the output arguments. */
+  plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
+  plhs[1] = mxCreateDoubleMatrix(mrows, ncols-1, mxREAL);
   
-  /* Create a C pointer to a copy of the output matrix. */
-  sol2D = mxGetPr(plhs[0]);
+  /* Create C pointers to a copy of the output arguments. */
+  CGMaxIter = mxGetPr(plhs[0]);
+  sol2D = mxGetPr(plhs[1]);
+  
   
   /* Call the C subroutine. */
-  ipdrops(sol2D, T0, S1, S2, M, xl, yl, zl, nu, mrx, mry, mrz, 
+  ipdrops(CGMaxIter, sol2D, T0, S1, S2, M, xl, yl, zl, nu, mrx, mry, mrz, 
     dt, ncols-1, theta, CGTol, CGIter, Flag, BndRef);
     
   return;
