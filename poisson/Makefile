@@ -6,7 +6,8 @@
 
 DIR = poisson
 
-EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep drops_neumann
+EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep drops_neumann \
+       MGdropsP2
 
 DELETE = $(EXEC)
 
