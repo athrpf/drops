@@ -8,16 +8,28 @@ DIR = tests
 
 EXEC = reftest ip1test ip2test mattest testfe
 
-DELETE = $(EXEC)
+DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
 CPP = $(wildcard *.cpp)
 
 OBJ = $(CPP:%.cpp=%.o)
 
-
+TESTNAME = drivencavity-adaptiv-schur drivencavity-adaptiv-uzawa \
+    poisson-instationaer-uniform poisson-stationaer-adaptiv \
+    poisson-stationaer-multigrid poisson-stationaer-neumann \
+    poisson-stationaer-uniform stokes-instationaer-uniform \
+    stokes-stationaer-uniform
+    
 # rules
 
 default: ClrScr
+
+check: $(TESTNAME:%=check_%)
+	@echo "--> All testcases have been executed!"
+
+check_%:
+	cd ../$$(./testinfo "makedir" $*); make $$(../${DIR}/testinfo "maketarget" $*)
+	./runtest $*
 
 reftest: \
     ../tests/reftest.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
