@@ -95,7 +95,8 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     using                                      _base::GetBndData;
     using                                      _base::GetMG;
     
-    typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
+    typedef P1EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
+    typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     IdxDescCL idx;
@@ -124,8 +125,10 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     static double ResidualErrEstimator  (const TetraCL&, const VecDescCL&, const BndDataCL&);
     static double ResidualErrEstimatorL2(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
-    DiscSolCL GetSolution() const
+    DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
+    const_DiscSolCL GetSolution() const
+        { return const_DiscSolCL(&x, &GetBndData(), &GetMG()); }
 };
 
 template <class Coeff>
@@ -141,7 +144,8 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     using                                           _base::GetBndData;
     using                                           _base::GetMG;
     
-    typedef P2EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
+    typedef P2EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
+    typedef P2EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     // new fields for the matrix A, the rhs b and the solution x
@@ -165,15 +169,6 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     // check computed solution, etc.
     double CheckSolution(const VecDescCL&, scalar_fun_ptr) const;
     double CheckSolution(scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-//    void GetDiscError (const MatDescCL&, scalar_fun_ptr) const;
-//    void GetDiscError (scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
-
-//    bool          EstimateError         (const VecDescCL&, const double, double&, est_fun);
-//    static double ResidualErrEstimator  (const TetraCL&, const VecDescCL&, const BndDataCL&);
-//    static double ResidualErrEstimatorL2(const TetraCL&, const VecDescCL&, const BndDataCL&);
-
-//    DiscSolCL GetSolution() const
-//        { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
 };
 
 

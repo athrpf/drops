@@ -245,7 +245,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
     Uint lvl=lsg.GetLevel(),
          Idx=lsg.RowIdx->GetIdx();
     
-    DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
+    const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
     
     std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
@@ -897,7 +897,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Ls
     Uint lvl=lsg.GetLevel(),
          Idx=lsg.RowIdx->GetIdx();
     
-    DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
+    const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
     
     std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 

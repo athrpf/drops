@@ -92,7 +92,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red, double 
 //        CreateNumbering(new_idx->TriangLevel, err_idx);
 //        err->SetIdx( err_idx);
 //        NumMarked= EstimateError(*new_x, 0.2, &Estimator);
-        new_marks= Estimator.Estimate( typename MyPoissonCL::DiscSolCL(new_x, &BndData, &MG) );
+        new_marks= Estimator.Estimate( typename MyPoissonCL::const_DiscSolCL(new_x, &BndData, &MG) );
 //        err->Reset();
 //        DeleteNumbering(err_idx);
         std::swap(old_x, new_x);

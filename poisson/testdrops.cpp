@@ -426,11 +426,11 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
         time.Reset();
         time2.Start();
         time.Start();
-        new_marks= Estimator.Estimate(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG) );
+        new_marks= Estimator.Estimate(typename MyPoissonCL::const_DiscSolCL(&Poisson.x, &BndData, &MG) );
         time.Stop();
         time2.Stop();
         std::cerr << time.GetTime() <<" seconds for estimating" << std::endl;
-        EstimatorL2.Estimate(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG) );
+        EstimatorL2.Estimate(typename MyPoissonCL::const_DiscSolCL(&Poisson.x, &BndData, &MG) );
 
 //        std::cerr << "Checking the discretization error: ";
 //        Poisson.GetDiscError(finest->A, &::Lsg);
