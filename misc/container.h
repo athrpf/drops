@@ -67,6 +67,8 @@ typedef SVectorCL<2> Point2DCL;
 typedef SVectorCL<3> Point3DCL;
 typedef SVectorCL<4> BaryCoordCL;
 
+enum InitStateT { Uninitialized, Initialized };
+
 
 //**************************************************************************
 // Class:    SArrayCL                                                      *
@@ -77,10 +79,14 @@ typedef SVectorCL<4> BaryCoordCL;
 template <class T, Uint _Size>
 class SArrayCL
 {
-private:
+  private:
     T Array[_Size];
 
-public:
+  protected:
+    /*uninitialized memory; mainly for faster SVectorCL-math*/
+    explicit SArrayCL(InitStateT) {}
+    
+  public:
     typedef       T*       iterator;
     typedef const T* const_iterator;
     typedef       T&       reference;
@@ -202,11 +208,14 @@ template <class T, Uint _Size>
 template <Uint _Size>
 class SVectorCL : public SArrayCL<double,_Size>
 {
-public:
-    SVectorCL() {}
-    explicit           SVectorCL(double val)       : SArrayCL<double,_Size>(val)       {}
-    template<class In> SVectorCL(In start)         : SArrayCL<double,_Size>(start)     {}
-    template<class In> SVectorCL(In start, In end) : SArrayCL<double,_Size>(start,end) {}
+  public:
+    typedef SArrayCL<double,_Size> base_type;
+
+    SVectorCL()                                                            {}
+    explicit           SVectorCL(InitStateT i)     : base_type( i)         {}
+    explicit           SVectorCL(double val)       : base_type( val)       {}
+    template<class In> SVectorCL(In start)         : base_type( start)     {}
+    template<class In> SVectorCL(In start, In end) : base_type( start,end) {}
 
     SVectorCL& operator+=(const SVectorCL&);
     SVectorCL& operator-=(const SVectorCL&);
@@ -281,7 +290,7 @@ double SVectorCL<_Size>::norm_sq() const
 template <Uint _Size>
 SVectorCL<_Size> BaryCenter(const SVectorCL<_Size>& v1, const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i] = .5 * (v1[i] + v2[i]);
     return tempv;
 }
@@ -291,7 +300,7 @@ SVectorCL<_Size> ConvexComb (double a,
                              const SVectorCL<_Size>& v1,
                              const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i] = (1.0-a)*v1[i] + a*v2[i];
     return tempv;
 }
@@ -300,7 +309,7 @@ template <Uint _Size>
 SVectorCL<_Size> operator+(const SVectorCL<_Size>& v1,
                            const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= v1[i] + v2[i];
     return tempv;
 }
@@ -309,7 +318,7 @@ template <Uint _Size>
 SVectorCL<_Size> operator-(const SVectorCL<_Size>& v1,
                            const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= v1[i] - v2[i];
     return tempv;
 }
@@ -317,7 +326,7 @@ SVectorCL<_Size> operator-(const SVectorCL<_Size>& v1,
 template <Uint _Size>
 SVectorCL<_Size> operator-(const SVectorCL<_Size>& v1)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= -v1[i];
     return tempv;
 }
@@ -325,7 +334,7 @@ SVectorCL<_Size> operator-(const SVectorCL<_Size>& v1)
 template <Uint _Size>
 SVectorCL<_Size> operator*(double d, const SVectorCL<_Size>& v)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= d * v[i];
     return tempv;
 }
@@ -340,14 +349,20 @@ template <Uint _Size>
 double inner_prod(const SVectorCL<_Size>& v1, const SVectorCL<_Size>& v2)
 {
     double ret= 0.0;
-    for (Uint i=0; i <_Size; ++i) ret+= v1[i]*v2[i];
+    for (Uint i= 0; i <_Size; ++i) ret+= v1[i]*v2[i];
     return ret;
+}
+
+inline double
+inner_prod(const SVectorCL<3u>& v1, const SVectorCL<3u>& v2)
+{
+    return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
 }
 
 template <Uint _Size>
 SVectorCL<_Size> operator/(const SVectorCL<_Size>& v, double d)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= v[i]/d;
     return tempv;
 }
@@ -356,7 +371,7 @@ template <Uint _Size>
 SVectorCL<_Size> operator*(const SVectorCL<_Size>& v1,
                            const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= v1[i] * v2[i];
     return tempv;
 }
@@ -365,7 +380,7 @@ template <Uint _Size>
 SVectorCL<_Size> operator/(const SVectorCL<_Size>& v1,
                            const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= v1[i] / v2[i];
     return tempv;
 }
@@ -374,7 +389,6 @@ template <Uint _Size>
 bool operator<(const SVectorCL<_Size>& v1,
                const SVectorCL<_Size>& v2)
 {
-    SVectorCL<_Size> tempv;
     for (Uint i=0; i<_Size; ++i) if(!( v1[i] < v2[i]) ) return false;
     return true;
 }
@@ -384,7 +398,7 @@ using ::sqrt;
 template <Uint _Size>
 SVectorCL<_Size> sqrt(const SVectorCL<_Size>& v)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= sqrt(v[i]);
     return tempv;
 }
@@ -394,7 +408,7 @@ using ::fabs;
 template <Uint _Size>
 SVectorCL<_Size> fabs(const SVectorCL<_Size>& v)
 {
-    SVectorCL<_Size> tempv;
+    SVectorCL<_Size> tempv( Uninitialized);
     for (Uint i=0; i<_Size; ++i) tempv[i]= fabs(v[i]);
     return tempv;
 }
@@ -435,16 +449,15 @@ class SMatrixCL : public SVectorCL<_Rows*_Cols>
   public:
     typedef SVectorCL<_Rows*_Cols> _vec_base;
 
-    SMatrixCL() {}
-    explicit           SMatrixCL(double val)       : SVectorCL<_Rows*_Cols>(val)       {}
-    template<class In> SMatrixCL(In start)         : SVectorCL<_Rows*_Cols>(start)     {}
-    template<class In> SMatrixCL(In start, In end) : SVectorCL<_Rows*_Cols>(start,end) {}
+    SMatrixCL()                                                            {}
+    explicit           SMatrixCL(InitStateT i)     : _vec_base( i)         {}
+    explicit           SMatrixCL(double val)       : _vec_base( val)       {}
+    template<class In> SMatrixCL(In start)         : _vec_base( start)     {}
+    template<class In> SMatrixCL(In start, In end) : _vec_base( start,end) {}
 
 // Schreib- & Lesezugriff
     double& operator() (int row, int col)       { return (*this)[row*_Cols+col]; }// Matrix(i,j)
     double  operator() (int row, int col) const { return (*this)[row*_Cols+col]; }
-//    SliceArrayCL operator() (const SliceCL& sl)
-//        { return SliceArrayCL(this->begin(), sl); }
 
 // Zuweisung & Co.
     SMatrixCL& operator+=(const SMatrixCL&);                // Matrix=Matrix+Matrix'
@@ -493,7 +506,7 @@ template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>
 operator+(const SMatrixCL<_Rows, _Cols>& m1, const SMatrixCL<_Rows, _Cols>& m2)
 {
-    SMatrixCL<_Rows, _Cols> ret;
+    SMatrixCL<_Rows, _Cols> ret( Uninitialized);
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
         = *static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m1)
          +*static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m2);
@@ -504,7 +517,7 @@ template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>
 operator-(const SMatrixCL<_Rows, _Cols>& m1, const SMatrixCL<_Rows, _Cols>& m2)
 {
-    SMatrixCL<_Rows, _Cols> ret;
+    SMatrixCL<_Rows, _Cols> ret( Uninitialized);
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
         = *static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m1)
          -*static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m2);
@@ -515,7 +528,7 @@ template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>
 operator-(const SMatrixCL<_Rows, _Cols>& m)
 {
-    SMatrixCL<_Rows, _Cols> ret;
+    SMatrixCL<_Rows, _Cols> ret( Uninitialized);
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
         = -*static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m);
     return ret;
@@ -525,7 +538,7 @@ template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>
 operator*(double d, const SMatrixCL<_Rows, _Cols>& m)
 {
-    SMatrixCL<_Rows, _Cols> ret;
+    SMatrixCL<_Rows, _Cols> ret( Uninitialized);
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
         = d**static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m);
     return ret;
@@ -535,7 +548,7 @@ template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>
 operator*(const SMatrixCL<_Rows, _Cols>& m, double d)
 {
-    SMatrixCL<_Rows, _Cols> ret;
+    SMatrixCL<_Rows, _Cols> ret( Uninitialized);
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
         = *static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m)*d;
     return ret;
@@ -545,7 +558,7 @@ template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>
 operator/(const SMatrixCL<_Rows, _Cols>& m, double d)
 {
-    SMatrixCL<_Rows, _Cols> ret;
+    SMatrixCL<_Rows, _Cols> ret( Uninitialized);
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
         = *static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m)/d;
     return ret;
@@ -571,6 +584,17 @@ operator*(const SMatrixCL<_Rows, _Cols>& m, const SVectorCL<_Cols>& v)
     for (Uint row=0; row!=_Rows; ++row)
         for (Uint i=0; i!=_Cols; ++i)
                 ret[row]+= m(row, i)*v[i];
+    return ret;
+}
+
+inline SVectorCL<3>
+operator*(const SMatrixCL<3, 3>& m, const SVectorCL<3>& v)
+{
+    SVectorCL<3> ret( Uninitialized);
+    const double* const a= m.begin();
+    ret[0]= a[0]*v[0] + a[1]*v[1] + a[2]*v[2];
+    ret[1]= a[3]*v[0] + a[4]*v[1] + a[5]*v[2];
+    ret[2]= a[6]*v[0] + a[7]*v[1] + a[8]*v[2];
     return ret;
 }
 
