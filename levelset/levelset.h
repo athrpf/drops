@@ -70,6 +70,8 @@ class LevelsetP2CL
     
     DiscSolCL GetSolution() const
         { return DiscSolCL( &Phi, &_dummyBnd, &_MG); }
+    DiscSolCL GetSolution( const VecDescCL& MyPhi) const
+        { return DiscSolCL( &MyPhi, &_dummyBnd, &_MG); }
         
     // the following member functions are added to enable an easier implementation
     // of the coupling navstokes-levelset. They should not be called by a common user.
