@@ -15,7 +15,7 @@ namespace DROPS
 {
 
 template <class Coeff>
-void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
+void StokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
@@ -29,7 +29,7 @@ void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr Lsg
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord())[i];
+               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord(), 0.)[i];
         }
     }
     
@@ -39,7 +39,7 @@ void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr Lsg
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)+i]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i];
+                lsgvel[sit->Unknowns(vidx)+i]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., 0.)[i];
         }
     }
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl),
@@ -59,7 +59,7 @@ void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr Lsg
 * formulas for   n u m e r i c   i n t e g r a t i o n   on the reference tetrahedron
 *****************************************************************************************************/
 
-inline StokesVelBndDataCL::bnd_type Quad(const TetraCL& t, vector_fun_ptr coeff)
+inline StokesBndDataCL::VelBndDataCL::bnd_type Quad(const TetraCL& t, vector_fun_ptr coeff)
 // exact up to degree 2
 {
     return ( coeff(t.GetVertex(0)->GetCoord())
@@ -206,8 +206,8 @@ inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
 }
 
 
-inline StokesVelBndDataCL::bnd_type Quad2D(const TetraCL& t, Uint face, Uint vert, 
-                                           StokesVelBndDataCL::bnd_val_fun bfun)
+inline StokesBndDataCL::VelBndDataCL::bnd_type Quad2D(const TetraCL& t, Uint face, Uint vert, 
+    StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun)
 // Integrate bnd_val * phi_vert over face
 {
     const VertexCL* v[3];
@@ -218,9 +218,10 @@ inline StokesVelBndDataCL::bnd_type Quad2D(const TetraCL& t, Uint face, Uint ver
         if (VertOfFace(face,i)!=vert)
             v[k++]= t.GetVertex( VertOfFace(face,i) );
     }
-    const StokesVelBndDataCL::bnd_type f0= bfun(v[0]->GetCoord());
-    const StokesVelBndDataCL::bnd_type f1= bfun(v[1]->GetCoord()) +  bfun( v[2]->GetCoord());
-    const StokesVelBndDataCL::bnd_type f2= bfun((v[0]->GetCoord() + v[1]->GetCoord() + v[2]->GetCoord())/3.0 );    //Barycenter of Face
+    typedef StokesBndDataCL::VelBndDataCL::bnd_type bndT;
+    const bndT f0= bfun(v[0]->GetCoord(), 0.);
+    const bndT f1= bfun(v[1]->GetCoord(), 0.) +  bfun( v[2]->GetCoord(), 0.);
+    const bndT f2= bfun((v[0]->GetCoord() + v[1]->GetCoord() + v[2]->GetCoord())/3.0, 0. );    //Barycenter of Face
     const double            absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
@@ -580,7 +581,7 @@ void StokesP2P1CL<Coeff>::SetupMass(MatDescCL* matM) const
 
 template <class Coeff>
 void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
-                                 vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
+    instat_vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
 {
     double mindiff=0, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel();
@@ -592,8 +593,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
     
-    P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>  pr(lsgpr, &_BndData.Pr, &_MG);
-    P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL>  vel(lsgvel, &_BndData.Vel, &_MG);
+    DiscPrSolCL  pr(lsgpr, &_BndData.Pr, &_MG);
+    DiscVelSolCL  vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T, M;
     double det, absdet;
@@ -662,7 +663,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 
             const double prtmp= pr.val(*sit, p[0], p[1], p[2]) - c_pr - LsgPr(p_world);
             pvals[i]= prtmp*prtmp;
-            const SVectorCL<3> tmp= vel.val(veldof, p[0], p[1], p[2]) - LsgVel(p_world);
+            const SVectorCL<3> tmp= vel.val(veldof, p[0], p[1], p[2]) - LsgVel(p_world, 0.);
             vals[i]= inner_prod(tmp, tmp);
 
             Dvals[i]= 0.;
@@ -826,7 +827,7 @@ double StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrS
 
 //
 template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
+void StokesP1BubbleP1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
@@ -840,7 +841,7 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_p
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord())[i];
+               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord(), 0.)[i];
         }
     }
     
@@ -849,14 +850,14 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_p
     {  // Tetras are never on the boundary.
        for(int i=0; i<3; ++i)
        {
-            lsgvel[sit->Unknowns(vidx)+i]= LsgVel( GetBaryCenter(*sit) )[i];
+            lsgvel[sit->Unknowns(vidx)+i]= LsgVel( GetBaryCenter(*sit), 0. )[i];
             // The coefficient of the bubble-function is not the value of the solution
             // in the barycenter, as the linear shape-functions contribute to the value
             // there.
-            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(0)->GetCoord() )[i];
-            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(1)->GetCoord() )[i];
-            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(2)->GetCoord() )[i];
-            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(3)->GetCoord() )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(0)->GetCoord(), 0. )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(1)->GetCoord(), 0. )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(2)->GetCoord(), 0. )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(3)->GetCoord(), 0. )[i];
        }
     }
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
@@ -1069,7 +1070,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
                         face= FaceOfVert(i,f);
                         if ( sit->IsBndSeg(face))
                         {
-                            tmp= Quad2D(*sit, face, i, _BndData.Vel.GetSegData(sit->GetBndIdx(face)).GetBndFun() );
+                            tmp= Quad2D(*sit, face, i, _BndData.Vel.GetBndSeg(sit->GetBndIdx(face)).GetBndFun() );
                             b.Data[Numb[i]]+=          tmp[0];
                             b.Data[Numb[i]+stride]+=   tmp[1];
                             b.Data[Numb[i]+2*stride]+= tmp[2];
@@ -1309,7 +1310,7 @@ bool StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const DiscPrSolCL& pr
 
 template <class Coeff>
 void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
-                                              vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
+    instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),
@@ -1322,7 +1323,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
     
-    P1BubbleEvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL>  vel(lsgvel, &_BndData.Vel, &_MG);
+    DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -1361,7 +1362,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
            ++countverts;
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord())[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
+               diff= fabs( LsgVel(sit->GetCoord(), 0.)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -1384,7 +1385,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         for (Uint i=0; i<Quad3CL::GetNumPoints(); ++i)
         {
             const Point3DCL& pt= Quad3CL::GetPoints()[i];
-            vvals[i]= fabs(LsgVel(GetWorldCoord(*sit, pt)) - vel.lin_val(*sit, pt[0], pt[1], pt[2]));
+            vvals[i]= fabs(LsgVel(GetWorldCoord(*sit, pt), 0.) - vel.lin_val(*sit, pt[0], pt[1], pt[2]));
             vvals_sq[i]= vvals[i]*vvals[i];
         }
         L1_vel+= Quad3CL::Quad(vvals)*absdet;

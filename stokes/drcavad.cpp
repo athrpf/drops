@@ -22,13 +22,13 @@ typedef DROPS::StokesP2P1CL<DrivenCavityCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
-inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
+inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
 //inline DROPS::SMatrixCL<3, 3> NullMat( const DROPS::Point3DCL&)   { return DROPS::SMatrixCL<3, 3>(0.); }
 inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
 const double st= 0.1;
 
-inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p)
+inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
 {
     const DROPS::SVectorCL<3> ret= DROPS::std_basis<3>(1);
     const double d0= fabs(p[0]-.5);
@@ -257,7 +257,7 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &Stroem};
         
     StokesOnBrickCL prob(brick, DrivenCavityCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));

@@ -31,6 +31,8 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 
     typedef Coeff                     CoeffCL;
     typedef typename _base::BndDataCL BndDataCL;
+    typedef typename _base::DiscVelSolCL DiscVelSolCL;
+    typedef typename _base::DiscPrSolCL DiscPrSolCL;
 
     MatDescCL    N;
     VelVecDescCL cplN;
@@ -45,8 +47,8 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 //    void SetupNonlinearRhs(const VelVecDescCL*, VelVecDescCL*) const;
 
     // Check system and computed solution
-    void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr);
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr);
+    void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr);
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, scalar_fun_ptr);
 };
 
 

@@ -9,7 +9,7 @@
 #include "levelset/levelset.h"
 #include "out/ensightOut.h"
 
-DROPS::Point3DCL Null( const DROPS::Point3DCL& )
+DROPS::Point3DCL Null( const DROPS::Point3DCL&, double)
 {
     return DROPS::Point3DCL(0.);
 }
@@ -134,7 +134,7 @@ int main( int argc, char **argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);
     const bool IsNeumann[6]= 
         {true, true, true, true, true, true};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &Null };
         
     MyStokesCL prob(brick, DROPS::DummyStokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));

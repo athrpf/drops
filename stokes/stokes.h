@@ -13,97 +13,27 @@
 #include "misc/problem.h"
 #include "num/solver.h"
 #include "num/fe.h"
+#include "num/discretize.h"
 
 
 namespace DROPS
 {
 
-class VelBndSegDataCL
-{
-  public:
-    typedef SVectorCL<3>    bnd_type;
-    typedef VelBndSegDataCL self;
-    typedef bnd_type (*bnd_val_fun)(const Point3DCL&);
-    
-  private:
-    BndCondT     _bc;
-    bnd_val_fun  _bnd_val;
-
-  public:
-    VelBndSegDataCL( BndCondT bc, bnd_val_fun f)
-    : _bc(bc), _bnd_val(f) {}
-    
-    bool        IsNeumann() const { return _bc & 1; }
-    bnd_val_fun GetBndFun() const { return _bnd_val; }
-    bnd_type    GetBndVal(const Point3DCL& p) const { return _bnd_val(p); }
-};
-
-class StokesVelBndDataCL
-{
-  private:
-    std::vector<VelBndSegDataCL> _BndData;
-
-    
-  public:
-    typedef VelBndSegDataCL::bnd_type    bnd_type;
-    typedef VelBndSegDataCL::bnd_val_fun bnd_val_fun;
-    
-    StokesVelBndDataCL(Uint, const bool*, const bnd_val_fun*);
-    StokesVelBndDataCL(Uint, const BndCondT*, const bnd_val_fun*);
-
-    inline bool IsOnDirBnd(const VertexCL&) const;
-    inline bool IsOnNeuBnd(const VertexCL&) const;
-    inline bool IsOnDirBnd(const EdgeCL&) const;
-    inline bool IsOnNeuBnd(const EdgeCL&) const;
-    inline bool IsOnDirBnd(const FaceCL&) const;
-    inline bool IsOnNeuBnd(const FaceCL&) const;
-    
-    inline bnd_type GetDirBndValue(const VertexCL&, double= 0.0) const;
-    inline bnd_type GetNeuBndValue(const VertexCL&, double= 0.0) const;
-    inline bnd_type GetDirBndValue(const EdgeCL&, double= 0.0) const;
-    inline bnd_type GetNeuBndValue(const EdgeCL&, double= 0.0) const;
-    inline bnd_type GetDirBndValue(const FaceCL&, double= 0.0) const;
-    inline bnd_type GetNeuBndValue(const FaceCL&, double= 0.0) const;
-
-    const VelBndSegDataCL& GetSegData(BndIdxT idx) const { return _BndData[idx]; }
-};
-
-inline StokesVelBndDataCL::StokesVelBndDataCL(Uint numbndseg,
-                                              const bool* isneumann,
-                                              const bnd_val_fun* fun)
-{
-    _BndData.reserve(numbndseg);
-    for (Uint i=0; i<numbndseg; ++i)
-        _BndData.push_back( VelBndSegDataCL(isneumann[i] ? NatBC : DirBC, fun[i]) );
-}
-
-inline StokesVelBndDataCL::StokesVelBndDataCL(Uint numbndseg,
-                                              const BndCondT* bc,
-                                              const bnd_val_fun* fun)
-{
-    _BndData.reserve(numbndseg);
-    for (Uint i=0; i<numbndseg; ++i)
-        _BndData.push_back( VelBndSegDataCL(bc[i], fun[i]) );
-}
-
-
 class StokesBndDataCL
 {
   public:
-    StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndSegDataCL::bnd_val_fun* fun)
+    typedef NoBndDataCL<>        PrBndDataCL;
+    typedef BndDataCL<Point3DCL> VelBndDataCL;
+    
+    StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndDataCL::bnd_val_fun* fun)
         : Pr(), Vel(numbndseg, isneumann, fun) {}
-    StokesBndDataCL( Uint numbndseg, const BndCondT* bc, const VelBndSegDataCL::bnd_val_fun* fun)
+    StokesBndDataCL( Uint numbndseg, const BndCondT* bc, const VelBndDataCL::bnd_val_fun* fun)
         : Pr(), Vel( numbndseg, bc, fun) {}
     
-    typedef NoBndDataCL<> PrBndDataCL;
-    typedef StokesVelBndDataCL VelBndDataCL;
-
     const PrBndDataCL  Pr;
     const VelBndDataCL Vel;   
 };
 
-typedef double (*scalar_fun_ptr)(const Point3DCL&);
-typedef SVectorCL<3> (*vector_fun_ptr)(const Point3DCL&);
 typedef SMatrixCL<3, 3> (*jacobi_fun_ptr)(const Point3DCL&);
 
 typedef VecDescBaseCL<VectorCL> VelVecDescCL;
@@ -121,8 +51,8 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     using                                     _base::GetBndData;
     using                                     _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>DiscPrSolCL;
-    typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL> DiscPrSolCL;
+    typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
     
@@ -152,8 +82,8 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupMass(MatDescCL*) const;
 
     // Check system and computed solution
-    void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
+    void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
 
     // work of Joerg :-)
     static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
@@ -180,7 +110,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     using                                     _base::GetMG;
 
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
-    typedef P1BubbleEvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+    typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
     
@@ -207,8 +137,8 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupMass(MatDescCL*) const;
 
     // Check system and computed solution
-    void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr) const;
+    void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, scalar_fun_ptr) const;
 
     // work of Joerg :-)  Very well then: Let the games begin!
     static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
@@ -271,108 +201,6 @@ class StokesDoerflerMarkCL
 //======================================
 //        inline functions 
 //======================================
-
-inline bool StokesVelBndDataCL::IsOnDirBnd(const VertexCL& v) const
-{
-    if ( !v.IsOnBoundary() ) return false;
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !_BndData[it->GetBndIdx()].IsNeumann() )
-            return true;
-    return false; 
-}        
-
-inline bool StokesVelBndDataCL::IsOnNeuBnd(const VertexCL& v) const
-{
-    if ( !v.IsOnBoundary() ) return false;
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !_BndData[it->GetBndIdx()].IsNeumann() )
-            return false;
-    return true;
-}        
-
-inline bool StokesVelBndDataCL::IsOnDirBnd(const EdgeCL& e) const
-{
-    if ( !e.IsOnBoundary() ) return false;
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !_BndData[*it].IsNeumann() )
-            return true;
-    return false;
-}
-
-inline bool StokesVelBndDataCL::IsOnNeuBnd(const EdgeCL& e) const
-{
-    if ( !e.IsOnBoundary() ) return false;
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !_BndData[*it].IsNeumann() )
-            return false;
-    return true;
-}        
-
-inline bool StokesVelBndDataCL::IsOnDirBnd(const FaceCL& f) const
-{
-    return f.IsOnBoundary() && !_BndData[f.GetBndIdx()].IsNeumann();
-}
-
-inline bool StokesVelBndDataCL::IsOnNeuBnd(const FaceCL& f) const
-{
-    return f.IsOnBoundary() && _BndData[f.GetBndIdx()].IsNeumann();
-}        
-
-
-
-
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const VertexCL& v, double) const
-// Returns value of the Dirichlet boundary value. 
-// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
-{
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !_BndData[it->GetBndIdx()].IsNeumann() )
-            return _BndData[it->GetBndIdx()].GetBndVal( v.GetCoord() );
-    throw DROPSErrCL("GetDirBndValue(VertexCL): No Dirichlet Boundary Segment!");
-}
-
-
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const VertexCL& v, double) const
-// Returns value of the Neumann boundary value. 
-// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( _BndData[it->GetBndIdx()].IsNeumann() )
-            return _BndData[it->GetBndIdx()].GetBndVal( v.GetCoord() );
-    throw DROPSErrCL("GetNeuBndValue(VertexCL): No Neumann Boundary Segment!");
-}
-
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const EdgeCL& e, double) const
-{
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !_BndData[*it].IsNeumann() )
-            return _BndData[*it].GetBndVal( GetBaryCenter(e) );
-    throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
-}
-
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const EdgeCL& e, double) const
-// Returns value of the Neumann boundary value. 
-// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( _BndData[*it].IsNeumann() )
-            return _BndData[*it].GetBndVal( GetBaryCenter(e) );
-    throw DROPSErrCL("GetNeuBndValue(EdgeCL): No Neumann Boundary Segment!");
-}
-
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const FaceCL& f, double) const
-{
-    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
-    return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f) );
-}
-
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const FaceCL& f, double) const
-// Returns value of the Neumann boundary value. 
-// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
-    return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f) );
-}
 
 
 } // end of namespace DROPS

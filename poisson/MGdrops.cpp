@@ -71,11 +71,11 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
     const_MGDataIterCL finest= --MGData.end();
 
     Uint sm;
-    Uint lvl;
+    int lvl;
     double tol;
     std::cerr << "tolerance: "; std::cin >> tol;
     std::cerr << "how many levels? (-1=all) > "; std::cin >> lvl;
-
+    
     double resid, old_resid;
     SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
     CGSolverCL  solver(200, tol); //CG-Verfahren

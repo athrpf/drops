@@ -52,7 +52,7 @@ class BndSegDataCL
     bool	IsPeriodic()   const { return bc_==Per1BC || bc_==Per2BC ; }
     BndCondT    GetBC()        const { return bc_; }
     bnd_val_fun GetBndFun()    const { return bnd_val_; }
-    BndValT     GetBndVal( const Point3DCL& p, double t) const { return bnd_val_( p, t); }
+    BndValT     GetBndVal( const Point3DCL& p, double t= 0.0) const { return bnd_val_( p, t); }
 };
 
 
@@ -87,6 +87,7 @@ class BndDataCL
     inline BndSegT GetBndSeg( const VertexCL&) const;
     inline BndSegT GetBndSeg( const EdgeCL&)   const;
     inline BndSegT GetBndSeg( const FaceCL&)   const;
+           BndSegT GetBndSeg( BndIdxT idx)     const { return BndData_[idx]; }
     
     inline BndValT GetDirBndValue( const VertexCL&, double) const;
     inline BndValT GetDirBndValue( const EdgeCL&, double)   const;
@@ -120,17 +121,11 @@ class NoBndDataCL
     template<class SimplexT>
     static inline bool IsOnPerBnd (const SimplexT&) { return false; }
     
-    static inline BndValT GetDirBndValue (const VertexCL&)
+    static inline BndValT GetDirBndValue (const VertexCL&, double= 0.0)
         { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline BndValT GetDirBndValue (const EdgeCL&)
+    static inline BndValT GetDirBndValue (const EdgeCL&, double= 0.0)
         { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-    static inline BndValT GetDirBndValue (const FaceCL&)
-        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on face."); }
-    static inline BndValT GetDirBndValue (const VertexCL&, double)
-        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline BndValT GetDirBndValue (const EdgeCL&, double)
-        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-    static inline BndValT GetDirBndValue (const FaceCL&, double)
+    static inline BndValT GetDirBndValue (const FaceCL&, double= 0.0)
         { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on face."); }
 };
 

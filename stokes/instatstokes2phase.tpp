@@ -324,11 +324,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
-        
+    LocalP2CL<> ls_loc;
+    
     SMatrixCL<3,3> T;
     
     double coupA[10][10], coupM[10][10];
-    double lsarray[10];
     double det, absdet;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
     
@@ -340,28 +340,21 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
         P2DiscCL::GetGradientsOnRef( GradRef);
-        if (ls.GetLevel()!=lvl)
-            RestrictP2( *sit, ls, lsarray);
-        else
-            ls.GetDoF( *sit, lsarray);
-    
+        ls_loc.assign( *sit, ls, t); // needed for restrictions
+        Phi.assign( ls_loc);
+        rhs.assign( *sit, _Coeff.f, t);
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for (int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            rhs[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
-            Phi[i]= lsarray[i];
         }
         for (int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        rhs[4]= _Coeff.f( GetBaryCenter( *sit), t);
-        Phi[4]= FE_P2CL::val( lsarray, 0.25, 0.25, 0.25);
-
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( _Coeff.rho);
         mu_Re= Phi;     mu_Re.apply( _Coeff.mu);     mu_Re*= 1./_Coeff.Re;

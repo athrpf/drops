@@ -10,7 +10,7 @@
 
 struct NS1CL
 {
-    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
+    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret;
         ret[0]= p[0];
@@ -260,7 +260,7 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 3, 3, 3);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &NS1CL::LsgVel, &NS1CL::LsgVel, &NS1CL::LsgVel, &NS1CL::LsgVel, &NS1CL::LsgVel, &NS1CL::LsgVel };
         
     DROPS::RBColorMapperCL colormap;

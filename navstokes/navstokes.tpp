@@ -10,7 +10,7 @@ namespace DROPS
 {
 
 template <class Coeff>
-void NavierStokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
+void NavierStokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
 {
     Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
@@ -58,7 +58,7 @@ void NavierStokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_p
 
 template <class Coeff>
 void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
-                                 vector_fun_ptr LsgVel,      scalar_fun_ptr LsgPr)
+    instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),
@@ -75,7 +75,7 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||      Bx       - g || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
     
-    P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL>  vel(lsgvel, &_BndData.Vel, &_MG);
+    DiscVelSolCL  vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -111,7 +111,7 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord())[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
+               diff= fabs( LsgVel(sit->GetCoord(), 0.)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -128,7 +128,7 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
+               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., 0.)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -146,12 +146,12 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
 	Point3DCL sum(0.0), diff, Diff[5];
 	for(int i=0; i<4; ++i)
 	{
-	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord()) - vel.val(*sit->GetVertex(i));
+	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), 0.) - vel.val(*sit->GetVertex(i));
 	    diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
 	    sum+= diff;
 	}
 	sum/= 120;
-	Diff[4]= diff= LsgVel(GetBaryCenter(*sit)) - vel.val(*sit, 0.25, 0.25, 0.25);
+	Diff[4]= diff= LsgVel(GetBaryCenter(*sit), 0.) - vel.val(*sit, 0.25, 0.25, 0.25);
 	diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
 	sum+= diff*2./15.;
 	sum*= sit->GetVolume()*6;
@@ -160,7 +160,7 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
 	for(int i=0; i<10; ++i)
 	{
 	    sum= Quad(Diff, i)*sit->GetVolume()*6;
-	    diff= i<4 ? Diff[i] : LsgVel( (sit->GetEdge(i-4)->GetVertex(0)->GetCoord() + sit->GetEdge(i-4)->GetVertex(1)->GetCoord() )/2) - vel.val(*sit->GetEdge(i-4));
+	    diff= i<4 ? Diff[i] : LsgVel( (sit->GetEdge(i-4)->GetVertex(0)->GetCoord() + sit->GetEdge(i-4)->GetVertex(1)->GetCoord() )/2, 0.) - vel.val(*sit->GetEdge(i-4));
 	    sum[0]*= diff[0]; sum[1]*= diff[1]; sum[2]*= diff[2];
 	    L2_vel+= sum;
 	}

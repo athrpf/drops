@@ -19,6 +19,8 @@ namespace DROPS
 
 typedef double (*scalar_fun_ptr)(const Point3DCL&);
 typedef Point3DCL (*vector_fun_ptr)(const Point3DCL&);
+typedef double (*instat_scalar_fun_ptr)(const Point3DCL&, double);
+typedef Point3DCL (*instat_vector_fun_ptr)(const Point3DCL&, double);
 typedef double (*SmoothFunT) (double,double);
 
 
@@ -218,7 +220,7 @@ class Quad2CL: public GridFunctionCL<T>
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
 
     inline self_&
-    assign(const TetraCL&, value_type (*)(const Point3DCL&, double) , double= 0.0);
+    assign(const TetraCL&, instat_fun_ptr , double= 0.0);
     inline self_&
     assign(const LocalP2CL<value_type>&);
     template <class P2FunT> 

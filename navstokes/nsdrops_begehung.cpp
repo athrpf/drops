@@ -9,7 +9,7 @@
 
 struct NSDrCavCL
 {
-    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&)
+    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&, double)
     {
         return DROPS::SVectorCL<3>(0.);
     }
@@ -19,7 +19,7 @@ struct NSDrCavCL
         return 0;
     }
     static const double st;
-    static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p)
+    static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
     {
         const DROPS::SVectorCL<3> ret= 5.*DROPS::std_basis<3>(1);
         const double d0= fabs(p[0]-.5);
@@ -46,7 +46,7 @@ struct NSDrCavCL
 
 const double NSDrCavCL::st= .1;
 
-inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
+inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
 inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
 typedef DROPS::StokesP2P1CL<NSDrCavCL::StokesCoeffCL> 
@@ -521,7 +521,7 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &NSDrCavCL::Stroem};
         
     StokesOnBrickCL stokesprob(brick, NSDrCavCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));

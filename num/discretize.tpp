@@ -118,7 +118,7 @@ const double Quad2CL<T>::Wght[Quad2CL<T>::NumNodesC]= {
 
 template<class T>
   inline Quad2CL<T>&
-  Quad2CL<T>::assign(const TetraCL& s, value_type (*f)(const Point3DCL&, double) , double t)
+  Quad2CL<T>::assign(const TetraCL& s, instat_fun_ptr f , double t)
 {
     for (Uint i= 0; i<NumNodesC-1; ++i)
         (*this)[i]= f( s.GetVertex( i)->GetCoord(), t);

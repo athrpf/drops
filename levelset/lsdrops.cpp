@@ -9,7 +9,7 @@
 #include "levelset/levelset.h"
 #include "out/ensightOut.h"
 
-DROPS::Point3DCL FixedVel( const DROPS::Point3DCL& p)
+DROPS::Point3DCL FixedVel( const DROPS::Point3DCL& p, double= 0.0)
 {
     DROPS::Point3DCL midpt( 0.5), q= p-midpt; 
     double d= q.norm(),
@@ -131,7 +131,7 @@ int main( int argc, char **argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);
     const bool IsNeumann[6]= 
         {true, true, true, true, true, true};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &FixedVel, &FixedVel, &FixedVel, &FixedVel, &FixedVel, &FixedVel};
         
     MyStokesCL prob(brick, DROPS::DummyStokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));

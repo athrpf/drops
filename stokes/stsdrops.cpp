@@ -12,7 +12,7 @@
 struct StokesCL
 {
     static double g_;
-    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
+    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret;
         ret[0]=    sin(p[0])*sin(p[1])*sin(p[2]);
@@ -821,7 +821,7 @@ typedef DROPS::SVectorCL<3> (*fun_ptr)(const DROPS::SVectorCL<3>&);
 
 int
 CheckVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
-                          const DROPS::StokesVelBndDataCL,
+                          const DROPS::StokesBndDataCL::VelBndDataCL,
                           DROPS::VelVecDescCL>& fun,
          fun_ptr f)
 {
@@ -1388,7 +1388,7 @@ int main (int argc, char** argv)
 				DROPS::std_basis<3>(3),
 				2, 2, 2);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
     StokesCL::g_= gamma;

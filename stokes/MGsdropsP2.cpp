@@ -8,7 +8,7 @@
 #include <fstream>
 
 
-inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
+inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret;
     ret[0]=    sin(p[0])*sin(p[1])*sin(p[2])/3.;
@@ -328,7 +328,7 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 3, 3, 3);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel};
         
     StokesOnBrickCL prob(brick, StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));

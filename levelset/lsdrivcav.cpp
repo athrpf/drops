@@ -32,8 +32,8 @@ class ZeroFlowCL
 DROPS::Point3DCL Mitte(0.5);
 double           Radius= 0.3;
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
-DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL&) { DROPS::SVectorCL<3> ret(0.); ret[0]= 1.; return ret; }
+DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
+DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL&, double) { DROPS::SVectorCL<3> ret(0.); ret[0]= 1.; return ret; }
 
 double DistanceFct( const DROPS::Point3DCL& p)
 {
@@ -172,7 +172,7 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &Null }; 
         
     MyStokesCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));

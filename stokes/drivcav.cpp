@@ -19,8 +19,8 @@ class DrivenCavityCL
     DrivenCavityCL() : nu(1.0) {}
 };
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
-DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL&) { DROPS::SVectorCL<3> ret(0.); ret[0]= 1.; return ret; }
+DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
+DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL&, double) { DROPS::SVectorCL<3> ret(0.); ret[0]= 1.; return ret; }
 
 void MarkLower( DROPS::MultiGridCL& mg, double tresh)
 {
@@ -252,7 +252,7 @@ int main (int argc, char** argv)
 //    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &Stroem };
         
     StokesOnBrickCL prob(brick, DrivenCavityCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
