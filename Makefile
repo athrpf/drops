@@ -52,7 +52,7 @@ deldepend:
 
 depend_%:
 	cd $* && \
-        $(DEPEND) -- $(CFLAGS) -- -s"# $* dependencies:" -f- ../$*/*.cpp >> ../$(DEPFILE); \
+        $(DEPEND) -- $(CFLAGS) -- -s"# $* dependencies:" -f- ../$*/*.cpp >> ../$(DEPFILE) 2>/dev/null; \
         echo " " >> ../$(DEPFILE)
 
 prog_%:
