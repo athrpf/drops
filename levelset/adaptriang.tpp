@@ -100,8 +100,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
 
     for (i=0; i<2*min_ref_num; ++i)
     {            
-	LevelsetP2CL::const_DiscSolCL sol= lset.GetSolution(
-            *const_cast<const VecDescCL*>( l1));
+	LevelsetP2CL::const_DiscSolCL sol= lset.GetSolution( *l1);
         if (!ModifyGridStep(sol))
             break;
         LastLevel= mg_.GetLastLevel();
@@ -118,7 +117,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
             throw DROPSErrCL( "AdapTriangCL::UpdateTriang: Sorry, not yet implemented.");
         }
         v1->SetIdx( vidx1);
-        typename StokesT::const_DiscVelSolCL funvel= NS.GetVelSolution( *const_cast<const VecDescCL*>( v2));
+        typename StokesT::const_DiscVelSolCL funvel= NS.GetVelSolution( *v2);
         RepairAfterRefineP2( funvel, *v1);
         v2->Clear();
         NS.DeleteNumberingVel( vidx2);
@@ -128,7 +127,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         std::swap( pidx2, pidx1);
         NS.CreateNumberingPr( LastLevel, pidx1);
         p1->SetIdx( pidx1);
-        typename StokesT::const_DiscPrSolCL funpr= NS.GetPrSolution( *const_cast<const VecDescCL*>( p2));
+        typename StokesT::const_DiscPrSolCL funpr= NS.GetPrSolution( *p2);
         RepairAfterRefineP1( funpr, *p1);
         p2->Clear();
         NS.DeleteNumberingPr( pidx2);
@@ -138,8 +137,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         std::swap( lidx2, lidx1);
         lset.CreateNumbering( LastLevel, lidx1);
         l1->SetIdx( lidx1);
-        LevelsetP2CL::const_DiscSolCL funlset= lset.GetSolution(
-            *const_cast<const VecDescCL*>( l2));
+        LevelsetP2CL::const_DiscSolCL funlset= lset.GetSolution( *l2);
         RepairAfterRefineP2( funlset, *l1);
         l2->Clear();
         lset.DeleteNumbering( lidx2);

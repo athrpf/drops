@@ -84,8 +84,8 @@ class LevelsetP2CL
         { return DiscSolCL( &Phi, &_Bnd, &_MG); }
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL( &Phi, &_Bnd, &_MG); }
-    DiscSolCL GetSolution( VecDescCL& MyPhi) const
-        { return DiscSolCL( &MyPhi, &_Bnd, &_MG); }
+    const_DiscSolCL GetSolution( VecDescCL& MyPhi) const
+        { return const_DiscSolCL( &MyPhi, &_Bnd, &_MG); }
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &_Bnd, &_MG); }
         
