@@ -25,13 +25,13 @@ lsdrops: \
     ../levelset/lsdrops.o ../levelset/fastmarch.o \
     ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LFLAGS)
 
 reparam: \
     ../levelset/reparam.o ../levelset/fastmarch.o \
     ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LFLAGS)
 
 lsdrivcav: \
     ../levelset/lsdrivcav.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
