@@ -131,6 +131,9 @@ class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
     
     // Set up matrices and complete rhs
     void SetupSystem( MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*, double) const;
+    // Set up mass-matrix for pressure-unknowns (P1) -- needed for Uzawa solver
+    // Time-independent
+    void SetupPrMass(MatDescCL* matM) const;
     // Setup time independent part of system
     void SetupInstatSystem( MatDescCL* A, MatDescCL* B, MatDescCL* M) const;
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
@@ -144,9 +147,6 @@ class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
     void GetDiscError ( vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const;
     void CheckSolution( const VelVecDescCL*, const VecDescCL*,
                         vector_instat_fun_ptr, scalar_instat_fun_ptr, double t) const;
-
-    // work of Joerg :-)
-//    bool EstimateError(const VecDescCL*, const double, double&, est_fun) const;
 
     // Get solutions as FE-functions
     DiscPrSolCL GetPrSolution() const

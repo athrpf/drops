@@ -234,7 +234,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
             {
-                // negative dot-product of the gradients
+                // dot-product of the gradients
                 coup[i][j]= _Coeff.nu * QuadGrad( Grad, i, j)*absdet;
                 coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
@@ -317,6 +317,42 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
               << matB->Data.num_nonzeros() << " nonzeros in B! " << std::endl;
 }
 
+
+template <class MGB, class Coeff>
+void InstatStokesP2P1CL<MGB,Coeff>::SetupPrMass(MatDescCL* matM) const
+// Sets up the mass matrix for the pressure
+{
+    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
+
+    MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
+
+    const Uint lvl    = matM->RowIdx->TriangLevel;
+    const Uint pidx   = matM->RowIdx->Idx;
+
+    IdxT prNumb[4];
+
+    // compute all couplings between HatFunctions on verts:
+    // I( i, j) = int ( psi_i*psi_j, T_ref) * absdet
+    const double coupl_ii= 1./120. + 2./15./16.,
+                 coupl_ij=           2./15./16.;
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        const double absdet= sit->GetVolume()*6.;
+        
+        for(int i=0; i<4; ++i)
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+
+        for(int i=0; i<4; ++i)    // assemble row prNumb[i]
+            for(int j=0; j<4; ++j)
+                    M_pr( prNumb[i], prNumb[j])+= (i==j ? coupl_ii : coupl_ij) * absdet;
+    }
+    M_pr.Build();
+}
+
+
+
 inline double OneFct( const Point3DCL&) { return 1.;}
 
 
@@ -376,9 +412,9 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
             {
-                // negative dot-product of the gradients
+                // dot-product of the gradients
                 coup[i][j]= _Coeff.nu * QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+//                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
 
@@ -482,9 +518,9 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
             {
-                // negative dot-product of the gradients
+                // dot-product of the gradients
                 coup[i][j]= _Coeff.nu * QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+//                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
 
