@@ -213,18 +213,65 @@ private:
     size_t  _rows;
     size_t  _cols;
     spmatT* _mat;
+    bool    _reuse;
     couplT* _coupl;
 
 public:
     SparseMatBuilderCL(spmatT* mat, size_t rows, size_t cols)
-        : _rows(rows), _cols(cols), _mat(mat), _coupl(new couplT[_rows])
-        { Assert( _coupl!=0, "SparseMatBuilderCL: out of memory", ~0); }
+        : _rows(rows), _cols(cols), _mat(mat),
+          _reuse(!(DROPSDebugC & DebugNoReuseSparseC) && mat->num_nonzeros()!=0
+                 && mat->num_rows()==rows && mat->num_cols()==cols)
+    {
+        if (_reuse)
+        {
+            Comment("SparseMatBuilderCL: Reusing OLD matrix" << std::endl, DebugNumericC);
+            _coupl=0;
+            _mat->_val=T();
+        }
+        else
+        {
+            Comment("SparseMatBuilderCL: Creating NEW matrix" << std::endl, DebugNumericC);
+            _coupl=new couplT[_rows];
+            Assert( _coupl!=0, "SparseMatBuilderCL: out of memory", ~0);
+        }
+    }
+
     ~SparseMatBuilderCL() { delete[] _coupl; }
 
     T& operator() (size_t i, size_t j)
     {
         Assert(i<_rows && j<_cols, "SparseMatBuilderCL (): index out of bounds", DebugNumericC);
-        return _coupl[i][j];
+
+        if (_reuse)
+        {
+            // search row for the correct entry
+            const size_t rowend=_mat->_rowbeg[i+1]-1;
+
+            for (size_t k=_mat->_rowbeg[i]; k<rowend; ++k)
+                if (_mat->_colind[k]==j)
+                    return _mat->_val[k];
+
+            Assert(_mat->_colind[rowend]==j, "SparseMatBuilderCL (): no such index", ~0);
+            return _mat->_val[rowend];
+
+/*            // search row for the correct entry via binary-search
+            // no visible speed improvement on x86 :-(
+            size_t first= _mat->_rowbeg[i], last= _mat->_rowbeg[i+1];
+
+            while (true)
+            {
+                size_t middle= (first+last) >> 1, mval= _mat->_colind[middle];
+
+                if (mval<j)
+                    first= middle+1;
+                else if (mval==j)
+                    return _mat->_val[middle];
+	        else
+                    last= middle;
+            }*/
+        }
+        else
+            return _coupl[i][j];
     }
 
     void Build();
@@ -234,12 +281,12 @@ public:
 template <typename T>
 void SparseMatBuilderCL<T>::Build()
 {
+    if (_reuse) return;
+
     size_t nz= 0;
     for (size_t i= 0; i<_rows; ++i)
         for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
-    // TODO: was machen wir mit Eintraegen kleiner 1e-18 ?
-            if (it->second != 0)
-                ++nz;
+            ++nz;
 
     _mat->resize(_rows, _cols, nz);
 
@@ -248,12 +295,11 @@ void SparseMatBuilderCL<T>::Build()
     {
         _mat->_rowbeg[i]= nz;
         for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
-            if (it->second != 0)
-            {
-                _mat->_colind[nz]= it->first;
-                _mat->_val[nz]=    it->second;
-                ++nz;
-            }
+        {
+            _mat->_colind[nz]= it->first;
+            _mat->_val[nz]=    it->second;
+            ++nz;
+        }
         // the col_ind-entries in each row are sorted, as they were stored sorted in the map
     }
     _mat->_rowbeg[_rows]= nz;
@@ -459,34 +505,43 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     Assert( A.num_rows()==B.num_rows() && A.num_cols()==B.num_cols(),
             "LinComb: incompatible dimensions", DebugNumericC);
 
-    _rows=A.num_rows();
-    _cols=A.num_cols();
-
-    // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
-
-    // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
-    _rowbeg.resize(A.num_rows()+1);
-    size_t i=0, iA=0, iB=0;
-
-    for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
+    if (!(DROPSDebugC & DebugNoReuseSparseC) && _val.size()!=0
+        && _rows==A.num_rows() && _cols==A.num_cols())
+        Comment("LinComb: Reusing OLD matrix" << std::endl, DebugNumericC);
+    else
     {
-        while ( iA < A.row_beg(row) )                                      // process every entry in A
+        Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
+
+        _rows=A.num_rows();
+        _cols=A.num_cols();
+
+        // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
+
+        // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
+        _rowbeg.resize(A.num_rows()+1);
+        size_t i=0, iA=0, iB=0;
+
+        for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
         {
-            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) ) // process entries in B with smaller col_ind
-                { ++i; ++iB; }
-            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )   // process entries in B with equal col_ind
-                ++iB;
-            ++i; ++iA;
+            while ( iA < A.row_beg(row) )                                      // process every entry in A
+            {
+                while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) ) // process entries in B with smaller col_ind
+                    { ++i; ++iB; }
+                if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )   // process entries in B with equal col_ind
+                    ++iB;
+                ++i; ++iA;
+            }
+            while ( iB < B.row_beg(row) )                                      // process, what is left in B
+                { ++iB; ++i; }
+            _rowbeg[row]=i;                                                    // store result
         }
-        while ( iB < B.row_beg(row) )                                      // process, what is left in B
-            { ++iB; ++i; }
-        _rowbeg[row]=i;                                                    // store result
+
+        // Calculate the entries of _colind, _val (really perform the merging of the matrices)
+        _colind.resize(row_beg(num_rows()));
+        _val.resize(row_beg(num_rows()));
     }
 
-    // Calculate the entries of _colind, _val (really perform the merging of the matrices)
-    _colind.resize(row_beg(num_rows()));
-    _val.resize(row_beg(num_rows()));
-    i=0, iA=0, iB=0;
+    size_t i=0, iA=0, iB=0;
 
     for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
     {
