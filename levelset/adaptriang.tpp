@@ -35,14 +35,27 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
     for (MultiGridCL::TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(),
          end= mg_.GetTriangTetraEnd(); it!=end; ++it) 
     {
-        double d= 1.;
+        double d= 1e99;
+        int num_pos= 0;
         for (Uint j=0; j<4; ++j) 
-            d= std::min( d, std::abs( GetValue( Dist, *it->GetVertex( j)) ));
+        {
+            const double dist= GetValue( Dist, *it->GetVertex( j));
+            if (dist>=0) ++num_pos;
+            d= std::min( d, std::abs( dist));
+        }
+        for (Uint j=0; j<6; ++j) 
+        {
+            const double dist= GetValue( Dist, *it->GetEdge( j));
+            if (dist>=0) ++num_pos;
+            d= std::min( d, std::abs( dist));
+        }
         d= std::min( d, std::abs( GetValue( Dist, *it)));
+        
+        const bool vzw= num_pos!=0 && num_pos!=10; // change of sign
         const Uint l= it->GetLevel();
 	// In the shell:      level should be f_level_.
         // Outside the shell: level should be c_level_.
-        const Uint soll_level= d<=width_ ? f_level_ : c_level_;
+        const Uint soll_level= (d<=width_ || vzw) ? f_level_ : c_level_;
 
         if (l !=  soll_level)
 	{ // tetra will be marked for refinement/removement
