@@ -23,9 +23,9 @@ namespace DROPS
 // Class:   FE_P1CL                                                        *
 // Purpose: Shape functions and their gradients for piecewise linear,      *
 //          continuous finite elements on the reference tetrahedron        *
-//          The number of the H-functions refer to the number of the       *
+//          The number of the H-functions refers to the number of the      *
 //          vertex in the tetrahedron as defined in topo.h, where the      *
-//          degree of freedom sits.                                        *
+//          degree of freedom is located.                                  *
 //**************************************************************************
 class FE_P1CL
 {
@@ -55,7 +55,7 @@ public:
 
     // gradients of the shape functions on the reference tetrahedron.
     // To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
-    // transformation that carries the reference tetrahefron to T.
+    // transformation that maps the reference tetrahefron to T.
     // Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
     static SVectorCL<3> DH0Ref() { return _gradient[0]; }
     static SVectorCL<3> DH1Ref() { return _gradient[1]; }
@@ -71,9 +71,9 @@ public:
 // Class:   FE_P2CL                                                        *
 // Purpose: Shape functions and their gradients for piecewise quadratic,   *
 //          continuous finite elements on the reference tetrahedron        *
-//          The number of the H-functions refer to the number of the       *
+//          The number of the H-functions refers to the number of the      *
 //          (mid-) vertex in the tetrahedron as defined in topo.h, where   *
-//          the degree of freedom lives.                                   *
+//          the degree of freedom is located.                              *
 //**************************************************************************
 class FE_P2CL
 {
@@ -243,10 +243,10 @@ FE_P2CL::Laplace(Uint dof, const SMatrixCL<3,3>& M)
 //**************************************************************************
 // Class:   FE_P1BubbleCL                                                  *
 // Purpose: Shape functions and their gradients for the mini element.      *
-//          The number of the H-functions refer to the number of the       *
+//          The number of the H-functions refers to the number of the      *
 //          vertex in the tetrahedron as defined in topo.h, where the      *
-//          degree of freedom sits. The last shape function is the bubble  *
-//          function on the tetrahedron.                                   *
+//          degree of freedom is located. The last shape function is the   *
+//          bubble function on the tetrahedron.                            *
 //**************************************************************************
 class FE_P1BubbleCL
 {
@@ -277,7 +277,7 @@ public:
 
     // gradients of the shape functions on the reference tetrahedron.
     // To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
-    // transformation that carries the reference tetrahefron to T.
+    // transformation that maps the reference tetrahefron to T.
     // Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
     static SVectorCL<3> DH0Ref() { return _LinFun.DH0Ref(); }
     static SVectorCL<3> DH1Ref() { return _LinFun.DH1Ref(); }
@@ -397,7 +397,7 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 //          numerical data via push_back() in a container. This container  *
 //          can be passed to a special val() function and allows for faster*
 //          evaluation of the FE-function, if several evaluations on the   *
-//          same simpex are necessary.                                     *
+//          same simplex are necessary.                                    *
 //          Generally, evaluations on lower-dimensional simplices are      *
 //          faster as only a smaller amount of shape-functions has to be   *
 //          evaluated.                                                     *
@@ -642,7 +642,7 @@ P1EvalBaseCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, d
 //          numerical data via push_back() in a container. This container  *
 //          can be passed to a special val() function and allows for faster*
 //          evaluation of the FE-function, if several evaluations on the   *
-//          same simpex are necessary.                                     *
+//          same simplex are necessary.                                    *
 //          Generally, evaluations on lower-dimensional simplices are      *
 //          faster as only a smaller amount of shape-functions has to be   *
 //          evaluated.                                                     *
@@ -1008,7 +1008,7 @@ inline bool P2EvalBaseCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t)
 //          numerical data via push_back() in a container. This container  *
 //          can be passed to a special val() function and allows for faster*
 //          evaluation of the FE-function, if several evaluations on the   *
-//          same simpex are necessary.                                     *
+//          same simplex are necessary.                                    *
 //          Generally, evaluations on lower-dimensional simplices are      *
 //          faster as only a smaller amount of shape-functions has to be   *
 //          evaluated.                                                     *
