@@ -7,6 +7,8 @@
 #ifndef DROPS_BNDDATA_H
 #define DROPS_BNDDATA_H
 
+#include "misc/utils.h"
+#include "geom/boundary.h"
 
 namespace DROPS
 {
@@ -66,8 +68,8 @@ class BndDataCL
     std::vector<BndSegT> BndData_;
     
   public:
-    BndDataCL( Uint numbndseg, const BndCondT* bc= 0, const bnd_val_fun* fun= 0);
-    BndDataCL( Uint numbndseg, const bool* isneumann, const bnd_val_fun* fun); // deprecated ctor!
+    BndDataCL( BndIdxT numbndseg, const BndCondT* bc= 0, const bnd_val_fun* fun= 0);
+    BndDataCL( BndIdxT numbndseg, const bool* isneumann, const bnd_val_fun* fun); // deprecated ctor!
 
     inline bool IsOnDirBnd( const VertexCL&) const;
     inline bool IsOnDirBnd( const EdgeCL&)   const;
@@ -138,7 +140,7 @@ class NoBndDataCL
 //======================================
 
 template<class BndValT>
-inline BndDataCL<BndValT>::BndDataCL( Uint numbndseg, const BndCondT* bc, const bnd_val_fun* fun)
+inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const BndCondT* bc, const bnd_val_fun* fun)
 {
     BndData_.reserve( numbndseg);
     for (Uint i=0; i<numbndseg; ++i)
@@ -146,7 +148,7 @@ inline BndDataCL<BndValT>::BndDataCL( Uint numbndseg, const BndCondT* bc, const 
 }
 
 template<class BndValT>
-inline BndDataCL<BndValT>::BndDataCL( Uint numbndseg, const bool* isneumann, const bnd_val_fun* fun) // deprecated ctor!
+inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const bool* isneumann, const bnd_val_fun* fun) // deprecated ctor!
 {
     BndData_.reserve( numbndseg);
     for (Uint i=0; i<numbndseg; ++i)
