@@ -1090,6 +1090,7 @@ ReadMeshBuilderCL::build(MultiGridCL* mgp) const
           default:
             Bnd.push_back( new MeshBoundaryCL( section.headerinfo[0], // zone-id
                                                section.headerinfo[3])); // the bc-type; see Mesh-File-Format C.8
+            BC_.push_back( MapBC(section.headerinfo[3]));
             zone_id2bndidx[section.headerinfo[0]]= Bnd.size()-1;
             break;
         }
@@ -1191,5 +1192,16 @@ ReadMeshBuilderCL::Symbolic(const Uint id)
     }
 }
 
+BndCondT ReadMeshBuilderCL::MapBC( Uint gambit_bc)
+{
+    switch(gambit_bc)
+    {
+      case  3: return WallBC;
+      case  4: return NatBC;
+      case 10: return DirBC;
+      case 36: return OutflowBC;
+      default: return UndefinedBC_;
+    }
+}
 
 } //end of namespace DROPS
