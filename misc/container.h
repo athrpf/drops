@@ -58,6 +58,9 @@ template <class T, Uint _Size>
   operator==(const SArrayCL<T, _Size>&, const SArrayCL<T, _Size>&);
 template <class T, Uint _Size>
   inline bool
+  operator<(const SArrayCL<T, _Size>&, const SArrayCL<T, _Size>&);
+template <class T, Uint _Size>
+  inline bool
   operator==(const SBufferCL<T, _Size>&, const SBufferCL<T, _Size>&);
 
 typedef SVectorCL<2> Point2DCL;
