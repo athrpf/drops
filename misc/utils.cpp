@@ -1,5 +1,5 @@
 /// \file
-/// Useful stuff that fits nowhere else.
+/// \brief Useful stuff that fits nowhere else.
 
 
 #include "misc/utils.h"
