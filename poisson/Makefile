@@ -6,7 +6,7 @@
 
 DIR = poisson
 
-EXEC = drops MGdrops testdrops dropsrep
+EXEC = drops MGdrops testdrops dropsrep ipdrops 
 
 DELETE = $(EXEC)
 
@@ -44,6 +44,22 @@ testdrops: \
     ../num/discretize.o
 	$(CC) $(LFLAGS) -o $@ $^
 
+ipdrops: \
+    ../geom/boundary.o ../geom/builder.o ipdrops.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o instatpoisson.o \
+    ../misc/problem.o ../misc/utils.o 
+	$(CC) $(LFLAGS) -o $@ $^
+  
+matlab/ipdrops: ../geom/boundary.o ../geom/builder.o  \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    instatpoisson.o ../misc/problem.o ../misc/utils.o    
+	$(CC) $(CFLAGS) $(LFLAGS) matlab/ipdrops.cpp -o $@ $^
 
+
+clean: matlab/clean
+
+matlab/clean:
+	cd matlab; make clean
+  
 # include common rules:
 include ../Make.common
