@@ -142,8 +142,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
+
+    EnsightP2SolOutCL ensight( MG, lidx);
+    const string filename= C.EnsDir + "/" + C.EnsCase;
+    const string datgeo= filename+".geo", 
+                 datpr = filename+".pr" ,
+                 datvec= filename+".vel",
+                 datscl= filename+".scl";
+    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
+    ensight.DescribeGeom( "Messzelle", datgeo);
+    ensight.DescribeScalar( "Levelset", datscl, true); 
+    ensight.DescribeScalar( "Pressure", datpr,  true); 
+    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.putGeom( datgeo);
+
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
+    const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
+    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    
 
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
@@ -185,7 +202,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-    double theta= 0, nl= 0.1;
+    double theta= C.stat_theta, nl= C.stat_nonlinear;
 //    std::cerr << "theta = "; std::cin >> theta;
 //    std::cerr << "nonlinear = "; std::cin >> nl;
     time.Reset();
@@ -199,20 +216,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data + nl*cplN.Data, Stokes.c.Data);
     } while (schurSolver.GetIter() > 0);
     time.Stop();
-    std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+    std::cerr << "Solving NavStokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-    EnsightP2SolOutCL ensight( MG, lidx);
-    const string filename= "ensight/" + C.EnsCase;
-    const string datgeo= filename+".geo", 
-                 datpr = filename+".pr" ,
-                 datvec= filename+".vel",
-                 datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
-    ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
@@ -239,6 +244,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
             ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
+            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
             if (C.RepFreq && step%C.RepFreq==0)
             {
@@ -247,6 +253,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
                 ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
                 ensight.Commit();
+                std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
     }
@@ -267,6 +274,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
             ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
+            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
             if (C.RepFreq && step%C.RepFreq==0)
             {
@@ -275,6 +283,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
                 ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
                 ensight.Commit();
+                std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
     }

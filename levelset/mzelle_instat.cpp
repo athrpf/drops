@@ -116,12 +116,23 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     IdxDescCL* pidx= &Stokes.pr_idx;
     MatDescCL prM, prA;
 
+    EnsightP2SolOutCL ensight( MG, lidx);
+    const string filename= C.EnsDir + "/" + C.EnsCase;
+    const string datgeo= filename+".geo", 
+                 datpr = filename+".pr" ,
+                 datvec= filename+".vel",
+                 datscl= filename+".scl";
+    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
+    ensight.DescribeGeom( "Messzelle", datgeo);
+
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
-
+    const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
+    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
@@ -166,14 +177,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     time.Stop();
     std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-    EnsightP2SolOutCL ensight( MG, lidx);
-    const string filename= "ensight/" + C.EnsCase;
-    const string datgeo= filename+".geo", 
-                 datpr = filename+".pr" ,
-                 datvec= filename+".vel",
-                 datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "Messzelle", datgeo);
     ensight.DescribeScalar( "Levelset", datscl, true); 
     ensight.DescribeScalar( "Pressure", datpr,  true); 
     ensight.DescribeVector( "Velocity", datvec, true); 
@@ -198,6 +201,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
         ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
         ensight.Commit();
+        std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.RepFreq && step%C.RepFreq==0)
         {
             lset.Reparam( C.RepSteps, C.RepTau);
@@ -205,6 +209,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
             ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
             ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
             ensight.Commit();
+            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         }
 //            Stokes.SetupPrMass( &prM, lset);
     }

@@ -43,7 +43,8 @@ class ParamMesszelleCL: public ParamBaseCL
     int    RepFreq, RepSteps;			// Parameter fuer
     double RepTau, RepDiff;  			// Reparametrisierung
 
-    string EnsCase, 				// Ensight Case
+    string EnsCase,				// Ensight Case, 
+           EnsDir,				//lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
            meshfile;				// Meshfile (von GAMBIT im FLUENT/UNS-Format)
 
     ParamMesszelleCL()                        { RegisterParams(); }
@@ -57,7 +58,8 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
     
   public:
     int    scheme;				// 0=Baensch, 1=theta-scheme
-    double nonlinear;				// Anteil Nichtlinearitaet
+    double nonlinear,				// Anteil Nichtlinearitaet
+           stat_nonlinear, stat_theta;		// stat. Rechnung fuer Anfangswerte
   
     ParamMesszelleNsCL()
       : ParamMesszelleCL() { RegisterParams(); }

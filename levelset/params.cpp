@@ -58,14 +58,17 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( num_dropref,  "NumDropRef");
     rp_.RegInt( FPsteps,      "CouplingSteps");
     rp_.RegString( EnsCase,   "EnsightCase");
+    rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( meshfile,  "MeshFile");
 }
 
 void ParamMesszelleNsCL::RegisterParams()
 {
     rp_.BeginGroup( "NavStokes");
-    rp_.RegInt( scheme,       "TimeIntScheme");
-    rp_.RegDouble( nonlinear, "AmountNonlinear");
+    rp_.RegInt( scheme,       "Scheme");
+    rp_.RegDouble( nonlinear, "Nonlinear");
+    rp_.RegDouble( stat_nonlinear, "NonlinearStat");
+    rp_.RegDouble( stat_theta, "ThetaStat");
     rp_.EndGroup();
 }
 
