@@ -38,8 +38,8 @@ template <typename PoissonSolverT>
 class PSchurSolverCL : public SolverBaseCL
 {
   private:
-    PreGSOwnMatCL<P_SSOR0,double> _schurPc;
-    PoissonSolverT&               _poissonSolver;
+    PreGSOwnMatCL<P_SSOR0> _schurPc;
+    PoissonSolverT&        _poissonSolver;
 
   public:
     PSchurSolverCL( PoissonSolverT& solver, MatrixCL& M, double tol, int maxiter)
