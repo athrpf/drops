@@ -25,7 +25,7 @@ TESTNAME = drivencavity-adaptiv-schur drivencavity-adaptiv-uzawa \
 
 default: ClrScr
 
-check: $(TESTNAME:%=check_%)
+check: $(TESTNAME:%=check_%) ip1check
 	@echo "--> All testcases have been executed!"
 
 check_%:
@@ -42,6 +42,9 @@ ip1test: \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
+
+ip1check: ip1test
+	@ ./ip1test > /dev/null 2>&1 || echo "WARNING: P1-repair failed."
 
 ip2test: \
     ../tests/interp2.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \

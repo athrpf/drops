@@ -1222,6 +1222,7 @@ P1BubbleEvalCL<Data, _BndData, _VD>::bubble_val(const TetraCL& s, double v1, dou
 }
 
 
+
 template<class Data, class _BndData, class _VD>
 void
 Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, const _VD>& old_sol)
@@ -1262,6 +1263,88 @@ if (sit->Unknowns.Exist(old_idx))
                                      << counter2 << " new Mid-vertex-DoF interpolated." << std::endl;
 }
 
+
+//**************************************************************************
+// RepairAfterRefine: Repairs the P1-function old_f, which is possibly     *
+//     damaged by a grid-refinement. This is done by copying to the new    *
+//     VecDescBaseCL object vecdesc and interpolation of old values.       *
+// Precondition: old_f is a damaged P1-function (through at most one       *
+//     refinement step), vecdesc contains a valid IdxDescCL* to an index on*
+//     the same level as old_f (If this level was deleted, vecdesc shall be*
+//     defined on the next coarser level.); vecdesc.Data has the correct   *
+//     size.                                                               *
+// Postcondition: vecdesc, together with the boundary-data of old_f,       *
+//     represents a P1-function on the triangulation tl. If old_f was      *
+//     defined on the last level before refinement, which is then deleted, *
+//     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
+//     level of old_f.                                                     *
+//**************************************************************************    
+template<class Data, class _BndData, class _VD, class _VecDesc>
+Uint
+RepairAfterRefine( P1EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
+{
+    Uint tl= old_f.GetSolution()->RowIdx->TriangLevel;
+    const MultiGridCL& MG= old_f.GetMG();
+    const Uint maxlevel= MG.GetLastLevel();
+
+    // If the level, on which f is defined, was completely deleted, old_f should
+    // be lifted to the next coarser level. It is left to the caller to do that
+    // -- use the return value of the current function.
+    if (tl > maxlevel) {
+        Assert( tl == maxlevel+1,
+                "RepairAfterRefine (P1): old_f is defined on a level, "
+                "which cannot have existed in the previous multigrid.",
+                DebugNumericC);
+        tl= maxlevel;
+    }
+    Assert( tl == vecdesc.RowIdx->TriangLevel,
+            "RepairAfterRefine (P1): old and new function are "
+            "defined on incompatible levels.",
+            DebugNumericC);
+    const Uint old_idx= old_f.GetSolution()->RowIdx->Idx;
+    const Uint idx= vecdesc.RowIdx->Idx;
+    typedef typename P1EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    BndCL* const bnd= old_f.GetBndData();
+    P1EvalCL<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
+    Uint counter1= 0, counter2= 0;
+
+    // Iterate over all edges on grids with smaller level than tl. If the
+    // edge **has the old index, **is not on a Dirichlet-boundary and **is refined,
+    // the new value on the midvertex can be interpolated from the vertices
+    // of the edge. (These have an old value as the edge has existed in the old grid
+    // and because of consistency so have its vertices.)
+    // As new vertices in a grid are always midvertices of edges on the next coarser grid,
+    // all new vertices in triangulation tl are initialized.
+    // If f is defined on tl==0, there is no coarser level, thus this step is to be skipped.
+    if (tl > 0) {
+        for (MultiGridCL::const_AllEdgeIteratorCL sit= MG.GetAllEdgeBegin(tl-1),
+             theend= MG.GetAllEdgeEnd(tl-1); sit!=theend; ++sit)
+            if ( sit->IsRefined()
+                 && sit->GetMidVertex()->Unknowns.Exist()
+                 && !sit->GetMidVertex()->Unknowns.Exist( old_idx)
+                 && sit->GetMidVertex()->Unknowns.Exist( idx)
+                 && !bnd->IsOnDirBnd( *sit->GetMidVertex())) {
+                f.SetDoF( *sit->GetMidVertex(),
+                          (old_f.val( *sit->GetVertex(0)) + old_f.val( *sit->GetVertex(1)))*0.5);
+                ++counter2;
+            }
+    }
+    // All vertices in tl, that **have the old index and **are not on the Dirichlet-boundary
+    // hold an old value, which is copied to the new vector.
+    // As the check for the Dirichlet-boundary is the first, sit->Unknowns.Exist(),
+    // can be spared, since idx is required to exist on tl.
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= MG.GetTriangVertexBegin( tl),
+         theend= MG.GetTriangVertexEnd( tl); sit!=theend; ++sit)
+        if (!bnd->IsOnDirBnd( *sit) && sit->Unknowns.Exist( old_idx)) {
+            f.SetDoF( *sit, old_f.val( *sit));
+            ++counter1;
+        }
+    Comment( "RepairAfterRefine (P1): " << counter1 << " vertex-dof of "
+             << old_f.GetSolution()->Data.size() << " copied, " << counter2
+             << " new mid-vertex-doF interpolated." << std::endl,
+             DebugNumericC);
+    return tl;
+}
 
 inline void
 GetEdgeInFace(Uint chedge, Uint& parface, Uint& pos)
@@ -1463,6 +1546,61 @@ if (!sit->Unknowns.Exist(old_idx)) continue;
                                      << num_child_edge << " edge-DoF interpolated." << std::endl;
 }
 
+
+//**************************************************************************
+// RepairAfterRefine: Repairs the P2-function old_f, which is possibly     *
+//     damaged by a grid-refinement. This is done by copying to the new    *
+//     VecDescBaseCL object vecdesc and interpolation of old values.       *
+// Precondition: old_f is a damaged P2-function (through at most one       *
+//     refinement step), vecdesc contains a valid IdxDescCL* to an index on*
+//     the same level as old_f (If this level was deleted, vecdesc shall be*
+//     defined on the next coarser level.); vecdesc.Data has the correct   *
+//     size.                                                               *
+// Postcondition: vecdesc, together with the boundary-data of old_f,       *
+//     represents a P2-function on the triangulation tl. If old_f was      *
+//     defined on the last level before refinement, which is then deleted, *
+//     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
+//     level of old_f.                                                     *
+//**************************************************************************    
+/*
+template<class Data, class _BndData, class _VD, class _VecDesc>
+Uint
+RepairAfterRefine( P2EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
+{
+    Uint tl= old_f.GetSolution()->RowIdx->TriangLevel;
+    const MultiGridCL& MG= old_f.GetMG();
+    const Uint maxlevel= MG.GetLastLevel();
+
+    // If the level, on which f is defined, was completely deleted, old_f should
+    // be lifted to the next coarser level. It is left to the caller to do that
+    // -- use the return value of the current function.
+    if (tl > maxlevel) {
+        Assert( tl == maxlevel+1,
+                "RepairAfterRefine (P2): old_f is defined on a level, "
+                "which cannot have existed in the previous multigrid.",
+                DebugNumericC);
+        tl= maxlevel;
+    }
+    Assert( tl == vecdesc.RowIdx->TriangLevel,
+            "RepairAfterRefine (P2): old and new function are "
+            "defined on incompatible levels.",
+            DebugNumericC);
+    const Uint old_idx= old_f.GetSolution()->RowIdx->Idx;
+    const Uint idx= vecdesc.RowIdx->Idx;
+    typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    BndCL* const bnd= old_f.GetBndData();
+    P2EvalCL<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
+
+
+
+
+
+    Comment( "RepairAfterRefine (P2): " << " We could give some statistics here." << std::endl,
+             DebugNumericC);
+    return tl;
+
+}
+*/
 
 } // end of namespace DROPS
 
