@@ -17,10 +17,15 @@ double f(const SVectorCL<3>& p)
 { return p[0]*p[0] +10.*p[1]*p[1] +100.*p[2]*p[2] +1000.*p[0]*p[1] +10000.*p[0]*p[2] +100000.*p[1]*p[2]; }
 
 double g(const SVectorCL<3>& p)
-{  return p[0] +10.*p[1] +100.*p[2]+1; }
+{  return p[0] +10.*p[1] +100.*p[2]+1000.; }
 
 double h(const SVectorCL<3>& p)
 {  return sin(M_PI*p[0])*sin(M_PI*p[1])*sin(M_PI*p[2]); }
+
+double g2(const DROPS::Point3DCL& p)
+{
+    return (-1.)*p[0];
+}
 
 void MarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 {
@@ -134,7 +139,10 @@ int TestReMark()
         for (DROPS::Uint j= 0; j<=64; ++j) {
             DROPS::IdCL<DROPS::VertexCL>::ResetCounter();
 //            std::cout << Rule( i) << "\t-->\t" << Rule( j) << " ";
-            DROPS::TetraBuilderCL tet( Rule( i));
+            DROPS::TetraBuilderCL tet( Rule( i), DROPS::std_basis<3>( 1),
+                                                 DROPS::std_basis<3>( 2),
+                                                 DROPS::std_basis<3>( 3),
+                                                 DROPS::Point3DCL( 1.0));
             DROPS::MultiGridCL mg( tet);
             DROPS::IdxDescCL i0, i1;
             i0.Set( 1,1,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
@@ -149,6 +157,7 @@ int TestReMark()
             DROPS::VecDescCL v0, v1;
             v0.SetIdx( &i0);
             SetFun( v0, mg, f);
+//            SetFun( v0, mg, g2);
             tet.BogoReMark( mg, Rule( j));
 
             i1.Set( 1,1,0,0);
@@ -168,6 +177,7 @@ int TestReMark()
             DROPS::RepairAfterRefineP2( fun0, v1);
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
             ttt= CheckResult( fun1, f, SILENT);
+//            ttt= CheckResult( fun1, g2, NOISY);
             ret+= ttt;
             if (ttt != 0 && SubSuperPattern( Rule( i) & 63, Rule( j) & 63))
                 std::cout << "Aerger: " << Rule( i) << "\t-->\t" << Rule( j) << " " << std::endl;
@@ -421,8 +431,8 @@ int TestInterpolateOld()
     v1.Data.resize( v1.RowIdx->NumUnknowns);
     P2EvalCL<double, BndCL, const VecDescBaseCL<VectorCL> > fun0( &v0, &Bnd, &mg);
     P2EvalCL<double, BndCL,VecDescBaseCL<VectorCL> > fun1( &v1, &Bnd, &mg);
-//    Interpolate( fun1, fun0);
-    DROPS::RepairAfterRefineP2( fun0, v1);
+    Interpolate( fun1, fun0);
+//    DROPS::RepairAfterRefineP2( fun0, v1);
     std::cout << "Verts:" << std::endl;
     double diff;
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(1),

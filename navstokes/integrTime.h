@@ -45,7 +45,8 @@ class InstatNavStokesThetaSchemeCL
     double _theta, _dt;
     
   public:
-    InstatNavStokesThetaSchemeCL( NavStokesT& NS, SolverT& solver, const VelVecDescCL* v, double theta= 0.5)
+    InstatNavStokesThetaSchemeCL(NavStokesT& NS, SolverT& solver, const VelVecDescCL* v,
+                                 double theta= 0.5, double t= 0.0)
         : _NS( NS), _solver( solver), _b( &NS.b), _old_b( new VelVecDescCL),
           _cplM( &NS.cplM), _old_cplM( new VelVecDescCL),
 	  _cplN( &NS.cplN), _rhs( NS.b.RowIdx->NumUnknowns), _theta( theta)
@@ -53,7 +54,7 @@ class InstatNavStokesThetaSchemeCL
         _old_b->SetIdx( _b->RowIdx);
         _old_cplM->SetIdx( _b->RowIdx);
         // Redundant for _NS.c but does not change its value
-        _NS.SetupInstatRhs( _old_b, &_NS.c, _old_cplM, 0., _old_b, 0.);
+        _NS.SetupInstatRhs( _old_b, &_NS.c, _old_cplM, t, _old_b, t);
     }
 
     ~InstatNavStokesThetaSchemeCL()

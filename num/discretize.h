@@ -118,6 +118,8 @@ class Quad2CL: public QuadBaseCL<T>
 class Quad3CL
 // contains cubatur on reference-tetra, that is exact up to degree 3, positive,
 // and uses only 8 points.
+// Do not forget to multiply the result of Quad() by the determinant of the affine trafo
+// from the reference tetra to the given tetra.
 {
   private:
     static const double _points[8][3];
@@ -131,6 +133,9 @@ class Quad3CL
 
     static inline double Quad(const double*);
     static inline SVectorCL<3> Quad(const SVectorCL<3>*);
+    template<class IteratorT, class ValueT>
+      static inline void
+      Quad(IteratorT, ValueT*const);
 };
 
 inline double Quad3CL::Quad(const TetraCL& t, scalar_fun_ptr f)
@@ -165,6 +170,16 @@ inline SVectorCL<3> Quad3CL::Quad(const SVectorCL<3>* vals)
           +(vals[4] + vals[5] + vals[6] + vals[7])*3./80.;
 }
 
+template<class IteratorT, class ValueT>
+inline void Quad3CL::Quad(IteratorT beg, ValueT*const ret)
+{
+    ValueT tmp0= *beg++; tmp0+= *beg++; tmp0+= *beg++; tmp0+= *beg++;
+    tmp0/=240.;
+    ValueT tmp1= *beg++; tmp1+= *beg++; tmp1+= *beg++; tmp1+= *beg;
+    tmp1*=3./240.;
+    *ret= tmp0 + tmp1;
+}
+
 
 class FaceQuad2CL
 // contains cubatur on reference-face, that is exact up to degree 2, positive,
@@ -179,6 +194,9 @@ class FaceQuad2CL
 
     static inline double Quad(const double*);
     static inline SVectorCL<3> Quad(const SVectorCL<3>*);
+    template<class IteratorT, class ValueT>
+      static inline void
+      Quad(IteratorT, ValueT*const);
 };
 
 inline double FaceQuad2CL::Quad(const double* vals)
@@ -189,6 +207,14 @@ inline double FaceQuad2CL::Quad(const double* vals)
 inline SVectorCL<3> FaceQuad2CL::Quad(const SVectorCL<3>* vals)
 {
     return (vals[0] + vals[1] + vals[2])/24.  +vals[3]*3./8.;
+}
+
+template<class IteratorT, class ValueT>
+inline void FaceQuad2CL::Quad(IteratorT beg, ValueT*const ret)
+{
+    ValueT tmp= *beg++; tmp+= *beg++; tmp+= *beg++;
+    tmp/=24.;
+    *ret= tmp + (*beg)*3./8.;
 }
 
 /*

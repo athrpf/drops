@@ -341,8 +341,8 @@ public:
     P1EvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
         :_sol(sol), _bnd(bnd), _MG(MG) {}
     // default copy-ctor, dtor, assignment-op
-    // copying P1EvalBaseCL-objects is safe - it is a flat copy, which is fine,
-    // as P1EvalBaseCL does not take possession of the pointed to _sol, _bnd and _MG.
+    // copying P1EvalCL-objects is safe - it is a flat copy, which is fine,
+    // as P1EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
 
     void // set / get the container of numerical data
     SetSolution(VecDescT* sol)
@@ -565,8 +565,8 @@ public:
     P2EvalCL(VecDescT* sol, BndDataCL* bnd, const MultiGridCL* MG)
         :_sol(sol), _bnd(bnd), _MG(MG) {}
     //default copy-ctor, dtor, assignment-op
-    // copying P2EvalBaseCL-objects is safe - it is a flat copy, which is fine,
-    // as P2EvalBaseCL does not take possession of the pointed to _sol, _bnd and _MG.
+    // copying P2EvalCL-objects is safe - it is a flat copy, which is fine,
+    // as P2EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
 
     void // set / get the container of numerical data
     SetSolution(VecDescT* sol)
@@ -704,6 +704,8 @@ class InstatP2EvalCL: public P2EvalCL<DataT, BndDataT, VecDescT>
     double _t;
     
 public:
+    using _base::val;
+
     InstatP2EvalCL() : _base(), _t(0) {}
     InstatP2EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG, double t)
         : _base( sol, bnd, MG), _t(t) {}
