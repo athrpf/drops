@@ -1175,14 +1175,10 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     VectorCL z2( g.size());
     VectorCL zbar( f.size());
     VectorCL zhat( f.size());
-    VectorCL a( f.size());
-    VectorCL b( f.size());
     VectorCL du( f.size());
     VectorCL c( g.size());
     ApproximateSchurComplMatrixCL<PC1>* asc= Apcislinear ? 0 :
         new ApproximateSchurComplMatrixCL<PC1>( A, Apc, B);
-    ApproximateSchurComplMatrixCL<PC1> asc2( A, Apc, B);
-    PCGSolverCL<PC2> pcgsolverold( Spc, 500, innerred);
     double innertol;
     int inneriter;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
@@ -1204,11 +1200,9 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         if (Apcislinear) {
             zbar= 0.0;
             zhat= 0.0;
-            // pcgsolver.SetTol( innerred*norm( c)); pcgsolver.Solve( Apc, A, B, z, zbar, zhat, c);
             UzawaPCG( Apc, A, B, z, zbar, zhat, c, Spc, inneriter, innertol);
         }
         else {
-            // pcgsolverold.SetTol( innerred*norm( c)); pcgsolverold.Solve( *asc, z2, c);
             PCG( *asc, z, c, Spc, inneriter, innertol);
             zbar= transp_mul( B, z);
             zhat= 0.0;
@@ -1216,16 +1210,6 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         }
         std::cerr << "innersolver: iterations: " << inneriter 
                   << "\tresid: " << innertol << '\n';
-	pcgsolverold.SetTol( innerred*norm( c));
-        pcgsolverold.Solve( asc2, z2, c);
-        std::cerr << "innersolverold: iterations: " << pcgsolverold.GetIter() 
-                  << "\tresid: " << pcgsolverold.GetResid() << '\n';
-        b= transp_mul( B, z); //zbar
-        a= 0.0; // zhat
-        Apc.Apply( A, a, b);
-        std::cerr << "(z2-z)/z2: " << norm( z2-z)/norm( z2) 
-                  << "(b-zbar)/b: " << norm( b-zbar)/norm( b) 
-                  << "\t(a-zhat)/a: " << norm( a-zhat)/norm( a) << '\n';
         du= w - zhat;
         xp+= z;
         z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar); // ru-= A*du + transp_mul( B, z);
@@ -1245,10 +1229,6 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         }
 */
         if (resid<=tol) { // absolute errors
-//            std::cerr << "relative residual (2-norm): " << resid/resid0 
-//                      << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
-//                      << "\tp: " << norm( g - B*xu)
-//                      << '\n';
             tol= resid;
             max_iter= k;
             delete asc;
