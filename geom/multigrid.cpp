@@ -913,6 +913,7 @@ BoundaryCL::~BoundaryCL()
 
 
 MultiGridCL::MultiGridCL (const MGBuilderCL& Builder)
+    : _TriangVertex( *this), _TriangEdge( *this), _TriangFace( *this), _TriangTetra( *this)
 {
     Builder.build(this);
     FinalizeModify();
@@ -1023,6 +1024,7 @@ void MultiGridCL::Refine()
 {
     const int tmpLastLevel( GetLastLevel() );
 
+    ClearTriangCache();
     PrepareModify();
     for (int Level=tmpLastLevel; Level>=0; --Level)
     {
@@ -1234,9 +1236,7 @@ void MultiGridCL::ElemInfo(std::ostream& os, int Level)
 {
     double hmax= -1, hmin= 1e99,
            rmax= -1, rmin= 1e99;
-    for (TriangTetraIteratorCL It= GetTriangTetraBegin(Level),
-             ItEnd= GetTriangTetraEnd(Level); It!=ItEnd; ++It)
-    {
+    DROPS_FOR_TRIANG_TETRA( (*this), Level, It) {
         double loc_max= -1, loc_min= 1e99;
         for (Uint i=0; i<3; ++i)
         {
@@ -1258,106 +1258,45 @@ void MultiGridCL::ElemInfo(std::ostream& os, int Level)
        << rmin << " <= h_max/h_min <= " << rmax << std::endl;
 }
 
-MultiGridCL::TriangVertexIteratorCL MultiGridCL::GetTriangVertexBegin (int TriLevel)
+
+void
+TriangFillCL<VertexCL>::fill (MultiGridCL& mg, TriangCL<VertexCL>::LevelCont& c, int lvl)
 {
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
+    for (MultiGridCL::VertexIterator it= mg.GetAllVertexBegin( lvl),
+         theend= mg.GetAllVertexEnd( lvl); it != theend; ++it)
+        if (it->IsInTriang( lvl)) c.push_back( &*it);
+    TriangCL<VertexCL>::LevelCont tmp= c;
+    c.swap( tmp);
 }
 
-MultiGridCL::const_TriangVertexIteratorCL MultiGridCL::GetTriangVertexBegin (int TriLevel) const
+void
+TriangFillCL<EdgeCL>::fill (MultiGridCL& mg, TriangCL<EdgeCL>::LevelCont& c, int lvl)
 {
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
+    for (MultiGridCL::EdgeIterator it= mg.GetAllEdgeBegin( lvl),
+         theend= mg.GetAllEdgeEnd( lvl); it != theend; ++it)
+        if (it->IsInTriang( lvl)) c.push_back( &*it);
+    TriangCL<EdgeCL>::LevelCont tmp= c;
+    c.swap( tmp);
 }
 
-MultiGridCL::TriangVertexIteratorCL MultiGridCL::GetTriangVertexEnd (int TriLevel)
+void
+TriangFillCL<FaceCL>::fill (MultiGridCL& mg, TriangCL<FaceCL>::LevelCont& c, int lvl)
 {
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
+    for (MultiGridCL::FaceIterator it= mg.GetAllFaceBegin( lvl),
+         theend= mg.GetAllFaceEnd( lvl); it != theend; ++it)
+        if (it->IsInTriang( lvl)) c.push_back( &*it);
+    TriangCL<FaceCL>::LevelCont tmp= c;
+    c.swap( tmp);
 }
 
-MultiGridCL::const_TriangVertexIteratorCL MultiGridCL::GetTriangVertexEnd (int TriLevel) const
+void
+TriangFillCL<TetraCL>::fill (MultiGridCL& mg, TriangCL<TetraCL>::LevelCont& c, int lvl)
 {
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
-}
-
-MultiGridCL::TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    TriangEdgeIteratorCL Start( this, TriLevel, 0, GetEdgesBegin( 0) );
-    return Start->IsInTriang(TriLevel) ? Start : ++Start;
-}
-
-MultiGridCL::const_TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    const_TriangEdgeIteratorCL Start( this, TriLevel, 0, GetEdgesBegin( 0) );
-    return Start->IsInTriang(TriLevel) ? Start : ++Start;
-}
-
-MultiGridCL::TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
-}
-
-MultiGridCL::const_TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
-}
-
-MultiGridCL::TriangFaceIteratorCL MultiGridCL::GetTriangFaceBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    TriangFaceIteratorCL Start( this, TriLevel, 0, GetFacesBegin( 0) );
-    return Start->IsInTriang(TriLevel) ? Start : ++Start;
-}
-
-MultiGridCL::const_TriangFaceIteratorCL MultiGridCL::GetTriangFaceBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    const_TriangFaceIteratorCL Start( this, TriLevel, 0, GetFacesBegin( 0) );
-    return Start->IsInTriang(TriLevel) ? Start : ++Start;
-}
-
-MultiGridCL::TriangFaceIteratorCL MultiGridCL::GetTriangFaceEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
-}
-
-MultiGridCL::const_TriangFaceIteratorCL MultiGridCL::GetTriangFaceEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
-}
-
-MultiGridCL::TriangTetraIteratorCL MultiGridCL::GetTriangTetraBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    TriangTetraIteratorCL Start( this, TriLevel, 0, GetTetrasBegin( 0) );
-    return Start->IsInTriang(TriLevel) ? Start : ++Start;
-}
-
-MultiGridCL::const_TriangTetraIteratorCL MultiGridCL::GetTriangTetraBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    const_TriangTetraIteratorCL Start( this, TriLevel, 0, GetTetrasBegin( 0) );
-    return Start->IsInTriang(TriLevel) ? Start : ++Start;
-}
-
-MultiGridCL::TriangTetraIteratorCL MultiGridCL::GetTriangTetraEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
-}
-
-MultiGridCL::const_TriangTetraIteratorCL MultiGridCL::GetTriangTetraEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
+    for (MultiGridCL::TetraIterator it= mg.GetAllTetraBegin( lvl),
+         theend= mg.GetAllTetraEnd( lvl); it != theend; ++it)
+        if (it->IsInTriang( lvl)) c.push_back( &*it);
+    TriangCL<TetraCL>::LevelCont tmp= c;
+    c.swap( tmp);
 }
 
 
@@ -1418,16 +1357,14 @@ void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r)
 
 void MarkAll (DROPS::MultiGridCL& mg)
 {
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin()),
-             ItEnd(mg.GetTriangTetraEnd()); It!=ItEnd; ++It)
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, It)
         It->SetRegRefMark();
 }
 
 
 void UnMarkAll (DROPS::MultiGridCL& mg)
 {
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin()),
-             ItEnd(mg.GetTriangTetraEnd()); It!=ItEnd; ++It)
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, It)
         It->SetRemoveMark();
 }
 

@@ -467,19 +467,56 @@ SVectorCL<3> FaceToTetraCoord(const TetraCL& t, Uint f, SVectorCL<2> c);
 
 class MultiGridCL;
 class MGBuilderCL;
-template
-  <
-  class Sim,
-  class SimRef,
-  class SimPtr,
-  class SimIter,
-  class MG,
-  template <class _Sim, class _SimRef, class _SimPtr, class _SimIter, class _MG> class Inc
-  >
-  class MGIterBaseCL;
-template <class Sim, class SimRef, class SimPtr, class SimIter, class MG>
-  struct TriangIncCL;
 
+template <class SimplexT>
+struct TriangFillCL;
+
+template <class SimplexT>
+class TriangCL
+{
+  public:
+    typedef std::vector<SimplexT*> LevelCont;
+
+    typedef SimplexT**                     ptr_iterator;
+    typedef const SimplexT**         const_ptr_iterator;
+
+    typedef ptr_iter<SimplexT>             iterator;
+    typedef ptr_iter<const SimplexT> const_iterator;
+
+  private:
+    mutable std::vector<LevelCont> triang_;
+    MultiGridCL&                   mg_;
+
+    int  StdIndex    (int lvl) const { return lvl >= 0 ? lvl : lvl + triang_.size(); }
+    inline void MaybeCreate (int lvl) const;
+
+  public:
+    TriangCL (MultiGridCL& mg);
+
+    void clear () { triang_.clear(); }
+    Uint size  (int lvl= -1) const
+        { MaybeCreate( StdIndex( lvl)); return triang_[StdIndex( lvl)].size(); }
+
+    ptr_iterator begin (int lvl= -1)
+        { MaybeCreate( StdIndex( lvl)); return &*triang_[StdIndex( lvl)].begin(); }
+    ptr_iterator end   (int lvl= -1)
+        { MaybeCreate( StdIndex( lvl)); return &*triang_[StdIndex( lvl)].end(); }
+    const_ptr_iterator begin (int lvl= -1) const
+        { MaybeCreate( StdIndex( lvl)); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].begin()); }
+    const_ptr_iterator end   (int lvl= -1) const
+        { MaybeCreate( StdIndex( lvl)); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].end()); }
+
+    LevelCont&       operator[] (int lvl)
+        { MaybeCreate( StdIndex( lvl)); return triang_[StdIndex( lvl)]; }
+    const LevelCont& operator[] (int lvl) const
+        { MaybeCreate( StdIndex( lvl)); return triang_[StdIndex( lvl)]; }
+
+};
+
+typedef  TriangCL<VertexCL> TriangVertexCL;
+typedef  TriangCL<EdgeCL>   TriangEdgeCL;
+typedef  TriangCL<FaceCL>   TriangFaceCL;
+typedef  TriangCL<TetraCL>  TriangTetraCL;
 
 class BoundaryCL
 {
@@ -504,31 +541,33 @@ class MultiGridCL
   friend class MGBuilderCL;
 
   public:
-    typedef MG_VertexContT                  VertexCont;
-    typedef VertexCont::LevelCont           VertexLevelCont;
-    typedef VertexCont::LevelIterator       VertexIterator;
+    typedef MG_VertexContT VertexCont;
+    typedef MG_EdgeContT   EdgeCont;
+    typedef MG_FaceContT   FaceCont;
+    typedef MG_TetraContT  TetraCont;
+
+    typedef VertexCont::LevelCont VertexLevelCont;
+    typedef EdgeCont::LevelCont   EdgeLevelCont;
+    typedef FaceCont::LevelCont   FaceLevelCont;
+    typedef TetraCont::LevelCont  TetraLevelCont;
+
+    typedef VertexCont::LevelIterator             VertexIterator;
+    typedef EdgeCont::LevelIterator               EdgeIterator;
+    typedef FaceCont::LevelIterator               FaceIterator;
+    typedef TetraCont::LevelIterator              TetraIterator;
     typedef VertexCont::const_LevelIterator const_VertexIterator;
-    typedef MG_EdgeContT                    EdgeCont;
-    typedef EdgeCont::LevelCont             EdgeLevelCont;
-    typedef EdgeCont::LevelIterator         EdgeIterator;
     typedef EdgeCont::const_LevelIterator   const_EdgeIterator;
-    typedef MG_FaceContT                    FaceCont;
-    typedef FaceCont::LevelCont             FaceLevelCont;
-    typedef FaceCont::LevelIterator         FaceIterator;
     typedef FaceCont::const_LevelIterator   const_FaceIterator;
-    typedef MG_TetraContT                   TetraCont;
-    typedef TetraCont::LevelCont            TetraLevelCont;
-    typedef TetraCont::LevelIterator        TetraIterator;
     typedef TetraCont::const_LevelIterator  const_TetraIterator;
 
-    typedef MGIterBaseCL<VertexCL, VertexCL&, VertexCL*, VertexIterator, MultiGridCL, TriangIncCL>                         TriangVertexIteratorCL;
-    typedef MGIterBaseCL<VertexCL, const VertexCL&, const VertexCL*, const_VertexIterator, const MultiGridCL, TriangIncCL> const_TriangVertexIteratorCL;
-    typedef MGIterBaseCL<EdgeCL, EdgeCL&, EdgeCL*, EdgeIterator, MultiGridCL, TriangIncCL>                                 TriangEdgeIteratorCL;
-    typedef MGIterBaseCL<EdgeCL, const EdgeCL&, const EdgeCL*, const_EdgeIterator, const MultiGridCL, TriangIncCL>         const_TriangEdgeIteratorCL;
-    typedef MGIterBaseCL<FaceCL, FaceCL&, FaceCL*, FaceIterator, MultiGridCL, TriangIncCL>                                 TriangFaceIteratorCL;
-    typedef MGIterBaseCL<FaceCL, const FaceCL&, const FaceCL*, const_FaceIterator, const MultiGridCL, TriangIncCL>         const_TriangFaceIteratorCL;
-    typedef MGIterBaseCL<TetraCL, TetraCL&, TetraCL*, TetraIterator, MultiGridCL, TriangIncCL>                             TriangTetraIteratorCL;
-    typedef MGIterBaseCL<TetraCL, const TetraCL&, const TetraCL*, const_TetraIterator, const MultiGridCL, TriangIncCL>     const_TriangTetraIteratorCL;
+    typedef TriangVertexCL::iterator             TriangVertexIteratorCL;
+    typedef TriangEdgeCL::iterator               TriangEdgeIteratorCL;
+    typedef TriangFaceCL::iterator               TriangFaceIteratorCL;
+    typedef TriangTetraCL::iterator              TriangTetraIteratorCL;
+    typedef TriangVertexCL::const_iterator const_TriangVertexIteratorCL;
+    typedef TriangEdgeCL::const_iterator   const_TriangEdgeIteratorCL;
+    typedef TriangFaceCL::const_iterator   const_TriangFaceIteratorCL;
+    typedef TriangTetraCL::const_iterator  const_TriangTetraIteratorCL;
 
   private:
     BoundaryCL _Bnd;
@@ -537,14 +576,22 @@ class MultiGridCL
     FaceCont   _Faces;
     TetraCont  _Tetras;
 
-    void PrepareModify  ()           { _Vertices.PrepareModify(); _Edges.PrepareModify(); _Faces.PrepareModify(); _Tetras.PrepareModify(); }
-    void FinalizeModify ()           { _Vertices.FinalizeModify(); _Edges.FinalizeModify(); _Faces.FinalizeModify(); _Tetras.FinalizeModify(); }
-    void AppendLevel    ()           { _Vertices.AppendLevel(); _Edges.AppendLevel(); _Faces.AppendLevel(); _Tetras.AppendLevel(); }
-    void RemoveLastLevel()           { _Vertices.RemoveLastLevel(); _Edges.RemoveLastLevel(); _Faces.RemoveLastLevel(); _Tetras.RemoveLastLevel(); }
-    void RestrictMarks  (Uint Level) { std::for_each( _Tetras[Level].begin(), _Tetras[Level].end(), std::mem_fun_ref(&TetraCL::RestrictMark)); }
-    void CloseGrid      (Uint);
-    void UnrefineGrid   (Uint);
-    void RefineGrid     (Uint);
+    TriangVertexCL _TriangVertex;    
+    TriangEdgeCL   _TriangEdge;    
+    TriangFaceCL   _TriangFace;    
+    TriangTetraCL  _TriangTetra;    
+
+    void PrepareModify   () { _Vertices.PrepareModify(); _Edges.PrepareModify(); _Faces.PrepareModify(); _Tetras.PrepareModify(); }
+    void FinalizeModify  () { _Vertices.FinalizeModify(); _Edges.FinalizeModify(); _Faces.FinalizeModify(); _Tetras.FinalizeModify(); }
+    void AppendLevel     () { _Vertices.AppendLevel(); _Edges.AppendLevel(); _Faces.AppendLevel(); _Tetras.AppendLevel(); }
+    void RemoveLastLevel () { _Vertices.RemoveLastLevel(); _Edges.RemoveLastLevel(); _Faces.RemoveLastLevel(); _Tetras.RemoveLastLevel(); }
+
+    void ClearTriangCache () { _TriangVertex.clear(); _TriangEdge.clear(); _TriangFace.clear(); _TriangTetra.clear(); }
+
+    void RestrictMarks (Uint Level) { std::for_each( _Tetras[Level].begin(), _Tetras[Level].end(), std::mem_fun_ref(&TetraCL::RestrictMark)); }
+    void CloseGrid     (Uint);
+    void UnrefineGrid  (Uint);
+    void RefineGrid    (Uint);
 
   public:
     MultiGridCL (const MGBuilderCL& Builder);
@@ -556,6 +603,11 @@ class MultiGridCL
     const EdgeCont&   GetEdges   () const { return _Edges; }
     const FaceCont&   GetFaces   () const { return _Faces; }
     const TetraCont&  GetTetras  () const { return _Tetras; }
+
+    const TriangVertexCL& GetTriangVertex () const { return _TriangVertex; }
+    const TriangEdgeCL&   GetTriangEdge   () const { return _TriangEdge; }
+    const TriangFaceCL&   GetTriangFace   () const { return _TriangFace; }
+    const TriangTetraCL&  GetTriangTetra  () const { return _TriangTetra; }
 
     VertexIterator GetVerticesBegin (int Level=-1) { return _Vertices.level_begin( Level); }
     VertexIterator GetVerticesEnd   (int Level=-1) { return _Vertices.level_end( Level); }
@@ -591,22 +643,22 @@ class MultiGridCL
     const_TetraIterator  GetAllTetraBegin  (int= -1     ) const { return _Tetras.begin(); }
     const_TetraIterator  GetAllTetraEnd    (int Level=-1) const { return _Tetras.level_end( Level); }
 
-    TriangVertexIteratorCL GetTriangVertexBegin (int Level=-1);
-    TriangVertexIteratorCL GetTriangVertexEnd   (int Level=-1);
-    TriangEdgeIteratorCL   GetTriangEdgeBegin   (int Level=-1);
-    TriangEdgeIteratorCL   GetTriangEdgeEnd     (int Level=-1);
-    TriangFaceIteratorCL   GetTriangFaceBegin   (int Level=-1);
-    TriangFaceIteratorCL   GetTriangFaceEnd     (int Level=-1);
-    TriangTetraIteratorCL  GetTriangTetraBegin  (int Level=-1);
-    TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1);
-    const_TriangVertexIteratorCL GetTriangVertexBegin (int Level=-1) const;
-    const_TriangVertexIteratorCL GetTriangVertexEnd   (int Level=-1) const;
-    const_TriangEdgeIteratorCL   GetTriangEdgeBegin   (int Level=-1) const;
-    const_TriangEdgeIteratorCL   GetTriangEdgeEnd     (int Level=-1) const;
-    const_TriangFaceIteratorCL   GetTriangFaceBegin   (int Level=-1) const;
-    const_TriangFaceIteratorCL   GetTriangFaceEnd     (int Level=-1) const;
-    const_TriangTetraIteratorCL  GetTriangTetraBegin  (int Level=-1) const;
-    const_TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) const;
+    TriangVertexIteratorCL GetTriangVertexBegin (int Level=-1) { return _TriangVertex.begin( Level); }
+    TriangVertexIteratorCL GetTriangVertexEnd   (int Level=-1) { return _TriangVertex.end( Level); }
+    TriangEdgeIteratorCL   GetTriangEdgeBegin   (int Level=-1) { return _TriangEdge.begin( Level); }
+    TriangEdgeIteratorCL   GetTriangEdgeEnd     (int Level=-1) { return _TriangEdge.end( Level); }
+    TriangFaceIteratorCL   GetTriangFaceBegin   (int Level=-1) { return _TriangFace.begin( Level); }
+    TriangFaceIteratorCL   GetTriangFaceEnd     (int Level=-1) { return _TriangFace.end( Level); }
+    TriangTetraIteratorCL  GetTriangTetraBegin  (int Level=-1) { return _TriangTetra.begin( Level); }
+    TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) { return _TriangTetra.end( Level); }
+    const_TriangVertexIteratorCL GetTriangVertexBegin (int Level=-1) const { return _TriangVertex.begin( Level); }
+    const_TriangVertexIteratorCL GetTriangVertexEnd   (int Level=-1) const { return _TriangVertex.end( Level); }
+    const_TriangEdgeIteratorCL   GetTriangEdgeBegin   (int Level=-1) const { return _TriangEdge.begin( Level); }
+    const_TriangEdgeIteratorCL   GetTriangEdgeEnd     (int Level=-1) const { return _TriangEdge.end( Level); }
+    const_TriangFaceIteratorCL   GetTriangFaceBegin   (int Level=-1) const { return _TriangFace.begin( Level); }
+    const_TriangFaceIteratorCL   GetTriangFaceEnd     (int Level=-1) const { return _TriangFace.end( Level); }
+    const_TriangTetraIteratorCL  GetTriangTetraBegin  (int Level=-1) const { return _TriangTetra.begin( Level); }
+    const_TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) const { return _TriangTetra.end( Level); }
 
     Uint GetLastLevel() const { return _Tetras.GetNumLevel()-1; }
     Uint GetNumLevel () const { return _Tetras.GetNumLevel(); }
@@ -621,118 +673,64 @@ class MultiGridCL
 };
 
 
-// This template should never be instantiated (only the specializations...);
-// Thus we provoke a link-time error, if it is instantiated.
-template <class Sim, class SimRef, class SimPtr, class SimIter, class MG>
-struct TriangIncCL
+template <class SimplexT>
+struct TriangFillCL
 {
-// Not defined!
-    inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos);
+  static void // not defined
+  fill (MultiGridCL& mg, typename TriangCL<SimplexT>::LevelCont& c, int lvl);
 };
 
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct TriangIncCL<VertexCL, SimRef, SimPtr, SimIter, MG>
+template <>
+struct TriangFillCL<VertexCL>
 {
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        while (_Level < _TriLevel)
-        {
-            if ( _Pos != _MG->GetVerticesEnd(_Level) ) return;
-            else _Pos = _MG->GetVerticesBegin(++_Level);
-        }
-    }
+    static void fill (MultiGridCL& mg, TriangCL<VertexCL>::LevelCont& c, int lvl);
 };
 
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct TriangIncCL<EdgeCL, SimRef, SimPtr, SimIter, MG>
+template <>
+struct TriangFillCL<EdgeCL>
 {
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        while (_Level < _TriLevel)
-        {
-            for ( ; _Pos != _MG->GetEdgesEnd(_Level); ++_Pos)
-                if ( _Pos->IsInTriang(_TriLevel) ) return;
-            _Pos = _MG->GetEdgesBegin(++_Level);
-        }
-    }
+    static void fill (MultiGridCL& mg, TriangCL<EdgeCL>::LevelCont& c, int lvl);
 };
 
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct TriangIncCL<FaceCL, SimRef, SimPtr, SimIter, MG>
+template <>
+struct TriangFillCL<FaceCL>
 {
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        while (_Level < _TriLevel)
-        {
-            for ( ; _Pos != _MG->GetFacesEnd(_Level); ++_Pos)
-                if ( _Pos->IsInTriang(_TriLevel) ) return;
-            _Pos = _MG->GetFacesBegin(++_Level);
-        }
-    }
+    static void fill (MultiGridCL& mg, TriangCL<FaceCL>::LevelCont& c, int lvl);
 };
 
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct TriangIncCL<TetraCL, SimRef, SimPtr, SimIter, MG>
+template <>
+struct TriangFillCL<TetraCL>
 {
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        while (_Level < _TriLevel)
-        {
-            for ( ; _Pos != _MG->GetTetrasEnd(_Level); ++_Pos)
-                if ( _Pos->IsInTriang(_TriLevel) ) return;
-            _Pos = _MG->GetTetrasBegin(++_Level);
-        }
-    }
+    static void fill (MultiGridCL& mg, TriangCL<TetraCL>::LevelCont& c, int lvl);
 };
 
 
-template <class Sim,
-          class SimRef,
-          class SimPtr,
-          class SimIter,
-          class MG,
-          template <class _Sim, class _SimRef, class _SimPtr, class _SimIter, class _MG> class Inc
-         >
-class MGIterBaseCL
-{
-  public:
-    typedef std::forward_iterator_tag iterator_category;
-    typedef Sim                       value_type;
-    typedef ptrdiff_t                 difference_type;
-    typedef SimPtr                    pointer;
-    typedef SimRef                    reference;
+#define DROPS_FOR_TRIANG_VERTEX( mg, lvl, it) \
+for (DROPS::TriangVertexCL::iterator it( mg.GetTriangVertexBegin( lvl)), end__( mg.GetTriangVertexEnd( lvl)); it != end__; ++it)
 
-    typedef MGIterBaseCL<Sim, SimRef, SimPtr, SimIter, MG, Inc> _self;
-    typedef SimIter                                             _iter;
-    typedef Inc<Sim, SimRef, SimPtr, SimIter, MG>               _incrementor;
+#define DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) \
+for (DROPS::TriangVertexCL::const_iterator it( mg.GetTriangVertexBegin( lvl)), end__( mg.GetTriangVertexEnd( lvl)); it != end__; ++it)
 
-  private:
-    MG*          _MG;
-    Uint         _TriLevel;
-    Uint         _Level;
-    _iter        _Pos;
-    _incrementor _Inc;
 
-  public:
-    MGIterBaseCL (MG* MGp, Uint TriLevel, Uint Level, _iter Pos)
-        : _MG(MGp), _TriLevel(TriLevel), _Level(Level), _Pos(Pos) {}
-    // Default copy-ctor, dtor, assignment-operator
+#define DROPS_FOR_TRIANG_EDGE( mg, lvl, it) \
+for (DROPS::TriangEdgeCL::iterator it( mg.GetTriangEdgeBegin( lvl)), end__( mg.GetTriangEdgeEnd( lvl)); it != end__; ++it)
 
-    reference operator *  () const { return  *_Pos; }
-    pointer   operator -> () const { return &*_Pos; }
+#define DROPS_FOR_TRIANG_CONST_EDGE( mg, lvl, it) \
+for (DROPS::TriangEdgeCL::const_iterator it( mg.GetTriangEdgeBegin( lvl)), end__( mg.GetTriangEdgeEnd( lvl)); it != end__; ++it)
 
-    _self& operator ++ ()    { _Inc.increment(_MG, _TriLevel, _Level, _Pos); return *this; }
-    _self  operator ++ (int) { _self tmp(*this); ++(*this); return tmp; }
 
-    friend bool operator == (const _self& It0, const _self& It1)
-        { return It0._Pos == It1._Pos && It0._Level    == It1._Level &&
-                 It0._MG  == It1._MG  && It0._TriLevel == It1._TriLevel; }
-    friend bool operator != (const _self& It0, const _self& It1) { return !(It0 == It1); }
-};
+#define DROPS_FOR_TRIANG_FACE( mg, lvl, it) \
+for (DROPS::TriangFaceCL::iterator it( mg.GetTriangFaceBegin( lvl)), end__( mg.GetTriangFaceEnd( lvl)); it != end__; ++it)
+
+#define DROPS_FOR_ALL_TRIANG_CONST_FACE( mg, lvl, it) \
+for (DROPS::TriangFaceCL::const_iterator FaceCL* it( mg.GetTriangFaceBegin( lvl)), end__( mg.GetTriangFaceEnd( lvl)); it != end__; ++it)
+
+
+#define DROPS_FOR_TRIANG_TETRA( mg, lvl, it) \
+for (DROPS::TriangTetraCL::iterator it( mg.GetTriangTetraBegin( lvl)), end__( mg.GetTriangTetraEnd( lvl)); it != end__; ++it)
+
+#define DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) \
+for (DROPS::TriangTetraCL::const_iterator it( mg.GetTriangTetraBegin( lvl)), end__( mg.GetTriangTetraEnd( lvl)); it != end__; ++it)
 
 
 class MGBuilderCL
@@ -995,6 +993,26 @@ inline void TetraCL::LinkFaces (const ChildDataCL& childdat)
 inline const RefRuleCL& TetraCL::GetRefData () const
 {
     return DROPS::GetRefRule(this->GetRefRule() & 63);
+}
+
+template <class SimplexT>
+  TriangCL<SimplexT>::TriangCL (MultiGridCL& mg)
+      : triang_( mg.GetNumLevel()), mg_( mg)
+{}
+
+template <class SimplexT>
+  inline void
+  TriangCL<SimplexT>::MaybeCreate(int lvl) const
+{
+    Assert ( StdIndex( lvl) >= 0 && StdIndex( lvl) < mg_.GetNumLevel(),
+        DROPSErrCL( "TriangCL::MaybeCreate: Wrong level."), DebugContainerC);
+    if (triang_.size() != mg_.GetNumLevel()) {
+        triang_.clear();
+        triang_.resize( mg_.GetNumLevel());
+    }
+    const int level= StdIndex( lvl);
+    if (triang_[level].empty())
+        TriangFillCL<SimplexT>::fill( mg_, triang_[level], level);
 }
 
 

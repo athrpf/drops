@@ -119,14 +119,6 @@ inline bool is_in_if( In beg, In end, Pred p )
 }
 
 
-template <class In, class Out, class Pred>
-Out copy_if( In beg, In end, Out dest, Pred p )
-{
-    while (beg!=end) { if (p(*beg)) *dest++= *beg; ++beg; }
-    return dest;
-}
-
-
 template <class T>
 class ref_to_ptr : public std::unary_function<T&, T*>
 {
@@ -253,6 +245,41 @@ struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
   }
 };
 
+
+template <class T>
+class ptr_iter
+{
+  public:
+    typedef std::random_access_iterator_tag iterator_category;
+    typedef T                               value_type;
+    typedef ptrdiff_t                       difference_type;
+    typedef T*                              pointer;
+    typedef T&                              reference;
+
+  private:
+    T** p_;
+
+  public:
+    // default copy-ctor, copy-assignment-op and dtor
+    ptr_iter (T** p) : p_( p) {}
+    
+    reference operator*  () const { return **p_; }
+    pointer   operator-> () const { return *p_; }
+
+    ptr_iter        operator+ (difference_type d) const { return p_ + d; }
+    difference_type operator- (ptr_iter b)        const { return p_ - b.p_; }
+
+    reference operator[] (difference_type d) const { return **(p_ + d); }
+
+    ptr_iter& operator++ ()    { ++p_; return *this; }
+    ptr_iter& operator++ (int) { ptr_iter tmp( p_); ++p_; return tmp; }
+    ptr_iter& operator-- ()    { --p_; return *this; }
+    ptr_iter& operator-- (int) { ptr_iter tmp( p_); --p_; return tmp; }
+
+    friend bool operator== (const ptr_iter& a, const ptr_iter& b) { return a.p_ == b.p_; }
+    friend bool operator!= (const ptr_iter& a, const ptr_iter& b) { return a.p_ != b.p_; }
+    friend bool operator<  (const ptr_iter& a, const ptr_iter& b) { return a.p_ < b.p_; }
+};
 
 } // end of namespace DROPS
 
