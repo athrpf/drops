@@ -242,17 +242,15 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
         std::cerr << std::endl;
     }
     while (new_marks && ++step<maxStep);
-    // we want the solution to be in _v
+    // we want the solution to be in Stokes.v, Stokes.pr
     if (v2 == &loc_v)
     {
+        Stokes.vel_idx.swap( loc_vidx);
+        Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx(&Stokes.vel_idx);
         Stokes.p.SetIdx(&Stokes.pr_idx);
-        *Stokes.v.RowIdx= *loc_v.RowIdx;
-        *Stokes.p.RowIdx= *loc_p.RowIdx;
         
-        Stokes.v.Data.resize(loc_v.Data.size());
         Stokes.v.Data= loc_v.Data;
-        Stokes.p.Data.resize(loc_p.Data.size());
         Stokes.p.Data= loc_p.Data;
     }
 }

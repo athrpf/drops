@@ -188,17 +188,15 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, Uint maxSt
         std::cerr << std::endl;
     }
     while (++step<maxStep);
-    // we want the solution to be in _v
+    // we want the solution to be in Stokes.v, Stokes.pr
     if (v2 == &loc_v)
     {
-        Stokes.v.SetIdx(&Stokes.vel_idx);
-        Stokes.p.SetIdx(&Stokes.pr_idx);
-        *Stokes.v.RowIdx= *loc_v.RowIdx;
-        *Stokes.p.RowIdx= *loc_p.RowIdx;
+        Stokes.vel_idx.swap( loc_vidx);
+        Stokes.pr_idx.swap( loc_pidx);
+        Stokes.v.SetIdx( &Stokes.vel_idx);
+        Stokes.p.SetIdx( &Stokes.pr_idx);
         
-        Stokes.v.Data.resize(loc_v.Data.size());
         Stokes.v.Data= loc_v.Data;
-        Stokes.p.Data.resize(loc_p.Data.size());
         Stokes.p.Data= loc_p.Data;
     }
 }
@@ -284,7 +282,6 @@ int main (int argc, char** argv)
     std::cerr << "inner iter tol: " << inner_iter_tol << std::endl;
     std::cerr << "refinements: " << num_ref << std::endl;
     Strategy(prob, inner_iter_tol, num_ref);
-    std::cerr << "hallo" << std::endl;
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");
     double min= prob.p.Data.min(),
@@ -295,7 +292,7 @@ int main (int argc, char** argv)
     DROPS::IdxDescCL tecIdx;
     tecIdx.Set( 1, 0, 0, 0);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
-    
+std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;    
     std::ofstream v2d("data2D.dat");
     DROPS::TecPlot2DSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
         tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
