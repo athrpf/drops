@@ -72,21 +72,67 @@ double DistanceFct( const DROPS::Point3DCL& p)
 namespace DROPS // for Strategy
 {
 
-class PSchur_PCG_Pr_CL: public PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >
+class Schur_GMRes_CL: public PSchurSolver2CL<GMResSolverCL<SSORPcCL>, GMResSolverCL<DummyPcCL> >
 {
+  public:
+    typedef GMResSolverCL<SSORPcCL>   innerSolverT;
+    typedef GMResSolverCL<DummyPcCL>  outerSolverT;
+
   private:
-    PCG_SsorCL           PCGsolver_;
-    PCGSolverCL<ISPreCL> PCGsolver2_;
+    innerSolverT innerSolver_;
+    outerSolverT outerSolver_;
 
   public:
-    PSchur_PCG_Pr_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
-                                   int inner_iter, double inner_tol)
-        : PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >(
-              PCGsolver_, PCGsolver2_, outer_iter, outer_tol
+    Schur_GMRes_CL( int outer_iter, double outer_tol,
+                    int inner_iter, double inner_tol)
+        : PSchurSolver2CL<innerSolverT, outerSolverT>(
+              innerSolver_, outerSolver_, outer_iter, outer_tol
           ),
-          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
-          PCGsolver2_( Spc, outer_iter, outer_tol)
+          innerSolver_( SSORPcCL( 1.), 10, inner_iter, inner_tol),
+          outerSolver_( DummyPcCL(), 10, outer_iter, outer_tol)
         {}
+};
+
+class ISPSchur_GMRes_CL: public PSchurSolver2CL<GMResSolverCL<SSORPcCL>, GMResSolverCL<ISPreCL> >
+{
+  public:
+    typedef GMResSolverCL<SSORPcCL> innerSolverT;
+    typedef GMResSolverCL<ISPreCL>  outerSolverT;
+
+  private:
+    innerSolverT innerSolver_;
+    outerSolverT outerSolver_;
+
+  public:
+    ISPSchur_GMRes_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
+                                    int inner_iter, double inner_tol)
+        : PSchurSolver2CL<innerSolverT, outerSolverT>(
+              innerSolver_, outerSolver_, outer_iter, outer_tol
+          ),
+          innerSolver_( SSORPcCL( 1.), 10, inner_iter, inner_tol),
+          outerSolver_( Spc, 10, outer_iter, outer_tol)
+        {}
+};
+
+class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
+{
+  public:
+    typedef PCGSolverCL<SSORPcCL> innerSolverT;
+    typedef PCGSolverCL<ISPreCL>  outerSolverT;
+
+  private:
+    innerSolverT innerSolver_;
+    outerSolverT outerSolver_;
+
+  public:
+    ISPSchur_PCG_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
+                                  int inner_iter, double inner_tol)
+        : PSchurSolver2CL<innerSolverT, outerSolverT>(
+              innerSolver_, outerSolver_, outer_iter, outer_tol
+          ),
+          innerSolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          outerSolver_( Spc, outer_iter, outer_tol)
+         {}
 };
 
 template<class Coeff>
@@ -134,18 +180,18 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     double outer_tol;
     std::cerr << "tol = "; std::cin >> outer_tol;
 
-    lset.GetSolver().SetTol( 1e-16);
+    lset.GetSolver().SetTol( outer_tol);
     lset.GetSolver().SetMaxIter( 50000);
 
-    PSchur_PCG_Pr_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
-    PSchur_PCG_CL schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
+    PSchur_PCG_CL     schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
 
     // solve stationary problem for initial velocities    
     TimerCL time;
     VelVecDescCL curv( vidx);
     time.Reset();
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &curv, lset, Stokes.t);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
     Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
+    curv.Clear();
     lset.AccumulateBndIntegral( curv);
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
@@ -157,11 +203,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
     EnsightP2SolOutCL ensight( MG, lidx);
-    const char datgeo[]= "ensight/mzi.geo", 
-               datpr[] = "ensight/mzi.pr",
-               datvec[]= "ensight/mzi.vec",
-               datscl[]= "ensight/mzi.scl";
-    ensight.CaseBegin( "mzi.case", num_steps+1);
+    const char datgeo[]= "ensight/nsmzi.geo", 
+               datpr[] = "ensight/nsmzi.pr",
+               datvec[]= "ensight/nsmzi.vec",
+               datscl[]= "ensight/nsmzi.scl";
+    ensight.CaseBegin( "nsmzi.case", num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
     ensight.DescribeScalar( "Levelset", datscl, true); 
     ensight.DescribeScalar( "Pressure", datpr,  true); 
@@ -172,25 +218,52 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    std::cerr << "tol = "; std::cin >> outer_tol;
-    ISPschurSolver.SetTol( outer_tol);
-    
-    CouplLevelsetNavStokes2PhaseCL<StokesProblemT, PSchur_PCG_Pr_CL> 
-        cpl( Stokes, lset, ISPschurSolver);
-
-    cpl.SetTimeStep( delta_t);
-
-    for (Uint step= 1; step<=num_steps; ++step)
+    int meth;
+    std::cerr << "0=Baensch / 1=inner-outer-GMRes : "; std::cin >> meth;
+    if (meth)
     {
-        std::cerr << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( FPsteps);
-//            if ((step%10)==0) lset.Reparam( 5, 0.01);
-        ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
-        ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
-        ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
-        ensight.Commit();
-    }
+//        Schur_GMRes_CL ISPschurSolver( 1000, outer_tol, 1000, inner_iter_tol);
+        ISPSchur_GMRes_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
+//        ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
 
+//        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, Schur_GMRes_CL> 
+        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_GMRes_CL> 
+//        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
+            cpl( Stokes, lset, ISPschurSolver);
+
+        cpl.SetTimeStep( delta_t);
+
+        for (Uint step= 1; step<=num_steps; ++step)
+        {
+            std::cerr << "======================================================== Schritt " << step << ":\n";
+            cpl.DoStep( FPsteps);
+    //            if ((step%10)==0) lset.Reparam( 5, 0.01);
+            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
+            ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
+            ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+            ensight.Commit();
+        }
+    }
+    else
+    {
+        ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
+
+        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
+            cpl( Stokes, lset, ISPschurSolver);
+
+        cpl.SetTimeStep( delta_t);
+
+        for (Uint step= 1; step<=num_steps; ++step)
+        {
+            std::cerr << "======================================================== Schritt " << step << ":\n";
+            cpl.DoStep( FPsteps);
+    //            if ((step%10)==0) lset.Reparam( 5, 0.01);
+            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
+            ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
+            ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+            ensight.Commit();
+        }
+    }
     ensight.CaseEnd();
     std::cerr << std::endl;
 }
