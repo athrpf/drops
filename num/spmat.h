@@ -70,9 +70,7 @@ T& VectorBaseCL<T>::operator[](size_t s)
     Assert(s<base_type::size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
     return (*static_cast<base_type*>( this))[s];
 }
-#endif
 
-#if (DROPSDebugC & DebugNumericC)
 /*
 template <class VT1, class  VT2>
   inline VectorBaseCL<typename VT1::value_type> operator+(const VT1& v, const VT2& w)

@@ -34,11 +34,12 @@ typedef unsigned char     Ubyte;
 const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 
 // constants that switch on debugging for specified portions of code
-const Uint DebugContainerC  = 1;
-const Uint DebugRefineEasyC = 2;
-const Uint DebugRefineHardC = 4;
-const Uint DebugNumericC    = 8;
-const Uint DebugUnknownsC   =16;
+#define DebugContainerC      1
+#define DebugRefineEasyC     2
+#define DebugRefineHardC     4
+#define DebugNumericC        8
+#define DebugUnknownsC      16
+#define DebugNoReuseSparseC 32
 
 #define cdebug std::cout
 
@@ -53,7 +54,7 @@ const Uint DebugUnknownsC   =16;
 #endif
 
 #if DROPSDebugC
-#  define Comment(a,b) {if ((b) & DROPSDebugC) cdebug << a;}
+#  define Comment(a,b) do { if ((b) & DROPSDebugC) cdebug << a; } while (false)
 #else
 #  define Comment(a,b) ((void)0)
 #endif
