@@ -1,10 +1,5 @@
-//**************************************************************************
-// File:    problem.h                                                      *
-// Content: classes that constitute a problem                              *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - March, 16 2001                                         *
-//**************************************************************************
+/// \file
+/// \brief Classes that constitute a problem.
 
 #ifndef DROPS_PROBLEM_H
 #define DROPS_PROBLEM_H
@@ -14,43 +9,76 @@
 #include "geom/builder.h"
 #include "num/spmat.h"
 
-
 namespace DROPS
 {
 
-void BndCondInfo( BndCondT, std::ostream&);
+/// Prints a text-message describing the given boundary-condition.
+void BndCondInfo (BndCondT, std::ostream&);
 
+
+/// \brief Mapping from the simplices in a triangulation to the components
+///     of algebraic data-structures.
+///
+/// This class describes how many unknowns are reserved for each
+/// simplex in a given triangulation. The number of unknowns can be
+/// given separately for each simplex-type.  Note, that no memory for the
+/// numbers or unknowns is allocated. This must be done in another step,
+/// e.g. by calling CreateNumb.
+
+/// Internally, each object of type IdxDescCL has a unique index that is
+/// used to access the unknown-indices that are stored in a helper class
+/// (UnknownIdxCL and UnknownHandleCL) for each simplex.
 class IdxDescCL
 {
   private:
-    static std::vector<bool> IdxFree;
-    Uint                     Idx;
+    static std::vector<bool> IdxFree;  ///< Cache for unused indices; reduces memory-usage.
+    Uint                     Idx;      ///< The unique index.
     
+    /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
     
   public:
-    Uint TriangLevel;
+    Uint TriangLevel;        ///< Triangulation of the index.
+
+    //@{
+    /// \brief Number of unknowns on the simplex-type.
     Uint NumUnknownsVertex;
     Uint NumUnknownsEdge;
     Uint NumUnknownsFace;
     Uint NumUnknownsTetra;
     IdxT NumUnknowns;
+    //@}
 
+    /// \brief The constructor uses the lowest available index for the
+    ///     numbering. The triangulation must be set separately.
     IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0) 
       : Idx( GetFreeIdx()), NumUnknownsVertex( unkVertex), NumUnknownsEdge( unkEdge),
         NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra), NumUnknowns( 0) {}
+    /// \brief The copy will inherit the index number, whereas the index
+    ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);              
-        // WARNING:  "orig" will be invalidated as the private "Idx" should not be the same for two different objects...
+    /// \brief Frees the index, but does not invalidate the numbering on
+    ///     the simplices. Call DeleteNumbering to do this.
     ~IdxDescCL() { if (Idx!=NoIdx) IdxFree[Idx]= true; }
     
-    IdxDescCL& operator= ( const IdxDescCL&);  // not implemented as the private "Idx" should not be the same for two different objects...
+    /// \brief Not implemented, as the private "Idx" should not be the
+    ///     same for two different objects.
+    IdxDescCL& operator= ( const IdxDescCL&);
+    /// \brief Swaps the contents of obj and *this.
     void swap( IdxDescCL&);
     
+    /// \brief Set the number of unknowns per simplex-type for this index.
     void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
-    Uint GetIdx() const { if (Idx==NoIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index. Probably using copy instead of original IdxDescCL-object."); return Idx; }
+    /// \brief Returns the number of the index. This can be used to access
+    ///     the numbering on the simplices.
+    Uint GetIdx() const {
+        if (Idx==NoIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index."
+            " Probably using copy instead of original IdxDescCL-object.");
+        return Idx;
+    }
 
-    // Compare two IdxDescCL-objects. If a multigrid is given via mg, the
-    // unknown-numbers on it are compared, too.
+    /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
+    ///     unknown-numbers on it are compared, too.
     static bool
     Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg= 0);
 };
@@ -58,8 +86,8 @@ class IdxDescCL
 
 inline void
 GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
-// Copies P1-unknown-indices from idx on s into Numb; assumes that all
-// vertices have unknowns (NoBndDataCL and the like).
+/// Copies P1-unknown-indices from idx on s into Numb; assumes that all
+/// vertices have unknowns (NoBndDataCL and the like).
 {
     const Uint sys= idx.GetIdx();
     for (Uint i= 0; i < 4; ++i) {
@@ -68,77 +96,110 @@ GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
 }
 
 
-//**************************************************************************
-// Class:   LocalNumbP2CL                                                  *
-// Purpose: Use this class to collect the indices of unknowns, boundary-   *
-//          conditions and boundary-segment-numbers.                       *
-// Description:                                                            *
-//    num: field of unknown-indices; NoIdx, iff the degree of freedom lies *
-//         on a boundary without unknowns.                                 *
-//    bndnum: On boundaries, the number of the relevant BndSegDataCL-object*
-//            in the corresponding BndDataCL-object, else NoBndC.          *
-//    bc: The relevant BndCondT, NoBC in the interior dofs.                *
-//**************************************************************************
+/// \brief Collect indices of unknowns, boundary-segments and boundary
+///     conditions on a tetrahedron.
+///
+/// This is convenient for discretisation of operators in the Setup-routines.
 class LocalNumbP2CL
 {
   public:
-    IdxT     num   [10]; // formerly Numb
+    /// \brief Field of unknown-indices; NoIdx, iff the degree of freedom lies
+    /// on a boundary without unknowns. (Formerly called Numb.)
+    IdxT     num   [10];
+    /// \brief On boundaries, the number of the relevant BndSegDataCL-object
+    /// in the corresponding BndDataCL-object, else NoBndC.
     BndIdxT  bndnum[10];
+    /// \brief The relevant BndCondT, NoBC in the interior dofs.
     BndCondT bc    [10];
 
+    /// \brief The default constructors leaves everything uninitialized.
     LocalNumbP2CL() {}
+    /// \brief Read indices, boundary-segment numbers and boundary conditions
+    ///     from a tetrahedron and a BndDataCL-like object.
     template<class BndDataT>
       LocalNumbP2CL(const TetraCL&, const IdxDescCL&, const BndDataT&);
     
+    /// \brief Read indices, boundary-segment numbers and boundary conditions
+    ///     from a tetrahedron and a BndDataCL-like object.
     template<class BndDataT>
       void
       assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd);
 
+    /// \brief True, iff index i has a dof associated with it.
     bool WithUnknowns(IdxT i) const { return num[i] != NoIdx; }
 };
 
 
+/// \brief A numerical vector together with an IdxDescCL -object,
+///     that couples it to simplices in a multigrid.
 template<class T>
 class VecDescBaseCL
 {
   public:
+    /// \brief The type of the numerical vector.
     typedef T DataType;
-    
+
+    /// \brief The default-constructor creates an empty vector and sets RowIdx to 0.    
     VecDescBaseCL()
         :RowIdx(0) {}
+    /// \brief Initialize RowIdx with idx and contruct Data with the given size.
     VecDescBaseCL( IdxDescCL* idx) { SetIdx( idx); }
-    IdxDescCL* RowIdx;
-    DataType  Data;
 
+    IdxDescCL* RowIdx; ///< Pointer to the index-description used for Data.
+    DataType  Data;    ///< The numerical data.
+
+    /// \brief The triangulation-level of the index.
     Uint GetLevel() const { return RowIdx->TriangLevel; }
+    /// \brief Use a new index for accessing the components.
     void SetIdx(IdxDescCL*);
+    /// \brief Resize a vector according to RowIdx.
     void Clear();
+    /// \brief Empty Data and set RowIdx to 0.
     void Reset();
 };
 
+
+/// \brief The most widely used vector-description type; it uses a VectorCL
+///     -object as Data.
 typedef VecDescBaseCL<VectorCL> VecDescCL;
 
 
+/// \brief A sparse matrix together with two IdxDescCL -objects,
+///     that couple the row- and column- indices to simplices in a
+///     multigrid.
 class MatDescCL
 {
   public:
+    /// \brief The type of the matrix.
     typedef MatrixCL DataType;
     
+    /// \brief The default-constructor creates an empty matrix and sets
+    /// the index-pointers to 0.
     MatDescCL()
         :RowIdx(0), ColIdx(0) {}
-    MatDescCL(IdxDescCL* r, IdxDescCL* c)
-        { SetIdx( r, c); }
-    IdxDescCL* RowIdx;
-    IdxDescCL* ColIdx;
-    DataType  Data;
+    /// \brief Initialize RowIdx an ColIdx; Data is still default-constructed.
+    MatDescCL(IdxDescCL* r, IdxDescCL* c) { SetIdx( r, c); }
 
+    IdxDescCL* RowIdx; ///< Pointer to the index-description used for row-indices.
+    IdxDescCL* ColIdx; ///< Pointer to the index-description used for column-indices.
+    DataType  Data; ///< The numerical data.
+
+    /// \brief The triangulation-level of the row-index.
     Uint GetRowLevel() const { return RowIdx->TriangLevel; }
+    /// \brief The triangulation-level of the column-index.
     Uint GetColLevel() const { return ColIdx->TriangLevel; }
+
+    /// \brief Use a new index for accessing the components.
     void SetIdx(IdxDescCL*, IdxDescCL*);
+    /// \brief Empty Data and set the index-pointers to 0.
     void Reset();
 };
 
 
+/// \brief This class contains the main constituents of a forward problem
+///     with a PDE.
+///
+/// \todo Probably we should not copy CoeffCL and BndDataCL.
 template <class Coeff, class BndData>
 class ProblemCL
 {
@@ -148,13 +209,15 @@ class ProblemCL
 
   protected:
     bool         _myMG;
-    MultiGridCL& _MG;
-    CoeffCL      _Coeff;      // rechte Seite, Koeffizienten der PDE
-    BndDataCL    _BndData;    // Randwerte
+    MultiGridCL& _MG;         ///< The multigrid.
+    CoeffCL      _Coeff;      ///< Right-hand-side, coefficients of the PDE.
+    BndDataCL    _BndData;    ///< boundary-conditions
 
   public:
+    /// \brief The multigrid constructed from mgbuilder will be destroyed if this variable leaves its scope.
     ProblemCL(const MGBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata)
-    : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata) {}
+        : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata) {}
+    /// \brief The multigrid mg will be left alone if this variable leaves its scope.
     ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata)
     : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata) {}
     ~ProblemCL() { if (_myMG) delete &_MG; }
@@ -169,6 +232,9 @@ class ProblemCL
 template<class BndDataT>
   LocalNumbP2CL::LocalNumbP2CL(const TetraCL& s, const IdxDescCL& idx,
       const BndDataT& bnd)
+/// \param s The tet, from which index-numbers are read.
+/// \param idx The IdxDescCL  -object to be used.
+/// \param bnd The BndDataCL -like-object, from which boundary-segment-numbers are used.
 {
     this->assign( s, idx, bnd);
 }
@@ -176,6 +242,9 @@ template<class BndDataT>
 template<class BndDataT>
   void
   LocalNumbP2CL::assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd)
+/// \param s The tet, from which index-numbers are read.
+/// \param idx The IdxDescCL -object to be used.
+/// \param bnd The BndDataCL -like object, from which boundary-segment-numbers are used.
 {
     BndIdxT bidx= 0;
     const Uint sys= idx.GetIdx();
@@ -204,8 +273,10 @@ template<class BndDataT>
 
 template<class T>
 void VecDescBaseCL<T>::SetIdx(IdxDescCL* idx)
+/// Prepares the vector for usage with a new index-object for
+/// its components. The vector is resized to size 0 and
+/// then to the new size.
 {
-    // create new vector of unknowns and set up the vector description
     RowIdx = idx;
     Data.resize(0);
     Data.resize(idx->NumUnknowns);
@@ -213,6 +284,8 @@ void VecDescBaseCL<T>::SetIdx(IdxDescCL* idx)
 
 template<class T>
 void VecDescBaseCL<T>::Clear()
+/// The vector is resized to size 0 and then resized to the size given
+/// by RowIdx.
 {
     Data.resize(0);
     Data.resize(RowIdx->NumUnknowns);
@@ -220,28 +293,30 @@ void VecDescBaseCL<T>::Clear()
 
 template<class T>
 void VecDescBaseCL<T>::Reset()
+/// Sets RowIdx to 0 and resizes the vector to size 0.
 {
     RowIdx = 0;
     Data.resize(0);
 }
 
 
-// ----------------------------------------------------------------------------
-//                      Routines for numbering of unknowns
-// ----------------------------------------------------------------------------
-
+/// \name Routines to number unknowns. 
+/// These functions should not be used directly. CreateNumb is much more
+/// comfortable and as efficient.
+///
+/// These functions allocate memory for the Unknown-indices in system
+/// idx on all simplices of the indicated type between begin and end.
+/// The first number used is the initial value of counter, the next
+/// numbers are counter+stride, counter+2*stride, and so on.
+/// Upon return, counter contains the first number, that was not used,
+/// that is #Unknowns+stride.
+/// Simplices on Dirichlet boundaries are skipped.
+/// \{
 template<class BndDataT>
 void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint stride,
                          const MultiGridCL::TriangVertexIteratorCL& begin,
                          const MultiGridCL::TriangVertexIteratorCL& end,
                          const BndDataT& Bnd)
-// Allocates memory for the Unknown-indices in system idx on all vertices
-// between begin and end.
-// The first number used is the initial value of counter, the next numbers are counter+stride,
-// counter+2*stride, and so on.
-// Upon return, counter contains the first number, that was not used,
-// that is #Unknowns+stride. 
-// Vertices on Dirichlet boundaries are skipped.
 {
     if (stride == 0) return;
     for (MultiGridCL::TriangVertexIteratorCL it= begin; it != end; ++it)
@@ -260,13 +335,6 @@ void CreateNumbOnEdge( const Uint idx, IdxT& counter, Uint stride,
                        const MultiGridCL::TriangEdgeIteratorCL& begin,
                        const MultiGridCL::TriangEdgeIteratorCL& end,
                        const BndDataT& Bnd)
-// Allocates memory for the Unknown-indices in system idx on all edges
-// between begin and end.
-// The first number used is the initial value of counter, the next numbers are counter+stride,
-// counter+2*stride, and so on.
-// Upon return, counter contains the first number, that was not used,
-// that is #Unknowns+stride. 
-// Edges on Dirichlet boundaries are skipped.
 {
     if (stride == 0) return;
     for (MultiGridCL::TriangEdgeIteratorCL it=begin; it!=end; ++it)
@@ -285,13 +353,6 @@ void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint stride,
                        const MultiGridCL::TriangFaceIteratorCL& begin,
                        const MultiGridCL::TriangFaceIteratorCL& end,
                        const BndDataT& Bnd)
-// Allocates memory for the Unknown-indices in system idx on all faces
-// between begin and end.
-// The first number used is the initial value of counter, the next numbers are counter+stride,
-// counter+2*stride, and so on.
-// Upon return, counter contains the first number, that was not used,
-// that is #Unknowns+stride. 
-// Faces on Dirichlet boundaries are skipped.
 {
     if (stride == 0) return;
     for (MultiGridCL::TriangFaceIteratorCL it=begin; it!=end; ++it)
@@ -305,23 +366,33 @@ void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint stride,
     }
 }
 
-
-// Allocates memory for the Unknown-indices in system idx on all tetras
-// between begin and end.
-// The first number used is the initial value of counter, the next numbers are counter+stride,
-// counter+2*stride, and so on.
-// Upon return, counter contains the first number, that was not used,
-// that is #Unknowns+stride. 
 void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
                         const MultiGridCL::TriangTetraIteratorCL& end);
+/// \}
 
+
+/// \brief Mark unknown-indices as invalid.
+///
+/// This routine writes NoIdx as unknown-index for all indices of the
+/// given system.
+/// \note Currently, there is no way to compactify the memory used by the
+///     UnknownHandleCL -objects in the simplices, as we never had a high
+///     variation in the number of allocated indices. Adding such a pass
+///     is probably not hard and defered until the need for one arises.
+/// \param idx The system-number, as returned by IdxDescCL::GetIdx(),
+///     to be invalidated.
+/// \param begin The beginning of the sequence of simplices, on which the
+///     system has indices.
+/// \param end The end of the sequence of simplices, on which the
+///     system has indices.
+///
+/// \note To be sure that all indices are invalidated, one can use the
+///     iterators returned by, e.g., MultiGridCL::GetAllVertexBegin,
+///     MultiGridCL::GetAllVertexEnd.
 template <class Iter>
 inline void
 DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
-// TODO: This does nothing anymore. It might be useful to have a marker for an invalid
-// index, e. g. to be able to tell, which indices are new after a refinement step.
-// deletes the memory for the Unknown-indices allocated by CreateNumbOn<Simplex>
 {
 
     for (Iter it=begin; it!=end; ++it) 
@@ -329,8 +400,31 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
             it->Unknowns.Invalidate( idx);
 }
 
+
+/// \brief Type of functions used to identify points on periodic boundaries,
+///     that share the same dof.
 typedef bool (*match_fun)(const Point3DCL&, const Point3DCL&);
 
+
+/// \name Routines to number unknowns on periodic boundaries. 
+/// These functions should not be used directly. CreateNumb is much more
+/// comfortable and as efficient.
+///
+/// For interior simplices and boundary-conditions other than Per1BC and Per2BC, 
+/// nothing unusual happens.
+/// The matching works as follows:
+///     - Simplices with Per1BC are memoized in list l1, those with Per2BC in list l2.
+///     - The unknowns in l1 are numbered.
+///     - Each element of l2 is matched in l1 via the matching function and inherits the
+///       indices from its l1-counterpart.
+///     .
+/// \todo In the presence of adaptive refinement the multigrid may be
+///     such, that there is
+///     no correspondence between the simplices on boundary-parts that are
+///     identified for the boundary condition. However, enforcing such
+///     a symmetry requires a modification of the refinement algorithm
+///     which is probably not a trivial exercise.
+/// \{
 template<class BndDataT>
 void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun match,
                         const MultiGridCL::TriangVertexIteratorCL& begin,
@@ -489,14 +583,24 @@ void CreatePeriodicNumbOnFace( Uint idx, IdxT& counter, Uint stride, match_fun m
     if (!s2.empty())
         throw DROPSErrCL( "CreatePeriodicNumbOnFace: Periodic boundaries do not match!");
 }
+/// \}
 
+
+/// \brief Used to number unknowns depending on the index idx.
+///
+/// If a matching function is given, numbering on periodic boundaries
+/// is performed, too.
+/// Memory for the Unknown-Indices on TriangLevel level is allocated
+/// and the unknowns are numbered.
+/// \param level Level of the triangulation to use.
+/// \param idx The index-description to be used.
+/// \param mg The multigrid to be operated on.
+/// \param Bnd A BndDataCL -like object used to determine the boundary-condition of boundary simplices.
+/// \param match An optional matching function. It is only neccessary, if periodic boundaries are used.
+/// \pre idx.NumUnknownsVertex etc. must be set.
+/// \post The function sets idx.TriangLevel to level and sets idx.NumUnknowns.
 template<class BndDataT>
-void CreateNumb( Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndDataT& Bnd, match_fun match= 0)
-// used for numbering of the Unknowns depending on the index idx.
-// if a matching function is given, numbering for periodic boundaries is considered.
-// sets up the description of the index idx,
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, that IdxDesc[idxnr].NumUnknownsVertex etc. are set.
+void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndDataT& Bnd, match_fun match= 0)
 {
     // set up the index description
     idx.TriangLevel = level;

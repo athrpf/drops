@@ -1,10 +1,5 @@
-//**************************************************************************
-// File:    problem.cpp                                                    *
-// Content: classes that constitute a problem                              *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - March, 16 2001                                         *
-//**************************************************************************
+/// \file
+/// \brief Classes that constitute a problem.
 
 #include "misc/problem.h"
 
@@ -14,6 +9,8 @@ namespace DROPS
 std::vector<bool> IdxDescCL::IdxFree;
 
 void BndCondInfo( BndCondT bc, std::ostream& os)
+/// \param bc Value of type BndCondT, which shall be described.
+/// \param os Stream, to which the description is written.
 {
     switch(bc)
     {
@@ -54,8 +51,8 @@ IdxDescCL::IdxDescCL( const IdxDescCL& orig)
 }
 
 void IdxDescCL::swap( IdxDescCL& obj)
-// Swaps the contents of obj and *this. Note that std::swap cannot be used
-// for IdxDescCL-objects as the assignment operator is not implemented.
+/// Note, that std::swap cannot be used for IdxDescCL-objects as the
+/// assignment operator is not implemented.
 {
     std::swap( Idx, obj.Idx);
     std::swap( TriangLevel,       obj.TriangLevel);
@@ -67,8 +64,6 @@ void IdxDescCL::swap( IdxDescCL& obj)
 }
 
 void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
-// sets up the number of unknowns in every subsimplex for a certain index.
-// Remark: expects _IdxDesc to be long enough
 {
     NumUnknownsVertex = unkVertex;
     NumUnknownsEdge   = unkEdge;
@@ -78,8 +73,14 @@ void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
 
 bool
 IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
-// Compare two IdxDescCL-objects. If a multigrid is given via mg, the
-// unknown-numbers on it are compared, too.
+/// \param i The left IdxDescCL.
+/// \param j The left IdxDescCL.
+/// \param mg Optional pointer to a multigrid. If it is given the numbers
+///     on the simplices are compared, too. This is rather expensive and
+///     only needed for some correctness tests.
+/// \return If mg==0: True, iff all members of i and j have the same value.
+///     If mg!=0: True, iff all members of i and j have the same value and
+///     all numbers on the simplices of the given trianbgulation are equal.
 {
     const Uint lvl= i.TriangLevel;
     if (lvl != j.TriangLevel) {
@@ -153,13 +154,17 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
 }
 
 void MatDescCL::SetIdx(IdxDescCL* row, IdxDescCL* col)
+/// Prepares the matrix for usage with new index-objects for
+/// its components. As constructiong sparse matrices is fairly involved,
+/// this routine does not modify Data. SparseMatBuilderCL should be used
+/// to do this.
 {
-    // create new matrix and set up the matrix description
     RowIdx= row;
     ColIdx= col;
 }
 
 void MatDescCL::Reset()
+/// Sets the index-pointers to 0 and clears the matrix.
 {
     RowIdx = 0;
     ColIdx = 0;
@@ -169,8 +174,6 @@ void MatDescCL::Reset()
 void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
                         const MultiGridCL::TriangTetraIteratorCL& end)
-// allocates memory for the Unknown-indices on all simplices between begin and end 
-// and numbers them in order of appearence.
 {
     if (stride == 0) return;
     for (MultiGridCL::TriangTetraIteratorCL it=begin; it!=end; ++it)

@@ -1,12 +1,6 @@
-//**************************************************************************
-// File:    unknowns.h                                                     *
-// Content:                                                                *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt IGPM RWTH Aachen     *
-// Version: 0.1                                                            *
-// History: begin - March, 14 2001                                         *
-//                                                                         *
-//**************************************************************************
-
+/// \file
+/// \brief Implementation of the mapping from simplices to indices to
+///    linear-algebra data-structures.
 
 #ifndef DROPS_UNKNOWNS_H
 #define DROPS_UNKNOWNS_H
@@ -19,17 +13,20 @@
 namespace DROPS
 {
 
-
+/// The type of indices used to access the components of vectors,
+/// matrices, etc.
 typedef Ulint IdxT;
 
-// Value of all unset indices; if we ever have so many unknowns, there will of course
-// be a problem -- but probably there would be still one more index and the wraparound
-// would kill us anyways.
+/// \brief Value of all unset indices.
+///
+/// \note If we ever have as many unknowns, there will of course be a
+/// problem -- but probably there would be still one more index and the
+/// wraparound would kill us anyways.
 const IdxT NoIdx= std::numeric_limits<IdxT>::max();
 
 
+/// Implementation-detail of UnknownHandleCL.
 class UnknownIdxCL
-// implementation-detail of UnknownHandleCL
 {
   private:
     std::vector<IdxT> _Idx;
@@ -62,13 +59,14 @@ class UnknownIdxCL
 };
 
 
+/// \brief Maps a simplex and a "sysnum" (system number) on an index for
+///     accessing numerical data.
+///
+/// Every simplex has a public member Unknowns of type UnknownHandleCL,
+/// which behaves as a container of indices (for numerical data) that
+/// can be accessed via a system number.  This class is only a handle
+/// for an UnknownIdxCL.
 class UnknownHandleCL
-// Maps a simplex and a "sysnum" (system number) on an index for
-// accessing numerical data.
-// Every simplex has a public member Unknowns of type UnknownHandleCL, which
-// behaves as a container of indices (for numerical data) that can be accessed
-// via a system number.
-// This class is only a handle for an UnknownIdxCL.
 {
   private:
     UnknownIdxCL* _unk;
@@ -100,23 +98,23 @@ class UnknownHandleCL
 
     void Destroy() { delete _unk; _unk= 0; }
     
-    // True, iff this instance has already acquired an UnknownIdxCL-object.
+    /// True, iff this instance has already acquired an UnknownIdxCL-object.
     bool Exist()             const { return _unk; }
-    // True, iff the system sysnum exists and has a valid index-entry.
+    /// True, iff the system sysnum exists and has a valid index-entry.
     bool Exist( Uint sysnum) const { return _unk && sysnum<_unk->GetNumSystems() && _unk->GetIdx(sysnum) != NoIdx; }
 
-    // Effectively deletes the index belonging to system sysnum. 
+    /// Effectively deletes the index belonging to system sysnum. 
     void Invalidate( Uint sysnum) { _unk->GetIdx(sysnum)= NoIdx; }
 
     UnknownIdxCL* Get() const { return _unk; }
-    // Retrieves the index for sysnum for writing.
+    /// Retrieves the index for sysnum for writing.
     IdxT&        operator() ( Uint i)       { return _unk->GetIdx(i); }
-    // Retrieves the index for sysnum for reading.
+    /// Retrieves the index for sysnum for reading.
     IdxT         operator() ( Uint i) const { return _unk->GetIdx(i); }
 
-    // Allocates memory for a system with number sysnum.  Afterwards, an index
-    // can be stored for sysnum.
-    // The initial index is set to NoIdx. Thus, .Exist( sysnum)==false.
+    /// Allocates memory for a system with number sysnum.  Afterwards, an index
+    /// can be stored for sysnum.
+    /// The initial index is set to NoIdx. Thus, .Exist( sysnum)==false.
     void Prepare( Uint sysnum)
     {
         if (!_unk) _unk= new UnknownIdxCL( sysnum+1);
@@ -125,8 +123,6 @@ class UnknownHandleCL
     }
 };
 
-
 } // end of namespace DROPS
-
 
 #endif
