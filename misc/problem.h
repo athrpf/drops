@@ -212,7 +212,6 @@ void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint stride,
 // counter+2*stride, and so on.
 // Upon return, counter contains the first number, that was not used,
 // that is #Unknowns+stride. 
-// Faces on Dirichlet boundaries are skipped.
 void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
                         const MultiGridCL::TriangTetraIteratorCL& end);
