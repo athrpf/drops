@@ -23,6 +23,9 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> _self;
 
   public:
+    using _base::GetBndData;
+    using _base::GetMG;
+    using _base::_Coeff;
     using _base::_MG;
     using _base::_BndData;
     using _base::b;
