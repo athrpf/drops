@@ -29,6 +29,9 @@ namespace DROPS
 template <typename T>
 const T* Addr(const std::valarray<T>& x)
   { return &(const_cast<std::valarray<T>&>(x)[0]); }
+template <typename T>
+T* Addr(std::valarray<T>& x)
+  { return &(x[0]); }
 
 
 template <typename T>
@@ -57,6 +60,11 @@ public:
     VectorBaseCL (const std::indirect_array<T>& ia) : _va(ia)    {}
 
     void resize (size_t s, T c = T()) { _va.resize(s, c); }
+
+    const std::valarray<T>& raw() const {
+        return _va;}
+    std::valarray<T>& raw() {
+        return _va;}
 
     // element access
     T  operator [] (size_t s) const
@@ -243,6 +251,19 @@ public:
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz,
                      const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
         : _rows(rows), _cols(cols), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
+
+    const T* raw_val() const {
+        return Addr( _val);}
+    T* raw_val() {
+        return &_val[0];}
+    const size_t* raw_row() const {
+        return Addr( _rowbeg);}
+    size_t* raw_row() {
+        return &_rowbeg[0];}
+    const size_t* raw_col() const {
+        return Addr( _colind);}
+    size_t* raw_col() {
+        return &_colind[0];}
 
     size_t num_rows     () const { return _rows; }
     size_t num_cols     () const { return _cols; }
@@ -464,39 +485,79 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
 }
 
 
-template <typename _MatEntry, typename _VecEntry>
-VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
+// y= A*x
+// fails, if num_rows==0.
+// Assumes, that none of the arrays involved do alias.
+template <typename T>
+inline void
+y_Ax(T* __restrict y,
+     size_t num_rows, 
+     const T* __restrict Aval,
+     const size_t* __restrict Arow,
+     const size_t* __restrict Acol,
+     const T* __restrict x)
 {
-    const size_t            M=A.num_rows();
-    VectorBaseCL<_VecEntry> ret(M);
-
-    Assert( A.num_cols()==x.size(), "SparseMatBaseCL * VectorBaseCL: incompatible dimensions", DebugNumericC);
-    for (size_t row=0, nz=0; row<M; ++row)
-    {
-        const size_t rowend=A.row_beg(row+1);
-        _VecEntry sum= _VecEntry();
+    T sum;
+    size_t rowend;
+    size_t nz= 0;
+    do {
+        rowend= *++Arow;
+        sum= T();
         for (; nz<rowend; ++nz)
-            sum += A.val(nz)*x[A.col_ind(nz)];
-        ret[row]= sum;
-    }
-    return ret;
+            sum+= (*Aval++)*x[*Acol++];
+        (*y++)= sum;
+    } while (--num_rows > 0);
 }
 
 
 template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
+{
+    VectorBaseCL<_VecEntry> ret( A.num_rows());
+    Assert( A.num_cols()==x.size(), "SparseMatBaseCL * VectorBaseCL: incompatible dimensions", DebugNumericC);
+    y_Ax( &ret.raw()[0],
+          A.num_rows(),
+          A.raw_val(),
+          A.raw_row(),
+          A.raw_col(),
+          Addr( x.raw()));
+    return ret;
+}
+
+
+// y+= A^T*x
+// fails, if num_rows==0.
+// Assumes, that none of the arrays involved do alias.
+template <typename T>
+inline void
+y_ATx(T* __restrict y,
+     size_t num_rows, 
+     const T* __restrict Aval,
+     const size_t* __restrict Arow,
+     const size_t* __restrict Acol,
+     const T* __restrict x)
+{
+    size_t rowend;
+    size_t nz= 0;
+    do {
+        rowend= *++Arow;
+        const T xrow= *x++;
+        for (; nz<rowend; ++nz)
+            y[*Acol++]+= (*Aval++)*xrow;
+    } while (--num_rows > 0);
+}
+
+template <typename _MatEntry, typename _VecEntry>
 VectorBaseCL<_VecEntry> transp_mul (const SparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
 {
-    const size_t num_rows=A.num_rows(), num_cols=A.num_cols();
-    VectorBaseCL<_VecEntry> ret(num_cols);
-
-    Assert( num_rows==x.size(), "transp_mul: incompatible dimensions", DebugNumericC);
-    for (size_t row=0, nz=0; row<num_rows; ++row)
-    {
-        const size_t    rowend=A.row_beg(row+1);
-        const _VecEntry xrow=x[row];
-        for (; nz<rowend; ++nz)
-            ret[A.col_ind(nz)]+= A.val(nz)*xrow;
-    }
+    VectorBaseCL<_VecEntry> ret( A.num_cols());
+    Assert( A.num_rows()==x.size(), "transp_mul: incompatible dimensions", DebugNumericC);
+    y_ATx( &ret.raw()[0],
+           A.num_rows(),
+           A.raw_val(),
+           A.raw_row(),
+           A.raw_col(),
+           Addr( x.raw()));
     return ret;
 }
 
