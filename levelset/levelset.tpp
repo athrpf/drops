@@ -16,7 +16,7 @@ inline double Sign( double x)
 
 inline double SmoothedSign( double x, double alpha)
 {
-    return x/sqrt(x*x+alpha*alpha);
+    return x/std::sqrt(x*x+alpha);
 }
 
 void LevelsetP2CL::CreateNumbering(Uint level, IdxDescCL* idx)
@@ -272,7 +272,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
     IdxT         Numb[10];
     SVectorCL<3> grad_Psi[4];
     DiscSolCL    phi= GetSolution();
-    double det, absdet;
+    double det, absdet, h_T;
     const double alpha= 0.1;  // for smoothing of signum fct
     
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
@@ -281,6 +281,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
+        h_T= std::pow( absdet, 1./3.);
         
         for (int i=0; i<4; ++i)
             Numb[i]= sit->GetVertex(i)->Unknowns(idx);
@@ -300,16 +301,23 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
         Sign_Phi.val[4]= SmoothedSign( phi.val( *sit, 0.25, 0.25, 0.25), alpha);
         w_loc.val[4]=    Sign_Phi.val[4]*gr/gr.norm();
 
+        Quad2CL<> w_Grad[10];
+        for (int i=0; i<10; ++i)
+            w_Grad[i]= dot(w_loc, Grad[i]);
+
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
         {
             // b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
             b[ Numb[i]]+= Sign_Phi.quadP2( i, absdet);
+            // TODO: Reicht die Genauigkeit der verwendeten Quadraturformel fuer SD aus?
+            b[ Numb[i]]+= _SD*h_T * Quad2CL<>(Sign_Phi*w_Grad[i]).quad( absdet);
 //            b[ Numb[i]]+= _SD*h_T*QuadVelGrad(w_loc,Grad[i], Sign_Phi)*absdet; 
             for(int j=0; j<10; ++j)
             {
                 // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
-                R( Numb[i], Numb[j])+= Quad2CL<>(dot( w_loc, Grad[j])).quadP2(i, absdet)
+                R( Numb[i], Numb[j])+= w_Grad[j].quadP2(i, absdet)
                     + _diff*Quad2CL<>(dot( Grad[j]*Sign_Phi.apply( func_abs), Grad[i])).quad( absdet);
+                R( Numb[i], Numb[j])+= _SD*h_T * Quad2CL<>( w_Grad[j]*w_Grad[i]).quad( absdet);
 //                R( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(w_loc,Grad[j],Grad[i])*absdet;
             }
         }
