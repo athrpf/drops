@@ -198,7 +198,8 @@ class Quad2CL: public GridFunctionCL<T>
     typedef typename base_type::value_type value_type;
     typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
-    static const Uint   NumNodesC= 5;
+    enum { NumNodesC= 5 };
+
     static const double Node[NumNodesC][4]; // Stuetzstellen 5*4 doubles
     static const double Wght[NumNodesC];    // Gewichte
 
