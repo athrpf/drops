@@ -518,20 +518,16 @@ int main (int argc, char** argv)
         return 1;
     }
     DROPS::ReadMeshBuilderCL builder( meshfile);
-    
-    const DROPS::BndCondT bc[3]= 
-        { DROPS::OutflowBC, DROPS::WallBC, DROPS::DirBC};
-    //    bottom,           side,          top
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[3]= 
-        { &Null, &Null, &Inflow}; 
-        
-    MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 3, bc, bnd_fun));
-
-    DROPS::MultiGridCL& mg = prob.GetMG();
+    DROPS::MultiGridCL mg( builder);
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
+    const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
     
-    for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
+    if (num_bnd>10) { std::cerr << "Increase size of BndSegs in main() for proper use!\n"; return 1; }
+    DROPS::BndCondT bc[10];
+    DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[10]; 
+    for (DROPS::BndIdxT i=0; i<num_bnd; ++i)
     {
+        bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &Inflow : &Null;
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
     
@@ -541,6 +537,8 @@ int main (int argc, char** argv)
         mg.Refine();
     } 
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+
+    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun));
 
     Strategy( prob);  // do all the stuff
     
