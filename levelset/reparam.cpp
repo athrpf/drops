@@ -9,13 +9,9 @@
 #include "levelset/levelset.h"
 #include "out/ensightOut.h"
 
-DROPS::Point3DCL FixedVel( const DROPS::Point3DCL& p)
+DROPS::Point3DCL Null( const DROPS::Point3DCL& )
 {
-    DROPS::Point3DCL midpt( 0.5), q= p-midpt; 
-    double d= q.norm(),
-           c= d<0.25 ? d : (d<0.5 ? 0.5-d: 0);
-    q[2]= q[0]; q[0]= c*q[1]; q[1]= -c*q[2]; q[2]= 0.; 
-    return q;
+    return DROPS::Point3DCL(0.);
 }
 
 double SmoothedSign( double x, double alpha)
@@ -57,10 +53,11 @@ namespace DROPS
 {  // for strategy
 
 template<class ProblemT>
-void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int bsp, int meth)
+void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
 {
     MultiGridCL& mg= prob.GetMG();
-    LevelsetP2CL lset( mg, 0, 1.0, SD);
+    // Levelset: sigma= 0, theta= 0.5, SD= 0
+    LevelsetP2CL lset( mg, 0, 0.5, 0, diff);
 
     IdxDescCL& lidx= lset.idx;
     IdxDescCL& vidx= prob.vel_idx;
@@ -89,16 +86,20 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int bsp, int
     sol.putGeom( datgeo);
     sol.putScalar( datscl, lset.GetSolution(), 0.);
 
+    TimerCL time;
+    time.Start();
+    lset.ReparamFastMarching();
+    time.Stop();
+    std::cerr << time.GetTime() << " sec for Fast Marching\n";
+    sol.putScalar( datscl, lset.GetSolution(), dt/2);
+    
     for (int i=1; i<=num_steps; ++i)
     {
-/*
-        if (meth)
-            lset.Reparam2();
-        else
-*/
-            lset.Reparam( 1, dt);
+        lset.Reparam( 1, dt);
         sol.putScalar( datscl, lset.GetSolution(), i*dt);
     }
+    
+    sol.CaseEnd();
 }
 
 class DummyStokesCoeffCL {};
@@ -107,17 +108,19 @@ class DummyStokesCoeffCL {};
 
 int main( int argc, char **argv)
 {
-    double dt= 0.1, SD= 0.1;
-    int bsp, meth= 0, num_steps= 10;
+  try{
+    double dt= 0.01, diff= 1e-4;
+    int bsp, num_steps= 100;
     
     if (argc>1)
-        dt= atof( argv[1]);
+        diff= atof( argv[1]);
     if (argc>2)
-        num_steps= atoi( argv[2]);
+        dt= atof( argv[2]);
     if (argc>3)
-        SD= atof( argv[3]);
+        num_steps= atoi( argv[3]);
 
-    std::cout << num_steps << " steps of lenght dt = " << dt << ", SD = " << SD << std::endl;
+    std::cout << num_steps << " steps of lenght dt = " << dt 
+              << ", diff = " << diff << std::endl;
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.0;
@@ -128,16 +131,16 @@ int main( int argc, char **argv)
     int num;
     std::cout << "# Unterteilungen: "; std::cin >> num;
     std::cout << "Beispielnr.: "; std::cin >> bsp;
-//    std::cout << "Reparam.verfahren (1=SaveIF, 0=Rep.Gl.) "; std::cin >> meth;
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);
     const bool IsNeumann[6]= 
         {true, true, true, true, true, true};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &FixedVel, &FixedVel, &FixedVel, &FixedVel, &FixedVel, &FixedVel};
+        { &Null, &Null, &Null, &Null, &Null, &Null };
         
     MyStokesCL prob(brick, DROPS::DummyStokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
  
-    Strategy( prob, dt, num_steps, SD, bsp, meth);
+    Strategy( prob, dt, num_steps, diff, bsp);
 
     return 0;
+  } catch(DROPS::DROPSErrCL err) { err.handle(); }
 }
