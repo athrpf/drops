@@ -34,6 +34,8 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     typedef typename _base::BndDataCL BndDataCL;
     typedef typename _base::DiscVelSolCL DiscVelSolCL;
     typedef typename _base::DiscPrSolCL DiscPrSolCL;
+    typedef typename _base::const_DiscVelSolCL const_DiscVelSolCL;
+    typedef typename _base::const_DiscPrSolCL const_DiscPrSolCL;
 
     MatDescCL    N;
     VelVecDescCL cplN;

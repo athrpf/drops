@@ -55,10 +55,12 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     using                                     _base::GetBndData;
     using                                     _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL> DiscPrSolCL;
-    typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>           DiscPrSolCL;
+    typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>           const_DiscPrSolCL;
+    typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
-    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double);
+    typedef double (*est_fun)(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double);
     
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
@@ -110,14 +112,18 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void CheckSolution(const VelVecDescCL*, const VecDescCL*,
                        instat_vector_fun_ptr, instat_scalar_fun_ptr, double t) const;
 
-    // work of Joerg :-)
-    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double t=0.0);
+    // estimation a la Verfuerth
+    static double ResidualErrEstimator(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double t=0.0);
 
     // Get solutions as FE-functions
-    DiscPrSolCL GetPrSolution() const
+    DiscPrSolCL GetPrSolution()
         { return DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
-    DiscVelSolCL GetVelSolution() const
+    DiscVelSolCL GetVelSolution()
         { return DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
+    const_DiscPrSolCL GetPrSolution() const
+        { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
+    const_DiscVelSolCL GetVelSolution() const
+        { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
 
 };
 
@@ -134,10 +140,12 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     using                                     _base::GetBndData;
     using                                     _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
-    typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>                 DiscPrSolCL;
+    typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>                 const_DiscPrSolCL;
+    typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
-    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double);
+    typedef double (*est_fun)(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double);
     
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
@@ -165,14 +173,18 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
     void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, scalar_fun_ptr) const;
 
-    // work of Joerg :-)  Very well then: Let the games begin!
-    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double= 0.0);
+    // estimation a la Verfuerth
+    static double ResidualErrEstimator(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double= 0.0);
 
     // Get solutions as FE-functions
-    DiscPrSolCL GetPrSolution() const
+    DiscPrSolCL GetPrSolution()
         { return DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
-    DiscVelSolCL GetVelSolution() const
+    DiscVelSolCL GetVelSolution()
         { return DiscVelSolCL(&v, &GetBndData().Vel, &GetMG()); }
+    const_DiscPrSolCL GetPrSolution() const
+        { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
+    const_DiscVelSolCL GetVelSolution() const
+        { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG()); }
 
 };
 
@@ -199,9 +211,8 @@ class StokesDoerflerMarkCL
     typedef typename _ProblemCL::BndDataCL BndDataCL;
     typedef typename BndDataCL::PrBndDataCL PrBndDataCL;
     typedef typename BndDataCL::VelBndDataCL VelBndDataCL;
-    typedef typename _ProblemCL::DiscPrSolCL DiscPrSolCL;
-    typedef typename _ProblemCL::DiscVelSolCL DiscVelSolCL;
-    
+    typedef typename _ProblemCL::const_DiscPrSolCL const_DiscPrSolCL;
+    typedef typename _ProblemCL::const_DiscVelSolCL const_DiscVelSolCL;
 
   // the tetras are sorted: T_1 with biggest error, last T_n with smallest
   // a tetra T_i is marked for refinement, iff (a) or (b) holds:
@@ -215,7 +226,7 @@ class StokesDoerflerMarkCL
         {}
     // default assignment-op, copy-ctor, dtor
 
-    void Init(const DiscPrSolCL&, const DiscVelSolCL&);
+    void Init(const const_DiscPrSolCL&, const const_DiscVelSolCL&);
 
     double GetRelRed() { return _RelReduction; }
     void   SetRelRed(double newred) { _RelReduction= newred; }
@@ -223,7 +234,7 @@ class StokesDoerflerMarkCL
     void   SetThreshold(double newThreshold) { _Threshold= newThreshold; }
     bool   DoesMark() { return _DoMark; }
     void   SwitchMark() { _DoMark= _DoMark ? false : true; }
-    bool Estimate(const DiscPrSolCL&, const DiscVelSolCL&);
+    bool Estimate(const const_DiscPrSolCL&, const const_DiscVelSolCL&);
 };
 
 //======================================

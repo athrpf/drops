@@ -32,7 +32,7 @@ class AdapTriangCL
     double GetValue( scalar_fun_ptr dist, const TetraCL& t)  { return dist( GetBaryCenter( t) ); }
 
     template <class DistFctT>
-    bool ModifyGridStep( DistFctT&);
+    bool ModifyGridStep( const DistFctT&);
     // One step of grid change; returns true if modifications were necessary,
     // false, if nothing changed.
 
@@ -42,7 +42,7 @@ class AdapTriangCL
       { Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0); }
     
     template <class DistFctT>
-    void MakeInitialTriang( DistFctT&);
+    void MakeInitialTriang( const DistFctT&);
 
     template <class StokesT>
     void UpdateTriang( StokesT&, LevelsetP2CL&);

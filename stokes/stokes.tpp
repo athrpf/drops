@@ -903,8 +903,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
     
-    DiscPrSolCL  pr(lsgpr, &_BndData.Pr, &_MG);
-    DiscVelSolCL  vel(lsgvel, &_BndData.Vel, &_MG);
+    const_DiscPrSolCL  pr(lsgpr, &_BndData.Pr, &_MG);
+    const_DiscVelSolCL  vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T, M;
     double det, absdet;
@@ -1039,7 +1039,7 @@ template <class Coeff>
     }
 */
 
-    DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
+    const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -1144,7 +1144,7 @@ template <class Coeff>
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
+    const_DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
@@ -1204,8 +1204,8 @@ template <class Coeff>
 
 template <class Coeff>
   double
-  StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& s, const DiscPrSolCL& pr,
-      const DiscVelSolCL& vel, double t)
+  StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& s, const const_DiscPrSolCL& pr,
+      const const_DiscVelSolCL& vel, double t)
 {
     double det;
     SMatrixCL<3,3> M;
@@ -1634,7 +1634,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupMass(MatDescCL* matM) const
 template <class Coeff>
   double
   StokesP1BubbleP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t,
-      const DiscPrSolCL& pr, const DiscVelSolCL& vel, double)
+      const const_DiscPrSolCL& pr, const const_DiscVelSolCL& vel, double)
 {
     Uint lvl= vel.GetLevel();
     double err_sq= 0.0;
@@ -1732,7 +1732,7 @@ namespace // anonymous namespace
 } // end of anonymous namespace
 
 template <class _TetraEst, class _ProblemCL>
-void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const DiscPrSolCL& pr, const DiscVelSolCL& vel)
+void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const const_DiscPrSolCL& pr, const const_DiscVelSolCL& vel)
 {
     MultiGridCL& mg= _Problem.GetMG();
     const Uint lvl= vel.GetLevel();
@@ -1755,7 +1755,7 @@ void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const DiscPrSolCL& pr, co
 }
 
 template <class _TetraEst, class _ProblemCL>
-bool StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const DiscPrSolCL& pr, const DiscVelSolCL& vel)
+bool StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const const_DiscPrSolCL& pr, const const_DiscVelSolCL& vel)
 {
     Err_ContCL err_est;
     const MultiGridCL& mg= _Problem.GetMG();
@@ -1812,7 +1812,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
     
-    DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG);
+    const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;

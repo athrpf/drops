@@ -356,7 +356,10 @@ public:
     typedef Data     DataT;
     typedef _BndData BndDataCL;
     typedef _VD      VecDescT;
+
     typedef P1EvalCL<Data, _BndData, _VD> _self;
+    typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
+    typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
     
 protected:
     // numerical data
@@ -476,7 +479,10 @@ public:
     typedef Data     DataT;
     typedef _BndData BndDataCL;
     typedef _VD      VecDescT;
+
     typedef P2EvalCL<Data, _BndData, _VD> _self;
+    typedef P2EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
+    typedef P2EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
 
 protected:
     // numerical data
@@ -616,6 +622,10 @@ public:
     typedef Data     DataT;
     typedef _BndData BndDataCL;
     typedef _VD      VecDescT;
+
+    typedef P1BubbleEvalCL<Data, _BndData, _VD> _self;
+    typedef P1BubbleEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
+    typedef P1BubbleEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
     
 private:
     // numerical data
@@ -698,8 +708,8 @@ public:
 // This only works, if Interpolate is called after every refinement of the multigrid.
 // Take care, that x and old_x are on successive triangulations.
 template<class Data, class _BndData, class _VD>
-void
-Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, const _VD>& old_sol);
+  void
+  Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, const _VD>& old_sol);
 
 
 //**************************************************************************
@@ -716,11 +726,9 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
 //**************************************************************************    
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P1T,
-          class _VecDesc>
-Uint
-RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc);
+template <class P1T, class VecDesc>
+  Uint
+  RepairAfterRefineP1( const P1T& old_f, VecDesc& f);
 
 
 // Adapt a solution on a triangulation of a certain level, that has changed during the refinement.
@@ -758,11 +766,9 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
 //**************************************************************************    
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P2T,
-          class _VecDesc>
+template <class P2T, class VecDesc>
 Uint
-RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc);
+RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc);
 
 
 //**************************************************************************

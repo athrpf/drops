@@ -34,8 +34,8 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     
     double det, absdet;
     Point3DCL tmp;
-    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
-    DiscVelSolCL u( vel, &GetBndData().Vel, &GetMG(), t);
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    const_DiscVelSolCL u( vel, &GetBndData().Vel, &GetMG(), t);
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     

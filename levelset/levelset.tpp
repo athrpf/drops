@@ -253,7 +253,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
     
     IdxT         Numb[10];
     SVectorCL<3> grad_Psi[4];
-    DiscSolCL    phi= GetSolution();
+    const_DiscSolCL    phi= GetSolution();
     double det, absdet;
     const double alpha= 0.1;  // for smoothing of signum fct
     
@@ -567,7 +567,7 @@ fil << "\n}\n";
 double LevelsetP2CL::GetVolume( double translation) const
 {
     const Uint lvl= Phi.GetLevel();
-    DiscSolCL phi= GetSolution();
+    const_DiscSolCL phi= GetSolution();
     SmoothedJumpCL H( JumpCL( 1, 0), DROPS::H_sm, 1e-4);
     Quad2CL<> Xi;    // 1 fuer phi<0, 0 sonst
     double det, absdet, vol= 0;

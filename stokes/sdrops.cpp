@@ -221,8 +221,8 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         }
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
-        typename MyStokesCL::DiscPrSolCL  pr(p1, &PrBndData, &MG); 
-        typename MyStokesCL::DiscVelSolCL vel(v1, &VelBndData, &MG);
+        typename MyStokesCL::const_DiscPrSolCL  pr(p1, &PrBndData, &MG); 
+        typename MyStokesCL::const_DiscVelSolCL vel(v1, &VelBndData, &MG);
         if (step==0)
         {
             Estimator.Init( pr, vel);

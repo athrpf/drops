@@ -49,7 +49,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
 
     SmoothedJumpCL nu_invers( 1./_Coeff.mu(0), 1./_Coeff.mu(1), _Coeff.mu);
     Quad2CL<double> nu_inv;
-    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const Uint ls_lvl = ls.GetLevel();
     LocalP2CL<> locallset;
     
@@ -92,7 +92,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr, const Level
 
     SmoothedJumpCL rho_invers( 1./_Coeff.rho(0), 1./_Coeff.rho(1), _Coeff.rho);
     Quad2CL<double> rho_inv;
-    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const Uint ls_lvl = ls.GetLevel();
     LocalP2CL<> locallset;
     
@@ -177,7 +177,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     double coupA[10][10], coupM[10][10];
     double det, absdet;
     Point3DCL tmp;
-    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     
@@ -334,7 +334,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     
     double coupA[10][10], coupM[10][10];
     double det, absdet;
-    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     P2DiscCL::GetGradientsOnRef( GradRef);
     
     for (MultiGridCL::const_TriangTetraIteratorCL 

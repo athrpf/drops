@@ -669,11 +669,9 @@ if (sit->Unknowns.Exist(old_idx))
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
 //**************************************************************************    
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P1T,
-          class _VecDesc>
-Uint
-RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
+template <class P1T, class VecDesc>
+  Uint
+  RepairAfterRefineP1( const P1T& old_f, VecDesc& vecdesc)
 {
     Uint tl= old_f.GetLevel();
     const MultiGridCL& MG= old_f.GetMG();
@@ -689,15 +687,16 @@ RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
                 DebugNumericC);
         tl= maxlevel;
     }
-    Assert( tl == vecdesc.GetLevel(),
+    Assert( tl == f.GetLevel(),
             "RepairAfterRefine (P1): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();
-    typedef typename P1T<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P1T::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
-    P1T<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
+    typename P1T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG);
+    f.SetTime( old_f.GetTime());
     Uint counter1= 0, counter2= 0;
 
     // Iterate over all edges on grids with smaller level than tl. If the
@@ -930,13 +929,12 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
 }
 
 // Helper function for RepairOnChildren.
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P2T>
+template <class P2T>
   bool
-  TryGetValuesOnFace( const P2T<Data, _BndData, const _VD>& f,
-      std::vector<Data>& v, const TetraCL& t, Uint face)
+  TryGetValuesOnFace( const P2T& f,
+      std::vector<typename P2T::DataT>& v, const TetraCL& t, Uint face)
 {
-    typedef typename P2T<Data, _BndData, const _VD>::BndDataCL BndCL;
+    typedef typename P2T::BndDataCL BndCL;
     const BndCL* const bnd= f.GetBndData();
     const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
 
@@ -964,13 +962,12 @@ template< class Data, class _BndData, class _VD,
 }
 
 // Helper function for RepairOnChildren.
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P2T>
+template <class P2T>
   bool
-  TryGetValuesOnTetra( const P2T<Data, _BndData, const _VD>& f,
-      std::vector<Data>& v, const TetraCL& t)
+  TryGetValuesOnTetra( const P2T& f,
+      std::vector<typename P2T::DataT>& v, const TetraCL& t)
 {
-    typedef typename P2EvalCL<Data, _BndData, const _VD>::BndDataCL BndCL;
+    typedef typename P2T::BndDataCL BndCL;
     const BndCL* const bnd= f.GetBndData();
     const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
 
@@ -1003,18 +1000,16 @@ template< class Data, class _BndData, class _VD,
 // old function old_f. These are used to define f by quadratic interpolation. If
 // a former (ir)regularly refined tetra is now refined differently, it may be
 // neccessary to interpolate only linearly because of lack of sufficient data.
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P2T,
-          class _VecDesc>
+template <class P2T, class VecDesc>
 void
-RepairOnChildren( const TetraCL& t, 
-                  const P2T<Data, _BndData, _VD>& old_f,
-                  _VecDesc& vecdesc)
+RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
 {
-    typedef typename P2T<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P2T::BndDataCL BndCL;
     const BndCL* const bnd= old_f.GetBndData();
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx() ;
+    typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &old_f.GetMG(), old_f.GetTime());
+    f.SetTime( old_f.GetTime());
 
     const double edgebary[3][2]= {
           {0.25, 0.25},
@@ -1029,8 +1024,6 @@ RepairOnChildren( const TetraCL& t,
         const ChildDataCL& childdata= GetChildData( refrule.Children[childnum]);
         for (Uint chedge=0; chedge<NumEdgesC; ++chedge) {
             const EdgeCL* const edgep= (*child)->GetEdge( chedge);
-//            if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                std::cout << "got it" << std::endl;
             if (!bnd->IsOnDirBnd( *edgep) 
                 && edgep->Unknowns.Exist()
                 && edgep->Unknowns.Exist( idx)
@@ -1043,37 +1036,21 @@ RepairOnChildren( const TetraCL& t,
                         && paredgep->Unknowns.Exist( old_idx)) { // refinement took place,
                                                                  // interpolate edge-dof
                         const Uint num= NumOfSubEdge( chedgeinparent);
-//                        f.SetDoF( *edgep, old_f.val( *paredgep, 0.25+0.5*num) );
-                        DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                            edgep->Unknowns( idx), old_f.val( *paredgep, 0.25+0.5*num));
-//                        if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                            std::cout << "five" << std::endl;
+                        f.SetDoF( *edgep, old_f.val( *paredgep, 0.25+0.5*num) );
                     }
                     else {  // this edge has been unrefined;
                             // There is not enough information available for 
                             // more than linear interpolation.
-//                        f.SetDoF( *edgep, 0.5*(old_f.val( *edgep->GetVertex( 0))
-//                                               + old_f.val( *edgep->GetVertex( 1))));
-                        DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                            edgep->Unknowns( idx),
-                            0.5*(old_f.val( *edgep->GetVertex( 0))
-                                 +old_f.val( *edgep->GetVertex( 1))));
-//                        if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                            { std::cout << "six" << std::endl; edgep->GetVertex( 1)->DebugInfo( std::cout);}
+                        f.SetDoF( *edgep, 0.5*(old_f.val( *edgep->GetVertex( 0))
+                                               + old_f.val( *edgep->GetVertex( 1))));
                     }
                 }
                 else if (IsSubInParFace( chedgeinparent)) { // Sub-edges in parent faces
                     Uint parface, pos;
                     WhichEdgeInFace(chedgeinparent, parface, pos);
-                    std::vector<Data> v( 6);
+                    std::vector<typename P2T::DataT> v( 6);
                     if (TryGetValuesOnFace( old_f, v, t, parface)) {
-//                        f.SetDoF( *edgep, old_f.val( v,
-//                                                     edgebary[pos][0], edgebary[pos][1]));
-                        DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                            edgep->Unknowns( idx),
-                            old_f.val( v, edgebary[pos][0], edgebary[pos][1]));
-//                        if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                            std::cout << "seven" << std::endl;
+                        f.SetDoF( *edgep, old_f.val( v, edgebary[pos][0], edgebary[pos][1]));
                     }
                     else { // These are complicated; the parent-face was refined and
                            // is now refined (differently). Linear interpolation
@@ -1081,47 +1058,19 @@ RepairOnChildren( const TetraCL& t,
                            // The values of f in the vertices of face are used
                            // (not old_f), because the vertices itself might be new.
                            // These have already been set in RepairAfterRefine.
-//                        f.SetDoF( *edgep, 0.5*(f.val( *edgep->GetVertex( 0))
-//                                               + f.val( *edgep->GetVertex( 1))));
-                        const Data v0= bnd->IsOnDirBnd( *edgep->GetVertex( 0))
-                                       ? old_f.val( *edgep->GetVertex( 0))
-                                       : DoFHelperCL<Data, typename _VD::DataType>::get(
-                                             vecdesc.Data, edgep->GetVertex( 0)->Unknowns( idx));
-                        const Data v1= bnd->IsOnDirBnd( *edgep->GetVertex( 1))
-                                       ? old_f.val( *edgep->GetVertex( 1))
-                                       : DoFHelperCL<Data, typename _VD::DataType>::get(
-                                             vecdesc.Data, edgep->GetVertex( 1)->Unknowns( idx));
-                        DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                            edgep->Unknowns( idx), 0.5*(v0 + v1));
-//                        if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                            std::cout << "eight" << std::endl;
+                        f.SetDoF( *edgep, 0.5*(f.val( *edgep->GetVertex( 0))
+                                               + f.val( *edgep->GetVertex( 1))));
                     }
                 }
                 // space diagonal
                 else {
-                    std::vector<Data> v( 10);
+                    std::vector<typename P2T::DataT> v( 10);
                     if (TryGetValuesOnTetra( old_f, v, t)) {
-//                        f.SetDoF( *edgep, old_f.val( v, 0.25, 0.25, 0.25));
-                        DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                            edgep->Unknowns( idx), old_f.val( v, 0.25, 0.25, 0.25));
-//                        if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                           std::cout << "nine" << std::endl;
+                        f.SetDoF( *edgep, old_f.val( v, 0.25, 0.25, 0.25));
                     }
                     else {
-//                        f.SetDoF( *edgep, 0.5*(f.val( *edgep->GetVertex( 0))
-//                                               + f.val( *edgep->GetVertex( 1))));
-                        const Data v0= bnd->IsOnDirBnd( *edgep->GetVertex( 0))
-                                       ? old_f.val( *edgep->GetVertex( 0))
-                                       : DoFHelperCL<Data, typename _VD::DataType>::get(
-                                             vecdesc.Data, edgep->GetVertex( 0)->Unknowns( idx));
-                        const Data v1= bnd->IsOnDirBnd( *edgep->GetVertex( 1))
-                                       ? old_f.val( *edgep->GetVertex( 1))
-                                       : DoFHelperCL<Data, typename _VD::DataType>::get(
-                                             vecdesc.Data, edgep->GetVertex( 1)->Unknowns( idx));
-                        DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                            edgep->Unknowns( idx), 0.5*(v0 + v1));
-//                        if (edgep->GetVertex( 0)->GetId() == 3 && edgep->GetVertex( 1)->GetId() == 62)
-//                            std::cout << "ten" << std::endl;
+                        f.SetDoF( *edgep, 0.5*(f.val( *edgep->GetVertex( 0))
+                                               + f.val( *edgep->GetVertex( 1))));
                     }
                 }
             }
@@ -1143,21 +1092,18 @@ RepairOnChildren( const TetraCL& t,
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel -1; else tl is the level of old_f.            *
 //**************************************************************************    
-template< class Data, class _BndData, class _VD,
-          template<class, class, class> class P2T,
-          class _VecDesc>
+template <class P2T, class VecDesc>
 Uint
-RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
+RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
 {
     const Uint tl= vecdesc.GetLevel();
     const MultiGridCL& MG= old_f.GetMG();
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();
-    typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P2T::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
-// These can be removed. For the time being, they have documentary value.
-//    P2T<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG,  old_f.GetTime());
-//    P2T<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
+    typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG, old_f.GetTime());
+
     // The first two loops interpolate the values of all vertices (new ones as
     // mid-vertices and old ones as copies). This works similar to the P1 case.    
 
@@ -1179,23 +1125,14 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
         if (sit->IsRefined()
             && sit->GetMidVertex()->Unknowns.Exist()
             && !sit->GetMidVertex()->Unknowns.Exist( old_idx)
-            && sit->GetMidVertex()->Unknowns.Exist( idx)
-            /*&& !bnd->IsOnDirBnd( *sit->GetMidVertex())*/) {
-//            f.SetDoF( *sit->GetMidVertex(), old_f.val( *sit));
-            DoFHelperCL<Data, typename _VD::DataType>::set(vecdesc.Data,
-                sit->GetMidVertex()->Unknowns( idx), old_f.val( *sit));
-//            if (sit->GetMidVertex()->GetId() == 28) std::cout << "one" << std::endl;
+            && sit->GetMidVertex()->Unknowns.Exist( idx)) {
+            f.SetDoF( *sit->GetMidVertex(), old_f.val( *sit));
         }
         else if (sit->Unknowns.Exist()
                  && sit->Unknowns.Exist( old_idx)
-                 && sit->Unknowns.Exist( idx)
-                 /*&& !bnd->IsOnDirBnd( *sit)*/) {
-//                f.SetDoF( *sit, old_f.val( *sit));   
-                DoFHelperCL<Data, typename _VD::DataType>::set(vecdesc.Data,
-                    sit->Unknowns( idx), old_f.val( *sit));
+                 && sit->Unknowns.Exist( idx)) {
+                f.SetDoF( *sit, old_f.val( *sit));   
                 ++counter3;
-//                if (sit->GetVertex( 0)->GetId() == 3 && sit->GetVertex( 1)->GetId() == 62)
-//                    std::cout << "two" << std::endl;
             }
     }
     // All vertices in tl, that **have the old index and **are not on the Dirichlet-boundary
@@ -1205,11 +1142,8 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
     for (MultiGridCL::const_TriangVertexIteratorCL sit= MG.GetTriangVertexBegin( tl),
          theend= MG.GetTriangVertexEnd( tl); sit!=theend; ++sit)
         if (!bnd->IsOnDirBnd( *sit) && sit->Unknowns.Exist( old_idx)) {
-//            f.SetDoF( *sit, old_f.val( *sit));
-            DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                sit->Unknowns( idx), old_f.val( *sit));
+            f.SetDoF( *sit, old_f.val( *sit));
             ++counter2;
-//            if (sit->GetId() == 28) std::cout << "three" << std::endl;
         }
     // Coarsened edges on level 0 cannot be handled on child-tetras,
     // as level-0-tetras are never children. Therefore they are handled
@@ -1223,13 +1157,8 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
             && sit->Unknowns.Exist( idx)
             && !sit->Unknowns.Exist( old_idx)
             && !bnd->IsOnDirBnd( *sit)) {
-//            f.SetDoF( *sit, 0.5*(old_f.val( *sit->GetVertex( 0))
-//                                 + old_f.val( *sit->GetVertex( 1))));
-            DoFHelperCL<Data, typename _VD::DataType>::set( vecdesc.Data,
-                sit->Unknowns( idx),
-                0.5*(old_f.val( *sit->GetVertex( 0)) + old_f.val( *sit->GetVertex( 1))));
-            if (sit->GetVertex( 0)->GetId() == 3 && sit->GetVertex( 1)->GetId() == 62)
-                std::cout << "four" << std::endl;
+            f.SetDoF( *sit, 0.5*(old_f.val( *sit->GetVertex( 0))
+                                 + old_f.val( *sit->GetVertex( 1))));
         }
     }
     // Handle edges e that were refined: The condition that identifies such

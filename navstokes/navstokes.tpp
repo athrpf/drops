@@ -35,7 +35,7 @@ template <class Coeff>
     std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||      Bx       - g || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
     
-    typename _base::DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
+    typename _base::const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -138,7 +138,7 @@ template <class Coeff>
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    typename _base::DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
+    typename _base::const_DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
@@ -241,7 +241,7 @@ template <class Coeff>
     const IdxT num_unks_vel= matN->RowIdx->NumUnknowns;
     MatrixBuilderCL N( &matN->Data, num_unks_vel, num_unks_vel);
 
-    typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
+    typename _base::const_DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
     VectorCL& b= vecb->Data;
     const Uint lvl    = matN->GetRowLevel();
     const Uint vidx   = matN->RowIdx->GetIdx();

@@ -51,7 +51,7 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg)
 }
 
 
-int CheckResult(DROPS::P1EvalCL<double, BndCL, const DROPS::VecDescCL>& fun)
+int CheckResult(DROPS::P1EvalCL<double, BndCL, DROPS::VecDescCL>& fun)
 {
     const DROPS::MultiGridCL& mg= fun.GetMG();
     const DROPS::Uint trilevel= fun.GetLevel();
@@ -103,7 +103,7 @@ int TestReMark()
             v1.SetIdx( &i1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             DROPS::RepairAfterRefineP1( fun0, v1);
-            DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
+            DROPS::P1EvalCL<double, BndCL, VecDescCL >       fun1( &v1, &Bnd, &mg);
             ttt= CheckResult( fun1);
             ret+= ttt;
             if (ttt != 0)
@@ -141,7 +141,7 @@ int TestRepair()
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
-        DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
+        DROPS::P1EvalCL<double, BndCL, VecDescCL >       fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1);
     }
     for (DROPS::Uint i=0; i<8; ++i) {
@@ -171,7 +171,7 @@ int TestRepair()
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
-        DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
+        DROPS::P1EvalCL<double, BndCL, VecDescCL >       fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1);
     }
     return ret;
@@ -204,8 +204,7 @@ int TestInterpolateOld()
     DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
     DROPS::P1EvalCL<double, BndCL, VecDescCL > fun1( &v1, &Bnd, &mg);
     Interpolate(fun1, fun0);
-    DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun2( &v1, &Bnd, &mg);
-    return CheckResult( fun2);
+    return CheckResult( fun1);
 
 }
 

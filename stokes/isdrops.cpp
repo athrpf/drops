@@ -487,9 +487,9 @@ EnsightWriterCL::WriteAtTime(const InstatNSCL& NS, const double t)
     if (!have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
     ensight_.putGeom( geomfile_, t);
-    typename InstatNSCL::DiscPrSolCL ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
+    typename InstatNSCL::const_DiscPrSolCL ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
     ensight_.putScalar( prfile_, ensightp, t);
-    typename InstatNSCL::DiscVelSolCL ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
+    typename InstatNSCL::const_DiscVelSolCL ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
     ensight_.putVector( velfile_, ensightv, t);
 }
 
@@ -637,6 +637,7 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
                     DROPS::VecDescCL* p1)
 {
     using namespace DROPS;
+    typedef StokesP2P1CL<Coeff> StokesCL;
     Assert( c_level<=f_level, "UpdateTriangulation: Levels are cheesy.\n", ~0);
     TimerCL time;
 
@@ -683,9 +684,8 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
         std::swap( pidx2, pidx1);
         NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
         p1->SetIdx( pidx1);
-        P1EvalCL<double, const StokesPrBndDataCL,
-                 const VecDescCL> funpr( p2, &BndData.Pr, &mg);
-        RepairAfterRefineP1( funpr, *p1);
+        typename StokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
+        RepairAfterRefineP1( oldfunpr, *p1);
         p2->Clear();
         NS.DeleteNumberingPr( pidx2);
     }

@@ -281,6 +281,22 @@ class ptr_iter
     friend bool operator<  (const ptr_iter& a, const ptr_iter& b) { return a.p_ < b.p_; }
 };
 
+
+template <class T>
+struct ConstHelperCL
+{
+    typedef       T stripped_type;
+    typedef const T const_type;
+};
+
+template <class T>
+struct ConstHelperCL<const T>
+{
+    typedef       T stripped_type;
+    typedef const T const_type;
+};
+
+
 } // end of namespace DROPS
 
 #endif
