@@ -184,9 +184,14 @@ void ReadParamsCL::WriteParams( std::ostream& os) const
 
 void ReadParamsCL::PrintWarning() const
 {
+    bool AllOk= true;
     for (InfoT::const_iterator it= info_.begin(), end= info_.end(); it!=end; ++it)
         if(!it->second.second) // parameter uninitialized
+        {
             std::cerr << "WARNING: Parameter " << it->first << " uninitialized!\n";
+            AllOk= false;
+        }
+    if (!AllOk) throw DROPSErrCL("ReadParamsCL: Parameters above are missing in parameter file!");
 }
 
 } // end of namespace DROPS
