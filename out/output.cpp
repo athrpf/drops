@@ -69,6 +69,16 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
     os << std::endl;
     for (Level=0; Level<=lastLevel; ++Level)
     {
+        for ( MultiGridCL::const_FaceIterator fCIt(_MG->GetFaces()[Level].begin());
+              fCIt!=_MG->GetFaces()[Level].end(); ++fCIt )
+        {
+            fCIt->DebugInfo(os);
+        }
+        os << std::endl;
+    }
+    os << std::endl;
+    for (Level=0; Level<=lastLevel; ++Level)
+    {
         for ( MultiGridCL::const_TetraIterator tCIt(_MG->GetTetras()[Level].begin());
               tCIt!=_MG->GetTetras()[Level].end(); ++tCIt)
         {
