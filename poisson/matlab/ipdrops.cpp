@@ -38,26 +38,21 @@ class MatConnect
   private:
     static double* _BndData[6];
     static double _DeltaT, _XLen, _YLen, _ZLen, _SpIncrX, _SpIncrY, _SpIncrZ;
-    static int _FacePts, _SqrtFacePts;
+    static int _MeshRefX, _MeshRefY, _MeshRefZ;
 	
   public:
-    MatConnect(double DeltaT, double xl,
-      double yl, double zl, int FacePts,
+    MatConnect(double DeltaT, 
+      double xl, double yl, double zl,
+      int mrx, int mry, int mrz,  
       double* S1, double* S2, double* S3,
       double* S4, double* S5, double* S6)
     {
       _DeltaT= DeltaT;
       _XLen= xl; _YLen= yl; _ZLen= zl;
-      _SpIncrX= xl/(sqrt(FacePts)-1.0);
-      _SpIncrY= yl/(sqrt(FacePts)-1.0);
-      _SpIncrZ= zl/(sqrt(FacePts)-1.0);
-      _FacePts= FacePts;
+      _MeshRefX= mrx; _MeshRefY= mry; _MeshRefZ= mrz;
+      _SpIncrX= xl/mrx; _SpIncrY= yl/mry; _SpIncrZ= zl/mrz;
       _BndData[0]= S1; _BndData[1]= S2; _BndData[2]= S3;
       _BndData[3]= S4; _BndData[4]= S5; _BndData[5]= S6;
-      
-      _SqrtFacePts= 0;
-      for (double coord= .0; coord<= xl+_SpIncrX/2.0; coord+= _SpIncrX)
-        _SqrtFacePts++;
     }
     
     template<int num> static int getLexNum(const DROPS::Point2DCL& p)
@@ -66,21 +61,21 @@ class MatConnect
       if (num==0)  // Punkt liegt auf der Seite S1 oder S2
       {
         for (double zcoord= .0; zcoord<= _ZLen*p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
-          count+= _SqrtFacePts;
+          count+= (_MeshRefY+1);
         for (double ycoord= .0; ycoord<= _YLen*p[0]+_SpIncrY/2.0; ycoord+= _SpIncrY)
           count++;
       }
       else if (num==1)  // Punkt liegt auf einer der Seiten S3 oder S4
       {
         for (double zcoord= .0; zcoord<= _ZLen*p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
-          count+= _SqrtFacePts;
+          count+= (_MeshRefX+1);
         for (double xcoord= .0; xcoord<= _XLen*p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
           count++;
       }
       else  // Punkt liegt auf einer der Seiten S5 oder S6
       {
         for (double ycoord= .0; ycoord<= _YLen*p[1]-_SpIncrY/2.0; ycoord+= _SpIncrY)
-          count+= _SqrtFacePts;
+          count+= (_MeshRefX+1);
         for (double xcoord= .0; xcoord<= _XLen*p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
           count++;
       }
@@ -93,14 +88,24 @@ class MatConnect
       int count= -1;  // das Feld beginnt mit Index 0
     
       // die Matrizen S1..S6 werden spaltenweise uebergeben
-      for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
-        count+= _FacePts;
       if (num==0 || num==1)  // Seite S1 oder S2
+      {
+        for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
+          count+= (_MeshRefY+1)*(_MeshRefZ+1);
         count+= getLexNum<0>(p);
+      }
       else if (num==2 || num==3) // Seite S3 oder S4
+      {
+        for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
+          count+= (_MeshRefX+1)*(_MeshRefZ+1);
         count+= getLexNum<1>(p);
+      }
       else  // Seite S5 oder S6
+      {
+        for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
+          count+= (_MeshRefX+1)*(_MeshRefY+1);
         count+= getLexNum<2>(p);
+      }
     
       return *(_BndData[num]+count);
     }
@@ -114,17 +119,18 @@ double MatConnect::_ZLen= .0;
 double MatConnect::_SpIncrX= .0;
 double MatConnect::_SpIncrY= .0;
 double MatConnect::_SpIncrZ= .0;
-int MatConnect::_FacePts= 0;
-int MatConnect::_SqrtFacePts= 0;
+int MatConnect::_MeshRefX= 0;
+int MatConnect::_MeshRefY= 0;
+int MatConnect::_MeshRefZ= 0;
 
 
 namespace DROPS // for Strategy
 {
 
 template<class MGB, class Coeff>
-void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
-  double dt, int time_steps, double cut_pos, int face_pts,
-  double* T0, double* sol2D)
+void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double* sol2D, 
+  double* T0, int cut_pos, int face_pts, double nu, double dt, 
+  int time_steps, double theta, double cgtol, int cgiter)
 {
   typedef InstatPoissonP1CL<MGB,Coeff> MyPoissonCL;
   
@@ -139,12 +145,8 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
   
   // aktueller Zeitpunkt
   double t= 0;
-  
-  // Daten fuer das PCG-Verfahren
-  double tol= 1.0e-7;
-  int max_iter= 500;
-  
-  idx.Set( 0, 1, 0, 0, 0);
+   
+  idx.Set(0, 1, 0, 0, 0);
   
   MultiGridCL& MG= Poisson.GetMG();
   
@@ -152,32 +154,36 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
   Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
   
   // Vektoren mit Index idx
-  b.SetIdx( &idx);
-  x.SetIdx( &idx);
-  cplA.SetIdx( &idx);
-  cplM.SetIdx( &idx);
+  b.SetIdx(&idx);
+  x.SetIdx(&idx);
+  cplA.SetIdx(&idx);
+  cplM.SetIdx(&idx);
   
   mexPrintf("Anzahl der Unbekannten: %d\n", x.Data.size());
+  mexPrintf("Theta: %g\n", theta);
+  mexPrintf("Toleranz CG: %g\n", cgtol);
+  mexPrintf("max. Anzahl CG-Iterationen: %d\n", cgiter);
   
   // Steifigkeitsmatrix mit Index idx (Zeilen und Spalten)
-  A.SetIdx( &idx, &idx);
+  A.SetIdx(&idx, &idx);
   // Massematrix mit Index idx (Zeilen und Spalten)
-  M.SetIdx( &idx, &idx);
+  M.SetIdx(&idx, &idx);
   
   // stationaerer Anteil
   Poisson.SetupInstatSystem(A, M);
   
   // instationaere rechte Seite
-  Poisson.SetupInstatRhs( cplA, cplM, t, b, t);
+  Poisson.SetupInstatRhs(cplA, cplM, t, b, t);
   
   // PCG-Verfahren mit SSOR-Vorkonditionierer
   SSORPcCL pc(1.0);
-  PCG_SsorCL pcg_solver(pc, max_iter, tol);
+  PCG_SsorCL pcg_solver(pc, cgiter, cgtol);
   
   // Zeitdiskretisierung mit one-step-theta-scheme
-  // theta=1 -> impl. Euler; theta=0.5 -> Crank-Nicholson
+  // theta=1 -> impl. Euler
+  // theta=0.5 -> Crank-Nicholson
   InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff>, PCG_SsorCL>
-    ThetaScheme(Poisson, pcg_solver, 0.5);
+    ThetaScheme(Poisson, pcg_solver, theta);
   ThetaScheme.SetTimeStep(dt, nu);
   
   
@@ -225,23 +231,23 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
     //Poisson.CheckSolution(exact_sol, Poisson.t);
     
     // Aufbereitung der Ausgabedaten
-        ci p= nmap.begin();
-        for (int i=0; i<cut_pos-0.1; i++)
-          for (int j=0; j<face_pts; j++)
-            if (p!=nmap.end())
-              p++;
-        for (int k=0; k<face_pts; k++)
-        {
-          //mexPrintf("%g %g %g %g\n", p->first.first, p->first.second.second,
-          //  p->first.second.first, *(p->second));
-          *(sol2D+count)= *(p->second);
+    ci p= nmap.begin();
+    for (int i=0; i<cut_pos; i++)
+      for (int j=0; j<face_pts; j++)
+        if (p!=nmap.end())
           p++;
-          count++;
-        }
+    for (int k=0; k<face_pts; k++)
+    {
+      //mexPrintf("%g %g %g %g\n", p->first.first, p->first.second.second,
+      //  p->first.second.first, *(p->second));
+      *(sol2D+count)= *(p->second);
+      p++;
+      count++;
+    }
         
-        //for (ci p=nmap.begin(); p!=nmap.end(); p++)
-        //  mexPrintf("%g %g %g\n", p->first.first, p->first.second.second,
-        //	  p->first.second.first);
+    //for (ci p=nmap.begin(); p!=nmap.end(); p++)
+    //  mexPrintf("%g %g %g\n", p->first.first, p->first.second.second,
+    //	  p->first.second.first);
   }
   
   
@@ -250,7 +256,6 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
   
   /*
   // Ausgabe Loesung   
-  
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
     std::cerr << *(p->second) << "\n";
@@ -263,9 +268,10 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
 
 
 static
-void ipdrops(double nu, double dt, double xl, double yl,
-  double zl, int time_steps, int face_pts, double* T0,
-  double* S1, double* S2, double* sol2D, double M)
+void ipdrops(double* sol2D, double* T0, double* S1, double* S2, 
+  double M, double xl, double yl, double zl, double nu, double mrx, 
+  double mry, double mrz, double dt, int time_steps, double theta, 
+  double cgtol, double cgiter)
 {
   try
   {
@@ -279,95 +285,50 @@ void ipdrops(double nu, double dt, double xl, double yl,
       InstatPoissonOnBrickCL;
     typedef InstatPoissonOnBrickCL MyPoissonCL;
     
-    DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
+    int imrx= static_cast<int>(mrx+0.5);
+    int imry= static_cast<int>(mry+0.5);
+    int imrz= static_cast<int>(mrz+0.5);
+    int iM= static_cast<int>(M+0.5);
+    int icgiter= static_cast<int>(cgiter+0.5);
+    
+    /*
+    mexPrintf("\nmrx = %d", imrx);
+    mexPrintf("\nmry = %d", imry);
+    mexPrintf("\nmrz = %d", imrz);  
+    */
+    
+    DROPS::BrickBuilderCL brick(null, e1, e2, e3, imrx, imry, imrz);
     
     mexPrintf("\nRueckgabe der Daten fuer die Flaeche x=%g\n", 
-      M*xl/(sqrt(face_pts)-1.0));
+      M*xl/imrx);
     mexPrintf("\nDelta t = %g", dt);
     mexPrintf("\nAnzahl der Zeitschritte = %d\n", time_steps);
-    //mexPrintf("\nAnzahl der Pkte einer Seite = %d\n", face_pts);
     
-    int dim= face_pts*(time_steps+1);
-    double test[dim];
-    for (int count=0; count<dim; count++)
-      test[count]= 0.0;
-    double* testp= &test[0];
-    //for (int count=0; count<dim; count++)
-    //  mexPrintf("%g", *(testp+count));
-    //mexPrintf("\n");
-    //for (int count=0; count<dim; count++)
-    //  mexPrintf("%g", *(S1+count));
-    //mexPrintf("\n");
+    // Randdaten 
+    int DiscPtsXY= (imrx+1)*(imry+1)*(time_steps+1);
+    int DiscPtsXZ= (imrx+1)*(imrz+1)*(time_steps+1);
+    DROPS::VectorCL VecXY(DiscPtsXY);
+    DROPS::VectorCL VecXZ(DiscPtsXZ);
+    double* Sy= &VecXY[0];
+    double* Sz= &VecXZ[0];
     
-    MatConnect MatCon(dt, xl, yl, zl, face_pts, S1, S2,
-      testp, testp, testp, testp);
-      
+    MatConnect MatCon(dt, xl, yl, zl, imrx, imry, imrz, 
+      S1, S2, Sy, Sy, Sz, Sz);  
     
-    const bool isneumann[6]= {true, true, true, true, true, true};
+    const bool isneumann[6]= { true, true, true, true, true, true };
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &MatConnect::getBndVal<0>, &MatConnect::getBndVal<1>,
         &MatConnect::getBndVal<2>, &MatConnect::getBndVal<3>,
-        &MatConnect::getBndVal<4>, &MatConnect::getBndVal<5>};
+        &MatConnect::getBndVal<4>, &MatConnect::getBndVal<5> };
     
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
     
-    int brick_div= 1;
-    int pot= 2;
-    int value= 9;
-    
-    while (value < face_pts)
-    {
-      brick_div++;
-      pot*= 2;
-      value= (pot+1)*(pot+1);
-      
-      MarkAll(mg);
-      mg.Refine();
-    }
-    
-    mexPrintf("Anzahl der Verfeinerungen = %d\n", brick_div);
-    
-    // test begin
-    /*
-      DROPS::Point2DCL point;
-      double sp_incr= 1.0/(sqrt(face_pts)-1);
-      double time= 0.0;
-      for (int count=0; count<=time_steps; count++)
-      {
-        for (double ycount=0.0; ycount<=1.0; ycount+=sp_incr)
-          for (double xcount=0.0; xcount<=1.0; xcount+=sp_incr)
-          {
-            point[0]= xcount;
-            point[1]= ycount;
-            mexPrintf("Wert an der Stelle (%g, %g) zum Zeitpkt %g: %g\n",
-              point[0], point[1], time, MatCon.getBndVal<0>(point, time));
-          }
-        time+= dt;
-      }
-      
-      DROPS::Point2DCL point;
-      double sp_incr= 1.0/(sqrt(face_pts)-1);
-      double sp_incrX= xl/(sqrt(face_pts)-1);
-      double time= 0.0;
-      for (int count=0; count<=time_steps; count++)
-      {
-        for (double ycount=0.0; ycount<=1.0; ycount+=sp_incr)
-          for (double xcount=0.0; xcount<=xl; xcount+=sp_incrX)
-          {
-            point[0]= xcount;
-            point[1]= ycount;
-            mexPrintf("Wert an der Stelle (%g, %g) zum Zeitpkt %g: %g\n",
-              point[0], point[1], time, MatCon.getBndVal<5>(point, time));
-          }
-        time+= dt;
-      }
-    */
-    // test end
-    
-    //mg.SizeInfo();
-    DROPS::Strategy(prob, nu, dt, time_steps, M, face_pts, T0, sol2D);
+    // mg.SizeInfo();
+    int FacePtsYZ= (imry+1)*(imrz+1); 
+    DROPS::Strategy(prob, sol2D, T0, iM, FacePtsYZ, nu, dt, time_steps,
+      theta, cgtol, icgiter);
     
     return;
   }
@@ -377,96 +338,93 @@ void ipdrops(double nu, double dt, double xl, double yl,
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  double nu, dt, xl, yl, zl, M;
+  double nu, dt, xl, yl, zl, M, mrx, mry, mrz, CGTol, CGIter, theta;
   double *T0, *S1, *S2, *sol2D;
   int mrows, ncols;
   
   /* Check for proper number of arguments. */
-  if(nrhs!=9)
-    mexErrMsgTxt("(nu, dt, xl, yl, zl, T0, S1, S2, M) as input required.");
+  if(nrhs!=15)
+    mexErrMsgTxt("(T0, S1, S2, M, xl, yl, zl, nu, mrx, mry, mrz, dt, Theta, CGTol, CGIter) as input required.");
   if(nlhs!=1)
     mexErrMsgTxt("Solution on 2D-area as output required.");
-    
-  /* Check to make sure the first input argument is a scalar. */
-  if( !mxIsNumeric(prhs[0]) || !mxIsDouble(prhs[0]) ||
-    mxIsEmpty(prhs[0]) || mxIsComplex(prhs[0]) ||
-    mxGetN(prhs[0])*mxGetM(prhs[0])!=1 )
-  {
-    mexErrMsgTxt("Input nu must be a scalar.");
-  }
   
-  /* Check to make sure the second input argument is a scalar. */
-  if( !mxIsNumeric(prhs[1]) || !mxIsDouble(prhs[1]) ||
-    mxIsEmpty(prhs[1]) || mxIsComplex(prhs[1]) ||
-    mxGetN(prhs[1])*mxGetM(prhs[1])!=1 )
-  {
-    mexErrMsgTxt("Input dt must be a scalar.");
-  }
+  /* Check to make sure the first input arguments are double matrices. */
+  for (int index=0; index<3; index++)
+    if(mxGetPi(prhs[index])!=NULL)
+    {
+      switch(index) {
+      case 0:
+        mexErrMsgTxt("Input T0 must be a double matrix.");
+      case 1:
+        mexErrMsgTxt("Input S1 must be a double matrix.");
+      case 2:
+        mexErrMsgTxt("Input S2 must be a double matrix.");
+      default:
+        mexErrMsgTxt("Input error.");
+      }
+    }
   
-  /* Check to make sure the third input argument is a scalar. */
-  if( !mxIsNumeric(prhs[2]) || !mxIsDouble(prhs[2]) ||
-    mxIsEmpty(prhs[2]) || mxIsComplex(prhs[2]) ||
-    mxGetN(prhs[2])*mxGetM(prhs[2])!=1 )
-  {
-    mexErrMsgTxt("Input xl must be a scalar.");
-  }
+  /* Check to make sure the last input arguments are scalar. */
+  for (int index=3; index<nrhs; index++)
+    if(!mxIsDouble(prhs[index]) || 
+      mxGetN(prhs[index])*mxGetM(prhs[index])!=1)
+    {
+      switch(index) {
+      case 3:
+        mexErrMsgTxt("Input M must be a scalar.");
+      case 4:
+        mexErrMsgTxt("Input xl must be a scalar.");
+      case 5:
+        mexErrMsgTxt("Input yl must be a scalar.");
+      case 6:
+        mexErrMsgTxt("Input zl must be a scalar.");
+      case 7:
+        mexErrMsgTxt("Input nu must be a scalar.");
+      case 8:
+        mexErrMsgTxt("Input mrx must be a scalar.");
+      case 9:
+        mexErrMsgTxt("Input mry must be a scalar.");
+      case 10:
+        mexErrMsgTxt("Input mrz must be a scalar.");
+      case 11:
+        mexErrMsgTxt("Input dt must be a scalar.");
+      case 12:
+        mexErrMsgTxt("Input Theta must be a scalar.");
+      case 13:
+        mexErrMsgTxt("Input CGTol must be a scalar.");
+      case 14:
+        mexErrMsgTxt("Input CGIter must be a scalar.");
+      default:
+        mexErrMsgTxt("Input error.");
+      }
+    }
   
-  /* Check to make sure the fourth input argument is a scalar. */
-  if( !mxIsNumeric(prhs[3]) || !mxIsDouble(prhs[3]) ||
-    mxIsEmpty(prhs[3]) || mxIsComplex(prhs[3]) ||
-    mxGetN(prhs[3])*mxGetM(prhs[3])!=1 )
-  {
-    mexErrMsgTxt("Input yl must be a scalar.");
-  }
+  /* Get the matrice input arguments. */
+  T0 = mxGetPr(prhs[0]);
+  S1 = mxGetPr(prhs[1]);
+  S2 = mxGetPr(prhs[2]);
   
-  /* Check to make sure the fifth input argument is a scalar. */
-  if( !mxIsNumeric(prhs[4]) || !mxIsDouble(prhs[4]) ||
-    mxIsEmpty(prhs[4]) || mxIsComplex(prhs[4]) ||
-    mxGetN(prhs[4])*mxGetM(prhs[4])!=1 )
-  {
-    mexErrMsgTxt("Input zl must be a scalar.");
-  }
-  
-  /* Check to make sure the last input argument is a scalar. */
-  if( !mxIsNumeric(prhs[8]) || !mxIsDouble(prhs[8]) ||
-    mxIsEmpty(prhs[8]) || mxIsComplex(prhs[8]) ||
-    mxGetN(prhs[8])*mxGetM(prhs[8])!=1 )
-  {
-    mexErrMsgTxt("Input M must be a scalar.");
-  }
-  
-  /* Get the scalar input nu. */
-  nu = mxGetScalar(prhs[0]);
-  
-  /* Get the scalar input dt. */
-  dt = mxGetScalar(prhs[1]);
-  
-  /* Get the scalar input xl. */
-  xl = mxGetScalar(prhs[2]);
-  
-  /* Get the scalar input yl. */
-  yl = mxGetScalar(prhs[3]);
-  
-  /* Get the scalar input zl. */
-  zl = mxGetScalar(prhs[4]);
-  
-  /* Create a pointer to the input matrices T0,S1,S2. */
-  T0 = mxGetPr(prhs[5]);
-  S1 = mxGetPr(prhs[6]);
-  S2 = mxGetPr(prhs[7]);
-  
-  /* Get the scalar input M. */
-  M = mxGetScalar(prhs[8]);
+  /* Get the scalar input arguments. */
+  M = mxGetScalar(prhs[3]);
+  xl = mxGetScalar(prhs[4]);
+  yl = mxGetScalar(prhs[5]);
+  zl = mxGetScalar(prhs[6]);
+  nu = mxGetScalar(prhs[7]);
+  mrx = mxGetScalar(prhs[8]);
+  mry = mxGetScalar(prhs[9]);
+  mrz = mxGetScalar(prhs[10]);
+  dt = mxGetScalar(prhs[11]);
+  theta = mxGetScalar(prhs[12]);
+  CGTol = mxGetScalar(prhs[13]);
+  CGIter = mxGetScalar(prhs[14]);
   
   /* Get the dimensions of the input matrix S1. */
-  mrows = mxGetM(prhs[6]);
-  ncols = mxGetN(prhs[6]);
+  mrows = mxGetM(prhs[1]);
+  ncols = mxGetN(prhs[1]);
   
   // test begin
-  
   //  for (int count=0; count<mrows*ncols; count++)
   //    mexPrintf("%g ", *(T0+count));
-  
   // test end
   
   /* Set the output pointer to the output matrix. */
@@ -476,8 +434,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   sol2D = mxGetPr(plhs[0]);
   
   /* Call the C subroutine. */
-  ipdrops(nu, dt, xl, yl, zl, ncols-1, mrows, T0, S1, S2, sol2D, M);
-  
+  ipdrops(sol2D, T0, S1, S2, M, xl, yl, zl, nu, mrx, mry, mrz, 
+    dt, ncols-1, theta, CGTol, CGIter);
+    
   return;
   
 }
