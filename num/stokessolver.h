@@ -37,7 +37,7 @@ class UzawaSolverCL
     double GetResid  () const { return _res; }
     int    GetIter   () const { return _iter; }
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c);
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
     // solves the system   A v + BT p = b
     //                     B v        = c
 };
@@ -64,7 +64,7 @@ class SchurSolverCL
     double GetResid  () const { return _res; }
     int    GetIter   () const { return _iter; }
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c);
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
     // solves the system   A v + BT p = b
     //                     B v        = c
 };    
@@ -92,7 +92,7 @@ class PSchurSolverCL
     double GetResid  () const { return _res; }
     int    GetIter   () const { return _iter; }
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c);
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
     // solves the system   A v + BT p = b
     //                     B v        = c
 };    
@@ -144,7 +144,7 @@ class Uzawa_IPCG_CL
     // Always call this when A has changed, before Solve()!
     void Init_A_Pc(MatrixCL& A) { _A_IPCGsolver.GetPc().Init(A); }
 
-    inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c);
+    inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c);
 };    
     
     
@@ -204,7 +204,7 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 
 template <class PoissonSolverT>
 void UzawaSolverCL<PoissonSolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c)
+    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 
 {
     VectorCL v_corr(v.size()),
@@ -248,7 +248,7 @@ void UzawaSolverCL<PoissonSolverT>::Solve
 
 template <class PoissonSolverT>
 void SchurSolverCL<PoissonSolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c)
+    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 {
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
@@ -276,7 +276,7 @@ void SchurSolverCL<PoissonSolverT>::Solve
 }
 
 inline void Uzawa_IPCG_CL::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c)
+    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 
 {
     VectorCL v_corr(v.size()),
@@ -320,7 +320,7 @@ inline void Uzawa_IPCG_CL::Solve
 
 template <class PoissonSolverT>
 void PSchurSolverCL<PoissonSolverT>::Solve
-    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, VectorCL& b, VectorCL& c)
+    ( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 {
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
