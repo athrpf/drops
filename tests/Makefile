@@ -8,7 +8,7 @@ DIR = tests
 
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
-        p2local
+        p2local quadbase
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -102,6 +102,12 @@ p2local: ../tests/p2local.o ../misc/utils.o \
   ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o ../num/unknowns.o \
   ../out/output.o  ../misc/problem.o ../geom/builder.o \
   ../num/discretize.o ../num/fe.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+quadbase: \
+    ../tests/quadbase.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
+    ../num/fe.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:
