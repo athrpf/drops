@@ -2,6 +2,9 @@
 #   c o m m o n   r u l e s   for all local makefiles   #
 #########################################################
 
+DROPS_ROOT = ..
+
+
 all: $(EXEC)
 	@echo "--> Made all executables in $(DIR)!"
 
@@ -25,13 +28,11 @@ endif
 # override implicit c++ rule
 %.o: %.cpp
 
-# local objectfiles get auto-praefix:
+# local objectfiles get auto-prefix:
 $(OBJ): %.o: ../$(DIR)/%.o
 
 .PHONY: clean distclean all default
 
-
-DROPS_ROOT = ..
 
 # include settings from the config file drops.conf:
 include ../drops.conf
