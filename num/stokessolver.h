@@ -10,6 +10,7 @@
 #define DROPS_STOKESSOLVER_H
 
 #include "num/solver.h"
+#include "num/MGsolver.h"
 #include "stokes/stokes.h"
 
 namespace DROPS
@@ -183,8 +184,7 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
     PCG_SgsCL& GetPoissonSolver() { return _PCGsolver; }
 };
 
-// TODO: (P)Schur_MG_CL
-// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
 {
   private:
@@ -261,7 +261,7 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
-    CG( SchurComplMatrixCL( A, B, _poissonSolver.GetTol(), 1.), p, rhs, iter, tol);
+    CG( SchurComplMatrixCL<PoissonSolverT>( _poissonSolver, A, B), p, rhs, iter, tol);
     std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
@@ -339,7 +339,7 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
-    PCG( SchurComplMatrixCL( A, B, _poissonSolver.GetTol(), 1.), p, rhs, _schurPc, iter, tol);
+    PCG( SchurComplMatrixCL<PoissonSolverT>( _poissonSolver, A, B), p, rhs, _schurPc, iter, tol);
     std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
@@ -351,10 +351,7 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
     _iter= iter+_poissonSolver.GetIter();
-    _res= tol+_poissonSolver.GetResid();
-std::cerr << "Real residuals are: "
-          << (A*v+transp_mul(B, p)-b).norm() << ", "
-          << (B*v-c).norm() << std::endl;
+    _res= std::sqrt( tol*tol + _poissonSolver.GetResid()*_poissonSolver.GetResid());
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 

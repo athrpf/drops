@@ -221,7 +221,10 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
     int iter= max_iter;   
     double tol= outer_tol;     
     //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
-    CG( SchurComplMatrixCL( M, B, inner_tol, omega), p, rhs, iter, tol);
+    SSORPcCL poissonpc;
+    PCG_SsorCL poissonsolver( poissonpc, 500, inner_tol);
+    SchurComplMatrixCL<PCG_SsorCL> BABT( poissonsolver, M, B);
+    CG( BABT, p, rhs, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
 
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;

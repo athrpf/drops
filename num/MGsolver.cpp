@@ -6,7 +6,6 @@
 // History: begin - April, 16 2001                                         *
 //**************************************************************************
 
-#include "num/solver.h"
 #include "num/MGsolver.h"
 
 namespace DROPS
@@ -47,16 +46,15 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end)
     }
 }
 
-// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //template <typename Vec> 
-void MG( const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
-         int maxiter, double tol )
+void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
+        int maxiter, double tol)
 {
     const_MGDataIterCL finest= --MGData.end();
 
-    Uint   sm    =  2; // how many smoothing steps?
-    int    lvl   = -1; // how many levels? (-1=all)
-    double omega = 1.; // relaxation parameter for smoother
+    Uint   sm   =  2; // how many smoothing steps?
+    int    lvl  = -1; // how many levels? (-1=all)
+    double omega= 1.; // relaxation parameter for smoother
     
     Uint nit;
     double resid, old_resid;
@@ -66,24 +64,20 @@ void MG( const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
 //    SGSsmoothCL smoother(omega);  // symmetric Gauss-Seidel
     SORsmoothCL smoother(omega);  // Gauss-Seidel with over-relaxation
 //    SSORsmoothCL smoother(omega);  // symmetric Gauss-Seidel with over-relaxation
-    CGSolverCL  solver(200, tol); //CG-Verfahren
-    for(Uint k=0; k<sm; ++k)
-    {
-        std::cerr << "x.size = " << x.size() <<std::endl;
+    CGSolverCL  solver( 200, tol); //CG-Verfahren
+    if (maxiter==0) return;
+    std::cerr << "x.size: " << x.size() <<std::endl;
+    resid= (b - finest->A.Data * x).norm();
+    std::cerr << "initial residual: " << resid <<std::endl;
+    nit= 1;
+    do {
+        MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
+        old_resid= resid;
         resid= (b - finest->A.Data * x).norm();
-        std::cerr << "initial residuum: " << resid <<std::endl;
-	nit = 0;
-        do
-        {
-            MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
-            old_resid= resid;
-            resid= (b - finest->A.Data * x).norm();
-	    nit = nit+1;
-            std::cerr << "iteration: " << nit 
-	              << "\tresiduum: " << resid 
-	              << "\tred. " << resid/old_resid << std::endl;
-        } while ( resid > tol);
-    }
+        std::cerr << "iteration: " << nit 
+                  << "\tresidual: " << resid 
+                  << "\treduction: " << resid/old_resid << std::endl;
+    } while (resid > tol && nit++ < maxiter);
 }
 
 } // end of namespace DROPS

@@ -10,7 +10,6 @@
 
 #include <vector>
 #include "misc/container.h"
-#include "num/MGsolver.h"
 #include "num/spmat.h"
 
 namespace DROPS
@@ -729,11 +728,11 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
     double err= resid0*resid0;
 
     tol*= tol;
-    if (err<=tol) {
-        tol= sqrt( err);
-        max_iter= 0;
-        return true;
-    }
+//    if (err<=tol) {
+//        tol= sqrt( err);
+//        max_iter= 0;
+//        return true;
+//    }
     const double norm_r0= q.norm_r0();
     bool lucky= q.breakdown();
     SBufferCL<double, 3> c;
@@ -787,6 +786,7 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
 //std::cout << "dx\n" << dx;
         x.raw()+= dx.raw();
         err= dx.norm2();
+//        err= (rhs - A*x).norm2();
         if (err<=tol || lucky==true) {
             tol= sqrt( err);
             max_iter= k;
@@ -976,30 +976,6 @@ class GMResSolverCL : public SolverBaseCL
     }
 };
 
-// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// declaration 
-void MG( const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
-         int maxiter, double tol );
-
-// MG
-class MGSolverCL : public SolverBaseCL
-{
-  private:
-    const MGDataCL& _mgdata;
-
-  public:
-    MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol )
-        : SolverBaseCL(maxiter,tol), _mgdata(mgdata) {}
-
-    void Solve(const MatrixCL& A, VectorCL& x, const VectorCL& b)
-    {
-        _res=  _tol;
-        _iter= _maxiter;
-        MG( _mgdata, x, b, _iter, _res );
-    }
-};
-
-//typedef MGSolverCL<MGDataCL> MG_CL;
 
 //=============================================================================
 //  Typedefs

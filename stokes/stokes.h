@@ -261,18 +261,19 @@ class StokesDoerflerMarkCL
     bool Estimate(const DiscPrSolCL&, const DiscVelSolCL&);
 };
 
+template<class PoissonSolverT>
 class SchurComplMatrixCL
 {
   private:
-    const MatrixCL& _matA;
-    const MatrixCL& _matB;
-    double          _tol;
-    SSORPcCL        _pc;
+    PoissonSolverT& solver_;
+    const MatrixCL& A_;
+    const MatrixCL& B_;
 
   public:
-    SchurComplMatrixCL(const MatrixCL& A, const MatrixCL& B, double tol, double om)
-        : _matA(A), _matB(B), _tol(tol), _pc(om) {}
-    friend VectorCL operator* (const SchurComplMatrixCL& M, const VectorCL& v);
+    SchurComplMatrixCL(PoissonSolverT& solver, const MatrixCL& A, const MatrixCL& B)
+        : solver_( solver), A_( A), B_( B) {}
+    friend VectorCL
+    operator*<PoissonSolverT>(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& v);
 };
 
 void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& I, VectorCL& x, VectorCL& y, const VectorCL& f, const VectorCL& g, 

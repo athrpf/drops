@@ -10,6 +10,8 @@
 #define DROPS_MGSOLVER_H
 
 #include "misc/problem.h"
+#include "num/solver.h"
+
 #include <list>
 
 
@@ -28,19 +30,48 @@ typedef std::list<MGLevelDataCL> MGDataCL;
 typedef MGDataCL::iterator       MGDataIterCL;
 typedef MGDataCL::const_iterator const_MGDataIterCL;
 
-template<class SmootherCL, class DirectSolverCL>
-void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
-          const SmootherCL& Smoother, Uint smoothSteps, 
-          DirectSolverCL& Solver, int numLevel, int numUnknDirect);
+
 // Multigrid method, V-cycle, beginning from level 'fine' 
 // numLevel and numUnknDirect specify, when the direct solver 'Solver' is used:
 //      after 'numLevel' visited levels or if #Unknowns <= 'numUnknDirect'
 // If one of the parameters is -1, it will be neglected. 
 // If the coarsest level 'begin' has been reached, the direct solver is used too.
 // NOTE: Assumes, that the levels are stored in an ascending order (first=coarsest, last=finest)
-    
-void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
+template<class SmootherCL, class DirectSolverCL>
+void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
+          const SmootherCL& Smoother, Uint smoothSteps, 
+          DirectSolverCL& Solver, int numLevel, int numUnknDirect);
+
+
 // checks  A_coarse= PT * A_fine * P on each level
+void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
+
+
+// Uses MGM for solving to tolerance tol or until maxiter iterations are reached.
+void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
+        int maxiter, double tol);
+
+
+// MG
+class MGSolverCL : public SolverBaseCL
+{
+  private:
+    const MGDataCL& _mgdata;
+
+  public:
+    MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol )
+        : SolverBaseCL(maxiter,tol), _mgdata(mgdata) {}
+
+    void Solve(const MatrixCL& A, VectorCL& x, const VectorCL& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        MG( _mgdata, x, b, _iter, _res );
+    }
+};
+
+//typedef MGSolverCL<MGDataCL> MG_CL;
+
 
 //===================================
 // definition of template functions

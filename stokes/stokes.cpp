@@ -12,46 +12,6 @@
 namespace DROPS
 {
 
-/*
-StokesBndDataCL::bnd_type
-bnd_val_e2e3(const Point2DCL& p)
-{
-    SVectorCL<3> ret;
-    Point2DCL q= 2*M_PI*p;
-    ret[0]= 0.; ret[1]= -cos(q[0])*sin(q[1]); ret[2]= 2.*sin(q[0])*cos(q[1]);
-    return ret;
-}
-
-StokesBndDataCL::bnd_type
-bnd_val_e1e3(const Point2DCL& p)
-{
-    SVectorCL<3> ret;
-    Point2DCL q= 2*M_PI*p;
-    ret[0]= 0.; ret[1]= -cos(q[0])*sin(q[1]); ret[2]= 0.;
-    return ret;
-}
-
-StokesBndDataCL::bnd_type
-bnd_val_e1e2(const Point2DCL& p)
-{
-    SVectorCL<3> ret;
-    Point2DCL q= 2*M_PI*p;
-    ret[0]= 0.; ret[1]= 0.; ret[2]= 2.*cos(q[0])*sin(q[1]);
-    return ret;
-}
-*/
-/*
-double GradPrEstimator(const TetraCL& t, const DiscPrSolCL& p, const DiscVelSolCL&)
-{
-    double diff[3];
-    double p0= p.val( t->GetVertex(0));
-    for (Uint i=0; i<3; ++i)
-        diff[i]= fabs( p.val( t->GetVertex(i+1)) -  p0);
-        
-    return std::max( diff) * t->GetVolume();    
-}
-*/
-
     
 void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& M, VectorCL& x, VectorCL& y, const VectorCL& f, const VectorCL& g, 
            double tau, int& max_iter, double& tol, Uint inner_iter, double inner_iter_tol)
@@ -100,24 +60,5 @@ void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& M, VectorCL& x,
     }
     tol= ::sqrt( res1_norm + res2_norm );
 }
-
-
-
-//==== SchurComplMatrixCL ====
-
-VectorCL operator* (const SchurComplMatrixCL& M, const VectorCL& v)
-{
-    double tol= M._tol;
-    int maxiter= 500;
-    VectorCL x( M._matA.num_cols());
-    
-    PCG(M._matA, x, transp_mul(M._matB, v), M._pc, maxiter, tol);
-    if (maxiter >= 499)
-        Comment(    "VectorCL operator* (const SchurComplMatrixCL& M, const VectorCL& v): "
-                 << "Took more than 100 iterations. tol: " << tol << std::endl,
-                 DebugNumericC);
-//    std::cerr << "Inner iteration took " << maxiter << " steps, residuum is " << tol << std::endl;
-    return M._matB*x;
-}    
 
 } // end of namespace DROPS

@@ -31,7 +31,7 @@ sdrops: \
 sdropsP2: \
     ../geom/boundary.o ../geom/builder.o ../stokes/sdropsP2.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../stokes/stokes.o ../out/output.o ../num/discretize.o
+    ../misc/utils.o ../stokes/stokes.o ../out/output.o ../num/discretize.o ../num/MGsolver.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 MGsdropsP2: \

@@ -171,7 +171,9 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             M.SetIdx( pidx1, pidx1);
             Stokes.SetupMass( &M);
             PreGSOwnMatCL<P_SSOR0> schur_pc(M.Data);
-            SchurComplMatrixCL BABT(A->Data, B->Data, inner_iter_tol, omega);
+            SSORPcCL poissonpc;
+            PCG_SsorCL poissonsolver( poissonpc, 500, inner_iter_tol);
+            SchurComplMatrixCL<PCG_SsorCL> BABT( poissonsolver, A->Data, B->Data);
             double outer_tol;
             std::cerr << "tol = "; std::cin >> outer_tol;
             time.Start();

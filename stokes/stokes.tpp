@@ -1473,4 +1473,20 @@ inline double norm_L2_sq(const TetraCL& t, scalar_fun_ptr coeff)
     
 }
 
+
+
+//==== SchurComplMatrixCL ====
+
+template<class PoissonSolverT>
+VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& v)
+{
+    VectorCL x( M.A_.num_cols());
+    
+    M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
+//    std::cerr << "iterations: " << M.solver_.GetIter()
+//              << "\tresidual: " << M.solver_.GetResid() << std::endl;
+    return M.B_*x;
+}    
+
+
 } // end of namespace DROPS
