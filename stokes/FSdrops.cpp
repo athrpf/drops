@@ -409,7 +409,7 @@ void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_
             VectorCL rhs( v1->Data.size());
                      
             MatrixCL M;
-            ConvexComb( M, 1., I->Data, eta, A->Data);
+            M.LinComb( 1., I->Data, eta, A->Data);
 
             double outer_tol, old_time= 0;
             std::cerr << "tol = "; std::cin >> outer_tol;
@@ -484,7 +484,7 @@ void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_
             std::cerr << "tol = "; std::cin >> outer_tol;
             
             MatrixCL M;
-            ConvexComb( M, 1., I->Data, theta*dt, A->Data);
+            M.LinComb( 1., I->Data, theta*dt, A->Data);
 
             VelVecDescCL* old_b= new VelVecDescCL;
             VelVecDescCL* cplI= new VelVecDescCL;

@@ -172,7 +172,7 @@ void AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve
         for(;;++_iter) // ever
         {
             _NS.SetupNonlinear( &_NS.N, &v, &_NS.cplN);
-            ConvexComb( _AN, 1., A, alpha, N->Data);
+            _AN.LinComb( 1., A, alpha, N->Data);
             
             // calculate defect:
             d= _AN*v + transp_mul( B, p) - b - alpha*_NS.cplN.Data;
@@ -219,7 +219,7 @@ void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve
         for(;;++_iter) // ever
         {
             _NS.SetupNonlinear( &_NS.N, &v, &_NS.cplN);
-            ConvexComb( _AN, 1., A, alpha, N->Data);
+            _AN.LinComb( 1., A, alpha, N->Data);
             
             // calculate defect:
             d= _AN*v + transp_mul( B, p) - b - alpha*_NS.cplN.Data;

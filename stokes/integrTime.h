@@ -65,7 +65,7 @@ class InstatStokesThetaSchemeCL
     void SetTimeStep( double dt)
     {
         _dt= dt;
-        ConvexComb( _mat, 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data);
+        _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data);
     }
        
     void DoStep( VectorCL& v, VectorCL& p);
@@ -120,7 +120,7 @@ class InstatStokesFracStepSchemeCL
     void SetTimeStep( double dt)
     {
         _dt= dt;
-        ConvexComb( _L, 1., _Stokes.M.Data, _alpha*_theta*dt, _Stokes.A.Data);
+        _L.LinComb( 1., _Stokes.M.Data, _alpha*_theta*dt, _Stokes.A.Data);
     }
        
     void DoStep( VectorCL& v, VectorCL& p);

@@ -66,7 +66,7 @@ class InstatNavStokesThetaSchemeCL
     void SetTimeStep( double dt)
     {
         _dt= dt;
-        ConvexComb( _L, 1., _NS.M.Data, _theta*_dt, _NS.A.Data);
+        _L.LinComb( 1., _NS.M.Data, _theta*_dt, _NS.A.Data);
     }
        
     void DoStep( VecDescCL& v, VectorCL& p);

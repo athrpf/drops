@@ -261,6 +261,9 @@ public:
     SparseMatBaseCL& operator*= (T c) { _val*= c; return *this; }
     SparseMatBaseCL& operator/= (T c) { _val/= c; return *this; }
 
+    SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&);
+
     void clear() { resize(0,0,0); }
 
     friend class SparseMatBuilderCL<T>;
@@ -400,12 +403,13 @@ void in (std::istream& is, SparseMatBaseCL<T>& A)
 //*****************************************************************************
 
 template <typename T>
-void ConvexComb (SparseMatBaseCL<T>& M, const double coeffA, const SparseMatBaseCL<T>& A,
-                                        const double coeffB, const SparseMatBaseCL<T>& B)
+SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
+                                                 double coeffB, const SparseMatBaseCL<T>& B)
 {
     Assert( A.num_rows()==B.num_rows() && A.num_cols()==B.num_cols(),
-            "ConvexComb: incompatible dimensions", DebugNumericC);
-    SparseMatBuilderCL<double> MB( &M, A.num_rows(), A.num_cols());
+            "LinComb: incompatible dimensions", DebugNumericC);
+
+    SparseMatBuilderCL<T> MB( this, A.num_rows(), A.num_cols());
     size_t col, indA= 0, indB= 0;
 
     for (size_t row= 0, row_end= A.num_rows(); row<row_end; ++row)
@@ -421,7 +425,9 @@ void ConvexComb (SparseMatBaseCL<T>& M, const double coeffA, const SparseMatBase
             MB(row,col)+= coeffB * B(row,col);
         }
     }
+
     MB.Build();
+    return *this;
 }
 
 

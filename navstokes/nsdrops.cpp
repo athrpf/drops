@@ -439,7 +439,7 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
         {
             NS.SetupNonlinear( N, v1, &rhsN);
             MatrixCL AN;
-            ConvexComb( AN, 1., A->Data, 1., N->Data);
+            AN.LinComb( 1., A->Data, 1., N->Data);
             
             // calculate defect:
             d= AN*v1->Data + transp_mul( B->Data, p1->Data) - b->Data - rhsN.Data;

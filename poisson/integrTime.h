@@ -80,7 +80,7 @@ class InstatPoissonThetaSchemeCL
     {
       _dt= dt;
       _nu= nu;
-      ConvexComb( _Lmat, 1., _Poisson.M.Data, _theta*_dt*_nu, _Poisson.A.Data);
+      _Lmat.LinComb( 1., _Poisson.M.Data, _theta*_dt*_nu, _Poisson.A.Data);
     }
        
     void DoStep( VecDescCL& v);
