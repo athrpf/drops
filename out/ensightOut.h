@@ -139,12 +139,20 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
         end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
     {
-        os << std::setw(8) << it->Unknowns(idx)+1 << ' ' << it->GetCoord() << '\n';
+        os << std::setw(8) << it->Unknowns(idx)+1; 
+        Point3DCL c= it->GetCoord();
+        for (int i=0; i<3; ++i)
+            os << std::setw(12) << c[i];
+        os << '\n';
     }
     for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
         end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
-        os << std::setw(8) << it->Unknowns(idx)+1 << ' ' << GetBaryCenter( *it) << '\n';
+        os << std::setw(8) << it->Unknowns(idx)+1;
+        Point3DCL c= GetBaryCenter( *it);
+        for (int i=0; i<3; ++i)
+            os << std::setw(12) << c[i];
+        os << '\n';
     }
 
     os << "part 1\n" << _geom << "\n";
