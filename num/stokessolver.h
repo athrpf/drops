@@ -836,10 +836,7 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
-    const double old_tol= _poissonSolver.GetTol();
-    _poissonSolver.SetTol( _tol);      // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
-    _poissonSolver.SetTol( old_tol);   // reset old tolerance, so that nothing has changed
     std::cerr << "Iterationen: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
@@ -914,10 +911,7 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
-    const double old_tol= _poissonSolver.GetTol();
-    _poissonSolver.SetTol( _tol);      // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
-    _poissonSolver.SetTol( old_tol);   // reset old tolerance, so that nothing has changed
     std::cerr << "iterations: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
@@ -945,10 +939,7 @@ void PSchurSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
     std::cerr << "pressure: iterations: " << poissonSolver2_.GetIter()
               << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
 
-    const double old_tol= poissonSolver_.GetTol();
-    poissonSolver_.SetTol( _tol ); // same tolerance as for pressure
     poissonSolver_.Solve( A, v, b - transp_mul(B, p));
-    poissonSolver_.SetTol( old_tol);   // reset old tolerance
     std::cerr << "velocity: iterations: " << poissonSolver_.GetIter()
               << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
 
