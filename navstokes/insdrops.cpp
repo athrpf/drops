@@ -109,10 +109,10 @@ void Strategy(InstatNavierStokesP2P1CL<MGB,Coeff>& NS, int num_ref, double fp_to
     MatDescCL* M= &NS.M;
     int refstep= 0;
 
-    vidx1->Set(0, 3, 3, 0, 0);
-    vidx2->Set(1, 3, 3, 0, 0);
-    pidx1->Set(2, 1, 0, 0, 0);
-    pidx2->Set(3, 1, 0, 0, 0);
+    vidx1->Set( 3, 3, 0, 0);
+    vidx2->Set( 3, 3, 0, 0);
+    pidx1->Set( 1, 0, 0, 0);
+    pidx2->Set( 1, 0, 0, 0);
     
     TimerCL time;
     do
@@ -163,32 +163,30 @@ void Strategy(InstatNavierStokesP2P1CL<MGB,Coeff>& NS, int num_ref, double fp_to
         NS.SetupPrMass( &M_pr);  
 //        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
 //                                                     stokes_maxiter, poi_maxiter, poi_tol, deco_red);
-//        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
-//                                                    stokes_maxiter, poi_maxiter, poi_tol, deco_red);
+        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
+                                                    stokes_maxiter, poi_maxiter, poi_tol, deco_red);
 //        FPDeCo_Uzawa_CG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
 //                                                   stokes_maxiter, poi_maxiter, poi_tol, deco_red);
 //        FPDeCo_Uzawa_SGSPCG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
 //                                                   stokes_maxiter, poi_maxiter, poi_tol, deco_red);
 //        AFPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
 //                                                   stokes_maxiter, poi_maxiter, poi_tol, deco_red);
-        FPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
-                                                    stokes_maxiter, poi_maxiter, poi_tol, deco_red);
-//        InstatNavStokesThetaSchemeCL<NavStokesCL, AFPDeCo_Uzawa_PCG_CL<NavStokesCL> >
-//            instatsolver(NS, statsolver, theta);
+//        FPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
+//                                                    stokes_maxiter, poi_maxiter, poi_tol, deco_red);
         // If the saddlepoint-problem is solved via an Uzawa-method, the mass-matrix alone is
         // not an appropriate preconditioner for the Schur-Complement-Matrix. M has to be scaled
         // by 1/(theta*dt).
-//        statsolver.GetStokesSolver().SetTau(theta*dt);
+        statsolver.GetStokesSolver().SetTau(theta*dt);
         time.Reset();
         time.Start();
         NS.SetupNonlinear(N, v1, cplN, 0., 0.);
 	time.Stop();
         std::cerr << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
         NS.SetupInstatRhs( b, c, cplM, 0., b, 0.);
-        InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Schur_PCG_CL<NavStokesCL> >
-	    instatsolver(NS, statsolver, v1, theta);
-//        InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Uzawa_PCG_CL<NavStokesCL> >
+//        InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Schur_PCG_CL<NavStokesCL> >
 //	    instatsolver(NS, statsolver, v1, theta);
+        InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Uzawa_PCG_CL<NavStokesCL> >
+	    instatsolver(NS, statsolver, v1, theta);
         std::cerr << "After constructor." << std::endl;
 	double t= 0.;
 	NS.t= 0;
@@ -305,7 +303,7 @@ int main (int argc, char** argv)
     fil.close();
 
     DROPS::IdxDescCL tecIdx;
-    tecIdx.Set( 4, 1, 0, 0, 0);
+    tecIdx.Set( 1, 0, 0, 0);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
     std::ofstream v2d("navstokestec2D.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::DiscVelSolCL, MyNavierStokesCL::DiscPrSolCL>
