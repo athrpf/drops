@@ -18,6 +18,8 @@
 namespace DROPS
 {
 
+void BndCondInfo( BndCondT, std::ostream&);
+
 class IdxDescCL
 {
   private:

@@ -13,6 +13,19 @@ namespace DROPS
 
 std::vector<bool> IdxDescCL::IdxFree;
 
+void BndCondInfo( BndCondT bc, std::ostream& os)
+{
+    switch(bc)
+    {
+      case DirBC:  os << "inhom. Dirichlet BC / inflow\n"; break; 
+      case Dir0BC: os << "hom. Dirichlet BC / wall\n"; break; 
+      case NatBC:  os << "inhom. Natural BC\n"; break; 
+      case Nat0BC: os << "hom. Natural BC / outflow\n"; break; 
+      default:     os << "WARNING! unknown BC\n";
+    }
+}
+
+
 Uint IdxDescCL::GetFreeIdx()
 {
     size_t sysnum= 0;
