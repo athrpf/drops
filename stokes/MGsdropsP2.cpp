@@ -229,14 +229,14 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             std::cerr << "Schur complement method..." << std::endl;
             PSchur_MG_CL MGschurSolver( M.Data, 200, outer_tol, MGD, 200, inner_iter_tol);
 //            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
-//            time.Start();
+            time.Start();
 //std::cout << M.Data << std::endl;
 //std::cout << A->Data << std::endl << b->Data << std::endl
 //          << B->Data << std::endl << c->Data << std::endl
 //          << v1->Data << std::endl << p1->Data << std::endl;
 //            schurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             MGschurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
-//            time.Stop();
+            time.Stop();
         }
         else // Uzawa
         {
