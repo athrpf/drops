@@ -31,6 +31,9 @@ dep: topo deldepend $(PACKAGES:%=depend_%)
 check:
 	cd ./tests && $(MAKE) check
 
+doc:
+	doxygen dox.cfg
+
 all_%:
 	cd $* && $(MAKE) all
 
@@ -59,7 +62,7 @@ prog_%:
 	cd $(@D) && $(MAKE) $(*F)
 
 
-.PHONY: all clean distclean default dep deldepend topo check
+.PHONY: all clean distclean default dep deldepend doc topo check
 
 # include settings from the config file drops.conf:
 include drops.conf
