@@ -20,7 +20,7 @@ void AdapTriangCL::MakeInitialTriang( DistFctT& Dist)
     for (i=0; i<2*min_ref_num; ++i)
         ModifyGridStep( Dist);
     time.Stop();
-    std::cout << "MakeTriang: " << i
+    std::cout << "MakeInitialTriang: " << i
               << " refinements in " << time.GetTime() << " seconds\n"
               << "last level: " << mg_.GetLastLevel() << '\n';
     mg_.SizeInfo( std::cout);
@@ -45,7 +45,7 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
         const Uint soll_level= d<=width_ ? f_level_ : c_level_;
 
         if (l !=  soll_level)
-	{ // tetra will be marked for refinement/remove
+	{ // tetra will be marked for refinement/removement
 	    modified= true;
             if (l < soll_level) 
                 it->SetRegRefMark();
