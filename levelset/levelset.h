@@ -61,7 +61,7 @@ class LevelsetP2CL
     void SetupSystem( const DiscVelSolT&);
     void DoStep();
     void Reparam( Uint steps, double dt);
-//    void Reparam2();
+    void ReparamFastMarching( bool ModifyZero= true, bool OnlyZeroLvl= false);
     
     bool   Intersects( const TetraCL&) const;
     double GetVolume( double translation= 0) const;

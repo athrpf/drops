@@ -5,6 +5,7 @@
 //**************************************************************************
 
 #include "num/discretize.h"
+#include "levelset/fastmarch.h"
 #include <fstream>
 
 namespace DROPS
@@ -359,91 +360,23 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
     return false;
 }
 
-/*
-void LevelsetP2CL::Reparam2()
-// Reparametrisierung, die den 0-Levelset fest laesst
-// Idee: Phi auf T durch festes g=|grad Phi|>0 teilen -> 0-Levelset bleibt fest
+
+void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool OnlyZeroLvl)
+// Reparametrisierung durch Fast Marching Method
+// Dabei verschiebt sich der 0-Level nur innerhalb der Elemente, die diesen schneiden.
+// onlyZeroLvl==true  =>  es wird nur lokal an der Phasengrenze reparametrisiert
 {
-    const size_t num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint   idx=      Phi.RowIdx->GetIdx();
-    VectorBaseCL<bool> nearby( false, num_unks);  // is DoF near the levelset?
-    VectorBaseCL<int>  num( 0, num_unks);         // how many tetras have this DoF?
-    VectorCL           div( num_unks);            // sum of |grad Phi| on this tetras
-    int                num_ls= 0;                 // how many tetras intersect the levelset?
-    double             div_ls= 0;                 // sum of |grad Phi| on this tetras
-    double      PhiLoc[10], det;
-    int         sign[10];
-    int         num_sign[3]; // - 0 + 
-    IdxT        Numb[10];
-    Point3DCL   grad;
+    FastMarchCL fm( _MG, Phi);
     
-    SMatrixCL<3,3> T;
-    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
-
-    for (MultiGridCL::TriangTetraIteratorCL it=_MG.GetTriangTetraBegin(), end=_MG.GetTriangTetraEnd();
-        it!=end; ++it)
+    if (OnlyZeroLvl)
     {
-        GetTrafoTr( T, det, *it);
-
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            if (v<4) 
-            {
-                PhiLoc[v]= Phi.Data[it->GetVertex(v)->Unknowns(idx)];
-                Numb[v]= it->GetVertex(v)->Unknowns(idx);
-            }
-            else
-            {
-                PhiLoc[v]= Phi.Data[it->GetEdge(v-4)->Unknowns(idx)];
-                Numb[v]= it->GetEdge(v-4)->Unknowns(idx);
-            }
-            sign[v]= std::abs(PhiLoc[v])<1e-8 ? 0 : (PhiLoc[v]>0 ? 1 : -1);
-        }
-            
-        for (int ch=0; ch<8; ++ch)
-        {
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            num_sign[0]= num_sign[1]= num_sign[2]= 0;
-            for (int vert= 0; vert<4; ++vert)
-                ++num_sign[ sign[data.Vertices[vert]] + 1];
-            const bool intersec= !(num_sign[0]*num_sign[2]==0 && num_sign[1]!=3); // (...) = no change of sign on child
-            const double Phi0= PhiLoc[data.Vertices[0]];
-            for (int i=0; i<3; ++i)
-                grad[i]= PhiLoc[data.Vertices[i+1]] - Phi0;
-            const double g= (T*grad).norm()*2; // doppelt so gross, da hier Kind des Tetra betrachtet wird
-
-            if (intersec)
-            {
-                div_ls+= g;    ++num_ls;
-                for (int vert= 0; vert<4; ++vert)
-                    nearby[Numb[data.Vertices[vert]]]= true;
-            }
-            else
-                for (int vert= 0; vert<4; ++vert)
-                {
-                    const size_t nv= Numb[data.Vertices[vert]];
-                    div[nv]+= g;    ++num[nv];
-                }
-        }
+        fm.InitZero();
+        fm.RestoreSigns();
     }
-    
-    const double c= num_ls/div_ls;
-    std::cerr << "ReparamSaveIF: " << num_ls << " child tetras intersecting the levelset\n"
-              << "\twith average norm of gradient = " << 1./c << std::endl;
-    
-    for (size_t i=0; i<num_unks; ++i)
-        if (nearby[i])
-            Phi.Data[i]*= c;
-        else if (div[i]>1e-4)
-        {
-const double d= div[i]/num[i];
-// Ausgabe nur bei rel. Abweichung von >50%
-if (fabs(d-1./c)*c>0.5) std::cerr << d << "\t";
-            Phi.Data[i]*= num[i]/div[i];
-        }
-std::cerr << std::endl;        
+    else
+        fm.Reparam( ModifyZero);
 }
-*/
+
 
 inline void Solve2x2( const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
 {
