@@ -30,7 +30,7 @@ switch flag
     % sinusfoermiger, stationaerer Waermestrom
         count=1;
         for i=0:dyd:yl
-          qcfm(count,:)=sin((zd/zl)*2*pi);
+          qcfm(count,:)=sin((zd/zl)*4*pi);
           count=count+1;
         end  
         qcfv=reshape(qcfm,npyz,1);
