@@ -36,7 +36,7 @@ class IdxDescCL
 
     IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0) 
       : Idx( GetFreeIdx()), NumUnknownsVertex( unkVertex), NumUnknownsEdge( unkEdge),
-        NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra) {}
+        NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra), NumUnknowns( 0) {}
     IdxDescCL( const IdxDescCL& orig);              
         // WARNING:  "orig" will be invalidated as the private "Idx" should not be the same for two different objects...
     ~IdxDescCL() { if (Idx!=NoIdx) IdxFree[Idx]= true; }
