@@ -263,6 +263,8 @@ void TetraCL::BuildEdges (EdgeContT& edgecont)
               case 2:
                 edgecont.push_back( EdgeCL(v0, v1, _Level, commonBndVerts[0].GetBndIdx(), commonBndVerts[1].GetBndIdx()) );   break;
               default:
+                v0->DebugInfo( std::cerr); std::cerr << std::endl;
+                v1->DebugInfo( std::cerr); std::cerr << std::endl;
                 throw DROPSErrCL("TetraCL::BuildEdges: Found edge on more than two BndSegs!");
             }
             _Edges[edge]= &edgecont.back();
@@ -305,6 +307,12 @@ void TetraCL::BuildAndLinkFaces (FaceContT& facecont)  // used by XXXBuilderCL
         }
         _Faces[face]->LinkTetra(this);
     }
+}
+
+void
+TetraCL::SetFace(Uint f, FaceCL* fp)
+{
+    _Faces[f]= fp;
 }
 
 // member functions for r e f i n e m e n t

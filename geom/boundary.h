@@ -171,6 +171,38 @@ class AffineTriangleCL : public BndSegCL
     virtual BndPairCL MidProject (const BndPointCL&, const BndPointCL&) const;
 };
 
+
+//**************************************************************************
+// Class:    MeshBoundaryCL                                                *
+// Base:     BndSegCL                                                      *
+// Purpose:  Represents a topological boundary-segment read from a         *
+//           mesh-file. Most operations are trivial.                       *
+//**************************************************************************
+// TODO: This will explode on refinement. We need 3D coordinates or better a vertex (2 vertices).
+class MeshBoundaryCL : public BndSegCL
+{
+  private:
+    Uint zone_id_;
+    Uint bc_; // Boundary condition as per mesh file. TODO: Use an enum.
+
+  public:
+    MeshBoundaryCL(Uint zid, Uint bc)
+        :BndSegCL( false), zone_id_( zid), bc_( bc) {}
+    // Default copy-ctor, assignment-op.
+
+    virtual bool      IsInBounds (const Point2DCL&) const {
+        return true; }
+    virtual Point3DCL Map        (const Point2DCL&) const {
+        return Point3DCL(); }
+    virtual Point2DCL ProjectRaw (const Point3DCL&, const Point2DCL* = 0) const {
+        return Point2DCL(); }
+    virtual Point2DCL Project    (const Point3DCL&, const Point2DCL* = 0) const {
+        return Point2DCL(); }
+    virtual BndPairCL MidProject (const BndPointCL&, const BndPointCL&) const {
+        return std::make_pair( Point2DCL(), Point3DCL()); }
+};
+
+
 } // end of namespace DROPS
 
 #endif

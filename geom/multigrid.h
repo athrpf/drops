@@ -202,6 +202,8 @@ class EdgeCL
     EdgeCL (const EdgeCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
     // default dtor
 
+    void AddBndIdx(BndIdxT idx) { if (_Bnd[0]==NoBndC) _Bnd[0]= idx; else _Bnd[1]= idx; }
+
     // Midvertex
     VertexCL*   GetMidVertex   ()             { return _MidVertex; }
     void        SetMidVertex   (VertexCL* vp) { _MidVertex= vp; }
@@ -391,6 +393,7 @@ friend class MultiGridCL;
     // used by builder
     void BuildEdges        (EdgeContT&);
     void BuildAndLinkFaces (FaceContT&);
+    void SetFace           (Uint, FaceCL*);
 
 //
 // Public Interface

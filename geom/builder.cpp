@@ -13,6 +13,9 @@
 //**************************************************************************
 
 #include <vector>
+#include <iterator>
+#include <algorithm>
+#include <map>
 #include "geom/builder.h"
 
 namespace DROPS
@@ -618,6 +621,574 @@ void TetraBuilderCL::build(MultiGridCL* mgp) const
         for (Uint i= 0; i < 6; ++i)
             if (rule_ & (1<<i)) const_cast<EdgeCL*>(tp->GetEdge( i))->IncMarkForRef();
     mgp->Refine();
+}
+
+
+//--------------------------------------------------------------------
+// Mesh-file-parser
+//--------------------------------------------------------------------
+
+MeshStringCL&
+operator>>(std::istream& is, MeshStringCL& m)
+{
+    m.isp_= &is;
+    return m;
+}
+
+std::istream&
+MeshStringCL::operator>>(std::string& s)
+{
+    Assert( isp_!= 0, "std::istream& MeshStringCL::operator>>(std::string&): Which stream?", ~0u);
+    char c;
+    *isp_ >> c;
+    if (c != '\"')
+        throw DROPSErrCL( "std::istream& MeshStringCL::operator>>(std::string&): Not a mesh string.");
+    std::getline( *isp_, s, '\"'); // Reads the closing ",
+                                   // but does not enter it into s.
+                                   // Embedded \" (quoted ") kill us.
+    return *isp_;
+}
+
+std::istream&
+MeshStringCL::SkipMeshString(std::istream& is, bool skipleadingquote)
+{
+    if (skipleadingquote) {
+        char c;
+        is >> c;
+    }
+    std::string s;
+    std::getline( is, s, '\"');
+    return is;
+}
+
+void
+MeshNodeCL::Check(std::ostream* msg)
+{
+    if (section.size() == 1) {
+        if (section[0].headerinfo[1] != 1)
+            throw DROPSErrCL( "MeshNodeCL::Check(): Node-indices must begin with 1.\n");
+        if (num_expected != section[0].point.size()) {
+            num_expected= section[0].point.size();
+            if (msg)
+                *msg << "MeshNodeCL::Check(): Unexpected number of nodes. Corrected.\n";
+        }
+        return;
+    }
+    else
+        throw DROPSErrCL("MeshNodeCL::Check(): Multiple node sections are currently not supported.\n");
+}
+
+void
+MeshFaceCL::Check(std::ostream* msg)
+{
+    std::sort( section.begin(), section.end(), FirstIndexLessCL());
+    Uint num= section[0].mface.size();
+    if (section[0].headerinfo[1] != 1)
+        throw DROPSErrCL( "MeshFaceCL::Check(): Face-indices must begin with 1.\n");
+    for (Uint i= 0; i<section.size()-1; ++i) {
+        num+= section[i+1].mface.size();
+        if (section[i].headerinfo[2] + 1 != section[i+1].headerinfo[1]) {
+            throw DROPSErrCL( "MeshFaceCL::Check(): Error: The enumeration of faces has holes.\n");
+        }
+    }
+    if (num != num_expected && msg)
+        *msg << "MeshFaceCL::Check(): Unexpected number of faces. Corrected.\n";
+    num_expected= num;
+}
+
+MFaceCL
+MeshFaceCL::operator[](Uint i) const
+{
+    Assert( i<=num_expected, "MeshFaceCL::operator[](Uint): Index out of bounds.\n", DebugRefineEasyC);
+    Uint s= 0;
+    for (; i>section[s].headerinfo[2]; ++s);
+    return section[s].mface[i-section[s].headerinfo[1]];
+}
+
+void
+MeshCellCL::Check(std::ostream*)
+{
+    if (section.size() == 1) {
+        return;
+    }
+    else
+        throw DROPSErrCL("MeshCellCL::Check(): Multiple cell sections are currently not supported.\n");
+}
+
+std::vector<Uint>
+HybridCellCL::Vertices()
+{
+    std::vector<Uint> v;
+    for (Uint i= 0; i<3; ++i) {
+        v.push_back( mf[0][i]);
+        v.push_back( mf[1][i]);
+    }
+    std::sort( v.begin(), v.end());
+    v.erase( std::unique( v.begin(), v.end()), v.end());
+    if (v.size() != 4)
+        DROPSErrCL( "HybridCellCL::Vertices(): Cell does not have 4 nodes.\n");
+    return v;
+}
+
+std::vector<FaceCL*>
+HybridCellCL::Faces()
+{
+    return fp;
+}
+
+FaceCL*
+HybridCellCL::Face(Uint i, Uint j, Uint k)
+{
+    for (Uint l= 0; l<4; ++l) {
+        std::vector<Uint> face( mf[l].begin(), mf[l].begin() + 3);
+        if (is_in( face.begin(), face.end(), i)
+            &&  is_in( face.begin(), face.end(), j)
+            &&  is_in( face.begin(), face.end(), k))
+            return fp[l];
+    }
+    throw( "HybridCellCL::Face(Uint, Uint, Uint): Face not found.\n");
+}
+
+FaceCL*
+HybridCellCL::face(Uint i)
+{
+    return fp[i];
+}
+
+void
+HybridCellCL::Check()
+{
+    if (fp.size() != 4)
+        throw DROPSErrCL( "HybridCellCL::Check(): Cell does not have 4 faces.\n");
+    std::vector<MFaceCL> mf_= mf;
+    std::sort( mf_.begin(), mf_.end());
+    if ( mf_.end() != std::unique( mf_.begin(), mf_.end()))
+        throw DROPSErrCL( "HybridCellCL::Check(): Cell-faces coincide.\n");
+}
+
+const char *ReadMeshBuilderCL::SymbolicName_[]= {
+    "XF_COMMENT",
+    "XF_HEADER",
+    "XF_DIMENSION",
+    "XF_NODE",
+    "XF_CELL",
+    "XF_FACE"
+    };
+
+bool
+ReadMeshBuilderCL::NextSection() const
+{
+    bool done= false;
+    do {
+        switch(f_.peek()) {
+          case '\"':
+            MeshStringCL::SkipMeshString( f_);
+            break;
+          case '(':
+            done= true;
+            break;
+          default:
+            f_.get();
+            break;
+        }
+    } while(f_ && !done);
+    return f_ && done;
+}
+
+bool
+ReadMeshBuilderCL::SkipSection(bool skipleadingparenthesis) const
+{
+    if (skipleadingparenthesis) { // Also, read whitespace until (.
+        char c;
+        f_ >> c;
+    }
+    Uint nesting_level= 0;
+    bool done= false;
+    do {
+        switch(f_.peek()) {
+          case '\"':
+            MeshStringCL::SkipMeshString( f_);
+            break;
+          case '(':
+            ++nesting_level;
+            f_.get();
+            break;
+          case ')':
+            if (nesting_level == 0) done= true;
+            else --nesting_level;
+            f_.get();
+            break;
+          default:
+            f_.get();
+            break;
+        }
+    } while(f_ && !done);
+    return f_ && done;
+}
+
+Uint
+ReadMeshBuilderCL::ReadId()
+{
+    char c= f_.get(); // Read (.
+    if (msg_ && c != '(')
+        *msg_ << "Uint ReadMeshBuilderCL::ReadId(): Not at the start of a section.\n";
+    Uint id;
+    f_ >> id;
+    id_history_.push_back( id);
+    return id;
+}
+
+HeaderInfoCL
+ReadMeshBuilderCL::ReadHeaderInfoHex()
+{
+    std::vector<Uint> ret;
+    ret.reserve( 5); // Most Headers have 5 entries;
+    char c;
+    f_ >> c; // Eat Whitespace and (.
+    f_ >> std::hex;
+    std::copy( std::istream_iterator<Uint>( f_), std::istream_iterator<Uint>(),
+               std::back_inserter( ret));
+
+    f_.clear();
+    f_ >> std::dec; // TODO: Preserve Stream-State by copying.
+    f_ >> c; // Eat whitespace and ).
+    return ret;
+} 
+
+void
+ReadMeshBuilderCL::ReadNode()
+{
+    if (msg_)
+       *msg_ << "XF_NODE: " << std::endl;
+    HeaderInfoCL hi= ReadHeaderInfoHex();
+    if (hi.empty())
+        throw DROPSErrCL( "ReadMeshBuilderCL::ReadNode(): Empty Header.\n");
+    switch (hi[0]) {
+      case 0: // Declare total number of nodes, no vertices defined.
+        nodes_.num_expected= hi[2];
+        if (hi[1]!= 1 && msg_)
+            *msg_ << "ReadMeshBuilderCL::ReadNode(): Header out of spec. Ignored.\n";
+        SkipSection( false);
+        break;
+      default:
+        NextSection();
+        char ch; f_ >> ch; // Eat (;
+        nodes_.section.push_back( NodeSectionCL());
+        NodeSectionCL& ns= nodes_.section.back();
+        ns.headerinfo= hi;
+        ns.point.reserve( hi[2] - hi[1] + 1);
+        Point3DCL p;
+        while(true) {
+            f_ >> p[0] >> p[1] >> p[2];
+            if (f_)
+                ns.point.push_back( p);
+            else {
+                f_.clear();
+                break;
+            }
+        }
+        if (ns.point.size() != hi[2] - hi[1] + 1) {
+            if (msg_)
+                *msg_ << "ReadMeshBuilderCL::ReadNode(): Wrong number of nodes. Adjusting last-index for this section.\n";
+            ns.headerinfo[2]= ns.headerinfo[1] + ns.point.size();
+        }
+        f_ >> ch; // Eat );
+        SkipSection( false);
+        break;
+    }
+}
+
+void
+ReadMeshBuilderCL::ReadFace()
+{
+    if (msg_)
+       *msg_ << "XF_FACE: " << std::endl;
+    HeaderInfoCL hi= ReadHeaderInfoHex();
+    if (hi.empty())
+        throw DROPSErrCL( "ReadMeshBuilderCL::ReadFace(): Empty Header.\n");
+    switch (hi[0]) {
+      case 0: // Declare total number of faces, no cells defined.
+        mfaces_.num_expected= hi[2];
+        SkipSection( false);
+        break;
+      default:
+        if (hi[4] != 3)
+            throw DROPSErrCL("ReadMeshBuilderCL::ReadFace(): Error: Faces are not triangular.\n");
+        NextSection();
+        char ch; f_ >> ch; // Eat (;
+        mfaces_.section.push_back( MFaceSectionCL());
+        MFaceSectionCL& s= mfaces_.section.back();
+        s.headerinfo= hi;
+        s.mface.reserve( hi[2] - hi[1] + 1);
+        MFaceCL mf;
+        f_ >> std::hex;
+        while(true) {
+            f_ >> mf[0] >> mf[1] >> mf[2] >> mf[3] >> mf[4];
+            if (f_)
+                s.mface.push_back( mf);
+            else {
+                f_.clear();
+                f_ >> std::dec; // TODO: Preserve Stream-State by copying.
+                break;
+            }
+        }
+        if (s.mface.size() != hi[2] - hi[1] + 1) {
+            if (msg_)
+                *msg_ << "ReadMeshBuilderCL::ReadFace(): Wrong number of faces. Adjusting last-index for this section.\n";
+            s.headerinfo[2]= s.headerinfo[1] + s.mface.size();
+        }
+        f_ >> ch; // Eat );
+        SkipSection( false);
+        break;
+    }
+}
+
+
+void
+ReadMeshBuilderCL::ReadCell()
+{
+    if (msg_)
+       *msg_ << "XF_CELL: " << std::endl;
+    HeaderInfoCL hi= ReadHeaderInfoHex();
+    if (hi.empty())
+        throw DROPSErrCL( "ReadMeshBuilderCL::ReadCell(): Empty Header.\n");
+    switch (hi[0]) {
+      case 0: // Declare total number of cells, no cells defined.
+        cells_.num_expected= hi[2];
+        if (hi[2] == 0)
+            throw DROPSErrCL("ReadMeshBuilderCL::ReadCell(): Error: No volume-mesh in file.\n");
+        SkipSection( false);
+        break;
+      default:
+        if (hi[3] == 0) { // dead-zone, ignore
+            if (msg_)
+                *msg_ << "ReadMeshBuilderCL::ReadCell(): Skipping dead zone " << hi[0]
+                      << '\n';
+            SkipSection( false);
+            break;
+        }
+        if (hi[4] != 2)
+            throw DROPSErrCL("ReadMeshBuilderCL::ReadCell(): Error: Cells are not tetrahedral.\n");
+        cells_.section.push_back( CellSectionCL());
+        CellSectionCL& cs= cells_.section.back();
+        cs.headerinfo= hi;
+        SkipSection( false);
+        break;
+    }
+}
+
+void
+ReadMeshBuilderCL::ReadFile()
+{
+    while(NextSection()) {
+        switch (ReadId()) {
+          case 0: // XF_COMMENT
+            if (msg_) {
+                std::string s;
+                MeshStringCL ms;
+                f_ >> ms >> s;
+                *msg_ << std::string("XF_COMMENT: ") + s << std::endl;
+            }
+            SkipSection( false);
+            break;
+          case 1: // XF_HEADER
+            if (msg_) {
+                std::string s;
+                MeshStringCL ms;
+                f_ >> ms >> s;
+                *msg_ << std::string("XF_HEADER: ") + s << std::endl;
+            }
+            SkipSection( false);
+            break;
+          case 2: // XF_DIMENSION
+            if (msg_)
+                *msg_ << "XF_DIMENSION: ignored" << std::endl;
+            SkipSection( false);
+            break;
+          case 10: // XF_NODE
+            ReadNode();
+            break;
+          case 12: // XF_CELL
+            ReadCell();
+            break;
+          case 13: // XF_FACE
+            ReadFace();
+            break;
+          default:
+            if (msg_)
+                *msg_ << "ReadMeshBuilderCL::ReadFile(): Skipping unknown section.\n";
+            SkipSection( false);
+            break;
+        }
+    }
+}
+
+void
+ReadMeshBuilderCL::AddVertexBndDescription(VertexCL* vp, Uint bndidx) const
+{
+    BndPointCL bpt( bndidx, std_basis<2>( 0));
+    if (vp->IsOnBoundary() && std::binary_search( vp->GetBndVertBegin(), vp->GetBndVertEnd(),
+                                                  bpt, BndPointSegLessCL()))
+        return;
+    vp->AddBnd( bpt);
+    vp->BndSort();
+}
+
+void
+ReadMeshBuilderCL::CreateUpdateBndEdge(MultiGridCL::EdgeLevelCont& edges,
+                                       VertexCL* vp0, VertexCL* vp1,
+                                       Uint bndidx) const
+{
+    if (vp1->GetId() < vp0->GetId() ) // Take care: We have to look for the edge at its first vertex.
+        std::swap( vp0, vp1); // Swap pointer, not pointee.
+    EdgeCL* ep;
+    if ((ep= vp0->FindEdge( vp1)) != 0) {
+        if (!is_in( ep->GetBndIdxBegin(), ep->GetBndIdxEnd(), bndidx))
+            ep->AddBndIdx( bndidx);
+    }
+    else {
+        edges.push_back( EdgeCL( vp0, vp1, 0, bndidx));
+        ep= &edges.back();
+        ep->SortVertices(); // Shoud be a nop due to the beginning of CreateUpdateEdge.
+        ep->RecycleMe();
+    }
+}
+
+void
+ReadMeshBuilderCL::Clear() const
+{
+    std::vector<NodeSectionCL> tmp1;
+    nodes_.section.swap( tmp1);
+    std::vector<MFaceSectionCL> tmp2;
+    mfaces_.section.swap( tmp2);
+    std::vector<CellSectionCL> tmp3;
+    cells_.section.swap( tmp3);
+}
+
+ReadMeshBuilderCL::ReadMeshBuilderCL(std::istream& f, std::ostream* msg)
+        :f_( f), msg_( msg) {}
+
+void
+ReadMeshBuilderCL::build(MultiGridCL* mgp) const
+{
+    // Read the mesh file.
+    const_cast<ReadMeshBuilderCL*>( this)->ReadFile(); // It is not useful that build is a
+                                                       // const member-function by inheritance.
+    nodes_.Check();
+    mfaces_.Check();
+    cells_.Check();
+
+    AppendLevel( mgp);
+
+    // Create boundary
+    BoundaryCL::SegPtrCont& Bnd= GetBnd( mgp);
+    std::map<Uint, BndIdxT> zone_id2bndidx;
+    for (Uint i= 0; i<mfaces_.section.size(); ++i) {
+        MFaceSectionCL& section= mfaces_.section[i];
+        switch(section.headerinfo[3]) { // switch on bondary-condition.
+          case 2: break; // interior faces
+          default:
+            Bnd.push_back( new MeshBoundaryCL( section.headerinfo[0], // zone-id
+                                               section.headerinfo[3])); // the bc-type; see Mesh-File-Format C.8
+            zone_id2bndidx[section.headerinfo[0]]= Bnd.size()-1;
+            break;
+        }
+    }
+
+    // Enter vertices into mgp;
+    // We assume that the nodes are numbered consecutively, starting at 1.
+    IdCL<VertexCL>::ResetCounter( 1);
+    MultiGridCL::VertexLevelCont& verts= GetVertices( mgp)[0];
+    std::vector<VertexCL*> va;
+    va.reserve( nodes_.num_expected);
+    for (Uint i= 0; i<nodes_.num_expected; ++i) {
+        verts.push_back( VertexCL( nodes_.section[0].point[i], 0));
+        va.push_back( &verts.back());
+    }
+
+    // We create the faces. On the fly, we gather tetra-definitions and add boundary descriptions
+    // to the appropriate vertices.
+    // To obtain correct boundary-descriptions, boundary-edges are created from boundary-faces.
+    // We assume that the MFace-Sections are sorted by ascending index, starting at 1. (Calling .Check() does this.)
+    IdCL<FaceCL>::ResetCounter( 1);
+    MultiGridCL::FaceLevelCont& faces= GetFaces(mgp)[0];
+    std::vector<FaceCL*> fa;
+    std::vector<HybridCellCL> thecells( cells_.num_expected);
+    MultiGridCL::EdgeLevelCont& edges= GetEdges(mgp)[0];
+    for (Uint s= 0; s<mfaces_.section.size(); ++s) {
+        MFaceSectionCL& section= mfaces_.section[s];
+        switch(section.headerinfo[3]) { // switch on the boundary condition.
+          case 2: // Inner faces
+            for (Uint i= 0; i<section.mface.size(); ++i) {
+                faces.push_back( FaceCL( 0)); // Default is no boundary segment.
+                fa.push_back( &faces.back());
+                thecells[section.mface[i][3]-1].push_back( &faces.back(), section.mface[i]);
+                thecells[section.mface[i][4]-1].push_back( &faces.back(), section.mface[i]);
+            }
+            break;
+          default: // boundary-faces
+            for (Uint i= 0; i<section.mface.size(); ++i) {
+                faces.push_back( FaceCL( 0, zone_id2bndidx[section.headerinfo[0]])); // Default is no boundary segment.
+                fa.push_back( &faces.back());
+                if (section.mface[i][3] != 0) // A cell on the right
+                    thecells[section.mface[i][3]-1].push_back( &faces.back(), section.mface[i]);
+                if (section.mface[i][4] != 0) // A cell on the left
+                    thecells[section.mface[i][4]-1].push_back( &faces.back(), section.mface[i]);
+                AddVertexBndDescription( va[section.mface[i][0]-1], zone_id2bndidx[section.headerinfo[0]]);
+                AddVertexBndDescription( va[section.mface[i][1]-1], zone_id2bndidx[section.headerinfo[0]]);
+                AddVertexBndDescription( va[section.mface[i][2]-1], zone_id2bndidx[section.headerinfo[0]]);
+                CreateUpdateBndEdge( edges, va[section.mface[i][0]-1],
+                                     va[section.mface[i][1]-1],
+                                     zone_id2bndidx[section.headerinfo[0]]);
+                CreateUpdateBndEdge( edges, va[section.mface[i][0]-1],
+                                     va[section.mface[i][2]-1],
+                                     zone_id2bndidx[section.headerinfo[0]]);
+                CreateUpdateBndEdge( edges, va[section.mface[i][1]-1],
+                                     va[section.mface[i][2]-1],
+                                     zone_id2bndidx[section.headerinfo[0]]);
+
+            }
+            break;
+        }
+    }
+
+    // Finally, build the tetras. This step also creates interior edges.
+    IdCL<TetraCL>::ResetCounter( 1);
+    MultiGridCL::TetraLevelCont& tetras= GetTetras( mgp)[0];
+    std::vector<TetraCL*> ta;
+    ta.reserve( cells_.num_expected);
+    for (Uint i= 0; i<thecells.size(); ++i) {
+        thecells[i].Check();
+        std::vector<Uint> vi= thecells[i].Vertices();
+        tetras.push_back( TetraCL( va[vi[0]-1], va[vi[1]-1], va[vi[2]-1], va[vi[3]-1], 0));
+        ta.push_back( &tetras.back());
+        tetras.back().BuildEdges( edges);
+        for (Uint f= 0; f<4; ++f) {
+            thecells[i].face( f)->LinkTetra( &tetras.back());
+            tetras.back().SetFace( f, thecells[i].Face( vi[VertOfFace( f, 0)],
+                                                        vi[VertOfFace( f, 1)],
+                                                        vi[VertOfFace( f, 2)]));
+        }
+    }
+    // Empty recycle-bins used to build edges.
+    std::for_each( va.begin(), va.end(), std::mem_fun( &VertexCL::DestroyRecycleBin));
+    // Should be a nop by construction in the builder, but one never knows...
+    mgp->MakeConsistentNumbering();
+    Clear(); // save memory.
+}
+
+const char*
+ReadMeshBuilderCL::Symbolic(const Uint id)
+{
+    switch (id) {
+      case 0:   return SymbolicName_[0];
+      case 1:   return SymbolicName_[1];
+      case 2:   return SymbolicName_[2];
+      case 10:  return SymbolicName_[3];
+      case 12:  return SymbolicName_[4];
+      case 13:  return SymbolicName_[5];
+      default:  return "UNKNOWN_TO_DROPS";
+    }
 }
 
 
