@@ -53,22 +53,24 @@ class PSchurSolverCL : public SolverBaseCL
                 const VectorCL& b, const VectorCL& c);
 };
 
-template <typename PoissonSolverT, typename PoissonSolver2T>
+template <typename InnerSolverT, typename OuterSolverT>
 class PSchurSolver2CL : public SolverBaseCL
 {
   private:
-    PoissonSolverT&  poissonSolver_;
-    PoissonSolver2T& poissonSolver2_;
-    VectorCL         tmp_;
+    InnerSolverT& innerSolver_;
+    OuterSolverT& outerSolver_;
+    VectorCL      tmp_;
 
   public:
-    PSchurSolver2CL(PoissonSolverT& solver, PoissonSolver2T& solver2,
+    PSchurSolver2CL( InnerSolverT& solver1, OuterSolverT& solver2,
                     int maxiter, double tol)
-        :SolverBaseCL( maxiter, tol), poissonSolver_( solver),
-         poissonSolver2_( solver2) {}
+        : SolverBaseCL( maxiter, tol), innerSolver_( solver1),
+          outerSolver_( solver2) {}
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c);
+                
+    InnerSolverT& GetInnerSolver() { return innerSolver_; }
 };
 
 template <typename PoissonSolverT>
@@ -724,8 +726,14 @@ class SchurComplMatrixCL
 template<class PoissonSolverT>
 VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& v)
 {
-    VectorCL x( M.A_.num_cols());
-
+    static VectorCL x( M.A_.num_cols());
+    if (x.size() != M.A_.num_cols())
+    {
+//        std::cerr << "> vector resized: old size was " << x.size();
+        x.resize( M.A_.num_cols() );
+//        std::cerr << ", new size is " << x.size() << '\n';
+    }
+    
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
 //    std::cerr << "> inner iterations: " << M.solver_.GetIter()
 //              << "\tresidual: " << M.solver_.GetResid() << std::endl;
@@ -920,32 +928,32 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
-template <typename PoissonSolverT, typename PoissonSolver2T>
-void PSchurSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
+template <typename InnerSolverT, typename OuterSolverT>
+void PSchurSolver2CL<InnerSolverT, OuterSolverT>::Solve(
     const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
 {
     VectorCL rhs= -c;
     if (tmp_.size() != v.size()) tmp_.resize( v.size());
-    poissonSolver_.Solve( A, tmp_, b);
-    std::cerr << "rhs     : iterations: " << poissonSolver_.GetIter()
-              << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
+    innerSolver_.Solve( A, tmp_, b);
+    std::cerr << "rhs     : iterations: " << innerSolver_.GetIter()
+              << "\tresidual: " << innerSolver_.GetResid() << std::endl;
     rhs+= B*tmp_;
 
-    poissonSolver2_.SetTol( _tol);
-    poissonSolver2_.SetMaxIter( _maxiter);
-    poissonSolver2_.Solve( SchurComplMatrixCL<PoissonSolverT>( poissonSolver_, A, B), p, rhs);
-    std::cerr << "pressure: iterations: " << poissonSolver2_.GetIter()
-              << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
+    outerSolver_.SetTol( _tol);
+    outerSolver_.SetMaxIter( _maxiter);
+    outerSolver_.Solve( SchurComplMatrixCL<InnerSolverT>( innerSolver_, A, B), p, rhs);
+    std::cerr << "pressure: iterations: " << outerSolver_.GetIter()
+              << "\tresidual: " << outerSolver_.GetResid() << std::endl;
 
-    poissonSolver_.Solve( A, v, b - transp_mul(B, p));
-    std::cerr << "velocity: iterations: " << poissonSolver_.GetIter()
-              << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
+    innerSolver_.Solve( A, v, b - transp_mul(B, p));
+    std::cerr << "velocity: iterations: " << innerSolver_.GetIter()
+              << "\tresidual: " << innerSolver_.GetResid() << std::endl;
 
-    _iter= poissonSolver_.GetIter() + poissonSolver2_.GetIter();
-    _res= std::sqrt( std::pow( poissonSolver_.GetResid(), 2)
-                   + std::pow( poissonSolver2_.GetResid(), 2));
+    _iter= innerSolver_.GetIter() + outerSolver_.GetIter();
+    _res= std::sqrt( std::pow( innerSolver_.GetResid(), 2)
+                   + std::pow( outerSolver_.GetResid(), 2));
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
