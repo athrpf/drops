@@ -116,20 +116,20 @@ public:
     friend VectorBaseCL operator* (const VectorBaseCL& v, T c) { return VectorBaseCL(v._va*c); }
     friend VectorBaseCL operator/ (const VectorBaseCL& v, T c) { return VectorBaseCL(v._va/c); }
 
-    friend void axpy(T a, const VectorBaseCL& x, VectorBaseCL& y)
+    friend void axpy (T a, const VectorBaseCL& x, VectorBaseCL& y)
     {
         Assert(x.size()==y.size(), "axpy: incompatible dimensions", DebugNumericC);
-        for (size_t i=0; i<x.size(); ++i) y[i]+= a*x[i]; // y+= a*x;
+        y._va+= a*x._va; // y+= a*x;
     }
-    friend void z_xpay(VectorBaseCL& z, const VectorBaseCL& x, T a, const VectorBaseCL& y)
+    friend void z_xpay (VectorBaseCL& z, const VectorBaseCL& x, T a, const VectorBaseCL& y)
     {
         Assert(z.size()==x.size() && z.size()==y.size(), "z_xpay: incompatible dimensions", DebugNumericC);
-        for (size_t i=0; i<x.size(); ++i) z[i]= x[i] + a*y[i]; // z= x+a*y;
+        z._va= x._va+a*y._va; // z= x+a*y;
     }
-    friend void z_xpaypby2(VectorBaseCL& z, const VectorBaseCL& x, T a, const VectorBaseCL& y, T b, const VectorBaseCL& y2)
+    friend void z_xpaypby2 (VectorBaseCL& z, const VectorBaseCL& x, T a, const VectorBaseCL& y, T b, const VectorBaseCL& y2)
     {
         Assert(z.size()==x.size() && z.size()==y.size() && z.size()==y2.size(), "z_xpaypby2: incompatible dimensions", DebugNumericC);
-        for (size_t i=0; i<x.size(); ++i) z[i]= x[i] + a*y[i] + b*y2[i]; // z= x+a*y+b*y2;
+        z._va= x._va+a*y._va+b*y2._va; // z= x+a*y+b*y2;
     }
 };
 
