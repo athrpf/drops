@@ -1069,7 +1069,7 @@ class SSORPCG_PreCL
 //
 //*****************************************************************************
 
-template<size_t _Dim>
+template<Uint _Dim>
 void
 gauss_pivot(SMatrixCL<_Dim, _Dim>& A, SVectorCL<_Dim>& b)
 {
