@@ -205,14 +205,19 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    Stokes.SetupPrMass(  &prM, lset/*, C.muF, C.muG*/);
-    Stokes.SetupPrStiff( &prA);
-    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
-   
-    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    Stokes.SetupPrMass(  &prM, lset);
+    Stokes.SetupPrStiff( &prA, lset);
+//    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
+    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, C.theta*C.dt); // May be used for inexact Uzawa.
+    SSORPCG_PreCL velpc;
+
+//    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    InexactUzawaNonlinear_CL inexactUzawaSolver( velpc, isnonlinpc, C.outer_iter, C.outer_tol);
     
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
-        cpl( Stokes, lset, ISPschurSolver, C.theta);
+//    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
+//        cpl( Stokes, lset, ISPschurSolver, C.theta);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaNonlinear_CL> 
+        cpl( Stokes, lset, inexactUzawaSolver, C.theta);
 
     cpl.SetTimeStep( C.dt);
 

@@ -147,8 +147,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA);
-    MatrixCL prM_A;
+    Stokes.SetupPrStiff( &prA, lset);
 
     PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     VelVecDescCL curv( vidx);
@@ -180,7 +179,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
+    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
     
@@ -229,7 +228,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
-//            Stokes.SetupPrMass( &prM, lset);
     }
 
     ensight.CaseEnd();

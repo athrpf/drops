@@ -191,7 +191,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA);
+    Stokes.SetupPrStiff( &prA, lset);
    
     switch (C.IniCond)
     {
@@ -259,7 +259,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     if (C.scheme)
     {
 //        Schur_GMRes_CL ISPschurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-        ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
+        ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
         ISPSchur_GMRes_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
@@ -310,7 +310,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     }
     else // Baensch scheme
     {
-        ISPreCL ispc( prA.Data, prM.Data, C.dt*C.muF/C.rhoF*(3 - 2*std::sqrt(2.)));
+        ISPreCL ispc( prA.Data, prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
         SSORPCG_PreCL pcg( C.inner_iter, 0.2);
         typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawaT;

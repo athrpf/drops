@@ -190,7 +190,8 @@ class MyPMinresSP_fullMG_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorC
 // We know, there are only natural boundary conditions.
 template<class Coeff>
 void
-SetupPrStiffMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
+SetupPrStiffMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes, 
+    DROPS::MGDataCL& MGData, const LevelsetP2CL& lset)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
     DROPS::IdxDescCL* c_idx= 0;
@@ -202,7 +203,7 @@ SetupPrStiffMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes, DROPS::MGDataCL& 
         stokes.CreateNumberingPr( lvl, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
-        stokes.SetupPrStiff( &tmp.A);
+        stokes.SetupPrStiff( &tmp.A, lset);
         if(lvl!=0) {
             std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
             DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
@@ -293,26 +294,15 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA);
-//    MatrixCL prM_A;
-    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
-    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF); // May be used for inexact Uzawa.
+    Stokes.SetupPrStiff( &prA, lset);
+    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
+    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, C.theta*C.dt); // May be used for inexact Uzawa.
     MGDataCL prA_MG;
-    SetupPrStiffMG( Stokes, prA_MG);
+    SetupPrStiffMG( Stokes, prA_MG, lset);
     MGDataCL prM_MG;
-    SetupPrMassMG( Stokes, prM_MG,  lset);
-    ISMGPreCL ispcMG( prA_MG, prM_MG, C.theta*C.dt*C.muF/C.rhoF, 1);
+    SetupPrMassMG( Stokes, prM_MG, lset);
+    ISMGPreCL ispcMG( prA_MG, prM_MG, C.theta*C.dt, 1);
     SSORPCG_PreCL velpc;
-/*
-    std::ofstream fA("A_pr");
-    fA << prA.Data;
-    std::ofstream fA_MG("A_pr_MG");
-    fA_MG << prA_MG.back().A.Data;
-    std::ofstream fM("M_pr");
-    fM << prM.Data;
-    std::ofstream fM_MG("M_pr_MG");
-    fM_MG << prM_MG.back().A.Data;
-*/
    
     // Available Stokes-solver
     ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
