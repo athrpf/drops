@@ -36,7 +36,7 @@ class EnsightP2SolOutCL
     // triangulation, i.e. use LevelsetP2CL::CreateNumbering before
     // constructing an EnsightSolOutCL-object.
     EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx)
-      : _MG( &mg), _idx( idx), _decDigits( 0), _timestep( 0), _numsteps( 0)
+      : _MG( &mg), _idx( idx), _decDigits( 0), _timestep( -1u), _numsteps( 0)
     {}
     ~EnsightP2SolOutCL() { if (_case.is_open()) CaseEnd(); }
       
@@ -107,7 +107,7 @@ void EnsightP2SolOutCL::CaseEnd()
 {
     if (_timestr.str().empty()) return;
     
-    _case << "\nTIME\ntime set:\t\t1\nnumber of steps:\t" << _timestep
+    _case << "\nTIME\ntime set:\t\t1\nnumber of steps:\t" << _timestep+1
           << "\nfilename start number:\t0\nfilename increment:\t1\ntime values:\t\t";
     _case << _timestr.str() << "\n\n";
 
@@ -123,8 +123,8 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     
     if ( t!=-1)
     {
-        AppendTimecode( fileName);
         putTime( t);
+        AppendTimecode( fileName);
     }    
     
     std::ofstream os( fileName.c_str());
@@ -200,8 +200,8 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
     
     if ( t!=-1)
     {
-        AppendTimecode( fileName);
         putTime( t);
+        AppendTimecode( fileName);
     }    
 
     std::ofstream os( fileName.c_str());
@@ -223,7 +223,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
     for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
         end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
-        os << std::setw(12) << v.val( *it);
+        os << std::setw(12) << v.val( *it, 0.5);
         if ( (++cnt)==6)
         { // Ensight expects six real numbers per line
             cnt= 0;
@@ -241,8 +241,8 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
     
     if ( t!=-1)
     {
-        AppendTimecode( fileName);
         putTime( t);
+        AppendTimecode( fileName);
     }    
 
     std::ofstream os( fileName.c_str());
