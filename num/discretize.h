@@ -98,22 +98,23 @@ class Quad2CL: public QuadBaseCL<T>
     T quad () const
       { T sum= T(); for (size_t i=0; i<size(); ++i) sum+= Wght[i]*val[i]; return sum; }
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
+    // zur Annaeherung von \int f*phi,    phi = P1-/P2-Hutfunktion
     T quadP1 (int i) const
-      { return Wght[i]*val[i] + (0.25*Wght[4])*val[4]; }
+      { return (1./120.)*val[i] + (1./30.)*val[4]; }
     T quadP1 (int i, int j) const
-      { return i!=j ? (0.0625*Wght[4]*val[4])
-                    : (0.0625*Wght[4]*val[4]) + Wght[i]*val[i]; }
+      { return i!=j ? (1./720.)*(val[i]+val[j]) + (1./180.)*val[4]
+                    : (1./180.)*val[i]          + (1./90.)*val[4]; }
     T quadP2 (int i) const
     { 
-        return i<4 ? (-0.125*Wght[4])*val[4] + Wght[i]*val[i] 
-                   : (  0.25*Wght[4])*val[4];
+        return i<4 ? (1./360.)*val[i] - (1./90.)*val[4]
+                   : (1./180.)*(val[VertOfEdge(i-4,0)]+val[VertOfEdge(i-4,1)]) + (1./45.)*val[4];
     }
-    
+
     T quadP2 (int i, int j) const
     { 
-        const double valBary= (i<4 ? -.125 : 0.25)*(j<4 ? -.125 : 0.25);
-        return i!=j || i>=4 ? Wght[4]*val[4]*valBary
-                            : Wght[4]*val[4]*valBary + Wght[i]*val[i];
+        const double valBary= (i<4 ? -0.125 : 0.25)*(j<4 ? -0.125 : 0.25);
+        return (i!=j || i>=4) ? Wght[4]*val[4]*valBary
+                              : Wght[4]*val[4]*valBary + Wght[i]*val[i];
     }
 };
 
