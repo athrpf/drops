@@ -136,9 +136,10 @@ public:
         std::copy( b.Array+0, b.Array+_Size, Array+0);
         Front= b.Front; }
     SBufferCL& operator=(const SBufferCL& b) {
-        if (&b==this) return *this;
-        std::copy( b.Array+0, b.Array+_Size, Array+0);
-        Front= b.Front; }
+        if (&b!=this) {
+            std::copy( b.Array+0, b.Array+_Size, Array+0);
+            Front= b.Front; }
+        return *this; }
     // Default dtor
 
     reference  operator[](int i) {
