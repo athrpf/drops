@@ -76,7 +76,7 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
 };
 
 class ParamFilmCL: public ParamBaseCL
-{ // x = Filmnormal, z = Ablaufrichtung
+{ // y = Filmnormal, x = Ablaufrichtung
   private:
     void RegisterParams();
     
