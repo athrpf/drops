@@ -253,12 +253,15 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
-    tol= _poissonSolver.GetTol();
-    _poissonSolver.SetTol( _tol);  // same tolerance as for pressure
+    const double old_tol= _poissonSolver.GetTol();
+    _poissonSolver.SetTol( _tol);      // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
-    _poissonSolver.SetTol( tol);   // reset old tolerance, so that nothing has changed
+    _poissonSolver.SetTol( old_tol);   // reset old tolerance, so that nothing has changed
     std::cerr << "Iterationen: " << _poissonSolver.GetIter()
               << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+
+    _iter= iter+_poissonSolver.GetIter();
+    _res= tol + _poissonSolver.GetResid();
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
@@ -325,12 +328,15 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
-    tol= _poissonSolver.GetTol();
-    _poissonSolver.SetTol( _tol);  // same tolerance as for pressure
+    const double old_tol= _poissonSolver.GetTol();
+    _poissonSolver.SetTol( _tol);      // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
-    _poissonSolver.SetTol( tol);   // reset old tolerance, so that nothing has changed
+    _poissonSolver.SetTol( old_tol);   // reset old tolerance, so that nothing has changed
     std::cerr << "Iterationen: " << _poissonSolver.GetIter()
               << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+
+    _iter= iter+_poissonSolver.GetIter();
+    _res= tol+_poissonSolver.GetResid();
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
