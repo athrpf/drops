@@ -116,6 +116,11 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     typedef typename _base::MultiGridBuilderCL     MultiGridBuilderCL;
     typedef typename _base::CoeffCL                CoeffCL;
     typedef typename _base::BndDataCL              BndDataCL;
+    using                                          _base::_MG;
+    using                                          _base::_Coeff;
+    using                                          _base::_BndData;
+    using                                          _base::GetBndData;
+    using                                          _base::GetMG;
 
     typedef VecDescBaseCL<VectorBaseCL<double> > VelVecDescCL;
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>           DiscPrSolCL;
@@ -170,6 +175,11 @@ class StokesP1BubbleP1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     typedef typename _base::MultiGridBuilderCL     MultiGridBuilderCL;
     typedef typename _base::CoeffCL                CoeffCL;
     typedef typename _base::BndDataCL              BndDataCL;
+    using                                          _base::_MG;
+    using                                          _base::_Coeff;
+    using                                          _base::_BndData;
+    using                                          _base::GetBndData;
+    using                                          _base::GetMG;
 
     typedef VecDescBaseCL<VectorBaseCL<double> > VelVecDescCL;
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>                 DiscPrSolCL;
