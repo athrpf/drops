@@ -103,7 +103,7 @@ class UnknownHandleCL
     // True, iff this instance has already acquired an UnknownIdxCL-object.
     bool Exist()             const { return _unk; }
     // True, iff the system sysnum exists and has a valid index-entry.
-    bool Exist( Uint sysnum) const { return sysnum<_unk->GetNumSystems() && _unk->GetIdx(sysnum) != NoIdx; }
+    bool Exist( Uint sysnum) const { return _unk && sysnum<_unk->GetNumSystems() && _unk->GetIdx(sysnum) != NoIdx; }
 
     // Effectively deletes the index belonging to system sysnum. 
     void Invalidate( Uint sysnum) { _unk->GetIdx(sysnum)= NoIdx; }
