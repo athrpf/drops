@@ -11,7 +11,6 @@
 
 #include "num/solver.h"
 #include "num/MGsolver.h"
-#include "stokes/stokes.h"
 
 namespace DROPS
 {
@@ -233,6 +232,46 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
           MGsolver_( MGData, inner_iter, inner_tol)
         {}
 };
+
+
+//=============================================================================
+//  SchurComplMatrixCL
+//=============================================================================
+
+template<typename>
+class SchurComplMatrixCL;
+
+template<typename T>
+VectorCL operator*(const SchurComplMatrixCL<T>&, const VectorCL&);
+
+
+template<class PoissonSolverT>
+class SchurComplMatrixCL
+{
+  private:
+    PoissonSolverT& solver_;
+    const MatrixCL& A_;
+    const MatrixCL& B_;
+
+  public:
+    SchurComplMatrixCL(PoissonSolverT& solver, const MatrixCL& A, const MatrixCL& B)
+        : solver_( solver), A_( A), B_( B) {}
+
+    friend VectorCL
+    operator*<>(const SchurComplMatrixCL<PoissonSolverT>&, const VectorCL&);
+};
+
+
+template<class PoissonSolverT>
+VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& v)
+{
+    VectorCL x( M.A_.num_cols());
+
+    M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
+//    std::cerr << "iterations: " << M.solver_.GetIter()
+//              << "\tresidual: " << M.solver_.GetResid() << std::endl;
+    return M.B_*x;
+}
 
 
 //=============================================================================

@@ -261,29 +261,6 @@ class StokesDoerflerMarkCL
     bool Estimate(const DiscPrSolCL&, const DiscVelSolCL&);
 };
 
-template<typename>
-class SchurComplMatrixCL;
-
-template<typename T>
-VectorCL operator*(const SchurComplMatrixCL<T>&, const VectorCL&);
-
-template<class PoissonSolverT>
-class SchurComplMatrixCL
-{
-  private:
-    PoissonSolverT& solver_;
-    const MatrixCL& A_;
-    const MatrixCL& B_;
-
-  public:
-    SchurComplMatrixCL(PoissonSolverT& solver, const MatrixCL& A, const MatrixCL& B)
-        : solver_( solver), A_( A), B_( B) {}
-
-    friend VectorCL
-    operator*<>(const SchurComplMatrixCL<PoissonSolverT>&, const VectorCL&);
-};
-
-
 //======================================
 //        inline functions 
 //======================================

@@ -11,8 +11,7 @@
 
 #include <vector>
 #include "misc/problem.h"
-#include "num/solver.h"
-#include "num/fe.h"
+#include "num/stokessolver.h"
 #include "stokes/stokes.h"
 
 
