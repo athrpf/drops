@@ -609,6 +609,7 @@ class MultiGridCL
     const_TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) const;
 
     Uint GetLastLevel() const { return _Tetras.GetNumLevel()-1; }
+    Uint GetNumLevel () const { return _Tetras.GetNumLevel(); }
 
     void Refine ();
     void Scale( double);
