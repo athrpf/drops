@@ -1,0 +1,75 @@
+#=============================================================
+#    DROPS parameter file
+#    simulation of two-phase flow: 
+#    droplet in measuring cell used in NMR measurements
+#=============================================================
+
+# time stepping
+Time {
+  NumSteps	=	500
+  StepSize	=	1e-4
+  Theta		=	0.5	# Crank-Nicholson
+}
+
+# flow solver
+Stokes {
+  InnerIter	=	1000
+  OuterIter	=	200
+  InnerTol	=	1e-14
+  OuterTol	=	1e-10
+}
+
+NavStokes {
+  Nonlinear	=	1
+  Scheme	=	0	# Baensch
+  NonlinearStat	=	0
+  ThetaStat	=	0.5
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1e-14
+  Iter		=	10000
+  SD		=	0.1
+}
+
+# re-initialization of levelset function
+Reparam { 
+  Freq		=	0	# 0 = no reparametrization
+  NumSteps	=	1
+  StepSize	=	0.01
+  Diffusion	=	1e-4
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop	=	955
+  ViscDrop	=	2.6e-3
+  DensFluid	=	1107
+  ViscFluid	=	1.2e-3
+  SmoothZone	=	1e-4
+  
+  SurfTension	=	0
+}
+
+# experimental conditions
+Exp {
+  RadDrop	=	1.75e-3
+  PosDrop	=	0	-8.25e-3	0
+  
+  Gravity	=	0	-9.81	0
+  
+  FlowDir	=	1	# flow in y-direction
+  
+  InflowVel	=	-0.14
+  RadInlet	=	3.5e-3
+}  
+
+# miscellaneous
+
+NumDropRef	=	2
+CouplingSteps	=	-1	# -1 = till convergence
+
+MeshFile	=	gambit/NMR_klein_grob.msh
+EnsightCase	=	nsmzi
+EnsightDir	=	ensight
