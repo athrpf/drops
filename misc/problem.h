@@ -51,6 +51,48 @@ class IdxDescCL
 };
 
 
+inline void
+GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
+// Copies P1-unknown-indices from idx on s into Numb; assumes that all
+// vertices have unknowns (NoBndDataCL and the like).
+{
+    const Uint sys= idx.GetIdx();
+    for (Uint i= 0; i < 4; ++i) {
+        Numb[i]= s.GetVertex( i)->Unknowns( sys);
+    }
+}
+
+
+//**************************************************************************
+// Class:   LocalNumbP2CL                                                  *
+// Purpose: Use this class to collect the indices of unknowns, boundary-   *
+//          conditions and boundary-segment-numbers.                       *
+// Description:                                                            *
+//    num: field of unknown-indices; NoIdx, iff the degree of freedom lies *
+//         on a boundary without unknowns.                                 *
+//    bndnum: On boundaries, the number of the relevant BndSegDataCL-object*
+//            in the corresponding BndDataCL-object, else NoBndC.          *
+//    bc: The relevant BndCondT, NoBC in the interior dofs.                *
+//**************************************************************************
+class LocalNumbP2CL
+{
+  public:
+    IdxT     num   [10]; // formerly Numb
+    BndIdxT  bndnum[10];
+    BndCondT bc    [10];
+
+    LocalNumbP2CL() {}
+    template<class BndDataT>
+      LocalNumbP2CL(const TetraCL&, const IdxDescCL&, const BndDataT&);
+    
+    template<class BndDataT>
+      void
+      assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd);
+
+    bool WithUnknowns(IdxT i) const { return num[i] != NoIdx; }
+};
+
+
 template<class T>
 class VecDescBaseCL
 {
@@ -71,6 +113,7 @@ class VecDescBaseCL
 
 typedef VecDescBaseCL<VectorCL> VecDescCL;
 
+
 class MatDescCL
 {
   public:
@@ -87,6 +130,7 @@ class MatDescCL
     void SetIdx(IdxDescCL*, IdxDescCL*);
     void Reset();
 };
+
 
 template <class Coeff, class BndData>
 class ProblemCL
@@ -114,6 +158,42 @@ class ProblemCL
     const BndDataCL&   GetBndData() const { return _BndData; }
 };
 
+
+template<class BndDataT>
+  LocalNumbP2CL::LocalNumbP2CL(const TetraCL& s, const IdxDescCL& idx,
+      const BndDataT& bnd)
+{
+    this->assign( s, idx, bnd);
+}
+
+template<class BndDataT>
+  void
+  LocalNumbP2CL::assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd)
+{
+    BndIdxT bidx;
+    const Uint sys= idx.GetIdx();
+    
+    for (Uint i= 0; i < NumVertsC; ++i)
+        if (NoBC == (bc[i]= bnd.GetBC( *s.GetVertex( i), bidx))) {
+            bndnum[i]= NoBndC;
+            num[i]= s.GetVertex( i)->Unknowns( sys);
+        }
+        else {
+            bndnum[i]= bidx;
+            num[i]= (bnd.GetBndSeg( bidx).WithUnknowns())
+                ? s.GetVertex( i)->Unknowns( sys) : NoIdx;
+        }
+    for (Uint i= 0; i< NumEdgesC; ++i)
+        if (NoBC == (bc[i+NumVertsC]= bnd.GetBC( *s.GetEdge( i), bidx))) {
+            bndnum[i+NumVertsC]= NoBndC;
+            num[i+NumVertsC]= s.GetEdge( i)->Unknowns( sys);
+        }
+        else {
+            bndnum[i+NumVertsC]= bidx;
+            num[i+NumVertsC]= (bnd.GetBndSeg( bidx).WithUnknowns())
+                ? s.GetEdge( i)->Unknowns( sys) : NoIdx;
+        }
+}
 
 template<class T>
 void VecDescBaseCL<T>::SetIdx(IdxDescCL* idx)

@@ -84,6 +84,9 @@ class BndDataCL
     inline BndCondT GetBC( const VertexCL&)    const;
     inline BndCondT GetBC( const EdgeCL&)      const;
     inline BndCondT GetBC( const FaceCL&)      const;
+    inline BndCondT GetBC( const VertexCL&, BndIdxT&) const;
+    inline BndCondT GetBC( const EdgeCL&, BndIdxT&)   const;
+    inline BndCondT GetBC( const FaceCL&, BndIdxT&)   const;
     inline BndSegT GetBndSeg( const VertexCL&) const;
     inline BndSegT GetBndSeg( const EdgeCL&)   const;
     inline BndSegT GetBndSeg( const FaceCL&)   const;
@@ -198,6 +201,20 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v) const
 }        
 
 template<class BndValT>
+inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v, BndIdxT& bidx) const
+{ // return BC on v with lowest number (i.e. the superior BC on v)
+    if ( !v.IsOnBoundary() ) return NoBC;
+    BndCondT bc= MaxBC_, tmp;
+    BndIdxT tmp2= NoBndC;
+    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
+        if ((tmp= BndData_[tmp2= it->GetBndIdx()].GetBC()) < bc) {
+            bc= tmp;
+            bidx= tmp2;
+        }
+    return bc;
+}        
+
+template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const VertexCL& v) const
 { // return BC on v with lowest number (i.e. the superior BC on v)
     Assert( v.IsOnBoundary(), DROPSErrCL("BndDataCL::GetBndSeg(VertexCL): Not on boundary!"), ~0);
@@ -254,6 +271,20 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e) const
     BndCondT bc= MaxBC_;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         bc= std::min( bc, BndData_[*it].GetBC());
+    return bc;
+}        
+
+template<class BndValT>
+inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e, BndIdxT& bidx) const
+{ // return BC on e with lowest number (i.e. the superior BC on e)
+    if ( !e.IsOnBoundary() ) return NoBC;
+    BndCondT bc= MaxBC_, tmp;
+    BndIdxT tmp2= NoBndC;
+    for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
+        if ((tmp= BndData_[tmp2= *it].GetBC()) < bc) {
+            bc= tmp;
+            bidx= tmp2;
+        }
     return bc;
 }        
 
