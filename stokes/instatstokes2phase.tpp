@@ -4,6 +4,10 @@
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 //**************************************************************************
 
+/** \file instatstokes2phase.tpp
+ *  \brief classes that constitute the 2-phase stokes-problem
+ */
+
 #include "num/discretize.h"
 
 namespace DROPS
@@ -33,19 +37,17 @@ void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 }
 
 
+/// Set up the mass matrix for the pressure, scaled by \f$\mu^{-1}\f$.
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset, double nu1, double nu2) const
-// Sets up the mass matrix for the pressure
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset) const
 {
-    std::cerr << "Entering SetupPrMass:\n";
-    
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
     MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
 
     const Uint lvl= matM->GetRowLevel();
     IdxT prNumb[4];
 
-    SmoothedJumpCL nu_invers( 1./nu1, 1./nu2, _Coeff.rho);
+    SmoothedJumpCL nu_invers( 1./_Coeff.mu(0), 1./_Coeff.mu(1), _Coeff.mu);
     Quad2CL<double> nu_inv;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
     const Uint ls_lvl = ls.GetLevel();
@@ -73,8 +75,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
     M_pr.Build();
 }
 
+/// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr, const LevelsetP2CL& lset) const
 // Assumes, that indices for A_pr are set up. We know, there are only natural
 // boundary conditions.
 {
@@ -87,18 +90,33 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr) const
     double absdet;
     IdxT UnknownIdx[4];
 
+    SmoothedJumpCL rho_invers( 1./_Coeff.rho(0), 1./_Coeff.rho(1), _Coeff.rho);
+    Quad2CL<double> rho_inv;
+    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    const Uint ls_lvl = ls.GetLevel();
+    LocalP2CL<> locallset;
+    
     for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const DROPS::MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
          send= const_cast<const DROPS::MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
          sit != send; ++sit) 
     {
+        if (ls_lvl != lvl) {
+            locallset.assign( *sit, ls);
+            rho_inv.assign( locallset);
+        }
+        else
+            rho_inv.assign( *sit, ls);
+        rho_inv.apply( rho_invers);
+        
         P1DiscCL::GetGradients( G,det,*sit);
         absdet= fabs( det);
+        const double IntRhoInv= rho_inv.quad( absdet);
         for(int i=0; i<4; ++i) 
         {
             for(int j=0; j<=i; ++j) 
             {
                 // dot-product of the gradients
-                coup[i][j]= ( G( 0, i)*G( 0, j) + G( 1, i)*G( 1, j) + G( 2, i)*G( 2, j) )/6.0*absdet;
+                coup[i][j]= ( G( 0, i)*G( 0, j) + G( 1, i)*G( 1, j) + G( 2, i)*G( 2, j) )*IntRhoInv;
                 coup[j][i]= coup[i][j];
             }
             UnknownIdx[i]= sit->GetVertex( i)->Unknowns( idx);
