@@ -18,6 +18,13 @@
 namespace DROPS
 {
 
+enum BndCondT
+{
+    DirBC= 0, Dir0BC= 2,         // (in)hom. Dirichlet boundary conditions
+    NatBC= 1, Nat0BC= 3,         // (in)hom. natural   boundary conditions
+    OutflowBC= 3, WallBC= 2      // for convenience
+};
+
 class VelBndSegDataCL
 {
   public:
@@ -26,14 +33,14 @@ class VelBndSegDataCL
     typedef bnd_type (*bnd_val_fun)(const Point3DCL&);
     
   private:
-    bool         _Neumann;
+    BndCondT     _bc;
     bnd_val_fun  _bnd_val;
 
   public:
-    VelBndSegDataCL(bool neumann, bnd_val_fun f)
-    : _Neumann(neumann), _bnd_val(f) {}
+    VelBndSegDataCL( BndCondT bc, bnd_val_fun f)
+    : _bc(bc), _bnd_val(f) {}
     
-    bool        IsNeumann() const { return _Neumann; }
+    bool        IsNeumann() const { return _bc & 1; }
     bnd_val_fun GetBndFun() const { return _bnd_val; }
     bnd_type    GetBndVal(const Point3DCL& p) const { return _bnd_val(p); }
 };
@@ -49,6 +56,7 @@ class StokesVelBndDataCL
     typedef VelBndSegDataCL::bnd_val_fun bnd_val_fun;
     
     StokesVelBndDataCL(Uint, const bool*, const bnd_val_fun*);
+    StokesVelBndDataCL(Uint, const BndCondT*, const bnd_val_fun*);
 
     inline bool IsOnDirBnd(const VertexCL&) const;
     inline bool IsOnNeuBnd(const VertexCL&) const;
@@ -73,7 +81,16 @@ inline StokesVelBndDataCL::StokesVelBndDataCL(Uint numbndseg,
 {
     _BndData.reserve(numbndseg);
     for (Uint i=0; i<numbndseg; ++i)
-        _BndData.push_back( VelBndSegDataCL(isneumann[i], fun[i]) );
+        _BndData.push_back( VelBndSegDataCL(isneumann[i] ? NatBC : DirBC, fun[i]) );
+}
+
+inline StokesVelBndDataCL::StokesVelBndDataCL(Uint numbndseg,
+                                              const BndCondT* bc,
+                                              const bnd_val_fun* fun)
+{
+    _BndData.reserve(numbndseg);
+    for (Uint i=0; i<numbndseg; ++i)
+        _BndData.push_back( VelBndSegDataCL(bc[i], fun[i]) );
 }
 
 
@@ -82,6 +99,8 @@ class StokesBndDataCL
   public:
     StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndSegDataCL::bnd_val_fun* fun)
         : Pr(), Vel(numbndseg, isneumann, fun) {}
+    StokesBndDataCL( Uint numbndseg, const BndCondT* bc, const VelBndSegDataCL::bnd_val_fun* fun)
+        : Pr(), Vel( numbndseg, bc, fun) {}
     
     typedef NoBndDataCL<> PrBndDataCL;
     typedef StokesVelBndDataCL VelBndDataCL;

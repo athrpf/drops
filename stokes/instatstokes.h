@@ -26,14 +26,14 @@ class InstatVelBndSegDataCL
     typedef bnd_type (*bnd_val_fun)( const Point3DCL&, double);
     
   private:
-    bool         _Neumann;
+    BndCondT     _bc;
     bnd_val_fun  _bnd_val;
 
   public:
-    InstatVelBndSegDataCL( bool neumann, bnd_val_fun f)
-    : _Neumann(neumann), _bnd_val(f) {}
+    InstatVelBndSegDataCL( BndCondT bc, bnd_val_fun f)
+    : _bc(bc), _bnd_val(f) {}
     
-    bool        IsNeumann() const { return _Neumann; }
+    bool        IsNeumann() const { return _bc & 1; }
     bnd_val_fun GetBndFun() const { return _bnd_val; }
     bnd_type    GetBndVal( const Point3DCL& p, double t) const { return _bnd_val( p, t); }
 };
@@ -48,6 +48,7 @@ class InstatStokesVelBndDataCL
     typedef InstatVelBndSegDataCL::bnd_val_fun bnd_val_fun;
     
     InstatStokesVelBndDataCL(Uint, const bool*, const bnd_val_fun*);
+    InstatStokesVelBndDataCL(Uint, const BndCondT*, const bnd_val_fun*);
 
     inline bool IsOnDirBnd( const VertexCL&) const;
     inline bool IsOnNeuBnd( const VertexCL&) const;
@@ -72,7 +73,16 @@ inline InstatStokesVelBndDataCL::InstatStokesVelBndDataCL( Uint numbndseg,
 {
     _BndData.reserve(numbndseg);
     for (Uint i=0; i<numbndseg; ++i)
-        _BndData.push_back( InstatVelBndSegDataCL( isneumann[i], fun[i]) );
+        _BndData.push_back( InstatVelBndSegDataCL( isneumann[i] ? NatBC : DirBC, fun[i]) );
+}
+
+inline InstatStokesVelBndDataCL::InstatStokesVelBndDataCL( Uint numbndseg,
+                                                           const BndCondT* bc,
+                                                           const bnd_val_fun* fun)
+{
+    _BndData.reserve(numbndseg);
+    for (Uint i=0; i<numbndseg; ++i)
+        _BndData.push_back( InstatVelBndSegDataCL( bc[i], fun[i]) );
 }
 
 
@@ -82,6 +92,8 @@ class InstatStokesBndDataCL
   public:
     InstatStokesBndDataCL( Uint numbndseg, const bool* isneumann, const InstatVelBndSegDataCL::bnd_val_fun* fun)
         : Pr(), Vel( numbndseg, isneumann, fun) {}
+    InstatStokesBndDataCL( Uint numbndseg, const BndCondT* bc, const InstatVelBndSegDataCL::bnd_val_fun* fun)
+        : Pr(), Vel( numbndseg, bc, fun) {}
     
     const StokesBndDataCL::PrBndDataCL Pr;
     const InstatStokesVelBndDataCL     Vel;   

@@ -419,16 +419,16 @@ void StokesP2P1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDe
                          : _BndData.Vel.IsOnNeuBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on Neumann boundary
                 {
                     Uint face;
-                    for (int f=0; f < 3; ++f)
+                    for (int f=0; f < (i<4?3:2); ++f)
                     {
                         face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
                         if ( sit->IsBndSeg(face))
                         {   // TODO: FIXME: Hier muss doch eigentlich eine 2D-Integrationsformel fuer P2-Elemente stehen, oder?
-                            tmp= Quad2D(*sit, face, i, _BndData.Vel.GetSegData(sit->GetBndIdx(face)).GetBndFun() );
+/*                            tmp= Quad2D(*sit, face, i, _BndData.Vel.GetSegData(sit->GetBndIdx(face)).GetBndFun() );
                             b.Data[Numb[i]]+=          tmp[0];
                             b.Data[Numb[i]+stride]+=   tmp[1];
                             b.Data[Numb[i]+2*stride]+= tmp[2];
-                        }
+*/                        }
                     }
                 }
             }

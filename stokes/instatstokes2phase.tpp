@@ -126,6 +126,43 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
 }
 
 template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr) const
+// Assumes, that indices for A_pr are set up. We know, there are only natural
+// boundary conditions.
+{
+    MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
+    const Uint lvl= A_pr->RowIdx->TriangLevel;
+    const Uint idx= A_pr->RowIdx->GetIdx();
+    SMatrixCL<3,4> G;
+    double coup[4][4];
+    double det;
+    double absdet;
+    IdxT UnknownIdx[4];
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const DROPS::MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
+         send= const_cast<const DROPS::MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
+         sit != send; ++sit) 
+    {
+        P1DiscCL::GetGradients( G,det,*sit);
+        absdet= fabs( det);
+        for(int i=0; i<4; ++i) 
+        {
+            for(int j=0; j<=i; ++j) 
+            {
+                // dot-product of the gradients
+                coup[i][j]= ( G( 0, i)*G( 0, j) + G( 1, i)*G( 1, j) + G( 2, i)*G( 2, j) )/6.0*absdet;
+                coup[j][i]= coup[i][j];
+            }
+            UnknownIdx[i]= sit->GetVertex( i)->Unknowns( idx);
+        }
+        for(int i=0; i<4; ++i)    // assemble row i
+            for(int j=0; j<4;++j)
+                A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i]; 
+    }
+    A.Build();
+}
+
+template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
@@ -158,7 +195,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_f
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplM, const LevelsetP2CL<_self>& lset, double t) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
 // Set up matrices A, M and rhs b (depending on phase bnd)
 {
     const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
@@ -184,7 +221,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     double coupA[10][10], coupM[10][10];
     double det, absdet;
     Point3DCL tmp;
-    typename LevelsetP2CL<_self>::DiscSolCL ls= lset.GetSolution();
+    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     

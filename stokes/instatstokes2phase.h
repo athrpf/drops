@@ -43,7 +43,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     MatDescCL    A, 
                  B,
                  M;
-//    LevelsetP2CL<_self> lset;
     
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base(mgb, coeff, bdata), vel_idx(3,3), pr_idx(1), t( 0.) {}  
@@ -55,16 +54,17 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     void DeleteNumberingPr ( IdxDescCL*);
     
     // Set up matrices A, M and rhs b (depending on phase bnd)
-    void SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplM, const LevelsetP2CL<_self>& lset, double t) const;
+    void SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
 
     // Set up matrix B and rhs c (independent of phase bnd, but c is time dependent)
     void SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const;
 
     // Set up rhs c (time dependent)
     void SetupRhs2( VecDescCL* c, double t) const;
-    // Set up mass-matrix for pressure-unknowns (P1) -- needed for Uzawa solver
-    // (time-independent)
-    void SetupPrMass(MatDescCL* matM) const;
+    // Set up mass and stiffness matrix for pressure-unknowns (P1, time-independent) 
+    // needed for preconditioning of the Schur complement
+    void SetupPrMass( MatDescCL* prM) const;
+    void SetupPrStiff(MatDescCL* prA) const;
     void InitVel( VelVecDescCL*, vector_instat_fun_ptr, double t0= 0.) const;
 
     // Get solutions as FE-functions
@@ -72,7 +72,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
         { return DiscPrSolCL( &p, &GetBndData().Pr, &GetMG()); }
     DiscVelSolCL GetVelSolution() const
         { return DiscVelSolCL( &v, &GetBndData().Vel, &GetMG(), t); }
-
 };
 
 } // end of namespace DROPS
