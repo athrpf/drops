@@ -110,8 +110,8 @@ inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr coeff, int
     }
 }
 
-inline InstatStokesVelBndDataCL::bnd_type Quad2D( const TetraCL& tetra, Uint face, Uint vert, 
-                                                  InstatStokesVelBndDataCL::bnd_val_fun bfun, double t)
+inline StokesVelBndDataCL::bnd_type Quad2D( const TetraCL& tetra, Uint face, Uint vert, 
+                                                  StokesVelBndDataCL::bnd_val_fun bfun, double t)
 // Integrate bnd_val * phi_vert over face
 {
     const VertexCL* v[3];
@@ -122,9 +122,9 @@ inline InstatStokesVelBndDataCL::bnd_type Quad2D( const TetraCL& tetra, Uint fac
         if (VertOfFace(face,i)!=vert)
             v[k++]= tetra.GetVertex( VertOfFace(face,i) );
     }
-    const InstatStokesVelBndDataCL::bnd_type f0= bfun(v[0]->GetCoord(), t);
-    const InstatStokesVelBndDataCL::bnd_type f1= bfun(v[1]->GetCoord(), t) +  bfun( v[2]->GetCoord(), t);
-    const InstatStokesVelBndDataCL::bnd_type f2= bfun((v[0]->GetCoord() + v[1]->GetCoord() + v[2]->GetCoord())/3.0, t);    //Barycenter of Face
+    const StokesVelBndDataCL::bnd_type f0= bfun(v[0]->GetCoord(), t);
+    const StokesVelBndDataCL::bnd_type f1= bfun(v[1]->GetCoord(), t) +  bfun( v[2]->GetCoord(), t);
+    const StokesVelBndDataCL::bnd_type f2= bfun((v[0]->GetCoord() + v[1]->GetCoord() + v[2]->GetCoord())/3.0, t);    //Barycenter of Face
     const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }

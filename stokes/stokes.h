@@ -22,17 +22,21 @@ namespace DROPS
 class StokesBndDataCL
 {
   public:
-    typedef NoBndDataCL<>        PrBndDataCL;
     typedef BndDataCL<Point3DCL> VelBndDataCL;
+    typedef BndDataCL<double>    PrBndDataCL;
     
+    StokesBndDataCL( Uint numbndseg, const BndCondT* bc_vel, const VelBndDataCL::bnd_val_fun* fun, const BndCondT* bc_pr= 0)
+        : Pr( numbndseg, bc_pr), Vel( numbndseg, bc_vel, fun) {}
     StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndDataCL::bnd_val_fun* fun)
-        : Pr(), Vel(numbndseg, isneumann, fun) {}
-    StokesBndDataCL( Uint numbndseg, const BndCondT* bc, const VelBndDataCL::bnd_val_fun* fun)
-        : Pr(), Vel( numbndseg, bc, fun) {}
+        : Pr( numbndseg), Vel(numbndseg, isneumann, fun) {} // deprecated
     
     const PrBndDataCL  Pr;
     const VelBndDataCL Vel;   
 };
+
+
+typedef StokesBndDataCL::VelBndDataCL StokesVelBndDataCL;
+typedef StokesBndDataCL::PrBndDataCL  StokesPrBndDataCL;
 
 typedef SMatrixCL<3, 3> (*jacobi_fun_ptr)(const Point3DCL&);
 

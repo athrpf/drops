@@ -294,10 +294,10 @@ int main (int argc, char** argv)
     
     const DROPS::BndCondT bc[6]= 
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &Null}; 
         
-    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::InstatStokesBndDataCL( 6, bc, bnd_fun));
+    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     

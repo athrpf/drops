@@ -18,37 +18,21 @@
 namespace DROPS
 {
 
-typedef BndDataCL<Point3DCL> InstatStokesVelBndDataCL;
-typedef BndDataCL<double>    InstatStokesPrBndDataCL;
-
-class InstatStokesBndDataCL
-{
-  public:
-    InstatStokesBndDataCL( Uint numbndseg, const BndCondT* bc_vel, const InstatStokesVelBndDataCL::bnd_val_fun* fun, const BndCondT* bc_pr= 0)
-        : Pr( numbndseg, bc_pr), Vel( numbndseg, bc_vel, fun) {}
-    InstatStokesBndDataCL( Uint numbndseg, const bool* isneumann, const InstatStokesVelBndDataCL::bnd_val_fun* fun)
-        : Pr( numbndseg), Vel( numbndseg, isneumann, fun) {} // deprecated ctor!
-    
-    const InstatStokesPrBndDataCL     Pr;
-    const InstatStokesVelBndDataCL    Vel;   
-};
-
-
 template <class Coeff>
-class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
+class InstatStokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<Coeff, InstatStokesBndDataCL> _base;
-    typedef typename _base::CoeffCL                 CoeffCL;
-    typedef typename _base::BndDataCL               BndDataCL;
-    using                                           _base::_MG;
-    using                                           _base::_Coeff;
-    using                                           _base::_BndData;
-    using                                           _base::GetBndData;
-    using                                           _base::GetMG;
+    typedef ProblemCL<Coeff, StokesBndDataCL> _base;
+    typedef typename _base::CoeffCL           CoeffCL;
+    typedef typename _base::BndDataCL         BndDataCL;
+    using                                     _base::_MG;
+    using                                     _base::_Coeff;
+    using                                     _base::_BndData;
+    using                                     _base::GetBndData;
+    using                                     _base::GetMG;
 
-    typedef P1EvalCL<double, const InstatStokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
-    typedef P2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
+    typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns

@@ -195,10 +195,10 @@ int main (int argc, char** argv)
 
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null, &Null, &Null }; 
         
-    StokesOnBrickCL prob(brick, ZeroFlowCL(), DROPS::InstatStokesBndDataCL(6, IsNeumann, bnd_fun));
+    StokesOnBrickCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::AdapTriangCL adap( mg, 0.1, 0, 3);
 

@@ -135,9 +135,9 @@ void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, i
                   << v1->Data.size() << std::endl;
         if (v2->RowIdx)
         {
-            const InstatStokesBndDataCL& BndData= NS.GetBndData();
-            P1EvalCL<double, const InstatStokesPrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
-            P1EvalCL<double, const InstatStokesPrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
+            const StokesBndDataCL& BndData= NS.GetBndData();
+            P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
+            P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
             Interpolate(pr1, pr2);
             v2->Reset();
             p2->Reset();
@@ -258,7 +258,7 @@ int main (int argc, char** argv)
 				DROPS::std_basis<3>(3),
 				4,4,4);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
     DROPS::RBColorMapperCL colormap;
@@ -286,7 +286,7 @@ int main (int argc, char** argv)
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyNavierStokesCL;
     MyNavierStokesCL prob(brick, MyPdeCL::StokesCoeffCL(),
-                          DROPS::InstatStokesBndDataCL(6, IsNeumann, bnd_fun));
+                          DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     
     Strategy(prob, num_ref, fp_tol, fp_maxiter, deco_red, stokes_maxiter, poi_tol, poi_maxiter,

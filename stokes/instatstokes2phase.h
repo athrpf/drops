@@ -18,21 +18,21 @@ namespace DROPS
 // InstatStokes2PhaseP2P1CL: problem class for instationary two pase stokes flow
 
 template <class Coeff>
-class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
+class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<Coeff, InstatStokesBndDataCL>      _base;
-    typedef InstatStokes2PhaseP2P1CL<Coeff>              _self;
-    typedef typename _base::CoeffCL                      CoeffCL;
-    typedef typename _base::BndDataCL                    BndDataCL;
-    using                                                _base::_MG;
-    using                                                _base::_Coeff;
-    using                                                _base::_BndData;
-    using                                                _base::GetBndData;
-    using                                                _base::GetMG;
+    typedef ProblemCL<Coeff, StokesBndDataCL>      _base;
+    typedef InstatStokes2PhaseP2P1CL<Coeff>        _self;
+    typedef typename _base::CoeffCL                CoeffCL;
+    typedef typename _base::BndDataCL              BndDataCL;
+    using                                          _base::_MG;
+    using                                          _base::_Coeff;
+    using                                          _base::_BndData;
+    using                                          _base::GetBndData;
+    using                                          _base::GetMG;
 
-    typedef P1EvalCL<double, const InstatStokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
-    typedef P2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+    typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
+    typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns

@@ -226,11 +226,11 @@ int main (int argc, char** argv)
 
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &Null, &Null, &Null, &Null,  &Parabol, &Parabol }; 
     // parabol. Einstroembedingungen bei z=0 und z=1 
         
-    MyStokesCL prob(brick, ShearFlowCL(), DROPS::InstatStokesBndDataCL(24, IsNeumann, bnd_fun));
+    MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(24, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     Strategy(prob, inner_iter_tol, sigma);
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;

@@ -328,7 +328,7 @@ int main (int argc, char** argv)
         std::cerr << "too many/few bnd conditions!\n"; return 1;
     }
     DROPS::BndCondT bc[6], bc_ls[6];
-    DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6];
+    DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6];
     
     for (int i=0; i<6; ++i)
     {
@@ -356,12 +356,12 @@ int main (int argc, char** argv)
 //        { DROPS::WallBC, DROPS::DirBC, DROPS::OutflowBC, DROPS::OutflowBC, DROPS::DirBC, DROPS::OutflowBC};
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
     //    foil, air_infty, side, side, top, bottom
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
 //        { &Null, &Inflow, &Null, &Null, &Inflow, &Null}; 
         { &Null, &Null, &Null, &Null, &Null, &Null}; 
     */
         
-    MyStokesCL prob(builder, CoeffT(C), DROPS::InstatStokesBndDataCL( 6, bc, bnd_fun, bc_ls));
+    MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     const DROPS::BoundaryCL& bnd= mg.GetBnd();

@@ -629,11 +629,11 @@ int main (int argc, char** argv)
 //    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &MyPDE::LsgVel, &MyPDE::LsgVel, &MyPDE::LsgVel, 
           &MyPDE::LsgVel, &MyPDE::LsgVel, &MyPDE::LsgVel};
         
-    MyStokesCL prob(brick, MyPDE::Coeff, DROPS::InstatStokesBndDataCL(6, IsNeumann, bnd_fun));
+    MyStokesCL prob(brick, MyPDE::Coeff, DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
 
     double omega= atof(argv[1]);

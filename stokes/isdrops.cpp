@@ -196,7 +196,7 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
 
 void
 ZeroMean(DROPS::P1EvalCL< double,
-                          const DROPS::InstatStokesPrBndDataCL,
+                          const DROPS::StokesPrBndDataCL,
                           DROPS::VecDescCL>& f)
 {
     const DROPS::Uint lvl= f.GetLevel();
@@ -533,7 +533,7 @@ typedef DROPS::SVectorCL<3> (*fun_ptr)(const DROPS::SVectorCL<3>&, double);
 
 int
 CheckVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
-                          const DROPS::InstatStokesVelBndDataCL,
+                          const DROPS::StokesVelBndDataCL,
                           DROPS::VelVecDescCL>& fun,
          fun_ptr f)
 {
@@ -656,7 +656,7 @@ UpdateTriangulation(DROPS::InstatStokesP2P1CL<Coeff>& NS,
     pidx2->Set( 1, 0, 0, 0);
     bool shell_not_ready= true;
     const Uint min_ref_num= f_level - c_level;
-    const InstatStokesBndDataCL& BndData= NS.GetBndData();
+    const StokesBndDataCL& BndData= NS.GetBndData();
     Uint i;
     for(i=0; shell_not_ready || i<min_ref_num; ++i) {
         shell_not_ready= ModifyGridStep( mg, Dist, width, c_level, f_level, t);
@@ -670,12 +670,12 @@ UpdateTriangulation(DROPS::InstatStokesP2P1CL<Coeff>& NS,
             throw DROPSErrCL( "Strategy: Sorry, not yet implemented.");
         }
         v1->SetIdx( vidx1);
-        P2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
+        P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL, 
                   const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
         NS.DeleteNumberingVel( vidx2);
-//P2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
+//P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL, 
 //          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
 //CheckVel( funv1, &MyPdeCL::LsgVel);
         // Repair pressure
@@ -683,7 +683,7 @@ UpdateTriangulation(DROPS::InstatStokesP2P1CL<Coeff>& NS,
         std::swap( pidx2, pidx1);
         NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
         p1->SetIdx( pidx1);
-        P1EvalCL<double, const InstatStokesPrBndDataCL,
+        P1EvalCL<double, const StokesPrBndDataCL,
                  const VecDescCL> funpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( funpr, *p1);
         p2->Clear();
@@ -835,7 +835,7 @@ StrategyMRes(DROPS::InstatStokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
         instatsolver->SetTimeStep( dt);
-        DROPS::P1EvalCL<double, const DROPS::InstatStokesPrBndDataCL,
+        DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,
              DROPS::VecDescCL> pr( p1, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         std::cerr << "Before timestep." << std::endl;
@@ -967,7 +967,7 @@ StrategyUzawa(DROPS::InstatStokesP2P1CL<Coeff>& NS,
         instatsolver->DoStep( v1->Data, p1->Data);
         std::cerr << "After timestep." << std::endl;
         std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
-        DROPS::P1EvalCL<double, const DROPS::InstatStokesPrBndDataCL,
+        DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
@@ -1086,7 +1086,7 @@ Strategy(DROPS::InstatStokesP2P1CL<Coeff>& NS,
         instatsolver->DoStep( v1->Data, p1->Data);
 //        instatsolver->DoStep( v1->Data, p1->Data, timestep==0);
         std::cerr << "After timestep." << std::endl;
-        DROPS::P1EvalCL<double, const DROPS::InstatStokesPrBndDataCL,
+        DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
@@ -1122,7 +1122,7 @@ int main (int argc, char** argv)
 				DROPS::std_basis<3>(3),
 				2,2,2);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
-    const DROPS::InstatStokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
 
@@ -1153,7 +1153,7 @@ int main (int argc, char** argv)
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyStokesCL;
     MyStokesCL prob( brick, MyPdeCL::StokesCoeffCL(),
-                     DROPS::InstatStokesBndDataCL( 6, IsNeumann, bnd_fun));
+                     DROPS::StokesBndDataCL( 6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
 
     switch (method) {
