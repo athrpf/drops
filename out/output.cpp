@@ -13,9 +13,10 @@ namespace DROPS
 
 std::ostream& GeomMGOutCL::put(std::ostream &os) const
 {
-    const char Color[][13] =
-        {" 1 0 0", " 0 1 0", " 0 0 1", " 0 1 1", " 1 0 1", " 1 1 0",
-         " 0.5 0 0", " 0 0.5 0", " 0 0 0.5", " 0 0.5 0.5"};
+    const int NumColors= 10;
+    const char Color[NumColors][11] =
+        {{" 1 0 0"}, {" 0 1 0"}, {" 0 0 1"}, {" 0 1 1"}, {" 1 0 1"},
+         {" 1 1 0"}, {" 0.5 0 0"}, {" 0 0.5 0"}, {" 0 0 0.5"}, {" 0 0.5 0.5"}};
 
     os << "LIST {\n";
     for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level); tit!=_MG->GetTriangTetraEnd(_level); ++tit )
@@ -32,10 +33,10 @@ std::ostream& GeomMGOutCL::put(std::ostream &os) const
         for ( int i=0; i<4; i++ )
             for ( int j=0; j<3; j++ )
                 os << _explode*Offset[j]/4+tit->GetVertex(i)->GetCoord()[j] << (j<2?" ":"\n");
-        os <<   "3 1 2 3" << (tit->IsBndSeg(0)?Color[tit->GetBndIdx(0)%10]:" 0.7 0.7 0.7")
-           << "\n3 0 2 3" << (tit->IsBndSeg(1)?Color[tit->GetBndIdx(1)%10]:" 0.7 0.7 0.7")
-           << "\n3 0 1 3" << (tit->IsBndSeg(2)?Color[tit->GetBndIdx(2)%10]:" 0.7 0.7 0.7")
-           << "\n3 0 1 2" << (tit->IsBndSeg(3)?Color[tit->GetBndIdx(3)%10]:" 0.7 0.7 0.7")
+        os <<   "3 1 2 3" << (tit->IsBndSeg(0)?Color[tit->GetBndIdx(0)%NumColors]:" 0.7 0.7 0.7")
+           << "\n3 0 2 3" << (tit->IsBndSeg(1)?Color[tit->GetBndIdx(1)%NumColors]:" 0.7 0.7 0.7")
+           << "\n3 0 1 3" << (tit->IsBndSeg(2)?Color[tit->GetBndIdx(2)%NumColors]:" 0.7 0.7 0.7")
+           << "\n3 0 1 2" << (tit->IsBndSeg(3)?Color[tit->GetBndIdx(3)%NumColors]:" 0.7 0.7 0.7")
            << "\n}\n";
     }
     return os << "}" << std::endl;
@@ -44,10 +45,9 @@ std::ostream& GeomMGOutCL::put(std::ostream &os) const
 
 std::ostream& DumpMGCL::put (std::ostream& os) const
 {
-    int lastLevel ( static_cast<int>(_MG->GetLastLevel()) );
-    int Level;
+    const int lastLevel ( static_cast<int>(_MG->GetLastLevel()) );
 
-    for (Level=0; Level<=lastLevel; ++Level)
+    for (int Level=0; Level<=lastLevel; ++Level)
     {
         for ( MultiGridCL::const_VertexIterator vCIt(_MG->GetVertices()[Level].begin());
               vCIt!=_MG->GetVertices()[Level].end(); ++vCIt)
@@ -57,7 +57,7 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
         os << std::endl;
     }
     os << std::endl;
-    for (Level=0; Level<=lastLevel; ++Level)
+    for (int Level=0; Level<=lastLevel; ++Level)
     {
         for ( MultiGridCL::const_EdgeIterator eCIt(_MG->GetEdges()[Level].begin());
               eCIt!=_MG->GetEdges()[Level].end(); ++eCIt )
@@ -67,7 +67,7 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
         os << std::endl;
     }
     os << std::endl;
-    for (Level=0; Level<=lastLevel; ++Level)
+    for (int Level=0; Level<=lastLevel; ++Level)
     {
         for ( MultiGridCL::const_FaceIterator fCIt(_MG->GetFaces()[Level].begin());
               fCIt!=_MG->GetFaces()[Level].end(); ++fCIt )
@@ -77,7 +77,7 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
         os << std::endl;
     }
     os << std::endl;
-    for (Level=0; Level<=lastLevel; ++Level)
+    for (int Level=0; Level<=lastLevel; ++Level)
     {
         for ( MultiGridCL::const_TetraIterator tCIt(_MG->GetTetras()[Level].begin());
               tCIt!=_MG->GetTetras()[Level].end(); ++tCIt)
