@@ -60,19 +60,20 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
 template <typename T>
 T  VectorBaseCL<T>::operator[](size_t s) const
 {
-    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
-    return (*static_cast<base_type*>( this))[s];
+    Assert(s<base_type::size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    return (*static_cast<const base_type*>( this))[s];
 }
 
 template <typename T>
 T& VectorBaseCL<T>::operator[](size_t s)
 {
-    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    Assert(s<base_type::size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
     return (*static_cast<base_type*>( this))[s];
 }
 #endif
 
 #if (DROPSDebugC & DebugNumericC)
+/*
 template <class VT1, class  VT2>
   inline VectorBaseCL<typename VT1::value_type> operator+(const VT1& v, const VT2& w)
 {
@@ -92,6 +93,7 @@ template <class VT1, class  VT2>
         static_cast<typename VectorBaseCL<VecEntryT>::base_type>( v)
         - static_cast<typename VectorBaseCL<VecEntryT>::base_type>( w));
 }
+*/
 #endif
 
 
