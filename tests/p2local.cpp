@@ -86,7 +86,7 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, v_inst_fun_ptr f, double t)
 {
     vd.Data.resize( vd.RowIdx->NumUnknowns);
-    InstatP2EvalCL<Point3DCL, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &theBnd, &mg, t);
+    P2EvalCL<Point3DCL, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &theBnd, &mg, t);
     const Uint lvl= vd.RowIdx->TriangLevel;
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
@@ -117,8 +117,6 @@ class LocalP2CL: public std::valarray<T>
     LocalP2CL(const TetraCL&, T (*)(const Point3DCL&, double) , double= 0.0);
     template<class BndDataT, class VecDescT>
       LocalP2CL(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
-    // Todo: The time-argument is ignored; if InstatP2EvalCL is used, make sure
-    //     to call SetTime with the correct time for boundary-evaluation.
     template <class P2FunT> 
       LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
 
@@ -183,14 +181,22 @@ template<class T>
 template<class T>
   template<class P2FunT>
     inline LocalP2CL<T>&
-    LocalP2CL<T>::Assign(const TetraCL& s, const P2FunT& f, double)
+    LocalP2CL<T>::Assign(const TetraCL& s, const P2FunT& f, double t)
 {
     const Uint tlvl= s.GetLevel();
     const Uint flvl= f.GetLevel();
-    if (tlvl == flvl) f.GetDoF( s, *this);
+    const double tmp= f.GetTime();
+    const_cast<P2FunT&>( f).SetTime( t);
+    if (tlvl == flvl) { // XXX: Kill this stupidity
+        std::vector<value_type> tmp;
+        tmp.reserve( 10);
+        f.GetDoF( s, tmp);
+        for (Uint i= 0; i < 10; ++i) (*this)[i]= tmp[i];
+    }
     else
         if (tlvl < flvl) RestrictP2( s, f, *this);
         else throw DROPSErrCL( "LocalP2CL::Assign: Prolongation not implemented.\n");
+    const_cast<P2FunT&>( f).SetTime( tmp);
     return *this;
 }
 
@@ -204,10 +210,10 @@ template<class T>
 
 template<class T>
   template <class P2FunT>
-    LocalP2CL<T>::LocalP2CL(const TetraCL& s, const P2FunT& f, double)
+    LocalP2CL<T>::LocalP2CL(const TetraCL& s, const P2FunT& f, double t)
     : base_type( value_type(), NumDoFP2C)
 {
-    this->Assign( s, f);
+    this->Assign( s, f, t);
 }
 
 template<class T>
@@ -321,9 +327,6 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     double det, absdet;
     Point3DCL tmp;
     LocalP2CL<> ls;
-//    P2FuncT lsfun( &vd2, &theBnd, &mg);
-//    LocalP2CL<> ls2( *mg.GetTriangTetraBegin(), lsfun);
-//    ret+= ls2[4];
     
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(),
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
@@ -366,12 +369,17 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
 
 }
 
-double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/)
+double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
 {
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTests:\n";
     Point3DCL ret( 0.);
     Point3DCL c( 0.2);
+
+    P2FuncT lsfun( &vd1, &theBnd, &mg);
+    LocalP2CL<> ls2( *mg.GetTriangTetraBegin(), lsfun);
+    ret+= ls2[4];
+
     LocalP2CL<Point3DCL> f1;
     LocalP2CL<Point3DCL> f2( *mg.GetTriangTetraBegin(), fv, 0.3);
 
@@ -440,7 +448,7 @@ int main ()
         << std::endl;
     time.Reset();
     time.Start();
-    double q2= Tests( mg, vd3, vd4);
+    double q2= Tests( mg, vd3, vd2);
     time.Stop();
     std::cout << "Tests: " << q2 << "\ttime: " << time.GetTime() << " seconds"
         << std::endl;

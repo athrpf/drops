@@ -58,12 +58,12 @@ class StokesVelBndDataCL
     inline bool IsOnDirBnd(const FaceCL&) const;
     inline bool IsOnNeuBnd(const FaceCL&) const;
     
-    inline bnd_type GetDirBndValue(const VertexCL&) const;
-    inline bnd_type GetNeuBndValue(const VertexCL&) const;
-    inline bnd_type GetDirBndValue(const EdgeCL&) const;
-    inline bnd_type GetNeuBndValue(const EdgeCL&) const;
-    inline bnd_type GetDirBndValue(const FaceCL&) const;
-    inline bnd_type GetNeuBndValue(const FaceCL&) const;
+    inline bnd_type GetDirBndValue(const VertexCL&, double= 0.0) const;
+    inline bnd_type GetNeuBndValue(const VertexCL&, double= 0.0) const;
+    inline bnd_type GetDirBndValue(const EdgeCL&, double= 0.0) const;
+    inline bnd_type GetNeuBndValue(const EdgeCL&, double= 0.0) const;
+    inline bnd_type GetDirBndValue(const FaceCL&, double= 0.0) const;
+    inline bnd_type GetNeuBndValue(const FaceCL&, double= 0.0) const;
 
     const VelBndSegDataCL& GetSegData(BndIdxT idx) const { return _BndData[idx]; }
 };
@@ -241,11 +241,6 @@ class StokesDoerflerMarkCL
     typedef typename _ProblemCL::BndDataCL BndDataCL;
     typedef typename BndDataCL::PrBndDataCL PrBndDataCL;
     typedef typename BndDataCL::VelBndDataCL VelBndDataCL;
-//    typedef P1EvalCL<double, const PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
-// TODO: New template parameter???
-//    typedef P1BubbleEvalCL<SVectorCL<3>, const VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
-//    typedef P2EvalCL<SVectorCL<3>, const VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
-//  DONE:
     typedef typename _ProblemCL::DiscPrSolCL DiscPrSolCL;
     typedef typename _ProblemCL::DiscVelSolCL DiscVelSolCL;
     
@@ -326,7 +321,7 @@ inline bool StokesVelBndDataCL::IsOnNeuBnd(const FaceCL& f) const
 
 
 
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const VertexCL& v) const
+inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const VertexCL& v, double) const
 // Returns value of the Dirichlet boundary value. 
 // Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
@@ -337,7 +332,7 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const Ver
 }
 
 
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const VertexCL& v) const
+inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const VertexCL& v, double) const
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
@@ -347,7 +342,7 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const Ver
     throw DROPSErrCL("GetNeuBndValue(VertexCL): No Neumann Boundary Segment!");
 }
 
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const EdgeCL& e) const
+inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const EdgeCL& e, double) const
 {
     for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         if ( !_BndData[*it].IsNeumann() )
@@ -355,7 +350,7 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const Edg
     throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
 }
 
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const EdgeCL& e) const
+inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const EdgeCL& e, double) const
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
@@ -365,13 +360,13 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const Edg
     throw DROPSErrCL("GetNeuBndValue(EdgeCL): No Neumann Boundary Segment!");
 }
 
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const FaceCL& f) const
+inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const FaceCL& f, double) const
 {
     Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f) );
 }
 
-inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const FaceCL& f) const
+inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const FaceCL& f, double) const
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {

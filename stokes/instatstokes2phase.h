@@ -32,8 +32,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     using                                                _base::GetMG;
 
     typedef P1EvalCL<double, const InstatStokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
-    typedef InstatP2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, 
-                                                     const VelVecDescCL> DiscVelSolCL;
+    typedef P2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns

@@ -177,9 +177,9 @@ typedef InstatNSCL MyPdeCL;
 typedef DROPS::SVectorCL<3> (*fun_ptr)(const DROPS::SVectorCL<3>&, double);
 
 int
-CheckVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
-                                const DROPS::InstatStokesVelBndDataCL,
-                                DROPS::VelVecDescCL>& fun,
+CheckVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
+                          const DROPS::InstatStokesVelBndDataCL,
+                          DROPS::VelVecDescCL>& fun,
          fun_ptr f)
 {
     using namespace DROPS;
@@ -214,9 +214,9 @@ CheckVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
 }
 
 void
-SetVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
-                              const DROPS::InstatStokesVelBndDataCL,
-                              DROPS::VelVecDescCL>& fun,
+SetVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
+                        const DROPS::InstatStokesVelBndDataCL,
+                        DROPS::VelVecDescCL>& fun,
        double t)
 {
     const DROPS::Uint lvl= fun.GetLevel();
@@ -349,13 +349,13 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
             throw DROPSErrCL( "Strategy: Sorry, not yet implemented.");
         }
         v1->SetIdx( vidx1);
-        InstatP2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
-                        const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
+        P2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
+                  const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
         NS.DeleteNumberingVel( vidx2);
-//InstatP2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
-//                VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
+//P2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
+//          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
 //CheckVel( funv1, &MyPdeCL::LsgVel);
         // Repair pressure
         std::swap( p2, p1);

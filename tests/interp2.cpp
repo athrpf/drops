@@ -50,23 +50,8 @@ void UnMarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
     }
 }
 
-
-class BndCL
-{
-  public:
-    typedef double bnd_type;
-
-    inline bool IsOnDirBnd (const VertexCL&) const { return false; }
-    inline bool IsOnNeuBnd (const VertexCL&) const { return false; }
-    inline bool IsOnDirBnd (const EdgeCL&) const { return false; }
-    inline bool IsOnNeuBnd (const EdgeCL&) const { return false; }
-    
-    static inline bnd_type GetDirBndValue (const VertexCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-} Bnd;
-
+typedef NoBndDataCL<double> BndCL;
+BndCL Bnd;
 
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 {

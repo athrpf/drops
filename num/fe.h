@@ -245,7 +245,7 @@ struct DoFHelperCL
 //**************************************************************************
 // Class:   DoFHelperCL                                                    *
 // Template Parameter:                                                     *
-//          Data - double, partial specialization of the general template  *                                                  *
+//          Data - double, partial specialization of the general template  *
 //          _Vec - The type of the object, that is used for actually       *
 //                 storing numerical data, which is referenced by          *
 //                 UnknownIdxCL. It is assumed to provide operator[] to    *
@@ -454,55 +454,46 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
+    double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
-    GetDoFImpl(const VertexCL& s) const
+    GetDoF(const VertexCL& s) const
     {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, t_)
+            : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
+            _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     inline DataT // helper-function to evaluate on an edge; use val() instead
-    GetDoFImpl(const EdgeCL& s) const
+    GetDoF(const EdgeCL& s) const
     {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, t_)
+            : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
+            _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
 
-    template<class T> // GetDoF is a compile-time virtual function.
-      DataT           // It calls the correct version of GetDoFImpl according
-      GetDoF(const VertexCL& s) const // to the template parameter T.
-        { return static_cast<T*>( this)->GetDoFImpl( s); }
-    template<class T> // see above.
-      DataT
-      GetDoF(const EdgeCL& s) const
-        { return static_cast<T*>( this)->GetDoFImpl( s); }
-    
 public:
-    P2EvalCL() :_sol(0), _bnd(0), _MG(0) {}
-    P2EvalCL(VecDescT* sol, BndDataCL* bnd, const MultiGridCL* MG)
-        :_sol(sol), _bnd(bnd), _MG(MG) {}
+    P2EvalCL() :_sol( 0), _bnd( 0), _MG( 0), t_( 0) {}
+    P2EvalCL(VecDescT* sol, BndDataCL* bnd, const MultiGridCL* MG, double t= 0.0)
+        :_sol( sol), _bnd( bnd), _MG( MG), t_( t) {}
     //default copy-ctor, dtor, assignment-op
     // copying P2EvalCL-objects is safe - it is a flat copy, which is fine,
     // as P2EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
 
     void // set / get the container of numerical data
-    SetSolution(VecDescT* sol)
-        { _sol= sol; }
+    SetSolution(VecDescT* sol) { _sol= sol; }
     VecDescT*
-    GetSolution() const
-        { return _sol; }
+    GetSolution() const { return _sol; }
     void // set / get the container of boundary-data
-    SetBndData(BndDataCL* bnd)
-        { _bnd= bnd; }
+    SetBndData(BndDataCL* bnd) { _bnd= bnd; }
     BndDataCL*
-    GetBndData() const
-        { return _bnd; }
-    const MultiGridCL&
-    GetMG() const // the multigrid we refer to
-        { return *_MG; }
-    Uint
-    GetLevel() const // Triangulation level of this function
-        { return _sol->GetLevel(); }
+    GetBndData() const { return _bnd; }
+    const MultiGridCL& // the multigrid we refer to
+    GetMG() const { return *_MG; }
+    Uint // Triangulation level of this function
+    GetLevel() const { return _sol->GetLevel(); }
+    // The time at which boundary data is evaluated.
+    double GetTime() const { return t_; }
+    void SetTime(double t) { t_= t; }
 
     inline bool UnknownsMissing(const TetraCL& t) const;
     // True, iff the function can be evaluated on the given simplex.
@@ -511,185 +502,51 @@ public:
     inline bool IsDefinedOn(const TetraCL&, Uint) const;
     inline bool IsDefinedOn(const TetraCL&) const;
 
-    // The following functions use compile-time polymorphism via T to choose
-    // the right version of GetDoF to obtain numerical data.
-    // Don't use them directly. Instead, use the wrappers below, which choose
-    // the right type for T.
-
-    // evaluation on vertices    
-    template<class T, class _Cont>
-      inline void
-      GetDoFImpl(const VertexCL&, _Cont&) const;
-    template<class T>
-      inline DataT
-      valImpl(const VertexCL&) const;
-    
-    // evaluation on edges
-    template<class T, class _Cont>
-      inline void
-      GetDoFImpl(const EdgeCL&, _Cont&) const;
-    template<class T>
-      inline DataT
-      valImpl(const EdgeCL&, double) const;
-    template<class T>
-      inline DataT // for your convenience: val(edge) == val(edge, 0.5)
-      valImpl(const EdgeCL&) const;
-
-    // evaluation on faces
-    template<class T, class _Cont>
-      inline void
-      GetDoFImpl(const TetraCL&, Uint, _Cont&) const;
-    template<class T>
-      inline DataT
-      valImpl(const TetraCL&, Uint, double, double) const;
-
-    // evaluation on a tetrahedron
-    template<class T, class _Cont>
-      inline void
-      GetDoFImpl(const TetraCL&, _Cont&) const;
-    template<class T>
-      inline DataT
-      valImpl(const TetraCL&, double, double, double) const;
-
-    // Wrapper, that insert the correct type for T. Use these.
-
     // evaluation on vertices    
     inline void // set the degree of freedom in the vertex; fails if, we are on a Dirichlet-boundary
     SetDoF(const VertexCL&, const DataT&);
     template<class _Cont>
       inline void
-      GetDoF(const VertexCL& s, _Cont& c) const { GetDoFImpl<const _self>( s, c); }
+      GetDoF(const VertexCL& s, _Cont& c) const;
     template<class _Cont>
       inline DataT
       val(const _Cont&) const;
     inline DataT
-    val(const VertexCL& s) const { return valImpl<const _self>( s); }
+    val(const VertexCL& s) const;
     
     // evaluation on edges
     inline void // set the degree of freedom on the edge; fails if, we are on a Dirichlet-boundary
     SetDoF(const EdgeCL&, const DataT&);
     template<class _Cont>
       inline void
-      GetDoF(const EdgeCL& s, _Cont& c) const { GetDoFImpl<const _self>( s, c); }
+      GetDoF(const EdgeCL& s, _Cont& c) const;
     template<class _Cont>
       inline DataT
       val(const _Cont&, double) const;
     inline DataT
-    val(const EdgeCL& s, double v1) const
-        { return valImpl<const _self>( s, v1); }
+    val(const EdgeCL& s, double v1) const;
     inline DataT // for your convenience: val(edge) == val(edge, 0.5)
-    val(const EdgeCL& s) const { return valImpl<const _self>( s); }
+    val(const EdgeCL& s) const;
 
     // evaluation on faces
     template<class _Cont>
       inline void
-      GetDoF(const TetraCL& s, Uint i, _Cont& c) const
-        { GetDoFImpl<const _self>( s, i, c); }
+      GetDoF(const TetraCL& s, Uint i, _Cont& c) const;
     template<class _Cont>
       inline DataT
       val(const _Cont&, double, double) const;
     inline DataT
-    val(const TetraCL& s, Uint i, double v1, double v2) const
-        { return valImpl<const _self>( s, i, v1, v2); }
+    val(const TetraCL& s, Uint i, double v1, double v2) const;
 
     // evaluation on a tetrahedron
     template<class _Cont>
       inline void
-      GetDoF(const TetraCL& s, _Cont& c) const
-        { GetDoFImpl<const _self>( s, c); }
+      GetDoF(const TetraCL& s, _Cont& c) const;
     template<class _Cont>
       inline DataT
       val(const _Cont&, double, double, double) const;
     inline DataT
-    val(const TetraCL& s, double v1, double v2, double v3) const
-        { return valImpl<const _self>( s, v1, v2, v3); }
-};
-
-
-//**************************************************************************
-// Class:   InStatP2EvalCL -- derived from P2EvalCL                        *
-// Template Parameter:                                                     *
-//          see P2EvalCL                                                   *
-// Purpose: Adds a time _t to P2EvalCL.                                    *
-//**************************************************************************
-template<class DataT, class BndDataT, class VecDescT>
-class InstatP2EvalCL: public P2EvalCL<DataT, BndDataT, VecDescT>
-{
-  private:
-    typedef P2EvalCL<DataT, BndDataT, VecDescT>       _base;
-    typedef InstatP2EvalCL<DataT, BndDataT, VecDescT> _self;
-    using _base::_bnd;
-    using _base::_sol;
-    
-    double _t;
-    
-public:
-    using _base::val;
-
-    InstatP2EvalCL() : _base(), _t(0) {}
-    InstatP2EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG, double t)
-        : _base( sol, bnd, MG), _t(t) {}
-    //default copy-ctor, dtor, assignment-op
-
-    inline DataT  // helper-function for compile-time-polymorphism of GetDoF.
-    GetDoFImpl(const VertexCL& s) const
-    {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
-               : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
-                 _sol->Data, s.Unknowns( _sol->RowIdx->GetIdx()));
-    }
-    inline DataT // helper-function for compile-time-polymorphism of GetDoF.
-    GetDoFImpl(const EdgeCL& s) const
-    {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
-               : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
-                 _sol->Data, s.Unknowns( _sol->RowIdx->GetIdx()));
-    }
-
-    // The time at which boundary data is evaluated.
-    double GetTime() const { return _t; }
-    void SetTime(double t) { _t= t; }
-
-    // Wrapper, that insert the correct type for GetDoF.
-
-    // evaluation on vertices    
-    template<class _Cont>
-      inline void
-      GetDoF(const VertexCL& s, _Cont& c) const
-        { _base::template GetDoFImpl<const _self>( s, c); }
-    inline DataT
-    val(const VertexCL& s) const
-        { return _base::template valImpl<const _self>( s); }
-    
-    // evaluation on edges
-    template<class _Cont>
-      inline void
-      GetDoF(const EdgeCL& s, _Cont& c) const
-        { _base::template GetDoFImpl<const _self>( s, c); }
-    inline DataT
-    val(const EdgeCL& s, double v1) const
-        { return _base::template valImpl<const _self>( s, v1); }
-    inline DataT // for your convenience: val(edge) == val(edge, 0.5)
-    val(const EdgeCL& s) const
-        { return _base::template valImpl<const _self>( s); }
-
-    // evaluation on faces
-    template<class _Cont>
-      inline void
-      GetDoF(const TetraCL& s, Uint i, _Cont& c) const
-        { _base::template GetDoFImpl<const _self>( s, i, c); }
-    inline DataT
-    val(const TetraCL& s, Uint i, double v1, double v2) const
-        { return _base::template valImpl<const _self>( s, v1, v2); }
-
-    // evaluation on a tetrahedron
-    template<class _Cont>
-      inline void
-      GetDoF(const TetraCL& s, _Cont& c) const
-        { _base::template GetDoFImpl<const _self>( s, c); }
-    inline DataT
-    val(const TetraCL& s, double v1, double v2, double v3) const
-        { return _base::template valImpl<const _self>( s, v1, v2, v3); }
+    val(const TetraCL& s, double v1, double v2, double v3) const;
 };
 
 
