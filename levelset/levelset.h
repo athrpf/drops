@@ -61,7 +61,8 @@ class LevelsetP2CL
 //    void Reparam2();
     
     bool   Intersects( const TetraCL&) const;
-    double GetMass() const;
+    double GetVolume( double translation= 0) const;
+    double AdjustVolume( double vol, double tol, double surf= 0) const;
     void   AccumulateBndIntegral( VecDescCL& f) const;
     
     DiscSolCL GetSolution() const

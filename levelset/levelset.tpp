@@ -4,6 +4,7 @@
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 //**************************************************************************
 
+#include "num/discretize.h"
 #include <fstream>
 
 namespace DROPS
@@ -634,6 +635,66 @@ fil << "\n}\n";
     }
 //fil << "}\n";    
 }
+
+double LevelsetP2CL::GetVolume( double translation) const
+{
+    const Uint lvl= Phi.RowIdx->TriangLevel;
+    DiscSolCL phi= GetSolution();
+    SmoothedJumpCL H( JumpCL( 1, 0), DROPS::H_sm, 1e-4);
+    Quad2CL<> Xi;    // 1 fuer phi<0, 0 sonst
+    double det, absdet, vol= 0;
+    SMatrixCL<3,3> T;
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit!=send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        absdet= fabs( det);
+        
+        for (int i=0; i<4; ++i)
+            Xi.val[i]= H( phi.val( *sit->GetVertex(i)) + translation);
+        // values in barycenter
+        Xi.val[4]= H( phi.val( *sit, 0.25, 0.25, 0.25) + translation);
+        
+        vol+= Xi.quad( absdet);
+    }
+    return vol;
+}
+
+double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
+{
+    tol*=vol;
+
+    double v0=GetVolume()-vol;
+    if (std::abs(v0)<=tol) return 0;
+
+    double d0=0, d1=v0*(surface ? 1.1/surface : 0.23/std::pow(vol,2./3.));
+    // Hinweis: surf(Kugel) = [3/4/pi*vol(Kugel)]^(2/3) * 4pi
+    double v1=GetVolume(d1)-vol;
+    if (std::abs(v1)<=tol) return d1;
+
+    // Sekantenverfahren fuer Startwert
+    while (v1*v0 > 0) // gleiches Vorzeichen
+    {
+        const double d2=1.2*(v1*d0-v0*d1)/(v1-v0);
+        d0=d1; d1=d2; v0=v1; v1=GetVolume(d1)-vol;
+        if (std::abs(v1)<=tol) return d1;
+    }
+
+    // Anderson-Bjoerk fuer genauen Wert
+    while (true)
+    {
+        const double d2=(v1*d0-v0*d1)/(v1-v0),
+                     v2=GetVolume(d2)-vol;
+        if (std::abs(v2)<=tol) return d2;
+
+        if (v2*v1 < 0) // ungleiches Vorzeichen
+          { d0=d1; d1=d2; v0=v1; v1=v2; }
+        else
+          { const double c=1.0-v2/v1; d1=d2; v1=v2; v0*= c>0 ? c : 0.5; }
+    }
+}
+
 
 
 } // end of namespace DROPS
