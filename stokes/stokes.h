@@ -96,7 +96,7 @@ class StokesBndDataCL
 {
   public:
     StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndSegDataCL::bnd_val_fun* fun)
-        : Vel(numbndseg, isneumann, fun) {}
+        : Pr(), Vel(numbndseg, isneumann, fun) {}
     
     typedef StokesPrBndDataCL PrBndDataCL;
     typedef StokesVelBndDataCL VelBndDataCL;
