@@ -1,23 +1,12 @@
-//**************************************************************************
-// File:    fe.tpp                                                         *
-// Content: description of various finite-element functions                *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - August, 12 2003                                        *
-//**************************************************************************
-// TODO: Faces for P1/2EvalCL!!!
-
+/// \file
+/// \brief Description of various finite-element functions
 
 namespace DROPS
 {
 
+
 //**************************************************************************
 // Class:   FE_P1CL                                                        *
-// Purpose: Shape functions and their gradients for piecewise linear,      *
-//          continuous finite elements on the reference tetrahedron        *
-//          The number of the H-functions refers to the number of the      *
-//          vertex in the tetrahedron as defined in topo.h, where the      *
-//          degree of freedom is located.                                  *
 //**************************************************************************
 inline double
 FE_P1CL::H(Uint dof, double v1, double v2, double v3)
@@ -31,13 +20,37 @@ FE_P1CL::H(Uint dof, double v1, double v2, double v3)
     };
 }
 
+
+//**************************************************************************
+// Class:   FE_P1DCL                                                       *
+//**************************************************************************
+inline double
+FE_P1DCL::H(Uint dof, double v1, double v2, double v3)
+{
+    switch(dof) {
+      case 0: return H0( v1, v2, v3); break;
+      case 1: return H1( v1, v2, v3); break;
+      case 2: return H2( v1, v2, v3); break;
+      case 3: return H3( v1, v2, v3); break;
+      default: throw DROPSErrCL("FE_P1DCL::H: Invalid shape function.");
+    };
+}
+
+inline double
+FE_P1DCL::H(Uint dof, const BaryCoordCL& p)
+{
+    switch(dof) {
+      case 0: return H0( p); break;
+      case 1: return H1( p); break;
+      case 2: return H2( p); break;
+      case 3: return H3( p); break;
+      default: throw DROPSErrCL("FE_P1DCL::H: Invalid shape function.");
+    };
+}
+
+
 //**************************************************************************
 // Class:   FE_P2CL                                                        *
-// Purpose: Shape functions and their gradients for piecewise quadratic,   *
-//          continuous finite elements on the reference tetrahedron        *
-//          The number of the H-functions refers to the number of the      *
-//          (mid-) vertex in the tetrahedron as defined in topo.h, where   *
-//          the degree of freedom is located.                              *
 //**************************************************************************
 inline double
 FE_P2CL::H(Uint dof, double v1, double v2, double v3)
@@ -258,6 +271,60 @@ template<class Data, class _BndData, class _VD>
 template<class Data, class _BndData, class _VD>
   inline void
   P1EvalCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
+{
+    Assert( !_bnd->IsOnDirBnd(s),
+        DROPSErrCL("P1EvalBaseCL::SetDoF: Trying to assign to"
+        "Dirichlet-boundary-vertex."), DebugNumericC);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(
+        _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
+}
+
+
+//**************************************************************************
+// Class:   P1DEvalCL                                                      *
+//**************************************************************************
+template<class Data, class _BndData, class _VD>
+  template<class _Cont>
+    inline void
+    P1DEvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
+{
+    for (Uint i= 0; i < NumFacesC; ++i)
+        c[i]= GetDoF( *s.GetFace( i));
+}
+
+template<class Data, class _BndData, class _VD>
+  template<class _Cont>
+    inline void
+    P1DEvalCL<Data, _BndData, _VD>::GetDoFP1(const TetraCL& s, _Cont& c) const
+{
+        c[0]= val( s, 0., 0., 0.);
+        c[1]= val( s, 1., 0., 0.);
+        c[2]= val( s, 0., 1., 0.);
+        c[3]= val( s, 0., 0., 1.);
+}
+
+template<class Data, class _BndData, class _VD>
+  inline Data
+  P1DEvalCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, double v3) const
+{
+    return  GetDoF( *s.GetFace( 0))*FE_P1DCL::H0( v1, v2, v3)
+           +GetDoF( *s.GetFace( 1))*FE_P1DCL::H1( v1, v2, v3)
+           +GetDoF( *s.GetFace( 2))*FE_P1DCL::H2( v1, v2, v3)
+           +GetDoF( *s.GetFace( 3))*FE_P1DCL::H3( v1, v2, v3);
+}
+
+template<class Data, class _BndData, class _VD>
+  template<class _Cont>
+    inline Data
+    P1DEvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
+{
+    return c[0] * FE_P1DCL::H0(v1, v2, v3) + c[1] * FE_P1DCL::H1(v1, v2, v3)
+         + c[2] * FE_P1DCL::H2(v1, v2, v3) + c[3] * FE_P1DCL::H3(v1, v2, v3);
+}
+
+template<class Data, class _BndData, class _VD>
+  inline void
+  P1DEvalCL<Data, _BndData, _VD>::SetDoF(const FaceCL& s, const Data& d)
 {
     Assert( !_bnd->IsOnDirBnd(s),
         DROPSErrCL("P1EvalBaseCL::SetDoF: Trying to assign to"

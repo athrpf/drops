@@ -1,11 +1,7 @@
-//**************************************************************************
-// File:    fe.h                                                           *
-// Content: description of various finite-element functions                *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - May, 2 2001                                            *
-//**************************************************************************
-// TODO: Faces for P1/2EvalCL!!!
+/// \file
+/// \brief Description of various finite-element functions.
+
+/// \todo Faces for P1/2EvalCL.
 
 #ifndef DROPS_FE_H
 #define DROPS_FE_H
@@ -20,52 +16,127 @@
 namespace DROPS
 {
 
-//**************************************************************************
-// Class:   FE_P1CL                                                        *
-// Purpose: Shape functions and their gradients for piecewise linear,      *
-//          continuous finite elements on the reference tetrahedron        *
-//          The number of the H-functions refers to the number of the      *
-//          vertex in the tetrahedron as defined in topo.h, where the      *
-//          degree of freedom is located.                                  *
-//**************************************************************************
+/// \brief Piecewise linear, continuous FE.
+///
+/// Shape functions and their gradients for piecewise linear,
+/// continuous finite elements on the reference tetrahedron.
+/// The number of the H-functions refers to the number of the
+/// vertex in the tetrahedron as defined in topo.h, where the
+/// degree of freedom is located.
 class FE_P1CL
 {
-private:
+  private:
     static const double _gradient[4][3];
     
-public:
-    // default ctor, copy-ctor, assignment-op, dtor
+  public:
+    /// default ctor, copy-ctor, assignment-op, dtor
 
-    static const Uint NumDoFC= 4;
+    static const Uint NumDoFC= 4; ///< Number of degrees of freedom on a single tet.
 
-    // restriction of the shape functions to reference edge
+    /// \name Restriction of the shape functions to reference edge.
+    /// \{
     static double H0(double v1) { return 1. -v1; }
     static double H1(double v1) { return v1; }
+    /// \}
 
-    // restriction of the shape functions to reference face
+    /// \name Restriction of the shape functions to reference face.
+    /// \{
     static double H0(double v1, double v2) { return 1. -v1 -v2; }
     static double H1(double v1, double)    { return v1; }
     static double H2(double, double v2)    { return v2; }
+    /// \}
 
-    // shape functions on the reference tetrahedron
+    /// \name Shape functions on the reference tetrahedron.
+    /// \{
     static double H0(double v1, double v2, double v3) { return 1. -v1 -v2 -v3; }
     static double H1(double v1, double, double)       { return v1; }
     static double H2(double, double v2, double)       { return v2; }
     static double H3(double, double, double v3)       { return v3; }
 
     static inline double H( Uint dof, double v1, double v2, double v3);
+    /// \}
 
-    // gradients of the shape functions on the reference tetrahedron.
-    // To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
-    // transformation that maps the reference tetrahefron to T.
-    // Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
+    /// \name Gradients of the shape functions on the reference tetrahedron.
+    /// \note To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
+    /// transformation that maps the reference tetrahefron to T.
+    /// Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
+    /// \{
     static SVectorCL<3> DH0Ref() { return _gradient[0]; }
     static SVectorCL<3> DH1Ref() { return _gradient[1]; }
     static SVectorCL<3> DH2Ref() { return _gradient[2]; }
     static SVectorCL<3> DH3Ref() { return _gradient[3]; }
 
-    // DHRef(i, ...) == DHiRef(...)
+    /// DHRef(i, ...) == DHiRef(...)
     static SVectorCL<3> DHRef(Uint i) { return _gradient[i]; }
+    /// \}
+};
+
+
+/// \brief Piecewise linear, discontinuous FE.
+///
+/// Shape functions and their gradients for piecewise linear,
+/// discontinuous finite elements on the reference tetrahedron.
+/// The degrees of freedom are located in the barycenters of the faces.
+/// Thus, these FE are continuous in these points.
+/// The number of the H-functions refers to the number of the
+/// face in the tetrahedron as defined in topo.h, where the
+/// degree of freedom is located.
+class FE_P1DCL
+{
+  private:
+    static const double _gradient[4][3];
+    static const double _vertexvalue[4][4]; ///< _vv[i][j] is the value of shape-function i in vertex j.
+    
+  public:
+    /// default ctor, copy-ctor, assignment-op, dtor
+
+    static const Uint NumDoFC= 4;
+
+    /// \name Shape functions on the reference tetrahedron.
+    /// \{
+    static double H0(double v1, double v2, double v3) { return 3.0*(v1+v2+v3) - 2.0; }
+    static double H1(double v1, double, double)       { return 1.0 - 3.0*v1; }
+    static double H2(double, double v2, double)       { return 1.0 - 3.0*v2; }
+    static double H3(double, double, double v3)       { return 1.0 - 3.0*v3; }
+
+    static inline double H( Uint dof, double v1, double v2, double v3);
+    /// \}
+
+    /// The values of the shape-function dof in the tet's vertices.
+    static inline const double* VertexVal( Uint dof) { return _vertexvalue[dof]; }
+
+    /// \name Shape functions to reference tetrahedron, barycentric coordinates.
+    /// \{
+    static inline double H0(const BaryCoordCL& p) { return -2.0 * p[0] + p[1] + p[2] + p[3]; }
+    static inline double H1(const BaryCoordCL& p) { return  p[0] -2.0 * p[1] + p[2] + p[3]; }
+    static inline double H2(const BaryCoordCL& p) { return  p[0] + p[1] -2.0 * p[2] + p[3]; }
+    static inline double H3(const BaryCoordCL& p) { return  p[0] + p[1] + p[2] -2.0 * p[3]; }
+
+    static inline double H (Uint dof, const BaryCoordCL& p);
+    /// \}
+
+    template <class Cont>
+      static inline typename ValueHelperCL<Cont>::value_type
+      val(const Cont& c, const BaryCoordCL& p)
+          { return c[0] * H0( p) + c[1] * H1( p) + c[2] * H2( p) + c[3] * H3( p); }
+    template <class Cont>
+      static inline typename ValueHelperCL<Cont>::value_type
+      val(const Cont& c, double v1, double v2, double v3)
+          { return c[0] * H0( v1, v2, v3) + c[1] * H1( v1, v2, v3) + c[2] * H2( v1, v2, v3) + c[3] * H3( v1, v2, v3); }
+
+    /// \name Gradients of the shape functions on the reference tetrahedron.
+    /// \note To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
+    /// transformation that maps the reference tetrahefron to T.
+    /// Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
+    /// \{
+    static SVectorCL<3> DH0Ref() { return _gradient[0]; }
+    static SVectorCL<3> DH1Ref() { return _gradient[1]; }
+    static SVectorCL<3> DH2Ref() { return _gradient[2]; }
+    static SVectorCL<3> DH3Ref() { return _gradient[3]; }
+
+    /// DHRef(i, ...) == DHiRef(...)
+    static SVectorCL<3> DHRef(Uint i) { return _gradient[i]; }
+    /// \}
 };
 
 
@@ -113,7 +184,7 @@ class FE_P2CL
     static double H9(double, double v2, double v3)    { return 4.*v2*v3; }
     static inline double H (Uint dof, double v1, double v2, double v3);
 
-    // restriction of the shape functions to reference tetrahedron, barucentric coordinates
+    // restriction of the shape functions to reference tetrahedron, barycentric coordinates
     static inline double H0(const BaryCoordCL& p) { return p[0]*(2.*p[0] - 1.); }
     static inline double H1(const BaryCoordCL& p) { return p[1]*(2.*p[1] - 1.); }
     static inline double H2(const BaryCoordCL& p) { return p[2]*(2.*p[2] - 1.); }
@@ -126,34 +197,15 @@ class FE_P2CL
     static inline double H9(const BaryCoordCL& p)    { return 4.*p[2]*p[3]; }
     static inline double H (Uint dof, const BaryCoordCL& p);
 
-  private:
-    // Return-type-helper for the evaluation-function val.
-    template<class Cont>
-      struct ValHelperCL
-    {
-        typedef typename Cont::value_type value_type;
-    };
-    template<class T>
-      struct ValHelperCL<T*>
-    {
-        typedef T value_type;
-    };
-    template<class T, size_t S>
-      struct ValHelperCL<T[S]>
-    {
-        typedef T value_type;
-    };
-
-  public:
     template <class Cont>
-      static inline typename ValHelperCL<Cont>::value_type
+      static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, const BaryCoordCL& p) {
           return c[0] * H0( p) + c[1] * H1( p) + c[2] * H2( p) + c[3] * H3( p)
                + c[4] * H4( p) + c[5] * H5( p) + c[6] * H6( p) + c[7] * H7( p)
                + c[8] * H8( p) + c[9] * H9( p);
       }
     template <class Cont>
-      static inline typename ValHelperCL<Cont>::value_type
+      static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, double v1, double v2, double v3) {
           return c[0] * H0( v1, v2, v3) + c[1] * H1( v1, v2, v3) + c[2] * H2( v1, v2, v3) + c[3] * H3( v1, v2, v3)
                + c[4] * H4( v1, v2, v3) + c[5] * H5( v1, v2, v3) + c[6] * H6( v1, v2, v3) + c[7] * H7( v1, v2, v3)
@@ -322,7 +374,7 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 
 
 //**************************************************************************
-// Class:   P1EvalCL                                                   *
+// Class:   P1EvalCL                                                       *
 // Template Parameter:                                                     *
 //          Data     - The result-type of this finite-element-function on  *
 //                     the multigrid                                       *
@@ -441,6 +493,112 @@ public:
 
     inline void // set the degree of freedom in this vertex; fails for Dirichlet-vertices
     SetDoF(const VertexCL&, const DataT&);
+};
+
+
+//**************************************************************************
+// Class:   P1DEvalCL                                                      *
+// Template Parameter:                                                     *
+//          Data     - The result-type of this finite-element-function on  *
+//                     the multigrid                                       *
+//          _BndData - Class-type that contains functions that describe,   *
+//                     how to handle values in boundary-simplices:         *
+//                     bool IsOnDirBnd(VertexCL) - iff true, we use        *
+//                     Data GetDirBndValue(T) to obtain the function value *
+//          _VD      - (const-) VecDescBaseCL<> like type - type of the    *
+//                     container that stores numerical data of this finite-*
+//                     element function. The class must contain the typedef*
+//                     DataType representing the type used for storing     *
+//                     numerical data.                                     *
+// Purpose: Abstraction that represents boundary-data and VecDescCL-objects*
+//          as a function on the multigrid, that can be evaluated on       *
+//          vertices, edges, faces and tetrahedrons via val()-functions and*
+//          coordinates in the reference tetrahedron.                      *
+//          Degrees of freedom can be set, via SetDoF.                     *
+//          We provide GetDoF(S) for simplices S to store all relevant     *
+//          numerical data via push_back() in a container. This container  *
+//          can be passed to a special val() function and allows for faster*
+//          evaluation of the FE-function, if several evaluations on the   *
+//          same simplex are necessary.                                    *
+//          Generally, evaluations on lower-dimensional simplices are      *
+//          faster as only a smaller amount of shape-functions has to be   *
+//          evaluated.                                                     *
+//**************************************************************************
+template<class Data, class _BndData, class _VD>
+class P1DEvalCL
+{
+public:
+    typedef Data     DataT;
+    typedef _BndData BndDataCL;
+    typedef _VD      VecDescT;
+
+    typedef P1DEvalCL<Data, _BndData, _VD> _self;
+    typedef P1DEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
+    typedef P1DEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
+    
+protected:
+    // numerical data
+    VecDescT*          _sol;
+    // boundary-data
+    BndDataCL*         _bnd;
+    // the multigrid
+    const MultiGridCL* _MG;
+    double t_;
+
+    inline DataT // helper-function to evaluate on a vertex; use val() instead
+    GetDoF(const FaceCL& s) const {
+        return _bnd->IsOnDirBnd( s) ? _bnd->GetDirBndValue( s, t_)
+            : DoFHelperCL<DataT, typename VecDescT::DataType>::get( _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
+    }
+
+public:
+    P1DEvalCL() :_sol( 0), _bnd( 0), _MG( 0), t_( 0) {}
+    P1DEvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG, double t= 0.0)
+        :_sol( sol), _bnd( bnd), _MG( MG), t_( t) {}
+    // default copy-ctor, dtor, assignment-op
+    // copying P1EvalCL-objects is safe - it is a flat copy, which is fine,
+    // as P1EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
+
+    void // set / get the container of numerical data
+    SetSolution(VecDescT* sol)
+        { _sol= sol; }
+    VecDescT*
+    GetSolution() const
+        { return _sol; }
+    void // set / get the container of boundary-data
+    SetBndData(BndDataCL* bnd)
+        { _bnd= bnd; }
+    BndDataCL*
+    GetBndData() const
+        { return _bnd; }
+    const MultiGridCL&
+    GetMG() const // the multigrid we refer to
+        { return *_MG; }
+    Uint
+    GetLevel() const // Triangulation level of this function
+        { return _sol->GetLevel(); }
+    void // set / get the time
+    SetTime(double t)
+        { t_= t; }
+    double
+    GetTime() const
+        { return t_; }
+
+    // evaluation on the tetrahedron
+    template<class _Cont>
+      inline void
+      GetDoF(const TetraCL&, _Cont&) const;
+    template<class _Cont>
+      inline void
+      GetDoFP1(const TetraCL&, _Cont&) const;
+    inline DataT
+    val(const TetraCL&, double, double, double) const;
+    template<class _Cont>
+      inline Data
+      val(const _Cont&, double, double, double) const;
+
+    inline void // set the degree of freedom in this face; fails for Dirichlet-faces
+    SetDoF(const FaceCL&, const DataT&);
 };
 
 

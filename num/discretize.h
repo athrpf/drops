@@ -89,6 +89,7 @@ class GridFunctionCL: public std::valarray<T>
 
   public:
     GridFunctionCL (value_type v= value_type(), Uint s= 0): base_type( v, s) {}
+    GridFunctionCL (const value_type* p, Uint s= 0): base_type( p, s) {}
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, T, base_type)
 
@@ -136,6 +137,55 @@ dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
     return ret; 
 }
 
+
+//**************************************************************************
+// Class:   LocalP1CL                                                      *
+// Template Parameter:                                                     *
+//          T - The result-type of the finite-element-function             *
+// Purpose: Evaluate a P1-function on a tetrahedron and calculate with such*
+//          functions. As LocalP1CL is derived from valarray, arithmetic   *
+//          operations are carried out efficiently.                        *
+//          The valarray holds the values in the 4 degrees of freedom,     *
+//          vertex_0,..., vertex_3, edge_0,..., edge5.                     *
+//**************************************************************************
+template<class T= double>
+class LocalP1CL: public GridFunctionCL<T>
+{
+  public:
+    typedef GridFunctionCL<T> base_type;
+    typedef typename base_type::value_type value_type;
+    typedef typename base_type::instat_fun_ptr instat_fun_ptr;
+
+  protected:
+    typedef LocalP1CL<T> self_;
+
+  public:
+    LocalP1CL() : base_type( value_type(), FE_P1CL::NumDoFC) {}
+    // Initialize from a given function
+    LocalP1CL(const TetraCL&, instat_fun_ptr , double= 0.0);
+    // Initialize from VecDescCL and boundary-data
+    template<class BndDataT, class VecDescT>
+      LocalP1CL(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
+    // Initialize from PiEvalCl
+    template <class P1FunT> 
+      LocalP1CL(const TetraCL&, const P1FunT&, double= 0.0);
+
+DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP1CL, T, base_type)
+
+    // These "assignment-operators" correspond to the constructors
+    // with multiple arguments
+    inline self_&
+    assign(const TetraCL&, instat_fun_ptr, double= 0.0);
+    template<class BndDataT, class VecDescT>
+      inline self_&
+      assign(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
+    template <class P1FunT> 
+      inline self_&
+      assign(const TetraCL&, const P1FunT&, double= 0.0);
+
+    // pointwise evaluation in barycentric coordinates    
+    inline value_type operator()(const BaryCoordCL&) const;
+};
 
 //**************************************************************************
 // Class:   LocalP2CL                                                      *
@@ -223,6 +273,8 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     inline self_&
     assign(const TetraCL&, instat_fun_ptr , double= 0.0);
     inline self_&
+    assign(const LocalP1CL<value_type>&);
+    inline self_&
     assign(const LocalP2CL<value_type>&);
     template <class P2FunT> 
       inline self_&
@@ -238,12 +290,16 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     }
 
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
-    // zur Annaeherung von \int f*phi,    phi = P1-/P2-Hutfunktion
+    // zur Annaeherung von \int f*phi,    phi = P1-/P1D-/P2-Hutfunktion
     T quadP1 (int i, double absdet) const
       { return ((1./120.)*(*this)[i] + (1./30.)*(*this)[4])*absdet; }
     T quadP1 (int i, int j, double absdet) const
       { return (i!=j ? (1./720.)*((*this)[i]+(*this)[j]) + (1./180.)*(*this)[4]
                      : (1./180.)*(*this)[i] + (1./90.)*(*this)[4]  )*absdet;}
+    // Die P1D-Formeln sind nur exakt bis Grad 1 bzw. 0.
+    T quadP1D (int i, double absdet) const;
+    T quadP1D (int i, int j, double absdet) const;
+
     T quadP2 (int i, double absdet) const
     { 
         return (i<4 ? (1./360.)*(*this)[i] - (1./90.)*(*this)[4]
@@ -409,6 +465,14 @@ class P1DiscCL
     // the gradient of hat function i is in column i of H
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
     static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
+};
+
+class P1DDiscCL
+// contains cubatur etc. for linear, discontinuous FE
+{
+  public:
+    // the gradient of hat function i is in column i of H
+    static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
 };
 
 class P1BubbleDiscCL
@@ -622,6 +686,19 @@ inline void P1DiscCL::GetGradients( Point3DCL H[4], double& det, const TetraCL& 
     H[3][2]= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
     // in H[1:3][0:2] steht jetzt die Adjunkte von M ...
     H[0]= -H[1]-H[2]-H[3];
+}
+
+
+inline void P1DDiscCL::GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t)
+{
+    SMatrixCL<3 ,3> M;
+    GetTrafoTr( M, det, t);
+    for (Uint i= 0; i<4; ++i) {
+        const Point3DCL tmp( M*FE_P1DCL::DHRef( i));
+        H(0, i)= tmp[0];
+        H(1, i)= tmp[1];
+        H(2, i)= tmp[2];
+    }
 }
 
 

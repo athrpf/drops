@@ -95,6 +95,17 @@ GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
     }
 }
 
+inline void
+GetLocalNumbP1DNoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
+/// Copies P1D-unknown-indices from idx on s into Numb; assumes that all
+/// faces have unknowns (NoBndDataCL and the like).
+{
+    const Uint sys= idx.GetIdx();
+    for (Uint i= 0; i < 4; ++i) {
+        Numb[i]= s.GetFace( i)->Unknowns( sys);
+    }
+}
+
 
 /// \brief Collect indices of unknowns, boundary-segments and boundary
 ///     conditions on a tetrahedron.

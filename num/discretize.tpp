@@ -10,6 +10,84 @@ namespace DROPS
 {
 
 //**************************************************************************
+// Class:   LocalP1CL                                                      *
+//**************************************************************************
+template<class T>
+  inline LocalP1CL<T>&
+  LocalP1CL<T>::assign(const TetraCL& s, instat_fun_ptr f, double t)
+{
+    for (Uint i= 0; i< NumVertsC; ++i)
+        (*this)[i]= f( s.GetVertex( i)->GetCoord(), t);
+    return *this;
+}
+
+template<class T>
+  template<class BndDataT, class VecDescT>
+    inline LocalP1CL<T>&
+    LocalP1CL<T>::assign(const TetraCL& s,
+        const VecDescT& vd, const BndDataT& bnd, double t)
+{
+    typedef typename VecDescT::DataType VecT;
+    typedef DoFHelperCL<value_type, VecT> DoFT;
+    const VecT& v= vd.Data;
+    const Uint tlvl= s.GetLevel();
+    const Uint vlvl= vd.GetLevel();
+    const Uint idx= vd.RowIdx->GetIdx();
+    for (Uint i= 0; i< NumVertsC; ++i)
+        (*this)[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
+            ? DoFT::get( v, s.GetVertex( i)->Unknowns( idx))
+            : bnd.GetDirBndValue( *s.GetVertex( i), t);
+    return *this;
+}
+
+template<class T>
+  template<class P1FunT>
+    inline LocalP1CL<T>&
+    LocalP1CL<T>::assign(const TetraCL& s, const P1FunT& f, double t)
+{
+    const Uint tlvl= s.GetLevel();
+    const Uint flvl= f.GetLevel();
+    const double tmp= f.GetTime();
+    const_cast<P1FunT&>( f).SetTime( t);
+    f.GetDoF( s, *this);
+    const_cast<P1FunT&>( f).SetTime( tmp);
+    return *this;
+}
+
+
+template<class T>
+  LocalP1CL<T>::LocalP1CL(const TetraCL& s, instat_fun_ptr f , double t)
+  : base_type( value_type(), FE_P1CL::NumDoFC)
+{
+    this->assign( s, f, t);
+}
+
+template<class T>
+  template <class P1FunT>
+    LocalP1CL<T>::LocalP1CL(const TetraCL& s, const P1FunT& f, double t)
+    : base_type( value_type(), FE_P1CL::NumDoFC)
+{
+    this->assign( s, f, t);
+}
+
+template<class T>
+  template<class BndDataT, class VecDescT>
+    LocalP1CL<T>::LocalP1CL(const TetraCL& s,
+        const VecDescT& vd, const BndDataT& bnd, double t)
+    : base_type( value_type(), FE_P1CL::NumDoFC)
+{
+    this->assign( s, vd, bnd, t);
+}
+
+template<class T>
+  inline typename LocalP1CL<T>::value_type
+  LocalP1CL<T>::operator() (const BaryCoordCL& p) const
+{
+    return FE_P1DCL::val( *this, p);
+}
+
+
+//**************************************************************************
 // Class:   LocalP2CL                                                      *
 //**************************************************************************
 template<class T>
@@ -128,6 +206,15 @@ template<class T>
 
 template<class T>
   inline Quad2CL<T>&
+  Quad2CL<T>::assign(const LocalP1CL<value_type>& f)
+{
+    (*this)[std::slice( 0, 4, 1)]= f;
+    (*this)[NumNodesC-1]= f( BaryCoordCL( 0.25));
+    return *this;
+}
+
+template<class T>
+  inline Quad2CL<T>&
   Quad2CL<T>::assign(const LocalP2CL<value_type>& f)
 {
     (*this)[std::slice( 0, 4, 1)]= f[std::slice( 0, 4, 1)];
@@ -170,6 +257,32 @@ template<class T>
   : base_type( value_type(), NumNodesC)  
 {
     this->assign( s, f, t);
+}
+
+
+template<class T>
+  T
+  Quad2CL<T>::quadP1D(int i, double absdet) const
+{
+    const double* const tmp( FE_P1DCL::VertexVal( i));
+    Quad2CL<T> tmp2( *this);
+    for (Uint k= 0; k<4; ++k)
+        tmp2[k]*= tmp[k];
+    tmp2[4]*= 0.25; // The value in the barycenter, independent of i.
+    return tmp2.quad( absdet);
+}
+
+template<class T>
+  T
+  Quad2CL<T>::quadP1D (int i, int j, double absdet) const
+{
+    const std::valarray<double> tmp(  FE_P1DCL::VertexVal( i), NumVertsC);
+    const std::valarray<double> tmp3( FE_P1DCL::VertexVal( j), NumVertsC);
+    Quad2CL<T> tmp2( *this);
+    tmp2[std::slice(0, 4, 1)]*= tmp*tmp3;
+    tmp2[4]*= 0.0625; // The value in the barycenter, independent of i, j.
+    return tmp2.quad( absdet);
+
 }
 
 } // end of namespace DROPS

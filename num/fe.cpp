@@ -1,10 +1,5 @@
-//**************************************************************************
-// File:    fe.cpp                                                         *
-// Content: description of various finite-element functions                *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - May, 2 2001                                            *
-//**************************************************************************
+/// \file
+/// \brief Description of various finite-element functions.
 
 #include "num/fe.h"
 
@@ -13,6 +8,12 @@ namespace DROPS
 
 const double FE_P1CL::_gradient[4][3]=
     { {-1., -1., -1.}, {1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.} };
+
+const double FE_P1DCL::_gradient[4][3]=
+    { {3., 3., 3.}, {-3., 0., 0.}, {0., -3., 0.}, {0., 0., -3.} };
+
+const double FE_P1DCL::_vertexvalue[4][4]=
+    { {-2., 1., 1., 1.}, {1., -2., 1., 1.}, {1., 1., -2., 1.}, {1., 1., 1., -2.} };
 
 const double FE_P2CL::_D2H[10][3][3]= {
     { {4., 4., 4.}, {4., 4., 4.}, {4., 4., 4.} },
@@ -68,18 +69,16 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
 }
 
 
-//**************************************************************************
-// P2-Prolongation                                                         *
-//**************************************************************************    
-// For each refinement rule the local P2 prolongation matrix is stored
-// as a sequence of matrix rows in P2_local_prolongation_row_idx.
-// Beginning and one-past-the-end of each sequence are stored in 
-// P2_local_prolongation_mat_beg.
-// Conceptually, rows of the local prolongation matrices are represented
-// by an index into an array of the 35 possible different rows.
-// Considered as a matrix, this array is sparse. Consequently, it is
-// stored in compressed row storage format.
-
+/// \name Coefficient-tables for P2-prolongation.
+/// For each refinement rule the local P2 prolongation matrix is stored
+/// as a sequence of matrix rows in P2_local_prolongation_row_idx.
+/// Beginning and one-past-the-end of each sequence are stored in 
+/// P2_local_prolongation_mat_beg.
+/// Conceptually, rows of the local prolongation matrices are represented
+/// by an index into an array of the 35 possible different rows.
+/// Considered as a matrix, this array is sparse. Consequently, it is
+/// stored in compressed row storage format.
+/// \{
 const unsigned int P2_local_prolongation_mat_beg[65]= {
     0, 10, 24, 38, 56, 70, 88, 106,
     128, 142, 160, 178, 200, 219, 241, 263,
@@ -161,7 +160,7 @@ const unsigned char P2_local_prolongation_rows[1438]= {
     24, 16, 26, 25, 12, 18, 17, 13, 28
 };
 
-// Column index for compressed row format storage
+/// Column index for compressed row format storage.
 const unsigned char P2_prolongation_col_ind[116]= {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 4, 0, 1, 4, 0, 1, 4, 7,
     8, 0, 1, 4, 5, 6, 0, 2, 5, 0, 2, 5, 0, 2, 5, 7, 9, 0, 2, 4,
@@ -171,13 +170,13 @@ const unsigned char P2_prolongation_col_ind[116]= {
     1, 3, 6, 8, 9, 2, 3, 6, 8, 9, 2, 3, 9, 2, 3, 9
 };
 
-// Beginning of rows for compressed row format storage
+/// Beginning of rows for compressed row format storage.
 const unsigned char P2_prolongation_row_beg[36]= {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 16, 21, 26, 29, 32, 37, 42,
     47, 50, 53, 58, 61, 64, 69, 74, 79, 84, 94, 97, 100, 105, 110, 113, 116
 };
 
-// Coefficients of the prolongation matrices as index into coeff.
+/// Coefficients of the prolongation matrices as index into coeff.
 const unsigned char P2_prolongation_coeff_idx[116]= {
     5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 0, 4, 0, 2, 4, 0, 0, 1, 3, 3,
     0, 0, 1, 3, 3, 2, 0, 4, 0, 2, 4, 0, 0, 1, 3, 3, 0, 0, 3, 1, 3, 0, 0, 3, 3, 1,
@@ -186,11 +185,11 @@ const unsigned char P2_prolongation_coeff_idx[116]= {
     4, 0, 0, 3, 1, 3, 0, 0, 3, 3, 1, 2, 0, 4, 0, 2, 4
 };
 
-// The coefficients in the prolongation matrices
+/// The coefficients in the prolongation matrices.
 const double P2_prolongation_coeff[6]= {
     -0.125, 0.25, 0.375, 0.5, 0.75, 1.0 
 };
-
+/// \}
 
 std::vector<IdxT> CollectChildUnknownsP2(const TetraCL& t, const Uint f_idx)
 {
