@@ -81,8 +81,10 @@ class MultiGridCL
     MultiGridCL (const MGBuilderCL& Builder);
 
     void Refine ();
+    void Scale( double);
     void MakeConsistentNumbering();
     void SizeInfo(std::ostream&);
+    void ElemInfo(std::ostream&, int Level= -1);
 
     bool IsSane (std::ostream&, int Level=-1) const;
 
@@ -155,6 +157,9 @@ class ReadMeshBuilderCL : public MGBuilderCL
     // Input stream, from which the mesh is read. Pass a pointer to an output stream,
     // e. g. msg= &std::cerr, if you want to know, what happens during multigrid-construction.
     ReadMeshBuilderCL(std::istream& f, std::ostream* msg= 0);
+
+    BndCondT GetBC( Uint i)                    const;
+    void     GetBC( std::vector<BndCondT>& BC) const;
 };
 \end{verbatim}
 \end{Code}
@@ -896,4 +901,218 @@ for (int i=1; i<=num_steps; ++i)
 ensight.CaseEnd();
 \end{verbatim}
 \end{Code}
+
+%============================================================================
+\section{{\tt misc}: Verschiedenes}
+%============================================================================
+
+\subsection{Einlesen von Parameterdaten}
+
+Zum Einlesen von Parameterdaten aus Dateien wird die Klasse \prg{ReadParamsCL}
+aus \prg{misc/params.h}
+zur Verf"ugung gestellt. Das Einlesen von Paramatern der Typen \prg{int}, 
+\prg{double}, \prg{Point3DCL} und \prg{string} wird damit stark vereinfacht.
+\begin{Code}
+\begin{verbatim}
+class ReadParamsCL
+{
+  public:
+    ReadParamsCL() {}
+    
+    // register parameters
+    void RegInt   ( int&,       string);
+    void RegDouble( double&,    string);
+    void RegCoord ( Point3DCL&, string);
+    void RegString( string&,    string);
+    
+    // build groups (may be used recursively)
+    void BeginGroup( const string& group);
+    void EndGroup();
+    
+    // IO
+    void ReadParams( std::istream&);
+    void WriteParams( std::ostream&) const;
+    
+    //cleanup
+    void Clear(); // deallocate memory
+};
+\end{verbatim}
+\end{Code}
+Vor Einlesen der Datei mit \prg{ReadParams} m"ussen die einzelnen Parameter
+mit Hilfe der Elementfunktionen \prg{RegXXX} registriert werden. Die Parameter
+k"onnen dabei mit Hilfe von Gruppen geordnet werden, die auch geschachtelt sein
+d"urfen. Beispiel:
+\begin{Code}
+\begin{verbatim}
+ReadParamsCL rp;
+rp.BeginGroup("Solver");
+    rp.BeginGroup("Stokes");
+        rp.RegDouble( outer_tol, "Tol");
+        rp.RegInt( outer_iter,   "Iter");
+    rp.EndGroup();
+    rp.BeginGroup("Levelset");
+        rp.RegDouble( lset_tol, "Tol");
+        rp.RegInt( lset_iter,   "Iter");
+    rp.EndGroup();
+rp.EndGroup();
+\end{verbatim}
+\end{Code}
+Z.B. ist nun \verb|lset_tol| unter dem Namen \prg{Solver:Levelset:Tol} 
+registriert. Eine entsprechende Parameterdatei k"onnte so aussehen:
+\begin{Code}
+\begin{verbatim}
+# Dies ist ein Kommentar.
+Solver
+{
+    Levelset {
+        Tol		=	1e-8	# Genauigkeit
+        Iter		=	1000	# max. Anzahl Iterationen
+    }
+    Stokes {
+        Tol		=	1e-6
+        Iter		=	100
+    }
+}
+\end{verbatim}
+\end{Code}
+Alle Zeichen hinter einem \verb|#| werden bis zum Zeilenende ignoriert.
+Statt Gruppen zu bilden, h"atte man auch die Parameter direkt ansprechen k"onnen,
+z.B. \prg{Solver:Levelset:Tol = 1e-8}.
+
+"Ublicherweise werden alle Parameter f"ur ein Hauptprogramm in einer Klasse
+zusammengefasst, die von der \prg{ParamBaseCL} (\prg{misc/params.h}) abgeleitet
+ist. Diese enth"alt ein \prg{ReadParamsCL}-Objekt; Lesen und Schreiben der
+Parameter erfolgt (nach deren Registrierung) "uber den Eingabe-/Ausgabeoperator 
+\prg{>>} bzw. \prg{<<}.
+\begin{Code}
+\begin{verbatim}
+class ParamBaseCL
+{
+  protected:
+    ReadParamsCL rp_;
+    
+  public:
+    void Clear() { rp_.Clear(); }		// cleanup
+
+    friend std::istream& operator >> ( std::istream&, ParamBaseCL&);
+    friend std::ostream& operator << ( std::ostream&, const ParamBaseCL&);
+};
+\end{verbatim}
+\end{Code}
+Ein Beispiel f"ur konkrete Parameterklassen findet sich z.B. in 
+\prg{levelset/params.h}. Die Bedeutung der Parameter ist in Anhang
+\ref{s:ParamFiles} 
+erl"autert.
+
+
+%============================================================================
+%============================================================================
+				\appendix
+%============================================================================
+%============================================================================
+
+%============================================================================
+\section{Parameter Files}
+%============================================================================
+\label{s:ParamFiles}
+
+\subsection{Stokes Flow, zweiphasig}
+\begin{Code}
+\begin{verbatim}
+#=============================================================
+#    DROPS parameter file
+#    simulation of two-phase flow: 
+#    droplet in measuring cell used in NMR measurements
+#=============================================================
+
+# time stepping
+Time {
+  NumSteps	=	40
+  StepSize	=	5e-4
+  Theta		=	0.5	# Crank-Nicholson
+}
+
+# flow solver
+Stokes {
+  InnerIter	=	1000
+  OuterIter	=	100
+  InnerTol	=	1e-14
+  OuterTol	=	1e-10
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1e-14
+  Iter		=	10000
+  SD		=	0.1
+}
+
+# re-initialization of levelset function
+Reparam { 
+  Freq		=	0	# 0 = no reparametrization
+  NumSteps	=	1
+  StepSize	=	0.01
+  Diffusion	=	1e-4
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop	=	955
+  ViscDrop	=	2.6e-3
+  DensFluid	=	1107
+  ViscFluid	=	1.2e-3
+  SmoothZone	=	1e-4
+  
+  SurfTension	=	0
+}
+
+# experimental conditions
+Exp {
+  RadDrop	=	1.75e-3
+  PosDrop	=	0	-18e-3	0
+  
+  Gravity	=	0	-9.81	0
+  
+  FlowDir	=	1	# flow in y-direction
+  
+  InflowVel	=	-0.1
+  RadInlet	=	3.5e-3
+}  
+
+# miscellaneous
+
+NumDropRef	=	2
+CouplingSteps	=	-1	# -1 = till convergence
+
+MeshFile	=	gambit/NMR_klein_grob.msh
+EnsightCase	=	NMRmzi
+\end{verbatim}
+\end{Code}
+
+{\bf Bedeutung der Parameter: }
+\begin{itemize}
+    \item ...
+\end{itemize}
+
+
+\subsection{Navier-Stokes Flow, zweiphasig}
+Folgende Parameter kommen gegen"uber dem Stokes Flow hinzu:
+\begin{Code}
+\begin{verbatim}
+NavStokes {
+  Nonlinear	=	0.5
+  Scheme	=	0	# Baensch
+  NonlinearStat	=	0
+  ThetaStat	=	0.5
+}
+\end{verbatim}
+\end{Code}
+
+{\bf Bedeutung der Parameter: }
+\begin{itemize}
+    \item ...
+\end{itemize}
+
+
+
 \end{document}
