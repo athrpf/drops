@@ -235,7 +235,7 @@ IdxT FastMarchCL::FindTrial() const
     double min= 1e99;
     IdxT min_idx= NoIdx;
     
-    for (std::set<IdxT>::iterator it= Close_.begin(), end= Close_.end(); it!=end; ++it)
+    for (std::set<IdxT>::const_iterator it= Close_.begin(), end= Close_.end(); it!=end; ++it)
     {
         if (v_.Data[*it]<=min)
         {
@@ -297,7 +297,7 @@ void FastMarchCL::Reparam( bool ModifyZero)
             for (Uint i=0; i<4; ++i)
                 neighVerts.insert( neigh_[next][n][i]);
         }
-        for (std::set<IdxT>::iterator it= neighVerts.begin(), end= neighVerts.end();
+        for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
             it!=end; ++it)
         { // update all neighboring verts, mark as Close
             Update( *it);
