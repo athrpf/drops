@@ -499,14 +499,16 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
       int m, int& max_iter, double& tol)
 {
     DMatrixCL<double> H(m,m);
-    Vec               s(m), cs(m), sn(m), w(b.size()), r;
+    Vec               s(m), cs(m), sn(m), w(b.size()), r(b.size());
     std::vector<Vec>  v(m);
-    double            beta = r.norm(), normb, resid;
+    double            beta, normb, resid;
 
     for ( int i=0; i<m; ++i )
         v[i].resize(b.size());
 
     M.Apply(A, r, b-A*x);
+    beta = r.norm();
+
     M.Apply(A, w, b);
     normb=w.norm();
     if (normb == 0.0) normb=1;
@@ -660,7 +662,7 @@ class GMResSolverCL : public SolverBaseCL
 
   public:
     GMResSolverCL(const PC& pc, int restart, int maxiter, double tol)
-        : SolverBaseCL(maxiter,tol), pc_(pc) {}
+        : SolverBaseCL(maxiter,tol), pc_(pc), restart_(restart) {}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
