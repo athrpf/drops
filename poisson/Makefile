@@ -47,7 +47,8 @@ MGdrops: \
 testdrops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/testdrops.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/MGsolver.o ../poisson/poisson.o \
-    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o \
+    ../num/fe.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 ipdrops: \
