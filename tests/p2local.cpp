@@ -108,7 +108,11 @@ class LocalP2CL: public std::valarray<T>
     typedef T value_type;
     typedef std::valarray<T> base_type;
     typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
-    
+
+  protected:
+    typedef LocalP2CL<T> self_;
+
+  public:
     LocalP2CL() : base_type( value_type(), NumDoFP2C) {}
     LocalP2CL(const TetraCL&, T (*)(const Point3DCL&, double) , double= 0.0);
     template<class BndDataT, class VecDescT>
@@ -123,13 +127,13 @@ class LocalP2CL: public std::valarray<T>
 
 DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
-    inline void
+    inline self_&
     Assign(const TetraCL&, T (*)(const Point3DCL&, double) , double= 0.0);
     template<class BndDataT, class VecDescT>
-      inline void
+      inline self_&
       Assign(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
     template <class P2FunT> 
-      inline void
+      inline self_&
       Assign(const TetraCL&, const P2FunT&, double= 0.0);
     
     inline value_type operator() (const BaryCoordCL&) const;
@@ -137,20 +141,19 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
 
 template<class T>
-  inline void
-  LocalP2CL<T>:: Assign(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
+  inline LocalP2CL<T>&
+  LocalP2CL<T>::Assign(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
 {
     for (Uint i= 0; i< NumVertsC; ++i)
         (*this)[i]= f( s.GetVertex( i)->GetCoord(), t);
     for (Uint i= 0; i< NumEdgesC; ++i)
-        (*this)[i+NumVertsC]= f( BaryCenter(
-            s.GetVertex( VertOfEdge( i, 0))->GetCoord(),
-            s.GetVertex( VertOfEdge( i, 1))->GetCoord()), t);
+        (*this)[i+NumVertsC]= f( GetBaryCenter( *s.GetEdge( i)), t);
+    return *this;
 }
 
 template<class T>
   template<class BndDataT, class VecDescT>
-    inline void
+    inline LocalP2CL<T>&
     LocalP2CL<T>::Assign(const TetraCL& s,
         const VecDescT& vd, const BndDataT& bnd, double t)
 {
@@ -171,13 +174,15 @@ template<class T>
                 : bnd.GetDirBndValue( *s.GetEdge( i), t);
     }
     else {
-        std::cerr << "LocalP2CL: Gridtransfer not implemented.";
+        if (tlvl < vlvl) RestrictP2( s, vd, bnd, *this);
+        else throw DROPSErrCL( "LocalP2CL::Assign: Prolongation not implemented.\n");
     }
+    return *this;
 }
 
 template<class T>
   template<class P2FunT>
-    inline void
+    inline LocalP2CL<T>&
     LocalP2CL<T>::Assign(const TetraCL& s, const P2FunT& f, double)
 {
     const Uint tlvl= s.GetLevel();
@@ -185,7 +190,8 @@ template<class T>
     if (tlvl == flvl) f.GetDoF( s, *this);
     else
         if (tlvl < flvl) RestrictP2( s, f, *this);
-        else std::cerr << "LocalP2CL: Prolongation not implemented.";
+        else throw DROPSErrCL( "LocalP2CL::Assign: Prolongation not implemented.\n");
+    return *this;
 }
 
 
@@ -233,6 +239,7 @@ double themu( const Point3DCL& p) { return norm( 1e-2*std_basis<3>( 1) + p); }
 double theRe= 1e1;
 Point3DCL theg= 9.81*std_basis<3>( 3);
 const BaryCoordCL bary( 0.25);
+const Point3DCL bary3d( 0.25);
 
 double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     VecDescCL& vd2)
@@ -262,15 +269,13 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
+        for (int i=0; i<4; ++i) {
             if(!(IsOnDirBnd[i]= theBnd.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
             rhs.val[i]= f( sit->GetVertex(i)->GetCoord());
             Phi.val[i]= ls.val( *sit->GetVertex(i));
         }
-        for (int i=0; i<6; ++i)
-        {
+        for (int i=0; i<6; ++i) {
             if (!(IsOnDirBnd[i+4]= theBnd.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
@@ -285,8 +290,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         rhs+= Quad2CL<Point3DCL>( theg)*rho;
         // compute all couplings between HatFunctions on edges and verts
         for (int i=0; i<10; ++i)
-            for (int j=0; j<=i; ++j)
-            {
+            for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
                 const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
@@ -329,15 +333,13 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         ls.Assign( *sit, vd2, theBnd);
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
+        for (int i=0; i<4; ++i) {
             if(!(IsOnDirBnd[i]= theBnd.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
             rhs.val[i]= f( sit->GetVertex(i)->GetCoord());
             Phi.val[i]= ls[i];
         }
-        for (int i=0; i<6; ++i)
-        {
+        for (int i=0; i<6; ++i) {
             if (!(IsOnDirBnd[i+4]= theBnd.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
@@ -352,8 +354,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         rhs+= Quad2CL<Point3DCL>( theg)*rho;
         // compute all couplings between HatFunctions on edges and verts
         for (int i=0; i<10; ++i)
-            for (int j=0; j<=i; ++j)
-            {
+            for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
                 const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
@@ -391,7 +392,7 @@ int main ()
                                 DROPS::std_basis<3>(1),
 				DROPS::std_basis<3>(2),
 				DROPS::std_basis<3>(3),
-				10, 30, 30);
+				10, 10, 30);
     DROPS::MultiGridCL mg( brick);
     DROPS::IdxDescCL idx( 1,1,0,0);
     idx.TriangLevel= 0;
@@ -444,6 +445,44 @@ int main ()
     std::cout << "Tests: " << q2 << "\ttime: " << time.GetTime() << " seconds"
         << std::endl;
     time.Reset();
+
+    MarkAll( mg);
+    mg.Refine();
+    DROPS::IdxDescCL idx1( 1,1,0,0);
+    idx1.TriangLevel= 1;
+    idx1.NumUnknowns= 0;
+    DROPS::CreateNumbOnVertex( idx1.GetIdx(), idx1.NumUnknowns, 1,
+        mg.GetTriangVertexBegin( idx1.TriangLevel),
+        mg.GetTriangVertexEnd( idx1.TriangLevel),
+        theBnd);
+    DROPS::CreateNumbOnEdge( idx1.GetIdx(), idx1.NumUnknowns, 1,
+        mg.GetTriangEdgeBegin( idx1.TriangLevel),
+        mg.GetTriangEdgeEnd( idx1.TriangLevel),
+        theBnd);
+    DROPS::VecDescCL vd5( &idx1);
+    SetFun( vd5, mg, f);
+    LocalP2CL<> restr1( *mg.GetTriangTetraBegin( 0), vd5, theBnd, 0.3);
+    double maxdiff= 0.0, maxdiff2= 0.0;
+    for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin( 0),
+         end=mg.GetTriangTetraEnd( 0); sit != end; ++sit) {
+        TetraCL& tet= *sit;
+        restr1.Assign( tet, vd5, theBnd, 0.3);
+        maxdiff= std::max( maxdiff, std::abs( restr1( bary) - f( tet.GetVertex( 0)->GetCoord()*0.25
+            + tet.GetVertex( 1)->GetCoord()*0.25 + tet.GetVertex( 2)->GetCoord()*0.25
+            + tet.GetVertex( 3)->GetCoord()*0.25)));
+        for (int i=0; i<4; ++i) {
+            maxdiff2= std::max( maxdiff2, std::abs( restr1( std_basis<4>( i+1))
+                - f( tet.GetVertex( i)->GetCoord()))); 
+        }
+        for (int i=0; i<6; ++i) {
+            maxdiff2= std::max( maxdiff2, std::abs( restr1( 0.5*(std_basis<4>( VertOfEdge( i, 0)+1) 
+                + std_basis<4>( VertOfEdge( i, 1)+1)))
+                - f( GetBaryCenter( *tet.GetEdge( i))))); 
+        }
+        
+    }
+    std::cout << "max. Differenz im Schwerpunkt: " << maxdiff
+        << "\tin den Freiheitsgraden: " << maxdiff2 << std::endl;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
