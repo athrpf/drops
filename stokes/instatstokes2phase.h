@@ -1,14 +1,5 @@
-//**************************************************************************
-// File:    instatstokes2phase.h                                           *
-// Content: classes that constitute the 2-phase stokes-problem             *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - Sep, 1 2003                                            *
-//**************************************************************************
-
-/** \file instatstokes2phase.h
- *  \brief classes that constitute the 2-phase stokes-problem
- */
+/// \file
+/// \brief classes that constitute the 2-phase stokes-problem
 
 #ifndef DROPS_INSTATSTOKES2PHASE_H
 #define DROPS_INSTATSTOKES2PHASE_H
