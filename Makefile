@@ -21,7 +21,7 @@ strip: $(PACKAGES:%=strip_%)
 clean: $(PACKAGES:%=clean_%)
 	@echo "--> All object files and executables removed!"
 
-distclean: $(PACKAGES:%=distclean_%)
+distclean: $(PACKAGES:%=distclean_%) distclean_dox
 	rm -f $(DEPFILE)
 	@echo "--> Everything is cleaned up now!"
 
@@ -46,6 +46,9 @@ clean_%:
 distclean_%:
 	cd $* && $(MAKE) distclean
 
+distclean_dox:
+	cd ./doc && rm -rf dox
+
 topo:
 	cd ./geom && $(MAKE) topo.cpp
 	@echo "--> topo.cpp generated!"
@@ -62,7 +65,7 @@ prog_%:
 	cd $(@D) && $(MAKE) $(*F)
 
 
-.PHONY: all clean distclean default dep deldepend doc topo check
+.PHONY: all clean distclean distclean_dox default dep deldepend doc topo check
 
 # include settings from the config file drops.conf:
 include drops.conf
