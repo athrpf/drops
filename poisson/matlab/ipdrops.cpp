@@ -176,15 +176,14 @@ class MatConnect
         for (int j=0; j<a; j++)
           count+= _FacePtsYZ;
         for (int k=0; k<c; k++)
-          count+= _MeshRefZ+1;
+          count+= _MeshRefY+1;
         count+= b;
         
-        //mexPrintf("xc, yc, zc: %g %g %g\n", xc, yc, zc);
+        //mexPrintf("xc, yc, zc, uh: %g %g %g %g\n", xc, yc, zc, *(_T0+count));
         //mexPrintf("a, b, c: %d %d %d\n", a, b, c);
         //mexPrintf("count: %d\n", count);
         
         *(p->second)= *(_T0+count);
-        // mexPrintf("%g",*(T0+count));
       }
     }
     
@@ -252,6 +251,7 @@ namespace DROPS // for Strategy
 
 double getIsolatedBndVal(const Point2DCL& p, double t) { return 0.0; };
 
+/*
 void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel)
 {
     for (MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
@@ -262,6 +262,65 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel)
           It->SetRegRefMark();
     }
 }
+*/
+
+/*
+void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel)
+{
+    for (MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
+             ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
+    {
+      for(int i=0; i<4; ++i)
+        if (It->GetVertex(i)->IsOnBoundary())
+          for (VertexCL::const_BndVertIt VertIter=It->GetVertex(i)->GetBndVertBegin();
+            VertIter!=It->GetVertex(i)->GetBndVertEnd(); ++VertIter)
+              if (VertIter->GetBndIdx()==0 || VertIter->GetBndIdx()==1)
+              {
+                It->SetRegRefMark();
+                goto mark;
+              }
+      mark:;
+    }
+}
+*/
+
+/*
+void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
+{
+  Point3DCL TetraCenter(0.0);
+  double width= 5.0;
+  
+  for (MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
+    ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
+  {
+    TetraCenter= GetBaryCenter(*It);
+    if (fabs(TetraCenter[0])<=width || fabs(TetraCenter[0]-xl)<=width)
+      It->SetRegRefMark();
+  }
+}
+*/
+
+void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
+{
+  Point3DCL VertCoord(0.0);
+  double width= 0.001;
+  
+  for (MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
+    ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
+  {
+    for(int i=0; i<4; ++i)
+    {
+      VertCoord=It->GetVertex(i)->GetCoord();
+      if (fabs(VertCoord[0])<=width || fabs(VertCoord[0]-xl)<=width)
+      {
+        It->SetRegRefMark();
+        goto mark;
+      }
+      mark:;
+    }
+  }
+}
+
 
 template<class Coeff>
 void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* sol2D, 
@@ -378,11 +437,17 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     int MeshRefZ= imrz<<iBndRef;
     int FacePtsYZ= (MeshRefY+1)*(MeshRefZ+1);
     
-    /*
-    mexPrintf("\nmrx = %d", imrx);
-    mexPrintf("\nmry = %d", imry);
-    mexPrintf("\nmrz = %d", imrz);  
-    */
+    //mexPrintf("imrx = %d\n", imrx);
+    //mexPrintf("imry = %d\n", imry);
+    //mexPrintf("imrz = %d\n", imrz);  
+    //mexPrintf("iM = %d\n", iM);
+    //mexPrintf("icgiter = %d\n", icgiter);
+    //mexPrintf("iFlag = %d\n", iFlag);
+    //mexPrintf("iBndRef = %d\n", iBndRef);
+    //mexPrintf("MeshRefX = %d\n", MeshRefX);
+    //mexPrintf("MeshRefY = %d\n", MeshRefY);
+    //mexPrintf("MeshRefZ = %d\n", MeshRefZ);
+    //mexPrintf("FacePtsYZ = %d\n", FacePtsYZ);
     
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, imrx, imry, imrz);
     
@@ -420,7 +485,7 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     
     for (int ref=0; ref<iBndRef; ref++)
     {
-      DROPS::MarkBndTetrahedra(mg, mg.GetLastLevel());
+      DROPS::MarkBndTetrahedra(mg, mg.GetLastLevel(), xl);
       mg.Refine();
     }
     
@@ -430,8 +495,8 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     //time.Stop();
     //mexPrintf("Zeit fuer das Loesen des direkten Problems: %g sek\n", time.GetTime());
     
-    //std::ofstream fil("ttt.off");
-    //fil << DROPS::GeomMGOutCL(mg, -1, true, 0.0) << std::endl;
+    std::ofstream fil("ttt.off");
+    fil << DROPS::GeomMGOutCL(mg, -1, true, 0.0) << std::endl;
     
     return;
   }
