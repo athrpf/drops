@@ -18,20 +18,11 @@
 
 
 #include "geom/multigrid.h"
+#include "num/bndData.h"
 #include <istream>
 
 namespace DROPS
 {
-
-enum BndCondT
-{
-    DirBC= 0, Dir0BC= 2,         // (in)hom. Dirichlet boundary conditions
-    NatBC= 1, Nat0BC= 3,         // (in)hom. natural   boundary conditions
-    OutflowBC= 3, WallBC= 2,     // for convenience
-    
-    UndefinedBC_= -1             // ReadMeshBuilderCL: error, unknown bc
-};
-
 
 class BrickBuilderCL : public MGBuilderCL
 {

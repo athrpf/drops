@@ -130,11 +130,9 @@ EnsightWriterCL::WriteAtTime(const InstatNSCL& NS, const double t)
     if (!have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
     ensight_.putGeom( geomfile_, t);
-    DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
-             const DROPS::VecDescCL> ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
+    typename InstatNSCL::DiscPrSolCL ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
     ensight_.putScalar( prfile_, ensightp, t);
-    DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>, const DROPS::InstatStokesVelBndDataCL, 
-                const DROPS::VelVecDescCL> ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
+    typename InstatNSCL::DiscVelSolCL ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
     ensight_.putVector( velfile_, ensightv, t);
 }
 
@@ -238,7 +236,7 @@ SetVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
 
 void
 SetPr(DROPS::P1EvalCL< double,
-                       const DROPS::StokesBndDataCL::PrBndDataCL,
+                       const DROPS::InstatStokesPrBndDataCL,
                        DROPS::VecDescCL>& fun,
       double t)
 {
@@ -364,7 +362,7 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
         std::swap( pidx2, pidx1);
         NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
         p1->SetIdx( pidx1);
-        P1EvalCL<double, const StokesBndDataCL::PrBndDataCL,
+        P1EvalCL<double, const InstatStokesPrBndDataCL,
                  const VecDescCL> funpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( funpr, *p1);
         p2->Clear();

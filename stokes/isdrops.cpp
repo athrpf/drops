@@ -196,7 +196,7 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
 
 void
 ZeroMean(DROPS::P1EvalCL< double,
-                          const DROPS::StokesBndDataCL::PrBndDataCL,
+                          const DROPS::InstatStokesPrBndDataCL,
                           DROPS::VecDescCL>& f)
 {
     const DROPS::Uint lvl= f.GetSolution()->RowIdx->TriangLevel;
@@ -487,11 +487,9 @@ EnsightWriterCL::WriteAtTime(const InstatNSCL& NS, const double t)
     if (!have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
     ensight_.putGeom( geomfile_, t);
-    DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
-             const DROPS::VecDescCL> ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
+    typename InstatNSCL::DiscPrSolCL ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
     ensight_.putScalar( prfile_, ensightp, t);
-    DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>, const DROPS::InstatStokesVelBndDataCL, 
-                const DROPS::VelVecDescCL> ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
+    typename InstatNSCL::DiscVelSolCL ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
     ensight_.putVector( velfile_, ensightv, t);
 }
 
@@ -685,7 +683,7 @@ UpdateTriangulation(DROPS::InstatStokesP2P1CL<Coeff>& NS,
         std::swap( pidx2, pidx1);
         NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
         p1->SetIdx( pidx1);
-        P1EvalCL<double, const StokesBndDataCL::PrBndDataCL,
+        P1EvalCL<double, const InstatStokesPrBndDataCL,
                  const VecDescCL> funpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( funpr, *p1);
         p2->Clear();
@@ -837,7 +835,7 @@ StrategyMRes(DROPS::InstatStokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
         instatsolver->SetTimeStep( dt);
-        DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
+        DROPS::P1EvalCL<double, const DROPS::InstatStokesPrBndDataCL,
              DROPS::VecDescCL> pr( p1, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         std::cerr << "Before timestep." << std::endl;
@@ -969,7 +967,7 @@ StrategyUzawa(DROPS::InstatStokesP2P1CL<Coeff>& NS,
         instatsolver->DoStep( v1->Data, p1->Data);
         std::cerr << "After timestep." << std::endl;
         std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
-        DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
+        DROPS::P1EvalCL<double, const DROPS::InstatStokesPrBndDataCL,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
@@ -1088,7 +1086,7 @@ Strategy(DROPS::InstatStokesP2P1CL<Coeff>& NS,
         instatsolver->DoStep( v1->Data, p1->Data);
 //        instatsolver->DoStep( v1->Data, p1->Data, timestep==0);
         std::cerr << "After timestep." << std::endl;
-        DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
+        DROPS::P1EvalCL<double, const DROPS::InstatStokesPrBndDataCL,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);

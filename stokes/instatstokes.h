@@ -18,85 +18,19 @@
 namespace DROPS
 {
 
-class InstatVelBndSegDataCL
-{
-  public:
-    typedef SVectorCL<3>    bnd_type;
-    typedef InstatVelBndSegDataCL self;
-    typedef bnd_type (*bnd_val_fun)( const Point3DCL&, double);
-    
-  private:
-    BndCondT     _bc;
-    bnd_val_fun  _bnd_val;
-
-  public:
-    InstatVelBndSegDataCL( BndCondT bc, bnd_val_fun f)
-    : _bc(bc), _bnd_val(f) {}
-    
-    bool        IsNeumann() const { return _bc & 1; }
-    bnd_val_fun GetBndFun() const { return _bnd_val; }
-    bnd_type    GetBndVal( const Point3DCL& p, double t) const { return _bnd_val( p, t); }
-};
-
-class InstatStokesVelBndDataCL
-{
-  private:
-    std::vector<InstatVelBndSegDataCL> _BndData;
-    
-  public:
-    typedef InstatVelBndSegDataCL::bnd_type    bnd_type;
-    typedef InstatVelBndSegDataCL::bnd_val_fun bnd_val_fun;
-    
-    InstatStokesVelBndDataCL(Uint, const bool*, const bnd_val_fun*);
-    InstatStokesVelBndDataCL(Uint, const BndCondT*, const bnd_val_fun*);
-
-    inline bool IsOnDirBnd( const VertexCL&) const;
-    inline bool IsOnNeuBnd( const VertexCL&) const;
-    inline bool IsOnDirBnd( const EdgeCL&) const;
-    inline bool IsOnNeuBnd( const EdgeCL&) const;
-    inline bool IsOnDirBnd( const FaceCL&) const;
-    inline bool IsOnNeuBnd( const FaceCL&) const;
-    
-    inline bnd_type GetDirBndValue( const VertexCL&, double) const;
-    inline bnd_type GetNeuBndValue( const VertexCL&, double) const;
-    inline bnd_type GetDirBndValue( const EdgeCL&, double) const;
-    inline bnd_type GetNeuBndValue( const EdgeCL&, double) const;
-    inline bnd_type GetDirBndValue( const FaceCL&, double) const;
-    inline bnd_type GetNeuBndValue( const FaceCL&, double) const;
-
-    const InstatVelBndSegDataCL& GetSegData(BndIdxT idx) const { return _BndData[idx]; }
-};
-
-inline InstatStokesVelBndDataCL::InstatStokesVelBndDataCL( Uint numbndseg,
-                                                           const bool* isneumann,
-                                                           const bnd_val_fun* fun)
-{
-    _BndData.reserve(numbndseg);
-    for (Uint i=0; i<numbndseg; ++i)
-        _BndData.push_back( InstatVelBndSegDataCL( isneumann[i] ? NatBC : DirBC, fun[i]) );
-}
-
-inline InstatStokesVelBndDataCL::InstatStokesVelBndDataCL( Uint numbndseg,
-                                                           const BndCondT* bc,
-                                                           const bnd_val_fun* fun)
-{
-    _BndData.reserve(numbndseg);
-    for (Uint i=0; i<numbndseg; ++i)
-        _BndData.push_back( InstatVelBndSegDataCL( bc[i], fun[i]) );
-}
-
-
+typedef BndDataCL<Point3DCL> InstatStokesVelBndDataCL;
+typedef BndDataCL<double>    InstatStokesPrBndDataCL;
 
 class InstatStokesBndDataCL
 {
   public:
-    InstatStokesBndDataCL( Uint numbndseg, const bool* isneumann, const InstatVelBndSegDataCL::bnd_val_fun* fun)
-        : Pr(), Vel( numbndseg, isneumann, fun) {}
-    InstatStokesBndDataCL( Uint numbndseg, const BndCondT* bc, const InstatVelBndSegDataCL::bnd_val_fun* fun)
-        : Pr(), Vel( numbndseg, bc, fun) {}
+    InstatStokesBndDataCL( Uint numbndseg, const BndCondT* bc_vel, const InstatStokesVelBndDataCL::bnd_val_fun* fun, const BndCondT* bc_pr= 0)
+        : Pr( numbndseg, bc_pr), Vel( numbndseg, bc_vel, fun) {}
+    InstatStokesBndDataCL( Uint numbndseg, const bool* isneumann, const InstatStokesVelBndDataCL::bnd_val_fun* fun)
+        : Pr( numbndseg), Vel( numbndseg, isneumann, fun) {} // deprecated ctor!
     
-    const StokesBndDataCL::PrBndDataCL Pr;
-    const InstatStokesVelBndDataCL     Vel;   
+    const InstatStokesPrBndDataCL     Pr;
+    const InstatStokesVelBndDataCL    Vel;   
 };
 
 typedef double       (*scalar_instat_fun_ptr)( const Point3DCL&, double);
@@ -115,7 +49,7 @@ class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     using                                           _base::GetBndData;
     using                                           _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>   DiscPrSolCL;
+    typedef P1EvalCL<double, const InstatStokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
     typedef InstatP2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, 
                                                      const VelVecDescCL> DiscVelSolCL;
 
@@ -134,8 +68,10 @@ class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
         : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.) {}  
 
     // Create and delete numbering of unknowns
-    void CreateNumberingVel( Uint, IdxDescCL*);
-    void CreateNumberingPr ( Uint, IdxDescCL*);
+    void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void DeleteNumberingVel( IdxDescCL*);
     void DeleteNumberingPr ( IdxDescCL*);
     
@@ -204,114 +140,6 @@ class SchurComplNoPcMatrixCL
         : _matA(A), _matB(B), _tol(tol) {}
     friend VectorCL operator*( const SchurComplNoPcMatrixCL& M, const VectorCL& v);
 };
-
-
-//======================================
-//        inline functions 
-//======================================
-
-inline bool InstatStokesVelBndDataCL::IsOnDirBnd( const VertexCL& v) const
-{
-    if ( !v.IsOnBoundary() ) return false;
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !_BndData[it->GetBndIdx()].IsNeumann() )
-            return true;
-    return false; 
-}        
-
-inline bool InstatStokesVelBndDataCL::IsOnNeuBnd( const VertexCL& v) const
-{
-    if ( !v.IsOnBoundary() ) return false;
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !_BndData[it->GetBndIdx()].IsNeumann() )
-            return false;
-    return true;
-}        
-
-inline bool InstatStokesVelBndDataCL::IsOnDirBnd( const EdgeCL& e) const
-{
-    if ( !e.IsOnBoundary() ) return false;
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !_BndData[*it].IsNeumann() )
-            return true;
-    return false;
-}
-
-inline bool InstatStokesVelBndDataCL::IsOnNeuBnd( const EdgeCL& e) const
-{
-    if ( !e.IsOnBoundary() ) return false;
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !_BndData[*it].IsNeumann() )
-            return false;
-    return true;
-}        
-
-inline bool InstatStokesVelBndDataCL::IsOnDirBnd( const FaceCL& f) const
-{
-    return f.IsOnBoundary() && !_BndData[f.GetBndIdx()].IsNeumann();
-}
-
-inline bool InstatStokesVelBndDataCL::IsOnNeuBnd(const FaceCL& f) const
-{
-    return f.IsOnBoundary() && _BndData[f.GetBndIdx()].IsNeumann();
-}        
-
-
-
-
-inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetDirBndValue( const VertexCL& v, double t) const
-// Returns value of the Dirichlet boundary value. 
-// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
-{
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !_BndData[it->GetBndIdx()].IsNeumann() )
-            return _BndData[it->GetBndIdx()].GetBndVal( v.GetCoord(), t);
-    throw DROPSErrCL("GetDirBndValue(VertexCL): No Dirichlet Boundary Segment!");
-}
-
-
-inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetNeuBndValue( const VertexCL& v, double t) const
-// Returns value of the Neumann boundary value. 
-// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( _BndData[it->GetBndIdx()].IsNeumann() )
-            return _BndData[it->GetBndIdx()].GetBndVal( v.GetCoord(), t);
-    throw DROPSErrCL("GetNeuBndValue(VertexCL): No Neumann Boundary Segment!");
-}
-
-inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetDirBndValue( const EdgeCL& e, double t) const
-{
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !_BndData[*it].IsNeumann() )
-            return _BndData[*it].GetBndVal( GetBaryCenter(e), t);
-    throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
-}
-
-inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetNeuBndValue( const EdgeCL& e, double t) const
-// Returns value of the Neumann boundary value. 
-// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( _BndData[*it].IsNeumann() )
-            return _BndData[*it].GetBndVal( GetBaryCenter(e), t);
-    throw DROPSErrCL("GetNeuBndValue(EdgeCL): No Neumann Boundary Segment!");
-}
-
-inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetDirBndValue( const FaceCL& f, double t) const
-{
-    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
-    return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
-}
-
-inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetNeuBndValue( const FaceCL& f, double t) const
-// Returns value of the Neumann boundary value. 
-// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
-    return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
-}
-
 
 } // end of namespace DROPS
 

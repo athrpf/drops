@@ -21,6 +21,8 @@ void BndCondInfo( BndCondT bc, std::ostream& os)
       case Dir0BC: os << "hom. Dirichlet BC / wall\n"; break; 
       case NatBC:  os << "inhom. Natural BC\n"; break; 
       case Nat0BC: os << "hom. Natural BC / outflow\n"; break; 
+      case Per1BC: os << "periodic BC\n"; break;
+      case Per2BC: os << "periodic BC, correspondent\n"; break;
       default:     os << "WARNING! unknown BC\n";
     }
 }

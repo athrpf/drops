@@ -31,7 +31,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     using                                                _base::GetBndData;
     using                                                _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>   DiscPrSolCL;
+    typedef P1EvalCL<double, const InstatStokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
     typedef InstatP2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, 
                                                      const VelVecDescCL> DiscVelSolCL;
 
@@ -50,8 +50,10 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
         : _base(mgb, coeff, bdata), vel_idx(3,3), pr_idx(1), t( 0.) {}  
 
     // Create and delete numbering of unknowns
-    void CreateNumberingVel( Uint, IdxDescCL*);
-    void CreateNumberingPr ( Uint, IdxDescCL*);
+    void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
     void DeleteNumberingVel( IdxDescCL*);
     void DeleteNumberingPr ( IdxDescCL*);
     

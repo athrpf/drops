@@ -85,26 +85,6 @@ class MatDescCL
     void Reset();
 };
 
-
-template<class Data= double>
-class NoBndDataCL
-{
-  public:
-    // default ctor, dtor, whatever
-    typedef Data bnd_type;
-
-    static inline bool IsOnDirBnd (const VertexCL&) { return false; }
-    static inline bool IsOnNeuBnd (const VertexCL&) { return false; }
-    static inline bool IsOnDirBnd (const EdgeCL&)   { return false; }
-    static inline bool IsOnNeuBnd (const EdgeCL&)   { return false; }
-    
-    static inline bnd_type GetDirBndValue (const VertexCL&)
-        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-};
-
-
 template <class Coeff, class BndData>
 class ProblemCL
 {
@@ -154,6 +134,11 @@ void VecDescBaseCL<T>::Reset()
     RowIdx = 0;
     Data.resize(0);
 }
+
+
+// ----------------------------------------------------------------------------
+//                      Routines for numbering of unknowns
+// ----------------------------------------------------------------------------
 
 template<class BndDataT>
 void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint stride,
@@ -252,6 +237,214 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
     for (Iter it=begin; it!=end; ++it) 
         if (it->Unknowns.Exist() && it->Unknowns.Exist( idx) ) 
             it->Unknowns.Invalidate( idx);
+}
+
+typedef bool (*match_fun)(const Point3DCL&, const Point3DCL&);
+
+template<class BndDataT>
+void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun match,
+                        const MultiGridCL::TriangVertexIteratorCL& begin,
+                        const MultiGridCL::TriangVertexIteratorCL& end,
+                        const BndDataT& Bnd)
+{
+    if (stride == 0) return;
+    
+    typedef std::list<VertexCL*> psetT;
+    psetT s1, s2;
+    // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
+    // collect all objects on Per1/Per2 bnds in s1, s2 resp.
+    for (MultiGridCL::TriangVertexIteratorCL it= begin; it!=end; ++it)
+    {
+        if ( Bnd.IsOnDirBnd( *it) ) continue;
+        it->Unknowns.Prepare( idx);
+        if (Bnd.IsOnPerBnd( *it))
+        {
+            if (Bnd.GetBC( *it)==Per1BC)
+            {
+                s1.push_back( &*it);
+                it->Unknowns( idx)= counter;
+                counter+= stride;
+            }
+            else
+                s2.push_back( &*it);
+        }
+        else
+        {
+            it->Unknowns( idx)= counter;
+            counter+= stride;
+        }
+    }
+    if (s1.size() != s2.size())
+        throw DROPSErrCL( "CreatePeriodicNumbOnVertex: Periodic boundaries do not match!");
+    // match objects in s1 and s2
+    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
+    {
+        // search corresponding object in s2
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; ++it2)
+            if (match( (*it1)->GetCoord(), (*it2)->GetCoord()))
+            {
+                // it2 gets same number as it1
+                (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
+                // remove it2 from s2 and stop search
+                s2.erase( it2);
+                break;
+            }
+    }
+    if (!s2.empty())
+        throw DROPSErrCL( "CreatePeriodicNumbOnVertex: Periodic boundaries do not match!");
+}
+
+template<class BndDataT>
+void CreatePeriodicNumbOnEdge( Uint idx, IdxT& counter, Uint stride, match_fun match,
+                        const MultiGridCL::TriangEdgeIteratorCL& begin,
+                        const MultiGridCL::TriangEdgeIteratorCL& end,
+                        const BndDataT& Bnd)
+{
+    if (stride == 0) return;
+    
+    typedef std::list<EdgeCL*> psetT;
+    psetT s1, s2;
+    // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
+    // collect all objects on Per1/Per2 bnds in s1, s2 resp.
+    for (MultiGridCL::TriangEdgeIteratorCL it= begin; it!=end; ++it)
+    {
+        if ( Bnd.IsOnDirBnd( *it) ) continue;
+        it->Unknowns.Prepare( idx);
+        if (Bnd.IsOnPerBnd( *it))
+        {
+            if (Bnd.GetBC( *it)==Per1BC)
+            {
+                s1.push_back( &*it);
+                it->Unknowns( idx)= counter;
+                counter+= stride;
+            }
+            else
+                s2.push_back( &*it);
+        }
+        else
+        {
+            it->Unknowns( idx)= counter;
+            counter+= stride;
+        }
+    }
+    if (s1.size() != s2.size())
+        throw DROPSErrCL( "CreatePeriodicNumbOnEdge: Periodic boundaries do not match!");
+    // match objects in s1 and s2
+    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
+    {
+        // search corresponding object in s2
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; ++it2)
+            if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
+            {
+                // it2 gets same number as it1
+                (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
+                // remove it2 from s2 and stop search
+                s2.erase( it2);
+                break;
+            }
+    }
+    if (!s2.empty())
+        throw DROPSErrCL( "CreatePeriodicNumbOnEdge: Periodic boundaries do not match!");
+}
+
+template<class BndDataT>
+void CreatePeriodicNumbOnFace( Uint idx, IdxT& counter, Uint stride, match_fun match,
+                        const MultiGridCL::TriangFaceIteratorCL& begin,
+                        const MultiGridCL::TriangFaceIteratorCL& end,
+                        const BndDataT& Bnd)
+{
+    if (stride == 0) return;
+    
+    typedef std::list<FaceCL*> psetT;
+    psetT s1, s2;
+    // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
+    // collect all objects on Per1/Per2 bnds in s1, s2 resp.
+    for (MultiGridCL::TriangFaceIteratorCL it= begin; it!=end; ++it)
+    {
+        if ( Bnd.IsOnDirBnd( *it) ) continue;
+        it->Unknowns.Prepare( idx);
+        if (Bnd.IsOnPerBnd( *it))
+        {
+            if (Bnd.GetBC( *it)==Per1BC)
+            {
+                s1.push_back( &*it);
+                it->Unknowns( idx)= counter;
+                counter+= stride;
+            }
+            else
+                s2.push_back( &*it);
+        }
+        else
+        {
+            it->Unknowns( idx)= counter;
+            counter+= stride;
+        }
+    }
+    if (s1.size() != s2.size())
+        throw DROPSErrCL( "CreatePeriodicNumbOnFace: Periodic boundaries do not match!");
+    // match objects in s1 and s2
+    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
+    {
+        // search corresponding object in s2
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; ++it2)
+            if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
+            {
+                // it2 gets same number as it1
+                (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
+                // remove it2 from s2 and stop search
+                s2.erase( it2);
+                break;
+            }
+    }
+    if (!s2.empty())
+        throw DROPSErrCL( "CreatePeriodicNumbOnFace: Periodic boundaries do not match!");
+}
+
+template<class BndDataT>
+void CreateNumb( Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndDataT& Bnd, match_fun match= 0)
+// used for numbering of the Unknowns depending on the index idx.
+// if a matching function is given, numbering for periodic boundaries is considered.
+// sets up the description of the index idx,
+// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
+// Remark: expects, that IdxDesc[idxnr].NumUnknownsVertex etc. are set.
+{
+    // set up the index description
+    idx.TriangLevel = level;
+    idx.NumUnknowns = 0;
+
+    const Uint idxnum= idx.GetIdx();
+
+    // allocate space for indices; number unknowns in TriangLevel level
+    if (match)
+    {
+        if (idx.NumUnknownsVertex)
+            CreatePeriodicNumbOnVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex, match,
+                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
+        if (idx.NumUnknownsEdge)
+            CreatePeriodicNumbOnEdge( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge, match,
+                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
+        if (idx.NumUnknownsFace)
+            CreatePeriodicNumbOnFace( idxnum, idx.NumUnknowns, idx.NumUnknownsFace, match,
+                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
+        if (idx.NumUnknownsTetra)
+            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra,
+                mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
+    }
+    else
+    {
+        if (idx.NumUnknownsVertex)
+            CreateNumbOnVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex,
+                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
+        if (idx.NumUnknownsEdge)
+            CreateNumbOnEdge( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge,
+                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
+        if (idx.NumUnknownsFace)
+            CreateNumbOnFace( idxnum, idx.NumUnknowns, idx.NumUnknownsFace,
+                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
+        if (idx.NumUnknownsTetra)
+            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra,
+                mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
+    }
 }
 
 } // end of namespace DROPS

@@ -7,8 +7,8 @@
 #ifndef DROPS_LEVELSET_H
 #define DROPS_LEVELSET_H
 
-#include "stokes/stokes.h"
 #include "num/spmat.h"
+#include "num/bndData.h"
 
 namespace DROPS
 {
@@ -18,7 +18,8 @@ class LevelsetP2CL
 // flow problems.
 {
   public:
-    typedef P2EvalCL<double, const NoBndDataCL<>, const VecDescCL> DiscSolCL;
+    typedef BndDataCL<>    BndDataT;
+    typedef P2EvalCL<double, const BndDataT, const VecDescCL> DiscSolCL;
 
     IdxDescCL           idx;
     VecDescCL           Phi;
@@ -31,7 +32,7 @@ class LevelsetP2CL
                         _SD,       // streamline diffusion
                         _theta, _dt;  
     MatrixCL            _E, _H, _L;
-    NoBndDataCL<>       _dummyBnd;
+    BndDataT            _Bnd;
     SSORPcCL            _pc;
     GMResSolverCL<SSORPcCL>  _gm;
 
@@ -40,17 +41,24 @@ class LevelsetP2CL
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
     
   public:
-    LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0., 
-                  double diff= 0., Uint iter=1000, double tol=1e-7, double curvDiff= -1)
+    LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0, 
+                  double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
       : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
-        _theta( theta), _dt( 0.), _gm( _pc, 10, iter, tol)
+        _theta( theta), _dt( 0.), _Bnd( BndDataT(mg.GetBnd().GetNumBndSeg()) ), _gm( _pc, 100, iter, tol)
+    {}
+    
+    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, double sig= 0, double theta= 0.5, double SD= 0, 
+                  double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
+      : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
+        _theta( theta), _dt( 0.), _Bnd( bnd), _gm( _pc, 100, iter, tol)
     {}
     
     GMResSolverCL<SSORPcCL>& GetSolver() { return _gm; }
     
-    const NoBndDataCL<>& GetBndData() const { return _dummyBnd; }
+    const BndDataT& GetBndData() const { return _Bnd; }
     
-    void CreateNumbering( Uint level, IdxDescCL*);
+    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _Bnd, match); }
     void DeleteNumbering( IdxDescCL*);
 
     void Init( scalar_fun_ptr);
@@ -69,9 +77,9 @@ class LevelsetP2CL
     void   AccumulateBndIntegral( VecDescCL& f) const;
     
     DiscSolCL GetSolution() const
-        { return DiscSolCL( &Phi, &_dummyBnd, &_MG); }
+        { return DiscSolCL( &Phi, &_Bnd, &_MG); }
     DiscSolCL GetSolution( const VecDescCL& MyPhi) const
-        { return DiscSolCL( &MyPhi, &_dummyBnd, &_MG); }
+        { return DiscSolCL( &MyPhi, &_Bnd, &_MG); }
         
     // the following member functions are added to enable an easier implementation
     // of the coupling navstokes-levelset. They should not be called by a common user.

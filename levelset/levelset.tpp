@@ -21,28 +21,6 @@ inline double SmoothedSign( double x, double alpha)
     return x/std::sqrt(x*x+alpha);
 }
 
-void LevelsetP2CL::CreateNumbering(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, that IdxDesc[idxnum].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level),
-                        _dummyBnd);
-    CreateNumbOnEdge( idxnum, idx->NumUnknowns, idx->NumUnknownsEdge,
-                      _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level),
-                      _dummyBnd );
-}
-
-
 void LevelsetP2CL::DeleteNumbering( IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
