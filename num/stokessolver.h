@@ -10,6 +10,7 @@
 #define DROPS_STOKESSOLVER_H
 
 #include "num/solver.h"
+#include "stokes/stokes.h"
 
 namespace DROPS
 {
