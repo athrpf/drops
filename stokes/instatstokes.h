@@ -70,7 +70,7 @@ class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
     void DeleteNumberingVel( IdxDescCL*);
     void DeleteNumberingPr ( IdxDescCL*);
     
