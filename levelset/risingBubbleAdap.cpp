@@ -43,7 +43,7 @@ class ZeroFlowCL
 
     ZeroFlowCL() 
       : rho( DROPS::JumpCL( 1, 10), DROPS::H_sm, sm_eps),
-         mu( DROPS::JumpCL( 1, 2), DROPS::H_sm, sm_eps),
+         mu( DROPS::JumpCL( 2, 1), DROPS::H_sm, sm_eps),
         Re(1), We(1) 
     { g[2]= -9.81; }
 };
@@ -67,7 +67,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, sigma, 0.5, 0.1); // Crank-Nicholson, SD=0.1
+    LevelsetP2CL lset( MG, sigma, 1, 0.1); // impl. Euler, SD=0.1
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -86,7 +86,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
     prM.SetIdx( pidx, pidx);
-    Stokes.SetupPrMass( &prM);
+    Stokes.SetupPrMass( &prM, lset);
     
     Stokes.InitVel( &Stokes.v, Null);
     lset.Init( DistanceFct);
@@ -120,17 +120,20 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
 
     CouplLevelsetStokes2PhaseCL<StokesProblemT, PSchur_GSPCG_CL> 
-        cpl( Stokes, lset, schurSolver);
+        cpl( Stokes, lset, schurSolver, 1.0); // impl. Euler
     cpl.SetTimeStep( delta_t);
 
     for (Uint step= 1; step<=num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( FPsteps);
+        if (step%10 == 0)
+            lset.ReparamFastMarching();
         ensight.putGeom( datgeo, step*delta_t);
         ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
         ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+        ensight.Commit();
 	if (step<num_steps) // omit in last step
 	{
 //            LevelsetP2CL::DiscSolCL sol= lset.GetSolution();
@@ -148,7 +151,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
                 cpl.Update();
                 // don't forget to update the pr mass matrix for the schur compl. preconditioner!!
                 prM.SetIdx( pidx, pidx);
-                Stokes.SetupPrMass( &prM);
+                Stokes.SetupPrMass( &prM, lset);
             }
 	}
     }
@@ -197,7 +200,7 @@ int main (int argc, char** argv)
         
     StokesOnBrickCL prob(brick, ZeroFlowCL(), DROPS::InstatStokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
-    DROPS::AdapTriangCL adap( mg, 0.2, 0, 3);
+    DROPS::AdapTriangCL adap( mg, 0.1, 0, 3);
 
     adap.MakeInitialTriang( DistanceFct);
     Strategy( prob, adap, inner_iter_tol, sigma);

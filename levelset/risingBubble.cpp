@@ -98,7 +98,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     
     Stokes.InitVel( &Stokes.v, Null);
 
-    Stokes.SetupPrMass( &prM);
+    Stokes.SetupPrMass( &prM, lset);
 
     Uint meth;
     std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;

@@ -190,7 +190,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     prA.SetIdx( pidx, pidx);
     
     Stokes.InitVel( &Stokes.v, Null);
-    Stokes.SetupPrMass(  &prM);
+    Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA);
    
     switch (C.IniCond)

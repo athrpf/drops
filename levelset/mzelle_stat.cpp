@@ -105,7 +105,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     
     Stokes.InitVel( &Stokes.v, Null);
 
-    Stokes.SetupPrMass( &prM);
+    Stokes.SetupPrMass( &prM, lset);
     
     VelVecDescCL curv( vidx);
     Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);

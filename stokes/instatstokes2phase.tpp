@@ -76,7 +76,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset, double nu1, double nu2) const
 // Sets up the mass matrix for the pressure
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
@@ -87,11 +87,14 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
     const Uint pidx   = matM->RowIdx->GetIdx();
 
     IdxT prNumb[4];
-
+    SmoothedJumpCL nu_invers( 1./nu1, 1./nu2, _Coeff.rho);
+    Quad2CL<double> nu_inv;
+    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    
     // compute all couplings between HatFunctions on verts:
     // I( i, j) = int ( psi_i*psi_j, T_ref) * absdet
-    const double coupl_ii= 1./60.,  // = 1/120 + 2/15 * 1/16,
-                 coupl_ij= 1./120.; // =         2/15 * 1/16;
+//    const double coupl_ii= 1./60.,  // = 1/120 + 2/15 * 1/16,
+//                 coupl_ij= 1./120.; // =         2/15 * 1/16;
 
     
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
@@ -102,12 +105,15 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
         for(int i=0; i<4; ++i)
         {
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
+            nu_inv.val[i]= ls.val( *sit->GetVertex(i));
         }
+        nu_inv.val[4]= ls.val( *sit, 0.25, 0.25, 0.25); 
+        nu_inv.apply( nu_invers);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
-                    M_pr( prNumb[i], prNumb[j])+= (i!=j ? coupl_ij : coupl_ii) * absdet;
-                    //mu_Re.quadP1(i,j, absdet);
+                    M_pr( prNumb[i], prNumb[j])+= //(i!=j ? coupl_ij : coupl_ii) * absdet;
+                                                  nu_inv.quadP1(i,j, absdet);
     }
     M_pr.Build();
 }

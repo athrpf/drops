@@ -147,7 +147,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     prA.SetIdx( pidx, pidx);
     
     Stokes.InitVel( &Stokes.v, Null);
-    Stokes.SetupPrMass(  &prM);
+    Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA);
     MatrixCL prM_A;
     ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);

@@ -146,29 +146,31 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     prA.SetIdx( pidx, pidx);
     
     Stokes.InitVel( &Stokes.v, Null);
-    Stokes.SetupPrMass(  &prM);
+    Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA);
     MatrixCL prM_A;
 
     PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-
-    // solve stationary problem for initial velocities    
-    TimerCL time;
     VelVecDescCL curv( vidx);
-    time.Reset();
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
-    curv.Clear();
-    lset.AccumulateBndIntegral( curv);
-    time.Stop();
-    std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-    time.Reset();
-    schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
-        Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data, Stokes.c.Data);
-    time.Stop();
-    std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+    if (C.IniCond != 0)
+    {
+        // solve stationary problem for initial velocities    
+        TimerCL time;
+        time.Reset();
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
+        curv.Clear();
+        lset.AccumulateBndIntegral( curv);
+        time.Stop();
+        std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
+        time.Reset();
+        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
+            Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data, Stokes.c.Data);
+        time.Stop();
+        std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+    }
     curv.Clear();
     lset.AccumulateBndIntegral( curv);
 
@@ -283,7 +285,7 @@ int main (int argc, char** argv)
 
     typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
     
-    const double L= 1.5*C.Radius;
+    const double L= 3e-3;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
     

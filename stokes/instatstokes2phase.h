@@ -65,7 +65,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     void SetupRhs2( VecDescCL* c, double t) const;
     // Set up mass and stiffness matrix for pressure-unknowns (P1, time-independent) 
     // needed for preconditioning of the Schur complement
-    void SetupPrMass( MatDescCL* prM) const;
+    void SetupPrMass( MatDescCL* prM, const LevelsetP2CL& lset, double nu1=1, double nu2=1) const;
     void SetupPrStiff(MatDescCL* prA) const;
     void InitVel( VelVecDescCL*, vector_instat_fun_ptr, double t0= 0.) const;
 
