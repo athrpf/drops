@@ -122,10 +122,10 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
 }
 
 
-template<class MGB, class Coeff>
-void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int meth, int sm)
+template<class Coeff>
+void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, int sm)
 {
-    typedef PoissonP1CL<MGB,Coeff> MyPoissonCL;
+    typedef PoissonP1CL<Coeff> MyPoissonCL;
     
     MultiGridCL& MG= Poisson.GetMG();
     IdxDescCL* c_idx;
@@ -259,13 +259,13 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int met
 }
 
 
-template<class MGB, class Coeff>
-void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
-                                                       double tol, int meth, int sm,
-                                                       double stoperr, double markratio,
-                                                       double minratio)
+template<class Coeff>
+void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
+                                                   double tol, int meth, int sm,
+                                                   double stoperr, double markratio,
+                                                   double minratio)
 {
-    typedef PoissonP1CL<MGB,Coeff> MyPoissonCL;
+    typedef PoissonP1CL<Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
@@ -528,8 +528,8 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 2.0;
 
-    typedef DROPS::PoissonP1CL<DROPS::BrickBuilderCL, PoissonCoeffCL> PoissonOnBrickCL;
-    typedef PoissonOnBrickCL                                          MyPoissonCL;
+    typedef DROPS::PoissonP1CL<PoissonCoeffCL> PoissonOnBrickCL;
+    typedef PoissonOnBrickCL                   MyPoissonCL;
 
     DROPS::BrickBuilderCL domain(orig, e1, e2, e3, 4, 4, 4);
 //    DROPS::LBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 2, 2); 

@@ -263,11 +263,11 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel)
     }
 }
 
-template<class MGB, class Coeff>
-void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double* sol2D, 
+template<class Coeff>
+void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* sol2D, 
   double nu, double dt, int time_steps, double theta, double cgtol, int cgiter, MatConnect* MatCon)
 {
-  typedef InstatPoissonP1CL<MGB,Coeff> MyPoissonCL;
+  typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
   
   IdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
@@ -317,7 +317,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double* sol2D,
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler
   // theta=0.5 -> Crank-Nicholson
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff>, PCG_SsorCL>
+  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, PCG_SsorCL>
     ThetaScheme(Poisson, pcg_solver, theta);
   ThetaScheme.SetTimeStep(dt, nu);
   
@@ -361,7 +361,7 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     e2[1]= yl;
     e3[2]= zl;
     
-    typedef DROPS::InstatPoissonP1CL<DROPS::BrickBuilderCL, PoissonCoeffCL>
+    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL>
       InstatPoissonOnBrickCL;
     typedef InstatPoissonOnBrickCL MyPoissonCL;
     

@@ -91,19 +91,18 @@ class InstatStokesBndDataCL
 typedef double       (*scalar_instat_fun_ptr)( const Point3DCL&, double);
 typedef SVectorCL<3> (*vector_instat_fun_ptr)( const Point3DCL&, double);
 
-template <class MGB, class Coeff>
-class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
+template <class Coeff>
+class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
 {
   public:
-    typedef ProblemCL<MGB, Coeff, InstatStokesBndDataCL> _base;
-    typedef typename _base::MultiGridBuilderCL           MultiGridBuilderCL;
-    typedef typename _base::CoeffCL                      CoeffCL;
-    typedef typename _base::BndDataCL                    BndDataCL;
-    using                                                _base::_MG;
-    using                                                _base::_Coeff;
-    using                                                _base::_BndData;
-    using                                                _base::GetBndData;
-    using                                                _base::GetMG;
+    typedef ProblemCL<Coeff, InstatStokesBndDataCL> _base;
+    typedef typename _base::CoeffCL                 CoeffCL;
+    typedef typename _base::BndDataCL               BndDataCL;
+    using                                           _base::_MG;
+    using                                           _base::_Coeff;
+    using                                           _base::_BndData;
+    using                                           _base::GetBndData;
+    using                                           _base::GetMG;
 
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
     typedef InstatP2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, 
@@ -120,8 +119,8 @@ class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
                  B,
                  M;
     
-    InstatStokesP2P1CL( const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), vel_idx(3,3), pr_idx(1), t( 0.) {}  
+    InstatStokesP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint, IdxDescCL*);

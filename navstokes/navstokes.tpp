@@ -9,8 +9,8 @@
 namespace DROPS
 {
 
-template <class MGB, class Coeff>
-void NavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
+template <class Coeff>
+void NavierStokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
 {
     Uint lvl= A.RowIdx->TriangLevel,
         vidx= A.RowIdx->GetIdx(),
@@ -56,8 +56,8 @@ void NavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
 */}
 
 
-template <class MGB, class Coeff>
-void NavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+template <class Coeff>
+void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
                                  vector_fun_ptr LsgVel,      scalar_fun_ptr LsgPr)
 {
     double diff, maxdiff=0, norm2= 0;
@@ -262,8 +262,8 @@ inline double Quad(double f[5], int i)
     }
 }
 
-template <class MGB, class Coeff>
-void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
+template <class Coeff>
+void NavierStokesP2P1CL<Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
 // Sets up the stiffness matrices and right hand sides
 {
     vecb->Clear();
@@ -347,8 +347,8 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
 
 
 /*
-template <class MGB, class Coeff>
-void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec, VelVecDescCL* vecb) const
+template <class Coeff>
+void NavierStokesP2P1CL<Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec, VelVecDescCL* vecb) const
 // Sets up the right hand sides corresponding to the sgtiffness matrix for N
 {
     vecb->Clear();

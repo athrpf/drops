@@ -47,9 +47,9 @@ class StokesCoeffCL
     StokesCoeffCL() : nu(1.0) {}
 };
 
-    typedef DROPS::StokesP1BubbleP1CL<DROPS::BrickBuilderCL, StokesCoeffCL> 
+    typedef DROPS::StokesP1BubbleP1CL<StokesCoeffCL> 
             StokesOnBrickCL;
-//    typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, StokesCoeffCL> 
+//    typedef DROPS::StokesP2P1CL<StokesCoeffCL> 
 //            StokesOnBrickCL;
     typedef StokesOnBrickCL MyStokesCL;
 
@@ -58,8 +58,8 @@ namespace DROPS // for Strategy
 using ::MyStokesCL;
 
 
-template<class MGB, class Coeff>
-void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep, double rel_red)
+template<class Coeff>
+void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep, double rel_red)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();

@@ -9,11 +9,11 @@
 namespace DROPS
 {
 
-template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel,
-                                                       vector_instat_fun_ptr DtLsgVel,
-                                                       scalar_instat_fun_ptr LsgPr,
-						       double t)
+template <class Coeff>
+void InstatNavierStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel,
+                                                   vector_instat_fun_ptr DtLsgVel,
+                                                   scalar_instat_fun_ptr LsgPr,
+						   double t)
 {
     Uint lvl= A.RowIdx->TriangLevel,
         vidx= A.RowIdx->GetIdx(),
@@ -68,8 +68,8 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr Lsg
 }
 
 
-template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
+template <class Coeff>
+void InstatNavierStokesP2P1CL<Coeff>::CheckSolution(
     const VelVecDescCL* lsgvel,
     const VecDescCL* lsgpr, 
     vector_instat_fun_ptr LsgVel,
@@ -308,9 +308,9 @@ inline double Quad(double f[5], int i)
     }
 }
 
-template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDescCL* velvec,
-                                                          VelVecDescCL* vecb, double t, double t2) const
+template <class Coeff>
+void InstatNavierStokesP2P1CL<Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDescCL* velvec,
+                                                      VelVecDescCL* vecb, double t, double t2) const
 // Sets up the approximation of the nonlinear term and the corresponding right hand side.
 {
     vecb->Clear();
@@ -394,10 +394,10 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
 
 
 /*
-template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec,
-                                                             VelVecDescCL* vecb,
-							     double t1, double t2) const
+template <class Coeff>
+void InstatNavierStokesP2P1CL<Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec,
+                                                         VelVecDescCL* vecb,
+							 double t1, double t2) const
 // Sets up the approximation of the nonlinear right hand side.
 {
     vecb->Clear();

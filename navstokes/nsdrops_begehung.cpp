@@ -49,7 +49,7 @@ const double NSDrCavCL::st= .1;
 inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
 inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
-typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, NSDrCavCL::StokesCoeffCL> 
+typedef DROPS::StokesP2P1CL<NSDrCavCL::StokesCoeffCL> 
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 typedef NSDrCavCL MyPdeCL;
@@ -182,10 +182,10 @@ PlotMTVSolOutCL<DiscVel>::put(std::ostream &os) const
     return os  << std::endl;
 }
 
-template<class MGB, class Coeff>
-void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, double tol,
-                                       int meth, Uint maxStep, double rel_red, double markratio,
-                                       double tau, Uint uzawa_inner_iter)
+template<class Coeff>
+void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
+                                   int meth, Uint maxStep, double rel_red, double markratio,
+                                   double tau, Uint uzawa_inner_iter)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
@@ -336,9 +336,9 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, double tol
 }
 
 
-template<class MGB, class Coeff>
-void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter, 
-                                                 double uzawa_red, double poi_tol, int poi_maxiter)
+template<class Coeff>
+void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter, 
+                                              double uzawa_red, double poi_tol, int poi_maxiter)
 // flow control
 {
     MultiGridCL& MG= NS.GetMG();
@@ -596,7 +596,7 @@ int main (int argc, char** argv)
         std::cerr << "uzawa_red: " << uzawa_red << ", ";
         std::cerr << "num_ref: " << num_ref << std::endl;
 
-        typedef DROPS::NavierStokesP2P1CL<DROPS::BrickBuilderCL, MyPdeCL::StokesCoeffCL> 
+        typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
                 NSOnBrickCL;
         typedef NSOnBrickCL MyNavierStokesCL;
 

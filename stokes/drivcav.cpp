@@ -36,8 +36,8 @@ void MarkLower( DROPS::MultiGridCL& mg, double tresh)
 namespace DROPS // for Strategy
 {
 
-template<class MGB, class Coeff>
-void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
+template<class Coeff>
+void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
@@ -243,7 +243,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
 
-    typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, DrivenCavityCL> 
+    typedef DROPS::StokesP2P1CL<DrivenCavityCL> 
             StokesOnBrickCL;
     typedef StokesOnBrickCL MyStokesCL;
 

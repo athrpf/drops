@@ -233,8 +233,8 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
-template<class MGB, class Coeff>
-void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep)
+template<class Coeff>
+void Strategy(InstatStokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
@@ -617,7 +617,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= M_PI/4.;
 
-    typedef DROPS::InstatStokesP2P1CL<DROPS::BrickBuilderCL, MyPDE::StokesCoeffCL> 
+    typedef DROPS::InstatStokesP2P1CL<MyPDE::StokesCoeffCL> 
             InstatStokesOnBrickCL;
     typedef InstatStokesOnBrickCL MyStokesCL;
 

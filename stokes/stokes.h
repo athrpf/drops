@@ -111,19 +111,18 @@ typedef SMatrixCL<3, 3> (*jacobi_fun_ptr)(const Point3DCL&);
 
 typedef VecDescBaseCL<VectorCL> VelVecDescCL;
 
-template <class MGB, class Coeff>
-class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
+template <class Coeff>
+class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<MGB, Coeff, StokesBndDataCL> _base;
-    typedef typename _base::MultiGridBuilderCL     MultiGridBuilderCL;
-    typedef typename _base::CoeffCL                CoeffCL;
-    typedef typename _base::BndDataCL              BndDataCL;
-    using                                          _base::_MG;
-    using                                          _base::_Coeff;
-    using                                          _base::_BndData;
-    using                                          _base::GetBndData;
-    using                                          _base::GetMG;
+    typedef ProblemCL<Coeff, StokesBndDataCL> _base;
+    typedef typename _base::CoeffCL           CoeffCL;
+    typedef typename _base::BndDataCL         BndDataCL;
+    using                                     _base::_MG;
+    using                                     _base::_Coeff;
+    using                                     _base::_BndData;
+    using                                     _base::GetBndData;
+    using                                     _base::GetMG;
 
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>           DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
@@ -139,10 +138,10 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     MatDescCL    A, 
                  B;
     
-    StokesP2P1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), vel_idx(3,3), pr_idx(1) {}  
+    StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1) {}  
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mg, coeff, bdata), vel_idx(3,3), pr_idx(1) {}  
+        : _base( mg, coeff, bdata), vel_idx( 3, 3), pr_idx( 1) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel(Uint, IdxDescCL*);
@@ -169,19 +168,18 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
 
 };
 
-template <class MGB, class Coeff>
-class StokesP1BubbleP1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
+template <class Coeff>
+class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<MGB, Coeff, StokesBndDataCL> _base;
-    typedef typename _base::MultiGridBuilderCL     MultiGridBuilderCL;
-    typedef typename _base::CoeffCL                CoeffCL;
-    typedef typename _base::BndDataCL              BndDataCL;
-    using                                          _base::_MG;
-    using                                          _base::_Coeff;
-    using                                          _base::_BndData;
-    using                                          _base::GetBndData;
-    using                                          _base::GetMG;
+    typedef ProblemCL<Coeff, StokesBndDataCL> _base;
+    typedef typename _base::CoeffCL           CoeffCL;
+    typedef typename _base::BndDataCL         BndDataCL;
+    using                                     _base::_MG;
+    using                                     _base::_Coeff;
+    using                                     _base::_BndData;
+    using                                     _base::GetBndData;
+    using                                     _base::GetMG;
 
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>                 DiscPrSolCL;
     typedef P1BubbleEvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
@@ -197,8 +195,8 @@ class StokesP1BubbleP1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     MatDescCL    A,        // Bad, bad comma.
                  B;
     
-    StokesP1BubbleP1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), vel_idx(3,0,0,3), pr_idx(1) {}  
+    StokesP1BubbleP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mgb, coeff, bdata), vel_idx( 3, 0, 0, 3), pr_idx( 1) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel(Uint, IdxDescCL*);

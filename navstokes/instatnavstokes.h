@@ -15,23 +15,22 @@
 namespace DROPS
 {
 
-template <class MGB, class Coeff>
-class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
+template <class Coeff>
+class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<Coeff>
 {
   private:
-    typedef InstatStokesP2P1CL<MGB, Coeff> _base;
+    typedef InstatStokesP2P1CL<Coeff> _base;
 
   public:
-    using                                  _base::_MG;
-    using                                  _base::_BndData;
-    using                                  _base::b;
-    using                                  _base::c;
-    using                                  _base::A;
-    using                                  _base::B;
+    using _base::_MG;
+    using _base::_BndData;
+    using _base::b;
+    using _base::c;
+    using _base::A;
+    using _base::B;
     
-    typedef MGB                           MultiGridBuilderCL;
-    typedef Coeff                         CoeffCL;
-    typedef typename _base::BndDataCL     BndDataCL;
+    typedef Coeff                     CoeffCL;
+    typedef typename _base::BndDataCL BndDataCL;
   
     MatDescCL    N;
     VelVecDescCL cplN;
@@ -40,8 +39,8 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
                // argument from SetupNonlinear.
 	       // The base class already contains t for the same purpose!
   
-    InstatNavierStokesP2P1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : InstatStokesP2P1CL<MGB, Coeff>(mgb, coeff, bdata) {}  
+    InstatNavierStokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : InstatStokesP2P1CL<Coeff>( mgb, coeff, bdata) {}  
 
     // Set up matrix and rhs for nonlinearity
     void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*, double, double) const;

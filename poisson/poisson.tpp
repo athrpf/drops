@@ -11,8 +11,8 @@
 namespace DROPS
 {
 
-template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
+template<class Coeff>
+void PoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -26,19 +26,19 @@ void PoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 
     // allocate space for indices; number unknowns in TriangLevel level
     CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level), GetBndData() );
+                        _MG.GetTriangVertexBegin( level), _MG.GetTriangVertexEnd( level), GetBndData());
 }
 
 
-template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::DeleteNumbering(IdxDescCL* idx)
+template<class Coeff>
+void PoissonP1CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
     idx->NumUnknowns = 0;
 
     // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
+    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin( level), _MG.GetTriangVertexEnd( level) );
 }
 
 //========================================================
@@ -105,8 +105,8 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 }
 */
 
-template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
 // Sets up the stiffness matrix and right hand side
 {
     b.Clear();
@@ -178,8 +178,8 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
 
 
 
-template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
 // Sets up the stiffness matrix
 {
     MatrixBuilderCL A(&Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
@@ -237,8 +237,8 @@ void PoissonP1CL<MGB,Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
     A.Build();
 }
 
-template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const
+template<class Coeff>
+void PoissonP1CL<Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const
 // This only works, if Interpolate is called after every refinement of the multigrid.
 {
     SetupP1ProlongationMatrix( _MG, P, cIdx, fIdx);
@@ -250,8 +250,8 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
 //
 //===================================================
 
-template<class MGB, class Coeff>
-double PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
+template<class Coeff>
+double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
     Uint lvl=lsg.RowIdx->TriangLevel,
@@ -298,8 +298,8 @@ double PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_pt
     return L2;
 }
 
-template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) const
+template<class Coeff>
+void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) const
 {
     Uint lvl= A.ColIdx->TriangLevel,
          idx= A.ColIdx->GetIdx();
@@ -321,8 +321,8 @@ void PoissonP1CL<MGB,Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg
 
 
 
-template<class MGB, class Coeff>
-bool PoissonP1CL<MGB,Coeff>::EstimateError (const VecDescCL& lsg, const double rel_loc_tol, double& globalerr, est_fun est)
+template<class Coeff>
+bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg, const double rel_loc_tol, double& globalerr, est_fun est)
 {
     const Uint lvl= lsg.RowIdx->TriangLevel;
     Uint num_ref= 0;
@@ -358,8 +358,8 @@ bool PoissonP1CL<MGB,Coeff>::EstimateError (const VecDescCL& lsg, const double r
 }
 
 
-template<class MGB, class Coeff>
-double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
+template<class Coeff>
+double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
 // Based on R. Verfuerth, "A review of a posteriori error estimation and adaptive
 // mesh refinement techniques"
 // chapter 1.2
@@ -455,8 +455,8 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
 }
 
 
-template<class MGB, class Coeff>
-double PoissonP1CL<MGB,Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
+template<class Coeff>
+double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
 // Based on R. Verfuerth, "A review of a posteriori error estimation and adaptive
 // mesh refinement techniques"
 // chapter 3.2

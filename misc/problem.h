@@ -84,11 +84,10 @@ class MatDescCL
 };
 
 
-template <class MGB, class Coeff, class BndData>
+template <class Coeff, class BndData>
 class ProblemCL
 {
   public:
-    typedef MGB      MultiGridBuilderCL;
     typedef Coeff    CoeffCL;
     typedef BndData  BndDataCL;
 
@@ -99,10 +98,10 @@ class ProblemCL
     BndDataCL    _BndData;    // Randwerte
 
   public:
-    ProblemCL(const MultiGridBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata)
-    : _myMG(true), _MG(*new MultiGridCL(mgbuilder)), _Coeff(coeff), _BndData(bnddata) {}
+    ProblemCL(const MGBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata)
+    : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata) {}
     ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata)
-    : _myMG(false), _MG(mg), _Coeff(coeff), _BndData(bnddata) {}
+    : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata) {}
     ~ProblemCL() { if (_myMG) delete &_MG; }
 
     MultiGridCL&       GetMG()            { return _MG; }

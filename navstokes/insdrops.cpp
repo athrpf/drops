@@ -76,13 +76,13 @@ namespace DROPS // for Strategy
 using ::MyPdeCL;
 
 
-template<class MGB, class Coeff>
-void Strategy(InstatNavierStokesP2P1CL<MGB,Coeff>& NS, int num_ref, double fp_tol, int fp_maxiter, 
+template<class Coeff>
+void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_maxiter, 
               double deco_red, int stokes_maxiter, double poi_tol, int poi_maxiter,
 	      double theta, double dt)
 // flow control
 {
-    typedef InstatNavierStokesP2P1CL<MGB,Coeff> NavStokesCL;
+    typedef InstatNavierStokesP2P1CL<Coeff> NavStokesCL;
     
     MultiGridCL& MG= NS.GetMG();
 
@@ -282,7 +282,7 @@ int main (int argc, char** argv)
     std::cerr << "theta: " << theta << ", ";
     std::cerr << "dt: " << dt << std::endl;
 
-    typedef DROPS::InstatNavierStokesP2P1CL<DROPS::BrickBuilderCL, MyPdeCL::StokesCoeffCL> 
+    typedef DROPS::InstatNavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyNavierStokesCL;
     MyNavierStokesCL prob(brick, MyPdeCL::StokesCoeffCL(),

@@ -11,8 +11,8 @@
 namespace DROPS
 {
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -31,8 +31,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx
                         _BndData.Pr );
 }
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -54,8 +54,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* id
 }
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -66,8 +66,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
     DeleteNumbOnSimplex( idxnum, _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level) );
 }
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingPr(IdxDescCL* idx)
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -80,8 +80,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
 {
     Uint lvl= A.RowIdx->TriangLevel,
         vidx= A.RowIdx->GetIdx(),
@@ -173,9 +173,9 @@ inline InstatStokesVelBndDataCL::bnd_type Quad2D( const TetraCL& tetra, Uint fac
 }
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* vecA, 
-                                                 MatDescCL* matB, VelVecDescCL* vecB, double t) const
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* vecA, 
+                                             MatDescCL* matB, VelVecDescCL* vecB, double t) const
 // Sets up the stiffness matrices and right hand sides
 {
     vecA->Clear();
@@ -318,8 +318,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
 }
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::SetupPrMass(MatDescCL* matM) const
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
 // Sets up the mass matrix for the pressure
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
@@ -356,8 +356,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupPrMass(MatDescCL* matM) const
 inline double OneFct( const Point3DCL&) { return 1.;}
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, MatDescCL* matI) const
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, MatDescCL* matI) const
 // Sets up the stiffness matrices and right hand sides
 {
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
@@ -460,10 +460,10 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
               << matI->Data.num_nonzeros() << " nonzeros in I! " << std::endl;
 }
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB, 
-                                                    VelVecDescCL* vecI, double tA, 
-                                                    VelVecDescCL* vecf, double tf) const
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB, 
+                                                VelVecDescCL* vecI, double tA, 
+                                                VelVecDescCL* vecf, double tf) const
 // Sets up the couplings with hat fcts on bnd (for matrices A, I) and discretizes the PDE coeff f(t)
 {
     vecA->Clear();
@@ -585,8 +585,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
 }
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
     Uint lvl        = vec->RowIdx->TriangLevel,
@@ -618,8 +618,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun
 }
 
 
-template <class MGB, class Coeff>
-void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
                                  vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
 {
     double diff, maxdiff=0, norm2= 0;

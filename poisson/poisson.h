@@ -80,19 +80,18 @@ inline PoissonBndDataCL::PoissonBndDataCL(Uint numbndseg,
 }
 
 
-template <class MGB, class Coeff>
-class PoissonP1CL : public ProblemCL<MGB, Coeff, PoissonBndDataCL>
+template <class Coeff>
+class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 {
   public:
-    typedef ProblemCL<MGB, Coeff, PoissonBndDataCL> _base;
-    typedef typename _base::MultiGridBuilderCL      MultiGridBuilderCL;
-    typedef typename _base::BndDataCL               BndDataCL;
-    typedef typename _base::CoeffCL                 CoeffCL;
-    using                                           _base::_MG;
-    using                                           _base::_Coeff;
-    using                                           _base::_BndData;
-    using                                           _base::GetBndData;
-    using                                           _base::GetMG;
+    typedef ProblemCL<Coeff, PoissonBndDataCL> _base;
+    typedef typename _base::BndDataCL          BndDataCL;
+    typedef typename _base::CoeffCL            CoeffCL;
+    using                                      _base::_MG;
+    using                                      _base::_Coeff;
+    using                                      _base::_BndData;
+    using                                      _base::GetBndData;
+    using                                      _base::GetMG;
     
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
@@ -104,8 +103,8 @@ class PoissonP1CL : public ProblemCL<MGB, Coeff, PoissonBndDataCL>
 //    VecDescCL _err;
     MatDescCL A;
     
-    PoissonP1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), idx(1) {}  
+    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mgb, coeff, bdata), idx( 1) {}  
     // numbering of unknowns
     void CreateNumbering(Uint, IdxDescCL*);
     void DeleteNumbering(IdxDescCL*);

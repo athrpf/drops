@@ -13,8 +13,8 @@ namespace DROPS
 {
 
 
-template<class MGB, class Coeff>
-void InstatPoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -32,8 +32,8 @@ void InstatPoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 }
 
 
-template<class MGB, class Coeff>
-void InstatPoissonP1CL<MGB,Coeff>::DeleteNumbering(IdxDescCL* idx)
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -72,8 +72,8 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDat
 }
 
 
-template<class MGB, class Coeff>
-void InstatPoissonP1CL<MGB,Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const
 // Sets up the time dependent right hand sides including couplings 
 // resulting from inhomogeneous dirichlet bnd conditions
 {
@@ -137,8 +137,8 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, 
 }
 
 
-template<class MGB, class Coeff>
-void InstatPoissonP1CL<MGB,Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mmat) const
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mmat) const
 // Sets up the stiffness matrix
 {
   MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
@@ -193,8 +193,8 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL
 }
 
 
-template<class MGB, class Coeff>
-void InstatPoissonP1CL<MGB,Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
     Uint lvl= vec.RowIdx->TriangLevel,
          idx= vec.RowIdx->GetIdx();
@@ -217,8 +217,8 @@ void InstatPoissonP1CL<MGB,Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr f
 //
 //========================================================
 
-template<class MGB, class Coeff>
-void InstatPoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, 
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, 
   scalar_instat_fun_ptr Lsg, double t) const
 {
   double diff, maxdiff=0, norm2= 0, L2=0;

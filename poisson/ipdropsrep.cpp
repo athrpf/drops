@@ -100,11 +100,11 @@ class NeuValCL
 MultiGridCL* DirValCL::_mg= NULL;
 MultiGridCL* NeuValCL::_mg= NULL;
 
-template<class MGB, class Coeff>
-void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
+template<class Coeff>
+void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   double time_steps)
 {	
-  typedef InstatPoissonP1CL<MGB,Coeff> MyPoissonCL;
+  typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
   
   IdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
@@ -150,7 +150,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
    
   SSORPcCL pc(1.0);
   PCG_SsorCL pcg_solver(pc, max_iter, tol);
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff>, PCG_SsorCL> 
+  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, PCG_SsorCL> 
     ThetaScheme(Poisson, pcg_solver, 0.5);
   
   ThetaScheme.SetTimeStep(dt);
@@ -238,7 +238,7 @@ int main()
     e2[1]= 1.0;
     e3[2]= 1.0;
 
-    typedef DROPS::InstatPoissonP1CL<DROPS::BrickBuilderCL, PoissonCoeffCL> 
+    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL> 
       InstatPoissonOnBrickCL;
     typedef InstatPoissonOnBrickCL MyPoissonCL;
     

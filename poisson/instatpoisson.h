@@ -99,14 +99,13 @@ class StripTimeCL
 };  
 
 
-template <class MGB, class Coeff>
-class InstatPoissonP1CL : public ProblemCL<MGB, Coeff, InstatPoissonBndDataCL>
+template <class Coeff>
+class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 {
   public:
-    typedef ProblemCL<MGB, Coeff, InstatPoissonBndDataCL> _base;
-    typedef typename _base::MultiGridBuilderCL            MultiGridBuilderCL;
-    typedef typename _base::BndDataCL                     BndDataCL;
-    typedef typename _base::CoeffCL                       CoeffCL;
+    typedef ProblemCL<Coeff, InstatPoissonBndDataCL> _base;
+    typedef typename _base::BndDataCL                BndDataCL;
+    typedef typename _base::CoeffCL                  CoeffCL;
     using _base::GetBndData;
     using _base::GetMG;
     using _base::_BndData;
@@ -125,8 +124,8 @@ class InstatPoissonP1CL : public ProblemCL<MGB, Coeff, InstatPoissonBndDataCL>
     MatDescCL M;
 	
     
-    InstatPoissonP1CL( const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), t( 0.), idx(1) {}  
+    InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mgb, coeff, bdata), t( 0.), idx( 1) {}  
 				
     // numbering of unknowns
     void CreateNumbering( Uint, IdxDescCL*);

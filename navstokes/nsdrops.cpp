@@ -41,7 +41,7 @@ struct NS1CL
 
 inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
-typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, NS1CL::StokesCoeffCL> 
+typedef DROPS::StokesP2P1CL<NS1CL::StokesCoeffCL> 
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 typedef NS1CL MyPdeCL;
@@ -52,12 +52,12 @@ namespace DROPS // for Strategy
 using ::MyStokesCL;
 
 
-template<class MGB, class Coeff>
-void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter, 
+template<class Coeff>
+void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter, 
                                                  double uzawa_red, double poi_tol, int poi_maxiter)
 // flow control
 {
-    typedef NavierStokesP2P1CL<MGB,Coeff> NavStokesCL;
+    typedef NavierStokesP2P1CL<Coeff> NavStokesCL;
     MultiGridCL& MG= NS.GetMG();
 
     IdxDescCL  loc_vidx, loc_pidx;
@@ -278,7 +278,7 @@ int main (int argc, char** argv)
         std::cerr << "uzawa_red: " << uzawa_red << ", ";
         std::cerr << "num_ref: " << num_ref << std::endl;
 
-        typedef DROPS::NavierStokesP2P1CL<DROPS::BrickBuilderCL, MyPdeCL::StokesCoeffCL> 
+        typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
                 NSOnBrickCL;
         typedef NSOnBrickCL MyNavierStokesCL;
 

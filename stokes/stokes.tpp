@@ -14,8 +14,8 @@
 namespace DROPS
 {
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
+template <class Coeff>
+void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     Uint lvl= A.RowIdx->TriangLevel,
         vidx= A.RowIdx->GetIdx(),
@@ -230,8 +230,8 @@ inline StokesVelBndDataCL::bnd_type Quad2D(const TetraCL& t, Uint face, Uint ver
 * member functions to handle with index descriptions
 **************************************************************************************************/
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
+template <class Coeff>
+void StokesP2P1CL<Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -250,8 +250,8 @@ void StokesP2P1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
                         _BndData.Pr );
 }
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
+template <class Coeff>
+void StokesP2P1CL<Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -273,8 +273,8 @@ void StokesP2P1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
 }
 
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
+template <class Coeff>
+void StokesP2P1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -285,8 +285,8 @@ void StokesP2P1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
     DeleteNumbOnSimplex( idxnum, _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level) );
 }
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::DeleteNumberingPr(IdxDescCL* idx)
+template <class Coeff>
+void StokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -324,8 +324,8 @@ inline void MakeGradients (SMatrixCL<3,5>* G, const SMatrixCL<3,5>* GRef, const 
         G[i]= T*GRef[i];
 }
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDescCL* matB, VelVecDescCL* vecB) const
+template <class Coeff>
+void StokesP2P1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDescCL* matB, VelVecDescCL* vecB) const
 // Sets up the stiffness matrices and right hand sides
 {
     vecA->Clear();
@@ -467,8 +467,8 @@ void StokesP2P1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, M
               << matB->Data.num_nonzeros() << " nonzeros in B! " << std::endl;
 }
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
+template <class Coeff>
+void StokesP2P1CL<Coeff>::SetupMass(MatDescCL* matM) const
 // Sets up the mass matrix
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
@@ -502,8 +502,8 @@ void StokesP2P1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
 
 
 
-template <class MGB, class Coeff>
-void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+template <class Coeff>
+void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
                                  vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
 {
     double mindiff=0, maxdiff=0, norm2= 0;
@@ -629,8 +629,8 @@ void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const Ve
 }
 
 
-template <class MGB, class Coeff>
-double StokesP2P1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrSolCL& pr, const DiscVelSolCL& vel)
+template <class Coeff>
+double StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrSolCL& pr, const DiscVelSolCL& vel)
 {
     double det;
     SMatrixCL<3,3> M;
@@ -753,8 +753,8 @@ double StokesP2P1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const Dis
 //*********************************************************************
 
 //
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     Uint lvl= A.RowIdx->TriangLevel,
         vidx= A.RowIdx->GetIdx(),
@@ -804,8 +804,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
 **************************************************************************************************/
 
 //
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -824,8 +824,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx
 }
 
 //
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
@@ -846,8 +846,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* id
 }
 
 //
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -859,8 +859,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 }
 
 //
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::DeleteNumberingPr(IdxDescCL* idx)
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
@@ -905,8 +905,8 @@ inline double GetB(Uint pr, Uint vel, const SMatrixCL<3,3>& T, Uint num)
 }
 
 
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDescCL* matB, VelVecDescCL* vecB) const
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDescCL* matB, VelVecDescCL* vecB) const
 // Sets up the stiffness matrices and right hand sides
 {
     vecA->Clear();
@@ -1037,8 +1037,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* v
               << matB->Data.num_nonzeros() << " nonzeros in B! " << std::endl;
 }
 
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::SetupMass(MatDescCL* matM) const
 // Sets up the mass matrix
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
@@ -1071,8 +1071,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
 }
 
 
-template <class MGB, class Coeff>
-double StokesP1BubbleP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrSolCL& pr, const DiscVelSolCL& vel)
+template <class Coeff>
+double StokesP1BubbleP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrSolCL& pr, const DiscVelSolCL& vel)
 {
     Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
     double err_sq= 0.0;
@@ -1235,9 +1235,9 @@ bool StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const DiscPrSolCL& pr
 }
 
 
-template <class MGB, class Coeff>
-void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
-                                                  vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
+template <class Coeff>
+void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+                                              vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->RowIdx->TriangLevel,
