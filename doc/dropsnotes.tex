@@ -22,9 +22,13 @@
 \topmargin-2cm
 \oddsidemargin-1cm
 \textheight25cm
+
 \textwidth17cm
 
 \newenvironment{Code}{\begin{quote}\scriptsize}{\end{quote}}
+\newenvironment{Desc}[3]%
+    {\fbox{\Large\tt #1}\qquad#2\hfill{\bf Typ: }{\tt #3}\\[1ex]}%
+    {\leavevmode\\[3ex]}
 
 \begin{document}
 \newcommand{\prg}[1]{{\tt #1}}
@@ -412,9 +416,9 @@ Funktionsname ist durch die Auswahlregeln f"ur "uberladene Funktionen
 in C++ bedingt.
 
 Die eigentliche Information "uber den Typ des Vorkonditionierers steckt in
-\prg{enum PreMethGS} bzw.\ der Template-Klasse \prg{template <PreBaseGS>
-class PreDummyCL \{\}}, die die \prg{enum}-Werte auf eigene C++-Typen
-abbildet.
+\prg{enum PreMethGS} bzw.\ der Template-Klasse 
+\verb|template <PreBaseGS> class PreDummyCL {}|, die die \prg{enum}-Werte 
+auf eigene C++-Typen abbildet.
 
 \subsubsection{Vorkonditionierer f"ur die station"aren Stokes-Gleichungen}
 In \prg{stokes/sdropsP2.cpp} befindet sich die Klasse
@@ -1011,108 +1015,6 @@ erl"autert.
 %============================================================================
 %============================================================================
 
-%============================================================================
-\section{Parameter Files}
-%============================================================================
-\label{s:ParamFiles}
-
-\subsection{Stokes Flow, zweiphasig}
-\begin{Code}
-\begin{verbatim}
-#=============================================================
-#    DROPS parameter file
-#    simulation of two-phase flow: 
-#    droplet in measuring cell used in NMR measurements
-#=============================================================
-
-# time stepping
-Time {
-  NumSteps	=	40
-  StepSize	=	5e-4
-  Theta		=	0.5	# Crank-Nicholson
-}
-
-# flow solver
-Stokes {
-  InnerIter	=	1000
-  OuterIter	=	100
-  InnerTol	=	1e-14
-  OuterTol	=	1e-10
-}
-
-# levelset solver
-Levelset {
-  Tol		=	1e-14
-  Iter		=	10000
-  SD		=	0.1
-}
-
-# re-initialization of levelset function
-Reparam { 
-  Freq		=	0	# 0 = no reparametrization
-  NumSteps	=	1
-  StepSize	=	0.01
-  Diffusion	=	1e-4
-}
-
-# material data, all units are SI
-Mat {
-  DensDrop	=	955
-  ViscDrop	=	2.6e-3
-  DensFluid	=	1107
-  ViscFluid	=	1.2e-3
-  SmoothZone	=	1e-4
-  
-  SurfTension	=	0
-}
-
-# experimental conditions
-Exp {
-  RadDrop	=	1.75e-3
-  PosDrop	=	0	-18e-3	0
-  
-  Gravity	=	0	-9.81	0
-  
-  FlowDir	=	1	# flow in y-direction
-  
-  InflowVel	=	-0.1
-  RadInlet	=	3.5e-3
-}  
-
-# miscellaneous
-
-NumDropRef	=	2
-CouplingSteps	=	-1	# -1 = till convergence
-
-MeshFile	=	gambit/NMR_klein_grob.msh
-EnsightCase	=	NMRmzi
-\end{verbatim}
-\end{Code}
-
-{\bf Bedeutung der Parameter: }
-\begin{itemize}
-    \item ...
-\end{itemize}
-
-
-\subsection{Navier-Stokes Flow, zweiphasig}
-Folgende Parameter kommen gegen"uber dem Stokes Flow hinzu:
-\begin{Code}
-\begin{verbatim}
-NavStokes {
-  Nonlinear	=	0.5
-  Scheme	=	0	# Baensch
-  NonlinearStat	=	0
-  ThetaStat	=	0.5
-}
-\end{verbatim}
-\end{Code}
-
-{\bf Bedeutung der Parameter: }
-\begin{itemize}
-    \item ...
-\end{itemize}
-
-
+\include{dropsappendix}
 
 \end{document}

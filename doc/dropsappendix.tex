@@ -1,0 +1,340 @@
+
+%============================================================================
+\section{Parameter Files}
+%============================================================================
+\label{s:ParamFiles}
+
+\subsection{Stokes Flow, zweiphasig}
+\begin{Code}
+\begin{verbatim}
+#=============================================================
+#    DROPS parameter file
+#    simulation of two-phase flow: 
+#    droplet in measuring cell used in NMR measurements
+#=============================================================
+
+# time stepping
+Time {
+  NumSteps	=	500
+  StepSize	=	1e-4
+  Theta		=	0.5	# Crank-Nicholson
+}
+
+# flow solver
+Stokes {
+  InnerIter	=	1000
+  OuterIter	=	200
+  InnerTol	=	1e-14
+  OuterTol	=	1e-10
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1e-14
+  Iter		=	10000
+  SD		=	0.1
+  CurvDiff	=	5e-9
+  VolCorrection	=	1
+}
+
+# re-initialization of levelset function
+Reparam { 
+  Freq		=	0	# 0 = no reparametrization
+  NumSteps	=	5
+  StepSize	=	0.001
+  Diffusion	=	1e-4
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop	=	955
+  ViscDrop	=	2.6e-3
+  DensFluid	=	1107
+  ViscFluid	=	1.2e-3
+  SmoothZone	=	1e-4
+  
+  SurfTension	=	0
+}
+
+# experimental conditions
+Exp {
+  RadDrop	=	1.75e-3
+  PosDrop	=	0	-8e-3	0
+  
+  Gravity	=	0	-9.81	0
+  
+  FlowDir	=	1	# flow in y-direction
+  
+  InflowVel	=	-0.1
+  RadInlet	=	3.5e-3
+}  
+
+# miscellaneous
+
+NumDropRef	=	2
+CouplingSteps	=	-1	# -1 = till convergence
+
+MeshFile	=	gambit/NMR_klein_grob.msh
+EnsightCase	=	NMRmzi
+EnsightDir	=	ensight
+\end{verbatim}
+\end{Code}
+
+{\bf Bedeutung der Parameter: }\\
+
+\begin{Desc}
+{Time:NumSteps}{$>0$}{int}
+    Anzahl der Zeitschritte.
+\end{Desc}
+%
+\begin{Desc}
+{Time:StepSize}{$>0$}{double}
+Gr"o"se des Zeitschrittes.
+\end{Desc}
+%
+\begin{Desc}
+{Time:Theta}{$\in[0,1]$}{double}
+steuert die Implizitheit des $\theta$-Schemas. F"ur
+\verb|Theta=0| erh"alt man das explizite Eulerverfahren, f"ur
+\verb|Theta=1| erh"alt man das implizite Eulerverfahren und f"ur
+\verb|Theta=0.5| das Crank-Nicholson-Verfahren.
+\end{Desc}
+
+
+\begin{Desc}
+{Stokes:InnerIter}{$\geq0$}{int}
+Maximale Iterationszahl des inneren L"osers. 
+\end{Desc}
+%
+\begin{Desc}
+{Stokes:OuterIter}{$\geq0$}{int}
+Maximale Iterationszahl des "au"seren L"osers.
+\end{Desc}
+%
+\begin{Desc}
+{Stokes:InnerTol}{$>0$}{double}
+Abbruchkriterium f"ur den inneren L"oser: Ist das erreichte Residuum kleiner als
+die vorgegebene Toleranz \verb|InnerTol|, so wird die Iteration abgebrochen.
+\emph{Hinweis:} \verb|InnerTol| sollte einige Gr"o"senordnungen kleiner als
+\verb|OuterTol| gew"ahlt werden, da sonst der "au"sere L"oser divergiert.
+\end{Desc}
+%
+\begin{Desc}
+{Stokes:OuterTol}{$>0$}{double}
+Abbruchkriterium f"ur den "au"seren L"oser: Ist das erreichte Residuum kleiner 
+als die vorgegebene Toleranz \verb|OuterTol|, so wird die Iteration abgebrochen.
+Die Impuls- und Massenerhaltungsgleichung werden also bis zu diesem Residuum
+gel"ost.
+\end{Desc}
+
+
+\begin{Desc}
+{Levelset:Iter}{$\geq0$}{int}
+Maximale Iterationszahl des Levelset-L"osers. Dies ist ein GMRES-L"oser, der 
+f"ur die L"osung der Gleichungen eingesetzt wird, die die Levelset-Funktion 
+als Unbekannte enthalten:
+Dies sind die Advektionsgleichung, die Reparametrisierungsgleichung und die
+Gl"attung zur Kr"ummungsberechnung. 
+\end{Desc}
+%
+\begin{Desc}
+{Levelset:Tol}{$>0$}{double}
+Abbruchkriterium f"ur den Levelset-L"oser. Ist das erreichte Residuum kleiner 
+als die vorgegebene Toleranz \verb|Tol|, so wird die Iteration abgebrochen.
+\end{Desc}
+%
+\begin{Desc}
+{Levelset:SD}{$>0$}{double}
+steuert die Stabilisierung der Advektionsgleichung mit \emph{streamline 
+diffusion}. \verb|SD=0| bedeutet keine Stabilisierung. Ein typischer Wert zur
+Stabilisierung ist \verb|SD=0.1|.
+\end{Desc}
+%
+\begin{Desc}
+{Levelset:CurvDiff}{$\ll1$}{double}
+Bei starken Oberfl"achenspannungen ist es ratsam, zur Berechnung des
+Kr"ummungsterms eine gegl"attete Levelset-Funktion zu verwenden. Ein typischer
+Wert ist \verb|CurvDiff=1e-8|. Ist $\mathtt{CurvDiff}\leq0$, so erfolgt keine 
+Gl"attung. \emph{Hinweis:} Die Gl"attung erfolgt nur f"ur eine tempor"are
+Variable, die zur Kr"ummungsberechnung verwendet wird; die eigentliche 
+Phasengrenze wird nicht ver"andert.
+\end{Desc}
+%
+\begin{Desc}
+{Levelset:VolCorrection}{$\in\{0,1\}$}{bool}
+schaltet die Volumenkorrektur an (\verb|VolCorrection=1|) oder aus 
+(\verb|VolCorrection=0|). Die Korrektur ist global, d.h. das Gesamtvolumen
+bleibt "uber der Zeit konstant. Die Korrektur erfolgt nach jedem Zeitschritt
+sowie nach jeder Reparametrisierung der Levelset-Funktion.
+\end{Desc}
+
+
+\begin{Desc}
+{Reparam:Freq}{$\geq0$}{int}
+gibt an, nach wievielen Zeitschritten jeweils die Levelset-Funktion
+reparametrisiert werden soll. \verb|Freq=0| schaltet die Reparametrisierung ab.
+\end{Desc}
+%
+\begin{Desc}
+{Reparam:NumSteps}{$>0$}{int}
+Bei der Reparametrisierung wird eine Transportgleichung in der k"unstlichen
+Zeit $\tau$ gel"ost. \verb|NumSteps| legt die Anzahl der Zeitschritte fest.
+\end{Desc}
+%
+\begin{Desc}
+{Reparam:StepSize}{$>0$}{double}
+\verb|StepSize| legt die Gr"o"se des Zeitschrittes $\Delta\tau$ fest. Wird bis
+zum Zeithorizont $\tau_f=\mathtt{NumSteps}\cdot\mathtt{StepSize}$ gel"ost, so
+ist die Levelset-Funktion in einem Streifen der Breite $\tau_f$ um die
+Phasengrenze herum wieder eine Abstandsfunktion (jedenfalls theoretisch ;-).
+\end{Desc}
+%
+\begin{Desc}
+{Reparam:Diffusion}{$\geq0$}{double}
+Zus"atzliche Diffusion bei der Reparametrisierung bewirkt eine Gl"attung der
+Phasengrenze. \verb|Diffusion| steuert den Anteil des diffusiven Terms
+gegen"uber dem konvektiven Term. 
+\end{Desc}
+
+
+\begin{Desc}
+{Mat:DensDrop}{$>0$}{double}
+Dichte des Tropfens in $kg\cdot m^{-3}$.
+\end{Desc}
+%
+\begin{Desc}
+{Mat:ViscDrop}{$>0$}{double}
+Dynamische Viskosit"at des Tropfens in $kg\cdot s^{-1}\, m^{-1}$ or $Pa\cdot s$.
+\end{Desc}
+%
+\begin{Desc}
+{Mat:DensFluid}{$>0$}{double}
+Dichte des umgebenden Fluids in $kg\cdot m^{-3}$.
+\end{Desc}
+%
+\begin{Desc}
+{Mat:ViscFluid}{$>0$}{double}
+Dynamische Viskosit"at des umgebenden Fluids in $kg\cdot s^{-1}\, m^{-1}$ or 
+$Pa\cdot s$.
+\end{Desc}
+%
+\begin{Desc}
+{Mat:SurfTension}{$\geq0$}{double}
+Oberfl"achenspannung in $kg\cdot s^{-2}$ oder $N/m$.
+\end{Desc}
+%
+\begin{Desc}
+{Mat:SmoothZone}{$\geq0$}{double}
+Der Sprung von Viskosit"at und Dichte wird an der Phasengrenze numerisch
+gegl"attet, so dass ein "Ubergangsbereich der Breite \verb|SmoothZone| rund um
+die Phasengrenze entsteht.
+\end{Desc}
+
+%
+\begin{Desc}
+{Exp:RadDrop}{}{double}
+Radius des kugelf"ormigen Tropfens in $m$ zum Anfangszeitpunkt. \emph{Hinweis:} 
+Ist \verb|RadDrop| negativ, so wird die Str"omung des Fluids ohne Tropfen 
+berechnet.
+\end{Desc}
+%
+\begin{Desc}
+{Exp:PosDrop}{}{Point3DCL}
+Mittelpunktposition des kugelf"ormigen Tropfens in $m$ zum Anfangszeitpunkt.
+\end{Desc}
+%
+\begin{Desc}
+{Exp:Gravity}{}{Point3DCL}
+Wirkungsrichtung und St"arke der Schwerkraft in $kg\cdot m\cdot s^{-2}$.
+\end{Desc}
+%
+\begin{Desc}
+{Exp:FlowDir}{$\in\{0,1,2\}$}{int}
+Richtung der Str"omung am Einfluss. \verb|InflowDir=0/1/2| bezeichnen
+jeweils die $x$-/$y$-/$z$-Richtung. Flie"st die Str"omung in \emph{negative} 
+Koordinatenrichtung, so muss beim Parameter \verb|Exp:InflowVel| ein 
+negatives Vorzeichen gew"ahlt werden.
+\end{Desc}
+%
+\begin{Desc}
+{Exp:InflowVel}{}{double}
+Einstr"omgeschwindigkeit in $m\cdot s^{-2}$.
+\end{Desc}
+%
+\begin{Desc}
+{Exp:RadInlet}{$>0$}{double}
+Radius der kreisf"ormigen Einlass"offnung in $m$.
+\end{Desc}
+
+%
+\begin{Desc}
+{NumDropRef}{$\geq0$}{int}
+Anzahl der zus"atzlichen Verfeinerungen des eingelesenen Gitters im Bereich des
+Tropfens.
+\end{Desc}
+%
+\begin{Desc}
+{CouplingSteps}{$\geq-1$}{int}
+Maximale Anzahl der Fixpunktschritte zur Kopplung der Levelset- und
+(Navier-)Stokes-Gleichung. \verb|CouplingSteps=-1| bewirkt, dass jeweils bis zur
+Konvergenz der Fixpunktiteration iteriert wird.
+\end{Desc}
+%
+\begin{Desc}
+{MeshFile}{}{string}
+Name der Mesh-Datei, aus der das Gitter eingelesen wird. Dieses muss im
+Format GAMBIT/FLUENT UNS abgespeichert sein.
+\end{Desc}
+%
+\begin{Desc}
+{EnsightCase}{}{string}
+Name, unter dem die Daten zur Visualisierung mit Ensight in Dateien ausgegeben 
+werden sollen. Das case file liegt im aktuellen Verzeichnis und erh"alt die 
+Endung \verb|.case|, die "ubrigen Dateien werden im Verzeichnis
+\verb|EnsightDir| abgespeichert.
+\end{Desc}
+%
+\begin{Desc}
+{EnsightDir}{}{string}
+Name des Verzeichnisses, in dem die Geometriedaten (Endung \verb|.geom*|) und 
+die Variablen in Dateien abgelegt werden (Endung \verb|.pr*| f"ur Druck, 
+\verb|.vec*| f"ur Geschwindigkeit, \verb|.scl*| f"ur Levelset).
+\end{Desc}
+
+
+\subsection{Navier-Stokes Flow, zweiphasig}
+Folgende Parameter kommen gegen"uber dem Stokes Flow hinzu:
+\begin{Code}
+\begin{verbatim}
+NavStokes {
+  Nonlinear	=	0.5
+  Scheme	=	0	# Baensch
+  NonlinearStat	=	0
+  ThetaStat	=	0.5
+}
+\end{verbatim}
+\end{Code}
+
+{\bf Bedeutung der Parameter: }
+
+\begin{Desc}
+{NavStokes:Nonlinear}{$\in[0,1]$}{double}
+Koeffizient vor dem nichtlinearen Term, um die St"arke der Nichtlinearit"at
+beeinflussen zu k"onnen. Bei \verb|Nonlinear=0| erh"alt man die
+Stokes-Gleichung, bei \verb|Nonlinear=1| wird die volle
+Navier-Stokes-Gleichung gel"ost.
+\end{Desc}
+%
+\begin{Desc}
+{NavStokes:Scheme}{$\in\{0,1\}$}{int}
+bestimmt das Zeitintegrationsschema f"ur die L"osung der instation"aren
+Navier-Stokes-Gleichung. \verb|Scheme=1| ist das $\theta$-Schema, was auch zur
+L"osung der Stokes-Gleichung eingesetzt wird, allerdings mit einem anderen
+L"oser (GMRES, aufgrund des zus"atzlichen Terms sind die Matrizen i.A. nicht mehr
+symmetrisch). Robuster ist das modifizierte fractional step scheme (siehe
+\textsc{B"ansch}), das bei \verb|Scheme=0| gew"ahlt wird.
+\end{Desc}
+%
+
+\ldots
+
