@@ -34,11 +34,9 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                                IdxDescCL* cIdx, IdxDescCL* fIdx)
 {
     const Uint c_level= cIdx->TriangLevel;
-    const Uint f_level= fIdx->TriangLevel;
     const Uint c_idx= cIdx->GetIdx();
     const Uint f_idx= fIdx->GetIdx();
     MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
-//    Uint counter1= 0, counter2= 0;
     IdxT i;
     
     
@@ -47,8 +45,8 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     P.ColIdx= cIdx;
     // setup index part of matrix
     // Iterate over all edges, interpolate values on new mid vertices
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= mg.GetAllEdgeBegin( f_level),
-         theend= mg.GetAllEdgeEnd( f_level); sit!=theend; ++sit)
+    for (MultiGridCL::const_AllEdgeIteratorCL sit= mg.GetAllEdgeBegin( c_level),
+         theend= mg.GetAllEdgeEnd( c_level); sit!=theend; ++sit)
         if ( sit->IsRefined() && sit->GetMidVertex()->Unknowns.Exist()
              && !sit->GetMidVertex()->Unknowns.Exist(c_idx) )  {
             // only new non-boundary vertices are interpolated
@@ -58,19 +56,15 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                 mat(i,sit->GetVertex(0)->Unknowns(c_idx))= 0.5;
             if (sit->GetVertex(1)->Unknowns.Exist())
                 mat(i,sit->GetVertex(1)->Unknowns(c_idx))= 0.5;
-//            ++counter2;
         }
     // Iterate over the vertices of the coarse triangulation and copy values
     for (MultiGridCL::const_TriangVertexIteratorCL sit= mg.GetTriangVertexBegin( c_level),
          theend= mg.GetTriangVertexEnd( c_level); sit!=theend; ++sit)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(c_idx) ) {
             mat( sit->Unknowns(f_idx), sit->Unknowns(c_idx) )= 1.0;
-//            ++counter1;
         }
 
     mat.Build();
-//    std::cerr << "Prolongation: " << counter1 << " vertices out of " << cIdx->NumUnknowns << " copied, " 
-//                                  << counter2 << " new mid vertices interpolated!" << std::endl;
 }
 
 
