@@ -18,12 +18,6 @@
 namespace DROPS
 {
 
-
-typedef SparseMatBaseCL<double>    MatrixCL;
-typedef SparseMatBuilderCL<double> MatrixBuilderCL;
-typedef VectorBaseCL<double>       VectorCL;
-
-
 class IdxDescCL
 {
   public:

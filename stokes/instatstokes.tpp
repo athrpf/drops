@@ -184,8 +184,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    SparseMatBuilderCL<double> A(&matA->Data, num_unks_vel, num_unks_vel), 
-                               B(&matB->Data, num_unks_pr,  num_unks_vel);
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+                    B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
     const Uint lvl    = matA->RowIdx->TriangLevel;
@@ -327,9 +327,9 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    SparseMatBuilderCL<double> A(&matA->Data, num_unks_vel, num_unks_vel), 
-                               B(&matB->Data, num_unks_pr,  num_unks_vel),
-                               I(&matI->Data, num_unks_vel, num_unks_vel);
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+                    B(&matB->Data, num_unks_pr,  num_unks_vel),
+                    I(&matI->Data, num_unks_vel, num_unks_vel);
 
     const Uint lvl    = matA->RowIdx->TriangLevel;
     const Uint vidx   = matA->RowIdx->Idx,

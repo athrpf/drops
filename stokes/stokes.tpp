@@ -334,8 +334,8 @@ void StokesP2P1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, M
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    SparseMatBuilderCL<double> A(&matA->Data, num_unks_vel, num_unks_vel), 
-                               B(&matB->Data, num_unks_pr,  num_unks_vel);
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+                    B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
     const Uint lvl    = matA->RowIdx->TriangLevel;
@@ -473,7 +473,7 @@ void StokesP2P1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
 
-    SparseMatBuilderCL<double> M(&matM->Data, num_unks_pr,  num_unks_pr);
+    MatrixBuilderCL M(&matM->Data, num_unks_pr,  num_unks_pr);
 
     const Uint lvl    = matM->RowIdx->TriangLevel;
     const Uint pidx   = matM->RowIdx->Idx;
@@ -963,8 +963,8 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* v
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    SparseMatBuilderCL<double> A(&matA->Data, num_unks_vel, num_unks_vel), 
-                               B(&matB->Data, num_unks_pr,  num_unks_vel);
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+                    B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
     const Uint lvl    = matA->RowIdx->TriangLevel;
@@ -1091,7 +1091,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
 
-    SparseMatBuilderCL<double> M(&matM->Data, num_unks_pr,  num_unks_pr);
+    MatrixBuilderCL M(&matM->Data, num_unks_pr,  num_unks_pr);
 
     const Uint lvl    = matM->RowIdx->TriangLevel;
     const Uint pidx   = matM->RowIdx->Idx;

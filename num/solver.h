@@ -60,7 +60,7 @@ template <PreBaseGS> class PreDummyCL {};
 // One step of the Jacobi method with start vector x
 template <bool HasOmega, typename Vec>
 void
-SolveGSstep(const PreDummyCL<PB_JAC>&, const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, double omega)
+SolveGSstep(const PreDummyCL<PB_JAC>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
 {
     const size_t n= A.num_rows();
     Vec          y(x.size());
@@ -86,7 +86,7 @@ SolveGSstep(const PreDummyCL<PB_JAC>&, const SparseMatBaseCL<double>& A, Vec& x,
 // One step of the Gauss-Seidel/SOR method with start vector x
 template <bool HasOmega, typename Vec>
 void
-SolveGSstep(const PreDummyCL<PB_GS>&, const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, double omega)
+SolveGSstep(const PreDummyCL<PB_GS>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
 {
     const size_t n= A.num_rows();
 
@@ -109,7 +109,7 @@ SolveGSstep(const PreDummyCL<PB_GS>&, const SparseMatBaseCL<double>& A, Vec& x, 
 // One step of the Symmetric-Gauss-Seidel/SSOR method with start vector x
 template <bool HasOmega, typename Vec>
 void
-SolveGSstep(const PreDummyCL<PB_SGS>&, const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, double omega)
+SolveGSstep(const PreDummyCL<PB_SGS>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
 {
     const size_t n= A.num_rows();
 
@@ -150,7 +150,7 @@ SolveGSstep(const PreDummyCL<PB_SGS>&, const SparseMatBaseCL<double>& A, Vec& x,
 // One step of the Symmetric-Gauss-Seidel/SSOR method with start vector 0
 template <bool HasOmega, typename Vec>
 void
-SolveGSstep(const PreDummyCL<PB_SGS0>&, const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, double omega)
+SolveGSstep(const PreDummyCL<PB_SGS0>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
 {
     const size_t n= A.num_rows();
 
@@ -185,7 +185,7 @@ SolveGSstep(const PreDummyCL<PB_SGS0>&, const SparseMatBaseCL<double>& A, Vec& x
 // uses SparseMatDiagCL for the location of the diagonal
 template <bool HasOmega, typename Vec>
 void
-SolveGSstep(const PreDummyCL<PB_SGS0>&, const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, const SparseMatDiagCL& diag, double omega)
+SolveGSstep(const PreDummyCL<PB_SGS0>&, const MatrixCL& A, Vec& x, const Vec& b, const SparseMatDiagCL& diag, double omega)
 {
     const size_t n= A.num_rows();
 
@@ -234,7 +234,7 @@ class PreGSCL<PM,false>
     PreGSCL (double om= 1.0) : _omega(om) {}
 
     template <typename Vec>
-    void Apply(const SparseMatBaseCL<double>& A, Vec& x, const Vec& b) const
+    void Apply(const MatrixCL& A, Vec& x, const Vec& b) const
     {
         SolveGSstep<PreTraitsCL<PM>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<PM>::BaseMeth>(), A, x, b, _omega);
     }
@@ -254,13 +254,13 @@ class PreGSCL<PM,true>
     PreGSCL (const PreGSCL& p) : _diag(new SparseMatDiagCL(*(p._diag))), _omega(p._omega) {}
     ~PreGSCL() { delete _diag; }
 
-    void Init(const SparseMatBaseCL<double>& A)
+    void Init(const MatrixCL& A)
     {
         delete _diag; _diag=new SparseMatDiagCL(A);
     }
 
     template <typename Vec>
-    void Apply(const SparseMatBaseCL<double>& A, Vec& x, const Vec& b) const
+    void Apply(const MatrixCL& A, Vec& x, const Vec& b) const
     {
         SolveGSstep<PreTraitsCL<PM>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<PM>::BaseMeth>(), A, x, b, *_diag, _omega);
     }
@@ -276,11 +276,11 @@ template <PreMethGS PM>
 class PreGSOwnMatCL<PM,false>
 {
   private:
-    const SparseMatBaseCL<double>& _M;
-    double                         _omega;
+    const MatrixCL& _M;
+    double          _omega;
 
   public:
-    PreGSOwnMatCL (const SparseMatBaseCL<double>& M, double om= 1.0) : _M(M), _omega(om) {}
+    PreGSOwnMatCL (const MatrixCL& M, double om= 1.0) : _M(M), _omega(om) {}
     PreGSOwnMatCL (const PreGSOwnMatCL&); // not defined
 
     template <typename Mat, typename Vec>
@@ -296,17 +296,16 @@ template <PreMethGS PM>
 class PreGSOwnMatCL<PM,true>
 {
   private:
-    const SparseMatBaseCL<double>& _M;
-    const SparseMatDiagCL*         _diag;
-    double                         _omega;
+    const MatrixCL&        _M;
+    const SparseMatDiagCL* _diag;
+    double                 _omega;
 
   public:
-    PreGSOwnMatCL (const SparseMatBaseCL<double>& M, double om= 1.0)
-      : _M(M), _diag(0), _omega(om) {}
+    PreGSOwnMatCL (const MatrixCL& M, double om= 1.0) : _M(M), _diag(0), _omega(om) {}
     PreGSOwnMatCL (const PreGSOwnMatCL&); // not defined
     ~PreGSOwnMatCL() { delete _diag; }
 
-    void Init(const SparseMatBaseCL<double>& A)
+    void Init(const MatrixCL& A)
     {
         delete _diag; _diag=new SparseMatDiagCL(A);
     }
@@ -340,12 +339,12 @@ class PreGSOwnMatCL<PM,true>
 //      tol - residual after the final iteration
 //-----------------------------------------------------------------------------
 
-template <typename Matrix, typename Vector>
+template <typename Mat, typename Vec>
 bool
-CG(const Matrix& A, Vector& x, const Vector& b, int& max_iter, double& tol)
+CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
 {
-    Vector r= A*x - b;
-    Vector d= -r;
+    Vec r= A*x - b;
+    Vec d= -r;
     double resid= r.norm2();
 
     tol*= tol;
@@ -359,7 +358,7 @@ CG(const Matrix& A, Vector& x, const Vector& b, int& max_iter, double& tol)
 
     for (int i=1; i<=max_iter; ++i)
     {
-        const Vector Ad= A*d;
+        const Vec    Ad= A*d;
         const double delta= Ad*d;
         const double alpha= resid/delta;
         double       beta= resid;
@@ -392,13 +391,13 @@ CG(const Matrix& A, Vector& x, const Vector& b, int& max_iter, double& tol)
 //      tol - residual after the final iteration
 //-----------------------------------------------------------------------------
 
-template <typename Matrix, typename Vector, typename PreCon>
+template <typename Mat, typename Vec, typename PreCon>
 bool
-PCG(const Matrix& A, Vector& x, const Vector& b, const PreCon& M,
+PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     int& max_iter, double& tol)
 {
     const size_t n= x.size();
-    Vector p(n), z(n), q(n), r= b - A*x;
+    Vec p(n), z(n), q(n), r= b - A*x;
     double rho, rho_1= 0.0, resid= r.norm2();
 
     tol*= tol;
@@ -470,14 +469,14 @@ class CGSolverCL : public SolverBaseCL
     CGSolverCL(double tol, int maxiter) : SolverBaseCL(tol,maxiter) {}
 
     template <typename Vec>
-    void Solve(const SparseMatBaseCL<double>& A, Vec& x, const Vec& b)
+    void Solve(const MatrixCL& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
         CG(A, x, b, _iter, _res);
     }
     template <typename Vec>
-    void Solve(const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
@@ -501,14 +500,14 @@ class PCGSolverCL : public SolverBaseCL
     const PC& GetPc () const { return _pc; }
 
     template <typename Vec>
-    void Solve(const SparseMatBaseCL<double>& A, Vec& x, const Vec& b)
+    void Solve(const MatrixCL& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
         PCG(A, x, b, _pc, _iter, _res);
     }
     template <typename Vec>
-    void Solve(const SparseMatBaseCL<double>& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;

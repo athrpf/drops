@@ -269,7 +269,7 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
     vecb->Clear();
     
     const IdxT num_unks_vel= matN->RowIdx->NumUnknowns;
-    SparseMatBuilderCL<double> N( &matN->Data, num_unks_vel, num_unks_vel);
+    MatrixBuilderCL N( &matN->Data, num_unks_vel, num_unks_vel);
 
     typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
     VectorCL& b= vecb->Data;

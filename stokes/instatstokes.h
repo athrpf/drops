@@ -105,7 +105,7 @@ class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
     using                                                _base::GetBndData;
     using                                                _base::GetMG;
 
-    typedef VecDescBaseCL<VectorBaseCL<double> >                         VelVecDescCL;
+    typedef VecDescBaseCL<VectorCL>                         VelVecDescCL;
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
     typedef InstatP2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, 
                                                      const VelVecDescCL> DiscVelSolCL;

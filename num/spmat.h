@@ -462,6 +462,14 @@ VectorBaseCL<_VecEntry> transp_mul (const SparseMatBaseCL<_MatEntry>& A, const V
 }
 
 
+//=============================================================================
+//  Typedefs
+//=============================================================================
+
+typedef VectorBaseCL<double>       VectorCL;
+typedef SparseMatBaseCL<double>    MatrixCL;
+typedef SparseMatBuilderCL<double> MatrixBuilderCL;
+
 } // end of namespace DROPS
 
 #endif
