@@ -248,6 +248,7 @@ double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
         f1.assign( *sit, vd0, theVBnd, 0.5);
         ret+= (c*f1 + f1)[4] + fv( sit->GetVertex( 0)->GetCoord(), 0.1);
+        ret-= f1( bary)[2];
     }
     
     return ret[0] + ret[1] + ret[2] + f2( bary)[2];    
@@ -261,7 +262,7 @@ int main ()
                                 DROPS::std_basis<3>(1),
 				DROPS::std_basis<3>(2),
 				DROPS::std_basis<3>(3),
-				10, 10, 30);
+				10, 20, 30);
     DROPS::MultiGridCL mg( brick);
     DROPS::IdxDescCL idx( 1,1,0,0);
     idx.TriangLevel= 0;

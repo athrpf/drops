@@ -99,11 +99,7 @@ template<class T>
   inline typename LocalP2CL<T>::value_type
   LocalP2CL<T>::operator() (const BaryCoordCL& p) const
 {
-    return (*this)[0]*FE_P2CL::H0( p) + (*this)[1]*FE_P2CL::H1( p)
-        + (*this)[2]*FE_P2CL::H2( p) + (*this)[3]*FE_P2CL::H3( p)
-        + (*this)[4]*FE_P2CL::H4( p) + (*this)[5]*FE_P2CL::H5( p)
-        + (*this)[6]*FE_P2CL::H6( p) + (*this)[7]*FE_P2CL::H7( p)
-        + (*this)[8]*FE_P2CL::H8( p) + (*this)[9]*FE_P2CL::H9( p);
+    return FE_P2CL::val( *this, p);
 }
 
 
