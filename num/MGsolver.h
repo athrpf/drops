@@ -1,5 +1,5 @@
 //**************************************************************************
-// File:    MGsolver.h                                                    *
+// File:    MGsolver.h                                                     *
 // Content: classes that constitute the poisson-problem with MG-solver     *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
@@ -48,8 +48,26 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
 
 
 // Uses MGM for solving to tolerance tol or until maxiter iterations are reached.
+// The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
 void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
-        int maxiter, double tol);
+        int& maxiter, double& tol, const bool residerr= true);
+
+
+class MGPreCL
+{
+  private:
+    MGDataCL& A_;
+    Uint iter_;
+
+  public:
+    MGPreCL( MGDataCL& A, Uint iter)
+        :A_( A), iter_( iter)
+    {}
+
+    template <class Mat, class Vec>
+    void
+    Apply( const Mat&, Vec& x, const Vec& r) const;
+};
 
 
 // MG
@@ -62,15 +80,13 @@ class MGSolverCL : public SolverBaseCL
     MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol )
         : SolverBaseCL(maxiter,tol), _mgdata(mgdata) {}
 
-    void Solve(const MatrixCL& A, VectorCL& x, const VectorCL& b)
+    void Solve(const MatrixCL& /*A*/, VectorCL& x, const VectorCL& b)
     {
         _res=  _tol;
         _iter= _maxiter;
-        MG( _mgdata, x, b, _iter, _res );
+        MG( _mgdata, x, b, _iter, _res);
     }
 };
-
-//typedef MGSolverCL<MGDataCL> MG_CL;
 
 
 //===================================
@@ -78,11 +94,14 @@ class MGSolverCL : public SolverBaseCL
 //===================================
 
 template<class SmootherCL, class DirectSolverCL>
-void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
-          const SmootherCL& Smoother, Uint smoothSteps, 
-          DirectSolverCL& Solver, int numLevel, int numUnknDirect)
-// Multigrid method, V-cycle. If numLevel==0 or #Unknowns <= numUnknDirect, the direct solver Solver is used.
-// If one of the parameters is -1, it will be neglected. If MGData.begin() has been reached, the direct solver is used too.
+void
+MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
+    const SmootherCL& Smoother, Uint smoothSteps, 
+    DirectSolverCL& Solver, int numLevel, int numUnknDirect)
+// Multigrid method, V-cycle. If numLevel==0 or #Unknowns <= numUnknDirect,
+// the direct solver Solver is used.
+// If one of the parameters is -1, it will be neglected.
+// If MGData.begin() has been reached, the direct solver is used too.
 {
     const_MGDataIterCL coarse= fine;
     --coarse;
@@ -107,6 +126,19 @@ void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, Vecto
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
 }
 
+
+template <class Mat, class Vec>
+void
+MGPreCL::Apply( const Mat&, Vec& x, const Vec& r) const
+{
+    Uint sm=  2; // how many smoothing steps?
+    int lvl= -1; // how many levels? (-1=all)
+    double omega= 1.; // relaxation parameter for smoother
+    SSORsmoothCL smoother( omega);  // Symmetric-Gauss-Seidel with over-relaxation
+    SSORPcCL directpc; PCG_SsorCL solver( directpc, 200, 1e-12);
+    for (Uint i= 0; i < iter_; ++i)
+        MGM( A_.begin(), --A_.end(), x, r, smoother, sm, solver, lvl, -1);
+}
 
 } // end of namespace DROPS
 
