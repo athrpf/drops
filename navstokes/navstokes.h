@@ -1,6 +1,6 @@
 //**************************************************************************
-// File:    navstokes.h                                                       *
-// Content: classes that constitute the navier-stokes-problem                     *
+// File:    navstokes.h                                                    *
+// Content: classes that constitute the navier-stokes-problem              *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
 // History: begin - April, 30 2001                                         *
@@ -32,6 +32,8 @@ class NavierStokesP2P1CL : public StokesP2P1CL<MGB, Coeff>
   
     NavierStokesP2P1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : StokesP2P1CL<MGB, Coeff>(mgb, coeff, bdata) {}  
+    NavierStokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
+        : StokesP2P1CL<MGB, Coeff>(mg, coeff, bdata) {}  
 
     // Set up matrix for nonlinearity
     void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*) const;
@@ -41,9 +43,6 @@ class NavierStokesP2P1CL : public StokesP2P1CL<MGB, Coeff>
     void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr);
 };
 
-
-//double ResidualErrEstimator(const TetraCL& t, const VecDescCL& sol);
-//double Estimator (const TetraCL& t, const VecDescCL& lsg);
 
 } // end of namespace DROPS
 

@@ -109,13 +109,14 @@ class PoissonP1CL : public ProblemCL<MGB, Coeff, PoissonBndDataCL>
     void SetupStiffnessMatrix(MatDescCL&) const;
     void SetupProlongation   (MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const;
     // check computed solution etc.
-    void CheckSolution(const VecDescCL&, scalar_fun_ptr) const;
-    void CheckSolution(scalar_fun_ptr Lsg) const { CheckSolution(x, Lsg); }
+    double CheckSolution(const VecDescCL&, scalar_fun_ptr) const;
+    double CheckSolution(scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
     void GetDiscError (const MatDescCL&, scalar_fun_ptr) const;
     void GetDiscError (scalar_fun_ptr Lsg) const { GetDiscError(x, Lsg); }
 
-    bool          EstimateError       (const VecDescCL&, const double, double&, est_fun);
-    static double ResidualErrEstimator(const TetraCL&, const VecDescCL&, const BndDataCL&);
+    bool          EstimateError         (const VecDescCL&, const double, double&, est_fun);
+    static double ResidualErrEstimator  (const TetraCL&, const VecDescCL&, const BndDataCL&);
+    static double ResidualErrEstimatorL2(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     DiscSolCL GetSolution() const
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
@@ -169,6 +170,7 @@ class DoerflerMarkCL
   private:
     double        _InitGlobErr;
     double        _RelReduction;
+    double        _min_tetra_ratio;
     double        _Threshold;
     double        _Meas;
     double        _ActGlobErr;
@@ -180,9 +182,14 @@ class DoerflerMarkCL
     std::ostream* _outp;
 
   public:
-      DoerflerMarkCL(double RelReduction, double Threshold, double Meas, bool DoMark, _TetraEst est,
+  // the tetras are sorted: T_1 with biggest error, last T_n with smallest
+  // a tetra T_i is marked for refinement, iff (a) or (b) holds:
+  // (a) it is among "min_ratio" % of the tetras with biggest errors,
+  // (b) the sum err_1+..+err_i accounts for less than "Threshold" % of the global error
+
+      DoerflerMarkCL(double RelReduction, double min_ratio, double Threshold, double Meas, bool DoMark, _TetraEst est,
                      _ProblemCL& problem, std::ostream* osp= &std::cout)
-        : _InitGlobErr(0), _RelReduction(RelReduction), _Threshold(Threshold), _Meas(Meas), _ActGlobErr(-1), _Estimator(est),
+        : _InitGlobErr(0), _RelReduction(RelReduction), _min_tetra_ratio(min_ratio), _Threshold(Threshold), _Meas(Meas), _ActGlobErr(-1), _Estimator(est),
           _Problem(problem), _NumLastMarkedForRef(0), _NumLastMarkedForDel(0), _DoMark(DoMark), _outp(osp)
         {}
     // default assignment-op, copy-ctor, dtor

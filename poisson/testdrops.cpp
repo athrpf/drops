@@ -6,8 +6,10 @@
 #include "num/MGsolver.h"
 #include <fstream>
 
-// laplace u + q*u = f
 
+
+
+// laplace u + q*u = f
 class PoissonCoeffCL
 {
   public:
@@ -17,7 +19,7 @@ class PoissonCoeffCL
     {
         const double t0= p.norm();
         const double t1= exp(a*(t0-b));
-        if (t0<1.e-5 || t1 > 1.e10)
+        if (t0<1.e-6 || t1 > 1.e10)
             return 0.;
         else
         {
@@ -25,11 +27,11 @@ class PoissonCoeffCL
             return a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(pow(t2,3)*t0);
         }
     }
-
 };
 
 const double PoissonCoeffCL::a= -60.;
-const double PoissonCoeffCL::b= .5;
+const double PoissonCoeffCL::b= .3;
+
 
 inline double Lsg( const DROPS::Point3DCL& p)
 {
@@ -37,35 +39,17 @@ inline double Lsg( const DROPS::Point3DCL& p)
 }
 
 
-
-/*
-class PoissonCoeffCL
-{
-  public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double f(const DROPS::Point3DCL& p) { return -128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
-                                                        + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
-//    static double f(const Point3DCL& p) { return p[2]>0.49?-15.:0; }
-};
-
-
-inline double Lsg( const DROPS::Point3DCL& p)
-{
-    return 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
-}
-*/
-
 double root( double base, double deg)
 // computes the <deg>-th root of <base>
 {
-    return exp(log(base)/deg);
+    return pow(base, 1./deg);
 }
 
 namespace DROPS // for Strategies
 {
 
 template <class DiscSol>
-class GeomSolOutReportCL : public MGOutCL
+class GeomSolOutReport1CL : public MGOutCL
 // output of solution in GeomView format
 {
   private:
@@ -78,7 +62,7 @@ class GeomSolOutReportCL : public MGOutCL
     DiscSol _discsol;
 
   public:
-    GeomSolOutReportCL (const MultiGridCL& MG, const DiscSol& discsol, const ColorMapperCL* colmap, int TriLevel=-1, bool onlyBnd=false,
+    GeomSolOutReport1CL (const MultiGridCL& MG, const DiscSol& discsol, const ColorMapperCL* colmap, int TriLevel=-1, bool onlyBnd=false,
                          double explode=0.5, double min=0., double max=1.)
         : MGOutCL(&MG), _level( TriLevel<0 ? MG.GetLastLevel() : TriLevel ),
           _onlyBnd(onlyBnd), _explode(explode), _min(min), _max(max), _color(colmap), _discsol(discsol) {}
@@ -92,7 +76,7 @@ class GeomSolOutReportCL : public MGOutCL
 
 template <class DiscSol>
 std::ostream&
-GeomSolOutReportCL<DiscSol>::put(std::ostream &os) const
+GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
 {
     const double val_diff= _max-_min;
     ColorMapperCL::RGBAType rgba;
@@ -122,19 +106,16 @@ GeomSolOutReportCL<DiscSol>::put(std::ostream &os) const
         val.reserve(4);
         _discsol.GetDoF(*tit, val);
 
-        os << "geom { COFF 3 1 3\n";
-//        os << "geom { OFF 3 1 3\n";
+        os << "geom { OFF 3 1 3\n";
         for ( int i=0; i<3; i++ )
         {
             os << tit->GetVertex(verts[i])->GetCoord()[0] << ' '
                << tit->GetVertex(verts[i])->GetCoord()[1] << ' '
                << val[verts[i]]
-               << ' '; //'\n';
-            rgba= _color->map( (val[i]-_min)/val_diff );
-            os << rgba[0] << ' ' << rgba[1] << ' ' << rgba[2] << ' ' << rgba[3] << '\n';
+               << '\n';
         }
         os <<   "3 0 1 2"
-           << "\n}\n";
+           << "\n}" << std::endl;
     }
     os.flags(old_format);
     return os << '}' << std::endl;
@@ -142,7 +123,7 @@ GeomSolOutReportCL<DiscSol>::put(std::ostream &os) const
 
 
 template<class MGB, class Coeff>
-void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
+void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int meth, int sm)
 {
     typedef PoissonP1CL<MGB,Coeff> MyPoissonCL;
     
@@ -195,24 +176,26 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime() 
 	      << " seconds including " << time.GetGTime() << " seconds for the largest system." << std::endl;
-    std::cerr << "Check Data...\n";
-    CheckMGData( MGData.begin(), MGData.end() );
+//    std::cerr << "Check Data...\n";
+//    CheckMGData( MGData.begin(), MGData.end() );
     const_MGDataIterCL finest= --MGData.end();
     std::cerr << finest->Idx.NumUnknowns << " unknowns on finest grid!" << std::endl;
     MG.SizeInfo(std::cerr);
+    std::cerr << "Checking the discretization error: ";
+    Poisson.GetDiscError(finest->A, &::Lsg);
     
     for(Uint level=1; level<=MG.GetLastLevel(); ++level)
     {
         Uint num= std::distance(MG.GetTriangTetraBegin(level), MG.GetTriangTetraEnd(level));
         std::cerr << num << " Tetras on Level " << level << std::endl;
     }
-    int meth;
-    for(;;) // ever
+//    int meth;
+//    for(;;) // ever
     {
-        std::cerr << "Which method? 0=MG, 1=PCG, -1=Quit > ";  std::cin>>meth;
-        if(meth==-1) break;
-        double tol;
-        std::cerr <<"tol = "; std::cin >> tol;
+//        std::cerr << "Which method? 0=MG, 1=PCG, -1=Quit > ";  std::cin>>meth;
+//        if(meth==-1) break;
+//        double tol;
+//        std::cerr <<"tol = "; std::cin >> tol;
         time.Reset();
         if (meth)
         {
@@ -221,32 +204,34 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
             // delete former solution
             Poisson.x.Data.resize(0);
             Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-            std::cerr << "initial error:" << std::endl;
+//            std::cerr << "initial error:" << std::endl;
 //            Poisson.CheckSolution(&::Lsg);
             double resid= (Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
             std::cerr << "initial residuum = " << resid << std::endl;
             time.Start();
             PCG(finest->A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, tol);
             time.Stop();
-            std::cerr << "residuum = "<<tol<<" (av.red. "<<root(tol/resid,max_iter)
-                      <<"), #iterations = "<<max_iter<< ", time = "<<time.GetTime()<<std::endl;
-//            Poisson.CheckSolution(&::Lsg);
+//            std::cerr << "residuum = "<<tol<<" (av.red. "<<root(tol/resid,max_iter)
+//                      <<"), #iterations = "<<max_iter<< ", time = "<<time.GetTime()<<std::endl;
+            std::cerr << "residuum = "<<tol<<", av.red. "<<root(tol/resid,max_iter)
+                      <<", #iterations = "<<max_iter<< ", time = "<<time.GetTime()<<std::endl;
+            Poisson.CheckSolution(&::Lsg);
         }
         else
         {
             double resid, old_resid;
             WGSSmootherCL<VectorCL, double> smoother(omega);  //gewichtetes Gauss-Seidel
             CGSolverCL   <VectorCL, double> solver(tol, 200); //CG-Verfahren
-            Uint sm;
-            do
-            {
-                std::cerr << "Smoothing steps (0=Quit MG): "; std::cin >> sm;
-                if (sm<=0) continue;
+//            Uint sm;
+//            do
+//            {
+//                std::cerr << "Smoothing steps (0=Quit MG): "; std::cin >> sm;
+//                if (sm<=0) continue;
                 // delete former solution
                 Poisson.x.Data.resize(0);
                 Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
                 old_resid= resid= (Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
-                std::cerr << "initial error:" << std::endl;
+//                std::cerr << "initial error:" << std::endl;
 //                Poisson.CheckSolution(&::Lsg);
                 std::cerr << "initial residuum = " << old_resid << std::endl;
                 time.Reset();
@@ -261,43 +246,56 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
 //                    old_resid= resid;
                     resid= (Poisson.b.Data - finest->A.Data*Poisson.x.Data).norm();
                     ++step;
-//                    std::cerr << "Step "<< step <<": residuum = " << resid << " (red. " << resid/old_resid << "), time = "<<time.GetTime()<<std::endl;
+//                    std::cerr << "Step "<< step <<": residuum = " << resid << ", red. " << resid/old_resid << ", time = "<<time.GetTime()<<std::endl;
                 } while ( resid > tol);
                 time.Stop();
-                std::cerr << "Step "<< step <<": residuum = " << resid << " (av.red. " << root(resid/old_resid,step) << "), time = "<<time.GetTime()<<std::endl;
-//                Poisson.CheckSolution(&::Lsg);
-            } while (sm>0);
+                std::cerr << "Step "<< step <<": residuum = " << resid << ", av.red. " << root(resid/old_resid,step) << ", time = "<<time.GetTime()<<std::endl;
+                Poisson.CheckSolution(&::Lsg);
+//            } while (sm>0);
         }
     }
-    std::cerr << "Checking the discretization error: ";
-    Poisson.GetDiscError(finest->A, &::Lsg);
     MGData.resize(0);
 }
 
 
 template<class MGB, class Coeff>
-void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
+void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
+                                                       double tol, int meth, int sm,
+                                                       double stoperr, double markratio,
+                                                       double minratio)
 {
     typedef PoissonP1CL<MGB,Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
-    Uint step= 0, meth;
+    Uint step= 0;
+    double true_err= 0.0;
     IdxDescCL *c_idx;
-    TimerCL time;
+    TimerCL time, time2;
     MGDataCL MGData;
     
     const_MGDataIterCL finest;
-    Uint NumRefined;
     bool new_marks;
-    PoissonErrEstCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
-        Estimator(rel_red, 1, 1, true, &Poisson.ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
+    DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
+        Estimator(1e-10, minratio, markratio, 8, true, &Poisson.ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
+    DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
+        EstimatorL2(1e-10, 0., markratio, 8, false, &Poisson.ResidualErrEstimatorL2, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
 
-    std::cerr << "Which method? 0=MG, 1=PCG > ";  std::cin>>meth;
-    double tol;
-    std::cerr <<"tol = "; std::cin >> tol;
+//    std::cerr << "Which method? 0=MG, 1=PCG > ";  std::cin>>meth;
+//    double tol;
+//    std::cerr <<"tol = "; std::cin >> tol;
     do{
+        std::cout << "Global Step " << step << ". ";
         time.Reset();
+        time2.Start();
+        time.Start();
+        MG.Refine();
+        time.Stop();
+        time2.Stop();
+        std::cerr << time.GetTime() <<" seconds for refining!" << std::endl;
+
+        time.Reset();
+        time2.Start();
         time.Start();
         if (meth) // PCG
         {
@@ -310,7 +308,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_
             Poisson.x.SetIdx(&tmp.Idx);
             std::cerr << "Create System " << std::endl;
             Poisson.SetupSystem( tmp.A, Poisson.b);
-            finest= MGData.begin();
+            finest= --MGData.end();
         }
         else
         {
@@ -353,6 +351,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_
             finest= --MGData.end();
         }
         time.Stop();
+        time2.Stop();
         std::cerr << "Setting up all stuff took " << time.GetTime() << " seconds!" << std::endl;
         std::cerr << finest->Idx.NumUnknowns << " unknowns on finest grid!" << std::endl;
         MG.SizeInfo(std::cerr);
@@ -361,40 +360,43 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_
         if (meth) // PCG
         {
             int max_iter= 200;
+            double mytol= tol;
             SsorPcCL<VectorCL, double> pc(omega);
             // delete former solution
             Poisson.x.Data.resize(0);
             Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
             double resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
-            std::cerr << "initial error:" << std::endl;
+//            std::cerr << "initial error:" << std::endl;
 //            Poisson.CheckSolution(&::Lsg);
             std::cerr << "initial residuum = " << resid << std::endl;
+            time2.Start();
             time.Start();
-            PCG(finest->A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, tol);
+            PCG(finest->A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, mytol);
             time.Stop();
-            std::cerr << "residuum = "<<tol<<" (av.red. "<<root(tol/resid,max_iter)
-                      <<"), #iterations = "<<max_iter<< ", time = "<<time.GetTime()<<std::endl;
-//            Poisson.CheckSolution(&::Lsg);
+            time2.Stop();
+            std::cerr << "residuum = "<<mytol<<", av.red. "<<root(tol/resid,max_iter)
+                      <<", #iterations = "<<max_iter<< ", time = "<<time.GetTime()<<std::endl;
         }
         else // MGM
         {
             double resid, old_resid;
             WGSSmootherCL<VectorCL, double> smoother(omega);  //gewichtetes Gauss-Seidel
             CGSolverCL   <VectorCL, double> solver(tol, 200); //CG-Verfahren
-            Uint sm;
-            do
-            {
-                std::cerr << "Smoothing steps (0=Quit MG): "; std::cin >> sm;
-                if (sm<=0) continue;
+//            Uint sm;
+//            do
+//            {
+//                std::cerr << "Smoothing steps (0=Quit MG): "; std::cin >> sm;
+//                if (sm<=0) continue;
                 // delete former solution
                 Poisson.x.Data.resize(0);
                 Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
                 old_resid= resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
-                std::cerr << "initial error:" << std::endl;
+//                std::cerr << "initial error:" << std::endl;
 //                Poisson.CheckSolution(&::Lsg);
                 std::cerr << "initial residuum = " << resid << std::endl;
                 time.Reset();
-                Uint step= 0;
+                Uint step2= 0;
+                time2.Start();
                 time.Start();
                 do
                 {
@@ -404,48 +406,42 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_
 //                        Poisson.CheckSolution(&::Lsg);
 //                        old_resid= resid;
                     resid= (Poisson.b.Data - finest->A.Data * Poisson.x.Data).norm();
-                    ++step;
-//                        std::cerr << "Step "<< step <<": residuum = " << resid << " (red. " << resid/old_resid << "), time = "<<time.GetTime()<<std::endl;
+                    ++step2;
+//                        std::cerr << "Step "<< step2 <<": residuum = " << resid << " (red. " << resid/old_resid << "), time = "<<time.GetTime()<<std::endl;
                 } while ( resid > tol);
                 time.Stop();
-                std::cerr << "Step "<< step <<": residuum = " << resid << " (av.red. " << root(resid/old_resid,step) << "), time = "<<time.GetTime()<<std::endl;
-            } while (sm>0);
+                time2.Stop();
+                std::cerr << "Step "<< step2 <<": residuum = " << resid << ", av.red. " << root(resid/old_resid,step2) << ", time = "<<time.GetTime()<<std::endl;
+//            } while (sm>0);
 
         }
-        time.Reset();
-        time.Start();
         if (step==0)
         {
             Estimator.Init(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG));
+            EstimatorL2.Init(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG));
         }
 //        std::cerr << "maximum is " << x.Data.max() << std::endl;
         // Fehler schaetzen, Verfeinerung
-        new_marks= Estimator.Estimate(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG) );
-//        NumRefined= EstimateError( x, rel_red, SimpleGradEstimator);
-//        std::cerr << NumRefined << " Tetras marked for refinement!" << std::endl;
-        time.Stop();
-        std::cerr << time.GetTime() <<" seconds for estimating" << std::endl;
+        true_err= Poisson.CheckSolution(&::Lsg);
         time.Reset();
+        time2.Start();
         time.Start();
-        MG.Refine();
+        new_marks= Estimator.Estimate(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG) );
+        time.Stop();
+        time2.Stop();
+        std::cerr << time.GetTime() <<" seconds for estimating" << std::endl;
+        EstimatorL2.Estimate(typename MyPoissonCL::DiscSolCL(&Poisson.x, &BndData, &MG) );
 
 //        std::cerr << "Checking the discretization error: ";
 //        Poisson.GetDiscError(finest->A, &::Lsg);
-        time.Stop();
-        std::cerr << time.GetTime() <<" seconds for refining!" << std::endl;
-        if(!new_marks)
-        {
-            // save numbering of solution
-            Poisson.idx.Set(0,1,0,0,0);
-            Poisson.CreateNumbering( Poisson.x.RowIdx->TriangLevel, &Poisson.idx);
-            Poisson.x.RowIdx= &Poisson.idx;
-        }
         MGData.resize(0);
         
         ++step;
-    } while (new_marks && step<9);
-//    } while (NumRefined>0 && step<9);
-
+    } while ( true_err > stoperr /*&& step<14*/ );
+    std::cout << "cumulative solving time: " << time2.GetTime() << std::endl;
+    Poisson.idx.Set(0,1,0,0,0);
+    Poisson.CreateNumbering( Poisson.x.RowIdx->TriangLevel, &Poisson.idx);
+    Poisson.x.RowIdx= &Poisson.idx;
 }
 
 
@@ -476,61 +472,82 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
     }
 }
 
-void MarkPart( DROPS::MultiGridCL& mg, DROPS::Uint maxLevel, double percent)
-// Marks percent * 100% of the Tetras for refinement ( 0<=percent<=1 )
+void MarkPart( DROPS::MultiGridCL& mg, DROPS::Uint maxLevel, double ratio)
+// Marks ratio * 100% of the Tetras for refinement ( 0<=ratio<=1 )
 {
-     if (percent<=0) return;
+     if (ratio<=0) return;
 
-     DROPS::Uint numMark= static_cast<DROPS::Uint>(percent*mg.GetTetras().GetFullSize()),
+     DROPS::Uint numMark= static_cast<DROPS::Uint>(ratio*mg.GetTetras().GetFullSize()),
           num= 1;
      for (DROPS::MultiGridCL::TriangTetraIteratorCL It= mg.GetTriangTetraBegin(maxLevel),
              ItEnd= mg.GetTriangTetraEnd(maxLevel); It!=ItEnd; ++It, ++num)
      {
          if ( num > numMark ) return;
+// TODO: Shouldn't we mark only leaves?
          It->SetRegRefMark();
      }
 }
 
 // boundary functions (neumann, dirichlet type)
 // used for BndSegCL-object of a UnitCube
-inline double neu_val(const DROPS::Point2DCL& p) { return -64.0*p[0]*p[1]*(1.0-p[0])*(1.0-p[1]); }
-inline double dir_val(const DROPS::Point2DCL&) { return 0.0; }
+inline double neu_val(const DROPS::Point2DCL& p) { throw("Don't use Neumann-values"); }
+inline double dir_val(const DROPS::Point2DCL&) { return 1.; }
 
 
 int main (int argc, char** argv)
 {
   try
   {
-    if (argc<2) 
+    if (argc!=11) 
     {
-        std::cerr << "missing argument! Usage: testdrops <omega>" << std::endl;
+        std::cerr << "missing argument! Usage: testdrops <omega> <file> <tol> <meth> <sm> <adap> <grids> <stoperr> <markratio> <minratio>" << std::endl;
         return 1;
     }
     double omega= atof(argv[1]);
-    DROPS::Point3DCL null(-1.0);
+    const char* filename= argv[2];
+    double tol= atof(argv[3]);
+    int meth= atoi(argv[4]);
+    int sm= atoi(argv[5]);
+    int adaptiv= atoi(argv[6]);
+    int grids= atoi(argv[7]);
+    double stoperr= atof(argv[8]);
+    double markratio= atof(argv[9]);
+    double minratio= atof(argv[10]);
+    std::cout << "omega " << omega << ", ";
+    std::cout << "filename " << filename << ", ";
+    std::cout << "tol " << tol << ", ";
+    std::cout << "meth " << meth << ", ";
+    std::cout << "sm " << sm << ", ";
+    std::cout << "adap " << adaptiv << ", ";
+    std::cout << "grids " << grids << ", ";
+    std::cout << "stoperr " << stoperr << ", ";
+    std::cout << "markratio " << markratio << ", ";
+    std::cout << "minratio " << minratio << std::endl;
+    DROPS::Point3DCL orig(-1.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 2.0;
 
     typedef DROPS::PoissonP1CL<DROPS::BrickBuilderCL, PoissonCoeffCL> PoissonOnBrickCL;
     typedef PoissonOnBrickCL                                          MyPoissonCL;
 
-    DROPS::BrickBuilderCL domain(null, e1, e2, e3, 4, 4, 4);
+    DROPS::BrickBuilderCL domain(orig, e1, e2, e3, 4, 4, 4);
+//    DROPS::LBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 2, 2); 
+//    DROPS::BBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 1, 1, 1); 
 
     bool isneumann[6]= { false, false, false, false, false, false };
     DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
         { &dir_val, &dir_val, &dir_val, &dir_val, &dir_val, &dir_val };
-    DROPS::PoissonBndDataCL bdata(24, isneumann, bnd_fun);
+    DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
 
     MyPoissonCL MGprob(domain, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = MGprob.GetMG();
     DROPS::RBColorMapperCL colormap;
 
-    int adaptiv;
-    std::cerr << "Refinement: 0=regular, 1=adaptive > ";   std::cin >> adaptiv;
+//    std::cerr << "Refinement: 0=regular, 1=adaptive > ";   std::cin >> adaptiv;
     if(adaptiv)
     {
         double rel_red;
-        std::cerr << "error reduction: ";   std::cin >> rel_red;
+//        std::cerr << "error reduction: ";   std::cin >> rel_red;
         std::cerr << "Creating Grid..." << std::endl;
         for (DROPS::Uint i=0; i<1; ++i)
         {
@@ -538,30 +555,25 @@ int main (int argc, char** argv)
             DROPS::MarkAll(mg);  
             mg.Refine();
         }
-        StrategyAdaptive(MGprob, omega, rel_red);
+        StrategyAdaptive(MGprob, omega, tol, meth, sm, stoperr, markratio, minratio);
     }
     else
     {
-        std::cerr << "Creating Grid..." << std::endl;
-        for (DROPS::Uint i=0; i<4; ++i)
+//        std::cerr << "Creating Grid..." << std::endl;
+        for (DROPS::Uint i=0; i<grids; ++i)
         {
     //        MarkDrop(mg,mg.GetLastLevel());
             DROPS::MarkAll(mg);  
             mg.Refine();
         }
-        Strategy(MGprob, omega);
-        double ref;
-        std::cerr << "\namount of refinement in % > "; std::cin >> ref;
-        if (ref<=0) return 0;
-        MarkPart( mg, mg.GetLastLevel(), ref/100);
-        mg.Refine();
-        Strategy(MGprob, omega);
+        Strategy(MGprob, omega, tol, meth, sm);
     }
 //    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-    std::ofstream fil("grid.off"), fil1("sol2d.off");
-    fil << DROPS::GeomSolOutCL<MyPoissonCL::DiscSolCL>(mg, MGprob.GetSolution(), &colormap, -1, false, 0.0, MGprob.x.Data.min(), MGprob.x.Data.max()) << std::endl;
-    fil1 << DROPS::GeomSolOutReportCL<MyPoissonCL::DiscSolCL>(mg, MGprob.GetSolution(), &colormap, -1, false, 0.0, MGprob.x.Data.min(), MGprob.x.Data.max()) << std::endl;
+//    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::ofstream fil(filename);
+    fil << DROPS::GeomSolOutReport1CL<MyPoissonCL::DiscSolCL>(mg, MGprob.GetSolution(), &colormap, -1, false, 0.0, MGprob.x.Data.min(), MGprob.x.Data.max()) << std::endl;
+//    std::ofstream fil2("ttt2.off");
+//    fil2 << DROPS::GeomSolOutCL<MyPoissonCL::DiscSolCL>(mg, MGprob.GetSolution(), &colormap, -1, false, 0.0, MGprob.x.Data.min(), MGprob.x.Data.max()) << std::endl;
 //    mg.SizeInfo(std::cerr);
     return 0;
   }

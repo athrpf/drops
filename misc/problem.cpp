@@ -10,7 +10,6 @@
 #define _PROBLEM_CPP_
 
 #include "misc/problem.h"
-
 namespace DROPS
 {
 
@@ -48,11 +47,7 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint NumUnknown,
     if (NumUnknown == 0) return;
     for ( MultiGridCL::TriangTetraIteratorCL it=begin; it!=end; ++it)
     {
-        if (!it->Unknowns.Exist()) it->Unknowns.Init(idx+1);
-        else if ( !(idx < it->Unknowns.Get()->GetNumSystems()) )
-            it->Unknowns.Get()->resize(idx+1); 
-        if ( !it->Unknowns.Exist(idx) )
-            it->Unknowns.Get()->Alloc(idx, NumUnknown);
+        it->Unknowns.Prepare( idx, NumUnknown);
         for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
     }
 }

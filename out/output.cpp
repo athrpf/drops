@@ -92,4 +92,8 @@ std::ostream& SanityMGOutCL::put (std::ostream& os) const
 
 } // end of namespace DROPS
 
+
+#include "out/mapleout.cpp"
+
+
 #endif

@@ -23,9 +23,9 @@ class MGOutCL
     const MultiGridCL* _MG;
 
   public:
-    MGOutCL (const MultiGridCL* MG) : _MG(MG) {}
+    MGOutCL(const MultiGridCL* MG) : _MG(MG) {}
 
-    virtual std::ostream& put (std::ostream&) const = 0;
+    virtual std::ostream& put(std::ostream&) const = 0;
 };
 
 class ColorMapperCL
@@ -33,7 +33,8 @@ class ColorMapperCL
   public:
     typedef SArrayCL<double, 4> RGBAType;
     
-    virtual RGBAType map(double val) const { RGBAType rgba; rgba[3]= 1.0; rgba[2]= val; rgba[1]= val; rgba[0]= val; return rgba; }
+    virtual RGBAType map(double val) const
+        { RGBAType rgba; rgba[3]= 1.0; rgba[2]= val; rgba[1]= val; rgba[0]= val; return rgba; }
     // returns an RGBA-quadruple for input between 0.0 and 1.0
 };
 
@@ -57,7 +58,7 @@ class RBColorMapperCL: public ColorMapperCL
 class DumpMGCL : public MGOutCL
 {
   public:
-    DumpMGCL (const MultiGridCL& MG) : MGOutCL(&MG) {}
+    DumpMGCL(const MultiGridCL& MG) : MGOutCL(&MG) {}
 
     virtual std::ostream& put (std::ostream&) const;
 };
@@ -66,7 +67,7 @@ class DumpMGCL : public MGOutCL
 class SanityMGOutCL : public MGOutCL
 {
   public:
-    SanityMGOutCL (const MultiGridCL& MG) : MGOutCL(&MG) {}
+    SanityMGOutCL(const MultiGridCL& MG) : MGOutCL(&MG) {}
 
     virtual std::ostream& put (std::ostream&) const;
 };
@@ -254,7 +255,7 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
         if (IsInPlane( it->GetCoord() ))
             it->Unknowns( _idx)[0]= ++numv;
 
-    Uint VertsInPlane, NotInPlane;
+    Uint VertsInPlane, NotInPlane= 0;
     for (MultiGridCL::const_TriangTetraIteratorCL it= tbegin; it!=tend; ++it)
     {
         VertsInPlane= 0;
@@ -373,5 +374,8 @@ std::ostream& TecPlotSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
     
     
 } // end of namespace DROPS
+
+// I don't want to mess around too much.
+#include "out/mapleout.h"
 
 #endif

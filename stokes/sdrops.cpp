@@ -47,10 +47,10 @@ class StokesCoeffCL
     StokesCoeffCL() : nu(1.0) {}
 };
 
-//    typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, StokesCoeffCL> 
-//            StokesOnBrickCL;
     typedef DROPS::StokesP1BubbleP1CL<DROPS::BrickBuilderCL, StokesCoeffCL> 
             StokesOnBrickCL;
+//    typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, StokesCoeffCL> 
+//            StokesOnBrickCL;
     typedef StokesOnBrickCL MyStokesCL;
 
 namespace DROPS // for Strategy
@@ -85,8 +85,8 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
     MatDescCL* B= &Stokes.B;
     Uint step= 0;
     // measure of cube: (Pi/4)^3==0.484...
-    StokesDoerflerMarkCL<typename MyStokesCL::est_fun, typename MyStokesCL::_base>
-        Estimator(rel_red, 0.8, 0.484473073, true, &MyStokesCL::ResidualErrEstimator, *static_cast<typename MyStokesCL::_base*>(&Stokes) );
+    StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
+        Estimator(rel_red, 0., .484473073129685, true, &MyStokesCL::ResidualErrEstimator, Stokes );
     bool new_marks;
 //    double akt_glob_err;
 
@@ -115,10 +115,7 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
                   << p1->Data.size() << std::endl;
         std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
-        if (step==0)
-        {
-            Estimator.Init(typename MyStokesCL::DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::DiscVelSolCL(v1, &VelBndData, &MG));
-        }
+
         if (p2->RowIdx)
         {
             const StokesBndDataCL& BndData= Stokes.GetBndData();
@@ -149,11 +146,12 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-        
+/*        
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
             Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
         }
+*/
         Stokes.GetDiscError(&LsgVel, &LsgPr);
 //std::cout << A->Data << std::endl << b->Data << std::endl;
 /*        double half= M_PI/8;
@@ -220,7 +218,13 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
         }
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
-        new_marks= Estimator.Estimate(typename MyStokesCL::DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::DiscVelSolCL(v1, &VelBndData, &MG) );
+        typename MyStokesCL::DiscPrSolCL  pr(p1, &PrBndData, &MG); 
+        typename MyStokesCL::DiscVelSolCL vel(v1, &VelBndData, &MG);
+        if (step==0)
+        {
+            Estimator.Init( pr, vel);
+        }
+        new_marks= Estimator.Estimate( pr, vel);
         A->Reset();
         B->Reset();
         b->Reset();

@@ -93,7 +93,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, s
     VectorCL lsgpr( B.RowIdx->NumUnknowns);
     SVectorCL<3> tmp;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -104,7 +104,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, s
         }
     }
     
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -114,7 +114,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, s
                 lsgvel[sit->Unknowns(vidx)[i]]= tmp[i];
         }
     }
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
         lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord(), t);
 
@@ -212,7 +212,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
 
     GetGradientsOnRef(GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -354,7 +354,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
 
     GetGradientsOnRef(GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -460,7 +460,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
 
     GetGradientsOnRef(GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -561,7 +561,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun
     
     SVectorCL<3> tmp;
     
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -572,7 +572,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun
         }
     }
     
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -606,7 +606,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     double det, absdet;
 
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
@@ -629,7 +629,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
     std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -646,7 +646,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
         }
     }
     
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -665,7 +665,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     norm2= ::sqrt(norm2 / lsgvel->Data.size());
 
     Point3DCL L1_vel(0.0), L2_vel(0.0);
-    for(MultiGridCL::const_TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
+    for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
 	Point3DCL sum(0.0), diff, Diff[5];
@@ -705,7 +705,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
     DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0;
@@ -719,7 +719,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     const double c_pr= MW_pr / vol;
     std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         diff= fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
@@ -731,7 +731,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     }
     norm2= ::sqrt(norm2 / lsgpr->Data.size() );
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0, sum1= 0;

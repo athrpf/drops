@@ -121,7 +121,7 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>           DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
-    typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
+    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
     
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
@@ -134,6 +134,8 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     
     StokesP2P1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base(mgb, coeff, bdata) {}  
+    StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base(mg, coeff, bdata) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel(Uint, IdxDescCL*);
@@ -150,7 +152,7 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr) const;
 
     // work of Joerg :-)
-    bool EstimateError(const VecDescCL*, const double, double&, est_fun) const;
+    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
 
     // Get solutions as FE-functions
     DiscPrSolCL GetPrSolution() const
@@ -233,9 +235,19 @@ class StokesDoerflerMarkCL
     typedef typename BndDataCL::PrBndDataCL PrBndDataCL;
     typedef typename BndDataCL::VelBndDataCL VelBndDataCL;
     typedef VecDescBaseCL<VectorBaseCL<double> > VelVecDescCL;
-    typedef P1EvalCL<double, const PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
-    typedef P1BubbleEvalCL<SVectorCL<3>, const VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+//    typedef P1EvalCL<double, const PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
+// TODO: New template parameter???
+//    typedef P1BubbleEvalCL<SVectorCL<3>, const VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+//    typedef P2EvalCL<SVectorCL<3>, const VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
+//  DONE:
+    typedef typename _ProblemCL::DiscPrSolCL DiscPrSolCL;
+    typedef typename _ProblemCL::DiscVelSolCL DiscVelSolCL;
     
+
+  // the tetras are sorted: T_1 with biggest error, last T_n with smallest
+  // a tetra T_i is marked for refinement, iff (a) or (b) holds:
+  // (a) it is among "min_ratio" % of the tetras with biggest errors,
+  // (b) the sum err_1+..+err_i accounts for less than "Threshold" % of the global error
 
       StokesDoerflerMarkCL(double RelReduction, double Threshold, double Meas, bool DoMark, _TetraEst est,
                            _ProblemCL& problem, std::ostream* osp= &std::cout)

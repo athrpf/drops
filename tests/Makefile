@@ -6,7 +6,7 @@
 
 DIR = tests
 
-EXEC = reftest iptest mattest testfe
+EXEC = reftest ip1test ip2test mattest testfe
 
 DELETE = $(EXEC)
 
@@ -21,14 +21,20 @@ default: ClrScr
 
 reftest: \
     reftest.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../misc/utils.o ../geom/topo.o \
+    ../num/unknowns.o ../misc/utils.o ../geom/topo.o \
     ../out/output.o 
 	$(CC) $(LFLAGS) -o $@ $^
         
-iptest: \
+ip1test: \
     interp1.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o \
-    ../geom/parallel.o ../num/fe.o ../geom/boundary.o ../misc/utils.o 
+    ../num/fe.o ../geom/boundary.o ../misc/utils.o 
+	$(CC) $(LFLAGS) -o $@ $^
+
+ip2test: \
+    interp2.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+    ../num/unknowns.o ../geom/builder.o ../misc/problem.o \
+    ../num/fe.o ../geom/boundary.o ../misc/utils.o 
 	$(CC) $(LFLAGS) -o $@ $^
 
 mattest: \
@@ -37,7 +43,7 @@ mattest: \
 
 testfe: \
     testfe.o ../misc/utils.o ../geom/topo.o \
-    ../geom/parallel.o ../geom/multigrid.o ../num/unknowns.o
+    ../geom/multigrid.o ../num/unknowns.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 

@@ -3,7 +3,7 @@
 // Content: classes that constitute the instationary navier-stokes-problem *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
-// History: begin - Nov, 22 2001                                         *
+// History: begin - Nov, 22 2001                                           *
 //**************************************************************************
 
 #ifndef _INSTATNAVSTOKES_H_

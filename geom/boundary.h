@@ -12,7 +12,6 @@
 #define _BOUNDARY_H_
 
 
-#include "geom/parallel.h"
 #include "misc/container.h"
 
 

@@ -148,7 +148,7 @@ class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
     DiscPrSolCL GetPrSolution() const
         { return DiscPrSolCL( &p, &GetBndData().Pr, &GetMG()); }
     DiscVelSolCL GetVelSolution() const
-        { return DiscVelSolCL( &v, &GetBndData().Vel, &GetMG()); }
+        { return DiscVelSolCL( &v, &GetBndData().Vel, &GetMG(), t); }
 
 };
 

@@ -46,7 +46,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
     MatDescCL* A= &Poisson.A;
     SsorPcCL<VectorCL, double> pc(omega);
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
-        Estimator(rel_red, 0.6, 0.875, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
+        Estimator(rel_red, 0.0, 0.6, 0.875, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
     Uint step= 0;
     bool new_marks;
 
@@ -101,7 +101,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
         std::swap(old_idx, new_idx);
         std::cerr << std::endl;
     }
-    while (new_marks && step++<9);
+    while (new_marks && step++<6);
     // I want the solution to be in Poisson.x
     if (old_x == &loc_x)
     {
@@ -183,6 +183,10 @@ int main (int argc, char** argv)
     PoissonOnBCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
+
+    std::ofstream maple("ttt.txt");
+    maple << DROPS::MapleMGOutCL(mg, -1, false, true, DROPS::PlaneCL(e3, 0.6)) << std::endl;
+
 //    MarkAll(mg);
 
 

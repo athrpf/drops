@@ -83,14 +83,17 @@ class ProblemCL
     typedef BndData  BndDataCL;
 
   protected:
-    MultiGridCL _MG;
-    CoeffCL     _Coeff;      // rechte Seite, Koeffizienten der PDE
-    BndDataCL   _BndData;    // Randwerte
+    bool         _myMG;
+    MultiGridCL& _MG;
+    CoeffCL      _Coeff;      // rechte Seite, Koeffizienten der PDE
+    BndDataCL    _BndData;    // Randwerte
 
   public:
     ProblemCL(const MultiGridBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata)
-    : _MG(mgbuilder), _Coeff(coeff), _BndData(bnddata) {}
-    // default dtor
+    : _myMG(true), _MG(*new MultiGridCL(mgbuilder)), _Coeff(coeff), _BndData(bnddata) {}
+    ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata)
+    : _myMG(false), _MG(mg), _Coeff(coeff), _BndData(bnddata) {}
+    ~ProblemCL() { if (_myMG) delete &_MG; }
 
     MultiGridCL&       GetMG()            { return _MG; }
     const MultiGridCL& GetMG()      const { return _MG; }
@@ -135,11 +138,7 @@ void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint NumUnknown,
     {
         if ( !Bnd.IsOnDirBnd(*it) )
         {        
-            if (!it->Unknowns.Exist()) it->Unknowns.Init(idx+1);
-            else if ( !(idx < it->Unknowns.Get()->GetNumSystems()) )
-                it->Unknowns.Get()->resize(idx+1); 
-            if ( !it->Unknowns.Exist(idx) )
-                it->Unknowns.Get()->Alloc(idx, NumUnknown);
+            it->Unknowns.Prepare( idx, NumUnknown);
             for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
         }
     }
@@ -158,11 +157,7 @@ void CreateNumbOnEdge( const Uint idx, IdxT& counter, Uint NumUnknown,
     {
         if ( !Bnd.IsOnDirBnd(*it) )
         {        
-            if (!it->Unknowns.Exist()) it->Unknowns.Init(idx+1);
-            else if ( !(idx < it->Unknowns.Get()->GetNumSystems()) )
-                it->Unknowns.Get()->resize(idx+1); 
-            if ( !it->Unknowns.Exist(idx) )
-                it->Unknowns.Get()->Alloc(idx, NumUnknown);
+            it->Unknowns.Prepare( idx, NumUnknown);
             for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
         }
     }
@@ -181,11 +176,7 @@ void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint NumUnknown,
     {
         if ( !Bnd.IsOnDirBnd(*it) )
         {        
-            if (!it->Unknowns.Exist()) it->Unknowns.Init(idx+1);
-            else if ( !(idx < it->Unknowns.Get()->GetNumSystems()) )
-                it->Unknowns.Get()->resize(idx+1); 
-            if ( !it->Unknowns.Exist(idx) )
-                it->Unknowns.Get()->Alloc(idx, NumUnknown);
+            it->Unknowns.Prepare( idx, NumUnknown);
             for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
         }
     }
@@ -202,7 +193,9 @@ inline void
 DeleteNumbOnSimplex(Uint idx, const Iter& begin, const Iter& end)
     // deletes the memory for the Unknown-indices allocated by CreateNumbOn<Simplex>
 {
-    for (Iter it=begin; it!=end; ++it) it->Unknowns.Get()->Dealloc(idx);
+    for (Iter it=begin; it!=end; ++it) 
+        if (it->Unknowns.Exist() && it->Unknowns.Exist(idx) ) 
+            it->Unknowns.Get()->Dealloc(idx);
 }
 
 } // end of namespace DROPS

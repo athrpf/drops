@@ -6,7 +6,7 @@
 
 DIR = stokes
 
-EXEC = sdrops sdropsP2 FSdrops drivcav
+EXEC = sdrops sdropsP2 FSdrops drcavad drivcav
 
 DELETE = $(EXEC)
 
@@ -24,27 +24,34 @@ run: ClrScr drcavad
 
 sdrops: \
     ../geom/boundary.o ../geom/builder.o sdrops.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../stokes/stokes.o ../num/discretize.o \
     ../out/output.o 
 	$(CC) $(LFLAGS) -o $@ $^
 
 sdropsP2: \
     ../geom/boundary.o ../geom/builder.o sdropsP2.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o stokes.o ../out/output.o \
     ../num/discretize.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 drivcav: \
     ../geom/boundary.o ../geom/builder.o drivcav.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o stokes.o ../out/output.o 
+	$(CC) $(LFLAGS) -o $@ $^
+
+drcavad: \
+    ../geom/boundary.o ../geom/builder.o drcavad.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../misc/problem.o ../misc/utils.o stokes.o ../out/output.o \
+    ../num/discretize.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 FSdrops: \
     ../geom/boundary.o ../geom/builder.o FSdrops.o ../geom/multigrid.o \
-    ../geom/parallel.o ../out/output.o ../num/unknowns.o ../geom/topo.o \
+    ../out/output.o ../num/unknowns.o ../geom/topo.o \
     ../num/fe.o ../misc/problem.o ../misc/utils.o instatstokes.o stokes.o
 	$(CC) $(LFLAGS) -o $@ $^
 

@@ -6,13 +6,15 @@
 // History: begin - Nov, 20 2001                                           *
 //**************************************************************************
 
+#include "num/stokessolver.h"
+
 #ifndef _NSSOLVER_H_
 #define _NSSOLVER_H_
 
 namespace DROPS
 {
 
-template<NavStokesT, SolverT>
+template <class NavStokesT, class SolverT>
 class AdaptFixedPtDefectCorrCL
 /****************************************************************************
 * adaptive fixedpoint defect correction (TUREK p. 187f)
@@ -51,7 +53,7 @@ class AdaptFixedPtDefectCorrCL
     // (param. alpha is used for time integr. schemes)
 };
 
-template<NavStokesT, SolverT>
+template<class NavStokesT, class SolverT>
 class FixedPtDefectCorrCL
 /****************************************************************************
 * fixedpoint defect correction (TUREK p. 187f w/o adaption)
@@ -67,7 +69,7 @@ class FixedPtDefectCorrCL
     MatrixCL    _AN;
     
     double      _tol, _res, _red;
-    int         _maxiter, _iter
+    int         _maxiter, _iter;
   
   public:
     FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, double tol, int maxiter, double reduction= 1000.)

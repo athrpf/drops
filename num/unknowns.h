@@ -130,6 +130,15 @@ class UnknownHandleCL
     UnknownIdxCL* Get() const { return _unk; }
     IdxT*&        operator() (Uint i)       { return _unk->GetIdx(i); }
     IdxT*         operator() (Uint i) const { return _unk->GetIdx(i); }
+    
+    void Prepare(Uint sysnum, Uint NumUnknown)
+    {
+        if (!_unk) _unk= new UnknownIdxCL(sysnum+1);
+        else if ( !(sysnum < _unk->GetNumSystems()) )
+            _unk->resize(sysnum+1); 
+        if ( !Exist(sysnum) )
+            _unk->Alloc(sysnum, NumUnknown);
+    }
 };
 
 

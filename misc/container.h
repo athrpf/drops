@@ -195,7 +195,7 @@ SVectorCL<_Size> ConvexComb (double a,
                              const SVectorCL<_Size>& v2)
 {
     SVectorCL<_Size> tempv;
-    for (Uint i=0; i<_Size; ++i) tempv[i] = a*v1[i] + (1.0-a)*v2[i];
+    for (Uint i=0; i<_Size; ++i) tempv[i] = (1.0-a)*v1[i] + a*v2[i];
     return tempv;
 }
 
@@ -320,6 +320,15 @@ cross_product(Point3DCL& res, const Point3DCL& v0, const Point3DCL& v1)
     res[0]= v0[1]*v1[2] - v0[2]*v1[1];
     res[1]= v0[2]*v1[0] - v0[0]*v1[2];
     res[2]= v0[0]*v1[1] - v0[1]*v1[0];
+}
+
+// std_basis<n>(0)==Null, std_basis<n>(i)[j]==Delta_i-1_j
+template <Uint _Size>
+inline SVectorCL<_Size> std_basis(Uint i)
+{
+    SVectorCL<_Size> ret(0.);
+    if (i>0) ret[i-1]= 1.;
+    return ret;
 }
 
 

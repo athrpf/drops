@@ -95,7 +95,7 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
     double absdet;
     IdxT UnknownIdx[4];
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         P1DiscCL::GetGradients(G,det,*sit);
@@ -167,7 +167,7 @@ void PoissonP1CL<MGB,Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
     double absdet;
     IdxT UnknownIdx[4];
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         P1DiscCL::GetGradients(G,det,*sit);
@@ -225,7 +225,7 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
     P.ColIdx= cIdx;
     // setup index part of matrix
     // Iterate over all edges, interpolate values on new mid vertices
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= _MG.GetAllEdgeBegin(f_level), theend= _MG.GetAllEdgeEnd(f_level);
+    for (MultiGridCL::const_AllEdgeIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetAllEdgeBegin(f_level), theend= const_cast<const MultiGridCL&>(_MG).GetAllEdgeEnd(f_level);
          sit!=theend; ++sit)
         if ( sit->IsRefined() && sit->GetMidVertex()->Unknowns.Exist() 
           && !sit->GetMidVertex()->Unknowns.Exist(c_idx) ) 
@@ -240,7 +240,7 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
 //            ++counter2;
         }
     // Iterate over the vertices of the coarse triangulation and copy values
-    for (MultiGridCL::const_TriangVertexIteratorCL sit= _MG.GetTriangVertexBegin(c_level), theend= _MG.GetTriangVertexEnd(c_level);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(c_level), theend= const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(c_level);
          sit!=theend; ++sit)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(c_idx) )
         {
@@ -260,7 +260,7 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
 //===================================================
 
 template<class MGB, class Coeff>
-void PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
+double PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr Lsg) const
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
     Uint lvl=lsg.RowIdx->TriangLevel,
@@ -270,7 +270,7 @@ void PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr 
     
     std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double absdet= sit->GetVolume()*6.,
@@ -287,7 +287,7 @@ void PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr 
     }
     L2= sqrt(L2);
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist())
@@ -304,6 +304,7 @@ void PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_ptr 
               << "w-2-Norm= " << ::sqrt(norm2/lsg.Data.size()) << std::endl
               << "max-Norm= " << maxdiff                       << std::endl
               << " L2-Norm= " << L2                            << std::endl;
+    return L2;
 }
 
 template<class MGB, class Coeff>
@@ -313,7 +314,7 @@ void PoissonP1CL<MGB,Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg
          idx= A.ColIdx->Idx;
     VectorCL lsg(A.Data.num_cols());
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist())
@@ -375,6 +376,7 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
     double _err= 0.0;
     Point3DCL cc_center;  // center of circum-circle
     double cc_radius;     // radius of circum-circle
+    double cc_rad_Face;
     Uint trilevel= sol.RowIdx->TriangLevel;
     const IdxDescCL& idx= *sol.RowIdx;
 
@@ -382,17 +384,19 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
     SMatrixCL<3,4> H;
     // Gradient of hat-function for vertex i is in col i
     P1DiscCL::GetGradients(H,det,t);
-
+    const double absdet= fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
-    _err+= 4.*cc_radius*cc_radius*P1DiscCL::norm_L2_sq(t, &CoeffCL::f)*fabs(det);
+    const double P0f= Quad3CL::Quad(t, &CoeffCL::f)*6.; // absdet/vol = 6.
+    _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
+//    _err+= 4.*cc_radius*cc_radius*P1DiscCL::norm_L2_sq(t, &CoeffCL::f)*absdet;
 
     // Integrals over boundary - distinguish between inner-boundary and domain-boundary
     Point3DCL normal; // normal of face
     double dir;       // 1.0, if normal points outward, -1.0 otherwise
     for (Uint face=0; face<NumFacesC; ++face)
     {
-        circumcircle(t, face, cc_center, cc_radius);
+        circumcircle(t, face, cc_center, cc_rad_Face);
         if ( t.IsBndSeg(face) )
         {
             t.GetOuterNormal(face, normal);
@@ -423,13 +427,13 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
                 const double f2= bdat->GetBndVal(vc2D[2]) - n_du;
                 const double fb= bdat->GetBndVal( 1./3.*(vc2D[0] + vc2D[1] + vc2D[2]) ) - n_du;    //Barycenter of Face
                 const double absdet= FuncDet2D(v[VertOfFace(face,1)]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
-                _err+= 2.*cc_radius * ( (f0*f0 + f1*f1 + f2*f2)/24. + 3./8.*fb*fb )*absdet/2.;
+                _err+= 2.*cc_rad_Face * ( (f0*f0 + f1*f1 + f2*f2)/24. + 3./8.*fb*fb )*absdet/2.;
             }
             // TODO: How do we handle non-null Dirichlet-boundary-data
         }
         else
         {
-            t.GetNormal(face, normal, dir);
+            const double absdet2D= t.GetNormal(face, normal, dir);
             const TetraCL& neigh= *t.GetNeighInTriang(face, trilevel);
             double ndet;
             SMatrixCL<3,4> nH;
@@ -451,12 +455,109 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
-            const double absdet= FuncDet2D( v[VertOfFace(face,1)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord(),
-                                            v[VertOfFace(face,2)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord() );
-            _err+= 0.5 * 2.*cc_radius * jump*jump * absdet/2.;
+//            const double absdet= FuncDet2D( v[VertOfFace(face,1)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord(),
+//                                            v[VertOfFace(face,2)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord() );
+            _err+= /* 0.5 * 2.* */cc_rad_Face * jump*jump * absdet2D/2.;
         }
     }
-    return sqrt(_err);
+    return _err;
+}
+
+
+template<class MGB, class Coeff>
+double PoissonP1CL<MGB,Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDescCL& sol, const BndDataCL& Bnd)
+// Based on R. Verfuerth, "A review of a posteriori error estimation and adaptive
+// mesh refinement techniques"
+// chapter 3.2
+{
+    double _err= 0.0;
+    Point3DCL cc_center;  // center of circum-circle
+    double cc_radius;     // radius of circum-circle
+    double cc_rad_Face;
+    Uint trilevel= sol.RowIdx->TriangLevel;
+    const IdxDescCL& idx= *sol.RowIdx;
+
+    double det;
+    SMatrixCL<3,4> H;
+    // Gradient of hat-function for vertex i is in col i
+    P1DiscCL::GetGradients(H,det,t);
+    const double absdet= fabs(det);
+    // Integral over tetra
+    circumcircle(t, cc_center, cc_radius);
+    const double P0f= Quad3CL::Quad(t, &CoeffCL::f)*6.; // absdet/vol = 6.
+    _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
+//    _err+= 4.*cc_radius*cc_radius*P1DiscCL::norm_L2_sq(t, &CoeffCL::f)*absdet;
+
+    // Integrals over boundary - distinguish between inner-boundary and domain-boundary
+    Point3DCL normal; // normal of face
+    double dir;       // 1.0, if normal points outward, -1.0 otherwise
+    for (Uint face=0; face<NumFacesC; ++face)
+    {
+        circumcircle(t, face, cc_center, cc_rad_Face);
+        if ( t.IsBndSeg(face) )
+        {
+            t.GetOuterNormal(face, normal);
+            const BndIdxT bidx= t.GetBndIdx(face);
+            const typename BndDataCL::BndSegDataCL* bdat= &Bnd.GetSegData(bidx);
+            if ( bdat->IsNeumann() )
+            {
+//std::cerr << "neumann";
+                Point2DCL vc2D[3];
+                const VertexCL* v[4];
+
+                const BndPointSegEqCL comp(bidx);
+                double n_du= 0.0;  // scalar product of Du and the normal
+                for (int i=0; i<4; ++i)
+                {
+                    v[i]= t.GetVertex(i);
+                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)[0]]
+                               : Bnd.GetDirBndValue(*v[i]) )
+                          *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
+                }
+                for (int i=0; i<3; ++i)
+                    vc2D[i]= std::find_if( v[VertOfFace(face,i)]->GetBndVertBegin(),
+                                           v[VertOfFace(face,i)]->GetBndVertEnd(),
+                                           comp                                      )->GetCoord2D();
+
+                const double f0= bdat->GetBndVal(vc2D[0]) - n_du;
+                const double f1= bdat->GetBndVal(vc2D[1]) - n_du;
+                const double f2= bdat->GetBndVal(vc2D[2]) - n_du;
+                const double fb= bdat->GetBndVal( 1./3.*(vc2D[0] + vc2D[1] + vc2D[2]) ) - n_du;    //Barycenter of Face
+                const double absdet= FuncDet2D(v[VertOfFace(face,1)]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
+                _err+= 2.*cc_rad_Face * ( (f0*f0 + f1*f1 + f2*f2)/24. + 3./8.*fb*fb )*absdet/2.;
+            }
+            // TODO: How do we handle non-null Dirichlet-boundary-data
+        }
+        else
+        {
+            const double absdet2D= t.GetNormal(face, normal, dir);
+            const TetraCL& neigh= *t.GetNeighInTriang(face, trilevel);
+            double ndet;
+            SMatrixCL<3,4> nH;
+            P1DiscCL::GetGradients(nH, ndet, neigh);
+            const VertexCL* v[4];
+            const VertexCL* nv;
+            double jump= 0.0;
+            for (int i=0; i<4; ++i)
+            {
+//                const Uint v_idx=  VertOfFace(face, i);
+                v[i]= t.GetVertex(i);
+                nv= neigh.GetVertex(i);
+                jump-= dir
+                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)[0]]
+                        : Bnd.GetDirBndValue(*v[i]) )
+                      *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
+                jump+= dir
+                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)[0]]
+                        : Bnd.GetDirBndValue(*nv) )
+                      *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
+            }
+//            const double absdet= FuncDet2D( v[VertOfFace(face,1)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord(),
+//                                            v[VertOfFace(face,2)]->GetCoord() - v[VertOfFace(face,0)]->GetCoord() );
+            _err+= /* 0.5 * 2.* */cc_rad_Face * jump*jump * absdet2D/2.;
+        }
+    }
+    return 4.*cc_radius*cc_radius*_err;
 }
 
 
@@ -572,13 +673,11 @@ void DoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData
     const Uint lvl= sol.GetSolution()->RowIdx->TriangLevel;
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
 
-    double tmp;
     _InitGlobErr= 0;
     for (MultiGridCL::TriangTetraIteratorCL sit=mg.GetTriangTetraBegin(lvl), send=mg.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
-        tmp= _Estimator( *sit, *sol.GetSolution(), bnd);
-        _InitGlobErr+= tmp*tmp;
+        _InitGlobErr+= _Estimator( *sit, *sol.GetSolution(), bnd);
     }
     _InitGlobErr= sqrt(_InitGlobErr);
     _ActGlobErr= _InitGlobErr;
@@ -605,7 +704,7 @@ bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bnd
          sit != send; ++sit)
     {
         const double localerr= _Estimator(*sit, lsg, bnd);
-        err_est.push_back( std::make_pair(&*sit, localerr*localerr) );
+        err_est.push_back( std::make_pair(&*sit, localerr) );
     }
     const double globalerr_sq= std::accumulate(err_est.begin(), err_est.end(), 0.0, AccErrCL() );
     const double globalerr= sqrt(globalerr_sq);
@@ -614,8 +713,9 @@ bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bnd
     {
         std::sort( err_est.begin(), err_est.end(), Err_Pair_GTCL() );
         double akt_ref_err_sq= 0;
+        const Uint min_tetra= static_cast<Uint>(err_est.size()*_min_tetra_ratio);
         for (Err_ContCL::iterator it= err_est.begin(), theend= err_est.end();
-             it != theend && akt_ref_err_sq < ref_threshold_sq; ++it)
+             it != theend && (akt_ref_err_sq < ref_threshold_sq || _NumLastMarkedForRef < min_tetra); ++it)
             if ( it->first->IsUnrefined() )
             {
                 it->first->SetRegRefMark();

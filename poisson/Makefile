@@ -6,7 +6,7 @@
 
 DIR = poisson
 
-EXEC = drops MGdrops testdrops
+EXEC = drops MGdrops testdrops dropsrep
 
 DELETE = $(EXEC)
 
@@ -21,19 +21,25 @@ default: ClrScr dropsrep
 
 drops: \
     ../geom/boundary.o ../geom/builder.o drops.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../geom/topo.o poisson.o \
+    ../num/unknowns.o ../geom/topo.o poisson.o \
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+	$(CC) $(LFLAGS) -o $@ $^
+
+dropsrep: \
+    ../geom/boundary.o ../geom/builder.o dropsrep.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o poisson.o \
     ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 MGdrops: \
     ../geom/boundary.o ../geom/builder.o MGdrops.o ../geom/multigrid.o \
-    ../geom/parallel.o ../out/output.o ../num/unknowns.o ../geom/topo.o \
+    ../out/output.o ../num/unknowns.o ../geom/topo.o \
     ../num/MGsolver.o poisson.o ../misc/problem.o ../misc/utils.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 testdrops: \
     ../geom/boundary.o ../geom/builder.o testdrops.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../geom/topo.o ../num/MGsolver.o \
+    ../num/unknowns.o ../geom/topo.o ../num/MGsolver.o \
     poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
     ../num/discretize.o
 	$(CC) $(LFLAGS) -o $@ $^

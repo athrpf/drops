@@ -305,9 +305,12 @@ int main (int argc, char** argv)
     v2d.close();
 
     std::ofstream v3d("data3D.dat");
-    DROPS::TecPlotSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
-        tecplot( mg, prob.GetVelSolution(), prob.GetPrSolution() );
-    v3d << tecplot;
+//    DROPS::TecPlotSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+//        tecplot( mg, prob.GetVelSolution(), prob.GetPrSolution() );
+//    v3d << tecplot;
+    DROPS::MapleSolOutCL<MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+        mapleplot( mg, prob.GetVelSolution(), prob.GetPrSolution(), -1, DROPS::PlaneCL(DROPS::std_basis<3>(2), .5));
+    v3d << mapleplot;
     v3d.close();
 
 /*

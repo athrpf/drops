@@ -11,7 +11,7 @@
 
 #include "num/discretize.h"
 #include "misc/problem.h"
-#include <deque>
+#include <vector>
 
 namespace DROPS
 {
@@ -25,7 +25,7 @@ void StokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
     VectorCL lsgpr( B.RowIdx->NumUnknowns);
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -35,7 +35,7 @@ void StokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr
         }
     }
     
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -44,7 +44,7 @@ void StokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr
                 lsgvel[sit->Unknowns(vidx)[i]]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i];
         }
     }
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
         lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord());
 
@@ -361,7 +361,7 @@ void StokesP2P1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, M
 
     GetGradientsOnRef(GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -487,7 +487,7 @@ void StokesP2P1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
     const double coupl_ii= 1./120. + 2./15./16.,
                  coupl_ij=           2./15./16.;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6;
@@ -508,9 +508,8 @@ template <class MGB, class Coeff>
 void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
                                  vector_fun_ptr LsgVel,      scalar_fun_ptr LsgPr) const
 {
-    double diff, maxdiff=0, norm2= 0;
-    Uint lvl=lsgvel->RowIdx->TriangLevel,
-         vidx=lsgvel->RowIdx->Idx;
+    double mindiff=0, maxdiff=0, norm2= 0;
+    Uint lvl=lsgvel->RowIdx->TriangLevel;
     
     VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;
     VectorCL res2= B.Data*lsgvel->Data - c.Data;
@@ -519,13 +518,14 @@ void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const Ve
     std::cerr << "|| Ax + BTy - F || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
     std::cerr << "||       Bx - G || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
     
+    P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr(lsgpr, &_BndData.Pr, &_MG);
     P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL>  vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
-    SMatrixCL<3,3> T;
+    SMatrixCL<3,3> T, M;
     double det, absdet;
 
-    
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    // Calculate div(u).
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
@@ -533,7 +533,7 @@ void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const Ve
         absdet= fabs(det);
         for(Uint i= 0; i<10; ++i)
         {
-            SVectorCL<3> value= i<4 ? vel.val(*sit->GetVertex(i))
+            const SVectorCL<3> value= i<4 ? vel.val(*sit->GetVertex(i))
                                     : vel.val(*sit->GetEdge(i-4));
             div[0]+= inner_prod(T*FE_P2CL::DHRef(i,0,0,0),value);
             div[1]+= inner_prod(T*FE_P2CL::DHRef(i,1,0,0),value);
@@ -548,95 +548,101 @@ void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const Ve
     std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
     std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
+    // the allowed offset of the pressure by setting it to 0.
+    double MW_pr= 0, vol= 0;
+    const Uint numpts= Quad3CL::GetNumPoints();
+    double* pvals= new double[numpts];
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
+        const double volT= sit->GetVolume();
+        for (Uint i=0; i<numpts; ++i)
         {
-           for(int i=0; i<3; ++i)
-           {
-               diff= fabs( LsgVel(sit->GetCoord())[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
-               norm2+= diff*diff;
-               if (diff>maxdiff)
-               {
-                   maxdiff= diff;
-               }
-           }
+            const Point3DCL& p= Quad3CL::GetPoints()[i];
+            pvals[i]= pr.val(*sit, p[0], p[1], p[2]);
         }
+        MW_pr+= Quad3CL::Quad(pvals)*volT*6.;
+        vol+= volT;
     }
-    
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
-        {
-           for(int i=0; i<3; ++i)
-           {
-               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
-               norm2+= diff*diff;
-               if (diff>maxdiff)
-               {
-                   maxdiff= diff;
-               }
-           }
-        }
-    }
-    norm2= ::sqrt(norm2 / lsgvel->Data.size());
+    const double c_pr= MW_pr/vol;
+    std::cerr << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
 
-    Point3DCL L1_vel(0.0), L2_vel(0.0);
-    for(MultiGridCL::const_TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
+    // Some norms of velocities: u_h - u
+    double L2_Dvel(0.0), L2_vel(0.0);
+    double L2_pr(0.0);
+    double* vals= new double[numpts];
+    double* Dvals= new double[numpts];
+    for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
-	Point3DCL sum(0.0), diff, Diff[5];
-	for(int i=0; i<4; ++i)
-	{
-	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord()) - vel.val(*sit->GetVertex(i));
-	    diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
-	    sum+= diff;
-	}
-	sum/= 120;
-	Diff[4]= diff= LsgVel(GetBaryCenter(*sit)) - vel.val(*sit, 0.25, 0.25, 0.25);
-	diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
-	sum+= diff*2./15.;
-	sum*= sit->GetVolume()*6;
-	L1_vel+= sum;
+        GetTrafoTr(M,det,*sit);
+        const double absdet= fabs(det);
+        // Put velocity degrees of freedom in veldof
+        std::vector< SVectorCL<3> > veldof;
+        veldof.reserve(10);
+        vel.GetDoF(*sit, veldof);
+        for (Uint i=0; i<numpts; ++i)
+        {
+            const Point3DCL& p= Quad3CL::GetPoints()[i];
+            const Point3DCL  p_world= GetWorldCoord(*sit, p);
 
-	for(int i=0; i<10; ++i)
-	{
-	    sum= Quad(Diff, i)*sit->GetVolume()*6;
-	    diff= i<4 ? Diff[i] : LsgVel( (sit->GetEdge(i-4)->GetVertex(0)->GetCoord() + sit->GetEdge(i-4)->GetVertex(1)->GetCoord() )/2) - vel.val(*sit->GetEdge(i-4));
-	    sum[0]*= diff[0]; sum[1]*= diff[1]; sum[2]*= diff[2];
-	    L2_vel+= sum;
-	}
+            const double prtmp= pr.val(*sit, p[0], p[1], p[2]) - c_pr - LsgPr(p_world);
+            pvals[i]= prtmp*prtmp;
+            const SVectorCL<3> tmp= vel.val(veldof, p[0], p[1], p[2]) - LsgVel(p_world);
+            vals[i]= inner_prod(tmp, tmp);
+
+            Dvals[i]= 0.;
+            Point3DCL Db_xi[10];
+            for (Uint j=0; j<10; ++j)
+            {
+                Db_xi[j]+=M*FE_P2CL::DHRef(j, p[0], p[1], p[2]);
+            }
+            for (Uint k=0; k<3; ++k)
+            {
+                Point3DCL tmpD= -LsgVel( p_world );
+                for (Uint j=0; j<10; ++j)
+                    tmpD+= veldof[j][k]*Db_xi[j];
+                Dvals[i]+= inner_prod(tmpD, tmpD);
+            }
+        }
+        L2_pr+= Quad3CL::Quad(pvals)*absdet;
+        L2_vel+= Quad3CL::Quad(vals)*absdet;
+        L2_Dvel+= Quad3CL::Quad(Dvals)*absdet;
     }
+    const double X_norm= sqrt(L2_pr + L2_vel + L2_Dvel);
+    L2_pr= sqrt(L2_pr);
     L2_vel= sqrt(L2_vel);
-    std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
-              << "w-2-Norm= " << norm2 << std::endl
-              << " L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")" << std::endl
-              << " L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")" << std::endl
-              << "max-Norm= " << maxdiff << std::endl;
+    L2_Dvel= sqrt(L2_Dvel);
+    delete[] Dvals;
+    delete[] vals;
+    delete[] pvals;
+    std::cerr << "|| (u_h, p_h) - (u, p) ||_X = " << X_norm
+              << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << L2_Dvel
+              << ", || p_h - p ||_L2 = " << L2_pr
+              << std::endl;
 
-    norm2= 0; maxdiff= 0; double mindiff= 1000;
-
+/*
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
     P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr(lsgpr, &_BndData.Pr, &_MG);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
+        const double volT= sit->GetVolume();
         double sum= 0;
         for(int i=0; i<4; ++i)
             sum+= pr.val(*sit->GetVertex(i)) - LsgPr(sit->GetVertex(i)->GetCoord());
         sum/= 120;
         sum+= 2./15.* (pr.val(*sit, .25, .25, .25) - LsgPr(GetBaryCenter(*sit)));
-        MW_pr+= sum * sit->GetVolume()*6.;
-        vol+= sit->GetVolume();
+        MW_pr+= sum * volT*6.;
+        vol+= volT;
     }
     const double c_pr= MW_pr / vol;
     std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         diff= fabs( c_pr + LsgPr(sit->GetCoord()) - pr.val(*sit));
@@ -648,7 +654,7 @@ void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const Ve
     }
     norm2= ::sqrt(norm2 / lsgpr->Data.size() );
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0, sum1= 0;
@@ -664,15 +670,133 @@ void StokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const Ve
         L1_pr+= sum1 * sit->GetVolume()*6.;
     }
     L2_pr= sqrt( L2_pr);
-
+*/
 
     std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
               << "w-2-Norm= " << norm2 << std::endl
               << " L2-Norm= " << L2_pr << std::endl
-              << " L1-Norm= " << L1_pr << std::endl
               << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
 
+
+template <class MGB, class Coeff>
+double StokesP2P1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrSolCL& pr, const DiscVelSolCL& vel)
+{
+    double det;
+    SMatrixCL<3,3> M;
+    GetTrafoTr(M, det, t);
+    const double absdet= fabs(det);
+    const double vol= absdet/6.;
+    Point3DCL cc; // unused; circumcenter of T dummy
+    double hT; // radius of circumcircle of T
+    circumcircle(t, cc, hT);
+    // P_0(f) := (f, 1_T)_T * 1_T = int(f, T)/|T|
+    const SVectorCL<3> P0f= Quad3CL::Quad(t, &Coeff::f)*6.;  //absdet/vol; // TODO: use absdet/vol = 6.
+
+/*  stupid me: we do not need the perturbation terms....
+    // torsion:  hT^2*(|| f - P0f ||_L2(T) )^2
+    const Uint numpts= Quad3CL::GetNumPoints();
+    double* vals= new double[numpts];
+    for (Uint i=0; i<numpts; ++i)
+    {
+        const SVectorCL<3> tmp= Coeff::f( GetWorldCoord(t, Quad3CL::GetPoints()[i]) ) - P0f;
+        vals[i]= inner_prod(tmp, tmp);
+    }
+    double err_sq= Quad3CL::Quad(vals)*absdet*hT*hT;
+*/
+
+    const Uint numpts= Quad3CL::GetNumPoints();
+    double* vals= new double[numpts];
+    double err_sq= 0.0;
+
+    // Now eta_T^2:
+    // Put velocity degrees of freedom in veldof
+    std::vector< SVectorCL<3> > veldof;
+    veldof.reserve(10);
+    vel.GetDoF(t, veldof);
+    // Put pressure degrees of freedom in prdof
+    std::vector< double > prdof;
+    prdof.reserve(4);
+    pr.GetDoF(t, prdof);
+    
+    // || div(u_h) ||_L2(T) squared; the integrand is linear, thus we only need a quadrature-formula,
+    // which is exact up to degree 2 (squares in L2-norm...); optimize this later.
+    for (Uint i=0; i<numpts; ++i)
+    {
+        double tmp= 0.;
+        for (Uint j=0; j<10; ++j)
+        {
+            tmp+= inner_prod( veldof[j], M*FE_P2CL::DHRef(j, Quad3CL::GetPoints()[i][0], Quad3CL::GetPoints()[i][1], Quad3CL::GetPoints()[i][2]) );
+        }
+        vals[i]= tmp*tmp;
+    }
+    err_sq+= Quad3CL::Quad(vals)*absdet;
+    delete[] vals;
+
+    // hT^2*int((-laplace(u) - grad(p) - P0f)^2, T) -- the sign of grad(p) is due to the implemented version of stokes eq.
+    // the integrand is a constant for P2P1-discretisation...
+    SVectorCL<3> tmp= -P0f;
+    tmp-= M*(  prdof[0]*FE_P1CL::DH0Ref() + prdof[1]*FE_P1CL::DH1Ref()
+             + prdof[2]*FE_P1CL::DH2Ref() + prdof[3]*FE_P1CL::DH3Ref() );
+    for(Uint i=0; i<10; ++i)
+    {
+        // TODO: 1.0 stands for Stokes:GetCoeff().nu!! How do I obtain this here?
+        tmp-= 1.0*veldof[i]*FE_P2CL::Laplace(i, M);
+    }
+    err_sq+= 4.*hT*hT*inner_prod(tmp, tmp)*vol;
+
+
+    // Sum over all hF*int( [nu*nE*grad(u) + p*nE]_jumpoverface^2, face) not on the boundary
+    const Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
+    const Uint numpts2= FaceQuad2CL::GetNumPoints();
+    vals= new double[numpts2];
+    for (Uint f=0; f<NumFacesC; ++f)
+    {
+        const FaceCL& face= *t.GetFace(f);
+        if ( !face.IsOnBoundary() )
+        {
+            const TetraCL& neigh= *face.GetNeighInTriang(&t, lvl);
+            const Uint f_n= face.GetFaceNumInTetra(&neigh);
+            // Put velocity degrees of freedom of neigh in veldof_n
+            std::vector< SVectorCL<3> > veldof_n;
+            veldof_n.reserve(10);
+            vel.GetDoF(neigh, veldof_n);
+            SMatrixCL<3,3> M_n;
+            double ndet, dir;
+            SVectorCL<3> n; // normal of the face; is the same on t and neigh,
+                            // if the triangulation is consistently numbered.
+            const double absdet2D= t.GetNormal(f, n, dir);
+            GetTrafoTr(M_n, ndet, neigh);
+            for (Uint pt=0; pt<numpts2; ++pt)
+            {
+                SVectorCL<3> tmp_me(0.);
+                SVectorCL<3> tmp_n(0.);
+                const SVectorCL<3> pos= FaceToTetraCoord(t, f, FaceQuad2CL::GetPoints()[pt]);
+                const SVectorCL<3> pos_n= FaceToTetraCoord(neigh, f_n, FaceQuad2CL::GetPoints()[pt]);
+                for (Uint i=0; i<10; ++i)
+                {
+                    const double gr= inner_prod( n, M*FE_P2CL::DHRef(i, pos[0], pos[1], pos[2]) );
+                    const double ngr= inner_prod( n, M_n*FE_P2CL::DHRef(i, pos_n[0], pos_n[1], pos_n[2]) );
+                    // TODO: 1.0 for nu; see above
+                    tmp_me+= 1.0*veldof[i]*gr;
+                    tmp_n+= 1.0*veldof_n[i]*ngr;
+                }
+                for (Uint i=0; i<4; ++i)
+                {
+                    tmp_me+= pr.val(t, pos[0], pos[1], pos[2])*n;
+                    tmp_n+= pr.val(neigh, pos_n[0], pos_n[1], pos_n[2])*n;
+                }
+                vals[pt]= (tmp_me-tmp_n).norm_sq();
+            }
+            Point3DCL ccF; // Dummy
+            double rF; // Radius of the Face
+            circumcircle(t, f, ccF, rF);
+            err_sq+= 2.*rF*FaceQuad2CL::Quad(vals)*absdet2D;
+        }
+    }
+    delete[] vals;
+    return err_sq;
+}
 
 //*********************************************************************
 //**************P1Bubble-P1 - discretisation***************************
@@ -688,7 +812,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
     VectorCL lsgpr( B.RowIdx->NumUnknowns);
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -698,7 +822,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
         }
     }
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {  // Tetras are never on the boundary.
        for(int i=0; i<3; ++i)
@@ -713,7 +837,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
             lsgvel[sit->Unknowns(vidx)[i]]-= .25*LsgVel( sit->GetVertex(3)->GetCoord() )[i];
        }
     }
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
         lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord());
 
@@ -863,7 +987,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* v
     double det, absdet;
     SVectorCL<3> tmp;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -981,7 +1105,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
     const double coupl_ii= 1./120. + 2./15./16.,
                  coupl_ij=           2./15./16.;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6;
@@ -1079,7 +1203,7 @@ double StokesP1BubbleP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, con
 namespace // anonymous namespace
 {
     typedef std::pair<const TetraCL*, double> Err_PairT;
-    typedef std::deque<Err_PairT> Err_ContCL;
+    typedef std::vector<Err_PairT> Err_ContCL;
 
     struct AccErrCL :public std::binary_function<double, const Err_PairT, double>
     {
@@ -1102,7 +1226,7 @@ void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const DiscPrSolCL& pr, co
     const Uint lvl= vel.GetSolution()->RowIdx->TriangLevel;
 
     double tmp;
-    _InitGlobErr= 0;
+    _InitGlobErr= 0.;
     for (MultiGridCL::TriangTetraIteratorCL sit=mg.GetTriangTetraBegin(lvl), send=mg.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
@@ -1184,7 +1308,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
 // We only use the linear part of the velocity-solution!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
     double* pvals= new double[Quad3CL::GetNumPoints()];
     double* pvals_sq= new double[Quad3CL::GetNumPoints()];
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -1207,7 +1331,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     delete[] pvals_sq; delete[] pvals;
     
     Uint countverts=0;
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (!_BndData.Vel.IsOnDirBnd(*sit))
@@ -1229,7 +1353,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     Point3DCL L1_vel(0.0), L2_vel(0.0);
     SVectorCL<3>* vvals= new SVectorCL<3>[Quad3CL::GetNumPoints()];
     SVectorCL<3>* vvals_sq= new SVectorCL<3>[Quad3CL::GetNumPoints()];
-    for(MultiGridCL::const_TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
+    for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -1258,7 +1382,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
     P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr(lsgpr, &_BndData.Pr, &_MG);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0;
@@ -1272,7 +1396,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     const double c_pr= MW_pr / vol;
     std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         diff= fabs( c_pr + LsgPr(sit->GetCoord()) - pr.val(*sit));
@@ -1284,7 +1408,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
     }
     norm2= ::sqrt(norm2 / lsgpr->Data.size() );
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0, sum1= 0;

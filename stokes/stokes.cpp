@@ -68,16 +68,20 @@ void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& M, VectorCL& x,
     tol*= tol;
     Uint output= 50;//max_iter/20;  // nur 20 Ausgaben pro Lauf
 
-    double res1_norm, res2_norm;
+    double res1_norm= 0., res2_norm= 0.;
     for( int step=0; step<max_iter; ++step)
     {
         int inner_max_iter= inner_iter;
         double inner_tol= inner_iter_tol;
 
-        PCG( M, y_corr, res2= B*x - g, pc, inner_max_iter, inner_tol);
-        
-        y+= tau * y_corr;
-        res1= A*x + transp_mul(B,y) - f;
+//        PCG( M, y_corr, res2= B*x - g, pc, inner_max_iter, inner_tol);
+        z_xpay(res2, B*x, -1.0, g);
+        PCG( M, y_corr, res2, pc, inner_max_iter, inner_tol);
+
+//        y+= tau * y_corr;
+        axpy(tau, y_corr, y);
+//        res1= A*x + transp_mul(B,y) - f;
+        z_xpaypby2(res1, A*x, 1.0, transp_mul(B,y), -1.0, f);
 
         res1_norm= res1.norm2();
         res2_norm= res2.norm2();
@@ -99,94 +103,7 @@ void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& M, VectorCL& x,
     }
     tol= ::sqrt( res1_norm + res2_norm );
 }
-/*
-void Uzawa2(const MatrixCL& A, const MatrixCL& B, VectorCL& x, VectorCL& y, const VectorCL& f, const VectorCL& g, 
-            int& max_iter, double& tol, Uint inner_iter, double inner_iter_tol)
-{
-    VectorCL x_corr(x.size()),
-             y_corr(y.size());
-    SsorPcCL<VectorCL, double> pc(1);
-    SchurComplMatrixCL H (A, B, inner_iter_tol, 1);
 
-    tol*= tol;
-    Uint output= 100;//max_iter/20;  // nur 20 Ausgaben pro Lauf
-    
-    for(int step=0; step<max_iter; ++step)
-    {
-        int inner_max_iter= inner_iter;
-        double inner_tol= 1e-20;
-        PCG( A, x_corr, f - (A*x + transp_mul(B,y)), pc, inner_max_iter, inner_tol);
-        x+= x_corr;
-
-        inner_max_iter= inner_iter;
-        inner_tol     = 1e-20;
-        CG( H, y_corr, B*x - g, inner_max_iter, inner_tol);
-        y+= y_corr;
-    
-        double x_corr_norm= x_corr.norm2(),
-               y_corr_norm= y_corr.norm2();
-        if( (step%output)==0 )
-            std::cerr << "step: " << step << ": norm_sq of x_corr = " << x_corr_norm
-                      << ", norm_sq of y_corr = " << y_corr_norm << std::endl;
-        if (x_corr_norm + y_corr_norm < tol)
-        {
-            tol= ::sqrt( x_corr_norm + y_corr_norm );
-            max_iter= step;
-            return;
-        }   
-    }
-    tol= ::sqrt( x_corr.norm2() + y_corr.norm2() );
-}
-
-void Uzawa3(const MatrixCL& A, const MatrixCL& B, VectorCL& x, VectorCL& y, const VectorCL& f, const VectorCL& g, 
-            int& max_iter, double& tol, Uint inner_iter, double inner_iter_tol)
-{
-    VectorCL r(x.size()),
-             s(y.size());
-    VectorCL v(x.size()),
-             c(y.size()), d(y.size());
-    SsorPcCL<VectorCL, double> pc(1);
-    SchurComplMatrixCL H (A, B, inner_iter_tol, 1);
-
-    tol*= tol;
-    Uint output= 100; // nach jeder 100. Iteration eine Ausgabe
-         //max_iter/20;  // nur 20 Ausgaben pro Lauf
-    
-    for(int step=0; step<max_iter; ++step)
-    {
-        r= f - A*x - transp_mul(B,y);
-        s= B*x - g;
-        
-        int inner_max_iter= inner_iter;
-        double inner_tol= 1e-20;
-        PCG( A, v, r, pc, inner_max_iter, inner_tol);
-
-        inner_max_iter= inner_iter;
-        inner_tol     = 1e-20;
-        CG( H, d, s + B*v, inner_max_iter, inner_tol);
-    
-        inner_max_iter= inner_iter;
-        inner_tol= 1e-20;
-        PCG( A, v, r - transp_mul(B,d), pc, inner_max_iter, inner_tol);
-        
-        x+= v;
-        y+= d;
-
-        double x_corr_norm= v.norm2(),
-               y_corr_norm= d.norm2();
-        if( (step%output)==0 )
-            std::cerr << "step: " << step << ": norm_sq of x_corr = " << x_corr_norm
-                      << ", norm_sq of y_corr = " << y_corr_norm << std::endl;
-        if (x_corr_norm + y_corr_norm < tol)
-        {
-            tol= ::sqrt( x_corr_norm + y_corr_norm );
-            max_iter= step;
-            return;
-        }   
-    }
-    tol= ::sqrt( v.norm2() + d.norm2() );
-}
-*/
 
 
 //==== SchurComplMatrixCL ====

@@ -127,11 +127,47 @@ _Assert(A assertion, const char* msg, Uint DebugLevel=-1)
         if (!assertion) throw DROPSErrCL(msg);
 }
 
-/******************************************************************************
-*
-*     T i m e r C L :   get to know how fast DROPS is !  :-)
-*
-*******************************************************************************/
+
+//**************************************************************************
+// Class:    IdCL                                                          *
+// Purpose:  provides a unique identifier for an object.                   *
+// Remarks:  We use the template argument to specify the class whose       *
+//           objects will carry an Id.                                     *
+//**************************************************************************
+
+template <class type>
+class IdCL
+{
+private:
+    static Ulint _Counter;
+
+    Ulint _Identity;
+
+public:
+    IdCL () : _Identity(_Counter++) {}
+    IdCL (Ulint Identity) : _Identity(Identity) {}
+    // Default Copy-ctor
+
+    Ulint GetCounter () const { return _Counter; }
+    Ulint GetIdent   () const { return _Identity; }
+
+    bool operator == (const IdCL<type>& Id) const
+        { return Id._Identity == _Identity; }
+    bool operator != (const IdCL<type>& Id) const { return !(*this==Id); }
+    bool operator <  (const IdCL<type>& Id) const
+        { return _Identity < Id._Identity; }
+};
+
+// Initialize the counter only once!
+template <class type> Ulint IdCL<type>::_Counter = 0;
+
+
+//**************************************************************************
+//                                                                         *
+//     T i m e r C L :   get to know how fast DROPS is !  :-)              *
+//                                                                         *
+//**************************************************************************
+
 class TimerCL
 {
   private:

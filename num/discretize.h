@@ -71,6 +71,31 @@ inline SVectorCL<3> Quad3CL::Quad(const SVectorCL<3>* vals)
 }
 
 
+class FaceQuad2CL
+// contains cubatur on reference-face, that is exact up to degree 2, positive,
+// and uses 4 points.
+{
+  private:
+    static const double _points[4][2];
+
+  public:
+    static Uint GetNumPoints() { return 4; }
+    static const Point2DCL* GetPoints() { return reinterpret_cast<const Point2DCL*>(_points); }
+
+    static inline double Quad(const double*);
+    static inline SVectorCL<3> Quad(const SVectorCL<3>*);
+};
+
+inline double FaceQuad2CL::Quad(const double* vals)
+{
+    return (vals[0] + vals[1] + vals[2])/24. + vals[3]*3./8.;
+}
+
+inline SVectorCL<3> FaceQuad2CL::Quad(const SVectorCL<3>* vals)
+{
+    return (vals[0] + vals[1] + vals[2])/24.  +vals[3]*3./8.;
+}
+
 /*
 template <class Fun>
 struct FunTraitsCL

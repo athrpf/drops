@@ -182,11 +182,11 @@ SVectorCL<3> FaceToTetraCoord(const TetraCL& t, Uint f, SVectorCL<2> c)
       case 0:
         ret[0]= 1 -c[0] -c[1]; ret[1]= c[0]; ret[2]= c[1]; break;
       case 1:
-        ret[0]= 0.; ret[1]= c[0]; ret[2]= c[1]; break;
+        ret[1]= c[0]; ret[2]= c[1]; break;
       case 2:
-        ret[0]= c[0]; ret[1]= 0.; ret[2]= c[1]; break;
+        ret[0]= c[0]; ret[2]= c[1]; break;
       case 3:
-        ret[0]= c[0]; ret[1]= c[1]; ret[2]= 0.; break;
+        ret[0]= c[0]; ret[1]= c[1]; break;
       default: throw DROPSErrCL("FaceToTetraCoord: illegal face-number.");
     }
     Assert( (GetWorldCoord(t,f,c)-GetWorldCoord(t, ret)).norm_sq() < 1.e-15, DROPSErrCL("FaceToTetraCoord: inconsistent mapping!"), DebugNumericC);
@@ -211,21 +211,17 @@ TetraCL::GetNormal(Uint face, Point3DCL& normal, double& dir) const
 // else it is set to -1.0.
 // Normal has unit length, but the length of the cross-product is returned,
 // which is useful for integration over that face
+// If the triangulation is consistently numbered, both tetras on a face will
+// return the same normal in "normal" (, of course "dir" will be different).
 {
     const VertexCL* v[3];
-    int count= 0;
     for (Uint i=0; i<3; ++i)
         v[i]= GetVertex( VertOfFace(face, i) );
-    // We count how often we see a "<" when we iterate over the vertices of face in
-    // their order induced by the topology of the tetrahedron.
-    // If there is one "<" the Id give the same ordering as that of the topology,
-    // otherwise the orientations are opposite to each other.
-    for (Uint i=0; i<3; ++i)
-        if ( v[i]->GetId() < v[(i+1)%3]->GetId() )
-            ++count;
-    dir= count==1 ? OrientOfFace(face) : -OrientOfFace(face);
+    const VertexCL* const opvert= GetVertex( OppVert(face) );
+
     cross_product(normal, v[1]->GetCoord()-v[0]->GetCoord(),
                           v[2]->GetCoord()-v[0]->GetCoord());
+    dir= inner_prod(opvert->GetCoord() - v[0]->GetCoord(), normal) < 0.0 ? 1. : -1.;
     const double absdet2D= normal.norm();
     normal/= absdet2D;
     return absdet2D;
@@ -233,12 +229,12 @@ TetraCL::GetNormal(Uint face, Point3DCL& normal, double& dir) const
 
 double
 TetraCL::GetOuterNormal(Uint face, Point3DCL& normal) const
-// Returns the unit outward normal of face "face" in normal
+// Returns the length of the cross-product;
+// "normal" is set to the unit outward normal of face "face"
 {
-    cross_product(normal, GetVertex(VertOfFace(face, 1))->GetCoord()-GetVertex(VertOfFace(face, 0))->GetCoord(),
-                          GetVertex(VertOfFace(face, 2))->GetCoord()-GetVertex(VertOfFace(face, 0))->GetCoord());
-    const double absdet2D= normal.norm();
-    normal*= OrientOfFace(face)/absdet2D;
+    double dir;
+    const double absdet2D= GetNormal(face, normal, dir);
+    normal*= dir;
     return absdet2D;
 }
 
@@ -633,7 +629,7 @@ bool VertexCL::IsSane(std::ostream& os, const BoundaryCL& Bnd) const
 
 void VertexCL::DebugInfo(std::ostream& os) const
 {
-    os << "VertexCL:  Id " << _Id.GetIdent() << " Proc " << _Id.GetProc()
+    os << "VertexCL:  Id " << _Id.GetIdent()
        << " Level " << GetLevel() << ' ';
     os << "RemoveMark " << _RemoveMark << std::endl << "  ";
     os << "Coord ";
@@ -883,7 +879,7 @@ bool TetraCL::IsSane(std::ostream& os) const
 
 void TetraCL::DebugInfo (std::ostream& os) const
 {
-    os << "TetraCL:  Id " << _Id.GetIdent() << " Proc " << _Id.GetProc()
+    os << "TetraCL:  Id " << _Id.GetIdent() 
        << " Level " << GetLevel() << "\t"
        << "RefRule " << GetRefRule() << " RefMark " << GetRefMark() << std::endl;
 

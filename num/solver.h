@@ -18,6 +18,7 @@
 
 #include "num/spmat.h"
 #include <algorithm>
+#include <string.h> // for memcpy
 
 namespace DROPS
 {
@@ -67,8 +68,10 @@ CG(const Matrix& A, Vector& x, const Vector& b,
             return true;
         }
 */      const Real alpha= gamma/delta;
-        x+= alpha*d;
-        r+= alpha*Ad;
+//        x+= alpha*d;
+        axpy(alpha, d, x);
+//        r+= alpha*Ad;
+        axpy(alpha, Ad, r);
         Real beta= gamma;
 //        std::cerr << "aeussere Iteration "<<it<<" mit Res.= " << r.norm() <<std::endl;
         if ( (gamma= r.norm2()) < tol ) 
@@ -106,7 +109,7 @@ PCG(const Matrix& A, Vector& x, const Vector& b,
     const size_t n= x.size();
     Real resid;
     Vector p(n), z(n), q(n);
-    Real alpha, beta, rho, rho_1;
+    Real alpha, beta, rho, rho_1= 0.0; // Initialize rho_1 to sink a compiler warning
     Vector r= b - A*x;
     tol*= tol;
 
@@ -124,12 +127,15 @@ PCG(const Matrix& A, Vector& x, const Vector& b,
         else 
         {
             beta= rho/rho_1;
-            p= z + beta*p;
+//            p= z + beta*p;
+            z_xpay(p, z, beta, p);
         }
         q= A*p;
         alpha= rho/(p*q);
-        x+= alpha*p;
-        r-= alpha*q;
+//        x+= alpha*p;
+        axpy(alpha, p, x);
+//        r-= alpha*q;
+        axpy(-alpha, q, r);
         if ( (resid= r.norm2()) <= tol) 
         {
             tol= sqrt(resid);
@@ -359,12 +365,24 @@ class ImprovedSsorPcCL
     typedef typename SparseMatBaseCL<Real>::value_type* valiterT;
 
     Real _omega;
+    size_t _n;
     coliterT* _diagonal;
 
   public:
     ImprovedSsorPcCL( Real om= 1.0)
-        : _omega(om), _diagonal(0)  {}
-    ~ImprovedSsorPcCL() { delete _diagonal; }
+        : _omega(om), _n(0), _diagonal(0)  {}
+    ImprovedSsorPcCL( const ImprovedSsorPcCL& pc)
+    {
+        _omega= pc._omega;
+        _n= pc._n;
+        if ( pc._diagonal!= 0 )
+        {
+            _diagonal= new coliterT[_n];
+            ::memcpy( _diagonal, pc._diagonal, _n*sizeof(coliterT) );
+        }
+        else _diagonal= 0;
+    }
+    ~ImprovedSsorPcCL() { delete[] _diagonal; }
     
     void Init(const SparseMatBaseCL<Real>& A);
       // call Init before calls to Apply, do so when matrix has changed
@@ -454,7 +472,7 @@ class PCGSolverCL
     PC   _pc;
   
   public:
-    PCGSolverCL(Real tol, int maxiter, const PC pc)
+    PCGSolverCL(Real tol, int maxiter, const PC& pc)
         : _tol(tol), _res( -1.), _maxiter(maxiter), _iter( -1), _pc(pc) {}
     
     void SetTol      ( double tol) { _tol= tol; }
@@ -564,11 +582,11 @@ cgVerf(const Matrix& A, Vector& x, const Vector& b,
 template <class Vec, class Real>
 void ImprovedSsorPcCL<Vec,Real>::Init(const SparseMatBaseCL<Real>& A)
 {
-    const size_t n= A.num_rows();
-    if (_diagonal) delete _diagonal;
-    _diagonal= new coliterT[n];
+    _n= A.num_rows();
+    if (_diagonal) delete[] _diagonal;
+    _diagonal= new coliterT[_n];
     
-    for(size_t i=0; i<n; ++i)
+    for(size_t i=0; i<_n; ++i)
     {
         _diagonal[i]= std::lower_bound( A.GetFirstCol(i), A.GetFirstCol(i+1), i);
     }
@@ -579,6 +597,8 @@ void ImprovedSsorPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, c
 {
     const size_t n= A.num_rows();
     Real sum, *valit;
+    const Real tmp= 2.0 - _omega;
+
     coliterT colit, diag;
 //std::cerr << "SSOR-Preconditioner\n";
 //    Assert(n == x.size(), DROPSErrCL("SSOR: incompatible dimensions\n"));
@@ -609,7 +629,7 @@ void ImprovedSsorPcCL<Vec,Real>::Apply(const SparseMatBaseCL<Real>& A, Vec& x, c
 
         // now: a_ii = *valit
         sum*= _omega/(*valit);
-	x[i]*= 2. - _omega;
+	x[i]*= tmp;
         x[i]-= sum;
     }
     while (i>0);

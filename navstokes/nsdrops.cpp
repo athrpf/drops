@@ -1,67 +1,32 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "geom/builder.h"
+#include "stokes/stokes.h"
+#include "num/stokessolver.h"
 #include "navstokes/navstokes.h"
 #include <fstream>
 
 
-struct NS1CL
+struct NSDrCavCL
 {
-    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
+    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL&)
     {
-        DROPS::SVectorCL<3> ret;
-        ret[0]= p[0];
-        ret[1]= p[1];
-        ret[2]= -2*p[2];
-        return ret;
+        return DROPS::SVectorCL<3>(0.);
     }
 
-    static double LsgPr(const DROPS::Point3DCL& p)
-    {
-        return (p[0]*p[0]+p[1]*p[1]+p[2]*p[2])/2;
-    }
-
-    // boundary value functions (in 2D-bnd-coords)
-    //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e2e3(const Point2DCL&);
-    //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e1e3(const Point2DCL&);
-    //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e1e2(const Point2DCL&);
-
-
-    // q*u - nu*laplace u + (u*D)u - Dp = f
-    //                            div u = 0
-    class StokesCoeffCL
-    {
-      public:
-        static double q(const DROPS::Point3DCL&) { return 0.0; }
-        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
-            { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3*p[2]; return ret; }
-        const double nu;
-
-        StokesCoeffCL() : nu(1.0) {}
-    };
-
-};
-
-struct NS2CL
-{
-    static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
-    {
-        DROPS::SVectorCL<3> ret;
-        ret[0]= 1;
-        ret[1]= 1;
-        ret[2]= 1;
-        return ret;
-    }
-
-    static double LsgPr(const DROPS::Point3DCL& p)
+    static double LsgPr(const DROPS::Point3DCL&)
     {
         return 0;
     }
-
-    // boundary value functions (in 2D-bnd-coords)
-    //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e2e3(const Point2DCL&);
-    //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e1e3(const Point2DCL&);
-    //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e1e2(const Point2DCL&);
+    static const double st;
+    static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p)
+    {
+        const DROPS::SVectorCL<3> ret= 5.*DROPS::std_basis<3>(1);
+        const double d0= fabs(p[0]-.5);
+        const double d1= fabs(p[1]-.5);
+        const double m= std::max(d0, d1);
+        return (.5-st<m) ? ((.5-m)/st)*ret : ret;
+    }
 
 
     // q*u - nu*laplace u + (u*D)u - Dp = f
@@ -70,7 +35,7 @@ struct NS2CL
     {
       public:
         static double q(const DROPS::Point3DCL&) { return 0.0; }
-        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
+        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&)
             { DROPS::SVectorCL<3> ret(0.0); return ret; }
         const double nu;
 
@@ -79,45 +44,305 @@ struct NS2CL
 
 };
 
-typedef NS1CL MyPdeCL;
+const double NSDrCavCL::st= .1;
+
+inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
+inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
+
+typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, NSDrCavCL::StokesCoeffCL> 
+        StokesOnBrickCL;
+typedef StokesOnBrickCL MyStokesCL;
+typedef NSDrCavCL MyPdeCL;
 
 namespace DROPS // for Strategy
 {
 
-template<class PreCondT, class SchurPreCondT>
-void Schur( const MatrixCL& A, const PreCondT& pc, const MatrixCL& B, 
-            VectorCL& u, VectorCL& p, const VectorCL& b, const VectorCL& c,
-            const SchurPreCondT& schur_pc,
-            const double inner_tol, const double outer_tol, const Uint max_iter, const Uint outer_iter)
-// solve:       S*q = B*(A^-1)*b - c
-//              A*u = b - BT*q
-//                q = dt*p 
-{
-    VectorCL rhs= -c;
-    {
-        double tol= inner_tol;
-        int iter= max_iter;        
-        VectorCL tmp( u.size());
-        PCG( A, tmp, b, pc, iter, tol);
-        std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
-        rhs+= B*tmp;
-    }
-    std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
-    int iter= outer_iter;   
-    double tol= outer_tol;     
-    PCG( SchurComplMatrixCL( A, B, inner_tol, 1), p, rhs, schur_pc, iter, tol);
-    std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
+using ::MyStokesCL;
 
-    std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
-    tol= outer_tol;
-    iter= max_iter;        
-    PCG(A, u, b - transp_mul(B, p), pc, iter, tol);
-    std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
-    std::cerr << "-----------------------------------------------------" << std::endl;
+template <class DiscSol>
+class GeomSolOutReport1CL : public MGOutCL
+// output of solution in GeomView format
+{
+  private:
+    Uint   _level;
+    bool   _onlyBnd;
+    double _explode;
+    double _min;
+    double _max;
+    const ColorMapperCL* _color;
+    DiscSol _discsol;
+
+  public:
+    GeomSolOutReport1CL (const MultiGridCL& MG, const DiscSol& discsol, const ColorMapperCL* colmap, int TriLevel=-1, bool onlyBnd=false,
+                         double explode=0.5, double min=0., double max=1.)
+        : MGOutCL(&MG), _level( TriLevel<0 ? MG.GetLastLevel() : TriLevel ),
+          _onlyBnd(onlyBnd), _explode(explode), _min(min), _max(max), _color(colmap), _discsol(discsol) {}
+
+    void   SetExplode (double explode) { _explode = explode; }
+    double GetExplode () const         { return _explode; }
+    void   SetMinMax  (double min, double max) { _min= min; _max= max; }
+    void   SetColorMap (const ColorMapperCL* colmap) { _color= colmap; }
+    virtual std::ostream& put (std::ostream&) const;
+};
+
+template <class DiscSol>
+std::ostream&
+GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
+{
+    const double val_diff= _max-_min;
+    ColorMapperCL::RGBAType rgba;
+//    std::ios_base::fmtflags my_format= std::ios_base::fixed|std::ios_base::showpoint;
+//    std::ios_base::fmtflags old_format= os.flags(my_format);
+    std::ios::fmtflags my_format= std::ios::fixed|std::ios::showpoint;
+    std::ios::fmtflags old_format= os.flags(my_format);
+//    Assert(_level==_discsol.GetSolution()->RowIdx->TriangLevel, DROPSErrCL("GeomSolOutCL::put: wrong level"), -1);
+    os << "appearance {\n-concave\nshading smooth\n}\n";
+    os << "LIST {\n";
+    for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level);
+          tit!=_MG->GetTriangTetraEnd(_level); ++tit )
+    {
+        if ( _onlyBnd && !(tit->IsBndSeg(0) || tit->IsBndSeg(1) || tit->IsBndSeg(2) || tit->IsBndSeg(3)) )
+            continue;
+//        if (GetBaryCenter(*tit)[2]>0.55) continue;
+        std::vector<Uint> verts;
+        verts.reserve(3);
+        for (Uint i=0; i<4; ++i)
+        {
+            if ( fabs(tit->GetVertex(i)->GetCoord()[1] -0.5 ) < 1.e-10 )
+                verts.push_back(i);
+        }
+        if (verts.size() != 3) continue;
+         
+        std::vector<double> val;
+        val.reserve(4);
+        _discsol.GetDoF(*tit, val);
+
+        os << "geom { OFF 3 1 3\n";
+        for ( int i=0; i<3; i++ )
+        {
+            os << tit->GetVertex(verts[i])->GetCoord()[0] << ' '
+               << tit->GetVertex(verts[i])->GetCoord()[2] << ' '
+               << log(fabs(val[verts[i]])+0.5)
+               << '\n';
+        }
+        os <<   "3 0 1 2"
+           << "\n}" << std::endl;
+    }
+    os.flags(old_format);
+    return os << '}' << std::endl;
+}
+
+template <class DiscVel>
+class PlotMTVSolOutCL : public MGOutCL
+// output of solution in plotmtv format
+{
+  private:
+    Uint   _level;
+    bool   _onlyBnd;
+    double _explode;
+    const ColorMapperCL* _color;
+    DiscVel _discsol;
+
+  public:
+    PlotMTVSolOutCL (const MultiGridCL& MG, const DiscVel& discsol, const ColorMapperCL* colmap, int TriLevel=-1, bool onlyBnd=false,
+                     double vscale=1.)
+        : MGOutCL(&MG), _level( TriLevel<0 ? MG.GetLastLevel() : TriLevel ),
+          _onlyBnd(onlyBnd), _explode(vscale), _color(colmap), _discsol(discsol) {}
+
+    void   SetVScale (double explode) { _explode = explode; }
+    double GetVScale () const         { return _explode; }
+    void   SetColorMap (const ColorMapperCL* colmap) { _color= colmap; }
+    virtual std::ostream& put (std::ostream&) const;
+};
+
+template <class DiscVel>
+std::ostream&
+PlotMTVSolOutCL<DiscVel>::put(std::ostream &os) const
+{
+//    std::ios_base::fmtflags my_format= std::ios_base::fixed|std::ios_base::showpoint;
+//    std::ios_base::fmtflags old_format= os.flags(my_format);
+    std::ios::fmtflags my_format= std::ios::fixed|std::ios::showpoint;
+    std::ios::fmtflags old_format= os.flags(my_format);
+//    Assert(_level==_discsol.GetSolution()->RowIdx->TriangLevel, DROPSErrCL("GeomSolOutCL::put: wrong level"), -1);
+    os << "# Drops Vector Field\n$ data=vector\n";
+    os << "% linewidth = 1 vscale = " << _explode << " toplabel = \"Velocity Field\"\n"
+       << "% xlabel = \"X\" ylabel = \"Z\"\n"
+       << "% xmin = -0.05 xmax = 2.0 ymin = -0.05 ymax = 1.4\n";
+    for ( MultiGridCL::const_TriangVertexIteratorCL tit=_MG->GetTriangVertexBegin(_level);
+          tit!=_MG->GetTriangVertexEnd(_level); ++tit )
+    {
+        if ( fabs(tit->GetCoord()[1] -0.5 ) > 1.e-10 )
+            continue;
+         
+            os << tit->GetCoord()[0] << ' ' << tit->GetCoord()[2] << " 0.0\t"
+               << _discsol.val(*tit)[0] << ' ' << _discsol.val(*tit)[2] << _discsol.val(*tit)[1]
+               << '\n';
+    }
+    os.flags(old_format);
+    return os  << std::endl;
 }
 
 template<class MGB, class Coeff>
-void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint maxStep)
+void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, double tol,
+                                       int meth, Uint maxStep, double rel_red, double markratio,
+                                       double tau, Uint uzawa_inner_iter)
+// flow control
+{
+    typedef typename StokesP2P1CL<MGB,Coeff>::VelVecDescCL VelVecDescCL;
+    
+    MultiGridCL& MG= Stokes.GetMG();
+    const typename MyStokesCL::BndDataCL::PrBndDataCL& PrBndData= Stokes.GetBndData().Pr;
+    const typename MyStokesCL::BndDataCL::VelBndDataCL& VelBndData= Stokes.GetBndData().Vel;
+
+    IdxDescCL  loc_vidx, loc_pidx;
+    IdxDescCL* vidx1= &Stokes.vel_idx;
+    IdxDescCL* pidx1= &Stokes.pr_idx;
+    IdxDescCL* vidx2= &loc_vidx;
+    IdxDescCL* pidx2= &loc_pidx;
+
+    VecDescCL     loc_p;
+    VelVecDescCL  loc_v;
+    VelVecDescCL* v1= &Stokes.v;
+    VelVecDescCL* v2= &loc_v;
+    VecDescCL*    p1= &Stokes.p;
+    VecDescCL*    p2= &loc_p;
+    VelVecDescCL* b= &Stokes.b;
+    VelVecDescCL* c= &Stokes.c;
+
+    MatDescCL* A= &Stokes.A;
+    MatDescCL* B= &Stokes.B;
+    Uint step= 0;
+    StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
+        Estimator(rel_red, markratio, 1., true, &MyStokesCL::ResidualErrEstimator, Stokes );
+    bool new_marks= false;
+
+    vidx1->Set(0, 3, 3, 0, 0);
+    vidx2->Set(1, 3, 3, 0, 0);
+    pidx1->Set(2, 1, 0, 0, 0);
+    pidx2->Set(3, 1, 0, 0, 0);
+
+//    MarkLower(MG,0.25); 
+    TimerCL time;
+    do
+    {
+        MG.Refine();
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
+                  << vidx1->TriangLevel << std::endl;
+        MG.SizeInfo(std::cerr);
+        b->SetIdx(vidx1);
+        c->SetIdx(pidx1);
+        p1->SetIdx(pidx1);
+        v1->SetIdx(vidx1);
+        std::cerr << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
+                  << p1->Data.size() << std::endl;
+        std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
+                  << v1->Data.size() << std::endl;
+        if (p2->RowIdx)
+        {
+            P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr2(p2, &PrBndData, &MG);
+            P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>        pr1(p1, &PrBndData, &MG);
+//            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> vel2(v2, &VelBndData, &MG);
+//            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL>       vel1(v1, &VelBndData, &MG);
+            Interpolate(pr1, pr2);
+//            Interpolate(vel1, vel2);
+            v2->Reset();
+            p2->Reset();
+        }
+        A->Reset();
+        B->Reset();
+        A->SetIdx(vidx1, vidx1);
+        B->SetIdx(pidx1, vidx1);
+        time.Reset();
+        time.Start();
+        Stokes.SetupSystem(A, b, B, c);
+        time.Stop();
+        std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+        time.Reset();
+        time.Start();
+        A->Data * v1->Data;
+        time.Stop();
+        std::cerr << " A*x took " << time.GetTime() << " seconds!" << std::endl;
+        time.Reset();
+        time.Start();
+        transp_mul( A->Data, v1->Data);
+        time.Stop();
+        std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
+/*        
+        { // write system in files for MatLab
+            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
+            Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
+        }
+*/
+        time.Reset();
+
+        MatDescCL M;
+        M.SetIdx( pidx1, pidx1);
+        Stokes.SetupMass( &M);
+
+        double outer_tol= tol;
+
+        if (meth)
+        {
+//            PSchur_PCG_CL schurSolver( M.Data, outer_tol, 200, inner_iter_tol, 200);
+            PSchur_GSPCG_CL schurSolver( M.Data, outer_tol, 200, inner_iter_tol, 200);
+            time.Start();
+            schurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
+            time.Stop();
+        }
+        else // Uzawa
+        {
+//            Uzawa_PCG_CL uzawaSolver(M.Data, outer_tol, 5000, inner_iter_tol, uzawa_inner_iter, tau);
+            Uzawa_IPCG_CL uzawaSolver(M.Data, outer_tol, 5000, inner_iter_tol, uzawa_inner_iter, tau);
+            uzawaSolver.Init_A_Pc(A->Data); // only for Uzawa_IPCG_CL.
+            time.Start();
+            uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
+            time.Stop();
+            std::cerr << "Iterationen: " << uzawaSolver.GetIter()
+                      << "\tNorm des Res.: " << uzawaSolver.GetResid() << std::endl;
+        }
+        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
+        if (step==0)
+        {
+            Estimator.Init(typename MyStokesCL::DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::DiscVelSolCL(v1, &VelBndData, &MG));
+        }
+        time.Reset();
+        time.Start();
+        if (step+1 == maxStep) Estimator.SwitchMark();
+        new_marks= Estimator.Estimate(typename MyStokesCL::DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::DiscVelSolCL(v1, &VelBndData, &MG) );
+        time.Stop();
+        std::cerr << "Estimation took " << time.GetTime() << " seconds\n";
+        A->Reset();
+        B->Reset();
+        b->Reset();
+        c->Reset();
+        std::swap(v2, v1);
+        std::swap(p2, p1);
+        std::swap(vidx2, vidx1);
+        std::swap(pidx2, pidx1);
+        std::cerr << std::endl;
+    }
+    while (new_marks && ++step<maxStep);
+    // we want the solution to be in _v
+    if (v2 == &loc_v)
+    {
+        Stokes.v.SetIdx(&Stokes.vel_idx);
+        Stokes.p.SetIdx(&Stokes.pr_idx);
+        *Stokes.v.RowIdx= *loc_v.RowIdx;
+        *Stokes.p.RowIdx= *loc_p.RowIdx;
+        
+        Stokes.v.Data.resize(loc_v.Data.size());
+        Stokes.v.Data= loc_v.Data;
+        Stokes.p.Data.resize(loc_p.Data.size());
+        Stokes.p.Data= loc_p.Data;
+    }
+}
+
+
+template<class MGB, class Coeff>
+void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter, 
+                                                 double uzawa_red, double poi_tol, int poi_maxiter)
 // flow control
 {
     typedef typename NavierStokesP2P1CL<MGB,Coeff>::VelVecDescCL VelVecDescCL;
@@ -129,7 +354,7 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
     IdxDescCL* pidx1= &NS.pr_idx;
     IdxDescCL* vidx2= &loc_vidx;
     IdxDescCL* pidx2= &loc_pidx;
-//    IdxDescCL* err_idx= &_err_idx;
+
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
     VelVecDescCL* v1= &NS.v;
@@ -138,13 +363,11 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
     VecDescCL*    p2= &loc_p;
     VelVecDescCL* b= &NS.b;
     VelVecDescCL* c= &NS.c;
-//    VecDescCL* err= &_err;
+
     MatDescCL* A= &NS.A;
     MatDescCL* B= &NS.B;
     MatDescCL* N= &NS.N;
-    Uint step= 0;
-//    bool new_marks;
-//    double akt_glob_err;
+    int step= 0;
 
     vidx1->Set(0, 3, 3, 0, 0);
     vidx2->Set(1, 3, 3, 0, 0);
@@ -152,11 +375,8 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
     pidx2->Set(3, 1, 0, 0, 0);
     
     TimerCL time;
-//    err_idx->Set(5, 0, 0, 0, 1);
     do
     {
-//        akt_glob_err= glob_err;
-        MarkAll(MG); 
         MG.Refine();
         NS.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
         NS.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
@@ -176,11 +396,7 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
             const StokesBndDataCL& BndData= NS.GetBndData();
             P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
             P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
-            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> vel2(v2, &BndData.Vel, &MG);
-            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL>       vel1(v1, &BndData.Vel, &MG);
             Interpolate(pr1, pr2);
-            Interpolate(vel1, vel2);
-//            CheckSolution(v1,p1,&MyPdeCL::LsgVel,&MyPdeCL::LsgPr);
             v2->Reset();
             p2->Reset();
         }
@@ -202,22 +418,12 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-/*        
-        { // write system in files for MatLab
-            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), Ndat("Nmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
-            Adat << A->Data;   Bdat << B->Data; Ndat << N->Data;   bdat << b->Data;    cdat << c->Data;
-        }
-*/      NS.GetDiscError(&MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
-        Uint meth, schritt= 0;
-        int numsteps, outer_iter;
-        double tol, outer_tol;
-        std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
-        std::cerr << "tol = "; std::cin >> tol;
-        if (!meth) // Uzawa
-            { std::cerr << "# PCG steps = "; std::cin >> numsteps; }
-        else
-            { std::cerr << "# outer CG steps = "; std::cin >> numsteps; }
-        
+      
+//        { // write system in files for MatLab
+//            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), Ndat("Nmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
+//            Adat << A->Data;   Bdat << B->Data; Ndat << N->Data;   bdat << b->Data;    cdat << c->Data;
+//        }
+
         // adaptive fixedpoint defect correction
         //---------------------------------------
         time.Reset();
@@ -228,9 +434,8 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
         M.SetIdx( pidx1, pidx1);
         NS.SetupMass( &M);
         double omega= 1, res; // initial value (no damping)
-        SsorPcCL<VectorCL, double> pc(1.);
-        SsorMassPcCL<SchurComplMatrixCL> schur_pc( M.Data);
-        for(;;) // ever
+        Uzawa_IPCG_CL uzawaSolver(M.Data, -1., 500, poi_tol, poi_maxiter, 1.);
+        for(int fp_step=0; fp_step<fp_maxiter; ++fp_step)
         {
             NS.SetupNonlinear( N, v1, &rhsN);
             MatrixCL AN;
@@ -238,31 +443,30 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
             
             // calculate defect:
             d= AN*v1->Data + transp_mul( B->Data, p1->Data) - b->Data - rhsN.Data;
-            e= B->Data*v1->Data                             - c->Data;
+//            e= B->Data*v1->Data                             - c->Data;
+            z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
             
-            std::cerr << (++schritt) << ": res = " << (res= sqrt(d*d + e*e) ) << std::endl; 
-            if (res < tol )
+            std::cerr << "fp_step: " << fp_step << ", res = " << (res= sqrt(d*d + e*e) ) << std::endl; 
+            if (res < fp_tol )
                 break;
             
             // solve correction:
-            outer_iter= meth ? numsteps : 500;
-            outer_tol= res/1000;
-            if (outer_tol < tol) outer_tol= tol;
-            if (meth)
-                Schur( AN, pc, B->Data, w, q, d, e, schur_pc, inner_iter_tol, outer_tol, 100, outer_iter);
-            else
-            {
-                Uzawa( AN, B->Data, M.Data, w, q, d, e, 1, outer_iter, outer_tol, numsteps, inner_iter_tol);
-                std::cerr << "iteration stopped after step " << outer_iter 
-                          << " with res = " << outer_tol << std::endl;
-            }
+            double uzawa_tol= res/uzawa_red;
+            if (uzawa_tol < fp_tol) uzawa_tol= fp_tol;
+            uzawaSolver.SetTol(uzawa_tol);
+            uzawaSolver.Init_A_Pc(AN); // only for Uzawa_IPCG_CL.
+            uzawaSolver.Solve(AN, B->Data, w, q, d, e);
+            std::cerr << "iteration stopped after step " << uzawaSolver.GetIter()
+                      << " with res = " << uzawaSolver.GetResid() << std::endl;
             
             // calculate adaption:
             N->Data.clear();
-            v_omw.Data= v1->Data - omega*w;
+//            v_omw.Data= v1->Data - omega*w;
+            z_xpay(v_omw.Data, v1->Data, -omega, w);
             NS.SetupNonlinear( N, &v_omw, &rhsN);
             
-            d= A->Data*w + N->Data*w + transp_mul( B->Data, q);
+//            d= A->Data*w + N->Data*w + transp_mul( B->Data, q);
+            z_xpaypby2(d, A->Data*w, 1.0, N->Data*w, 1.0, transp_mul(B->Data, q) );
             e= B->Data*w;
             omega= d*(A->Data*v1->Data) + d*(N->Data*v1->Data) + d*transp_mul( B->Data, p1->Data) + e*(B->Data*v1->Data)
                  - d*b->Data - d*rhsN.Data - e*c->Data;
@@ -270,73 +474,18 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
             std::cerr << "omega = " << omega << std::endl;
             
             // update solution:
-            v1->Data-= omega*w;
-            p1->Data-= omega*q;
+//            v1->Data-= omega*w;
+            axpy(-omega, w, v1->Data);
+//            p1->Data-= omega*q;
+            axpy(-omega, q, p1->Data);
         }
         time.Stop();
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         
-/*        time.Reset();
-        if (meth)
-        {
-            SsorPcCL<VectorCL, double> pc(omega);
-            SchurComplMatrixCL BABT(A->Data, B->Data, inner_iter_tol, omega);
-            double outer_tol;
-            std::cerr << "tol = "; std::cin >> outer_tol;
-            time.Start();
-            VectorCL rhs= -c->Data;
-            {
-                double tol= inner_iter_tol;
-                int max_iter= 200;        
-                VectorCL tmp(vidx1->NumUnknowns);
-                PCG(A->Data, tmp, b->Data, pc, max_iter, tol);
-                std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
-                rhs+= B->Data*tmp;
-            }
-            std::cerr << "rhs has been set!" << std::endl;
-//            tol= 1.0e-14;
-            max_iter= 200;   
-            tol= outer_tol;     
-    //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
-            CG(BABT, p1->Data, rhs, max_iter, tol);
-            std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
-
-            tol= outer_tol;
-            max_iter= 200;        
-            PCG(A->Data, v1->Data, b->Data - transp_mul(B->Data, p1->Data), pc, max_iter, tol);
-            time.Stop();
-        }
-        else
-        {
-            max_iter= 5000;
-            double tau;
-            Uint inner_iter;
-            std::cerr << "tol = "; std::cin >> tol;
-            std::cerr << "tau = "; std::cin >> tau;
-            std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-            MatDescCL I;
-            I.SetIdx( pidx1, pidx1);
-            NS.SetupMass( &I);
-            time.Start();
-            Uzawa( A->Data, B->Data, I.Data, v1->Data, p1->Data, b->Data, c->Data, tau, max_iter, tol, inner_iter, inner_iter_tol);
-//            Uzawa2( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data, max_iter, tol, inner_iter, inner_iter_tol);
-            time.Stop();
-            std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
-        }
-        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
-*/        NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
         A->Reset();
         B->Reset();
         b->Reset();
         c->Reset();
-//        std::cerr << "Loesung Druck: " << p1->Data << std::endl;
-//        CreateNumbering(new_idx->TriangLevel, err_idx);
-//        err->SetIdx(err_idx);
-//        NumMarked= EstimateError(new_x, 0.2, &Estimator);
-//TODO: Fehler schaetzen
-//        new_marks= EstimateError(new_x, 1.5, akt_glob_err, &ResidualErrEstimator);
-//        err->Reset();
-//        DeleteNumbering(err_idx);
         std::swap(v2, v1);
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
@@ -362,108 +511,132 @@ void Strategy(NavierStokesP2P1CL<MGB,Coeff>& NS, double inner_iter_tol, Uint max
 } // end of namespace DROPS
 
 
-void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
-{
-    DROPS::Point3DCL Mitte; Mitte[0]=0.5; Mitte[1]=0.5; Mitte[2]=0.5;
-
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
-             ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
-    {
-        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*pow(It->GetVolume(),1.0/3.0)) )
-            It->SetRegRefMark();
-    }
-}
-
-
-void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
-{
-    DROPS::Point3DCL Mitte; Mitte[0]=0.5; Mitte[1]=0.5; Mitte[2]=0.5;
-
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
-             ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
-    {
-        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*pow(It->GetVolume(),1.0/3.0)) )
-            It->SetRemoveMark();
-    }
-}
-
 int main (int argc, char** argv)
 {
   try
   {
-    if (argc!=2)
+    if (argc!=9)
     {
-        std::cerr << "You have to specify one parameter:\n\tnsdrops <inner_iter_tol>" << std::endl;
+        std::cerr << "Usage (stokes): nsdrops <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>" << std::endl;
+        std::cerr << "Usage (navstokes): <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
         return 1;
     }
 
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
-    e1[0]= e2[1]= e3[2]= M_PI/4.;
+    e1[0]= e2[1]= e3[2]= 1.;
 
-    typedef DROPS::NavierStokesP2P1CL<DROPS::BrickBuilderCL, MyPdeCL::StokesCoeffCL> 
-            NSOnBrickCL;
-    typedef NSOnBrickCL MyNavierStokesCL;
-
-    DROPS::BrickBuilderCL brick(null, e1, e2, e3, 1, 1, 1);
-//    DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2, 2);
-//    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
+    DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
     const bool IsNeumann[6]= 
         {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel};
+        { &Null, &Null, &Null, &Null, &Null, &NSDrCavCL::Stroem};
         
-    MyNavierStokesCL prob(brick, MyPdeCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
-    DROPS::MultiGridCL& mg = prob.GetMG();
+    StokesOnBrickCL stokesprob(brick, NSDrCavCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
+    DROPS::MultiGridCL& mg = stokesprob.GetMG();
     DROPS::RBColorMapperCL colormap;
-    double inner_iter_tol= atof(argv[1]);
-    std::cerr << "inner iter tol: " << inner_iter_tol << std::endl;
-    
-    Strategy(prob, inner_iter_tol, 4);
 
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-    std::ofstream fil("ttt.off");
-    double min= prob.p.Data.min(),
-           max= prob.p.Data.max();
-    fil << DROPS::GeomSolOutCL<MyNavierStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
-
-//    std::cout.flags(std::ios::fixed|std::ios::showpoint);
-//    for ( DROPS::MultiGridCL::const_TriangVertexIteratorCL tit=const_cast<const DROPS::MultiGridCL&>(mg).GetTriangVertexBegin(prob.GetSolution().GetTriangLevel()),
-//          theend=const_cast<const DROPS::MultiGridCL&>(mg).GetTriangVertexEnd(prob.GetSolution().GetTriangLevel()); tit!=theend; ++tit )
-//        std::cout << prob.GetSolution().GetVertSol(*tit) << '\n';
-//    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-//    std::cerr << "Verts: "   << mg.GetVertices().GetFullSize()
-//              << " Edges: "  << mg.GetEdges().GetFullSize()
-//              << " Tetras: " << mg.GetTetras().GetFullSize()
-//              << std::endl;
-/*
-//int wait;
-//cin>>wait;
-    for (DROPS::Uint i=0; i<6; ++i)
     {
-        UnMarkDrop(mg, min(mg.GetLastLevel(),10u));
-//        std::cerr << DROPS::SanityMGOutCL(mg);
-//        std::cerr << i << std::endl;
-        mg.Refine();
+        double inner_iter_tol= atof(argv[1]);
+        double tol= atof(argv[2]);
+        int meth= atoi(argv[3]);
+        int num_ref= atoi(argv[4]);
+        double rel_red= atof(argv[5]);
+        double markratio= atof(argv[6]);
+        double tau= atof(argv[7]);
+        unsigned int uz_inner_iter= atoi(argv[8]);
+        std::cerr << "inner iter tol: " << inner_iter_tol << ", ";
+        std::cerr << "tol: " << tol << ", ";
+        std::cerr << "meth: " << meth << ", ";
+        std::cerr << "refinements: " << num_ref << ", ";
+        std::cerr << "relative error reduction: " << rel_red << ", ";
+        std::cerr << "markratio: " << markratio << ", ";
+        std::cerr << "tau: " << tau << ", ";
+        std::cerr << "uzawa inner iter: " << uz_inner_iter << std::endl;
+        Strategy(stokesprob, inner_iter_tol, tol, meth, num_ref, rel_red, markratio, tau, uz_inner_iter);
+
+        double min= stokesprob.p.Data.min(),
+               max= stokesprob.p.Data.max();
+        std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+        std::ofstream fil("stokespr.off");
+        fil << DROPS::GeomSolOutCL<MyStokesCL::DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
+        std::ofstream fil2("stokespr_cut.off");
+        fil2 << DROPS::GeomSolOutReport1CL<MyStokesCL::DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
+
+        DROPS::IdxDescCL tecIdx;
+        tecIdx.Set( 4, 1, 0, 0, 0);
+        stokesprob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
+    
+        std::ofstream v2d("stokestec2D.dat");
+        DROPS::TecPlot2DSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+            tecplot2d( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
+        v2d << tecplot2d;
+        v2d.close();
+
+        v2d.open("stokes_vel.mtv");
+        v2d << DROPS::PlotMTVSolOutCL<MyStokesCL::DiscVelSolCL>(mg, stokesprob.GetVelSolution(), &colormap, -1, false, 0.19) << std::endl;
+        v2d.close();
+
+        std::ofstream v3d("stokesmaple3D.dat");
+        DROPS::MapleSolOutCL<MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+            mapleplot( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution(), -1, DROPS::PlaneCL(DROPS::std_basis<3>(2), .5));
+        v3d << mapleplot;
+        v3d.close();
+
+        v3d.open("stokestec3D.dat");
+        DROPS::TecPlotSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+            tecplot( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution() );
+        v3d << tecplot;
+        v3d.close();
     }
-    UnMarkAll(mg);
-    mg.Refine();
-    UnMarkAll(mg);
-    mg.Refine();
-    UnMarkAll(mg);
-    mg.Refine();
-    UnMarkAll(mg);
-    mg.Refine();
-*/
-//    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-/*
-    std::cerr << "Verts: "   << mg.GetVertices().GetFullSize()
-         << " Edges: "  << mg.GetEdges().GetFullSize()
-         << " Tetras: " << mg.GetTetras().GetFullSize()
-         << std::endl;
-*/
-//    std::cout << DROPS::GeomMGOutCL(mg, -1, true) << std::endl;
+{
+        std::cerr << "Enter nsdrops parameters: <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
+        double fp_tol; std::cin >> fp_tol;
+        double poi_tol; std::cin >> poi_tol;
+        int fp_maxiter; std::cin >> fp_maxiter;
+        int poi_maxiter; std::cin >> poi_maxiter;
+        double uzawa_red; std::cin >> uzawa_red;
+        int num_ref; std::cin >> num_ref;
+        std::cerr << "fp_tol: " << fp_tol<< ", ";
+        std::cerr << "poi_tol: " << poi_tol << ", ";
+        std::cerr << "fp_maxiter: " << fp_maxiter << ", ";
+        std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
+        std::cerr << "uzawa_red: " << uzawa_red << ", ";
+        std::cerr << "num_ref: " << num_ref << std::endl;
+
+        typedef DROPS::NavierStokesP2P1CL<DROPS::BrickBuilderCL, MyPdeCL::StokesCoeffCL> 
+                NSOnBrickCL;
+        typedef NSOnBrickCL MyNavierStokesCL;
+
+        MyNavierStokesCL prob(stokesprob.GetMG(), MyPdeCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
+        DROPS::MultiGridCL& mg = prob.GetMG();
+    
+        StrategyNavSt(prob, num_ref, fp_tol, fp_maxiter, uzawa_red, poi_tol, poi_maxiter);
+
+        std::cerr << "hallo" << std::endl;
+        std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+        std::ofstream fil("navstokespr.off");
+        double min= prob.p.Data.min(),
+               max= prob.p.Data.max();
+        fil << DROPS::GeomSolOutCL<MyNavierStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
+        fil.close();
+        std::ofstream fil2("navstokespr_cut.off");
+        fil2 << DROPS::GeomSolOutReport1CL<MyNavierStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
+
+        DROPS::IdxDescCL tecIdx;
+        tecIdx.Set( 4, 1, 0, 0, 0);
+        prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
+    
+        std::ofstream v2d("navstokestec2D.dat");
+        DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::DiscVelSolCL, MyNavierStokesCL::DiscPrSolCL>
+            tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
+        v2d << tecplot2d;
+        v2d.close();
+
+        v2d.open("navstokes_vel.mtv");
+        v2d << DROPS::PlotMTVSolOutCL<MyStokesCL::DiscVelSolCL>(mg, stokesprob.GetVelSolution(), &colormap, -1, false, 0.19) << std::endl;
+        v2d.close();
+    }
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

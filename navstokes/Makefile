@@ -21,7 +21,7 @@ default: ClrScr
 
 nsdrops: \
     ../geom/boundary.o ../geom/builder.o nsdrops.o ../geom/multigrid.o \
-    ../geom/parallel.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../stokes/stokes.o ../out/output.o \
     ../num/discretize.o 
 	$(CC) $(LFLAGS) -o $@ $^

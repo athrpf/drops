@@ -443,6 +443,41 @@ inline VectorBaseCL<T> operator * (T c, const VectorBaseCL<T> &v)
     return ret;
 }
 
+// z_xpaypby2(z, x, a,y,b,y2) := z= x + a*y + b*y2
+template<typename T>
+inline void z_xpaypby2(VectorBaseCL<T>& z,
+                       const VectorBaseCL<T>& x,
+                       T a, const VectorBaseCL<T>& y,
+                       T b, const VectorBaseCL<T>& y2)
+{
+    Assert(z.size()==x.size() && z.size() == y.size() && z.size()==y2.size(),
+           DROPSErrCL("z_xpaypy2: incompatible dimensions!"), DebugNumericC);
+
+    const typename VectorBaseCL<T>::subs_type s= z.size();
+    for (typename VectorBaseCL<T>::subs_type i=0; i<s; ++i)
+        z[i]= x[i] + a*y[i] + b*y2[i];
+}
+
+// z_xpay(z,x,a,y) := z= x + a*y
+template<typename T>
+inline void z_xpay(VectorBaseCL<T>& z, const VectorBaseCL<T>& x, T a, const VectorBaseCL<T>& y)
+{
+    Assert( z.size()==x.size() && z.size() == y.size(), DROPSErrCL("z_xpay: incompatible dimensions!"), DebugNumericC);
+
+    const typename VectorBaseCL<T>::subs_type s= z.size();
+    for (typename VectorBaseCL<T>::subs_type i=0; i<s; ++i)
+        z[i]= x[i] + a*y[i];
+}
+
+// axpy(a,x,y) :=  y+= a*x
+template<typename T>
+inline void axpy(const T a, const VectorBaseCL<T>& x, VectorBaseCL<T>& y)
+{
+    Assert( x.size()==y.size(), DROPSErrCL("axpy: incompatible dimensions!"), DebugNumericC);
+
+    const typename VectorBaseCL<T>::subs_type s= x.size();
+    for (typename VectorBaseCL<T>::subs_type i=0; i<s; ++i) y[i]+= a*x[i];
+}
 
 // Human readable output
 template <class T>
