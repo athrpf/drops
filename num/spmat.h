@@ -409,24 +409,57 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     Assert( A.num_rows()==B.num_rows() && A.num_cols()==B.num_cols(),
             "LinComb: incompatible dimensions", DebugNumericC);
 
-    SparseMatBuilderCL<T> MB( this, A.num_rows(), A.num_cols());
-    size_t col, indA= 0, indB= 0;
+    _rows=A.num_rows();
+    _cols=A.num_cols();
 
-    for (size_t row= 0, row_end= A.num_rows(); row<row_end; ++row)
+    // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
+
+    // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
+    _rowbeg.resize(A.num_rows()+1);
+    size_t i=0, iA=0, iB=0;
+
+    for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
     {
-        while ( indA < A.row_beg(row+1) )
+        while ( iA < A.row_beg(row) )                                      // process every entry in A
         {
-            col= A.col_ind( indA++);
-            MB(row,col)+= coeffA * A(row,col);
+            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) ) // process entries in B with smaller col_ind
+                { ++i; ++iB; }
+            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )   // process entries in B with equal col_ind
+                ++iB;
+            ++i; ++iA;
         }
-        while ( indB < B.row_beg(row+1) )
+        while ( iB < B.row_beg(row) )                                      // process, what is left in B
+            { ++iB; ++i; }
+        _rowbeg[row]=i;                                                    // store result
+    }
+
+    // Calculate the entries of _colind, _val (really perform the merging of the matrices)
+    _colind.resize(row_beg(num_rows()));
+    _val.resize(row_beg(num_rows()));
+    i=0, iA=0, iB=0;
+
+    for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
+    {
+        while ( iA < A.row_beg(row) )
         {
-            col= B.col_ind( indB++);
-            MB(row,col)+= coeffB * B(row,col);
+            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
+            {
+                _val[i]=coeffB*B._val[iB];
+                _colind[i++]=B._colind[iB++];
+            }
+            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
+                _val[i]=coeffA*A._val[iA]+coeffB*B._val[iB++];
+            else
+                _val[i]=coeffA*A._val[iA];
+            _colind[i++]=A._colind[iA++];
+        }
+        while ( iB < B.row_beg(row) )
+        {
+            _val[i]=coeffB*B._val[iB];
+            _colind[i++]=B._colind[iB++];
         }
     }
 
-    MB.Build();
     return *this;
 }
 
