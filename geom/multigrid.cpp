@@ -1064,6 +1064,14 @@ void MultiGridCL::Refine()
     while ( _Tetras[GetLastLevel()].empty() ) RemoveLastLevel();
 }
 
+void MultiGridCL::Scale( double s)
+{
+    for (AllVertexIteratorCL it= GetAllVertexBegin(), end= GetAllVertexEnd();
+        it!=end; ++it)
+        it->_Coord*= s;
+}
+
+
 
   class VertPtrLessCL : public std::binary_function<const VertexCL*, const VertexCL* , bool>
   {

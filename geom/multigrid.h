@@ -105,6 +105,8 @@ class RecycleBinCL
 
 class VertexCL
 {
+    friend class MultiGridCL;
+    
   public:
     typedef std::vector<BndPointCL>::iterator       BndVertIt;
     typedef std::vector<BndPointCL>::const_iterator const_BndVertIt;
@@ -620,6 +622,7 @@ class MultiGridCL
     const_TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) const;
 
     void Refine ();
+    void Scale( double);
     void MakeConsistentNumbering();
     void SizeInfo(std::ostream&);
 
