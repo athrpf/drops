@@ -953,7 +953,7 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
-    _poissonSolver.Solve( A, v, b - transp_mul(B, p));
+    _poissonSolver.Solve( A, v, VectorCL(b - transp_mul(B, p)));
     std::cerr << "Iterationen: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
