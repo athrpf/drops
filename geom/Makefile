@@ -25,7 +25,7 @@ topo.o: topo.cpp topo.h ../misc/utils.h
 maketopo: maketopo.cpp topo.h topo.cpp.in ../misc/utils.o
 	cp -f topo.cpp.in maketopo_helper.cpp
 	$(CC) $(CFLAGS) -c maketopo_helper.cpp
-	$(CC) $(CFLAGS) $(LFLAGS) -o maketopo maketopo.cpp maketopo_helper.o ../misc/utils.o
+	$(CC) $(CFLAGS) -o maketopo maketopo.cpp maketopo_helper.o ../misc/utils.o $(LFLAGS)
 	rm -f maketopo_helper.cpp maketopo_helper.o
 
 topo.cpp: maketopo topo.cpp.in

@@ -2,11 +2,11 @@
 #   D R O P S   local makefile              #
 #############################################
 
-# variables: 
+# variables:
 
 DIR = poisson
 
-EXEC = drops MGdrops testdrops dropsrep ipdrops 
+EXEC = drops MGdrops testdrops dropsrep ipdrops
 
 DELETE = $(EXEC)
 
@@ -20,46 +20,45 @@ OBJ = $(CPP:%.cpp=%.o)
 default: ClrScr dropsrep
 
 drops: \
-    ../geom/boundary.o ../geom/builder.o drops.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o poisson.o \
+    ../geom/boundary.o ../geom/builder.o ../poisson/drops.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../poisson/poisson.o \
     ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
-	$(CC) $(LFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LFLAGS)
 
 dropsrep: \
-    ../geom/boundary.o ../geom/builder.o dropsrep.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o poisson.o \
+    ../geom/boundary.o ../geom/builder.o ../poisson/dropsrep.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../poisson/poisson.o \
     ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
-	$(CC) $(LFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LFLAGS)
 
 MGdrops: \
-    ../geom/boundary.o ../geom/builder.o MGdrops.o ../geom/multigrid.o \
+    ../geom/boundary.o ../geom/builder.o ../poisson/MGdrops.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o \
-    ../num/MGsolver.o poisson.o ../misc/problem.o ../misc/utils.o
-	$(CC) $(LFLAGS) -o $@ $^
+    ../num/MGsolver.o ../poisson/poisson.o ../misc/problem.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 testdrops: \
-    ../geom/boundary.o ../geom/builder.o testdrops.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/MGsolver.o \
-    poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
-    ../num/discretize.o
-	$(CC) $(LFLAGS) -o $@ $^
+    ../geom/boundary.o ../geom/builder.o ../poisson/testdrops.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/MGsolver.o ../poisson/poisson.o \
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 ipdrops: \
-    ../geom/boundary.o ../geom/builder.o ipdrops.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o instatpoisson.o \
-    ../misc/problem.o ../misc/utils.o 
-	$(CC) $(LFLAGS) -o $@ $^
-  
-matlab/ipdrops: ../geom/boundary.o ../geom/builder.o  \
+    ../geom/boundary.o ../geom/builder.o ../poisson/ipdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    instatpoisson.o ../misc/problem.o ../misc/utils.o    
-	$(CC) $(CFLAGS) $(LFLAGS) matlab/ipdrops.cpp -o $@ $^
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
+	$(CC) $(CFLAGS) matlab/ipdrops.cpp -o $@ $^ $(LFLAGS)
 
 
 clean: matlab/clean
 
 matlab/clean:
 	cd matlab; make clean
-  
+
 # include common rules:
 include ../Make.common

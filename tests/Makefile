@@ -20,32 +20,30 @@ OBJ = $(CPP:%.cpp=%.o)
 default: ClrScr
 
 reftest: \
-    reftest.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
-    ../num/unknowns.o ../misc/utils.o ../geom/topo.o \
-    ../out/output.o 
-	$(CC) $(LFLAGS) -o $@ $^
-        
+    ../tests/reftest.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
 ip1test: \
-    interp1.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+    ../tests/interp1.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o \
-    ../num/fe.o ../geom/boundary.o ../misc/utils.o 
-	$(CC) $(LFLAGS) -o $@ $^
+    ../num/fe.o ../geom/boundary.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 ip2test: \
-    interp2.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+    ../tests/interp2.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o \
-    ../num/fe.o ../geom/boundary.o ../misc/utils.o 
-	$(CC) $(LFLAGS) -o $@ $^
+    ../num/fe.o ../geom/boundary.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 mattest: \
-    mattest.o ../misc/utils.o
-	$(CC) $(LFLAGS) -o $@ $^
+    ../tests/mattest.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 testfe: \
-    testfe.o ../misc/utils.o ../geom/topo.o \
+    ../tests/testfe.o ../misc/utils.o ../geom/topo.o \
     ../geom/multigrid.o ../num/unknowns.o
-	$(CC) $(LFLAGS) -o $@ $^
-
+	$(CC) -o $@ $^ $(LFLAGS)
 
 
 # include common rules:
