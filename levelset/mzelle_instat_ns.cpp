@@ -131,7 +131,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD); 
+    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff); 
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -183,11 +183,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.SetupPrMass(  &prM);
     Stokes.SetupPrStiff( &prA);
     MatrixCL prM_A;
-    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
    
-    lset.GetSolver().SetTol( C.lset_tol);
-    lset.GetSolver().SetMaxIter( C.lset_iter);
-
     PSchur_PCG_CL schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 //    Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
@@ -226,6 +222,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     if (C.scheme)
     {
 //        Schur_GMRes_CL ISPschurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
         ISPSchur_GMRes_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
@@ -240,10 +237,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
             cpl.DoStep( C.FPsteps);
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
-            ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
-            ensight.Commit();
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {
@@ -252,14 +245,17 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
+            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
+            ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
+            ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
+            ensight.Commit();
 
             if (C.RepFreq && step%C.RepFreq==0)
             {
-                lset.Reparam( C.RepSteps, C.RepTau);
-                ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
-                ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
-                ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
-                ensight.Commit();
+                if (C.RepMethod>1)
+                    lset.Reparam( C.RepSteps, C.RepTau);
+                else
+                    lset.ReparamFastMarching( C.RepMethod);
                 std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
                 if (C.VolCorr)
                 {
@@ -268,11 +264,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                     lset.Phi.Data+= dphi;
                     std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
                 }
+                ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
+                ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
+                ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
+                ensight.Commit();
             }
         }
     }
     else // Baensch scheme
     {
+        ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF*(1.-std::sqrt(2.)/2));
         ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
         CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
@@ -284,20 +285,37 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
             cpl.DoStep( C.FPsteps);
+            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            if (C.VolCorr)
+            {
+                double dphi= lset.AdjustVolume( Vol, 1e-9);
+                std::cerr << "volume correction is " << dphi << std::endl;
+                lset.Phi.Data+= dphi;
+                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            }
             ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
             ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
             ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
-            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
             if (C.RepFreq && step%C.RepFreq==0)
             {
-                lset.Reparam( C.RepSteps, C.RepTau);
+                if (C.RepMethod>1)
+                    lset.Reparam( C.RepSteps, C.RepTau);
+                else
+                    lset.ReparamFastMarching( C.RepMethod);
+                std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                if (C.VolCorr)
+                {
+                    double dphi= lset.AdjustVolume( Vol, 1e-9);
+                    std::cerr << "volume correction is " << dphi << std::endl;
+                    lset.Phi.Data+= dphi;
+                    std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                }
                 ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
                 ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
                 ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
                 ensight.Commit();
-                std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
     }
@@ -333,7 +351,7 @@ int main (int argc, char** argv)
     if (argc>1)
         param.open( argv[1]);
     else
-        param.open( "NMRmzi.param");
+        param.open( "NMRnsmzi.param");
     if (!param)
     {
         std::cerr << "error while opening parameter file\n";
