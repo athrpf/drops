@@ -80,12 +80,8 @@ class LevelsetP2CL
     double AdjustVolume( double vol, double tol, double surf= 0) const;
     void   AccumulateBndIntegral( VecDescCL& f) const;
     
-    DiscSolCL GetSolution()
-        { return DiscSolCL( &Phi, &_Bnd, &_MG); }
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL( &Phi, &_Bnd, &_MG); }
-    const_DiscSolCL GetSolution( VecDescCL& MyPhi) const
-        { return const_DiscSolCL( &MyPhi, &_Bnd, &_MG); }
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &_Bnd, &_MG); }
         

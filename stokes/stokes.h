@@ -115,16 +115,18 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     // estimation a la Verfuerth
     static double ResidualErrEstimator(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double t=0.0);
 
-    // Get solutions as FE-functions
-    DiscPrSolCL GetPrSolution()
-        { return DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
-    DiscVelSolCL GetVelSolution()
-        { return DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
+    //@{
+    /// Get solutions as FE-functions
     const_DiscPrSolCL GetPrSolution() const
         { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution() const
         { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
 
+    const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
+        { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
+    const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
+        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
+    //@}
 };
 
 template <class Coeff>
@@ -176,16 +178,18 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     // estimation a la Verfuerth
     static double ResidualErrEstimator(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double= 0.0);
 
-    // Get solutions as FE-functions
-    DiscPrSolCL GetPrSolution()
-        { return DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
-    DiscVelSolCL GetVelSolution()
-        { return DiscVelSolCL(&v, &GetBndData().Vel, &GetMG()); }
+    //@{
+    /// Get solutions as FE-functions
     const_DiscPrSolCL GetPrSolution() const
         { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution() const
         { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG()); }
 
+    const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
+        { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
+    const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
+        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
+    //@}
 };
 
 
