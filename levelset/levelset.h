@@ -13,31 +13,12 @@
 namespace DROPS
 {
 
-// This class is more or less a hack to describe, that no boundary conditions 
-// are imposed. (Note, that P*EvalCL expects a certain BndDataCL.)
-class DummyBndDataCL
-{
-  public:
-    // default ctor, dtor, whatever
-    typedef double bnd_type;
-
-    static inline bool IsOnDirBnd (const VertexCL&) { return false; }
-    static inline bool IsOnNeuBnd (const VertexCL&) { return false; }
-    static inline bool IsOnDirBnd (const EdgeCL&)   { return false; }
-    static inline bool IsOnNeuBnd (const EdgeCL&)   { return false; }
-    
-    static inline bnd_type GetDirBndValue (const VertexCL&)
-        { throw DROPSErrCL("StokesBndDataPrCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("StokesBndDataPrCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-};
-
 class LevelsetP2CL
 // P2-discretization and solution of the levelset equation for two phase
 // flow problems.
 {
   public:
-    typedef P2EvalCL<double, const DummyBndDataCL, const VecDescCL> DiscSolCL;
+    typedef P2EvalCL<double, const NoBndDataCL<>, const VecDescCL> DiscSolCL;
 
     IdxDescCL           idx;
     VecDescCL           Phi;
@@ -49,7 +30,7 @@ class LevelsetP2CL
                         _SD,     // streamline diffusion
                         _theta, _dt;  
     MatrixCL            _E, _H, _L;
-    DummyBndDataCL      _dummyBnd;
+    NoBndDataCL<>       _dummyBnd;
     SSORPcCL            _pc;
     GMResSolverCL<SSORPcCL>  _gm;
 
@@ -64,7 +45,7 @@ class LevelsetP2CL
     
     GMResSolverCL<SSORPcCL>& GetSolver() { return _gm; }
     
-    const DummyBndDataCL& GetBndData() const { return _dummyBnd; }
+    const NoBndDataCL<>& GetBndData() const { return _dummyBnd; }
     
     void CreateNumbering( Uint level, IdxDescCL*);
     void DeleteNumbering( IdxDescCL*);
