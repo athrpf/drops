@@ -3,6 +3,7 @@
 #include "geom/builder.h"
 #include "stokes/stokes.h"
 #include "num/stokessolver.h"
+#include "num/nssolver.h"
 #include "navstokes/navstokes.h"
 #include <fstream>
 
@@ -56,6 +57,7 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
                                                  double uzawa_red, double poi_tol, int poi_maxiter)
 // flow control
 {
+    typedef NavierStokesP2P1CL<MGB,Coeff> NavStokesCL;
     MultiGridCL& MG= NS.GetMG();
 
     IdxDescCL  loc_vidx, loc_pidx;
@@ -136,6 +138,25 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
         // adaptive fixedpoint defect correction
         //---------------------------------------
         time.Reset();
+
+        MatDescCL M;
+        M.SetIdx( pidx1, pidx1);
+        NS.SetupMass( &M);
+//        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
+//	                                             2000, poi_maxiter, poi_tol, uzawa_red);
+//        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
+//	                                            2000, poi_maxiter, poi_tol, uzawa_red);
+//        AFPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
+//	                                             2000, poi_maxiter, poi_tol, uzawa_red);
+        FPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
+	                                            2000, poi_maxiter, poi_tol, uzawa_red);
+        VelVecDescCL old_v1( vidx1);
+	old_v1.Data= v1->Data;
+	VelVecDescCL rhsN( vidx1);
+	NS.SetupNonlinear( N, v1, &rhsN);
+        statsolver.Solve( A->Data, B->Data, *v1, p1->Data, b->Data, rhsN, c->Data, 1.);
+
+/*	
         VectorCL d( vidx1->NumUnknowns), e( pidx1->NumUnknowns),
                  w( vidx1->NumUnknowns), q( pidx1->NumUnknowns);
         VelVecDescCL rhsN( vidx1), v_omw( vidx1);
@@ -188,6 +209,8 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
 //            p1->Data-= omega*q;
             axpy(-omega, q, p1->Data);
         }
+*/
+
         time.Stop();
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
 	NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
