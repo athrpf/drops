@@ -359,6 +359,9 @@ public:
     const MultiGridCL&
     GetMG() const // the multigrid we refer to
         { return *_MG; }
+    Uint
+    GetLevel() const // Triangulation level of this function
+        { return _sol->GetLevel(); }
 
     // The following functions use compile-time polymorphism via T to choose
     // the right version of GetDoF to obtain numerical data.
@@ -583,6 +586,9 @@ public:
     const MultiGridCL&
     GetMG() const // the multigrid we refer to
         { return *_MG; }
+    Uint
+    GetLevel() const // Triangulation level of this function
+        { return _sol->GetLevel(); }
 
     inline bool UnknownsMissing(const TetraCL& t) const;
     // True, iff the function can be evaluated on the given simplex.
@@ -845,6 +851,9 @@ public:
     const MultiGridCL&
     GetMG() const // the multigrid we refer to
         { return *_MG; }
+    Uint
+    GetLevel() const // Triangulation level of this function
+        { return _sol->GetLevel(); }
 
     // evaluation on vertices    
     template<class _Cont>
@@ -987,6 +996,18 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
 //**************************************************************************    
 void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                                IdxDescCL* cIdx, IdxDescCL* fIdx);
+
+//**************************************************************************
+// RestrictP2: Stores the DoF-values of a P2-function f for tetrahedron t  *
+//     in the container c.                                                 *
+// Precondition: f is a P2-function on level l and t a tetrahedron on a    *
+//     level <= l. c is a container (component access with []) that can    *
+//     hold at least 10 values of f's return type.                         *
+// Postcondition: c contains the value of f in the 10 DoF in the order used*
+//     by FE_P2CL.                                                         *
+//**************************************************************************    
+template <class P2FuncT, class Cont>
+void RestrictP2(const TetraCL& t, const P2FuncT& f, Cont& c);
 
 
 } // end of namespace DROPS

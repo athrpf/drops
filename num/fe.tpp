@@ -1307,4 +1307,22 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 }
 
 
+template <class P2FuncT, class Cont>
+void RestrictP2(const TetraCL& t, const P2FuncT& f, Cont& c)
+{
+    const Uint tlvl= t.GetLevel();
+    const Uint flvl= f.GetLevel();
+    Assert( tlvl<=flvl, DROPSErrCL("RestrictP2: Tetra is on a finer level"
+            "than the function."), ~0);
+
+    for (Uint i= 0; i<NumVertsC; ++i)
+        c[i]= f.val( *t.GetVertex( i));
+    for (Uint i= 0; i<NumEdgesC; ++i) {
+        const EdgeCL& e= *t.GetEdge( i);
+        c[i+NumVertsC]= (tlvl < flvl && e.IsRefined())
+            ? f.val( *e.GetMidVertex()) : f.val( e);
+    }
+}
+
+
 } // end of namespace DROPS
