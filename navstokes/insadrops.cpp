@@ -270,7 +270,7 @@ typedef double (*signed_dist_fun)(const DROPS::Point3DCL& p, double t);
 bool
 ModifyGridStep(DROPS::MultiGridCL& mg,
                const signed_dist_fun Dist,
-               const double width,         // Thickness of refined shell on eache side of the interface
+               const double width,         // Thickness of refined shell on each side of the interface
                const DROPS::Uint c_level,  // Outside the shell, use this level
                const DROPS::Uint f_level,  // Inside the shell, use this level
                const double t)             // Time of evaluation
@@ -295,7 +295,7 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
                     if (l > f_level) { it->SetRemoveMark(); }
                     else; // nothing
             }
-            else { // Outside the shell; level should bel c_level;
+            else { // Outside the shell; level should be c_level;
                 if (l < c_level) { it->SetRegRefMark(); }
                 else
                     if (l> c_level) { it->SetRemoveMark(); }
@@ -372,14 +372,13 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
     }
     // We want the solution to be where v1, p1 point to.
     if (v1 == &loc_v) {
-        std::swap(v2, v1);
-        std::swap(p2, p1);
-        v1->RowIdx->swap( *v2->RowIdx);
-        p1->RowIdx->swap( *p2->RowIdx);
-        v1->Data.resize( v1->RowIdx->NumUnknowns);
-        v1->Data= v2->Data;
-        p1->Data.resize( p1->RowIdx->NumUnknowns);
-        p1->Data= p2->Data;
+        NS.vel_idx.swap( loc_vidx);
+        NS.pr_idx.swap( loc_pidx);
+        NS.v.SetIdx( &NS.vel_idx);
+        NS.p.SetIdx( &NS.pr_idx);
+        
+        NS.v.Data= loc_v.Data;
+        NS.p.Data= loc_p.Data;
     }
     time.Stop();
     std::cout << "UpdateTriangulation: " << i
