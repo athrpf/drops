@@ -68,6 +68,110 @@ struct InstatNSCL
     static StokesCoeffCL Coeff;
 };
 
+
+// Interface to EnsightP2SolOutCL for time-dependent geometry,
+// velocity and pressure
+class EnsightWriterCL
+{
+  private:
+    std::string casefile_;
+    std::string geomfile_;
+    std::string prfile_;
+    std::string velfile_;
+    DROPS::MultiGridCL& MG_;
+    DROPS::IdxDescCL ensightidx_;
+    DROPS::EnsightP2SolOutCL ensight_;
+    bool have_idx_;
+
+  public:
+    EnsightWriterCL(DROPS::MultiGridCL& MG, DROPS::Uint num_timestep,
+                    std::string casefile, std::string geomfile,
+                    std::string prfile, std::string velfile);
+    ~EnsightWriterCL();
+
+    // Call after a grid-change before writing data. The constructor calls this, too.
+    void CreateNumbering(int level= -1);
+    // Destroy the index before modifying the grid.
+    void DeleteNumbering();
+
+    // To write geometry, pressure and velocity at time t.
+    template<class InstatNSCL>
+    void
+    WriteAtTime(const InstatNSCL& NS, const double t);
+};
+
+EnsightWriterCL::EnsightWriterCL(DROPS::MultiGridCL& MG, DROPS::Uint num_timestep,
+                                 std::string casefile, std::string geomfile,
+                                 std::string prfile, std::string velfile)
+    :casefile_( casefile), geomfile_( geomfile), prfile_( prfile), velfile_( velfile),
+     MG_( MG), ensight_( MG, &ensightidx_), have_idx_( false)
+{
+    ensightidx_.Set( 1,1,0,0);
+    this->CreateNumbering();
+    have_idx_= true;
+    ensight_.CaseBegin( casefile_.c_str(), num_timestep);
+    ensight_.DescribeGeom( "insa_geometry", geomfile_, true);
+    ensight_.DescribeScalar( "p", prfile_, true);
+    ensight_.DescribeVector( "v", velfile_, true);
+}
+
+EnsightWriterCL::~EnsightWriterCL()
+{
+    if (!have_idx_)
+        std::cerr << "EnsightWriter::~EnsightWriterCL: Error; no index found.\n";
+    ensight_.CaseEnd();
+    this->DeleteNumbering();
+}
+
+template<class InstatNSCL>
+void
+EnsightWriterCL::WriteAtTime(const InstatNSCL& NS, const double t)
+{
+    if (!have_idx_)
+        throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
+    ensight_.putGeom( geomfile_, t);
+    DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
+             const DROPS::VecDescCL> ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
+    ensight_.putScalar( prfile_, ensightp, t);
+    DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>, const DROPS::InstatStokesVelBndDataCL, 
+                const DROPS::VelVecDescCL> ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
+    ensight_.putVector( velfile_, ensightv, t);
+}
+
+void
+EnsightWriterCL::CreateNumbering( int level)
+{
+    if (have_idx_)
+        throw DROPS::DROPSErrCL( "EnsightWriter::CreateIndex: Already done.");
+    DROPS::NoBndDataCL<> ensightbnd;
+    ensightidx_.TriangLevel= level < 0 ? MG_.GetLastLevel(): level;
+    DROPS::CreateNumbOnVertex( ensightidx_.GetIdx(), ensightidx_.NumUnknowns, 1,
+                               MG_.GetTriangVertexBegin( ensightidx_.TriangLevel),
+                               MG_.GetTriangVertexEnd( ensightidx_.TriangLevel),
+                               ensightbnd);
+    DROPS::CreateNumbOnEdge( ensightidx_.GetIdx(), ensightidx_.NumUnknowns, 1,
+                             MG_.GetTriangEdgeBegin( ensightidx_.TriangLevel),
+                             MG_.GetTriangEdgeEnd( ensightidx_.TriangLevel),
+                             ensightbnd);
+    have_idx_= true;
+}
+
+void
+EnsightWriterCL::DeleteNumbering()
+{
+    if (!have_idx_)
+        throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
+    DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
+                                MG_.GetAllVertexBegin( ensightidx_.TriangLevel),
+                                MG_.GetAllVertexEnd( ensightidx_.TriangLevel));
+    DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
+                                MG_.GetAllEdgeBegin( ensightidx_.TriangLevel),
+                                MG_.GetAllEdgeEnd( ensightidx_.TriangLevel));
+    ensightidx_.NumUnknowns= 0;
+    have_idx_= false;
+}
+
+
 InstatNSCL::StokesCoeffCL InstatNSCL::Coeff;
 
 typedef InstatNSCL MyPdeCL;
@@ -146,8 +250,8 @@ SetPr(DROPS::P1EvalCL< double,
     }
 }
 
-const double radiusorbit= 0.2003; // Radius of the drops' orbit.
-const double radiusdrop= 0.1997; // Initial radius of the drop.
+const double radiusorbit= 0.3; // Radius of the drops' orbit.
+const double radiusdrop= 0.15; // Initial radius of the drop.
 
 // positive outside the drop, negative inside the drop.
 double
@@ -168,7 +272,8 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
                const signed_dist_fun Dist,
                const double width,         // Thickness of refined shell on eache side of the interface
                const DROPS::Uint c_level,  // Outside the shell, use this level
-               const DROPS::Uint f_level)  // Inside the shell, use this level
+               const DROPS::Uint f_level,  // Inside the shell, use this level
+               const double t)             // Time of evaluation
 // One step of grid change; returns true if modifications were necessary,
 // false, if nothing changed.
 {
@@ -178,7 +283,7 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
              theend= mg.GetTriangTetraEnd(); it!=theend; ++it) {
             double d= 1.;
             for (Uint j=0; j<4; ++j) {
-                d= std::min( d, std::abs( Dist( it->GetVertex( j)->GetCoord(), 0.)));
+                d= std::min( d, std::abs( Dist( it->GetVertex( j)->GetCoord(), t)));
             }
             const Uint l= it->GetLevel();
             if (d<=width) { // In the shell; level should be f_level.
@@ -235,7 +340,7 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
     const InstatStokesBndDataCL& BndData= NS.GetBndData();
     Uint i;
     for(i=0; shell_not_ready || i<min_ref_num; ++i) {
-        shell_not_ready= ModifyGridStep( mg, Dist, width, c_level, f_level);
+        shell_not_ready= ModifyGridStep( mg, Dist, width, c_level, f_level, t);
         // Repair velocity
         std::swap( v2, v1);
         std::swap( vidx2, vidx1);
@@ -304,7 +409,7 @@ MakeInitialTriangulation(DROPS::MultiGridCL& mg,
     const Uint min_ref_num= f_level - c_level;
     Uint i;
     for(i=0; shell_not_ready || i<min_ref_num; ++i)
-        shell_not_ready=  ModifyGridStep( mg, Dist, width, c_level, f_level);
+        shell_not_ready=  ModifyGridStep( mg, Dist, width, c_level, f_level, 0.);
     time.Stop();
     std::cout << "MakeTriangulation: " << i
               << " refinements in " << time.GetTime() << " seconds\n"
@@ -350,7 +455,6 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
          double theta,
          DROPS::Uint num_timestep,
          double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
-// flow control
 {
     using namespace DROPS;
     typedef InstatNavierStokesP2P1CL<Coeff> NavStokesCL;
@@ -378,25 +482,15 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
     InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Uzawa_PCG_CL<NavStokesCL> >* instatsolver= 0;
 
     MakeInitialTriangulation( MG, &SignedDistToInterface, shell_width, c_level, f_level);
-//    IdxDescCL ensightIdx;
-//    EnsightP2SolOutCL
     NS.CreateNumberingVel( MG.GetLastLevel(), vidx1);    
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
     NS.CreateNumberingPr( MG.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
-    NoBndDataCL<> ensightbnd;
-    IdxDescCL ensightidx;
-    ensightidx.Set( 1,1,0,0); ensightidx.TriangLevel= MG.GetLastLevel(); ensightidx.NumUnknowns= 0;
-    DROPS::CreateNumbOnVertex( ensightidx.GetIdx(), ensightidx.NumUnknowns, 1,
-                               MG.GetTriangVertexBegin( ensightidx.TriangLevel),
-                               MG.GetTriangVertexEnd( ensightidx.TriangLevel),
-                               ensightbnd);
-    DROPS::CreateNumbOnEdge( ensightidx.GetIdx(), ensightidx.NumUnknowns, 1,
-                             MG.GetTriangEdgeBegin( ensightidx.TriangLevel),
-                             MG.GetTriangEdgeEnd( ensightidx.TriangLevel),
-                             ensightbnd);
-    EnsightP2SolOutCL ensight( MG, &ensightidx);
+
+    EnsightWriterCL ensightout( MG, num_timestep, "insa.case", "insa_geo", "insa_pr", "insa_vel");
+    ensightout.WriteAtTime( NS, 0.);
+
     for (; timestep<num_timestep; ++timestep, t+= dt, NS.t+= dt) {
         std::cerr << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
@@ -406,14 +500,11 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
                 delete instatsolver; instatsolver= 0;
                 M_pr.Reset();
                 ResetSystem( NS);
+                ensightout.DeleteNumbering();
                 UpdateTriangulation( NS, &SignedDistToInterface, t,
                                      shell_width, c_level, f_level, v1, p1);
+                ensightout.CreateNumbering();
             }
-//            std::ostringstream name;
-//            name << "grid" << timestep << ".off";
-//            std::ofstream fil0( name.str());
-//            fil0 << DROPS::GeomMGOutCL( MG, -1, false, 0.) << std::endl;
-//            fil0.close();
             SetMatVecIndices( NS, vidx1, pidx1);
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
@@ -456,6 +547,7 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
         instatsolver->DoStep( *v1, p1->Data);
         std::cerr << "After timestep." << std::endl;
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t+dt);
+        ensightout.WriteAtTime( NS, t+dt);
     }
     delete statsolver; statsolver= 0;
     delete instatsolver; instatsolver= 0;
