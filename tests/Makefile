@@ -7,7 +7,8 @@
 DIR = tests
 
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
-        tetrabuildertest sbuffer minres meshreader restrictp2 vectest
+        tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
+        p2local
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -95,6 +96,12 @@ restrictp2: \
 
 vectest: \
     ../tests/vectest.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+p2local: ../tests/p2local.o ../misc/utils.o \
+  ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o ../num/unknowns.o \
+  ../out/output.o  ../misc/problem.o ../geom/builder.o \
+  ../num/discretize.o ../num/fe.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:
