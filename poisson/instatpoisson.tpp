@@ -195,7 +195,7 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL
   M.Build();
 }
 
-
+/* TODO: lsgvel ist nicht definiert
 template<class MGB, class Coeff>
 void InstatPoissonP1CL<MGB,Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
@@ -213,6 +213,7 @@ void InstatPoissonP1CL<MGB,Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr f
     }
     
 }
+*/
 
 //========================================================
 //
