@@ -1383,11 +1383,7 @@ void Adapt( P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _Bn
                      if ((*it)->IsRefined() && (*it)->GetMidVertex()->Unknowns.Exist(old_idx) )
                      {
                          // evtl. UnknownIdx fuer old_idx anlegen
-                         if (!(*it)->Unknowns.Exist()) (*it)->Unknowns.Init(old_idx+1);
-                         else if ( !(old_idx < (*it)->Unknowns.Get()->GetNumSystems()) )
-                             (*it)->Unknowns.Get()->resize(old_idx+1); 
-                         if ( !(*it)->Unknowns.Exist(old_idx) )
-                             (*it)->Unknowns.Get()->Alloc(old_idx, NumUnknowns);
+                         (*it)->Unknowns.Prepare( old_idx);
                          // Indexwerte von MidVertex kopieren
                          //for (Uint i=0; i<NumUnknowns; ++i)
                              (*it)->Unknowns(old_idx)= (*it)->GetMidVertex()->Unknowns(old_idx);
