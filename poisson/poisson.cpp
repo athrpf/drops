@@ -25,7 +25,7 @@ double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const Poisso
     double val1, val2, diff, maxdiff=0;
     
     for(int i=0; i<4; ++i)
-        UnknownIdx[i]= t.GetVertex(i)->Unknowns.Exist() ? t.GetVertex(i)->Unknowns(Idx)[0] : -1ul;
+        UnknownIdx[i]= t.GetVertex(i)->Unknowns.Exist() ? t.GetVertex(i)->Unknowns(Idx) : -1ul;
     for(int i=1; i<4; ++i)    
         for(int j=0; j<i;++j)
         {

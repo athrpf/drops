@@ -120,76 +120,103 @@ void VecDescBaseCL<T>::Reset()
 }
 
 template<class BndDataT>
-void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint NumUnknown,
+void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint stride,
                          const MultiGridCL::TriangVertexIteratorCL& begin,
                          const MultiGridCL::TriangVertexIteratorCL& end,
                          const BndDataT& Bnd)
-// allocates memory for the Unknown-indices on all simplices between begin and end 
-// and numbers them in order of appearence. Simplices on Dirichlet boundaries are skipped.
+// Allocates memory for the Unknown-indices in system idx on all vertices
+// between begin and end.
+// The first number used is the initial value of counter, the next numbers are counter+stride,
+// counter+2*stride, and so on.
+// Upon return, counter contains the first number, that was not used,
+// that is #Unknowns+stride. 
+// Vertices on Dirichlet boundaries are skipped.
 {
-    if (NumUnknown == 0) return;
-    for ( MultiGridCL::TriangVertexIteratorCL it=begin; it!=end; ++it)
+    if (stride == 0) return;
+    for (MultiGridCL::TriangVertexIteratorCL it= begin; it != end; ++it)
     {
-        if ( !Bnd.IsOnDirBnd(*it) )
+        if ( !Bnd.IsOnDirBnd( *it) )
         {        
-            it->Unknowns.Prepare( idx, NumUnknown);
-            for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
+            it->Unknowns.Prepare( idx);
+            it->Unknowns( idx)= counter;
+            counter+= stride;
         }
     }
 }
 
 template<class BndDataT>
-void CreateNumbOnEdge( const Uint idx, IdxT& counter, Uint NumUnknown,
+void CreateNumbOnEdge( const Uint idx, IdxT& counter, Uint stride,
                        const MultiGridCL::TriangEdgeIteratorCL& begin,
                        const MultiGridCL::TriangEdgeIteratorCL& end,
                        const BndDataT& Bnd)
-// allocates memory for the Unknown-indices on all simplices between begin and end 
-// and numbers them in order of appearence. Simplices on Dirichlet boundaries are skipped.
+// Allocates memory for the Unknown-indices in system idx on all edges
+// between begin and end.
+// The first number used is the initial value of counter, the next numbers are counter+stride,
+// counter+2*stride, and so on.
+// Upon return, counter contains the first number, that was not used,
+// that is #Unknowns+stride. 
+// Edges on Dirichlet boundaries are skipped.
 {
-    if (NumUnknown == 0) return;
-    for ( MultiGridCL::TriangEdgeIteratorCL it=begin; it!=end; ++it)
+    if (stride == 0) return;
+    for (MultiGridCL::TriangEdgeIteratorCL it=begin; it!=end; ++it)
     {
         if ( !Bnd.IsOnDirBnd(*it) )
         {        
-            it->Unknowns.Prepare( idx, NumUnknown);
-            for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
+            it->Unknowns.Prepare( idx);
+            it->Unknowns( idx)= counter;
+            counter+= stride;
         }
     }
 }
 
 template<class BndDataT>
-void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint NumUnknown,
+void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint stride,
                        const MultiGridCL::TriangFaceIteratorCL& begin,
                        const MultiGridCL::TriangFaceIteratorCL& end,
                        const BndDataT& Bnd)
-// allocates memory for the Unknown-indices on all simplices between begin and end 
-// and numbers them in order of appearence. Simplices on Dirichlet boundaries are skipped.
+// Allocates memory for the Unknown-indices in system idx on all faces
+// between begin and end.
+// The first number used is the initial value of counter, the next numbers are counter+stride,
+// counter+2*stride, and so on.
+// Upon return, counter contains the first number, that was not used,
+// that is #Unknowns+stride. 
+// Faces on Dirichlet boundaries are skipped.
 {
-    if (NumUnknown == 0) return;
-    for ( MultiGridCL::TriangFaceIteratorCL it=begin; it!=end; ++it)
+    if (stride == 0) return;
+    for (MultiGridCL::TriangFaceIteratorCL it=begin; it!=end; ++it)
     {
         if ( !Bnd.IsOnDirBnd(*it) )
         {        
-            it->Unknowns.Prepare( idx, NumUnknown);
-            for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
+            it->Unknowns.Prepare( idx);
+            it->Unknowns( idx)= counter;
+            counter+= stride;
         }
     }
 }
 
-void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint NumUnknown,
+
+// Allocates memory for the Unknown-indices in system idx on all tetras
+// between begin and end.
+// The first number used is the initial value of counter, the next numbers are counter+stride,
+// counter+2*stride, and so on.
+// Upon return, counter contains the first number, that was not used,
+// that is #Unknowns+stride. 
+// Faces on Dirichlet boundaries are skipped.
+void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
                         const MultiGridCL::TriangTetraIteratorCL& end);
-// allocates memory for the Unknown-indices on all simplices between begin and end 
-// and numbers them in order of appearence.
 
 template <class Iter>
 inline void
-DeleteNumbOnSimplex(Uint idx, const Iter& begin, const Iter& end)
-    // deletes the memory for the Unknown-indices allocated by CreateNumbOn<Simplex>
+DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
+// TODO: This does nothing anymore. It might be useful to have a marker for an invalid
+// index, e. g. to be able to tell, which indices are new after a refinement step.
+// deletes the memory for the Unknown-indices allocated by CreateNumbOn<Simplex>
 {
+
     for (Iter it=begin; it!=end; ++it) 
-        if (it->Unknowns.Exist() && it->Unknowns.Exist(idx) ) 
-            it->Unknowns.Get()->Dealloc(idx);
+        if (it->Unknowns.Exist() && it->Unknowns.Exist( idx) ) 
+            it->Unknowns.Invalidate( idx);
 }
 
 } // end of namespace DROPS

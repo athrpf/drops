@@ -358,7 +358,7 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
     Uint numv= 0, numel= 0;
     for (MultiGridCL::TriangVertexIteratorCL it=vbegin; it!=vend; ++it)
         if (IsInPlane( it->GetCoord() ))
-            it->Unknowns( _idx)[0]= ++numv;
+            it->Unknowns( _idx)= ++numv;
 
     Uint VertsInPlane, NotInPlane= 0;
     for (MultiGridCL::const_TriangTetraIteratorCL it= tbegin; it!=tend; ++it)
@@ -414,7 +414,7 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
         {
             for (Uint v=0; v<NumVertsC; ++v)
                 if (v!=NotInPlane)
-                    os << it->GetVertex(v)->Unknowns(_idx)[0] << '\t';
+                    os << it->GetVertex(v)->Unknowns(_idx) << '\t';
             os << '\n';
         }
     }
@@ -470,7 +470,7 @@ std::ostream& TecPlotSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
     for (MultiGridCL::const_TriangTetraIteratorCL it= tbegin; it!=tend; ++it)
     {
         for (Uint v=0; v<NumVertsC; ++v)
-                os << (it->GetVertex(v)->Unknowns(pidx)[0]+1) << '\t';
+                os << (it->GetVertex(v)->Unknowns(pidx)+1) << '\t';
         os << '\n';
     }
 

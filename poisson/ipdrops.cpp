@@ -178,7 +178,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
   { 
     if (sit->Unknowns.Exist())
     {
-      IdxT i= sit->Unknowns(indx)[0];
+      IdxT i= sit->Unknowns(indx);
       pt= sit->GetCoord();
     
       help= std::make_pair(pt[2], pt[1]);

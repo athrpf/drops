@@ -319,11 +319,11 @@ struct DoFHelperCL
 {
     // read the Data-object referenced by IdxT in _Vec
     static inline Data
-    get(const _Vec&, const IdxT*)
+    get(const _Vec&, const IdxT)
     { throw DROPSErrCL("DoFHelperCL::get: Unknown data-type"); return Data(); }
     // write the Data-object at position IdxT to the _Vec-object 
     static inline void
-    set(_Vec&, const IdxT*, const Data&)
+    set(_Vec&, const IdxT, const Data&)
     { throw DROPSErrCL("DoFHelperCL::set: Unknown data-type"); }
 };
 
@@ -342,11 +342,11 @@ template<class _Vec>
 struct DoFHelperCL<double, _Vec>
 {
     static inline double
-    get(const _Vec& sol, IdxT* idx)
-    { return sol[*idx]; }
+    get(const _Vec& sol, IdxT idx)
+    { return sol[idx]; }
     static inline void
-    set(_Vec& sol, IdxT* idx, double val)
-    { sol[*idx]= val; }
+    set(_Vec& sol, IdxT idx, double val)
+    { sol[idx]= val; }
 };
 
 //**************************************************************************
@@ -360,17 +360,18 @@ struct DoFHelperCL<double, _Vec>
 //                 UnknownIdxCL. It is assumed to provide operator[] to    *
 //                 access numerical data.                                  *
 // Purpose: reads and writes SVectoCL<_Len>-objects from / to _Vec objects *
-//          interpreting IdxT as an array of _Len indices in _Vec.         *
+//          interpreting idx,idx+1, ..., idx+_Len-1 as the indices of the  *
+//          components of SVector<_Len>.                                   *
 //**************************************************************************
 template<Uint _Len, class _Vec>
 struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 {
     static inline SVectorCL<_Len>
-    get(const _Vec& sol, const IdxT* idx)
-    { SVectorCL<_Len> ret; for (IdxT i=0; i<_Len; ++i) ret[i]= sol[idx[i]]; return ret;}
+    get(const _Vec& sol, IdxT idx)
+    { SVectorCL<_Len> ret; for (IdxT i=0; i<_Len; ++i) ret[i]= sol[idx++]; return ret;}
     static inline void
-    set(_Vec& sol, const IdxT* idx, const SVectorCL<_Len>& val)
-    { for (IdxT i=0; i<_Len; ++i) sol[idx[i]]= val[i]; }
+    set(_Vec& sol, IdxT idx, const SVectorCL<_Len>& val)
+    { for (IdxT i=0; i<_Len; ++i) sol[idx++]= val[i]; }
 };
 
 
@@ -1388,8 +1389,8 @@ void Adapt( P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _Bn
                          if ( !(*it)->Unknowns.Exist(old_idx) )
                              (*it)->Unknowns.Get()->Alloc(old_idx, NumUnknowns);
                          // Indexwerte von MidVertex kopieren
-                         for (Uint i=0; i<NumUnknowns; ++i)
-                             (*it)->Unknowns(old_idx)[i]= (*it)->GetMidVertex()->Unknowns(old_idx)[i];
+                         //for (Uint i=0; i<NumUnknowns; ++i)
+                             (*it)->Unknowns(old_idx)= (*it)->GetMidVertex()->Unknowns(old_idx);
                      }
                  // Interpoliere Werte vom Vater
                  InterpolateChildren( *sit->GetParent(), sol, old_sol);

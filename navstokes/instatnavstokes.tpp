@@ -31,8 +31,8 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr Lsg
         {
            for(int i=0; i<3; ++i)
 	   {
-               lsgvel[sit->Unknowns(vidx)[i]]= LsgVel(sit->GetCoord(), t)[i];
-	       lsgveldt[sit->Unknowns(vidx)[i]]= DtLsgVel(sit->GetCoord(), t)[i];
+               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord(), t)[i];
+	       lsgveldt[sit->Unknowns(vidx)+i]= DtLsgVel(sit->GetCoord(), t)[i];
 	   }
 	   
         }
@@ -45,14 +45,14 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr Lsg
         {
            for(int i=0; i<3; ++i)
 	   {
-                lsgvel[sit->Unknowns(vidx)[i]]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i];
-                lsgveldt[sit->Unknowns(vidx)[i]]= DtLsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i];
+                lsgvel[sit->Unknowns(vidx)+i]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i];
+                lsgveldt[sit->Unknowns(vidx)+i]= DtLsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i];
            }
         }
     }
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
-        lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord(), t);
+        lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord(), t);
     VecDescCL rhsN( A.ColIdx);
     N.SetIdx( A.RowIdx, A.ColIdx);
     N.Data.clear();
@@ -94,7 +94,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
          sit != send; ++sit) {
         if (!_BndData.Vel.IsOnDirBnd(*sit)) {
            for(int i=0; i<3; ++i) {
-               res1[sit->Unknowns(vidx)[0]+i]-= DtLsgVel(sit->GetCoord(), t)[i];
+               res1[sit->Unknowns(vidx)+i]-= DtLsgVel(sit->GetCoord(), t)[i];
            }
         }
     }
@@ -102,7 +102,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
          sit != send; ++sit) {
         if (!_BndData.Vel.IsOnDirBnd(*sit)) {
            for(int i=0; i<3; ++i) {
-               res1[sit->Unknowns(vidx)[0]+i]-= DtLsgVel( .5*(sit->GetVertex(0)->GetCoord()+sit->GetVertex(0)->GetCoord()), t)[i];
+               res1[sit->Unknowns(vidx)+i]-= DtLsgVel( .5*(sit->GetVertex(0)->GetCoord()+sit->GetVertex(0)->GetCoord()), t)[i];
            }
         }
     }
@@ -149,7 +149,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
+               diff= fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -165,7 +165,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
+               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -350,10 +350,10 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
         for(int i=0; i<6; ++i)
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
 
         for(int j=0; j<10; ++j)
         {
@@ -435,10 +435,10 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL*
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
         for(int i=0; i<6; ++i)
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
 
         for(int j=0; j<10; ++j)
         {

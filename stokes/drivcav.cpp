@@ -131,10 +131,10 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, Uint maxSt
 /*        double half= M_PI/8;
         MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->RowIdx->TriangLevel);
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
-        IdxT unk= vert->Unknowns(A->RowIdx->Idx)[0];
+        IdxT unk= vert->Unknowns(A->RowIdx->Idx);
         std::cerr << vert->GetCoord() << " has index " << unk << std::endl;
         std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;    
-        std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx)[0],unk) << std::endl;
+        std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
 */        Uint meth;
         std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
         time.Reset();

@@ -204,7 +204,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double* sol2D,
   for (MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(lvl),
     send=MG.GetTriangVertexEnd(lvl); sit != send; ++sit)
   {
-    IdxT i= sit->Unknowns(indx)[0];
+    IdxT i= sit->Unknowns(indx);
     pt= sit->GetCoord();
     
     help= std::make_pair(pt[2], pt[1]);

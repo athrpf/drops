@@ -155,10 +155,10 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
 /*        double half= M_PI/8;
         MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->RowIdx->TriangLevel);
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
-        IdxT unk= vert->Unknowns(A->RowIdx->Idx)[0];
+        IdxT unk= vert->Unknowns(A->RowIdx->Idx);
         std::cerr << vert->GetCoord() << " has index " << unk << std::endl;
         std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;    
-        std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx)[0],unk) << std::endl;
+        std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
 */        Uint meth;
         int max_iter;
         double tol;

@@ -12,6 +12,7 @@
 #define DROPS_UNKNOWNS_H
 
 #include "misc/utils.h"
+#include <limits>
 #include <vector>
 
 
@@ -21,97 +22,71 @@ namespace DROPS
 
 typedef Ulint IdxT;
 
+// Value of all unset indices; if we ever have so many unknowns, there will of course
+// be a problem -- but probably there would be still one more index and the wraparound
+// would kill us anyways.
+const IdxT NoIdx= std::numeric_limits<IdxT>::max();
+
+
 class UnknownIdxCL
+// implementation-detail of UnknownHandleCL
 {
   private:
-    std::vector<IdxT*> _Idx;
-    std::vector<Uint>  _Len;
+    std::vector<IdxT> _Idx;
 
   public:
-    UnknownIdxCL(Uint numsys)
-        : _Idx(numsys), _Len(numsys) {}
+    UnknownIdxCL( Uint numsys) : _Idx( numsys, NoIdx) {}
     UnknownIdxCL() {}
     UnknownIdxCL(const UnknownIdxCL&);
-    ~UnknownIdxCL()
-    {
-        for( std::vector<IdxT*>::iterator vit=_Idx.begin(); vit!=_Idx.end(); ++vit)
-        {
-            delete[] *vit;
-        }
-    }
-    UnknownIdxCL& operator=(const UnknownIdxCL&);
+    ~UnknownIdxCL() {}
+    UnknownIdxCL& operator=( const UnknownIdxCL&);
 
-    IdxT*& GetIdx(Uint sysnum)
+    IdxT& GetIdx( Uint sysnum)
     { 
         Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range"), DebugUnknownsC);
         return _Idx[sysnum];
     }
-    IdxT*  GetIdx(Uint sysnum) const
+    IdxT  GetIdx( Uint sysnum) const
     { 
         Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range"), DebugUnknownsC);
         return _Idx[sysnum];
     }
     Uint GetNumSystems()            const { return _Idx.size(); }
-    Uint GetSystemSize(Uint sysnum) const
-    {
-        Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range"), DebugUnknownsC);
-        return _Len[sysnum];
-    }
-    // Alloc geht davon aus, dass die sysnum schon existiert und fuer diese
-    // sysnum noch kein Speicher alloziert worden ist...
-    void Alloc(Uint sysnum, Uint size)
-    {
-        Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range"), DebugUnknownsC);
-        if( !(_Idx[sysnum]= new IdxT[size]) )
-            throw DROPSErrCL("Bad Alloc in UnknownIdxCL::Alloc");
-        _Len[sysnum]= size;
-    }
 
-    void Dealloc(Uint sysnum)
-    {
-        Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range."), DebugUnknownsC);
-        delete[] _Idx[sysnum];
-        _Idx[sysnum]= 0;
-        _Len[sysnum]= 0;
-    }
-
-    void Dealloc(const std::vector<Uint>& systems)
-    {
-        for (Uint sysnum=0; sysnum<systems.size(); ++sysnum) Dealloc(sysnum);
-    }
-
-    void resize(Uint size)   
+    void resize( Uint size, const IdxT defaultIdx= NoIdx)   
     { 
-        for(Uint sysnum= size; sysnum<_Idx.size(); ++sysnum)
-            delete[] _Idx[sysnum];
-        _Idx.resize(size); _Len.resize(size); 
+        _Idx.resize(size, defaultIdx);
     }
     
-    void push_back() { _Idx.push_back(0); _Len.push_back(0); }
+    void push_back(IdxT idx= NoIdx) { _Idx.push_back( idx); }
 };
 
 
 class UnknownHandleCL
+// Maps a simplex and a "sysnum" (system number) on an index for
+// accessing numerical data.
+// Every simplex has a public member Unknowns of type UnknownHandleCL, which
+// behaves as a container of indices (for numerical data) that can be accessed
+// via a system number.
+// This class is only a handle for an UnknownIdxCL.
 {
   private:
     UnknownIdxCL* _unk;
   
   public:
     UnknownHandleCL() : _unk(0) {}
-    UnknownHandleCL(const UnknownHandleCL& orig)
+    UnknownHandleCL( const UnknownHandleCL& orig)
     {
-        _unk= orig._unk ? new UnknownIdxCL(*orig._unk)
+        _unk= orig._unk ? new UnknownIdxCL( *orig._unk)
                         : 0;
     }
         
-    UnknownHandleCL& operator= (const UnknownHandleCL& rhs)
+    UnknownHandleCL& operator=( const UnknownHandleCL& rhs)
     {
         if (this==&rhs) return *this;
         delete _unk;
-        if (rhs._unk)
-            _unk= new UnknownIdxCL(*rhs._unk);
-        else
-            _unk= 0;
+        _unk= rhs._unk ? new UnknownIdxCL( *rhs._unk)
+                       : 0;
         return *this;
     }
         
@@ -125,19 +100,28 @@ class UnknownHandleCL
 
     void Destroy() { delete _unk; _unk= 0; }
     
-    bool Exist() const            { return _unk; }
-    bool Exist(Uint sysnum) const { return sysnum<_unk->GetNumSystems() && _unk->GetIdx(sysnum); }
+    // True, iff this instance has already acquired an UnknownIdxCL-object.
+    bool Exist()             const { return _unk; }
+    // True, iff the system sysnum exists and has a valid index-entry.
+    bool Exist( Uint sysnum) const { return sysnum<_unk->GetNumSystems() && _unk->GetIdx(sysnum) != NoIdx; }
+
+    // Effectively deletes the index belonging to system sysnum. 
+    void Invalidate( Uint sysnum) { _unk->GetIdx(sysnum)= NoIdx; }
+
     UnknownIdxCL* Get() const { return _unk; }
-    IdxT*&        operator() (Uint i)       { return _unk->GetIdx(i); }
-    IdxT*         operator() (Uint i) const { return _unk->GetIdx(i); }
-    
-    void Prepare(Uint sysnum, Uint NumUnknown)
+    // Retrieves the index for sysnum for writing.
+    IdxT&        operator() ( Uint i)       { return _unk->GetIdx(i); }
+    // Retrieves the index for sysnum for reading.
+    IdxT         operator() ( Uint i) const { return _unk->GetIdx(i); }
+
+    // Allocates memory for a system with number sysnum.  Afterwards, an index
+    // can be stored for sysnum.
+    // The initial index is set to NoIdx. Thus, .Exist( sysnum)==false.
+    void Prepare( Uint sysnum)
     {
-        if (!_unk) _unk= new UnknownIdxCL(sysnum+1);
+        if (!_unk) _unk= new UnknownIdxCL( sysnum+1);
         else if ( !(sysnum < _unk->GetNumSystems()) )
-            _unk->resize(sysnum+1); 
-        if ( !Exist(sysnum) )
-            _unk->Alloc(sysnum, NumUnknown);
+            _unk->resize( sysnum+1, NoIdx); 
     }
 };
 

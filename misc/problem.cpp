@@ -36,17 +36,18 @@ void MatDescCL::Reset()
     Data.clear();
 }
 
-void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint NumUnknown,
+void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
                         const MultiGridCL::TriangTetraIteratorCL& end)
 // allocates memory for the Unknown-indices on all simplices between begin and end 
 // and numbers them in order of appearence.
 {
-    if (NumUnknown == 0) return;
-    for ( MultiGridCL::TriangTetraIteratorCL it=begin; it!=end; ++it)
+    if (stride == 0) return;
+    for (MultiGridCL::TriangTetraIteratorCL it=begin; it!=end; ++it)
     {
-        it->Unknowns.Prepare( idx, NumUnknown);
-        for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
+        it->Unknowns.Prepare( idx);
+        it->Unknowns(idx)= counter;
+        counter+= stride;
     }
 }
 

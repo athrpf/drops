@@ -139,12 +139,12 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
         end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
     {
-        os << std::setw(8) << it->Unknowns(idx)[0]+1 << ' ' << it->GetCoord() << '\n';
+        os << std::setw(8) << it->Unknowns(idx)+1 << ' ' << it->GetCoord() << '\n';
     }
     for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
         end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
-        os << std::setw(8) << it->Unknowns(idx)[0]+1 << ' ' << GetBaryCenter( *it) << '\n';
+        os << std::setw(8) << it->Unknowns(idx)+1 << ' ' << GetBaryCenter( *it) << '\n';
     }
 
     os << "part 1\n" << _geom << "\n";
@@ -164,9 +164,9 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
                 int v= data.Vertices[vert];
                 os << std::setw(8);
                 if (v<4) 
-                    os << it->GetVertex(v)->Unknowns(idx)[0]+1;
+                    os << it->GetVertex(v)->Unknowns(idx)+1;
                 else
-                    os << it->GetEdge(v-4)->Unknowns(idx)[0]+1;
+                    os << it->GetEdge(v-4)->Unknowns(idx)+1;
             }
             os << '\n';
         }
@@ -179,14 +179,14 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         end= _MG->GetTriangTetraEnd(lvl); it!=end; ++it)
     {
         for (int i=0; i<4; ++i)
-            os << std::setw(8) << it->GetVertex(i)->Unknowns(idx)[0]+1;
+            os << std::setw(8) << it->GetVertex(i)->Unknowns(idx)+1;
         // the edge order of Ensight is a little bit strange...
-        os << std::setw(8) << it->GetEdge(0)->Unknowns(idx)[0]+1;
-        os << std::setw(8) << it->GetEdge(2)->Unknowns(idx)[0]+1;
-        os << std::setw(8) << it->GetEdge(1)->Unknowns(idx)[0]+1;
-        os << std::setw(8) << it->GetEdge(3)->Unknowns(idx)[0]+1;
-        os << std::setw(8) << it->GetEdge(4)->Unknowns(idx)[0]+1;
-        os << std::setw(8) << it->GetEdge(5)->Unknowns(idx)[0]+1;
+        os << std::setw(8) << it->GetEdge(0)->Unknowns(idx)+1;
+        os << std::setw(8) << it->GetEdge(2)->Unknowns(idx)+1;
+        os << std::setw(8) << it->GetEdge(1)->Unknowns(idx)+1;
+        os << std::setw(8) << it->GetEdge(3)->Unknowns(idx)+1;
+        os << std::setw(8) << it->GetEdge(4)->Unknowns(idx)+1;
+        os << std::setw(8) << it->GetEdge(5)->Unknowns(idx)+1;
         os << '\n';
     }
 */

@@ -148,7 +148,7 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                 coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
-            UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx)[0] 
+            UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) 
                                                                : -1ul;
         }
         for(int i=0; i<4; ++i)    // assemble row i
@@ -219,7 +219,7 @@ void PoissonP1CL<MGB,Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
                 coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
-            UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx)[0] : -1ul;
+            UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) : -1ul;
         }
         for(int i=0; i<4; ++i)    // assemble row i
             if (sit->GetVertex(i)->Unknowns.Exist())  // vertex i is not on a Dirichlet boundary
@@ -263,11 +263,11 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
         // only new non-boundary vertices are interpolated
         {
             // if(!(*sit->GetMidVertex()->Unknowns.Exist(idx)) std::cerr << "no unknown index in mid vertex" << std::endl;
-            i= sit->GetMidVertex()->Unknowns(f_idx)[0];
+            i= sit->GetMidVertex()->Unknowns(f_idx);
             if (sit->GetVertex(0)->Unknowns.Exist())
-                mat(i,sit->GetVertex(0)->Unknowns(c_idx)[0])= 0.5;
+                mat(i,sit->GetVertex(0)->Unknowns(c_idx))= 0.5;
             if (sit->GetVertex(1)->Unknowns.Exist())
-                mat(i,sit->GetVertex(1)->Unknowns(c_idx)[0])= 0.5;
+                mat(i,sit->GetVertex(1)->Unknowns(c_idx))= 0.5;
 //            ++counter2;
         }
     // Iterate over the vertices of the coarse triangulation and copy values
@@ -275,7 +275,7 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
          sit!=theend; ++sit)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(c_idx) )
         {
-            mat( sit->Unknowns(f_idx)[0], sit->Unknowns(c_idx)[0] )= 1.0;
+            mat( sit->Unknowns(f_idx), sit->Unknowns(c_idx) )= 1.0;
 //            ++counter1;
         }
 
@@ -323,7 +323,7 @@ double PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_pt
     {
         if (sit->Unknowns.Exist())
         {
-           diff= fabs( Lsg(sit->GetCoord()) - lsg.Data[sit->Unknowns(Idx)[0]] );
+           diff= fabs( Lsg(sit->GetCoord()) - lsg.Data[sit->Unknowns(Idx)] );
            norm2+= diff*diff;
            if (diff>maxdiff)
            {
@@ -350,7 +350,7 @@ void PoissonP1CL<MGB,Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg
     {
         if (sit->Unknowns.Exist())
         {
-            lsg[sit->Unknowns(idx)[0]]= Lsg(sit->GetCoord());
+            lsg[sit->Unknowns(idx)]= Lsg(sit->GetCoord());
         }
     }
     
@@ -444,7 +444,7 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
                 for (int i=0; i<4; ++i)
                 {
                     v[i]= t.GetVertex(i);
-                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)[0]]
+                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
                                : Bnd.GetDirBndValue(*v[i]) )
                           *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 }
@@ -478,11 +478,11 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
                 v[i]= t.GetVertex(i);
                 nv= neigh.GetVertex(i);
                 jump-= dir
-                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)[0]]
+                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
                         : Bnd.GetDirBndValue(*v[i]) )
                       *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 jump+= dir
-                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)[0]]
+                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)]
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
@@ -541,7 +541,7 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const Ve
                 for (int i=0; i<4; ++i)
                 {
                     v[i]= t.GetVertex(i);
-                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)[0]]
+                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
                                : Bnd.GetDirBndValue(*v[i]) )
                           *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 }
@@ -575,11 +575,11 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const Ve
                 v[i]= t.GetVertex(i);
                 nv= neigh.GetVertex(i);
                 jump-= dir
-                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)[0]]
+                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
                         : Bnd.GetDirBndValue(*v[i]) )
                       *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 jump+= dir
-                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)[0]]
+                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)]
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }

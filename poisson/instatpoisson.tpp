@@ -109,7 +109,7 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, 
         // coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx)[0] 
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) 
                                                              : -1ul;
     }
     for(int i=0; i<4; ++i)    // assemble row i
@@ -171,7 +171,7 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL
         // coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx)[0] : -1ul;
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) : -1ul;
     }
 		  
     for(int i=0; i<4; ++i)    // assemble row i
@@ -256,7 +256,7 @@ void InstatPoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg,
   {
     if (sit->Unknowns.Exist())
     {
-      diff= fabs( Lsg(sit->GetCoord(),t) - lsg.Data[sit->Unknowns(Idx)[0]] );
+      diff= fabs( Lsg(sit->GetCoord(),t) - lsg.Data[sit->Unknowns(Idx)] );
       norm2+= diff*diff;
       if (diff>maxdiff)
       {

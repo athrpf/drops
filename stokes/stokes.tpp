@@ -29,7 +29,7 @@ void StokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-               lsgvel[sit->Unknowns(vidx)[i]]= LsgVel(sit->GetCoord())[i];
+               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord())[i];
         }
     }
     
@@ -39,12 +39,12 @@ void StokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)[i]]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i];
+                lsgvel[sit->Unknowns(vidx)+i]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i];
         }
     }
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl),
          send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl); sit != send; ++sit)
-        lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord());
+        lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord());
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
     VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
@@ -371,13 +371,13 @@ void StokesP2P1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, M
         for(int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
         }
         for(int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
 
         // compute all couplings between HatFunctions on edges and verts
@@ -491,7 +491,7 @@ void StokesP2P1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
         const double absdet= sit->GetVolume()*6;
         
         for(int i=0; i<4; ++i)
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
@@ -768,7 +768,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-               lsgvel[sit->Unknowns(vidx)[i]]= LsgVel(sit->GetCoord())[i];
+               lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord())[i];
         }
     }
     
@@ -777,19 +777,19 @@ void StokesP1BubbleP1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_f
     {  // Tetras are never on the boundary.
        for(int i=0; i<3; ++i)
        {
-            lsgvel[sit->Unknowns(vidx)[i]]= LsgVel( GetBaryCenter(*sit) )[i];
+            lsgvel[sit->Unknowns(vidx)+i]= LsgVel( GetBaryCenter(*sit) )[i];
             // The coefficient of the bubble-function is not the value of the solution
             // in the barycenter, as the linear shape-functions contribute to the value
             // there.
-            lsgvel[sit->Unknowns(vidx)[i]]-= .25*LsgVel( sit->GetVertex(0)->GetCoord() )[i];
-            lsgvel[sit->Unknowns(vidx)[i]]-= .25*LsgVel( sit->GetVertex(1)->GetCoord() )[i];
-            lsgvel[sit->Unknowns(vidx)[i]]-= .25*LsgVel( sit->GetVertex(2)->GetCoord() )[i];
-            lsgvel[sit->Unknowns(vidx)[i]]-= .25*LsgVel( sit->GetVertex(3)->GetCoord() )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(0)->GetCoord() )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(1)->GetCoord() )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(2)->GetCoord() )[i];
+            lsgvel[sit->Unknowns(vidx)+i]-= .25*LsgVel( sit->GetVertex(3)->GetCoord() )[i];
        }
     }
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
-        lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord());
+        lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord());
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
     VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
@@ -948,10 +948,10 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* v
         for(int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
         }
-        Numb[4]= sit->Unknowns(vidx)[0];
+        Numb[4]= sit->Unknowns(vidx);
         IsOnDirBnd[4]= false; // the bubble-function is never on a boundary
 
         // compute all couplings between HatFunctions on tetra and verts
@@ -1061,7 +1061,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::SetupMass(MatDescCL* matM) const
         const double absdet= sit->GetVolume()*6;
         
         for(int i=0; i<4; ++i)
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
@@ -1289,7 +1289,7 @@ void StokesP1BubbleP1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
            ++countverts;
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord())[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
+               diff= fabs( LsgVel(sit->GetCoord())[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {

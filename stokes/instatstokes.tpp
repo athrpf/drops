@@ -97,7 +97,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, s
         {
             tmp= LsgVel(sit->GetCoord(), t);
             for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)[i]]= tmp[i];
+                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
         }
     }
     
@@ -108,12 +108,12 @@ void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, s
         {
             tmp= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t);
             for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)[i]]= tmp[i];
+                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
         }
     }
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
-        lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord(), t);
+        lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord(), t);
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
     VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
@@ -221,13 +221,13 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
         for(int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
         }
         for(int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
 
         // compute all couplings between HatFunctions on edges and verts
@@ -342,7 +342,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupPrMass(MatDescCL* matM) const
         const double absdet= sit->GetVolume()*6.;
         
         for(int i=0; i<4; ++i)
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
@@ -399,13 +399,13 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
         for(int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
         }
         for(int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
 
         // compute all couplings between HatFunctions on edges and verts
@@ -505,13 +505,13 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
         for(int i=0; i<4; ++i)
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx)[0];
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
         }
         for(int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
 
         // compute all couplings between HatFunctions on edges and verts
@@ -601,7 +601,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun
         {
             tmp= LsgVel(sit->GetCoord(), t0);
             for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)[i]]= tmp[i];
+                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
         }
     }
     
@@ -612,7 +612,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun
         {
             tmp= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t0);
             for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)[i]]= tmp[i];
+                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
         }
     }
 }
@@ -669,7 +669,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]]);
+               diff= fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i]);
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -686,7 +686,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]]);
+               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i]);
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
