@@ -1,16 +1,9 @@
-//**************************************************************************
-// File:    utils.cpp                                                      *
-// Content: useful stuff that fits nowhere else                            *
-// Author:  Joerg Peters, Volker Reichelt, IGPM RWTH Aachen                *
-// Version: 0.8                                                            *
-// History: begin - September, 16, 2000                                    *
-//                                                                         *
-// Remarks:                                                                *
-//**************************************************************************
+/// \file
+/// Useful stuff that fits nowhere else.
+
 
 #include "misc/utils.h"
 #include <iostream>
-
 
 namespace DROPS
 {
