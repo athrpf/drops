@@ -142,14 +142,14 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
         NS.SetupMass( &M);
-//        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
-//	                                             2000, poi_maxiter, poi_tol, uzawa_red);
+        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
+	                                             2000, poi_maxiter, poi_tol, uzawa_red);
 //        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
 //	                                            2000, poi_maxiter, poi_tol, uzawa_red);
 //        AFPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
 //	                                             2000, poi_maxiter, poi_tol, uzawa_red);
-        FPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
-	                                            2000, poi_maxiter, poi_tol, uzawa_red);
+//        FPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
+//	                                            2000, poi_maxiter, poi_tol, uzawa_red);
         VelVecDescCL old_v1( vidx1);
 	old_v1.Data= v1->Data;
 	VelVecDescCL rhsN( vidx1);
