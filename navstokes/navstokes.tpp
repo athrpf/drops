@@ -275,7 +275,7 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
     const IdxT num_unks_vel= matN->RowIdx->NumUnknowns;
     SparseMatBuilderCL<double> N( &matN->Data, num_unks_vel, num_unks_vel);
 
-    typename BaseCL::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
+    typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
     VectorCL& b= vecb->Data;
     const Uint lvl    = matN->RowIdx->TriangLevel;
     const Uint vidx   = matN->RowIdx->Idx;

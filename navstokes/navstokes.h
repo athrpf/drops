@@ -19,14 +19,20 @@ template <class MGB, class Coeff>
 class NavierStokesP2P1CL : public StokesP2P1CL<MGB, Coeff>
 {
   private:
-    typedef StokesP2P1CL<MGB, Coeff> BaseCL;
-    
+    typedef StokesP2P1CL<MGB, Coeff> _base;
+    using                            _base::_MG;
+    using                            _base::_BndData;
+    using                            _base::b;
+    using                            _base::c;
+    using                            _base::A;
+    using                            _base::B;
+
   public:
-    typedef MGB                           MultiGridBuilderCL;
-    typedef Coeff                         CoeffCL;
-    typedef typename BaseCL::BndDataCL    BndDataCL;
-    typedef typename BaseCL::VelVecDescCL VelVecDescCL;
-  
+    typedef MGB                          MultiGridBuilderCL;
+    typedef Coeff                        CoeffCL;
+    typedef typename _base::BndDataCL    BndDataCL;
+    typedef typename _base::VelVecDescCL VelVecDescCL;
+
     MatDescCL    N;
     VelVecDescCL cplN;
   
