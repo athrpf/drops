@@ -6,6 +6,8 @@
 
 PACKAGES = geom num out misc poisson stokes navstokes tests levelset
 
+DROPS_ROOT = .
+
 
 # rules:
 
@@ -53,5 +55,4 @@ prog_%:
 .PHONY: all clean distclean dep check
 
 # include settings from the config file drops.conf:
-DROPS_ROOT = .
 include drops.conf

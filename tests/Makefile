@@ -6,7 +6,7 @@
 
 DIR = tests
 
-EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe tetrabuildertest 
+EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe tetrabuildertest
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -20,7 +20,7 @@ TESTNAME = drivencavity-adaptiv-schur drivencavity-adaptiv-uzawa \
     poisson-stationaer-multigrid poisson-stationaer-neumann \
     poisson-stationaer-uniform stokes-instationaer-uniform \
     stokes-stationaer-uniform
-    
+
 # rules
 
 default: ClrScr

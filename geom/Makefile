@@ -8,11 +8,11 @@ DIR = geom
 
 EXEC = maketopo
 
-DELETE = $(EXEC)
+DELETE = $(EXEC) maketopo_helper.cpp
 
 CPP = $(wildcard *.cpp)
 
-OBJ = $(filter-out topo.o,$(CPP:%.cpp=%.o))
+OBJ = $(CPP:%.cpp=%.o)
 
 
 # rules:
@@ -31,6 +31,10 @@ maketopo: maketopo.cpp topo.h topo.cpp.in ../misc/utils.o
 topo.cpp: maketopo topo.cpp.in
 	./maketopo
 
+distclean: topoclean
+
+topoclean:
+	rm -f topo.cpp
 
 # include common rules:
 include ../Make.common

@@ -6,7 +6,7 @@
 
 DIR = out
 
-EXEC = 
+EXEC =
 
 DELETE = $(EXEC)
 
