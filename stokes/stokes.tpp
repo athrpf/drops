@@ -468,9 +468,6 @@ void StokesP2P1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDe
 }
 
 
-
-
-// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 template <class Coeff>
 void StokesP2P1CL<Coeff>::SetupStiffnessMatrix( MatDescCL* matA ) const
 // Sets up the stiffness matrices 
