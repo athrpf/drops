@@ -139,7 +139,7 @@ class MatConnect
     {
       DROPS::Point3DCL pt;
       DROPS::Uint lvl= x.RowIdx->TriangLevel;
-      DROPS::Uint indx= x.RowIdx->Idx;
+      DROPS::Uint indx= x.RowIdx->GetIdx();
   
       d_pair help;
       cmp_key key;
@@ -281,7 +281,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double* sol2D,
   // aktueller Zeitpunkt
   double t= 0;
    
-  idx.Set(0, 1, 0, 0, 0);
+  idx.Set(1, 0, 0, 0);
   
   MultiGridCL& MG= Poisson.GetMG();
   
@@ -352,8 +352,8 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
 {
   try
   {
-    DROPS::TimerCL time;
-    time.Reset();
+    //DROPS::TimerCL time;
+    //time.Reset();
   
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
@@ -427,11 +427,11 @@ void ipdrops(double* sol2D, double* T0, double* S1, double* S2,
     // mg.SizeInfo();
     DROPS::Strategy(prob, sol2D, nu, dt, time_steps, theta, cgtol, icgiter, &MatCon);
     
-    time.Stop();
-    mexPrintf("Zeit fuer das Loesen des direkten Problems: %g sek\n", time.GetTime());
+    //time.Stop();
+    //mexPrintf("Zeit fuer das Loesen des direkten Problems: %g sek\n", time.GetTime());
     
-    std::ofstream fil("ttt.off");
-    fil << DROPS::GeomMGOutCL(mg, -1, true, 0.0) << std::endl;
+    //std::ofstream fil("ttt.off");
+    //fil << DROPS::GeomMGOutCL(mg, -1, true, 0.0) << std::endl;
     
     return;
   }
