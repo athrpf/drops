@@ -635,7 +635,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
     const Uint lvl= sol.GetSolution()->RowIdx->TriangLevel;
     const VecDescCL& lsg= *sol.GetSolution();
     const double exp_err= _InitGlobErr*_RelReduction/sqrt(_Meas);
-    const double unref_bnd= exp_err/2./pow(2, _ConvExponent);
+    const double unref_bnd= exp_err/2./std::pow(2, _ConvExponent);
     double globalerr= 0;
     double localerr;
     double localerr_dist;

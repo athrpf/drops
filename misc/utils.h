@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <iosfwd>
 #include <string>
-#include <time.h>
+#include <ctime>
 
 
 namespace DROPS

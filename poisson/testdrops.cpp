@@ -24,7 +24,7 @@ class PoissonCoeffCL
         else
         {
             const double t2= 1.0+t1;
-            return a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(pow(t2,3)*t0);
+            return a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(std::pow(t2,3)*t0);
         }
     }
 };
@@ -42,7 +42,7 @@ inline double Lsg( const DROPS::Point3DCL& p)
 double root( double base, double deg)
 // computes the <deg>-th root of <base>
 {
-    return pow(base, 1./deg);
+    return std::pow(base, 1./deg);
 }
 
 namespace DROPS // for Strategies
@@ -455,7 +455,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
-        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*pow(It->GetVolume(),1.0/3.0)) )
+        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
             It->SetRegRefMark();
     }
 }
@@ -468,7 +468,7 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
-        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*pow(It->GetVolume(),1.0/3.0)) )
+        if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
             It->SetRemoveMark();
     }
 }

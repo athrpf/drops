@@ -16,7 +16,7 @@
 
 #include <vector>
 #include <list>
-#include <math.h>
+#include <cmath>
 #include "misc/utils.h"
 
 namespace DROPS
