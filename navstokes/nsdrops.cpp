@@ -56,8 +56,6 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
                                                  double uzawa_red, double poi_tol, int poi_maxiter)
 // flow control
 {
-    typedef typename NavierStokesP2P1CL<MGB,Coeff>::VelVecDescCL VelVecDescCL;
-    
     MultiGridCL& MG= NS.GetMG();
 
     IdxDescCL  loc_vidx, loc_pidx;

@@ -25,7 +25,6 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
     typedef MGB                           MultiGridBuilderCL;
     typedef Coeff                         CoeffCL;
     typedef typename BaseCL::BndDataCL    BndDataCL;
-    typedef typename BaseCL::VelVecDescCL VelVecDescCL;
   
     MatDescCL    N;
     VelVecDescCL cplN;

@@ -237,8 +237,6 @@ template<class MGB, class Coeff>
 void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep)
 // flow control
 {
-    typedef typename InstatStokesP2P1CL<MGB,Coeff>::VelVecDescCL VelVecDescCL;
-    
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL  loc_vidx, loc_pidx;

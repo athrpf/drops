@@ -69,8 +69,6 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_t
                                                double tau, Uint uzawa_inner_iter)
 // flow control
 {
-    typedef typename StokesP2P1CL<MGB,Coeff>::VelVecDescCL VelVecDescCL;
-    
     MultiGridCL& MG= Stokes.GetMG();
     const typename MyStokesCL::BndDataCL::PrBndDataCL& PrBndData= Stokes.GetBndData().Pr;
     const typename MyStokesCL::BndDataCL::VelBndDataCL& VelBndData= Stokes.GetBndData().Vel;

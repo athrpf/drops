@@ -31,7 +31,6 @@ class NavierStokesP2P1CL : public StokesP2P1CL<MGB, Coeff>
     typedef MGB                          MultiGridBuilderCL;
     typedef Coeff                        CoeffCL;
     typedef typename _base::BndDataCL    BndDataCL;
-    typedef typename _base::VelVecDescCL VelVecDescCL;
 
     MatDescCL    N;
     VelVecDescCL cplN;

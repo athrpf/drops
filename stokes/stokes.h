@@ -109,6 +109,8 @@ typedef double (*scalar_fun_ptr)(const Point3DCL&);
 typedef SVectorCL<3> (*vector_fun_ptr)(const Point3DCL&);
 typedef SMatrixCL<3, 3> (*jacobi_fun_ptr)(const Point3DCL&);
 
+typedef VecDescBaseCL<VectorCL> VelVecDescCL;
+
 template <class MGB, class Coeff>
 class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
 {
@@ -123,7 +125,6 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     using                                          _base::GetBndData;
     using                                          _base::GetMG;
 
-    typedef VecDescBaseCL<VectorCL> VelVecDescCL;
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>           DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
@@ -182,7 +183,6 @@ class StokesP1BubbleP1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
     using                                          _base::GetBndData;
     using                                          _base::GetMG;
 
-    typedef VecDescBaseCL<VectorCL> VelVecDescCL;
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>                 DiscPrSolCL;
     typedef P1BubbleEvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
@@ -245,7 +245,6 @@ class StokesDoerflerMarkCL
     typedef typename _ProblemCL::BndDataCL BndDataCL;
     typedef typename BndDataCL::PrBndDataCL PrBndDataCL;
     typedef typename BndDataCL::VelBndDataCL VelBndDataCL;
-    typedef VecDescBaseCL<VectorCL> VelVecDescCL;
 //    typedef P1EvalCL<double, const PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
 // TODO: New template parameter???
 //    typedef P1BubbleEvalCL<SVectorCL<3>, const VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
