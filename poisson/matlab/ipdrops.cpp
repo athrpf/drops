@@ -37,7 +37,7 @@ class MatConnect
 {
   private:
     static double* _BndData[6];
-    static double _DeltaT, _SpIncrX, _SpIncrY, _SpIncrZ;
+    static double _DeltaT, _XLen, _YLen, _ZLen, _SpIncrX, _SpIncrY, _SpIncrZ;
     static int _FacePts, _SqrtFacePts;
 	
   public:
@@ -47,6 +47,7 @@ class MatConnect
       double* S4, double* S5, double* S6)
     {
       _DeltaT= DeltaT;
+      _XLen= xl; _YLen= yl; _ZLen= zl;
       _SpIncrX= xl/(sqrt(FacePts)-1.0);
       _SpIncrY= yl/(sqrt(FacePts)-1.0);
       _SpIncrZ= zl/(sqrt(FacePts)-1.0);
@@ -64,23 +65,23 @@ class MatConnect
       int count= 0;
       if (num==0)  // Punkt liegt auf der Seite S1 oder S2
       {
-        for (double zcoord= .0; zcoord<= p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
+        for (double zcoord= .0; zcoord<= _ZLen*p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
           count+= _SqrtFacePts;
-        for (double ycoord= .0; ycoord<= p[0]+_SpIncrY/2.0; ycoord+= _SpIncrY)
+        for (double ycoord= .0; ycoord<= _YLen*p[0]+_SpIncrY/2.0; ycoord+= _SpIncrY)
           count++;
       }
       else if (num==1)  // Punkt liegt auf einer der Seiten S3 oder S4
       {
-        for (double zcoord= .0; zcoord<= p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
+        for (double zcoord= .0; zcoord<= _ZLen*p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
           count+= _SqrtFacePts;
-        for (double xcoord= .0; xcoord<= p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
+        for (double xcoord= .0; xcoord<= _XLen*p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
           count++;
       }
       else  // Punkt liegt auf einer der Seiten S5 oder S6
       {
-        for (double ycoord= .0; ycoord<= p[1]-_SpIncrY/2.0; ycoord+= _SpIncrY)
+        for (double ycoord= .0; ycoord<= _YLen*p[1]-_SpIncrY/2.0; ycoord+= _SpIncrY)
           count+= _SqrtFacePts;
-        for (double xcoord= .0; xcoord<= p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
+        for (double xcoord= .0; xcoord<= _XLen*p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
           count++;
       }
     
@@ -107,6 +108,9 @@ class MatConnect
 
 double* MatConnect::_BndData[6];
 double MatConnect::_DeltaT= .0;
+double MatConnect::_XLen= .0;
+double MatConnect::_YLen= .0;
+double MatConnect::_ZLen= .0;
 double MatConnect::_SpIncrX= .0;
 double MatConnect::_SpIncrY= .0;
 double MatConnect::_SpIncrZ= .0;
@@ -243,6 +247,15 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
   
   A.Reset();
   b.Reset();
+  
+  /*
+  // Ausgabe Loesung   
+  
+  for (ci p= nmap.begin(); p!= nmap.end(); p++)
+  {
+    std::cerr << *(p->second) << "\n";
+  }
+  */
   
 }
 
