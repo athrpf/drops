@@ -11,6 +11,9 @@ clean:
 distclean: clean
 	rm -f $(DISTDELETE)
 
+dep:
+	cd $(DROPS_ROOT); make dep
+
 # .cpp -> .o
 ../%.o: ../%.cpp
 ifeq ($(CC),mex)

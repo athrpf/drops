@@ -25,9 +25,12 @@ Regeln steht:
     dep        erzeugt automatisch die Abhaengigkeiten und legt ein
                entsprechendes dependency-file an.
 	       
-In den jeweiligen Unterverzeichnissen befinden sich die lokalen Makefiles. Diese
-verstehen als Regeln "all", "clean", "distclean" sowie die jeweiligen
-Namen der executables und Objektdateien.
+In den jeweiligen Unterverzeichnissen befinden sich die lokalen Makefiles. 
+Diese verstehen als Regeln 
+  - "all", "clean", "distclean", die im jeweiligen Verzeichnis wirken
+  - "dep" ruft die Regel "dep" des top-level-Makefiles auf
+  - sowie die jeweiligen Namen der executables und Objektdateien in diesem
+    Verzeichnis
 
 
 ---------------------------------------
