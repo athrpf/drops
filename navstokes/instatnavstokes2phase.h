@@ -41,6 +41,8 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     
     InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : InstatStokes2PhaseP2P1CL<Coeff>( mgb, coeff, bdata) {}  
+    InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
+        : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata) {}  
 
     // Set up matrix for nonlinearity; 
     // couplings with dir.bnd are accumulated in cplN,
