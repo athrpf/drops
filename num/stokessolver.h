@@ -147,7 +147,7 @@ class Uzawa_IPCG_CL : public SolverBaseCL
 // The preconditioner Apc for A must be "good" (MG-like) to guarantee
 // convergence.
 //=============================================================================
-template <class ApcT, class SpcT>
+template <class ApcT, class SpcT, bool ApcislinearBool= false>
   class InexactUzawaCL: public SolverBaseCL
 {
   private:
@@ -166,10 +166,10 @@ template <class ApcT, class SpcT>
           const VectorCL& b, const VectorCL& c);
 };
 
-typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawa_CL;
-typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL> InexactUzawaNonlinear_CL;
-typedef InexactUzawaCL<MGPreCL, ISPreCL> InexactUzawaMG_CL;
-typedef InexactUzawaCL<MGPreCL, ISMGPreCL> InexactUzawaFullMG_CL;
+typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, false> InexactUzawa_CL;
+typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, false> InexactUzawaNonlinear_CL;
+typedef InexactUzawaCL<MGPreCL, ISPreCL, true> InexactUzawaMG_CL;
+typedef InexactUzawaCL<MGPreCL, ISMGPreCL, true> InexactUzawaFullMG_CL;
 
 
 // One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
@@ -1094,28 +1094,97 @@ void PSchurSolver2CL<InnerSolverT, OuterSolverT>::Solve(
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
+//-----------------------------------------------------------------------------
+// UzawaPCG: The basic scheme is identical to PCG, but two extra recursions for
+//     InexactUzawa are performed to avoid an evaluation of a preconditioner
+//     there.
+//     Also, the matrix is fixed: BQ_A^{-1}B^T and we assume x=zbar=zhat=0
+//     upon entry to this function.
+//     See "Fast iterative solvers for Stokes equation", Peters, Reichelt,
+//     Reusken, Ch. 3.3 Remark 3.
+//-----------------------------------------------------------------------------
+template <typename APC, typename Mat, typename Vec, typename SPC>
+bool
+UzawaPCG(const APC& Apc, const Mat& A, const Mat& B,
+    Vec& x, Vec& zbar, Vec& zhat, const Vec& b, const SPC& M,
+    int& max_iter, double& tol)
+{
+    const size_t n= x.size();
+    Vec p(n), z(n), q(n), d(n), e(n), r= b;
+    Vec q1( B.num_cols()), q2( B.num_cols());
+    double rho, rho_1= 0.0, resid= norm_sq( r);
+    
+    tol*= tol;
+    if (resid<=tol)
+    {
+        tol= std::sqrt( resid);
+        max_iter= 0;
+        return true;
+    }
+
+    for (int i=1; i<=max_iter; ++i)
+    {
+        M.Apply( B/*dummy*/, z, r);
+        rho= dot( r, z);
+        if (i == 1)
+            p= z;
+        else
+            z_xpay(p, z, (rho/rho_1), p); // p= z + (rho/rho_1)*p;
+
+        // q= A*p;
+        q1= transp_mul( B, p);
+        q2= 0.0;
+        Apc.Apply( A, q2, q1);
+        q= B*q2;
+        
+        const double alpha= rho/dot( p, q);
+        axpy(alpha, p, x);                // x+= alpha*p;
+        axpy(-alpha, q, r);               // r-= alpha*q;
+        zbar+= alpha*q1;
+        zhat+= alpha*q2;
+        resid= norm_sq( r);
+        if (resid<=tol)
+        {
+            tol= sqrt( resid);
+            max_iter= i;
+            return true;
+        }
+        rho_1= rho;
+    }
+    tol= sqrt(resid);
+    return false;
+}
+
 //=============================================================================
 // Inexact Uzawa-method from "Fast Iterative Solvers for Discrete Stokes
 // Equations", Peters, Reichelt, Reusken, Chapter 3.3.
 // The preconditioner Apc for A must be "good" (MG-like) to guarantee
 // convergence.
+// Due to theory (see paper), we should use 0.2 < innerred < 0.7.
 //=============================================================================
 template <typename Mat, typename Vec, typename PC1, typename PC2>
 bool
 InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
     PC1& Apc, PC2& Spc,
-    int& max_iter, double& tol, double innerred= 0.3)
+    int& max_iter, double& tol, bool Apcislinear= false, double innerred= 0.3)
 {
     VectorCL ru= f - A*xu - transp_mul( B, xp);
     VectorCL rp= g - B*xu;
     VectorCL w( f.size());
     VectorCL z( g.size());
+    VectorCL z2( g.size());
+    VectorCL zbar( f.size());
+    VectorCL zhat( f.size());
     VectorCL a( f.size());
-    VectorCL du( f.size());
     VectorCL b( f.size());
+    VectorCL du( f.size());
     VectorCL c( g.size());
-    ApproximateSchurComplMatrixCL<PC1> asc( A, Apc, B);
-    PCGSolverCL<PC2> pcgsolver( Spc, 500, innerred);
+    ApproximateSchurComplMatrixCL<PC1>* asc= Apcislinear ? 0 :
+        new ApproximateSchurComplMatrixCL<PC1>( A, Apc, B);
+    ApproximateSchurComplMatrixCL<PC1> asc2( A, Apc, B);
+    PCGSolverCL<PC2> pcgsolverold( Spc, 500, innerred);
+    double innertol;
+    int inneriter;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
     double resid= 0.0;
     std::cerr << "residual (2-norm): " << resid0 << '\n';
@@ -1127,22 +1196,39 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     for (int k= 1; k<=max_iter; ++k) {
         w= 0.0;
         Apc.Apply( A, w, ru);
-        z= 0.0;
-        // Due to theory (see paper) we must use relative error of about 0.3. z==0.
         c= B*w - rp;
-//        std::cerr << "B*xu-g: " << norm( B*xu-g) << "\tprojektion auf 1: "
-//                  << dot( B*xu-g, VectorCL( 1.0/std::sqrt( (double)g.size()), g.size()))
-//                  << "\n";
-	pcgsolver.SetTol( innerred*norm( c));
-        pcgsolver.Solve( asc, z, c);
-        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
-                  << "\tresid: " << pcgsolver.GetResid() << '\n';
-        b= transp_mul( B, z);
-        a= 0.0;
+        z= 0.0;
+        z2= 0.0;
+        inneriter= 500;
+        innertol= innerred*norm( c);
+        if (Apcislinear) {
+            zbar= 0.0;
+            zhat= 0.0;
+            // pcgsolver.SetTol( innerred*norm( c)); pcgsolver.Solve( Apc, A, B, z, zbar, zhat, c);
+            UzawaPCG( Apc, A, B, z, zbar, zhat, c, Spc, inneriter, innertol);
+        }
+        else {
+            // pcgsolverold.SetTol( innerred*norm( c)); pcgsolverold.Solve( *asc, z2, c);
+            PCG( *asc, z, c, Spc, inneriter, innertol);
+            zbar= transp_mul( B, z);
+            zhat= 0.0;
+            Apc.Apply( A, zhat, zbar);
+        }
+        std::cerr << "innersolver: iterations: " << inneriter 
+                  << "\tresid: " << innertol << '\n';
+	pcgsolverold.SetTol( innerred*norm( c));
+        pcgsolverold.Solve( asc2, z2, c);
+        std::cerr << "innersolverold: iterations: " << pcgsolverold.GetIter() 
+                  << "\tresid: " << pcgsolverold.GetResid() << '\n';
+        b= transp_mul( B, z); //zbar
+        a= 0.0; // zhat
         Apc.Apply( A, a, b);
-        du= w - a;
+        std::cerr << "(z2-z)/z2: " << norm( z2-z)/norm( z2) 
+                  << "(b-zbar)/b: " << norm( b-zbar)/norm( b) 
+                  << "\t(a-zhat)/a: " << norm( a-zhat)/norm( a) << '\n';
+        du= w - zhat;
         xp+= z;
-        z_xpaypby2(ru, ru, -1.0, A*du, -1.0, b); // ru-= A*du + transp_mul( B, z);
+        z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar); // ru-= A*du + transp_mul( B, z);
         xu+= du;
         rp= g - B*xu;
         resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
@@ -1154,6 +1240,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         if (resid<=tol*resid0) { // relative errors
             tol= resid0==0.0 ? 0.0 : resid/resid0;
             max_iter= k;
+            delete asc;
             return true;
         }
 */
@@ -1164,23 +1251,25 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
 //                      << '\n';
             tol= resid;
             max_iter= k;
+            delete asc;
             return true;
         }
         resid0= resid;
     }
     tol= resid;
+    delete asc;
     return false;
 }
 
 
-template <class ApcT, class SpcT>
+template <class ApcT, class SpcT, bool ApcislinearBool>
   inline void
-  InexactUzawaCL<ApcT, SpcT>::Solve( const MatrixCL& A, const MatrixCL& B,
+  InexactUzawaCL<ApcT, SpcT, ApcislinearBool>::Solve( const MatrixCL& A, const MatrixCL& B,
     VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 {
     _res=  _tol;
     _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, ApcislinearBool);
 }
 
 } // end of namespace DROPS
