@@ -58,7 +58,7 @@ void EdgeCL::BuildMidVertex(VertContT& container, const BoundaryCL& Bnd)
                                                            BndPointSegEqCL(bndidx) );
                 BndPairCL bndpair1= Bnd.GetBndSeg(bndidx)->MidProject(bndvert0, bndvert1);
                 container.back().AddBnd( BndPointCL(bndidx, bndpair1.first) );
-                Assert( bndpair.second == bndpair1.second, DROPSErrCL("BuildMidVertex: Projection leads to different 3D-coords."), -1u );
+                Assert( bndpair.second == bndpair1.second, DROPSErrCL("BuildMidVertex: Projection leads to different 3D-coords."), ~0 );
             }
         }
 //        else
@@ -285,7 +285,7 @@ BndIdxT GetCommonBndSeg(const VertexCL* v0, const VertexCL* v1, const VertexCL* 
     if (intersec012.empty() )
         return NoBndC;
     Assert( intersec012.size()==1, 
-        DROPSErrCL("GetCommonBndSeg: found more than one BndSeg connected to three different boundary vertices"), -1u);
+        DROPSErrCL("GetCommonBndSeg: found more than one BndSeg connected to three different boundary vertices"), ~0);
     return intersec012.begin()->GetBndIdx();
 }
 

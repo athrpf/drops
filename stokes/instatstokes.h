@@ -286,7 +286,7 @@ inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetNeuBndVal
 
 inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetDirBndValue( const FaceCL& f, double t) const
 {
-    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), -1u);
+    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
 }
 
@@ -294,7 +294,7 @@ inline InstatStokesVelBndDataCL::bnd_type InstatStokesVelBndDataCL::GetNeuBndVal
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
-    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), -1u);
+    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
 }
 

@@ -392,7 +392,7 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const Edg
 
 inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetDirBndValue(const FaceCL& f) const
 {
-    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), -1u);
+    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f) );
 }
 
@@ -400,7 +400,7 @@ inline StokesVelBndDataCL::bnd_type StokesVelBndDataCL::GetNeuBndValue(const Fac
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
-    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), -1u);
+    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f) );
 }
 

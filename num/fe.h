@@ -1356,7 +1356,7 @@ void Adapt( P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _Bn
     const Uint NumUnknowns=  old_sol.GetSolution()->RowIdx->NumUnknownsEdge;
     
     Assert( level==old_sol.GetSolution()->RowIdx->TriangLevel, 
-        DROPSErrCL("Adapt: Same triang levels are expected\n"), -1u);
+        DROPSErrCL("Adapt: Same triang levels are expected\n"), ~0);
 
     // 1. Iterate tetras of triangulation: Interpolate missing unknowns
     // 2. Iterate tetras of triangulation: Copy known values

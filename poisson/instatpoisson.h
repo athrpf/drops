@@ -245,7 +245,7 @@ inline InstatPoissonBndDataCL::bnd_type InstatPoissonBndDataCL::GetNeuBndValue(c
 
 inline InstatPoissonBndDataCL::bnd_type InstatPoissonBndDataCL::GetDirBndValue( const FaceCL& f, double t) const
 {
-    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), -1u);
+    Assert( !_BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
 }
 
@@ -253,7 +253,7 @@ inline InstatPoissonBndDataCL::bnd_type InstatPoissonBndDataCL::GetNeuBndValue( 
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
-    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), -1u);
+    Assert( _BndData[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
     return _BndData[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
 }
 */

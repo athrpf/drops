@@ -84,7 +84,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
 //    std::ios_base::fmtflags old_format= os.flags(my_format);
     std::ios::fmtflags my_format= std::ios::fixed|std::ios::showpoint;
     std::ios::fmtflags old_format= os.flags(my_format);
-    Assert(_level==_discsol.GetSolution()->RowIdx->TriangLevel, DROPSErrCL("GeomSolOutCL::put: wrong level"), -1);
+    Assert(_level==_discsol.GetSolution()->RowIdx->TriangLevel, DROPSErrCL("GeomSolOutCL::put: wrong level"), ~0);
     os << "appearance {\n-concave\nshading smooth\n}\n";
     os << "LIST {\n";
     for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level);

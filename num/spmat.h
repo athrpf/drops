@@ -162,7 +162,7 @@ private:
 public:
     SparseMatBuilderCL(spmatT* mat, size_t rows, size_t cols)
         : _rows(rows), _cols(cols), _mat(mat), _coupl(new couplT[_rows])
-        { Assert( _coupl!=0, "SparseMatBuilderCL: out of memory", -1); }
+        { Assert( _coupl!=0, "SparseMatBuilderCL: out of memory", ~0); }
     ~SparseMatBuilderCL() { delete[] _coupl; }
 
     T& operator() (size_t i, size_t j)
@@ -201,7 +201,7 @@ void SparseMatBuilderCL<T>::Build()
     }
     _mat->_rowbeg[_rows]= nz;
 
-    Assert( nz == _mat->num_nonzeros(), "SparseMatBuilderCL::Build: wrong count of nonzeros", -1);
+    Assert( nz == _mat->num_nonzeros(), "SparseMatBuilderCL::Build: wrong count of nonzeros", ~0);
 
     delete[] _coupl;
     _coupl= 0;

@@ -43,7 +43,7 @@ const Uint DebugUnknownsC   =16;
 #define cdebug std::cout
 
 //#define DROPSDebugC 25  //(DROPS::DebugNumericC | DROPS::DebugUnknownsC | DROPS::DebugContainerC )
-//#define DROPSDebugC -1u
+//#define DROPSDebugC ~0  // all bits set
 #define DROPSDebugC 0 
 
 #if DROPSDebugC
@@ -113,7 +113,7 @@ class DROPSErrCL
 
 template <class E, class A>
 inline void
-_Assert(A assertion, E exc, Uint DebugLevel=-1)
+_Assert(A assertion, E exc, Uint DebugLevel=~0)
 {
     if (DebugLevel&DROPSDebugC) 
         if (!assertion) throw exc;
@@ -122,7 +122,7 @@ _Assert(A assertion, E exc, Uint DebugLevel=-1)
 
 template <class A>
 inline void
-_Assert(A assertion, const char* msg, Uint DebugLevel=-1)
+_Assert(A assertion, const char* msg, Uint DebugLevel=~0)
 {
     if (DebugLevel&DROPSDebugC) 
         if (!assertion) throw DROPSErrCL(msg);
