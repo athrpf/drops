@@ -28,7 +28,7 @@ struct InstatNSCL
     }
 
     // Jacobi-matrix of exact solution (only in the spatial variables)
-    static inline DROPS::SMatrixCL<3, 3> DxLsgVel(const DROPS::Point3DCL& p, double t)
+    static inline DROPS::SMatrixCL<3, 3> DxLsgVel(const DROPS::Point3DCL&, double t)
     {
         DROPS::SMatrixCL<3, 3> ret(0.0);
         ret(0,0)= 2.*t - 1.;
@@ -38,7 +38,7 @@ struct InstatNSCL
     }
 
     // Time-derivative of exact solution
-    static inline DROPS::SVectorCL<3> DtLsgVel(const DROPS::Point3DCL& p, double t)
+    static inline DROPS::SVectorCL<3> DtLsgVel(const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret(0.0);
         ret[0]= 2.*p[0];
@@ -528,9 +528,9 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
             std::cerr << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
             NS.SetupInstatRhs( &NS.b, &NS.c, &NS.cplM, t, &NS.b, t);
 //            instatsolver= new InstatNavStokesThetaSchemeCL<NavStokesCL,
-//                              FPDeCo_Schur_PCG_CL<NavStokesCL> >(NS, *statsolver, v1, theta);
+//                              FPDeCo_Schur_PCG_CL<NavStokesCL> >(NS, *statsolver, theta);
             instatsolver= new InstatNavStokesThetaSchemeCL<NavStokesCL,
-                             FPDeCo_Uzawa_PCG_CL<NavStokesCL> >( NS, *statsolver, v1, theta, t);
+                             FPDeCo_Uzawa_PCG_CL<NavStokesCL> >( NS, *statsolver, theta, t);
             if (timestep == 0) // check initial velocities
                 NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DtLsgVel, &MyPdeCL::LsgPr, t);
         }

@@ -26,7 +26,7 @@ struct InstatNSCL
     }
 
     // Jacobi-matrix of exact solution (only in the spatial variables)
-    static inline DROPS::SMatrixCL<3, 3> DxLsgVel(const DROPS::Point3DCL& p, double t)
+    static inline DROPS::SMatrixCL<3, 3> DxLsgVel(const DROPS::Point3DCL&, double t)
     {
         DROPS::SMatrixCL<3, 3> ret(0.0);
         ret(0,0)= 2.*t - 1.;
@@ -36,7 +36,7 @@ struct InstatNSCL
     }
 
     // Time-derivative of exact solution
-    static inline DROPS::SVectorCL<3> DtLsgVel(const DROPS::Point3DCL& p, double t)
+    static inline DROPS::SVectorCL<3> DtLsgVel(const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret(0.0);
         ret[0]= 2.*p[0];
@@ -121,7 +121,7 @@ void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, i
         NS.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
         NS.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
         std::cerr << "altes und neues TriangLevel: " << (refstep!=0 ?
-	vidx2->TriangLevel : -1) << ", " << vidx1->TriangLevel << std::endl;
+	int(vidx2->TriangLevel) : -1) << ", " << vidx1->TriangLevel << std::endl;
         MG.SizeInfo(std::cerr);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
@@ -184,9 +184,9 @@ void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, i
         std::cerr << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
         NS.SetupInstatRhs( b, c, cplM, 0., b, 0.);
 //        InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Schur_PCG_CL<NavStokesCL> >
-//	    instatsolver(NS, statsolver, v1, theta);
+//	    instatsolver(NS, statsolver, theta);
         InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Uzawa_PCG_CL<NavStokesCL> >
-	    instatsolver(NS, statsolver, v1, theta);
+	    instatsolver(NS, statsolver, theta);
         std::cerr << "After constructor." << std::endl;
 	double t= 0.;
 	NS.t= 0;

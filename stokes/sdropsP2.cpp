@@ -173,7 +173,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         double outer_tol= tol;
         switch (meth) {
           case 1: { // Schur
-            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol*std::sqrt( err0), 200, inner_iter_tol);
+            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol*std::sqrt( err0), 200, inner_iter_tol, omega);
             time.Start();
 //std::cout << M.Data << std::endl;
 //std::cout << A->Data << std::endl << b->Data << std::endl
@@ -191,7 +191,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //            Uint inner_iter;
 //            std::cerr << "tau = "; std::cin >> tau;
 //            std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-            Uzawa_PCG_CL uzawaSolver( M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
+            Uzawa_PCG_CL uzawaSolver( M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau, omega);
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -322,7 +322,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
             std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
 //            CheckMGData( MGData.begin(), MGData.end());
-            Uzawa_MG_CL uzawaMG( M.Data, 5000, outer_tol*std::sqrt( err0), MGD, 1, inner_iter_tol, tau);
+            Uzawa_MG_CL uzawaMG( M.Data, 5000, outer_tol*std::sqrt( err0), MGD, 1, inner_iter_tol, tau, omega);
             time.Start();
             uzawaMG.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();

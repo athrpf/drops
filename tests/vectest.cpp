@@ -13,7 +13,7 @@ class OldVectorBaseCL
 private:
     std::valarray<T> _va;
 
-    void OldAssertDim (const std::valarray<T>& va, const char msg[]) const
+    void OldAssertDim (__UNUSED__ const std::valarray<T>& va, __UNUSED__ const char msg[]) const
       { Assert(_va.size()==va.size(), msg, DebugNumericC); }
 
 public:

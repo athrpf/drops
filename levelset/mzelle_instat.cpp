@@ -163,7 +163,7 @@ class MyPMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL,
     PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresMGPreCL> q_;
 
   public:
-    MyPMinresSP_Diag_CL(MGPreCL& Apc, ISPreCL& Spc, int iter_vel, int maxiter, double tol)
+    MyPMinresSP_Diag_CL(MGPreCL& Apc, ISPreCL& Spc, int maxiter, double tol)
         :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresMGPreCL> >( q_, maxiter, tol),
          pre_( Apc, Spc), q_( pre_)
     {}
@@ -180,7 +180,7 @@ class MyPMinresSP_fullMG_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorC
     PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresfullMGPreCL> q_;
 
   public:
-    MyPMinresSP_fullMG_CL(MGPreCL& Apc, ISMGPreCL& Spc, int iter_vel, int maxiter, double tol)
+    MyPMinresSP_fullMG_CL(MGPreCL& Apc, ISMGPreCL& Spc, int maxiter, double tol)
         :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresfullMGPreCL> >( q_, maxiter, tol),
          pre_( Apc, Spc), q_( pre_)
     {}
@@ -326,13 +326,13 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISPSchur2_MG_CL ISPschur2SolverMG( velmgpc, ispc,
         C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     InexactUzawaMG_CL inexactUzawaSolverMG( velmgpc, ispc, C.outer_iter, C.outer_tol);
-    MyPMinresSP_Diag_CL stokessolverMG( velmgpc, ispc, 1, C.outer_iter, C.outer_tol);
+    MyPMinresSP_Diag_CL stokessolverMG( velmgpc, ispc, C.outer_iter, C.outer_tol);
 
     // Available Stokes-solver: full MG
     ISPSchur2_fullMG_CL ISPschur2SolverfullMG( velmgpc, ispcMG,
         C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     InexactUzawaFullMG_CL inexactUzawaSolverFullMG( velmgpc, ispcMG, C.outer_iter, C.outer_tol);
-    MyPMinresSP_fullMG_CL stokessolverfullMG( velmgpc, ispcMG, 1, C.outer_iter, C.outer_tol);
+    MyPMinresSP_fullMG_CL stokessolverfullMG( velmgpc, ispcMG, C.outer_iter, C.outer_tol);
 
     PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
@@ -487,7 +487,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 } // end of namespace DROPS
 
 
-void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
+void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
 {
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)

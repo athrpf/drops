@@ -368,7 +368,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 } // end of namespace DROPS
 
 
-void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
+void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
 {
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)

@@ -171,7 +171,7 @@ Point3DCL GetWorldCoord(const TetraCL& t, Uint face, const SVectorCL<2>& c)
           +c[1]*t.GetVertex(VertOfFace(face, 2))->GetCoord();
 }
 
-SVectorCL<3> FaceToTetraCoord(const TetraCL& t, Uint f, SVectorCL<2> c)
+SVectorCL<3> FaceToTetraCoord(__UNUSED__ const TetraCL& t, Uint f, SVectorCL<2> c)
 {
     SVectorCL<3> ret(0.);
     switch(f)

@@ -66,7 +66,7 @@ namespace DROPS // for Strategy
 using ::MyStokesCL;
 
 template<class Coeff>
-void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, double tol, int meth,
+void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, int meth,
                                             Uint maxStep, double rel_red, double markratio,
                                             double tau, Uint uzawa_inner_iter)
 // flow control
@@ -297,23 +297,21 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc!=10)
+    if (argc!=9)
     {
-        std::cerr << "Usage: sdropsP2 <omega> <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>"
+        std::cerr << "Usage: sdropsP2 <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>"
                   << std::endl;
         return 1;
     }
-    double omega= atof(argv[1]);
-    double inner_iter_tol= atof(argv[2]);
-    double tol= atof(argv[3]);
-    int meth= atoi(argv[4]);
-    int num_ref= atoi(argv[5]);
-    double rel_red= atof(argv[6]);
-    double markratio= atof(argv[7]);
-    double tau= atof(argv[8]);
-    unsigned int uz_inner_iter= atoi(argv[9]);
-    std::cerr << "Omega: " << omega << ", "
-              << "inner iter tol: " << inner_iter_tol << ", "
+    double inner_iter_tol= atof(argv[1]);
+    double tol= atof(argv[2]);
+    int meth= atoi(argv[3]);
+    int num_ref= atoi(argv[4]);
+    double rel_red= atof(argv[5]);
+    double markratio= atof(argv[6]);
+    double tau= atof(argv[7]);
+    unsigned int uz_inner_iter= atoi(argv[8]);
+    std::cerr << "inner iter tol: " << inner_iter_tol << ", "
               << "tol: " << tol << ", "
               << "meth: " << meth << ", "
               << "refinements: " << num_ref << ", "
@@ -337,7 +335,7 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
 
-    Strategy(prob, omega, inner_iter_tol, tol, meth, num_ref, rel_red, markratio, tau, uz_inner_iter);
+    Strategy(prob, inner_iter_tol, tol, meth, num_ref, rel_red, markratio, tau, uz_inner_iter);
     std::cerr << "hallo" << std::endl;
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");

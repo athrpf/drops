@@ -155,7 +155,7 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 
 // boundary functions (neumann, dirichlet type)
 // used for BndSegCL-object of a UnitCube
-inline double neu_val(const DROPS::Point2DCL& p) { throw "Don't use Neumann-values."; }
+inline double neu_val(const DROPS::Point2DCL&) { throw "Don't use Neumann-values."; }
 inline double dir_val(const DROPS::Point2DCL&) { return 1.0; }
 
 

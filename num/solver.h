@@ -773,7 +773,7 @@ class PLanczosONBCL
 //-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename Lanczos>
 bool
-PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol)
+PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol)
 {
     Vec dx( x.size());
     const double norm_r0= q.norm_r0();

@@ -23,7 +23,7 @@ class PoissonCoeffCL
     //static double f(const DROPS::Point3DCL& , double ) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double t)
       { return (-2.0*exp(t)*exp(p[0]+p[1]+p[2])); }
-    static DROPS::Point3DCL Vel(const DROPS::Point3DCL& p, double t)
+    static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
       { return DROPS::Point3DCL(0.); } // no convection
 };
 

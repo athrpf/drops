@@ -541,12 +541,12 @@ class DiagPCGPreCL
     const MatrixCL&   M_; // Preconditioner for S.
 
   public:
-    DiagPCGPreCL( const MatrixCL& M)
-      :PA_( SSORPcCL(), 8, 1e-20), PS_( SSORPcCL(), 3, 1e-20), M_( M) {}
+    DiagPCGPreCL(const MatrixCL& M, double omega= 1.)
+      :PA_( SSORPcCL(omega), 8, 1e-20), PS_( SSORPcCL(omega), 3, 1e-20), M_( M) {}
 
     template <typename Mat, typename Vec>
     void
-    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+    Apply(const Mat& A, const Mat&, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
 //        PA_.SetMaxIter( 500); PA_.SetTol( norm( b - A*v)*1e-4);
         PA_.Solve( A, v, b);
 //        std::cerr << PA_.GetIter() << '\t' << PA_.GetResid() << '\n';
@@ -568,7 +568,7 @@ class DiagMGPreCL
 
     template <typename Mat, typename Vec>
     void
-    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+    Apply(const Mat&, const Mat&, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
 //        PA_.SetMaxIter( 1); PA_.SetTol( norm( bb - K.A_*u)*1e-4);
         Uint   sm   =  2; // how many smoothing steps?
         int    lvl  = -1; // how many levels? (-1=all)
@@ -627,9 +627,9 @@ class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
   private:
     PCG_SsorCL _PCGsolver;
   public:
-    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
+    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
         : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
-          _PCGsolver(SSORPcCL(1.), inner_iter, inner_tol)
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
         {}
 };
 
@@ -661,9 +661,9 @@ class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
   private:
     PCG_SsorCL _PCGsolver;
   public:
-    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
+    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
         : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SSORPcCL(1.), inner_iter, inner_tol)
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
         {}
 };
 
@@ -734,10 +734,10 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
 
   public:
     Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
-                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1.)
+                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
         : UzawaSolver2CL<PCG_SsorCL, MGSolverCL>( PCGsolver_, MGsolver_, M,
                                                   outer_iter, outer_tol, tau),
-          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
           MGsolver_( MGData, inner_iter, inner_tol)
         {}
 };
@@ -762,9 +762,9 @@ class PMinresSP_DiagPCG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorC
     PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> q_;
 
   public:
-    PMinresSP_DiagPCG_CL(const MatrixCL& M, int maxiter, double tol)
+    PMinresSP_DiagPCG_CL(const MatrixCL& M, int maxiter, double tol, double omega= 1.)
         :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >( q_, maxiter, tol),
-         pre_( M), q_( pre_)
+         pre_( M, omega), q_( pre_)
     {}
 };
 

@@ -45,7 +45,7 @@ class InstatNavStokesThetaSchemeCL
     double _theta, _dt;
     
   public:
-    InstatNavStokesThetaSchemeCL(NavStokesT& NS, SolverT& solver, const VelVecDescCL* v,
+    InstatNavStokesThetaSchemeCL(NavStokesT& NS, SolverT& solver,
                                  double theta= 0.5, double t= 0.0)
         : _NS( NS), _solver( solver), _b( &NS.b), _old_b( new VelVecDescCL),
           _cplM( &NS.cplM), _old_cplM( new VelVecDescCL),

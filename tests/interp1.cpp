@@ -220,7 +220,7 @@ int TestInterpolateOld()
 
 }
 
-int main (int argc, char** argv)
+int main()
 {
   try {
     return TestRepair() + TestInterpolateOld() + TestReMark();
