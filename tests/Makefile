@@ -6,7 +6,8 @@
 
 DIR = tests
 
-EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe tetrabuildertest
+EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
+        tetrabuildertest sbuffer
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -72,6 +73,9 @@ testfe: \
     ../geom/multigrid.o ../num/unknowns.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
+sbuffer: \
+    ../tests/sbuffer.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:
 include ../Make.common

@@ -107,6 +107,71 @@ template <class T, Uint _Size>
     return true;
 }
 
+//**************************************************************************
+// Class:    SBufferCL                                                     *
+// Purpose:  A buffer or ring-buffer of fixed size with wrap-around indices*
+//**************************************************************************
+template <class T, Uint _Size>
+class SBufferCL
+{
+private:
+    T Array[_Size];
+    int Front;
+
+public:
+    typedef       T&       reference;
+    typedef const T& const_reference;
+    typedef       T  value_type;
+
+//    SBufferCL() {}
+    explicit           SBufferCL(T val= T())      { std::fill_n(Array+0, _Size, val); Front= 0; }
+    template<class In> SBufferCL(In start)         { std::copy(start, start+_Size, Array+0); Front= 0; }
+    template<class In> SBufferCL(In start, In end) { std::copy(start, end, Array+0); Front= 0; }
+    SBufferCL(const SBufferCL& b) {
+        std::copy( b.Array+0, b.Array+_Size, Array+0);
+        Front= b.Front; }
+    SBufferCL& operator=(const SBufferCL& b) {
+        if (&b==this) return *this;
+        std::copy( b.Array+0, b.Array+_Size, Array+0);
+        Front= b.Front; }
+    // Default dtor
+
+    reference  operator[](int i) {
+        if (i<0) i+= _Size;
+        else if (i >= static_cast<int>( _Size)) i-=_Size;
+        Assert( (i>=0 && i<static_cast<int>( _Size)), DROPSErrCL("SBufferCL::operator[]: wrong index"), DebugContainerC);
+        return Array[(i+Front < static_cast<int>( _Size)) ? i+Front : i+Front-_Size]; }
+    value_type operator[](int i) const {
+        if (i<0) i+= _Size;
+        else if (i >= static_cast<int>( _Size)) i-=_Size;
+        Assert( (i>=0 && i<_Size), DROPSErrCL("SBufferCL::operator[]: wrong index"), DebugContainerC);
+        return Array[(i+Front < static_cast<int>( _Size)) ? i+Front : i+Front-_Size]; }
+    Uint size() const { return _Size; }
+
+    // first entry is overwritten.
+    void push_back(const T& t) {
+        Array[Front]= t;
+        if (++Front == static_cast<int>( _Size)) Front-= _Size; }
+    // for positive i, front element moves to the end.
+    void rotate (int i= 1) {
+        Assert(i<static_cast<int>( _Size), DROPSErrCL("SBufferCL::rotate: wrong index"), DebugContainerC);
+        Front+= i;
+        if (Front >= static_cast<int>( _Size)) Front-= _Size;
+        else if (Front < 0) Front+= _Size; }
+        
+
+    friend bool operator==<>(const SBufferCL&, const SBufferCL&);
+};
+
+template <class T, Uint _Size>
+  inline bool
+  operator==(const SBufferCL<T, _Size>& a0, const SBufferCL<T, _Size>& a1)
+{
+    if (a0.Front != a1.Front) return false;
+    for (Uint i=0; i<_Size; ++i)
+        if (a0.Array[i] != a1.Array[i]) return false;
+    return true;
+}
 
 //**************************************************************************
 // Class:    SVectorCL                                                     *
