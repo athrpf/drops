@@ -139,15 +139,15 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         for (int i=0; i<4; ++i) {
             if(!(IsOnDirBnd[i]= theBnd.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            rhs.val[i]= f( sit->GetVertex(i)->GetCoord());
-            Phi.val[i]= ls.val( *sit->GetVertex(i));
+            rhs[i]= f( sit->GetVertex(i)->GetCoord());
+            Phi[i]= ls.val( *sit->GetVertex(i));
         }
         for (int i=0; i<6; ++i) {
             if (!(IsOnDirBnd[i+4]= theBnd.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        rhs.val[4]= h( GetBaryCenter( *sit));
-        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+        rhs[4]= h( GetBaryCenter( *sit));
+        Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
 
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( therho);
@@ -200,15 +200,15 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         for (int i=0; i<4; ++i) {
             if(!(IsOnDirBnd[i]= theBnd.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            rhs.val[i]= f( sit->GetVertex(i)->GetCoord());
-            Phi.val[i]= ls[i];
+            rhs[i]= f( sit->GetVertex(i)->GetCoord());
+            Phi[i]= ls[i];
         }
         for (int i=0; i<6; ++i) {
             if (!(IsOnDirBnd[i+4]= theBnd.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        rhs.val[4]= h( GetBaryCenter( *sit));
-        Phi.val[4]= ls( bary);
+        rhs[4]= h( GetBaryCenter( *sit));
+        Phi[4]= ls( bary);
 
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( therho);

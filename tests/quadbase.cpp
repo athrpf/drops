@@ -63,175 +63,112 @@ BndCL Bnd;
 typedef NoBndDataCL<Point3DCL> VBndCL;
 VBndCL VBnd;
 
-/*
-template<class T=double>
-class NewQuadBaseCL: public std::valarray<T>
-{
-  public:
-    typedef T value_type;
-    typedef std::valarray<value_type> base_type;
 
-  private:
-    NewQuadBaseCL()                      : base_type()       {}
+template<class T=double>
+class OldQuadBaseCL
+{
   protected:
-#ifdef VALARRAY_BUG
-    NewQuadBaseCL (size_t s)             : base_type( T(),s) {}
-#else
-    NewQuadBaseCL (size_t s)             : base_type( s)     {}
-#endif
-    NewQuadBaseCL (size_t s, T c)        : base_type( c, s)  {}
-    NewQuadBaseCL (const T* tp, size_t s): base_type( tp, s) {}
-    template <class X> // For valarray expression-templates
-      NewQuadBaseCL (const X& x)         : base_type( x)     {}
+    OldQuadBaseCL( size_t size) : val( size) {}
+    OldQuadBaseCL( size_t size, const T& t) : val( t, size) {}
     
   public:
+    std::valarray<T> val;
+    
+    size_t size() const 
+        { return val.size(); }
+        
+    // Arithmetik
+    template<typename FuncT>
+    OldQuadBaseCL& apply ( FuncT fun)
+      { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
 
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(NewQuadBaseCL, T, base_type)
+    OldQuadBaseCL& operator+= (const OldQuadBaseCL &q)
+      { val+=q.val; return *this; }
+    OldQuadBaseCL& operator+= (const T &t)
+      { val+= t; return *this; }
+    OldQuadBaseCL& operator*= (const T &t)
+      { val*= t; return *this; }
+    template <typename U> OldQuadBaseCL& operator*= (const OldQuadBaseCL<U>& q)
+      { for (size_t i=0; i<val.size(); ++i) val[i]*=q.val[i]; return *this; }
+//    template <typename U> OldQuadBaseCL& operator*= (const U& c)
+//      { val*=c; return *this; }
 
-//    template<typename FuncT>
-//    NewQuadBaseCL& apply ( FuncT fun)
-//      { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
-
-    friend NewQuadBaseCL<double> dot (const NewQuadBaseCL<Point3DCL>&, const NewQuadBaseCL<Point3DCL>&);
+    OldQuadBaseCL operator+ (const OldQuadBaseCL &q) const
+      { return OldQuadBaseCL(*this)+= q; }
+    OldQuadBaseCL operator+ (const T &t) const
+      { return OldQuadBaseCL(*this)+= t; }
+    OldQuadBaseCL operator* (const T &t) const
+      { return OldQuadBaseCL(*this)*= t; }
+    template <typename U> OldQuadBaseCL operator* (const OldQuadBaseCL<U> &q) const
+      { return OldQuadBaseCL(*this)*= q; }
+//    template <typename U> OldQuadBaseCL operator* (const U& c) const
+//      { OldQuadBaseCL ret(*this); ret.val*=c; return ret; }
+    friend OldQuadBaseCL<double> dot (const OldQuadBaseCL<Point3DCL>&, const OldQuadBaseCL<Point3DCL>&);
 };
-*/
+
+inline OldQuadBaseCL<double> dot (const OldQuadBaseCL<Point3DCL> &q1, const OldQuadBaseCL<Point3DCL> &q2)
+{ 
+    OldQuadBaseCL<double> res( q1.size()); 
+    for (size_t i=0; i<q1.size(); ++i) 
+        res.val[i]= inner_prod( q1.val[i], q2.val[i]); 
+    return res; 
+}
+
 
 template<class T=double>
-class NewQuad2CL: public std::valarray<T>
+class OldQuad2CL: public OldQuadBaseCL<T>
 {
   public:
-    typedef T value_type;
-    typedef std::valarray<T> base_type;
-    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+    using OldQuadBaseCL<T>::size;
+    using OldQuadBaseCL<T>::val;
 
-    static const Uint NumNodesC= 5;
-    static const double Node[NumNodesC][4]; // Stuetzstellen 5*4 doubles
-    static const double Wght[NumNodesC];    // Gewichte
-
-    static inline BaryCoordCL // Das kopiert leider.
-    GetNode( Uint i) { return Node[i]; }
-
-  protected:
-    typedef NewQuad2CL<T> self_;
-
-  public:
-    NewQuad2CL(): base_type( value_type(), NumNodesC) {}
-    NewQuad2CL(const value_type& t): base_type( t, NumNodesC) {}
-    template <class X> // For valarray expression-templates
-      NewQuad2CL(const X& x): base_type( x) {}
-
-    NewQuad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
-    NewQuad2CL(const LocalP2CL<value_type>&);
-    template <class PFunT> 
-      NewQuad2CL(const TetraCL&, const PFunT&, double= 0.0);
+    static const BaryCoordCL Node[5]; // Stuetzstellen
+    static const double      Wght[5]; // Gewichte
     
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(NewQuad2CL, T, base_type)
-
-    inline self_&
-    assign(const TetraCL&, value_type (*)(const Point3DCL&, double) , double= 0.0);
-    inline self_&
-    assign(const LocalP2CL<value_type>&);
-    template <class P2FunT> 
-      inline self_&
-      assign(const TetraCL&, const P2FunT&, double= 0.0);
-
-    // Integration:
+    OldQuad2CL() : OldQuadBaseCL<T>( 5) {}
+    OldQuad2CL( const T& t) : OldQuadBaseCL<T>( 5, t) {}
+    OldQuad2CL( const OldQuadBaseCL<T>& q) : OldQuadBaseCL<T>(q) {}
+    
+    // Initialisiere die Knotenwerte
+/*    template <ElemT et> 
+    void set( const ElemBaseCL<et,T>& e)
+      { for (size_t i=0; i<size(); ++i) val[i]= e.eval( Node[i]); }
+*/
+    // Werte Quadraturformel aus
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
     // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
     T quad (double absdet) const
-    {
-        value_type sum= this->sum()/120.;
-        return (sum + 0.125*(*this)[NumNodesC-1])*absdet;
-    }
-
+      { T sum= T(); for (size_t i=0; i<size(); ++i) sum+= Wght[i]*val[i]; return sum*absdet; }
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
     // zur Annaeherung von \int f*phi,    phi = P1-/P2-Hutfunktion
     T quadP1 (int i, double absdet) const
-      { return ((1./120.)*(*this)[i] + (1./30.)*(*this)[4])*absdet; }
+      { return ((1./120.)*val[i] + (1./30.)*val[4])*absdet; }
     T quadP1 (int i, int j, double absdet) const
-      { return (i!=j ? (1./720.)*((*this)[i]+(*this)[j]) + (1./180.)*(*this)[4]
-                     : (1./180.)*(*this)[i] + (1./90.)*(*this)[4]  )*absdet;}
+      { return (i!=j ? (1./720.)*(val[i]+val[j]) + (1./180.)*val[4]
+                     : (1./180.)*val[i]          + (1./90.)*val[4]  )*absdet;}
     T quadP2 (int i, double absdet) const
     { 
-        return (i<4 ? (1./360.)*(*this)[i] - (1./90.)*(*this)[4]
-                    : (1./180.)*((*this)[VertOfEdge(i-4,0)]+(*this)[VertOfEdge(i-4,1)]) + (1./45.)*(*this)[4]
+        return (i<4 ? (1./360.)*val[i] - (1./90.)*val[4]
+                    : (1./180.)*(val[VertOfEdge(i-4,0)]+val[VertOfEdge(i-4,1)]) + (1./45.)*val[4]
                )*absdet;
     }
 
     T quadP2 (int i, int j, double absdet) const
     { 
         const double valBary= (i<4 ? -0.125 : 0.25)*(j<4 ? -0.125 : 0.25);
-        return ((i!=j || i>=4) ? Wght[4]*(*this)[4]*valBary
-                               : Wght[4]*(*this)[4]*valBary + Wght[i]*(*this)[i]
+        return ((i!=j || i>=4) ? Wght[4]*val[4]*valBary
+                               : Wght[4]*val[4]*valBary + Wght[i]*val[i]
                )*absdet;
     }
 };
 
 template<class T>
-const double NewQuad2CL<T>::Node[NewQuad2CL<T>::NumNodesC][4]= {
+const BaryCoordCL OldQuad2CL<T>::Node[5]= {
     {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
-}; 
-
+    }; 
 template<class T>
-const double NewQuad2CL<T>::Wght[NewQuad2CL<T>::NumNodesC]= {
-    1./120., 1./120., 1./120., 1./120., 2./15.
-};
+const double OldQuad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15.};
 
-template<class T>
-  inline NewQuad2CL<T>&
-  NewQuad2CL<T>::assign(const TetraCL& s, value_type (*f)(const Point3DCL&, double) , double t)
-{
-    for (Uint i= 0; i<NumNodesC-1; ++i)
-        (*this)[i]= f( s.GetVertex( i)->GetCoord(), t);
-    (*this)[NumNodesC-1]= f( GetBaryCenter( s), t);
-    return *this;
-}
-
-template<class T>
-  inline NewQuad2CL<T>&
-  NewQuad2CL<T>::assign(const LocalP2CL<value_type>& f)
-{
-    (*this)[std::slice( 0, 4, 1)]= f[std::slice( 0, 4, 1)];
-    (*this)[NumNodesC-1]= f( BaryCoordCL( 0.25));
-    return *this;
-}
-
-template<class T>
-  template <class P2FunT> 
-    inline NewQuad2CL<T>&
-    NewQuad2CL<T>::assign(const TetraCL& s, const P2FunT& f, double t)
-{
-    const double oldt= f.GetTime();
-    const_cast<P2FunT&>( f).SetTime( t);
-    for (Uint i= 0; i<NumNodesC-1; ++i)
-        (*this)[i]= f.val( *s.GetVertex( i));
-    (*this)[NumNodesC-1]= f.val( s, 0.25, 0.25, 0.25);
-    const_cast<P2FunT&>( f).SetTime( oldt);
-    return *this;
-}
-
-template<class T>
-  NewQuad2CL<T>::NewQuad2CL(const TetraCL& s,
-      value_type (*f)(const Point3DCL&, double), double t)
-  : base_type( value_type(), NumNodesC)  
-{
-    this->assign( s, f, t);
-}
-
-template<class T>
-  NewQuad2CL<T>::NewQuad2CL(const LocalP2CL<value_type>& f)
-  : base_type( value_type(), NumNodesC)  
-{
-    this->assign( f);
-}
-
-template<class T>
-  template <class PFunT> 
-    NewQuad2CL<T>::NewQuad2CL(const TetraCL& s, const PFunT& f, double t)
-  : base_type( value_type(), NumNodesC)  
-{
-    this->assign( s, f, t);
-}
 
 
 inline std::valarray<double>
@@ -275,9 +212,9 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, vfun_ptr f)
 }
 
 typedef P2EvalCL<double, BndCL, VecDescCL> P2FuncT;
-typedef Quad2CL<double> OldQuadT;
-typedef NewQuad2CL<double> NewQuadT;
-typedef NewQuad2CL<Point3DCL> NewVQuadT;
+typedef OldQuad2CL<double> OldQuadT;
+typedef Quad2CL<double> NewQuadT;
+typedef Quad2CL<Point3DCL> NewVQuadT;
 
 BndCL theBnd;
 

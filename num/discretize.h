@@ -116,107 +116,98 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 };
 
 
+
 // ===================================
 //        Quadrature formulas
 // ===================================
-
 template<class T=double>
-class QuadBaseCL
+class Quad2CL: public std::valarray<T>
 {
+  public:
+    typedef T value_type;
+    typedef std::valarray<T> base_type;
+    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+
+    static const Uint NumNodesC= 5;
+    static const double Node[NumNodesC][4]; // Stuetzstellen 5*4 doubles
+    static const double Wght[NumNodesC];    // Gewichte
+
+    static inline BaryCoordCL // Das kopiert leider.
+    GetNode( Uint i) { return Node[i]; }
+
   protected:
-    QuadBaseCL( size_t size) : val( size) {}
-    QuadBaseCL( size_t size, const T& t) : val( t, size) {}
-    
+    typedef Quad2CL<T> self_;
+
   public:
-    std::valarray<T> val;
+    Quad2CL(): base_type( value_type(), NumNodesC) {}
+    Quad2CL(const value_type& t): base_type( t, NumNodesC) {}
+    template <class X> // For valarray expression-templates
+      Quad2CL(const X& x): base_type( x) {}
+
+    Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
+    Quad2CL(const LocalP2CL<value_type>&);
+    template <class PFunT> 
+      Quad2CL(const TetraCL&, const PFunT&, double= 0.0);
     
-    size_t size() const 
-        { return val.size(); }
-        
-    // Arithmetik
+DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
+
+    inline self_&
+    assign(const TetraCL&, value_type (*)(const Point3DCL&, double) , double= 0.0);
+    inline self_&
+    assign(const LocalP2CL<value_type>&);
+    template <class P2FunT> 
+      inline self_&
+      assign(const TetraCL&, const P2FunT&, double= 0.0);
+
     template<typename FuncT>
-    QuadBaseCL& apply ( FuncT fun)
-      { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
+    Quad2CL& apply (FuncT fun)
+      { for (size_t i=0; i<NumNodesC; ++i) (*this)[i]=fun( (*this)[i]); return *this; }
 
-    QuadBaseCL& operator+= (const QuadBaseCL &q)
-      { val+=q.val; return *this; }
-    QuadBaseCL& operator+= (const T &t)
-      { val+= t; return *this; }
-    QuadBaseCL& operator*= (const T &t)
-      { val*= t; return *this; }
-    template <typename U> QuadBaseCL& operator*= (const QuadBaseCL<U>& q)
-      { for (size_t i=0; i<val.size(); ++i) val[i]*=q.val[i]; return *this; }
-//    template <typename U> QuadBaseCL& operator*= (const U& c)
-//      { val*=c; return *this; }
+    template <typename U> Quad2CL& operator*= (const Quad2CL<U>& q)
+      { for (size_t i=0; i<NumNodesC; ++i) (*this)[i]*=q[i]; return *this; }
+    template <typename U> Quad2CL operator* (const Quad2CL<U> &q) const
+      { return Quad2CL( *this)*= q; }
 
-    QuadBaseCL operator+ (const QuadBaseCL &q) const
-      { return QuadBaseCL(*this)+= q; }
-    QuadBaseCL operator+ (const T &t) const
-      { return QuadBaseCL(*this)+= t; }
-    QuadBaseCL operator* (const T &t) const
-      { return QuadBaseCL(*this)*= t; }
-    template <typename U> QuadBaseCL operator* (const QuadBaseCL<U> &q) const
-      { return QuadBaseCL(*this)*= q; }
-//    template <typename U> QuadBaseCL operator* (const U& c) const
-//      { QuadBaseCL ret(*this); ret.val*=c; return ret; }
-    friend QuadBaseCL<double> dot (const QuadBaseCL<Point3DCL>&, const QuadBaseCL<Point3DCL>&);
-};
-
-inline QuadBaseCL<double> dot (const QuadBaseCL<Point3DCL> &q1, const QuadBaseCL<Point3DCL> &q2)
-{ 
-    QuadBaseCL<double> res( q1.size()); 
-    for (size_t i=0; i<q1.size(); ++i) 
-        res.val[i]= inner_prod( q1.val[i], q2.val[i]); 
-    return res; 
-}
-
-
-template<class T=double>
-class Quad2CL: public QuadBaseCL<T>
-{
-  public:
-    using QuadBaseCL<T>::size;
-    using QuadBaseCL<T>::val;
-
-    static const BaryCoordCL Node[5]; // Stuetzstellen
-    static const double      Wght[5]; // Gewichte
-    
-    Quad2CL() : QuadBaseCL<T>( 5) {}
-    Quad2CL( const T& t) : QuadBaseCL<T>( 5, t) {}
-    Quad2CL( const QuadBaseCL<T>& q) : QuadBaseCL<T>(q) {}
-    
-    // Initialisiere die Knotenwerte
-/*    template <ElemT et> 
-    void set( const ElemBaseCL<et,T>& e)
-      { for (size_t i=0; i<size(); ++i) val[i]= e.eval( Node[i]); }
-*/
-    // Werte Quadraturformel aus
+    // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
     // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
     T quad (double absdet) const
-      { T sum= T(); for (size_t i=0; i<size(); ++i) sum+= Wght[i]*val[i]; return sum*absdet; }
+    {
+        value_type sum= this->sum()/120.;
+        return (sum + 0.125*(*this)[NumNodesC-1])*absdet;
+    }
+
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
     // zur Annaeherung von \int f*phi,    phi = P1-/P2-Hutfunktion
     T quadP1 (int i, double absdet) const
-      { return ((1./120.)*val[i] + (1./30.)*val[4])*absdet; }
+      { return ((1./120.)*(*this)[i] + (1./30.)*(*this)[4])*absdet; }
     T quadP1 (int i, int j, double absdet) const
-      { return (i!=j ? (1./720.)*(val[i]+val[j]) + (1./180.)*val[4]
-                     : (1./180.)*val[i]          + (1./90.)*val[4]  )*absdet;}
+      { return (i!=j ? (1./720.)*((*this)[i]+(*this)[j]) + (1./180.)*(*this)[4]
+                     : (1./180.)*(*this)[i] + (1./90.)*(*this)[4]  )*absdet;}
     T quadP2 (int i, double absdet) const
     { 
-        return (i<4 ? (1./360.)*val[i] - (1./90.)*val[4]
-                    : (1./180.)*(val[VertOfEdge(i-4,0)]+val[VertOfEdge(i-4,1)]) + (1./45.)*val[4]
+        return (i<4 ? (1./360.)*(*this)[i] - (1./90.)*(*this)[4]
+                    : (1./180.)*((*this)[VertOfEdge(i-4,0)]+(*this)[VertOfEdge(i-4,1)]) + (1./45.)*(*this)[4]
                )*absdet;
     }
 
     T quadP2 (int i, int j, double absdet) const
     { 
         const double valBary= (i<4 ? -0.125 : 0.25)*(j<4 ? -0.125 : 0.25);
-        return ((i!=j || i>=4) ? Wght[4]*val[4]*valBary
-                               : Wght[4]*val[4]*valBary + Wght[i]*val[i]
+        return ((i!=j || i>=4) ? Wght[4]*(*this)[4]*valBary
+                               : Wght[4]*(*this)[4]*valBary + Wght[i]*(*this)[i]
                )*absdet;
     }
 };
+
+inline Quad2CL<double>
+dot (const Quad2CL<Point3DCL>& a, const Quad2CL<Point3DCL>& b)
+{
+    Quad2CL<double> ret; 
+    for (size_t i=0; i<a.size(); ++i) 
+        ret[i]= dot( a[i], b[i]); 
+    return ret; 
+}
 
 
 class Quad3CL
@@ -373,9 +364,9 @@ class P2DiscCL
     static void GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10]);
     // compute gradients
     static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
-    { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i].val[j]= T*GRef[i].val[j]; }
+    { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
-    { for (int j=0; j<5; ++j) G.val[j]= T*GRef.val[j]; }
+    { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
 };
 
 
@@ -548,13 +539,6 @@ inline SVectorCL<3> P1BubbleDiscCL::Quad(const SVectorCL<3>* vals, Uint i)
     return -4./945.*( vals[0] + vals[1] + vals[2] + vals[3] )
            +32./2835.*(vals[4] + vals[5] + vals[6] + vals[7] + vals[8] + vals[9]);
 }
-
-template<class T>
-const BaryCoordCL Quad2CL<T>::Node[5]= {
-    {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
-    }; 
-template<class T>
-const double Quad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15.};
 
 
 } // end of namespace DROPS

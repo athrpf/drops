@@ -175,13 +175,13 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
         for(int i=0; i<4; ++i)
         {
             Numb[i]= sit->GetVertex(i)->Unknowns(idx);
-	    u_loc.val[i]= vel.val( *sit->GetVertex(i));
+	    u_loc[i]= vel.val( *sit->GetVertex(i));
         }
         for(int i=0; i<6; ++i)
         {
             Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
         }
-        u_loc.val[4]= vel.val( *sit, 0.25, 0.25, 0.25);
+        u_loc[4]= vel.val( *sit, 0.25, 0.25, 0.25);
 
         for(int i=0; i<10; ++i)
             u_Grad[i]= dot( u_loc, Grad[i]);
@@ -271,16 +271,16 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
         // init Sign_Phi, w_loc
         for (int i=0; i<4; ++i)
         {
-            Sign_Phi.val[i]= SmoothedSign( phi.val( *sit->GetVertex(i)), alpha);
+            Sign_Phi[i]= SmoothedSign( phi.val( *sit->GetVertex(i)), alpha);
             grad_Psi[i]= Point3DCL();  // init with zero
             for (int l=0; l<10; ++l)
-                grad_Psi[i]+= Psi[ Numb[l]] * Grad[l].val[i];
-	    w_loc.val[i]= (Sign_Phi.val[i]/grad_Psi[i].norm() )*grad_Psi[i];
+                grad_Psi[i]+= Psi[ Numb[l]] * Grad[l][i];
+	    w_loc[i]= (Sign_Phi[i]/grad_Psi[i].norm() )*grad_Psi[i];
         }
         // values in barycenter
         Point3DCL gr= 0.25*(grad_Psi[0]+grad_Psi[1]+grad_Psi[2]+grad_Psi[3]);
-        Sign_Phi.val[4]= SmoothedSign( phi.val( *sit, 0.25, 0.25, 0.25), alpha);
-        w_loc.val[4]=    Sign_Phi.val[4]*gr/gr.norm();
+        Sign_Phi[4]= SmoothedSign( phi.val( *sit, 0.25, 0.25, 0.25), alpha);
+        w_loc[4]=    Sign_Phi[4]*gr/gr.norm();
 
         Quad2CL<> w_Grad[10];
         for (int i=0; i<10; ++i)
@@ -536,7 +536,7 @@ fil << "\n}\n";
                 // gr= grad Phi(P) + grad Phi(Q) + grad Phi(R)
                 for (int node=0; node<4; ++node)
                 { // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
-                    gradv[node]= Grad[v].val[node];
+                    gradv[node]= Grad[v][node];
                 }
                     
                 for (int k=0; k<4; ++k)
@@ -580,9 +580,9 @@ double LevelsetP2CL::GetVolume( double translation) const
         absdet= fabs( det);
         
         for (int i=0; i<4; ++i)
-            Xi.val[i]= H( phi.val( *sit->GetVertex(i)) + translation);
+            Xi[i]= H( phi.val( *sit->GetVertex(i)) + translation);
         // values in barycenter
-        Xi.val[4]= H( phi.val( *sit, 0.25, 0.25, 0.25) + translation);
+        Xi[4]= H( phi.val( *sit, 0.25, 0.25, 0.25) + translation);
         
         vol+= Xi.quad( absdet);
     }

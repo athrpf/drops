@@ -33,11 +33,11 @@ void P2DiscCL::GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10])
 {
     for (int i=0; i<10; ++i)
     {
-        GRef[i].val[0]= FE_P2CL::DHRef( i, 0,0,0);
-        GRef[i].val[1]= FE_P2CL::DHRef( i, 1,0,0);
-        GRef[i].val[2]= FE_P2CL::DHRef( i, 0,1,0);
-        GRef[i].val[3]= FE_P2CL::DHRef( i, 0,0,1);
-        GRef[i].val[4]= FE_P2CL::DHRef( i, 0.25,0.25,0.25);
+        GRef[i][0]= FE_P2CL::DHRef( i, 0,0,0);
+        GRef[i][1]= FE_P2CL::DHRef( i, 1,0,0);
+        GRef[i][2]= FE_P2CL::DHRef( i, 0,1,0);
+        GRef[i][3]= FE_P2CL::DHRef( i, 0,0,1);
+        GRef[i][4]= FE_P2CL::DHRef( i, 0.25,0.25,0.25);
     }
 }
 

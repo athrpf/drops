@@ -52,16 +52,16 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            Phi.val[i]= ls.val( *sit->GetVertex(i));
-            u_loc.val[i]= u.val( *sit->GetVertex(i));
+            Phi[i]= ls.val( *sit->GetVertex(i));
+            u_loc[i]= u.val( *sit->GetVertex(i));
         }
         for (int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        u_loc.val[4]= u.val( *sit, 0.25, 0.25, 0.25);
-        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+        u_loc[4]= u.val( *sit, 0.25, 0.25, 0.25);
+        Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
 
         // rho = rho( Phi)
         rho= Phi;    rho.apply( _Coeff.rho);

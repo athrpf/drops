@@ -81,9 +81,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
         for(int i=0; i<4; ++i)
         {
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
-            nu_inv.val[i]= lsarray[i];
+            nu_inv[i]= lsarray[i];
         }
-        nu_inv.val[4]= P2( lsarray, 1.0/*type-dummy*/, 0.25, 0.25, 0.25); 
+        nu_inv[4]= P2( lsarray, 1.0/*type-dummy*/, 0.25, 0.25, 0.25); 
         nu_inv.apply( nu_invers);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
@@ -209,16 +209,16 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            rhs.val[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
-            Phi.val[i]= ls.val( *sit->GetVertex(i));
+            rhs[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
+            Phi[i]= ls.val( *sit->GetVertex(i));
         }
         for (int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        rhs.val[4]= _Coeff.f( GetBaryCenter( *sit), t);
-        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+        rhs[4]= _Coeff.f( GetBaryCenter( *sit), t);
+        Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
 
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( _Coeff.rho);
@@ -252,7 +252,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                             {
                                 // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm.val[m]= Grad[i].val[m][l] * Grad[j].val[m][k] * mu_Re.val[m];
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
 
                                 mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad( absdet);
                             }
@@ -274,7 +274,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                             {
                                 // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm.val[m]= Grad[i].val[m][l] * Grad[j].val[m][k] * mu_Re.val[m];
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
                                 cplA->Data[Numb[i]+k]-= kreuzterm.quad( absdet)*tmp[l];
                             }
                         }
@@ -364,16 +364,16 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            rhs.val[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
-            Phi.val[i]= lsarray[i];
+            rhs[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
+            Phi[i]= lsarray[i];
         }
         for (int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        rhs.val[4]= _Coeff.f( GetBaryCenter( *sit), t);
-        Phi.val[4]= P2( lsarray, 1.0/*type-dummy*/, 0.25, 0.25, 0.25);
+        rhs[4]= _Coeff.f( GetBaryCenter( *sit), t);
+        Phi[4]= P2( lsarray, 1.0/*type-dummy*/, 0.25, 0.25, 0.25);
 
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( _Coeff.rho);
@@ -407,7 +407,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
                             {
                                 // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm.val[m]= Grad[i].val[m][l] * Grad[j].val[m][k] * mu_Re.val[m];
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
 
                                 mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad( absdet);
                             }

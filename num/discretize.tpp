@@ -107,4 +107,73 @@ template<class T>
 }
 
 
+//**************************************************************************
+// Class: Quad2CL                                                          *
+//**************************************************************************
+template<class T>
+const double Quad2CL<T>::Node[Quad2CL<T>::NumNodesC][4]= {
+    {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
+}; 
+
+template<class T>
+const double Quad2CL<T>::Wght[Quad2CL<T>::NumNodesC]= {
+    1./120., 1./120., 1./120., 1./120., 2./15.
+};
+
+template<class T>
+  inline Quad2CL<T>&
+  Quad2CL<T>::assign(const TetraCL& s, value_type (*f)(const Point3DCL&, double) , double t)
+{
+    for (Uint i= 0; i<NumNodesC-1; ++i)
+        (*this)[i]= f( s.GetVertex( i)->GetCoord(), t);
+    (*this)[NumNodesC-1]= f( GetBaryCenter( s), t);
+    return *this;
+}
+
+template<class T>
+  inline Quad2CL<T>&
+  Quad2CL<T>::assign(const LocalP2CL<value_type>& f)
+{
+    (*this)[std::slice( 0, 4, 1)]= f[std::slice( 0, 4, 1)];
+    (*this)[NumNodesC-1]= f( BaryCoordCL( 0.25));
+    return *this;
+}
+
+template<class T>
+  template <class P2FunT> 
+    inline Quad2CL<T>&
+    Quad2CL<T>::assign(const TetraCL& s, const P2FunT& f, double t)
+{
+    const double oldt= f.GetTime();
+    const_cast<P2FunT&>( f).SetTime( t);
+    for (Uint i= 0; i<NumNodesC-1; ++i)
+        (*this)[i]= f.val( *s.GetVertex( i));
+    (*this)[NumNodesC-1]= f.val( s, 0.25, 0.25, 0.25);
+    const_cast<P2FunT&>( f).SetTime( oldt);
+    return *this;
+}
+
+template<class T>
+  Quad2CL<T>::Quad2CL(const TetraCL& s,
+      value_type (*f)(const Point3DCL&, double), double t)
+  : base_type( value_type(), NumNodesC)  
+{
+    this->assign( s, f, t);
+}
+
+template<class T>
+  Quad2CL<T>::Quad2CL(const LocalP2CL<value_type>& f)
+  : base_type( value_type(), NumNodesC)  
+{
+    this->assign( f);
+}
+
+template<class T>
+  template <class PFunT> 
+    Quad2CL<T>::Quad2CL(const TetraCL& s, const PFunT& f, double t)
+  : base_type( value_type(), NumNodesC)  
+{
+    this->assign( s, f, t);
+}
+
 } // end of namespace DROPS

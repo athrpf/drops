@@ -223,9 +223,9 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
     for(int i=0; i<4; ++i)
     {
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
-      u.val[i]= _Coeff.Vel( sit->GetVertex(i)->GetCoord(), t);
+      u[i]= _Coeff.Vel( sit->GetVertex(i)->GetCoord(), t);
     }
-    u.val[4]= _Coeff.Vel( GetBaryCenter( *sit), t);
+    u[4]= _Coeff.Vel( GetBaryCenter( *sit), t);
 
     for(int j=0; j<4;++j)
     {
