@@ -8,7 +8,7 @@
 //**************************************************************************
 
 #include "poisson/instatpoisson.h"
-#include "num/poissonsolver.h"
+#include "num/solver.h"
 #include "poisson/integrTime.h"
 
 
@@ -148,9 +148,9 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
   // instationaere rechte Seite 
   Poisson.SetupInstatRhs( cplA, cplM, t, b, t);
    
-  SsorPcCL<VectorCL, double> pc(1.0);
-  PCG_T pcg_solver(tol, max_iter, pc);
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff> ,PCG_T> 
+  SSORPcCL pc(1.0);
+  PCG_SsorCL pcg_solver(tol, max_iter, pc);
+  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff>, PCG_SsorCL> 
     ThetaScheme(Poisson, pcg_solver, 0.5);
   
   ThetaScheme.SetTimeStep(dt);

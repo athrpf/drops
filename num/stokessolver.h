@@ -73,10 +73,9 @@ template <class PoissonSolverT>
 class PSchurSolverCL
 {
   private:
-    typedef SsorMassPcCL<SchurComplMatrixCL> SchurPcT;
-    SchurPcT _schurPc;
-    PoissonSolverT&  _poissonSolver;
-    
+    PreGSOwnMatCL<P_SSOR0,double> _schurPc;
+    PoissonSolverT&               _poissonSolver;
+
     double _tol, _res;
     int    _maxiter, _iter;
     
@@ -103,23 +102,14 @@ class PSchurSolverCL
 //        derived classes for easier use
 //==================================================
 
-typedef PCGSolverCL<VectorCL, double, SsorPcCL<VectorCL, double> > 
-        PCG_T;
-
-typedef PCGSolverCL<VectorCL, double, ImprovedSsorPcCL<VectorCL, double> > 
-        IPCG_T;
-
-typedef PCGSolverCL<VectorCL, double, SGSPcCL<VectorCL, double> > 
-        GSPCG_T;
-
-class Uzawa_PCG_CL: public UzawaSolverCL<PCG_T>
+class Uzawa_PCG_CL: public UzawaSolverCL<PCG_SsorCL>
 {
   private:
-    PCG_T _PCGsolver;
+    PCG_SsorCL _PCGsolver;
   public:
     Uzawa_PCG_CL( MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter, double tau= 1.)
-        : UzawaSolverCL<PCG_T>( _PCGsolver,  M, outer_tol, outer_iter, tau), 
-          _PCGsolver( inner_tol, inner_iter, SsorPcCL<VectorCL, double>( 1.))
+        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver,  M, outer_tol, outer_iter, tau), 
+          _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
         {}
 };    
 
@@ -127,8 +117,8 @@ class Uzawa_PCG_CL: public UzawaSolverCL<PCG_T>
 class Uzawa_IPCG_CL
 {
   private:
-    IPCG_T _M_IPCGsolver;
-    IPCG_T _A_IPCGsolver;
+    PCG_SsorDiagCL _M_IPCGsolver;
+    PCG_SsorDiagCL _A_IPCGsolver;
 
     MatrixCL&       _M; 
     
@@ -138,8 +128,8 @@ class Uzawa_IPCG_CL
   public:
     Uzawa_IPCG_CL(MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter, double tau= 1.)
         :  
-          _M_IPCGsolver( inner_tol, inner_iter, ImprovedSsorPcCL<VectorCL, double>( 1.) ),
-          _A_IPCGsolver( inner_tol, inner_iter, ImprovedSsorPcCL<VectorCL, double>( 1.) ),
+          _M_IPCGsolver( inner_tol, inner_iter, SSORDiagPcCL(1.) ),
+          _A_IPCGsolver( inner_tol, inner_iter, SSORDiagPcCL(1.) ),
           _M(M), _tau(tau), _tol(outer_tol), _res(-1.), _maxiter(outer_iter), _iter(-1)
         { _M_IPCGsolver.GetPc().Init(_M); }
 
@@ -158,50 +148,50 @@ class Uzawa_IPCG_CL
 };    
     
     
-class Schur_PCG_CL: public SchurSolverCL<PCG_T>
+class Schur_PCG_CL: public SchurSolverCL<PCG_SsorCL>
 {
   private:
-    PCG_T _PCGsolver;
+    PCG_SsorCL _PCGsolver;
   public:
     Schur_PCG_CL(double outer_tol, int outer_iter, double inner_tol, int inner_iter)
-        : SchurSolverCL<PCG_T>( _PCGsolver, outer_tol, outer_iter),
-          _PCGsolver( inner_tol, inner_iter, SsorPcCL<VectorCL, double>( 1.))
+        : SchurSolverCL<PCG_SsorCL>( _PCGsolver, outer_tol, outer_iter),
+          _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
         {}
 };    
     
-class PSchur_PCG_CL: public PSchurSolverCL<PCG_T>
+class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
 {
   private:
-    PCG_T _PCGsolver;
+    PCG_SsorCL _PCGsolver;
   public:
     PSchur_PCG_CL( MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter)
-        : PSchurSolverCL<PCG_T>( _PCGsolver, M, outer_tol, outer_iter),
-          _PCGsolver( inner_tol, inner_iter, SsorPcCL<VectorCL, double>( 1.))
+        : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_tol, outer_iter),
+          _PCGsolver( inner_tol, inner_iter, SSORPcCL(1.))
         {}
 };    
     
-class PSchur_IPCG_CL: public PSchurSolverCL<IPCG_T>
+class PSchur_IPCG_CL: public PSchurSolverCL<PCG_SsorDiagCL>
 {
   private:
-    IPCG_T _PCGsolver;
+    PCG_SsorDiagCL _PCGsolver;
   public:
     PSchur_IPCG_CL( MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter)
-        : PSchurSolverCL<IPCG_T>( _PCGsolver, M, outer_tol, outer_iter),
-          _PCGsolver( inner_tol, inner_iter, ImprovedSsorPcCL<VectorCL, double>( 1.))
+        : PSchurSolverCL<PCG_SsorDiagCL>( _PCGsolver, M, outer_tol, outer_iter),
+          _PCGsolver( inner_tol, inner_iter, SSORDiagPcCL(1.))
         {}
-    IPCG_T& GetPoissonSolver() { return _PCGsolver; }
+    PCG_SsorDiagCL& GetPoissonSolver() { return _PCGsolver; }
 };    
     
-class PSchur_GSPCG_CL: public PSchurSolverCL<GSPCG_T>
+class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 {
   private:
-    GSPCG_T _PCGsolver;
+    PCG_SgsCL _PCGsolver;
   public:
     PSchur_GSPCG_CL( MatrixCL& M, double outer_tol, int outer_iter, double inner_tol, int inner_iter)
-        : PSchurSolverCL<GSPCG_T>( _PCGsolver, M, outer_tol, outer_iter),
-          _PCGsolver( inner_tol, inner_iter, SGSPcCL<VectorCL, double>() )
+        : PSchurSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_tol, outer_iter),
+          _PCGsolver( inner_tol, inner_iter, SGSPcCL() )
         {}
-    GSPCG_T& GetPoissonSolver() { return _PCGsolver; }
+    PCG_SgsCL& GetPoissonSolver() { return _PCGsolver; }
 };    
     
 // TODO: (P)Schur_MG_CL    

@@ -168,11 +168,11 @@ void Strategy(StokesP1BubbleP1CL<MGB,Coeff>& Stokes, double omega, double inner_
         time.Reset();
         if (meth)
         {
-            SsorPcCL<VectorCL, double> pc(omega);
+            SSORPcCL  pc(omega);
             MatDescCL M;
             M.SetIdx( pidx1, pidx1);
             Stokes.SetupMass( &M);
-            SsorMassPcCL<SchurComplMatrixCL> schur_pc( M.Data);
+            PreGSOwnMatCL<P_SSOR0,double> schur_pc(M.Data);
             SchurComplMatrixCL BABT(A->Data, B->Data, inner_iter_tol, omega);
             double outer_tol;
             std::cerr << "tol = "; std::cin >> outer_tol;

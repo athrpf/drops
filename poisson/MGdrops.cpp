@@ -76,8 +76,8 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
     std::cerr << "how many levels? (-1=all) > "; std::cin >> lvl;
 
     double resid, old_resid;
-    WGSSmootherCL<VectorCL, double> smoother(omega);   //gewichtetes Gauss-Seidel
-    CGSolverCL   <VectorCL, double> solver(tol, 200);  //CG-Verfahren
+    SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
+    CGSolverCL  solver(tol, 200); //CG-Verfahren
     do
     {
         std::cerr << "Smoothing steps (0=Quit): "; std::cin >> sm;

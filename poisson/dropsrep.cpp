@@ -57,7 +57,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
     VecDescCL* b= &Poisson.b;
 //    VecDescCL* err= &_err;
     MatDescCL* A= &Poisson.A;
-    SsorPcCL<VectorCL, double> pc(omega);
+    SSORPcCL   pc(omega);
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
         Estimator(rel_red, 0.0, 0.6, 8, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
     Uint step= 0;

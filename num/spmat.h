@@ -181,7 +181,8 @@ void SparseMatBuilderCL<T>::Build()
     size_t nz= 0;
     for (size_t i= 0; i<_rows; ++i)
         for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
-            if (it->second != 0) //nz+= _coupl[i].size();
+    // TODO: was machen wir mit Eintraegen kleiner 1e-18 ?
+            if (it->second != 0)
                 ++nz;
 
     _mat->resize(_rows, _cols, nz);
@@ -223,7 +224,7 @@ private:
     size_t _cols;
 
     std::valarray<size_t> _rowbeg;  // (_rows+1 entries, last entry must be <=_nz) index of first non-zero-entry in _val belonging to the row given as subscript
-    std::valarray<size_t> _colind;  // (_nz elements) column-number of correspnding entry in _val
+    std::valarray<size_t> _colind;  // (_nz elements) column-number of corresponding entry in _val
     std::valarray<T>      _val;     // nonzero-entries
 
     void resize (size_t rows, size_t cols, size_t nz)
@@ -285,6 +286,31 @@ T SparseMatBaseCL<T>::operator() (size_t i, size_t j) const
     // lower_bound returns the iterator to the next column entry, if col j is not found
     return (pos != GetFirstCol(i+1) && *pos==j) ? _val[pos-GetFirstCol(0)] : 0;
 }
+
+
+//**********************************************************************************
+//
+//  S p a r s e M a t D i a g C L :  stores location of diagonal of a sparse matrix
+//
+//**********************************************************************************
+
+class SparseMatDiagCL
+{
+  private:
+    std::valarray<size_t> _diagpos;
+
+  public:
+    template <typename T> SparseMatDiagCL (const SparseMatBaseCL<T>& A)
+      : _diagpos(A.num_rows())
+    {
+        const size_t n=A.num_rows();
+
+        for (size_t i=0; i<n; ++i)
+            _diagpos[i]=std::lower_bound( A.GetFirstCol(i), A.GetFirstCol(i+1), i) - A.GetFirstCol(0);
+    }
+
+    size_t operator[] (size_t i) const { return _diagpos[i]; }
+};
 
 
 //*****************************************************************************

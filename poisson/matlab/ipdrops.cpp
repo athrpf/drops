@@ -10,7 +10,7 @@
 #include "mex.h"
 
 #include "../instatpoisson.h"
-#include "../../num/poissonsolver.h"
+#include "../../num/solver.h"
 #include "../integrTime.h"
 
 
@@ -171,12 +171,12 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
   Poisson.SetupInstatRhs( cplA, cplM, t, b, t);
   
   // PCG-Verfahren mit SSOR-Vorkonditionierer
-  SsorPcCL<VectorCL, double> pc(1.0);
-  PCG_T pcg_solver(tol, max_iter, pc);
+  SSORPcCL pc(1.0);
+  PCG_SsorCL pcg_solver(tol, max_iter, pc);
   
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler; theta=0.5 -> Crank-Nicholson
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff> ,PCG_T>
+  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff>, PCG_SsorCL>
     ThetaScheme(Poisson, pcg_solver, 0.5);
   ThetaScheme.SetTimeStep(dt, nu);
   

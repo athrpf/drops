@@ -200,7 +200,8 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int met
         if (meth)
         {
             int max_iter= 200;
-            SsorPcCL<VectorCL, double> pc(omega);
+            SSORPcCL pc(omega);
+
             // delete former solution
             Poisson.x.Data.resize(0);
             Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
@@ -220,8 +221,8 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int met
         else
         {
             double resid, old_resid;
-            WGSSmootherCL<VectorCL, double> smoother(omega);  //gewichtetes Gauss-Seidel
-            CGSolverCL   <VectorCL, double> solver(tol, 200); //CG-Verfahren
+            SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
+            CGSolverCL  solver(tol, 200); //CG-Verfahren
 //            Uint sm;
 //            do
 //            {
@@ -361,7 +362,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
         {
             int max_iter= 200;
             double mytol= tol;
-            SsorPcCL<VectorCL, double> pc(omega);
+            SSORPcCL pc(omega);
             // delete former solution
             Poisson.x.Data.resize(0);
             Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
@@ -380,8 +381,8 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
         else // MGM
         {
             double resid, old_resid;
-            WGSSmootherCL<VectorCL, double> smoother(omega);  //gewichtetes Gauss-Seidel
-            CGSolverCL   <VectorCL, double> solver(tol, 200); //CG-Verfahren
+            SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
+            CGSolverCL  solver(tol, 200); //CG-Verfahren
 //            Uint sm;
 //            do
 //            {

@@ -63,7 +63,7 @@ void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& M, VectorCL& x,
              y_corr(y.size()),
              res1(x.size()),
              res2(y.size());
-    SsorPcCL<VectorCL, double> pc(1);
+    SSORPcCL pc(1);
 
     tol*= tol;
     Uint output= 50;//max_iter/20;  // nur 20 Ausgaben pro Lauf

@@ -405,7 +405,7 @@ void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_
         } break;
 
         case 0: {
-            SsorPcCL<VectorCL, double> pc(omega);
+            SSORPcCL pc(omega);
             VectorCL rhs( v1->Data.size());
                      
             MatrixCL M;
@@ -476,7 +476,7 @@ void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_
         } break;
 
         case 2: {
-            SsorPcCL<VectorCL, double> pc(omega);
+            SSORPcCL pc(omega);
             VectorCL v( v1->Data.size());
                      
             double outer_tol, theta, old_time= 0;

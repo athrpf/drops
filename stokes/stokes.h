@@ -282,9 +282,9 @@ class SchurComplMatrixCL
   private:
     const MatrixCL& _matA;
     const MatrixCL& _matB;
-    double    _tol;
-    SsorPcCL<VectorCL, double>  _pc;
-    
+    double          _tol;
+    SSORPcCL        _pc;
+
   public:
     SchurComplMatrixCL(const MatrixCL& A, const MatrixCL& B, double tol, double om)
         : _matA(A), _matB(B), _tol(tol), _pc(om) {}
