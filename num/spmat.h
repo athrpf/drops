@@ -43,19 +43,7 @@ class VectorBaseCL: public std::valarray<T>
     template <class X>
       VectorBaseCL (const X& x)         : base_type( x)     {}
 
-    // assignment
-    VectorBaseCL& operator=(const T s) { *static_cast<base_type*>( this)= s; return *this; }
-    template <class VT> inline VectorBaseCL& operator=(const VT& v);
-
-    // computed assignment
-    VectorBaseCL& operator+=(const T s) { *static_cast<base_type*>( this)+= s; return *this; }
-    VectorBaseCL& operator-=(const T s) { *static_cast<base_type*>( this)-= s; return *this; }
-    VectorBaseCL& operator*=(const T s) { *static_cast<base_type*>( this)*= s; return *this; }
-    VectorBaseCL& operator/=(const T s) { *static_cast<base_type*>( this)/= s; return *this; }
-    template <class VT> inline VectorBaseCL& operator+=(const VT& v);
-    template <class VT> inline VectorBaseCL& operator-=(const VT& v);
-    template <class VT> inline VectorBaseCL& operator*=(const VT& v);
-    template <class VT> inline VectorBaseCL& operator/=(const VT& v);
+DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
 
 #if (DROPSDebugC & DebugNumericC)
     // For checking new code; the following functions interfere with the expression
@@ -83,53 +71,6 @@ T& VectorBaseCL<T>::operator[](size_t s)
     return (*static_cast<base_type*>( this))[s];
 }
 #endif
-
-// assignment
-template <class T>
-  template <class VT>
-    inline VectorBaseCL<T>&
-    VectorBaseCL<T>::operator=(const VT& v)
-{
-    Assert( this->size()==v.size(), "VectorBaseCL =: incompatible dimensions", DebugNumericC);
-    *static_cast<base_type*>( this)= v; return *this;
-}
-
-// computed assignment
-template <class T>
-  template <class VT>
-    inline VectorBaseCL<T>&
-    VectorBaseCL<T>::operator+=(const VT& v)
-{
-    Assert( this->size()==v.size(), "VectorBaseCL +=: incompatible dimensions", DebugNumericC);
-    *static_cast<base_type*>( this)+= v; return *this;
-}
-
-template <class T>
-  template <class VT>
-    inline VectorBaseCL<T>&
-    VectorBaseCL<T>::operator-=(const VT& v)
-{
-    Assert( this->size()==v.size(), "VectorBaseCL -=: incompatible dimensions", DebugNumericC);
-    *static_cast<base_type*>( this)-= v; return *this;
-}
-
-template <class T>
-  template <class VT>
-    inline VectorBaseCL<T>&
-    VectorBaseCL<T>::operator*=(const VT& v)
-{
-    Assert( this->size()==v.size(), "VectorBaseCL *=: incompatible dimensions", DebugNumericC);
-    *static_cast<base_type*>( this)*= v; return *this;
-}
-
-template <class T>
-  template <class VT>
-    inline VectorBaseCL<T>&
-    VectorBaseCL<T>::operator/=(const VT& v)
-{
-    Assert( this->size()==v.size(), "VectorBaseCL /=: incompatible dimensions", DebugNumericC);
-    *static_cast<base_type*>( this)/= v; return *this;
-}
 
 #if (DROPSDebugC & DebugNumericC)
 template <class VT1, class  VT2>

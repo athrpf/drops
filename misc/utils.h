@@ -64,6 +64,34 @@ const Uint DebugUnknownsC   =16;
 #  define __UNUSED__
 #endif
 
+
+#undef  DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE
+#define DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(theOp, theClass, theT, thebase_type) \
+theClass& operator theOp (const theT s)                                                  \
+{                                                                                        \
+    *static_cast<thebase_type*>( this) theOp s; return *this;                            \
+}                                                                                        \
+template <class VT>                                                                      \
+  inline theClass<theT>&                                                                 \
+  operator theOp (const VT& v)                                                           \
+{                                                                                        \
+    Assert( this->size()==v.size(), #theClass #theOp ": incompatible dimensions",        \
+        DebugNumericC);                                                                  \
+    *static_cast<thebase_type*>( this) theOp v; return *this;                            \
+}
+
+
+#undef  DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE
+#define DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(theClass, theT, thebase_type) \
+/*assignment*/                                                                     \
+DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(=, theClass, theT, thebase_type)       \
+/*computed assignment*/                                                            \
+DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(+=, theClass, theT, thebase_type)      \
+DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(-=, theClass, theT, thebase_type)      \
+DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(*=, theClass, theT, thebase_type)      \
+DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(/=, theClass, theT, thebase_type)      \
+
+
 template <class In, class T>
 inline bool is_in( In beg, In end, const T& value )
 {
