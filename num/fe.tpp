@@ -1253,7 +1253,7 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 
 
 template <class VecDescT, class BndDataT, class Cont>
-void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t= 0.0)
+void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t)
 {
     const Uint slvl= s.GetLevel();
     const Uint flvl= vd.GetLevel();
