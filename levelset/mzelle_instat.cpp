@@ -116,6 +116,10 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     IdxDescCL* pidx= &Stokes.pr_idx;
     MatDescCL prM, prA;
 
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+    lset.CreateNumbering(      MG.GetLastLevel(), lidx);
+
     EnsightP2SolOutCL ensight( MG, lidx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
     const string datgeo= filename+".geo", 
@@ -124,10 +128,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
                  datscl= filename+".scl";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
+    ensight.DescribeScalar( "Levelset", datscl, true); 
+    ensight.DescribeScalar( "Pressure", datpr,  true); 
+    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.putGeom( datgeo);
 
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
-    lset.CreateNumbering(      MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
     const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
@@ -177,10 +182,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     time.Stop();
     std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
-    ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
