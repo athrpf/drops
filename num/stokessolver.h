@@ -336,9 +336,8 @@ PMINRES_SP(const Mat& A, const Mat& B,
     Vec dxu( u.size()); // Vector for updating x, thus the name.
     Vec dxpr( pr.size()); // Vector for updating x, thus the name.
     double err;
-//std::cerr << "PMINRES: residual: " << err << '\n';
+    double res;
 
-    tol*= tol;
     const double norm_r0= q.norm_r0();
     bool lucky= q.breakdown();
     SBufferCL<double, 3> c;
@@ -395,13 +394,13 @@ PMINRES_SP(const Mat& A, const Mat& B,
         dxpr.raw()= (norm_r0*b[0][0])*ppr[0].raw();
         u.raw()+= dxu.raw();
         pr.raw()+= dxpr.raw();
-//        err= dxu.norm2() + dxpr.norm2();
 
         // This is for fair comparisons of different solvers:
-        err= (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2();
-        std::cerr << "PMINRES: residual: " << err << '\n';
+        err= std::sqrt( (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2());
+        res= std::fabs( norm_r0*b[0][1]);
+        std::cerr << "PMINRES: residual: " << res << '\t' << " 2-residual: " << err << '\n';
         if (err<=tol || lucky==true) {
-            tol= std::sqrt( err);
+            tol= err;
             max_iter= k;
             return true;
         }
@@ -412,7 +411,7 @@ PMINRES_SP(const Mat& A, const Mat& B,
         }
         c.rotate(); s.rotate(); r.rotate(); pu.rotate(); ppr.rotate(); b.rotate();
     }
-    tol= std::sqrt( err);
+    tol= err;
     return false;
 }
 

@@ -730,9 +730,8 @@ bool
 PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol)
 {
     Vec dx( x.size());
-    double err;
+    double res;
 
-    tol*= tol;
     const double norm_r0= q.norm_r0();
     bool lucky= q.breakdown();
     SBufferCL<double, 3> c;
@@ -782,14 +781,11 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
         }
         dx.raw()= (norm_r0*b[0][0])*p[0].raw();
         x.raw()+= dx.raw();
-//        err= dx.norm2();
 
-        // This is for fair comparisons of different solvers:
-        // XXX: Devise a method for computing the residual-norm cheaply.
-        err= (rhs - A*x).norm2();
-//        std::cerr << "PMINRES: residual: " << err << '\n';
-        if (err<= tol || lucky==true) {
-            tol= std::sqrt( err);
+        res= std::fabs( norm_r0*b[0][1]);
+//        std::cerr << "PMINRES: residual: " << res << '\n';
+        if (res<= tol || lucky==true) {
+            tol= res;
             max_iter= k;
             return true;
         }
@@ -800,7 +796,7 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
         }
         c.rotate(); s.rotate(); r.rotate(); p.rotate(); b.rotate();
     }
-    tol= sqrt( err);
+    tol= res;
     return false;
 }
 
