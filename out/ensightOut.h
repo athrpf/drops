@@ -31,6 +31,7 @@ class EnsightP2SolOutCL
      
     void AppendTimecode( std::string&) const;
     void putTime( double time);
+    void CheckFile( const std::ofstream&) const;
   
   public:
     // idx must refer to a numbering of the verts and edges of a certain
@@ -63,6 +64,7 @@ class EnsightP2SolOutCL
 void EnsightP2SolOutCL::CaseBegin( const char casefileName[], Uint numsteps)
 {
     _case.open( casefileName);
+    CheckFile( _case);
     _descstr << "FORMAT\ntype: ensight\n\n";
     
     _numsteps= numsteps;
@@ -127,6 +129,11 @@ void EnsightP2SolOutCL::putTime( double t)
     }
 }
 
+void EnsightP2SolOutCL::CheckFile( const std::ofstream& os) const
+{
+    if (!os) throw DROPSErrCL( "EnsightP2SolOutCL: error while opening file!");
+}
+
 void EnsightP2SolOutCL::Commit()
 {
     // rewrite case file
@@ -161,6 +168,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     }    
     
     std::ofstream os( fileName.c_str());
+    CheckFile( os);
     os.flags(std::ios_base::scientific);
     os.precision(5);
     os.width(12);
@@ -246,6 +254,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
     }    
 
     std::ofstream os( fileName.c_str());
+    CheckFile( os);
     os.flags(std::ios_base::scientific);
     os.precision(5);
     os.width(12);
@@ -287,6 +296,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
     }    
 
     std::ofstream os( fileName.c_str());
+    CheckFile( os);
     os.flags(std::ios_base::scientific);
     os.precision(5);
     os.width(12);
