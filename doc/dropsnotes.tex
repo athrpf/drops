@@ -1,0 +1,834 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{ngerman,amssymb,amsmath}
+
+\newif\ifpdf\ifx\pdfoutput\undefined\pdffalse\else\pdfoutput=1\pdftrue\fi
+
+\ifpdf
+    \usepackage[pdftex]{graphicx}
+    \usepackage[pdftex]{hyperref}
+\else
+    \usepackage{graphicx}
+\fi
+
+
+\parindent0cm
+\parskip1ex
+\topmargin-2cm
+\oddsidemargin-1cm
+\textheight25cm
+\textwidth17cm
+
+\newenvironment{Code}{\begin{quote}\scriptsize}{\end{quote}}
+
+\begin{document}
+\newcommand{\prg}[1]{{\tt #1}}
+
+{\Large\bf Eine Sammlung von DROPS aller Geschmacksrichtungen}
+
+\tableofcontents
+
+%============================================================================
+\section{{\tt geom}: Geometrie}
+%============================================================================
+
+\subsection{Tetraeder und Subsimplices}
+
+Datenstrukturen f"ur die Subsimplices (Knoten, Kanten, Seitenfl"achen) und die
+Simplices (Tetraeder): 
+\prg{VertexCL}, \prg{EdgeCL}, \prg{FaceCL}, \prg{TetraCL} (siehe
+\prg{multigrid.h/cpp}).
+
+Jeder Tetraeder hat Zugriff auf seine 4 Knoten, 6 Kanten und 4 Seitenfl"achen.
+Die interne Nummerierung dieser Subsimplices auf einem Tetraeder kann der 
+folgenden Skizze entnommen werden:
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.5\textwidth]{tetra}
+\end{figure}
+
+Die Seitenfl"ache $i$ liegt dem Knoten $i$ gegen"uber. All diese topologischen
+Informationen sind in \prg{topo.h/cpp} festgehalten.
+
+\subsection{Das MultiGrid}
+
+Das MultiGrid $\mathcal M$ ist durch die \prg{MultiGridCL} repr"asentiert.
+Darin sind die Tetraeder und Subsimplices nach Leveln geordnet abgespeichert.
+Das Level eines Objektes gibt gerade die Anzahl seiner Vorfahren an,
+entsprechend besitzt das gr"obste Level die Nummer 0. Alle Tetraeder eines
+Levels $k$ formen das  sogenannte \emph{Gitter der Stufe $k$}: 
+$$
+\mathcal G_k=\{T\in\mathcal M: \ell(T)=k\} ~.
+$$
+Die \emph{Triangulierung der Stufe $k$}
+wird vom Gitter $\mathcal G_k$ und allen gr"oberen Tetraedern $T\in\mathcal
+G_j, j<k$, die nicht verfeinert sind, gebildet: 
+$$
+\mathcal T_k:=\mathcal G_k \cup\bigcup_{j<k}\{T\in\mathcal G_j: T\mbox{ ist
+unverfeinert}\} ~.
+$$
+
+
+\begin{Code}
+\begin{verbatim}
+class MultiGridCL
+{
+    MultiGridCL (const MGBuilderCL& Builder);
+
+    void Refine ();
+    void MakeConsistentNumbering();
+    void SizeInfo(std::ostream&);
+
+    bool IsSane (std::ostream&, int Level=-1) const;
+
+    VertexIterator         GetVerticesBegin     (int Level);
+    VertexIterator         GetVerticesEnd       (int Level);
+    AllVertexIteratorCL    GetAllVertexBegin    (int Level=-1);
+    AllVertexIteratorCL    GetAllVertexEnd      (int Level=-1);
+    TriangVertexIteratorCL GetTriangVertexBegin (int Level=-1);
+    TriangVertexIteratorCL GetTriangVertexEnd   (int Level=-1);
+    // ... und dasselbe mit const_Iteratoren
+    // ... und fuer Edge, Face, Tetra
+};
+\end{verbatim}
+\end{Code}
+
+Der Zugriff auf die Tetraeder und Subsimplices erfolgt "uber entsprechende
+Iteratoren, die sich drei Kategorien zuordnen. Am Beispiel der Tetraeder sind
+dies:
+\begin{itemize}
+    \item \prg{TetraIterator} iteriert "uber alle Tetraeder $T\in\mathcal G_k$
+    eines Gitters $\mathcal G_k$.
+    \item \prg{AllTetraIteratorCL} iteriert "uber alle Tetraeder
+    $T\in\bigcup_{j\leq k}{\mathcal G_j}$ bis zum Gitter $\mathcal G_k$.
+    \item \prg{TriangTetraIteratorCL} iteriert "uber alle Tetraeder
+    $T\in\mathcal T_k$ der Triangulierung $\mathcal T_k$.
+\end{itemize}
+
+Der Verfeinerungsalgorithmus wird durch die Elementfunktion \prg{Refine}
+aufgerufen und verfeinert alle Tetraeder des MultiGrids $\mathcal M$, die zur
+Verfeinerung markiert sind (Ein Tetraeder wird durch Aufruf seiner
+Elementfunktion \prg{TetraCL::SetRegRefMark} zur Verfeinerung markiert).
+
+Ein MultiGrid wird mit Hilfe eines \prg{MGBuilderCL}-Objektes erzeugt (siehe
+Konstruktor von \prg{MultiGridCL}), welche im n"achsten Abschnitt behandelt
+werden.
+
+\subsection{MultiGrid-Builder}
+Die Anfangstriangulierung $\mathcal T_0=\mathcal G_0$ wird mit Hilfe einer
+Builder-Klasse konstruiert. Derzeit gibt es in DROPS folgende Builder:
+\begin{itemize}
+    \item \prg{BrickBuilder} zur Erzeugung eines Quaders.
+    \item \prg{LBuilder} zur Erzeugung eines L-Gebietes.
+    \item \prg{BBuilder} zur Erzeugung eines B-Gebietes (Quader mit
+    einspringender Ecke).
+    \item \prg{ReadMeshBuilderCL} liest GAMBIT (FLUENT) Mesh-Files.
+\end{itemize}
+
+\begin{Code}
+\begin{verbatim}
+class BrickBuilderCL : public MGBuilderCL
+{
+    BrickBuilderCL(const Point3DCL& orig, const Point3DCL& e1, const Point3DCL& e2, const Point3DCL& e3, 
+                   Uint n1, Uint n2, Uint n3);
+};
+
+class LBuilderCL : public MGBuilderCL
+{
+    LBuilderCL(const Point3DCL& origin, const Point3DCL& e1, const Point3DCL& e2, const Point3DCL& e3,
+               Uint n1, Uint n2, Uint n3, Uint b1, Uint b2);
+};
+
+class BBuilderCL : public MGBuilderCL
+{
+    BBuilderCL(const Point3DCL& origin, const Point3DCL& e1, const Point3DCL& e2, const Point3DCL& e3,
+               Uint n1, Uint n2, Uint n3, Uint b1, Uint b2, Uint b3);
+};
+
+class ReadMeshBuilderCL : public MGBuilderCL
+{
+    // Input stream, from which the mesh is read. Pass a pointer to an output stream,
+    // e. g. msg= &std::cerr, if you want to know, what happens during multigrid-construction.
+    ReadMeshBuilderCL(std::istream& f, std::ostream* msg= 0);
+};
+\end{verbatim}
+\end{Code}
+
+\subsubsection{\prg{BrickBuilderCL}}
+Der Quader wird festgelegt durch den Ursprung \prg{orig}
+und die aufspannenden Vektoren \prg{e1, e2, e3}. Der Quader wird dann in
+${\mathtt n1}\times{\mathtt n2}\times{\mathtt n3}$ Unterquader zerlegt, von
+denen jeder in 6 Tetraeder unterteilt wird.
+
+Die 6 Randsegmente des Quaders werden in folgender Reihenfolge abgespeichert
+(als Beispiel der Einheitsw"urfel $\Omega=[0,1]^3$:) 
+\begin{itemize}
+    \item $x=0, \quad x=1$, 
+    \item $y=0, \quad y=1$, 
+    \item $z=0, \quad z=1$.
+\end{itemize}
+
+\subsubsection{\prg{LBuilderCL}}  Das L-Gebiet wird "ahnlich wie der Quader
+festgelegt. Die zus"atzlichen Parameter ${\mathtt b1}<{\mathtt n1}$, ${\mathtt
+b2}<{\mathtt n2}$ legen die Aussparung des L-Gebietes fest, welche dem
+Ursprung gegen"uber liegt und aus $({\mathtt n1-b1})\times({\mathtt
+n2-b2})\times{\mathtt n3}$ Unterquadern besteht.
+
+Die 14 Randsegmente des L-Gebietes werden in folgender Reihenfolge
+abgespeichert (als Beispiel das L-Gebiet $\Omega=[0,1]^3\setminus
+([0.5,1]^2\times[0,1])$):
+\begin{itemize}
+    \item $x=0, y\in[0,0.5]$, \quad
+    $x=0, y\in[0.5,1]$, \quad
+    $x=1, y\in[0,0.5]$, \quad
+    $x=0.5, y\in[0.5,1]$,
+    \item $y=0, x\in[0,0.5]$, \quad
+    $y=0, x\in[0.5,1]$, \quad
+    $y=1, x\in[0,0.5]$, \quad
+    $y=0.5, x\in[0.5,1]$,
+    \item $z=0, (x,y)\in[0,0.5]\times[0,0.5]$, \quad
+    $z=0, (x,y)\in[0,0.5]\times[0.5,1]$, \quad
+    $z=0, (x,y)\in[0.5,1]\times[0,0.5]$, \\
+    $z=1, (x,y)\in[0,0.5]\times[0,0.5]$, \quad
+    $z=1, (x,y)\in[0,0.5]\times[0.5,1]$, \quad
+    $z=1, (x,y)\in[0.5,1]\times[0,0.5]$.
+\end{itemize}
+ 
+\subsubsection{\prg{BBuilderCL}}  Das B-Gebiet wird "ahnlich wie der Quader
+festgelegt. Die zus"atzlichen Parameter ${\mathtt b1}<{\mathtt n1}$, ${\mathtt
+b2}<{\mathtt n2}$, ${\mathtt b3}<{\mathtt n3}$ legen die Aussparung des
+B-Gebietes fest, welche dem Ursprung gegen"uber liegt und aus $({\mathtt
+n1-b1})\times({\mathtt n2-b2})\times({\mathtt n3-b3})$ Unterquadern besteht.
+
+Die 24 Randsegmente des L-Gebietes werden in folgender Reihenfolge
+abgespeichert (als Beispiel das L-Gebiet $\Omega=[0,1]^3\setminus [0.5,1]^3$):
+\begin{itemize}
+    \item $x=0, (y,z)\in[0,0.5]\times[0,0.5]$, \quad
+    $x=0, (y,z)\in[0,0.5]\times[0.5,1]$, \quad
+    $x=0, (y,z)\in[0.5,1]\times[0,0.5]$, \quad
+    $x=0, (y,z)\in[0.5,1]\times[0.5,1]$, \\
+    $x=1, (y,z)\in[0,0.5]\times[0,0.5]$, \quad
+    $x=1, (y,z)\in[0,0.5]\times[0.5,1]$, \quad
+    $x=1, (y,z)\in[0.5,1]\times[0,0.5]$, \quad
+    $x=0.5, (y,z)\in[0.5,1]\times[0.5,1]$.
+    \item analog f"ur die $x$-$z$-Ebene.
+    \item analog f"ur die $x$-$y$-Ebene.
+\end{itemize}
+
+\subsubsection{\prg{ReadMeshBuilderCL}}
+Der Builder versteht das Format des "`User's Guide"' zu TGrid 3, Anhang C, welches
+unter anderem von RAMPANT, FLUENT/UNS, TGrid verwendet wird und von dem
+Gittergenerator GAMBIT erzeugt wird.
+Die ID's der erzeugten Simplexe entsprechen denen in der Datei.
+
+Um Randsegmente zu repr"asentieren, wird die Klasse \prg{MeshBoundaryCL} verwendet.
+Pro Zone von Randdreiecken in der .msh-Datei wird ein \prg{MeshBoundaryCL}-Objekt
+erzeugt, welches die zone-id und die boundary-condition enth"alt (siehe Ahnhang C des
+User's Guide).
+
+%============================================================================
+\section{{\tt poisson}: Poisson-Gleichung}
+%============================================================================
+
+\subsection{station"are Poisson-Gleichung}
+
+Auf dem Gebiet $\Omega$ sei die (verallgemeinerte) Poissongleichung
+\[
+\begin{array}{rcll}
+    -\Delta u(x) + q(x)\cdot u(x) &=& f(x) & \qquad\mbox{in }\Omega\\
+    u(x) &=& g_D(x) & \qquad\mbox{auf }\Gamma_D\\
+    \frac{\partial u(x)}{\partial n} &=& g_N(x) & \qquad\mbox{auf }\Gamma_N
+\end{array}
+\]
+gegeben, wobei die disjunkten Randst"ucke $\Gamma_D\cup\Gamma_N=\partial\Omega$
+den Dirichlet- bzw. Neumannrand darstellen.
+
+F"ur die Finite-Elemente-Diskretisierung mit $P_1$-Elementen steht die
+Problemklasse \prg{PoissonP1CL} zur Verf"ugung:
+\begin{Code}
+\begin{verbatim}
+template <class MGB, class Coeff>
+class PoissonP1CL: public ProblemCL<MGB, Coeff, PoissonBndDataCL>
+{
+    IdxDescCL idx;
+    VecDescCL x;
+    VecDescCL b;
+    MatDescCL A;
+    
+    PoissonP1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata);
+    // numbering of unknowns
+    void CreateNumbering(Uint, IdxDescCL*);
+    void DeleteNumbering(IdxDescCL*);
+    // set up matrices and rhs
+    void SetupSystem         (MatDescCL&, VecDescCL&) const;
+    void SetupStiffnessMatrix(MatDescCL&) const;
+    void SetupProlongation   (MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const;
+    // check computed solution etc.
+    double CheckSolution(const VecDescCL&, scalar_fun_ptr) const;
+    double CheckSolution(scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+    void GetDiscError (const MatDescCL&, scalar_fun_ptr) const;
+    void GetDiscError (scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
+
+    bool          EstimateError         (const VecDescCL&, const double, double&, est_fun);
+    static double ResidualErrEstimator  (const TetraCL&, const VecDescCL&, const BndDataCL&);
+    static double ResidualErrEstimatorL2(const TetraCL&, const VecDescCL&, const BndDataCL&);
+
+    DiscSolCL GetSolution() const;
+};
+\end{verbatim}
+\end{Code}
+
+\subsection{instation"are Poisson-Gleichung}
+Auf dem Gebiet $\Omega$ sei die instation"are Poissongleichung bzw.
+W"armeleitungsgleichung
+\[
+\begin{array}{rcll}
+    \frac{\partial u(x,t)}{\partial t}-\Delta u(x,t) + q(x)\cdot u(x,t) &=& f(x,t) 
+    & \qquad\mbox{in }\Omega\times[0,t_f]\\
+    u(x,0) &=& u_0(x) & \qquad\mbox{in }\Omega\\
+    u(x,t) &=& g_D(x) & \qquad\mbox{auf }\Gamma_D\times[0,t_f]\\
+    \frac{\partial u(x,t)}{\partial n} &=& g_N(x) 
+    & \qquad\mbox{auf }\Gamma_N\times[0,t_f]
+\end{array}
+\]
+gegeben.
+
+\begin{Code}
+\begin{verbatim}
+\end{verbatim}
+\end{Code}
+
+%============================================================================
+\section{{\tt stokes}: Stokes-Gleichung}
+%============================================================================
+
+\subsection{station"are Stokes-Gleichung}
+\begin{Code}
+\begin{verbatim}
+\end{verbatim}
+\end{Code}
+\subsection{instation"are Stokes-Gleichung}
+\begin{Code}
+\begin{verbatim}
+\end{verbatim}
+\end{Code}
+ 
+%============================================================================
+\section{{\tt navstokes}: Navier-Stokes-Gleichung}
+%============================================================================
+ 
+\subsection{station"are Navier-Stokes-Gleichung}
+\begin{Code}
+\begin{verbatim}
+\end{verbatim}
+\end{Code}
+\subsection{instation"are Navier-Stokes-Gleichung}
+\begin{Code}
+\begin{verbatim}
+\end{verbatim}
+\end{Code}
+ 
+%============================================================================
+\section{{\tt levelset}: Levelset-Methode}
+%============================================================================
+
+Die \prg{LevelsetP2CL} implementiert die Funktionalit"at der Levelset-Methode
+f"ur $P_2$-Elemente. 
+
+\begin{Code}
+\begin{verbatim}
+template<class StokesProblemT>
+class LevelsetP2CL
+{
+    LevelsetP2CL( MultiGridCL& mg, double theta= 0.5, double SD= 0.)
+    
+    void CreateNumbering( Uint level, IdxDescCL*);
+    void DeleteNumbering();
+    void Init( scalar_fun_ptr);
+    void SetVel( const DiscVelSolCL& vel);
+    // call SetupSystem *before* calling SetTimeStep!
+    void SetupSystem();
+    void SetTimeStep( double dt);
+    void DoStep();
+    void Reparam( Uint steps, double dt);
+    
+    bool   Intersects( const TetraCL&) const;
+    double GetMass() const;
+    static void AccumulateBndIntegral( const MultiGridCL&, VecDescCL& f, const VecDescCL& Phi, double sigma);
+    
+    DiscSolCL GetSolution() const;
+};
+\end{verbatim}
+\end{Code}
+
+%============================================================================
+\section{{\tt num}: Numerik}
+%============================================================================
+
+\subsection{Vorkonditionierer}
+\label{ss:vorkonditionierer}
+Die Vorkonditionierer f"ur ein lineares Gleichungssystem $Ax=b$ sind
+in \prg{num/solver.h} definiert. Sie haben im wesentlichen die folgende
+Struktur:
+\begin{Code}
+\begin{verbatim}
+template <PreMethGS PM>
+class PreGSCL<PM, false>
+{
+  private:
+    double _omega;
+
+  public:
+    PreGSCL (double om= 1.0) : _omega(om) {}
+
+    template <typename Vec>
+    void Apply(const MatrixCL& A, Vec& x, const Vec& b) const
+};
+\end{verbatim}
+\end{Code}
+Die Funktion \prg{Apply} wendet den Vorkonditionierer an. Zur Zeit gibt
+es folgende Verfahren:
+\begin{itemize}
+\item \prg{SORsmoothCL}, Gauss-Seidel-Verfahren mit "Uberrelaxation.
+\item \prg{SGSPcCL}, symmetrisches Gauss-Seidel-Verfahren f"ur den Startvektor $x=0$. 
+\item \prg{SSORPcCL}, SSOR-Verfahren f"ur den Startvektor $x=0$.
+\item \prg{SSORDiagPcCL}, SSOR-Verfahren, f"ur schnelleren Zugriff auf die Diagonale von $A$ optimiert.
+\item \prg{DummyPcCL}, die Identit"at als trivialer Vorkonditionierer.
+\end{itemize}
+Ferner existiert die Funktion \prg{SolveGSstep(const
+PreDummyCL<PB\_JAC>\&, const MatrixCL\& A, Vec\& x, const Vec\& b, double
+omega)}, die einen Jacobi-Schritt zum Startvektor $x$ durchf"uhrt. Der
+Funktionsname ist durch die Auswahlregeln f"ur "uberladene Funktionen
+in C++ bedingt.
+
+Die eigentliche Information "uber den Typ des Vorkonditionierers steckt in
+\prg{enum PreMethGS} bzw.\ der Template-Klasse \prg{template <PreBaseGS>
+class PreDummyCL \{\}}, die die \prg{enum}-Werte auf eigene C++-Typen
+abbildet.
+
+\subsubsection{Vorkonditionierer f"ur die station"aren Stokes-Gleichungen}
+In \prg{stokes/sdropsP2.cpp} befindet sich die Klasse
+\begin{Code}
+\begin{verbatim}
+class MGPreCL
+{
+    MGPreCL( const MGDataCL& mgd, const MatrixCL& ps);
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& K, Vec& x, const Vec& b) const;
+};
+\end{verbatim}
+\end{Code}
+Sie implementiert einen Blockdiagonal-Vorkonditionierer f"ur die
+station"aren Stokes-Gleichungen.  Die Argumente x, b von \prg{Apply}
+m"ussen Zugriff auf die Gechwindigkeitskomponenten erm"oglichen (via
+der Elementfunktion \prg{u}) und ebenso auf die Druckkomponenten (via
+\prg{p}). Dies leistet im Moment die Vektorklasse \prg{StokesVectorCL},
+welche in \prg{stokes/sdropsP2.cpp} definiert ist.
+
+Die Matrix K repr"asentiert die Block-Matrix zu den Stokes-Gleichungen
+und mu"s Zugriff auf die Teilmatrizen A und B erlauben. Zur Zeit die
+in \prg{stokes/sdropsP2.cpp} definierte Klasse \prg{StokesMatrixCL}
+eingesetzt.
+
+Der Vorkonditionierer verwendet f"ur den Poissonanteil der
+Stokes-Gleichungen eine Iteration des "ubergebenen Mehrgitter-V-Zyklus
+mit den in diesem eingestellten Gl"attern.
+
+Die Schur-Komplementmatrix wird durch einen SSOR-Schritt mit der
+$P_2$-Massenmatrix vorkonditioniert.
+
+\medskip
+Als traditionelle Alternative kann ein "ahnlicher aufgebauter
+Vorkonditionierer vom Typ
+\begin{Code}
+\begin{verbatim}
+class FullPreCL
+{
+    FullPreCL( const MatrixCL& ps);
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& K, Vec& x, const Vec& b) const;
+};
+\end{verbatim}
+\end{Code}
+verwendet werden. Im Unterschied zu \prg{MGPreCL} wird hier der
+Poissonanteil mit Hilfe eines SSOR-vorkonditionierten PCG-L"osers
+n"aherungsweise gel"ost.\footnote{Diese Klasse ist viel ineffizienter
+als \prg{MGPreCL}.}
+
+\medskip
+Beide Vorkonditionierer liefern bereits korrekte Ergebnisse. Die Implementierung
+hat sich jedoch in Details noch nicht stabilisiert. Deshalb befindet sich der
+gesamte Code in \prg{stokes/sdropsP2.cpp}.
+
+\subsection{Poisson-L"oser}
+Die iterativen L"oser f"ur lineare Gleichungssysteme sind in
+\prg{num/solver.h} implementiert.  Es gibt einen CG-L"oser,
+\begin{Code}
+\begin{verbatim}
+template <typename Mat, typename Vec>
+bool
+CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol),
+\end{verbatim}
+\end{Code}
+einen PCG-L"oser, der die in \ref{ss:vorkonditionierer} beschriebenen Vorkonditionierer
+verwenden kann:
+\begin{Code}
+\begin{verbatim}
+template <typename Mat, typename Vec, typename PreCon>
+bool
+PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
+    int& max_iter, double& tol),
+\end{verbatim}
+\end{Code}
+Ein MINRES-L"oser
+\begin{Code}
+\begin{verbatim}
+template <typename Mat, typename Vec>
+bool
+MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol);
+\end{verbatim}
+\end{Code}
+und ein vorkonditionierter PMINRES-L"oser
+\begin{Code}
+\begin{verbatim}
+template <typename Mat, typename Vec, typename Lanczos>
+bool
+PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol);
+\end{verbatim}
+\end{Code}
+stehen zur Verf"ugung. Sie k"onnen auch direkt
+zum L"osen der Stokes-Gleichungen verwendet werden. Beispiele dazu findet man in
+\prg{stokes/sdropsP2}.
+
+Ferner existiert eine GMRES-Implementierung, die zur Zeit nur vom 2D-Code eingesetzt
+wird:
+\begin{Code}
+\begin{verbatim}
+template <typename Mat, typename Vec, typename PreCon>
+bool
+GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
+      int m, int& max_iter, double& tol).
+\end{verbatim}
+\end{Code}
+Um die Handhabung der L"oser zu erleichtern gibt es die Klasse
+\begin{Code}
+\begin{verbatim}
+class SolverBaseCL
+{
+  protected:
+    int    _maxiter, _iter;
+    double _tol, _res;
+
+    SolverBaseCL (int maxiter, double tol)
+        : _maxiter(maxiter), _iter(-1), _tol(tol), _res(-1.) {}
+
+  public:
+    void   SetTol    (double tol) { _tol= tol; }
+    void   SetMaxIter(int iter)   { _maxiter= iter; }
+
+    double GetTol    () const { return _tol; }
+    int    GetMaxIter() const { return _maxiter; }
+    double GetResid  () const { return _res; }
+    int    GetIter   () const { return _iter; }
+},
+\end{verbatim}
+\end{Code}
+welche als Basisklasse f"ur die iterativen L"oser dient. Die abgeleiteten
+Klassen enthalten die Elementfunktion \prg{Solve}. Diese ruft den
+eigentlichen L"oser mit den vorher gew"ahlten Parametern auf.
+
+\subsection{Stokes-L"oser}
+Die Stokes-L"oser ermitteln die L"osung eines linearen Gleichungssystems der Form
+$$
+\begin{pmatrix}A & B^T \\ B & 0\end{pmatrix}
+\begin{pmatrix}u \\ p\end{pmatrix}
+=
+\begin{pmatrix}b \\ c\end{pmatrix}.
+$$
+Sie sind in \prg{num/stokessolver.h} implementiert.
+
+\subsubsection{Schur-Verfahren}
+Die Schur-Komplementmatrix $S=BA^{-1}B^T$ wird in Drops durch die Klasse
+\prg{SchurComplMatrixCL} in \prg{stokes/stokes.h} realisiert. Der Matrix-Vektor-Multiplikationsoperator
+verwendet zu L"osung des Gleichungssystems mit $A$ ein PCG-Verfahren mit dem
+in der \prg{SchurComplMatrixCL} definierten Vorkonditionierer. Dies ist gegenw"artig
+die \prg{SSORPcCL}.
+
+Damit kann das Schur-Verfahren in \prg{SchurSolverCL} und \prg{PSchurSolverCL} so
+darstellen:
+\begin{enumerate}
+\item $r= BA^{-1}b -c$ berechnen: $r= -c$, $Av = b$ l"osen, $r+= Bv$.
+\item $Sp=r$ l"osen.
+\item $Av = b - B^Tp$ l"osen.
+\end{enumerate}
+Beide Klassen verwenden in Schritt 1 und 3 einen der Poissonl"oser,
+dessen Typ als Template-Parameter in die Klasse gebracht wird (H"alt
+eine Referenz auf den L"oser.). Ein Objekt vom L"osertyp wird
+erst durch "offentliches Ableiten zugef"ugt. In Schritt 2 verwendet
+\prg{SchurSolverCL} das CG-Verfahren und \prg{PSchurSolverCL} ein
+PCG-Verfahren mit SSOR-Vorkonditionierung.
+
+\subsubsection{Uzawa-Verfahren}
+Die folgenden Uzawa-Verfahren stehen zur Verf"ugung:
+\begin{Code}
+\begin{verbatim}
+template <typename PoissonSolverT>
+class UzawaSolverCL : public SolverBaseCL
+{
+  private:
+// ...
+
+  public:
+    UzawaSolverCL (PoissonSolverT& solver, MatrixCL& M, int maxiter, double tol, double tau= 1.);
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+// ...
+};
+
+class Uzawa_IPCG_CL : public SolverBaseCL
+{
+  private:
+// ...
+
+  public:
+    Uzawa_IPCG_CL(MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.);
+
+    // Always call this when A has changed, before Solve()!
+    void Init_A_Pc(MatrixCL& A) { _A_IPCGsolver.GetPc().Init(A); }
+
+    inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                       const VectorCL& b, const VectorCL& c);
+// ...
+};
+\end{verbatim}
+\end{Code}
+
+In der ersten Klasse ist der Typ des Poissonl"osers als Template-Parameter gegeben.
+F"ur die in DROPS vorhandenen Poisson-Verfahren existieren in \prg{num/stokessolver.h}
+von \prg{UzawaSolverCL} abgeleitete Klassen, die den entsprechenden L"oser in den
+im folgenden Algorithmus auftretenden Poisson-Problemen einsetzen:
+\begin{enumerate}
+\item $M dp = (B v -c)$ l"osen.
+\item $p += dp$.
+\item $A dv = A v + B^Tp - b$ l"osen.
+\item $v-= dv$.
+\end{enumerate}
+In der Klasse \prg{Uzawa\_IPCG\_CL} k"onnen in Schritt 1 und 3
+unterschiedliche Poisson-Verfahren benutzt werden. Zur Zeit sind beide
+L"oser SSOR-vorkonditionierte PCG-Verfahren.
+
+\subsection{Navier-Stokes-L"oser}
+Im\prg{num/nssolver.h} sind die L"osungsverfahren f"ur die station"aren
+Navier-Stokes-Gleichungen definiert. Sie l"osen das nicht-lineare
+Gleichungssystem
+$$
+\begin{pmatrix}A +\alpha N(v) & B^T p \\ B & 0\end{pmatrix}
+\begin{pmatrix}v \\ p\end{pmatrix} = \begin{pmatrix}b \\ c\end{pmatrix}.
+$$
+Der Parameter $\alpha$ ist hier stets $1$, wird jedoch f"ur die
+Zeitintegration ben"otigt. In DROPS wird ein Fixpunktverfahren eingesetzt,
+in dem folgende Schritte bis zur Konvergenz iteriert werden:
+\begin{enumerate}
+\item Stelle $N(v)$ auf.
+\item L"ose
+$$
+\begin{pmatrix}A + \alpha N(v) & B^T \\ B & 0\end{pmatrix}
+\begin{pmatrix}w \\ q\end{pmatrix}
+=
+\begin{pmatrix}(A +\alpha N(v)) v + B^T p - b\\ B v - c\end{pmatrix}.
+$$
+\item $v-=w$, $p-=q$.
+\end{enumerate}
+
+Die Implementierung findet man in der Klasse \prg{FixedPtDefectCorrCL},
+deren abgeleitete Klassen konkrete Stokes-L"oser aus
+\prg{num/stokessolver.h} verwenden.
+
+Nach Turek (Seite 187 ff.) kann man obige Defektkorrektur
+d"ampfen. Diese Variante des Fixpunktverfahrens wird durch die Klasse
+\prg{AdaptFixedPtDefectCorrCL} implementiert.
+
+%============================================================================
+\section{Zeitintegration}
+%============================================================================
+Die Verfahren zur L"osung zeitabh"angiger Gleichungen befinden
+sich in der Erprobung und haben noch keinen festen Platz in der
+DROPS-Verzeichnishierarchie.  In \prg{poisson}, \prg{stokes} und
+\prg{navstokes} gibt es je eine Datei \prg{integrtime.h}, die stets ein
+Theta-Schema enth"alt.
+
+\subsection{$\theta$-Schema}
+Diese Verfahren ergeben sich dadurch, da"s man
+$$
+\partial_t u \approx \frac{(1-\theta) u^\text{alt} + \theta u^\text{neu}}{dt}
+$$
+in die entsprechende Differentialgleichung einsetzt. Man erh"alt f"ur
+jeden Zeitschritt ein (nicht-) lineares Gleichungssystem. Bei den Stokes-
+bzw.\ Navier-Stokes-Gleichungen wird der Druck stets vollimplizit
+diskretisiert.  Auf diese Weise wird die Berechnung eines Startwertes
+f"ur den Druck vermieden.
+
+Die Klassen \prg{Instat***ThetaSchemeCL} enthalten eine Funktion
+\prg{SetTimeStep}, die vor jedem Zeitschritt aufgerufen werden mu"s. Sie
+stellt das Gleichungssystem mit der Massenmatrix auf und setzt die
+Zeitschritt-Gr"o"se.  Der eigentliche Zeitschritt wird durch einen Aufruf
+von \prg{DoStep} durchgef"uhrt.
+
+\subsection{Fractional-Step-Verfahren}
+F"ur die Stokes-Gleichungen ist ein weiteres Verfahren verf"ugbar:
+(XXX beschreiben. Ist im Moment defekt...)
+
+%============================================================================
+\section{{\tt out}: Ausgabe}
+%============================================================================
+
+\subsection{Ausgabe in Geomview}
+\begin{itemize}
+    \item \prg{GeomMGOutCL}: nur Triangulierung ausgeben.
+    \item \prg{GeomSolOutCL}: Triangulierung ausgeben, die nach den Werten 
+    einer skalaren Variable eingef"arbt ist.
+\end{itemize}
+
+\begin{Code}
+\begin{verbatim}
+class GeomMGOutCL : public MGOutCL
+{
+    GeomMGOutCL (const MultiGridCL& MG, int TriLevel=-1, bool onlyBnd=false, double explode=0.5);
+};
+
+template <class DiscSol>
+class GeomSolOutCL : public MGOutCL
+{
+    GeomSolOutCL (const MultiGridCL& MG, const DiscSol& discsol, const ColorMapperCL* colmap, int TriLevel=-1, 
+                  bool onlyBnd=false, double explode=0.5, double min=0., double max=1.);
+};
+\end{verbatim}
+\end{Code}
+
+Mit \prg{onlyBnd=true} werden nur die am Rand liegenden Tetraeder ausgegeben
+(schnellerer Aufbau von Postscript-Bildern!). "Uber den Parameter \prg{explode}
+kann der Versatz der Tetraeder untereinander gesteuert werden, bei
+\prg{explode=0} ist dieser Effekt ausgeschaltet. Die Parameter \prg{min, max}
+geben an, ab welchen Grenzen die Werte der dargestellten L"osung geclippt
+werden sollen.
+
+Die Geomview-Ausgabe ist vor allem f"ur die Ausgabe der Geometrie und
+Triangulierung geeignet. Um L"osungen zu betrachten, sollten die folgende
+TecPlot- (f"ur 2D-Daten) oder Ensight-Ausgabe (f"ur 3D-Daten) genutzt werden.
+
+\subsection{Ausgabe in TecPlot}
+\begin{itemize}
+    \item \prg{TecPlot2DSolOutCL}: Ausgabe von Druck und Geschwindigkeit 
+    in einer Schnittebene senkrecht zu einer der Koordinatenachsen.
+    \item \prg{TecPlotSolOutCL}: Ausgabe von Druck und Geschwindigkeit im gesamten
+    Gebiet. Da Tecplot zur 3D-Visualisierung nicht so geeignet ist, empfiehlt
+    sich anstattdessen eine Ausgabe f"ur Ensight!
+\end{itemize}
+
+\begin{Code}
+\begin{verbatim}
+template <class DiscVelT, class DiscPrT>
+class TecPlot2DSolOutCL: public MGOutCL
+{
+    TecPlot2DSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, 
+                       const IdxDescCL& freeVertIdx, int lvl, Uint cutvar, double cutplane)
+};
+
+template <class DiscVelT, class DiscPrT>
+class TecPlotSolOutCL: public MGOutCL
+{
+    TecPlotSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, int lvl= -1)
+};
+\end{verbatim}
+\end{Code}
+Die Klasse \prg{TecPlot2DSolOutCL} ben"otigt zur Nummerierung der Knoten einen 
+Index, in dem alle $P_1$-Freiheitsgrade durchnummeriert sind. Dieser wird nicht
+ver"andert, es kann also z.B. auch der Index der Druckvariable hierzu benutzt
+werden. Hier ein Beispiel zur Benutzung:
+\begin{Code}
+\begin{verbatim}
+DROPS::IdxDescCL tecIdx;
+tecIdx.Set( 1);
+Stokes.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
+
+std::ofstream v2d("data2D.dat");
+DROPS::TecPlot2DSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+    tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
+v2d << tecplot2d;
+v2d.close();
+\end{verbatim}
+\end{Code}
+
+\subsection{Ausgabe in Ensight}
+\prg{EnsightP2SolOutCL}: Ausgabe im Ensight-Case-Format, auch transiente Daten
+m"oglich.
+\begin{Code}
+\begin{verbatim}
+class EnsightP2SolOutCL
+{
+    EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx)
+    // call CaseBegin() before any other member function
+    void CaseBegin ( const char casefileName[], Uint numsteps= 0);
+    void DescribeGeom  ( const char geoName[], std::string fileName, bool timedep= false);
+    void DescribeScalar( const char varName[], std::string fileName, bool timedep= false);
+    void DescribeVector( const char varName[], std::string fileName, bool timedep= false);
+    void putGeom      ( std::string, double t= -1);
+    template<class DiscScalT>
+    void putScalar    ( std::string, const DiscScalT&, double t= -1);
+    template<class DiscVecT>
+    void putVector    ( std::string, const DiscVecT&, double t= -1);
+    // call putCaseEnd() after finishing all other output
+    void CaseEnd   ();
+};
+\end{verbatim}
+\end{Code}
+
+Die Klasse \prg{EnsightP2SolOutCL} ben"otigt einen eigenen Index, in dem alle
+$P_2$-Freiheitsgrade durchnummeriert sind. Die Aufrufe von Elementfunktionen
+werden durch \prg{CaseBegin} am Anfang und \prg{CaseEnd} am Ende
+eingeschlossen. Beachte, dass das Case-File in der Regel fehlerhaft sein
+wird, wenn \prg{CaseEnd} nicht aufgerufen wird. Die Funktionen
+\prg{DescribeXXX} dienen zur Beschreibung der Geometrie und skalarer oder
+vektorwertiger Variablen und werden einmal zu Anfang aufgerufen. Der Parameter
+\prg{timedep} gibt dabei an, ob es sich um transiente Daten handelt. Mit den
+Funktionen \prg{putXXX} k"onnen die Daten dann tats"achlich abgespeichert
+werden. Bei transienten Daten muss dabei noch der entsprechende Zeitpunkt
+angegeben werden.
+
+Hier ein Beispiel zur Ausgabe von transienten skalaren Daten bei festem Gitter
+und festem Geschwindigkeitsfeld:
+\begin{Code}
+\begin{verbatim}
+IdxDescCL lidx;
+lidx.Set( 1, 1);
+lset.CreateNumbering( mg.GetLastLevel(), &lidx);
+EnsightP2SolOutCL ensight( mg, &lidx);
+
+const char datgeo[]= "ensight/drop.geo", 
+           datvec[]= "ensight/drop.vec",
+           datscl[]= "ensight/drop.scl";
+
+ensight.CaseBegin     ( "drop.case", num_steps+1);
+ensight.DescribeGeom  ( "rotating vel field", datgeo);
+ensight.DescribeScalar( "Levelset", datscl, true); 
+ensight.DescribeVector( "Velocity", datvec); 
+
+ensight.putGeom( datgeo);
+ensight.putVector( datvec, prob.GetVelSolution());
+ensight.putScalar( datscl, lset.GetSolution(), 0);
+
+for (int i=1; i<=num_steps; ++i)
+{
+    // berechne Loesung zum neuen Zeitschritt
+    // ...
+    ensight.putScalar( datscl, lset.GetSolution(), i/10.);
+}
+
+ensight.CaseEnd();
+\end{verbatim}
+\end{Code}
+\end{document}
