@@ -242,8 +242,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                 {
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
-                        mA( Numb[i],   Numb[j]  )=
-                        mA( Numb[i]+1, Numb[j]+1)=
+                        mA( Numb[i],   Numb[j]  )+= coupA[j][i];
+                        mA( Numb[i]+1, Numb[j]+1)+= coupA[j][i];
                         mA( Numb[i]+2, Numb[j]+2)+= coupA[j][i];
                         for (int k=0; k<3; ++k)
                             for (int l=0; l<3; ++l)
@@ -254,8 +254,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
 
                                 mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad()*absdet;
                             }
-                        mM( Numb[i],   Numb[j]  )=
-                        mM( Numb[i]+1, Numb[j]+1)=
+                        mM( Numb[i],   Numb[j]  )+= coupM[j][i];
+                        mM( Numb[i]+1, Numb[j]+1)+= coupM[j][i];
                         mM( Numb[i]+2, Numb[j]+2)+= coupM[j][i];
                     }
                     else // put coupling on rhs
