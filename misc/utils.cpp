@@ -8,10 +8,6 @@
 // Remarks:                                                                *
 //**************************************************************************
 
-#ifndef _UTILS_CPP_
-#define _UTILS_CPP_
-
-
 #include "misc/utils.h"
 #include <iostream>
 
@@ -40,5 +36,3 @@ clock_t TimerCL::_gt_begin= 0,
 
 
 } // end of namespace DROPS
-
-#endif

@@ -6,9 +6,6 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _POISSON_CPP_
-#define _POISSON_CPP_
-
 #include "num/discretize.h"
 #include "poisson/poisson.h"
 
@@ -45,6 +42,3 @@ double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const Poisso
 
 
 } // end of namespace DROPS
-
-#endif
-

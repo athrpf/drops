@@ -6,9 +6,6 @@
 // History: begin - Sep, 13 2001                                           *
 //**************************************************************************
 
-#ifndef _INSTAT_STOKES_CPP_
-#define _INSTAT_STOKES_CPP_
-
 #include "stokes/instatstokes.h"
 #include "num/discretize.h"
 
@@ -61,8 +58,3 @@ VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v)
 
 
 } // end of namespace DROPS
-
-#endif
-
-
-

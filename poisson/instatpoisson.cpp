@@ -7,9 +7,6 @@
 // History: begin - November, 11 2002                                      *
 //**************************************************************************
 
-#ifndef _INSTAT_POISSON_CPP_
-#define _INSTAT_POISSON_CPP_
-
 #include "poisson/instatpoisson.h"
 #include "num/discretize.h"
 
@@ -20,8 +17,3 @@ namespace DROPS
   double                StripTimeCL::_t= 0;
 
 } // end of namespace DROPS
-
-#endif
-
-
-

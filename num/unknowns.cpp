@@ -7,9 +7,6 @@
 //                                                                         *
 //**************************************************************************
 
-#ifndef _UNKNOWNS_CPP_
-#define _UNKNOWNS_CPP_
-
 #include "num/unknowns.h"
 #include <algorithm>
 
@@ -46,6 +43,3 @@ UnknownIdxCL& UnknownIdxCL::operator=(const UnknownIdxCL& rhs)
 
 
 } // end of namespace DROPS
-
-
-#endif

@@ -6,9 +6,6 @@
 // History: begin - April, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _MGSOLVER_CPP_
-#define _MGSOLVER_CPP_
-
 #include "num/MGsolver.h"
 
 namespace DROPS
@@ -51,6 +48,3 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end)
 
 
 } // end of namespace DROPS
-
-#endif
-

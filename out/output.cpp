@@ -1,13 +1,10 @@
 //**************************************************************************
-// File:    output.cpp                                                       *
+// File:    output.cpp                                                     *
 // Content: geometry and solution output in various formats                *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
 // History: begin - Nov, 26 2001                                           *
 //**************************************************************************
-
-#ifndef _OUTPUT_CPP_
-#define _OUTPUT_CPP_
 
 #include "out/output.h"
 
@@ -92,8 +89,4 @@ std::ostream& SanityMGOutCL::put (std::ostream& os) const
 
 } // end of namespace DROPS
 
-
 #include "out/mapleout.cpp"
-
-
-#endif

@@ -6,9 +6,6 @@
 // History: begin - May, 2 2001                                            *
 //**************************************************************************
 
-#ifndef _FE_CPP_
-#define _FE_CPP_
-
 #include "num/fe.h"
 
 namespace DROPS
@@ -31,5 +28,3 @@ const double FE_P2CL::_D2H[10][3][3]= {
 
 
 } // end of namespace DROPS
-
-#endif

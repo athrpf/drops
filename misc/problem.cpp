@@ -6,10 +6,8 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _PROBLEM_CPP_
-#define _PROBLEM_CPP_
-
 #include "misc/problem.h"
+
 namespace DROPS
 {
 
@@ -51,6 +49,5 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint NumUnknown,
         for (Uint i=0; i<NumUnknown; ++i) it->Unknowns(idx)[i]= counter++;
     }
 }
-} // end of namespace DROPS
 
-#endif
+} // end of namespace DROPS

@@ -6,9 +6,6 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _STOKES_CPP_
-#define _STOKES_CPP_
-
 #include "stokes/stokes.h"
 #include "num/discretize.h"
 
@@ -120,8 +117,3 @@ VectorCL operator* (const SchurComplMatrixCL& M, const VectorCL& v)
 }    
 
 } // end of namespace DROPS
-
-#endif
-
-
-
