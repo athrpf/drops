@@ -1499,10 +1499,9 @@ LocatorCL::LocateInTetra(const Point3DCL& p, Uint trilevel, LocationCL& loc) con
     SVectorCL<4>& b= loc._Coord;
     SMatrixCL<4,4> M;
     
-    for (Uint lvl=0; lvl<trilevel; ++lvl)
+    for (Uint lvl=t->GetLevel(); lvl<trilevel; ++lvl)
         if ( !t->IsUnrefined() )
         {
-//            bool found= false;
             for (TetraCL::const_ChildPIterator it=t->GetChildBegin(), theend=t->GetChildEnd(); it!=theend; ++it)
             {
                 MakeMatrix(**it, M);
@@ -1512,15 +1511,9 @@ LocatorCL::LocateInTetra(const Point3DCL& p, Uint trilevel, LocationCL& loc) con
                 if ( InTetra(b) )
                 {
                     t= *it;
-//                    found= true;
                     break;
                 }
             }
-//            if (!found)
-//            {
-//                t=0; std::fill(b.begin(), b.end(), 0.);
-//                return false;
-//            }
         }
         else break;
     return true;
