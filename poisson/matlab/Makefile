@@ -16,8 +16,8 @@ MCFLAGS=$(FLAGS) -I..
 default: ipdrops
 
 ipdrops:
-	cd ..; make ../geom/topo.o
-	cd ..; make matlab/ipdrops CC=$(MC) CFLAGS="$(MCFLAGS)"
+	cd .. && make ../geom/topo.o
+	cd .. && make matlab/ipdrops CC=$(MC) CFLAGS="$(MCFLAGS)"
   
 clean:
 	rm -f *.mexglx 

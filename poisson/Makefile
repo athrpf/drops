@@ -72,7 +72,7 @@ matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \
 clean: matlab/clean
 
 matlab/clean:
-	cd matlab; make clean
+	cd matlab && make clean
 
 # include common rules:
 include ../Make.common
