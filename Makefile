@@ -34,6 +34,12 @@ check:
 doc:
 	doxygen dox.cfg
 
+stat:
+	-ls $(PACKAGES:%=%/*.[ct]pp) $(PACKAGES:%=%/*.h) > $(DROPS_ROOT)/srcFiles.tmp
+	cat $(DROPS_ROOT)/srcFiles.tmp | xargs wc --lines
+	@rm -f $(DROPS_ROOT)/srcFiles.tmp
+	@echo "--> lines of code (LOC) statistics done"
+
 all_%:
 	cd $* && $(MAKE) all
 
@@ -64,8 +70,8 @@ depend_%:
 prog_%:
 	cd $(@D) && $(MAKE) $(*F)
 
-
-.PHONY: all clean distclean distclean_dox default dep deldepend doc topo check
+         
+.PHONY: all clean distclean distclean_dox default dep deldepend doc stat topo check
 
 # include settings from the config file drops.conf:
 include drops.conf
