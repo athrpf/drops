@@ -21,6 +21,9 @@ distclean: clean
 dep:
 	cd $(DROPS_ROOT) && $(MAKE) dep
 
+doc:
+	cd $(DROPS_ROOT) && $(MAKE) doc
+
 # .cpp -> .o
 ../%.o: ../%.cpp
 ifeq ($(CC),mex)
@@ -35,7 +38,7 @@ endif
 # local objectfiles get auto-prefix:
 $(OBJ): %.o: ../$(DIR)/%.o
 
-.PHONY: all clean distclean dep default
+.PHONY: all clean distclean dep default doc
 
 
 # include settings from the config file drops.conf:
