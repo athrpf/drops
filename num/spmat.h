@@ -50,44 +50,24 @@ public:
     template <class V>
       VectorBaseCL (V exptpl)           : base_type(exptpl) {}
 
-    // member functions
-    T norm2  () const { return (*this)*(*this); }
-    T norm   () const { return std::sqrt( norm2()); }
-    T supnorm() const { return std::abs( *this).max(); }
-
     // assignment
     template <class VT>
-      VectorBaseCL&
-      operator=(const VT& v) {
-        *static_cast<base_type*>( this)= v;
-        return *this;
-      }
+      VectorBaseCL& operator=(const VT& v) {
+        *static_cast<base_type*>( this)= v; return *this; }
 
     // computed assignment
     template <class VT>
-    VectorBaseCL&
-      operator+=(const VT& v) {
-        *static_cast<base_type*>( this)+= v;
-        return *this;
-      }
+    VectorBaseCL& operator+=(const VT& v) {
+        *static_cast<base_type*>( this)+= v; return *this; }
     template <class VT>
-    VectorBaseCL&
-      operator-=(const VT& v) {
-        *static_cast<base_type*>( this)-= v;
-        return *this;
-      }
+    VectorBaseCL& operator-=(const VT& v) {
+        *static_cast<base_type*>( this)-= v; return *this; }
     template <class VT>
-    VectorBaseCL&
-      operator*=(const VT& v) {
-        *static_cast<base_type*>( this)*= v;
-        return *this;
-      }
+    VectorBaseCL& operator*=(const VT& v) {
+        *static_cast<base_type*>( this)*= v; return *this; }
     template <class VT>
-    VectorBaseCL&
-      operator/=(const VT& v) {
-        *static_cast<base_type*>( this)/= v;
-        return *this;
-      }
+    VectorBaseCL& operator/=(const VT& v) {
+        *static_cast<base_type*>( this)/= v; return *this; }
 
 #if (DROPSDebugC & DebugNumericC)
     // For checking new code; the following functions inhibit the expression
@@ -114,8 +94,54 @@ public:
 };
 
 
+template <class VT1, class VT2>
+  inline typename VT1::value_type
+  dot(const VT1& v, const VT2& w)
+{
+#if (DROPSDebugC & DebugNumericC)
+        v.AssertDim(w, "dot: incompatible dimensions");
+#endif
+    typedef typename VT1::value_type valueT;
+    valueT ret= valueT();
+    const size_t s= v.size();
+    for (size_t i= 0; i<s; ++i) ret+= v[i]*w[i];
+    return ret;
+}
+
+template <class VT>
+  inline typename VT::value_type
+  norm_sq(const VT& v)
+{
+    typedef typename VT::value_type valueT;
+    valueT ret= valueT();
+    const size_t s= v.size();
+    for (size_t i= 0; i<s; ++i) ret+= v[i]*v[i];
+    return ret;
+}
+
+template <class VT>
+  inline typename VT::value_type
+  norm(const VT& v)
+{
+    return std::sqrt( norm_sq( v));
+}
+
+template <class VT>
+  inline typename VT::value_type
+  supnorm(const VT& v)
+{
+    typedef typename VT::value_type valueT;
+    const size_t s= v.size();
+    valueT ret= s==0 ? valueT() : std::abs( v[0]);
+    for (size_t i= 1; i < s; ++i) {
+        const valueT t= std::abs( v[i]);
+        if (t > ret) ret= t;
+    }
+    return ret;
+}
+
 template <typename T>
-  void
+  inline void
   axpy(T a, const VectorBaseCL<T>& x, VectorBaseCL<T>& y)
 {
     Assert(x.size()==y.size(), "axpy: incompatible dimensions", DebugNumericC);
@@ -123,7 +149,7 @@ template <typename T>
 }
 
 template <typename T>
-  void
+  inline void
   z_xpay(VectorBaseCL<T>& z, const VectorBaseCL<T>& x, T a, const VectorBaseCL<T>& y)
 {
     Assert(z.size()==x.size() && z.size()==y.size(),
@@ -132,7 +158,7 @@ template <typename T>
 }
 
 template <typename T>
-  void
+  inline void
   z_xpaypby2 (VectorBaseCL<T>& z, const VectorBaseCL<T>& x,
     T a, const VectorBaseCL<T>& y, T b, const VectorBaseCL<T>& y2)
 {
@@ -141,17 +167,6 @@ template <typename T>
     z= x + a*y + b*y2;
 }
 
-template <typename T>
-  T
-  operator*(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
-{
-#if (DROPSDebugC & DebugNumericC)
-        v.AssertDim(w, "VectorBaseCL * VectorBaseCL: incompatible dimensions");
-#endif
-    const T* const vbegin= &(const_cast<VectorBaseCL<T>& >( v)[0]);
-    const T* const wbegin= &(const_cast<VectorBaseCL<T>& >( w)[0]);
-    return std::inner_product( vbegin, vbegin + v.size(), wbegin, T());
-}
 
 #if (DROPSDebugC & DebugNumericC)
 template <typename T>
@@ -239,12 +254,12 @@ VectorBaseCL<T> operator-(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
 // Get the address of the first element in a valarray
 // ("&x[0]" doesn't work, because "operator[] const" only returns a value)
 template <typename T>
-  const T*
+  inline const T*
   Addr(const std::valarray<T>& x)
     { return &(const_cast<std::valarray<T>&>(x)[0]); }
 
 template <typename T>
-  T*
+  inline T*
   Addr(std::valarray<T>& x)
     { return &(x[0]); }
 

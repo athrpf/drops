@@ -207,7 +207,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             // calculate defect:
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
-	    std::cerr << _iter << ": res = " << (_res= sqrt(d*d + e*e) ) << std::endl; 
+	    std::cerr << _iter << ": res = " << (_res= sqrt( dot( d, d) + dot( e, e)) ) << std::endl; 
             if (_res < _tol || _iter>=_maxiter)
                 break;
             
@@ -224,9 +224,10 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             
             d= A*w + alpha*(_NS.N.Data*w) + transp_mul( B, q);
             e= B*w;
-            omega= d*(A*v.Data) + alpha*(d*(_NS.N.Data*v.Data)) + d*transp_mul( B, p) + e*(B*v.Data)
-                  - d*b - alpha*(d*cplN.Data) - e*c;
-            omega/= d*d + e*e;
+            omega= dot( d, A*v.Data + _NS.N.Data*VectorCL( alpha*v.Data)
+                + transp_mul( B, p) - b - alpha*cplN.Data)
+                + dot( e, B*v.Data - c);
+            omega/= norm_sq( d) + norm_sq( e);
             std::cerr << "omega = " << omega << std::endl;
             
             // update solution:
@@ -252,7 +253,7 @@ void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
             
-            std::cerr << _iter << ": res = " << (_res= sqrt(d*d + e*e) ) << std::endl; 
+            std::cerr << _iter << ": res = " << (_res= sqrt( norm_sq( d) + norm_sq(e))) << std::endl; 
             if (_res < _tol || _iter>=_maxiter)
                 break;
             

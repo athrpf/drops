@@ -631,7 +631,7 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
     C.LinComb( 1, M, diff, A);
     PCG_SsorCL pcg( _pc, _gm.GetMaxIter(),_gm.GetTol());
     pcg.Solve( C, SmPhi, M*Phi.Data);
-    std::cerr << "||SmPhi - Phi||_oo = " << VectorCL( SmPhi-Phi.Data).supnorm() << std::endl;
+    std::cerr << "||SmPhi - Phi||_oo = " << supnorm( SmPhi-Phi.Data) << std::endl;
 }
 
 void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const

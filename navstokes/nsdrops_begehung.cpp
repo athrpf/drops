@@ -440,7 +440,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 //            e= B->Data*v1->Data                             - c->Data;
             z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
             
-            std::cerr << "fp_step: " << fp_step << ", res = " << (res= sqrt(d*d + e*e) ) << std::endl; 
+            std::cerr << "fp_step: " << fp_step << ", res = " << (res= sqrt( norm_sq( d) + norm_sq( e))) << std::endl; 
             if (res < fp_tol )
                 break;
             
@@ -462,9 +462,10 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 //            d= A->Data*w + N->Data*w + transp_mul( B->Data, q);
             z_xpaypby2(d, A->Data*w, 1.0, N->Data*w, 1.0, transp_mul(B->Data, q) );
             e= B->Data*w;
-            omega= d*(A->Data*v1->Data) + d*(N->Data*v1->Data) + d*transp_mul( B->Data, p1->Data) + e*(B->Data*v1->Data)
-                 - d*b->Data - d*rhsN.Data - e*c->Data;
-            omega/= d*d + e*e;
+            omega= dot( d, A->Data*v1->Data + N->Data*v1->Data
+                + transp_mul( B->Data, p1->Data) - b->Data - rhsN.Data)
+                + dot( e, B->Data*v1->Data - c->Data);
+            omega/= norm_sq( d) + norm_sq( e);
             std::cerr << "omega = " << omega << std::endl;
             
             // update solution:

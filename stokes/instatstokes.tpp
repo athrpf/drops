@@ -74,9 +74,9 @@ void InstatStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scala
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
     VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
-    std::cerr <<"|| Ax + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
+    std::cerr <<"|| Ax + BTy - f || = "<< norm( res)<<", max "<< supnorm( res) << std::endl;
     VectorCL resB= B.Data*lsgvel - c.Data; 
-    std::cerr <<"|| Bx - g || = "<< resB.norm()<<", max "<<resB.supnorm()<<std::endl;
+    std::cerr <<"|| Bx - g || = "<<  norm( resB)<<", max "<< supnorm( resB) << std::endl;
 }
 
 
@@ -701,8 +701,8 @@ void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         VectorCL res1= M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data;
         VectorCL res2= B.Data*lsgvel->Data - cc.Data;
         std::cerr << "\nChecken der Loesung...\n";    
-        std::cerr << "|| Ax + BTy - F || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
-        std::cerr << "||       Bx - G || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
+        std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
+        std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
     }
 
     DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);

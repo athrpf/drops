@@ -169,13 +169,13 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
     double res1_norm= 0., res2_norm= 0.;
     for( _iter=0; _iter<_maxiter; ++_iter) {
         z_xpay(res2, B*v, -1.0, c);
-        res2_norm= res2.norm2();
+        res2_norm= norm_sq( res2);
         pr_pre_.Apply( M_, p_corr, res2);
 //        p+= _tau * p_corr;
         axpy(tau_, p_corr, p);
 //        res1= A*v + transp_mul(B,p) - b;
         z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
-        res1_norm= res1.norm2();
+        res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
             _res= ::sqrt( res1_norm + res2_norm);
             return;

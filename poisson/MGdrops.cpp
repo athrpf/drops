@@ -88,19 +88,14 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
         Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
 //        std::cerr << "initial error:" << std::endl;
 //        Poisson.CheckSolution();
-        {
-            VectorCL residVec= Poisson.b.Data - finest->A.Data * Poisson.x.Data;
-            resid= residVec.norm();
-        }
+        resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
         std::cerr << "initial residuum: " << resid <<std::endl;
         do
         {
             MGM( MGData.begin(), finest, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, lvl, -1);
             Poisson.CheckSolution(&::Lsg);
             old_resid= resid;
-            {   VectorCL residVec= Poisson.b.Data - finest->A.Data * Poisson.x.Data;
-                resid= residVec.norm();
-            }
+                resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
             std::cerr << "residuum: " << resid << "\tred. " << resid/old_resid << std::endl;
         } while ( resid > tol);
     } while (sm>0);

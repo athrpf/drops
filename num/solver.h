@@ -399,7 +399,7 @@ CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
 {
     Vec r= A*x - b;
     Vec d= -r;
-    double resid= r.norm2();
+    double resid= norm_sq( r);
 
     tol*= tol;
 
@@ -413,14 +413,14 @@ CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
     for (int i=1; i<=max_iter; ++i)
     {
         const Vec    Ad= A*d;
-        const double delta= Ad*d;
+        const double delta= dot( Ad, d);
         const double alpha= resid/delta;
         double       beta= resid;
 
         axpy(alpha, d, x);  // x+= alpha*d;
         axpy(alpha, Ad, r); // r+= alpha*Ad;
 
-        resid= r.norm2();
+        resid= norm_sq( r);
         if (resid<=tol)
         {
             tol= sqrt(resid);
@@ -452,7 +452,7 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 {
     const size_t n= x.size();
     Vec p(n), z(n), q(n), r= b - A*x;
-    double rho, rho_1= 0.0, resid= r.norm2();
+    double rho, rho_1= 0.0, resid= norm_sq( r);
 
     tol*= tol;
 
@@ -466,21 +466,21 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     for (int i=1; i<=max_iter; ++i)
     {
         M.Apply(A, z, r);
-        rho= r*z;
+        rho= dot( r, z);
         if (i == 1)
             p= z;
         else
             z_xpay(p, z, (rho/rho_1), p); // p= z + (rho/rho_1)*p;
 
         q= A*p;
-        const double alpha= rho/(p*q);
+        const double alpha= rho/dot( p, q);
         axpy(alpha, p, x);                // x+= alpha*p;
         axpy(-alpha, q, r);               // r-= alpha*q;
 
-        resid= r.norm2();
+        resid= norm_sq( r);
         if (resid<=tol)
         {
-            tol= sqrt(resid);
+            tol= sqrt( resid);
             max_iter= i;
             return true;
         }
@@ -551,10 +551,10 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         v[i].resize(b.size());
 
     M.Apply(A, r, Vec( b-A*x));
-    beta = r.norm();
+    beta = norm( r);
 
     M.Apply(A, w, b);
-    normb=w.norm();
+    normb= norm( w);
     if (normb == 0.0) normb=1;
 
     resid = beta/normb;
@@ -577,10 +577,10 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
             M.Apply(A, w, A*v[i]);
             for ( int k=0; k<=i; ++k )
             {
-                H(k, i) = w * v[k];
+                H(k, i) = dot( w, v[k]);
                 w -= H(k, i) * v[k];
             }
-            H(i+1, i) = w.norm();
+            H(i+1, i) = norm( w);
             v[i+1] = w * (1.0 / H(i+1,i));
 
             for ( int k=0; k<i; ++k )
@@ -602,7 +602,7 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
         GMRES_Update(x, m - 2, H, s, v);
         M.Apply(A, r, Vec( b-A*x));
-        beta = r.norm();
+        beta = norm( r);
         resid = beta/normb;
         if (resid<=tol)
         {
@@ -631,9 +631,9 @@ LanczosStep(const Mat& A,
             const double b0, double& b1)
 {
     q2= A*q1 - b0*q0;
-    a1= q2*q1;
+    a1= dot( q2, q1);
     q2-= a1*q1;
-    b1= q2.norm();
+    b1= norm( q2);
     // Lucky breakdown; the Krylov-space K up to q1 is A-invariant. Thus,
     // the correction dx needed to solve A(x0+dx)=b is in this space and
     // the Minres-algo will terminate with the exact solution in the
@@ -663,7 +663,7 @@ class LanczosONBCL
     new_basis(const Mat& A_, const Vec& r0) {
         A= &A_;
         q[-1].resize( r0.size(), 0.);
-        norm_r0_= r0.norm();
+        norm_r0_= norm( r0);
         q[0].resize( r0.size(), 0.); q[0]= r0/norm_r0_;
         q[1].resize( r0.size(), 0.);
         b[-1]= 0.;
@@ -701,10 +701,10 @@ PLanczosStep(const Mat& A,
              const double b0, double& b1)
 {
     t2= A*q1 - b0*t0;
-    a1= t2*q1;
+    a1= dot( t2, q1);
     t2-= a1*t1;
     M.Apply( A, q2, t2);
-    const double b1sq= q2*t2;
+    const double b1sq= dot( q2, t2);
     Assert( b1sq >= 0.0, "PLanczosStep: b1sq is negative!\n", DebugNumericC);
     b1= std::sqrt( b1sq);
     if (b1 < 1e-15) return false;
@@ -737,7 +737,7 @@ class PLanczosONBCL
         A= &A_;
         t[-1].resize( r0.size(), 0.);
         q[-1].resize( r0.size(), 0.); M.Apply( *A, q[-1], r0);
-        norm_r0_= std::sqrt( q[-1]*r0);
+        norm_r0_= std::sqrt( dot( q[-1], r0));
         t[0].resize( r0.size(), 0.); t[0]= r0/norm_r0_;
         q[0].resize( r0.size(), 0.); q[0]= q[-1]/norm_r0_;
         t[1].resize( r0.size(), 0.);
@@ -1059,7 +1059,7 @@ class SSORPCG_PreCL
     template <typename Mat, typename Vec>                             // computed in Apply.
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
-        solver_.SetTol( reltol_*Vec( b-A*x).norm());
+        solver_.SetTol( reltol_*norm( b-A*x));
 	solver_.Solve( A, x, b);
     }
 };

@@ -47,12 +47,12 @@ void NavierStokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_p
     SetupNonlinear( &N, &veldesc, &rhsN);
     std::cerr << "discretization error to check the system (x,y = continuos solution): "<<std::endl;
     VectorCL res= A.Data*lsgvel + N.Data*lsgvel + transp_mul(B.Data,lsgpr) - b.Data - rhsN.Data; 
-    std::cerr <<"|| Ax + Nx + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
+    std::cerr <<"|| Ax + Nx + BTy - f || = "<< norm( res)<<", max "<< supnorm( res)<<std::endl;
     VectorCL resB= B.Data*lsgvel - c.Data; 
-    std::cerr <<"|| Bx - g || = "<< resB.norm()<<", max "<<resB.supnorm()<<std::endl;
+    std::cerr <<"|| Bx - g || = "<< norm( resB)<<", max "<< supnorm( resB)<<std::endl;
 //    std::cerr << res << std::endl;
 /*    VectorCL resC= N.Data*lsgvel - rhsN.Data;
-    std::cerr <<"|| Nx - rhsN || = "<< resC.norm()<<", max "<<resC.supnorm()<<std::endl;
+    std::cerr <<"|| Nx - rhsN || = "<< norm( resC)<<", max "<< supnorm( resC)<<std::endl;
 */}
 
 
@@ -72,8 +72,8 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     VectorCL res2= B.Data*lsgvel->Data - c.Data;
 
     std::cerr << "\nChecken der Loesung...\n";    
-    std::cerr << "|| Ax + Nx + BTy - f || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
-    std::cerr << "||      Bx       - g || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
+    std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
+    std::cerr << "||      Bx       - g || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
     
     P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL>  vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;

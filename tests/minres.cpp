@@ -38,7 +38,7 @@ int TestLanczos()
               <<std::endl;
     for (unsigned int i= 0; i<basis.size(); ++i) {
         for (unsigned int j= 0; j<basis.size(); ++j) {
-            std::cout << basis[i]*basis[j] << '\t';
+            std::cout << dot( basis[i], basis[j]) << '\t';
         }
         std::cout << std::endl;
     }

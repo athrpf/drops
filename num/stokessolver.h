@@ -184,10 +184,10 @@ LanczosStep_SP(const Mat& A, const Mat& B,
 {
     qu2= A*qu1 + transp_mul( B, qpr1) - b0*qu0;
     qpr2= B*qu1 - b0*qpr0;
-    a1= qu2*qu1 + qpr2*qpr1;
+    a1= dot( qu2, qu1) + dot( qpr2,qpr1);
     qu2-= a1*qu1;
     qpr2-= a1*qpr1;
-    b1= std::sqrt( qu2.norm2() + qpr2.norm2());
+    b1= std::sqrt( norm_sq( qu2) + norm_sq( qpr2));
     // Lucky breakdown; the Krylov-space K up to q1 is A-invariant. Thus,
     // the correction dx needed to solve A(x0+dx)=b is in this space and
     // the Minres-algo will terminate with the exact solution in the
@@ -222,7 +222,7 @@ class LanczosONB_SPCL
         B= &B_;
         qu[-1].resize( ru0.size(), 0.);
         qpr[-1].resize( rpr0.size(), 0.);
-        norm_r0_= std::sqrt( ru0.norm2() + rpr0.norm2());
+        norm_r0_= std::sqrt( norm_sq( ru0) + norm_sq( rpr0));
         qu[0].resize( ru0.size(), 0.); qu[0]= ru0*(1./norm_r0_);
         qpr[0].resize( rpr0.size(), 0.); qpr[0]= rpr0*(1./norm_r0_);
         qu[1].resize( ru0.size(), 0.);
@@ -268,11 +268,11 @@ PLanczosStep_SP(const Mat& A, const Mat& B,
 {
     tu2= A*qu1 + transp_mul( B, qpr1) - b0*tu0;
     tpr2= B*qu1 - b0*tpr0;
-    a1= tu2*qu1 + tpr2*qpr1;
+    a1= dot( tu2, qu1) + dot( tpr2, qpr1);
     tu2+= (-a1)*tu1;
     tpr2+= (-a1)*tpr1;
     M.Apply( A, B, qu2, qpr2, tu2, tpr2);
-    const double b1sq= qu2*tu2 + qpr2*tpr2;
+    const double b1sq= dot( qu2, tu2) + dot( qpr2, tpr2);
     Assert( b1sq >= 0.0, "PLanczosStep_SP: b1sq is negative!\n", DebugNumericC);
     b1= std::sqrt( b1sq);
     if (b1 < 1e-15) return false;
@@ -313,7 +313,7 @@ class PLanczosONB_SPCL
         qu[-1].resize( r0u.size(), 0.);
         qpr[-1].resize( r0pr.size(), 0.);
         M.Apply( *A, *B, qu[-1], qpr[-1], r0u, r0pr);
-        norm_r0_= std::sqrt( qu[-1]*r0u + qpr[-1]*r0pr);
+        norm_r0_= std::sqrt( dot( qu[-1], r0u) + dot( qpr[-1], r0pr));
         tu[0].resize( r0u.size(), 0.); tu[0]= r0u*(1./norm_r0_);
         tpr[0].resize( r0pr.size(), 0.); tpr[0]= r0pr*(1./norm_r0_);
         qu[0].resize( r0u.size(), 0.); qu[0]= qu[-1]*(1./norm_r0_);
@@ -434,7 +434,7 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
         pr+= dxpr;
 
         // This is for fair comparisons of different solvers:
-//        err= std::sqrt( (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2());
+//        err= std::sqrt( norm_sq( rhsu - (A*u + transp_mul( B, pr))) + norm_sq( rhspr - B*u));
         res= std::fabs( norm_r0*b[0][1]);
 //        std::cerr << "PMINRES: residual: " << res << '\t' << " 2-residual: " << err << '\n';
         if (res<=tol || lucky==true) {
@@ -518,7 +518,7 @@ class DiagPCGPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
-//        PA_.SetMaxIter( 500); PA_.SetTol( (b - A*v).norm()*1e-4);
+//        PA_.SetMaxIter( 500); PA_.SetTol( norm( b - A*v)*1e-4);
         PA_.Solve( A, v, b);
 //        std::cerr << PA_.GetIter() << '\t' << PA_.GetResid() << '\n';
         PS_.Solve( M_, p, c);
@@ -540,7 +540,7 @@ class DiagMGPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
-//        PA_.SetMaxIter( 1); PA_.SetTol( (bb - K.A_*u).norm()*1e-4);
+//        PA_.SetMaxIter( 1); PA_.SetTol( norm( bb - K.A_*u)*1e-4);
         Uint   sm   =  2; // how many smoothing steps?
         int    lvl  = -1; // how many levels? (-1=all)
         double omega= 1.; // relaxation parameter for smoother
@@ -870,14 +870,14 @@ void UzawaSolverCL<PoissonSolverT>::Solve(
     double res1_norm= 0., res2_norm= 0.;
     for( _iter=0; _iter<_maxiter; ++_iter) {
         z_xpay(res2, B*v, -1.0, c);
-        res2_norm= res2.norm2();
+        res2_norm= norm_sq( res2);
         _poissonSolver.SetTol( std::sqrt( res2_norm)/20.0);
         _poissonSolver.Solve(_M, p_corr, res2);
 //        p+= _tau * p_corr;
         axpy(_tau, p_corr, p);
 //        res1= A*v + transp_mul(B,p) - b;
         z_xpaypby2(res1, A*v, 1.0, transp_mul(B,p), -1.0, b);
-        res1_norm= res1.norm2();
+        res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
             _res= ::sqrt( res1_norm + res2_norm );
             return;
@@ -909,14 +909,14 @@ void UzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
     double res1_norm= 0., res2_norm= 0.;
     for( _iter=0; _iter<_maxiter; ++_iter) {
         z_xpay(res2, B*v, -1.0, c);
-        res2_norm= res2.norm2();
+        res2_norm= norm_sq( res2);
         poissonSolver_.SetTol( std::sqrt( res2_norm)/20.0);
         poissonSolver_.Solve( M_, p_corr, res2);
 //        p+= _tau * p_corr;
         axpy(tau_, p_corr, p);
 //        res1= A*v + transp_mul(B,p) - b;
         z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
-        res1_norm= res1.norm2();
+        res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
             _res= ::sqrt( res1_norm + res2_norm);
             return;
@@ -960,8 +960,8 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     _iter= iter+_poissonSolver.GetIter();
     _res= tol + _poissonSolver.GetResid();
 /* std::cerr << "Real residuals are: "
-          << (A*v+transp_mul(B, p)-b).norm() << ", "
-          << (B*v-c).norm() << std::endl; */
+          << norm( A*v+transp_mul(B, p)-b) << ", "
+          << norm( B*v-c) << std::endl; */
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
@@ -987,8 +987,8 @@ inline void Uzawa_IPCG_CL::Solve(
         axpy(_tau, p_corr, p);
 //        res1= A*v + transp_mul(B,p) - b;
         z_xpaypby2(res1, A*v, 1.0, transp_mul(B,p), -1.0, b);
-        res1_norm= res1.norm2();
-        res2_norm= res2.norm2();
+        res1_norm= norm_sq( res1);
+        res2_norm= norm_sq( res2);
 
         if (res1_norm + res2_norm < tol)
         {
@@ -1087,7 +1087,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     VectorCL b( f.size());
     ApproximateSchurComplMatrixCL<PC1> asc( A, Apc, B);
     PCGSolverCL<PC2> pcgsolver( Spc, 100, 0.3);
-    const double resid0= std::sqrt( ru.norm2() + Vec( g - B*xu).norm2());
+    const double resid0= std::sqrt( norm_sq( ru) + norm_sq( g - B*xu));
     double resid= 0.0;
     std::cerr << "residual (2-norm): " << resid0 << '\n';
     if (resid0<=tol) { // The fixed point iteration between levelset and Stokes
@@ -1100,12 +1100,13 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         Apc.Apply( A, w, ru);
         w+= xu;
         z= 0.0;
-//        std::cerr << "B*w : " << (B*w).norm() << "\tprojektion auf 1: "
+//        std::cerr << "B*w : " << norm( B*w) << "\tprojektion auf 1: "
 //                  << (B*w)*VectorCL( 1.0/std::sqrt( (double)g.size()), g.size())
 //                  << "\n";
-        // Due to theory (see paper) we must use relative error of about 0.5. z==0.
-	pcgsolver.SetTol( 0.5*Vec( B*w - g).norm());
-        pcgsolver.Solve( asc, z, Vec( B*w - g));
+        // Due to theory (see paper) we must use relative error of about 0.3. z==0.
+        const Vec rp= B*w - g;
+	pcgsolver.SetTol( 0.3*norm( rp));
+        pcgsolver.Solve( asc, z, rp);
         std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
                   << "\tresid: " << pcgsolver.GetResid() << '\n';
 
@@ -1116,10 +1117,10 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         xp+= z;
         z_xpaypby2(ru, ru, -1.0, A*Vec( xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
         xu= xuneu;
-        resid= std::sqrt( Vec( f - A*xu - transp_mul( B, xp)).norm2() + Vec( g - B*xu).norm2());
+        resid= std::sqrt( norm_sq( f - A*xu - transp_mul( B, xp)) + norm_sq( g - B*xu));
         std::cerr << "relative residual (2-norm): " << resid/resid0 
-                  << "\tv: " << Vec( f - A*xu - transp_mul( B, xp)).norm()
-                  << "\tp: " << Vec( g - B*xu).norm()
+                  << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
+                  << "\tp: " << norm( g - B*xu)
                   << '\n';
 /*
         if (resid<=tol*resid0) { // relative errors
@@ -1130,8 +1131,8 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
 */
         if (resid<=tol) { // absolute errors
             std::cerr << "relative residual (2-norm): " << resid/resid0 
-                      << "\tv: " << Vec( f - A*xu - transp_mul( B, xp)).norm()
-                      << "\tp: " << Vec( g - B*xu).norm()
+                      << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
+                      << "\tp: " << norm( g - B*xu)
                       << '\n';
             tol= resid;
             max_iter= k;

@@ -72,7 +72,7 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
     for (it= 0; it<maxiter; ++it) {
         if (residerr == true) {
             old_resid= resid;
-            if ((resid= VectorCL( b - finest->A.Data * x).norm()) <= tol) break;
+            if ((resid= norm( b - finest->A.Data * x)) <= tol) break;
 //            if (it == 0) std::cerr << "initial residual: " << resid << '\n';
         }
         else tmp= x;
@@ -82,7 +82,7 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
 //            if (it!=0) std::cerr << "\treduction: " << resid/old_resid;
 //            std::cerr << '\n';
         }
-        else if ((resid= VectorCL( tmp - x).norm()) <= tol) break;
+        else if ((resid= norm( tmp - x)) <= tol) break;
     }
     maxiter= it;
     tol= resid;

@@ -59,12 +59,12 @@ void InstatNavierStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel,
     SetupNonlinear( &N, &veldesc, &rhsN, t, t);
     std::cerr << "discretization error to check the system (x,y = continuos solution): "<<std::endl;
     VectorCL res= lsgveldt + A.Data*lsgvel + N.Data*lsgvel + transp_mul(B.Data,lsgpr) - b.Data - rhsN.Data; 
-    std::cerr <<"|| x_t + Ax + Nx + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
+    std::cerr <<"|| x_t + Ax + Nx + BTy - f || = "<< norm( res) <<", max "<<supnorm( res)<<std::endl;
     VectorCL resB= B.Data*lsgvel - c.Data; 
-    std::cerr <<"|| Bx - g || = "<< resB.norm()<<", max "<<resB.supnorm()<<std::endl;
+    std::cerr <<"|| Bx - g || = "<< norm( resB)<<", max "<< supnorm( resB)<<std::endl;
 //    std::cerr << res << std::endl;
     VectorCL resC= N.Data*lsgvel - rhsN.Data;
-    std::cerr <<"|| Nx - rhsN || = "<< resC.norm()<<", max "<<resC.supnorm()<<std::endl;
+    std::cerr <<"|| Nx - rhsN || = "<< norm( resC)<<", max "<< supnorm( resC)<<std::endl;
 }
 
 
@@ -110,8 +110,8 @@ void InstatNavierStokesP2P1CL<Coeff>::CheckSolution(
 
 
     std::cerr << "\nChecken der Loesung des LGS...\n";    
-    std::cerr << "|| Ax + Nx + BTy - f || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
-    std::cerr << "||      Bx       - g || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
+    std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
+    std::cerr << "||      Bx       - g || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
     
     typename _base::DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
