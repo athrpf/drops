@@ -47,6 +47,8 @@ class DMatrixCL
 
 template <class T, Uint _Size>
   class SArrayCL;
+template <class T, Uint _Size>
+  class SBufferCL;
 template <Uint _Size>
   class SVectorCL;
 template <Uint _Rows, Uint _Cols>
@@ -54,6 +56,9 @@ template <Uint _Rows, Uint _Cols>
 template <class T, Uint _Size>
   inline bool
   operator==(const SArrayCL<T, _Size>&, const SArrayCL<T, _Size>&);
+template <class T, Uint _Size>
+  inline bool
+  operator==(const SBufferCL<T, _Size>&, const SBufferCL<T, _Size>&);
 
 typedef SVectorCL<2> Point2DCL;
 typedef SVectorCL<3> Point3DCL;
