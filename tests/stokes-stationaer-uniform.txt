@@ -1,0 +1,115 @@
+Omega: 1, inner iter tol: 1e-09, tol: 1e-07, meth: 0, refinements: 3, relative error reduction: 0.001, markratio: 1.1, tau: 1, uzawa inner iter: 5
+altes und neues TriangLevel: 134907104, 0
+64 Verts, 279 Edges, 378 Faces, 162 Tetras
+Anzahl der Druck-Unbekannten: 0, 64
+Anzahl der Geschwindigkeitsunbekannten: 0, 375
+entering SetupSystem: 375 vels, 64 prs
+done: value part fill
+4959 nonzeros in A, 2628 nonzeros in B! 
+0.06 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+discretization error to check the system (x,y = continuous solution): 
+|| Ax + BTy - f || = 0.000600616, max 8.23049e-05
+|| Bx - g || = 4.56081e-06, max 1.5577e-06
+step 0: norm of 1st eq= 1.00676, norm of 2nd eq= 0.0450764
+step 50: norm of 1st eq= 3.09763e-05, norm of 2nd eq= 4.74474e-06
+step 100: norm of 1st eq= 1.99855e-06, norm of 2nd eq= 2.46532e-07
+step 150: norm of 1st eq= 1.58538e-07, norm of 2nd eq= 1.92599e-08
+Iterationen: 160Norm des Res.: 9.52295e-08
+Das Verfahren brauchte 0.65 Sekunden.
+
+Checken der Loesung...
+|| Ax + BTy - F || = 9.45324e-08, max. 3.33068e-08
+||       Bx - G || = 1.15014e-08, max. 5.27728e-09
+
+|| div x ||_L1 = 0.000659635
+|| div x ||_L2 = 0.00162257
+
+
+constant pressure offset is -1.24268e-06, volume of cube is 0.484473
+|| (u_h, p_h) - (u, p) ||_X = 0.00481457, || u_h - u ||_L2 = 6.20897e-05, || Du_h - Du ||_L2 = 0.0038602, || p_h - p ||_L2 = 0.00287665
+Druck: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 0
+ L2-Norm= 0.00287665
+Differenz liegt zwischen 0 und 0
+ErrorEstimator is initialized now; initial error: 0.0409426 We try to reduce by a factor of 0.001 by marking the tetrahedrons with largest error-estimates, until the error marked is at least 1.1 of the actual global error.
+Estimated global |v|1 + ||pr||0-error: 0.0409426. This is a reduction of 1 compared to the last estimation. Marked 162, unmarked 0 out of 162 tetrahedrons, which account for 1.1 of the global error.
+Estimation took 0.11 seconds
+
+altes und neues TriangLevel: 0, 1
+343 Verts, 2133 Edges, 3186 Faces, 1458 Tetras
+Anzahl der Druck-Unbekannten: 64, 343
+Anzahl der Geschwindigkeitsunbekannten: 375, 3993
+Interpolate: 64 vertex-Dof of 64 copied, 279 new Mid-vertex-DoF interpolated.
+entering SetupSystem: 3993 vels, 343 prs
+done: value part fill
+73917 nonzeros in A, 28551 nonzeros in B! 
+0.58 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0.01 seconds!
+discretization error to check the system (x,y = continuous solution): 
+|| Ax + BTy - f || = 6.46852e-05, max 2.69902e-06
+|| Bx - g || = 2.09605e-07, max 5.21838e-08
+step 0: norm of 1st eq= 0.991331, norm of 2nd eq= 0.0266082
+step 50: norm of 1st eq= 1.79391e-05, norm of 2nd eq= 1.78103e-06
+step 100: norm of 1st eq= 9.9714e-07, norm of 2nd eq= 6.2355e-08
+Iterationen: 147Norm des Res.: 9.04565e-08
+Das Verfahren brauchte 10.29 Sekunden.
+
+Checken der Loesung...
+|| Ax + BTy - F || = 9.02843e-08, max. 3.71851e-08
+||       Bx - G || = 5.57764e-09, max. 2.92512e-09
+
+|| div x ||_L1 = 0.000165056
+|| div x ||_L2 = 0.000405156
+
+
+constant pressure offset is -1.35044e-06, volume of cube is 0.484473
+|| (u_h, p_h) - (u, p) ||_X = 0.00116301, || u_h - u ||_L2 = 7.12925e-06, || Du_h - Du ||_L2 = 0.000969722, || p_h - p ||_L2 = 0.000642009
+Druck: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 0
+ L2-Norm= 0.000642009
+Differenz liegt zwischen 0 und 0
+Estimated global |v|1 + ||pr||0-error: 0.00995297. This is a reduction of 0.243096 compared to the last estimation. Marked 1296, unmarked 0 out of 1296 tetrahedrons, which account for 1.1 of the global error.
+Estimation took 0.86 seconds
+
+altes und neues TriangLevel: 1, 2
+2197 Verts, 15561 Edges, 24786 Faces, 11826 Tetras
+Anzahl der Druck-Unbekannten: 343, 2197
+Anzahl der Geschwindigkeitsunbekannten: 3993, 36501
+Interpolate: 343 vertex-Dof of 343 copied, 2133 new Mid-vertex-DoF interpolated.
+entering SetupSystem: 36501 vels, 2197 prs
+done: value part fill
+784557 nonzeros in A, 263988 nonzeros in B! 
+5.39 seconds for setting up all systems!
+ A*x took 0.05 seconds!
+AT*x took 0.05 seconds!
+discretization error to check the system (x,y = continuous solution): 
+|| Ax + BTy - f || = 6.22672e-06, max 8.73453e-08
+|| Bx - g || = 9.399e-09, max 1.65869e-09
+step 0: norm of 1st eq= 0.976271, norm of 2nd eq= 0.0143728
+step 50: norm of 1st eq= 1.10715e-05, norm of 2nd eq= 6.9442e-07
+step 100: norm of 1st eq= 5.40669e-07, norm of 2nd eq= 1.62779e-08
+Iterationen: 133Norm des Res.: 9.37873e-08
+Das Verfahren brauchte 118.1 Sekunden.
+
+Checken der Loesung...
+|| Ax + BTy - F || = 9.37422e-08, max. 3.66998e-08
+||       Bx - G || = 2.90757e-09, max. 1.4358e-09
+
+|| div x ||_L1 = 4.13138e-05
+|| div x ||_L2 = 0.000101073
+
+
+constant pressure offset is -1.47733e-07, volume of cube is 0.484473
+|| (u_h, p_h) - (u, p) ||_X = 0.000289735, || u_h - u ||_L2 = 8.55938e-07, || Du_h - Du ||_L2 = 0.000242825, || p_h - p ||_L2 = 0.000158056
+Druck: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 0
+ L2-Norm= 0.000158056
+Differenz liegt zwischen 0 und 0
+Estimated global |v|1 + ||pr||0-error: 0.0024847. This is a reduction of 0.249644 compared to the last estimation. Marked 10368, unmarked 0 out of 10368 tetrahedrons, which account for 1.1 of the global error.
+Estimation took 7.04 seconds
+
+hallo
+As far as I can tell the MultigridCL is sane.

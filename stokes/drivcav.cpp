@@ -6,8 +6,8 @@
 #include "out/output.h"
 #include <fstream>
 
-// q*u - nu*laplace u - Dp = f
-//                   div u = 0
+// q*u - nu*laplace u + Dp = f
+//                  -div u = 0
 class DrivenCavityCL
 {
   public:

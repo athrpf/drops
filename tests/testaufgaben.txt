@@ -13,3 +13,22 @@ Poisson instationaer
 ====================
 --uniform: ipdropsrep mit dt=0.001, 500 Zeitschritten, 4 Verfeinerungen
   erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.txt.
+
+Stokes stationaer
+=================
+--uniform: sdropsP2 1 1e-09 1e-07 0 3 0.001 1.1 1 5
+  erzeugt die Ausgabe in der Datei stokes-stationaer-uniform.txt.
+--adaptiv: drcavad 1e-9 1e-7 0 7 0.01 0.8 1 5
+  loest das Driven-Cavity-Problem fuer die Stokes-Gleichungen adaptiv mit
+  dem Uzawa-Loeser. Die Ausgabe steht in der Datei
+  drivencavity-adaptiv-uzawa.txt.
+--drcavad 1e-9 1e-7 1 7 0.01 0.8 1 5
+  loest das Driven-Cavity-Problem fuer die Stokes-Gleichungen adaptiv mit
+  dem Schur-Komplement-Loeser. Die Ausgabe steht in der Datei
+  drivencavity-adaptiv-schur.txt.
+  
+Stokes instationaer
+===================
+--FSdrops 1 1e-7 mit dt=0.005, method 2, theta 1, tol 1e-5
+  erzeugt die Ausgabe in stokes-instationaer-uniform.txt. Das Programm wurde
+  vor der Zeitintegration auf der dritten Verfeinerung manuell beendet.

@@ -115,7 +115,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, s
          sit != send; ++sit)
         lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord(), t);
 
-    std::cerr << "discretization error to check the system (x,y = continuos solution): "<<std::endl;
+    std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
     VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
     std::cerr <<"|| Ax + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
     VectorCL resB= B.Data*lsgvel - c.Data; 
@@ -283,7 +283,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
                 }
             }
             
-        // Setup B:   B(i,j) =  psi_i * div( phi_j)
+        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel)
         {
             if (!IsOnDirBnd[vel])
@@ -291,9 +291,9 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
                 {
                     // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
                     // hint: psi_i( barycenter ) = 0.25
-                    B(prNumb[pr],Numb[vel])+=           (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*absdet;
-                    B(prNumb[pr],Numb[vel]+stride)+=    (Grad[vel](1,pr) / 120. + Grad[vel](1,4)*0.25 * 2./15. )*absdet;
-                    B(prNumb[pr],Numb[vel]+2*stride)+=  (Grad[vel](2,pr) / 120. + Grad[vel](2,4)*0.25 * 2./15. )*absdet;
+                    B(prNumb[pr],Numb[vel])-=           (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*absdet;
+                    B(prNumb[pr],Numb[vel]+stride)-=    (Grad[vel](1,pr) / 120. + Grad[vel](1,4)*0.25 * 2./15. )*absdet;
+                    B(prNumb[pr],Numb[vel]+2*stride)-=  (Grad[vel](2,pr) / 120. + Grad[vel](2,4)*0.25 * 2./15. )*absdet;
                 }
             else // put coupling on rhs
             {
@@ -302,7 +302,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
                 for(int pr=0; pr<4; ++pr)
                 {
                     // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
-                    c.Data[prNumb[pr]]-= (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*absdet*tmp[0]
+                    c.Data[prNumb[pr]]+= (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*absdet*tmp[0]
                                          +(Grad[vel](1,pr) / 120. + Grad[vel](1,4)*0.25 * 2./15. )*absdet*tmp[1]
                                          +(Grad[vel](2,pr) / 120. + Grad[vel](2,4)*0.25 * 2./15. )*absdet*tmp[2];
                 }
@@ -400,7 +400,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
 
             }
             
-        // Setup B:   B(i,j) =  psi_i * div( phi_j)
+        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel)
         {
             if (!IsOnDirBnd[vel])
@@ -408,9 +408,9 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
                 {
                     // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
                     // hint: psi_i( barycenter ) = 0.25
-                    B(prNumb[pr],Numb[vel])+=           (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*absdet;
-                    B(prNumb[pr],Numb[vel]+stride)+=    (Grad[vel](1,pr) / 120. + Grad[vel](1,4)*0.25 * 2./15. )*absdet;
-                    B(prNumb[pr],Numb[vel]+2*stride)+=  (Grad[vel](2,pr) / 120. + Grad[vel](2,4)*0.25 * 2./15. )*absdet;
+                    B(prNumb[pr],Numb[vel])-=           (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*absdet;
+                    B(prNumb[pr],Numb[vel]+stride)-=    (Grad[vel](1,pr) / 120. + Grad[vel](1,4)*0.25 * 2./15. )*absdet;
+                    B(prNumb[pr],Numb[vel]+2*stride)-=  (Grad[vel](2,pr) / 120. + Grad[vel](2,4)*0.25 * 2./15. )*absdet;
                 } // else put coupling on rhs
         }
     }
@@ -529,7 +529,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
                     }
                 }
             }
-        // Setup B:   B(i,j) =  psi_i * div( phi_j)
+        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel)
         {
             if (IsOnDirBnd[vel])
@@ -539,7 +539,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
                 for(int pr=0; pr<4; ++pr)
                 {
                     // numeric integration is exact: psi_i * div( phi_j) is of degree 2 !
-                    c[prNumb[pr]]-=( (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*tmp[0]
+                    c[prNumb[pr]]+=( (Grad[vel](0,pr) / 120. + Grad[vel](0,4)*0.25 * 2./15. )*tmp[0]
                                     +(Grad[vel](1,pr) / 120. + Grad[vel](1,4)*0.25 * 2./15. )*tmp[1]
                                     +(Grad[vel](2,pr) / 120. + Grad[vel](2,4)*0.25 * 2./15. )*tmp[2] )*absdet;
                 }

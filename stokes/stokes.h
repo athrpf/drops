@@ -107,6 +107,7 @@ class StokesBndDataCL
 
 typedef double (*scalar_fun_ptr)(const Point3DCL&);
 typedef SVectorCL<3> (*vector_fun_ptr)(const Point3DCL&);
+typedef SMatrixCL<3, 3> (*jacobi_fun_ptr)(const Point3DCL&);
 
 template <class MGB, class Coeff>
 class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
@@ -154,7 +155,7 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
 
     // Check system and computed solution
     void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr) const;
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
 
     // work of Joerg :-)
     static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);

@@ -5,8 +5,8 @@
 #include "num/stokessolver.h"
 #include <fstream>
 
-// q*u - nu*laplace u - Dp = f
-//                   div u = 0
+// q*u - nu*laplace u + Dp = f
+//                  -div u = 0
 class DrivenCavityCL
 {
   public:
@@ -23,6 +23,7 @@ typedef DROPS::StokesP2P1CL<DROPS::BrickBuilderCL, DrivenCavityCL>
 typedef StokesOnBrickCL MyStokesCL;
 
 inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&)   { return DROPS::SVectorCL<3>(0.); }
+//inline DROPS::SMatrixCL<3, 3> NullMat( const DROPS::Point3DCL&)   { return DROPS::SMatrixCL<3, 3>(0.); }
 inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
 const double st= 0.1;

@@ -1,0 +1,3268 @@
+Omega: 1 inner iter tol: 1e-07
+Anzahl der Druck-Unbekannten: 0, 27
+Anzahl der Geschwindigkeitsunbekannten: 0, 81
+entering SetupSystem: 81 vels, 27 prs
+done: value part fill
+705 nonzeros in A, 561 nonzeros in B, 813 nonzeros in I! 
+0.01 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+
+Delta t = which method? 0=Schur, 1=SchurNoPc, 2=impl./expl. Euler > theta = tol = Iterationen: 3    Norm des Residuums: 4.96893e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 2.23198e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.55082e-07
+-----------------------------------------------------
+Zeitschritt t = 0.005 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 9.90631e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 3.28251e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.52491e-07
+-----------------------------------------------------
+Zeitschritt t = 0.01 dauerte 0.02 sec
+
+Iterationen: 3    Norm des Residuums: 1.4825e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 3.97898e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51731e-07
+-----------------------------------------------------
+Zeitschritt t = 0.015 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 1.97412e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 4.50978e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51511e-07
+-----------------------------------------------------
+Zeitschritt t = 0.02 dauerte 0.02 sec
+
+Iterationen: 3    Norm des Residuums: 2.46585e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 4.95759e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51453e-07
+-----------------------------------------------------
+Zeitschritt t = 0.025 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 2.9577e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.361e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51442e-07
+-----------------------------------------------------
+Zeitschritt t = 0.03 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 3.44966e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.73938e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51443e-07
+-----------------------------------------------------
+Zeitschritt t = 0.035 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 3.94168e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.10316e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51446e-07
+-----------------------------------------------------
+Zeitschritt t = 0.04 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 4.43375e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.45831e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51447e-07
+-----------------------------------------------------
+Zeitschritt t = 0.045 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 4.92585e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.80849e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51448e-07
+-----------------------------------------------------
+Zeitschritt t = 0.05 dauerte 0.02 sec
+
+Iterationen: 3    Norm des Residuums: 5.41796e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.15602e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51447e-07
+-----------------------------------------------------
+Zeitschritt t = 0.055 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 5.91009e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.50241e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51447e-07
+-----------------------------------------------------
+Zeitschritt t = 0.06 dauerte 0.02 sec
+
+Iterationen: 3    Norm des Residuums: 6.40222e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.84868e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51446e-07
+-----------------------------------------------------
+Zeitschritt t = 0.065 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 6.89436e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.1955e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51444e-07
+-----------------------------------------------------
+Zeitschritt t = 0.07 dauerte 0.02 sec
+
+Iterationen: 3    Norm des Residuums: 7.3865e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.54332e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51443e-07
+-----------------------------------------------------
+Zeitschritt t = 0.075 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 7.87864e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.89242e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51443e-07
+-----------------------------------------------------
+Zeitschritt t = 0.08 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 8.37079e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.24297e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51442e-07
+-----------------------------------------------------
+Zeitschritt t = 0.085 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 8.86293e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.59506e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51441e-07
+-----------------------------------------------------
+Zeitschritt t = 0.09 dauerte 0.02 sec
+
+Iterationen: 3    Norm des Residuums: 9.35508e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.94872e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51441e-07
+-----------------------------------------------------
+Zeitschritt t = 0.095 dauerte 0.01 sec
+
+Iterationen: 3    Norm des Residuums: 9.84722e-08
+rhs has been set! Now solving pressure...
+Iterationen: 2    Norm des Residuums: 5.83854e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.45564e-07
+-----------------------------------------------------
+Zeitschritt t = 0.1 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 7.3846e-10
+rhs has been set! Now solving pressure...
+Iterationen: 2    Norm des Residuums: 5.67027e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5087e-07
+-----------------------------------------------------
+Zeitschritt t = 0.105 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 7.73563e-10
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.88621e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51124e-07
+-----------------------------------------------------
+Zeitschritt t = 0.11 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 8.08688e-10
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.9879e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.48811e-07
+-----------------------------------------------------
+Zeitschritt t = 0.115 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 8.43808e-10
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.73129e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.49774e-07
+-----------------------------------------------------
+Zeitschritt t = 0.12 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 8.78947e-10
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 3.05231e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.53471e-07
+-----------------------------------------------------
+Zeitschritt t = 0.125 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 9.14116e-10
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.81041e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.52676e-07
+-----------------------------------------------------
+Zeitschritt t = 0.13 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 9.49289e-10
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 3.90584e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.49706e-07
+-----------------------------------------------------
+Zeitschritt t = 0.135 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 9.84482e-10
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.0157e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50374e-07
+-----------------------------------------------------
+Zeitschritt t = 0.14 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.01967e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.89371e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50732e-07
+-----------------------------------------------------
+Zeitschritt t = 0.145 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.05485e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 8.49422e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.52283e-07
+-----------------------------------------------------
+Zeitschritt t = 0.15 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.09004e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.95924e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.52023e-07
+-----------------------------------------------------
+Zeitschritt t = 0.155 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 1.12516e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.61059e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51808e-07
+-----------------------------------------------------
+Zeitschritt t = 0.16 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.16029e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.20478e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51699e-07
+-----------------------------------------------------
+Zeitschritt t = 0.165 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.19545e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.98214e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51634e-07
+-----------------------------------------------------
+Zeitschritt t = 0.17 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.23061e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 5.10163e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51086e-07
+-----------------------------------------------------
+Zeitschritt t = 0.175 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.26585e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 4.56065e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5089e-07
+-----------------------------------------------------
+Zeitschritt t = 0.18 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.30101e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.02313e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51097e-07
+-----------------------------------------------------
+Zeitschritt t = 0.185 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.33618e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.31232e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51214e-07
+-----------------------------------------------------
+Zeitschritt t = 0.19 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 1.37135e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.23887e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51283e-07
+-----------------------------------------------------
+Zeitschritt t = 0.195 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.40652e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.90426e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51327e-07
+-----------------------------------------------------
+Zeitschritt t = 0.2 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.4417e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.40023e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51356e-07
+-----------------------------------------------------
+Zeitschritt t = 0.205 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.47687e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.78987e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51377e-07
+-----------------------------------------------------
+Zeitschritt t = 0.21 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.51205e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79923e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51275e-07
+-----------------------------------------------------
+Zeitschritt t = 0.215 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.54727e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.09967e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51173e-07
+-----------------------------------------------------
+Zeitschritt t = 0.22 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.58239e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.6515e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51276e-07
+-----------------------------------------------------
+Zeitschritt t = 0.225 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.61753e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.67045e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51056e-07
+-----------------------------------------------------
+Zeitschritt t = 0.23 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.65275e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.46962e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50977e-07
+-----------------------------------------------------
+Zeitschritt t = 0.235 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.68788e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.27854e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51161e-07
+-----------------------------------------------------
+Zeitschritt t = 0.24 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.72303e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.6815e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51026e-07
+-----------------------------------------------------
+Zeitschritt t = 0.245 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 1.75825e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.62378e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50981e-07
+-----------------------------------------------------
+Zeitschritt t = 0.25 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 1.79338e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.38749e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5116e-07
+-----------------------------------------------------
+Zeitschritt t = 0.255 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.82852e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.86683e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51043e-07
+-----------------------------------------------------
+Zeitschritt t = 0.26 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.86374e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76266e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51001e-07
+-----------------------------------------------------
+Zeitschritt t = 0.265 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.89887e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.6056e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51173e-07
+-----------------------------------------------------
+Zeitschritt t = 0.27 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 1.93402e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.01273e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51046e-07
+-----------------------------------------------------
+Zeitschritt t = 0.275 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 1.96924e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.92108e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50995e-07
+-----------------------------------------------------
+Zeitschritt t = 0.28 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.00437e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.82154e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51171e-07
+-----------------------------------------------------
+Zeitschritt t = 0.285 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.03952e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.16944e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51038e-07
+-----------------------------------------------------
+Zeitschritt t = 0.29 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.07474e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.07732e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50984e-07
+-----------------------------------------------------
+Zeitschritt t = 0.295 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.10986e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.63703e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50861e-07
+-----------------------------------------------------
+Zeitschritt t = 0.3 dauerte 0.04 sec
+
+Iterationen: 4    Norm des Residuums: 2.14507e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.0272e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50893e-07
+-----------------------------------------------------
+Zeitschritt t = 0.305 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.18018e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.12748e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50842e-07
+-----------------------------------------------------
+Zeitschritt t = 0.31 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.21538e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.06487e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50882e-07
+-----------------------------------------------------
+Zeitschritt t = 0.315 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.2505e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.93852e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50857e-07
+-----------------------------------------------------
+Zeitschritt t = 0.32 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.2857e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.9373e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50901e-07
+-----------------------------------------------------
+Zeitschritt t = 0.325 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.32082e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.86741e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50875e-07
+-----------------------------------------------------
+Zeitschritt t = 0.33 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.35602e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.83833e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50917e-07
+-----------------------------------------------------
+Zeitschritt t = 0.335 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.39115e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.80418e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50888e-07
+-----------------------------------------------------
+Zeitschritt t = 0.34 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.42634e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.78024e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50927e-07
+-----------------------------------------------------
+Zeitschritt t = 0.345 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.46147e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.75339e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50896e-07
+-----------------------------------------------------
+Zeitschritt t = 0.35 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.49667e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73964e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50933e-07
+-----------------------------------------------------
+Zeitschritt t = 0.355 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.53179e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.71765e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50901e-07
+-----------------------------------------------------
+Zeitschritt t = 0.36 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.56699e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.70922e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50938e-07
+-----------------------------------------------------
+Zeitschritt t = 0.365 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.60211e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.99656e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51138e-07
+-----------------------------------------------------
+Zeitschritt t = 0.37 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.63726e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.50123e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51071e-07
+-----------------------------------------------------
+Zeitschritt t = 0.375 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.67248e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72963e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51031e-07
+-----------------------------------------------------
+Zeitschritt t = 0.38 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.70761e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.34793e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51193e-07
+-----------------------------------------------------
+Zeitschritt t = 0.385 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.74276e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.08796e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51065e-07
+-----------------------------------------------------
+Zeitschritt t = 0.39 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.77798e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.94804e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51017e-07
+-----------------------------------------------------
+Zeitschritt t = 0.395 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 2.81311e-09
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.90274e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51184e-07
+-----------------------------------------------------
+Zeitschritt t = 0.4 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.84826e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.24272e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.51051e-07
+-----------------------------------------------------
+Zeitschritt t = 0.405 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.88348e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.20741e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50995e-07
+-----------------------------------------------------
+Zeitschritt t = 0.41 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.91861e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.81757e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50871e-07
+-----------------------------------------------------
+Zeitschritt t = 0.415 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.95381e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.22618e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50902e-07
+-----------------------------------------------------
+Zeitschritt t = 0.42 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 2.98893e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.36487e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50848e-07
+-----------------------------------------------------
+Zeitschritt t = 0.425 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.02413e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.32009e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50887e-07
+-----------------------------------------------------
+Zeitschritt t = 0.43 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.05925e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.21237e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50858e-07
+-----------------------------------------------------
+Zeitschritt t = 0.435 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.09445e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.22414e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50902e-07
+-----------------------------------------------------
+Zeitschritt t = 0.44 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.12957e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.16422e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50872e-07
+-----------------------------------------------------
+Zeitschritt t = 0.445 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.16477e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.141e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50914e-07
+-----------------------------------------------------
+Zeitschritt t = 0.45 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.19989e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.11187e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50882e-07
+-----------------------------------------------------
+Zeitschritt t = 0.455 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.23509e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.08925e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50921e-07
+-----------------------------------------------------
+Zeitschritt t = 0.46 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.27021e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.06362e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50888e-07
+-----------------------------------------------------
+Zeitschritt t = 0.465 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.30542e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.04855e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.47 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.34054e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.02515e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50892e-07
+-----------------------------------------------------
+Zeitschritt t = 0.475 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.37574e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.01368e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5093e-07
+-----------------------------------------------------
+Zeitschritt t = 0.48 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.41086e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.99351e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50896e-07
+-----------------------------------------------------
+Zeitschritt t = 0.485 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.44606e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.98412e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50934e-07
+-----------------------------------------------------
+Zeitschritt t = 0.49 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.48118e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.96651e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.509e-07
+-----------------------------------------------------
+Zeitschritt t = 0.495 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.51639e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.9589e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50937e-07
+-----------------------------------------------------
+Zeitschritt t = 0.5 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.55151e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.9432e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50902e-07
+-----------------------------------------------------
+Zeitschritt t = 0.505 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.58671e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.93707e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50939e-07
+-----------------------------------------------------
+Zeitschritt t = 0.51 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 3.62183e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.92289e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50905e-07
+-----------------------------------------------------
+Zeitschritt t = 0.515 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.65703e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.91796e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50941e-07
+-----------------------------------------------------
+Zeitschritt t = 0.52 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 3.69216e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.90502e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50907e-07
+-----------------------------------------------------
+Zeitschritt t = 0.525 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.72736e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.90108e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50943e-07
+-----------------------------------------------------
+Zeitschritt t = 0.53 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.76248e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.88916e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50908e-07
+-----------------------------------------------------
+Zeitschritt t = 0.535 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.79768e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.88604e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50945e-07
+-----------------------------------------------------
+Zeitschritt t = 0.54 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.83281e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.87497e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5091e-07
+-----------------------------------------------------
+Zeitschritt t = 0.545 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.86801e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.87255e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50946e-07
+-----------------------------------------------------
+Zeitschritt t = 0.55 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.90313e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.86219e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50911e-07
+-----------------------------------------------------
+Zeitschritt t = 0.555 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 3.93833e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.86036e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50947e-07
+-----------------------------------------------------
+Zeitschritt t = 0.56 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 3.97346e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.8506e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50912e-07
+-----------------------------------------------------
+Zeitschritt t = 0.565 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.00866e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.84929e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50948e-07
+-----------------------------------------------------
+Zeitschritt t = 0.57 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.04378e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.84005e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50914e-07
+-----------------------------------------------------
+Zeitschritt t = 0.575 dauerte 0.04 sec
+
+Iterationen: 4    Norm des Residuums: 4.07898e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.83919e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50949e-07
+-----------------------------------------------------
+Zeitschritt t = 0.58 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.11411e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.8304e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50914e-07
+-----------------------------------------------------
+Zeitschritt t = 0.585 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.14931e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.82994e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5095e-07
+-----------------------------------------------------
+Zeitschritt t = 0.59 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.18443e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79815e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.595 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.21963e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.80401e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50958e-07
+-----------------------------------------------------
+Zeitschritt t = 0.6 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.25476e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79923e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50929e-07
+-----------------------------------------------------
+Zeitschritt t = 0.605 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.28996e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.80191e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50957e-07
+-----------------------------------------------------
+Zeitschritt t = 0.61 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 4.32508e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79139e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.615 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.36028e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.80308e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50963e-07
+-----------------------------------------------------
+Zeitschritt t = 0.62 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.39541e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79407e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50927e-07
+-----------------------------------------------------
+Zeitschritt t = 0.625 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.43061e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79486e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.63 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.46573e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.78962e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50923e-07
+-----------------------------------------------------
+Zeitschritt t = 0.635 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.50093e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.79024e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50957e-07
+-----------------------------------------------------
+Zeitschritt t = 0.64 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.53606e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.78406e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5092e-07
+-----------------------------------------------------
+Zeitschritt t = 0.645 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.57126e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.78465e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50955e-07
+-----------------------------------------------------
+Zeitschritt t = 0.65 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.60638e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.77863e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50919e-07
+-----------------------------------------------------
+Zeitschritt t = 0.655 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.64158e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.77885e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50955e-07
+-----------------------------------------------------
+Zeitschritt t = 0.66 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.67671e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7733e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5092e-07
+-----------------------------------------------------
+Zeitschritt t = 0.665 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.71191e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.77351e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50956e-07
+-----------------------------------------------------
+Zeitschritt t = 0.67 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 4.74703e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76836e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50921e-07
+-----------------------------------------------------
+Zeitschritt t = 0.675 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.78224e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76877e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50957e-07
+-----------------------------------------------------
+Zeitschritt t = 0.68 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.81736e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76395e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50922e-07
+-----------------------------------------------------
+Zeitschritt t = 0.685 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.85256e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76457e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50958e-07
+-----------------------------------------------------
+Zeitschritt t = 0.69 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.88769e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76004e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50922e-07
+-----------------------------------------------------
+Zeitschritt t = 0.695 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 4.92289e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.76083e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50958e-07
+-----------------------------------------------------
+Zeitschritt t = 0.7 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.95801e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.75655e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50922e-07
+-----------------------------------------------------
+Zeitschritt t = 0.705 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 4.99321e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.75748e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50959e-07
+-----------------------------------------------------
+Zeitschritt t = 0.71 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.02834e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7534e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50923e-07
+-----------------------------------------------------
+Zeitschritt t = 0.715 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 5.06354e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.75445e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50959e-07
+-----------------------------------------------------
+Zeitschritt t = 0.72 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.09866e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.75053e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50923e-07
+-----------------------------------------------------
+Zeitschritt t = 0.725 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.13386e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.75169e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50959e-07
+-----------------------------------------------------
+Zeitschritt t = 0.73 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.16899e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74791e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50923e-07
+-----------------------------------------------------
+Zeitschritt t = 0.735 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.20419e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74917e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50959e-07
+-----------------------------------------------------
+Zeitschritt t = 0.74 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.23931e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7455e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50924e-07
+-----------------------------------------------------
+Zeitschritt t = 0.745 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.27451e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74686e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5096e-07
+-----------------------------------------------------
+Zeitschritt t = 0.75 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 5.30964e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7433e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50924e-07
+-----------------------------------------------------
+Zeitschritt t = 0.755 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.34484e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74474e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5096e-07
+-----------------------------------------------------
+Zeitschritt t = 0.76 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.37997e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74127e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50924e-07
+-----------------------------------------------------
+Zeitschritt t = 0.765 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.41517e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74279e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5096e-07
+-----------------------------------------------------
+Zeitschritt t = 0.77 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.45029e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7394e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50924e-07
+-----------------------------------------------------
+Zeitschritt t = 0.775 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.48549e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.74099e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5096e-07
+-----------------------------------------------------
+Zeitschritt t = 0.78 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.52062e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73767e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50924e-07
+-----------------------------------------------------
+Zeitschritt t = 0.785 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.55582e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73932e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5096e-07
+-----------------------------------------------------
+Zeitschritt t = 0.79 dauerte 0.04 sec
+
+Iterationen: 4    Norm des Residuums: 5.59094e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73608e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.795 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.62614e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73779e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.5096e-07
+-----------------------------------------------------
+Zeitschritt t = 0.8 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.66127e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7346e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.805 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.69647e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73637e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.81 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.7316e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73324e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.815 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.7668e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73505e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.82 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.80192e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73197e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.825 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.83712e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73383e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.83 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.87225e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7308e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.835 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.90745e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7327e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.84 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 5.94257e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72971e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.845 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 5.97777e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73166e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.85 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.0129e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72871e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.855 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.0481e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.73069e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.86 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.08322e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72778e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50925e-07
+-----------------------------------------------------
+Zeitschritt t = 0.865 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.11843e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72979e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.87 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.15355e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72691e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.875 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.18875e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72896e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.88 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 6.22388e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72611e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.885 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.25908e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72819e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50961e-07
+-----------------------------------------------------
+Zeitschritt t = 0.89 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.2942e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72537e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.895 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 6.3294e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72747e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.9 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.36453e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72468e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.905 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.39973e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72681e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.91 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.43485e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72405e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.915 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.47006e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7262e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.92 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 6.50518e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72346e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.925 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.54038e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72563e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.93 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.57551e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72291e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.935 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.61071e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72511e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.94 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 6.64583e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72241e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.945 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.68103e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72462e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.95 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.71616e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72194e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.955 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.75136e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72417e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.96 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.78648e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72151e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.965 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.82168e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72376e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.97 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 6.85681e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72112e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.975 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.89201e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72338e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.98 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 6.92714e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72075e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.985 dauerte 0.01 sec
+
+Iterationen: 4    Norm des Residuums: 6.96234e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72302e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 0.99 dauerte 0.03 sec
+
+Iterationen: 4    Norm des Residuums: 6.99746e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.72041e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50926e-07
+-----------------------------------------------------
+Zeitschritt t = 0.995 dauerte 0.02 sec
+
+Iterationen: 4    Norm des Residuums: 7.03266e-09
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 6.7227e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.50962e-07
+-----------------------------------------------------
+Zeitschritt t = 1 dauerte 0.02 sec
+
+Das Verfahren brauchte 2.97 Sekunden.
+entering SetupSystem: 81 vels, 27 prs
+done: value part fill
+705 nonzeros in A, 561 nonzeros in B! 
+
+Checken der Loesung...
+|| Ax + BTy - F || = 0.0200641, max. 0.00725192
+||       Bx - G || = 6.65053e-06, max. 4.39824e-06
+
+|| div x ||_L1 = 0.0073812
+|| div x ||_L2 = 0.015075
+
+Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 0.000431833
+ L2-Norm= (0.00011772, 0.00011772, 0.00014703)
+ L1-Norm= (8.3306e-05, 8.3306e-05, 0.000111806)
+max-Norm= 0.00193004
+
+constant pressure offset is -8.51266e-05, volume of cube is 0.484473
+Druck: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 0.0519427
+ L2-Norm= 0.0129518
+ L1-Norm= 0.00385606
+Differenz liegt zwischen 1.86517e-06 und 0.21349
+
+Anzahl der Druck-Unbekannten: 27, 125
+Anzahl der Geschwindigkeitsunbekannten: 81, 1029
+entering SetupSystem: 1029 vels, 125 prs
+done: value part fill
+16089 nonzeros in A, 7287 nonzeros in B, 19005 nonzeros in I! 
+0.17 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+
+Delta t = which method? 0=Schur, 1=SchurNoPc, 2=impl./expl. Euler > theta = tol = Iterationen: 5    Norm des Residuums: 3.14907e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 1.75894e-07
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.78542e-06
+-----------------------------------------------------
+Zeitschritt t = 0.005 dauerte 0.13 sec
+
+Iterationen: 5    Norm des Residuums: 6.3311e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.72125e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.69306e-06
+-----------------------------------------------------
+Zeitschritt t = 0.01 dauerte 0.13 sec
+
+Iterationen: 5    Norm des Residuums: 9.49451e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 7.60753e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67631e-06
+-----------------------------------------------------
+Zeitschritt t = 0.015 dauerte 0.13 sec
+
+Iterationen: 6    Norm des Residuums: 1.42707e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 5.39943e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68957e-06
+-----------------------------------------------------
+Zeitschritt t = 0.02 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 1.78157e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 4.85595e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68554e-06
+-----------------------------------------------------
+Zeitschritt t = 0.025 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 2.13616e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.68238e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68274e-06
+-----------------------------------------------------
+Zeitschritt t = 0.03 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 2.49043e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.21909e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68167e-06
+-----------------------------------------------------
+Zeitschritt t = 0.035 dauerte 0.13 sec
+
+Iterationen: 6    Norm des Residuums: 2.84465e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 3.06801e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68594e-06
+-----------------------------------------------------
+Zeitschritt t = 0.04 dauerte 0.15 sec
+
+Iterationen: 6    Norm des Residuums: 3.19895e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.23203e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68291e-06
+-----------------------------------------------------
+Zeitschritt t = 0.045 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 3.55352e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.51671e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68074e-06
+-----------------------------------------------------
+Zeitschritt t = 0.05 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 3.90802e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.43783e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67833e-06
+-----------------------------------------------------
+Zeitschritt t = 0.055 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 4.26233e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.91465e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67886e-06
+-----------------------------------------------------
+Zeitschritt t = 0.06 dauerte 0.13 sec
+
+Iterationen: 6    Norm des Residuums: 4.61634e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.46719e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67967e-06
+-----------------------------------------------------
+Zeitschritt t = 0.065 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 4.97041e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.21621e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68312e-06
+-----------------------------------------------------
+Zeitschritt t = 0.07 dauerte 0.15 sec
+
+Iterationen: 6    Norm des Residuums: 5.32472e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.77949e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6808e-06
+-----------------------------------------------------
+Zeitschritt t = 0.075 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 5.67926e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.30988e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67909e-06
+-----------------------------------------------------
+Zeitschritt t = 0.08 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 6.03372e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 1.95903e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67592e-06
+-----------------------------------------------------
+Zeitschritt t = 0.085 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 6.38785e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.54292e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67711e-06
+-----------------------------------------------------
+Zeitschritt t = 0.09 dauerte 0.12 sec
+
+Iterationen: 6    Norm des Residuums: 6.74178e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.07141e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67833e-06
+-----------------------------------------------------
+Zeitschritt t = 0.095 dauerte 0.13 sec
+
+Iterationen: 6    Norm des Residuums: 7.09578e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.00738e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68142e-06
+-----------------------------------------------------
+Zeitschritt t = 0.1 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 7.45004e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.42281e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67961e-06
+-----------------------------------------------------
+Zeitschritt t = 0.105 dauerte 0.15 sec
+
+Iterationen: 6    Norm des Residuums: 7.80453e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.87149e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67824e-06
+-----------------------------------------------------
+Zeitschritt t = 0.11 dauerte 0.15 sec
+
+Iterationen: 6    Norm des Residuums: 8.15895e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 1.87265e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67549e-06
+-----------------------------------------------------
+Zeitschritt t = 0.115 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 8.51304e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.24534e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6767e-06
+-----------------------------------------------------
+Zeitschritt t = 0.12 dauerte 0.15 sec
+
+Iterationen: 6    Norm des Residuums: 8.86695e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.65556e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67794e-06
+-----------------------------------------------------
+Zeitschritt t = 0.125 dauerte 0.14 sec
+
+Iterationen: 6    Norm des Residuums: 9.22095e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.93551e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67859e-06
+-----------------------------------------------------
+Zeitschritt t = 0.13 dauerte 0.13 sec
+
+Iterationen: 6    Norm des Residuums: 9.57503e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.07726e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68131e-06
+-----------------------------------------------------
+Zeitschritt t = 0.135 dauerte 0.15 sec
+
+Iterationen: 6    Norm des Residuums: 9.9294e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.9606e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67925e-06
+-----------------------------------------------------
+Zeitschritt t = 0.14 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.02918e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 1.78557e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67568e-06
+-----------------------------------------------------
+Zeitschritt t = 0.145 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 2.09901e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.37976e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67645e-06
+-----------------------------------------------------
+Zeitschritt t = 0.15 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.16887e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.2983e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67749e-06
+-----------------------------------------------------
+Zeitschritt t = 0.155 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 2.23876e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.28691e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67809e-06
+-----------------------------------------------------
+Zeitschritt t = 0.16 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 2.30866e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.81902e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67836e-06
+-----------------------------------------------------
+Zeitschritt t = 0.165 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 2.37858e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.11745e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67845e-06
+-----------------------------------------------------
+Zeitschritt t = 0.17 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 2.4485e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.29209e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67845e-06
+-----------------------------------------------------
+Zeitschritt t = 0.175 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 2.51842e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.3991e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67841e-06
+-----------------------------------------------------
+Zeitschritt t = 0.18 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.58834e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.46801e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67836e-06
+-----------------------------------------------------
+Zeitschritt t = 0.185 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.65827e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.51471e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67831e-06
+-----------------------------------------------------
+Zeitschritt t = 0.19 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.72819e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.54797e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67826e-06
+-----------------------------------------------------
+Zeitschritt t = 0.195 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 2.79812e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.57276e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67822e-06
+-----------------------------------------------------
+Zeitschritt t = 0.2 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.86804e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.592e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67819e-06
+-----------------------------------------------------
+Zeitschritt t = 0.205 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 2.93796e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.60744e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67816e-06
+-----------------------------------------------------
+Zeitschritt t = 0.21 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.00789e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.62019e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67814e-06
+-----------------------------------------------------
+Zeitschritt t = 0.215 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 3.07781e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.63097e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67812e-06
+-----------------------------------------------------
+Zeitschritt t = 0.22 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.14773e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.64029e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6781e-06
+-----------------------------------------------------
+Zeitschritt t = 0.225 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.21766e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.64849e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67809e-06
+-----------------------------------------------------
+Zeitschritt t = 0.23 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.28758e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.65584e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67808e-06
+-----------------------------------------------------
+Zeitschritt t = 0.235 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 3.3575e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.66252e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67807e-06
+-----------------------------------------------------
+Zeitschritt t = 0.24 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.42743e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.66868e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67807e-06
+-----------------------------------------------------
+Zeitschritt t = 0.245 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.49735e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.67444e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67806e-06
+-----------------------------------------------------
+Zeitschritt t = 0.25 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 3.56727e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.6799e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67806e-06
+-----------------------------------------------------
+Zeitschritt t = 0.255 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.63719e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.68511e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.26 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 3.70712e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.69014e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.265 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 3.77704e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.69503e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.27 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 3.84696e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.69981e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.275 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 3.91688e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.70453e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.28 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 3.98681e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.70919e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.285 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 4.05673e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.71382e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.29 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 4.12665e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.71843e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.295 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 4.19657e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.72304e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.3 dauerte 0.16 sec
+
+Iterationen: 7    Norm des Residuums: 4.2665e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.72765e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.305 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 4.33642e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.73227e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.31 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 4.40634e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.73691e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.315 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 4.47626e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.74158e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.32 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 4.54619e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.74627e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.325 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 4.61611e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.75099e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.33 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 4.68603e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.75574e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.335 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 4.75595e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.76053e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.34 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 4.82588e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.76535e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.345 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 4.8958e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.77021e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.35 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 4.96572e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.77511e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.355 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.03564e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.78005e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.36 dauerte 0.11 sec
+
+Iterationen: 7    Norm des Residuums: 5.10557e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.78503e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.365 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 5.17549e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.79005e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.37 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.24541e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.7951e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.375 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 5.31533e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.8002e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.38 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 5.38526e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.80534e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.385 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.45518e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.81052e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.39 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.5251e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.81575e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.395 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.59502e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.82101e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.4 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.66495e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.82632e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.405 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.73487e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.83166e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.41 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 5.80479e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.83705e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.415 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.87471e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.84248e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.42 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 5.94463e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.84796e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.425 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.01456e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.85347e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.43 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 6.08448e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.85902e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.435 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 6.1544e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.86462e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.44 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.22432e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.87026e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.445 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 6.29425e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.87594e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.45 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.36417e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.88166e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.455 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.43409e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.88742e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.46 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.50401e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.89322e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.465 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 6.57394e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.89906e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.47 dauerte 0.12 sec
+
+Iterationen: 7    Norm des Residuums: 6.64386e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.90495e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.475 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.71378e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.91087e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.48 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.7837e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.91684e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.485 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.85363e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.92285e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.49 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 6.92355e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.92889e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.495 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 6.99347e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.93498e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.5 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 7.06339e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.94111e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.505 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 7.13332e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.94728e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.51 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.20324e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.95349e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.515 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.27316e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.95974e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.52 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.34308e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.96603e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.525 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 7.41301e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.97236e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.53 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.48293e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.97873e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.535 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 7.55285e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.98514e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.54 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.62277e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.99159e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.545 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.6927e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.99808e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67804e-06
+-----------------------------------------------------
+Zeitschritt t = 0.55 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 7.76262e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.68887e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67951e-06
+-----------------------------------------------------
+Zeitschritt t = 0.555 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 7.83266e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.56636e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67788e-06
+-----------------------------------------------------
+Zeitschritt t = 0.56 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 7.90266e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.51475e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67417e-06
+-----------------------------------------------------
+Zeitschritt t = 0.565 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 7.97245e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.195e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6755e-06
+-----------------------------------------------------
+Zeitschritt t = 0.57 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 8.04229e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.19492e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67686e-06
+-----------------------------------------------------
+Zeitschritt t = 0.575 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 8.11217e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.23029e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67765e-06
+-----------------------------------------------------
+Zeitschritt t = 0.58 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 8.18206e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.78339e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67805e-06
+-----------------------------------------------------
+Zeitschritt t = 0.585 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 8.25197e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.3705e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68067e-06
+-----------------------------------------------------
+Zeitschritt t = 0.59 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 8.32203e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.11799e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6789e-06
+-----------------------------------------------------
+Zeitschritt t = 0.595 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 8.39203e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.78313e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67761e-06
+-----------------------------------------------------
+Zeitschritt t = 0.6 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 8.462e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.69107e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67542e-06
+-----------------------------------------------------
+Zeitschritt t = 0.605 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 8.53177e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.42931e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67669e-06
+-----------------------------------------------------
+Zeitschritt t = 0.61 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 8.6016e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.27192e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68055e-06
+-----------------------------------------------------
+Zeitschritt t = 0.615 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 8.67162e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.82222e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67952e-06
+-----------------------------------------------------
+Zeitschritt t = 0.62 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 8.7416e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.7462e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67849e-06
+-----------------------------------------------------
+Zeitschritt t = 0.625 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 8.81156e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.7448e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67791e-06
+-----------------------------------------------------
+Zeitschritt t = 0.63 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 8.8815e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.2841e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67766e-06
+-----------------------------------------------------
+Zeitschritt t = 0.635 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 8.95143e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.58719e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67758e-06
+-----------------------------------------------------
+Zeitschritt t = 0.64 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.02136e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.76458e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67759e-06
+-----------------------------------------------------
+Zeitschritt t = 0.645 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.09128e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.87291e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67763e-06
+-----------------------------------------------------
+Zeitschritt t = 0.65 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.1612e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.94205e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67769e-06
+-----------------------------------------------------
+Zeitschritt t = 0.655 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 9.23112e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.98815e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67775e-06
+-----------------------------------------------------
+Zeitschritt t = 0.66 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 9.30104e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.53353e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67673e-06
+-----------------------------------------------------
+Zeitschritt t = 0.665 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 9.37082e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.34954e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67785e-06
+-----------------------------------------------------
+Zeitschritt t = 0.67 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 9.44066e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.40855e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68118e-06
+-----------------------------------------------------
+Zeitschritt t = 0.675 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 9.51068e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.94506e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67998e-06
+-----------------------------------------------------
+Zeitschritt t = 0.68 dauerte 0.15 sec
+
+Iterationen: 7    Norm des Residuums: 9.58067e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.8758e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67882e-06
+-----------------------------------------------------
+Zeitschritt t = 0.685 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.65063e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.87602e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67817e-06
+-----------------------------------------------------
+Zeitschritt t = 0.69 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.72057e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.41226e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67786e-06
+-----------------------------------------------------
+Zeitschritt t = 0.695 dauerte 0.13 sec
+
+Iterationen: 7    Norm des Residuums: 9.79051e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.70984e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67774e-06
+-----------------------------------------------------
+Zeitschritt t = 0.7 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.86043e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.88088e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67771e-06
+-----------------------------------------------------
+Zeitschritt t = 0.705 dauerte 0.14 sec
+
+Iterationen: 7    Norm des Residuums: 9.93036e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.98294e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67773e-06
+-----------------------------------------------------
+Zeitschritt t = 0.71 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 1.61819e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.43072e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67605e-06
+-----------------------------------------------------
+Zeitschritt t = 0.715 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.62945e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.3504e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6773e-06
+-----------------------------------------------------
+Zeitschritt t = 0.72 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.64074e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.46349e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68033e-06
+-----------------------------------------------------
+Zeitschritt t = 0.725 dauerte 0.16 sec
+
+Iterationen: 8    Norm des Residuums: 1.65209e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 5.98963e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67939e-06
+-----------------------------------------------------
+Zeitschritt t = 0.73 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 1.66342e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.93355e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67839e-06
+-----------------------------------------------------
+Zeitschritt t = 0.735 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.67474e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.95089e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67784e-06
+-----------------------------------------------------
+Zeitschritt t = 0.74 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.68606e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.50435e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67761e-06
+-----------------------------------------------------
+Zeitschritt t = 0.745 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.69738e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.81756e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67754e-06
+-----------------------------------------------------
+Zeitschritt t = 0.75 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 1.70869e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.40937e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67591e-06
+-----------------------------------------------------
+Zeitschritt t = 0.755 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 1.71996e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.19557e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67714e-06
+-----------------------------------------------------
+Zeitschritt t = 0.76 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 1.73125e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.90603e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67836e-06
+-----------------------------------------------------
+Zeitschritt t = 0.765 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.74255e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.75625e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68098e-06
+-----------------------------------------------------
+Zeitschritt t = 0.77 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.75391e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.59509e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67928e-06
+-----------------------------------------------------
+Zeitschritt t = 0.775 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 1.76524e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.32755e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67578e-06
+-----------------------------------------------------
+Zeitschritt t = 0.78 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.77652e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.06237e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67645e-06
+-----------------------------------------------------
+Zeitschritt t = 0.785 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.78782e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.04588e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67747e-06
+-----------------------------------------------------
+Zeitschritt t = 0.79 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 1.79912e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.08031e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67807e-06
+-----------------------------------------------------
+Zeitschritt t = 0.795 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.81043e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.64298e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67834e-06
+-----------------------------------------------------
+Zeitschritt t = 0.8 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.82174e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.96217e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67844e-06
+-----------------------------------------------------
+Zeitschritt t = 0.805 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.83305e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.51665e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67998e-06
+-----------------------------------------------------
+Zeitschritt t = 0.81 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.84441e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.36759e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6785e-06
+-----------------------------------------------------
+Zeitschritt t = 0.815 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.85575e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.39163e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67561e-06
+-----------------------------------------------------
+Zeitschritt t = 0.82 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.86703e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.01842e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67632e-06
+-----------------------------------------------------
+Zeitschritt t = 0.825 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 1.87832e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.96967e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67735e-06
+-----------------------------------------------------
+Zeitschritt t = 0.83 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.88963e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.99046e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67796e-06
+-----------------------------------------------------
+Zeitschritt t = 0.835 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.90093e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.54616e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67825e-06
+-----------------------------------------------------
+Zeitschritt t = 0.84 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.91225e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.86092e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67836e-06
+-----------------------------------------------------
+Zeitschritt t = 0.845 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 1.92356e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.44315e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68021e-06
+-----------------------------------------------------
+Zeitschritt t = 0.85 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.93491e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.28915e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67869e-06
+-----------------------------------------------------
+Zeitschritt t = 0.855 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.94625e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.40764e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67608e-06
+-----------------------------------------------------
+Zeitschritt t = 0.86 dauerte 0.16 sec
+
+Iterationen: 8    Norm des Residuums: 1.95753e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.00319e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67663e-06
+-----------------------------------------------------
+Zeitschritt t = 0.865 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.96883e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.9488e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67756e-06
+-----------------------------------------------------
+Zeitschritt t = 0.87 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.98013e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.97354e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6781e-06
+-----------------------------------------------------
+Zeitschritt t = 0.875 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 1.99144e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.53636e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67835e-06
+-----------------------------------------------------
+Zeitschritt t = 0.88 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.00275e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.85857e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67843e-06
+-----------------------------------------------------
+Zeitschritt t = 0.885 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 2.01406e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.45597e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6802e-06
+-----------------------------------------------------
+Zeitschritt t = 0.89 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.02542e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.32302e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67871e-06
+-----------------------------------------------------
+Zeitschritt t = 0.895 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.03675e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.42419e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67621e-06
+-----------------------------------------------------
+Zeitschritt t = 0.9 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.04804e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.05187e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6767e-06
+-----------------------------------------------------
+Zeitschritt t = 0.905 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 2.05933e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.0164e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6776e-06
+-----------------------------------------------------
+Zeitschritt t = 0.91 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 2.07064e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.05508e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67812e-06
+-----------------------------------------------------
+Zeitschritt t = 0.915 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.08194e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.62852e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67836e-06
+-----------------------------------------------------
+Zeitschritt t = 0.92 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 2.09325e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.95871e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67844e-06
+-----------------------------------------------------
+Zeitschritt t = 0.925 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.10457e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.48548e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68011e-06
+-----------------------------------------------------
+Zeitschritt t = 0.93 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 2.11592e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.42132e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67868e-06
+-----------------------------------------------------
+Zeitschritt t = 0.935 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.12726e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.45742e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6763e-06
+-----------------------------------------------------
+Zeitschritt t = 0.94 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 2.13854e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.14811e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67674e-06
+-----------------------------------------------------
+Zeitschritt t = 0.945 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.14984e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.1496e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.6776e-06
+-----------------------------------------------------
+Zeitschritt t = 0.95 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.16114e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.21162e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67812e-06
+-----------------------------------------------------
+Zeitschritt t = 0.955 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 2.17245e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.80077e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67835e-06
+-----------------------------------------------------
+Zeitschritt t = 0.96 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.18376e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.45522e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.68006e-06
+-----------------------------------------------------
+Zeitschritt t = 0.965 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 2.19511e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 7.31801e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67876e-06
+-----------------------------------------------------
+Zeitschritt t = 0.97 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.20645e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.42211e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67661e-06
+-----------------------------------------------------
+Zeitschritt t = 0.975 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.21773e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 6.06598e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67691e-06
+-----------------------------------------------------
+Zeitschritt t = 0.98 dauerte 0.13 sec
+
+Iterationen: 8    Norm des Residuums: 2.22903e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 8.04174e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67769e-06
+-----------------------------------------------------
+Zeitschritt t = 0.985 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.24033e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.09407e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67816e-06
+-----------------------------------------------------
+Zeitschritt t = 0.99 dauerte 0.15 sec
+
+Iterationen: 8    Norm des Residuums: 2.25164e-08
+rhs has been set! Now solving pressure...
+Iterationen: 0    Norm des Residuums: 9.68114e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67837e-06
+-----------------------------------------------------
+Zeitschritt t = 0.995 dauerte 0.14 sec
+
+Iterationen: 8    Norm des Residuums: 2.26295e-08
+rhs has been set! Now solving pressure...
+Iterationen: 1    Norm des Residuums: 2.44911e-06
+pressure has been solved! Now solving velocities...
+Iterationen: 2    Norm des Residuums: 3.67988e-06
+-----------------------------------------------------
+Zeitschritt t = 1 dauerte 0.14 sec
+
+Das Verfahren brauchte 27.87 Sekunden.
+entering SetupSystem: 1029 vels, 125 prs
+done: value part fill
+16089 nonzeros in A, 7287 nonzeros in B! 
+
+Checken der Loesung...
+|| Ax + BTy - F || = 0.00962871, max. 0.00132061
+||       Bx - G || = 1.3648e-05, max. 5.19392e-06
+
+|| div x ||_L1 = 0.00183932
+|| div x ||_L2 = 0.00375632
+
+Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 8.56508e-05
+ L2-Norm= (2.5838e-05, 2.5892e-05, 4.6352e-05)
+ L1-Norm= (1.42976e-05, 1.42929e-05, 2.36083e-05)
+max-Norm= 0.000461799
+
+constant pressure offset is 1.97994e-05, volume of cube is 0.484473
+Druck: Abweichung von der tatsaechlichen Loesung:
+w-2-Norm= 0.00285954
+ L2-Norm= 0.00126228
+ L1-Norm= 0.000705314
+Differenz liegt zwischen 3.02261e-06 und 0.0111879

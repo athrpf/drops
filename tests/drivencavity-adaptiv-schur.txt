@@ -1,0 +1,143 @@
+inner iter tol: 1e-09, tol: 1e-07, meth: 1, refinements: 7, relative error reduction: 0.01, markratio: 0.8, tau: 1, uzawa inner iter: 5
+altes und neues TriangLevel: 1074588168, 0
+27 Verts, 98 Edges, 120 Faces, 48 Tetras
+Anzahl der Druck-Unbekannten: 0, 27
+Anzahl der Geschwindigkeitsunbekannten: 0, 81
+entering SetupSystem: 81 vels, 27 prs
+done: value part fill
+705 nonzeros in A, 560 nonzeros in B! 
+0.01 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+Iterationen: 8    Norm des Residuums: 6.59119e-11
+rhs has been set! Now solving pressure...
+Iterationen: 19    Norm des Residuums: 1.26357e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 7    Norm des Residuums: 7.92985e-09
+-----------------------------------------------------
+Das Verfahren brauchte 0.03 Sekunden.
+ErrorEstimator is initialized now; initial error: 51.7738 We try to reduce by a factor of 0.01 by marking the tetrahedrons with largest error-estimates, until the error marked is at least 0.8 of the actual global error.
+Estimated global |v|1 + ||pr||0-error: 51.7738. This is a reduction of 1 compared to the last estimation. Marked 5, unmarked 0 out of 48 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 0.03 seconds
+
+altes und neues TriangLevel: 0, 1
+48 Verts, 220 Edges, 304 Faces, 132 Tetras
+Anzahl der Druck-Unbekannten: 27, 48
+Anzahl der Geschwindigkeitsunbekannten: 81, 243
+entering SetupSystem: 243 vels, 48 prs
+done: value part fill
+2931 nonzeros in A, 1698 nonzeros in B! 
+0.03 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+Iterationen: 13    Norm des Residuums: 4.80119e-10
+rhs has been set! Now solving pressure...
+Iterationen: 25    Norm des Residuums: 6.88305e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 12    Norm des Residuums: 1.09264e-08
+-----------------------------------------------------
+Das Verfahren brauchte 0.15 Sekunden.
+Estimated global |v|1 + ||pr||0-error: 48.5746. This is a reduction of 0.938209 compared to the last estimation. Marked 9, unmarked 0 out of 111 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 0.06 seconds
+
+altes und neues TriangLevel: 1, 2
+86 Verts, 445 Edges, 635 Faces, 280 Tetras
+Anzahl der Druck-Unbekannten: 48, 86
+Anzahl der Geschwindigkeitsunbekannten: 243, 546
+entering SetupSystem: 546 vels, 86 prs
+done: value part fill
+7572 nonzeros in A, 3839 nonzeros in B! 
+0.07 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+Iterationen: 17    Norm des Residuums: 2.24852e-10
+rhs has been set! Now solving pressure...
+Iterationen: 27    Norm des Residuums: 8.77105e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 14    Norm des Residuums: 4.967e-08
+-----------------------------------------------------
+Das Verfahren brauchte 0.47 Sekunden.
+Estimated global |v|1 + ||pr||0-error: 32.8437. This is a reduction of 0.676149 compared to the last estimation. Marked 24, unmarked 0 out of 229 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 0.14 seconds
+
+altes und neues TriangLevel: 2, 3
+168 Verts, 952 Edges, 1405 Faces, 634 Tetras
+Anzahl der Druck-Unbekannten: 86, 168
+Anzahl der Geschwindigkeitsunbekannten: 546, 1335
+entering SetupSystem: 1335 vels, 168 prs
+done: value part fill
+20667 nonzeros in A, 9413 nonzeros in B! 
+0.16 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+Iterationen: 21    Norm des Residuums: 5.95737e-10
+rhs has been set! Now solving pressure...
+Iterationen: 29    Norm des Residuums: 8.48591e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 17    Norm des Residuums: 9.99162e-08
+-----------------------------------------------------
+Das Verfahren brauchte 1.58 Sekunden.
+Estimated global |v|1 + ||pr||0-error: 25.106. This is a reduction of 0.764408 compared to the last estimation. Marked 29, unmarked 0 out of 511 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 0.33 seconds
+
+altes und neues TriangLevel: 3, 3
+246 Verts, 1456 Edges, 2189 Faces, 1004 Tetras
+Anzahl der Druck-Unbekannten: 168, 246
+Anzahl der Geschwindigkeitsunbekannten: 1335, 2247
+entering SetupSystem: 2247 vels, 246 prs
+done: value part fill
+37377 nonzeros in A, 15833 nonzeros in B! 
+0.3 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+Iterationen: 25    Norm des Residuums: 8.14417e-10
+rhs has been set! Now solving pressure...
+Iterationen: 29    Norm des Residuums: 8.58804e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 21    Norm des Residuums: 6.19311e-08
+-----------------------------------------------------
+Das Verfahren brauchte 4 Sekunden.
+Estimated global |v|1 + ||pr||0-error: 17.0902. This is a reduction of 0.680722 compared to the last estimation. Marked 97, unmarked 0 out of 809 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 0.52 seconds
+
+altes und neues TriangLevel: 3, 4
+535 Verts, 3293 Edges, 5038 Faces, 2337 Tetras
+Anzahl der Druck-Unbekannten: 246, 535
+Anzahl der Geschwindigkeitsunbekannten: 2247, 5430
+entering SetupSystem: 5430 vels, 535 prs
+done: value part fill
+95874 nonzeros in A, 38365 nonzeros in B! 
+0.69 seconds for setting up all systems!
+ A*x took 0 seconds!
+AT*x took 0 seconds!
+Iterationen: 33    Norm des Residuums: 6.49999e-10
+rhs has been set! Now solving pressure...
+Iterationen: 25    Norm des Residuums: 6.14779e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 27    Norm des Residuums: 5.36786e-08
+-----------------------------------------------------
+Das Verfahren brauchte 11.79 Sekunden.
+Estimated global |v|1 + ||pr||0-error: 10.112. This is a reduction of 0.591686 compared to the last estimation. Marked 292, unmarked 0 out of 1874 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 1.22 seconds
+
+altes und neues TriangLevel: 4, 5
+1338 Verts, 8672 Edges, 13694 Faces, 6492 Tetras
+Anzahl der Druck-Unbekannten: 535, 1338
+Anzahl der Geschwindigkeitsunbekannten: 5430, 16335
+entering SetupSystem: 16335 vels, 1338 prs
+done: value part fill
+316161 nonzeros in A, 116110 nonzeros in B! 
+2.09 seconds for setting up all systems!
+ A*x took 0.02 seconds!
+AT*x took 0.02 seconds!
+Iterationen: 41    Norm des Residuums: 9.802e-10
+rhs has been set! Now solving pressure...
+Iterationen: 24    Norm des Residuums: 9.99602e-08
+pressure has been solved! Now solving velocities...
+Iterationen: 33    Norm des Residuums: 9.85911e-08
+-----------------------------------------------------
+Das Verfahren brauchte 46.08 Sekunden.
+Estimated global |v|1 + ||pr||0-error: 6.13104. This is a reduction of 0.606312 compared to the last estimation. Marked 548, unmarked 0 out of 5211 tetrahedrons, which account for 0.8 of the global error.
+Estimation took 3.45 seconds
+
+pressure min/max: -152.227, 136.702

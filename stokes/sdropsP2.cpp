@@ -15,27 +15,21 @@ inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
     return ret;
 }
 
-inline DROPS::SVectorCL<3> DLsgVel(DROPS::Uint k, const DROPS::Point3DCL& p)
+// Jacobi-matrix od exact solution
+inline DROPS::SMatrixCL<3, 3> DLsgVel(const DROPS::Point3DCL& p)
 {
-    DROPS::SVectorCL<3> ret;
-    switch(k)
-    {
-      case 0:
-        ret[0]= cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        ret[1]= sin(p[0])*cos(p[1])*sin(p[2])/3.;
-        ret[2]= sin(p[0])*sin(p[1])*cos(p[2])/3.;
-        break;
-      case 1:
-        ret[0]=   sin(p[0])*cos(p[1])*sin(p[2])/3.;
-        ret[1]=   cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        ret[2]= - cos(p[0])*cos(p[1])*cos(p[2])/3.;
-        break;
-      case 2:
-        ret[0]= -2.*sin(p[0])*sin(p[1])*cos(p[2])/3.;
-        ret[1]=  2.*cos(p[0])*cos(p[1])*cos(p[2])/3.;
-        ret[2]= -2.*cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        break;
-    }
+    DROPS::SMatrixCL<3, 3> ret;
+        ret(0,0)= cos(p[0])*sin(p[1])*sin(p[2])/3.;
+        ret(0,1)= sin(p[0])*cos(p[1])*sin(p[2])/3.;
+        ret(0,2)= sin(p[0])*sin(p[1])*cos(p[2])/3.;
+
+        ret(1,0)=   sin(p[0])*cos(p[1])*sin(p[2])/3.;
+        ret(1,1)=   cos(p[0])*sin(p[1])*sin(p[2])/3.;
+        ret(1,2)= - cos(p[0])*cos(p[1])*cos(p[2])/3.;
+
+        ret(2,0)= -2.*sin(p[0])*sin(p[1])*cos(p[2])/3.;
+        ret(2,1)=  2.*cos(p[0])*cos(p[1])*cos(p[2])/3.;
+        ret(2,2)= -2.*cos(p[0])*sin(p[1])*sin(p[2])/3.;
     return ret;
 }
 
@@ -44,12 +38,12 @@ inline DROPS::SVectorCL<3> DLsgVel(DROPS::Uint k, const DROPS::Point3DCL& p)
 // int(p)/vol = -0.125208551608365
 inline double LsgPr(const DROPS::Point3DCL& p)
 {
-    return -cos(p[0])*sin(p[1])*sin(p[2]) + 0.125208551608365;
+    return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
 }
 
 
-// q*u - nu*laplace u - Dp = f
-//                   div u = 0
+// q*u - nu*laplace u + Dp = f
+//                  -div u = 0
 class StokesCoeffCL
 {
   public:
@@ -134,7 +128,7 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_t
 //            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL>       vel1(v1, &VelBndData, &MG);
             Interpolate(pr1, pr2);
 //            Interpolate(vel1, vel2);
-//            Stokes.CheckSolution(v1,p1,&LsgVel,&LsgPr);
+//            Stokes.CheckSolution(v1,p1,&LsgVel, &DLsgVel, &LsgPr);
             v2->Reset();
             p2->Reset();
         }
@@ -196,7 +190,7 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_t
                       << "Norm des Res.: " << uzawaSolver.GetResid() << std::endl;
         }
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
-        Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
+        Stokes.CheckSolution(v1, p1, &LsgVel, &DLsgVel, &LsgPr);
         if (step==0)
         {
             Estimator.Init(typename MyStokesCL::DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::DiscVelSolCL(v1, &VelBndData, &MG));

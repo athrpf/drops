@@ -16,7 +16,7 @@ inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p)
 
 inline double LsgPr(const DROPS::Point3DCL& p)
 {
-    return -cos(p[0])*sin(p[1])*sin(p[2]);
+    return cos(p[0])*sin(p[1])*sin(p[2]);
 //     return 1.;
 }
 
@@ -26,8 +26,8 @@ inline double LsgPr(const DROPS::Point3DCL& p)
 //DROPS::StokesVelBndDataCL::bnd_type bnd_val_e1e2(const Point2DCL&);
 
 
-// q*u - nu*laplace u - Dp = f
-//                   div u = 0
+// q*u - nu*laplace u + Dp = f
+//                  -div u = 0
 class StokesCoeffCL
 {
   public:

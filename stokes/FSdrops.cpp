@@ -21,11 +21,11 @@ struct StatStokesCL
 
     static double LsgPr(const Point3DCL& p, double)
     {
-        return -cos(p[0])*sin(p[1])*sin(p[2]);
+        return cos(p[0])*sin(p[1])*sin(p[2]);
     }
 
-    // du/dt + q*u - nu*laplace u - Dp = f
-    //                           div u = 0
+    // du/dt + q*u - nu*laplace u + Dp = f
+    //                          -div u = 0
     class StokesCoeffCL
     {
       public:
@@ -55,11 +55,11 @@ struct InstatStokes2CL
 
     static double LsgPr(const Point3DCL& p, double t)
     {
-        return -cos(p[0])*sin(p[1])*sin(p[2])*t*t;
+        return cos(p[0])*sin(p[1])*sin(p[2])*t*t;
     }
 
-    // du/dt + q*u - nu*laplace u - Dp = f
-    //                           div u = 0
+    // du/dt + q*u - nu*laplace u + Dp = f
+    //                          -div u = 0
     class StokesCoeffCL
     {
       public:
@@ -91,11 +91,11 @@ struct InstatStokes3CL
 
     static double LsgPr(const Point3DCL& p, double)
     {
-        return p[0]+p[1]+p[2];
+        return -(p[0]+p[1]+p[2]);
     }
 
-    // du/dt + q*u - nu*laplace u - Dp = f
-    //                           div u = 0
+    // du/dt + q*u - nu*laplace u + Dp = f
+    //                          -div u = 0
     class StokesCoeffCL
     {
       public:
@@ -135,8 +135,8 @@ struct InstatStokesCL
         return 0;
     }
 
-    // du/dt + q*u - nu*laplace u - Dp = f
-    //                           div u = 0
+    // du/dt + q*u - nu*laplace u + Dp = f
+    //                          -div u = 0
     class StokesCoeffCL
     {
       public:
