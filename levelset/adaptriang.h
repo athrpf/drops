@@ -50,9 +50,8 @@ class AdapTriangCL
     bool WasModified() const { return modified_; }
 };
 
-#include "levelset/adaptriang.tpp"
-
 } // end of namespace DROPS
 
-#endif
+#include "levelset/adaptriang.tpp"
 
+#endif
