@@ -58,7 +58,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL> DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
-    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
+    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double);
     
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
@@ -84,17 +84,34 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void DeleteNumberingVel(IdxDescCL*);
     void DeleteNumberingPr (IdxDescCL*);
     
-    // Set up matrices and rhs
-    void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;
+    // Set up matrices and complete rhs
+    void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*, double= 0.0) const;
+    // Set up only A.
     void SetupStiffnessMatrix(MatDescCL*) const;
-    void SetupMass(MatDescCL*) const;
+    // Set up mass-matrix for pressure-unknowns (P1)
+    void SetupPrMass(MatDescCL*) const;
+    // Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme
+    // Time-independent
+    void SetupMassMatrix(MatDescCL* matI) const;
+
+    // Setup time independent part of system
+    void SetupInstatSystem( MatDescCL* A, MatDescCL* B, MatDescCL* M) const;
+    // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
+    // If the function is called with the same vector for some arguments (out of 1, 2, 4), 
+    // the vector will contain the sum of the results after the call
+    void SetupInstatRhs( VelVecDescCL* vA, VelVecDescCL* vB, VelVecDescCL* vI, double tA, VelVecDescCL* vf, double tf) const;
+    // Set initial value for velocities
+    void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
 
     // Check system and computed solution
-    void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;
+    void GetDiscError (instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t= 0.0) const;
     void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
+    // XXX: merge stationary and instationary version
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*,
+                       instat_vector_fun_ptr, instat_scalar_fun_ptr, double t) const;
 
     // work of Joerg :-)
-    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
+    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double t=0.0);
 
     // Get solutions as FE-functions
     DiscPrSolCL GetPrSolution() const
@@ -120,7 +137,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
     typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
-    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
+    typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double);
     
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
@@ -149,7 +166,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, scalar_fun_ptr) const;
 
     // work of Joerg :-)  Very well then: Let the games begin!
-    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
+    static double ResidualErrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&, double= 0.0);
 
     // Get solutions as FE-functions
     DiscPrSolCL GetPrSolution() const
@@ -159,6 +176,9 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
 };
 
+
+// Works only for the stationary Stokes-equations (id est, always t==0.0)
+// because Estimate calls the estimation-function always with time==0.0.
 template <class _TetraEst, class _ProblemCL>
 class StokesDoerflerMarkCL
 {

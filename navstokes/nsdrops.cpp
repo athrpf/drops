@@ -30,7 +30,7 @@ struct NS1CL
     {
       public:
         static double q(const DROPS::Point3DCL&) { return 0.0; }
-        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
+        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
             { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3*p[2]; return ret; }
         const double nu;
 
@@ -141,7 +141,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
-        NS.SetupMass( &M);
+        NS.SetupPrMass( &M);
         AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
 	                                             2000, poi_maxiter, poi_tol, uzawa_red);
 //        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,

@@ -21,7 +21,7 @@ class ZeroFlowCL
 {
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&)
+    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
         { DROPS::SVectorCL<3> ret(0.0); return ret; }
     const double nu;
     
@@ -94,7 +94,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
 
     MatDescCL M;
     M.SetIdx( pidx, pidx);
-    Stokes.SetupMass( &M);
+    Stokes.SetupPrMass( &M);
 
     Uint meth;
     std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;

@@ -35,7 +35,7 @@ struct NSDrCavCL
     {
       public:
         static double q(const DROPS::Point3DCL&) { return 0.0; }
-        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&)
+        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
             { DROPS::SVectorCL<3> ret(0.0); return ret; }
         const double nu;
 
@@ -276,7 +276,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
-        Stokes.SetupMass( &M);
+        Stokes.SetupPrMass( &M);
 
         double outer_tol= tol;
 
@@ -425,7 +425,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         VelVecDescCL rhsN( vidx1), v_omw( vidx1);
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
-        NS.SetupMass( &M);
+        NS.SetupPrMass( &M);
         double omega= 1, res; // initial value (no damping)
         Uzawa_IPCG_CL uzawaSolver(M.Data, 500, -1., poi_maxiter, poi_tol, 1.);
         for(int fp_step=0; fp_step<fp_maxiter; ++fp_step)

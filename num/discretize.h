@@ -274,7 +274,9 @@ class Quad3CL
     static Uint GetNumPoints() { return 8; }
     static const Point3DCL* GetPoints() { return reinterpret_cast<const Point3DCL*>(_points); }
 
+    static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, double);
     static inline double Quad(const TetraCL&, scalar_fun_ptr);
+    static inline SVectorCL<3> Quad(const TetraCL&, instat_vector_fun_ptr, double);
     static inline SVectorCL<3> Quad(const TetraCL&, vector_fun_ptr);
 
     static inline double Quad(const double*);
@@ -284,6 +286,15 @@ class Quad3CL
       Quad(IteratorT, ValueT*const);
 };
 
+inline double Quad3CL::Quad(const TetraCL& t, instat_scalar_fun_ptr f, double tt)
+{
+    const Point3DCL* pts= GetPoints();
+    return ( f(GetWorldCoord(t, pts[0]), tt) + f(GetWorldCoord(t, pts[1]), tt)
+            +f(GetWorldCoord(t, pts[2]), tt) + f(GetWorldCoord(t, pts[3]), tt) )/240.
+          +( f(GetWorldCoord(t, pts[4]), tt) + f(GetWorldCoord(t, pts[5]), tt)
+            +f(GetWorldCoord(t, pts[6]), tt) + f(GetWorldCoord(t, pts[7]), tt) )*3./80.;
+
+}
 inline double Quad3CL::Quad(const TetraCL& t, scalar_fun_ptr f)
 {
     const Point3DCL* pts= GetPoints();
@@ -293,7 +304,15 @@ inline double Quad3CL::Quad(const TetraCL& t, scalar_fun_ptr f)
             +f(GetWorldCoord(t, pts[6])) + f(GetWorldCoord(t, pts[7])) )*3./80.;
 
 }
+inline SVectorCL<3> Quad3CL::Quad(const TetraCL& t, instat_vector_fun_ptr f, double tt)
+{
+    const Point3DCL* pts= GetPoints();
+    return ( f(GetWorldCoord(t, pts[0]), tt) + f(GetWorldCoord(t, pts[1]), tt)
+            +f(GetWorldCoord(t, pts[2]), tt) + f(GetWorldCoord(t, pts[3]), tt) )/240.
+          +( f(GetWorldCoord(t, pts[4]), tt) + f(GetWorldCoord(t, pts[5]), tt)
+            +f(GetWorldCoord(t, pts[6]), tt) + f(GetWorldCoord(t, pts[7]), tt) )*3./80.;
 
+}
 inline SVectorCL<3> Quad3CL::Quad(const TetraCL& t, vector_fun_ptr f)
 {
     const Point3DCL* pts= GetPoints();

@@ -37,6 +37,10 @@ inline DROPS::SMatrixCL<3, 3> DLsgVel(const DROPS::Point3DCL& p)
 
 // Volume of the box: 0.484473073129685
 // int(p)/vol = -0.125208551608365
+inline double LsgPr(const DROPS::Point3DCL& p, double)
+{
+    return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
+}
 inline double LsgPr(const DROPS::Point3DCL& p)
 {
     return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
@@ -49,7 +53,7 @@ class StokesCoeffCL
 {
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
+    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
         { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*cos(p[0])*sin(p[1])*cos(p[2]); return ret; }
     const double nu;
     
@@ -165,7 +169,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
-        Stokes.SetupMass( &M);
+        Stokes.SetupPrMass( &M);
         double err0= norm_sq( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data)
                     +norm_sq( B->Data*v1->Data - c->Data);
         std::cerr << "000 residual: " << std::sqrt( err0) << std::endl;

@@ -38,95 +38,45 @@ void InstatStokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 
 
 template <class Coeff>
-void InstatStokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t) const
+void InstatStokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel,
+    instat_scalar_fun_ptr LsgPr, double t) const
 {
-    Uint lvl= A.GetRowLevel(),
-        vidx= A.RowIdx->GetIdx(),
-        pidx= B.RowIdx->GetIdx();
+    const Uint lvl= A.GetRowLevel(),
+              vidx= A.RowIdx->GetIdx(),
+              pidx= B.RowIdx->GetIdx();
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
     VectorCL lsgpr( B.RowIdx->NumUnknowns);
     SVectorCL<3> tmp;
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
-        {
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangVertexBegin( lvl),
+         send= const_cast<const MultiGridCL&>( _MG).GetTriangVertexEnd( lvl);
+         sit != send; ++sit) {
+        if (!_BndData.Vel.IsOnDirBnd( *sit)) {
             tmp= LsgVel(sit->GetCoord(), t);
             for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
+                lsgvel[sit->Unknowns( vidx)+i]= tmp[i];
         }
     }
     
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
-        {
-            tmp= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t);
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeBegin( lvl),
+         send= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeEnd( lvl);
+         sit != send; ++sit) {
+        if (!_BndData.Vel.IsOnDirBnd( *sit)) {
+            tmp= LsgVel( GetBaryCenter( *sit), t);
             for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
+                lsgvel[sit->Unknowns( vidx)+i]= tmp[i];
         }
     }
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangVertexBegin( lvl),
+         send= const_cast<const MultiGridCL&>( _MG).GetTriangVertexEnd( lvl);
          sit != send; ++sit)
-        lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord(), t);
+        lsgpr[sit->Unknowns( pidx)]= LsgPr( sit->GetCoord(), t);
 
-    std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
-    VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
-    std::cerr <<"|| Ax + BTy - f || = "<< norm( res)<<", max "<< supnorm( res) << std::endl;
-    VectorCL resB= B.Data*lsgvel - c.Data; 
-    std::cerr <<"|| Bx - g || = "<<  norm( resB)<<", max "<< supnorm( resB) << std::endl;
-}
-
-
-
-inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr coeff, int i, double t)
-{
-    SVectorCL<3> f[5];
-    
-    if (i<4) // hat function on vert
-    {
-        f[0]= coeff( tetra.GetVertex(i)->GetCoord(), t);
-        for (int k=0, l=1; k<4; ++k)
-            if (k!=i) f[l++]= coeff( tetra.GetVertex(k)->GetCoord(), t);
-        f[4]= coeff( GetBaryCenter(tetra), t);
-        return f[0]/504. - (f[1] + f[2] + f[3])/1260. - f[4]/126.;
-    }
-    else  // hat function on edge
-    {
-        const double ve= 4./945.,  // coeff for verts of edge
-                     vn= -1./756.,  // coeff for other verts
-                     vs= 26./945.;   // coeff for barycenter
-        double a[4];
-        a[VertOfEdge(i-4,0)]= a[VertOfEdge(i-4,1)]= ve;
-        a[VertOfEdge(OppEdge(i-4),0)]= a[VertOfEdge(OppEdge(i-4),1)]= vn;
-
-        SVectorCL<3> sum= vs * coeff( GetBaryCenter(tetra), t);
-        for(int k=0; k<4; ++k)
-            sum+= a[k] * coeff( tetra.GetVertex(k)->GetCoord(), t);
-
-        return sum;
-    }
-}
-
-inline StokesVelBndDataCL::bnd_type Quad2D( const TetraCL& tetra, Uint face, Uint vert, 
-                                                  StokesVelBndDataCL::bnd_val_fun bfun, double t)
-// Integrate bnd_val * phi_vert over face
-{
-    const VertexCL* v[3];
-    
-    v[0]= tetra.GetVertex(vert);
-    for (int i=0, k=1; i<3; ++i)
-    {
-        if (VertOfFace(face,i)!=vert)
-            v[k++]= tetra.GetVertex( VertOfFace(face,i) );
-    }
-    const StokesVelBndDataCL::bnd_type f0= bfun(v[0]->GetCoord(), t);
-    const StokesVelBndDataCL::bnd_type f1= bfun(v[1]->GetCoord(), t) +  bfun( v[2]->GetCoord(), t);
-    const StokesVelBndDataCL::bnd_type f2= bfun((v[0]->GetCoord() + v[1]->GetCoord() + v[2]->GetCoord())/3.0, t);    //Barycenter of Face
-    const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
-    return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
+    std::cerr << "discretization error to check the system (x,y = continuous solution): " << std::endl;
+    VectorCL res( A.Data*lsgvel + transp_mul(B.Data, lsgpr) - b.Data); 
+    std::cerr << "|| Ax + BTy - f || = "<< norm( res)<< ", max "<< supnorm( res) << std::endl;
+    VectorCL resB( B.Data*lsgvel - c.Data); 
+    std::cerr << "|| Bx - g || = " <<  norm( resB) << ", max " << supnorm( resB) << std::endl;
 }
 
 
@@ -307,10 +257,6 @@ void InstatStokesP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
     }
     M_pr.Build();
 }
-
-
-
-inline double OneFct( const Point3DCL&) { return 1.;}
 
 
 template <class Coeff>

@@ -11,7 +11,7 @@ class DrivenCavityCL
 {
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&)
+    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
         { DROPS::SVectorCL<3> ret(0.0); return ret; }
     const double nu;
     
@@ -174,7 +174,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
-        Stokes.SetupMass( &M);
+        Stokes.SetupPrMass( &M);
 
         double outer_tol= tol;
 //        std::cerr << "tol = "; std::cin >> outer_tol;

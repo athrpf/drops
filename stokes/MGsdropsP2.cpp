@@ -42,6 +42,10 @@ inline double LsgPr(const DROPS::Point3DCL& p)
 {
     return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
 }
+inline double LsgPr(const DROPS::Point3DCL& p, double)
+{
+    return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
+}
 
 
 // q*u - nu*laplace u + Dp = f
@@ -50,7 +54,7 @@ class StokesCoeffCL
 {
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
+    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
         { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*cos(p[0])*sin(p[1])*cos(p[2]); return ret; }
     const double nu;
     
@@ -211,7 +215,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
 	
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
-        Stokes.SetupMass( &M);
+        Stokes.SetupPrMass( &M);
 
         time.Stop();
         std::cerr << "Setting up all preconditioners took " << time.GetTime() 

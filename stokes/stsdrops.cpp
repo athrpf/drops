@@ -51,7 +51,7 @@ struct StokesCL
     {
       public:
         static double q(const DROPS::Point3DCL&) { return StokesCL::g_; }
-        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
+        static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
         { 
             const double g= StokesCL::g_;
             DROPS::SVectorCL<3> ret;
@@ -707,7 +707,7 @@ SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
 //        stokes.SetupPrMass( &tmp.A);
-        stokes.SetupMass( &tmp.A);
+        stokes.SetupPrMass( &tmp.A);
 //        tmp.A.Data*= 1e4;
         std::cerr << tmp.A.Data.num_nonzeros() << " nonzeros in M_pr.\n";
         if(lvl!=0) {
@@ -942,7 +942,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     ML_pr.SetIdx( pidx1, pidx1);
     M_pr.SetIdx( pidx1, pidx1);
     SetupLumpedPrMass( NS, ML_pr);  
-    NS.SetupMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);  
 //    SetupPressureMassMG( NS, MG_Mpr);
     PrepareStart( v1, p1, &M_pr);
     statsolver= new StatsolverCL( MG_vel, ML_pr.Data, 1, stokes_maxiter, stokes_tol);
@@ -1005,7 +1005,7 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     ML_pr.SetIdx( pidx1, pidx1);
 //    SetupLumpedPrMass( NS, ML_pr);
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupMass( &M_pr);
+    NS.SetupPrMass( &M_pr);
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
@@ -1160,7 +1160,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);  
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
 //    ispcp= new ISPreCL( A_pr.Data, M_pr.Data, k_pc, 1.0);
@@ -1247,7 +1247,7 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     ML_pr.SetIdx( pidx1, pidx1);
 //    SetupLumpedPrMass( NS, ML_pr);  
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);  
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
@@ -1315,7 +1315,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);  
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
 //    ISPreCL ispc( A_pr.Data, M_pr.Data, k_pc, 10);
