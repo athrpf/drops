@@ -17,7 +17,102 @@ namespace DROPS
 {
 
 typedef double (*scalar_fun_ptr)(const Point3DCL&);
-typedef SVectorCL<3> (*vector_fun_ptr)(const Point3DCL&);
+typedef Point3DCL (*vector_fun_ptr)(const Point3DCL&);
+
+// ===================================
+//        Quadrature formulas
+// ===================================
+
+template<class T=double>
+class QuadBaseCL
+{
+  protected:
+    QuadBaseCL( size_t size) : val( size) {}
+    QuadBaseCL( size_t size, const T& t) : val( t, size) {}
+    
+  public:
+    std::valarray<T> val;
+    
+    size_t size() const 
+        { return val.size(); }
+        
+    // Arithmetik
+    QuadBaseCL& apply ( T (*fun)( const T&) )
+      { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
+    QuadBaseCL& apply ( T (*fun)( T) )
+      { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
+
+    QuadBaseCL& operator+= (const QuadBaseCL &q)
+      { val+=q.val; return *this; }
+    QuadBaseCL& operator+= (const T &t)
+      { val+= t; return *this; }
+    QuadBaseCL& operator*= (const T &t)
+      { val*= t; return *this; }
+    template <typename U> QuadBaseCL& operator*= (const QuadBaseCL<U>& q)
+      { for (size_t i=0; i<val.size(); ++i) val[i]*=q.val[i]; return *this; }
+//    template <typename U> QuadBaseCL& operator*= (const U& c)
+//      { val*=c; return *this; }
+
+    QuadBaseCL operator+ (const QuadBaseCL &q) const
+      { return QuadBaseCL(*this)+= q; }
+    QuadBaseCL operator+ (const T &t) const
+      { return QuadBaseCL(*this)+= t; }
+    QuadBaseCL operator* (const T &t) const
+      { return QuadBaseCL(*this)*= t; }
+    template <typename U> QuadBaseCL operator* (const QuadBaseCL<U> &q) const
+      { return QuadBaseCL(*this)*= q; }
+//    template <typename U> QuadBaseCL operator* (const U& c) const
+//      { QuadBaseCL ret(*this); ret.val*=c; return ret; }
+    friend QuadBaseCL<double> dot (const QuadBaseCL<Point3DCL>&, const QuadBaseCL<Point3DCL>&);
+};
+
+inline QuadBaseCL<double> dot (const QuadBaseCL<Point3DCL> &q1, const QuadBaseCL<Point3DCL> &q2)
+{ 
+    QuadBaseCL<double> res( q1.size()); 
+    for (size_t i=0; i<q1.size(); ++i) 
+        res.val[i]= inner_prod( q1.val[i], q2.val[i]); 
+    return res; 
+}
+
+
+template<class T=double>
+class Quad2CL: public QuadBaseCL<T>
+{
+  public:
+    static const BaryCoordCL Node[5]; // Stuetzstellen
+    static const double      Wght[5]; // Gewichte
+    
+    Quad2CL() : QuadBaseCL<T>( 5) {}
+    Quad2CL( const T& t) : QuadBaseCL<T>( 5, t) {}
+    Quad2CL( const QuadBaseCL<T>& q) : QuadBaseCL<T>(q) {}
+    
+    // Initialisiere die Knotenwerte
+/*    template <ElemT et> 
+    void set( const ElemBaseCL<et,T>& e)
+      { for (size_t i=0; i<size(); ++i) val[i]= e.eval( Node[i]); }
+*/
+    // Werte Quadraturformel aus
+    T quad () const
+      { T sum= T(); for (size_t i=0; i<size(); ++i) sum+= Wght[i]*val[i]; return sum; }
+    // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
+    T quadP1 (int i) const
+      { return Wght[i]*val[i] + (0.25*Wght[4])*val[4]; }
+    T quadP1 (int i, int j) const
+      { return i!=j ? (0.0625*Wght[4]*val[4])
+                    : (0.0625*Wght[4]*val[4]) + Wght[i]*val[i]; }
+    T quadP2 (int i) const
+    { 
+        return i<4 ? (-0.125*Wght[4])*val[4] + Wght[i]*val[i] 
+                   : (  0.25*Wght[4])*val[4];
+    }
+    
+    T quadP2 (int i, int j) const
+    { 
+        const double valBary= (i<4 ? -.125 : 0.25)*(j<4 ? -.125 : 0.25);
+        return i!=j || i>=4 ? Wght[4]*val[4]*valBary
+                            : Wght[4]*val[4]*valBary + Wght[i]*val[i];
+    }
+};
 
 
 class Quad3CL
@@ -118,6 +213,10 @@ struct FunTraitsCL<vector_fun_ptr>
 */
 
 
+//=========================================
+//    Finite Elements: P1, P1Bubble, P2
+//=========================================
+
 class P1DiscCL
 // contains cubatur etc. for linear FE
 {
@@ -155,6 +254,18 @@ class P1BubbleDiscCL
     static inline SVectorCL<3> Quad(const TetraCL&, vector_fun_ptr, Uint);
     static inline double Quad(const double*, Uint);
     static inline SVectorCL<3> Quad(const SVectorCL<3>*, Uint);
+};
+
+class P2DiscCL
+{
+  public:
+    // gradients on reference tetra
+    static void GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10]);
+    // compute gradients
+    static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i].val[j]= T*GRef[i].val[j]; }
+    static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
+    { for (int j=0; j<5; ++j) G.val[j]= T*GRef.val[j]; }
 };
 
 
@@ -303,6 +414,13 @@ inline SVectorCL<3> P1BubbleDiscCL::Quad(const SVectorCL<3>* vals, Uint i)
     return -4./945.*( vals[0] + vals[1] + vals[2] + vals[3] )
            +32./2835.*(vals[4] + vals[5] + vals[6] + vals[7] + vals[8] + vals[9]);
 }
+
+template<class T>
+const BaryCoordCL Quad2CL<T>::Node[5]= {
+    {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
+    }; 
+template<class T>
+const double Quad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15.};
 
 } // end of namespace DROPS
 
