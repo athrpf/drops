@@ -420,7 +420,7 @@ operator-(const SMatrixCL<_Rows, _Cols>& m)
 {
     SMatrixCL<_Rows, _Cols> ret;
     *static_cast<typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&ret)
-        = -*static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m1);
+        = -*static_cast<const typename SMatrixCL<_Rows, _Cols>::_vec_base*>(&m);
     return ret;
 }
 
