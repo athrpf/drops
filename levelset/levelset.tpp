@@ -158,6 +158,7 @@ inline double GetMassP2( int i, int j)
     }
 }
 
+
 inline double QuadVelGrad( double f[10], double g[4], int phi_i)
 // approximates int ( f*g*v_i ) on reference tetrahedron,
 // where f, g are scalar functions. 
@@ -353,9 +354,11 @@ void LevelsetP2CL<StokesProblemT>::SetupSystem( const DiscVelSolCL& vel)
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             for(int j=0; j<10; ++j)
             {
+                // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
                 E( Numb[i], Numb[j])+= ( GetMassP2(i,j) 
                                        + u_Grad[i].quadP2(j)*_SD*h_T )*absdet; 
                 
+                // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
                 H( Numb[i], Numb[j])+= ( u_Grad[j].quadP2(i)
                                        + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad() * _SD*h_T )*absdet;
             }
@@ -373,8 +376,6 @@ void LevelsetP2CL<StokesProblemT>::Reparam( Uint steps, double dt)
 {
     VectorCL Psi= Phi.Data, b;
     MatrixCL L, R;
-    DummyPcCL pc;
-    GMResSolverCL<DummyPcCL> gmres( pc, 10, 1000, 1e-7);
 
     for (Uint i=0; i<steps; ++i)
     {
@@ -383,9 +384,8 @@ void LevelsetP2CL<StokesProblemT>::Reparam( Uint steps, double dt)
         
         b*= dt;
         b+= _E*Psi - dt*(1.-_theta) * (R*Psi);
-//        _pcg.Solve( L, Psi, b);
-        gmres.Solve( L, Psi, b);
-        std::cout << "Reparam: res = " << gmres.GetResid() << ", iter = " << gmres.GetIter() << std::endl;
+        _gm.Solve( L, Psi, b);
+        std::cout << "Reparam: res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() << std::endl;
     }
     
     Phi.Data= Psi;
@@ -457,10 +457,12 @@ void LevelsetP2CL<StokesProblemT>::SetupReparamSystem( MatrixCL& _R, const Vecto
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
         {
+            // b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
             b[ Numb[i]]+= QuadVel( Sign_Phi, i)*absdet;
             b[ Numb[i]]+= _SD*h_T*QuadVelGrad(w_loc,Grad[i], Sign_Phi)*absdet; 
             for(int j=0; j<10; ++j)
             {
+                // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
                 R( Numb[i], Numb[j])+= QuadVelGrad(w_loc,Grad[j],i)*absdet;
                 R( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(w_loc,Grad[j],Grad[i])*absdet;
             }
@@ -480,8 +482,8 @@ void LevelsetP2CL<StokesProblemT>::ComputeRhs( VectorCL& rhs) const
 template<class StokesProblemT>
 void LevelsetP2CL<StokesProblemT>::DoStep( const VectorCL& rhs)
 {
-    _pcg.Solve( _L, Phi.Data, rhs);
-    std::cout << "res = " << _pcg.GetResid() << ", iter = " << _pcg.GetIter() <<std::endl;
+    _gm.Solve( _L, Phi.Data, rhs);
+    std::cout << "res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() <<std::endl;
 }
 
 template<class StokesProblemT>
@@ -1097,7 +1099,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
     for (int i=0; i<maxFPiter; ++i)
     {
         DoFPIter();
-        if (_solver.GetIter()==0) // no change of vel -> no change of Phi
+        if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
             std::cerr << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;

@@ -51,18 +51,18 @@ class LevelsetP2CL
                         _theta, _dt;  
     MatrixCL            _E, _H, _L;
     DummyBndDataCL      _dummyBnd;
-    SSORPcCL            _pc;
-    PCG_SsorCL          _pcg;
+    DummyPcCL           _pc;
+    GMResSolverCL<DummyPcCL>  _gm;
 
     void SetupReparamSystem( MatrixCL&, const VectorCL&, VectorCL&);
     
   public:
     LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0., Uint iter=1000, double tol=1e-7)
       : idx( 1, 1), sigma( sig), _MG( mg), _SD( SD), _theta( theta), _dt( 0.),  
-        _pcg( _pc, iter, tol)
+        _gm( _pc, 10, iter, tol)
     {}
     
-    PCG_SsorCL& GetSolver() { return _pcg; }
+    GMResSolverCL<DummyPcCL>& GetSolver() { return _gm; }
     
     const DummyBndDataCL& GetBndData() const { return _dummyBnd; }
     
