@@ -184,6 +184,18 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 };
 
 // TODO: (P)Schur_MG_CL
+// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
+{
+  private:
+    MGSolverCL _MGsolver;
+  public:
+    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol, 
+                  MGDataCL& MGData, int inner_iter, double inner_tol )
+        : PSchurSolverCL<MGSolverCL>( _MGsolver, M, outer_iter, outer_tol ),
+          _MGsolver( MGData, inner_iter, inner_tol )
+        {}
+};
 
 
 //=============================================================================

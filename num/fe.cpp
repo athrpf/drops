@@ -237,11 +237,29 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     const Uint f_level= fIdx->TriangLevel;
     const Uint c_idx= cIdx->GetIdx();
     const Uint f_idx= fIdx->GetIdx();
+// It is only a copy of the 1D case 'ndofs' times
+    const Uint ndofs= fIdx->NumUnknownsVertex;
 
     MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
     P.RowIdx= fIdx;
     P.ColIdx= cIdx;
-
+/*    std::cout << "    alt                    cIdx " 
+              << cIdx->TriangLevel       << ", "
+              << cIdx->NumUnknownsVertex << ", "
+              << cIdx->NumUnknownsEdge   << ", "
+              << cIdx->NumUnknownsFace   << ", "
+              << cIdx->NumUnknownsTetra  << ", "
+              << cIdx->NumUnknowns
+              << std::endl;
+    std::cout << "    neu                    fIdx " 
+              << fIdx->TriangLevel       << ", "
+              << fIdx->NumUnknownsVertex << ", "
+              << fIdx->NumUnknownsEdge   << ", "
+              << fIdx->NumUnknownsFace   << ", "
+              << fIdx->NumUnknownsTetra  << ", "
+              << fIdx->NumUnknowns
+              << std::endl;
+*/
     for (MultiGridCL::const_TriangTetraIteratorCL sit= mg.GetTriangTetraBegin( c_level),
          theend= mg.GetTriangTetraEnd( c_level); sit != theend; ++sit) {
         if (!sit->IsInTriang( f_level)) {
@@ -270,7 +288,8 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                          j != P2_prolongation_row_beg[row+1]; ++j) {
                         const IdxT thecUnknown= cUnknowns[P2_prolongation_col_ind[j]];
                         if (thecUnknown != NoIdx)
-                            mat(thefUnknown, thecUnknown)=
+                            for (Uint k=0; k<ndofs; k++)
+                                mat(thefUnknown+k, thecUnknown+k)=
                                 P2_prolongation_coeff[P2_prolongation_coeff_idx[j]];
                     }
                 }
@@ -281,14 +300,16 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                 if (sit->GetVertex( i)->Unknowns.Exist() 
                     && sit->GetVertex( i)->Unknowns.Exist( c_idx)
                     && sit->GetVertex( i)->Unknowns.Exist( f_idx))
-                    mat(sit->GetVertex( i)->Unknowns( f_idx),
-                        sit->GetVertex( i)->Unknowns( c_idx))= 1.0;
+                    for (Uint k=0; k<ndofs; k++)
+                        mat(sit->GetVertex( i)->Unknowns( f_idx)+k,
+                            sit->GetVertex( i)->Unknowns( c_idx)+k)= 1.0;
             for (Uint i=0; i<6; ++i)
                 if (sit->GetEdge( i)->Unknowns.Exist() 
                     && sit->GetEdge( i)->Unknowns.Exist( c_idx)
                     && sit->GetEdge( i)->Unknowns.Exist( f_idx))
-                    mat(sit->GetEdge( i)->Unknowns( f_idx),
-                        sit->GetEdge( i)->Unknowns( c_idx))= 1.0;
+		    for (Uint k=0; k<ndofs; k++)
+                        mat(sit->GetEdge( i)->Unknowns( f_idx)+k,
+                            sit->GetEdge( i)->Unknowns( c_idx)+k)= 1.0;
         }
     }
     mat.Build();

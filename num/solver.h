@@ -10,7 +10,8 @@
 
 #include <vector>
 #include "misc/container.h"
-#include "spmat.h"
+#include "num/MGsolver.h"
+#include "num/spmat.h"
 
 namespace DROPS
 {
@@ -975,23 +976,48 @@ class GMResSolverCL : public SolverBaseCL
     }
 };
 
+// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// declaration 
+void MG( const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
+         int maxiter, double tol );
+
+// MG
+class MGSolverCL : public SolverBaseCL
+{
+  private:
+    const MGDataCL& _mgdata;
+
+  public:
+    MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol )
+        : SolverBaseCL(maxiter,tol), _mgdata(mgdata) {}
+
+    void Solve(const MatrixCL& A, VectorCL& x, const VectorCL& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        MG( _mgdata, x, b, _iter, _res );
+    }
+};
+
+//typedef MGSolverCL<MGDataCL> MG_CL;
 
 //=============================================================================
 //  Typedefs
 //=============================================================================
 
+typedef PreGSCL<P_SSOR>    SSORsmoothCL;
 typedef PreGSCL<P_SOR>     SORsmoothCL;
-typedef PreGSCL<P_JAC>     JACsmoothCL;
+typedef PreGSCL<P_SGS>     SGSsmoothCL;
+typedef PreGSCL<P_JOR>     JORsmoothCL;
+typedef PreGSCL<P_GS>      GSsmoothCL;
 typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
-typedef PreGSCL<P_SSOR>    SSORPc2CL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
 typedef PreGSCL<P_DUMMY>   DummyPcCL;
 
 typedef PCGSolverCL<SGSPcCL>      PCG_SgsCL;
 typedef PCGSolverCL<SSORPcCL>     PCG_SsorCL;
 typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
-
 
 //*****************************************************************************
 //

@@ -136,6 +136,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     
     // Set up matrices and rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;
+    void SetupStiffnessMatrix(MatDescCL*) const;
     void SetupMass(MatDescCL*) const;
 
     // Check system and computed solution

@@ -467,6 +467,85 @@ void StokesP2P1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA, MatDe
               << matB->Data.num_nonzeros() << " nonzeros in B! " << std::endl;
 }
 
+
+
+
+// NEW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+template <class Coeff>
+void StokesP2P1CL<Coeff>::SetupStiffnessMatrix( MatDescCL* matA ) const
+// Sets up the stiffness matrices 
+{ 
+    const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
+    
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel);
+     
+    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint vidx   = matA->RowIdx->GetIdx();
+
+    IdxT Numb[10]; 
+    bool IsOnDirBnd[10];
+    
+    const IdxT stride= 1;   // stride between unknowns on same simplex, which
+                            // depends on numbering of the unknowns
+
+    std::cerr << " --- >>>  SetupStiffnessMatrix: " 
+              << num_unks_vel << " vels, " << std::endl;
+
+    // fill value part of matrices
+    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    SMatrixCL<3,3> T;
+    double coup[10][10];
+    double det, absdet;
+
+    GetGradientsOnRef(GradRef);
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr(T,det,*sit);
+        MakeGradients(Grad, GradRef, T);
+        absdet= fabs(det);
+        
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i)
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+
+        for(int i=0; i<6; ++i)
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
+
+        // compute all couplings between HatFunctions on edges and verts
+        for(int i=0; i<10; ++i)
+            for(int j=0; j<=i; ++j)
+            {
+                // negative dot-product of the gradients
+                coup[i][j]= _Coeff.nu * QuadGrad( Grad, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[j][i]= coup[i][j];
+            }
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+                for(int j=0; j<10; ++j)            
+                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    {
+                        A(Numb[i],          Numb[j])+=          coup[j][i]; 
+                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i]; 
+                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i]; 
+                    }
+    }
+    std::cerr << " <<< --- SetupStiffnessMatrix " << std::endl;
+
+    A.Build();
+    std::cerr << matA->Data.num_nonzeros() << " nonzeros in A (MG-preconditioner), "
+              << std::endl;
+}
+
+//====================================================================
+
+
 template <class Coeff>
 void StokesP2P1CL<Coeff>::SetupMass(MatDescCL* matM) const
 // Sets up the mass matrix
