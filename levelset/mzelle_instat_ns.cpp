@@ -311,10 +311,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     else // Baensch scheme
     {
         ISPreCL ispc( prA.Data, prM.Data, C.dt*C.muF/C.rhoF*(3 - 2*std::sqrt(2.)));
-        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        SSORPCG_PreCL pcg( C.inner_iter, 0.2);
+        typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawaT;
+        InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 
-        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
-            cpl( Stokes, lset, ISPschurSolver, C.nonlinear);
+//        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
+//            cpl( Stokes, lset, ISPschurSolver, C.inner_iter, C.inner_tol, C.nonlinear);
+        CouplLsNsBaenschCL<StokesProblemT, InexactUzawaT> 
+            cpl( Stokes, lset, inexactUzawaSolver, C.inner_iter, C.inner_tol, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
 
