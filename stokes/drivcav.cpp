@@ -309,7 +309,7 @@ std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;
     v3d.close();
 
 /*
-    int nv= 2*cbrt( mg.GetVertices().GetFullSize()) - 1; // cbrt = 3. Wurzel;
+    int nv= 2*cbrt( mg.GetVertices().size()) - 1; // cbrt = 3. Wurzel;
     int n= nv-1;  // = Anzahl der Bloecke in einer Dimension
     
     typedef void* voidpointerT;

@@ -34,7 +34,6 @@ class EdgeCL;
 class FaceCL;
 class TetraCL;
 
-
 // Containers for storage of the simplices
 typedef GlobalListCL<VertexCL> MG_VertexContT;
 typedef GlobalListCL<EdgeCL>   MG_EdgeContT;
@@ -549,6 +548,8 @@ class MultiGridCL
     FaceCont   _Faces;
     TetraCont  _Tetras;
 
+    void PrepareModify  ()           { _Vertices.PrepareModify(); _Edges.PrepareModify(); _Faces.PrepareModify(); _Tetras.PrepareModify(); }
+    void FinalizeModify ()           { _Vertices.FinalizeModify(); _Edges.FinalizeModify(); _Faces.FinalizeModify(); _Tetras.FinalizeModify(); }
     void AppendLevel    ()           { _Vertices.AppendLevel(); _Edges.AppendLevel(); _Faces.AppendLevel(); _Tetras.AppendLevel(); }
     void RemoveLastLevel()           { _Vertices.RemoveLastLevel(); _Edges.RemoveLastLevel(); _Faces.RemoveLastLevel(); _Tetras.RemoveLastLevel(); }
     void RestrictMarks  (Uint Level) { std::for_each( _Tetras[Level].begin(), _Tetras[Level].end(), std::mem_fun_ref(&TetraCL::RestrictMark)); }
@@ -618,7 +619,7 @@ class MultiGridCL
     const_TriangTetraIteratorCL  GetTriangTetraBegin  (int Level=-1) const;
     const_TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) const;
 
-    Uint GetLastLevel() const { return _Tetras.GetLevelEnd()-1; }
+    Uint GetLastLevel() const { return _Tetras.GetNumLevel()-1; }
 
     void Refine ();
     void Scale( double);
@@ -819,6 +820,8 @@ class MGBuilderCL
     MultiGridCL::FaceCont&   GetFaces   (MultiGridCL* _MG) const { return _MG->_Faces; }
     MultiGridCL::TetraCont&  GetTetras  (MultiGridCL* _MG) const { return _MG->_Tetras; }
     BoundaryCL::SegPtrCont&  GetBnd     (MultiGridCL* _MG) const { return _MG->_Bnd._Bnd; }
+    void PrepareModify  (MultiGridCL* _MG) const { _MG->PrepareModify(); }
+    void FinalizeModify (MultiGridCL* _MG) const { _MG->FinalizeModify(); }
     void AppendLevel    (MultiGridCL* _MG) const { _MG->AppendLevel(); }
     void RemoveLastLevel(MultiGridCL* _MG) const { _MG->RemoveLastLevel(); }
 

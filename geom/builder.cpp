@@ -620,7 +620,13 @@ void TetraBuilderCL::build(MultiGridCL* mgp) const
     else
         for (Uint i= 0; i < 6; ++i)
             if (rule_ & (1<<i)) const_cast<EdgeCL*>(tp->GetEdge( i))->IncMarkForRef();
+    // Builder are called between PrepareModify and FinalizeModify.
+    // PrepareModify and FinalizeModify may only be called in turns and building
+    // is finished anyway.
+    FinalizeModify( mgp);
     mgp->Refine();
+    // Needed due to FinalizeModify() in MultiGridCL-constructor.
+    PrepareModify( mgp);
 }
 
 

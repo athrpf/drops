@@ -640,18 +640,17 @@ class GlobalListCL
     std::vector<typename std::list<LevelCont>::iterator> _LevelStarts;
 
   public:
-    GlobalListCL  (Uint LevelBegin, Uint Size=0)
+    GlobalListCL  (Uint LevelBegin= 0, Uint Size= 0)
         : _LevelBegin(LevelBegin), _Data(Size), _LevelStarts(Size)
         { Uint i=0;
           for (iterator It(_Data.begin()); It!=_Data.end(); ++It) _LevelStarts[i++] = It; }
     // standard dtor
 
-    Uint GetLevelBegin   () const { return _LevelBegin; }
+    Uint GetLevelBegin () const { return _LevelBegin; }
     // One greater than the last accessible Level!
-    Uint GetLevelEnd     () const { return _LevelBegin+_LevelStarts.size(); }
-    Uint GetSize         () const { return _LevelStarts.size(); }
-    Uint GetFullSize     () const;
-    bool IsEmpty         () const { return _LevelStarts.empty(); }
+    Uint GetNumLevel   () const { return _LevelBegin+_LevelStarts.size(); }
+    Uint size          () const;
+    bool IsEmpty       () const { return _LevelStarts.empty(); }
 
     const_iterator begin () const { return _Data.begin(); }
           iterator begin ()       { return _Data.begin(); }
@@ -670,10 +669,14 @@ class GlobalListCL
 
     const LevelCont&  operator [] (Uint Level) const { return *_LevelStarts[Level-_LevelBegin]; }
     LevelCont&        operator [] (Uint Level)       { return *_LevelStarts[Level-_LevelBegin]; }
+    void
+    PrepareModify() {}
+    void
+    FinalizeModify() {}
 };
 
 template <class T>
-Uint GlobalListCL<T>::GetFullSize () const
+Uint GlobalListCL<T>::size () const
 {
     Uint fullsize=0;
 
@@ -694,91 +697,139 @@ class NewGlobalListCL
 {
   public:
     typedef std::list<T>                  Cont;
+    typedef std::list<T>                  LevelCont;
     typedef typename Cont::iterator       iterator;
     typedef typename Cont::const_iterator const_iterator;
-
-    typedef std::list<T>                  LevelCont;
-
-    typedef typename Cont::iterator       LevelIterator;
-    typedef typename Cont::const_iterator const_LevelIterator;
+    typedef typename LevelCont::iterator       LevelIterator;
+    typedef typename LevelCont::const_iterator const_LevelIterator;
 
   private:
     Cont Data_;
     std::vector<iterator> LevelStarts_;
-    std::vector<LevelCont> LevelViews_;
+    std::vector<LevelCont*> LevelViews_;
     bool modifiable_;
 
   public:
-    NewGlobalListCL() : modifiable_( true) {}
+    NewGlobalListCL (bool modifiable= true) : modifiable_( modifiable) {}
     // standard dtor 
 
-    Uint GetSize     () const { return LevelStarts_.size(); }
-    Uint GetNumLevel () const { return LevelStarts_.size() > 0 ? LevelStarts_.size() - 1 : 0; }
-    Uint size        () const { return Data_.size(); }
-    // One greater than the last accessible Level!
-    Uint GetLevelEnd () const { return LevelStarts_.size(); }
-    bool IsEmpty     () const { return LevelStarts_.empty(); }
+    Uint GetNumLevel () const;
+    bool IsEmpty () const
+        { return modifiable_ ? LevelViews_.empty() : LevelStarts_.empty(); }
+    bool IsLevelEmpty (Uint Level) const {
+        return modifiable_ ? LevelViews_[Level]->empty()
+            : LevelStarts_[Level] == LevelStarts_[1+Level];
+    }
 
-    bool IsLevelEmpty (Uint Level) const
-        { return LevelStarts_[Level] == LevelStarts_[1+Level]; }
-
+    // Only useful, if modifiable_ == false, otherwise 0.
+    Uint size () const { return Data_.size(); }
+    // If modifiable_==true, Data_ is empty, thus these accessors are useless.
           iterator begin ()       { return Data_.begin(); }
           iterator end   ()       { return Data_.end(); }
     const_iterator begin () const { return Data_.begin(); }
     const_iterator end   () const { return Data_.end(); }
 
-          LevelIterator level_begin (Uint Level)       { return LevelStarts_[Level]; }
-          LevelIterator level_end   (Uint Level)       { return LevelStarts_[Level + 1]; }
-    const_LevelIterator level_begin (Uint Level) const { return LevelStarts_[Level]; }
-    const_LevelIterator level_end   (Uint Level) const { return LevelStarts_[Level + 1]; }
+    iterator level_begin (Uint Level)
+        { return !modifiable_ ? LevelStarts_[Level] : LevelViews_[Level]->begin(); }
+    iterator level_end   (Uint Level)
+        { return !modifiable_ ? LevelStarts_[Level + 1] : LevelViews_[Level]->end(); }
+    const_iterator level_begin (Uint Level) const
+        { return !modifiable_ ? LevelStarts_[Level] : LevelViews_[Level]->begin(); }
+    const_iterator level_end   (Uint Level) const
+        { return !modifiable_ ? LevelStarts_[Level + 1] : LevelViews_[Level]->end(); }
 
-    void
-    PrepareModify() {
-        Assert( !modifiable_, DROPSErrCL("NewGlobalListCL::PrepareModify: Data is already modifiable."), DebugContainerC );
-        Assert( LevelViews_.empty(), DROPSErrCL("NewGlobalListCL::PrepareModify: Inconsistent LevelViews_."), DebugContainerC );
-        LevelViews_.resize( GetNumLevel());
-        for (Uint lvl= 0, numlvl= GetNumLevel(); lvl < numlvl; ++lvl)
-            LevelViews_[lvl].splice( LevelViews_[lvl].end(), Data_,
-                                     level_begin( lvl), level_begin( lvl+1));
-        LevelStarts_.clear();
-        Assert( Data_.empty(), DROPSErrCL("NewGlobalListCL::PrepareModify: Did not move all Data."), DebugContainerC );
-        modifiable_= true;
-    }
-    void
-    FinalizeModify() {
-        Assert( modifiable_, DROPSErrCL("NewGlobalListCL::FinalizeModify: Data is not modifiable."), DebugContainerC );
-        Assert( LevelStarts_.empty(), DROPSErrCL("NewGlobalListCL::FinalizeModify: Inconsistent LevelStarts_."), DebugContainerC );
-        Assert( Data_.empty(), DROPSErrCL("NewGlobalListCL::FinalizeModify: Inconsistent Data_."), DebugContainerC );
-        modifiable_= false;
-        if ( LevelViews_.empty()) return; 
-        LevelStarts_.resize( LevelViews_.size() + 1);
-        LevelStarts_[LevelViews_.size()]= Data_.end();
-        for (Uint lvl= LevelViews_.size(); lvl > 0; --lvl) {
-            Data_.splice( Data_.end(), LevelViews_[lvl-1],
-                          LevelViews_[lvl-1].begin(), LevelViews_[lvl-1].end());
-            LevelStarts_[lvl-1]= Data_.begin();
-            Assert( LevelStarts_[lvl-1].empty(), DROPSErrCL("NewGlobalListCL::FinalizeModify: Did not move all Data."), DebugContainerC );
-        }
-        LevelViews_.clear();
-    }
-    void
-    AppendLevel() {
-        Assert( modifiable_, DROPSErrCL("NewGlobalListCL::AppendLevel: Data not modifiable."), DebugContainerC );
-        LevelViews_.push_back( LevelCont());
-    }
-    void
-    RemoveLastLevel() { 
-        Assert( modifiable_, DROPSErrCL("NewGlobalListCL::RemoveLast: Data not modifiable."), DebugContainerC );
-        Assert( LevelViews_.size() > 0, DROPSErrCL("LevelList: RemoveLastLevel: There are no levels to be removed."), DebugContainerC);
-        Assert( LevelViews_.back().empty(), DROPSErrCL("LevelList: RemoveLastLevel: Last level not empty"), DebugContainerC);
-        LevelViews_.pop_back();
-    }
+    // Split Data_ into level-wise lists in LevelViews_ or merge LevelViews_ into Data_.
+    void PrepareModify();
+    void FinalizeModify();
 
-    LevelCont& operator[] (Uint Level) {
-        Assert( modifiable_, DROPSErrCL("NewGlobalListCL::operator[]: Data not modifiable."), DebugContainerC );
-        return LevelViews_[Level];
+    void AppendLevel();
+    void RemoveLastLevel();
+
+    LevelCont& // Only usable, if modifiable_ == true
+    operator[] (Uint Level) {
+        Assert( modifiable_, DROPSErrCL("NewGlobalListCL::operator[]: "
+            "Data not modifiable."), DebugContainerC );
+        return *LevelViews_[Level];
     }
 };
+
+template <class T>
+  Uint
+  NewGlobalListCL<T>::GetNumLevel () const
+{
+    return modifiable_ ? LevelViews_.size()
+        : (LevelStarts_.size() > 0 ? LevelStarts_.size()-1 : 0);
+}
+
+template <class T>
+  void // Split Data_ into level-wise lists in LevelViews_.
+  NewGlobalListCL<T>::PrepareModify()
+{
+    Assert( !modifiable_, DROPSErrCL("NewGlobalListCL::PrepareModify:"
+        "Data is already modifiable."), DebugContainerC );
+    Assert( LevelViews_.empty(), DROPSErrCL("NewGlobalListCL::PrepareModify:"
+        "Inconsistent LevelViews_."), DebugContainerC );
+    LevelViews_.resize( GetNumLevel());
+    for (Uint lvl= 0, numlvl= GetNumLevel(); lvl < numlvl; ++lvl) {
+        LevelViews_[lvl]= new LevelCont();
+        LevelViews_[lvl]->splice( LevelViews_[lvl]->end(), Data_,
+            level_begin( lvl), level_begin( lvl+1));
+    }
+    LevelStarts_.clear();
+    Assert( Data_.empty(), DROPSErrCL("NewGlobalListCL::PrepareModify: "
+        "Did not move all Data."), DebugContainerC );
+    modifiable_= true;
+}
+
+template <class T>
+  void // Merge LevelViews_ into Data_.
+  NewGlobalListCL<T>::FinalizeModify()
+{
+    Assert( modifiable_,
+        DROPSErrCL("NewGlobalListCL::FinalizeModify: Data is not modifiable."),
+        DebugContainerC );
+    Assert( LevelStarts_.empty(),
+        DROPSErrCL("NewGlobalListCL::FinalizeModify: Inconsistent LevelStarts_."),
+        DebugContainerC );
+    Assert( Data_.empty(), DROPSErrCL("NewGlobalListCL::FinalizeModify:"
+        "Inconsistent Data_."), DebugContainerC );
+    modifiable_= false;
+    if (LevelViews_.empty()) return; 
+    LevelStarts_.resize( LevelViews_.size() + 1);
+    LevelStarts_[LevelViews_.size()]= Data_.end();
+    for (Uint lvl= LevelViews_.size(); lvl > 0; --lvl) {
+        Data_.splice( Data_.begin(), *LevelViews_[lvl-1]);
+        LevelStarts_[lvl-1]= Data_.begin();
+        Assert( LevelViews_[lvl-1]->empty(),
+            DROPSErrCL("NewGlobalListCL::FinalizeModify: Did not move all Data."),
+            DebugContainerC );
+        delete LevelViews_[lvl-1];
+    }
+    LevelViews_.clear();
+}
+
+template <class T>
+  void
+  NewGlobalListCL<T>::AppendLevel()
+{
+    Assert( modifiable_, DROPSErrCL("NewGlobalListCL::AppendLevel: "
+        "Data not modifiable."), DebugContainerC );
+    LevelViews_.push_back( new LevelCont());
+}
+
+template <class T>
+  void
+  NewGlobalListCL<T>::RemoveLastLevel()
+{ 
+    Assert( modifiable_, DROPSErrCL("NewGlobalListCL::RemoveLast: "
+        "Data not modifiable."), DebugContainerC );
+    Assert( LevelViews_.size() > 0, DROPSErrCL("LevelList: RemoveLastLevel: "
+        "There are no levels to be removed."), DebugContainerC);
+    Assert( LevelViews_.back()->empty(), DROPSErrCL("LevelList: RemoveLastLevel: "
+        "Last level not empty"), DebugContainerC);
+    delete LevelViews_.back();
+    LevelViews_.pop_back();
+}
 
 
 } // end of namespace DROPS

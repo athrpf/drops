@@ -221,9 +221,9 @@ int main (int argc, char** argv)
 //        std::cout << prob.GetSolution().val(*tit) << '\n';
 //    std::cout << DROPS::GeomSolOutCL<DROPS::PoissonLinearDirectCL::PoissonDiscSolCL>(mg, prob.GetSolution(), &colormap, -1, false, 0.0, 0.0, 1.1) << std::endl;
 //    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-//    std::cerr << "Verts: "   << mg.GetVertices().GetFullSize()
-//              << " Edges: "  << mg.GetEdges().GetFullSize()
-//              << " Tetras: " << mg.GetTetras().GetFullSize()
+//    std::cerr << "Verts: "   << mg.GetVertices().size()
+//              << " Edges: "  << mg.GetEdges().size()
+//              << " Tetras: " << mg.GetTetras().size()
 //              << std::endl;
 /*
 //int wait;
@@ -246,9 +246,9 @@ int main (int argc, char** argv)
 */
 //    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 /*
-    std::cerr << "Verts: "   << mg.GetVertices().GetFullSize()
-         << " Edges: "  << mg.GetEdges().GetFullSize()
-         << " Tetras: " << mg.GetTetras().GetFullSize()
+    std::cerr << "Verts: "   << mg.GetVertices().size()
+         << " Edges: "  << mg.GetEdges().size()
+         << " Tetras: " << mg.GetTetras().size()
          << std::endl;
 */
 //    std::cout << DROPS::GeomMGOutCL(mg, -1, true) << std::endl;

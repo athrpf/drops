@@ -477,7 +477,7 @@ void MarkPart( DROPS::MultiGridCL& mg, DROPS::Uint maxLevel, double ratio)
 {
      if (ratio<=0) return;
 
-     DROPS::Uint numMark= static_cast<DROPS::Uint>(ratio*mg.GetTetras().GetFullSize()),
+     DROPS::Uint numMark= static_cast<DROPS::Uint>(ratio*mg.GetTetras().size()),
           num= 1;
      for (DROPS::MultiGridCL::TriangTetraIteratorCL It= mg.GetTriangTetraBegin(maxLevel),
              ItEnd= mg.GetTriangTetraEnd(maxLevel); It!=ItEnd; ++It, ++num)

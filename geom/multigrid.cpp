@@ -824,29 +824,6 @@ bool TetraCL::IsSane(std::ostream& os) const
                    << "by the tetras is not the same, which is a BadThing (TM). ";
             }
         }
-/* already done on face
-        else if (IsBndSeg(face))
-        {
-            bool sane2 = true;
-            BndPointCL Dummy(GetBndIdx(face), Point2DCL());
-
-            for (Uint vert=0; vert<3; ++vert)
-            {
-                VertexCL* vp=_Vertices[VertOfFace(face, vert)];
-                if ( !vp->IsOnBoundary() ||
-                     !is_in_if(vp->GetBndVertBegin(), vp->GetBndVertEnd(),
-                               std::bind2nd(BndPointSegEqCL(), Dummy)) )
-                    {
-                        sane2 = false; os << "offending vertex: " << vp->GetId().GetIdent() << ' ';
-                    }
-            }
-            if ( !sane2 )
-            {
-                sane = false;
-                os << " - these vertices on face " << face << " do not have proper boundary-descriptions. ";
-            }
-        }
-*/        
     }
     // Check, whether the ordering of the vertices in each edge is induced by the ordering of
     // the vertices in the tetra
@@ -936,9 +913,9 @@ BoundaryCL::~BoundaryCL()
 
 
 MultiGridCL::MultiGridCL (const MGBuilderCL& Builder)
-    : _Vertices(0), _Edges(0), _Faces(0), _Tetras(0)
 {
     Builder.build(this);
+    FinalizeModify();
 }
 
 
@@ -1033,8 +1010,9 @@ void MultiGridCL::RefineGrid (Uint Level)
             tIt->CollectAndLinkChildren (refrule, _Tetras[nextLevel]);
         }
     }
-    std::for_each(GetAllVertexBegin(nextLevel), GetAllVertexEnd(nextLevel),
-        std::mem_fun_ref(&VertexCL::DestroyRecycleBin));
+    for (Uint lvl= 0; lvl <= nextLevel; ++lvl)
+        std::for_each( _Vertices[lvl].begin(), _Vertices[lvl].end(),
+            std::mem_fun_ref( &VertexCL::DestroyRecycleBin));
 
     Comment("Refinement of grid " << Level << " done." << std::endl, DebugRefineEasyC);
     if (DROPSDebugC & DebugRefineHardC) if ( !IsSane(cdebug, Level) ) cdebug << std::endl;
@@ -1045,6 +1023,7 @@ void MultiGridCL::Refine()
 {
     const int tmpLastLevel( GetLastLevel() );
 
+    PrepareModify();
     for (int Level=tmpLastLevel; Level>=0; --Level)
     {
         RestrictMarks(Level);
@@ -1058,11 +1037,14 @@ void MultiGridCL::Refine()
         if ( Level != tmpLastLevel ) UnrefineGrid(Level);
         RefineGrid(Level);
     }
-    std::for_each(GetAllVertexBegin(), GetAllVertexEnd(),
-        std::mem_fun_ref(&VertexCL::DestroyRecycleBin));
 
     while ( _Tetras[GetLastLevel()].empty() ) RemoveLastLevel();
+    FinalizeModify();
+
+    std::for_each( GetAllVertexBegin(), GetAllVertexEnd(),
+        std::mem_fun_ref( &VertexCL::DestroyRecycleBin));
 }
+
 
 void MultiGridCL::Scale( double s)
 {
@@ -1072,13 +1054,13 @@ void MultiGridCL::Scale( double s)
 }
 
 
+class VertPtrLessCL : public std::binary_function<const VertexCL*, const VertexCL* , bool>
+{
+  public:
+    bool operator() (const VertexCL* v0, const VertexCL* v1)
+        { return v0->GetId() < v1->GetId(); }
+};
 
-  class VertPtrLessCL : public std::binary_function<const VertexCL*, const VertexCL* , bool>
-  {
-    public:
-      bool operator() (const VertexCL* v0, const VertexCL* v1)
-          { return v0->GetId() < v1->GetId(); }
-  };
 
 void MultiGridCL::MakeConsistentNumbering()
 // Applicable only before the first call to Refine()
@@ -1142,10 +1124,6 @@ class EdgeEqualCL : public std::binary_function<const EdgeCL*, const EdgeCL*, bo
         { return    e0->GetVertex(1)->GetId() == e1->GetVertex(1)->GetId()
                  && e0->GetVertex(0)->GetId() == e1->GetVertex(0)->GetId(); }
 };
-
-
-
-
 
 
 bool MultiGridCL::IsSane (std::ostream& os, int Level) const
@@ -1245,10 +1223,10 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
 
 void MultiGridCL::SizeInfo(std::ostream& os)
 {
-    os << GetVertices().GetFullSize() << " Verts, "
-       << GetEdges().GetFullSize()    << " Edges, "
-       << GetFaces().GetFullSize()    << " Faces, "
-       << GetTetras().GetFullSize()   << " Tetras"
+    os << GetVertices().size() << " Verts, "
+       << GetEdges().size()    << " Edges, "
+       << GetFaces().size()    << " Faces, "
+       << GetTetras().size()   << " Tetras"
        << std::endl;
 }
 
