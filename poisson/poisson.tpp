@@ -50,6 +50,7 @@ void PoissonP1CL<MGB,Coeff>::DeleteNumbering(IdxDescCL* idx)
 //
 //========================================================
 
+
 inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
 // Integrate neu_val() * phi_vert over face
 {
@@ -64,15 +65,48 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
         if (VertOfFace(face,i)!=vert)
             v[k++]= t.GetVertex( VertOfFace(face,i) );
         vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
-//        std::cerr << "Vertex " << i << ": " << vc2D[i] << std::endl;
+        //std::cerr << "\nVertex " << i << ": " << vc2D[i] << std::endl;
     }
     const double f0= bfun(vc2D[0]);
     const double f1= bfun(vc2D[1]) +  bfun( vc2D[2]);
     const double f2= bfun(1./3.*(vc2D[0] + vc2D[1] + vc2D[2]) );    //Barycenter of Face
     const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
-//    std::cerr << f0 << ' ' << f1 << ' ' << f2 << ' ' << absdet << std::endl;
+    //std::cerr << '\n' << f0 << ' ' << f1 << ' ' << f2 << ' ' << absdet << std::endl;
+    //std::cerr << '\n' << v[0]->GetCoord() << ' ' << v[1]->GetCoord() << ' ' << v[2]->GetCoord() << ' ' << absdet << std::endl;
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
+
+/*
+inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
+// Integrate neu_val() * phi_vert over face
+{
+    const BndIdxT bidx= t.GetBndIdx(face);
+    Point2DCL vc2D[3];
+    const VertexCL* v[3];
+    const BndPointSegEqCL comp(bidx);
+    
+    v[0]= t.GetVertex(vert);
+    
+    for (Uint i=0, k=1; i<3; ++i)
+    {
+        if (VertOfFace(face,i)!=vert)
+            v[k++]= t.GetVertex( VertOfFace(face,i) );
+        vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
+        //std::cerr << "\nVertex3D " << i << ": " << v[i]->GetCoord();
+        //std::cerr << "\nVertex2D " << i << ": " << vc2D[i];
+    }
+    const double f0= bfun(vc2D[0]);
+    const double f1= bfun(vc2D[1]);
+    const double f2= bfun(vc2D[2]);    
+    const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
+    //std::cerr << '\n' << f0 << ' ' << f1 << ' ' << f2 << ' ' << std::endl;
+    //std::cerr << '\n' << v[0]->GetCoord() << ' ' << v[1]->GetCoord() << ' ' << v[2]->GetCoord() << ' ' << absdet << std::endl;
+    //std::cerr << absdet <<"\n";
+    //std::cerr << (1./12.*f0 + 1./24.*f1 + 1./24.*f2) << "\n";
+    //std::cerr << (1./12.*f0 + 1./24.*f1 + 1./24.*f2)*absdet << "\n";
+    return (1./12.*f0 + 1./24.*f1 + 1./24.*f2) * absdet;
+}
+*/
 
 template<class MGB, class Coeff>
 void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
@@ -82,7 +116,7 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
     
     const Uint lvl    = Amat.RowIdx->TriangLevel,
                idx    = Amat.RowIdx->Idx;
-    MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
+    MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
 
 //    SMatrixCL<3,3> T;
 //    SMatrixCL<3,4> Gref(0.0); 
@@ -94,11 +128,11 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
     double det;
     double absdet;
     IdxT UnknownIdx[4];
-
+    
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
-        P1DiscCL::GetGradients(G,det,*sit);
+        P1DiscCL::GetGradients(G,det,*sit);   
 //        SMatrixCL<3,4> G= T*Gref;
 /*        G(0,0)= -T(0,0)-T(0,1)-T(0,2);
         G(0,1)= T(0,0); G(0,2)= T(0,1); G(0,3)= T(0,2);
