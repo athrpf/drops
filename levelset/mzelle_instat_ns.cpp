@@ -23,23 +23,6 @@ const int   FPsteps= -1;
 //                          -div u = 0
 //                               u = u0, t=t0
 
-
-class ZeroFlowCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    static const double eps;
-    const double rho1, rho2, mu1, mu2, Re, We;
-    DROPS::Point3DCL g;
-    ZeroFlowCL() 
-      : rho1(955.), rho2(1107.), 
-        mu1(2.6e-3),  mu2(1.2e-3), 
-        Re(1.), We(1.) 
-        { g[0]= 9.81; }
-};
-
 // Tropfendaten:
 DROPS::Point3DCL Mitte;
 double           x_Mitte= 8e-3,
@@ -47,7 +30,25 @@ double           x_Mitte= 8e-3,
                  Anstroem= 4e-2;
 
 // Glaettungszone fuer Dichte-/Viskositaetssprung
-const double ZeroFlowCL::eps= Radius*0.05;
+const double sm_eps= Radius*0.05;
+
+
+class ZeroFlowCL
+{
+// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
+  public:
+    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
+        { DROPS::Point3DCL ret(0.0); return ret; }
+    DROPS::SmoothedJumpCL rho, mu;
+    const double Re, We;
+    DROPS::Point3DCL g;
+
+    ZeroFlowCL() 
+      : rho( DROPS::JumpCL( 955.,   1107. ), DROPS::H_sm, sm_eps),
+         mu( DROPS::JumpCL( 2.6e-3, 1.2e-3), DROPS::H_sm, sm_eps),
+        Re(1.), We(1.) 
+    { g[0]= 9.81; }
+};
 
 
 DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
@@ -149,6 +150,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
     MatDescCL prM, prA;
+    VecDescCL cplN;
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
@@ -161,12 +163,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
     Stokes.v.SetIdx( vidx);
+    cplN.SetIdx( vidx);
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
+    Stokes.N.SetIdx(vidx, vidx);
     prM.SetIdx( pidx, pidx);
     prA.SetIdx( pidx, pidx);
     
@@ -183,7 +187,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     lset.GetSolver().SetTol( outer_tol);
     lset.GetSolver().SetMaxIter( 50000);
 
-    PSchur_PCG_CL     schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
+    PSchur_PCG_CL schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
+//    Schur_GMRes_CL schurSolver( 1000, outer_tol, 1000, inner_iter_tol);
 
     // solve stationary problem for initial velocities    
     TimerCL time;
@@ -196,9 +201,19 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
+    double theta= 0, nl= 0.1;
+//    std::cerr << "theta = "; std::cin >> theta;
+//    std::cerr << "nonlinear = "; std::cin >> nl;
     time.Reset();
-    schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
-        Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data, Stokes.c.Data);
+    do
+    {
+        Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
+        MatrixCL mat;
+        mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
+        cplN.Data-= (1-theta)*nl * (Stokes.N.Data * Stokes.v.Data);
+        schurSolver.Solve( mat, Stokes.B.Data, 
+            Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data + nl*cplN.Data, Stokes.c.Data);
+    } while (schurSolver.GetIter() > 0);
     time.Stop();
     std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
@@ -229,7 +244,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
 //        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, Schur_GMRes_CL> 
         CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_GMRes_CL> 
 //        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
-            cpl( Stokes, lset, ISPschurSolver);
+            cpl( Stokes, lset, ISPschurSolver, 0.1);
 
         cpl.SetTimeStep( delta_t);
 
@@ -249,7 +264,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_
         ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
 
         CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
-            cpl( Stokes, lset, ISPschurSolver);
+            cpl( Stokes, lset, ISPschurSolver, 0.1);
 
         cpl.SetTimeStep( delta_t);
 

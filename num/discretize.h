@@ -37,9 +37,8 @@ class QuadBaseCL
         { return val.size(); }
         
     // Arithmetik
-    QuadBaseCL& apply ( T (*fun)( const T&) )
-      { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
-    QuadBaseCL& apply ( T (*fun)( T) )
+    template<typename FuncT>
+    QuadBaseCL& apply ( FuncT fun)
       { for (size_t i=0; i<val.size(); ++i) val[i]=fun(val[i]); return *this; }
 
     QuadBaseCL& operator+= (const QuadBaseCL &q)

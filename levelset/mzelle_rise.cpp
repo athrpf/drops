@@ -23,6 +23,14 @@ const int   FPsteps= -1;
 //                          -div u = 0
 //                               u = u0, t=t0
 
+// Tropfendaten:
+DROPS::Point3DCL Mitte;
+double           x_Mitte= 8e-3,
+                 Radius= 1.75e-3;
+
+// Glaettungszone fuer Dichte-/Viskositaetssprung
+const double sm_eps= Radius*0.05;
+
 
 class ZeroFlowCL
 {
@@ -30,23 +38,16 @@ class ZeroFlowCL
   public:
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
-    static const double eps;
-    const double rho1, rho2, mu1, mu2, Re, We;
+    DROPS::SmoothedJumpCL rho, mu;
+    const double Re, We;
     DROPS::Point3DCL g;
+
     ZeroFlowCL() 
-      : rho1(955.), rho2(1107.), 
-        mu1(2.6e-3),  mu2(1.2e-3), 
+      : rho( DROPS::JumpCL( 955.,   1107. ), DROPS::H_sm, sm_eps),
+         mu( DROPS::JumpCL( 2.6e-3, 1.2e-3), DROPS::H_sm, sm_eps),
         Re(1.), We(1.) 
-        { g[0]= 9.81; }
+    { g[0]= 9.81; }
 };
-
-// Tropfendaten:
-DROPS::Point3DCL Mitte;
-double           x_Mitte= 19e-3,
-                 Radius= 1.75e-3;
-
-// Glaettungszone fuer Dichte-/Viskositaetssprung
-const double ZeroFlowCL::eps= Radius*0.05;
 
 
 DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
@@ -192,7 +193,7 @@ int main (int argc, char** argv)
 
     typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
 
-    std::ifstream meshfile( "gambit/mzelle2.msh");
+    std::ifstream meshfile( "gambit/messzelle.msh");
     DROPS::ReadMeshBuilderCL builder( meshfile);
     
     

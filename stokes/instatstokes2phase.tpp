@@ -76,19 +76,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 }
 
 template <class Coeff>
-double H_eps( double s)
-{
-    if (s <= -Coeff::eps)
-        return 0;
-    if (s >= Coeff::eps)
-        return 1;
-    // -eps < s < eps
-    s/= Coeff::eps;
-    const double s2= s*s, s3= s2*s;
-    return 0.5 + 1.40625*s - 1.5625*s3 + 0.65625*s2*s3;
-}
-
-template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
 // Sets up the mass matrix for the pressure
 {
@@ -215,7 +202,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
-    Quad2CL<double> rho, mu_Re, H, kreuzterm;
+    Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
         
     SMatrixCL<3,3> T;
     
@@ -241,7 +228,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
             rhs.val[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
-            H.val[i]= ls.val( *sit->GetVertex(i));
+            Phi.val[i]= ls.val( *sit->GetVertex(i));
         }
         for (int i=0; i<6; ++i)
         {
@@ -249,16 +236,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
         rhs.val[4]= _Coeff.f( GetBaryCenter( *sit), t);
-        H.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
-        H.apply( H_eps<Coeff>);
+        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
 
-        // rho = rho1 + (rho2-rho1)*H
-        rho= H * (_Coeff.rho2 - _Coeff.rho1);
-        rho+= _Coeff.rho1;
-
-        // mu_Re = (mu1 + (mu2-mu1)*H) / Re
-        mu_Re= H * ((_Coeff.mu2 - _Coeff.mu1) / _Coeff.Re);
-        mu_Re+= _Coeff.mu1 / _Coeff.Re;
+        // rho = rho( Phi),    mu_Re= mu( Phi)/Re
+        rho=   Phi;     rho.apply( _Coeff.rho);
+        mu_Re= Phi;     mu_Re.apply( _Coeff.mu);     mu_Re*= 1./_Coeff.Re;
 
         // rhs = f + rho*g
         rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;

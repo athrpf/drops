@@ -15,6 +15,51 @@
 namespace DROPS
 {
 
+// SmoothedJumpCL for jumping coefficients
+
+class JumpCL
+{
+  private:
+    double Coeff[2];
+
+  public:
+    JumpCL (double In, double Out) { Coeff[0]=In; Coeff[1]=Out; }
+
+    double operator() (bool b)   const { return Coeff[b]; }
+    double operator() (double x) const { return (1-x)*Coeff[0]+x*Coeff[1]; }
+};
+
+typedef double (*SmoothFunT) (double,double);
+
+class SmoothedJumpCL
+{
+  private:
+    const JumpCL     jc;
+    const SmoothFunT smf;
+    const double     eps;
+
+  public:
+    SmoothedJumpCL (const JumpCL& myjc, const SmoothFunT f, double myeps)
+      : jc(myjc), smf(f), eps(myeps) {}
+
+    double operator() (double x) const { return jc(smf(x,eps)); }
+};
+
+// smoothed Heaviside function
+double H_sm( double s, double eps)
+{
+    if (s <= -eps) return 0;
+    if (s >=  eps) return 1;
+    // -eps < s < eps
+    s/= eps;
+    const double s2= s*s, s3= s2*s;
+    return 0.5 + 1.40625*s - 1.5625*s3 + 0.65625*s2*s3;
+}
+
+
+
+// InstatStokes2PhaseP2P1CL: problem class for instationary two pase stokes flow
+
 template <class Coeff>
 class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
 {

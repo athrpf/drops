@@ -23,6 +23,13 @@ const int   FPsteps= -1;
 //                          -div u = 0
 //                               u = u0, t=t0
 
+// Tropfendaten:
+DROPS::Point3DCL Mitte(0.5);
+double           Radius= 0.25;
+
+// Glaettungszone fuer Dichte-/Viskositaetssprung
+const double sm_eps= 0.05;
+
 
 class ZeroFlowCL
 {
@@ -30,17 +37,17 @@ class ZeroFlowCL
   public:
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
-    static const double eps;
-    const double rho1, rho2, mu1, mu2, Re, We;
+    DROPS::SmoothedJumpCL rho, mu;
+    const double Re, We;
     DROPS::Point3DCL g;
-    ZeroFlowCL() : rho1(1), rho2(10), mu1(1), mu2(2), Re(1), We(1) { g[2]= -9.81; }
+
+    ZeroFlowCL() 
+      : rho( DROPS::JumpCL( 1, 10), DROPS::H_sm, sm_eps),
+         mu( DROPS::JumpCL( 1, 2), DROPS::H_sm, sm_eps),
+        Re(1), We(1) 
+    { g[2]= -9.81; }
 };
 
-const double ZeroFlowCL::eps= 0.05;
-
-// Tropfendaten:
-DROPS::Point3DCL Mitte(0.5);
-double           Radius= 0.25;
 
 DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
 

@@ -28,7 +28,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
-    Quad2CL<double> rho, H;
+    Quad2CL<double> rho, Phi;
         
     SMatrixCL<3,3> T;
     
@@ -52,7 +52,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
         {
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            H.val[i]= ls.val( *sit->GetVertex(i));
+            Phi.val[i]= ls.val( *sit->GetVertex(i));
             u_loc.val[i]= u.val( *sit->GetVertex(i));
         }
         for (int i=0; i<6; ++i)
@@ -61,12 +61,10 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
         u_loc.val[4]= u.val( *sit, 0.25, 0.25, 0.25);
-        H.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
-        H.apply( H_eps<Coeff>);
+        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
 
-        // rho = rho1 + (rho2-rho1)*H
-        rho= H * (_Coeff.rho2 - _Coeff.rho1);
-        rho+= _Coeff.rho1;
+        // rho = rho( Phi)
+        rho= Phi;    rho.apply( _Coeff.rho);
 
         u_rho= u_loc*rho;
         
