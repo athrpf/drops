@@ -201,6 +201,35 @@ int Test()
     return 0;
 }
 
+int TestRefineUniform()
+{
+//    std::cout << "---------------------------------------------------\n";
+    DROPS::ReadMeshBuilderCL builder( std::cin);
+    DROPS::MultiGridCL mg( builder);
+    DROPS::MarkAll( mg);
+    mg.Refine();
+//    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
+    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;   
+    return 0;
+}
+
+int TestRefine()
+{
+//    std::cout << "---------------------------------------------------\n";
+    DROPS::ReadMeshBuilderCL builder( std::cin);
+    DROPS::MultiGridCL mg( builder);
+    for (DROPS::MultiGridCL::TriangTetraIteratorCL It( mg.GetTriangTetraBegin()),
+             ItEnd( mg.GetTriangTetraEnd()); It!=ItEnd; ++It)
+        if (It->GetId().GetIdent()%7 == 1)
+            It->SetRegRefMark();
+    mg.Refine();
+//    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
+    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;   
+    return 0;
+}
+
 int main (int, char**)
 {
 /*
@@ -212,7 +241,9 @@ int main (int, char**)
 */    
 
   try {
-    return Test();
+    return TestRefine();
+//    return TestRefineUniform();
+//    return Test();
 //    return TestPrimitives() + TestReading();
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

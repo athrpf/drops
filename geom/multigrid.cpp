@@ -32,43 +32,40 @@ void EdgeCL::BuildMidVertex(VertContT& container, const BoundaryCL& Bnd)
 // TODO: For nonlinear boundaries, we must treat the case, in which an edge lies in two
 //       boundary-segments in a different manner: Project to the common "edge" of the
 //       boundary-segments!
+// TODO: Due to MeshReader-Boundaries, which have no 2D-parametrization, we calculate
+//       the barycenter of the edge directly. This, of course, breaks nonlinear boundary
+//       segments.
 {
-    const VertexCL* const vp0 ( GetVertex(0) );
-    const VertexCL* const vp1 ( GetVertex(1) );
+    const VertexCL* const vp0 ( GetVertex( 0));
+    const VertexCL* const vp1 ( GetVertex( 1));
 
-    if ( IsOnBoundary() )
-    {
-//        if ( std::distance(GetBndIdxBegin(), GetBndIdxEnd()) == 1 )
-        {
-            const BndIdxT bndidx= *GetBndIdxBegin();
+    if (IsOnBoundary()) {
+        const BndIdxT bndidx= *GetBndIdxBegin();
+        const BndPointCL& bndvert0= *std::find_if( vp0->GetBndVertBegin(), vp0->GetBndVertEnd(),
+                                                   BndPointSegEqCL( bndidx));
+        const BndPointCL& bndvert1= *std::find_if( vp1->GetBndVertBegin(), vp1->GetBndVertEnd(),
+                                                   BndPointSegEqCL( bndidx));
+        BndPairCL bndpair= Bnd.GetBndSeg( bndidx)->MidProject( bndvert0, bndvert1);
+        // XXX: Revise this for nonlinear boundary-segments.
+        bndpair.second= GetBaryCenter( *this);
+        container.push_back( VertexCL( bndpair.second, GetLevel() + 1));
+        SetMidVertex( &container.back());
+        container.back().AddBnd( BndPointCL( bndidx, bndpair.first));
+        if ( std::distance( GetBndIdxBegin(), GetBndIdxEnd()) == 2 ) {
+            const BndIdxT bndidx= *(GetBndIdxBegin() + 1);
             const BndPointCL& bndvert0= *std::find_if( vp0->GetBndVertBegin(), vp0->GetBndVertEnd(),
-                                                       BndPointSegEqCL(bndidx) );
+                                                       BndPointSegEqCL( bndidx));
             const BndPointCL& bndvert1= *std::find_if( vp1->GetBndVertBegin(), vp1->GetBndVertEnd(),
-                                                       BndPointSegEqCL(bndidx) );
-            BndPairCL bndpair= Bnd.GetBndSeg(bndidx)->MidProject(bndvert0, bndvert1);
-            container.push_back( VertexCL(bndpair.second, GetLevel()+1) );
-            SetMidVertex( &container.back() );
-            container.back().AddBnd( BndPointCL(bndidx, bndpair.first) );
-            if ( std::distance(GetBndIdxBegin(), GetBndIdxEnd()) == 2 )
-            {
-                const BndIdxT bndidx= *(GetBndIdxBegin()+1);
-                const BndPointCL& bndvert0= *std::find_if( vp0->GetBndVertBegin(), vp0->GetBndVertEnd(),
-                                                           BndPointSegEqCL(bndidx) );
-                const BndPointCL& bndvert1= *std::find_if( vp1->GetBndVertBegin(), vp1->GetBndVertEnd(),
-                                                           BndPointSegEqCL(bndidx) );
-                BndPairCL bndpair1= Bnd.GetBndSeg(bndidx)->MidProject(bndvert0, bndvert1);
-                container.back().AddBnd( BndPointCL(bndidx, bndpair1.first) );
-                Assert( bndpair.second == bndpair1.second, DROPSErrCL("BuildMidVertex: Projection leads to different 3D-coords."), ~0 );
-            }
+                                                       BndPointSegEqCL( bndidx));
+            BndPairCL bndpair1= Bnd.GetBndSeg( bndidx)->MidProject( bndvert0, bndvert1);
+            container.back().AddBnd( BndPointCL( bndidx, bndpair1.first));
+            container.back().BndSort();
+//            Assert( bndpair.second == bndpair1.second, DROPSErrCL("BuildMidVertex: Projection leads to different 3D-coords."), ~0 );
         }
-//        else
-//        {
-//        }
     }
-    else
-    {
-        container.push_back( VertexCL(BaryCenter(vp0->GetCoord(), vp1->GetCoord()), GetLevel()+1) );
-        SetMidVertex( &container.back() );
+    else {
+        container.push_back( VertexCL( BaryCenter( vp0->GetCoord(), vp1->GetCoord()), GetLevel() + 1));
+        SetMidVertex( &container.back());
     }
 }
 
@@ -613,16 +610,19 @@ bool VertexCL::IsSane(std::ostream& os, const BoundaryCL& Bnd) const
     bool sane= true;
 
     // Check, if all boundary descriptions map to the same coordinates
-    if (_BndVerts)
-    {
-        for (std::vector<BndPointCL>::const_iterator bIt(_BndVerts->begin()); bIt!=_BndVerts->end(); ++bIt)
-            if ( (Bnd.GetBndSeg(bIt->GetBndIdx())->Map(bIt->GetCoord2D()) - GetCoord()).norm() > DoubleEpsC )
+    if (_BndVerts) {
+        for (std::vector<BndPointCL>::const_iterator bIt(_BndVerts->begin());
+             bIt != _BndVerts->end(); ++bIt) {
+            if (dynamic_cast<const MeshBoundaryCL*>( Bnd.GetBndSeg(bIt->GetBndIdx())))
+                continue; // We ignore MeshBoundaryCL as it does not have 2D-coordinates...
+            if ((Bnd.GetBndSeg(bIt->GetBndIdx())->Map(bIt->GetCoord2D()) - GetCoord()).norm() > DoubleEpsC)
             {
                 sane= false;
                 os << "BndSegCL description " << bIt->GetBndIdx()
                    << " does not match the coordinates. ";
                 os << "Mapping gives: " << Bnd.GetBndSeg(bIt->GetBndIdx())->Map(bIt->GetCoord2D()) << ' ';
             }
+        }
     }
     // Check, that the refinement algorithm did not miss any RecycleBins
     if ( HasRecycleBin() )
