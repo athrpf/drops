@@ -369,14 +369,14 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
     {
         is >> d;
         if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
-        v.Data[it->Unknowns(idx)[0]]= d;
+        v.Data[it->Unknowns(idx)]= d;
     }
     for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
         end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
         is >> d;
         if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
-        v.Data[it->Unknowns(idx)[0]]= d;
+        v.Data[it->Unknowns(idx)]= d;
     }
     CheckFile( is);
 }
