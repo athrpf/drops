@@ -551,32 +551,32 @@ int main (int argc, char** argv)
                max= stokesprob.p.Data.max();
         std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
         std::ofstream fil("stokespr.off");
-        fil << DROPS::GeomSolOutCL<MyStokesCL::DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
+        fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
         std::ofstream fil2("stokespr_cut.off");
-        fil2 << DROPS::GeomSolOutReport1CL<MyStokesCL::DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
+        fil2 << DROPS::GeomSolOutReport1CL<MyStokesCL::const_DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
 
         DROPS::IdxDescCL tecIdx;
         tecIdx.Set( 1, 0, 0, 0);
         stokesprob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
     
         std::ofstream v2d("stokestec2D.dat");
-        DROPS::TecPlot2DSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+        DROPS::TecPlot2DSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
             tecplot2d( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
         v2d << tecplot2d;
         v2d.close();
 
         v2d.open("stokes_vel.mtv");
-        v2d << DROPS::PlotMTVSolOutCL<MyStokesCL::DiscVelSolCL>(mg, stokesprob.GetVelSolution(), &colormap, -1, false, 0.19) << std::endl;
+        v2d << DROPS::PlotMTVSolOutCL<MyStokesCL::const_DiscVelSolCL>(mg, stokesprob.GetVelSolution(), &colormap, -1, false, 0.19) << std::endl;
         v2d.close();
 
         std::ofstream v3d("stokesmaple3D.dat");
-        DROPS::MapleSolOutCL<MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+        DROPS::MapleSolOutCL<MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
             mapleplot( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution(), -1, DROPS::PlaneCL(DROPS::std_basis<3>(2), .5));
         v3d << mapleplot;
         v3d.close();
 
         v3d.open("stokestec3D.dat");
-        DROPS::TecPlotSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+        DROPS::TecPlotSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
             tecplot( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution() );
         v3d << tecplot;
         v3d.close();
@@ -610,23 +610,23 @@ int main (int argc, char** argv)
         std::ofstream fil("navstokespr.off");
         double min= prob.p.Data.min(),
                max= prob.p.Data.max();
-        fil << DROPS::GeomSolOutCL<MyNavierStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
+        fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
         fil.close();
         std::ofstream fil2("navstokespr_cut.off");
-        fil2 << DROPS::GeomSolOutReport1CL<MyNavierStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
+        fil2 << DROPS::GeomSolOutReport1CL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
 
         DROPS::IdxDescCL tecIdx;
         tecIdx.Set( 1, 0, 0, 0);
         prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
     
         std::ofstream v2d("navstokestec2D.dat");
-        DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::DiscVelSolCL, MyNavierStokesCL::DiscPrSolCL>
+        DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
             tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
         v2d << tecplot2d;
         v2d.close();
 
         v2d.open("navstokes_vel.mtv");
-        v2d << DROPS::PlotMTVSolOutCL<MyStokesCL::DiscVelSolCL>(mg, stokesprob.GetVelSolution(), &colormap, -1, false, 0.19) << std::endl;
+        v2d << DROPS::PlotMTVSolOutCL<MyStokesCL::const_DiscVelSolCL>(mg, stokesprob.GetVelSolution(), &colormap, -1, false, 0.19) << std::endl;
         v2d.close();
     }
     return 0;

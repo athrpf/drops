@@ -299,7 +299,7 @@ int main (int argc, char** argv)
     std::ofstream fil("ttt.off");
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
-    fil << DROPS::GeomSolOutCL<MyStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
+    fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
 
     return 0;
   }

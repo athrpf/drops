@@ -292,7 +292,7 @@ int main (int argc, char** argv)
         std::ofstream fil("navstokespr.off");
         double min= prob.p.Data.min(),
                max= prob.p.Data.max();
-        fil << DROPS::GeomSolOutCL<MyNavierStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
+        fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
         fil.close();
 
         DROPS::IdxDescCL tecIdx;
@@ -300,7 +300,7 @@ int main (int argc, char** argv)
         prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
     
         std::ofstream v2d("navstokestec2D.dat");
-        DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::DiscVelSolCL, MyNavierStokesCL::DiscPrSolCL>
+        DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
             tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
         v2d << tecplot2d;
         v2d.close();

@@ -287,23 +287,23 @@ int main (int argc, char** argv)
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
-    fil << DROPS::GeomSolOutCL<MyStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
+    fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
 
     DROPS::IdxDescCL tecIdx;
     tecIdx.Set( 1, 0, 0, 0);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
 std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;    
     std::ofstream v2d("data2D.dat");
-    DROPS::TecPlot2DSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+    DROPS::TecPlot2DSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
         tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
     v2d << tecplot2d;
     v2d.close();
 
     std::ofstream v3d("data3D.dat");
-//    DROPS::TecPlotSolOutCL< MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+//    DROPS::TecPlotSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
 //        tecplot( mg, prob.GetVelSolution(), prob.GetPrSolution() );
 //    v3d << tecplot;
-    DROPS::MapleSolOutCL<MyStokesCL::DiscVelSolCL, MyStokesCL::DiscPrSolCL>
+    DROPS::MapleSolOutCL<MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
         mapleplot( mg, prob.GetVelSolution(), prob.GetPrSolution(), -1, DROPS::PlaneCL(DROPS::std_basis<3>(2), .5));
     v3d << mapleplot;
     v3d.close();

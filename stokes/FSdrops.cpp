@@ -704,7 +704,7 @@ int main (int argc, char** argv)
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
            std::cerr << "pressure solution: min = " << min << ", max = " << max <<std::endl;
-    fil << DROPS::GeomSolOutCL<MyStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max)
+    fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max)
         << std::endl;
 
     return 0;
