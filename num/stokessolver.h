@@ -72,6 +72,27 @@ class UzawaSolverCL : public SolverBaseCL
                 const VectorCL& b, const VectorCL& c);
 };
 
+template <typename PoissonSolverT, typename PoissonSolver2T>
+class UzawaSolver2CL : public SolverBaseCL
+{
+  private:
+    PoissonSolverT&  poissonSolver_;
+    PoissonSolver2T& poissonSolver2_;
+    MatrixCL& M_;
+    double    tau_;
+
+  public:
+    UzawaSolver2CL (PoissonSolverT& solver, PoissonSolver2T& solver2,
+                    MatrixCL& M, int maxiter, double tol, double tau= 1.)
+        : SolverBaseCL( maxiter, tol), poissonSolver_( solver), poissonSolver2_( solver2),
+          M_( M), tau_( tau) {}
+
+    double GetTau()            const { return tau_; }
+    void   SetTau( double tau)       { tau_= tau; }
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+};
 
 class Uzawa_IPCG_CL : public SolverBaseCL
 {
@@ -197,6 +218,22 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
         {}
 };
 
+class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
+{
+  private:
+    PCG_SsorCL PCGsolver_;
+    MGSolverCL MGsolver_;
+
+  public:
+    Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
+                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1.)
+        : UzawaSolver2CL<PCG_SsorCL, MGSolverCL>( PCGsolver_, MGsolver_, M,
+                                                  outer_iter, outer_tol, tau),
+          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          MGsolver_( MGData, inner_iter, inner_tol)
+        {}
+};
+
 
 //=============================================================================
 //  The "Solve" functions
@@ -216,33 +253,69 @@ void UzawaSolverCL<PoissonSolverT>::Solve(
     Uint output= 50;//max_iter/20;  // nur 20 Ausgaben pro Lauf
 
     double res1_norm= 0., res2_norm= 0.;
-    for( _iter=0; _iter<_maxiter; ++_iter)
-    {
+    for( _iter=0; _iter<_maxiter; ++_iter) {
         z_xpay(res2, B*v, -1.0, c);
+        res2_norm= res2.norm2();
+        _poissonSolver.SetTol( std::sqrt( res2_norm)/20.0);
         _poissonSolver.Solve(_M, p_corr, res2);
 //        p+= _tau * p_corr;
         axpy(_tau, p_corr, p);
 //        res1= A*v + transp_mul(B,p) - b;
         z_xpaypby2(res1, A*v, 1.0, transp_mul(B,p), -1.0, b);
         res1_norm= res1.norm2();
-        res2_norm= res2.norm2();
-
-        if (res1_norm + res2_norm < tol)
-        {
+        if (res1_norm + res2_norm < tol) {
             _res= ::sqrt( res1_norm + res2_norm );
             return;
         }
-
-        if( (_iter%output)==0 )
+        if( (_iter%output)==0)
             std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
                       << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
 
+        _poissonSolver.SetTol( std::sqrt( res1_norm)/20.0);
         _poissonSolver.Solve( A, v_corr, res1);
         v-= v_corr;
     }
     _res= ::sqrt( res1_norm + res2_norm );
 }
 
+template <class PoissonSolverT, class PoissonSolver2T>
+void UzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
+    const MatrixCL& A, const MatrixCL& B,
+    VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+{
+    VectorCL v_corr( v.size()),
+             p_corr( p.size()),
+             res1( v.size()),
+             res2( p.size());
+    double tol= _tol;
+    tol*= tol;
+    Uint output= 50;//max_iter/20;  // nur 20 Ausgaben pro Lauf
+
+    double res1_norm= 0., res2_norm= 0.;
+    for( _iter=0; _iter<_maxiter; ++_iter) {
+        z_xpay(res2, B*v, -1.0, c);
+        res2_norm= res2.norm2();
+        poissonSolver_.SetTol( std::sqrt( res2_norm)/20.0);
+        poissonSolver_.Solve( M_, p_corr, res2);
+//        p+= _tau * p_corr;
+        axpy(tau_, p_corr, p);
+//        res1= A*v + transp_mul(B,p) - b;
+        z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
+        res1_norm= res1.norm2();
+        if (res1_norm + res2_norm < tol) {
+            _res= ::sqrt( res1_norm + res2_norm);
+            return;
+        }
+        if( (_iter%output)==0)
+            std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
+
+        poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
+        poissonSolver2_.Solve( A, v_corr, res1);
+        v-= v_corr;
+    }
+    _res= ::sqrt( res1_norm + res2_norm );
+}
 
 template <class PoissonSolverT>
 void SchurSolverCL<PoissonSolverT>::Solve(

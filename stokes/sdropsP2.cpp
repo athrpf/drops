@@ -543,6 +543,43 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                       << "\terror: " << pmr.GetResid()/std::sqrt( err0) << std::endl;
             break;
           }
+          case 6: { // MG-Uzawa
+            std::cerr << "MG_Uzawa!\n";
+            MGDataCL MGData;
+	    IdxDescCL* c_idx;
+            time.Reset();
+            time.Start();
+            for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
+                MGData.push_back( MGLevelDataCL());
+                MGLevelDataCL& tmp= MGData.back();
+                std::cerr << "                        Create MGData on Level " << lvl << std::endl;
+                tmp.Idx.Set( 3, 3);
+                Stokes.CreateNumberingVel(lvl, &tmp.Idx);
+                tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+                std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
+                Stokes.SetupStiffnessMatrix( &tmp.A );
+                if(lvl!=0) {
+                    std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
+                    SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
+//                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
+	        }
+                c_idx= &tmp.Idx;
+            }
+            time.Stop();
+            std::cerr <<"MG-Setup: " << time.GetTime() << " seconds." << std::endl;
+	    MGDataCL& MGD = MGData;
+            std::cerr << "Check MG-Data..." << std::endl;
+            std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
+            std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
+//            CheckMGData( MGData.begin(), MGData.end());
+            Uzawa_MG_CL uzawaMG( M.Data, 5000, outer_tol*std::sqrt( err0), MGD, 1, inner_iter_tol, tau);
+            time.Start();
+            uzawaMG.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
+            time.Stop();
+            std::cerr << "iterations: " << uzawaMG.GetIter()
+                      << "\tresidual: " << uzawaMG.GetResid() << std::endl;
+            break;
+          }
         }
         std::cerr << "Solver: "<<time.GetTime()<<" seconds.\n";
         Stokes.CheckSolution(v1, p1, &LsgVel, &DLsgVel, &LsgPr);
