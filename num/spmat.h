@@ -49,7 +49,11 @@ public:
 
     // ctors
     VectorBaseCL ()                                 : _va()      {}
+#ifdef VALARRAY_BUG
+    VectorBaseCL (size_t s)                         : _va(T(),s) {}
+#else
     VectorBaseCL (size_t s)                         : _va(s)     {}
+#endif
     VectorBaseCL (T c, size_t s)                    : _va(c, s)  {}
     VectorBaseCL (const T* tp, size_t s)            : _va(tp, s) {}
     VectorBaseCL (const std::valarray<T>& va)       : _va(va)    {}
