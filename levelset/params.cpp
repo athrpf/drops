@@ -14,7 +14,8 @@ void ParamMesszelleCL::RegisterParams()
     rp_.BeginGroup("Time");
     rp_.RegInt( num_steps,    "NumSteps");
     rp_.RegDouble( dt,        "StepSize");
-    rp_.RegDouble( theta,     "Theta");
+    rp_.RegDouble( theta,     "ThetaStokes");
+    rp_.RegDouble( lset_theta,"ThetaLevelset");
     rp_.EndGroup();
 
     rp_.BeginGroup("Stokes");
@@ -40,6 +41,12 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( RepDiff,   "Diffusion");
     rp_.EndGroup();
 
+    rp_.BeginGroup("AdaptRef");
+    rp_.RegInt( ref_freq,     "Freq");
+    rp_.RegInt( ref_flevel,   "FinestLevel");
+    rp_.RegDouble( ref_width, "Width");
+    rp_.EndGroup();
+    
     rp_.BeginGroup("Mat");
     rp_.RegDouble( rhoD,      "DensDrop");
     rp_.RegDouble( muD,       "ViscDrop");
@@ -58,10 +65,12 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( flow_dir,     "FlowDir");
     rp_.EndGroup();
     
+    rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( num_dropref,  "NumDropRef");
     rp_.RegInt( FPsteps,      "CouplingSteps");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
+    rp_.RegString( IniData,   "InitialVel");
     rp_.RegString( meshfile,  "MeshFile");
 }
 

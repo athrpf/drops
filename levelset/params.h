@@ -25,7 +25,7 @@ class ParamMesszelleCL: public ParamBaseCL
 
     double dt;					// Zeitschrittweite
     int    num_steps;				// Anzahl Zeitschritte
-    double theta;				// 0=FwdEuler, 1=BwdEuler, 0.5=CN
+    double theta, lset_theta;			// 0=FwdEuler, 1=BwdEuler, 0.5=CN
 
     double sigma,				// Oberflaechenspannung
            CurvDiff,				// num. Glaettung Kruemmungstermberechnung
@@ -36,8 +36,12 @@ class ParamMesszelleCL: public ParamBaseCL
     double    Radius;				// Radius und 
     Point3DCL Mitte;				// Position des Tropfens
     int       num_dropref,			// zusaetzliche Tropfenverfeinerung
-              VolCorr;				// Volumenkorrektur (0=false)
+              VolCorr,				// Volumenkorrektur (0=false)
+              IniCond;				// Anfangsbedingung (0=Null, 1/2= stat. flow mit/ohne Tropfen)
               
+    int    ref_flevel, ref_freq;		// Parameter fuer
+    double ref_width;				// adaptive Verfeinerung
+    
     double Anstroem, 				// max. Einstroemgeschwindigkeit (Parabelprofil)
            r_inlet;				// Radius am Einlass der Messzelle
     int    flow_dir;				// Stroemungsrichtung (x/y/z = 0/1/2)
@@ -46,7 +50,8 @@ class ParamMesszelleCL: public ParamBaseCL
     double RepTau, RepDiff;  			// Reparametrisierung
 
     string EnsCase,				// Ensight Case, 
-           EnsDir,				//lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
+           EnsDir,				// lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
+           IniData,
            meshfile;				// Meshfile (von GAMBIT im FLUENT/UNS-Format)
 
     ParamMesszelleCL()                        { RegisterParams(); }
