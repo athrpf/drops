@@ -31,24 +31,29 @@ class InstatNavStokesThetaSchemeCL
 ******************************************************************************/
 {
   private:
+//    typedef typename NavStokesT::VelVecDescCL VelVecDescCL;
+    
     NavStokesT& _NS;
     SolverT&    _solver;
     
     VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
+    VelVecDescCL *_cplN;              // couplings with nonlinearity N
     VectorCL      _rhs;
     MatrixCL      _L;                 // M + theta*dt*A  = linear part 
     
     double _theta, _dt;
     
   public:
-    InstatNavStokesThetaSchemeCL( NavStokesT& NS, SolverT& solver, double theta= 0.5)
+    InstatNavStokesThetaSchemeCL( NavStokesT& NS, SolverT& solver, const VelVecDescCL* v, double theta= 0.5)
         : _NS( NS), _solver( solver), _b( &NS.b), _old_b( new VelVecDescCL),
-          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
-          _rhs( NS.b.RowIdx->NumUnknowns), _theta( theta)
+          _cplM( &NS.cplM), _old_cplM( new VelVecDescCL),
+	  _cplN( &NS.cplN), _rhs( NS.b.RowIdx->NumUnknowns), _theta( theta)
     { 
-        _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
-        _NS.SetupInstatRhs( _old_b, &_NS.c, _old_cplM, _NS.t, _old_b, _NS.t);
+        _old_b->SetIdx( _b->RowIdx);
+        _old_cplM->SetIdx( _b->RowIdx);
+        // Redundant for _NS.c but does not change its value
+        _NS.SetupInstatRhs( _old_b, &_NS.c, _old_cplM, 0., _old_b, 0.);
     }
 
     ~InstatNavStokesThetaSchemeCL()
@@ -57,7 +62,7 @@ class InstatNavStokesThetaSchemeCL
             delete _b;
         else
             delete _old_b; 
-        delete _cplM; delete _old_cplM;
+        delete _old_cplM;
     }
     
     double GetTheta()    const { return _theta; }
@@ -80,69 +85,22 @@ class InstatNavStokesThetaSchemeCL
 template <class NavStokesT, class SolverT>
 void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, VectorCL& p)
 {
-//        _NS.SetupNonlinar( &_NS.N, v, &_NS.cplN, _t);
-// sollte vorher schon geschehen sein: im 1. Zeitschritt durch User, danach durch _solver!
-
-    _NS.t+= _dt;
-    _NS.SetupInstatRhs( _b, &_NS.c, _cplM, _NS.t, _b, _NS.t);
-
-    _rhs=  _NS.A.Data * v + _NS.N.Data * v;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _NS.M.Data*v + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*(_old_b->Data + _NS.cplN.Data));
-
+    // _NS._t contains the new time!
+    _NS.SetupInstatRhs( _b, &_NS.c, _cplM, _NS._t, _b, _NS._t);
+    const double alpha= _theta*_dt;
+    const double beta= (_theta - 1.)*_dt;
+    _rhs=  alpha*( _b->Data  + _cplN->Data)
+         - beta*_old_b->Data
+         + beta*( _NS.A.Data*_NS.v.Data + _NS.N.Data*_NS.v.Data )
+         +_cplM->Data - _old_cplM->Data + _NS.M.Data*_NS.v.Data;
     p*= _dt;
-    _solver.solve( _L, _NS.B.Data, v, p, _rhs, _NS.c.Data, _dt*_theta);
+    _solver.Solve( _L, _NS.B.Data, v, p, _rhs, *_cplN, _NS.c.Data, alpha);
     p/= _dt;
-
-    std::swap( _b, _old_b);
-    std::swap( _cplM, _old_cplM);
+    _old_b->Data= _b->Data;
+    _old_cplM->Data= _cplM->Data;
 }
 
 
-/*template <class NavStokesT, class SolverT>
-void InstatNavStokesFracStepSchemeCL<NavStokesT,SolverT>::DoStep( VectorCL& v, VectorCL& p)
-{
-        double macrostep= _theta*_dt;
-        _NS.SetupInstatRhs( _cplA, &_NS.c, _cplM, _NS.t+macrostep, _NS.b, _NS.t);
-        _rhs= _NS.A->Data * v;
-        _rhs*= -(1-alpha)*macrostep;
-        _rhs+= _NS.M->Data*v + macrostep*_NS.b.Data;
-        _rhs+= _cplM->Data - _old_cplM->Data + macrostep * ( _alpha*_cplA->Data + (1.-_alpha)*_old_cplA->Data );
-        p*= _dt;
-        _solver.Solve( _L, _NS.B.Data, v, p, _rhs, _NS.c.Data, _alpha*_theta*_dt);
-        p/= _dt;
-        std::swap( _cplA, _old_cplA);
-        std::swap( _cplM, _old_cplM);
-
-        macrostep= (1.-2.*_theta)*_dt;
-        _NS.SetupInstatRhs( _cplA, &_NS.c, _cplm, _NS.t+(1.-_theta)*_dt, &_NS.b, _NS.t+(1.-_theta)*_dt);
-        _rhs= _NS.A.Data * v;
-        _rhs*= -_alpha*macrostep;
-        _rhs+= _NS.M.Data*v + macrostep*_NS.b.Data;
-        _rhs+= _cplM->Data - _old_cplM->Data + macrostep * ( _alpha*_old_cplA->Data + (1.-_alpha)*_cplA->Data );
-        p*= _dt;
-        _solver.Solve( _L, _NS.B.Data, v, p, _rhs, _NS.c.Data, _alpha*_theta*_dt);
-        p/= _dt;
-        std::swap( _cplA, _old_cplA);
-        std::swap( _cplM, _old_cplM);
-
-        macrostep= _theta*_dt;
-        _NS.SetupInstatRhs( _cplA, &_NS.c, _cplM, _NS.t+_dt, &_NS.b, _NS.t+(1.-_theta)*_dt);
-        _rhs= _NS.A.Data * v;
-        _rhs*= -(1.-_alpha)*macrostep;
-        _rhs+= _NS.M.Data*v + macrostep*_NS.b.Data;
-        _rhs+= _cplM->Data - _old_cplM->Data + macrostep * ( _alpha*_cplA->Data + (1.-_alpha)*_old_cplA->Data );
-        p*= _dt;
-        _solver.Solve( _L, _NS.B.Data, v, p, _rhs, _NS.c.Data, _alpha*_theta*_dt);
-        p/= _dt;
-        std::swap( _cplA, _old_cplA);
-        std::swap( _cplM, _old_cplM);
-
-        _NS.t+= _dt;
-}
-*/
-
-}    // end of namespace DROPS
+} // end of namespace DROPS
 
 #endif

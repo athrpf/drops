@@ -28,21 +28,34 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
   
     MatDescCL    N;
     VelVecDescCL cplN;
+    VelVecDescCL cplM;
+    double _t; // Hack to allow the direct use of stationary NavStokes-Solvers by stripping the time
+               // argument from SetupNonlinear.
+	       // The base class already contains t for the same purpose!
   
     InstatNavierStokesP2P1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : InstatStokesP2P1CL<MGB, Coeff>(mgb, coeff, bdata) {}  
 
-    // Set up matrix for nonlinearity
-    void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*, double) const;
+    // Set up matrix and rhs for nonlinearity
+    void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*, double, double) const;
+    // Set up matrix for nonlinearity, use time _t
+    void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
+    { this->SetupNonlinear(matN, velvec, vecb, _t, _t); }
+    // Set up only rhs for nonlinearity: use time t1 for the velocity in N,
+    // t2 for the boundary-data in the velocity unknowns
+//    void SetupNonlinearRhs(const VelVecDescCL*, VelVecDescCL*, double t1, double t2) const;
+//    void SetupNonlinearRhs(const VelVecDescCL* velvec, VelVecDescCL* vecb) const
+//    { this->SetupNonlinearRhs(velvec, vecb, _t, _t); }
 
+    // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
+    void SetTime (double tt) { _t= tt; }
+    
     // Check system and computed solution
-    void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr, double);
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr, double);
+    void GetDiscError (vector_instat_fun_ptr LsgVel, vector_instat_fun_ptr DtLsgVel,
+                       scalar_instat_fun_ptr LsgPr, double t);
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_instat_fun_ptr, vector_instat_fun_ptr, scalar_instat_fun_ptr, double);
 };
 
-
-//double ResidualErrEstimator(const TetraCL& t, const VecDescCL& sol);
-//double Estimator (const TetraCL& t, const VecDescCL& lsg);
 
 } // end of namespace DROPS
 

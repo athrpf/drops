@@ -3,20 +3,25 @@
 // Content: classes that constitute the instationary navier-stokes-problem *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
-// History: begin - Nov, 22 2001                                         *
+// History: begin - Nov, 22 2001                                           *
 //**************************************************************************
 
 namespace DROPS
 {
 
 template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr, double t)
+void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel,
+                                                       vector_instat_fun_ptr DtLsgVel,
+                                                       scalar_instat_fun_ptr LsgPr,
+						       double t)
 {
     Uint lvl= A.RowIdx->TriangLevel,
         vidx= A.RowIdx->Idx,
         pidx= B.RowIdx->Idx;
     VecDescCL veldesc( A.RowIdx);
     VectorCL& lsgvel= veldesc.Data;
+    VecDescCL veldescdt( A.RowIdx);
+    VectorCL& lsgveldt= veldescdt.Data;
     VectorCL  lsgpr( B.RowIdx->NumUnknowns);
 
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
@@ -25,7 +30,11 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, sc
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
-               lsgvel[sit->Unknowns(vidx)[i]]= LsgVel(sit->GetCoord())[i];
+	   {
+               lsgvel[sit->Unknowns(vidx)[i]]= LsgVel(sit->GetCoord(), t)[i];
+	       lsgveldt[sit->Unknowns(vidx)[i]]= DtLsgVel(sit->GetCoord(), t)[i];
+	   }
+	   
         }
     }
     
@@ -35,43 +44,72 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, sc
         if (!_BndData.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
+	   {
                 lsgvel[sit->Unknowns(vidx)[i]]= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i];
+                lsgveldt[sit->Unknowns(vidx)[i]]= DtLsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i];
+           }
         }
     }
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
-        lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord());
+        lsgpr[sit->Unknowns(pidx)[0]]= LsgPr(sit->GetCoord(), t);
     VecDescCL rhsN( A.ColIdx);
     N.SetIdx( A.RowIdx, A.ColIdx);
     N.Data.clear();
-    SetupNonlinear( &N, &veldesc, &rhsN);
+    SetupNonlinear( &N, &veldesc, &rhsN, t);
     std::cerr << "discretization error to check the system (x,y = continuos solution): "<<std::endl;
-    VectorCL res= A.Data*lsgvel + N.Data*lsgvel + transp_mul(B.Data,lsgpr) - b.Data - rhsN.Data; 
-    std::cerr <<"|| Ax + Nx + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
+    VectorCL res= lsgveldt + A.Data*lsgvel + N.Data*lsgvel + transp_mul(B.Data,lsgpr) - b.Data - rhsN.Data; 
+    std::cerr <<"|| x_t + Ax + Nx + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
     VectorCL resB= B.Data*lsgvel - c.Data; 
     std::cerr <<"|| Bx - g || = "<< resB.norm()<<", max "<<resB.supnorm()<<std::endl;
 //    std::cerr << res << std::endl;
-/*    VectorCL resC= N.Data*lsgvel - rhsN.Data;
+    VectorCL resC= N.Data*lsgvel - rhsN.Data;
     std::cerr <<"|| Nx - rhsN || = "<< resC.norm()<<", max "<<resC.supnorm()<<std::endl;
-*/}
+}
 
 
 template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
-                                 vector_fun_ptr LsgVel,      scalar_fun_ptr LsgPr, double t)
+void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
+    const VelVecDescCL* lsgvel,
+    const VecDescCL* lsgpr, 
+    vector_instat_fun_ptr LsgVel,
+    vector_instat_fun_ptr DtLsgVel,
+    scalar_instat_fun_ptr LsgPr,
+    double t
+    )
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->RowIdx->TriangLevel,
          vidx=lsgvel->RowIdx->Idx;
     
     VecDescCL rhsN( lsgvel->RowIdx);
-    N.Data.clear();
-    SetupNonlinear( &N, lsgvel, &rhsN);
+    rhsN.Data= this->cplN.Data;
+//    N.Data.clear();
+//    SetupNonlinear( &N, lsgvel, &rhsN, t);
     VectorCL res1= A.Data*lsgvel->Data + N.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
                  - b.Data - rhsN.Data;
     VectorCL res2= B.Data*lsgvel->Data - c.Data;
 
-    std::cerr << "\nChecken der Loesung...\n";    
+/*    for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+         sit != send; ++sit) {
+        if (!_BndData.Vel.IsOnDirBnd(*sit)) {
+           for(int i=0; i<3; ++i) {
+               res1[sit->Unknowns(vidx)[0]+i]-= DtLsgVel(sit->GetCoord(), t)[i];
+           }
+        }
+    }
+    for (MultiGridCL::TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
+         sit != send; ++sit) {
+        if (!_BndData.Vel.IsOnDirBnd(*sit)) {
+           for(int i=0; i<3; ++i) {
+               res1[sit->Unknowns(vidx)[0]+i]-= DtLsgVel( .5*(sit->GetVertex(0)->GetCoord()+sit->GetVertex(0)->GetCoord()), t)[i];
+           }
+        }
+    }
+*/    
+
+
+    std::cerr << "\nChecken der Loesung des LGS...\n";    
     std::cerr << "|| Ax + Nx + BTy - f || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
     std::cerr << "||      Bx       - g || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
     
@@ -111,7 +149,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord())[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
+               diff= fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -120,7 +158,6 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
            }
         }
     }
-    
     for (MultiGridCL::TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
@@ -128,7 +165,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2.)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
+               diff= fabs( LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t)[i] - lsgvel->Data[sit->Unknowns(vidx)[i]] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -146,12 +183,12 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
 	Point3DCL sum(0.0), diff, Diff[5];
 	for(int i=0; i<4; ++i)
 	{
-	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord()) - vel.val(*sit->GetVertex(i));
+	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
 	    diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
 	    sum+= diff;
 	}
 	sum/= 120;
-	Diff[4]= diff= LsgVel(GetBaryCenter(*sit)) - vel.val(*sit, 0.25, 0.25, 0.25);
+	Diff[4]= diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
 	diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
 	sum+= diff*2./15.;
 	sum*= sit->GetVolume()*6;
@@ -160,7 +197,9 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
 	for(int i=0; i<10; ++i)
 	{
 	    sum= Quad(Diff, i)*sit->GetVolume()*6;
-	    diff= i<4 ? Diff[i] : LsgVel( (sit->GetEdge(i-4)->GetVertex(0)->GetCoord() + sit->GetEdge(i-4)->GetVertex(1)->GetCoord() )/2) - vel.val(*sit->GetEdge(i-4));
+	    diff= i<4 ? Diff[i] : LsgVel( (sit->GetEdge(i-4)->GetVertex(0)->GetCoord() +
+	                                   sit->GetEdge(i-4)->GetVertex(1)->GetCoord() )/2, t)
+			          - vel.val(*sit->GetEdge(i-4));
 	    sum[0]*= diff[0]; sum[1]*= diff[1]; sum[2]*= diff[2];
 	    L2_vel+= sum;
 	}
@@ -177,32 +216,39 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
+    typename BaseCL::DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0;
         for(int i=0; i<4; ++i)
-            sum+= pr.val(*sit->GetVertex(i)) - LsgPr(sit->GetVertex(i)->GetCoord());
+            sum+= pr.val(*sit->GetVertex(i)) - LsgPr(sit->GetVertex(i)->GetCoord(), t);
         sum/= 120;
-        sum+= 2./15.* (pr.val(*sit, .25, .25, .25) - LsgPr(GetBaryCenter(*sit)));
+        sum+= 2./15.* (pr.val(*sit, .25, .25, .25) - LsgPr(GetBaryCenter(*sit), t));
         MW_pr+= sum * sit->GetVolume()*6.;
         vol+= sit->GetVolume();
     }
     const double c_pr= MW_pr / vol;
     std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
+    VertexCL* maxvert= 0;
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
-        diff= fabs( c_pr + LsgPr(sit->GetCoord()) - pr.val(*sit));
+        diff= fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
         norm2+= diff*diff;
         if (diff>maxdiff)
+	{
             maxdiff= diff;
+	    maxvert= &*sit;
+	}
         if (diff<mindiff)
             mindiff= diff;
     }
     norm2= ::sqrt(norm2 / lsgpr->Data.size() );
+    std::cout << "Maximaler Druckfehler: ";
+    maxvert->DebugInfo(std::cout);
+    std::cout<<std::endl;
 
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -210,11 +256,11 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgv
         double sum= 0, sum1= 0;
         for(int i=0; i<4; ++i)
         {
-            diff= c_pr + LsgPr(sit->GetVertex(i)->GetCoord()) - pr.val(*sit->GetVertex(i));
+            diff= c_pr + LsgPr(sit->GetVertex(i)->GetCoord(), t) - pr.val(*sit->GetVertex(i));
             sum+= diff*diff; sum1+= fabs(diff);
         }
         sum/= 120;   sum1/= 120;
-        diff= c_pr + LsgPr(GetBaryCenter(*sit)) - pr.val(*sit, .25, .25, .25);
+        diff= c_pr + LsgPr(GetBaryCenter(*sit), t) - pr.val(*sit, .25, .25, .25);
         sum+= 2./15.*diff*diff;   sum1+= 2./15.*fabs(diff);
         L2_pr+= sum * sit->GetVolume()*6.;
         L1_pr+= sum1 * sit->GetVolume()*6.;
@@ -263,8 +309,9 @@ inline double Quad(double f[5], int i)
 }
 
 template <class MGB, class Coeff>
-void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb, double t) const
-// Sets up the stiffness matrices and right hand sides
+void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVecDescCL* velvec,
+                                                          VelVecDescCL* vecb, double t, double t2) const
+// Sets up the approximation of the nonlinear term and the corresponding right hand side.
 {
     vecb->Clear();
     
@@ -291,7 +338,8 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
 
     GetGradientsOnRef( GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+                                                 send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -332,8 +380,8 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
                     }
                     else // coupling with vert/edge j on right-hand-side
                     {
-                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t)
-                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t);
+                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
+                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
                         b[Numb[i]]-=          coup * tmp[0];
                         b[Numb[i]+stride]-=   coup * tmp[1];
                         b[Numb[i]+2*stride]-= coup * tmp[2];
@@ -343,5 +391,84 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
     }
     N.Build();
 }
+
+
+/*
+template <class MGB, class Coeff>
+void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec,
+                                                             VelVecDescCL* vecb,
+							     double t1, double t2) const
+// Sets up the approximation of the nonlinear right hand side.
+{
+    vecb->Clear();
+    
+    typename BaseCL::DiscVelSolCL old_u( velvec, &_BndData.Vel, &_MG, t1);
+//    typename BaseCL::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t2);
+    VectorCL& b= vecb->Data;
+    const Uint lvl    = velvec->RowIdx->TriangLevel;
+    const Uint vidx   = velvec->RowIdx->Idx;
+
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    
+    const IdxT stride= 1;   // stride between unknowns on same simplex, which
+                            // depends on numbering of the unknowns
+                            
+    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    SMatrixCL<3,3> T;
+    double coup;
+    double det, absdet;
+    SVectorCL<3> tmp;
+    double func[5];
+
+    GetGradientsOnRef( GradRef);
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+                                                 send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr(T,det,*sit);
+        MakeGradients(Grad, GradRef, T);
+        absdet= fabs(det);
+        
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i)
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
+        for(int i=0; i<6; ++i)
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+
+        for(int j=0; j<10; ++j)
+        {
+            // N(u)_ij = int( phi_i *( u1 phi_j_x + u2 phi_j_y + u3 phi_j_z ) )
+            //                       \______________ func __________________/
+            
+            for( Uint pt=0; pt<5; ++pt) // eval func at 5 points:
+            {
+                tmp= pt<4 ? old_u.val( *sit->GetVertex(pt))      // value of u in vert pt
+                          : old_u.val( *sit, 0.25, 0.25, 0.25);  // value of u in barycenter
+                func[pt]= Grad[j](0,pt) * tmp[0]
+                        + Grad[j](1,pt) * tmp[1]
+                        + Grad[j](2,pt) * tmp[2];
+            }
+            for(int i=0; i<10; ++i)    // assemble row Numb[i]
+                if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+                {
+                    coup= Quad( func, i) * absdet;
+                    if (IsOnDirBnd[j])// coupling with vert/edge j on right-hand-side
+                    {
+                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
+                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
+                        b[Numb[i]]-=          coup * tmp[0];
+                        b[Numb[i]+stride]-=   coup * tmp[1];
+                        b[Numb[i]+2*stride]-= coup * tmp[2];
+                    }
+                }
+        }
+    }
+}
+*/
 
 } // end of namespace DROPS

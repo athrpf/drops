@@ -6,7 +6,7 @@
 
 DIR = navstokes
 
-EXEC = nsdrops nsdrops_begehung
+EXEC = nsdrops nsdrops_begehung insdrops
 
 DELETE = $(EXEC)
 
@@ -31,6 +31,13 @@ nsdrops_begehung: \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../stokes/stokes.o ../out/output.o \
     ../num/discretize.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+insdrops: \
+    ../geom/boundary.o ../geom/builder.o ../navstokes/insdrops.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../misc/problem.o ../misc/utils.o ../stokes/stokes.o \
+    ../stokes/instatstokes.o ../out/output.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 
