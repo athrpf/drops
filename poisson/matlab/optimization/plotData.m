@@ -40,12 +40,12 @@ return
 niter=size(J,2);
 figure(2)
 clear qcd fqc
-for t=1:ndt
+for t=1:ndt+1
     qcd(:,:)=qc_iter(niter,:,:);
     plotq(gl,ni,qcd,t,0)
-    hold on
-    plotq(gl,ni,qcf,t,1)
-    hold off
+%     hold on
+%     plotq(gl,ni,qcf,t,1)
+%     hold off
     fqc(t)=getframe(gcf);
 end
 
@@ -62,3 +62,15 @@ for i=1:niter
     hold off
     fqc(i)=getframe(gcf);
 end
+
+%--------------- plot residual over time -------------------
+
+figure(4)
+clear qcd fqc
+for t=1:ndt+1
+    qcd(:,:)=qc_iter(niter,:,:);
+    res_q(:,:)=qcf(:,:)-qcd(:,:);
+    plotq(gl,ni,res_q,t,1)
+    fqc(t)=getframe(gcf);
+end
+
