@@ -529,7 +529,7 @@ class DiagPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const
-        { apc_.Apply( A, v, b); spc_.Apply( A/*Dummy*/, p, c); }
+        { apc_.Apply( A, v, b); spc_.Apply( B/*Dummy*/, p, c); }
 };
 
 
