@@ -72,21 +72,25 @@ double DistanceFct( const DROPS::Point3DCL& p)
 namespace DROPS // for Strategy
 {
 
-class PSchur_PCG_Pr_CL: public PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >
+class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
 {
+  public:
+    typedef PCGSolverCL<SSORPcCL> innerSolverT;
+    typedef PCGSolverCL<ISPreCL>  outerSolverT;
+
   private:
-    PCG_SsorCL           PCGsolver_;
-    PCGSolverCL<ISPreCL> PCGsolver2_;
+    innerSolverT innerSolver_;
+    outerSolverT outerSolver_;
 
   public:
-    PSchur_PCG_Pr_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
-                                   int inner_iter, double inner_tol)
-        : PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >(
-              PCGsolver_, PCGsolver2_, outer_iter, outer_tol
+    ISPSchur_PCG_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
+                                  int inner_iter, double inner_tol)
+        : PSchurSolver2CL<innerSolverT, outerSolverT>(
+              innerSolver_, outerSolver_, outer_iter, outer_tol
           ),
-          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
-          PCGsolver2_( Spc, outer_iter, outer_tol)
-        {}
+          innerSolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          outerSolver_( Spc, outer_iter, outer_tol)
+         {}
 };
 
 template<class Coeff>
@@ -134,19 +138,19 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     double outer_tol;
     std::cerr << "tol = "; std::cin >> outer_tol;
 
-    lset.GetSolver().SetTol( 1e-16);
+    lset.GetSolver().SetTol( outer_tol);
     lset.GetSolver().SetMaxIter( 50000);
 
-    PSchur_PCG_Pr_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
-    PSchur_PCG_CL schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
-//    PSchur_PCG_CL ISschurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
+    ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
+    PSchur_PCG_CL    schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
 
     // solve stationary problem for initial velocities    
     TimerCL time;
     VelVecDescCL curv( vidx);
     time.Reset();
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &curv, lset, Stokes.t);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
     Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
+    curv.Clear();
     lset.AccumulateBndIntegral( curv);
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
@@ -173,10 +177,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    std::cerr << "tol = "; std::cin >> outer_tol;
     ISPschurSolver.SetTol( outer_tol);
     
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, PSchur_PCG_Pr_CL> 
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
         cpl( Stokes, lset, ISPschurSolver);
 
     cpl.SetTimeStep( delta_t);

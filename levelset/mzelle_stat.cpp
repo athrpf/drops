@@ -107,8 +107,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     Stokes.SetupPrMass( &prM);
     
     VelVecDescCL curv( vidx);
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &curv, lset, Stokes.t);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
     Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
+    curv.Clear();
     lset.AccumulateBndIntegral( curv);
     
     double outer_tol;
@@ -144,6 +145,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     ensight.CaseEnd();
     std::cerr << std::endl;
 }
+
 
 } // end of namespace DROPS
 
@@ -202,13 +204,14 @@ int main (int argc, char** argv)
     {
         std::cerr << "BC: " << dynamic_cast<const DROPS::MeshBoundaryCL*>(bnd.GetBndSeg( i))->GetBC() << std::endl;
     }
-    
+    mg.ElemInfo( std::cerr);    
 //    MarkAll( mg); mg.Refine();
     for (int i=0; i<num_dropref; ++i)
     {
         MarkDrop( mg);
         mg.Refine();
     }
+    std::cerr << "after refinement: "; mg.ElemInfo( std::cerr);    
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream geomout( "gambit/mzelle.off");
     geomout << DROPS::GeomMGOutCL( mg, -1, false, 0);
