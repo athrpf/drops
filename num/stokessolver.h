@@ -117,6 +117,386 @@ class Uzawa_IPCG_CL : public SolverBaseCL
 };
 
 
+// One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
+// of the Krylovspace of A for a given starting vector r. This is a three term
+// recursion, computing the next q_i from the two previous ones.
+// See Arnold Reusken, "Numerical methods for elliptic partial differential equations",
+// p. 148.
+//
+// This is the reformulation from ../num/solver.h for the Stokes-equation.
+//
+// Returns false for 'lucky breakdown' (see below), true in the generic case.
+template <typename Mat, typename Vec>
+bool
+LanczosStep_SP(const Mat& A, const Mat& B,
+               const Vec& qu0, const Vec& qpr0, const Vec& qu1, const Vec& qpr1,
+               Vec& qu2, Vec& qpr2,
+               double& a1,
+               const double b0, double& b1)
+{
+    qu2.raw()= (A*qu1).raw() + transp_mul( B, qpr1).raw() - b0*qu0.raw();
+    qpr2.raw()= (B*qu1).raw() - b0*qpr0.raw();
+    a1= qu2*qu1 + qpr2*qpr1;
+    qu2.raw()-= a1*qu1.raw();
+    qpr2.raw()-= a1*qpr1.raw();
+    b1= std::sqrt( qu2.norm2() + qpr2.norm2());
+    // Lucky breakdown; the Krylov-space K up to q1 is A-invariant. Thus,
+    // the correction dx needed to solve A(x0+dx)=b is in this space and
+    // the Minres-algo will terminate with the exact solution in the
+    // following step.
+    if (std::fabs( b1) < 1e-15) return false;
+    qu2.raw()*= 1./b1;
+    qpr2.raw()*= 1./b1;
+    return true;
+}
+
+template <typename Mat, typename Vec>
+class LanczosONB_SPCL
+{
+  private:
+    bool nobreakdown_;
+    double norm_r0_;
+    const Mat* A;
+    const Mat* B;
+
+  public:
+    SBufferCL<Vec, 3> qu;
+    SBufferCL<Vec, 3> qpr;
+    double a0;
+    SBufferCL<double, 2> b;
+
+    LanczosONB_SPCL()
+      :A( 0), B( 0) {}
+
+    void // Sets up initial values and computes q0.
+    new_basis(const Mat& A_, const Mat& B_, const Vec& ru0, const Vec& rpr0) {
+        A= &A_;
+        B= &B_;
+        qu[-1].resize( ru0.size(), 0.);
+        qpr[-1].resize( rpr0.size(), 0.);
+        norm_r0_= std::sqrt( ru0.norm2() + rpr0.norm2());
+        qu[0].resize( ru0.size(), 0.); qu[0].raw()= ru0.raw()*(1./norm_r0_);
+        qpr[0].resize( rpr0.size(), 0.); qpr[0].raw()= rpr0.raw()*(1./norm_r0_);
+        qu[1].resize( ru0.size(), 0.);
+        qpr[1].resize( rpr0.size(), 0.);
+        b[-1]= 0.;
+        nobreakdown_= LanczosStep_SP( *A, *B, qu[-1], qpr[-1], qu[0], qpr[0],
+                                      qu[1], qpr[1], a0, b[-1], b[0]);
+    }
+
+    double norm_r0() const {
+        return norm_r0_; }
+    bool
+    breakdown() const {
+        return !nobreakdown_; }
+    // Computes new q_i, a_i, b_1, q_{i+1} in q0, a0, b0, q1 and moves old
+    // values to qm1, bm1.
+    bool
+    next() {
+        qu.rotate(); qpr.rotate(); b.rotate();
+        return (nobreakdown_= LanczosStep_SP( *A, *B, qu[-1], qpr[-1], qu[0], qpr[0],
+                                              qu[1], qpr[1], a0, b[-1], b[0]));
+    }
+};
+
+// One recursive step of the preconditioned Lanzcos algorithm for computing an ONB of
+// a Krylovspace. This is a three term
+// recursion, computing the next q_i from the two previous ones.
+// See Arnold Reusken, "Numerical methods for elliptic partial differential equations",
+// p. 153.
+//
+// This is the PMinres-method from ../num/solver.h adapted to the
+// Stokes-equations. Keep in sync!
+// Returns false for 'lucky breakdown' (see below), true in the generic case.
+template <typename Mat, typename Vec, typename PreCon>
+bool
+PLanczosStep_SP(const Mat& A, const Mat& B,
+                const PreCon& M,
+                const Vec& qu1, const Vec& qpr1, Vec& qu2, Vec& qpr2,
+                const Vec& tu0, const Vec& tpr0, const Vec& tu1, const Vec& tpr1,
+                Vec& tu2, Vec& tpr2,
+                double& a1,
+                const double b0, double& b1)
+{
+    tu2.raw()= (A*qu1).raw() + transp_mul( B, qpr1).raw() - b0*tu0.raw();
+    tpr2.raw()= (B*qu1).raw() - b0*tpr0.raw();
+    a1= tu2*qu1 + tpr2*qpr1;
+    tu2.raw()+= (-a1)*tu1.raw();
+    tpr2.raw()+= (-a1)*tpr1.raw();
+    M.Apply( A, B, qu2, qpr2, tu2, tpr2);
+    b1= std::sqrt( qu2*tu2 + qpr2*tpr2);
+    if (fabs( b1) < 1e-15) return false;
+    tu2.raw()*= 1./b1;
+    tpr2.raw()*= 1./b1;
+    qu2.raw()*= 1./b1;
+    qpr2.raw()*= 1./b1;
+    return true;
+}
+
+template <typename Mat, typename Vec, typename PreCon>
+class PLanczosONB_SPCL
+{
+  private:
+    bool nobreakdown_;
+    double norm_r0_;
+    const Mat* A;
+    const Mat* B;
+    const PreCon& M;
+
+  public:
+    SBufferCL<Vec, 2> qu;
+    SBufferCL<Vec, 2> qpr;
+    SBufferCL<Vec, 3> tu;
+    SBufferCL<Vec, 3> tpr;
+    double a0;
+    SBufferCL<double, 2> b;
+
+    PLanczosONB_SPCL(const PreCon& M_)
+        :A( 0), B( 0), M( M_) {}
+
+    void // Sets up initial values and computes q0.
+    new_basis(const Mat& A_, const Mat& B_,  const Vec& r0u, const Vec& r0pr) {
+        A= &A_;
+        B= &B_;
+        tu[-1].resize( r0u.size(), 0.);
+        tpr[-1].resize( r0pr.size(), 0.);
+        qu[-1].resize( r0u.size(), 0.);
+        qpr[-1].resize( r0pr.size(), 0.);
+        M.Apply( *A, *B, qu[-1], qpr[-1], r0u, r0pr);
+        norm_r0_= std::sqrt( qu[-1]*r0u + qpr[-1]*r0pr);
+        tu[0].resize( r0u.size(), 0.); tu[0].raw()= r0u.raw()*(1./norm_r0_);
+        tpr[0].resize( r0pr.size(), 0.); tpr[0].raw()= r0pr.raw()*(1./norm_r0_);
+        qu[0].resize( r0u.size(), 0.); qu[0].raw()= qu[-1].raw()*(1./norm_r0_);
+        qpr[0].resize( r0pr.size(), 0.); qpr[0].raw()= qpr[-1].raw()*(1./norm_r0_);
+        tu[1].resize( r0u.size(), 0.);
+        tpr[1].resize( r0pr.size(), 0.);
+        b[-1]= 0.;
+        nobreakdown_= PLanczosStep_SP( *A, *B, M, qu[0], qpr[0], qu[1], qpr[1],
+                          tu[-1], tpr[-1], tu[0], tpr[0], tu[1], tpr[1],
+                          a0, b[-1], b[0]);
+    }
+
+    double
+    norm_r0() const {
+        return norm_r0_; }
+    bool
+    breakdown() const {
+        return !nobreakdown_; }
+    // Computes new q_i, t_i, a_i, b_1, q_{i+1} in q0, t_0, a0, b0, q1 and moves old
+    // values to qm1, tm1, bm1.
+    bool
+    next() {
+        qu.rotate(); qpr.rotate(); tu.rotate(); tpr.rotate(); b.rotate();
+        return (nobreakdown_= PLanczosStep_SP( *A, *B, M, qu[0], qpr[0], qu[1], qpr[1],
+                                  tu[-1], tpr[-1], tu[0], tpr[0], tu[1], tpr[1],
+                                  a0, b[-1], b[0]));
+    }
+};
+
+
+//-----------------------------------------------------------------------------
+// PMINRES: The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within max_iter iterations (false).
+// See Arnold Reusken, "Numerical methods for elliptic partial differential
+// equations", pp. 149 -- 154
+//
+// This is the PMinres-method from ../num/solver.h adapted to the
+// Stokes-equations. Keep in sync!
+//
+// Upon successful return, output arguments have the following values:
+//
+//        x - approximate solution to Ax = rhs
+// max_iter - number of iterations performed before tolerance was reached
+//      tol - 2-norm of the last correction dx to x after the final iteration.
+//-----------------------------------------------------------------------------
+template <typename Mat, typename Vec, typename Lanczos>
+bool
+PMINRES_SP(const Mat& A, const Mat& B,
+           Vec& u, Vec& pr, const Vec& rhsu, const Vec& rhspr,
+           Lanczos& q, int& max_iter, double& tol)
+{
+    Vec dxu( u.size()); // Vector for updating x, thus the name.
+    Vec dxpr( pr.size()); // Vector for updating x, thus the name.
+    double err;
+//std::cerr << "PMINRES: residual: " << err << '\n';
+
+    tol*= tol;
+    const double norm_r0= q.norm_r0();
+    bool lucky= q.breakdown();
+    SBufferCL<double, 3> c;
+    SBufferCL<double, 3> s;
+    SBufferCL<SVectorCL<3>, 3> r;
+    SBufferCL<Vec, 3> pu;
+    SBufferCL<Vec, 3> ppr;
+    pu[0].resize( u.size()); pu[1].resize( u.size()); pu[2].resize( u.size());
+    ppr[0].resize( pr.size()); ppr[1].resize( pr.size()); ppr[2].resize( pr.size());
+    SBufferCL<SVectorCL<2>, 2> b;
+    
+    for (int k=1; k<=max_iter; ++k) {
+        switch (k) {
+          case 1:
+            // Compute r1
+            GMRES_GeneratePlaneRotation( q.a0, q.b[0], c[0], s[0]);
+            r[0][0]= std::sqrt( q.a0*q.a0 + q.b[0]*q.b[0]);
+            // Compute p1
+            // p[0]= q.q[0]/r[0][0];
+            pu[0].raw()= q.qu[0].raw()/r[0][0];
+            ppr[0].raw()= q.qpr[0].raw()/r[0][0];
+            // Compute b11
+            b[0][0]= 1.; b[0][1]= 0.;
+            GMRES_ApplyPlaneRotation(b[0][0], b[0][1], c[0], s[0]);
+            break;
+          case 2:
+            // Compute r2
+            r[0][0]= q.b[-1]; r[0][1]= q.a0; r[0][2]= q.b[0];
+            GMRES_ApplyPlaneRotation( r[0][0], r[0][1], c[-1], s[-1]);
+            GMRES_GeneratePlaneRotation( r[0][1], r[0][2], c[0], s[0]);
+            GMRES_ApplyPlaneRotation( r[0][1], r[0][2], c[0], s[0]);
+            // Compute p2
+            // p[0]= (q.q[0] - r[0][0]*p[-1])/r[0][1];
+            pu[0].raw()= (q.qu[0].raw() - r[0][0]*pu[-1].raw())/r[0][1];
+            ppr[0].raw()= (q.qpr[0].raw() - r[0][0]*ppr[-1].raw())/r[0][1];
+            // Compute b22
+            b[0][0]= b[-1][1]; b[0][1]= 0.;
+            GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
+            break;
+          default:
+            r[0][0]= 0.; r[0][1]= q.b[-1]; r[0][2]= q.a0;
+            double tmp= q.b[0];
+            GMRES_ApplyPlaneRotation( r[0][0], r[0][1], c[-2], s[-2]);
+            GMRES_ApplyPlaneRotation( r[0][1], r[0][2], c[-1], s[-1]);
+            GMRES_GeneratePlaneRotation( r[0][2], tmp, c[0], s[0]);
+            GMRES_ApplyPlaneRotation( r[0][2], tmp, c[0], s[0]);
+            // p[0]= (q.q[0] - r[0][0]*p[-2] -r[0][1]*p[-1])/r[0][2];
+            pu[0].raw()= (q.qu[0].raw() - r[0][0]*pu[-2].raw() -r[0][1]*pu[-1].raw())*(1./r[0][2]);
+            ppr[0].raw()= (q.qpr[0].raw() - r[0][0]*ppr[-2].raw() -r[0][1]*ppr[-1].raw())*(1./r[0][2]);
+            b[0][0]= b[-1][1]; b[0][1]= 0.;
+            GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
+        }
+        dxu.raw()= (norm_r0*b[0][0])*pu[0].raw();
+        dxpr.raw()= (norm_r0*b[0][0])*ppr[0].raw();
+        u.raw()+= dxu.raw();
+        pr.raw()+= dxpr.raw();
+//        err= dxu.norm2() + dxpr.norm2();
+
+        // This is for fair comparisons of different solvers:
+        err= (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2();
+        std::cerr << "PMINRES: residual: " << err << '\n';
+        if (err<=tol || lucky==true) {
+            tol= std::sqrt( err);
+            max_iter= k;
+            return true;
+        }
+        q.next();
+        if (q.breakdown()) {
+            lucky= true;
+            std::cerr << "MINRES: lucky breakdown\n";
+        }
+        c.rotate(); s.rotate(); r.rotate(); pu.rotate(); ppr.rotate(); b.rotate();
+    }
+    tol= std::sqrt( err);
+    return false;
+}
+
+
+// Preconditioned MINRES solver for the Stokes-equations.
+template <typename Lanczos>
+class PMResSPCL : public SolverBaseCL
+{
+  private:
+    Lanczos* q_;
+
+  public:
+    PMResSPCL(Lanczos& q, int maxiter, double tol)
+      :SolverBaseCL( maxiter,tol), q_( &q) {}
+
+    Lanczos*&       GetONB ()       { return q_; }
+    const Lanczos*& GetONB () const { return q_; }
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c)
+    {
+        q_->new_basis( A, B, b - (A*v + transp_mul( B, p)), c - B*v);
+        _res=  _tol;
+        _iter= _maxiter;
+        PMINRES_SP( A, B, v, p, b, c, *q_, _iter, _res);
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c, int& numIter, double& resid) const
+    {
+        q_->new_basis( A, B, b - (A*v + transp_mul( B, p)), c - B*v);
+        PMINRES_SP( A, B, v, p, b, c, *q_, numIter, resid);
+    }
+};
+
+
+// The identity-preconditioner for PMinres.
+// For testing. If you really want plain Minres, use
+// LanczosONB_SPCL instaed of PLanczosONB_SPCL<..., IdPreCL>;
+// it is about 4% faster.
+class IdPreCL
+{
+  private:
+
+  public:
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+        v= b; p= c;
+    }
+};
+
+
+class DiagPCGPreCL
+{
+  private:
+    mutable PCG_SsorCL PA_; // Preconditioner for A.
+    mutable PCG_SsorCL PS_; // Preconditioner for S.
+    const MatrixCL&   M_; // Preconditioner for S.
+
+  public:
+    DiagPCGPreCL( const MatrixCL& M)
+      :PA_( SSORPcCL(), 8, 1e-20), PS_( SSORPcCL(), 3, 1e-20), M_( M) {}
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+//        PA_.SetMaxIter( 500); PA_.SetTol( (b - A*v).norm()*1e-4);
+        PA_.Solve( A, v, b);
+//        std::cerr << PA_.GetIter() << '\t' << PA_.GetResid() << '\n';
+        PS_.Solve( M_, p, c);
+    }
+};
+
+
+class DiagMGPreCL
+{
+  private:
+    const MGDataCL& A_; // Preconditioner for A.
+    const MatrixCL& M_; // Preconditioner for S.
+    Uint iter_vel_;
+
+  public:
+    DiagMGPreCL(const MGDataCL& A, const MatrixCL& M, Uint iter_vel)
+      :A_( A), M_( M), iter_vel_( iter_vel) {}
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+//        PA_.SetMaxIter( 1); PA_.SetTol( (bb - K.A_*u).norm()*1e-4);
+        Uint   sm   =  2; // how many smoothing steps?
+        int    lvl  = -1; // how many levels? (-1=all)
+        double omega= 1.; // relaxation parameter for smoother
+        SORsmoothCL smoother( omega);  // Gauss-Seidel with over-relaxation
+        SSORPcCL P1;
+        PCG_SsorCL solver( P1, 200, 1e-12);
+        for (DROPS::Uint i=0; i<iter_vel_; ++i)
+            MGM( A_.begin(), --A_.end(), v, b, smoother, sm, solver, lvl, -1);
+        P1.Apply( M_, p, c);
+    }
+};
+
+
 //=============================================================================
 //  Derived classes for easier use
 //=============================================================================
@@ -233,6 +613,45 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
         {}
 };
 
+
+
+class MinresSPCL : public PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >
+{
+  private:
+    LanczosONB_SPCL<MatrixCL, VectorCL> q_;
+
+  public:
+    MinresSPCL(int maxiter, double tol)
+        :PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >( q_, maxiter, tol),
+         q_()
+    {}
+};
+
+class PMinresSP_DiagPCG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >
+{
+  private:
+    DiagPCGPreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> q_;
+
+  public:
+    PMinresSP_DiagPCG_CL(const MatrixCL& M, int maxiter, double tol)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >( q_, maxiter, tol),
+         pre_( M), q_( pre_)
+    {}
+};
+
+class PMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >
+{
+  private:
+    DiagMGPreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> q_;
+
+  public:
+    PMinresSP_DiagMG_CL(const MGDataCL& A, const MatrixCL& M, int iter_vel, int maxiter, double tol)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >( q_, maxiter, tol),
+         pre_( A, M, iter_vel), q_( pre_)
+    {}
+};
 
 //=============================================================================
 //  SchurComplMatrixCL

@@ -605,20 +605,23 @@ class LanczosONBCL
     double norm_r0_;
 
   public:
-    const Mat& A;
+    const Mat* A;
     SBufferCL<Vec, 3> q;
     double a0;
     SBufferCL<double, 2> b;
 
-    // Sets up initial values and computes q0.
-    LanczosONBCL(const Mat& A_, const Vec& r0)
-      :A( A_) {
+    LanczosONBCL()
+      :A( 0) {}
+
+    void // Sets up initial values and computes q0.
+    new_basis(const Mat& A_, const Vec& r0) {
+        A= &A_;
         q[-1].resize( r0.size(), 0.);
         norm_r0_= r0.norm();
         q[0].resize( r0.size(), 0.); q[0]= r0/norm_r0_;
         q[1].resize( r0.size(), 0.);
         b[-1]= 0.;
-        nobreakdown_= LanczosStep( A, q[-1], q[0], q[1], a0, b[-1], b[0]);
+        nobreakdown_= LanczosStep( *A, q[-1], q[0], q[1], a0, b[-1], b[0]);
     }
 
     double norm_r0() const {
@@ -631,7 +634,7 @@ class LanczosONBCL
     bool
     next() {
         q.rotate(); b.rotate();
-        return (nobreakdown_= LanczosStep( A, q[-1], q[0], q[1], a0, b[-1], b[0]));
+        return (nobreakdown_= LanczosStep( *A, q[-1], q[0], q[1], a0, b[-1], b[0]));
     }
 };
 
@@ -656,7 +659,7 @@ PLanczosStep(const Mat& A,
     t2.raw()-= a1*t1.raw();
     M.Apply( A, q2, t2);
     b1= std::sqrt( q2*t2);
-    if (b1 < 1e-15) return false;
+    if (fabs( b1) < 1e-15) return false;
     t2.raw()*= 1./b1;
     q2.raw()*= 1./b1;
     return true;
@@ -670,7 +673,7 @@ class PLanczosONBCL
     double norm_r0_;
 
   public:
-    const Mat& A;
+    const Mat* A;
     const PreCon& M;
     SBufferCL<Vec, 2> q;
     SBufferCL<Vec, 3> t;
@@ -678,16 +681,20 @@ class PLanczosONBCL
     SBufferCL<double, 2> b;
 
     // Sets up initial values and computes q0.
-    PLanczosONBCL(const Mat& A_, const PreCon& M_, const Vec& r0)
-      :A( A_), M( M_) {
+    PLanczosONBCL(const PreCon& M_)
+      :A( 0), M( M_) {}
+
+    void // Sets up initial values and computes q0.
+    new_basis(const Mat& A_, const Vec& r0) {
+        A= &A_;
         t[-1].resize( r0.size(), 0.);
-        q[-1].resize( r0.size(), 0.); M.Apply( A, q[-1], r0);
+        q[-1].resize( r0.size(), 0.); M.Apply( *A, q[-1], r0);
         norm_r0_= std::sqrt( q[-1]*r0);
         t[0].resize( r0.size(), 0.); t[0]= r0/norm_r0_;
         q[0].resize( r0.size(), 0.); q[0]= q[-1]/norm_r0_;
         t[1].resize( r0.size(), 0.);
         b[-1]= 0.;
-        nobreakdown_= PLanczosStep( A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]);
+        nobreakdown_= PLanczosStep( *A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]);
     }
 
     double norm_r0() const {
@@ -700,7 +707,7 @@ class PLanczosONBCL
     bool
     next() {
         q.rotate(); t.rotate(); b.rotate();
-        return (nobreakdown_= PLanczosStep( A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]));
+        return (nobreakdown_= PLanczosStep( *A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]));
     }
 };
 
@@ -720,17 +727,10 @@ template <typename Mat, typename Vec, typename Lanczos>
 bool
 PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol)
 {
-    Vec dx= rhs - A*x; // First, the residual, later used as vector for
-                       // updating x, thus the name.
-    const double resid0= dx.norm();
-    double err= resid0*resid0;
+    Vec dx( x.size());
+    double err;
 
     tol*= tol;
-//    if (err<=tol) {
-//        tol= sqrt( err);
-//        max_iter= 0;
-//        return true;
-//    }
     const double norm_r0= q.norm_r0();
     bool lucky= q.breakdown();
     SBufferCL<double, 3> c;
@@ -779,21 +779,22 @@ PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double&
             GMRES_ApplyPlaneRotation( b[0][0], b[0][1], c[0], s[0]);
         }
         dx.raw()= (norm_r0*b[0][0])*p[0].raw();
-//std::cout << "q.q[0] " << q.q[0] << " q.a0 " << q.a0 << " q.b[0] " << q.b[0] << " c " << c[0] << " s " << s[0] << " r " << r[0] << " p " << p[0] << " b " << b[0]
-//          << std::endl;
-//std::cout << "dx\n" << dx;
         x.raw()+= dx.raw();
-        err= dx.norm2();
-//        err= (rhs - A*x).norm2();
-        if (err<=tol || lucky==true) {
-            tol= sqrt( err);
+//        err= dx.norm2();
+
+        // This is for fair comparisons of different solvers:
+        // XXX: Devise a method for computing the residual-norm cheaply.
+        err= (rhs - A*x).norm2();
+//        std::cerr << "PMINRES: residual: " << err << '\n';
+        if (err<= tol || lucky==true) {
+            tol= std::sqrt( err);
             max_iter= k;
             return true;
         }
         q.next();
         if (q.breakdown()) {
             lucky= true;
-            Comment( "MINRES: lucky breakdown\n", ~0);
+            std::cerr << "PMINRES: lucky breakdown\n";
         }
         c.rotate(); s.rotate(); r.rotate(); p.rotate(); b.rotate();
     }
@@ -806,8 +807,8 @@ template <typename Mat, typename Vec>
 bool
 MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol)
 {
-    Vec dx= rhs - A*x;
-    LanczosONBCL<Mat, Vec> q( A, dx);
+    LanczosONBCL<Mat, Vec> q;
+    q.new_basis( A, rhs - A*x);
     return PMINRES( A,  x, rhs, q, max_iter, tol);
 }
 
@@ -931,6 +932,7 @@ class PMResSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
+        q_.new_basis( A, b - A*x);
         PMINRES( A, x, b, q_, _iter, _res);
     }
     template <typename Mat, typename Vec>
@@ -938,6 +940,7 @@ class PMResSolverCL : public SolverBaseCL
     {
         resid=   _tol;
         numIter= _maxiter;
+        q_.new_basis( A, b - A*x);
         PMINRES( A, x, b, q_, numIter, resid);
     }
 };
