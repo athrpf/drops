@@ -12,6 +12,7 @@
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 #include "misc/container.h"
+#include "num/fe.h"
 
 namespace DROPS
 {
@@ -62,6 +63,57 @@ inline double H_sm( double s, double eps)
     return 0.5 + 1.40625*s - 1.5625*s3 + 0.65625*s2*s3;
 }
 
+//**************************************************************************
+// Class:   LocalP2CL                                                      *
+// Template Parameter:                                                     *
+//          T - The result-type of the finite-element-function             *
+// Purpose: Evaluate a P2-function on a tetrahedron and calculate with such*
+//          functions. As LocalP2CL is derived from valarray, arithmetic   *
+//          operations are carried out efficiently.                        *
+//          The valarray holds the values in the 10 degrees of freedom,    *
+//          vertex_0,..., vertex_3, edge_0,..., edge5.                     *
+//**************************************************************************
+template<class T= double>
+class LocalP2CL: public std::valarray<T>
+{
+  public:
+    typedef T value_type;
+    typedef std::valarray<T> base_type;
+    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+
+  protected:
+    typedef LocalP2CL<T> self_;
+
+  public:
+    LocalP2CL() : base_type( value_type(), FE_P2CL::NumDoFC) {}
+    // Initialize from a given function
+    LocalP2CL(const TetraCL&, instat_fun_ptr , double= 0.0);
+    // Initialize from VecDescCL an boundary-data
+    template<class BndDataT, class VecDescT>
+      LocalP2CL(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
+    // Initialize from PiEvalCl
+    template <class P2FunT> 
+      LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
+
+    template <class X> // For valarray expression-templates
+      LocalP2CL(const X& x): base_type( x) {}
+
+DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
+
+    // These "assignment-operators" correspond to the constructors
+    // with multiple arguments
+    inline self_&
+    assign(const TetraCL&, instat_fun_ptr, double= 0.0);
+    template<class BndDataT, class VecDescT>
+      inline self_&
+      assign(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
+    template <class P2FunT> 
+      inline self_&
+      assign(const TetraCL&, const P2FunT&, double= 0.0);
+
+    // pointwise evaluation in barycentric coordinates    
+    inline value_type operator() (const BaryCoordCL&) const;
+};
 
 
 // ===================================
@@ -269,27 +321,6 @@ inline void FaceQuad2CL::Quad(IteratorT beg, ValueT*const ret)
     *ret= tmp + (*beg)*3./8.;
 }
 
-/*
-template <class Fun>
-struct FunTraitsCL
-{
-    typedef void argument_type;
-    typedef void return_type;
-};
-template <>
-struct FunTraitsCL<scalar_fun_ptr>
-{
-    typedef Point3DCL argument_type;
-    typedef double    return_type;
-};
-template <>
-struct FunTraitsCL<vector_fun_ptr>
-{
-    typedef Point3DCL    argument_type;
-    typedef SVectorCL<3> return_type;
-};
-*/
-
 
 //=========================================
 //    Finite Elements: P1, P1Bubble, P2
@@ -355,28 +386,6 @@ inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
     const double d2= p[0]*q[1] - p[1]*q[0];
     return sqrt(d0*d0 + d1*d1 + d2*d2);
 }
-
-/*
-template<class T=double>
-class P1ElemCL
-{
-  private:
-    valarray<T> val;
-    
-  public:
-    P1ElemCL()
-      : val(4) {}
-    
-    const T& operator[] (int i) const { return val[i]; }
-    
-    T eval( const BaryCoordCL& c) const
-    {
-        T sum= T();
-        for (int i=0; i<4; ++i) sum+= val[i]*c[i];
-        return sum;
-    }
-};
-*/
 
 
 /********************************************************************************
@@ -547,6 +556,9 @@ const BaryCoordCL Quad2CL<T>::Node[5]= {
 template<class T>
 const double Quad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15.};
 
+
 } // end of namespace DROPS
+
+#include "num/discretize.tpp"
 
 #endif

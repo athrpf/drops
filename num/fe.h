@@ -36,8 +36,7 @@ private:
 public:
     // default ctor, copy-ctor, assignment-op, dtor
 
-    static bool IsC0() { return true; }
-    static bool IsC1() { return false; }
+    static const Uint NumDoFC= 4;
 
     // restriction of the shape functions to reference edge
     static double H0(double v1) { return 1. -v1; }
@@ -86,8 +85,7 @@ class FE_P2CL
   public:
     // default ctor, copy-ctor, assignment-op, dtor
 
-    static bool IsC0() { return true; }
-    static bool IsC1() { return false; }
+    static const Uint NumDoFC= 10;
 
     // restriction of the shape functions to reference edge
     static double H0(double v1) { return 1. +v1*(2.*v1 -3.); }
@@ -116,17 +114,39 @@ class FE_P2CL
     static inline double H (Uint dof, double v1, double v2, double v3);
 
     // restriction of the shape functions to reference tetrahedron, barucentric coordinates
-    static double H0(const BaryCoordCL& p) { return p[0]*(2.*p[0] - 1.); }
-    static double H1(const BaryCoordCL& p) { return p[1]*(2.*p[1] - 1.); }
-    static double H2(const BaryCoordCL& p) { return p[2]*(2.*p[2] - 1.); }
-    static double H3(const BaryCoordCL& p) { return p[3]*(2.*p[3] - 1.); }
-    static double H4(const BaryCoordCL& p) { return 4.*p[0]*p[1]; }
-    static double H5(const BaryCoordCL& p) { return 4.*p[0]*p[2]; }
-    static double H6(const BaryCoordCL& p) { return 4.*p[1]*p[2]; }
-    static double H7(const BaryCoordCL& p) { return 4.*p[0]*p[3]; }
-    static double H8(const BaryCoordCL& p)    { return 4.*p[1]*p[3]; }
-    static double H9(const BaryCoordCL& p)    { return 4.*p[2]*p[3]; }
+    static inline double H0(const BaryCoordCL& p) { return p[0]*(2.*p[0] - 1.); }
+    static inline double H1(const BaryCoordCL& p) { return p[1]*(2.*p[1] - 1.); }
+    static inline double H2(const BaryCoordCL& p) { return p[2]*(2.*p[2] - 1.); }
+    static inline double H3(const BaryCoordCL& p) { return p[3]*(2.*p[3] - 1.); }
+    static inline double H4(const BaryCoordCL& p) { return 4.*p[0]*p[1]; }
+    static inline double H5(const BaryCoordCL& p) { return 4.*p[0]*p[2]; }
+    static inline double H6(const BaryCoordCL& p) { return 4.*p[1]*p[2]; }
+    static inline double H7(const BaryCoordCL& p) { return 4.*p[0]*p[3]; }
+    static inline double H8(const BaryCoordCL& p)    { return 4.*p[1]*p[3]; }
+    static inline double H9(const BaryCoordCL& p)    { return 4.*p[2]*p[3]; }
     static inline double H (Uint dof, const BaryCoordCL& p);
+
+  private:
+    // Return-type-helper for the evaluation-function val.
+    template<class Cont>
+      struct ValHelperCL
+    {
+        typedef typename Cont::value_type value_type;
+    };
+   template<class T>
+      struct ValHelperCL<T*>
+    {
+        typedef T value_type;
+    };
+
+  public:
+    template <class Cont>
+      static inline typename ValHelperCL<Cont>::value_type
+      val(const Cont& c, const BaryCoordCL& p) {
+          return c[0] * H0( p) + c[1] * H1( p) + c[2] * H2( p) + c[3] * H3( p)
+               + c[4] * H4( p) + c[5] * H5( p) + c[6] * H6( p) + c[7] * H7( p)
+               + c[8] * H8( p) + c[9] * H9( p);
+      }
 
     // gradients of the shape functions on the reference tetrahedron.
     // To obtain the gradient on tetra T: See comments in FE_P1CL.
@@ -171,8 +191,7 @@ private:
 public:
     // default ctor, copy-ctor, assignment-op, dtor
 
-    static bool IsC0() { return true; }
-    static bool IsC1() { return false; }
+    static const Uint NumDoFC= 5;
 
     // restriction of the shape functions to reference edge
     static double H0(double v1) { return 1. -v1; }
