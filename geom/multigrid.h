@@ -284,7 +284,7 @@ class FaceCL
     Uint          GetLevel     ()              const { return _Level; }
     bool          IsOnNextLevel()              const { return _Neighbors[2] || _Neighbors[3]; }
     bool          IsOnBoundary ()              const { return _Bnd != NoBndC; }
-    const BndIdxT GetBndIdx    ()              const { return _Bnd; }
+    BndIdxT       GetBndIdx    ()              const { return _Bnd; }
     inline bool   IsRefined    ()              const;
     bool          IsInTriang   (Uint TriLevel) const
         { return _Level==TriLevel || (_Level < TriLevel && !IsRefined() ); }
@@ -431,7 +431,7 @@ friend class MultiGridCL;
 
     bool           IsBndSeg        (Uint face) const { return _Faces[face]->IsOnBoundary(); }
     bool           IsNeighbor      (Uint face) const { return _Faces[face]->HasNeighborTetra(this); }
-    const BndIdxT  GetBndIdx       (Uint face) const { return _Faces[face]->GetBndIdx(); }
+    BndIdxT        GetBndIdx       (Uint face) const { return _Faces[face]->GetBndIdx(); }
     const TetraCL* GetNeighbor     (Uint face) const { return _Faces[face]->GetNeighborTetra(this); }
     const TetraCL* GetNeighInTriang(Uint face, Uint trilevel) const
                                                 { return _Faces[face]->GetNeighInTriang( this, trilevel); }
