@@ -89,7 +89,7 @@ void EnsightP2SolOutCL::DescribeScalar( const char varName[], std::string fileNa
         _case << '1';
         fileName+= std::string( _decDigits, '*');
     }
-    _case << '\t' << varName << '\t' << fileName << '\n';
+    _case << '\t' << varName << '\t' << fileName << std::endl;
 }
 
 void EnsightP2SolOutCL::DescribeVector( const char varName[], std::string fileName, bool timedep)
@@ -100,17 +100,17 @@ void EnsightP2SolOutCL::DescribeVector( const char varName[], std::string fileNa
         _case << '1';
         fileName+= std::string( _decDigits, '*');
     }
-    _case << '\t' << varName << '\t' << fileName << '\n';
+    _case << '\t' << varName << '\t' << fileName << std::endl;
 }
 
 void EnsightP2SolOutCL::CaseEnd()
 {
-    if (_timestr.str().empty()) return;
-    
-    _case << "\nTIME\ntime set:\t\t1\nnumber of steps:\t" << _timestep+1
-          << "\nfilename start number:\t0\nfilename increment:\t1\ntime values:\t\t";
-    _case << _timestr.str() << "\n\n";
-
+    if (!_timestr.str().empty()) 
+    {
+        _case << "\nTIME\ntime set:\t\t1\nnumber of steps:\t" << _timestep+1
+              << "\nfilename start number:\t0\nfilename increment:\t1\ntime values:\t\t";
+        _case << _timestr.str() << "\n\n";
+    }
     _case.close();
 }
 
