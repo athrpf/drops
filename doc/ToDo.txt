@@ -1,0 +1,13 @@
+==============
+  ToDo-Liste
+==============
+
+* Es sollte eine Art "Testsuite" fuer DROPS geben, mit der die Funktionalitaet
+  nach Codeaenderungen getestet werden kann (z.B. Poissonproblem, Stokes,
+  Navier-Stokes, jeweils stationaer/instationaer). Dass sich alles fehlerfrei
+  uebersetzen laesst, heisst ja noch lange nicht, dass sich keine semantischen
+  Fehler eingeschlichen haben... Der Test sollte mit dem Top-level-Makefile
+  gestartet werden koennen, um das Ueberpruefen einfach durchfuehren zu
+  koennen, z.B. mit "make check".
+
+sg, 4. Maerz 2003

@@ -1,0 +1,8 @@
+#####################################
+#   DROPS   dependency file         #
+#####################################
+
+# special rules:
+../geom/topo.o:
+	cd $(DROPS_ROOT)/geom; make topo.o
+

@@ -1,0 +1,16 @@
+===========
+  History
+===========
+
+merge von lx-22/recent/drops/src 
+      und lx-22/recent/drops2002Jan8.tgz:
+ * keine grossen Unterschiede:
+    - multigrid.h/cpp: (recent) Face-Bug im Verfeinerungsalg. gefixt,
+        ausserdem einige zusaetzliche Funktionen gegenueber (2002Jan8).
+    - einige zusaetzliche typenames in (recent), um 
+      Compilerwarnungen "implicit typename is deprecated" gerecht zu werden.
+ * integrTime.h aufgeteilt in stokes und navstokes
+ * Einfuehren der Verzeichnisstruktur + Makefiles.
+ * kleinere Anpassungen im Code, damit sich alles uebersetzen laesst.
+--> Ausgangsversion fuer CVS
+sg, 20. Feb 2003

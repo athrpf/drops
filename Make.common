@@ -1,0 +1,34 @@
+#########################################################
+#   c o m m o n   r u l e s   for all local makefiles   #
+#########################################################
+
+all: $(EXEC)
+	@echo "--> Made all executables in $(DIR)!"
+
+clean:
+	rm -f *.o $(DELETE)
+
+distclean: clean
+	rm -f $(DISTDELETE)
+
+# .cpp -> .o
+../%.o: ../%.cpp
+	$(CC) $(CFLAGS) -o ../$*.o -c ../$*.cpp
+        
+# override implicit c++ rule
+%.o: %.cpp
+
+# local objectfiles get auto-praefix:
+$(OBJ): %.o: ../$(DIR)/%.o
+
+.PHONY: clean distclean all default
+
+
+DROPS_ROOT = ..
+
+# include settings from the config file drops.conf:
+include ../drops.conf
+
+# include global dependencies
+-include ../$(DEPFILE)
+
