@@ -112,7 +112,7 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     using _base::_MG;
     using _base::_Coeff;
     
-    typedef InstatP1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
+    typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
     
     double     	t;        // time

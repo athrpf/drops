@@ -61,12 +61,12 @@ class PoissonBndDataCL
     inline bool IsOnDirBnd(const FaceCL&) const;
     inline bool IsOnNeuBnd(const FaceCL&) const;
     
-    inline bnd_type GetDirBndValue(const VertexCL&) const;
-    inline bnd_type GetDirBndValue(const EdgeCL&) const;
-    inline bnd_type GetDirBndValue(const FaceCL&) const;
-    inline bnd_type GetNeuBndValue(const VertexCL&) const;
-    inline bnd_type GetNeuBndValue(const EdgeCL&) const;
-    inline bnd_type GetNeuBndValue(const FaceCL&) const;
+    inline bnd_type GetDirBndValue(const VertexCL&, double= 0.0) const;
+    inline bnd_type GetDirBndValue(const EdgeCL&, double= 0.0) const;
+    inline bnd_type GetDirBndValue(const FaceCL&, double= 0.0) const;
+    inline bnd_type GetNeuBndValue(const VertexCL&, double= 0.0) const;
+    inline bnd_type GetNeuBndValue(const EdgeCL&, double= 0.0) const;
+    inline bnd_type GetNeuBndValue(const FaceCL&, double= 0.0) const;
 
     bnd_val_fun GetBndFun(BndIdxT i) const { return _BndData[i].GetBndFun(); }
     const BndSegDataCL& GetSegData(BndIdxT i) const { return _BndData[i]; }
@@ -314,7 +314,7 @@ inline bool PoissonBndDataCL::IsOnNeuBnd(const FaceCL& f) const
 }        
 
 
-inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const VertexCL& v) const
+inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const VertexCL& v, double) const
 // Returns value of the Dirichlet boundary value. 
 // Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
@@ -325,7 +325,7 @@ inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const VertexC
 }
 
 
-inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const VertexCL& v) const
+inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const VertexCL& v, double) const
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
@@ -335,7 +335,7 @@ inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const VertexC
     throw DROPSErrCL("GetNeuBndValue(VertexCL): No Neumann Boundary Segment!");
 }
 
-inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const EdgeCL& e) const
+inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const EdgeCL& e, double) const
 {
 //    std::cout << " GetDirBndValue --->>> " << std::endl;
     for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
@@ -364,7 +364,7 @@ inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetDirBndValue(const EdgeCL&
 }
 
 
-inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const EdgeCL& e) const
+inline PoissonBndDataCL::bnd_type PoissonBndDataCL::GetNeuBndValue(const EdgeCL& e, double) const
 // Returns value of the Neumann boundary value. 
 // Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
