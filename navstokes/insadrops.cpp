@@ -355,11 +355,7 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
                         const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
-// XXX What's the difference?
-//        NS.DeleteNumberingVel( vidx2);
-        DeleteNumbOnSimplex( vidx2->GetIdx(), mg.GetAllVertexBegin(), mg.GetAllVertexEnd() );
-        DeleteNumbOnSimplex( vidx2->GetIdx(), mg.GetAllEdgeBegin(), mg.GetAllEdgeEnd() );
-        vidx2->NumUnknowns= 0;
+        NS.DeleteNumberingVel( vidx2);
 //InstatP2EvalCL< SVectorCL<3>, const InstatStokesVelBndDataCL, 
 //                VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
 //CheckVel( funv1, &MyPdeCL::LsgVel);

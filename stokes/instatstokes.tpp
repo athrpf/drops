@@ -62,8 +62,8 @@ void InstatStokesP2P1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
     idx->NumUnknowns = 0;
 
     // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level) );
+    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
+    DeleteNumbOnSimplex( idxnum, _MG.GetAllEdgeBegin(level), _MG.GetAllEdgeEnd(level) );
 }
 
 template <class Coeff>
@@ -74,7 +74,7 @@ void InstatStokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
     idx->NumUnknowns = 0;
 
     // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
+    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
 }
 
 
