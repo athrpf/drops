@@ -6,7 +6,7 @@
 
 DIR = stokes
 
-EXEC = sdrops sdropsP2 FSdrops drcavad drivcav MGsdropsP2 isdrops
+EXEC = sdrops sdropsP2 FSdrops drcavad drivcav MGsdropsP2 isdrops stsdrops
 
 DELETE = $(EXEC)
 
@@ -60,6 +60,13 @@ FSdrops: \
 
 isdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o \
+    ../out/output.o ../num/discretize.o ../num/MGsolver.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+stsdrops: \
+    ../geom/boundary.o ../geom/builder.o ../stokes/stsdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
