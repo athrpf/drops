@@ -59,6 +59,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     
     // Set up matrices A, M and rhs b (depending on phase bnd)
     void SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
+    // Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
+    void SetupMatrices1( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;
 
     // Set up matrix B and rhs c (independent of phase bnd, but c is time dependent)
     void SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const;
