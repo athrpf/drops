@@ -15,6 +15,7 @@ CPP = $(wildcard *.cpp)
 OBJ = $(CPP:%.cpp=%.o)
 
 TESTNAME = drivencavity-adaptiv-schur drivencavity-adaptiv-uzawa \
+    navierstokes-stationaer-uniform \
     poisson-instationaer-uniform poisson-stationaer-adaptiv \
     poisson-stationaer-multigrid poisson-stationaer-neumann \
     poisson-stationaer-uniform stokes-instationaer-uniform \

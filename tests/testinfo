@@ -39,6 +39,13 @@ case $testname in
     makedir=stokes
     maketarget=drcavad
     ;;
+  "navierstokes-stationaer-uniform")
+    arguments="1e-6 1e-8 10 100 10. 3"
+    command=navstokes/nsdrops
+    input=""
+    makedir=navstokes
+    maketarget=nsdrops
+    ;;
   "poisson-instationaer-uniform")
     arguments=""
     command=poisson/ipdropsrep

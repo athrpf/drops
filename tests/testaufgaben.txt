@@ -1,3 +1,11 @@
+Hinweis
+=======
+Die Ergebnisse haengen sowohl vom verwendeten Compiler als auch von dessen
+Optimierungseinstellungen ab (z. B. AAnzahl der Nicht-Null-Eintraege bestimmter
+Matrizen). Die Referenzergebnisse in den .ref-Dateien werden mit gcc 3.2.3 -W
+-Wall -pedantic -O2 -funroll-loops -march=athlon -fomit-frame-pointer
+-finline-limit=2000 gewonnen.
+
 Poisson stationaer
 ==================
 
@@ -34,3 +42,8 @@ Stokes instationaer
 ===================
 --FSdrops 1 1e-7 2 mit dt=0.005, method 2, theta 1, tol 1e-5
   erzeugt die Ausgabe in stokes-instationaer-uniform.ref.
+
+Navier-Stokes stationaer
+========================
+--nsdrops 1e-6 1e-8 10 100 10. 3
+  erzeugt die Ausgabe in der Datei navierstokes-stationaer-uniform.ref.

@@ -261,7 +261,7 @@ class PreGSCL<PM,true>
 
   public:
     PreGSCL (double om= 1.0) : _diag(0), _omega(om) {}
-    PreGSCL (const PreGSCL& p) : _diag(new SparseMatDiagCL(*(p._diag))), _omega(p._omega) {}
+    PreGSCL (const PreGSCL& p) : _diag(p._diag ? new SparseMatDiagCL(*(p._diag)) : 0), _omega(p._omega) {}
     ~PreGSCL() { delete _diag; }
 
     void Init(const MatrixCL& A)
