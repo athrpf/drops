@@ -6,8 +6,8 @@
 // History: begin - Nov, 22 2001                                           *
 //**************************************************************************
 
-#ifndef _INSTATNAVSTOKES_H_
-#define _INSTATNAVSTOKES_H_
+#ifndef DROPS_INSTATNAVSTOKES_H
+#define DROPS_INSTATNAVSTOKES_H
 
 #include "stokes/instatstokes.h"
 

@@ -6,8 +6,8 @@
 // History: begin - March, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _POISSON_H_
-#define _POISSON_H_
+#ifndef DROPS_POISSON_H
+#define DROPS_POISSON_H
 
 #include "misc/problem.h"
 #include "num/fe.h"

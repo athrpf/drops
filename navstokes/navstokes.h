@@ -6,8 +6,8 @@
 // History: begin - April, 30 2001                                         *
 //**************************************************************************
 
-#ifndef _NAVSTOKES_H_
-#define _NAVSTOKES_H_
+#ifndef DROPS_NAVSTOKES_H
+#define DROPS_NAVSTOKES_H
 
 #include "stokes/stokes.h"
 

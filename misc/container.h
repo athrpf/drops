@@ -11,8 +11,8 @@
 //**************************************************************************
 
 
-#ifndef _CONTAINER_H_  // container.h should not be read twice
-#define _CONTAINER_H_
+#ifndef DROPS_CONTAINER_H
+#define DROPS_CONTAINER_H
 
 #include <vector>
 #include <list>

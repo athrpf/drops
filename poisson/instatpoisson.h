@@ -7,8 +7,8 @@
 // History: begin - November, 11 2002                                      *
 //**************************************************************************
 
-#ifndef _INSTAT_POISSON_H_
-#define _INSTAT_POISSON_H_
+#ifndef DROPS_INSTATPOISSON_H
+#define DROPS_INSTATPOISSON_H
 
 #include <vector>
 #include "misc/problem.h"

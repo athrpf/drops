@@ -7,8 +7,8 @@
 // History: begin - Nov, 26 2002                                           *
 //**************************************************************************
 
-#ifndef _INTEGRTIME_H_
-#define _INTEGRTIME_H_
+#ifndef DROPS_POI_INTEGRTIME_H
+#define DROPS_POI_INTEGRTIME_H
 
 // TODO: FracStepScheme fuer instat. Poisson
 

@@ -8,8 +8,8 @@
 // Remarks:                                                                *
 //**************************************************************************
 
-#ifndef _UTILS_H_
-#define _UTILS_H_
+#ifndef DROPS_UTILS_H
+#define DROPS_UTILS_H
 
 
 // #include <limits> // TODO: Do we have limits with gcc-snapshots or SGI-CC?

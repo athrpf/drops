@@ -6,8 +6,8 @@
 // History: begin - Nov, 26 2001                                           *
 //**************************************************************************
 
-#ifndef _OUTPUT_H_
-#define _OUTPUT_H_
+#ifndef DROPS_OUTPUT_H
+#define DROPS_OUTPUT_H
 
 #include "geom/multigrid.h"
 #include "misc/problem.h"

@@ -13,8 +13,8 @@
 //**************************************************************************
 
 
-#ifndef _BUILDER_H_
-#define _BUILDER_H_
+#ifndef DROPS_BUILDER_H
+#define DROPS_BUILDER_H
 
 
 #include "geom/multigrid.h"

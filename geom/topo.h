@@ -8,8 +8,8 @@
 // Remarks:                                                                *
 //**************************************************************************
 
-#ifndef _TOPO_H_
-#define _TOPO_H_
+#ifndef DROPS_TOPO_H
+#define DROPS_TOPO_H
 
 #include "misc/utils.h"
 

@@ -6,8 +6,8 @@
 // History: begin - April, 16 2001                                         *
 //**************************************************************************
 
-#ifndef _MGSOLVER_H_
-#define _MGSOLVER_H_
+#ifndef DROPS_MGSOLVER_H
+#define DROPS_MGSOLVER_H
 
 #include "misc/problem.h"
 #include <list>

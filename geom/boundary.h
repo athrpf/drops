@@ -8,8 +8,8 @@
 // Remarks:                                                                *
 //**************************************************************************
 
-#ifndef _BOUNDARY_H_
-#define _BOUNDARY_H_
+#ifndef DROPS_BOUNDARY_H
+#define DROPS_BOUNDARY_H
 
 
 #include "misc/container.h"

@@ -8,8 +8,8 @@
 //**************************************************************************
 
 
-#ifndef _UNKNOWNIDX_H_
-#define _UNKNOWNIDX_H_
+#ifndef DROPS_UNKNOWNS_H
+#define DROPS_UNKNOWNS_H
 
 #include "misc/utils.h"
 #include <vector>

@@ -6,8 +6,8 @@
 // History: begin - Nov, 20 2001                                           *
 //**************************************************************************
 
-#ifndef _STOKESSOLVER_H_
-#define _STOKESSOLVER_H_
+#ifndef DROPS_STOKESSOLVER_H
+#define DROPS_STOKESSOLVER_H
 
 #include "num/solver.h"
 

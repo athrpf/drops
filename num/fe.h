@@ -7,8 +7,8 @@
 //**************************************************************************
 // TODO: Faces for P1/2EvalCL!!!
 
-#ifndef _FE_H_
-#define _FE_H_
+#ifndef DROPS_FE_H
+#define DROPS_FE_H
 
 
 #include "misc/container.h"

@@ -13,8 +13,8 @@
 //       extensively to avoid accidental changes of the multigrid structure.
 // TODO: Parallelization
 
-#ifndef _MULTIGRID_H_
-#define _MULTIGRID_H_
+#ifndef DROPS_MULTIGRID_H
+#define DROPS_MULTIGRID_H
 
 #include <list>
 #include <vector>

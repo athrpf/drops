@@ -6,8 +6,8 @@
 // History: begin - Sep, 13 2001                                           *
 //**************************************************************************
 
-#ifndef _INSTAT_STOKES_H_
-#define _INSTAT_STOKES_H_
+#ifndef DROPS_INSTATSTOKES_H
+#define DROPS_INSTATSTOKES_H
 
 #include <vector>
 #include "misc/problem.h"

@@ -6,8 +6,8 @@
 // History: begin - Juli, 10 2001                                          *
 //**************************************************************************
 
-#ifndef _DISCRETIZE_H_
-#define _DISCRETIZE_H_
+#ifndef DROPS_DISCRETIZE_H
+#define DROPS_DISCRETIZE_H
 
 #include "geom/multigrid.h"
 #include "misc/problem.h"

@@ -8,8 +8,8 @@
 
 #include "num/stokessolver.h"
 
-#ifndef _NSSOLVER_H_
-#define _NSSOLVER_H_
+#ifndef DROPS_NSSOLVER_H
+#define DROPS_NSSOLVER_H
 
 namespace DROPS
 {

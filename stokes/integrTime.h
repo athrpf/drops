@@ -6,8 +6,8 @@
 // History: begin - Nov, 19 2001                                           *
 //**************************************************************************
 
-#ifndef _INTEGRTIME_H_
-#define _INTEGRTIME_H_
+#ifndef DROPS_STO_INTEGRTIME_H
+#define DROPS_STO_INTEGRTIME_H
 
 namespace DROPS
 {

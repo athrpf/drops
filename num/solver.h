@@ -5,8 +5,8 @@
 //**************************************************************************
 
 
-#ifndef _SOLVER_H_
-#define _SOLVER_H_
+#ifndef DROPS_SOLVER_H
+#define DROPS_SOLVER_H
 
 #include "spmat.h"
 
