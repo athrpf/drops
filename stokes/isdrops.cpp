@@ -333,7 +333,7 @@ SetupPoissonPressureMG(DROPS::InstatStokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL
     std::cerr << "Check MG-Data..." << std::endl;
     std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
     std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
-    CheckMGData( MGData.begin(), MGData.end());
+    DROPS::CheckMGData( MGData.begin(), MGData.end());
 }
 
 
@@ -362,7 +362,7 @@ SetupPressureMassMG(DROPS::InstatStokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& M
     std::cerr << "Check MG-Data..." << std::endl;
     std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
     std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
-    CheckMGData( MGData.begin(), MGData.end());
+    DROPS::CheckMGData( MGData.begin(), MGData.end());
 }
 
 
