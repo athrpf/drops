@@ -122,6 +122,7 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     VecDescCL b;
     MatDescCL A;
     MatDescCL M;
+    MatDescCL U;
 	
     
     InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
@@ -133,6 +134,8 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 		
     // set up matrices (which are time independent expressions)
     void SetupInstatSystem( MatDescCL& A, MatDescCL& M) const;
+    // set up matrix and couplings with bnd unknowns for convection term
+    void SetupConvection( MatDescCL& U, VecDescCL& vU, double t) const;
 		
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
     // If the function is called with the same vector for some arguments, 

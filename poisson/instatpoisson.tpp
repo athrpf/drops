@@ -80,17 +80,17 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   vA.Clear();
   vM.Clear();
   vf.Clear();
-    
+
   const Uint lvl = vA.RowIdx->TriangLevel,
              idx = vA.RowIdx->GetIdx();
-  SMatrixCL<3,4> G;
+  Point3DCL G[4];
 
   double coup[4][4];
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-	
-	StripTimeCL strip( &_Coeff.f, tf);
+
+  StripTimeCL strip( &_Coeff.f, tf);
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -105,27 +105,31 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
       for(int j=0; j<=i; ++j)
       {
         // dot-product of the gradients
-        coup[i][j]= ( G(0,i)*G(0,j)+G(1,i)*G(1,j)+G(2,i)*G(2,j) )/6.0*absdet;
+        coup[i][j]= inner_prod( G[i], G[j])/6.0*absdet;
         // coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) 
-                                                             : -1ul;
+                                                             : NoIdx;
     }
-    for(int i=0; i<4; ++i)    // assemble row i
-      if (sit->GetVertex(i)->Unknowns.Exist())  // vertex i is not on a Dirichlet boundary
-      {
-        for(int j=0; j<4;++j)
+    
+    for(int j=0; j<4; ++j)
+      if (!sit->GetVertex(j)->Unknowns.Exist())  // vertex j is on a Dirichlet boundary
+      { // coupling with vertex j on right-hand-side
+        const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), tA);
+        for(int i=0; i<4;++i)    // assemble row i
         {
-          if (!sit->GetVertex(j)->Unknowns.Exist()) // vertex j is on a Dirichlet boundary
+          if (sit->GetVertex(i)->Unknowns.Exist()) // vertex i is not on a Dirichlet boundary
           { 
-						// coupling with vertex j on right-hand-side
-            vA.Data[UnknownIdx[i]]-= coup[j][i] * _BndData.GetDirBndValue(*sit->GetVertex(j), tA);
-            vM.Data[UnknownIdx[i]]-= (i==j ? 1./60. : 1./120.)*absdet 
-                                     * _BndData.GetDirBndValue(*sit->GetVertex(j), tA);
+            vA.Data[UnknownIdx[i]]-= coup[j][i] * bndval;
+            vM.Data[UnknownIdx[i]]-= (i==j ? 1./60. : 1./120.)*absdet * bndval;
           }
         }
-        
+      }
+
+    for(int i=0; i<4;++i)    // assemble row i
+      if (sit->GetVertex(i)->Unknowns.Exist()) // vertex i is not on a Dirichlet boundary
+      { 
         vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
         if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
@@ -139,7 +143,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
 
 template<class Coeff>
 void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mmat) const
-// Sets up the stiffness matrix
+// Sets up the stiffness matrix and the mass matrix
 {
   MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
 	MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
@@ -147,7 +151,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   const Uint lvl = Amat.RowIdx->TriangLevel;
   const Uint idx = Amat.RowIdx->GetIdx();
 
-  SMatrixCL<3,4> G;
+  Point3DCL G[4];
     
   double coup[4][4];
   double det;
@@ -167,11 +171,11 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
       for(int j=0; j<=i; ++j)
       {
         // dot-product of the gradients
-        coup[i][j]= ( G(0,i)*G(0,j)+G(1,i)*G(1,j)+G(2,i)*G(2,j) )/6.0*absdet;
+        coup[i][j]= inner_prod( G[i], G[j])/6.0*absdet;
         // coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) : -1ul;
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
     }
 		  
     for(int i=0; i<4; ++i)    // assemble row i
@@ -190,6 +194,60 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   }
   A.Build();
   M.Build();
+}
+
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, double t) const
+// Sets up matrix and couplings with bnd unknowns for convection term
+{
+  vU.Clear();
+  MatrixBuilderCL U( &Umat.Data, Umat.RowIdx->NumUnknowns, Umat.ColIdx->NumUnknowns);
+	 
+  const Uint lvl = Umat.RowIdx->TriangLevel;
+  const Uint idx = Umat.RowIdx->GetIdx();
+
+  Point3DCL G[4];
+    
+  double det;
+  double absdet;
+  IdxT UnknownIdx[4];
+  Quad2CL<Point3DCL> u;
+	 
+  for (MultiGridCL::const_TriangTetraIteratorCL
+    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), 
+    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    sit != send; ++sit)
+  {
+    P1DiscCL::GetGradients(G,det,*sit);
+    absdet= fabs(det);
+    
+    for(int i=0; i<4; ++i)
+    {
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist() ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
+      u.val[i]= _Coeff.Vel( sit->GetVertex(i)->GetCoord(), t);
+    }
+    u.val[4]= _Coeff.Vel( GetBaryCenter( *sit), t);
+
+    for(int j=0; j<4;++j)
+    {
+      const Quad2CL<> u_Gradj= dot( u, Quad2CL<Point3DCL>( G[j]));
+
+      if (sit->GetVertex(j)->Unknowns.Exist()) // vertex j is not on a Dirichlet boundary
+      {
+        for(int i=0; i<4; ++i)    // assemble row i
+          if (sit->GetVertex(i)->Unknowns.Exist())  // vertex i is not on a Dirichlet boundary
+            U( UnknownIdx[i], UnknownIdx[j])+= u_Gradj.quadP1( i, absdet); 
+      }
+      else // coupling with vertex j on right-hand-side
+      {
+        const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+        for(int i=0; i<4; ++i)    // assemble row i
+          if (sit->GetVertex(i)->Unknowns.Exist())  // vertex i is not on a Dirichlet boundary
+            vU.Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval; 
+      }
+    }
+  }
+  U.Build();
 }
 
 
