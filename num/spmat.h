@@ -18,7 +18,84 @@ namespace DROPS
 {
 
 template <class T>
-class SparseMatBuilderCL;
+class SparseMatBaseCL;
+
+/**************************************************************************
+*
+*  S p a r s e M a t B u i l d e r C L :  used for setting up sparse matrices
+*
+**************************************************************************/
+
+template <class T>
+class SparseMatBuilderCL
+{
+public:
+    typedef T                       valueT;
+    typedef size_t                  subsT;            // type of subscripts
+    typedef SparseMatBaseCL<T>      spmatT;
+    typedef std::pair<subsT,valueT> entryT;
+    typedef std::map<subsT,valueT>  couplT;
+
+private:
+    Uint    _rows;
+    Uint    _cols;
+    spmatT* _mat;
+    couplT* _coupl;
+    
+public:
+    SparseMatBuilderCL(spmatT* mat, subsT rows, subsT cols)
+        : _rows(rows), _cols(cols), _mat(mat), _coupl(new couplT[_rows])
+        { 
+            Assert( _coupl!=0, DROPSErrCL("SparseMatBuilderCL: not enough memory!"), -1); 
+        }
+    ~SparseMatBuilderCL() { delete[] _coupl; }
+
+    inline T&   operator() (subsT i, subsT j);
+    void Build();
+};
+
+template<class T>
+T& SparseMatBuilderCL<T>::operator() (subsT i, subsT j)
+{
+    Assert(i<_rows && j<_cols, DROPSErrCL("SparseMatBuilderCL operator(): index out of bounds"), DebugNumericC);
+    return _coupl[i][j];
+}
+
+template<class T>
+void SparseMatBuilderCL<T>::Build()
+{
+    Uint nz= 0;
+    for (Uint i= 0; i<_rows; ++i)
+        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end();
+             it != end; ++it)
+            if(it->second!=0) //nz+= _coupl[i].size();
+                ++nz;
+                    
+    _mat->resize(_rows, _cols, nz);
+
+    nz= 0;
+    for (Uint i=0; i<_rows; ++i)
+    {
+        _mat->_rowbeg[i]= nz;
+        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end();
+             it != end; ++it)
+            if (it->second != 0)
+            {
+                _mat->_colind[nz]= it->first;
+                _mat->_val[nz]=    it->second;
+                ++nz;
+            }
+        // the col_ind-entries in each row are sorted, as they were stored sorted in the map
+   }
+   _mat->_rowbeg[_rows]= nz;
+
+   Assert( nz == _mat->num_nonzeros(), 
+           DROPSErrCL("SparseMatBuilderCL: wrong counting of nonzeros in Build()"), -1);
+              
+   delete[] _coupl;
+   _coupl= 0;
+}
+
 
 /**************************************************************************
 *
@@ -56,7 +133,7 @@ public:
     SparseMatBaseCL (subs_type rows, subs_type cols, subs_type nz)
         : _rows(rows), _cols(cols), _rowbeg(rows+1), _colind(nz), _val(nz) {}
     SparseMatBaseCL (subs_type rows, subs_type cols, subs_type nz,
-                 const T* valbeg , const subs_type* rowbegbeg, const subs_type* colindbeg)
+                 const T* valbeg , const subs_type* rowbeg, const subs_type* colindbeg)
         : _rows(rows), _cols(cols), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
 
     subs_type num_rows     () const { return _rows; }
@@ -196,83 +273,6 @@ void in( std::istream &is, SparseMatBaseCL<T> &A)
    for(subs_t row=0; row<=numrows; ++row) is >> A.row_beg(row);
    for(subs_t nz=0; nz<numnz; ++nz) is >> A.col_ind(nz);
    for(subs_t nz=0; nz<numnz; ++nz) is >> A.val(nz);
-}
-
-
-/**************************************************************************
-*
-*  S p a r s e M a t B u i l d e r C L :  used for setting up sparse matrices
-*
-**************************************************************************/
-
-template <class T>
-class SparseMatBuilderCL
-{
-public:
-    typedef T                       valueT;
-    typedef size_t                  subsT;            // type of subscripts
-    typedef SparseMatBaseCL<T>      spmatT;
-    typedef std::pair<subsT,valueT> entryT;
-    typedef std::map<subsT,valueT>  couplT;
-
-private:
-    Uint    _rows;
-    Uint    _cols;
-    spmatT* _mat;
-    couplT* _coupl;
-    
-public:
-    SparseMatBuilderCL(spmatT* mat, subsT rows, subsT cols)
-        : _rows(rows), _cols(cols), _mat(mat), _coupl(new couplT[_rows])
-        { 
-            Assert( _coupl!=0, DROPSErrCL("SparseMatBuilderCL: not enough memory!"), -1); 
-        }
-    ~SparseMatBuilderCL() { delete[] _coupl; }
-
-    inline T&   operator() (subsT i, subsT j);
-    void Build();
-};
-
-template<class T>
-T& SparseMatBuilderCL<T>::operator() (subsT i, subsT j)
-{
-    Assert(i<_rows && j<_cols, DROPSErrCL("SparseMatBuilderCL operator(): index out of bounds"), DebugNumericC);
-    return _coupl[i][j];
-}
-
-template<class T>
-void SparseMatBuilderCL<T>::Build()
-{
-    Uint nz= 0;
-    for (Uint i= 0; i<_rows; ++i)
-        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end();
-             it != end; ++it)
-            if(it->second!=0) //nz+= _coupl[i].size();
-                ++nz;
-                    
-    _mat->resize(_rows, _cols, nz);
-
-    nz= 0;
-    for (Uint i=0; i<_rows; ++i)
-    {
-        _mat->_rowbeg[i]= nz;
-        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end();
-             it != end; ++it)
-            if (it->second != 0)
-            {
-                _mat->_colind[nz]= it->first;
-                _mat->_val[nz]=    it->second;
-                ++nz;
-            }
-        // the col_ind-entries in each row are sorted, as they were stored sorted in the map
-   }
-   _mat->_rowbeg[_rows]= nz;
-
-   Assert( nz == _mat->num_nonzeros(), 
-           DROPSErrCL("SparseMatBuilderCL: wrong counting of nonzeros in Build()"), -1);
-              
-   delete[] _coupl;
-   _coupl= 0;
 }
 
 
