@@ -152,7 +152,7 @@ public:
     Ulint GetCounter () const { return _Counter; }
     Ulint GetIdent   () const { return _Identity; }
 
-    static void ResetCounter() { _Counter= 0; }
+    static void ResetCounter(Ulint i= 0) { _Counter= i; }
 
     bool operator == (const IdCL<type>& Id) const
         { return Id._Identity == _Identity; }
