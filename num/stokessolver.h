@@ -1144,16 +1144,6 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
 }
 
 
-void
-InexactUzawa_CL::Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
-    const VectorCL& b, const VectorCL& c)
-{
-    _res=  _tol;
-    _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
-}
-
-
 } // end of namespace DROPS
 
 #endif
