@@ -481,11 +481,15 @@ public:
 template<class DataT, class BndDataT, class VecDescT>
 class P1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
 {
-  // without using-instruction helper-function will shadow other 
-  // GetDoF member-functions
-  using P1EvalBaseCL<DataT, BndDataT, VecDescT>::GetDoF;
-  
   private:
+    typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+
+    // without using-instruction helper-function will shadow other 
+    // GetDoF member-functions
+    using _base::GetDoF;
+    using _base::_sol;
+    using _base::_bnd;
+  
     typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
     
     inline DataT // helper-function to evaluate on a vertex; use val() instead
@@ -495,7 +499,7 @@ class P1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
                                    : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
     }
     
-public:
+  public:
     P1EvalCL() : _base() {}
     P1EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG)
         : _base( sol, bnd, MG) {}
@@ -507,6 +511,9 @@ class InstatP1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
 {
   private:
     typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+
+    using _base::_sol;
+    using _base::_bnd;
     
     double _t;
     
@@ -517,7 +524,7 @@ class InstatP1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
                                    : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
     }
     
-public:
+  public:
     InstatP1EvalCL() : _base(), _t(0) {}
     InstatP1EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG, double t)
         : _base( sol, bnd, MG), _t(t) {}
