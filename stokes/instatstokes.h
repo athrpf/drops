@@ -138,6 +138,11 @@ class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     // If the function is called with the same vector for some arguments (out of 1, 2, 4), 
     // the vector will contain the sum of the results after the call
     void SetupInstatRhs( VelVecDescCL* vA, VelVecDescCL* vB, VelVecDescCL* vI, double tA, VelVecDescCL* vf, double tf) const;
+    // Set up only A.
+    void SetupStiffnessMatrix(MatDescCL*) const;
+    // Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme
+    // Time-independent
+    void SetupMassMatrix(MatDescCL* matI) const;
     // Set initial value for velocities
     void InitVel( VelVecDescCL*, vector_instat_fun_ptr, double t0= 0.) const;
 

@@ -586,6 +586,114 @@ void InstatStokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL
 
 
 template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::SetupStiffnessMatrix(MatDescCL* matA) const
+// Sets up the stiffness matrix.
+{
+    const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel);
+    const Uint lvl    = matA->RowIdx->TriangLevel;
+    const Uint vidx   = matA->RowIdx->GetIdx();
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    const IdxT stride= 1;   // stride between unknowns on same simplex, which
+                            // depends on numbering of the unknowns
+    std::cerr << "entering SetupStiffnessMatrix: " <<num_unks_vel<<" vels, " << std::endl;                            
+
+    // fill value part of matrices
+    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    SMatrixCL<3,3> T;
+    double coup[10][10];
+    double det, absdet;
+    GetGradientsOnRef(GradRef);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+         send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl); sit != send; ++sit) {
+        GetTrafoTr(T,det,*sit);
+        MakeGradients(Grad, GradRef, T);
+        absdet= fabs(det);
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i) {
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+        }
+        for(int i=0; i<6; ++i) {
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
+        }
+        // compute all couplings between HatFunctions on edges and verts
+        for(int i=0; i<10; ++i)
+            for(int j=0; j<=i; ++j) {
+                // dot-product of the gradients
+                coup[i][j]= _Coeff.nu * QuadGrad( Grad, i, j)*absdet;
+//                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[j][i]= coup[i][j];
+            }
+
+        for(int i=0; i<10; ++i)   // assemble row Numb[i]
+            if (!IsOnDirBnd[i]) { // vert/edge i is not on a Dirichlet boundary
+                for(int j=0; j<10; ++j) {
+                    if (!IsOnDirBnd[j]) { // vert/edge j is not on a Dirichlet boundary
+                        A(Numb[i],          Numb[j])+=          coup[j][i]; 
+                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i]; 
+                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
+                    }
+                }
+            }
+    }
+    std::cerr << "done: value part fill" << std::endl;
+    A.Build();
+    std::cerr << matA->Data.num_nonzeros() << " nonzeros in A. " << std::endl;
+}
+
+
+template <class Coeff>
+void InstatStokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
+// Sets up the velocity-mass-matrix
+{
+    const IdxT num_unks_vel= matI->RowIdx->NumUnknowns;
+    MatrixBuilderCL I( &matI->Data, num_unks_vel, num_unks_vel);
+    const Uint lvl= matI->RowIdx->TriangLevel;
+    const Uint vidx= matI->RowIdx->GetIdx();
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    const IdxT stride= 1;   // stride between unknowns on same simplex, which
+                            // depends on numbering of the unknowns
+    std::cerr << "entering SetupMass: " << num_unks_vel << " vels, " << std::endl;                            
+
+    // fill value part of matrices
+    double absdet;
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+         send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl); sit != send; ++sit) {
+        absdet= sit->GetVolume()*6.0;
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i) {
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+        }
+        for(int i=0; i<6; ++i) {
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
+        }
+        // compute all couplings between HatFunctions on edges and verts
+        for(int i=0; i<10; ++i)   // assemble row Numb[i]
+            if (!IsOnDirBnd[i]) { // vert/edge i is not on a Dirichlet boundary
+                for(int j=0; j<10; ++j) {
+                    if (!IsOnDirBnd[j]) { // vert/edge j is not on a Dirichlet boundary
+                        I(Numb[i],            Numb[j])
+                        = I(Numb[i]+stride,   Numb[j]+stride)
+                        = I(Numb[i]+2*stride, Numb[j]+2*stride)+= Quad( *sit, &OneFct, i, j)*absdet;
+                    }
+                }
+            }
+            
+    }
+    std::cerr << "done: value part fill" << std::endl;
+    I.Build();
+    std::cerr << matI->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
+}
+
+template <class Coeff>
 void InstatStokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
@@ -625,21 +733,29 @@ void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->RowIdx->TriangLevel,
          vidx=lsgvel->RowIdx->GetIdx();
-    
-    VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;
-    VectorCL res2= B.Data*lsgvel->Data - c.Data;
 
-    std::cerr << "\nChecken der Loesung...\n";    
-    std::cerr << "|| Ax + BTy - F || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
-    std::cerr << "||       Bx - G || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
-    
+    {   // XXX still not correct as the system solved involves old values for v and p on the rhs.
+        const double theta= 0.5, dt= 1.0/128.0;
+        VelVecDescCL bb, cc, cplM;
+        bb.SetIdx( lsgvel->RowIdx);
+        cc.SetIdx( lsgpr->RowIdx);
+        cplM.SetIdx( lsgvel->RowIdx);
+        SetupInstatRhs( &bb, &cc, &cplM, t, &bb, t);
+        VectorCL res1= M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data;
+        VectorCL res2= B.Data*lsgvel->Data - cc.Data;
+        std::cerr << "\nChecken der Loesung...\n";    
+        std::cerr << "|| Ax + BTy - F || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
+        std::cerr << "||       Bx - G || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
+    }
+
     DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
 
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+         send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
@@ -743,26 +859,32 @@ void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     {
         double sum= 0;
         for(int i=0; i<4; ++i)
-            sum+= pr.val(*sit->GetVertex(i)) - LsgPr(sit->GetVertex(i)->GetCoord(), t);
+            sum+= pr.val(*sit->GetVertex(i)); // XXX: Hae? das steht hier so seit Ewigkeiten...- LsgPr(sit->GetVertex(i)->GetCoord(), t);
         sum/= 120;
-        sum+= 2./15.* (pr.val(*sit, .25, .25, .25) - LsgPr(GetBaryCenter(*sit), t));
+        sum+= 2./15.* (pr.val(*sit, .25, .25, .25)); // s. o.: Hae? - LsgPr(GetBaryCenter(*sit), t));
         MW_pr+= sum * sit->GetVolume()*6.;
         vol+= sit->GetVolume();
     }
     const double c_pr= MW_pr / vol;
     std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
+    const VertexCL* maxvert= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         diff= fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
         norm2+= diff*diff;
-        if (diff>maxdiff)
+        if (diff>maxdiff) {
             maxdiff= diff;
+	    maxvert= &*sit;
+        }
         if (diff<mindiff)
             mindiff= diff;
     }
-    norm2= ::sqrt(norm2 / lsgpr->Data.size() );
+    norm2= ::sqrt( norm2 / lsgpr->Data.size());
+    std::cerr << "Maximaler Druckfehler: ";
+    if (maxvert) maxvert->DebugInfo( std::cerr);
+    std::cerr << std::endl;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
