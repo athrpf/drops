@@ -82,7 +82,7 @@ class InstatStokesBndDataCL
 {
   public:
     InstatStokesBndDataCL( Uint numbndseg, const bool* isneumann, const InstatVelBndSegDataCL::bnd_val_fun* fun)
-        : Vel( numbndseg, isneumann, fun) {}
+        : Pr(), Vel( numbndseg, isneumann, fun) {}
     
     const StokesPrBndDataCL        Pr;
     const InstatStokesVelBndDataCL Vel;   
