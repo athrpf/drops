@@ -11,3 +11,18 @@
   koennen, z.B. mit "make check".
 
 sg, 4. Maerz 2003
+
+* Die Datei-Header sollten vereinheitlicht und mit sinnvollem Inhalt
+  gefuellt werden.
+
+* Vorkonditionierer sollten nicht kopiert werden. Die Loeser sollten
+  nur eine Referenz speichern. Kopierkonstruktoren entfallen oder
+  vereinfachen sich. Vorsicht mit Vorkonditionierern, die als
+  Temporary uebergeben werden. Was passiert mit den Init-Funktionen?
+
+* Konstruktion von Matrizen: Es macht Sinn, erst SparseMatBuilderCL zu
+  erzeugen und mit dem fertigen Builder die Matrix zu erzeugen.
+
+* CVS: History aufraeumen. Versionen 1.1.1 und 1.1.1.1 entfernen.
+
+vr, 16. Mai 2003
