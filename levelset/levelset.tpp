@@ -230,15 +230,15 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
 // Reparametrization of the levelset function Phi
 {
     VectorCL Psi= Phi.Data, b;
-    MatrixCL L, R;
+    MatrixCL L, R, M;
 
     for (Uint i=0; i<steps; ++i)
     {
-        SetupReparamSystem( R, Psi, b);
-        L.LinComb( 1., _E, dt*_theta, R);
+        SetupReparamSystem( M, R, Psi, b);
+        L.LinComb( 1., M, dt*_theta, R);
         
         b*= dt;
-        b+= _E*Psi - dt*(1.-_theta) * (R*Psi);
+        b+= M*Psi - dt*(1.-_theta) * (R*Psi);
         _gm.Solve( L, Psi, b);
         std::cout << "Reparam: res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() << std::endl;
     }
@@ -248,10 +248,11 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
 
 double func_abs( double x) { return std::abs(x); }
 
-void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, VectorCL& b) const
-// R, b describe the following terms used for reparametrization:  
-// b_i  = ( S(Phi0),           v_i              + SD * w(Psi) grad v_i )
-// R_ij = ( w(Psi) grad v_j,   v_i              + SD * w(Psi) grad v_i )
+void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorCL& Psi, VectorCL& b) const
+// M, R, b describe the following terms used for reparametrization:  
+// b_i  = ( S(Phi0),           v_i     )
+// M_ij = ( v_j,               v_i     )
+// R_ij = ( w(Psi) grad v_j,   v_i     )
 //      + (|S(Phi0)| grad v_j, grad v_i) * diff
 // where v_i, v_j denote the ansatz functions
 // and w(Psi) = sign(Phi0) * grad Psi / |grad Psi| the scaled gradient of Psi
@@ -261,6 +262,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
                idx= Phi.RowIdx->GetIdx();
 
     SparseMatBuilderCL<double> R(&_R, num_unks, num_unks);
+    SparseMatBuilderCL<double> M(&_M, num_unks, num_unks);
     b.resize( 0);
     b.resize( num_unks);
     std::cerr << "entering SetupReparamSystem: " << num_unks << " levelset unknowns. ";
@@ -273,7 +275,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
     IdxT         Numb[10];
     SVectorCL<3> grad_Psi[4];
     DiscSolCL    phi= GetSolution();
-    double det, absdet, h_T;
+    double det, absdet;
     const double alpha= 0.1;  // for smoothing of signum fct
     
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
@@ -282,7 +284,6 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
-        h_T= std::pow( absdet, 1./3.);
         
         for (int i=0; i<4; ++i)
             Numb[i]= sit->GetVertex(i)->Unknowns(idx);
@@ -310,22 +311,20 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
         {
             // b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
             b[ Numb[i]]+= Sign_Phi.quadP2( i, absdet);
-            // TODO: Reicht die Genauigkeit der verwendeten Quadraturformel fuer SD aus?
-            b[ Numb[i]]+= _SD*h_T * Quad2CL<>(Sign_Phi*w_Grad[i]).quad( absdet);
-//            b[ Numb[i]]+= _SD*h_T*QuadVelGrad(w_loc,Grad[i], Sign_Phi)*absdet; 
             for(int j=0; j<10; ++j)
             {
+                // M_ij = ( v_j, v_i )
+                M( Numb[i], Numb[j])+= GetMassP2(i,j)*absdet;
                 // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
                 R( Numb[i], Numb[j])+= w_Grad[j].quadP2(i, absdet)
                     + _diff*Quad2CL<>(dot( Grad[j]*Sign_Phi.apply( func_abs), Grad[i])).quad( absdet);
-                R( Numb[i], Numb[j])+= _SD*h_T * Quad2CL<>( w_Grad[j]*w_Grad[i]).quad( absdet);
-//                R( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(w_loc,Grad[j],Grad[i])*absdet;
             }
         }
     }
-    
+    M.Build();
     R.Build();
-    std::cerr << _R.num_nonzeros() << " nonzeros in R!" << std::endl;
+    std::cerr << _M.num_nonzeros() << " nonzeros in M, " 
+              << _R.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
@@ -455,12 +454,9 @@ inline void Solve2x2( const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<
 
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
-    VectorCL    SmPhi= Phi.Data;
+    VectorCL SmPhi= Phi.Data;
     if (_curvDiff>0)
-    {
-        std::cerr << "Smoothing for curvature calculation.\n";
         SmoothPhi( SmPhi, _curvDiff);
-    }
         
     BaryCoordCL BaryDoF[10];
     Point3DCL   Coord[10];
@@ -704,11 +700,13 @@ double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
 
 void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
 {
-    SmPhi= Phi.Data;
+    std::cerr << "Smoothing for curvature calculation... ";
     MatrixCL M, A, C;
     SetupSmoothSystem( M, A); 
     C.LinComb( 1, M, diff, A);
-    PCG_SsorCL( _pc, _gm.GetIter(),_gm.GetTol()).Solve( C, SmPhi, M*Phi.Data);
+    PCG_SsorCL pcg( _pc, _gm.GetMaxIter(),_gm.GetTol());
+    pcg.Solve( C, SmPhi, M*Phi.Data);
+    std::cerr << "||SmPhi - Phi||_oo = " << (SmPhi-Phi.Data).supnorm() << std::endl;
 }
 
 void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
@@ -745,15 +743,11 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
         {
-            for(int j=0; j<=i; ++j)
+            for(int j=0; j<10; ++j)
             {
                 // M_ij = ( v_j, v_i),    A_ij = ( grad v_j, grad v_i)
-                const double mij= GetMassP2(i,j)*absdet,
-                             aij= Quad2CL<>(dot( Grad[j], Grad[i])).quad( absdet);
-                Mb( Numb[i], Numb[j])+= mij;
-                Mb( Numb[j], Numb[i])+= mij;
-                Ab( Numb[i], Numb[j])+= aij;
-                Ab( Numb[j], Numb[i])+= aij;
+                Mb( Numb[i], Numb[j])+= GetMassP2(i,j)*absdet;
+                Ab( Numb[i], Numb[j])+= Quad2CL<>(dot( Grad[j], Grad[i])).quad( absdet);
             }
         }
     }

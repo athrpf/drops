@@ -35,9 +35,9 @@ class LevelsetP2CL
     SSORPcCL            _pc;
     GMResSolverCL<SSORPcCL>  _gm;
 
-    void SetupReparamSystem( MatrixCL&, const VectorCL&, VectorCL&) const;
-    void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                  const;
-    void SmoothPhi( VectorCL& SmPhi, double diff)                   const;
+    void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
+    void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
+    void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
     
   public:
     LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0., 
