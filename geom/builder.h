@@ -220,7 +220,7 @@ struct CellSectionCL
 };
 
 // All cell-sections, apart from the one that only declares the total number of cells.
-// Quite useless right now, as DROPS does not otherwise support voume-sections.
+// Quite useless right now, as DROPS does not otherwise support volume-sections.
 struct MeshCellCL
 {
     std::vector<CellSectionCL> section;
