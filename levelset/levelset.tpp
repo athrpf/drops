@@ -347,7 +347,7 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 }
 
 
-void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool OnlyZeroLvl)
+void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl)
 // Reparametrisierung durch Fast Marching Method
 // Dabei verschiebt sich der 0-Level nur innerhalb der Elemente, die diesen schneiden.
 // onlyZeroLvl==true  =>  es wird nur lokal an der Phasengrenze reparametrisiert
@@ -356,9 +356,14 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool OnlyZeroLvl)
     
     if (OnlyZeroLvl)
     {
-        fm.InitZero();
+        if (Periodic)
+            fm.InitZeroPer( _Bnd, ModifyZero);
+        else
+            fm.InitZero( ModifyZero);
         fm.RestoreSigns();
     }
+    else if (Periodic)
+        fm.ReparamPer( _Bnd, ModifyZero);
     else
         fm.Reparam( ModifyZero);
 }
