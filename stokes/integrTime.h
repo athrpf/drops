@@ -122,9 +122,9 @@ class ISNonlinearPreCL
 
   public:
     ISNonlinearPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
-        double k_pc= 0, double om= 1)
+        double k_pc= 0, double omega= 1.0)
         : A_( A_pr), M_( M_pr), k_( k_pc),
-          solver_( SSORPcCL( 1.0), 6, 1e-30)  {}
+          solver_( SSORPcCL( omega), 6, 1e-30)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
