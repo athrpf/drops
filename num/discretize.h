@@ -45,6 +45,8 @@ class SmoothedJumpCL
   public:
     SmoothedJumpCL (const JumpCL& myjc, const SmoothFunT f, double myeps)
       : jc(myjc), smf(f), eps(myeps) {}
+    SmoothedJumpCL (double In, double Out, const SmoothedJumpCL& sjc)
+      : jc(In,Out), smf(sjc.smf), eps(sjc.eps) {}
 
     double operator() (double x) const { return jc(smf(x,eps)); }
 };
