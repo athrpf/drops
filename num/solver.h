@@ -592,7 +592,7 @@ LanczosStep(const Mat& A,
     // the correction dx needed to solve A(x0+dx)=b is in this space and
     // the Minres-algo will terminate with the exact solution in the
     // following step.
-    if (std::fabs(b1) < 1e-15) return false;
+    if (b1 < 1e-15) return false;
     q2/= b1;
     return true;
 }
@@ -658,8 +658,10 @@ PLanczosStep(const Mat& A,
     a1= t2*q1;
     t2.raw()-= a1*t1.raw();
     M.Apply( A, q2, t2);
-    b1= std::sqrt( q2*t2);
-    if (fabs( b1) < 1e-15) return false;
+    const double b1sq= q2*t2;
+    Assert( b1sq >= 0.0, "PLanczosStep: b1sq is negative!\n", DebugNumericC);
+    b1= std::sqrt( b1sq);
+    if (b1 < 1e-15) return false;
     t2.raw()*= 1./b1;
     q2.raw()*= 1./b1;
     return true;

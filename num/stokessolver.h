@@ -51,6 +51,22 @@ class PSchurSolverCL : public SolverBaseCL
                 const VectorCL& b, const VectorCL& c);
 };
 
+template <typename PoissonSolverT, typename PoissonSolver2T>
+class PSchurSolver2CL : public SolverBaseCL
+{
+  private:
+    PoissonSolverT&  poissonSolver_;
+    PoissonSolver2T& poissonSolver2_;
+
+  public:
+    PSchurSolver2CL(PoissonSolverT& solver, PoissonSolver2T& solver2,
+                    int maxiter, double tol)
+        :SolverBaseCL( maxiter, tol), poissonSolver_( solver),
+         poissonSolver2_( solver2) {}
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+};
 
 template <typename PoissonSolverT>
 class UzawaSolverCL : public SolverBaseCL
@@ -144,7 +160,7 @@ LanczosStep_SP(const Mat& A, const Mat& B,
     // the correction dx needed to solve A(x0+dx)=b is in this space and
     // the Minres-algo will terminate with the exact solution in the
     // following step.
-    if (std::fabs( b1) < 1e-15) return false;
+    if (b1 < 1e-15) return false;
     qu2.raw()*= 1./b1;
     qpr2.raw()*= 1./b1;
     return true;
@@ -224,8 +240,10 @@ PLanczosStep_SP(const Mat& A, const Mat& B,
     tu2.raw()+= (-a1)*tu1.raw();
     tpr2.raw()+= (-a1)*tpr1.raw();
     M.Apply( A, B, qu2, qpr2, tu2, tpr2);
-    b1= std::sqrt( qu2*tu2 + qpr2*tpr2);
-    if (fabs( b1) < 1e-15) return false;
+    const double b1sq= qu2*tu2 + qpr2*tpr2;
+    Assert( b1sq >= 0.0, "PLanczosStep_SP: b1sq is negative!\n", DebugNumericC);
+    b1= std::sqrt( b1sq);
+    if (b1 < 1e-15) return false;
     tu2.raw()*= 1./b1;
     tpr2.raw()*= 1./b1;
     qu2.raw()*= 1./b1;
@@ -408,7 +426,8 @@ class PMResSPCL : public SolverBaseCL
 
   public:
     PMResSPCL(Lanczos& q, int maxiter, double tol)
-      :SolverBaseCL( maxiter,tol), q_( &q) {}
+      :SolverBaseCL( maxiter,tol), q_( &q)
+    {}
 
     Lanczos*&       GetONB ()       { return q_; }
     const Lanczos*& GetONB () const { return q_; }
@@ -597,6 +616,26 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
         {}
 };
 
+
+/*
+// Reimplementation of PSchur_PCG_CL with PSchurSolver2CL;
+// this is only a check for the new class.
+class PSchur2_PCG_CL: public PSchurSolver2CL<PCG_SsorCL,
+                                             PCGSolverCL< PreGSOwnMatCL<P_SSOR0> > >
+{
+  private:
+    PCG_SsorCL PCGsolver_;
+    PCGSolverCL< PreGSOwnMatCL<P_SSOR0> > PCGsolver2_;
+
+  public:
+    PSchur2_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
+        : PSchurSolver2CL<PCG_SsorCL, PCGSolverCL< PreGSOwnMatCL<P_SSOR0> > >( PCGsolver_, PCGsolver2_, outer_iter, outer_tol),
+          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          PCGsolver2_( PreGSOwnMatCL<P_SSOR0>( M), outer_iter, outer_tol)
+        {}
+};
+*/
+
 class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
 {
   private:
@@ -612,7 +651,6 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
           MGsolver_( MGData, inner_iter, inner_tol)
         {}
 };
-
 
 
 class MinresSPCL : public PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >
@@ -652,6 +690,7 @@ class PMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL
          pre_( A, M, iter_vel), q_( pre_)
     {}
 };
+
 
 //=============================================================================
 //  SchurComplMatrixCL
@@ -886,6 +925,35 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
+template <typename PoissonSolverT, typename PoissonSolver2T>
+void PSchurSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
+    const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+// solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
+//              A*u = b - BT*p
+{
+    VectorCL rhs= -c;
+    {   VectorCL tmp( v.size());
+        poissonSolver_.Solve( A, tmp, b);
+        std::cerr << "rhs: iterations: " << poissonSolver_.GetIter()
+                  << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
+        rhs+= B*tmp;
+    }
+    poissonSolver2_.Solve( SchurComplMatrixCL<PoissonSolverT>( poissonSolver_, A, B), p, rhs);
+    std::cerr << "pressure: iterations: " << poissonSolver2_.GetIter()
+              << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
+
+    const double old_tol= poissonSolver_.GetTol();
+    poissonSolver_.SetTol( poissonSolver2_.GetTol() ); // same tolerance as for pressure
+    poissonSolver_.Solve( A, v, b - transp_mul(B, p));
+    poissonSolver_.SetTol( old_tol);   // reset old tolerance
+    std::cerr << "velocity: iterations: " << poissonSolver_.GetIter()
+              << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
+
+    _iter= poissonSolver_.GetIter() + poissonSolver2_.GetIter();
+    _res= std::sqrt( std::pow( poissonSolver_.GetResid(), 2.0)
+                     + std::pow( poissonSolver2_.GetResid(), 2.0));
+    std::cerr << "-----------------------------------------------------" << std::endl;
+}
 
 } // end of namespace DROPS
 

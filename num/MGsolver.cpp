@@ -80,7 +80,7 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
         if (residerr == true) {
             std::cerr << "iteration: " << it  << "\tresidual: " << resid;
             if (it!=0) std::cerr << "\treduction: " << resid/old_resid;
-            std::cer << '\n';
+            std::cerr << '\n';
         }
         else if ((resid= (tmp - x).norm()) <= tol) break;
     }

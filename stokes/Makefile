@@ -6,7 +6,7 @@
 
 DIR = stokes
 
-EXEC = sdrops sdropsP2 FSdrops drcavad drivcav MGsdropsP2
+EXEC = sdrops sdropsP2 FSdrops drcavad drivcav MGsdropsP2 isdrops
 
 DELETE = $(EXEC)
 
@@ -58,6 +58,12 @@ FSdrops: \
     ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
+isdrops: \
+    ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../misc/problem.o ../misc/utils.o ../stokes/instatstokes.o \
+    ../out/output.o ../num/discretize.o ../num/MGsolver.o
+	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:
 include ../Make.common
