@@ -107,6 +107,11 @@ class InstatPoissonP1CL : public ProblemCL<MGB, Coeff, InstatPoissonBndDataCL>
     typedef typename _base::MultiGridBuilderCL            MultiGridBuilderCL;
     typedef typename _base::BndDataCL                     BndDataCL;
     typedef typename _base::CoeffCL                       CoeffCL;
+    using _base::GetBndData;
+    using _base::GetMG;
+    using _base::_BndData;
+    using _base::_MG;
+    using _base::_Coeff;
     
     typedef InstatP1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
