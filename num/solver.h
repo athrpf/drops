@@ -199,7 +199,7 @@ SGSStep(const SparseMatBaseCL<Real>& A, Vec& x, const Vec& b)
     {
         x[i]= b[i];
         for(const size_t beg= A.row_beg(i); nz>=beg; --nz)
-            if (col_ind(nz) != i)
+            if (A.col_ind(nz) != i)
                 x[i]-= A.val(nz)*x[A.col_ind(nz)];
             else
                 aii= A.val(nz);
