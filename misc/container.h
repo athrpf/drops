@@ -205,12 +205,9 @@ class SVectorCL : public SArrayCL<double,_Size>
 public:
     SVectorCL() {}
     explicit           SVectorCL(double val)       : SArrayCL<double,_Size>(val)       {}
-//    SVectorCL(const SliceArrayCL& s)
-//        { for (Uint i=0; i!=_Size; ++i) (*this)[i]= s[i]; }
     template<class In> SVectorCL(In start)         : SArrayCL<double,_Size>(start)     {}
     template<class In> SVectorCL(In start, In end) : SArrayCL<double,_Size>(start,end) {}
 
-//    SVectorCL& operator= (const SliceArrayCL&);
     SVectorCL& operator+=(const SVectorCL&);
     SVectorCL& operator-=(const SVectorCL&);
     SVectorCL& operator*=(double);
@@ -224,15 +221,6 @@ public:
     double norm()    const { return ::sqrt(norm_sq()); }
 };
 
-/*
-template <Uint _Size>
-SVectorCL<_Size>&
-SVectorCL<_Size>::operator=(const SliceArrayCL& s)
-{
-    for (Uint i=0; i!=_Size; ++i) (*this)[i]= s[i];
-    return *this;
-}
-*/
 
 template <Uint _Size>
 SVectorCL<_Size>&
