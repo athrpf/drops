@@ -12,6 +12,7 @@
 #include "num/discretize.h"
 #include "misc/problem.h"
 #include <vector>
+#include <numeric>
 
 namespace DROPS
 {
