@@ -310,6 +310,7 @@ class P1DiscCL
 
     // the gradient of hat function i is in column i of H
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
+    static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
 };
 
 class P1BubbleDiscCL
@@ -472,6 +473,30 @@ inline void P1DiscCL::GetGradients( SMatrixCL<3,4>& H, double& det, const TetraC
     H(0,0)= -H(0,1)-H(0,2)-H(0,3);
     H(1,0)= -H(1,1)-H(1,2)-H(1,3);
     H(2,0)= -H(2,1)-H(2,2)-H(2,3);
+}
+
+inline void P1DiscCL::GetGradients( Point3DCL H[4], double& det, const TetraCL& t)
+{
+    double M[3][3];
+    const Point3DCL& pt0= t.GetVertex(0)->GetCoord();
+    for(Uint i=0; i<3; ++i)
+        for(Uint j=0; j<3; ++j)
+            M[j][i]= t.GetVertex(i+1)->GetCoord()[j] - pt0[j];
+    det=   M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+         - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+         + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]);
+
+    H[1][0]= (M[1][1]*M[2][2] - M[1][2]*M[2][1])/det;
+    H[1][1]= (M[2][1]*M[0][2] - M[0][1]*M[2][2])/det;
+    H[1][2]= (M[0][1]*M[1][2] - M[1][1]*M[0][2])/det;
+    H[2][0]= (M[2][0]*M[1][2] - M[1][0]*M[2][2])/det;
+    H[2][1]= (M[0][0]*M[2][2] - M[2][0]*M[0][2])/det;
+    H[2][2]= (M[1][0]*M[0][2] - M[0][0]*M[1][2])/det;
+    H[3][0]= (M[1][0]*M[2][1] - M[2][0]*M[1][1])/det;
+    H[3][1]= (M[2][0]*M[0][1] - M[0][0]*M[2][1])/det;
+    H[3][2]= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
+    // in H[1:3][0:2] steht jetzt die Adjunkte von M ...
+    H[0]= -H[1]-H[2]-H[3];
 }
 
 
