@@ -625,6 +625,7 @@ class MultiGridCL
     void Scale( double);
     void MakeConsistentNumbering();
     void SizeInfo(std::ostream&);
+    void ElemInfo(std::ostream&, int Level= -1);
 
     bool IsSane (std::ostream&, int Level=-1) const;
 };

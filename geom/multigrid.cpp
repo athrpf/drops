@@ -1248,6 +1248,34 @@ void MultiGridCL::SizeInfo(std::ostream& os)
        << std::endl;
 }
 
+void MultiGridCL::ElemInfo(std::ostream& os, int Level)
+{
+    double hmax= -1, hmin= 1e99,
+           rmax= -1, rmin= 1e99;
+    for (TriangTetraIteratorCL It= GetTriangTetraBegin(Level),
+             ItEnd= GetTriangTetraEnd(Level); It!=ItEnd; ++It)
+    {
+        double loc_max= -1, loc_min= 1e99;
+        for (Uint i=0; i<3; ++i)
+        {
+            Point3DCL pi= It->GetVertex(i)->GetCoord();
+            for (Uint j=i+1; j<4; ++j)
+            {
+                const double h= (It->GetVertex(j)->GetCoord() - pi).norm();
+                if (h < loc_min) loc_min= h;
+                if (h > loc_max) loc_max= h;
+            }
+        }
+        if (loc_min < hmin) hmin= loc_min;
+        if (loc_max > hmax) hmax= loc_max;
+        const double ratio= loc_max/loc_min;
+        if (ratio < rmin) rmin= ratio;
+        if (ratio > rmax) rmax= ratio;
+    }
+    os << hmin << " <= h <= " << hmax << '\t'
+       << rmin << " <= h_max/h_min <= " << rmax << std::endl;
+}
+
 MultiGridCL::TriangVertexIteratorCL MultiGridCL::GetTriangVertexBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
