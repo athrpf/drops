@@ -186,11 +186,6 @@ void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
     const Uint lvl    = Amat.RowIdx->TriangLevel;
     const Uint idx    = Amat.RowIdx->GetIdx();
 
-//    SMatrixCL<3,4> Gref(0.0); 
-//    Gref(0,1)= Gref(1,2)= Gref(2,3)= 1.; // gradients on ref. tetra
-//    Gref(0,0)= Gref(1,0)= Gref(2,0)= -1.;
-
-//    SMatrixCL<3,3> T;
     SMatrixCL<3,4> G;
     
     double coup[4][4];
@@ -202,14 +197,7 @@ void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
          sit != send; ++sit)
     {
         P1DiscCL::GetGradients(G,det,*sit);
-//        SMatrixCL<3,4> G= T*Gref;
-/*        G(0,0)= -T(0,0)-T(0,1)-T(0,2);
-        G(0,1)= T(0,0); G(0,2)= T(0,1); G(0,3)= T(0,2);
-        G(1,0)= -T(1,0)-T(1,1)-T(1,2);
-        G(1,1)= T(1,0); G(1,2)= T(1,1); G(1,3)= T(1,2);
-        G(2,0)= -T(2,0)-T(2,1)-T(2,2);
-        G(2,1)= T(2,0); G(2,2)= T(2,1); G(2,3)= T(2,2);
-*/        absdet= fabs(det);
+        absdet= fabs(det);
         for(int i=0; i<4; ++i)
         {
             for(int j=0; j<=i; ++j)
