@@ -191,6 +191,22 @@ class TimerCL
     double GetGTime() const     { return _gtime; }
 };
 
+
+// This is needed, as the C++-standard comittee deemed selectors for
+// pairs unneccessary.
+// Function-object that returns the second component of a pair.
+template <class Pair>
+struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
+{
+  typename Pair::second_type& operator()(Pair& x) const {
+    return x.second;
+  }
+  const typename Pair::second_type& operator()(const Pair& x) const {
+    return x.second;
+  }
+};
+
+
 } // end of namespace DROPS
 
 #endif

@@ -6,7 +6,7 @@
 
 DIR = tests
 
-EXEC = reftest ip1test ip2test tetrabuildertest mattest testfe
+EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe tetrabuildertest 
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -52,10 +52,15 @@ ip2test: \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
-tetrabuildertest: \
-    ../tests/tetrabuildertest.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+prolongationp2test: \
+    ../tests/prolongationp2test.o ../geom/multigrid.o ../geom/topo.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+tetrabuildertest: \
+    ../tests/tetrabuildertest.o ../geom/multigrid.o ../geom/topo.o \
+    ../num/unknowns.o ../geom/builder.o ../geom/boundary.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 mattest: \
