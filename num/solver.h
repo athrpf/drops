@@ -92,15 +92,16 @@ void
 SolveGSstep(const PreDummyCL<PB_GS>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
 {
     const size_t n= A.num_rows();
+    double aii, sum;
 
-    for (size_t i=0, nz=0; i<n; ++i)
-    {
-        double aii, sum= b[i];
-        for (const size_t end= A.row_beg(i+1); nz<end; ++nz)
-            if (A.col_ind(nz) != i)
-                sum-= A.val(nz)*x[A.col_ind(nz)];
-            else
-                aii= A.val(nz);
+    for (size_t i=0, nz=0; i<n; ++i) {
+        sum= b[i];
+        const size_t end= A.row_beg( i+1);
+        for (; A.col_ind( nz) != i; ++nz) // This is safe: Without diagonal entry, Gauss-Seidel would explode anyway.
+            sum-= A.val( nz)*x[A.col_ind( nz)];
+        aii= A.val( nz++);
+        for (; nz<end; ++nz)
+            sum-= A.val( nz)*x[A.col_ind( nz)];
         if (HasOmega)
             x[i]= (1.-omega)*x[i]+omega*sum/aii;
         else
@@ -115,27 +116,25 @@ void
 SolveGSstep(const PreDummyCL<PB_SGS>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
 {
     const size_t n= A.num_rows();
+    double aii, sum;
 
-    for (size_t i=0, nz=0; i<n; ++i)
-    {
-        double aii, sum= b[i];
-        for (const size_t end= A.row_beg(i+1); nz<end; ++nz)
-            if (A.col_ind(nz) != i)
-                sum-= A.val(nz)*x[A.col_ind(nz)];
-            else
-                aii= A.val(nz);
+    for (size_t i=0, nz=0; i<n; ++i) {
+        sum= b[i];
+        const size_t end= A.row_beg( i+1);
+        for (; A.col_ind( nz) != i; ++nz) // This is safe: Without diagonal entry, Gauss-Seidel would explode anyway.
+            sum-= A.val( nz)*x[A.col_ind( nz)];
+        aii= A.val( nz++);
+        for (; nz<end; ++nz)
+            sum-= A.val( nz)*x[A.col_ind( nz)];
         if (HasOmega)
             x[i]= (1.-omega)*x[i]+omega*sum/aii;
         else
             x[i]= sum/aii;
     }
-
-    for (size_t i=n, nz=A.row_beg(n); i>0; )
-    {
+    for (size_t i= n, nz= A.row_beg( n); i>0; ) { // XXX: Rearrange this loop as the preceding one.
         --i;
         double aii, sum= b[i];
-        for (const size_t beg= A.row_beg(i); nz>beg; )
-        {
+        for (const size_t beg= A.row_beg(i); nz>beg; ) {
             --nz;
             if (A.col_ind(nz) != i)
                 sum-= A.val(nz)*x[A.col_ind(nz)];
