@@ -176,7 +176,6 @@ int Test()
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             double dof[10];
             RestrictP2( t0, fun0, dof);
-    std::cout << P2( dof, 1.0, 0.25, 0.25, 0.25) << std::endl;
             ttt= CheckResult( t0, f, dof, NOISY);
 //            ttt= CheckResult( t0, g2, dof, NOISY);
             ret+= ttt;

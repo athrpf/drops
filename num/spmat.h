@@ -27,80 +27,162 @@ namespace DROPS
 template <typename T>
 class VectorBaseCL: public std::valarray<T>
 {
-private:
-#if (DROPSDebugC & DebugNumericC)
-    void AssertDim (__UNUSED__ const std::valarray<T>& va,
-                    __UNUSED__ const char msg[]) const
-      { Assert( size()==va.size(), msg, DebugNumericC); }
-#endif
-
-public:
+  public:
     typedef T value_type;
     typedef std::valarray<T> base_type;
 
     // ctors
     VectorBaseCL()                      : base_type()       {}
 #ifdef VALARRAY_BUG
-    VectorBaseCL (size_t s)             : base_type(T(),s)  {}
+    VectorBaseCL (size_t s)             : base_type( T(),s) {}
 #else
-    VectorBaseCL (size_t s)             : base_type(s)      {}
+    VectorBaseCL (size_t s)             : base_type( s)     {}
 #endif
-    VectorBaseCL (T c, size_t s)        : base_type(c, s)   {}
-    VectorBaseCL (const T* tp, size_t s): base_type(tp, s)  {}
-    template <class V>
-      VectorBaseCL (V exptpl)           : base_type(exptpl) {}
+    VectorBaseCL (T c, size_t s)        : base_type( c, s)  {}
+    VectorBaseCL (const T* tp, size_t s): base_type( tp, s) {}
+    template <class X>
+      VectorBaseCL (const X& x)         : base_type( x)     {}
 
     // assignment
-    template <class VT>
-      VectorBaseCL& operator=(const VT& v) {
-        *static_cast<base_type*>( this)= v; return *this; }
+    VectorBaseCL& operator=(const T s) { *static_cast<base_type*>( this)= s; return *this; }
+    template <class VT> inline VectorBaseCL& operator=(const VT& v);
 
     // computed assignment
-    template <class VT>
-    VectorBaseCL& operator+=(const VT& v) {
-        *static_cast<base_type*>( this)+= v; return *this; }
-    template <class VT>
-    VectorBaseCL& operator-=(const VT& v) {
-        *static_cast<base_type*>( this)-= v; return *this; }
-    template <class VT>
-    VectorBaseCL& operator*=(const VT& v) {
-        *static_cast<base_type*>( this)*= v; return *this; }
-    template <class VT>
-    VectorBaseCL& operator/=(const VT& v) {
-        *static_cast<base_type*>( this)/= v; return *this; }
+    VectorBaseCL& operator+=(const T s) { *static_cast<base_type*>( this)+= s; return *this; }
+    VectorBaseCL& operator-=(const T s) { *static_cast<base_type*>( this)-= s; return *this; }
+    VectorBaseCL& operator*=(const T s) { *static_cast<base_type*>( this)*= s; return *this; }
+    VectorBaseCL& operator/=(const T s) { *static_cast<base_type*>( this)/= s; return *this; }
+    template <class VT> inline VectorBaseCL& operator+=(const VT& v);
+    template <class VT> inline VectorBaseCL& operator-=(const VT& v);
+    template <class VT> inline VectorBaseCL& operator*=(const VT& v);
+    template <class VT> inline VectorBaseCL& operator/=(const VT& v);
 
 #if (DROPSDebugC & DebugNumericC)
-    // For checking new code; the following functions inhibit the expression
+    // For checking new code; the following functions interfere with the expression
     // template mechanism of std::valarray, but do some checks before the
     // operations.
-
     // element access
-    T  operator [] (size_t s) const;
-    T& operator [] (size_t s);
-
-    // assignment
-    VectorBaseCL& operator=(const std::valarray<T>& va);
-    VectorBaseCL& operator= (const VectorBaseCL& v);
-
-    // computed assignment
-    VectorBaseCL& operator+= (const VectorBaseCL& v);
-    VectorBaseCL& operator-= (const VectorBaseCL& v);
-    VectorBaseCL& operator*= (const VectorBaseCL& v);
-    VectorBaseCL& operator/= (const VectorBaseCL& v);
-
-    friend VectorBaseCL operator+ (const VectorBaseCL& v, const VectorBaseCL& w);
-    friend VectorBaseCL operator- (const VectorBaseCL& v, const VectorBaseCL& w);
+    T  operator[](size_t s) const;
+    T& operator[](size_t s);
 #endif
 };
 
+
+#if (DROPSDebugC & DebugNumericC)
+template <typename T>
+T  VectorBaseCL<T>::operator[](size_t s) const
+{
+    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    return (*static_cast<base_type*>( this))[s];
+}
+
+template <typename T>
+T& VectorBaseCL<T>::operator[](size_t s)
+{
+    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    return (*static_cast<base_type*>( this))[s];
+}
+#endif
+
+// assignment
+template <class T>
+  template <class VT>
+    inline VectorBaseCL<T>&
+    VectorBaseCL<T>::operator=(const VT& v)
+{
+    Assert( this->size()==v.size(), "VectorBaseCL =: incompatible dimensions", DebugNumericC);
+    *static_cast<base_type*>( this)= v; return *this;
+}
+
+// computed assignment
+template <class T>
+  template <class VT>
+    inline VectorBaseCL<T>&
+    VectorBaseCL<T>::operator+=(const VT& v)
+{
+    Assert( this->size()==v.size(), "VectorBaseCL +=: incompatible dimensions", DebugNumericC);
+    *static_cast<base_type*>( this)+= v; return *this;
+}
+
+template <class T>
+  template <class VT>
+    inline VectorBaseCL<T>&
+    VectorBaseCL<T>::operator-=(const VT& v)
+{
+    Assert( this->size()==v.size(), "VectorBaseCL -=: incompatible dimensions", DebugNumericC);
+    *static_cast<base_type*>( this)-= v; return *this;
+}
+
+template <class T>
+  template <class VT>
+    inline VectorBaseCL<T>&
+    VectorBaseCL<T>::operator*=(const VT& v)
+{
+    Assert( this->size()==v.size(), "VectorBaseCL *=: incompatible dimensions", DebugNumericC);
+    *static_cast<base_type*>( this)*= v; return *this;
+}
+
+template <class T>
+  template <class VT>
+    inline VectorBaseCL<T>&
+    VectorBaseCL<T>::operator/=(const VT& v)
+{
+    Assert( this->size()==v.size(), "VectorBaseCL /=: incompatible dimensions", DebugNumericC);
+    *static_cast<base_type*>( this)/= v; return *this;
+}
+
+#if (DROPSDebugC & DebugNumericC)
+template <class VT1, class  VT2>
+  inline VectorBaseCL<typename VT1::value_type> operator+(const VT1& v, const VT2& w)
+{
+    typedef typename VT1::value_type VecEntryT;
+    Assert( v.size()==w.size(), "VectorBaseCL + VectorBaseCL: incompatible dimensions", DebugNumericC);
+    return VectorBaseCL<VecEntryT>(
+        static_cast<typename VectorBaseCL<VecEntryT>::base_type>( v)
+        + static_cast<typename VectorBaseCL<VecEntryT>::base_type>( w));
+}
+
+template <class VT1, class  VT2>
+  inline VectorBaseCL<typename VT1::value_type> operator-(const VT1& v, const VT2& w)
+{
+    typedef typename VT1::value_type VecEntryT;
+    Assert( v.size()==w.size(), "VectorBaseCL - VectorBaseCL: incompatible dimensions", DebugNumericC);
+    return VectorBaseCL<VecEntryT>(
+        static_cast<typename VectorBaseCL<VecEntryT>::base_type>( v)
+        - static_cast<typename VectorBaseCL<VecEntryT>::base_type>( w));
+}
+#endif
+
+
+// Get the address of the first element in a valarray
+// ("&x[0]" doesn't work, because "operator[] const" only returns a value)
+template <typename T>
+  inline const T*
+  Addr(const std::valarray<T>& x)
+{
+    return &(const_cast<std::valarray<T>&>(x)[0]);
+}
+
+template <typename T>
+  inline T*
+  Addr(std::valarray<T>& x)
+{
+    return &(x[0]);
+}
+
+template <class T>
+  inline T
+  dot(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
+{
+    Assert( v.size()==w.size(), "dot: incompatible dimensions", DebugNumericC);
+    return std::inner_product( Addr( v), Addr( v) + v.size(), Addr( w), T());
+}
 
 template <class VT1, class VT2>
   inline typename VT1::value_type
   dot(const VT1& v, const VT2& w)
 {
-#if (DROPSDebugC & DebugNumericC)
-        v.AssertDim(w, "dot: incompatible dimensions");
-#endif
+    Assert(v.size()==w.size(), "dot: incompatible dimensions", DebugNumericC);
     typedef typename VT1::value_type valueT;
     valueT ret= valueT();
     const size_t s= v.size();
@@ -166,102 +248,6 @@ template <typename T>
         "z_xpaypby2: incompatible dimensions", DebugNumericC);
     z= x + a*y + b*y2;
 }
-
-
-#if (DROPSDebugC & DebugNumericC)
-template <typename T>
-T  VectorBaseCL<T>::operator[](size_t s) const
-{
-    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
-    return (*static_cast<base_type*>( this))[s];
-}
-
-template <typename T>
-T& VectorBaseCL<T>::operator[](size_t s)
-{
-    Assert(s<size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
-    return (*static_cast<base_type*>( this))[s];
-}
-
-// assignment
-template <typename T>
-VectorBaseCL<T>& VectorBaseCL<T>::operator=(const std::valarray<T>& va)
-{
-    AssertDim(va, "VectorBaseCL =: incompatible dimensions");
-    *static_cast<base_type*>( this)= va;
-    return *this;
-}
-
-template <typename T>
-VectorBaseCL<T>& VectorBaseCL<T>::operator=(const VectorBaseCL<T>& v)
-{
-    AssertDim(v, "VectorBaseCL =: incompatible dimensions");
-    *static_cast<base_type*>( this)= v;
-    return *this;
-}
-
-// computed assignment
-template <typename T>
-VectorBaseCL<T>& VectorBaseCL<T>::operator+=(const VectorBaseCL<T>& v)
-{
-    AssertDim(v, "VectorBaseCL +=: incompatible dimensions");
-    *static_cast<base_type*>( this)+= v;
-    return *this;
-}
-
-template <typename T>
-VectorBaseCL<T>& VectorBaseCL<T>::operator-=(const VectorBaseCL<T>& v)
-{
-    AssertDim(v, "VectorBaseCL -=: incompatible dimensions");
-    *static_cast<base_type*>( this)-= v;
-    return *this;
-}
-
-template <typename T>
-VectorBaseCL<T>& VectorBaseCL<T>::operator*=(const VectorBaseCL<T>& v)
-{
-    AssertDim(v, "VectorBaseCL *=: incompatible dimensions");
-    *static_cast<base_type*>( this)*= v;
-    return *this;
-}
-
-template <typename T>
-VectorBaseCL<T>& VectorBaseCL<T>::operator/=(const VectorBaseCL<T>& v)
-{
-    AssertDim(v, "VectorBaseCL /=: incompatible dimensions");
-    *static_cast<base_type*>( this)/= v;
-    return *this;
-}
-
-template <typename T>
-VectorBaseCL<T> operator+(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
-{
-    v.AssertDim(w, "VectorBaseCL + VectorBaseCL: incompatible dimensions");
-    return VectorBaseCL( static_cast<typename VectorBaseCL<T>::base_type>( v)
-        + static_cast<typename VectorBaseCL<T>::base_type>( w));
-}
-
-template <typename T>
-VectorBaseCL<T> operator-(const VectorBaseCL<T>& v, const VectorBaseCL<T>& w)
-{
-    v.AssertDim(w, "VectorBaseCL - VectorBaseCL: incompatible dimensions");
-    return VectorBaseCL( static_cast<typename VectorBaseCL<T>::base_type>( v)
-        - static_cast<typename VectorBaseCL<T>::base_type>( w));
-}
-#endif
-
-
-// Get the address of the first element in a valarray
-// ("&x[0]" doesn't work, because "operator[] const" only returns a value)
-template <typename T>
-  inline const T*
-  Addr(const std::valarray<T>& x)
-    { return &(const_cast<std::valarray<T>&>(x)[0]); }
-
-template <typename T>
-  inline T*
-  Addr(std::valarray<T>& x)
-    { return &(x[0]); }
 
 
 //*****************************************************************************

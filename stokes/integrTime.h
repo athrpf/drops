@@ -232,6 +232,12 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
         ssor_.Apply( M_, p2, c);
 //      p+= k_*p2;
         axpy( k_, p2, p);
+//        PCG_SsorCL sol( ssor_, 15, 1e-30);
+//	p= 0.0;
+//        sol.Solve( A_, p, c);
+//        VectorCL p2( p.size() );
+//        sol.Solve( M_, p2, c);
+//        axpy( k_, p2, p); // p+= k_*p2;
 }
 
 
@@ -254,7 +260,7 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
        || fine==begin)
     { // use direct solver
         Solver.Solve( fine->A.Data, x, b);
-        x-= ((*ones)*x);
+        x-= dot( *ones, x);
         return;
     }
     VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
@@ -262,7 +268,7 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
     // restriction of defect
     d= transp_mul( fine->P.Data, VectorCL( b - fine->A.Data*x));
-    d-= (*(ones-1))*d;
+    d-= dot( *(ones-1), d);
     // calculate coarse grid correction
     MGMPr( ones-1, begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
     // add coarse grid correction
@@ -270,7 +276,7 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
     // postsmoothing
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
 // Not needed, as our smoother and prolongation do not amplify the constant function.
-//    x-= (*ones)*x;
+//    x-= dot( *ones, x);
 }
 
 
@@ -278,7 +284,7 @@ template <typename Mat, typename Vec>
 void
 ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-    p-= ones_.back()*p;
+    p-= dot( ones_.back(), p);
     for (DROPS::Uint i=0; i<max_iter_; ++i)
 //        DROPS::MGM( A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
         MGMPr( --ones_.end(), A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
@@ -305,7 +311,7 @@ ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const
 //    std::cerr << "ISMinresMGPreCL: Velocity: iterations: " << iter_vel_ << '\t'
 //              << " residual: " <<  (Avel_.back().A.Data*v - b).norm() << '\t';
 
-    p-= ones_.back()*p;
+    p-= dot( ones_.back(), p);
 //    double new_res= (Apr_.back().A.Data*p - c).norm();
 //    double old_res;
 //    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';

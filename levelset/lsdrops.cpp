@@ -89,7 +89,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int num_repa
         // after half of the time, the velocity field is turned around
         if (i==num_steps/2)
         {
-            prob.v.Data*= -1;
+            prob.v.Data*= -1.0;
             lset.SetupSystem( prob.GetVelSolution() );
             lset.SetTimeStep( dt);
         }
