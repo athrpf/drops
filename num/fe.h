@@ -333,7 +333,7 @@ protected:
     inline DataT       // It calls the correct version of GetDoFImpl according
     GetDoF (const VertexCL& s) const // to the template parameter T.
     {
-        return static_cast<T* const>(this)->GetDoFImpl( s);
+        return static_cast<T*>(this)->GetDoFImpl( s);
     }
 
 public:
@@ -554,11 +554,11 @@ protected:
     template<class T> // GetDoF is a compile-time virtual function.
       DataT           // It calls the correct version of GetDoFImpl according
       GetDoF(const VertexCL& s) const // to the template parameter T.
-        { return static_cast<T* const>( this)->GetDoFImpl( s); }
+        { return static_cast<T*>( this)->GetDoFImpl( s); }
     template<class T> // see above.
       DataT
       GetDoF(const EdgeCL& s) const
-        { return static_cast<T* const>( this)->GetDoFImpl( s); }
+        { return static_cast<T*>( this)->GetDoFImpl( s); }
     
 public:
     P2EvalCL() :_sol(0), _bnd(0), _MG(0) {}
