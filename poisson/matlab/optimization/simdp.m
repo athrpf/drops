@@ -1,5 +1,4 @@
-function Td=simdp()
-
+function [Val,Td]=simdp(C_data,L_data)
 
 % ------------------------------------------------------------------------
 % PROBLEM: LOESUNG DER GLEICHUNG 
@@ -38,24 +37,42 @@ function Td=simdp()
 % (Schnitt durch den Wuerfel an der Stelle x=M)
 %--------------------------------------------------------------------------
 
-% gemeinsame Daten der direkten Probleme holen
-[nu,xl,yl,zl,M,theta,cgtol,cgiter,Flag,BndRef,nis,ni,func]=getDirectData;
+% set common data
+xl= C_data(1);
+yl= C_data(2);
+zl= C_data(3);
+nix= C_data(4);
+niy= C_data(5);
+niz= C_data(6);
+dt= C_data(7);
+ndt= C_data(8);
+nu= C_data(9);
+Flag= C_data(10);
+theta= C_data(11);
 
-npx= ni(1)+1;
-npyz= (ni(2)+1)*(ni(3)+1);
-%
-dt= 0.01;
-ndt= 100;
-%time=[0:dt:ndt*dt];
-%
+npx= nix+1;
+npyz= (niy+1)*(niz+1);
+
+% set local data
+nis= [L_data(1),L_data(2),L_data(3)];
+BndRef= L_data(4);
+cgtol= L_data(5);
+cgiter= L_data(6);
+M= L_data(7);
+
 T0= 20*ones(npyz,npx);
-%
 qh= 2*ones(npyz, ndt+1);
-qc=zeros(npyz, ndt+1);
+qc= zeros(npyz, ndt+1);
 
 % Loesung mit DROPS
 cd ..;
-T= ipdrops(T0, qh, qc, M, xl, yl, zl, nu, nis(1), nis(2), nis(3), dt, theta, cgtol, cgiter, Flag, BndRef);
+[Value,T]= ipdrops(T0, qh, qc, M, xl, yl, zl, nu, nis(1), nis(2), nis(3), dt, theta, cgtol, cgiter, Flag, BndRef);
 cd optimization;
-Td=[T0(:,M+1) T];
+
+Plane_Pos= round(M*nix/xl);
+Td= [T0(:,Plane_Pos+1) T];
+Val= Value;
+
 %figure(2);plotsol(npc,ndt,sol)
+
+return
