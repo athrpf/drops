@@ -58,6 +58,12 @@ const Uint DebugUnknownsC   =16;
 #  define Comment(a,b) ((void)0)
 #endif
 
+#ifdef __GNUC__
+#  define __UNUSED__ __attribute__((__unused__))
+#else
+#  define __UNUSED__
+#endif
+
 template <class In, class T>
 inline bool is_in( In beg, In end, const T& value )
 {

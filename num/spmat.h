@@ -40,7 +40,8 @@ class VectorBaseCL
 private:
     std::valarray<T> _va;
 
-    void AssertDim (const std::valarray<T>& va, const char msg[]) const
+    void AssertDim (__UNUSED__ const std::valarray<T>& va,
+                    __UNUSED__ const char msg[]) const
       { Assert(_va.size()==va.size(), msg, DebugNumericC); }
 
 public:
