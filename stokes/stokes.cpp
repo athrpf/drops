@@ -108,10 +108,14 @@ void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& M, VectorCL& x,
 VectorCL operator* (const SchurComplMatrixCL& M, const VectorCL& v)
 {
     double tol= M._tol;
-    int maxiter= 100;
+    int maxiter= 500;
     VectorCL x( M._matA.num_cols());
     
     PCG(M._matA, x, transp_mul(M._matB, v), M._pc, maxiter, tol);
+    if (maxiter >= 499)
+        Comment(    "VectorCL operator* (const SchurComplMatrixCL& M, const VectorCL& v): "
+                 << "Took more than 100 iterations. tol: " << tol << std::endl,
+                 DebugNumericC);
 //    std::cerr << "Inner iteration took " << maxiter << " steps, residuum is " << tol << std::endl;
     return M._matB*x;
 }    

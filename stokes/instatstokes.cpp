@@ -52,6 +52,10 @@ VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v)
     VectorCL x( M._matA.num_cols());
 
     CG(M._matA, x, transp_mul(M._matB, v), maxiter, tol);
+    if (maxiter > 990)
+        Comment(     "VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v): "
+                  << "Needed more than 990 iterations! tol: " << tol << std::endl,
+                  DebugNumericC);
 //    std::cerr << "Inner iteration took " << maxiter << " steps, residuum is " << tol << std::endl;
     return M._matB*x;
 }    
