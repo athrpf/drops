@@ -170,7 +170,7 @@ template<class BndDataT>
   void
   LocalNumbP2CL::assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd)
 {
-    BndIdxT bidx;
+    BndIdxT bidx= 0;
     const Uint sys= idx.GetIdx();
     
     for (Uint i= 0; i < NumVertsC; ++i)

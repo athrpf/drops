@@ -73,7 +73,7 @@ void InstatNavierStokesP2P1CL<Coeff>::CheckSolution(
     const VelVecDescCL* lsgvel,
     const VecDescCL* lsgpr, 
     vector_instat_fun_ptr LsgVel,
-    vector_instat_fun_ptr DtLsgVel,
+    vector_instat_fun_ptr /*DtLsgVel*/,
     scalar_instat_fun_ptr LsgPr,
     double t
     )
