@@ -156,7 +156,7 @@ void InstatStokesFracStepSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorC
 {
         double macrostep= _theta*_dt;
         _Stokes.SetupInstatRhs( _cplA, &_Stokes.c, _cplM, _Stokes.t+macrostep, _Stokes.b, _Stokes.t);
-        _rhs= _Stokes.A->Data * v;
+        _rhs= _Stokes.A.Data * v;
         _rhs*= -(1-alpha)*macrostep;
         _rhs+= _Stokes.M->Data*v + macrostep*_Stokes.b.Data;
         _rhs+= _cplM->Data - _old_cplM->Data + macrostep * ( _alpha*_cplA->Data + (1.-_alpha)*(_old_cplA->Data + _NS.cplN.Data) );
