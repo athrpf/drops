@@ -48,9 +48,9 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red, dou
     Uint step= 0;
     bool new_marks;
 
-    new_idx->Set( 0, 1, 0, 0, 0);
-    old_idx->Set( 1, 1, 0, 0, 0);
-//    err_idx->Set( 2, 0, 0, 0, 1);
+    new_idx->Set( 1, 0, 0, 0);
+    old_idx->Set( 1, 0, 0, 0);
+//    err_idx->Set( 0, 0, 0, 1);
     do
     {
         std::cerr << DROPS::SanityMGOutCL(MG) << std::endl;

@@ -122,7 +122,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
   double tol= 1.0e-7;
   int max_iter= 500;  
   
-  idx.Set( 0, 1, 0, 0, 0);
+  idx.Set( 1, 0, 0, 0);
   
   MultiGridCL& MG= Poisson.GetMG();
     
@@ -167,7 +167,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
   
   Point3DCL pt;
   Uint lvl= x.RowIdx->TriangLevel;
-  Uint indx= x.RowIdx->Idx;
+  Uint indx= x.RowIdx->GetIdx();
     
   d_pair help;
   cmp_key key;

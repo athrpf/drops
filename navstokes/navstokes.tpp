@@ -13,8 +13,8 @@ template <class MGB, class Coeff>
 void NavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr)
 {
     Uint lvl= A.RowIdx->TriangLevel,
-        vidx= A.RowIdx->Idx,
-        pidx= B.RowIdx->Idx;
+        vidx= A.RowIdx->GetIdx(),
+        pidx= B.RowIdx->GetIdx();
     VecDescCL veldesc( A.RowIdx);
     VectorCL& lsgvel= veldesc.Data;
     VectorCL  lsgpr( B.RowIdx->NumUnknowns);
@@ -62,7 +62,7 @@ void NavierStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->RowIdx->TriangLevel,
-         vidx=lsgvel->RowIdx->Idx;
+         vidx=lsgvel->RowIdx->GetIdx();
     
     VecDescCL rhsN( lsgvel->RowIdx);
     N.Data.clear();
@@ -274,7 +274,7 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
     typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
     VectorCL& b= vecb->Data;
     const Uint lvl    = matN->RowIdx->TriangLevel;
-    const Uint vidx   = matN->RowIdx->Idx;
+    const Uint vidx   = matN->RowIdx->GetIdx();
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];
@@ -356,7 +356,7 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL* velve
     typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
     VectorCL& b= vecb->Data;
     const Uint lvl    = velvec->RowIdx->TriangLevel;
-    const Uint vidx   = velvec->RowIdx->Idx;
+    const Uint vidx   = velvec->RowIdx->GetIdx();
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];

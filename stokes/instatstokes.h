@@ -121,7 +121,7 @@ class InstatStokesP2P1CL : public ProblemCL<MGB, Coeff, InstatStokesBndDataCL>
                  M;
     
     InstatStokesP2P1CL( const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), t( 0.) {}  
+        : _base(mgb, coeff, bdata), vel_idx(3,3), pr_idx(1), t( 0.) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint, IdxDescCL*);

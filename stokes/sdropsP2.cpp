@@ -96,10 +96,10 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_iter_t
         Estimator(rel_red, markratio, .484473073129685, true, &MyStokesCL::ResidualErrEstimator, Stokes);
     bool new_marks= false;
 
-    vidx1->Set(0, 3, 3, 0, 0);
-    vidx2->Set(1, 3, 3, 0, 0);
-    pidx1->Set(2, 1, 0, 0, 0);
-    pidx2->Set(3, 1, 0, 0, 0);
+    vidx1->Set(3, 3, 0, 0);
+    vidx2->Set(3, 3, 0, 0);
+    pidx1->Set(1, 0, 0, 0);
+    pidx2->Set(1, 0, 0, 0);
     TimerCL time;
 
     do

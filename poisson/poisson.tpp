@@ -22,7 +22,7 @@ void PoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
     idx->TriangLevel = level;
     idx->NumUnknowns = 0;
 
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
 
     // allocate space for indices; number unknowns in TriangLevel level
     CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
@@ -33,7 +33,7 @@ void PoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 template<class MGB, class Coeff>
 void PoissonP1CL<MGB,Coeff>::DeleteNumbering(IdxDescCL* idx)
 {
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
     idx->NumUnknowns = 0;
 
@@ -112,7 +112,7 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
     b.Clear();
     
     const Uint lvl    = Amat.RowIdx->TriangLevel,
-               idx    = Amat.RowIdx->Idx;
+               idx    = Amat.RowIdx->GetIdx();
     MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns); 
 
 //    SMatrixCL<3,3> T;
@@ -184,7 +184,7 @@ void PoissonP1CL<MGB,Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
 {
     MatrixBuilderCL A(&Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
     const Uint lvl    = Amat.RowIdx->TriangLevel;
-    const Uint idx    = Amat.RowIdx->Idx;
+    const Uint idx    = Amat.RowIdx->GetIdx();
 
 //    SMatrixCL<3,4> Gref(0.0); 
 //    Gref(0,1)= Gref(1,2)= Gref(2,3)= 1.; // gradients on ref. tetra
@@ -244,8 +244,8 @@ void PoissonP1CL<MGB,Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, Id
 {
     const Uint c_level= cIdx->TriangLevel;
     const Uint f_level= fIdx->TriangLevel;
-    const Uint c_idx= cIdx->Idx;
-    const Uint f_idx= fIdx->Idx;
+    const Uint c_idx= cIdx->GetIdx();
+    const Uint f_idx= fIdx->GetIdx();
     MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
 //    Uint counter1= 0, counter2= 0;
     IdxT i;
@@ -295,7 +295,7 @@ double PoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg, scalar_fun_pt
 {
     double diff, maxdiff=0, norm2= 0, L2=0;
     Uint lvl=lsg.RowIdx->TriangLevel,
-         Idx=lsg.RowIdx->Idx;
+         Idx=lsg.RowIdx->GetIdx();
     
     DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
     
@@ -342,7 +342,7 @@ template<class MGB, class Coeff>
 void PoissonP1CL<MGB,Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) const
 {
     Uint lvl= A.ColIdx->TriangLevel,
-         idx= A.ColIdx->Idx;
+         idx= A.ColIdx->GetIdx();
     VectorCL lsg(A.Data.num_cols());
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
@@ -444,7 +444,7 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
                 for (int i=0; i<4; ++i)
                 {
                     v[i]= t.GetVertex(i);
-                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
+                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.GetIdx())]
                                : Bnd.GetDirBndValue(*v[i]) )
                           *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 }
@@ -478,11 +478,11 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimator(const TetraCL& t, const VecD
                 v[i]= t.GetVertex(i);
                 nv= neigh.GetVertex(i);
                 jump-= dir
-                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
+                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.GetIdx())]
                         : Bnd.GetDirBndValue(*v[i]) )
                       *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 jump+= dir
-                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)]
+                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.GetIdx())]
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }
@@ -541,7 +541,7 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const Ve
                 for (int i=0; i<4; ++i)
                 {
                     v[i]= t.GetVertex(i);
-                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
+                    n_du+= (v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.GetIdx())]
                                : Bnd.GetDirBndValue(*v[i]) )
                           *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 }
@@ -575,11 +575,11 @@ double PoissonP1CL<MGB,Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const Ve
                 v[i]= t.GetVertex(i);
                 nv= neigh.GetVertex(i);
                 jump-= dir
-                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.Idx)]
+                      *(v[i]->Unknowns.Exist() ? sol.Data[v[i]->Unknowns(idx.GetIdx())]
                         : Bnd.GetDirBndValue(*v[i]) )
                       *(H(0,i)*normal[0] + H(1,i)*normal[1] + H(2,i)*normal[2]);
                 jump+= dir
-                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.Idx)]
+                      *(nv->Unknowns.Exist() ? sol.Data[nv->Unknowns(idx.GetIdx())]
                         : Bnd.GetDirBndValue(*nv) )
                       *(nH(0,i)*normal[0] + nH(1,i)*normal[1] + nH(2,i)*normal[2]);
             }

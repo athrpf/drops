@@ -22,7 +22,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx
     idx->TriangLevel = level;
     idx->NumUnknowns = 0;
 
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
 
     // allocate space for indices; number unknowns in TriangLevel level; "true" generates unknowns on
     // the boundary
@@ -42,7 +42,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* id
     idx->TriangLevel = level;
     idx->NumUnknowns = 0;
 
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
 
     // allocate space for indices; number unknowns in TriangLevel level
     CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
@@ -57,7 +57,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CreateNumberingVel(Uint level, IdxDescCL* id
 template <class MGB, class Coeff>
 void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 {
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
     idx->NumUnknowns = 0;
 
@@ -69,7 +69,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 template <class MGB, class Coeff>
 void InstatStokesP2P1CL<MGB,Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 {
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
     idx->NumUnknowns = 0;
 
@@ -84,8 +84,8 @@ template <class MGB, class Coeff>
 void InstatStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
 {
     Uint lvl= A.RowIdx->TriangLevel,
-        vidx= A.RowIdx->Idx,
-        pidx= B.RowIdx->Idx;
+        vidx= A.RowIdx->GetIdx(),
+        pidx= B.RowIdx->GetIdx();
     VectorCL lsgvel(A.RowIdx->NumUnknowns);
     VectorCL lsgpr( B.RowIdx->NumUnknowns);
     SVectorCL<3> tmp;
@@ -189,8 +189,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* 
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
     const Uint lvl    = matA->RowIdx->TriangLevel;
-    const Uint vidx   = matA->RowIdx->Idx,
-               pidx   = matB->RowIdx->Idx;
+    const Uint vidx   = matA->RowIdx->GetIdx(),
+               pidx   = matB->RowIdx->GetIdx();
 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
@@ -327,7 +327,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupPrMass(MatDescCL* matM) const
     MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
 
     const Uint lvl    = matM->RowIdx->TriangLevel;
-    const Uint pidx   = matM->RowIdx->Idx;
+    const Uint pidx   = matM->RowIdx->GetIdx();
 
     IdxT prNumb[4];
 
@@ -368,8 +368,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL
                     I(&matI->Data, num_unks_vel, num_unks_vel);
 
     const Uint lvl    = matA->RowIdx->TriangLevel;
-    const Uint vidx   = matA->RowIdx->Idx,
-               pidx   = matB->RowIdx->Idx;
+    const Uint vidx   = matA->RowIdx->GetIdx(),
+               pidx   = matB->RowIdx->GetIdx();
 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
@@ -476,8 +476,8 @@ void InstatStokesP2P1CL<MGB,Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDe
     VectorCL& f    = vecf->Data;
     VectorCL& id   = vecI->Data;
     const Uint lvl = vecA->RowIdx->TriangLevel;
-    const Uint vidx= vecA->RowIdx->Idx,
-               pidx= vecB->RowIdx->Idx;
+    const Uint vidx= vecA->RowIdx->GetIdx(),
+               pidx= vecB->RowIdx->GetIdx();
 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
@@ -590,7 +590,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun
 {
     VectorCL& lsgvel= vec->Data;
     Uint lvl        = vec->RowIdx->TriangLevel,
-         vidx       = vec->RowIdx->Idx;
+         vidx       = vec->RowIdx->GetIdx();
     
     SVectorCL<3> tmp;
     
@@ -624,7 +624,7 @@ void InstatStokesP2P1CL<MGB,Coeff>::CheckSolution(const VelVecDescCL* lsgvel, co
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->RowIdx->TriangLevel,
-         vidx=lsgvel->RowIdx->Idx;
+         vidx=lsgvel->RowIdx->GetIdx();
     
     VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;
     VectorCL res2= B.Data*lsgvel->Data - c.Data;

@@ -105,7 +105,7 @@ class PoissonP1CL : public ProblemCL<MGB, Coeff, PoissonBndDataCL>
     MatDescCL A;
     
     PoissonP1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata) {}  
+        : _base(mgb, coeff, bdata), idx(1) {}  
     // numbering of unknowns
     void CreateNumbering(Uint, IdxDescCL*);
     void DeleteNumbering(IdxDescCL*);

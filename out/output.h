@@ -143,7 +143,7 @@ class TecPlot2DSolOutCL: public MGOutCL
   public:
     TecPlot2DSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, 
                        const IdxDescCL& freeVertIdx, int lvl, Uint cutvar, double cutplane)
-      : MGOutCL( &mg), _idx( freeVertIdx.Idx), _level( lvl<0 ? mg.GetLastLevel() : lvl), 
+      : MGOutCL( &mg), _idx( freeVertIdx.GetIdx()), _level( lvl<0 ? mg.GetLastLevel() : lvl), 
         _cut( cutvar), _cutplane( cutplane), _v( v), _p( p) 
     {}
       
@@ -436,7 +436,7 @@ std::ostream& TecPlotSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
                                               vend=   const_cast<MultiGridCL*>(_MG)->GetTriangVertexEnd( _level); 
     Uint numv= std::distance( vbegin, vend), 
          numel= std::distance( tbegin, tend),
-         pidx= _p.GetSolution()->RowIdx->Idx;
+         pidx= _p.GetSolution()->RowIdx->GetIdx();
             
     os << "# output written by DROPS::TecPlotSolOutCL,\n";
     os << "TITLE = " << '"' << "3D-Solution" << '"' << '\n';

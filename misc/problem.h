@@ -20,16 +20,27 @@ namespace DROPS
 
 class IdxDescCL
 {
+  private:
+    static std::vector<bool> IdxFree;
+    Uint                     Idx;
+    
+    Uint GetFreeIdx();
+    
   public:
     Uint TriangLevel;
-    Uint Idx;
     Uint NumUnknownsVertex;
     Uint NumUnknownsEdge;
     Uint NumUnknownsFace;
     Uint NumUnknownsTetra;
     IdxT NumUnknowns;
-    // Uit _NumElimUnknowns;
-    void Set(Uint idxnum, Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra);
+
+    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0) 
+      : Idx( GetFreeIdx()), NumUnknownsVertex( unkVertex), NumUnknownsEdge( unkEdge),
+        NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra) {}
+    ~IdxDescCL() { IdxFree[Idx]= true; }
+    
+    void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
+    Uint GetIdx() const { return Idx; }
 };
 
 

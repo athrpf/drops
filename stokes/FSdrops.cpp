@@ -261,13 +261,13 @@ void Strategy(InstatStokesP2P1CL<MGB,Coeff>& Stokes, double omega, double inner_
 //    bool new_marks;
 //    double akt_glob_err;
 
-    vidx1->Set(0, 3, 3, 0, 0);
-    vidx2->Set(1, 3, 3, 0, 0);
-    pidx1->Set(2, 1, 0, 0, 0);
-    pidx2->Set(3, 1, 0, 0, 0);
+    vidx1->Set( 3, 3, 0, 0);
+    vidx2->Set( 3, 3, 0, 0);
+    pidx1->Set( 1, 0, 0, 0);
+    pidx2->Set( 1, 0, 0, 0);
     
     TimerCL time;
-//    err_idx->Set(5, 0, 0, 0, 1);
+//    err_idx->Set( 0, 0, 0, 1);
     do
     {
 //        akt_glob_err= glob_err;

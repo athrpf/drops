@@ -88,12 +88,12 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, double tol
         Estimator(rel_red, markratio, 1., true, &MyStokesCL::ResidualErrEstimator, Stokes);
     bool new_marks= false;
 
-    vidx1->Set( 0, 3, 3, 0, 0);
-    vidx2->Set( 1, 3, 3, 0, 0);
-    pidx1->Set( 2, 1, 0, 0, 0);
-    pidx2->Set( 3, 1, 0, 0, 0);
+    vidx1->Set( 3, 3, 0, 0);
+    vidx2->Set( 3, 3, 0, 0);
+    pidx1->Set( 1, 0, 0, 0);
+    pidx2->Set( 1, 0, 0, 0);
     
-    corr_vidx.Set( 4, 3, 3, 0, 0);
+    corr_vidx.Set( 3, 3, 0, 0);
 
 //    MarkLower(MG,0.25); 
     TimerCL time;
@@ -291,7 +291,7 @@ int main (int argc, char** argv)
     fil << DROPS::GeomSolOutCL<MyStokesCL::DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
 
     DROPS::IdxDescCL tecIdx;
-    tecIdx.Set( 4, 1, 0, 0, 0);
+    tecIdx.Set( 1, 0, 0, 0);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
     
     std::ofstream v2d("data2D.dat");

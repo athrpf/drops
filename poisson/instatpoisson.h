@@ -126,7 +126,7 @@ class InstatPoissonP1CL : public ProblemCL<MGB, Coeff, InstatPoissonBndDataCL>
 	
     
     InstatPoissonP1CL( const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata), t( 0.) {}  
+        : _base(mgb, coeff, bdata), t( 0.), idx(1) {}  
 				
     // numbering of unknowns
     void CreateNumbering( Uint, IdxDescCL*);

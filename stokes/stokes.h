@@ -140,9 +140,9 @@ class StokesP2P1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
                  B;
     
     StokesP2P1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata) {}  
+        : _base(mgb, coeff, bdata), vel_idx(3,3), pr_idx(1) {}  
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mg, coeff, bdata) {}  
+        : _base(mg, coeff, bdata), vel_idx(3,3), pr_idx(1) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel(Uint, IdxDescCL*);
@@ -198,7 +198,7 @@ class StokesP1BubbleP1CL : public ProblemCL<MGB, Coeff, StokesBndDataCL>
                  B;
     
     StokesP1BubbleP1CL(const MultiGridBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base(mgb, coeff, bdata) {}  
+        : _base(mgb, coeff, bdata), vel_idx(3,0,0,3), pr_idx(1) {}  
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel(Uint, IdxDescCL*);

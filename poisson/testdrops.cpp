@@ -146,7 +146,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int met
         MGLevelDataCL& tmp= MGData.back();
         
         std::cerr << "Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set(i, 1, 0, 0, 0);
+        tmp.Idx.Set(1, 0, 0, 0);
         Poisson.CreateNumbering(lvl, &tmp.Idx);
         tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
         if(lvl==MG.GetLastLevel())
@@ -302,7 +302,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
         {
             MGData.push_back(MGLevelDataCL());
             MGLevelDataCL& tmp= MGData.back();
-            tmp.Idx.Set(1+step%2, 1, 0, 0, 0);
+            tmp.Idx.Set( 1, 0, 0, 0);
             Poisson.CreateNumbering(MG.GetLastLevel(), &tmp.Idx);
             tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
             Poisson.b.SetIdx(&tmp.Idx);
@@ -326,7 +326,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
                 MGLevelDataCL& tmp= MGData.back();
 
                 std::cerr << "Create MGData on Level " << lvl << std::endl;
-                tmp.Idx.Set(lvl, 1, 0, 0, 0);
+                tmp.Idx.Set( 1, 0, 0, 0);
                 Poisson.CreateNumbering(lvl, &tmp.Idx);
                 tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
                 if(lvl!=1)
@@ -440,7 +440,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
         ++step;
     } while ( true_err > stoperr /*&& step<14*/ );
     std::cout << "cumulative solving time: " << time2.GetTime() << std::endl;
-    Poisson.idx.Set(0,1,0,0,0);
+    Poisson.idx.Set(1,0,0,0);
     Poisson.CreateNumbering( Poisson.x.RowIdx->TriangLevel, &Poisson.idx);
     Poisson.x.RowIdx= &Poisson.idx;
 }

@@ -24,7 +24,7 @@ void InstatPoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
     idx->TriangLevel = level;
     idx->NumUnknowns = 0;
 
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
 
     // allocate space for indices; number unknowns in TriangLevel level
     CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
@@ -35,7 +35,7 @@ void InstatPoissonP1CL<MGB,Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 template<class MGB, class Coeff>
 void InstatPoissonP1CL<MGB,Coeff>::DeleteNumbering(IdxDescCL* idx)
 {
-    const Uint idxnum = idx->Idx;    // idx is the index in UnknownIdxCL
+    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
     const Uint level  = idx->TriangLevel;
     idx->NumUnknowns = 0;
 
@@ -82,7 +82,7 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, 
   vf.Clear();
     
   const Uint lvl = vA.RowIdx->TriangLevel,
-             idx = vA.RowIdx->Idx;
+             idx = vA.RowIdx->GetIdx();
   SMatrixCL<3,4> G;
 
   double coup[4][4];
@@ -145,7 +145,7 @@ void InstatPoissonP1CL<MGB,Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL
 	MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
 	 
   const Uint lvl = Amat.RowIdx->TriangLevel;
-  const Uint idx = Amat.RowIdx->Idx;
+  const Uint idx = Amat.RowIdx->GetIdx();
 
   SMatrixCL<3,4> G;
     
@@ -197,7 +197,7 @@ template<class MGB, class Coeff>
 void InstatPoissonP1CL<MGB,Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
     Uint lvl= vec.RowIdx->TriangLevel,
-         idx= vec.RowIdx->Idx;
+         idx= vec.RowIdx->GetIdx();
     
     
     for (MultiGridCL::const_TriangVertexIteratorCL sit= _MG.GetTriangVertexBegin(lvl), send= _MG.GetTriangVertexEnd(lvl);
@@ -205,7 +205,7 @@ void InstatPoissonP1CL<MGB,Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr f
     {
         if (sit->Unknowns.Exist(idx))
         {
-            vec.Data[sit->Unknowns(idx)[0]]= func( sit->GetCoord(), t0);
+            vec.Data[sit->Unknowns(idx)]= func( sit->GetCoord(), t0);
         }
     }
     
@@ -223,7 +223,7 @@ void InstatPoissonP1CL<MGB,Coeff>::CheckSolution(const VecDescCL& lsg,
 {
   double diff, maxdiff=0, norm2= 0, L2=0;
   Uint lvl=lsg.RowIdx->TriangLevel,
-       Idx=lsg.RowIdx->Idx;
+       Idx=lsg.RowIdx->GetIdx();
   
   DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);
     

@@ -21,7 +21,7 @@ namespace DROPS
 double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const PoissonBndDataCL& Bnd)
 {
     IdxT UnknownIdx[4];
-    Uint Idx= lsg.RowIdx->Idx;
+    const Uint Idx= lsg.RowIdx->GetIdx();
     double val1, val2, diff, maxdiff=0;
     
     for(int i=0; i<4; ++i)

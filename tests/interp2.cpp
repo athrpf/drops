@@ -72,12 +72,12 @@ int main (int argc, char** argv)
     mg.Refine();
 
     IdxDescCL i0, i1;
-    i0.Set(0, 1,1,0,0); i0.TriangLevel= 0; i0.NumUnknowns= 0;
-    i1.Set(1, 1,1,0,0); i1.TriangLevel= 1; i1.NumUnknowns= 0;
-    CreateNumbOnVertex(i0.Idx, i0.NumUnknowns, 1, mg.GetTriangVertexBegin(i0.TriangLevel), mg.GetTriangVertexEnd(i0.TriangLevel), Bnd );
-    CreateNumbOnEdge(i0.Idx, i0.NumUnknowns, 1, mg.GetTriangEdgeBegin(i0.TriangLevel), mg.GetTriangEdgeEnd(i0.TriangLevel), Bnd );
-    CreateNumbOnVertex(i1.Idx, i1.NumUnknowns, 1, mg.GetTriangVertexBegin(i1.TriangLevel), mg.GetTriangVertexEnd(i1.TriangLevel), Bnd );
-    CreateNumbOnEdge(i1.Idx, i1.NumUnknowns, 1, mg.GetTriangEdgeBegin(i1.TriangLevel), mg.GetTriangEdgeEnd(i1.TriangLevel), Bnd );
+    i0.Set( 1,1,0,0); i0.TriangLevel= 0; i0.NumUnknowns= 0;
+    i1.Set( 1,1,0,0); i1.TriangLevel= 1; i1.NumUnknowns= 0;
+    CreateNumbOnVertex(i0.GetIdx(), i0.NumUnknowns, 1, mg.GetTriangVertexBegin(i0.TriangLevel), mg.GetTriangVertexEnd(i0.TriangLevel), Bnd );
+    CreateNumbOnEdge  (i0.GetIdx(), i0.NumUnknowns, 1, mg.GetTriangEdgeBegin(i0.TriangLevel), mg.GetTriangEdgeEnd(i0.TriangLevel), Bnd );
+    CreateNumbOnVertex(i1.GetIdx(), i1.NumUnknowns, 1, mg.GetTriangVertexBegin(i1.TriangLevel), mg.GetTriangVertexEnd(i1.TriangLevel), Bnd );
+    CreateNumbOnEdge  (i1.GetIdx(), i1.NumUnknowns, 1, mg.GetTriangEdgeBegin(i1.TriangLevel), mg.GetTriangEdgeEnd(i1.TriangLevel), Bnd );
 
     VecDescBaseCL<VectorCL> v0, v1;
     v0.SetIdx(&i0);

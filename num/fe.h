@@ -497,7 +497,7 @@ class P1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
     GetDoF(const VertexCL& s) const
     {
         return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     
   public:
@@ -522,7 +522,7 @@ class InstatP1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
     GetDoF(const VertexCL& s) const
     {
         return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     
   public:
@@ -544,7 +544,7 @@ inline void
 P1EvalBaseCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
 {
     Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P1EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->Idx), d);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
@@ -755,13 +755,13 @@ class P2EvalCL: public P2EvalBaseCL<DataT, BndDataT, VecDescT>
     GetDoF(const VertexCL& s) const
     {
         return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     inline DataT // helper-function to evaluate on an edge; use val() instead
     GetDoF(const EdgeCL& s) const
     {
         return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     
 public:
@@ -787,13 +787,13 @@ class InstatP2EvalCL: public P2EvalBaseCL<DataT, BndDataT, VecDescT>
     GetDoF(const VertexCL& s) const
     {
         return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     inline DataT // helper-function to evaluate on an edge; use val() instead
     GetDoF(const EdgeCL& s) const
     {
         return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     
 public:
@@ -809,7 +809,7 @@ inline void
 P2EvalBaseCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
 {
     Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P2EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->Idx), d);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
@@ -839,7 +839,7 @@ inline void
 P2EvalBaseCL<Data, _BndData, _VD>::SetDoF(const EdgeCL& s, const Data& d)
 {
     Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P2EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-edge."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->Idx), d);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
@@ -973,7 +973,7 @@ P2EvalBaseCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, d
 template<class Data, class _BndData, class _VD>
 inline bool P2EvalBaseCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t) const
 {
-    const Uint idx= _sol->RowIdx->Idx;
+    const Uint idx= _sol->RowIdx->GetIdx();
     for (TetraCL::const_VertexPIterator it= t.GetVertBegin(), end= t.GetVertEnd();
         it!=end; ++it)
         if ( !(_bnd->IsOnDirBnd( **it) || (*it)->Unknowns.Exist(idx) ))
@@ -1102,7 +1102,7 @@ inline Data
 P1BubbleEvalCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s) const
 {
     return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                               : DoFHelperCL<Data,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+                               : DoFHelperCL<Data,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
 }
 
 
@@ -1118,7 +1118,7 @@ template<class Data, class _BndData, class _VD>
 inline Data
 P1BubbleEvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s) const
 {
-    return DoFHelperCL<Data,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+    return DoFHelperCL<Data,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
 }
 
 
@@ -1127,7 +1127,7 @@ inline void
 P1BubbleEvalCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
 {
     Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P1EvalCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->Idx), d);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
@@ -1235,7 +1235,7 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
     const MultiGridCL& _MG= old_sol.GetMG();    
     const Uint old_level= old_sol.GetSolution()->RowIdx->TriangLevel;
     const Uint level= sol.GetSolution()->RowIdx->TriangLevel;
-    const Uint old_idx= old_sol.GetSolution()->RowIdx->Idx;
+    const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     Uint counter1= 0, counter2= 0;
     
 //    Assert( level==old_level || old_level==level-1, DROPSErrCL("Interpolate: successive triangs are expected\n"));
@@ -1301,8 +1301,8 @@ RepairAfterRefine( P1EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
             "RepairAfterRefine (P1): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
-    const Uint old_idx= old_f.GetSolution()->RowIdx->Idx;
-    const Uint idx= vecdesc.RowIdx->Idx;
+    const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
+    const Uint idx= vecdesc.RowIdx->GetIdx();
     typedef typename P1EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
     P1EvalCL<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
@@ -1443,7 +1443,7 @@ void Adapt( P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _Bn
 
     const MultiGridCL& _MG= old_sol.GetMG();    
     const Uint level= sol.GetSolution()->RowIdx->TriangLevel;
-    const Uint old_idx= old_sol.GetSolution()->RowIdx->Idx;
+    const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     const Uint NumUnknowns=  old_sol.GetSolution()->RowIdx->NumUnknownsEdge;
     
     Assert( level==old_sol.GetSolution()->RowIdx->TriangLevel, 
@@ -1494,7 +1494,7 @@ void Interpolate(P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data
 {
     typedef typename P2EvalBaseCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
-    const Uint old_idx= old_sol.GetSolution()->RowIdx->Idx;
+    const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
       
     // All velocity-components use the same row-index and the same trianglevel
     const MultiGridCL& _MG= old_sol.GetMG();    
@@ -1585,8 +1585,8 @@ RepairAfterRefine( P2EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
             "RepairAfterRefine (P2): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
-    const Uint old_idx= old_f.GetSolution()->RowIdx->Idx;
-    const Uint idx= vecdesc.RowIdx->Idx;
+    const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
+    const Uint idx= vecdesc.RowIdx->GetIdx();
     typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
     P2EvalCL<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);

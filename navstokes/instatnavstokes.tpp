@@ -16,8 +16,8 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr Lsg
 						       double t)
 {
     Uint lvl= A.RowIdx->TriangLevel,
-        vidx= A.RowIdx->Idx,
-        pidx= B.RowIdx->Idx;
+        vidx= A.RowIdx->GetIdx(),
+        pidx= B.RowIdx->GetIdx();
     VecDescCL veldesc( A.RowIdx);
     VectorCL& lsgvel= veldesc.Data;
     VecDescCL veldescdt( A.RowIdx);
@@ -56,7 +56,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::GetDiscError(vector_instat_fun_ptr Lsg
     VecDescCL rhsN( A.ColIdx);
     N.SetIdx( A.RowIdx, A.ColIdx);
     N.Data.clear();
-    SetupNonlinear( &N, &veldesc, &rhsN, t);
+    SetupNonlinear( &N, &veldesc, &rhsN, t, t);
     std::cerr << "discretization error to check the system (x,y = continuos solution): "<<std::endl;
     VectorCL res= lsgveldt + A.Data*lsgvel + N.Data*lsgvel + transp_mul(B.Data,lsgpr) - b.Data - rhsN.Data; 
     std::cerr <<"|| x_t + Ax + Nx + BTy - f || = "<< res.norm()<<", max "<<res.supnorm()<<std::endl;
@@ -80,12 +80,12 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->RowIdx->TriangLevel,
-         vidx=lsgvel->RowIdx->Idx;
+         vidx=lsgvel->RowIdx->GetIdx();
     
     VecDescCL rhsN( lsgvel->RowIdx);
     rhsN.Data= this->cplN.Data;
 //    N.Data.clear();
-//    SetupNonlinear( &N, lsgvel, &rhsN, t);
+//    SetupNonlinear( &N, lsgvel, &rhsN, t, t);
     VectorCL res1= A.Data*lsgvel->Data + N.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
                  - b.Data - rhsN.Data;
     VectorCL res2= B.Data*lsgvel->Data - c.Data;
@@ -113,7 +113,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
     std::cerr << "|| Ax + Nx + BTy - f || = " << res1.norm() << ", max. " << res1.supnorm() << std::endl;
     std::cerr << "||      Bx       - g || = " << res2.norm() << ", max. " << res2.supnorm() << std::endl<<std::endl;
     
-    typename BaseCL::DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
+    typename _base::DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -216,7 +216,7 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::CheckSolution(
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    typename BaseCL::DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
+    typename _base::DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
@@ -318,10 +318,10 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const
     const IdxT num_unks_vel= matN->RowIdx->NumUnknowns;
     MatrixBuilderCL N( &matN->Data, num_unks_vel, num_unks_vel);
 
-    typename BaseCL::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
+    typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
     VectorCL& b= vecb->Data;
     const Uint lvl    = matN->RowIdx->TriangLevel;
-    const Uint vidx   = matN->RowIdx->Idx;
+    const Uint vidx   = matN->RowIdx->GetIdx();
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];
@@ -402,11 +402,11 @@ void InstatNavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL*
 {
     vecb->Clear();
     
-    typename BaseCL::DiscVelSolCL old_u( velvec, &_BndData.Vel, &_MG, t1);
-//    typename BaseCL::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t2);
+    typename _base::DiscVelSolCL old_u( velvec, &_BndData.Vel, &_MG, t1);
+//    typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t2);
     VectorCL& b= vecb->Data;
     const Uint lvl    = velvec->RowIdx->TriangLevel;
-    const Uint vidx   = velvec->RowIdx->Idx;
+    const Uint vidx   = velvec->RowIdx->GetIdx();
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];

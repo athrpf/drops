@@ -11,7 +11,21 @@
 namespace DROPS
 {
 
-void IdxDescCL::Set(Uint idxnum, Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
+std::vector<bool> IdxDescCL::IdxFree;
+
+Uint IdxDescCL::GetFreeIdx()
+{
+    size_t sysnum= 0;
+    for (; sysnum<IdxFree.size(); ++sysnum)
+        if (IdxFree[sysnum]) break;
+    if (sysnum>=IdxFree.size())
+        IdxFree.push_back( false);
+    else
+        IdxFree[sysnum]= false;
+    return sysnum;
+}
+
+void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
 // sets up the number of unknowns in every subsimplex for a certain index.
 // Remark: expects _IdxDesc to be long enough
 {
@@ -19,7 +33,6 @@ void IdxDescCL::Set(Uint idxnum, Uint unkVertex, Uint unkEdge, Uint unkFace, Uin
     NumUnknownsEdge   = unkEdge;
     NumUnknownsFace   = unkFace;
     NumUnknownsTetra  = unkTetra;
-    Idx               = idxnum;
 }
 
 void MatDescCL::SetIdx(IdxDescCL* row, IdxDescCL* col)
