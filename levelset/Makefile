@@ -7,7 +7,7 @@
 DIR = levelset
 
 EXEC = lsdrops reparam lsdrivcav lsshear curvDriven risingBubble \
-    risingBubbleAdap mzelle_stat mzelle_instat mzelle_rise mzelle_instat_ns
+    risingBubbleAdap mzelle_stat mzelle_instat mzelle_instat_ns
 
 DELETE = $(EXEC)
 
@@ -80,12 +80,6 @@ mzelle_instat_ns: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o
-	$(CC) -o $@ $^ $(LFLAGS)
-
-mzelle_rise: \
-    ../levelset/mzelle_rise.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:
