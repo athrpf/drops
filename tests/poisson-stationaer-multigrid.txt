@@ -1,0 +1,83 @@
+Creating Grid...
+1
+Create MGData on Level 1
+Create StiffMatrix
+Create MGData on Level 2
+Create StiffMatrix
+Create Prolongation on Level 2
+Create MGData on Level 3
+Create System 
+Create Prolongation on Level 3
+Check Data...
+279 unknowns on level 1
+2863 unknowns on level 2
+Check skipped: too many unknowns, too much time...
+tolerance: how many levels? (-1=all) > Smoothing steps (0=Quit): initial residuum: 0.505675
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 7.78098
+w-2-Norm= 0.0485412
+max-Norm= 0.288315
+ L2-Norm= 0.043493
+residuum: 0.0515331	red. 0.10191
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 1.37258
+w-2-Norm= 0.00856273
+max-Norm= 0.0665701
+ L2-Norm= 0.00839425
+residuum: 0.00851421	red. 0.165218
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.325688
+w-2-Norm= 0.00203178
+max-Norm= 0.0152331
+ L2-Norm= 0.0027797
+residuum: 0.00166536	red. 0.195597
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.126467
+w-2-Norm= 0.000788956
+max-Norm= 0.00393606
+ L2-Norm= 0.00181246
+residuum: 0.00034655	red. 0.208093
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0901013
+w-2-Norm= 0.000562091
+max-Norm= 0.00156789
+ L2-Norm= 0.00164379
+residuum: 7.45559e-05	red. 0.215138
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0833854
+w-2-Norm= 0.000520194
+max-Norm= 0.00113819
+ L2-Norm= 0.00161103
+residuum: 1.63653e-05	red. 0.219503
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0820248
+w-2-Norm= 0.000511706
+max-Norm= 0.00108774
+ L2-Norm= 0.00160424
+residuum: 3.63518e-06	red. 0.222128
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0817363
+w-2-Norm= 0.000509907
+max-Norm= 0.00107873
+ L2-Norm= 0.0016028
+residuum: 8.1259e-07	red. 0.223535
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0816745
+w-2-Norm= 0.000509521
+max-Norm= 0.00107717
+ L2-Norm= 0.00160249
+residuum: 1.82083e-07	red. 0.224077
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0816613
+w-2-Norm= 0.000509439
+max-Norm= 0.00107677
+ L2-Norm= 0.00160243
+residuum: 4.07856e-08	red. 0.223994
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0816585
+w-2-Norm= 0.000509422
+max-Norm= 0.00107667
+ L2-Norm= 0.00160241
+residuum: 9.11829e-09	red. 0.223567
+Smoothing steps (0=Quit): hallo
+As far as I can tell the MultigridCL is sane.

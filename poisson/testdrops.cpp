@@ -9,7 +9,7 @@
 
 
 
-// laplace u + q*u = f
+// -laplace u + q*u = f
 class PoissonCoeffCL
 {
   public:
@@ -24,7 +24,7 @@ class PoissonCoeffCL
         else
         {
             const double t2= 1.0+t1;
-            return a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(std::pow(t2,3)*t0);
+            return -a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(std::pow(t2,3)*t0);
         }
     }
 };

@@ -1,0 +1,107 @@
+Omega: 1 rel_red: 0.01 markratio: 0.8 maxiter: 7
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 134862152, 1
+Anzahl der Unbekannten: 0, 343
+729 Verts, 4788 Edges, 7392 Faces, 3456 Tetras
+ErrorEstimator is initialized now; initial error: 22.2817 We try to reduce by a factor of 0.01 by marking the tetrahedrons with largest error-estimates, until the error marked is at least 0.8 of the actual global error.
+Iterationen: 12    Norm des Residuums: 5.68437e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 1.84645
+w-2-Norm= 0.099699
+max-Norm= 0.516563
+ L2-Norm= 0.268234
+Estimated global W1_2-error: 17.9293. This is a reduction of 0.804666 compared to the last estimation. Marked 22, unmarked 0 out of 3072 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 1, 2
+Anzahl der Unbekannten: 343, 426
+812 Verts, 5418 Edges, 8583 Faces, 4100 Tetras
+Interpolate: 343 vertex-Dof of 343 copied, 399 new Mid-vertex-DoF interpolated.
+Iterationen: 16    Norm des Residuums: 7.80352e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 4.58409
+w-2-Norm= 0.2221
+max-Norm= 0.98578
+ L2-Norm= 0.398184
+Estimated global W1_2-error: 16.7149. This is a reduction of 0.932265 compared to the last estimation. Marked 128, unmarked 0 out of 3536 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 2, 3
+Anzahl der Unbekannten: 426, 681
+1067 Verts, 7396 Edges, 12234 Faces, 6024 Tetras
+Interpolate: 561 vertex-Dof of 426 copied, 654 new Mid-vertex-DoF interpolated.
+Iterationen: 19    Norm des Residuums: 4.33154e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 4.26896
+w-2-Norm= 0.163587
+max-Norm= 0.413746
+ L2-Norm= 0.207655
+Estimated global W1_2-error: 13.7196. This is a reduction of 0.820802 compared to the last estimation. Marked 388, unmarked 0 out of 5004 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 3, 3
+Anzahl der Unbekannten: 681, 1591
+1977 Verts, 14614 Edges, 25010 Faces, 12540 Tetras
+Interpolate: 1591 vertex-Dof of 681 copied, 1564 new Mid-vertex-DoF interpolated.
+Iterationen: 25    Norm des Residuums: 8.05708e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 2.54068
+w-2-Norm= 0.0636964
+max-Norm= 0.235762
+ L2-Norm= 0.0623685
+Estimated global W1_2-error: 10.5396. This is a reduction of 0.768216 compared to the last estimation. Marked 1443, unmarked 0 out of 10402 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 3, 4
+Anzahl der Unbekannten: 1591, 4728
+5114 Verts, 39494 Edges, 69721 Faces, 35518 Tetras
+Interpolate: 1945 vertex-Dof of 1591 copied, 4701 new Mid-vertex-DoF interpolated.
+Iterationen: 33    Norm des Residuums: 9.57183e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 1.93809
+w-2-Norm= 0.0281861
+max-Norm= 0.13454
+ L2-Norm= 0.0257738
+Estimated global W1_2-error: 7.91893. This is a reduction of 0.751348 compared to the last estimation. Marked 5693, unmarked 0 out of 29008 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 4, 5
+Anzahl der Unbekannten: 4728, 11409
+11795 Verts, 91767 Edges, 163250 Faces, 83719 Tetras
+Interpolate: 8411 vertex-Dof of 4728 copied, 11382 new Mid-vertex-DoF interpolated.
+Iterationen: 42    Norm des Residuums: 8.47355e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 1.23679
+w-2-Norm= 0.011579
+max-Norm= 0.0545547
+ L2-Norm= 0.0117325
+Estimated global W1_2-error: 5.78492. This is a reduction of 0.730518 compared to the last estimation. Marked 13748, unmarked 0 out of 67919 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 5, 5
+Anzahl der Unbekannten: 11409, 36173
+36559 Verts, 289934 Edges, 510121 Faces, 258368 Tetras
+Interpolate: 36173 vertex-Dof of 11409 copied, 36146 new Mid-vertex-DoF interpolated.
+Iterationen: 57    Norm des Residuums: 9.43982e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 1.87743
+w-2-Norm= 0.00987122
+max-Norm= 0.0347096
+ L2-Norm= 0.00795412
+Estimated global W1_2-error: 3.91571. This is a reduction of 0.676883 compared to the last estimation. Marked 69523, unmarked 0 out of 216558 tetrahedrons, which account for 0.8 of the global error.
+
+As far as I can tell the MultigridCL is sane.
+altes und neues TriangLevel: 5, 6
+Anzahl der Unbekannten: 36173, 132958
+133344 Verts, 1054324 Edges, 1873054 Faces, 956067 Tetras
+Interpolate: 51986 vertex-Dof of 36173 copied, 132931 new Mid-vertex-DoF interpolated.
+Iterationen: 81    Norm des Residuums: 7.78641e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 1.27656
+w-2-Norm= 0.00350092
+max-Norm= 0.0141797
+ L2-Norm= 0.00277095
+Estimated global W1_2-error: 2.65506. This is a reduction of 0.678054 compared to the last estimation. Marked 188484, unmarked 0 out of 787378 tetrahedrons, which account for 0.8 of the global error.
+
+hallo
+As far as I can tell the MultigridCL is sane.

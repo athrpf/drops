@@ -6,7 +6,7 @@
 
 DIR = poisson
 
-EXEC = drops MGdrops testdrops dropsrep ipdrops
+EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep
 
 DELETE = $(EXEC)
 
@@ -45,6 +45,12 @@ testdrops: \
 
 ipdrops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdrops.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+ipdropsrep: \
+    ../geom/boundary.o ../geom/builder.o ../poisson/ipdropsrep.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)

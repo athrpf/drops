@@ -146,8 +146,8 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
         {
             for(int j=0; j<=i; ++j)
             {
-                // negative dot-product of the gradients
-                coup[i][j]= ( -G(0,i)*G(0,j)-G(1,i)*G(1,j)-G(2,i)*G(2,j) )/6.0*absdet;
+                // dot-product of the gradients
+                coup[i][j]= ( G(0,i)*G(0,j) + G(1,i)*G(1,j) + G(2,i)*G(2,j) )/6.0*absdet;
                 coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
@@ -217,8 +217,8 @@ void PoissonP1CL<MGB,Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
         {
             for(int j=0; j<=i; ++j)
             {
-                // negative dot-product of the gradients
-                coup[i][j]= ( -G(0,i)*G(0,j)-G(1,i)*G(1,j)-G(2,i)*G(2,j) )/6.0*absdet;
+                // dot-product of the gradients
+                coup[i][j]= ( G(0,i)*G(0,j) + G(1,i)*G(1,j) + G(2,i)*G(2,j) )/6.0*absdet;
                 coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }

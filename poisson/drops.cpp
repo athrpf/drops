@@ -5,13 +5,14 @@
 #include "num/solver.h"
 #include <fstream>
 
-// laplace u + q*u = f
+// -laplace u + q*u = f
 class PoissonCoeffCL
 {
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double f(const DROPS::Point3DCL& p) { return -128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
-                                                        + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
+    static double f(const DROPS::Point3DCL& p)
+        { return 128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
+                                                     + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
 //    static double f(const Point3DCL& p) { return p[2]>0.49?-15.:0; }
 };
 

@@ -1,0 +1,3505 @@
+
+Delta t = 
+Anzahl der Zeitschritte = 
+Anzahl der Verfeinerungen = 4913 Verts, 35910 Edges, 58200 Faces, 28080 Tetras
+Anzahl der Unbekannten: 3375
+t= 0.001
+Iterationen: 2    Norm des Residuums: 2.09904e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.00238683
+w-2-Norm= 4.10852e-05
+max-Norm= 0.00011502
+ L2-Norm= 0.0124471
+t= 0.002
+Iterationen: 2    Norm des Residuums: 2.10779e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.00446712
+w-2-Norm= 7.68938e-05
+max-Norm= 0.000210594
+ L2-Norm= 0.0124341
+t= 0.003
+Iterationen: 2    Norm des Residuums: 2.10766e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.00638587
+w-2-Norm= 0.000109922
+max-Norm= 0.000284456
+ L2-Norm= 0.0124236
+t= 0.004
+Iterationen: 2    Norm des Residuums: 2.11362e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.00818093
+w-2-Norm= 0.00014082
+max-Norm= 0.000342677
+ L2-Norm= 0.012415
+t= 0.005
+Iterationen: 2    Norm des Residuums: 2.11458e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.00987497
+w-2-Norm= 0.000169981
+max-Norm= 0.000409003
+ L2-Norm= 0.0124078
+t= 0.006
+Iterationen: 2    Norm des Residuums: 2.11911e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0114826
+w-2-Norm= 0.000197652
+max-Norm= 0.00047301
+ L2-Norm= 0.012402
+t= 0.007
+Iterationen: 2    Norm des Residuums: 2.12076e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0130143
+w-2-Norm= 0.000224019
+max-Norm= 0.000530655
+ L2-Norm= 0.0123973
+t= 0.008
+Iterationen: 2    Norm des Residuums: 2.12446e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0144782
+w-2-Norm= 0.000249217
+max-Norm= 0.000581761
+ L2-Norm= 0.0123936
+t= 0.009
+Iterationen: 2    Norm des Residuums: 2.12648e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0158807
+w-2-Norm= 0.000273358
+max-Norm= 0.000627976
+ L2-Norm= 0.0123908
+t= 0.01
+Iterationen: 2    Norm des Residuums: 2.12968e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0172269
+w-2-Norm= 0.000296531
+max-Norm= 0.000669436
+ L2-Norm= 0.0123888
+t= 0.011
+Iterationen: 2    Norm des Residuums: 2.13191e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0185212
+w-2-Norm= 0.00031881
+max-Norm= 0.000713622
+ L2-Norm= 0.0123876
+t= 0.012
+Iterationen: 2    Norm des Residuums: 2.1348e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0197673
+w-2-Norm= 0.00034026
+max-Norm= 0.000761755
+ L2-Norm= 0.0123869
+t= 0.013
+Iterationen: 2    Norm des Residuums: 2.13713e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0209684
+w-2-Norm= 0.000360934
+max-Norm= 0.00080681
+ L2-Norm= 0.012387
+t= 0.014
+Iterationen: 2    Norm des Residuums: 2.13983e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0221272
+w-2-Norm= 0.000380881
+max-Norm= 0.000849229
+ L2-Norm= 0.0123875
+t= 0.015
+Iterationen: 2    Norm des Residuums: 2.1422e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0232462
+w-2-Norm= 0.000400143
+max-Norm= 0.00088905
+ L2-Norm= 0.0123886
+t= 0.016
+Iterationen: 2    Norm des Residuums: 2.14479e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0243277
+w-2-Norm= 0.000418758
+max-Norm= 0.000926595
+ L2-Norm= 0.0123903
+t= 0.017
+Iterationen: 2    Norm des Residuums: 2.14718e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0253734
+w-2-Norm= 0.00043676
+max-Norm= 0.000961951
+ L2-Norm= 0.0123923
+t= 0.018
+Iterationen: 2    Norm des Residuums: 2.14969e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0263854
+w-2-Norm= 0.000454178
+max-Norm= 0.000995357
+ L2-Norm= 0.0123948
+t= 0.019
+Iterationen: 2    Norm des Residuums: 2.15208e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0273651
+w-2-Norm= 0.000471042
+max-Norm= 0.00102691
+ L2-Norm= 0.0123977
+t= 0.02
+Iterationen: 2    Norm des Residuums: 2.15453e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.028314
+w-2-Norm= 0.000487376
+max-Norm= 0.0010568
+ L2-Norm= 0.0124011
+t= 0.021
+Iterationen: 2    Norm des Residuums: 2.15692e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0292335
+w-2-Norm= 0.000503204
+max-Norm= 0.00108511
+ L2-Norm= 0.0124047
+t= 0.022
+Iterationen: 2    Norm des Residuums: 2.15933e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0301248
+w-2-Norm= 0.000518547
+max-Norm= 0.00111199
+ L2-Norm= 0.0124087
+t= 0.023
+Iterationen: 2    Norm des Residuums: 2.16171e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0309892
+w-2-Norm= 0.000533426
+max-Norm= 0.00113752
+ L2-Norm= 0.0124131
+t= 0.024
+Iterationen: 2    Norm des Residuums: 2.1641e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0318277
+w-2-Norm= 0.000547859
+max-Norm= 0.00116511
+ L2-Norm= 0.0124177
+t= 0.025
+Iterationen: 2    Norm des Residuums: 2.16646e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0326413
+w-2-Norm= 0.000561863
+max-Norm= 0.00119592
+ L2-Norm= 0.0124227
+t= 0.026
+Iterationen: 2    Norm des Residuums: 2.16884e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.033431
+w-2-Norm= 0.000575456
+max-Norm= 0.00122554
+ L2-Norm= 0.0124279
+t= 0.027
+Iterationen: 2    Norm des Residuums: 2.17119e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0341976
+w-2-Norm= 0.000588652
+max-Norm= 0.00125404
+ L2-Norm= 0.0124334
+t= 0.028
+Iterationen: 2    Norm des Residuums: 2.17354e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.034942
+w-2-Norm= 0.000601466
+max-Norm= 0.00128146
+ L2-Norm= 0.0124392
+t= 0.029
+Iterationen: 2    Norm des Residuums: 2.17589e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0356651
+w-2-Norm= 0.000613913
+max-Norm= 0.00130787
+ L2-Norm= 0.0124452
+t= 0.03
+Iterationen: 2    Norm des Residuums: 2.17823e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0363675
+w-2-Norm= 0.000626004
+max-Norm= 0.00133331
+ L2-Norm= 0.0124514
+t= 0.031
+Iterationen: 2    Norm des Residuums: 2.18057e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.03705
+w-2-Norm= 0.000637752
+max-Norm= 0.00135783
+ L2-Norm= 0.0124579
+t= 0.032
+Iterationen: 2    Norm des Residuums: 2.1829e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0377133
+w-2-Norm= 0.00064917
+max-Norm= 0.00138146
+ L2-Norm= 0.0124646
+t= 0.033
+Iterationen: 2    Norm des Residuums: 2.18523e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0383581
+w-2-Norm= 0.000660268
+max-Norm= 0.00140425
+ L2-Norm= 0.0124715
+t= 0.034
+Iterationen: 2    Norm des Residuums: 2.18756e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0389849
+w-2-Norm= 0.000671057
+max-Norm= 0.00142624
+ L2-Norm= 0.0124786
+t= 0.035
+Iterationen: 2    Norm des Residuums: 2.18988e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0395943
+w-2-Norm= 0.000681547
+max-Norm= 0.00144747
+ L2-Norm= 0.0124859
+t= 0.036
+Iterationen: 2    Norm des Residuums: 2.1922e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.040187
+w-2-Norm= 0.000691749
+max-Norm= 0.00146797
+ L2-Norm= 0.0124934
+t= 0.037
+Iterationen: 2    Norm des Residuums: 2.19451e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0407634
+w-2-Norm= 0.000701672
+max-Norm= 0.00148777
+ L2-Norm= 0.012501
+t= 0.038
+Iterationen: 2    Norm des Residuums: 2.19683e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0413242
+w-2-Norm= 0.000711324
+max-Norm= 0.0015069
+ L2-Norm= 0.0125088
+t= 0.039
+Iterationen: 2    Norm des Residuums: 2.19914e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0418698
+w-2-Norm= 0.000720715
+max-Norm= 0.0015254
+ L2-Norm= 0.0125168
+t= 0.04
+Iterationen: 2    Norm des Residuums: 2.20145e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0424006
+w-2-Norm= 0.000729853
+max-Norm= 0.00154328
+ L2-Norm= 0.0125249
+t= 0.041
+Iterationen: 2    Norm des Residuums: 2.20376e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0429172
+w-2-Norm= 0.000738745
+max-Norm= 0.00156059
+ L2-Norm= 0.0125332
+t= 0.042
+Iterationen: 2    Norm des Residuums: 2.20607e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0434201
+w-2-Norm= 0.000747401
+max-Norm= 0.00157733
+ L2-Norm= 0.0125417
+t= 0.043
+Iterationen: 2    Norm des Residuums: 2.20837e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0439096
+w-2-Norm= 0.000755827
+max-Norm= 0.00159354
+ L2-Norm= 0.0125503
+t= 0.044
+Iterationen: 2    Norm des Residuums: 2.21068e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0443861
+w-2-Norm= 0.00076403
+max-Norm= 0.00160925
+ L2-Norm= 0.012559
+t= 0.045
+Iterationen: 2    Norm des Residuums: 2.21298e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0448501
+w-2-Norm= 0.000772017
+max-Norm= 0.00162662
+ L2-Norm= 0.0125679
+t= 0.046
+Iterationen: 2    Norm des Residuums: 2.21528e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.045302
+w-2-Norm= 0.000779796
+max-Norm= 0.00164492
+ L2-Norm= 0.0125769
+t= 0.047
+Iterationen: 2    Norm des Residuums: 2.21758e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0457422
+w-2-Norm= 0.000787372
+max-Norm= 0.00166269
+ L2-Norm= 0.012586
+t= 0.048
+Iterationen: 2    Norm des Residuums: 2.21988e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0461709
+w-2-Norm= 0.000794752
+max-Norm= 0.00167996
+ L2-Norm= 0.0125952
+t= 0.049
+Iterationen: 2    Norm des Residuums: 2.22218e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0465886
+w-2-Norm= 0.000801942
+max-Norm= 0.00169673
+ L2-Norm= 0.0126046
+t= 0.05
+Iterationen: 2    Norm des Residuums: 2.22448e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0469956
+w-2-Norm= 0.000808948
+max-Norm= 0.00171302
+ L2-Norm= 0.012614
+t= 0.051
+Iterationen: 2    Norm des Residuums: 2.22678e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0473922
+w-2-Norm= 0.000815775
+max-Norm= 0.00172886
+ L2-Norm= 0.0126236
+t= 0.052
+Iterationen: 2    Norm des Residuums: 2.22908e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0477788
+w-2-Norm= 0.000822429
+max-Norm= 0.00174425
+ L2-Norm= 0.0126333
+t= 0.053
+Iterationen: 2    Norm des Residuums: 2.23138e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0481556
+w-2-Norm= 0.000828915
+max-Norm= 0.00175922
+ L2-Norm= 0.0126431
+t= 0.054
+Iterationen: 2    Norm des Residuums: 2.23368e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.048523
+w-2-Norm= 0.000835239
+max-Norm= 0.00177377
+ L2-Norm= 0.0126529
+t= 0.055
+Iterationen: 2    Norm des Residuums: 2.23598e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0488812
+w-2-Norm= 0.000841405
+max-Norm= 0.00178793
+ L2-Norm= 0.0126629
+t= 0.056
+Iterationen: 2    Norm des Residuums: 2.23828e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0492305
+w-2-Norm= 0.000847418
+max-Norm= 0.0018017
+ L2-Norm= 0.012673
+t= 0.057
+Iterationen: 2    Norm des Residuums: 2.24058e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0495712
+w-2-Norm= 0.000853283
+max-Norm= 0.00181509
+ L2-Norm= 0.0126832
+t= 0.058
+Iterationen: 2    Norm des Residuums: 2.24288e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0499036
+w-2-Norm= 0.000859004
+max-Norm= 0.00182813
+ L2-Norm= 0.0126934
+t= 0.059
+Iterationen: 2    Norm des Residuums: 2.24518e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0502279
+w-2-Norm= 0.000864585
+max-Norm= 0.00184082
+ L2-Norm= 0.0127038
+t= 0.06
+Iterationen: 2    Norm des Residuums: 2.24748e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0505443
+w-2-Norm= 0.000870032
+max-Norm= 0.00185318
+ L2-Norm= 0.0127142
+t= 0.061
+Iterationen: 2    Norm des Residuums: 2.24978e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0508531
+w-2-Norm= 0.000875348
+max-Norm= 0.00186521
+ L2-Norm= 0.0127247
+t= 0.062
+Iterationen: 2    Norm des Residuums: 2.25209e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0511545
+w-2-Norm= 0.000880536
+max-Norm= 0.00187693
+ L2-Norm= 0.0127353
+t= 0.063
+Iterationen: 2    Norm des Residuums: 2.25439e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0514488
+w-2-Norm= 0.000885602
+max-Norm= 0.00188835
+ L2-Norm= 0.012746
+t= 0.064
+Iterationen: 2    Norm des Residuums: 2.25669e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0517361
+w-2-Norm= 0.000890547
+max-Norm= 0.00189948
+ L2-Norm= 0.0127567
+t= 0.065
+Iterationen: 2    Norm des Residuums: 2.259e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0520167
+w-2-Norm= 0.000895378
+max-Norm= 0.00191032
+ L2-Norm= 0.0127675
+t= 0.066
+Iterationen: 2    Norm des Residuums: 2.2613e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0522908
+w-2-Norm= 0.000900095
+max-Norm= 0.0019209
+ L2-Norm= 0.0127784
+t= 0.067
+Iterationen: 2    Norm des Residuums: 2.26361e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0525585
+w-2-Norm= 0.000904704
+max-Norm= 0.0019312
+ L2-Norm= 0.0127894
+t= 0.068
+Iterationen: 2    Norm des Residuums: 2.26591e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0528201
+w-2-Norm= 0.000909207
+max-Norm= 0.00194126
+ L2-Norm= 0.0128004
+t= 0.069
+Iterationen: 2    Norm des Residuums: 2.26822e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0530758
+w-2-Norm= 0.000913607
+max-Norm= 0.00195107
+ L2-Norm= 0.0128115
+t= 0.07
+Iterationen: 2    Norm des Residuums: 2.27053e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0533257
+w-2-Norm= 0.000917909
+max-Norm= 0.00196064
+ L2-Norm= 0.0128226
+t= 0.071
+Iterationen: 2    Norm des Residuums: 2.27284e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0535699
+w-2-Norm= 0.000922113
+max-Norm= 0.00196998
+ L2-Norm= 0.0128338
+t= 0.072
+Iterationen: 2    Norm des Residuums: 2.27515e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0538088
+w-2-Norm= 0.000926225
+max-Norm= 0.0019791
+ L2-Norm= 0.0128451
+t= 0.073
+Iterationen: 2    Norm des Residuums: 2.27746e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0540424
+w-2-Norm= 0.000930245
+max-Norm= 0.001988
+ L2-Norm= 0.0128564
+t= 0.074
+Iterationen: 2    Norm des Residuums: 2.27978e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0542708
+w-2-Norm= 0.000934178
+max-Norm= 0.0019967
+ L2-Norm= 0.0128678
+t= 0.075
+Iterationen: 2    Norm des Residuums: 2.28209e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0544944
+w-2-Norm= 0.000938026
+max-Norm= 0.00200519
+ L2-Norm= 0.0128793
+t= 0.076
+Iterationen: 2    Norm des Residuums: 2.28441e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0547131
+w-2-Norm= 0.000941791
+max-Norm= 0.00201349
+ L2-Norm= 0.0128908
+t= 0.077
+Iterationen: 2    Norm des Residuums: 2.28672e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0549271
+w-2-Norm= 0.000945475
+max-Norm= 0.00202161
+ L2-Norm= 0.0129023
+t= 0.078
+Iterationen: 2    Norm des Residuums: 2.28904e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0551367
+w-2-Norm= 0.000949082
+max-Norm= 0.00202954
+ L2-Norm= 0.012914
+t= 0.079
+Iterationen: 2    Norm des Residuums: 2.29136e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0553419
+w-2-Norm= 0.000952614
+max-Norm= 0.00203729
+ L2-Norm= 0.0129256
+t= 0.08
+Iterationen: 2    Norm des Residuums: 2.29368e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0555428
+w-2-Norm= 0.000956072
+max-Norm= 0.00204488
+ L2-Norm= 0.0129373
+t= 0.081
+Iterationen: 2    Norm des Residuums: 2.296e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0557396
+w-2-Norm= 0.000959459
+max-Norm= 0.0020523
+ L2-Norm= 0.0129491
+t= 0.082
+Iterationen: 2    Norm des Residuums: 2.29833e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0559324
+w-2-Norm= 0.000962778
+max-Norm= 0.00205957
+ L2-Norm= 0.0129609
+t= 0.083
+Iterationen: 2    Norm des Residuums: 2.30065e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0561213
+w-2-Norm= 0.00096603
+max-Norm= 0.00206667
+ L2-Norm= 0.0129727
+t= 0.084
+Iterationen: 2    Norm des Residuums: 2.30298e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0563064
+w-2-Norm= 0.000969217
+max-Norm= 0.00207363
+ L2-Norm= 0.0129846
+t= 0.085
+Iterationen: 2    Norm des Residuums: 2.30531e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.056488
+w-2-Norm= 0.000972342
+max-Norm= 0.00208045
+ L2-Norm= 0.0129966
+t= 0.086
+Iterationen: 2    Norm des Residuums: 2.30764e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0566659
+w-2-Norm= 0.000975406
+max-Norm= 0.00208713
+ L2-Norm= 0.0130086
+t= 0.087
+Iterationen: 2    Norm des Residuums: 2.30997e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0568405
+w-2-Norm= 0.00097841
+max-Norm= 0.00209367
+ L2-Norm= 0.0130206
+t= 0.088
+Iterationen: 2    Norm des Residuums: 2.3123e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0570117
+w-2-Norm= 0.000981358
+max-Norm= 0.00210008
+ L2-Norm= 0.0130327
+t= 0.089
+Iterationen: 2    Norm des Residuums: 2.31464e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0571797
+w-2-Norm= 0.00098425
+max-Norm= 0.00210637
+ L2-Norm= 0.0130448
+t= 0.09
+Iterationen: 2    Norm des Residuums: 2.31698e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0573446
+w-2-Norm= 0.000987088
+max-Norm= 0.00211253
+ L2-Norm= 0.0130569
+t= 0.091
+Iterationen: 2    Norm des Residuums: 2.31931e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0575065
+w-2-Norm= 0.000989874
+max-Norm= 0.00211858
+ L2-Norm= 0.0130691
+t= 0.092
+Iterationen: 2    Norm des Residuums: 2.32165e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0576654
+w-2-Norm= 0.00099261
+max-Norm= 0.00212451
+ L2-Norm= 0.0130814
+t= 0.093
+Iterationen: 2    Norm des Residuums: 2.324e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0578215
+w-2-Norm= 0.000995296
+max-Norm= 0.00213033
+ L2-Norm= 0.0130936
+t= 0.094
+Iterationen: 2    Norm des Residuums: 2.32634e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0579748
+w-2-Norm= 0.000997935
+max-Norm= 0.00213605
+ L2-Norm= 0.0131059
+t= 0.095
+Iterationen: 2    Norm des Residuums: 2.32869e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0581254
+w-2-Norm= 0.00100053
+max-Norm= 0.00214166
+ L2-Norm= 0.0131183
+t= 0.096
+Iterationen: 2    Norm des Residuums: 2.33103e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0582734
+w-2-Norm= 0.00100308
+max-Norm= 0.00214717
+ L2-Norm= 0.0131307
+t= 0.097
+Iterationen: 2    Norm des Residuums: 2.33338e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.058419
+w-2-Norm= 0.00100558
+max-Norm= 0.00215258
+ L2-Norm= 0.0131431
+t= 0.098
+Iterationen: 2    Norm des Residuums: 2.33573e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.058562
+w-2-Norm= 0.00100804
+max-Norm= 0.0021579
+ L2-Norm= 0.0131555
+t= 0.099
+Iterationen: 2    Norm des Residuums: 2.33809e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0587027
+w-2-Norm= 0.00101047
+max-Norm= 0.00216312
+ L2-Norm= 0.013168
+t= 0.1
+Iterationen: 2    Norm des Residuums: 2.34044e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0588412
+w-2-Norm= 0.00101285
+max-Norm= 0.00216826
+ L2-Norm= 0.0131805
+t= 0.101
+Iterationen: 2    Norm des Residuums: 2.3428e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0589773
+w-2-Norm= 0.00101519
+max-Norm= 0.00217332
+ L2-Norm= 0.0131931
+t= 0.102
+Iterationen: 2    Norm des Residuums: 2.34516e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0591114
+w-2-Norm= 0.0010175
+max-Norm= 0.00217829
+ L2-Norm= 0.0132056
+t= 0.103
+Iterationen: 2    Norm des Residuums: 2.34752e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0592433
+w-2-Norm= 0.00101977
+max-Norm= 0.00218318
+ L2-Norm= 0.0132182
+t= 0.104
+Iterationen: 2    Norm des Residuums: 2.34988e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0593732
+w-2-Norm= 0.00102201
+max-Norm= 0.002188
+ L2-Norm= 0.0132309
+t= 0.105
+Iterationen: 2    Norm des Residuums: 2.35224e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0595012
+w-2-Norm= 0.00102421
+max-Norm= 0.00219274
+ L2-Norm= 0.0132436
+t= 0.106
+Iterationen: 2    Norm des Residuums: 2.35461e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0596272
+w-2-Norm= 0.00102638
+max-Norm= 0.0021974
+ L2-Norm= 0.0132563
+t= 0.107
+Iterationen: 2    Norm des Residuums: 2.35698e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0597514
+w-2-Norm= 0.00102852
+max-Norm= 0.002202
+ L2-Norm= 0.013269
+t= 0.108
+Iterationen: 2    Norm des Residuums: 2.35935e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0598738
+w-2-Norm= 0.00103062
+max-Norm= 0.00220653
+ L2-Norm= 0.0132817
+t= 0.109
+Iterationen: 2    Norm des Residuums: 2.36172e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0599945
+w-2-Norm= 0.0010327
+max-Norm= 0.00221099
+ L2-Norm= 0.0132945
+t= 0.11
+Iterationen: 2    Norm des Residuums: 2.36409e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0601135
+w-2-Norm= 0.00103475
+max-Norm= 0.00221539
+ L2-Norm= 0.0133073
+t= 0.111
+Iterationen: 2    Norm des Residuums: 2.36647e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0602308
+w-2-Norm= 0.00103677
+max-Norm= 0.00221973
+ L2-Norm= 0.0133202
+t= 0.112
+Iterationen: 2    Norm des Residuums: 2.36885e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0603466
+w-2-Norm= 0.00103876
+max-Norm= 0.00222401
+ L2-Norm= 0.013333
+t= 0.113
+Iterationen: 2    Norm des Residuums: 2.37123e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0604608
+w-2-Norm= 0.00104073
+max-Norm= 0.00222823
+ L2-Norm= 0.0133459
+t= 0.114
+Iterationen: 2    Norm des Residuums: 2.37361e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0605736
+w-2-Norm= 0.00104267
+max-Norm= 0.0022324
+ L2-Norm= 0.0133589
+t= 0.115
+Iterationen: 2    Norm des Residuums: 2.37599e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0606849
+w-2-Norm= 0.00104459
+max-Norm= 0.00223651
+ L2-Norm= 0.0133718
+t= 0.116
+Iterationen: 2    Norm des Residuums: 2.37838e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0607949
+w-2-Norm= 0.00104648
+max-Norm= 0.00224056
+ L2-Norm= 0.0133848
+t= 0.117
+Iterationen: 2    Norm des Residuums: 2.38077e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0609035
+w-2-Norm= 0.00104835
+max-Norm= 0.00224457
+ L2-Norm= 0.0133978
+t= 0.118
+Iterationen: 2    Norm des Residuums: 2.38316e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0610107
+w-2-Norm= 0.00105019
+max-Norm= 0.00224853
+ L2-Norm= 0.0134108
+t= 0.119
+Iterationen: 2    Norm des Residuums: 2.38555e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0611168
+w-2-Norm= 0.00105202
+max-Norm= 0.00225244
+ L2-Norm= 0.0134238
+t= 0.12
+Iterationen: 2    Norm des Residuums: 2.38795e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0612215
+w-2-Norm= 0.00105382
+max-Norm= 0.00225631
+ L2-Norm= 0.0134369
+t= 0.121
+Iterationen: 2    Norm des Residuums: 2.39035e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0613251
+w-2-Norm= 0.00105561
+max-Norm= 0.00226013
+ L2-Norm= 0.01345
+t= 0.122
+Iterationen: 2    Norm des Residuums: 2.39275e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0614276
+w-2-Norm= 0.00105737
+max-Norm= 0.0022639
+ L2-Norm= 0.0134631
+t= 0.123
+Iterationen: 2    Norm des Residuums: 2.39515e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0615289
+w-2-Norm= 0.00105911
+max-Norm= 0.00226764
+ L2-Norm= 0.0134763
+t= 0.124
+Iterationen: 2    Norm des Residuums: 2.39755e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0616292
+w-2-Norm= 0.00106084
+max-Norm= 0.00227133
+ L2-Norm= 0.0134894
+t= 0.125
+Iterationen: 2    Norm des Residuums: 2.39996e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0617284
+w-2-Norm= 0.00106255
+max-Norm= 0.00227499
+ L2-Norm= 0.0135026
+t= 0.126
+Iterationen: 2    Norm des Residuums: 2.40236e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0618266
+w-2-Norm= 0.00106424
+max-Norm= 0.00227861
+ L2-Norm= 0.0135158
+t= 0.127
+Iterationen: 2    Norm des Residuums: 2.40477e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0619238
+w-2-Norm= 0.00106591
+max-Norm= 0.00228219
+ L2-Norm= 0.0135291
+t= 0.128
+Iterationen: 2    Norm des Residuums: 2.40719e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.06202
+w-2-Norm= 0.00106757
+max-Norm= 0.00228574
+ L2-Norm= 0.0135423
+t= 0.129
+Iterationen: 2    Norm des Residuums: 2.4096e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0621153
+w-2-Norm= 0.00106921
+max-Norm= 0.00228925
+ L2-Norm= 0.0135556
+t= 0.13
+Iterationen: 2    Norm des Residuums: 2.41202e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0622098
+w-2-Norm= 0.00107083
+max-Norm= 0.00229273
+ L2-Norm= 0.0135689
+t= 0.131
+Iterationen: 2    Norm des Residuums: 2.41444e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0623034
+w-2-Norm= 0.00107244
+max-Norm= 0.00229617
+ L2-Norm= 0.0135822
+t= 0.132
+Iterationen: 2    Norm des Residuums: 2.41686e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0623961
+w-2-Norm= 0.00107404
+max-Norm= 0.00229959
+ L2-Norm= 0.0135955
+t= 0.133
+Iterationen: 2    Norm des Residuums: 2.41928e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0624881
+w-2-Norm= 0.00107562
+max-Norm= 0.00230297
+ L2-Norm= 0.0136089
+t= 0.134
+Iterationen: 2    Norm des Residuums: 2.42171e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0625792
+w-2-Norm= 0.00107719
+max-Norm= 0.00230633
+ L2-Norm= 0.0136223
+t= 0.135
+Iterationen: 2    Norm des Residuums: 2.42414e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0626696
+w-2-Norm= 0.00107875
+max-Norm= 0.00230966
+ L2-Norm= 0.0136357
+t= 0.136
+Iterationen: 2    Norm des Residuums: 2.42657e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0627593
+w-2-Norm= 0.00108029
+max-Norm= 0.00231296
+ L2-Norm= 0.0136491
+t= 0.137
+Iterationen: 2    Norm des Residuums: 2.429e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0628482
+w-2-Norm= 0.00108182
+max-Norm= 0.00231624
+ L2-Norm= 0.0136625
+t= 0.138
+Iterationen: 2    Norm des Residuums: 2.43144e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0629365
+w-2-Norm= 0.00108334
+max-Norm= 0.00231949
+ L2-Norm= 0.013676
+t= 0.139
+Iterationen: 2    Norm des Residuums: 2.43387e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0630241
+w-2-Norm= 0.00108485
+max-Norm= 0.00232271
+ L2-Norm= 0.0136895
+t= 0.14
+Iterationen: 2    Norm des Residuums: 2.43631e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.063111
+w-2-Norm= 0.00108635
+max-Norm= 0.00232591
+ L2-Norm= 0.013703
+t= 0.141
+Iterationen: 2    Norm des Residuums: 2.43875e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0631974
+w-2-Norm= 0.00108783
+max-Norm= 0.00232909
+ L2-Norm= 0.0137165
+t= 0.142
+Iterationen: 2    Norm des Residuums: 2.4412e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0632831
+w-2-Norm= 0.00108931
+max-Norm= 0.00233225
+ L2-Norm= 0.01373
+t= 0.143
+Iterationen: 2    Norm des Residuums: 2.44365e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0633683
+w-2-Norm= 0.00109077
+max-Norm= 0.00233538
+ L2-Norm= 0.0137436
+t= 0.144
+Iterationen: 2    Norm des Residuums: 2.44609e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0634529
+w-2-Norm= 0.00109223
+max-Norm= 0.00233849
+ L2-Norm= 0.0137572
+t= 0.145
+Iterationen: 2    Norm des Residuums: 2.44855e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0635369
+w-2-Norm= 0.00109368
+max-Norm= 0.00234159
+ L2-Norm= 0.0137708
+t= 0.146
+Iterationen: 2    Norm des Residuums: 2.451e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0636204
+w-2-Norm= 0.00109512
+max-Norm= 0.00234466
+ L2-Norm= 0.0137844
+t= 0.147
+Iterationen: 2    Norm des Residuums: 2.45345e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0637035
+w-2-Norm= 0.00109654
+max-Norm= 0.00234772
+ L2-Norm= 0.013798
+t= 0.148
+Iterationen: 2    Norm des Residuums: 2.45591e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.063786
+w-2-Norm= 0.00109796
+max-Norm= 0.00235075
+ L2-Norm= 0.0138117
+t= 0.149
+Iterationen: 2    Norm des Residuums: 2.45837e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.063868
+w-2-Norm= 0.00109938
+max-Norm= 0.00235377
+ L2-Norm= 0.0138253
+t= 0.15
+Iterationen: 2    Norm des Residuums: 2.46084e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0639496
+w-2-Norm= 0.00110078
+max-Norm= 0.00235678
+ L2-Norm= 0.013839
+t= 0.151
+Iterationen: 2    Norm des Residuums: 2.4633e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0640308
+w-2-Norm= 0.00110218
+max-Norm= 0.00235976
+ L2-Norm= 0.0138527
+t= 0.152
+Iterationen: 2    Norm des Residuums: 2.46577e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0641115
+w-2-Norm= 0.00110357
+max-Norm= 0.00236273
+ L2-Norm= 0.0138664
+t= 0.153
+Iterationen: 2    Norm des Residuums: 2.46824e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0641918
+w-2-Norm= 0.00110495
+max-Norm= 0.00236569
+ L2-Norm= 0.0138802
+t= 0.154
+Iterationen: 2    Norm des Residuums: 2.47071e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0642717
+w-2-Norm= 0.00110633
+max-Norm= 0.00236863
+ L2-Norm= 0.0138939
+t= 0.155
+Iterationen: 2    Norm des Residuums: 2.47319e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0643512
+w-2-Norm= 0.00110769
+max-Norm= 0.00237156
+ L2-Norm= 0.0139077
+t= 0.156
+Iterationen: 2    Norm des Residuums: 2.47566e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0644304
+w-2-Norm= 0.00110906
+max-Norm= 0.00237447
+ L2-Norm= 0.0139215
+t= 0.157
+Iterationen: 2    Norm des Residuums: 2.47814e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0645092
+w-2-Norm= 0.00111041
+max-Norm= 0.00237737
+ L2-Norm= 0.0139353
+t= 0.158
+Iterationen: 2    Norm des Residuums: 2.48063e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0645876
+w-2-Norm= 0.00111176
+max-Norm= 0.00238026
+ L2-Norm= 0.0139491
+t= 0.159
+Iterationen: 2    Norm des Residuums: 2.48311e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0646657
+w-2-Norm= 0.00111311
+max-Norm= 0.00238313
+ L2-Norm= 0.013963
+t= 0.16
+Iterationen: 2    Norm des Residuums: 2.4856e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0647435
+w-2-Norm= 0.00111445
+max-Norm= 0.002386
+ L2-Norm= 0.0139769
+t= 0.161
+Iterationen: 2    Norm des Residuums: 2.48809e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.064821
+w-2-Norm= 0.00111578
+max-Norm= 0.00238885
+ L2-Norm= 0.0139907
+t= 0.162
+Iterationen: 2    Norm des Residuums: 2.49058e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0648982
+w-2-Norm= 0.00111711
+max-Norm= 0.00239169
+ L2-Norm= 0.0140046
+t= 0.163
+Iterationen: 2    Norm des Residuums: 2.49307e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0649751
+w-2-Norm= 0.00111843
+max-Norm= 0.00239452
+ L2-Norm= 0.0140185
+t= 0.164
+Iterationen: 2    Norm des Residuums: 2.49557e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0650517
+w-2-Norm= 0.00111975
+max-Norm= 0.00239734
+ L2-Norm= 0.0140325
+t= 0.165
+Iterationen: 2    Norm des Residuums: 2.49807e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0651281
+w-2-Norm= 0.00112107
+max-Norm= 0.00240015
+ L2-Norm= 0.0140464
+t= 0.166
+Iterationen: 2    Norm des Residuums: 2.50057e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0652042
+w-2-Norm= 0.00112238
+max-Norm= 0.00240295
+ L2-Norm= 0.0140604
+t= 0.167
+Iterationen: 2    Norm des Residuums: 2.50307e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.06528
+w-2-Norm= 0.00112368
+max-Norm= 0.00240574
+ L2-Norm= 0.0140744
+t= 0.168
+Iterationen: 2    Norm des Residuums: 2.50558e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0653556
+w-2-Norm= 0.00112498
+max-Norm= 0.00240853
+ L2-Norm= 0.0140884
+t= 0.169
+Iterationen: 2    Norm des Residuums: 2.50809e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.065431
+w-2-Norm= 0.00112628
+max-Norm= 0.0024113
+ L2-Norm= 0.0141024
+t= 0.17
+Iterationen: 2    Norm des Residuums: 2.5106e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0655061
+w-2-Norm= 0.00112757
+max-Norm= 0.00241407
+ L2-Norm= 0.0141164
+t= 0.171
+Iterationen: 2    Norm des Residuums: 2.51311e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0655811
+w-2-Norm= 0.00112886
+max-Norm= 0.00241683
+ L2-Norm= 0.0141305
+t= 0.172
+Iterationen: 2    Norm des Residuums: 2.51563e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0656558
+w-2-Norm= 0.00113015
+max-Norm= 0.00241958
+ L2-Norm= 0.0141445
+t= 0.173
+Iterationen: 2    Norm des Residuums: 2.51815e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0657304
+w-2-Norm= 0.00113143
+max-Norm= 0.00242232
+ L2-Norm= 0.0141586
+t= 0.174
+Iterationen: 2    Norm des Residuums: 2.52067e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0658047
+w-2-Norm= 0.00113271
+max-Norm= 0.00242506
+ L2-Norm= 0.0141727
+t= 0.175
+Iterationen: 2    Norm des Residuums: 2.52319e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0658789
+w-2-Norm= 0.00113399
+max-Norm= 0.00242779
+ L2-Norm= 0.0141868
+t= 0.176
+Iterationen: 2    Norm des Residuums: 2.52572e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0659529
+w-2-Norm= 0.00113526
+max-Norm= 0.00243052
+ L2-Norm= 0.0142009
+t= 0.177
+Iterationen: 2    Norm des Residuums: 2.52825e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0660267
+w-2-Norm= 0.00113654
+max-Norm= 0.00243323
+ L2-Norm= 0.0142151
+t= 0.178
+Iterationen: 2    Norm des Residuums: 2.53078e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0661004
+w-2-Norm= 0.0011378
+max-Norm= 0.00243595
+ L2-Norm= 0.0142292
+t= 0.179
+Iterationen: 2    Norm des Residuums: 2.53331e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.066174
+w-2-Norm= 0.00113907
+max-Norm= 0.00243865
+ L2-Norm= 0.0142434
+t= 0.18
+Iterationen: 2    Norm des Residuums: 2.53585e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0662473
+w-2-Norm= 0.00114033
+max-Norm= 0.00244136
+ L2-Norm= 0.0142576
+t= 0.181
+Iterationen: 2    Norm des Residuums: 2.53838e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0663206
+w-2-Norm= 0.00114159
+max-Norm= 0.00244405
+ L2-Norm= 0.0142718
+t= 0.182
+Iterationen: 2    Norm des Residuums: 2.54093e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0663937
+w-2-Norm= 0.00114285
+max-Norm= 0.00244674
+ L2-Norm= 0.014286
+t= 0.183
+Iterationen: 2    Norm des Residuums: 2.54347e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0664667
+w-2-Norm= 0.00114411
+max-Norm= 0.00244943
+ L2-Norm= 0.0143003
+t= 0.184
+Iterationen: 2    Norm des Residuums: 2.54601e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0665395
+w-2-Norm= 0.00114536
+max-Norm= 0.00245211
+ L2-Norm= 0.0143145
+t= 0.185
+Iterationen: 2    Norm des Residuums: 2.54856e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0666123
+w-2-Norm= 0.00114661
+max-Norm= 0.00245479
+ L2-Norm= 0.0143288
+t= 0.186
+Iterationen: 2    Norm des Residuums: 2.55111e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0666849
+w-2-Norm= 0.00114786
+max-Norm= 0.00245747
+ L2-Norm= 0.0143431
+t= 0.187
+Iterationen: 2    Norm des Residuums: 2.55367e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0667574
+w-2-Norm= 0.00114911
+max-Norm= 0.00246014
+ L2-Norm= 0.0143574
+t= 0.188
+Iterationen: 2    Norm des Residuums: 2.55622e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0668299
+w-2-Norm= 0.00115036
+max-Norm= 0.00246281
+ L2-Norm= 0.0143717
+t= 0.189
+Iterationen: 2    Norm des Residuums: 2.55878e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0669022
+w-2-Norm= 0.0011516
+max-Norm= 0.00246547
+ L2-Norm= 0.014386
+t= 0.19
+Iterationen: 2    Norm des Residuums: 2.56134e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0669744
+w-2-Norm= 0.00115285
+max-Norm= 0.00246813
+ L2-Norm= 0.0144004
+t= 0.191
+Iterationen: 2    Norm des Residuums: 2.56391e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0670466
+w-2-Norm= 0.00115409
+max-Norm= 0.00247079
+ L2-Norm= 0.0144148
+t= 0.192
+Iterationen: 2    Norm des Residuums: 2.56647e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0671187
+w-2-Norm= 0.00115533
+max-Norm= 0.00247344
+ L2-Norm= 0.0144291
+t= 0.193
+Iterationen: 2    Norm des Residuums: 2.56904e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0671907
+w-2-Norm= 0.00115657
+max-Norm= 0.00247609
+ L2-Norm= 0.0144435
+t= 0.194
+Iterationen: 2    Norm des Residuums: 2.57161e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0672626
+w-2-Norm= 0.00115781
+max-Norm= 0.00247874
+ L2-Norm= 0.0144579
+t= 0.195
+Iterationen: 2    Norm des Residuums: 2.57419e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0673345
+w-2-Norm= 0.00115905
+max-Norm= 0.00248139
+ L2-Norm= 0.0144724
+t= 0.196
+Iterationen: 2    Norm des Residuums: 2.57676e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0674063
+w-2-Norm= 0.00116028
+max-Norm= 0.00248403
+ L2-Norm= 0.0144868
+t= 0.197
+Iterationen: 2    Norm des Residuums: 2.57934e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.067478
+w-2-Norm= 0.00116152
+max-Norm= 0.00248668
+ L2-Norm= 0.0145013
+t= 0.198
+Iterationen: 2    Norm des Residuums: 2.58192e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0675497
+w-2-Norm= 0.00116275
+max-Norm= 0.00248932
+ L2-Norm= 0.0145157
+t= 0.199
+Iterationen: 2    Norm des Residuums: 2.58451e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0676213
+w-2-Norm= 0.00116398
+max-Norm= 0.00249195
+ L2-Norm= 0.0145302
+t= 0.2
+Iterationen: 2    Norm des Residuums: 2.58709e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0676929
+w-2-Norm= 0.00116522
+max-Norm= 0.00249459
+ L2-Norm= 0.0145447
+t= 0.201
+Iterationen: 2    Norm des Residuums: 2.58968e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0677645
+w-2-Norm= 0.00116645
+max-Norm= 0.00249723
+ L2-Norm= 0.0145593
+t= 0.202
+Iterationen: 2    Norm des Residuums: 2.59227e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.067836
+w-2-Norm= 0.00116768
+max-Norm= 0.00249986
+ L2-Norm= 0.0145738
+t= 0.203
+Iterationen: 2    Norm des Residuums: 2.59487e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0679074
+w-2-Norm= 0.00116891
+max-Norm= 0.00250249
+ L2-Norm= 0.0145884
+t= 0.204
+Iterationen: 2    Norm des Residuums: 2.59747e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0679789
+w-2-Norm= 0.00117014
+max-Norm= 0.00250512
+ L2-Norm= 0.0146029
+t= 0.205
+Iterationen: 2    Norm des Residuums: 2.60007e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0680503
+w-2-Norm= 0.00117137
+max-Norm= 0.00250775
+ L2-Norm= 0.0146175
+t= 0.206
+Iterationen: 2    Norm des Residuums: 2.60267e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0681216
+w-2-Norm= 0.0011726
+max-Norm= 0.00251038
+ L2-Norm= 0.0146321
+t= 0.207
+Iterationen: 2    Norm des Residuums: 2.60527e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.068193
+w-2-Norm= 0.00117382
+max-Norm= 0.00251301
+ L2-Norm= 0.0146467
+t= 0.208
+Iterationen: 2    Norm des Residuums: 2.60788e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0682643
+w-2-Norm= 0.00117505
+max-Norm= 0.00251564
+ L2-Norm= 0.0146613
+t= 0.209
+Iterationen: 2    Norm des Residuums: 2.61049e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0683356
+w-2-Norm= 0.00117628
+max-Norm= 0.00251826
+ L2-Norm= 0.014676
+t= 0.21
+Iterationen: 2    Norm des Residuums: 2.6131e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0684068
+w-2-Norm= 0.0011775
+max-Norm= 0.00252089
+ L2-Norm= 0.0146906
+t= 0.211
+Iterationen: 2    Norm des Residuums: 2.61572e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0684781
+w-2-Norm= 0.00117873
+max-Norm= 0.00252351
+ L2-Norm= 0.0147053
+t= 0.212
+Iterationen: 2    Norm des Residuums: 2.61833e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0685494
+w-2-Norm= 0.00117996
+max-Norm= 0.00252614
+ L2-Norm= 0.01472
+t= 0.213
+Iterationen: 2    Norm des Residuums: 2.62095e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0686206
+w-2-Norm= 0.00118118
+max-Norm= 0.00252876
+ L2-Norm= 0.0147347
+t= 0.214
+Iterationen: 2    Norm des Residuums: 2.62358e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0686918
+w-2-Norm= 0.00118241
+max-Norm= 0.00253139
+ L2-Norm= 0.0147494
+t= 0.215
+Iterationen: 2    Norm des Residuums: 2.6262e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0687631
+w-2-Norm= 0.00118364
+max-Norm= 0.00253401
+ L2-Norm= 0.0147642
+t= 0.216
+Iterationen: 2    Norm des Residuums: 2.62883e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0688343
+w-2-Norm= 0.00118486
+max-Norm= 0.00253663
+ L2-Norm= 0.0147789
+t= 0.217
+Iterationen: 2    Norm des Residuums: 2.63146e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0689055
+w-2-Norm= 0.00118609
+max-Norm= 0.00253926
+ L2-Norm= 0.0147937
+t= 0.218
+Iterationen: 2    Norm des Residuums: 2.63409e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0689767
+w-2-Norm= 0.00118731
+max-Norm= 0.00254188
+ L2-Norm= 0.0148085
+t= 0.219
+Iterationen: 2    Norm des Residuums: 2.63673e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.069048
+w-2-Norm= 0.00118854
+max-Norm= 0.0025445
+ L2-Norm= 0.0148233
+t= 0.22
+Iterationen: 2    Norm des Residuums: 2.63937e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0691192
+w-2-Norm= 0.00118977
+max-Norm= 0.00254713
+ L2-Norm= 0.0148381
+t= 0.221
+Iterationen: 2    Norm des Residuums: 2.64201e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0691905
+w-2-Norm= 0.00119099
+max-Norm= 0.00254975
+ L2-Norm= 0.0148529
+t= 0.222
+Iterationen: 2    Norm des Residuums: 2.64465e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0692617
+w-2-Norm= 0.00119222
+max-Norm= 0.00255238
+ L2-Norm= 0.0148678
+t= 0.223
+Iterationen: 2    Norm des Residuums: 2.6473e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.069333
+w-2-Norm= 0.00119345
+max-Norm= 0.002555
+ L2-Norm= 0.0148826
+t= 0.224
+Iterationen: 2    Norm des Residuums: 2.64995e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0694042
+w-2-Norm= 0.00119467
+max-Norm= 0.00255763
+ L2-Norm= 0.0148975
+t= 0.225
+Iterationen: 2    Norm des Residuums: 2.6526e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0694755
+w-2-Norm= 0.0011959
+max-Norm= 0.00256026
+ L2-Norm= 0.0149124
+t= 0.226
+Iterationen: 2    Norm des Residuums: 2.65525e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0695468
+w-2-Norm= 0.00119713
+max-Norm= 0.00256288
+ L2-Norm= 0.0149273
+t= 0.227
+Iterationen: 2    Norm des Residuums: 2.65791e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0696182
+w-2-Norm= 0.00119836
+max-Norm= 0.00256551
+ L2-Norm= 0.0149422
+t= 0.228
+Iterationen: 2    Norm des Residuums: 2.66057e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0696895
+w-2-Norm= 0.00119958
+max-Norm= 0.00256814
+ L2-Norm= 0.0149571
+t= 0.229
+Iterationen: 2    Norm des Residuums: 2.66323e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0697609
+w-2-Norm= 0.00120081
+max-Norm= 0.00257077
+ L2-Norm= 0.0149721
+t= 0.23
+Iterationen: 2    Norm des Residuums: 2.6659e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0698323
+w-2-Norm= 0.00120204
+max-Norm= 0.0025734
+ L2-Norm= 0.0149871
+t= 0.231
+Iterationen: 2    Norm des Residuums: 2.66856e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0699037
+w-2-Norm= 0.00120327
+max-Norm= 0.00257603
+ L2-Norm= 0.015002
+t= 0.232
+Iterationen: 2    Norm des Residuums: 2.67123e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0699751
+w-2-Norm= 0.0012045
+max-Norm= 0.00257866
+ L2-Norm= 0.015017
+t= 0.233
+Iterationen: 2    Norm des Residuums: 2.67391e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0700466
+w-2-Norm= 0.00120573
+max-Norm= 0.0025813
+ L2-Norm= 0.015032
+t= 0.234
+Iterationen: 2    Norm des Residuums: 2.67658e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0701181
+w-2-Norm= 0.00120696
+max-Norm= 0.00258393
+ L2-Norm= 0.0150471
+t= 0.235
+Iterationen: 2    Norm des Residuums: 2.67926e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0701896
+w-2-Norm= 0.00120819
+max-Norm= 0.00258656
+ L2-Norm= 0.0150621
+t= 0.236
+Iterationen: 2    Norm des Residuums: 2.68194e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0702612
+w-2-Norm= 0.00120942
+max-Norm= 0.0025892
+ L2-Norm= 0.0150772
+t= 0.237
+Iterationen: 2    Norm des Residuums: 2.68463e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0703328
+w-2-Norm= 0.00121066
+max-Norm= 0.00259184
+ L2-Norm= 0.0150923
+t= 0.238
+Iterationen: 2    Norm des Residuums: 2.68731e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0704044
+w-2-Norm= 0.00121189
+max-Norm= 0.00259448
+ L2-Norm= 0.0151073
+t= 0.239
+Iterationen: 2    Norm des Residuums: 2.69e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.070476
+w-2-Norm= 0.00121312
+max-Norm= 0.00259712
+ L2-Norm= 0.0151224
+t= 0.24
+Iterationen: 2    Norm des Residuums: 2.69269e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0705477
+w-2-Norm= 0.00121436
+max-Norm= 0.00259976
+ L2-Norm= 0.0151376
+t= 0.241
+Iterationen: 2    Norm des Residuums: 2.69539e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0706194
+w-2-Norm= 0.00121559
+max-Norm= 0.0026024
+ L2-Norm= 0.0151527
+t= 0.242
+Iterationen: 2    Norm des Residuums: 2.69808e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0706912
+w-2-Norm= 0.00121683
+max-Norm= 0.00260505
+ L2-Norm= 0.0151679
+t= 0.243
+Iterationen: 2    Norm des Residuums: 2.70078e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.070763
+w-2-Norm= 0.00121806
+max-Norm= 0.00260769
+ L2-Norm= 0.015183
+t= 0.244
+Iterationen: 2    Norm des Residuums: 2.70349e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0708349
+w-2-Norm= 0.0012193
+max-Norm= 0.00261034
+ L2-Norm= 0.0151982
+t= 0.245
+Iterationen: 2    Norm des Residuums: 2.70619e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0709067
+w-2-Norm= 0.00122054
+max-Norm= 0.00261299
+ L2-Norm= 0.0152134
+t= 0.246
+Iterationen: 2    Norm des Residuums: 2.7089e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0709787
+w-2-Norm= 0.00122177
+max-Norm= 0.00261564
+ L2-Norm= 0.0152286
+t= 0.247
+Iterationen: 2    Norm des Residuums: 2.71161e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0710506
+w-2-Norm= 0.00122301
+max-Norm= 0.00261829
+ L2-Norm= 0.0152438
+t= 0.248
+Iterationen: 2    Norm des Residuums: 2.71432e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0711227
+w-2-Norm= 0.00122425
+max-Norm= 0.00262094
+ L2-Norm= 0.0152591
+t= 0.249
+Iterationen: 2    Norm des Residuums: 2.71704e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0711947
+w-2-Norm= 0.00122549
+max-Norm= 0.0026236
+ L2-Norm= 0.0152743
+t= 0.25
+Iterationen: 2    Norm des Residuums: 2.71976e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0712668
+w-2-Norm= 0.00122673
+max-Norm= 0.00262625
+ L2-Norm= 0.0152896
+t= 0.251
+Iterationen: 2    Norm des Residuums: 2.72248e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.071339
+w-2-Norm= 0.00122798
+max-Norm= 0.00262891
+ L2-Norm= 0.0153049
+t= 0.252
+Iterationen: 2    Norm des Residuums: 2.7252e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0714112
+w-2-Norm= 0.00122922
+max-Norm= 0.00263157
+ L2-Norm= 0.0153202
+t= 0.253
+Iterationen: 2    Norm des Residuums: 2.72793e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0714834
+w-2-Norm= 0.00123046
+max-Norm= 0.00263423
+ L2-Norm= 0.0153355
+t= 0.254
+Iterationen: 2    Norm des Residuums: 2.73066e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0715557
+w-2-Norm= 0.00123171
+max-Norm= 0.0026369
+ L2-Norm= 0.0153509
+t= 0.255
+Iterationen: 2    Norm des Residuums: 2.73339e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.071628
+w-2-Norm= 0.00123295
+max-Norm= 0.00263956
+ L2-Norm= 0.0153662
+t= 0.256
+Iterationen: 2    Norm des Residuums: 2.73612e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0717004
+w-2-Norm= 0.0012342
+max-Norm= 0.00264223
+ L2-Norm= 0.0153816
+t= 0.257
+Iterationen: 2    Norm des Residuums: 2.73886e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0717729
+w-2-Norm= 0.00123545
+max-Norm= 0.0026449
+ L2-Norm= 0.015397
+t= 0.258
+Iterationen: 2    Norm des Residuums: 2.7416e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0718454
+w-2-Norm= 0.00123669
+max-Norm= 0.00264757
+ L2-Norm= 0.0154124
+t= 0.259
+Iterationen: 2    Norm des Residuums: 2.74435e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0719179
+w-2-Norm= 0.00123794
+max-Norm= 0.00265025
+ L2-Norm= 0.0154278
+t= 0.26
+Iterationen: 2    Norm des Residuums: 2.74709e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0719905
+w-2-Norm= 0.00123919
+max-Norm= 0.00265292
+ L2-Norm= 0.0154432
+t= 0.261
+Iterationen: 2    Norm des Residuums: 2.74984e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0720632
+w-2-Norm= 0.00124044
+max-Norm= 0.0026556
+ L2-Norm= 0.0154587
+t= 0.262
+Iterationen: 2    Norm des Residuums: 2.75259e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0721359
+w-2-Norm= 0.00124169
+max-Norm= 0.00265828
+ L2-Norm= 0.0154741
+t= 0.263
+Iterationen: 2    Norm des Residuums: 2.75535e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0722086
+w-2-Norm= 0.00124295
+max-Norm= 0.00266096
+ L2-Norm= 0.0154896
+t= 0.264
+Iterationen: 2    Norm des Residuums: 2.7581e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0722815
+w-2-Norm= 0.0012442
+max-Norm= 0.00266364
+ L2-Norm= 0.0155051
+t= 0.265
+Iterationen: 2    Norm des Residuums: 2.76086e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0723543
+w-2-Norm= 0.00124545
+max-Norm= 0.00266633
+ L2-Norm= 0.0155206
+t= 0.266
+Iterationen: 2    Norm des Residuums: 2.76362e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0724273
+w-2-Norm= 0.00124671
+max-Norm= 0.00266901
+ L2-Norm= 0.0155361
+t= 0.267
+Iterationen: 2    Norm des Residuums: 2.76639e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0725003
+w-2-Norm= 0.00124797
+max-Norm= 0.0026717
+ L2-Norm= 0.0155517
+t= 0.268
+Iterationen: 2    Norm des Residuums: 2.76916e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0725733
+w-2-Norm= 0.00124922
+max-Norm= 0.00267439
+ L2-Norm= 0.0155672
+t= 0.269
+Iterationen: 2    Norm des Residuums: 2.77193e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0726464
+w-2-Norm= 0.00125048
+max-Norm= 0.00267709
+ L2-Norm= 0.0155828
+t= 0.27
+Iterationen: 2    Norm des Residuums: 2.7747e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0727196
+w-2-Norm= 0.00125174
+max-Norm= 0.00267978
+ L2-Norm= 0.0155984
+t= 0.271
+Iterationen: 2    Norm des Residuums: 2.77748e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0727928
+w-2-Norm= 0.001253
+max-Norm= 0.00268248
+ L2-Norm= 0.015614
+t= 0.272
+Iterationen: 2    Norm des Residuums: 2.78026e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0728661
+w-2-Norm= 0.00125426
+max-Norm= 0.00268518
+ L2-Norm= 0.0156296
+t= 0.273
+Iterationen: 2    Norm des Residuums: 2.78304e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0729394
+w-2-Norm= 0.00125552
+max-Norm= 0.00268788
+ L2-Norm= 0.0156452
+t= 0.274
+Iterationen: 2    Norm des Residuums: 2.78582e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0730128
+w-2-Norm= 0.00125679
+max-Norm= 0.00269059
+ L2-Norm= 0.0156609
+t= 0.275
+Iterationen: 2    Norm des Residuums: 2.78861e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0730863
+w-2-Norm= 0.00125805
+max-Norm= 0.0026933
+ L2-Norm= 0.0156766
+t= 0.276
+Iterationen: 2    Norm des Residuums: 2.7914e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0731598
+w-2-Norm= 0.00125932
+max-Norm= 0.00269601
+ L2-Norm= 0.0156922
+t= 0.277
+Iterationen: 2    Norm des Residuums: 2.79419e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0732334
+w-2-Norm= 0.00126058
+max-Norm= 0.00269872
+ L2-Norm= 0.0157079
+t= 0.278
+Iterationen: 2    Norm des Residuums: 2.79699e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.073307
+w-2-Norm= 0.00126185
+max-Norm= 0.00270143
+ L2-Norm= 0.0157236
+t= 0.279
+Iterationen: 2    Norm des Residuums: 2.79979e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0733807
+w-2-Norm= 0.00126312
+max-Norm= 0.00270415
+ L2-Norm= 0.0157394
+t= 0.28
+Iterationen: 2    Norm des Residuums: 2.80259e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0734545
+w-2-Norm= 0.00126439
+max-Norm= 0.00270687
+ L2-Norm= 0.0157551
+t= 0.281
+Iterationen: 2    Norm des Residuums: 2.80539e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0735283
+w-2-Norm= 0.00126566
+max-Norm= 0.00270959
+ L2-Norm= 0.0157709
+t= 0.282
+Iterationen: 2    Norm des Residuums: 2.8082e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0736022
+w-2-Norm= 0.00126693
+max-Norm= 0.00271231
+ L2-Norm= 0.0157867
+t= 0.283
+Iterationen: 2    Norm des Residuums: 2.81101e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0736762
+w-2-Norm= 0.00126821
+max-Norm= 0.00271503
+ L2-Norm= 0.0158024
+t= 0.284
+Iterationen: 2    Norm des Residuums: 2.81382e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0737502
+w-2-Norm= 0.00126948
+max-Norm= 0.00271776
+ L2-Norm= 0.0158183
+t= 0.285
+Iterationen: 2    Norm des Residuums: 2.81664e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0738243
+w-2-Norm= 0.00127076
+max-Norm= 0.00272049
+ L2-Norm= 0.0158341
+t= 0.286
+Iterationen: 2    Norm des Residuums: 2.81946e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0738985
+w-2-Norm= 0.00127203
+max-Norm= 0.00272323
+ L2-Norm= 0.0158499
+t= 0.287
+Iterationen: 2    Norm des Residuums: 2.82228e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0739727
+w-2-Norm= 0.00127331
+max-Norm= 0.00272596
+ L2-Norm= 0.0158658
+t= 0.288
+Iterationen: 2    Norm des Residuums: 2.8251e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.074047
+w-2-Norm= 0.00127459
+max-Norm= 0.0027287
+ L2-Norm= 0.0158816
+t= 0.289
+Iterationen: 2    Norm des Residuums: 2.82793e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0741213
+w-2-Norm= 0.00127587
+max-Norm= 0.00273144
+ L2-Norm= 0.0158975
+t= 0.29
+Iterationen: 2    Norm des Residuums: 2.83076e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0741958
+w-2-Norm= 0.00127715
+max-Norm= 0.00273418
+ L2-Norm= 0.0159134
+t= 0.291
+Iterationen: 2    Norm des Residuums: 2.83359e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0742702
+w-2-Norm= 0.00127843
+max-Norm= 0.00273692
+ L2-Norm= 0.0159294
+t= 0.292
+Iterationen: 2    Norm des Residuums: 2.83642e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0743448
+w-2-Norm= 0.00127972
+max-Norm= 0.00273967
+ L2-Norm= 0.0159453
+t= 0.293
+Iterationen: 2    Norm des Residuums: 2.83926e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0744194
+w-2-Norm= 0.001281
+max-Norm= 0.00274242
+ L2-Norm= 0.0159612
+t= 0.294
+Iterationen: 2    Norm des Residuums: 2.8421e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0744941
+w-2-Norm= 0.00128229
+max-Norm= 0.00274517
+ L2-Norm= 0.0159772
+t= 0.295
+Iterationen: 2    Norm des Residuums: 2.84495e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0745689
+w-2-Norm= 0.00128357
+max-Norm= 0.00274793
+ L2-Norm= 0.0159932
+t= 0.296
+Iterationen: 2    Norm des Residuums: 2.84779e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0746437
+w-2-Norm= 0.00128486
+max-Norm= 0.00275069
+ L2-Norm= 0.0160092
+t= 0.297
+Iterationen: 2    Norm des Residuums: 2.85064e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0747186
+w-2-Norm= 0.00128615
+max-Norm= 0.00275345
+ L2-Norm= 0.0160252
+t= 0.298
+Iterationen: 2    Norm des Residuums: 2.85349e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0747935
+w-2-Norm= 0.00128744
+max-Norm= 0.00275621
+ L2-Norm= 0.0160412
+t= 0.299
+Iterationen: 2    Norm des Residuums: 2.85635e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0748686
+w-2-Norm= 0.00128873
+max-Norm= 0.00275897
+ L2-Norm= 0.0160573
+t= 0.3
+Iterationen: 2    Norm des Residuums: 2.85921e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0749437
+w-2-Norm= 0.00129002
+max-Norm= 0.00276174
+ L2-Norm= 0.0160733
+t= 0.301
+Iterationen: 2    Norm des Residuums: 2.86207e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0750188
+w-2-Norm= 0.00129132
+max-Norm= 0.00276451
+ L2-Norm= 0.0160894
+t= 0.302
+Iterationen: 2    Norm des Residuums: 2.86493e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0750941
+w-2-Norm= 0.00129261
+max-Norm= 0.00276728
+ L2-Norm= 0.0161055
+t= 0.303
+Iterationen: 2    Norm des Residuums: 2.8678e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0751694
+w-2-Norm= 0.00129391
+max-Norm= 0.00277006
+ L2-Norm= 0.0161216
+t= 0.304
+Iterationen: 2    Norm des Residuums: 2.87067e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0752448
+w-2-Norm= 0.00129521
+max-Norm= 0.00277284
+ L2-Norm= 0.0161378
+t= 0.305
+Iterationen: 2    Norm des Residuums: 2.87354e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0753202
+w-2-Norm= 0.00129651
+max-Norm= 0.00277562
+ L2-Norm= 0.0161539
+t= 0.306
+Iterationen: 2    Norm des Residuums: 2.87641e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0753957
+w-2-Norm= 0.00129781
+max-Norm= 0.0027784
+ L2-Norm= 0.0161701
+t= 0.307
+Iterationen: 2    Norm des Residuums: 2.87929e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0754713
+w-2-Norm= 0.00129911
+max-Norm= 0.00278118
+ L2-Norm= 0.0161862
+t= 0.308
+Iterationen: 2    Norm des Residuums: 2.88217e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.075547
+w-2-Norm= 0.00130041
+max-Norm= 0.00278397
+ L2-Norm= 0.0162024
+t= 0.309
+Iterationen: 2    Norm des Residuums: 2.88505e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0756227
+w-2-Norm= 0.00130171
+max-Norm= 0.00278676
+ L2-Norm= 0.0162186
+t= 0.31
+Iterationen: 2    Norm des Residuums: 2.88794e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0756985
+w-2-Norm= 0.00130302
+max-Norm= 0.00278956
+ L2-Norm= 0.0162349
+t= 0.311
+Iterationen: 2    Norm des Residuums: 2.89083e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0757744
+w-2-Norm= 0.00130432
+max-Norm= 0.00279235
+ L2-Norm= 0.0162511
+t= 0.312
+Iterationen: 2    Norm des Residuums: 2.89372e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0758503
+w-2-Norm= 0.00130563
+max-Norm= 0.00279515
+ L2-Norm= 0.0162674
+t= 0.313
+Iterationen: 2    Norm des Residuums: 2.89662e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0759264
+w-2-Norm= 0.00130694
+max-Norm= 0.00279795
+ L2-Norm= 0.0162836
+t= 0.314
+Iterationen: 2    Norm des Residuums: 2.89952e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0760025
+w-2-Norm= 0.00130825
+max-Norm= 0.00280076
+ L2-Norm= 0.0162999
+t= 0.315
+Iterationen: 2    Norm des Residuums: 2.90242e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0760786
+w-2-Norm= 0.00130956
+max-Norm= 0.00280356
+ L2-Norm= 0.0163162
+t= 0.316
+Iterationen: 2    Norm des Residuums: 2.90532e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0761549
+w-2-Norm= 0.00131087
+max-Norm= 0.00280637
+ L2-Norm= 0.0163326
+t= 0.317
+Iterationen: 2    Norm des Residuums: 2.90823e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0762312
+w-2-Norm= 0.00131219
+max-Norm= 0.00280918
+ L2-Norm= 0.0163489
+t= 0.318
+Iterationen: 2    Norm des Residuums: 2.91114e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0763076
+w-2-Norm= 0.0013135
+max-Norm= 0.002812
+ L2-Norm= 0.0163653
+t= 0.319
+Iterationen: 2    Norm des Residuums: 2.91405e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.076384
+w-2-Norm= 0.00131482
+max-Norm= 0.00281482
+ L2-Norm= 0.0163816
+t= 0.32
+Iterationen: 2    Norm des Residuums: 2.91697e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0764605
+w-2-Norm= 0.00131614
+max-Norm= 0.00281764
+ L2-Norm= 0.016398
+t= 0.321
+Iterationen: 2    Norm des Residuums: 2.91988e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0765371
+w-2-Norm= 0.00131745
+max-Norm= 0.00282046
+ L2-Norm= 0.0164144
+t= 0.322
+Iterationen: 2    Norm des Residuums: 2.92281e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0766138
+w-2-Norm= 0.00131877
+max-Norm= 0.00282329
+ L2-Norm= 0.0164309
+t= 0.323
+Iterationen: 2    Norm des Residuums: 2.92573e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0766906
+w-2-Norm= 0.00132009
+max-Norm= 0.00282611
+ L2-Norm= 0.0164473
+t= 0.324
+Iterationen: 2    Norm des Residuums: 2.92866e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0767674
+w-2-Norm= 0.00132142
+max-Norm= 0.00282894
+ L2-Norm= 0.0164637
+t= 0.325
+Iterationen: 2    Norm des Residuums: 2.93159e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0768443
+w-2-Norm= 0.00132274
+max-Norm= 0.00283178
+ L2-Norm= 0.0164802
+t= 0.326
+Iterationen: 2    Norm des Residuums: 2.93452e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0769213
+w-2-Norm= 0.00132407
+max-Norm= 0.00283461
+ L2-Norm= 0.0164967
+t= 0.327
+Iterationen: 2    Norm des Residuums: 2.93746e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0769983
+w-2-Norm= 0.00132539
+max-Norm= 0.00283745
+ L2-Norm= 0.0165132
+t= 0.328
+Iterationen: 2    Norm des Residuums: 2.9404e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0770754
+w-2-Norm= 0.00132672
+max-Norm= 0.0028403
+ L2-Norm= 0.0165297
+t= 0.329
+Iterationen: 2    Norm des Residuums: 2.94334e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0771526
+w-2-Norm= 0.00132805
+max-Norm= 0.00284314
+ L2-Norm= 0.0165463
+t= 0.33
+Iterationen: 2    Norm des Residuums: 2.94628e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0772299
+w-2-Norm= 0.00132938
+max-Norm= 0.00284599
+ L2-Norm= 0.0165628
+t= 0.331
+Iterationen: 2    Norm des Residuums: 2.94923e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0773072
+w-2-Norm= 0.00133071
+max-Norm= 0.00284884
+ L2-Norm= 0.0165794
+t= 0.332
+Iterationen: 2    Norm des Residuums: 2.95218e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0773846
+w-2-Norm= 0.00133204
+max-Norm= 0.00285169
+ L2-Norm= 0.016596
+t= 0.333
+Iterationen: 2    Norm des Residuums: 2.95513e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0774621
+w-2-Norm= 0.00133338
+max-Norm= 0.00285455
+ L2-Norm= 0.0166126
+t= 0.334
+Iterationen: 2    Norm des Residuums: 2.95809e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0775397
+w-2-Norm= 0.00133471
+max-Norm= 0.00285741
+ L2-Norm= 0.0166292
+t= 0.335
+Iterationen: 2    Norm des Residuums: 2.96105e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0776174
+w-2-Norm= 0.00133605
+max-Norm= 0.00286027
+ L2-Norm= 0.0166458
+t= 0.336
+Iterationen: 2    Norm des Residuums: 2.96401e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0776951
+w-2-Norm= 0.00133739
+max-Norm= 0.00286313
+ L2-Norm= 0.0166625
+t= 0.337
+Iterationen: 2    Norm des Residuums: 2.96698e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0777729
+w-2-Norm= 0.00133872
+max-Norm= 0.002866
+ L2-Norm= 0.0166792
+t= 0.338
+Iterationen: 2    Norm des Residuums: 2.96995e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0778508
+w-2-Norm= 0.00134007
+max-Norm= 0.00286887
+ L2-Norm= 0.0166959
+t= 0.339
+Iterationen: 2    Norm des Residuums: 2.97292e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0779287
+w-2-Norm= 0.00134141
+max-Norm= 0.00287174
+ L2-Norm= 0.0167126
+t= 0.34
+Iterationen: 2    Norm des Residuums: 2.97589e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0780067
+w-2-Norm= 0.00134275
+max-Norm= 0.00287462
+ L2-Norm= 0.0167293
+t= 0.341
+Iterationen: 2    Norm des Residuums: 2.97887e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0780848
+w-2-Norm= 0.00134409
+max-Norm= 0.00287749
+ L2-Norm= 0.016746
+t= 0.342
+Iterationen: 2    Norm des Residuums: 2.98185e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.078163
+w-2-Norm= 0.00134544
+max-Norm= 0.00288037
+ L2-Norm= 0.0167628
+t= 0.343
+Iterationen: 2    Norm des Residuums: 2.98483e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0782413
+w-2-Norm= 0.00134679
+max-Norm= 0.00288326
+ L2-Norm= 0.0167795
+t= 0.344
+Iterationen: 2    Norm des Residuums: 2.98782e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0783196
+w-2-Norm= 0.00134814
+max-Norm= 0.00288614
+ L2-Norm= 0.0167963
+t= 0.345
+Iterationen: 2    Norm des Residuums: 2.99081e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.078398
+w-2-Norm= 0.00134949
+max-Norm= 0.00288903
+ L2-Norm= 0.0168131
+t= 0.346
+Iterationen: 2    Norm des Residuums: 2.9938e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0784765
+w-2-Norm= 0.00135084
+max-Norm= 0.00289193
+ L2-Norm= 0.01683
+t= 0.347
+Iterationen: 2    Norm des Residuums: 2.9968e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0785551
+w-2-Norm= 0.00135219
+max-Norm= 0.00289482
+ L2-Norm= 0.0168468
+t= 0.348
+Iterationen: 2    Norm des Residuums: 2.9998e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0786337
+w-2-Norm= 0.00135354
+max-Norm= 0.00289772
+ L2-Norm= 0.0168636
+t= 0.349
+Iterationen: 2    Norm des Residuums: 3.0028e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0787124
+w-2-Norm= 0.0013549
+max-Norm= 0.00290062
+ L2-Norm= 0.0168805
+t= 0.35
+Iterationen: 2    Norm des Residuums: 3.0058e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0787912
+w-2-Norm= 0.00135625
+max-Norm= 0.00290352
+ L2-Norm= 0.0168974
+t= 0.351
+Iterationen: 2    Norm des Residuums: 3.00881e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0788701
+w-2-Norm= 0.00135761
+max-Norm= 0.00290643
+ L2-Norm= 0.0169143
+t= 0.352
+Iterationen: 2    Norm des Residuums: 3.01182e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.078949
+w-2-Norm= 0.00135897
+max-Norm= 0.00290934
+ L2-Norm= 0.0169312
+t= 0.353
+Iterationen: 2    Norm des Residuums: 3.01483e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0790281
+w-2-Norm= 0.00136033
+max-Norm= 0.00291225
+ L2-Norm= 0.0169482
+t= 0.354
+Iterationen: 2    Norm des Residuums: 3.01785e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0791072
+w-2-Norm= 0.00136169
+max-Norm= 0.00291517
+ L2-Norm= 0.0169651
+t= 0.355
+Iterationen: 2    Norm des Residuums: 3.02087e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0791863
+w-2-Norm= 0.00136306
+max-Norm= 0.00291808
+ L2-Norm= 0.0169821
+t= 0.356
+Iterationen: 2    Norm des Residuums: 3.02389e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0792656
+w-2-Norm= 0.00136442
+max-Norm= 0.00292101
+ L2-Norm= 0.0169991
+t= 0.357
+Iterationen: 2    Norm des Residuums: 3.02692e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.079345
+w-2-Norm= 0.00136579
+max-Norm= 0.00292393
+ L2-Norm= 0.0170161
+t= 0.358
+Iterationen: 2    Norm des Residuums: 3.02994e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0794244
+w-2-Norm= 0.00136715
+max-Norm= 0.00292686
+ L2-Norm= 0.0170331
+t= 0.359
+Iterationen: 2    Norm des Residuums: 3.03298e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0795039
+w-2-Norm= 0.00136852
+max-Norm= 0.00292979
+ L2-Norm= 0.0170502
+t= 0.36
+Iterationen: 2    Norm des Residuums: 3.03601e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0795834
+w-2-Norm= 0.00136989
+max-Norm= 0.00293272
+ L2-Norm= 0.0170672
+t= 0.361
+Iterationen: 2    Norm des Residuums: 3.03905e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0796631
+w-2-Norm= 0.00137126
+max-Norm= 0.00293565
+ L2-Norm= 0.0170843
+t= 0.362
+Iterationen: 2    Norm des Residuums: 3.04209e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0797428
+w-2-Norm= 0.00137263
+max-Norm= 0.00293859
+ L2-Norm= 0.0171014
+t= 0.363
+Iterationen: 2    Norm des Residuums: 3.04513e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0798226
+w-2-Norm= 0.00137401
+max-Norm= 0.00294153
+ L2-Norm= 0.0171185
+t= 0.364
+Iterationen: 2    Norm des Residuums: 3.04818e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0799025
+w-2-Norm= 0.00137538
+max-Norm= 0.00294448
+ L2-Norm= 0.0171356
+t= 0.365
+Iterationen: 2    Norm des Residuums: 3.05123e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0799825
+w-2-Norm= 0.00137676
+max-Norm= 0.00294742
+ L2-Norm= 0.0171528
+t= 0.366
+Iterationen: 2    Norm des Residuums: 3.05428e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0800626
+w-2-Norm= 0.00137814
+max-Norm= 0.00295037
+ L2-Norm= 0.0171699
+t= 0.367
+Iterationen: 2    Norm des Residuums: 3.05734e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0801427
+w-2-Norm= 0.00137952
+max-Norm= 0.00295333
+ L2-Norm= 0.0171871
+t= 0.368
+Iterationen: 2    Norm des Residuums: 3.0604e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0802229
+w-2-Norm= 0.0013809
+max-Norm= 0.00295628
+ L2-Norm= 0.0172043
+t= 0.369
+Iterationen: 2    Norm des Residuums: 3.06346e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0803032
+w-2-Norm= 0.00138228
+max-Norm= 0.00295924
+ L2-Norm= 0.0172215
+t= 0.37
+Iterationen: 2    Norm des Residuums: 3.06652e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0803835
+w-2-Norm= 0.00138366
+max-Norm= 0.0029622
+ L2-Norm= 0.0172388
+t= 0.371
+Iterationen: 2    Norm des Residuums: 3.06959e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.080464
+w-2-Norm= 0.00138505
+max-Norm= 0.00296517
+ L2-Norm= 0.017256
+t= 0.372
+Iterationen: 2    Norm des Residuums: 3.07266e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0805445
+w-2-Norm= 0.00138643
+max-Norm= 0.00296813
+ L2-Norm= 0.0172733
+t= 0.373
+Iterationen: 2    Norm des Residuums: 3.07574e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0806251
+w-2-Norm= 0.00138782
+max-Norm= 0.0029711
+ L2-Norm= 0.0172905
+t= 0.374
+Iterationen: 2    Norm des Residuums: 3.07881e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0807058
+w-2-Norm= 0.00138921
+max-Norm= 0.00297408
+ L2-Norm= 0.0173078
+t= 0.375
+Iterationen: 2    Norm des Residuums: 3.08189e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0807866
+w-2-Norm= 0.0013906
+max-Norm= 0.00297705
+ L2-Norm= 0.0173252
+t= 0.376
+Iterationen: 2    Norm des Residuums: 3.08498e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0808674
+w-2-Norm= 0.00139199
+max-Norm= 0.00298003
+ L2-Norm= 0.0173425
+t= 0.377
+Iterationen: 2    Norm des Residuums: 3.08806e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0809483
+w-2-Norm= 0.00139338
+max-Norm= 0.00298302
+ L2-Norm= 0.0173598
+t= 0.378
+Iterationen: 2    Norm des Residuums: 3.09115e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0810294
+w-2-Norm= 0.00139478
+max-Norm= 0.002986
+ L2-Norm= 0.0173772
+t= 0.379
+Iterationen: 2    Norm des Residuums: 3.09425e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0811104
+w-2-Norm= 0.00139618
+max-Norm= 0.00298899
+ L2-Norm= 0.0173946
+t= 0.38
+Iterationen: 2    Norm des Residuums: 3.09734e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0811916
+w-2-Norm= 0.00139757
+max-Norm= 0.00299198
+ L2-Norm= 0.017412
+t= 0.381
+Iterationen: 2    Norm des Residuums: 3.10044e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0812729
+w-2-Norm= 0.00139897
+max-Norm= 0.00299497
+ L2-Norm= 0.0174294
+t= 0.382
+Iterationen: 2    Norm des Residuums: 3.10354e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0813542
+w-2-Norm= 0.00140037
+max-Norm= 0.00299797
+ L2-Norm= 0.0174469
+t= 0.383
+Iterationen: 2    Norm des Residuums: 3.10665e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0814356
+w-2-Norm= 0.00140177
+max-Norm= 0.00300097
+ L2-Norm= 0.0174643
+t= 0.384
+Iterationen: 2    Norm des Residuums: 3.10976e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0815171
+w-2-Norm= 0.00140317
+max-Norm= 0.00300397
+ L2-Norm= 0.0174818
+t= 0.385
+Iterationen: 2    Norm des Residuums: 3.11287e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0815987
+w-2-Norm= 0.00140458
+max-Norm= 0.00300698
+ L2-Norm= 0.0174993
+t= 0.386
+Iterationen: 2    Norm des Residuums: 3.11598e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0816803
+w-2-Norm= 0.00140598
+max-Norm= 0.00300999
+ L2-Norm= 0.0175168
+t= 0.387
+Iterationen: 2    Norm des Residuums: 3.1191e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0817621
+w-2-Norm= 0.00140739
+max-Norm= 0.003013
+ L2-Norm= 0.0175343
+t= 0.388
+Iterationen: 2    Norm des Residuums: 3.12222e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0818439
+w-2-Norm= 0.0014088
+max-Norm= 0.00301602
+ L2-Norm= 0.0175519
+t= 0.389
+Iterationen: 2    Norm des Residuums: 3.12534e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0819258
+w-2-Norm= 0.00141021
+max-Norm= 0.00301903
+ L2-Norm= 0.0175694
+t= 0.39
+Iterationen: 2    Norm des Residuums: 3.12847e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0820077
+w-2-Norm= 0.00141162
+max-Norm= 0.00302206
+ L2-Norm= 0.017587
+t= 0.391
+Iterationen: 2    Norm des Residuums: 3.1316e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0820898
+w-2-Norm= 0.00141303
+max-Norm= 0.00302508
+ L2-Norm= 0.0176046
+t= 0.392
+Iterationen: 2    Norm des Residuums: 3.13473e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.082172
+w-2-Norm= 0.00141445
+max-Norm= 0.00302811
+ L2-Norm= 0.0176222
+t= 0.393
+Iterationen: 2    Norm des Residuums: 3.13787e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0822542
+w-2-Norm= 0.00141586
+max-Norm= 0.00303114
+ L2-Norm= 0.0176398
+t= 0.394
+Iterationen: 2    Norm des Residuums: 3.14101e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0823365
+w-2-Norm= 0.00141728
+max-Norm= 0.00303417
+ L2-Norm= 0.0176575
+t= 0.395
+Iterationen: 2    Norm des Residuums: 3.14415e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0824189
+w-2-Norm= 0.0014187
+max-Norm= 0.00303721
+ L2-Norm= 0.0176751
+t= 0.396
+Iterationen: 2    Norm des Residuums: 3.1473e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0825013
+w-2-Norm= 0.00142012
+max-Norm= 0.00304024
+ L2-Norm= 0.0176928
+t= 0.397
+Iterationen: 2    Norm des Residuums: 3.15045e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0825839
+w-2-Norm= 0.00142154
+max-Norm= 0.00304329
+ L2-Norm= 0.0177105
+t= 0.398
+Iterationen: 2    Norm des Residuums: 3.1536e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0826665
+w-2-Norm= 0.00142296
+max-Norm= 0.00304633
+ L2-Norm= 0.0177283
+t= 0.399
+Iterationen: 2    Norm des Residuums: 3.15675e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0827493
+w-2-Norm= 0.00142438
+max-Norm= 0.00304938
+ L2-Norm= 0.017746
+t= 0.4
+Iterationen: 2    Norm des Residuums: 3.15991e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0828321
+w-2-Norm= 0.00142581
+max-Norm= 0.00305243
+ L2-Norm= 0.0177637
+t= 0.401
+Iterationen: 2    Norm des Residuums: 3.16307e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0829149
+w-2-Norm= 0.00142724
+max-Norm= 0.00305549
+ L2-Norm= 0.0177815
+t= 0.402
+Iterationen: 2    Norm des Residuums: 3.16624e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0829979
+w-2-Norm= 0.00142866
+max-Norm= 0.00305854
+ L2-Norm= 0.0177993
+t= 0.403
+Iterationen: 2    Norm des Residuums: 3.16941e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0830809
+w-2-Norm= 0.00143009
+max-Norm= 0.0030616
+ L2-Norm= 0.0178171
+t= 0.404
+Iterationen: 2    Norm des Residuums: 3.17258e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0831641
+w-2-Norm= 0.00143152
+max-Norm= 0.00306467
+ L2-Norm= 0.0178349
+t= 0.405
+Iterationen: 2    Norm des Residuums: 3.17575e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0832473
+w-2-Norm= 0.00143296
+max-Norm= 0.00306773
+ L2-Norm= 0.0178528
+t= 0.406
+Iterationen: 2    Norm des Residuums: 3.17893e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0833306
+w-2-Norm= 0.00143439
+max-Norm= 0.0030708
+ L2-Norm= 0.0178706
+t= 0.407
+Iterationen: 2    Norm des Residuums: 3.18211e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.083414
+w-2-Norm= 0.00143583
+max-Norm= 0.00307388
+ L2-Norm= 0.0178885
+t= 0.408
+Iterationen: 2    Norm des Residuums: 3.18529e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0834974
+w-2-Norm= 0.00143726
+max-Norm= 0.00307695
+ L2-Norm= 0.0179064
+t= 0.409
+Iterationen: 2    Norm des Residuums: 3.18848e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.083581
+w-2-Norm= 0.0014387
+max-Norm= 0.00308003
+ L2-Norm= 0.0179243
+t= 0.41
+Iterationen: 2    Norm des Residuums: 3.19167e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0836646
+w-2-Norm= 0.00144014
+max-Norm= 0.00308311
+ L2-Norm= 0.0179423
+t= 0.411
+Iterationen: 2    Norm des Residuums: 3.19486e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0837483
+w-2-Norm= 0.00144158
+max-Norm= 0.0030862
+ L2-Norm= 0.0179602
+t= 0.412
+Iterationen: 2    Norm des Residuums: 3.19806e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0838321
+w-2-Norm= 0.00144302
+max-Norm= 0.00308929
+ L2-Norm= 0.0179782
+t= 0.413
+Iterationen: 2    Norm des Residuums: 3.20126e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.083916
+w-2-Norm= 0.00144447
+max-Norm= 0.00309238
+ L2-Norm= 0.0179962
+t= 0.414
+Iterationen: 2    Norm des Residuums: 3.20446e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.084
+w-2-Norm= 0.00144591
+max-Norm= 0.00309547
+ L2-Norm= 0.0180142
+t= 0.415
+Iterationen: 2    Norm des Residuums: 3.20767e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.084084
+w-2-Norm= 0.00144736
+max-Norm= 0.00309857
+ L2-Norm= 0.0180322
+t= 0.416
+Iterationen: 2    Norm des Residuums: 3.21088e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0841681
+w-2-Norm= 0.00144881
+max-Norm= 0.00310167
+ L2-Norm= 0.0180502
+t= 0.417
+Iterationen: 2    Norm des Residuums: 3.21409e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0842524
+w-2-Norm= 0.00145026
+max-Norm= 0.00310477
+ L2-Norm= 0.0180683
+t= 0.418
+Iterationen: 2    Norm des Residuums: 3.21731e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0843367
+w-2-Norm= 0.00145171
+max-Norm= 0.00310788
+ L2-Norm= 0.0180864
+t= 0.419
+Iterationen: 2    Norm des Residuums: 3.22052e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.084421
+w-2-Norm= 0.00145316
+max-Norm= 0.00311099
+ L2-Norm= 0.0181045
+t= 0.42
+Iterationen: 2    Norm des Residuums: 3.22375e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0845055
+w-2-Norm= 0.00145462
+max-Norm= 0.0031141
+ L2-Norm= 0.0181226
+t= 0.421
+Iterationen: 2    Norm des Residuums: 3.22697e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0845901
+w-2-Norm= 0.00145607
+max-Norm= 0.00311722
+ L2-Norm= 0.0181407
+t= 0.422
+Iterationen: 2    Norm des Residuums: 3.2302e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0846747
+w-2-Norm= 0.00145753
+max-Norm= 0.00312033
+ L2-Norm= 0.0181589
+t= 0.423
+Iterationen: 2    Norm des Residuums: 3.23343e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0847594
+w-2-Norm= 0.00145899
+max-Norm= 0.00312346
+ L2-Norm= 0.018177
+t= 0.424
+Iterationen: 2    Norm des Residuums: 3.23667e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0848442
+w-2-Norm= 0.00146045
+max-Norm= 0.00312658
+ L2-Norm= 0.0181952
+t= 0.425
+Iterationen: 2    Norm des Residuums: 3.23991e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0849291
+w-2-Norm= 0.00146191
+max-Norm= 0.00312971
+ L2-Norm= 0.0182134
+t= 0.426
+Iterationen: 2    Norm des Residuums: 3.24315e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0850141
+w-2-Norm= 0.00146337
+max-Norm= 0.00313284
+ L2-Norm= 0.0182317
+t= 0.427
+Iterationen: 2    Norm des Residuums: 3.24639e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0850992
+w-2-Norm= 0.00146483
+max-Norm= 0.00313598
+ L2-Norm= 0.0182499
+t= 0.428
+Iterationen: 2    Norm des Residuums: 3.24964e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0851843
+w-2-Norm= 0.0014663
+max-Norm= 0.00313911
+ L2-Norm= 0.0182682
+t= 0.429
+Iterationen: 2    Norm des Residuums: 3.25289e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0852695
+w-2-Norm= 0.00146777
+max-Norm= 0.00314226
+ L2-Norm= 0.0182864
+t= 0.43
+Iterationen: 2    Norm des Residuums: 3.25615e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0853549
+w-2-Norm= 0.00146924
+max-Norm= 0.0031454
+ L2-Norm= 0.0183047
+t= 0.431
+Iterationen: 2    Norm des Residuums: 3.2594e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0854403
+w-2-Norm= 0.00147071
+max-Norm= 0.00314855
+ L2-Norm= 0.018323
+t= 0.432
+Iterationen: 2    Norm des Residuums: 3.26266e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0855257
+w-2-Norm= 0.00147218
+max-Norm= 0.0031517
+ L2-Norm= 0.0183414
+t= 0.433
+Iterationen: 2    Norm des Residuums: 3.26593e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0856113
+w-2-Norm= 0.00147365
+max-Norm= 0.00315485
+ L2-Norm= 0.0183597
+t= 0.434
+Iterationen: 2    Norm des Residuums: 3.2692e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.085697
+w-2-Norm= 0.00147512
+max-Norm= 0.00315801
+ L2-Norm= 0.0183781
+t= 0.435
+Iterationen: 2    Norm des Residuums: 3.27247e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0857827
+w-2-Norm= 0.0014766
+max-Norm= 0.00316117
+ L2-Norm= 0.0183965
+t= 0.436
+Iterationen: 2    Norm des Residuums: 3.27574e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0858685
+w-2-Norm= 0.00147808
+max-Norm= 0.00316433
+ L2-Norm= 0.0184149
+t= 0.437
+Iterationen: 2    Norm des Residuums: 3.27902e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0859545
+w-2-Norm= 0.00147956
+max-Norm= 0.00316749
+ L2-Norm= 0.0184333
+t= 0.438
+Iterationen: 2    Norm des Residuums: 3.2823e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0860405
+w-2-Norm= 0.00148104
+max-Norm= 0.00317066
+ L2-Norm= 0.0184518
+t= 0.439
+Iterationen: 2    Norm des Residuums: 3.28558e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0861265
+w-2-Norm= 0.00148252
+max-Norm= 0.00317384
+ L2-Norm= 0.0184702
+t= 0.44
+Iterationen: 2    Norm des Residuums: 3.28887e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0862127
+w-2-Norm= 0.001484
+max-Norm= 0.00317701
+ L2-Norm= 0.0184887
+t= 0.441
+Iterationen: 2    Norm des Residuums: 3.29216e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.086299
+w-2-Norm= 0.00148549
+max-Norm= 0.00318019
+ L2-Norm= 0.0185072
+t= 0.442
+Iterationen: 2    Norm des Residuums: 3.29545e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0863853
+w-2-Norm= 0.00148697
+max-Norm= 0.00318337
+ L2-Norm= 0.0185257
+t= 0.443
+Iterationen: 2    Norm des Residuums: 3.29875e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0864718
+w-2-Norm= 0.00148846
+max-Norm= 0.00318656
+ L2-Norm= 0.0185442
+t= 0.444
+Iterationen: 2    Norm des Residuums: 3.30205e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0865583
+w-2-Norm= 0.00148995
+max-Norm= 0.00318975
+ L2-Norm= 0.0185628
+t= 0.445
+Iterationen: 2    Norm des Residuums: 3.30536e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0866449
+w-2-Norm= 0.00149144
+max-Norm= 0.00319294
+ L2-Norm= 0.0185814
+t= 0.446
+Iterationen: 2    Norm des Residuums: 3.30866e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0867316
+w-2-Norm= 0.00149293
+max-Norm= 0.00319613
+ L2-Norm= 0.0186
+t= 0.447
+Iterationen: 2    Norm des Residuums: 3.31197e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0868183
+w-2-Norm= 0.00149443
+max-Norm= 0.00319933
+ L2-Norm= 0.0186186
+t= 0.448
+Iterationen: 2    Norm des Residuums: 3.31529e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0869052
+w-2-Norm= 0.00149592
+max-Norm= 0.00320253
+ L2-Norm= 0.0186372
+t= 0.449
+Iterationen: 2    Norm des Residuums: 3.3186e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0869922
+w-2-Norm= 0.00149742
+max-Norm= 0.00320573
+ L2-Norm= 0.0186558
+t= 0.45
+Iterationen: 2    Norm des Residuums: 3.32192e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0870792
+w-2-Norm= 0.00149892
+max-Norm= 0.00320894
+ L2-Norm= 0.0186745
+t= 0.451
+Iterationen: 2    Norm des Residuums: 3.32525e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0871663
+w-2-Norm= 0.00150042
+max-Norm= 0.00321215
+ L2-Norm= 0.0186932
+t= 0.452
+Iterationen: 2    Norm des Residuums: 3.32857e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0872535
+w-2-Norm= 0.00150192
+max-Norm= 0.00321537
+ L2-Norm= 0.0187119
+t= 0.453
+Iterationen: 2    Norm des Residuums: 3.33191e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0873408
+w-2-Norm= 0.00150342
+max-Norm= 0.00321858
+ L2-Norm= 0.0187306
+t= 0.454
+Iterationen: 2    Norm des Residuums: 3.33524e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0874282
+w-2-Norm= 0.00150492
+max-Norm= 0.0032218
+ L2-Norm= 0.0187494
+t= 0.455
+Iterationen: 2    Norm des Residuums: 3.33858e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0875157
+w-2-Norm= 0.00150643
+max-Norm= 0.00322503
+ L2-Norm= 0.0187681
+t= 0.456
+Iterationen: 2    Norm des Residuums: 3.34192e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0876033
+w-2-Norm= 0.00150794
+max-Norm= 0.00322825
+ L2-Norm= 0.0187869
+t= 0.457
+Iterationen: 2    Norm des Residuums: 3.34526e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0876909
+w-2-Norm= 0.00150945
+max-Norm= 0.00323148
+ L2-Norm= 0.0188057
+t= 0.458
+Iterationen: 2    Norm des Residuums: 3.34861e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0877786
+w-2-Norm= 0.00151096
+max-Norm= 0.00323472
+ L2-Norm= 0.0188245
+t= 0.459
+Iterationen: 2    Norm des Residuums: 3.35196e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0878665
+w-2-Norm= 0.00151247
+max-Norm= 0.00323795
+ L2-Norm= 0.0188433
+t= 0.46
+Iterationen: 2    Norm des Residuums: 3.35531e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0879544
+w-2-Norm= 0.00151398
+max-Norm= 0.00324119
+ L2-Norm= 0.0188622
+t= 0.461
+Iterationen: 2    Norm des Residuums: 3.35867e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0880424
+w-2-Norm= 0.0015155
+max-Norm= 0.00324444
+ L2-Norm= 0.0188811
+t= 0.462
+Iterationen: 2    Norm des Residuums: 3.36203e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0881305
+w-2-Norm= 0.00151701
+max-Norm= 0.00324768
+ L2-Norm= 0.0189
+t= 0.463
+Iterationen: 2    Norm des Residuums: 3.36539e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0882186
+w-2-Norm= 0.00151853
+max-Norm= 0.00325093
+ L2-Norm= 0.0189189
+t= 0.464
+Iterationen: 2    Norm des Residuums: 3.36876e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0883069
+w-2-Norm= 0.00152005
+max-Norm= 0.00325418
+ L2-Norm= 0.0189378
+t= 0.465
+Iterationen: 2    Norm des Residuums: 3.37213e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0883953
+w-2-Norm= 0.00152157
+max-Norm= 0.00325744
+ L2-Norm= 0.0189567
+t= 0.466
+Iterationen: 2    Norm des Residuums: 3.3755e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0884837
+w-2-Norm= 0.00152309
+max-Norm= 0.0032607
+ L2-Norm= 0.0189757
+t= 0.467
+Iterationen: 2    Norm des Residuums: 3.37888e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0885722
+w-2-Norm= 0.00152462
+max-Norm= 0.00326396
+ L2-Norm= 0.0189947
+t= 0.468
+Iterationen: 2    Norm des Residuums: 3.38226e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0886608
+w-2-Norm= 0.00152614
+max-Norm= 0.00326723
+ L2-Norm= 0.0190137
+t= 0.469
+Iterationen: 2    Norm des Residuums: 3.38564e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0887495
+w-2-Norm= 0.00152767
+max-Norm= 0.0032705
+ L2-Norm= 0.0190327
+t= 0.47
+Iterationen: 2    Norm des Residuums: 3.38903e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0888383
+w-2-Norm= 0.0015292
+max-Norm= 0.00327377
+ L2-Norm= 0.0190518
+t= 0.471
+Iterationen: 2    Norm des Residuums: 3.39242e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0889272
+w-2-Norm= 0.00153073
+max-Norm= 0.00327704
+ L2-Norm= 0.0190708
+t= 0.472
+Iterationen: 2    Norm des Residuums: 3.39582e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0890162
+w-2-Norm= 0.00153226
+max-Norm= 0.00328032
+ L2-Norm= 0.0190899
+t= 0.473
+Iterationen: 2    Norm des Residuums: 3.39921e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0891053
+w-2-Norm= 0.00153379
+max-Norm= 0.0032836
+ L2-Norm= 0.019109
+t= 0.474
+Iterationen: 2    Norm des Residuums: 3.40261e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0891944
+w-2-Norm= 0.00153533
+max-Norm= 0.00328689
+ L2-Norm= 0.0191281
+t= 0.475
+Iterationen: 2    Norm des Residuums: 3.40602e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0892837
+w-2-Norm= 0.00153686
+max-Norm= 0.00329018
+ L2-Norm= 0.0191473
+t= 0.476
+Iterationen: 2    Norm des Residuums: 3.40943e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.089373
+w-2-Norm= 0.0015384
+max-Norm= 0.00329347
+ L2-Norm= 0.0191664
+t= 0.477
+Iterationen: 2    Norm des Residuums: 3.41284e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0894624
+w-2-Norm= 0.00153994
+max-Norm= 0.00329677
+ L2-Norm= 0.0191856
+t= 0.478
+Iterationen: 2    Norm des Residuums: 3.41625e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0895519
+w-2-Norm= 0.00154148
+max-Norm= 0.00330006
+ L2-Norm= 0.0192048
+t= 0.479
+Iterationen: 2    Norm des Residuums: 3.41967e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0896415
+w-2-Norm= 0.00154302
+max-Norm= 0.00330337
+ L2-Norm= 0.019224
+t= 0.48
+Iterationen: 2    Norm des Residuums: 3.42309e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0897312
+w-2-Norm= 0.00154457
+max-Norm= 0.00330667
+ L2-Norm= 0.0192432
+t= 0.481
+Iterationen: 2    Norm des Residuums: 3.42652e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.089821
+w-2-Norm= 0.00154611
+max-Norm= 0.00330998
+ L2-Norm= 0.0192625
+t= 0.482
+Iterationen: 2    Norm des Residuums: 3.42995e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0899108
+w-2-Norm= 0.00154766
+max-Norm= 0.00331329
+ L2-Norm= 0.0192818
+t= 0.483
+Iterationen: 2    Norm des Residuums: 3.43338e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0900008
+w-2-Norm= 0.00154921
+max-Norm= 0.00331661
+ L2-Norm= 0.019301
+t= 0.484
+Iterationen: 2    Norm des Residuums: 3.43681e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0900908
+w-2-Norm= 0.00155076
+max-Norm= 0.00331992
+ L2-Norm= 0.0193204
+t= 0.485
+Iterationen: 2    Norm des Residuums: 3.44025e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.090181
+w-2-Norm= 0.00155231
+max-Norm= 0.00332325
+ L2-Norm= 0.0193397
+t= 0.486
+Iterationen: 2    Norm des Residuums: 3.44369e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0902712
+w-2-Norm= 0.00155386
+max-Norm= 0.00332657
+ L2-Norm= 0.019359
+t= 0.487
+Iterationen: 2    Norm des Residuums: 3.44714e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0903615
+w-2-Norm= 0.00155542
+max-Norm= 0.0033299
+ L2-Norm= 0.0193784
+t= 0.488
+Iterationen: 2    Norm des Residuums: 3.45059e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0904519
+w-2-Norm= 0.00155697
+max-Norm= 0.00333323
+ L2-Norm= 0.0193978
+t= 0.489
+Iterationen: 2    Norm des Residuums: 3.45404e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0905424
+w-2-Norm= 0.00155853
+max-Norm= 0.00333657
+ L2-Norm= 0.0194172
+t= 0.49
+Iterationen: 2    Norm des Residuums: 3.45749e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.090633
+w-2-Norm= 0.00156009
+max-Norm= 0.0033399
+ L2-Norm= 0.0194366
+t= 0.491
+Iterationen: 2    Norm des Residuums: 3.46095e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0907237
+w-2-Norm= 0.00156165
+max-Norm= 0.00334325
+ L2-Norm= 0.0194561
+t= 0.492
+Iterationen: 2    Norm des Residuums: 3.46442e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0908145
+w-2-Norm= 0.00156321
+max-Norm= 0.00334659
+ L2-Norm= 0.0194755
+t= 0.493
+Iterationen: 2    Norm des Residuums: 3.46788e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0909053
+w-2-Norm= 0.00156478
+max-Norm= 0.00334994
+ L2-Norm= 0.019495
+t= 0.494
+Iterationen: 2    Norm des Residuums: 3.47135e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0909963
+w-2-Norm= 0.00156634
+max-Norm= 0.00335329
+ L2-Norm= 0.0195145
+t= 0.495
+Iterationen: 2    Norm des Residuums: 3.47483e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0910873
+w-2-Norm= 0.00156791
+max-Norm= 0.00335665
+ L2-Norm= 0.0195341
+t= 0.496
+Iterationen: 2    Norm des Residuums: 3.4783e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0911784
+w-2-Norm= 0.00156948
+max-Norm= 0.00336
+ L2-Norm= 0.0195536
+t= 0.497
+Iterationen: 2    Norm des Residuums: 3.48178e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0912697
+w-2-Norm= 0.00157105
+max-Norm= 0.00336337
+ L2-Norm= 0.0195732
+t= 0.498
+Iterationen: 2    Norm des Residuums: 3.48527e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.091361
+w-2-Norm= 0.00157262
+max-Norm= 0.00336673
+ L2-Norm= 0.0195927
+t= 0.499
+Iterationen: 2    Norm des Residuums: 3.48875e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0914524
+w-2-Norm= 0.00157419
+max-Norm= 0.0033701
+ L2-Norm= 0.0196123
+t= 0.5
+Iterationen: 2    Norm des Residuums: 3.49224e-08
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 0.0915439
+w-2-Norm= 0.00157577
+max-Norm= 0.00337347
+ L2-Norm= 0.019632

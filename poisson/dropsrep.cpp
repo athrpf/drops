@@ -5,7 +5,7 @@
 #include "num/solver.h"
 #include <fstream>
 
-// laplace u + q*u = f
+// -laplace u + q*u = f
 class PoissonCoeffCL
 {
   public:
@@ -20,14 +20,14 @@ class PoissonCoeffCL
         else
         {
             const double t2= 1.0+t1;
-            return a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(std::pow(t2,3)*t0);
+            return -a*t1*(-2.0*t2 -a*t0+a*t1*t0)/(std::pow(t2,3)*t0);
         }
     }
 
 };
 
-const double PoissonCoeffCL::a= -200.;
-const double PoissonCoeffCL::b= .8;
+const double PoissonCoeffCL::a= -60.;
+const double PoissonCoeffCL::b= .3;
 
 inline double Lsg( const DROPS::Point3DCL& p)
 {
@@ -39,7 +39,7 @@ namespace DROPS // for Strategy
 {
 
 template<class MGB, class Coeff>
-void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
+void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red, double markratio, Uint maxiter)
 {
     typedef PoissonP1CL<MGB,Coeff> MyPoissonCL;
 
@@ -59,7 +59,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
     MatDescCL* A= &Poisson.A;
     SSORPcCL   pc(omega);
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
-        Estimator(rel_red, 0.0, 0.6, 8, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
+        Estimator(rel_red, 0.0, markratio, 8, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
     Uint step= 0;
     bool new_marks;
 
@@ -114,7 +114,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red)
         std::swap(old_idx, new_idx);
         std::cerr << std::endl;
     }
-    while (new_marks && step++<9);
+    while (new_marks && step++<maxiter);
     // I want the solution to be in Poisson.x
     if (old_x == &loc_x)
     {
@@ -163,13 +163,15 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc!=3)
+    if (argc!=5)
     {
-        std::cerr << "You have to specify two parameters:\n\tdrops <omega> <err_red>" << std::endl;
+        std::cerr << "You have to specify 4 parameters:\n\tdrops <omega> <err_red> <markratio> <maxiter>" << std::endl;
         return 1;
     }
     double omega;
     double rel_red;
+    double markratio;
+    DROPS::Uint maxiter;
     DROPS::Point3DCL orig(-1.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 2.0;
@@ -190,8 +192,13 @@ int main (int argc, char** argv)
 
     omega= atof(argv[1]);
     rel_red= atof(argv[2]);
-    std::cerr << "Omega: " << omega << " rel_red: " << rel_red << std::endl;
-    DROPS::Strategy(prob, omega, rel_red);
+    markratio= atof(argv[3]);
+    maxiter= atoi(argv[4]);
+    std::cerr << "Omega: " << omega << " rel_red: " << rel_red 
+              << " markratio: " << markratio << " maxiter: " << maxiter
+	      << std::endl;
+    DROPS::MarkAll(mg);
+    DROPS::Strategy(prob, omega, rel_red, markratio, maxiter);
     std::cerr << "hallo" << std::endl;
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");

@@ -1,0 +1,15 @@
+Poisson stationaer
+==================
+
+--uniform: dropsrep 1 0.01 1.1 3
+  erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.txt.
+--adaptiv: dropsrep 1 0.01 0.8 7
+  erzeugt die Ausgabe in der Datei poisson-stationaer-adaptiv.txt.
+--multigrid: MGdrops 1 mit tolerance 1e-8, -1 levels, 2 smoothing steps
+  erzeugt die Ausgabe in der Datei poisson-stationaer-multigrid.txt.
+Das uniforme Problem steht in Abschnitt 7.1 des IGPM-Reports 211 ueber DROPS.
+
+Poisson instationaer
+====================
+--uniform: ipdropsrep mit dt=0.001, 500 Zeitschritten, 4 Verfeinerungen
+  erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.txt.
