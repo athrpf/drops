@@ -233,9 +233,9 @@ SolveGSstep(const PreDummyCL<PB_SGS0>&, const MatrixCL& A, Vec& x, const Vec& b,
 }
 
 
-template <bool HasOmega, typename Vec, typename Real>
+template <bool HasOmega, typename Vec, typename Mat>
 void
-SolveGSstep(const PreDummyCL<PB_DUMMY>&, const SparseMatBaseCL<Real>&, Vec& x, const Vec& b, double)
+SolveGSstep(const PreDummyCL<PB_DUMMY>&, const Mat&, Vec& x, const Vec& b, double)
 {
     x=b;
 }
@@ -259,8 +259,8 @@ class PreGSCL<PM,false>
   public:
     PreGSCL (double om= 1.0) : _omega(om) {}
 
-    template <typename Vec>
-    void Apply(const MatrixCL& A, Vec& x, const Vec& b) const
+    template <typename Mat, typename Vec>
+    void Apply(const Mat& A, Vec& x, const Vec& b) const
     {
         SolveGSstep<PreTraitsCL<PM>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<PM>::BaseMeth>(), A, x, b, _omega);
     }
