@@ -11,7 +11,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 
     long ct= 0;
     
-    for (DROPS::MultiGridCL::AllTetraIteratorCL It(mg.GetAllTetraBegin(maxLevel)),
+    for (DROPS::MultiGridCL::TetraIterator It(mg.GetAllTetraBegin(maxLevel)),
              ItEnd(mg.GetAllTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
         if ( It->IsUnrefined() && (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
@@ -27,7 +27,7 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 {
     DROPS::Point3DCL Mitte; Mitte[0]=0.5; Mitte[1]=0.5; Mitte[2]=0.5;
 
-    for (DROPS::MultiGridCL::AllTetraIteratorCL It(mg.GetAllTetraBegin(maxLevel)),
+    for (DROPS::MultiGridCL::TetraIterator It(mg.GetAllTetraBegin(maxLevel)),
              ItEnd(mg.GetAllTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
         if ( It->IsUnrefined() && (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
@@ -111,7 +111,7 @@ int main()
         mg.SizeInfo(std::cerr);
     }
 //    DROPS::UnMarkAll(mg);
-//    for (DROPS::MultiGridCL::AllTetraIteratorCL it= mg.GetAllTetraBegin(); it!=mg.GetAllTetraEnd(); ++it)
+//    for (DROPS::MultiGridCL::TetraIterator it= mg.GetAllTetraBegin(); it!=mg.GetAllTetraEnd(); ++it)
 //        if (it->IsMarkedForRemovement()) std::cout << "MFR ";
 //    std::cout << DROPS::DumpMGCL(mg);
 

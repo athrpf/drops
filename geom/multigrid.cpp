@@ -1048,7 +1048,7 @@ void MultiGridCL::Refine()
 
 void MultiGridCL::Scale( double s)
 {
-    for (AllVertexIteratorCL it= GetAllVertexBegin(), end= GetAllVertexEnd();
+    for (VertexIterator it= GetAllVertexBegin(), end= GetAllVertexEnd();
         it!=end; ++it)
         it->_Coord*= s;
 }
@@ -1359,104 +1359,6 @@ MultiGridCL::const_TriangTetraIteratorCL MultiGridCL::GetTriangTetraEnd (int Tri
     if (TriLevel<0) TriLevel=GetLastLevel();
     return const_TriangTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
 }
-
-
-MultiGridCL::AllVertexIteratorCL MultiGridCL::GetAllVertexBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
-}
-
-MultiGridCL::const_AllVertexIteratorCL MultiGridCL::GetAllVertexBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
-}
-
-MultiGridCL::AllVertexIteratorCL MultiGridCL::GetAllVertexEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
-}
-
-MultiGridCL::const_AllVertexIteratorCL MultiGridCL::GetAllVertexEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
-}
-
-MultiGridCL::AllEdgeIteratorCL MultiGridCL::GetAllEdgeBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllEdgeIteratorCL( this, TriLevel, 0, GetEdgesBegin( 0) );
-}
-
-MultiGridCL::const_AllEdgeIteratorCL MultiGridCL::GetAllEdgeBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllEdgeIteratorCL( this, TriLevel, 0, GetEdgesBegin( 0) );
-}
-
-MultiGridCL::AllEdgeIteratorCL MultiGridCL::GetAllEdgeEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
-}
-
-MultiGridCL::const_AllEdgeIteratorCL MultiGridCL::GetAllEdgeEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
-}
-
-MultiGridCL::AllFaceIteratorCL MultiGridCL::GetAllFaceBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllFaceIteratorCL( this, TriLevel, 0, GetFacesBegin( 0) );
-}
-
-MultiGridCL::const_AllFaceIteratorCL MultiGridCL::GetAllFaceBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllFaceIteratorCL( this, TriLevel, 0, GetFacesBegin( 0) );
-}
-
-MultiGridCL::AllFaceIteratorCL MultiGridCL::GetAllFaceEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
-}
-
-MultiGridCL::const_AllFaceIteratorCL MultiGridCL::GetAllFaceEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
-}
-
-MultiGridCL::AllTetraIteratorCL MultiGridCL::GetAllTetraBegin (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllTetraIteratorCL( this, TriLevel, 0, GetTetrasBegin( 0) );
-}
-
-MultiGridCL::const_AllTetraIteratorCL MultiGridCL::GetAllTetraBegin (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllTetraIteratorCL( this, TriLevel, 0, GetTetrasBegin( 0) );
-}
-
-MultiGridCL::AllTetraIteratorCL MultiGridCL::GetAllTetraEnd (int TriLevel)
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
-}
-
-MultiGridCL::const_AllTetraIteratorCL MultiGridCL::GetAllTetraEnd (int TriLevel) const
-{
-    if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
-}
-
 
 
 void circumcircle(const TetraCL& t, Point3DCL& c, double& r)

@@ -631,7 +631,7 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
     
 //    Assert( level==old_level || old_level==level-1, DROPSErrCL("Interpolate: successive triangs are expected\n"));
     // Iterate over all edges, interpolate values on new mid vertices
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= _MG.GetAllEdgeBegin(level), theend= _MG.GetAllEdgeEnd(level);
+    for (MultiGridCL::const_EdgeIterator sit= _MG.GetAllEdgeBegin(level), theend= _MG.GetAllEdgeEnd(level);
          sit!=theend; ++sit)
         if ( sit->IsRefined() && !_bnd->IsOnDirBnd(*sit->GetMidVertex())  ) // only new non-boundary vertices are interpolated
         {
@@ -710,7 +710,7 @@ RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
     // all new vertices in triangulation tl are initialized.
     // If f is defined on tl==0, there is no coarser level, thus this step is to be skipped.
     if (tl > 0) {
-        for (MultiGridCL::const_AllEdgeIteratorCL sit= MG.GetAllEdgeBegin(tl-1),
+        for (MultiGridCL::const_EdgeIterator sit= MG.GetAllEdgeBegin(tl-1),
              theend= MG.GetAllEdgeEnd(tl-1); sit!=theend; ++sit)
             if ( sit->IsRefined()
                  && sit->GetMidVertex()->Unknowns.Exist()
@@ -896,7 +896,7 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
             InterpolateChildren( *sit, sol, old_sol);
     }
     // Iterate over all edges, interpolate values on new mid-vertices and edge-copies (plain copying)
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= _MG.GetAllEdgeBegin(level), theend= _MG.GetAllEdgeEnd(level);
+    for (MultiGridCL::const_EdgeIterator sit= _MG.GetAllEdgeBegin(level), theend= _MG.GetAllEdgeEnd(level);
          sit!=theend; ++sit)
     {
         if ( sit->IsRefined() && sit->IsInTriang(old_level)
@@ -1174,7 +1174,7 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
     // sit->GetMidVertex()->Unknowns.Exist( idx) will always be false; this is used to
     // copy edge-dofs, that did not change.
     Uint counter2= 0, counter3= 0;
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= MG.GetAllEdgeBegin( tl),
+    for (MultiGridCL::const_EdgeIterator sit= MG.GetAllEdgeBegin( tl),
          theend= MG.GetAllEdgeEnd( tl); sit!=theend; ++sit) {
         if (sit->IsRefined()
             && sit->GetMidVertex()->Unknowns.Exist()
@@ -1217,7 +1217,7 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
     // as edges on level 0 never have parents, which would otherwise have to
     // be checked for refinement.
     // Linear interpolation.
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= MG.GetAllEdgeBegin( 0),
+    for (MultiGridCL::const_EdgeIterator sit= MG.GetAllEdgeBegin( 0),
          theend= MG.GetAllEdgeEnd( 0); sit!=theend; ++sit) {
         if (sit->Unknowns.Exist()
             && sit->Unknowns.Exist( idx)
@@ -1238,7 +1238,7 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
     // over tetras is used.
     // The remaining cases, where green rules change, are handled here, too.
     if (tl>0)
-        for (MultiGridCL::const_AllTetraIteratorCL sit= MG.GetAllTetraBegin( tl-1),
+        for (MultiGridCL::const_TetraIterator sit= MG.GetAllTetraBegin( tl-1),
              theend= MG.GetAllTetraEnd( tl-1); sit!=theend; ++sit) {
             // If *sit is unrefined, there are no diagonals and childedge-dof to interpolate.
             if ( !sit->IsUnrefined() )

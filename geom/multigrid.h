@@ -479,8 +479,6 @@ template
   class MGIterBaseCL;
 template <class Sim, class SimRef, class SimPtr, class SimIter, class MG>
   struct TriangIncCL;
-template <class Sim, class SimRef, class SimPtr, class SimIter, class MG>
-  struct AllIncCL;
 
 
 class BoundaryCL
@@ -532,15 +530,6 @@ class MultiGridCL
     typedef MGIterBaseCL<TetraCL, TetraCL&, TetraCL*, TetraIterator, MultiGridCL, TriangIncCL>                             TriangTetraIteratorCL;
     typedef MGIterBaseCL<TetraCL, const TetraCL&, const TetraCL*, const_TetraIterator, const MultiGridCL, TriangIncCL>     const_TriangTetraIteratorCL;
 
-    typedef MGIterBaseCL<VertexCL, VertexCL&, VertexCL*, VertexIterator, MultiGridCL, AllIncCL>                            AllVertexIteratorCL;
-    typedef MGIterBaseCL<VertexCL, const VertexCL&, const VertexCL*, const_VertexIterator, const MultiGridCL, AllIncCL>    const_AllVertexIteratorCL;
-    typedef MGIterBaseCL<EdgeCL, EdgeCL&, EdgeCL*, EdgeIterator, MultiGridCL, AllIncCL>                                    AllEdgeIteratorCL;
-    typedef MGIterBaseCL<EdgeCL, const EdgeCL&, const EdgeCL*, const_EdgeIterator, const MultiGridCL, AllIncCL>            const_AllEdgeIteratorCL;
-    typedef MGIterBaseCL<FaceCL, FaceCL&, FaceCL*, FaceIterator, MultiGridCL, AllIncCL>                                    AllFaceIteratorCL;
-    typedef MGIterBaseCL<FaceCL, const FaceCL&, const FaceCL*, const_FaceIterator, const MultiGridCL, AllIncCL>            const_AllFaceIteratorCL;
-    typedef MGIterBaseCL<TetraCL, TetraCL&, TetraCL*, TetraIterator, MultiGridCL, AllIncCL>                                AllTetraIteratorCL;
-    typedef MGIterBaseCL<TetraCL, const TetraCL&, const TetraCL*, const_TetraIterator, const MultiGridCL, AllIncCL>        const_AllTetraIteratorCL;
-
   private:
     BoundaryCL _Bnd;
     VertexCont _Vertices;
@@ -568,39 +557,39 @@ class MultiGridCL
     const FaceCont&   GetFaces   () const { return _Faces; }
     const TetraCont&  GetTetras  () const { return _Tetras; }
 
-    VertexIterator GetVerticesBegin (int Level) { return _Vertices.level_begin( Level); }
-    VertexIterator GetVerticesEnd   (int Level) { return _Vertices.level_end( Level); }
-    EdgeIterator   GetEdgesBegin    (int Level)  { return _Edges.level_begin( Level); }
-    EdgeIterator   GetEdgesEnd      (int Level)  { return _Edges.level_end( Level); }
-    FaceIterator   GetFacesBegin    (int Level) { return _Faces.level_begin( Level); }
-    FaceIterator   GetFacesEnd      (int Level) { return _Faces.level_end( Level); }
-    TetraIterator  GetTetrasBegin   (int Level) { return _Tetras.level_begin( Level); }
-    TetraIterator  GetTetrasEnd     (int Level) { return _Tetras.level_end( Level); }
-    const_VertexIterator GetVerticesBegin (int Level) const { return _Vertices.level_begin( Level); }
-    const_VertexIterator GetVerticesEnd   (int Level) const { return _Vertices.level_end( Level); }
-    const_EdgeIterator   GetEdgesBegin    (int Level) const { return _Edges.level_begin( Level); }
-    const_EdgeIterator   GetEdgesEnd      (int Level) const { return _Edges.level_end( Level); }
-    const_FaceIterator   GetFacesBegin    (int Level) const { return _Faces.level_begin( Level); }
-    const_TetraIterator  GetTetrasBegin   (int Level) const { return _Tetras.level_begin( Level); }
-    const_TetraIterator  GetTetrasEnd     (int Level) const { return _Tetras.level_end( Level); }
-    const_FaceIterator   GetFacesEnd      (int Level) const { return _Faces.level_end( Level); }
+    VertexIterator GetVerticesBegin (int Level=-1) { return _Vertices.level_begin( Level); }
+    VertexIterator GetVerticesEnd   (int Level=-1) { return _Vertices.level_end( Level); }
+    EdgeIterator   GetEdgesBegin    (int Level=-1)  { return _Edges.level_begin( Level); }
+    EdgeIterator   GetEdgesEnd      (int Level=-1)  { return _Edges.level_end( Level); }
+    FaceIterator   GetFacesBegin    (int Level=-1) { return _Faces.level_begin( Level); }
+    FaceIterator   GetFacesEnd      (int Level=-1) { return _Faces.level_end( Level); }
+    TetraIterator  GetTetrasBegin   (int Level=-1) { return _Tetras.level_begin( Level); }
+    TetraIterator  GetTetrasEnd     (int Level=-1) { return _Tetras.level_end( Level); }
+    const_VertexIterator GetVerticesBegin (int Level=-1) const { return _Vertices.level_begin( Level); }
+    const_VertexIterator GetVerticesEnd   (int Level=-1) const { return _Vertices.level_end( Level); }
+    const_EdgeIterator   GetEdgesBegin    (int Level=-1) const { return _Edges.level_begin( Level); }
+    const_EdgeIterator   GetEdgesEnd      (int Level=-1) const { return _Edges.level_end( Level); }
+    const_FaceIterator   GetFacesBegin    (int Level=-1) const { return _Faces.level_begin( Level); }
+    const_FaceIterator   GetFacesEnd      (int Level=-1) const { return _Faces.level_end( Level); }
+    const_TetraIterator  GetTetrasBegin   (int Level=-1) const { return _Tetras.level_begin( Level); }
+    const_TetraIterator  GetTetrasEnd     (int Level=-1) const { return _Tetras.level_end( Level); }
 
-    AllVertexIteratorCL GetAllVertexBegin (int Level=-1);
-    AllVertexIteratorCL GetAllVertexEnd   (int Level=-1);
-    AllEdgeIteratorCL   GetAllEdgeBegin   (int Level=-1);
-    AllEdgeIteratorCL   GetAllEdgeEnd     (int Level=-1);
-    AllFaceIteratorCL   GetAllFaceBegin   (int Level=-1);
-    AllFaceIteratorCL   GetAllFaceEnd     (int Level=-1);
-    AllTetraIteratorCL  GetAllTetraBegin  (int Level=-1);
-    AllTetraIteratorCL  GetAllTetraEnd    (int Level=-1);
-    const_AllVertexIteratorCL GetAllVertexBegin (int Level=-1) const;
-    const_AllVertexIteratorCL GetAllVertexEnd   (int Level=-1) const;
-    const_AllEdgeIteratorCL   GetAllEdgeBegin   (int Level=-1) const;
-    const_AllEdgeIteratorCL   GetAllEdgeEnd     (int Level=-1) const;
-    const_AllFaceIteratorCL   GetAllFaceBegin   (int Level=-1) const;
-    const_AllFaceIteratorCL   GetAllFaceEnd     (int Level=-1) const;
-    const_AllTetraIteratorCL  GetAllTetraBegin  (int Level=-1) const;
-    const_AllTetraIteratorCL  GetAllTetraEnd    (int Level=-1) const;
+    VertexIterator GetAllVertexBegin (int= -1     ) { return _Vertices.begin(); }
+    VertexIterator GetAllVertexEnd   (int Level=-1) { return _Vertices.level_end( Level); }
+    EdgeIterator   GetAllEdgeBegin   (int= -1     ) { return _Edges.begin(); }
+    EdgeIterator   GetAllEdgeEnd     (int Level=-1) { return _Edges.level_end( Level); }
+    FaceIterator   GetAllFaceBegin   (int= -1     ) { return _Faces.begin(); }
+    FaceIterator   GetAllFaceEnd     (int Level=-1) { return _Faces.level_end( Level); }
+    TetraIterator  GetAllTetraBegin  (int= -1     ) { return _Tetras.begin(); }
+    TetraIterator  GetAllTetraEnd    (int Level=-1) { return _Tetras.level_end( Level); }
+    const_VertexIterator GetAllVertexBegin (int= -1     ) const { return _Vertices.begin(); }
+    const_VertexIterator GetAllVertexEnd   (int Level=-1) const { return _Vertices.level_end( Level); }
+    const_EdgeIterator   GetAllEdgeBegin   (int= -1     ) const  { return _Edges.begin(); }
+    const_EdgeIterator   GetAllEdgeEnd     (int Level=-1) const  { return _Edges.level_end( Level); }
+    const_FaceIterator   GetAllFaceBegin   (int= -1     ) const { return _Faces.begin(); }
+    const_FaceIterator   GetAllFaceEnd     (int Level=-1) const { return _Faces.level_end( Level); }
+    const_TetraIterator  GetAllTetraBegin  (int= -1     ) const { return _Tetras.begin(); }
+    const_TetraIterator  GetAllTetraEnd    (int Level=-1) const { return _Tetras.level_end( Level); }
 
     TriangVertexIteratorCL GetTriangVertexBegin (int Level=-1);
     TriangVertexIteratorCL GetTriangVertexEnd   (int Level=-1);
@@ -695,73 +684,6 @@ struct TriangIncCL<TetraCL, SimRef, SimPtr, SimIter, MG>
             for ( ; _Pos != _MG->GetTetrasEnd(_Level); ++_Pos)
                 if ( _Pos->IsInTriang(_TriLevel) ) return;
             _Pos = _MG->GetTetrasBegin(++_Level);
-        }
-    }
-};
-
-
-
-// This template should never be instantiated (only the specializations...);
-// Thus we provoke a link-time error, if it is instantiated.
-template <class Sim, class SimRef, class SimPtr, class SimIter, class MG>
-struct AllIncCL
-{
-// Not defined!
-    inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos);
-};
-
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct AllIncCL<VertexCL, SimRef, SimPtr, SimIter, MG>
-{
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        if (_Level < _TriLevel)
-        {
-            if ( _Pos != _MG->GetVerticesEnd(_Level) ) return;
-            else _Pos = _MG->GetVerticesBegin(++_Level);
-        }
-    }
-};
-
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct AllIncCL<EdgeCL, SimRef, SimPtr, SimIter, MG>
-{
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        if (_Level < _TriLevel)
-        {
-            if ( _Pos != _MG->GetEdgesEnd(_Level) ) return;
-            else _Pos = _MG->GetEdgesBegin(++_Level);
-        }
-    }
-};
-
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct AllIncCL<FaceCL, SimRef, SimPtr, SimIter, MG>
-{
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        if (_Level < _TriLevel)
-        {
-            if ( _Pos != _MG->GetFacesEnd(_Level) ) return;
-            else _Pos = _MG->GetFacesBegin(++_Level);
-        }
-    }
-};
-
-template <class SimRef, class SimPtr, class SimIter, class MG>
-struct AllIncCL<TetraCL, SimRef, SimPtr, SimIter, MG>
-{
-    static inline void increment (MG* _MG, Uint _TriLevel, Uint& _Level, SimIter& _Pos)
-    {
-        ++_Pos;
-        if (_Level < _TriLevel)
-        {
-            if ( _Pos != _MG->GetTetrasEnd(_Level) ) return;
-            else _Pos = _MG->GetTetrasBegin(++_Level);
         }
     }
 };

@@ -45,7 +45,7 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     P.ColIdx= cIdx;
     // setup index part of matrix
     // Iterate over all edges, interpolate values on new mid vertices
-    for (MultiGridCL::const_AllEdgeIteratorCL sit= mg.GetAllEdgeBegin( c_level),
+    for (MultiGridCL::const_EdgeIterator sit= mg.GetAllEdgeBegin( c_level),
          theend= mg.GetAllEdgeEnd( c_level); sit!=theend; ++sit)
         if ( sit->IsRefined() && sit->GetMidVertex()->Unknowns.Exist()
              && !sit->GetMidVertex()->Unknowns.Exist(c_idx) )  {

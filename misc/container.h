@@ -622,7 +622,7 @@ std::ostream& operator << (std::ostream& os, const SMatrixCL<_Rows, _Cols>& m)
 // Purpose: A list that is subdivided in levels. For modifications, it can *
 //          efficiently be split into std::lists per level and then merged *
 //          after modifications.                                           *
-// Remarks:                                                                *
+// Remarks: Negative level-indices count backwards from end().             *
 //**************************************************************************
 template <class T>
 class GlobalListCL
@@ -636,16 +636,23 @@ class GlobalListCL
     typedef typename LevelCont::const_iterator const_LevelIterator;
 
   private:
-    Cont Data_;
-    std::vector<iterator> LevelStarts_;
-    std::vector<LevelCont*> LevelViews_;
-    bool modifiable_;
+    Cont                        Data_;
+    std::vector<iterator>       LevelStarts_;
+    std::vector<const_iterator> const_LevelStarts_;
+    std::vector<LevelCont*>     LevelViews_;
+    bool                        modifiable_;
 
+    int
+    StdLevel (int lvl) const { return lvl >= 0 ? lvl : lvl + GetNumLevel(); }
+    
   public:
     GlobalListCL (bool modifiable= true) : modifiable_( modifiable) {}
     // standard dtor 
 
-    Uint GetNumLevel () const;
+    Uint GetNumLevel () const { 
+        return modifiable_ ? LevelViews_.size()
+            : (LevelStarts_.size() > 0 ? LevelStarts_.size()-1 : 0);
+    }
     bool IsEmpty () const
         { return modifiable_ ? LevelViews_.empty() : LevelStarts_.empty(); }
     bool IsLevelEmpty (Uint Level) const {
@@ -661,14 +668,14 @@ class GlobalListCL
     const_iterator begin () const { return Data_.begin(); }
     const_iterator end   () const { return Data_.end(); }
 
-    iterator level_begin (Uint Level)
-        { return !modifiable_ ? LevelStarts_[Level] : LevelViews_[Level]->begin(); }
-    iterator level_end   (Uint Level)
-        { return !modifiable_ ? LevelStarts_[Level + 1] : LevelViews_[Level]->end(); }
-    const_iterator level_begin (Uint Level) const
-        { return !modifiable_ ? LevelStarts_[Level] : LevelViews_[Level]->begin(); }
-    const_iterator level_end   (Uint Level) const
-        { return !modifiable_ ? LevelStarts_[Level + 1] : LevelViews_[Level]->end(); }
+    iterator level_begin (int lvl)
+        { return !modifiable_ ? LevelStarts_[StdLevel( lvl)] : LevelViews_[StdLevel( lvl)]->begin(); }
+    iterator level_end   (int lvl)
+        { return !modifiable_ ? LevelStarts_[StdLevel( lvl) + 1] : LevelViews_[StdLevel( lvl)]->end(); }
+    const_iterator level_begin (int lvl) const
+        { return !modifiable_ ? const_LevelStarts_[StdLevel( lvl)] : LevelViews_[StdLevel( lvl)]->begin(); }
+    const_iterator level_end   (int lvl) const
+        { return !modifiable_ ? const_LevelStarts_[StdLevel( lvl) + 1] : LevelViews_[StdLevel( lvl)]->end(); }
 
     // Split Data_ into level-wise lists in LevelViews_ or merge LevelViews_ into Data_.
     void PrepareModify();
@@ -678,20 +685,12 @@ class GlobalListCL
     void RemoveLastLevel();
 
     LevelCont& // Only usable, if modifiable_ == true
-    operator[] (Uint Level) {
+    operator[] (int lvl) {
         Assert( modifiable_, DROPSErrCL("GlobalListCL::operator[]: "
             "Data not modifiable."), DebugContainerC );
-        return *LevelViews_[Level];
+        return *LevelViews_[StdLevel( lvl)];
     }
 };
-
-template <class T>
-  Uint
-  GlobalListCL<T>::GetNumLevel () const
-{
-    return modifiable_ ? LevelViews_.size()
-        : (LevelStarts_.size() > 0 ? LevelStarts_.size()-1 : 0);
-}
 
 template <class T>
   void // Split Data_ into level-wise lists in LevelViews_.
@@ -708,6 +707,7 @@ template <class T>
             level_begin( lvl), level_begin( lvl+1));
     }
     LevelStarts_.clear();
+    const_LevelStarts_.clear();
     Assert( Data_.empty(), DROPSErrCL("GlobalListCL::PrepareModify: "
         "Did not move all Data."), DebugContainerC );
     modifiable_= true;
@@ -729,9 +729,12 @@ template <class T>
     if (LevelViews_.empty()) return; 
     LevelStarts_.resize( LevelViews_.size() + 1);
     LevelStarts_[LevelViews_.size()]= Data_.end();
+    const_LevelStarts_.resize( LevelViews_.size() + 1);
+    const_LevelStarts_[LevelViews_.size()]= Data_.end();
     for (Uint lvl= LevelViews_.size(); lvl > 0; --lvl) {
         Data_.splice( Data_.begin(), *LevelViews_[lvl-1]);
         LevelStarts_[lvl-1]= Data_.begin();
+        const_LevelStarts_[lvl-1]= Data_.begin();
         Assert( LevelViews_[lvl-1]->empty(),
             DROPSErrCL("GlobalListCL::FinalizeModify: Did not move all Data."),
             DebugContainerC );
