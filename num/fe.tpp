@@ -57,6 +57,24 @@ FE_P2CL::H(Uint dof, double v1, double v2, double v3)
     };
 }
 
+inline double
+FE_P2CL::H(Uint dof, const BaryCoordCL& p)
+{
+    switch(dof) {
+      case 0: return H0( p); break;
+      case 1: return H1( p); break;
+      case 2: return H2( p); break;
+      case 3: return H3( p); break;
+      case 4: return H4( p); break;
+      case 5: return H5( p); break;
+      case 6: return H6( p); break;
+      case 7: return H7( p); break;
+      case 8: return H8( p); break;
+      case 9: return H9( p); break;
+      default: throw DROPSErrCL("FE_P2CL::H: Invalid shape function.");
+    };
+}
+
 inline SVectorCL<3>
 FE_P2CL::DH0Ref(double v1, double v2, double v3)
 {

@@ -115,6 +115,19 @@ class FE_P2CL
     static double H9(double, double v2, double v3)    { return 4.*v2*v3; }
     static inline double H (Uint dof, double v1, double v2, double v3);
 
+    // restriction of the shape functions to reference tetrahedron, barucentric coordinates
+    static double H0(const BaryCoordCL& p) { return p[0]*(2.*p[0] - 1.); }
+    static double H1(const BaryCoordCL& p) { return p[1]*(2.*p[1] - 1.); }
+    static double H2(const BaryCoordCL& p) { return p[2]*(2.*p[2] - 1.); }
+    static double H3(const BaryCoordCL& p) { return p[3]*(2.*p[3] - 1.); }
+    static double H4(const BaryCoordCL& p) { return 4.*p[0]*p[1]; }
+    static double H5(const BaryCoordCL& p) { return 4.*p[0]*p[2]; }
+    static double H6(const BaryCoordCL& p) { return 4.*p[1]*p[2]; }
+    static double H7(const BaryCoordCL& p) { return 4.*p[0]*p[3]; }
+    static double H8(const BaryCoordCL& p)    { return 4.*p[1]*p[3]; }
+    static double H9(const BaryCoordCL& p)    { return 4.*p[2]*p[3]; }
+    static inline double H (Uint dof, const BaryCoordCL& p);
+
     // gradients of the shape functions on the reference tetrahedron.
     // To obtain the gradient on tetra T: See comments in FE_P1CL.
     static inline SVectorCL<3> DH0Ref(double, double, double);
