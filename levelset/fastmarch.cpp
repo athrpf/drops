@@ -267,7 +267,7 @@ void FastMarchCL::Update( const IdxT NrI)
             }
         }
 
-        double minval= std::min( minval, CompValueProj( NrI, num, upd));
+        minval= std::min( minval, CompValueProj( NrI, num, upd));
     }
 
     v_.Data[NrI]= minval;
