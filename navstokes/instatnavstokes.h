@@ -20,6 +20,8 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
 {
   private:
     typedef InstatStokesP2P1CL<MGB, Coeff> _base;
+
+  public:
     using                                  _base::_MG;
     using                                  _base::_BndData;
     using                                  _base::b;
@@ -27,7 +29,6 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
     using                                  _base::A;
     using                                  _base::B;
     
-  public:
     typedef MGB                           MultiGridBuilderCL;
     typedef Coeff                         CoeffCL;
     typedef typename _base::BndDataCL     BndDataCL;
