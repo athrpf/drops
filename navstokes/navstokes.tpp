@@ -291,7 +291,8 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
 
     GetGradientsOnRef( GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+                                                 send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -343,5 +344,84 @@ void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinear( MatDescCL* matN, const VelVe
     }
     N.Build();
 }
+
+
+/*
+template <class MGB, class Coeff>
+void NavierStokesP2P1CL<MGB,Coeff>::SetupNonlinearRhs( const VelVecDescCL* velvec, VelVecDescCL* vecb) const
+// Sets up the right hand sides corresponding to the sgtiffness matrix for N
+{
+    vecb->Clear();
+    
+    typename _base::DiscVelSolCL u( velvec, &_BndData.Vel, &_MG);
+    VectorCL& b= vecb->Data;
+    const Uint lvl    = velvec->RowIdx->TriangLevel;
+    const Uint vidx   = velvec->RowIdx->Idx;
+
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    
+    const IdxT stride= 1;   // stride between unknowns on same simplex, which
+                            // depends on numbering of the unknowns
+                            
+    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    SMatrixCL<3,3> T;
+    double coup;
+    double det, absdet;
+    SVectorCL<3> tmp;
+    double func[5];
+
+    GetGradientsOnRef( GradRef);
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+                                                 send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr(T,det,*sit);
+        MakeGradients(Grad, GradRef, T);
+        absdet= fabs(det);
+        
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for(int i=0; i<4; ++i)
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx)[0];
+        for(int i=0; i<6; ++i)
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx)[0];
+
+        for(int j=0; j<10; ++j)
+        {
+            // N(u)_ij = int( phi_i *( u1 phi_j_x + u2 phi_j_y + u3 phi_j_z ) )
+            //                       \______________ func __________________/
+            
+            for( Uint pt=0; pt<5; ++pt) // eval func at 5 points:
+            {
+                tmp= pt<4 ? u.val( *sit->GetVertex(pt))      // value of u in vert pt
+                          : u.val( *sit, 0.25, 0.25, 0.25);  // value of u in barycenter
+                func[pt]= Grad[j](0,pt) * tmp[0]
+                        + Grad[j](1,pt) * tmp[1]
+                        + Grad[j](2,pt) * tmp[2];
+            }
+            for(int i=0; i<10; ++i)    // assemble row Numb[i]
+                if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+                {
+                    coup= Quad( func, i) * absdet;
+                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    {
+                    }
+                    else // coupling with vert/edge j on right-hand-side
+                    {
+                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j))
+                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4));
+                        b[Numb[i]]-=          coup * tmp[0];
+                        b[Numb[i]+stride]-=   coup * tmp[1];
+                        b[Numb[i]+2*stride]-= coup * tmp[2];
+                    }
+                }
+        }
+    }
+}
+*/
 
 } // end of namespace DROPS

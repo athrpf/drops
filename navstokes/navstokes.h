@@ -42,6 +42,7 @@ class NavierStokesP2P1CL : public StokesP2P1CL<MGB, Coeff>
 
     // Set up matrix for nonlinearity
     void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*) const;
+//    void SetupNonlinearRhs(const VelVecDescCL*, VelVecDescCL*) const;
 
     // Check system and computed solution
     void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr);
