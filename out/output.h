@@ -26,6 +26,8 @@ class MGOutCL
     MGOutCL(const MultiGridCL* MG) : _MG(MG) {}
 
     virtual std::ostream& put(std::ostream&) const = 0;
+
+    virtual ~MGOutCL() {}
 };
 
 class ColorMapperCL
@@ -36,6 +38,8 @@ class ColorMapperCL
     virtual RGBAType map(double val) const
         { RGBAType rgba; rgba[3]= 1.0; rgba[2]= val; rgba[1]= val; rgba[0]= val; return rgba; }
     // returns an RGBA-quadruple for input between 0.0 and 1.0
+
+    virtual ~ColorMapperCL() {}
 };
 
 
