@@ -119,7 +119,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 {
     const IdxDescCL* idxDesc= _idx;
     const Uint lvl= _idx->TriangLevel,
-               idx= _idx->Idx;
+               idx= _idx->GetIdx();
     
     if ( t!=-1)
     {
