@@ -935,24 +935,26 @@ void PSchurSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
     VectorCL rhs= -c;
     if (tmp_.size() != v.size()) tmp_.resize( v.size());
     poissonSolver_.Solve( A, tmp_, b);
-    std::cerr << "rhs: iterations: " << poissonSolver_.GetIter()
+    std::cerr << "rhs     : iterations: " << poissonSolver_.GetIter()
               << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
     rhs+= B*tmp_;
 
+    poissonSolver2_.SetTol( _tol);
+    poissonSolver2_.SetMaxIter( _maxiter);
     poissonSolver2_.Solve( SchurComplMatrixCL<PoissonSolverT>( poissonSolver_, A, B), p, rhs);
     std::cerr << "pressure: iterations: " << poissonSolver2_.GetIter()
               << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
 
     const double old_tol= poissonSolver_.GetTol();
-    poissonSolver_.SetTol( poissonSolver2_.GetTol() ); // same tolerance as for pressure
+    poissonSolver_.SetTol( _tol ); // same tolerance as for pressure
     poissonSolver_.Solve( A, v, b - transp_mul(B, p));
     poissonSolver_.SetTol( old_tol);   // reset old tolerance
     std::cerr << "velocity: iterations: " << poissonSolver_.GetIter()
               << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
 
     _iter= poissonSolver_.GetIter() + poissonSolver2_.GetIter();
-    _res= std::sqrt( std::pow( poissonSolver_.GetResid(), 2.0)
-                     + std::pow( poissonSolver2_.GetResid(), 2.0));
+    _res= std::sqrt( std::pow( poissonSolver_.GetResid(), 2)
+                   + std::pow( poissonSolver2_.GetResid(), 2));
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
