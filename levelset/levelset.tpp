@@ -245,10 +245,13 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
     Phi.Data= Psi;
 }
 
+double func_abs( double x) { return std::abs(x); }
+
 void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, VectorCL& b)
 // R, b describe the following terms used for reparametrization:  
-// b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
-// R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
+// b_i  = ( S(Phi0),           v_i              + SD * w(Psi) grad v_i )
+// R_ij = ( w(Psi) grad v_j,   v_i              + SD * w(Psi) grad v_i )
+//      + (|S(Phi0)| grad v_j, grad v_i) * diff
 // where v_i, v_j denote the ansatz functions
 // and w(Psi) = sign(Phi0) * grad Psi / |grad Psi| the scaled gradient of Psi
 {
@@ -305,7 +308,8 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
             for(int j=0; j<10; ++j)
             {
                 // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
-                R( Numb[i], Numb[j])+= Quad2CL<>(dot( w_loc, Grad[j])).quadP2(i, absdet);
+                R( Numb[i], Numb[j])+= Quad2CL<>(dot( w_loc, Grad[j])).quadP2(i, absdet)
+                    + _diff*Quad2CL<>(dot( Grad[j]*Sign_Phi.apply( func_abs), Grad[i])).quad( absdet);
 //                R( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(w_loc,Grad[j],Grad[i])*absdet;
             }
         }
