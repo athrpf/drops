@@ -471,7 +471,27 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
 
     if (!(DROPSDebugC & DebugNoReuseSparseC) && _val.size()!=0
         && _rows==A.num_rows() && _cols==A.num_cols())
+    {
         Comment("LinComb: Reusing OLD matrix" << std::endl, DebugNumericC);
+
+        size_t i=0, iA=0, iB=0;
+
+        // same algorithm as below without writing _colind
+        for (size_t row=1; row<=A.num_rows(); ++row)
+        {
+            while ( iA < A.row_beg(row) )
+            {
+                while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
+                    _val[i++]=coeffB*B._val[iB++];
+                if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
+                    _val[i++]=coeffA*A._val[iA++]+coeffB*B._val[iB++];
+                else
+                    _val[i++]=coeffA*A._val[iA++];
+            }
+            while ( iB < B.row_beg(row) )
+                _val[i++]=coeffB*B._val[iB++];
+        }
+    }
     else
     {
         Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
@@ -503,29 +523,29 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
         // Calculate the entries of _colind, _val (really perform the merging of the matrices)
         _colind.resize(row_beg(num_rows()));
         _val.resize(row_beg(num_rows()));
-    }
 
-    size_t i=0, iA=0, iB=0;
+        i=0, iA=0, iB=0;
 
-    for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
-    {
-        while ( iA < A.row_beg(row) )
+        for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
         {
-            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
+            while ( iA < A.row_beg(row) )
+            {
+                while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
+                {
+                    _val[i]=coeffB*B._val[iB];
+                    _colind[i++]=B._colind[iB++];
+                }
+                if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
+                    _val[i]=coeffA*A._val[iA]+coeffB*B._val[iB++];
+                else
+                    _val[i]=coeffA*A._val[iA];
+                _colind[i++]=A._colind[iA++];
+            }
+            while ( iB < B.row_beg(row) )
             {
                 _val[i]=coeffB*B._val[iB];
                 _colind[i++]=B._colind[iB++];
             }
-            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
-                _val[i]=coeffA*A._val[iA]+coeffB*B._val[iB++];
-            else
-                _val[i]=coeffA*A._val[iA];
-            _colind[i++]=A._colind[iA++];
-        }
-        while ( iB < B.row_beg(row) )
-        {
-            _val[i]=coeffB*B._val[iB];
-            _colind[i++]=B._colind[iB++];
         }
     }
 
