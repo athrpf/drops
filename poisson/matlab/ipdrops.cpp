@@ -172,7 +172,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double nu,
   
   // PCG-Verfahren mit SSOR-Vorkonditionierer
   SSORPcCL pc(1.0);
-  PCG_SsorCL pcg_solver(tol, max_iter, pc);
+  PCG_SsorCL pcg_solver(pc, max_iter, tol);
   
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler; theta=0.5 -> Crank-Nicholson

@@ -445,11 +445,11 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 class SolverBaseCL
 {
   protected:
-    double _tol, _res;
     int    _maxiter, _iter;
+    double _tol, _res;
 
-    SolverBaseCL (double tol, int maxiter)
-        : _tol(tol), _res( -1.), _maxiter(maxiter), _iter( -1) {}
+    SolverBaseCL (int maxiter, double tol)
+        : _maxiter(maxiter), _iter(-1), _tol(tol), _res(-1.) {}
 
   public:
     void   SetTol    (double tol) { _tol= tol; }
@@ -466,7 +466,7 @@ class SolverBaseCL
 class CGSolverCL : public SolverBaseCL
 {
   public:
-    CGSolverCL(double tol, int maxiter) : SolverBaseCL(tol,maxiter) {}
+    CGSolverCL(int maxiter, double tol) : SolverBaseCL(maxiter,tol) {}
 
     template <typename Vec>
     void Solve(const MatrixCL& A, Vec& x, const Vec& b)
@@ -493,8 +493,8 @@ class PCGSolverCL : public SolverBaseCL
     PC _pc;
 
   public:
-    PCGSolverCL(double tol, int maxiter, const PC& pc)
-        : SolverBaseCL(tol,maxiter), _pc(pc) {}
+    PCGSolverCL(const PC& pc, int maxiter, double tol)
+        : SolverBaseCL(maxiter,tol), _pc(pc) {}
 
     PC&       GetPc ()       { return _pc; }
     const PC& GetPc () const { return _pc; }

@@ -149,7 +149,7 @@ void Strategy(InstatPoissonP1CL<MGB, Coeff>& Poisson, double dt,
   Poisson.SetupInstatRhs( cplA, cplM, t, b, t);
    
   SSORPcCL pc(1.0);
-  PCG_SsorCL pcg_solver(tol, max_iter, pc);
+  PCG_SsorCL pcg_solver(pc, max_iter, tol);
   InstatPoissonThetaSchemeCL<InstatPoissonP1CL<MGB, Coeff>, PCG_SsorCL> 
     ThetaScheme(Poisson, pcg_solver, 0.5);
   

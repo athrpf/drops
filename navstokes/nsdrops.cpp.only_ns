@@ -148,7 +148,7 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
         M.SetIdx( pidx1, pidx1);
         NS.SetupMass( &M);
         double omega= 1, res; // initial value (no damping)
-        Uzawa_IPCG_CL uzawaSolver(M.Data, -1., 500, poi_tol, poi_maxiter, 1.);
+        Uzawa_IPCG_CL uzawaSolver(M.Data, 500, -1., poi_maxiter, poi_tol, 1.);
         for(int fp_step=0; fp_step<fp_maxiter; ++fp_step)
         {
             NS.SetupNonlinear( N, v1, &rhsN);

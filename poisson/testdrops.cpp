@@ -222,7 +222,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double tol, int met
         {
             double resid, old_resid;
             SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
-            CGSolverCL  solver(tol, 200); //CG-Verfahren
+            CGSolverCL  solver(200, tol); //CG-Verfahren
 //            Uint sm;
 //            do
 //            {
@@ -382,7 +382,7 @@ void StrategyAdaptive(PoissonP1CL<MGB,Coeff>& Poisson, double omega,
         {
             double resid, old_resid;
             SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
-            CGSolverCL  solver(tol, 200); //CG-Verfahren
+            CGSolverCL  solver(200, tol); //CG-Verfahren
 //            Uint sm;
 //            do
 //            {

@@ -78,7 +78,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
 
     double resid, old_resid;
     SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
-    CGSolverCL  solver(tol, 200); //CG-Verfahren
+    CGSolverCL  solver(200, tol); //CG-Verfahren
     do
     {
         std::cerr << "Smoothing steps (0=Quit): "; std::cin >> sm;

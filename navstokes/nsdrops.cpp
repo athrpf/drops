@@ -285,16 +285,16 @@ void Strategy(StokesP2P1CL<MGB,Coeff>& Stokes, double inner_iter_tol, double tol
 
         if (meth)
         {
-//            PSchur_PCG_CL schurSolver( M.Data, outer_tol, 200, inner_iter_tol, 200);
-            PSchur_GSPCG_CL schurSolver( M.Data, outer_tol, 200, inner_iter_tol, 200);
+//            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
+            PSchur_GSPCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
             time.Start();
             schurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
         }
         else // Uzawa
         {
-//            Uzawa_PCG_CL uzawaSolver(M.Data, outer_tol, 5000, inner_iter_tol, uzawa_inner_iter, tau);
-            Uzawa_IPCG_CL uzawaSolver(M.Data, outer_tol, 5000, inner_iter_tol, uzawa_inner_iter, tau);
+//            Uzawa_PCG_CL uzawaSolver(M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
+            Uzawa_IPCG_CL uzawaSolver(M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
             uzawaSolver.Init_A_Pc(A->Data); // only for Uzawa_IPCG_CL.
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
@@ -434,7 +434,7 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
         M.SetIdx( pidx1, pidx1);
         NS.SetupMass( &M);
         double omega= 1, res; // initial value (no damping)
-        Uzawa_IPCG_CL uzawaSolver(M.Data, -1., 500, poi_tol, poi_maxiter, 1.);
+        Uzawa_IPCG_CL uzawaSolver(M.Data, 500, -1., poi_maxiter, poi_tol, 1.);
         for(int fp_step=0; fp_step<fp_maxiter; ++fp_step)
         {
             NS.SetupNonlinear( N, v1, &rhsN);
