@@ -338,8 +338,8 @@ PMINRES_SP(const Mat& A, const Mat& B,
 {
     Vec dxu( u.size()); // Vector for updating x, thus the name.
     Vec dxpr( pr.size()); // Vector for updating x, thus the name.
-    double err;
-    double res;
+    double err= 0.0; // Sink gcc-warnings.
+    double res= 0.0; // Sink gcc-warnings.
 
     const double norm_r0= q.norm_r0();
     bool lucky= q.breakdown();
@@ -401,7 +401,7 @@ PMINRES_SP(const Mat& A, const Mat& B,
         // This is for fair comparisons of different solvers:
         err= std::sqrt( (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2());
         res= std::fabs( norm_r0*b[0][1]);
-        std::cerr << "PMINRES: residual: " << res << '\t' << " 2-residual: " << err << '\n';
+//        std::cerr << "PMINRES: residual: " << res << '\t' << " 2-residual: " << err << '\n';
         if (err<=tol || lucky==true) {
             tol= err;
             max_iter= k;

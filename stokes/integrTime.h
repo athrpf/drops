@@ -115,16 +115,32 @@ class ISPreCL
 class ISMGPreCL
 {
   private:
+    const Uint sm; // how many smoothing steps?
+    const int lvl; // how many levels? (-1=all)
+    const double omega; // relaxation parameter for smoother
+    DROPS::SSORsmoothCL smoother; // symmetric Gauss-Seidel with over-relaxation
+    DROPS::SSORPcCL directpc;
+    mutable DROPS::PCG_SsorCL solver;
+    mutable DROPS::VectorCL p2;
+
     DROPS::MGDataCL& A_;
     DROPS::MGDataCL& M_;
     DROPS::Uint max_iter_;
     double k_;
+    std::vector<DROPS::VectorCL> ones_;
 
   public:
     ISMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
               double k_pc, DROPS::Uint max_iter)
-        :A_( A_pr), M_( M_pr), max_iter_( max_iter), k_( k_pc)
-    {}
+        :sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
+         A_( A_pr), M_( M_pr), max_iter_( max_iter), k_( k_pc),
+         ones_( M_.size()) {
+        // Compute projection on constant pressure function only once.
+        Uint i= 0;
+        for (const_MGDataIterCL it= M_.begin(); it != M_.end(); ++it, ++i) {
+            ones_[i].resize( it->Idx.NumUnknowns, 1.0/it->Idx.NumUnknowns);
+        }
+    }
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -143,6 +159,14 @@ class ISMGPreCL
 class ISMinresMGPreCL
 {
   private:
+    const Uint sm; // how many smoothing steps?
+    const int lvl; // how many levels? (-1=all)
+    const double omega; // relaxation parameter for smoother
+    SSORsmoothCL smoother;  // Symmetric-Gauss-Seidel with over-relaxation
+    SSORPcCL directpc;
+    mutable PCG_SsorCL solver;
+    mutable VectorCL p2;
+
     DROPS::MGDataCL& Avel_;
     DROPS::MGDataCL& Apr_;
     DROPS::MGDataCL& Mpr_;
@@ -151,22 +175,23 @@ class ISMinresMGPreCL
     DROPS::Uint iter_prM_;
     double tol_prA_;
     double k_;
-//    DROPS::VectorCL onesMpr;
-//    double vol_;
+    std::vector<DROPS::VectorCL> ones_;
 
   public:
     ISMinresMGPreCL(DROPS::MGDataCL& A_vel,
                     DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
                     double k_pc, DROPS::Uint iter_vel, DROPS::Uint iter_prA,
                     DROPS::Uint iter_prM, double tol_prA)
-        :Avel_( A_vel), Apr_( A_pr), Mpr_( M_pr), iter_vel_( iter_vel),
-         iter_prA_( iter_prA), iter_prM_( iter_prM), tol_prA_( tol_prA), k_( k_pc)//,
-//         onesMpr ( Mpr_.back().A.Data.num_rows())
+        : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
+          Avel_( A_vel), Apr_( A_pr), Mpr_( M_pr), iter_vel_( iter_vel),
+         iter_prA_( iter_prA), iter_prM_( iter_prM), tol_prA_( tol_prA), k_( k_pc),
+         ones_( Mpr_.size())
     {
-//        // Compute projection on constant pressure function and volume only once.
-//        DROPS::VectorCL ones( 1.0, Mpr_.back().A.Data.num_rows());
-//        onesMpr= Mpr_.back().A.Data*ones;
-//        vol_= onesMpr*ones;
+        // Compute projection on constant pressure function only once.
+        Uint i= 0;
+        for (const_MGDataIterCL it= Mpr_.begin(); it != Mpr_.end(); ++it, ++i) {
+            ones_[i].resize( it->Idx.NumUnknowns, 1.0/it->Idx.NumUnknowns);
+        }
     }
 
     template <typename Mat, typename Vec>
@@ -210,62 +235,95 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 }
 
 
+template<class SmootherCL, class DirectSolverCL>
+void
+MGMPr(const std::vector<VectorCL>::const_iterator& ones,
+      const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
+      const SmootherCL& Smoother, const Uint smoothSteps, 
+    DirectSolverCL& Solver, const int numLevel, const int numUnknDirect)
+// Multigrid method, V-cycle. If numLevel==0 or #Unknowns <= numUnknDirect,
+// the direct solver Solver is used.
+// If one of the parameters is -1, it will be neglected.
+// If MGData.begin() has been reached, the direct solver is used too.
+{
+    const_MGDataIterCL coarse= fine;
+    --coarse;
+
+    if(  ( numLevel==-1      ? false : numLevel==0 )
+       ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) ) 
+       || fine==begin)
+    { // use direct solver
+        Solver.Solve( fine->A.Data, x, b);
+        x-= ((*ones)*x);
+        return;
+    }
+    VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
+    // presmoothing
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+    // restriction of defect
+    d= transp_mul( fine->P.Data, b - fine->A.Data*x );
+    d-= (*(ones-1))*d;
+    // calculate coarse grid correction
+    MGMPr( ones-1, begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
+    // add coarse grid correction
+    x+= fine->P.Data * e;
+    // postsmoothing
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+// Not needed, as our smoother and prolongation do not amplify the constant function.
+//    x-= (*ones)*x;
+}
+
+
 template <typename Mat, typename Vec>
 void
 ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-    DROPS::Uint sm=  2; // how many smoothing steps?
-    int lvl= -1; // how many levels? (-1=all)
-    double omega= 1.; // relaxation parameter for smoother
-    DROPS::SORsmoothCL smoother( omega);  // Gauss-Seidel with over-relaxation
-    DROPS::SSORPcCL directpc;
-    DROPS::PCG_SsorCL solver( directpc, 200, 1e-12);
+    p-= ones_.back()*p;
     for (DROPS::Uint i=0; i<max_iter_; ++i)
-        DROPS::MGM( A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
-    std::cerr << "IsMGPcCL: iterations: " << max_iter_ << '\t'
-              << "residual: " << (A_.back().A.Data*p - c).norm() << '\t';
-    DROPS::VectorCL p2( 0.0, p.size());
-    for (DROPS::Uint i=0; i<2; ++i)
+//        DROPS::MGM( A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
+        MGMPr( --ones_.end(), A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
+
+//    std::cerr << "IsMGPcCL: iterations: " << max_iter_ << '\t'
+//              << "residual: " << (A_.back().A.Data*p - c).norm() << '\t';
+    if (p2.size() != p.size())
+        p2.resize( p.size());
+    for (DROPS::Uint i=0; i<1; ++i)
         DROPS::MGM( M_.begin(), --M_.end(), p2, c, smoother, sm, solver, lvl, -1);
-    std::cerr << "M: iterations: " << 2 << '\t'
-              << "residual: " << (M_.back().A.Data*p2 - c).norm() << '\n';
+//    std::cerr << "M: iterations: " << 1 << '\t'
+//              << "residual: " << (M_.back().A.Data*p2 - c).norm() << '\n';
 //    p+= k_*p2;
     axpy( k_, p2, p);
 }
+
 
 template <typename Mat, typename Vec>
 void
 ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const Vec& b, const Vec& c) const
 {
-    DROPS::Uint sm= 2; // how many smoothing steps?
-    int lvl= -1; // how many levels? (-1=all)
-    double omega= 1.; // relaxation parameter for smoother
-//    DROPS::SORsmoothCL smoother( omega);  // Gauss-Seidel with over-relaxation
-    DROPS::SSORsmoothCL smoother( omega);  // Symmetric-Gauss-Seidel with over-relaxation
-    DROPS::SSORPcCL directpc; DROPS::PCG_SsorCL solver( directpc, 200, 1e-12);
-
     for (DROPS::Uint i=0; i<iter_vel_; ++i)
         DROPS::MGM( Avel_.begin(), --Avel_.end(), v, b, smoother, sm, solver, lvl, -1);
-    std::cerr << "ISMinresMGPreCL: Velocity: iterations: " << iter_vel_ << '\t';
+//    std::cerr << "ISMinresMGPreCL: Velocity: iterations: " << iter_vel_ << '\t'
 //              << " residual: " <<  (Avel_.back().A.Data*v - b).norm() << '\t';
 
-//    p= 0.;
-//    for (DROPS::Uint i=0; i<iter_prA_; ++i) {
-//        DROPS::MGM( Apr_.begin(), --Apr_.end(), p, c, smoother, sm, solver, lvl, -1);
-//    }
-//    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t'
-//              << " residual: " <<  (Apr_.back().A.Data*p - c).norm() << '\t';
-    DROPS::PCG_SsorCL solver_( DROPS::SSORPcCL( 1.), 1000, tol_prA_);
-    solver_.Solve( Apr_.back().A.Data, p, c);
-    std::cerr << "Pressure: iterations: " << solver_.GetIter() <<'\t'
-              << " residual: " <<  solver_.GetResid() << '\t';
+    p-= ones_.back()*p;
+//    double new_res= (Apr_.back().A.Data*p - c).norm();
+//    double old_res;
+//    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';
+    for (DROPS::Uint i=0; i<iter_prA_; ++i) {
+        DROPS::MGMPr( --ones_.end(), Apr_.begin(), --Apr_.end(), p, c, smoother, sm, solver, lvl, -1);
+//        old_res= new_res;
+//        std::cerr << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
+//        std::cerr << " reduction: " << new_res/old_res << '\n';
+    }
+//    std::cerr << " residual: " <<  (Apr_.back().A.Data*p - c).norm() << '\t';
 
-    DROPS::VectorCL p2( 0.0, p.size());
+    if (p2.size() != p.size())
+        p2.resize( p.size());
     for (DROPS::Uint i=0; i<iter_prM_; ++i)
         DROPS::MGM( Mpr_.begin(), --Mpr_.end(), p2, c, smoother, sm, solver, lvl, -1);
-    std::cerr << "Mass: iterations: " << iter_prM_ << '\t'
-              << " residual: " <<  (Mpr_.back().A.Data*p2 - c).norm() << '\n';
-    
+//    std::cerr << "Mass: iterations: " << iter_prM_ << '\t'
+//              << " residual: " <<  (Mpr_.back().A.Data*p2 - c).norm() << '\n';
+
 //    p+= k_*p2;
     axpy( k_, p2, p);
 }

@@ -131,7 +131,24 @@ SolveGSstep(const PreDummyCL<PB_SGS>&, const MatrixCL& A, Vec& x, const Vec& b, 
         else
             x[i]= sum/aii;
     }
-    for (size_t i= n, nz= A.row_beg( n); i>0; ) { // XXX: Rearrange this loop as the preceding one.
+    for (size_t i= n, nz= A.row_beg( n); i>0; ) { // This is safe: Without diagonal entry, Gauss-Seidel would explode anyway.
+        --i;
+        double aii, sum= b[i];
+        const size_t beg= A.row_beg( i);
+        for (; A.col_ind( --nz) != i; ) {
+            sum-= A.val( nz)*x[A.col_ind( nz)];
+        }
+        aii= A.val( nz);
+        for (; nz>beg; ) {
+            --nz;
+            sum-= A.val( nz)*x[A.col_ind( nz)];
+        }
+        if (HasOmega)
+            x[i]= (1.-omega)*x[i]+omega*sum/aii;
+        else
+            x[i]= sum/aii;
+    }
+/*    for (size_t i= n, nz= A.row_beg( n); i>0; ) { // XXX: Rearrange this loop as the preceding one.
         --i;
         double aii, sum= b[i];
         for (const size_t beg= A.row_beg(i); nz>beg; ) {
@@ -145,7 +162,7 @@ SolveGSstep(const PreDummyCL<PB_SGS>&, const MatrixCL& A, Vec& x, const Vec& b, 
             x[i]= (1.-omega)*x[i]+omega*sum/aii;
         else
             x[i]= sum/aii;
-    }
+    }*/
 }
 
 

@@ -52,11 +52,11 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
         int& maxiter, double& tol, const bool residerr)
 {
     const_MGDataIterCL finest= --MGData.end();
-    Uint   sm   =  2; // how many smoothing steps?
+    Uint   sm   =  1; // how many smoothing steps?
     int    lvl  = -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
     double resid= 0.0;
-    double old_resid;
+    double old_resid= 0.0; // Sink gcc-warning.
     VectorCL tmp;
     if (residerr == false)
         tmp.resize( x.size());
@@ -73,14 +73,14 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
         if (residerr == true) {
             old_resid= resid;
             if ((resid= (b - finest->A.Data * x).norm()) <= tol) break;
-            if (it == 0) std::cerr << "initial residual: " << resid << '\n';
+//            if (it == 0) std::cerr << "initial residual: " << resid << '\n';
         }
         else tmp= x;
         MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
         if (residerr == true) {
-            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
-            if (it!=0) std::cerr << "\treduction: " << resid/old_resid;
-            std::cerr << '\n';
+//            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
+//            if (it!=0) std::cerr << "\treduction: " << resid/old_resid;
+//            std::cerr << '\n';
         }
         else if ((resid= (tmp - x).norm()) <= tol) break;
     }
