@@ -1206,7 +1206,6 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 {
     const Uint tl= vecdesc.RowIdx->TriangLevel;
     const MultiGridCL& MG= old_f.GetMG();
-    const Uint maxlevel= MG.GetLastLevel();
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();
     typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
