@@ -57,6 +57,7 @@ template <class T, Uint _Size>
 
 typedef SVectorCL<2> Point2DCL;
 typedef SVectorCL<3> Point3DCL;
+typedef SVectorCL<4> BaryCoordCL;
 
 
 //**************************************************************************
