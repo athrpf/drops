@@ -630,8 +630,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
     SSORPcCL pc;
-//    PCGSolverCL<SSORPcCL> gm( pc, 10, _solver.GetTol());
-    GMResSolverCL<SSORPcCL> gm( pc, 100, 1000, _solver.GetTol());
+    GMResSolverCL<SSORPcCL> gm( pc, 100, _solver.GetInnerSolver().GetMaxIter(), _solver.GetInnerSolver().GetTol());
     std::cerr << "Starting fixed point iterations for solving nonlinear system...\n";
     _iter_nonlinear= 0;
     do
@@ -646,7 +645,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
                  );
         std::cerr << "fp cycle " << ++_iter_nonlinear << ":\titerations: " 
                   << gm.GetIter() << "\tresidual: " << gm.GetResid() << std::endl;
-    } while (gm.GetIter() > 0);
+    } while (gm.GetIter() > 0 && _iter_nonlinear<20);
     time.Stop();
     std::cerr << "Solving nonlinear system took "<<time.GetTime()<<" sec.\n";
 }
