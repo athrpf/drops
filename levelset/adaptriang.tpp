@@ -9,7 +9,7 @@ namespace DROPS
 {
 
 template <class DistFctT>
-void AdapTriangCL::MakeInitialTriang( const DistFctT& Dist)
+void AdapTriangCL::MakeInitialTriang( DistFctT& Dist)
 {
     TimerCL time;
 
@@ -27,7 +27,7 @@ void AdapTriangCL::MakeInitialTriang( const DistFctT& Dist)
 }
     
 template <class DistFctT>
-bool AdapTriangCL::ModifyGridStep( const DistFctT& Dist)
+bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
 // One step of grid change; returns true if modifications were necessary,
 // false, if nothing changed.
 {
