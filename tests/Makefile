@@ -29,7 +29,7 @@ check: $(TESTNAME:%=check_%) ip1check
 	@echo "--> All testcases have been executed!"
 
 check_%:
-	cd ../$$(./testinfo "makedir" $*) && make $$(../${DIR}/testinfo "maketarget" $*)
+	cd ../$$(./testinfo "makedir" $*) && $(MAKE) $$(../${DIR}/testinfo "maketarget" $*)
 	./runtest $*
 
 reftest: \

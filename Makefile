@@ -1,5 +1,5 @@
 #############################################
-#   D R O P S   top level makefile          #
+#   D R O P S   top-level makefile          #
 #############################################
 
 # variables:
@@ -11,7 +11,9 @@ DROPS_ROOT = .
 
 # rules:
 
-all: dep $(PACKAGES:%=all_%)
+default: dep all
+
+all: $(PACKAGES:%=all_%)
 	@echo "--> All executables generated successfully!"
 
 clean: $(PACKAGES:%=clean_%)
@@ -25,19 +27,19 @@ dep: topo deldepend $(PACKAGES:%=depend_%)
 	@echo "--> Actual dependencies generated in $(DEPFILE)!"
 
 check:
-	cd ./tests && make check
+	cd ./tests && $(MAKE) check
 
 all_%:
-	cd $* && make all
+	cd $* && $(MAKE) all
 
 clean_%:
-	cd $* && make clean
+	cd $* && $(MAKE) clean
 
 distclean_%:
-	cd $* && make distclean
+	cd $* && $(MAKE) distclean
 
 topo:
-	cd ./geom && make topo.cpp
+	cd ./geom && $(MAKE) topo.cpp
 	@echo "--> topo.cpp generated!"
 
 deldepend:
@@ -49,10 +51,10 @@ depend_%:
         echo " " >> ../$(DEPFILE)
 
 prog_%:
-	cd $(@D) && make $(*F)
+	cd $(@D) && $(MAKE) $(*F)
 
 
-.PHONY: all clean distclean dep check
+.PHONY: all clean distclean default dep deldepend topo check
 
 # include settings from the config file drops.conf:
 include drops.conf

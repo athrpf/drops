@@ -2,7 +2,7 @@
 #   D R O P S   local makefile              #
 #############################################
 
-# variables: 
+# variables:
 
 MC = mex
 
@@ -16,12 +16,12 @@ MCFLAGS=$(FLAGS) -I..
 default: ipdrops
 
 ipdrops:
-	cd .. && make ../geom/topo.o
-	cd .. && make matlab/ipdrops CC=$(MC) CFLAGS="$(MCFLAGS)"
+	cd .. && $(MAKE) ../geom/topo.o
+	cd .. && $(MAKE) matlab/ipdrops CC=$(MC) CFLAGS="$(MCFLAGS)"
   
 clean:
-	rm -f *.mexglx 
-  
+	rm -f *.mexglx
+
 
 DROPS_ROOT = ../..
 include ../../drops.conf
