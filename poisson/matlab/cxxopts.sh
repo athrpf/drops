@@ -109,7 +109,8 @@
 #           gcc version 2.95.2 19991024 (release)
             CC='g++'
 #           Add -fhandle-exceptions to CFLAGS to support exception handling
-            CFLAGS='-fPIC -ansi -D_GNU_SOURCE -pthread'
+#            CFLAGS='-fPIC -ansi -D_GNU_SOURCE -pthread'
+            CFLAGS='-ansi -O2 -fPIC -ffast-math -funroll-loops -fomit-frame-pointer'
             CLIBS="$RPATH $MLIBS -lm"
             COPTIMFLAGS='-O -DNDEBUG'
             CDEBUGFLAGS='-g'
