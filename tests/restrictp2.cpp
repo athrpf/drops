@@ -111,7 +111,7 @@ int CheckResult( DROPS::TetraCL& t, fun_ptr f, double* dof, OutputModeT om)
     return ret;
 }
 
-
+/*
 template<class _Cont, class DataT>
   inline DataT
       P2(const _Cont& dof, const DataT& , double v1, double v2, double v3)
@@ -123,7 +123,7 @@ template<class _Cont, class DataT>
         + dof[7] * FE_P2CL::H7( v1, v2, v3) + dof[8] * FE_P2CL::H8( v1, v2, v3)
         + dof[9] * FE_P2CL::H9( v1, v2, v3);
 }
-
+*/
 
 DROPS::Uint Rule(DROPS::Uint r)
 {

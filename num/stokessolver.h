@@ -147,22 +147,29 @@ class Uzawa_IPCG_CL : public SolverBaseCL
 // The preconditioner Apc for A must be "good" (MG-like) to guarantee
 // convergence.
 //=============================================================================
-class InexactUzawa_CL: public SolverBaseCL
+template <class ApcT, class SpcT>
+  class InexactUzawaCL: public SolverBaseCL
 {
   private:
-    SSORPCG_PreCL Apc_;
-    ISPreCL& Spc_;
+    ApcT& Apc_;
+    SpcT& Spc_;
+    double innerreduction_;
 
   public:
-    InexactUzawa_CL(ISPreCL& Spc, int outer_iter, double outer_tol)
+    InexactUzawaCL(ApcT& Apc, SpcT& Spc, int outer_iter, double outer_tol,
+        double innerreduction= 0.3)
         :SolverBaseCL( outer_iter, outer_tol),
-	 Apc_( 1000, 0.2), Spc_( Spc)
+	 Apc_( Apc), Spc_( Spc), innerreduction_(innerreduction)
     {}
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
-                const VectorCL& b, const VectorCL& c);
+    inline void
+    Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+          const VectorCL& b, const VectorCL& c);
 };
 
-
+typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawa_CL;
+typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL> InexactUzawaNonlinear_CL;
+typedef InexactUzawaCL<MGPreCL, ISPreCL> InexactUzawaMG_CL;
+typedef InexactUzawaCL<MGPreCL, ISMGPreCL> InexactUzawaFullMG_CL;
 
 
 // One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
@@ -367,7 +374,8 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
 {
     Vec dxu( u.size()); // Vector for updating x, thus the name.
     Vec dxpr( pr.size()); // Vector for updating x, thus the name.
-//    double err= 0.0; // Sink gcc-warnings.
+//    double err= std::sqrt( norm_sq( rhsu - (A*u + transp_mul( B, pr)))
+//                           + norm_sq( rhspr - B*u)); // Sink gcc-warnings.
     double res= 0.0; // Sink gcc-warnings.
 
     const double norm_r0= q.norm_r0();
@@ -436,7 +444,9 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
         // This is for fair comparisons of different solvers:
 //        err= std::sqrt( norm_sq( rhsu - (A*u + transp_mul( B, pr))) + norm_sq( rhspr - B*u));
         res= std::fabs( norm_r0*b[0][1]);
-//        std::cerr << "PMINRES: residual: " << res << '\t' << " 2-residual: " << err << '\n';
+        std::cerr << "PMINRES: residual: " << res
+//                  << '\t' << " 2-residual: " << err 
+                  << '\n';
         if (res<=tol || lucky==true) {
             tol= res;
             max_iter= k;
@@ -501,6 +511,25 @@ class IdPreCL
     Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
         v= b; p= c;
     }
+};
+
+
+template <class APreT, class SPreT>
+class DiagPreCL
+{
+  private:
+    APreT& apc_;
+    SPreT& spc_;
+
+  public:
+    DiagPreCL(APreT& apc, SPreT& spc)
+    : apc_( apc), spc_( spc)
+    {}
+    
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const
+        { apc_.Apply( A, v, b); spc_.Apply( A/*Dummy*/, p, c); }
 };
 
 
@@ -807,7 +836,6 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& 
         x.resize( M.A_.num_cols() );
 //        std::cerr << ", new size is " << x.size() << '\n';
     }
-    
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
 //    std::cerr << "> inner iterations: " << M.solver_.GetIter()
 //              << "\tresidual: " << M.solver_.GetResid() << std::endl;
@@ -1066,7 +1094,6 @@ void PSchurSolver2CL<InnerSolverT, OuterSolverT>::Solve(
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
-
 //=============================================================================
 // Inexact Uzawa-method from "Fast Iterative Solvers for Discrete Stokes
 // Equations", Peters, Reichelt, Reusken, Chapter 3.3.
@@ -1077,17 +1104,19 @@ template <typename Mat, typename Vec, typename PC1, typename PC2>
 bool
 InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
     PC1& Apc, PC2& Spc,
-    int& max_iter, double& tol)
+    int& max_iter, double& tol, double innerred= 0.3)
 {
     VectorCL ru= f - A*xu - transp_mul( B, xp);
+    VectorCL rp= g - B*xu;
     VectorCL w( f.size());
     VectorCL z( g.size());
     VectorCL a( f.size());
-    VectorCL xuneu( f.size());
+    VectorCL du( f.size());
     VectorCL b( f.size());
+    VectorCL c( g.size());
     ApproximateSchurComplMatrixCL<PC1> asc( A, Apc, B);
-    PCGSolverCL<PC2> pcgsolver( Spc, 100, 0.3);
-    const double resid0= std::sqrt( norm_sq( ru) + norm_sq( g - B*xu));
+    PCGSolverCL<PC2> pcgsolver( Spc, 500, innerred);
+    double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
     double resid= 0.0;
     std::cerr << "residual (2-norm): " << resid0 << '\n';
     if (resid0<=tol) { // The fixed point iteration between levelset and Stokes
@@ -1098,29 +1127,28 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     for (int k= 1; k<=max_iter; ++k) {
         w= 0.0;
         Apc.Apply( A, w, ru);
-        w+= xu;
         z= 0.0;
-//        std::cerr << "B*w : " << norm( B*w) << "\tprojektion auf 1: "
-//                  << (B*w)*VectorCL( 1.0/std::sqrt( (double)g.size()), g.size())
-//                  << "\n";
         // Due to theory (see paper) we must use relative error of about 0.3. z==0.
-        const Vec rp= B*w - g;
-	pcgsolver.SetTol( 0.3*norm( rp));
-        pcgsolver.Solve( asc, z, rp);
+        c= B*w - rp;
+//        std::cerr << "B*xu-g: " << norm( B*xu-g) << "\tprojektion auf 1: "
+//                  << dot( B*xu-g, VectorCL( 1.0/std::sqrt( (double)g.size()), g.size()))
+//                  << "\n";
+	pcgsolver.SetTol( innerred*norm( c));
+        pcgsolver.Solve( asc, z, c);
         std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
                   << "\tresid: " << pcgsolver.GetResid() << '\n';
-
         b= transp_mul( B, z);
         a= 0.0;
         Apc.Apply( A, a, b);
-        z_xpay( xuneu, w, -1.0, a); // xuneu= w - a;
+        du= w - a;
         xp+= z;
-        z_xpaypby2(ru, ru, -1.0, A*Vec( xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
-        xu= xuneu;
-        resid= std::sqrt( norm_sq( f - A*xu - transp_mul( B, xp)) + norm_sq( g - B*xu));
-        std::cerr << "relative residual (2-norm): " << resid/resid0 
-                  << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
-                  << "\tp: " << norm( g - B*xu)
+        z_xpaypby2(ru, ru, -1.0, A*du, -1.0, b); // ru-= A*du + transp_mul( B, z);
+        xu+= du;
+        rp= g - B*xu;
+        resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
+        std::cerr << "residual reduction (2-norm): " << resid/resid0 
+//                  << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
+//                  << "\tp: " << norm( g - B*xu)
                   << '\n';
 /*
         if (resid<=tol*resid0) { // relative errors
@@ -1130,20 +1158,30 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         }
 */
         if (resid<=tol) { // absolute errors
-            std::cerr << "relative residual (2-norm): " << resid/resid0 
-                      << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
-                      << "\tp: " << norm( g - B*xu)
-                      << '\n';
+//            std::cerr << "relative residual (2-norm): " << resid/resid0 
+//                      << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
+//                      << "\tp: " << norm( g - B*xu)
+//                      << '\n';
             tol= resid;
             max_iter= k;
             return true;
         }
-
+        resid0= resid;
     }
     tol= resid;
     return false;
 }
 
+
+template <class ApcT, class SpcT>
+  inline void
+  InexactUzawaCL<ApcT, SpcT>::Solve( const MatrixCL& A, const MatrixCL& B,
+    VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+{
+    _res=  _tol;
+    _iter= _maxiter;
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
+}
 
 } // end of namespace DROPS
 

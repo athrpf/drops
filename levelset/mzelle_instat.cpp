@@ -17,7 +17,9 @@
 
 
 DROPS::ParamMesszelleCL C;
-enum StokesMethod { schur= 0, inexactuzawa= 1, minres= 2 };
+enum StokesMethod { schur= 0,       inexactuzawa= 1,       minres= 2,
+                    schurMG= 3,     inexactuzawaMG= 4,     minresMG= 5,
+                    schurfullMG= 6, inexactuzawafullMG= 7, minresfullMG= 8};
 
 // rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
 //                          -div u = 0
@@ -100,6 +102,148 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
          {}
 };
 
+class ISPSchur2_MG_CL: public PSchurSolver2CL<PCGSolverCL<MGPreCL>,
+                                              PCGSolverCL<ISPreCL> >
+{
+  public:
+    typedef PCGSolverCL<MGPreCL> innerSolverT;
+    typedef PCGSolverCL<ISPreCL> outerSolverT;
+
+  private:
+    innerSolverT innerSolver_;
+    outerSolverT outerSolver_;
+
+  public:
+    ISPSchur2_MG_CL(MGPreCL& Apc, ISPreCL& Spc,
+        int outer_iter, double outer_tol,
+        int inner_iter, double inner_tol)
+        : PSchurSolver2CL<innerSolverT, outerSolverT>(
+            innerSolver_, outerSolver_, outer_iter, outer_tol
+          ),
+          innerSolver_( Apc, inner_iter, inner_tol),
+          outerSolver_( Spc, outer_iter, outer_tol)
+        {}
+};
+
+class ISPSchur2_fullMG_CL: public PSchurSolver2CL<PCGSolverCL<MGPreCL>,
+                                                  PCGSolverCL<ISMGPreCL> >
+{
+  public:
+    typedef PCGSolverCL<MGPreCL> innerSolverT;
+    typedef PCGSolverCL<ISMGPreCL> outerSolverT;
+
+  private:
+    innerSolverT innerSolver_;
+    outerSolverT outerSolver_;
+
+  public:
+    ISPSchur2_fullMG_CL(MGPreCL& Apc, ISMGPreCL& Spc,
+        int outer_iter, double outer_tol,
+        int inner_iter, double inner_tol)
+        : PSchurSolver2CL<innerSolverT, outerSolverT>(
+            innerSolver_, outerSolver_, outer_iter, outer_tol
+          ),
+          innerSolver_( Apc, inner_iter, inner_tol),
+          outerSolver_( Spc, outer_iter, outer_tol)
+        {}
+};
+
+
+typedef DiagPreCL<MGPreCL,ISPreCL>  MyISMinresMGPreCL;
+typedef DiagPreCL<MGPreCL,ISMGPreCL>  MyISMinresfullMGPreCL;
+
+//=============================================================================
+// PMinres solver for the instationary Stokes-Equations with MG for velocities
+//=============================================================================
+class MyPMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL,
+    MyISMinresMGPreCL> >
+{
+  private:
+    MyISMinresMGPreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresMGPreCL> q_;
+
+  public:
+    MyPMinresSP_Diag_CL(MGPreCL& Apc, ISPreCL& Spc, int iter_vel, int maxiter, double tol)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresMGPreCL> >( q_, maxiter, tol),
+         pre_( Apc, Spc), q_( pre_)
+    {}
+};
+
+//=============================================================================
+// PMinres solver for the instationary Stokes-Equations with full MG
+//=============================================================================
+class MyPMinresSP_fullMG_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL,
+    MyISMinresfullMGPreCL> >
+{
+  private:
+    MyISMinresfullMGPreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresfullMGPreCL> q_;
+
+  public:
+    MyPMinresSP_fullMG_CL(MGPreCL& Apc, ISMGPreCL& Spc, int iter_vel, int maxiter, double tol)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresfullMGPreCL> >( q_, maxiter, tol),
+         pre_( Apc, Spc), q_( pre_)
+    {}
+};
+
+// copied from isdrops.cpp
+// We know, there are only natural boundary conditions.
+template<class Coeff>
+void
+SetupPrStiffMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
+{
+    DROPS::MultiGridCL& mg= stokes.GetMG();
+    DROPS::IdxDescCL* c_idx= 0;
+    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
+        MGData.push_back( DROPS::MGLevelDataCL());
+        DROPS::MGLevelDataCL& tmp= MGData.back();
+        std::cerr << "Pressure-MG:            Create MGData on Level " << lvl << std::endl;
+        tmp.Idx.Set( 1);
+        stokes.CreateNumberingPr( lvl, &tmp.Idx);
+        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
+        stokes.SetupPrStiff( &tmp.A);
+        if(lvl!=0) {
+            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
+            DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
+        }
+        c_idx= &tmp.Idx;
+    }
+    std::cerr << "Check MG-Data..." << std::endl;
+    std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
+    std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
+    DROPS::CheckMGData( MGData.begin(), MGData.end());
+}
+
+template<class Coeff>
+void
+SetupPrMassMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes,
+    DROPS::MGDataCL& MGData, const LevelsetP2CL& lset)
+{
+    DROPS::MultiGridCL& mg= stokes.GetMG();
+    DROPS::IdxDescCL* c_idx= 0;
+    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
+        MGData.push_back( DROPS::MGLevelDataCL());
+        DROPS::MGLevelDataCL& tmp= MGData.back();
+        std::cerr << "Mass-Pressure-MG:       Create MGData on Level " << lvl << std::endl;
+        tmp.Idx.Set( 1);
+        stokes.CreateNumberingPr( lvl, &tmp.Idx);
+        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
+        stokes.SetupPrMass( &tmp.A, lset);
+        std::cerr << tmp.A.Data.num_nonzeros() << " nonzeros in M_pr.\n";
+        if(lvl!=0) {
+            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
+            DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
+        }
+        c_idx= &tmp.Idx;
+    }
+    std::cerr << "Check MG-Data..." << std::endl;
+    std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
+    std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
+    DROPS::CheckMGData( MGData.begin(), MGData.end());
+}
+
 template<class Coeff>
 void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
@@ -150,13 +294,45 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA);
-    MatrixCL prM_A;
+//    MatrixCL prM_A;
     ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
+    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF); // May be used for inexact Uzawa.
+    MGDataCL prA_MG;
+    SetupPrStiffMG( Stokes, prA_MG);
+    MGDataCL prM_MG;
+    SetupPrMassMG( Stokes, prM_MG,  lset);
+    ISMGPreCL ispcMG( prA_MG, prM_MG, C.theta*C.dt*C.muF/C.rhoF, 1);
+    SSORPCG_PreCL velpc;
+/*
+    std::ofstream fA("A_pr");
+    fA << prA.Data;
+    std::ofstream fA_MG("A_pr_MG");
+    fA_MG << prA_MG.back().A.Data;
+    std::ofstream fM("M_pr");
+    fM << prM.Data;
+    std::ofstream fM_MG("M_pr_MG");
+    fM_MG << prM_MG.back().A.Data;
+*/
    
     // Available Stokes-solver
-    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-    InexactUzawa_CL inexactUzawaSolver( ispc, C.outer_iter, C.outer_tol);
+    ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//    InexactUzawa_CL inexactUzawaSolver( velpc, ispc, C.outer_iter, C.outer_tol);
+    InexactUzawaNonlinear_CL inexactUzawaSolver( velpc, isnonlinpc, C.outer_iter, C.outer_tol);
     PMinresSP_Diag_CL stokessolver( ispc, 1, C.outer_iter, C.outer_tol);
+
+    // Available Stokes-solver: MG for velocities
+    MGDataCL VelMGPreData;
+    MGPreCL velmgpc( VelMGPreData);
+    ISPSchur2_MG_CL ISPschur2SolverMG( velmgpc, ispc,
+        C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    InexactUzawaMG_CL inexactUzawaSolverMG( velmgpc, ispc, C.outer_iter, C.outer_tol);
+    MyPMinresSP_Diag_CL stokessolverMG( velmgpc, ispc, 1, C.outer_iter, C.outer_tol);
+
+    // Available Stokes-solver: full MG
+    ISPSchur2_fullMG_CL ISPschur2SolverfullMG( velmgpc, ispcMG,
+        C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    InexactUzawaFullMG_CL inexactUzawaSolverFullMG( velmgpc, ispcMG, C.outer_iter, C.outer_tol);
+    MyPMinresSP_fullMG_CL stokessolverfullMG( velmgpc, ispcMG, 1, C.outer_iter, C.outer_tol);
 
     PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
@@ -219,24 +395,56 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     
     CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
         cpl1( Stokes, lset, ISPschurSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawa_CL> 
+//    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawa_CL> 
+//        cpl2( Stokes, lset, inexactUzawaSolver, C.theta);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaNonlinear_CL> 
         cpl2( Stokes, lset, inexactUzawaSolver, C.theta);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, PMinresSP_Diag_CL> 
         cpl3( Stokes, lset, stokessolver, C.theta);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur2_MG_CL> 
+        cpl4( Stokes, lset, ISPschur2SolverMG, C.theta,
+        C.StokesMethod==schurMG, &VelMGPreData);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaMG_CL> 
+        cpl5( Stokes, lset, inexactUzawaSolverMG, C.theta,
+        C.StokesMethod==inexactuzawaMG, &VelMGPreData);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, MyPMinresSP_Diag_CL> 
+        cpl6( Stokes, lset, stokessolverMG, C.theta,
+        C.StokesMethod==minresMG, &VelMGPreData);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur2_fullMG_CL> 
+        cpl7( Stokes, lset, ISPschur2SolverfullMG, C.theta,
+        C.StokesMethod==schurfullMG, &VelMGPreData);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaFullMG_CL> 
+        cpl8( Stokes, lset, inexactUzawaSolverFullMG, C.theta,
+        C.StokesMethod==inexactuzawafullMG, &VelMGPreData);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, MyPMinresSP_fullMG_CL> 
+        cpl9( Stokes, lset, stokessolverfullMG, C.theta,
+        C.StokesMethod==minresfullMG, &VelMGPreData);
 
     switch (C.StokesMethod) {
-      case schur:        cpl1.SetTimeStep( C.dt); break;
-      case inexactuzawa: cpl2.SetTimeStep( C.dt); break;
-      case minres:       cpl3.SetTimeStep( C.dt); break;
+      case schur:              cpl1.SetTimeStep( C.dt); break;
+      case inexactuzawa:       cpl2.SetTimeStep( C.dt); break;
+      case minres:             cpl3.SetTimeStep( C.dt); break;
+      case schurMG:            cpl4.SetTimeStep( C.dt); break;
+      case inexactuzawaMG:     cpl5.SetTimeStep( C.dt); break;
+      case minresMG:           cpl6.SetTimeStep( C.dt); break;
+      case schurfullMG:        cpl7.SetTimeStep( C.dt); break;
+      case inexactuzawafullMG: cpl8.SetTimeStep( C.dt); break;
+      case minresfullMG:       cpl9.SetTimeStep( C.dt); break;
       default: std::cerr << "Strategy: Please Choose a Stokes-solver." << std::endl;
     }
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         switch (C.StokesMethod) {
-          case schur:        cpl1.DoStep( C.FPsteps); break;
-          case inexactuzawa: cpl2.DoStep( C.FPsteps); break;
-          case minres:       cpl3.DoStep( C.FPsteps); break;
+          case schur:              cpl1.DoStep( C.FPsteps); break;
+          case inexactuzawa:       cpl2.DoStep( C.FPsteps); break;
+          case minres:             cpl3.DoStep( C.FPsteps); break;
+          case schurMG:            cpl4.DoStep( C.FPsteps); break;
+          case inexactuzawaMG:     cpl5.DoStep( C.FPsteps); break;
+          case minresMG:           cpl6.DoStep( C.FPsteps); break;
+          case schurfullMG:        cpl7.DoStep( C.FPsteps); break;
+          case inexactuzawafullMG: cpl8.DoStep( C.FPsteps); break;
+          case minresfullMG:       cpl9.DoStep( C.FPsteps); break;
 	}
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)

@@ -776,9 +776,10 @@ bool
 PMINRES(const Mat& A, Vec& x, const Vec& rhs, Lanczos& q, int& max_iter, double& tol)
 {
     Vec dx( x.size());
-    double res;
+    double res= norm_r0;
 
     const double norm_r0= q.norm_r0();
+    double res= norm_r0;
     bool lucky= q.breakdown();
     SBufferCL<double, 3> c;
     SBufferCL<double, 3> s;
@@ -1052,7 +1053,7 @@ class SSORPCG_PreCL
     mutable PCGSolverCL<SSORPcCL> solver_;
 
   public:
-    SSORPCG_PreCL(int maxiter, double reltol)
+    SSORPCG_PreCL(int maxiter= 500, double reltol= 0.2)
         : reltol_( reltol), solver_( SSORPcCL( 1.0), maxiter, reltol) // Note, that the
     {}                                                                // real tol for
                                                                       // solver_ is

@@ -60,7 +60,7 @@ class MGPreCL
     Uint iter_;
 
   public:
-    MGPreCL( MGDataCL& A, Uint iter)
+    MGPreCL( MGDataCL& A, Uint iter= 1)
         :A_( A), iter_( iter)
     {}
 
@@ -131,11 +131,15 @@ template <class Mat, class Vec>
 void
 MGPreCL::Apply( const Mat&, Vec& x, const Vec& r) const
 {
-    Uint sm=  2; // how many smoothing steps?
+    Uint sm=  1; // how many smoothing steps?
     int lvl= -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
     SSORsmoothCL smoother( omega);  // Symmetric-Gauss-Seidel with over-relaxation
     SSORPcCL directpc; PCG_SsorCL solver( directpc, 200, 1e-12);
+    // XXX: It is usually up to the caller to provide a good start value,
+    // but we get this wrong in some places. Once these are fixed, resetting
+    // x here is superfluous.
+    x= 0.0;
     for (Uint i= 0; i < iter_; ++i)
         MGM( A_.begin(), --A_.end(), x, r, smoother, sm, solver, lvl, -1);
 }

@@ -98,12 +98,38 @@ class ISPreCL
 
   public:
     ISPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
-            double k_pc= 0, double om= 1)
-      : A_( A_pr), M_( M_pr), k_( k_pc), ssor_( om)  {}
+        double k_pc= 0, double om= 1)
+        : A_( A_pr), M_( M_pr), k_( k_pc), ssor_( om)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
 };
+
+
+//**************************************************************************
+// Preconditioner for the instationary Stokes-equations.
+// Confer ISPreCL for details. This preconditioner uses a few CG-iterations
+// to solve the linear systems.
+// It is well suited for InexactUzawa-Solvers.
+//**************************************************************************
+class ISNonlinearPreCL
+{
+  private:
+    MatrixCL&  A_;
+    MatrixCL&  M_;
+    double     k_;
+    mutable PCG_SsorCL solver_;
+
+  public:
+    ISNonlinearPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
+        double k_pc= 0, double om= 1)
+        : A_( A_pr), M_( M_pr), k_( k_pc),
+          solver_( SSORPcCL( 1.0), 6, 1e-30)  {}
+
+    template <typename Mat, typename Vec>
+    void Apply(const Mat&, Vec& p, const Vec& c) const;
+};
+
 
 //**************************************************************************
 // Preconditioner for the instationary Stokes-equations.
@@ -121,7 +147,6 @@ class ISMGPreCL
     DROPS::SSORsmoothCL smoother; // symmetric Gauss-Seidel with over-relaxation
     DROPS::SSORPcCL directpc;
     mutable DROPS::PCG_SsorCL solver;
-    mutable DROPS::VectorCL p2;
 
     DROPS::MGDataCL& A_;
     DROPS::MGDataCL& M_;
@@ -165,7 +190,6 @@ class ISMinresMGPreCL
     SSORsmoothCL smoother;  // Symmetric-Gauss-Seidel with over-relaxation
     SSORPcCL directpc;
     mutable PCG_SsorCL solver;
-    mutable VectorCL p2;
 
     DROPS::MGDataCL& Avel_;
     DROPS::MGDataCL& Apr_;
@@ -227,17 +251,29 @@ void InstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& 
 template <typename Mat, typename Vec>
 void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-        ssor_.Apply( A_, p, c);
-        VectorCL p2( p.size() );
-        ssor_.Apply( M_, p2, c);
-//      p+= k_*p2;
-        axpy( k_, p2, p);
-//        PCG_SsorCL sol( ssor_, 15, 1e-30);
-//	p= 0.0;
-//        sol.Solve( A_, p, c);
-//        VectorCL p2( p.size() );
-//        sol.Solve( M_, p2, c);
-//        axpy( k_, p2, p); // p+= k_*p2;
+//    double new_res;
+//    double old_res= norm( c);
+    ssor_.Apply( A_, p, c);
+//    std::cerr << " residual: " <<  (new_res= norm( A_*p - c)) << '\t';
+//    std::cerr << " reduction: " << new_res/old_res << '\n';
+//    if (c.size() != p2_.size()) p2_.resize( c.size());
+//    double mnew_res;
+//    double mold_res= norm( c);
+    Vec p2_( c.size());
+    ssor_.Apply( M_, p2_, c);
+//    std::cerr << " residual: " <<  (mnew_res= norm( M_*p2_ - c)) << '\t';
+//    std::cerr << " reduction: " << mnew_res/mold_res << '\n';
+    axpy( k_, p2_, p); // p+= k_*p2_;
+}
+
+template <typename Mat, typename Vec>
+void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+{
+    p= 0.0;
+    solver_.Solve( A_, p, c);
+    Vec p2_( c.size());
+    solver_.Solve( M_, p2_, c);
+    axpy( k_, p2_, p); // p+= k_*p2_;
 }
 
 
@@ -251,10 +287,12 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
 // the direct solver Solver is used.
 // If one of the parameters is -1, it will be neglected.
 // If MGData.begin() has been reached, the direct solver is used too.
+// Concerning the stabilization see Hackbusch Multigrid-Methods and Applications;
+// Basically we project on the orthogonal complement of the kernel of A before
+// the coarse-grid correction.
 {
     const_MGDataIterCL coarse= fine;
     --coarse;
-
     if(  ( numLevel==-1      ? false : numLevel==0 )
        ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) ) 
        || fine==begin)
@@ -275,8 +313,9 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
     x+= fine->P.Data * e;
     // postsmoothing
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
-// Not needed, as our smoother and prolongation do not amplify the constant function.
-//    x-= dot( *ones, x);
+    // This projection could probably be avoided, but it is cheap and with it,
+    // we are on the safe side.
+    x-= dot( *ones, x);
 }
 
 
@@ -284,21 +323,32 @@ template <typename Mat, typename Vec>
 void
 ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-    p-= dot( ones_.back(), p);
-    for (DROPS::Uint i=0; i<max_iter_; ++i)
-//        DROPS::MGM( A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
-        MGMPr( --ones_.end(), A_.begin(), --A_.end(), p, c, smoother, sm, solver, lvl, -1);
-
-//    std::cerr << "IsMGPcCL: iterations: " << max_iter_ << '\t'
-//              << "residual: " << (A_.back().A.Data*p - c).norm() << '\t';
-    if (p2.size() != p.size())
-        p2.resize( p.size());
-    for (DROPS::Uint i=0; i<1; ++i)
-        DROPS::MGM( M_.begin(), --M_.end(), p2, c, smoother, sm, solver, lvl, -1);
+    p= 0.0;
+    const Vec c2_= c - dot( ones_.back(), c);
+//    double new_res= norm( A_.back().A.Data*p - c2_);
+//    double old_res;
+//    std::cerr << "IsMGPcCL: "
+//              << norm( cc) << " " << norm( A_.back().A.Data*c2_) << " "
+//              << "\tPressure: iterations: " << max_iter_ <<'\t';
+    for (DROPS::Uint i=0; i<max_iter_; ++i) {
+        MGMPr( --ones_.end(), A_.begin(), --A_.end(), p, c2_, smoother, sm, solver, lvl, -1);
+//        old_res= new_res;
+//        std::cerr << " residual: " <<  (new_res= norm( A_.back().A.Data*p - c2_))
+//                  << '\t' << norm( p)
+//        std::cerr << " reduction: " << new_res/old_res << '\n';
+    }
+    Vec p2_( c.size());
+//    double mnew_res= norm( M_.back().A.Data*p2_ - c);
+//    double mold_res;
+    for (DROPS::Uint i=0; i<1; ++i) {
+        DROPS::MGM( M_.begin(), --M_.end(), p2_, c, smoother, sm, solver, lvl, -1);
+//        mold_res= mnew_res;
+//        std::cerr << "IsMGPcCL: Mass: residual: " <<  (mnew_res= norm( M_.back().A.Data*p2_ - c)) << '\t';
+//        std::cerr << " reduction: " << mnew_res/mold_res << '\n';
+    }
 //    std::cerr << "M: iterations: " << 1 << '\t'
-//              << "residual: " << (M_.back().A.Data*p2 - c).norm() << '\n';
-//    p+= k_*p2;
-    axpy( k_, p2, p);
+//              << "residual: " << norm( M_.back().A.Data*p2_ - c) << '\n';
+    axpy( k_, p2_, p); // p+= k_*p2_;
 }
 
 
@@ -323,8 +373,7 @@ ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const
     }
 //    std::cerr << " residual: " <<  (Apr_.back().A.Data*p - c).norm() << '\t';
 
-    if (p2.size() != p.size())
-        p2.resize( p.size());
+    Vec p2( p.size());
     for (DROPS::Uint i=0; i<iter_prM_; ++i)
         DROPS::MGM( Mpr_.begin(), --Mpr_.end(), p2, c, smoother, sm, solver, lvl, -1);
 //    std::cerr << "Mass: iterations: " << iter_prM_ << '\t'

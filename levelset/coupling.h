@@ -96,13 +96,16 @@ class CouplLevelsetStokes2PhaseCL
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VecDescCL    *_curv, *_old_curv;  // curvature terms
     VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
-    
+    MatrixCL*     _mat;               // M + theta*dt*A
+
+    bool          _usematMG;          // MG-hierachy for _mat
+    MGDataCL*     _matMG;
+        
     double _theta, _dt;
     
   public:
     CouplLevelsetStokes2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, 
-                           SolverT& solver, double theta= 0.5);
+        SolverT& solver, double theta= 0.5, bool usematMG= false, MGDataCL* matMG= 0);
     ~CouplLevelsetStokes2PhaseCL();
     
     double GetTheta()    const { return _theta; }
@@ -117,7 +120,7 @@ class CouplLevelsetStokes2PhaseCL
     void CommitStep();
     
     void DoStep( int maxFPiter= -1);  // combines the 3 former routines
-    
+
     // update after grid has changed
     void Update();
 };

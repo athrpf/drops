@@ -47,6 +47,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
     SmoothedJumpCL nu_invers( 1./nu1, 1./nu2, _Coeff.rho);
     Quad2CL<double> nu_inv;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    double lsarray[10];
     
     // compute all couplings between HatFunctions on verts:
     // I( i, j) = int ( psi_i*psi_j, T_ref) * absdet
@@ -58,13 +59,21 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
          sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6.;
+        if (ls.GetLevel()!=lvl)
+            RestrictP2( *sit, ls, lsarray);
+        else {
+            // TODO: This must go. And it will, once we have P2LocalCL
+            std::vector<double> xxx;
+            ls.GetDoF( *sit, xxx);
+            std::copy( xxx.begin(), xxx.end(), lsarray);
+        }
         
         for(int i=0; i<4; ++i)
         {
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
-            nu_inv.val[i]= ls.val( *sit->GetVertex(i));
+            nu_inv.val[i]= lsarray[i];
         }
-        nu_inv.val[4]= ls.val( *sit, 0.25, 0.25, 0.25); 
+        nu_inv.val[4]= P2( lsarray, 1.0/*type-dummy*/, 0.25, 0.25, 0.25); 
         nu_inv.apply( nu_invers);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
@@ -298,6 +307,19 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
 }
 
 
+template<class _Cont, class DataT>
+  inline DataT
+      P2(const _Cont& dof, const DataT& , double v1, double v2, double v3)
+{
+    return dof[0] * FE_P2CL::H0( v1, v2, v3)
+        + dof[1] * FE_P2CL::H1( v1, v2, v3) + dof[2] * FE_P2CL::H2( v1, v2, v3)
+        + dof[3] * FE_P2CL::H3( v1, v2, v3) + dof[4] * FE_P2CL::H4( v1, v2, v3)
+        + dof[5] * FE_P2CL::H5( v1, v2, v3) + dof[6] * FE_P2CL::H6( v1, v2, v3)
+        + dof[7] * FE_P2CL::H7( v1, v2, v3) + dof[8] * FE_P2CL::H8( v1, v2, v3)
+        + dof[9] * FE_P2CL::H9( v1, v2, v3);
+}
+
+
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     MatDescCL* M, const LevelsetP2CL& lset, double t) const
@@ -308,8 +330,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel),
                     mM( &M->Data, num_unks_vel, num_unks_vel);
     
-    const Uint lvl         = A->RowIdx->TriangLevel,
-               vidx        = A->RowIdx->GetIdx();
+    const Uint lvl= A->GetRowLevel(),
+               vidx= A->RowIdx->GetIdx();
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];
@@ -322,11 +344,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     SMatrixCL<3,3> T;
     
     double coupA[10][10], coupM[10][10];
+    double lsarray[10];
     double det, absdet;
-    Point3DCL tmp;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
-
-    P2DiscCL::GetGradientsOnRef( GradRef);
     
     for (MultiGridCL::const_TriangTetraIteratorCL 
             sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -335,6 +355,15 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
+        P2DiscCL::GetGradientsOnRef( GradRef);
+        if (ls.GetLevel()!=lvl)
+            RestrictP2( *sit, ls, lsarray);
+        else {
+            // TODO: This must go. And it will, once we have P2LocalCL
+            std::vector<double> xxx;
+            ls.GetDoF( *sit, xxx);
+            std::copy( xxx.begin(), xxx.end(), lsarray);
+        }
     
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -343,7 +372,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
             if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
                 Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
             rhs.val[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
-            Phi.val[i]= ls.val( *sit->GetVertex(i));
+            Phi.val[i]= lsarray[i];
         }
         for (int i=0; i<6; ++i)
         {
@@ -351,7 +380,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
         rhs.val[4]= _Coeff.f( GetBaryCenter( *sit), t);
-        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+        Phi.val[4]= P2( lsarray, 1.0/*type-dummy*/, 0.25, 0.25, 0.25);
 
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( _Coeff.rho);
@@ -402,6 +431,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
 }
+
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const

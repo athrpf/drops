@@ -11,15 +11,6 @@
 
 namespace DROPS
 {
-
-void
-InexactUzawa_CL::Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
-    const VectorCL& b, const VectorCL& c)
-{
-    _res=  _tol;
-    _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
-}
-
-
+    // Once used for routines without template parameters. Although there are
+    // none at the moment, we keep the file around.
 } // end of namespace DROPS

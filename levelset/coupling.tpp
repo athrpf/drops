@@ -220,12 +220,14 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoStep( int maxFPiter)
 
 template <class StokesT, class SolverT>
 CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetStokes2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta)
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver,
+      double theta, bool usematMG, MGDataCL* matMG)
 
   : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
     _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
-    _theta( theta)
+    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL),
+    _mat( 0), _usematMG( usematMG),
+    _matMG( usematMG ? matMG : new MGDataCL), _theta( theta)
 { 
     Update(); 
 }
@@ -238,6 +240,7 @@ CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::~CouplLevelsetStokes2PhaseCL()
     else
         delete _old_b; 
     delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
+    if (!_usematMG) delete _matMG;
 }
 
 template <class StokesT, class SolverT>
@@ -263,40 +266,49 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     TimerCL time;
     time.Reset();
     time.Start();
-
     // setup system for levelset eq.
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _LvlSet.SetTimeStep( _dt);
-
     time.Stop();
     std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
     time.Reset();
 
     _LvlSet.DoStep( _ls_rhs);
-
     time.Stop();
     std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
-
     time.Reset();
-    time.Start();
 
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
-
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
-    _mat.LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
-
+    _mat->LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
+    if (_usematMG) {
+        for(MGDataCL::iterator it= _matMG->begin(); it!=_matMG->end(); ++it) {
+            MGLevelDataCL& tmp= *it;
+            MatDescCL A, M;
+            A.SetIdx( &tmp.Idx, &tmp.Idx);
+            M.SetIdx( &tmp.Idx, &tmp.Idx);
+            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+            std::cerr << "DoFPIter: Create StiffMatrix for "
+                      << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
+            if(&tmp != &_matMG->back()) {
+                _Stokes.SetupMatrices1( &A, &M, _LvlSet, _Stokes.t);
+                tmp.A.Data.LinComb( 1., M.Data, _theta*_dt, A.Data);
+            }
+        }
+    }
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
 
     _Stokes.p.Data*= _dt;
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
+    _solver.Solve( *_mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
                    VectorCL( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data)), _Stokes.c.Data);
     _Stokes.p.Data/= _dt;
-
     time.Stop();
-    std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
+    std::cerr << "Solving Stokes: residual: " << _solver.GetResid()
+              << "\titerations:" << _solver.GetIter()
+              << "\ttime: " << time.GetTime() << "s\n";
 }
 
 template <class StokesT, class SolverT>
@@ -352,7 +364,33 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _Stokes.t);
-    
+
+    // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
+    if (_usematMG) {
+        _matMG->clear();
+        MultiGridCL& mg= _Stokes.GetMG();
+        IdxDescCL* c_idx= 0;
+        for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
+            _matMG->push_back( MGLevelDataCL());
+            MGLevelDataCL& tmp= _matMG->back();
+            std::cerr << "    Create indices on Level " << lvl << std::endl;
+            tmp.Idx.Set( 3, 3);
+            _Stokes.CreateNumberingVel( lvl, &tmp.Idx);
+            if(lvl!=0) {
+                std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
+                SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
+//                std::cout << "    Matrix P " << tmp.P.Data << std::endl;
+            }
+            c_idx= &tmp.Idx;
+        }
+    }
+    else {
+        _matMG->clear();
+        _matMG->push_back( MGLevelDataCL());
+    }
+    // _mat is always a pointer to _matMG->back()A.Data for efficiency.
+    _mat= &_matMG->back().A.Data;
+
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
 }
