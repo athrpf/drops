@@ -328,6 +328,14 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
               << _R.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
 
+void LevelsetP2CL::SetTimeStep( double dt, double theta) 
+{ 
+    _dt= dt; 
+    if (theta >= 0) _theta= theta;
+    
+    _L.LinComb( 1., _E, _theta*_dt, _H); 
+}
+
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
     rhs= _E*Phi.Data - _dt*(1-_theta) * (_H*Phi.Data);
@@ -406,10 +414,10 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     Point3DCL   PQRS[4], B[3];
     Point2DCL   AT_i, ab, tmp;
     IdxT        Numb[10];
-/*    
-std::ofstream fil("surf.off");
-fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
-*/
+    
+//std::ofstream fil("surf.off");
+//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
     RefRuleCL RegRef= GetRefRule( RegRefRuleC);
@@ -492,7 +500,6 @@ else
     fil << "3 0 1 2";
 fil << "\n}\n";
 */
-
             if (intersec<3) continue; // Nullstellenmenge vom Mass 0!
 
             SMatrixCL<3,2> A;    // A = [ Q-P | R-P ]
@@ -521,12 +528,15 @@ fil << "\n}\n";
             { // berechne a, b
                 // Loese (Q-P)a + (R-P)b = S-P
                 SMatrixCL<2,2> M;  
-                M(0,0)= A(0,0); M(0,1)= A(0,1); M(1,0)=A(1,0); M(1,1)= A(1,1);
-                // M is upper 2x2 part of A
-                tmp[0]= PQRS[3][0]-PQRS[0][0]; tmp[1]= PQRS[3][1]-PQRS[0][1];
+                M(0,0)= A(0,0); M(0,1)= A(0,1);          // 1st row of A
+                int row2= 1;
+		if (std::abs(A(0,0)*A(1,1) - A(1,0)*A(0,1))<1e-15 ) // upper 2x2 part of A close to singular
+                    row2= 2;
+                M(1,0)= A(row2,0); M(1,1)= A(row2,1);
+                // now M is nonsingular 2x2 part of A
+                tmp[0]= PQRS[3][0]-PQRS[0][0]; tmp[1]= PQRS[3][row2]-PQRS[0][row2];
                 // tmp = S-P
                 Solve2x2( M, ab, tmp);
-
                 //if (ab[0]<0 || ab[1]<0) 
                 //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
                 // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
@@ -548,7 +558,6 @@ fil << "\n}\n";
                     
                 for (int k=0; k<4; ++k)
                     gr+= BaryPQR[k]*gradv[k];
-
                 if (intersec==4)
                 {
                     Point3DCL grSQR;
@@ -569,7 +578,7 @@ fil << "\n}\n";
             }
         } // Ende der for-Schleife ueber die Kinder
     }
-//fil << "}\n";    
+//fil << "}\n";
 }
 
 double LevelsetP2CL::GetVolume( double translation) const

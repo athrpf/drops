@@ -99,7 +99,7 @@ template <class StokesT, class SolverT>
 void CouplStokesLevelsetCL<StokesT,SolverT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
-        maxFPiter= 999;
+        maxFPiter= 99;
 
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
@@ -201,7 +201,7 @@ template <class StokesT, class SolverT>
 void CouplLevelsetStokesCL<StokesT,SolverT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
-        maxFPiter= 999;
+        maxFPiter= 99;
 
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
@@ -311,7 +311,7 @@ template <class StokesT, class SolverT>
 void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
-        maxFPiter= 999;
+        maxFPiter= 99;
 
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
@@ -549,6 +549,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::InitStep( bool StokesStep)
 
     const double frac_dt= StokesStep ? _theta*_dt : (1-2*_theta)*_dt;
     
+    _LvlSet.SetTimeStep( frac_dt, StokesStep ? _alpha : 1-_alpha);
     _LvlSet.ComputeRhs( _ls_rhs);
 
     _Stokes.t+= frac_dt;
@@ -579,7 +580,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     time.Start();
     // setup system for levelset eq.
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( _theta*_dt);
+    _LvlSet.SetTimeStep( _theta*_dt, _alpha);
     time.Stop();
     std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
     time.Reset();
@@ -614,7 +615,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
     time.Start();
     // setup system for levelset eq.
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( frac_dt);
+    _LvlSet.SetTimeStep( frac_dt, 1-_alpha);
     time.Stop();
     std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
     time.Reset();

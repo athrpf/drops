@@ -55,7 +55,7 @@ class LevelsetP2CL
 
     void Init( scalar_fun_ptr);
 
-    void SetTimeStep( double dt) { _dt= dt; _L.LinComb( 1., _E, _theta*_dt, _H); }
+    void SetTimeStep( double dt, double theta=-1);
     // call SetupSystem *before* calling SetTimeStep!
     template<class DiscVelSolT>
     void SetupSystem( const DiscVelSolT&);
