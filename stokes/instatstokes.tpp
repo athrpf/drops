@@ -556,7 +556,7 @@ void InstatStokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL
                     {
                         face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
                         if ( sit->IsBndSeg(face))
-                        {
+                        {   // TODO: FIXME: Hier muss doch eigentlich eine 2D-Integrationsformel fuer P2-Elemente stehen, oder?
                             tmp= Quad2D(*sit, face, i, _BndData.Vel.GetSegData(sit->GetBndIdx(face)).GetBndFun(), tA);
                             a[Numb[i]]+=          tmp[0];
                             a[Numb[i]+stride]+=   tmp[1];
