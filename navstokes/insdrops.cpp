@@ -247,7 +247,7 @@ int main (int argc, char** argv)
   {
     if (argc!=10)
     {
-        std::cerr << "Usage (navstokes): <num_refinement> <fp_tol> <fp_maxiter> "
+        std::cerr << "Usage (insdrops): <num_refinement> <fp_tol> <fp_maxiter> "
 	          << "<deco_red> <stokes_maxiter> <poi_tol> <poi_maxiter> "
                   << "<theta> <dt>" << std::endl;
         return 1;

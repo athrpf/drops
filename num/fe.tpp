@@ -253,7 +253,7 @@ P1EvalCL<Data, _BndData, _VD>::valImpl(const TetraCL& s, double v1, double v2, d
 
 
 //**************************************************************************
-// Class:   P2EvalBaseCL                                                   *
+// Class:   P2EvalCL                                                       *
 // Template Parameter:                                                     *
 //          Data     - The result-type of this finite-element-function on  *
 //                     the multigrid                                       *
@@ -282,94 +282,100 @@ P1EvalCL<Data, _BndData, _VD>::valImpl(const TetraCL& s, double v1, double v2, d
 //**************************************************************************
 template<class Data, class _BndData, class _VD>
 inline void
-P2EvalBaseCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
+P2EvalCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
 {
-    Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P2EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
+    Assert( !_bnd->IsOnDirBnd(s),
+            DROPSErrCL( "P2EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."),
+            DebugNumericC);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(
+        _sol->Data, s.Unknowns( _sol->RowIdx->GetIdx()), d);
 }
 
-template<class Data, class _BndData, class _VD> template<class _Cont>
+template<class Data, class _BndData, class _VD> template<class T, class _Cont>
 inline void
-P2EvalBaseCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s, _Cont& c) const
+P2EvalCL<Data, _BndData, _VD>::GetDoFImpl(const VertexCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF(s) );
+    c.push_back( GetDoF<T>( s) );
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c) const
+P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c) const
 {
     return *c.begin();
 }
 
-template<class Data, class _BndData, class _VD>
+template<class Data, class _BndData, class _VD> template<class T>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const VertexCL& s) const
+P2EvalCL<Data, _BndData, _VD>::valImpl(const VertexCL& s) const
 {
-    return GetDoF(s);
+    return GetDoF<T>( s);
 }
 
 
 template<class Data, class _BndData, class _VD>
 inline void
-P2EvalBaseCL<Data, _BndData, _VD>::SetDoF(const EdgeCL& s, const Data& d)
+P2EvalCL<Data, _BndData, _VD>::SetDoF(const EdgeCL& s, const Data& d)
 {
-    Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P2EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-edge."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
+    Assert( !_bnd->IsOnDirBnd(s),
+            DROPSErrCL( "P2EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-edge."),
+            DebugNumericC);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(
+        _sol->Data, s.Unknowns( _sol->RowIdx->GetIdx()), d);
 }
 
-template<class Data, class _BndData, class _VD> template<class _Cont>
+template<class Data, class _BndData, class _VD> template<class T, class _Cont>
 inline void
-P2EvalBaseCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
+P2EvalCL<Data, _BndData, _VD>::GetDoFImpl(const EdgeCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF(*s.GetVertex(0)) );
-    c.push_back( GetDoF(*s.GetVertex(1)) );
-    c.push_back( GetDoF(s) );
+    c.push_back( GetDoF<T>( *s.GetVertex( 0)));
+    c.push_back( GetDoF<T>( *s.GetVertex( 1)));
+    c.push_back( GetDoF<T>( s));
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
+P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
 {
     typename _Cont::const_iterator it= c.begin();
-    DataT ret= *it++ * FE_P2CL::H0(v1);
-    ret+= *it++ * FE_P2CL::H1(v1);
-    return ret + *it * FE_P2CL::H2(v1);
+    DataT ret= *it++ * FE_P2CL::H0( v1);
+    ret+= *it++ * FE_P2CL::H1( v1);
+    return ret + *it * FE_P2CL::H2( v1);
 }
 
-template<class Data, class _BndData, class _VD>
+template<class Data, class _BndData, class _VD> template<class T>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const EdgeCL& s, double v1) const
+P2EvalCL<Data, _BndData, _VD>::valImpl(const EdgeCL& s, double v1) const
 {
-    return  GetDoF(*s.GetVertex(0))*FE_P2CL::H0(v1)
-          + GetDoF(*s.GetVertex(1))*FE_P2CL::H1(v1)
-          + GetDoF(s)*FE_P2CL::H2(v1);
+    return  GetDoF<T>( *s.GetVertex(0))*FE_P2CL::H0( v1)
+          + GetDoF<T>( *s.GetVertex(1))*FE_P2CL::H1( v1)
+          + GetDoF<T>( s)*FE_P2CL::H2( v1);
 }
 
-template<class Data, class _BndData, class _VD>
+template<class Data, class _BndData, class _VD> template<class T>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const EdgeCL& s) const
+P2EvalCL<Data, _BndData, _VD>::valImpl(const EdgeCL& s) const
 {
-    return GetDoF(s);
+    return GetDoF<T>( s);
 }
 
 
-template<class Data, class _BndData, class _VD> template<class _Cont>
+template<class Data, class _BndData, class _VD> template<class T, class _Cont>
 inline void
-P2EvalBaseCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, Uint face, _Cont& c) const
+P2EvalCL<Data, _BndData, _VD>::GetDoFImpl(const TetraCL& s, Uint face, _Cont& c) const
 {
     typename _Cont::iterator it= c.begin();
-    *it++= GetDoF(*s.GetVertex(VertOfFace(face, 0)));
-    *it++= GetDoF(*s.GetVertex(VertOfFace(face, 1)));
-    *it++= GetDoF(*s.GetVertex(VertOfFace(face, 2)));
-    *it++= GetDoF(*s.GetEdge(EdgeOfFace(face, 0)));
-    *it++= GetDoF(*s.GetEdge(EdgeOfFace(face, 1)));
-    *it= GetDoF(*s.GetEdge(EdgeOfFace(face, 2)));
+    *it++= GetDoF<T>( *s.GetVertex( VertOfFace( face, 0)));
+    *it++= GetDoF<T>( *s.GetVertex( VertOfFace( face, 1)));
+    *it++= GetDoF<T>( *s.GetVertex( VertOfFace( face, 2)));
+    *it++= GetDoF<T>( *s.GetEdge( EdgeOfFace( face, 0)));
+    *it++= GetDoF<T>( *s.GetEdge( EdgeOfFace( face, 1)));
+    *it= GetDoF<T>( *s.GetEdge( EdgeOfFace( face, 2)));
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2) const
+P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2) const
 {
     typename _Cont::const_iterator it= c.begin();
 
@@ -382,72 +388,72 @@ P2EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2) con
 }
 
 
-template<class Data, class _BndData, class _VD>
+template<class Data, class _BndData, class _VD> template<class T>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const TetraCL& s, Uint face, double v1, double v2) const
+P2EvalCL<Data, _BndData, _VD>::valImpl(const TetraCL& s, Uint face, double v1, double v2) const
 {
-    return  GetDoF(*s.GetVertex(VertOfFace(face, 0)))*FE_P2CL::H0(v1, v2)
-           +GetDoF(*s.GetVertex(VertOfFace(face, 1)))*FE_P2CL::H1(v1, v2)
-           +GetDoF(*s.GetVertex(VertOfFace(face, 2)))*FE_P2CL::H2(v1, v2)
-           +GetDoF(*s.GetEdge(EdgeOfFace(face, 0)))*FE_P2CL::H3(v1, v2)
-           +GetDoF(*s.GetEdge(EdgeOfFace(face, 1)))*FE_P2CL::H4(v1, v2)
-           +GetDoF(*s.GetEdge(EdgeOfFace(face, 2)))*FE_P2CL::H5(v1, v2);
+    return  GetDoF<T>( *s.GetVertex( VertOfFace( face, 0)))*FE_P2CL::H0( v1, v2)
+           +GetDoF<T>( *s.GetVertex( VertOfFace( face, 1)))*FE_P2CL::H1( v1, v2)
+           +GetDoF<T>( *s.GetVertex( VertOfFace( face, 2)))*FE_P2CL::H2( v1, v2)
+           +GetDoF<T>( *s.GetEdge( EdgeOfFace( face, 0)))*FE_P2CL::H3( v1, v2)
+           +GetDoF<T>( *s.GetEdge( EdgeOfFace( face, 1)))*FE_P2CL::H4( v1, v2)
+           +GetDoF<T>( *s.GetEdge( EdgeOfFace( face, 2)))*FE_P2CL::H5( v1, v2);
 }
 
 
-template<class Data, class _BndData, class _VD> template<class _Cont>
+template<class Data, class _BndData, class _VD> template<class T, class _Cont>
 inline void
-P2EvalBaseCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
+P2EvalCL<Data, _BndData, _VD>::GetDoFImpl(const TetraCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF(*s.GetVertex(0)) );
-    c.push_back( GetDoF(*s.GetVertex(1)) );
-    c.push_back( GetDoF(*s.GetVertex(2)) );
-    c.push_back( GetDoF(*s.GetVertex(3)) );
-    c.push_back( GetDoF(*s.GetEdge(0)) );
-    c.push_back( GetDoF(*s.GetEdge(1)) );
-    c.push_back( GetDoF(*s.GetEdge(2)) );
-    c.push_back( GetDoF(*s.GetEdge(3)) );
-    c.push_back( GetDoF(*s.GetEdge(4)) );
-    c.push_back( GetDoF(*s.GetEdge(5)) );
+    c.push_back( GetDoF<T>( *s.GetVertex( 0)));
+    c.push_back( GetDoF<T>( *s.GetVertex( 1)));
+    c.push_back( GetDoF<T>( *s.GetVertex( 2)));
+    c.push_back( GetDoF<T>( *s.GetVertex( 3)));
+    c.push_back( GetDoF<T>( *s.GetEdge( 0)));
+    c.push_back( GetDoF<T>( *s.GetEdge( 1)));
+    c.push_back( GetDoF<T>( *s.GetEdge( 2)));
+    c.push_back( GetDoF<T>( *s.GetEdge( 3)));
+    c.push_back( GetDoF<T>( *s.GetEdge( 4)));
+    c.push_back( GetDoF<T>( *s.GetEdge( 5)));
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
+P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
 {
     typename _Cont::const_iterator it= c.begin();
 
-    DataT ret= *it++ * FE_P2CL::H0(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H1(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H2(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H3(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H4(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H5(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H6(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H7(v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H8(v1, v2, v3);
-    return ret + *it * FE_P2CL::H9(v1, v2, v3);
+    DataT ret= *it++ * FE_P2CL::H0( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H1( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H2( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H3 (v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H4( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H5( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H6( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H7( v1, v2, v3);
+    ret+= *it++ * FE_P2CL::H8( v1, v2, v3);
+    return ret + *it * FE_P2CL::H9( v1, v2, v3);
 }
 
-template<class Data, class _BndData, class _VD>
+template<class Data, class _BndData, class _VD> template<class T>
 inline Data
-P2EvalBaseCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, double v3) const
+P2EvalCL<Data, _BndData, _VD>::valImpl(const TetraCL& s, double v1, double v2, double v3) const
 {
-    return  GetDoF(*s.GetVertex(0))*FE_P2CL::H0(v1, v2, v3)
-           +GetDoF(*s.GetVertex(1))*FE_P2CL::H1(v1, v2, v3)
-           +GetDoF(*s.GetVertex(2))*FE_P2CL::H2(v1, v2, v3)
-           +GetDoF(*s.GetVertex(3))*FE_P2CL::H3(v1, v2, v3)
-           +GetDoF(*s.GetEdge(0))*FE_P2CL::H4(v1, v2, v3)
-           +GetDoF(*s.GetEdge(1))*FE_P2CL::H5(v1, v2, v3)
-           +GetDoF(*s.GetEdge(2))*FE_P2CL::H6(v1, v2, v3)
-           +GetDoF(*s.GetEdge(3))*FE_P2CL::H7(v1, v2, v3)
-           +GetDoF(*s.GetEdge(4))*FE_P2CL::H8(v1, v2, v3)
-           +GetDoF(*s.GetEdge(5))*FE_P2CL::H9(v1, v2, v3);
+    return  GetDoF<T>( *s.GetVertex( 0))*FE_P2CL::H0( v1, v2, v3)
+           +GetDoF<T>( *s.GetVertex( 1))*FE_P2CL::H1( v1, v2, v3)
+           +GetDoF<T>( *s.GetVertex( 2))*FE_P2CL::H2( v1, v2, v3)
+           +GetDoF<T>( *s.GetVertex( 3))*FE_P2CL::H3( v1, v2, v3)
+           +GetDoF<T>( *s.GetEdge( 0))*FE_P2CL::H4( v1, v2, v3)
+           +GetDoF<T>( *s.GetEdge( 1))*FE_P2CL::H5( v1, v2, v3)
+           +GetDoF<T>( *s.GetEdge( 2))*FE_P2CL::H6( v1, v2, v3)
+           +GetDoF<T>( *s.GetEdge( 3))*FE_P2CL::H7( v1, v2, v3)
+           +GetDoF<T>( *s.GetEdge( 4))*FE_P2CL::H8( v1, v2, v3)
+           +GetDoF<T>( *s.GetEdge( 5))*FE_P2CL::H9( v1, v2, v3);
 }
 
 
 template<class Data, class _BndData, class _VD>
-inline bool P2EvalBaseCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t) const
+inline bool P2EvalCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t) const
 {
     const Uint idx= _sol->RowIdx->GetIdx();
     for (TetraCL::const_VertexPIterator it= t.GetVertBegin(), end= t.GetVertEnd();  
@@ -461,14 +467,14 @@ inline bool P2EvalBaseCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t)
 
 
 template<class Data, class _BndData, class _VD>
-inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(const VertexCL& v) const
+inline bool P2EvalCL<Data, _BndData, _VD>::IsDefinedOn(const VertexCL& v) const
 {
     return _bnd->IsOnDirBnd( v)
            || (v.Unknowns.Exist() && v.Unknowns.Exist( _sol->RowIdx->GetIdx()));
 }
 
 template<class Data, class _BndData, class _VD>
-inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(const EdgeCL& e) const
+inline bool P2EvalCL<Data, _BndData, _VD>::IsDefinedOn(const EdgeCL& e) const
 {
     return IsDefinedOn( *e.GetVertex( 0)) && IsDefinedOn( *e.GetVertex( 1))
            && (_bnd->IsOnDirBnd( e)
@@ -476,7 +482,7 @@ inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(const EdgeCL& e) cons
 }
 
 template<class Data, class _BndData, class _VD>
-inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(
+inline bool P2EvalCL<Data, _BndData, _VD>::IsDefinedOn(
     const TetraCL& t, const Uint face) const
 {
     const Uint idx= _sol->RowIdx->GetIdx();
@@ -493,7 +499,7 @@ inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(
 
 
 template<class Data, class _BndData, class _VD>
-inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(const TetraCL& t) const
+inline bool P2EvalCL<Data, _BndData, _VD>::IsDefinedOn(const TetraCL& t) const
 {
     for (Uint i=0; i<NumVertsC; ++i)
         if (!IsDefinedOn( *t.GetVertex( i))) return false;
@@ -717,9 +723,11 @@ if (sit->Unknowns.Exist(old_idx))
 //     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
 //     level of old_f.                                                     *
 //**************************************************************************    
-template<class Data, class _BndData, class _VD, class _VecDesc>
+template< class Data, class _BndData, class _VD,
+          template<class, class, class> class P1T,
+          class _VecDesc>
 Uint
-RepairAfterRefine( P1EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
+RepairAfterRefineP1( P1T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 {
     Uint tl= old_f.GetSolution()->RowIdx->TriangLevel;
     const MultiGridCL& MG= old_f.GetMG();
@@ -741,9 +749,9 @@ RepairAfterRefine( P1EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
             DebugNumericC);
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();
-    typedef typename P1EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P1T<Data, _BndData, _VD>::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
-    P1EvalCL<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
+    P1T<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
     Uint counter1= 0, counter2= 0;
 
     // Iterate over all edges on grids with smaller level than tl. If the
@@ -786,9 +794,9 @@ RepairAfterRefine( P1EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 }
 
 template<class Data, class _BndData, class _VD>
-void InterpolateChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _BndData, const _VD>& old_sol)
+void InterpolateChildren( const TetraCL& t, P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, const _VD>& old_sol)
 {
-    typedef typename P2EvalBaseCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
 
     const double edgebary[3][2]=
@@ -838,9 +846,9 @@ void InterpolateChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& s
 
 
 template<class Data, class _BndData, class _VD>
-inline void CopyValues( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _BndData, const _VD>& old_sol)
+inline void CopyValues( const TetraCL& t, P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, const _VD>& old_sol)
 {
-    typedef typename P2EvalBaseCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
     
     for (TetraCL::const_VertexPIterator it= t.GetVertBegin(), end= t.GetVertEnd();
@@ -854,7 +862,7 @@ inline void CopyValues( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& sol
 }
 
 template<class Data, class _BndData, class _VD>
-void Adapt( P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _BndData, const _VD>& old_sol)
+void Adapt( P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, const _VD>& old_sol)
 {
 // Adapt a solution on a triangulation of a certain level, that has changed during the refinement.
 // Notation: T = old triang, T' = new triang. Both T and T' are of the same level.
@@ -916,11 +924,11 @@ void Adapt( P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _Bn
 
 
 template<class Data, class _BndData, class _VD>
-void Interpolate(P2EvalBaseCL<Data, _BndData, _VD>& sol, const P2EvalBaseCL<Data, _BndData, const _VD>& old_sol)
+void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, const _VD>& old_sol)
 // This only works, if Interpolate is called after every refinement of the multigrid.
 // Take care, that x and old_x are on successive triangulations.
 {
-    typedef typename P2EvalBaseCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
       
@@ -976,11 +984,13 @@ if (!sit->Unknowns.Exist(old_idx)) continue;
 }
 
 // Helper function for RepairOnChildren.
-template<class Data, class _BndData, class _VD>
-bool TryGetValuesOnFace( const P2EvalBaseCL<Data, _BndData, const _VD>& f,
-                         std::vector<Data>& v, const TetraCL& t, Uint face)
+template< class Data, class _BndData, class _VD,
+          template<class, class, class> class P2T>
+bool
+TryGetValuesOnFace( const P2T<Data, _BndData, const _VD>& f,
+                    std::vector<Data>& v, const TetraCL& t, Uint face)
 {
-    typedef typename P2EvalBaseCL<Data, _BndData, const _VD>::BndDataCL BndCL;
+    typedef typename P2T<Data, _BndData, const _VD>::BndDataCL BndCL;
     const BndCL* const bnd= f.GetBndData();
     const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
 
@@ -1008,11 +1018,13 @@ bool TryGetValuesOnFace( const P2EvalBaseCL<Data, _BndData, const _VD>& f,
 }
 
 // Helper function for RepairOnChildren.
-template<class Data, class _BndData, class _VD>
-bool TryGetValuesOnTetra( const P2EvalBaseCL<Data, _BndData, const _VD>& f,
-                          std::vector<Data>& v, const TetraCL& t)
+template< class Data, class _BndData, class _VD,
+          template<class, class, class> class P2T>
+bool
+TryGetValuesOnTetra( const P2T<Data, _BndData, const _VD>& f,
+                     std::vector<Data>& v, const TetraCL& t)
 {
-    typedef typename P2EvalBaseCL<Data, _BndData, const _VD>::BndDataCL BndCL;
+    typedef typename P2EvalCL<Data, _BndData, const _VD>::BndDataCL BndCL;
     const BndCL* const bnd= f.GetBndData();
     const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
 
@@ -1045,11 +1057,13 @@ bool TryGetValuesOnTetra( const P2EvalBaseCL<Data, _BndData, const _VD>& f,
 // old function old_f. These are used to define f by quadratic interpolation. If
 // a former (ir)regularly refined tetra is now refined differently, it may be
 // neccessary to interpolate only linearly because of lack of sufficient data.
-template<class Data, class _BndData, class _VD>
-void RepairOnChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& f,
-                       const P2EvalBaseCL<Data, _BndData, const _VD>& old_f)
+template< class Data, class _BndData, class _VD,
+          template<class, class, class> class P2T>
+void
+RepairOnChildren( const TetraCL& t, P2T<Data, _BndData, _VD>& f,
+                  const P2T<Data, _BndData, const _VD>& old_f)
 {
-    typedef typename P2EvalBaseCL<Data, _BndData, _VD>::BndDataCL BndCL;
+    typedef typename P2T<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const bnd= old_f.GetBndData();
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
@@ -1149,9 +1163,11 @@ void RepairOnChildren( const TetraCL& t, P2EvalBaseCL<Data, _BndData, _VD>& f,
 //     tl ==  old_f.GetSolution()->RowIdx->TriangLevel -1; else tl is the  *
 //     level of old_f.                                                     *
 //**************************************************************************    
-template<class Data, class _BndData, class _VD, class _VecDesc>
+template< class Data, class _BndData, class _VD,
+          template<class, class, class> class P2T,
+          class _VecDesc>
 Uint
-RepairAfterRefine( P2EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
+RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 {
     Uint tl= old_f.GetSolution()->RowIdx->TriangLevel;
     const MultiGridCL& MG= old_f.GetMG();
@@ -1171,11 +1187,12 @@ RepairAfterRefine( P2EvalCL<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
             "RepairAfterRefine (P2): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
+tl= vecdesc.RowIdx->TriangLevel;
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();
     typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
-    P2EvalCL<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
+    P2T<Data, _BndData, _VecDesc> f( &vecdesc, bnd, &MG);
 
     // The first two loops interpolate the values of all vertices (new ones as
     // mid-vertices and old ones as copies). This works similar to the P1 case.    

@@ -165,7 +165,7 @@ int TestReMark()
                                      Bnd);
             v1.SetIdx( &i1);
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-            DROPS::RepairAfterRefine( fun0, v1);
+            DROPS::RepairAfterRefineP2( fun0, v1);
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
             ttt= CheckResult( fun1, f, SILENT);
             ret+= ttt;
@@ -213,7 +213,7 @@ int TestRepairUniform()
                                  Bnd);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-        DROPS::RepairAfterRefine( fun0, v1);
+        DROPS::RepairAfterRefineP2( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1, f, NOISY);
         DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( i0.TriangLevel),
@@ -262,7 +262,7 @@ int TestRepairUniform()
                                  Bnd);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-        DROPS::RepairAfterRefine( fun0, v1);
+        DROPS::RepairAfterRefineP2( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1, g, NOISY);
         if (mg.GetLastLevel() < i0.TriangLevel) {
@@ -317,7 +317,7 @@ int TestRepair()
                                  Bnd);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-        DROPS::RepairAfterRefine( fun0, v1);
+        DROPS::RepairAfterRefineP2( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1, g, NOISY);
         DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( i0.TriangLevel),
@@ -366,7 +366,7 @@ int TestRepair()
                                  Bnd);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-        DROPS::RepairAfterRefine( fun0, v1);
+        DROPS::RepairAfterRefineP2( fun0, v1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1, g, NOISY);
         if (mg.GetLastLevel() < i0.TriangLevel) {
@@ -392,11 +392,13 @@ int TestInterpolateOld()
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
-//    DROPS::BrickBuilderCL brick(null, e1, e2, e3, 1, 1, 1);
-    DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 3, 3, 3);
+    DROPS::BrickBuilderCL brick(null, e1, e2, e3, 4, 4, 4);
+//    DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 3, 3, 3);
     DROPS::MultiGridCL mg(brick);
     MarkDrop(mg, 0);
 //    MarkAll( mg);
+    mg.Refine();
+    MarkDrop(mg, 1);
     mg.Refine();
 
     IdxDescCL i0, i1;
@@ -419,22 +421,24 @@ int TestInterpolateOld()
     v1.Data.resize( v1.RowIdx->NumUnknowns);
     P2EvalCL<double, BndCL, const VecDescBaseCL<VectorCL> > fun0( &v0, &Bnd, &mg);
     P2EvalCL<double, BndCL,VecDescBaseCL<VectorCL> > fun1( &v1, &Bnd, &mg);
-    Interpolate( fun1, fun0);
+//    Interpolate( fun1, fun0);
+    DROPS::RepairAfterRefineP2( fun0, v1);
     std::cout << "Verts:" << std::endl;
     double diff;
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(1),
          theend= mg.GetTriangVertexEnd(1); sit!=theend; ++sit) {
         diff= fun1.val(*sit) - f(sit->GetCoord()); 
-//        std::cout << diff << "\t";
+        std::cout << diff << "\t";
         if (diff!=0.) return 1;
     }
     std::cout << "\n\nEdges:" << std::endl;
     for (MultiGridCL::TriangEdgeIteratorCL sit=mg.GetTriangEdgeBegin(1),
          theend= mg.GetTriangEdgeEnd(1); sit!=theend; ++sit) {
         diff = fun1.val( *sit, .5) - f( (sit->GetVertex(0)->GetCoord()+sit->GetVertex(1)->GetCoord())*.5);
-//        std::cout << diff << "\t";
+        std::cout << diff << "\t";
         if (diff!=0.) return 1;
     }
+    std::cout << std::endl;
     std::cerr << std::endl << DROPS::SanityMGOutCL(mg) << std::endl;
     return 0;
 }

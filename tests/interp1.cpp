@@ -114,7 +114,7 @@ int TestReMark()
                                        Bnd);
             v1.SetIdx( &i1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-            DROPS::RepairAfterRefine( fun0, v1);
+            DROPS::RepairAfterRefineP1( fun0, v1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
             ttt= CheckResult( fun1);
             ret+= ttt;
@@ -152,7 +152,7 @@ int TestRepair()
                                    Bnd);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-        DROPS::RepairAfterRefine( fun0, v1);
+        DROPS::RepairAfterRefineP1( fun0, v1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1);
     }
@@ -182,7 +182,7 @@ int TestRepair()
                                    Bnd);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
-        DROPS::RepairAfterRefine( fun0, v1);
+        DROPS::RepairAfterRefineP1( fun0, v1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun1( &v1, &Bnd, &mg);
         ret+= CheckResult( fun1);
     }
