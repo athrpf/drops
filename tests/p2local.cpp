@@ -187,12 +187,8 @@ template<class T>
     const Uint flvl= f.GetLevel();
     const double tmp= f.GetTime();
     const_cast<P2FunT&>( f).SetTime( t);
-    if (tlvl == flvl) { // XXX: Kill this stupidity
-        std::vector<value_type> tmp;
-        tmp.reserve( 10);
-        f.GetDoF( s, tmp);
-        for (Uint i= 0; i < 10; ++i) (*this)[i]= tmp[i];
-    }
+    if (tlvl == flvl)
+        f.GetDoF( s, *this);
     else
         if (tlvl < flvl) RestrictP2( s, f, *this);
         else throw DROPSErrCL( "LocalP2CL::Assign: Prolongation not implemented.\n");

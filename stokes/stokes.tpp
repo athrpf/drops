@@ -653,8 +653,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         GetTrafoTr(M,det,*sit);
         const double absdet= fabs(det);
         // Put velocity degrees of freedom in veldof
-        std::vector< SVectorCL<3> > veldof;
-        veldof.reserve(10);
+        std::vector< SVectorCL<3> > veldof( 10);
         vel.GetDoF(*sit, veldof);
         for (Uint i=0; i<numpts; ++i)
         {
@@ -737,12 +736,10 @@ double StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrS
 
     // Now eta_T^2:
     // Put velocity degrees of freedom in veldof
-    std::vector< SVectorCL<3> > veldof;
-    veldof.reserve(10);
+    std::vector< SVectorCL<3> > veldof( 10);
     vel.GetDoF(t, veldof);
     // Put pressure degrees of freedom in prdof
-    std::vector< double > prdof;
-    prdof.reserve(4);
+    std::vector< double > prdof(NumVertsC);
     pr.GetDoF(t, prdof);
     
     // || div(u_h) ||_L2(T) squared; the integrand is linear, thus we only need a quadrature-formula,
@@ -784,8 +781,7 @@ double StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const DiscPrS
             const TetraCL& neigh= *face.GetNeighInTriang(&t, lvl);
             const Uint f_n= face.GetFaceNumInTetra(&neigh);
             // Put velocity degrees of freedom of neigh in veldof_n
-            std::vector< SVectorCL<3> > veldof_n;
-            veldof_n.reserve(10);
+            std::vector< SVectorCL<3> > veldof_n( 10);
             vel.GetDoF(neigh, veldof_n);
             SMatrixCL<3,3> M_n;
             double ndet, dir;

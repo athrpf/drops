@@ -102,8 +102,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
         }
         if (verts.size() != 3) continue;
          
-        std::vector<double> val;
-        val.reserve(4);
+        std::vector<double> val( NumVertsC);
         _discsol.GetDoF(*tit, val);
 
         os << "geom { OFF 3 1 3\n";

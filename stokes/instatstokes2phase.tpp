@@ -75,12 +75,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
         const double absdet= sit->GetVolume()*6.;
         if (ls.GetLevel()!=lvl)
             RestrictP2( *sit, ls, lsarray);
-        else {
-            // TODO: This must go. And it will, once we have P2LocalCL
-            std::vector<double> xxx;
-            ls.GetDoF( *sit, xxx);
-            std::copy( xxx.begin(), xxx.end(), lsarray);
-        }
+        else
+            ls.GetDoF( *sit, lsarray);
         
         for(int i=0; i<4; ++i)
         {
@@ -359,12 +355,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
         P2DiscCL::GetGradientsOnRef( GradRef);
         if (ls.GetLevel()!=lvl)
             RestrictP2( *sit, ls, lsarray);
-        else {
-            // TODO: This must go. And it will, once we have P2LocalCL
-            std::vector<double> xxx;
-            ls.GetDoF( *sit, xxx);
-            std::copy( xxx.begin(), xxx.end(), lsarray);
-        }
+        else
+            ls.GetDoF( *sit, lsarray);
     
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd

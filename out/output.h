@@ -318,8 +318,7 @@ GeomSolOutCL<DiscSol>::put(std::ostream &os) const
 //        if (GetBaryCenter(*tit)[2]>0.55) continue;
 
         Point3DCL Offset(0.0);
-        std::vector<double> val;
-        val.reserve(4);
+        std::vector<double> val( NumVertsC);
         _discsol.GetDoF(*tit, val);
 
         for (TetraCL::const_VertexPIterator it= tit->GetVertBegin(), vend= tit->GetVertEnd(); it!=vend; ++it)

@@ -185,7 +185,7 @@ template<class Data, class _BndData, class _VD>
     inline void
     P1EvalCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF( s));
+    c[0]= GetDoF( s);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -199,7 +199,7 @@ template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
 P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c) const
 {
-    return  *c.begin();
+    return  c[0];
 }
 
 template<class Data, class _BndData, class _VD>
@@ -207,8 +207,8 @@ template<class Data, class _BndData, class _VD>
     inline void
     P1EvalCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF( *s.GetVertex( 0)));
-    c.push_back( GetDoF( *s.GetVertex( 1)));
+    c[0]= GetDoF( *s.GetVertex( 0));
+    c[1]= GetDoF( *s.GetVertex( 1));
 }
 
 template<class Data, class _BndData, class _VD>
@@ -224,9 +224,7 @@ template<class Data, class _BndData, class _VD>
     inline Data
     P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
 {
-    typename _Cont::const_iterator it= c.begin();
-    DataT ret= *it++ * FE_P1CL::H0( v1);
-    return ret + *it * FE_P1CL::H1( v1);
+    return c[0]*FE_P1CL::H0( v1) + c[1]*FE_P1CL::H1( v1);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -234,10 +232,8 @@ template<class Data, class _BndData, class _VD>
     inline void
     P1EvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF( *s.GetVertex( 0)));
-    c.push_back( GetDoF( *s.GetVertex( 1)));
-    c.push_back( GetDoF( *s.GetVertex( 2)));
-    c.push_back( GetDoF( *s.GetVertex( 3)));
+    for (Uint i= 0; i < NumVertsC; ++i)
+        c[i]= GetDoF( *s.GetVertex( i));
 }
 
 template<class Data, class _BndData, class _VD>
@@ -255,11 +251,8 @@ template<class Data, class _BndData, class _VD>
     inline Data
     P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
 {
-    typename _Cont::const_iterator it= c.begin();
-    DataT ret= *it++ * FE_P1CL::H0(v1, v2, v3);
-    ret+= *it++ * FE_P1CL::H1(v1, v2, v3);
-    ret+= *it++ * FE_P1CL::H2(v1, v2, v3);
-    return ret + *it * FE_P1CL::H3(v1, v2, v3);
+    return c[0] * FE_P1CL::H0(v1, v2, v3) + c[1] * FE_P1CL::H1(v1, v2, v3)
+         + c[2] * FE_P1CL::H2(v1, v2, v3) + c[3] * FE_P1CL::H3(v1, v2, v3);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -269,7 +262,8 @@ template<class Data, class _BndData, class _VD>
     Assert( !_bnd->IsOnDirBnd(s),
         DROPSErrCL("P1EvalBaseCL::SetDoF: Trying to assign to"
         "Dirichlet-boundary-vertex."), DebugNumericC);
-    DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
+    DoFHelperCL<Data, typename VecDescT::DataType>::set(
+        _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()), d);
 }
 
 
@@ -292,7 +286,7 @@ template<class Data, class _BndData, class _VD>
     inline void
     P2EvalCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF( s) );
+    c[0]= GetDoF( s);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -300,7 +294,7 @@ template<class Data, class _BndData, class _VD>
     inline Data
     P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c) const
 {
-    return *c.begin();
+    return c[0];
 }
 
 template<class Data, class _BndData, class _VD>
@@ -327,9 +321,9 @@ template<class Data, class _BndData, class _VD>
     inline void
     P2EvalCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF( *s.GetVertex( 0)));
-    c.push_back( GetDoF( *s.GetVertex( 1)));
-    c.push_back( GetDoF( s));
+    c[0]= GetDoF( *s.GetVertex( 0));
+    c[1]= GetDoF( *s.GetVertex( 1));
+    c[2]= GetDoF( s);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -337,10 +331,7 @@ template<class Data, class _BndData, class _VD>
     inline Data
     P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
 {
-    typename _Cont::const_iterator it= c.begin();
-    DataT ret= *it++ * FE_P2CL::H0( v1);
-    ret+= *it++ * FE_P2CL::H1( v1);
-    return ret + *it * FE_P2CL::H2( v1);
+    return c[0] * FE_P2CL::H0( v1) + c[1] * FE_P2CL::H1( v1) + c[2] * FE_P2CL::H2( v1);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -365,13 +356,10 @@ template<class Data, class _BndData, class _VD>
     inline void
     P2EvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, Uint face, _Cont& c) const
 {
-    typename _Cont::iterator it= c.begin();
-    *it++= GetDoF( *s.GetVertex( VertOfFace( face, 0)));
-    *it++= GetDoF( *s.GetVertex( VertOfFace( face, 1)));
-    *it++= GetDoF( *s.GetVertex( VertOfFace( face, 2)));
-    *it++= GetDoF( *s.GetEdge( EdgeOfFace( face, 0)));
-    *it++= GetDoF( *s.GetEdge( EdgeOfFace( face, 1)));
-    *it= GetDoF( *s.GetEdge( EdgeOfFace( face, 2)));
+    for(Uint i= 0; i < 3; ++i) {
+        c[i]= GetDoF( *s.GetVertex( VertOfFace( face, i)));
+        c[i+3]= GetDoF( *s.GetEdge( EdgeOfFace( face, i)));
+    }
 }
 
 template<class Data, class _BndData, class _VD>
@@ -379,14 +367,9 @@ template<class Data, class _BndData, class _VD>
     inline Data
     P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2) const
 {
-    typename _Cont::const_iterator it= c.begin();
-
-    DataT ret= *it++ * FE_P2CL::H0(v1, v2);
-    ret+= *it++ * FE_P2CL::H1(v1, v2);
-    ret+= *it++ * FE_P2CL::H2(v1, v2);
-    ret+= *it++ * FE_P2CL::H3(v1, v2);
-    ret+= *it++ * FE_P2CL::H4(v1, v2);
-    return ret + *it * FE_P2CL::H5(v1, v2);
+    return c[0] * FE_P2CL::H0(v1, v2) + c[1] * FE_P2CL::H1(v1, v2)
+         + c[2] * FE_P2CL::H2(v1, v2) + c[3] * FE_P2CL::H3(v1, v2)
+         + c[4] * FE_P2CL::H4(v1, v2) + c[5] * FE_P2CL::H5(v1, v2);
 }
 
 
@@ -408,16 +391,10 @@ template<class Data, class _BndData, class _VD>
     inline void
     P2EvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF( *s.GetVertex( 0)));
-    c.push_back( GetDoF( *s.GetVertex( 1)));
-    c.push_back( GetDoF( *s.GetVertex( 2)));
-    c.push_back( GetDoF( *s.GetVertex( 3)));
-    c.push_back( GetDoF( *s.GetEdge( 0)));
-    c.push_back( GetDoF( *s.GetEdge( 1)));
-    c.push_back( GetDoF( *s.GetEdge( 2)));
-    c.push_back( GetDoF( *s.GetEdge( 3)));
-    c.push_back( GetDoF( *s.GetEdge( 4)));
-    c.push_back( GetDoF( *s.GetEdge( 5)));
+    for (Uint i= 0; i < NumVertsC; ++i)
+        c[i]= GetDoF( *s.GetVertex( i));
+    for (Uint i= 0; i < NumEdgesC; ++i)
+        c[i+NumVertsC]= GetDoF( *s.GetEdge( i));
 }
 
 template<class Data, class _BndData, class _VD>
@@ -425,18 +402,11 @@ template<class Data, class _BndData, class _VD>
     inline Data
     P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
 {
-    typename _Cont::const_iterator it= c.begin();
-
-    DataT ret= *it++ * FE_P2CL::H0( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H1( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H2( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H3 (v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H4( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H5( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H6( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H7( v1, v2, v3);
-    ret+= *it++ * FE_P2CL::H8( v1, v2, v3);
-    return ret + *it * FE_P2CL::H9( v1, v2, v3);
+    return  c[0] * FE_P2CL::H0( v1, v2, v3) + c[1] * FE_P2CL::H1( v1, v2, v3)
+          + c[2] * FE_P2CL::H2( v1, v2, v3) + c[3] * FE_P2CL::H3 (v1, v2, v3)
+          + c[4] * FE_P2CL::H4( v1, v2, v3) + c[5] * FE_P2CL::H5( v1, v2, v3)
+          + c[6] * FE_P2CL::H6( v1, v2, v3) + c[7] * FE_P2CL::H7( v1, v2, v3)
+          + c[8] * FE_P2CL::H8( v1, v2, v3) + c[9] * FE_P2CL::H9( v1, v2, v3);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -535,7 +505,7 @@ template<class Data, class _BndData, class _VD> template<class _Cont>
 inline void
 P1BubbleEvalCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF(s) );
+    c[0]= GetDoF(s);
 }
 
 
@@ -563,7 +533,7 @@ template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
 P1BubbleEvalCL<Data, _BndData, _VD>::val(const _Cont& c) const
 {
-    return  *c.begin();
+    return  c[0];
 }
 
 template<class Data, class _BndData, class _VD>
@@ -578,17 +548,15 @@ template<class Data, class _BndData, class _VD> template<class _Cont>
 inline void
 P1BubbleEvalCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF(*s.GetVertex(0)) );
-    c.push_back( GetDoF(*s.GetVertex(1)) );
+    c[0]= GetDoF(*s.GetVertex(0));
+    c[1]= GetDoF(*s.GetVertex(1));
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
 P1BubbleEvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
 {
-    typename _Cont::const_iterator it= c.begin();
-    DataT ret= *it++ * FE_P1BubbleCL::H0(v1);
-    return ret + *it * FE_P1BubbleCL::H1(v1);
+    return c[0] * FE_P1BubbleCL::H0(v1) + c[1] * FE_P1BubbleCL::H1(v1);
 }
 
 template<class Data, class _BndData, class _VD>
@@ -603,23 +571,18 @@ template<class Data, class _BndData, class _VD> template<class _Cont>
 inline void
 P1BubbleEvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
 {
-    c.push_back( GetDoF(*s.GetVertex(0)) );
-    c.push_back( GetDoF(*s.GetVertex(1)) );
-    c.push_back( GetDoF(*s.GetVertex(2)) );
-    c.push_back( GetDoF(*s.GetVertex(3)) );
-    c.push_back( GetDoF(s) );
+    for(Uint i= 0; i < NumVertsC; ++i)
+        c[i]= GetDoF(*s.GetVertex(0));
+    c[4]= GetDoF(s);
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
 P1BubbleEvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
 {
-    typename _Cont::const_iterator it= c.begin();
-    DataT ret= *it++ * FE_P1BubbleCL::H0(v1, v2, v3);
-    ret+= *it++ * FE_P1BubbleCL::H1(v1, v2, v3);
-    ret+= *it++ * FE_P1BubbleCL::H2(v1, v2, v3);
-    ret+= *it++ * FE_P1BubbleCL::H3(v1, v2, v3);
-    return ret + *it * FE_P1BubbleCL::H4(v1, v2, v3);
+    return c[0] * FE_P1BubbleCL::H0(v1, v2, v3) + c[1] * FE_P1BubbleCL::H1(v1, v2, v3)
+         + c[2] * FE_P1BubbleCL::H2(v1, v2, v3) + c[3] * FE_P1BubbleCL::H3(v1, v2, v3)
+         + c[4] * FE_P1BubbleCL::H4(v1, v2, v3);
 }
 
 template<class Data, class _BndData, class _VD>
