@@ -84,6 +84,25 @@ class MatDescCL
 };
 
 
+template<class Data= double>
+class NoBndDataCL
+{
+  public:
+    // default ctor, dtor, whatever
+    typedef Data bnd_type;
+
+    static inline bool IsOnDirBnd (const VertexCL&) { return false; }
+    static inline bool IsOnNeuBnd (const VertexCL&) { return false; }
+    static inline bool IsOnDirBnd (const EdgeCL&)   { return false; }
+    static inline bool IsOnNeuBnd (const EdgeCL&)   { return false; }
+    
+    static inline bnd_type GetDirBndValue (const VertexCL&)
+        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
+    static inline bnd_type GetDirBndValue (const EdgeCL&)
+        { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
+};
+
+
 template <class Coeff, class BndData>
 class ProblemCL
 {

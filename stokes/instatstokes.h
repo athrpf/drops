@@ -84,8 +84,8 @@ class InstatStokesBndDataCL
     InstatStokesBndDataCL( Uint numbndseg, const bool* isneumann, const InstatVelBndSegDataCL::bnd_val_fun* fun)
         : Pr(), Vel( numbndseg, isneumann, fun) {}
     
-    const StokesPrBndDataCL        Pr;
-    const InstatStokesVelBndDataCL Vel;   
+    const StokesBndDataCL::PrBndDataCL Pr;
+    const InstatStokesVelBndDataCL     Vel;   
 };
 
 typedef double       (*scalar_instat_fun_ptr)( const Point3DCL&, double);
@@ -104,7 +104,7 @@ class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     using                                           _base::GetBndData;
     using                                           _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   DiscPrSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>   DiscPrSolCL;
     typedef InstatP2EvalCL<SVectorCL<3>, const InstatStokesVelBndDataCL, 
                                                      const VelVecDescCL> DiscVelSolCL;
 

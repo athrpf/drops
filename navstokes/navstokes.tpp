@@ -177,7 +177,7 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr(lsgpr, &_BndData.Pr, &_MG);
+    P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>  pr(lsgpr, &_BndData.Pr, &_MG);
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {

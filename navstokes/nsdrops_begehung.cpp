@@ -239,8 +239,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
                   << v1->Data.size() << std::endl;
         if (p2->RowIdx)
         {
-            P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr2(p2, &PrBndData, &MG);
-            P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>        pr1(p1, &PrBndData, &MG);
+            P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>  pr2(p2, &PrBndData, &MG);
+            P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>        pr1(p1, &PrBndData, &MG);
 //            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> vel2(v2, &VelBndData, &MG);
 //            P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL>       vel1(v1, &VelBndData, &MG);
             Interpolate(pr1, pr2);
@@ -388,8 +388,8 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         if (v2->RowIdx)
         {
             const StokesBndDataCL& BndData= NS.GetBndData();
-            P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
-            P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
+            P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
+            P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
             Interpolate(pr1, pr2);
             v2->Reset();
             p2->Reset();

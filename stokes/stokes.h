@@ -76,21 +76,6 @@ inline StokesVelBndDataCL::StokesVelBndDataCL(Uint numbndseg,
         _BndData.push_back( VelBndSegDataCL(isneumann[i], fun[i]) );
 }
 
-// This class is more or less a hack to describe boundary conditions for
-// pressure
-class StokesPrBndDataCL
-{
-  public:
-    // default ctor, dtor, whatever
-    typedef double bnd_type;
-
-    static inline bool IsOnDirBnd (const VertexCL&) { return false; }
-    static inline bool IsOnNeuBnd (const VertexCL&) { return false; }
-    
-    static inline bnd_type GetDirBndValue (const VertexCL&)
-        { throw DROPSErrCL("StokesBndDataPrCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-};
-
 
 class StokesBndDataCL
 {
@@ -98,11 +83,11 @@ class StokesBndDataCL
     StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndSegDataCL::bnd_val_fun* fun)
         : Pr(), Vel(numbndseg, isneumann, fun) {}
     
-    typedef StokesPrBndDataCL PrBndDataCL;
+    typedef NoBndDataCL<> PrBndDataCL;
     typedef StokesVelBndDataCL VelBndDataCL;
 
-    const StokesPrBndDataCL  Pr;
-    const StokesVelBndDataCL Vel;   
+    const PrBndDataCL  Pr;
+    const VelBndDataCL Vel;   
 };
 
 typedef double (*scalar_fun_ptr)(const Point3DCL&);
@@ -124,7 +109,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     using                                     _base::GetBndData;
     using                                     _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>           DiscPrSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
@@ -181,7 +166,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     using                                     _base::GetBndData;
     using                                     _base::GetMG;
 
-    typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>                 DiscPrSolCL;
+    typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>                 DiscPrSolCL;
     typedef P1BubbleEvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> DiscVelSolCL;
 
     typedef double (*est_fun)(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);

@@ -136,8 +136,8 @@ void Strategy(InstatNavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, i
         if (v2->RowIdx)
         {
             const InstatStokesBndDataCL& BndData= NS.GetBndData();
-            P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
-            P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
+            P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>  pr2(p2, &BndData.Pr, &MG);
+            P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>        pr1(p1, &BndData.Pr, &MG);
             Interpolate(pr1, pr2);
             v2->Reset();
             p2->Reset();

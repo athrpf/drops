@@ -1,5 +1,6 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
+#include "out/ensightOut.h"
 #include "geom/builder.h"
 #include "stokes/instatstokes.h"
 #include "num/nssolver.h"
@@ -133,7 +134,7 @@ SetVel(DROPS::InstatP2EvalCL< DROPS::SVectorCL<3>,
 
 void
 SetPr(DROPS::P1EvalCL< double,
-                       const DROPS::StokesPrBndDataCL,
+                       const DROPS::StokesBndDataCL::PrBndDataCL,
                        DROPS::VecDescCL>& fun,
       double t)
 {
@@ -262,7 +263,7 @@ UpdateTriangulation(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
         std::swap( pidx2, pidx1);
         NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
         p1->SetIdx( pidx1);
-        P1EvalCL<double, const StokesPrBndDataCL,
+        P1EvalCL<double, const StokesBndDataCL::PrBndDataCL,
                  const VecDescCL> funpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( funpr, *p1);
         p2->Clear();
@@ -384,6 +385,18 @@ Strategy(DROPS::InstatNavierStokesP2P1CL<Coeff>& NS,
     NS.InitVel( v1, &MyPdeCL::LsgVel);
     NS.CreateNumberingPr( MG.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
+    NoBndDataCL<> ensightbnd;
+    IdxDescCL ensightidx;
+    ensightidx.Set( 1,1,0,0); ensightidx.TriangLevel= MG.GetLastLevel(); ensightidx.NumUnknowns= 0;
+    DROPS::CreateNumbOnVertex( ensightidx.GetIdx(), ensightidx.NumUnknowns, 1,
+                               MG.GetTriangVertexBegin( ensightidx.TriangLevel),
+                               MG.GetTriangVertexEnd( ensightidx.TriangLevel),
+                               ensightbnd);
+    DROPS::CreateNumbOnEdge( ensightidx.GetIdx(), ensightidx.NumUnknowns, 1,
+                             MG.GetTriangEdgeBegin( ensightidx.TriangLevel),
+                             MG.GetTriangEdgeEnd( ensightidx.TriangLevel),
+                             ensightbnd);
+    EnsightP2SolOutCL ensight( MG, &ensightidx);
     for (; timestep<num_timestep; ++timestep, t+= dt, NS.t+= dt) {
         std::cerr << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
