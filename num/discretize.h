@@ -79,6 +79,9 @@ template<class T=double>
 class Quad2CL: public QuadBaseCL<T>
 {
   public:
+    using QuadBaseCL<T>::size;
+    using QuadBaseCL<T>::val;
+
     static const BaryCoordCL Node[5]; // Stuetzstellen
     static const double      Wght[5]; // Gewichte
     
