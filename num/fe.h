@@ -1009,16 +1009,25 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                                IdxDescCL* cIdx, IdxDescCL* fIdx);
 
 //**************************************************************************
-// RestrictP2: Stores the DoF-values of a P2-function f for tetrahedron t  *
-//     in the container c.                                                 *
-// Precondition: f is a P2-function on level l and t a tetrahedron on a    *
-//     level <= l. c is a container (component access with []) that can    *
-//     hold at least 10 values of f's return type.                         *
+// RestrictP2: Stores the DoF-values of a P2-function corresponding to vd  *
+//     and bnd for tetrahedron s in the container c.                       *
+// Precondition: vd is a VecDescCL for a P2-function on level l, bnd is a  *
+//     BndDataCL and s a tetrahedron on a level <= l. c is a container     *
+//     (component access with []) that can hold at least 10 values of f's  *
+//     return type.                                                        *
 // Postcondition: c contains the value of f in the 10 DoF in the order used*
 //     by FE_P2CL.                                                         *
 //**************************************************************************    
+template <class VecDescT, class BndDataT, class Cont>
+void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t= 0.0);
+
+
 template <class P2FuncT, class Cont>
-void RestrictP2(const TetraCL& t, const P2FuncT& f, Cont& c);
+void RestrictP2(const TetraCL& s, const P2FuncT& f, Cont& c, double t= 0.0)
+{
+    RestrictP2( s, *f.GetSolution(), *f.GetBndData(), c, t);
+}
+
 
 
 } // end of namespace DROPS

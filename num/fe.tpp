@@ -1323,20 +1323,31 @@ RepairAfterRefineP2( P2T<Data, _BndData, _VD>& old_f, _VecDesc& vecdesc)
 }
 
 
-template <class P2FuncT, class Cont>
-void RestrictP2(const TetraCL& t, const P2FuncT& f, Cont& c)
+template <class VecDescT, class BndDataT, class Cont>
+void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t= 0.0)
 {
-    const Uint tlvl= t.GetLevel();
-    const Uint flvl= f.GetLevel();
-    Assert( tlvl<=flvl, DROPSErrCL("RestrictP2: Tetra is on a finer level"
+    const Uint slvl= s.GetLevel();
+    const Uint flvl= vd.GetLevel();
+    Assert( slvl<=flvl, DROPSErrCL("RestrictP2: Tetra is on a finer level"
             "than the function."), ~0);
 
+    typedef typename VecDescT::DataType VecT;
+    typedef DoFHelperCL< typename BndDataT::bnd_type, VecT> DoFT;
+    const VecT& v= vd.Data;
+    const Uint idx= vd.RowIdx->GetIdx();
     for (Uint i= 0; i<NumVertsC; ++i)
-        c[i]= f.val( *t.GetVertex( i));
+        c[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
+                ? DoFT::get( v, s.GetVertex( i)->Unknowns( idx))
+                : bnd.GetDirBndValue( *s.GetVertex( i), t);
     for (Uint i= 0; i<NumEdgesC; ++i) {
-        const EdgeCL& e= *t.GetEdge( i);
-        c[i+NumVertsC]= (tlvl < flvl && e.IsRefined())
-            ? f.val( *e.GetMidVertex()) : f.val( e);
+        const EdgeCL& e= *s.GetEdge( i);
+        c[i+NumVertsC]= (slvl < flvl && e.IsRefined())
+            ? ( !bnd.IsOnDirBnd( *e.GetMidVertex())
+                ? DoFT::get( v, e.GetMidVertex()->Unknowns( idx))
+                : bnd.GetDirBndValue( *e.GetMidVertex(), t))
+            : ( !bnd.IsOnDirBnd( e)
+                ? DoFT::get( v, e.Unknowns( idx))
+                : bnd.GetDirBndValue( e, t));
     }
 }
 

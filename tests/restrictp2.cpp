@@ -51,22 +51,9 @@ void UnMarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 }
 
 
-class BndCL
-{
-  public:
-    typedef double bnd_type;
+typedef NoBndDataCL<double> BndCL;
 
-    inline bool IsOnDirBnd (const VertexCL&) const { return false; }
-    inline bool IsOnNeuBnd (const VertexCL&) const { return false; }
-    inline bool IsOnDirBnd (const EdgeCL&) const { return false; }
-    inline bool IsOnNeuBnd (const EdgeCL&) const { return false; }
-    
-    static inline bnd_type GetDirBndValue (const VertexCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-} Bnd;
-
+BndCL Bnd;
 
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 {
@@ -111,19 +98,6 @@ int CheckResult( DROPS::TetraCL& t, fun_ptr f, double* dof, OutputModeT om)
     return ret;
 }
 
-/*
-template<class _Cont, class DataT>
-  inline DataT
-      P2(const _Cont& dof, const DataT& , double v1, double v2, double v3)
-{
-    return dof[0] * FE_P2CL::H0( v1, v2, v3)
-        + dof[1] * FE_P2CL::H1( v1, v2, v3) + dof[2] * FE_P2CL::H2( v1, v2, v3)
-        + dof[3] * FE_P2CL::H3( v1, v2, v3) + dof[4] * FE_P2CL::H4( v1, v2, v3)
-        + dof[5] * FE_P2CL::H5( v1, v2, v3) + dof[6] * FE_P2CL::H6( v1, v2, v3)
-        + dof[7] * FE_P2CL::H7( v1, v2, v3) + dof[8] * FE_P2CL::H8( v1, v2, v3)
-        + dof[9] * FE_P2CL::H9( v1, v2, v3);
-}
-*/
 
 DROPS::Uint Rule(DROPS::Uint r)
 {
@@ -175,6 +149,8 @@ int Test()
             v1.SetIdx( &i1);
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             double dof[10];
+            RestrictP2( t0, v0, Bnd, dof);
+            ttt= CheckResult( t0, f, dof, NOISY);
             RestrictP2( t0, fun0, dof);
             ttt= CheckResult( t0, f, dof, NOISY);
 //            ttt= CheckResult( t0, g2, dof, NOISY);
