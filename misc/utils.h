@@ -252,14 +252,14 @@ template <class type> Ulint IdCL<type>::_Counter = 0;
 /// Get to know how fast DROPS is !  :-)
 ///
 /// The class provides two timers one is local, the other one is global
-/// in the sense that it measures the cumulative time spend in all timers.
+/// in the sense that it measures the cumulative time spent in all timers.
 class TimerCL
 {
   private:
     clock_t _t_begin, _t_end;
     double _time;          ///< local timer
     static clock_t _gt_begin, _gt_end;
-    static double _gtime;  //< global timer
+    static double _gtime;  ///< global timer
 
   public:
     TimerCL(double time=0.) : _t_begin(clock()), _t_end(clock()), _time(time) {}
