@@ -1002,8 +1002,8 @@ template<class Data, class _BndData, class _VD>
 inline bool P2EvalBaseCL<Data, _BndData, _VD>::IsDefinedOn(const EdgeCL& e) const
 {
     return IsDefinedOn( *e.GetVertex( 0)) && IsDefinedOn( *e.GetVertex( 1))
-           && (_bnd->IsOnDirBnd( *ep)
-               || (ep->Unknowns.Exist() && ep->Unknowns.Exist( _sol->RowIdx->GetIdx())));
+           && (_bnd->IsOnDirBnd( e)
+               || (e.Unknowns.Exist() && e.Unknowns.Exist( _sol->RowIdx->GetIdx())));
 }
 
 template<class Data, class _BndData, class _VD>
