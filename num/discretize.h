@@ -64,6 +64,16 @@ inline double H_sm( double s, double eps)
 }
 
 
+//**************************************************************************
+// Class:   GridFunctionCL                                                 *
+// Template Parameter:                                                     *
+//          T - The result-type of the finite-element-function             *
+// Purpose: Base-class for LocalPiCL and Quadrature-classes. Defines       *
+//          arithmetik via expression templates and a function-object bases*
+//          apply.                                                         *
+//          Defines mixed operations for Point3DCL and double as           *
+//          value_types.                                                   *
+//**************************************************************************
 template<class T= double>
 class GridFunctionCL: public std::valarray<T>
 {
@@ -94,39 +104,19 @@ template<class T>
     return *this;
 }
 
-template<>
-class GridFunctionCL<Point3DCL>: public std::valarray<Point3DCL>
+inline GridFunctionCL<Point3DCL>&
+operator*=(GridFunctionCL<Point3DCL>& a, const GridFunctionCL<double>& b)
 {
-  public:
-    typedef Point3DCL value_type;
-    typedef std::valarray<Point3DCL> base_type;
-    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
-
-  protected:
-    typedef GridFunctionCL<Point3DCL> self_;
-
-  public:
-    GridFunctionCL (value_type v= value_type(), Uint s= 0): base_type( v, s) {}
-
-DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, Point3DCL, base_type)
-
-    template<typename FuncT>
-      inline GridFunctionCL& apply(FuncT fun);
-
-    inline GridFunctionCL<Point3DCL>&
-    operator*=(const GridFunctionCL<double>& b)
-    {
-        for (size_t i= 0; i < b.size(); ++i)
-            (*this)[i]*=b[i];
-        return *this;
-    }
-};
-
+    for (size_t i= 0; i < b.size(); ++i)
+        a[i]*= b[i];
+    return a;
+}
 
 inline GridFunctionCL<Point3DCL>
 operator*(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<double>& b)
 {
-    return GridFunctionCL<Point3DCL>( a)*= b;
+    GridFunctionCL<Point3DCL> ret( a);
+    return ret*= b;
 }
 
 inline GridFunctionCL<Point3DCL>
@@ -134,7 +124,6 @@ operator*(const GridFunctionCL<double>& a, const GridFunctionCL<Point3DCL>& b)
 {
     return b*a;
 }
-
 
 inline GridFunctionCL<double>
 dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
@@ -192,9 +181,8 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
       assign(const TetraCL&, const P2FunT&, double= 0.0);
 
     // pointwise evaluation in barycentric coordinates    
-    inline value_type operator() (const BaryCoordCL&) const;
+    inline value_type operator()(const BaryCoordCL&) const;
 };
-
 
 
 // ===================================
