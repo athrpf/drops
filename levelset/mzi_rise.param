@@ -29,6 +29,7 @@ Levelset {
 # re-initialization of levelset function
 Reparam { 
   Freq		=	0	# 0 = no reparametrization
+  Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep.eq.
   NumSteps	=	1
   StepSize	=	0.01
   Diffusion	=	1e-4
