@@ -37,41 +37,33 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset, double nu1, double nu2) const
 // Sets up the mass matrix for the pressure
 {
+    std::cerr << "Entering SetupPrMass:\n";
+    
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
-
     MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl    = matM->GetRowLevel();
-    const Uint pidx   = matM->RowIdx->GetIdx();
-
+    const Uint lvl= matM->GetRowLevel();
     IdxT prNumb[4];
+
     SmoothedJumpCL nu_invers( 1./nu1, 1./nu2, _Coeff.rho);
     Quad2CL<double> nu_inv;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
-    double lsarray[10];
+    const Uint ls_lvl = ls.GetLevel();
+    LocalP2CL<> locallset;
     
-    // compute all couplings between HatFunctions on verts:
-    // I( i, j) = int ( psi_i*psi_j, T_ref) * absdet
-//    const double coupl_ii= 1./60.,  // = 1/120 + 2/15 * 1/16,
-//                 coupl_ij= 1./120.; // =         2/15 * 1/16;
-
-    
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+         send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit) {
         const double absdet= sit->GetVolume()*6.;
-        if (ls.GetLevel()!=lvl)
-            RestrictP2( *sit, ls, lsarray);
-        else
-            ls.GetDoF( *sit, lsarray);
-        
-        for(int i=0; i<4; ++i)
-        {
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
-            nu_inv[i]= lsarray[i];
+        if (ls_lvl != lvl) {
+            locallset.assign( *sit, ls);
+            nu_inv.assign( locallset);
         }
-        nu_inv[4]= FE_P2CL::val( lsarray, 0.25, 0.25, 0.25); 
+        else
+            nu_inv.assign( *sit, ls);
         nu_inv.apply( nu_invers);
+        
+        GetLocalNumbP1NoBnd( prNumb, *sit, *matM->RowIdx);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
@@ -122,31 +114,22 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
-    Uint lvl        = vec->GetLevel(),
-         vidx       = vec->RowIdx->GetIdx();
+    const Uint lvl  = vec->GetLevel(),
+               vidx = vec->RowIdx->GetIdx();
     
-    SVectorCL<3> tmp;
-    
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
-        {
-            tmp= LsgVel(sit->GetCoord(), t0);
-            for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
-        }
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangVertexBegin( lvl),
+         send= const_cast<const MultiGridCL&>( _MG).GetTriangVertexEnd( lvl);
+         sit != send; ++sit) {
+        if (!_BndData.Vel.IsOnDirBnd( *sit))
+            DoFHelperCL<Point3DCL, VectorCL>::set( lsgvel, sit->Unknowns( vidx),
+                LsgVel(sit->GetCoord(), t0));
     }
-    
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
-         sit != send; ++sit)
-    {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
-        {
-            tmp= LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t0);
-            for(int i=0; i<3; ++i)
-                lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
-        }
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeBegin( lvl),
+         send= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeEnd( lvl);
+         sit != send; ++sit) {
+        if (!_BndData.Vel.IsOnDirBnd( *sit))
+            DoFHelperCL<Point3DCL, VectorCL>::set( lsgvel, sit->Unknowns( vidx),
+                LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t0));
     }
 }
 
@@ -162,11 +145,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     cplM->Clear();
     cplA->Clear();
     
-    const Uint lvl         = A->GetRowLevel(),
-               vidx        = A->RowIdx->GetIdx();
+    const Uint lvl = A->GetRowLevel();
 
-    IdxT Numb[10];
-    bool IsOnDirBnd[10];
+    LocalNumbP2CL n;
     
     std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
 
@@ -177,7 +158,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     
     double coupA[10][10], coupM[10][10];
     double det, absdet;
-    Point3DCL tmp;
+    Point3DCL tmp, myt;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
 
     P2DiscCL::GetGradientsOnRef( GradRef);
@@ -190,22 +171,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
     
+        rhs.assign( *sit, _Coeff.f, t);
+        Phi.assign( *sit, ls, t);
         // collect some information about the edges and verts of the tetra
-        // and save it in Numb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
-            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            rhs[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
-            Phi[i]= ls.val( *sit->GetVertex(i));
-        }
-        for (int i=0; i<6; ++i)
-        {
-            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
-        }
-        rhs[4]= _Coeff.f( GetBaryCenter( *sit), t);
-        Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+        // and save it n.
+        n.assign( *sit, *A->RowIdx, _BndData.Vel);
 
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
         rho=   Phi;     rho.apply( _Coeff.rho);
@@ -225,15 +195,15 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
             }
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+            if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
             {
                 for(int j=0; j<10; ++j)
                 {
-                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    if (n.WithUnknowns( j)) // vert/edge j is not on a Dirichlet boundary
                     {
-                        mA( Numb[i],   Numb[j]  )+= coupA[j][i];
-                        mA( Numb[i]+1, Numb[j]+1)+= coupA[j][i];
-                        mA( Numb[i]+2, Numb[j]+2)+= coupA[j][i];
+                        mA( n.num[i],   n.num[j]  )+= coupA[j][i];
+                        mA( n.num[i]+1, n.num[j]+1)+= coupA[j][i];
+                        mA( n.num[i]+2, n.num[j]+2)+= coupA[j][i];
                         for (int k=0; k<3; ++k)
                             for (int l=0; l<3; ++l)
                             {
@@ -241,59 +211,41 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
                                     kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
 
-                                mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad( absdet);
+                                mA( n.num[i]+k, n.num[j]+l)+= kreuzterm.quad( absdet);
                             }
-                        mM( Numb[i],   Numb[j]  )+= coupM[j][i];
-                        mM( Numb[i]+1, Numb[j]+1)+= coupM[j][i];
-                        mM( Numb[i]+2, Numb[j]+2)+= coupM[j][i];
+                        mM( n.num[i],   n.num[j]  )+= coupM[j][i];
+                        mM( n.num[i]+1, n.num[j]+1)+= coupM[j][i];
+                        mM( n.num[i]+2, n.num[j]+2)+= coupM[j][i];
                     }
                     else // put coupling on rhs
                     {
-                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t)
-                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t);
+                        typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                        bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                        tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
+                                 : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
                         const double cA= coupA[j][i],
                                      cM= coupM[j][i];
                         for (int k=0; k<3; ++k)
                         {
-                            cplA->Data[Numb[i]+k]-= cA*tmp[k];
+                            cplA->Data[n.num[i]+k]-= cA*tmp[k];
                             
                             for (int l=0; l<3; ++l)
                             {
                                 // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
                                     kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
-                                cplA->Data[Numb[i]+k]-= kreuzterm.quad( absdet)*tmp[l];
+                                cplA->Data[n.num[i]+k]-= kreuzterm.quad( absdet)*tmp[l];
                             }
                         }
-                        cplM->Data[Numb[i]  ]-= cM*tmp[0];
-                        cplM->Data[Numb[i]+1]-= cM*tmp[1];
-                        cplM->Data[Numb[i]+2]-= cM*tmp[2];
+                        cplM->Data[n.num[i]  ]-= cM*tmp[0];
+                        cplM->Data[n.num[i]+1]-= cM*tmp[1];
+                        cplM->Data[n.num[i]+2]-= cM*tmp[2];
                     }
                 }
                 tmp= rhs.quadP2( i, absdet);
-                b->Data[Numb[i]  ]+= tmp[0];
-                b->Data[Numb[i]+1]+= tmp[1];
-                b->Data[Numb[i]+2]+= tmp[2];
-
-                if ( i<4 ? _BndData.Vel.IsOnNeuBnd(*sit->GetVertex(i))
-                         : _BndData.Vel.IsOnNeuBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on Neumann boundary
-                {
-                    Uint face;
-                    const int num_faces= i<4 ? 3 : 2;
-                    for (int f=0; f < num_faces; ++f)
-                    {
-                        face= i<4 ? FaceOfVert(i,f) : FaceOfEdge(i-4,f);
-                        if ( sit->IsBndSeg(face))
-                        {   // TODO: FIXME: Hier muss doch eigentlich eine 2D-Integrationsformel fuer P2-Elemente stehen, oder?
-/*
-                            tmp= Quad2D(*sit, face, i, _BndData.Vel.GetSegData(sit->GetBndIdx(face)).GetBndFun(), t);
-                            a[Numb[i]]+=          tmp[0];
-                            a[Numb[i]+stride]+=   tmp[1];
-                            a[Numb[i]+2*stride]+= tmp[2];
-*/                            
-                        }
-                    }
-                }
+                b->Data[n.num[i]  ]+= tmp[0];
+                b->Data[n.num[i]+1]+= tmp[1];
+                b->Data[n.num[i]+2]+= tmp[2];
             }
     }
 
@@ -304,22 +256,56 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
 }
 
 
+
+
+/*
+        for (int i=0; i<4; ++i)
+        {
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+        }
+        for (int i=0; i<6; ++i)
+        {
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
+        }
+        locn.assign( *sit, *A->RowIdx, _BndData.Vel);
+        for (Uint i= 0; i<10; ++i) {
+            if (IsOnDirBnd[i]) {
+                if (locn.bc[i]!=Dir0BC && locn.bc[i]!=DirBC)
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1\n";
+                if ( !_BndData.Vel.GetBndSeg( locn.bndnum[i]).IsDirichlet())
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2\n";
+                if ( locn.num[i]!=NoIdx)
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!5\n";
+            }
+            else {
+                if (Numb[i]!=locn.num[i])
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3\n";
+                if (locn.bc[i]!= OutflowBC && ( locn.bc[i]!=NoBC|| locn.bndnum[i]!=NoBndC ))
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!4\n";
+                if (locn.bc[i]== OutflowBC && locn.bndnum[i]==NoBndC)
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!6\n";
+            }
+        }
+*/
+
+
+
+
+
+
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     MatDescCL* M, const LevelsetP2CL& lset, double t) const
 // Set up matrices A, M (depending on phase bnd)
 {
     const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
-
     MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel),
                     mM( &M->Data, num_unks_vel, num_unks_vel);
-    
-    const Uint lvl= A->GetRowLevel(),
-               vidx= A->RowIdx->GetIdx();
+    const Uint lvl= A->GetRowLevel();
+    LocalNumbP2CL locn;
 
-    IdxT Numb[10];
-    bool IsOnDirBnd[10];
-    
     std::cerr << "entering SetupMatrices1: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
@@ -331,35 +317,28 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     double coupA[10][10], coupM[10][10];
     double det, absdet;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+    P2DiscCL::GetGradientsOnRef( GradRef);
     
     for (MultiGridCL::const_TriangTetraIteratorCL 
-            sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-            send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+            sit= const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
+            send= const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
             sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
-        P2DiscCL::GetGradientsOnRef( GradRef);
+        // Collect information about Numbering of unknowns and boundary conditions.
+        locn.assign( *sit, *A->RowIdx, _BndData.Vel);
         ls_loc.assign( *sit, ls, t); // needed for restrictions
         Phi.assign( ls_loc);
-        rhs.assign( *sit, _Coeff.f, t);
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
-            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-        }
-        for (int i=0; i<6; ++i)
-        {
-            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
-        }
         // rho = rho( Phi),    mu_Re= mu( Phi)/Re
-        rho=   Phi;     rho.apply( _Coeff.rho);
-        mu_Re= Phi;     mu_Re.apply( _Coeff.mu);     mu_Re*= 1./_Coeff.Re;
+        rho=   Phi;
+        rho.apply( _Coeff.rho);
+        mu_Re= Phi;
+        mu_Re.apply( _Coeff.mu);
+        mu_Re*= 1./_Coeff.Re;
 
         // rhs = f + rho*g
+        rhs.assign( *sit, _Coeff.f, t);
         rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
         
         // compute all couplings between HatFunctions on edges and verts
@@ -373,27 +352,22 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
             }
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
-            {
-                for(int j=0; j<10; ++j)
-                {
-                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
-                    {
-                        mA( Numb[i],   Numb[j]  )+= coupA[j][i];
-                        mA( Numb[i]+1, Numb[j]+1)+= coupA[j][i];
-                        mA( Numb[i]+2, Numb[j]+2)+= coupA[j][i];
+            if (locn.WithUnknowns( i)) { // vert/edge i is not on a Dirichlet boundary
+                for(int j=0; j<10; ++j) {
+                    if (locn.WithUnknowns( j)) { // vert/edge j is not on a Dirichlet boundary
+                        mA( locn.num[i],   locn.num[j]  )+= coupA[j][i];
+                        mA( locn.num[i]+1, locn.num[j]+1)+= coupA[j][i];
+                        mA( locn.num[i]+2, locn.num[j]+2)+= coupA[j][i];
                         for (int k=0; k<3; ++k)
-                            for (int l=0; l<3; ++l)
-                            {
+                            for (int l=0; l<3; ++l) {
                                 // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
                                     kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
-
-                                mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad( absdet);
+                                mA( locn.num[i]+k, locn.num[j]+l)+= kreuzterm.quad( absdet);
                             }
-                        mM( Numb[i],   Numb[j]  )+= coupM[j][i];
-                        mM( Numb[i]+1, Numb[j]+1)+= coupM[j][i];
-                        mM( Numb[i]+2, Numb[j]+2)+= coupM[j][i];
+                        mM( locn.num[i],   locn.num[j]  )+= coupM[j][i];
+                        mM( locn.num[i]+1, locn.num[j]+1)+= coupM[j][i];
+                        mM( locn.num[i]+2, locn.num[j]+2)+= coupM[j][i];
                     }
                 }
             }
@@ -410,69 +384,46 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const
 // Set up matrix B and rhs c (independent of phase bnd, but c is time dependent)
 {
-    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
-    c->Clear();
-    
-    const Uint lvl         = B->GetRowLevel();
-    const Uint pidx        = B->RowIdx->GetIdx(),
-               vidx        = B->ColIdx->GetIdx();
-
-    IdxT Numb[10], prNumb[4];
-    bool IsOnDirBnd[10];
-    
     std::cerr << "entering SetupSystem2: " << B->RowIdx->NumUnknowns << " prs. ";
 
+    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
+    c->Clear();
+    const Uint lvl= B->GetRowLevel();
+    IdxT prNumb[4];
+    LocalNumbP2CL n;
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
-        
     SMatrixCL<3,3> T;
-    
     double det, absdet;
     Point3DCL tmp;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
-    
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
+         send=const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
+         sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
-    
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
-            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
-        }
-        for (int i=0; i<6; ++i)
-        {
-            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
-        }
-        
+        n.assign( *sit, *B->ColIdx, _BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *B->RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel)
-        {
-            if (!IsOnDirBnd[vel])
-                for(int pr=0; pr<4; ++pr)
-                {
+        for(int vel=0; vel<10; ++vel) {
+            if (n.WithUnknowns( vel))
+                for(int pr=0; pr<4; ++pr) {
                     tmp= Grad[vel].quadP1( pr, absdet);
-                    mB( prNumb[pr], Numb[vel])  -=  tmp[0];
-                    mB( prNumb[pr], Numb[vel]+1)-=  tmp[1];
-                    mB( prNumb[pr], Numb[vel]+2)-=  tmp[2];
+                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
+                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
+                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
                 } 
-            else // put coupling on rhs
-            {
-                tmp= vel<4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex(vel), t)
-                           : _BndData.Vel.GetDirBndValue( *sit->GetEdge(vel-4), t);
+            else { // put coupling on rhs
+                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                           : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
                 for(int pr=0; pr<4; ++pr)
                     c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
             }
         }
     }
-
     mB.Build();
     std::cerr << B->Data.num_nonzeros() << " nonzeros in B!" << std::endl;
 }
@@ -498,13 +449,12 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, double t) const
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
-         sit != send; ++sit)
-    {
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
+         send= const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
+         sit != send; ++sit) {
         // collect some information about the edges and verts of the tetra
         // and save it in prNumb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
+        for (int i=0; i<4; ++i) {
             IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) );
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
         }
@@ -515,10 +465,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, double t) const
         absdet= fabs( det);
     
         // b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel)
-        {
-            if (IsOnDirBnd[vel])
-            { // put coupling on rhs
+        for(int vel=0; vel<10; ++vel) {
+            if (IsOnDirBnd[vel]) { // put coupling on rhs
                 P2DiscCL::GetGradient( Grad_vel, GradRef[vel], T);
                 tmp= vel<4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex(vel), t)
                            : _BndData.Vel.GetDirBndValue( *sit->GetEdge(vel-4), t);
