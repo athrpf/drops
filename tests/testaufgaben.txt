@@ -12,7 +12,7 @@ Das uniforme Problem steht in Abschnitt 7.1 des IGPM-Reports 211 ueber DROPS.
 Poisson instationaer
 ====================
 --uniform: ipdropsrep mit dt=0.001, 500 Zeitschritten, 4 Verfeinerungen
-  erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.txt.
+  erzeugt die Ausgabe in der Datei poisson-instationaer-uniform.txt.
 
 Stokes stationaer
 =================
