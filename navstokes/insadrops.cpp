@@ -593,7 +593,7 @@ int main (int argc, char** argv)
     std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
     std::cerr << "theta: " << theta << ", ";
     std::cerr << "num_timestep: " << num_timestep <<  ", ";
-    std::cerr << "shell_width: " << theta <<  ", ";
+    std::cerr << "shell_width: " << shell_width <<  ", ";
     std::cerr << "c_level: " << c_level << ", ";
     std::cerr << "f_level: " << f_level << std::endl;
 
