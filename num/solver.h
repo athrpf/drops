@@ -45,7 +45,7 @@ enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0 };
 template <PreMethGS PM> struct PreTraitsCL
 {
     static const PreBaseGS BaseMeth= PreBaseGS(PM<8 ? PM%4 : PB_SGS0);
-    static const bool      HasOmega= (PM>=4 && PM<8) || PM==10;
+    static const bool      HasOmega= (PM>=4 && PM<8) || PM==9;
     static const bool      HasDiag=  PM>=8;
 };
 
