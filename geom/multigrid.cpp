@@ -1161,7 +1161,8 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
     else
     {
         // Check Vertices
-        for (const_VertexIterator vIt(_Vertices[Level].begin()); vIt!=_Vertices[Level].end(); ++vIt)
+        for (const_VertexIterator vIt( GetVerticesBegin( Level));
+             vIt != GetVerticesEnd( Level); ++vIt)
         {
             if ( int(vIt->GetLevel())!=Level )
             {
@@ -1176,7 +1177,8 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
             }
         }
         // Check Edges
-        for (const_EdgeIterator eIt(_Edges[Level].begin()); eIt!=_Edges[Level].end(); ++eIt)
+        for (const_EdgeIterator eIt( GetEdgesBegin( Level));
+             eIt!=GetEdgesEnd( Level); ++eIt)
         {
             if ( int(eIt->GetLevel())!=Level )
             {
@@ -1195,17 +1197,18 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
         // This is memory-expensive!
         std::list<const EdgeCL*> elist;
         ref_to_ptr<const EdgeCL> conv;
-        std::transform(_Edges[Level].begin(), _Edges[Level].end(),
-                       std::back_inserter(elist), conv);
-        elist.sort( EdgeByVertLessCL() );
-        if ( std::adjacent_find(elist.begin(), elist.end(), EdgeEqualCL()) != elist.end() )
+        std::transform( GetEdgesBegin( Level), GetEdgesEnd( Level),
+            std::back_inserter( elist), conv);
+        elist.sort( EdgeByVertLessCL());
+        if (std::adjacent_find( elist.begin(), elist.end(), EdgeEqualCL()) != elist.end() )
         {
             sane = false;
             os << "Found an edge more than once in level " << Level << ".\n";
-            (*std::adjacent_find(elist.begin(), elist.end(), EdgeEqualCL()))->DebugInfo(os);
+            (*std::adjacent_find( elist.begin(), elist.end(), EdgeEqualCL()))->DebugInfo( os);
         }
         // Check Faces
-        for (const_FaceIterator It(_Faces[Level].begin()); It!=_Faces[Level].end(); ++It)
+        for (const_FaceIterator It( GetFacesBegin( Level));
+             It!=GetFacesEnd( Level); ++It)
         {
             if ( It->GetLevel() != static_cast<Uint>(Level) )
             {
@@ -1220,7 +1223,8 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
             }
         }
         // Check Tetras
-        for (const_TetraIterator tIt(_Tetras[Level].begin()); tIt!=_Tetras[Level].end(); ++tIt)
+        for (const_TetraIterator tIt( GetTetrasBegin( Level));
+             tIt!=GetTetrasEnd( Level); ++tIt)
         {
             if ( tIt->GetLevel() != static_cast<Uint>(Level) )
             {
@@ -1279,200 +1283,200 @@ void MultiGridCL::ElemInfo(std::ostream& os, int Level)
 MultiGridCL::TriangVertexIteratorCL MultiGridCL::GetTriangVertexBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangVertexIteratorCL( this, TriLevel, 0, _Vertices[0].begin() );
+    return TriangVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
 }
 
 MultiGridCL::const_TriangVertexIteratorCL MultiGridCL::GetTriangVertexBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangVertexIteratorCL( this, TriLevel, 0, _Vertices[0].begin() );
+    return const_TriangVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
 }
 
 MultiGridCL::TriangVertexIteratorCL MultiGridCL::GetTriangVertexEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangVertexIteratorCL( this, TriLevel, TriLevel, _Vertices[TriLevel].end() );
+    return TriangVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
 }
 
 MultiGridCL::const_TriangVertexIteratorCL MultiGridCL::GetTriangVertexEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangVertexIteratorCL( this, TriLevel, TriLevel, _Vertices[TriLevel].end() );
+    return const_TriangVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
 }
 
 MultiGridCL::TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    TriangEdgeIteratorCL Start( this, TriLevel, 0, _Edges[0].begin() );
+    TriangEdgeIteratorCL Start( this, TriLevel, 0, GetEdgesBegin( 0) );
     return Start->IsInTriang(TriLevel) ? Start : ++Start;
 }
 
 MultiGridCL::const_TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    const_TriangEdgeIteratorCL Start( this, TriLevel, 0, _Edges[0].begin() );
+    const_TriangEdgeIteratorCL Start( this, TriLevel, 0, GetEdgesBegin( 0) );
     return Start->IsInTriang(TriLevel) ? Start : ++Start;
 }
 
 MultiGridCL::TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangEdgeIteratorCL( this, TriLevel, TriLevel, _Edges[TriLevel].end() );
+    return TriangEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
 }
 
 MultiGridCL::const_TriangEdgeIteratorCL MultiGridCL::GetTriangEdgeEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangEdgeIteratorCL( this, TriLevel, TriLevel, _Edges[TriLevel].end() );
+    return const_TriangEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
 }
 
 MultiGridCL::TriangFaceIteratorCL MultiGridCL::GetTriangFaceBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    TriangFaceIteratorCL Start( this, TriLevel, 0, _Faces[0].begin() );
+    TriangFaceIteratorCL Start( this, TriLevel, 0, GetFacesBegin( 0) );
     return Start->IsInTriang(TriLevel) ? Start : ++Start;
 }
 
 MultiGridCL::const_TriangFaceIteratorCL MultiGridCL::GetTriangFaceBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    const_TriangFaceIteratorCL Start( this, TriLevel, 0, _Faces[0].begin() );
+    const_TriangFaceIteratorCL Start( this, TriLevel, 0, GetFacesBegin( 0) );
     return Start->IsInTriang(TriLevel) ? Start : ++Start;
 }
 
 MultiGridCL::TriangFaceIteratorCL MultiGridCL::GetTriangFaceEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangFaceIteratorCL( this, TriLevel, TriLevel, _Faces[TriLevel].end() );
+    return TriangFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
 }
 
 MultiGridCL::const_TriangFaceIteratorCL MultiGridCL::GetTriangFaceEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangFaceIteratorCL( this, TriLevel, TriLevel, _Faces[TriLevel].end() );
+    return const_TriangFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
 }
 
 MultiGridCL::TriangTetraIteratorCL MultiGridCL::GetTriangTetraBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    TriangTetraIteratorCL Start( this, TriLevel, 0, _Tetras[0].begin() );
+    TriangTetraIteratorCL Start( this, TriLevel, 0, GetTetrasBegin( 0) );
     return Start->IsInTriang(TriLevel) ? Start : ++Start;
 }
 
 MultiGridCL::const_TriangTetraIteratorCL MultiGridCL::GetTriangTetraBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    const_TriangTetraIteratorCL Start( this, TriLevel, 0, _Tetras[0].begin() );
+    const_TriangTetraIteratorCL Start( this, TriLevel, 0, GetTetrasBegin( 0) );
     return Start->IsInTriang(TriLevel) ? Start : ++Start;
 }
 
 MultiGridCL::TriangTetraIteratorCL MultiGridCL::GetTriangTetraEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return TriangTetraIteratorCL( this, TriLevel, TriLevel, _Tetras[TriLevel].end() );
+    return TriangTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
 }
 
 MultiGridCL::const_TriangTetraIteratorCL MultiGridCL::GetTriangTetraEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_TriangTetraIteratorCL( this, TriLevel, TriLevel, _Tetras[TriLevel].end() );
+    return const_TriangTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
 }
 
 
 MultiGridCL::AllVertexIteratorCL MultiGridCL::GetAllVertexBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllVertexIteratorCL( this, TriLevel, 0, _Vertices[0].begin() );
+    return AllVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
 }
 
 MultiGridCL::const_AllVertexIteratorCL MultiGridCL::GetAllVertexBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllVertexIteratorCL( this, TriLevel, 0, _Vertices[0].begin() );
+    return const_AllVertexIteratorCL( this, TriLevel, 0, GetVerticesBegin( 0) );
 }
 
 MultiGridCL::AllVertexIteratorCL MultiGridCL::GetAllVertexEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllVertexIteratorCL( this, TriLevel, TriLevel, _Vertices[TriLevel].end() );
+    return AllVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
 }
 
 MultiGridCL::const_AllVertexIteratorCL MultiGridCL::GetAllVertexEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllVertexIteratorCL( this, TriLevel, TriLevel, _Vertices[TriLevel].end() );
+    return const_AllVertexIteratorCL( this, TriLevel, TriLevel, GetVerticesEnd( TriLevel) );
 }
 
 MultiGridCL::AllEdgeIteratorCL MultiGridCL::GetAllEdgeBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllEdgeIteratorCL( this, TriLevel, 0, _Edges[0].begin() );
+    return AllEdgeIteratorCL( this, TriLevel, 0, GetEdgesBegin( 0) );
 }
 
 MultiGridCL::const_AllEdgeIteratorCL MultiGridCL::GetAllEdgeBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllEdgeIteratorCL( this, TriLevel, 0, _Edges[0].begin() );
+    return const_AllEdgeIteratorCL( this, TriLevel, 0, GetEdgesBegin( 0) );
 }
 
 MultiGridCL::AllEdgeIteratorCL MultiGridCL::GetAllEdgeEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllEdgeIteratorCL( this, TriLevel, TriLevel, _Edges[TriLevel].end() );
+    return AllEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
 }
 
 MultiGridCL::const_AllEdgeIteratorCL MultiGridCL::GetAllEdgeEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllEdgeIteratorCL( this, TriLevel, TriLevel, _Edges[TriLevel].end() );
+    return const_AllEdgeIteratorCL( this, TriLevel, TriLevel, GetEdgesEnd( TriLevel) );
 }
 
 MultiGridCL::AllFaceIteratorCL MultiGridCL::GetAllFaceBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllFaceIteratorCL( this, TriLevel, 0, _Faces[0].begin() );
+    return AllFaceIteratorCL( this, TriLevel, 0, GetFacesBegin( 0) );
 }
 
 MultiGridCL::const_AllFaceIteratorCL MultiGridCL::GetAllFaceBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllFaceIteratorCL( this, TriLevel, 0, _Faces[0].begin() );
+    return const_AllFaceIteratorCL( this, TriLevel, 0, GetFacesBegin( 0) );
 }
 
 MultiGridCL::AllFaceIteratorCL MultiGridCL::GetAllFaceEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllFaceIteratorCL( this, TriLevel, TriLevel, _Faces[TriLevel].end() );
+    return AllFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
 }
 
 MultiGridCL::const_AllFaceIteratorCL MultiGridCL::GetAllFaceEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllFaceIteratorCL( this, TriLevel, TriLevel, _Faces[TriLevel].end() );
+    return const_AllFaceIteratorCL( this, TriLevel, TriLevel, GetFacesEnd( TriLevel) );
 }
 
 MultiGridCL::AllTetraIteratorCL MultiGridCL::GetAllTetraBegin (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllTetraIteratorCL( this, TriLevel, 0, _Tetras[0].begin() );
+    return AllTetraIteratorCL( this, TriLevel, 0, GetTetrasBegin( 0) );
 }
 
 MultiGridCL::const_AllTetraIteratorCL MultiGridCL::GetAllTetraBegin (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllTetraIteratorCL( this, TriLevel, 0, _Tetras[0].begin() );
+    return const_AllTetraIteratorCL( this, TriLevel, 0, GetTetrasBegin( 0) );
 }
 
 MultiGridCL::AllTetraIteratorCL MultiGridCL::GetAllTetraEnd (int TriLevel)
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return AllTetraIteratorCL( this, TriLevel, TriLevel, _Tetras[TriLevel].end() );
+    return AllTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
 }
 
 MultiGridCL::const_AllTetraIteratorCL MultiGridCL::GetAllTetraEnd (int TriLevel) const
 {
     if (TriLevel<0) TriLevel=GetLastLevel();
-    return const_AllTetraIteratorCL( this, TriLevel, TriLevel, _Tetras[TriLevel].end() );
+    return const_AllTetraIteratorCL( this, TriLevel, TriLevel, GetTetrasEnd( TriLevel) );
 }
 
 
@@ -1529,61 +1533,6 @@ void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r)
         throw DROPSErrCL();
     }
     r= (c-v0).norm();
-}
-
-
-bool
-LocatorCL::LocateInTetra(const Point3DCL& p, Uint trilevel, LocationCL& loc) const
-// Assumes, that p lies in loc._Tetra and that loc._Tetra contains the barycentric
-// coordinates of p therein. If these prerequisites are not met, this function might
-// loop forever or lie to you. You have been warned!
-// Searches p in the children of loc._Tetra up to triangulation-level trilevel
-{
-    const TetraCL*& t= loc._Tetra;
-    SVectorCL<4>& b= loc._Coord;
-    SMatrixCL<4,4> M;
-    
-    for (Uint lvl=t->GetLevel(); lvl<trilevel; ++lvl)
-        if ( !t->IsUnrefined() )
-        {
-            for (TetraCL::const_ChildPIterator it=t->GetChildBegin(), theend=t->GetChildEnd(); it!=theend; ++it)
-            {
-                MakeMatrix(**it, M);
-                std::copy(p.begin(), p.end(), b.begin());
-                b[3]= 1.;
-                gauss_pivot(M, b);
-                if ( InTetra(b) )
-                {
-                    t= *it;
-                    break;
-                }
-            }
-        }
-        else break;
-    return true;
-}
-
-// TODO: this only works for triangulations of polygonal domains, which resolve the geometry of the domain exactly (on level 0).
-bool
-LocatorCL::Locate(const Point3DCL& p, Uint trilevel, LocationCL& loc) const
-{
-    SVectorCL<4>& b= loc._Coord;
-    SMatrixCL<4,4> M;
-
-    for (MultiGridCL::const_TetraIterator it= _MG.GetTetrasBegin(0), theend= _MG.GetTetrasEnd(0); it!=theend; ++it)
-    {
-        MakeMatrix(*it, M);
-        std::copy(p.begin(), p.end(), b.begin());
-        b[3]= 1.;
-        gauss_pivot(M, b);
-        if ( InTetra(b) )
-        {
-            loc._Tetra= &*it;
-            return LocateInTetra(p, trilevel, loc);
-        }
-    }
-    loc._Tetra= 0; std::fill(b.begin(), b.end(), 0.);
-    return false;
 }
 
 

@@ -561,29 +561,28 @@ class MultiGridCL
     MultiGridCL (const MultiGridCL&); // Dummy
     // default ctor
 
-    const BoundaryCL& GetBnd() const { return _Bnd; } 
+    const BoundaryCL& GetBnd     () const { return _Bnd; } 
+    const VertexCont& GetVertices() const { return _Vertices; }
+    const EdgeCont&   GetEdges   () const { return _Edges; }
+    const FaceCont&   GetFaces   () const { return _Faces; }
+    const TetraCont&  GetTetras  () const { return _Tetras; }
 
-    const VertexCont&    GetVertices      () const    { return _Vertices; }
-    const_VertexIterator GetVerticesBegin (int Level) const { return _Vertices[Level].begin(); }
-    const_VertexIterator GetVerticesEnd   (int Level) const { return _Vertices[Level].end(); }
-    VertexIterator       GetVerticesBegin (int Level) { return _Vertices[Level].begin(); }
-    VertexIterator       GetVerticesEnd   (int Level) { return _Vertices[Level].end(); }
-    const EdgeCont&      GetEdges         () const    { return _Edges; }
-    const_EdgeIterator   GetEdgesBegin    (int Level) const { return _Edges[Level].begin(); }
-    const_EdgeIterator   GetEdgesEnd      (int Level) const { return _Edges[Level].end(); }
-    EdgeIterator         GetEdgesBegin    (int Level) { return _Edges[Level].begin(); }
-    EdgeIterator         GetEdgesEnd      (int Level) { return _Edges[Level].end(); }
-    const FaceCont&      GetFaces         () const    { return _Faces; }
-    const_FaceIterator   GetFacesBegin    (int Level) const { return _Faces[Level].begin(); }
-    const_FaceIterator   GetFacesEnd      (int Level) const { return _Faces[Level].end(); }
-    FaceIterator         GetFacesBegin    (int Level) { return _Faces[Level].begin(); }
-    FaceIterator         GetFacesEnd      (int Level) { return _Faces[Level].end(); }
-    const TetraCont&     GetTetras        () const    { return _Tetras; }
-    const_TetraIterator  GetTetrasBegin   (int Level) const { return _Tetras[Level].begin(); }
-    const_TetraIterator  GetTetrasEnd     (int Level) const { return _Tetras[Level].end(); }
-    TetraIterator        GetTetrasBegin   (int Level) { return _Tetras[Level].begin(); }
-    TetraIterator        GetTetrasEnd     (int Level) { return _Tetras[Level].end(); }
-    Uint                 GetLastLevel     () const    { return _Tetras.GetLevelEnd()-1; }
+    VertexIterator GetVerticesBegin (int Level) { return _Vertices.level_begin( Level); }
+    VertexIterator GetVerticesEnd   (int Level) { return _Vertices.level_end( Level); }
+    EdgeIterator   GetEdgesBegin    (int Level)  { return _Edges.level_begin( Level); }
+    EdgeIterator   GetEdgesEnd      (int Level)  { return _Edges.level_end( Level); }
+    FaceIterator   GetFacesBegin    (int Level) { return _Faces.level_begin( Level); }
+    FaceIterator   GetFacesEnd      (int Level) { return _Faces.level_end( Level); }
+    TetraIterator  GetTetrasBegin   (int Level) { return _Tetras.level_begin( Level); }
+    TetraIterator  GetTetrasEnd     (int Level) { return _Tetras.level_end( Level); }
+    const_VertexIterator GetVerticesBegin (int Level) const { return _Vertices.level_begin( Level); }
+    const_VertexIterator GetVerticesEnd   (int Level) const { return _Vertices.level_end( Level); }
+    const_EdgeIterator   GetEdgesBegin    (int Level) const { return _Edges.level_begin( Level); }
+    const_EdgeIterator   GetEdgesEnd      (int Level) const { return _Edges.level_end( Level); }
+    const_FaceIterator   GetFacesBegin    (int Level) const { return _Faces.level_begin( Level); }
+    const_TetraIterator  GetTetrasBegin   (int Level) const { return _Tetras.level_begin( Level); }
+    const_TetraIterator  GetTetrasEnd     (int Level) const { return _Tetras.level_end( Level); }
+    const_FaceIterator   GetFacesEnd      (int Level) const { return _Faces.level_end( Level); }
 
     AllVertexIteratorCL GetAllVertexBegin (int Level=-1);
     AllVertexIteratorCL GetAllVertexEnd   (int Level=-1);
@@ -618,6 +617,8 @@ class MultiGridCL
     const_TriangFaceIteratorCL   GetTriangFaceEnd     (int Level=-1) const;
     const_TriangTetraIteratorCL  GetTriangTetraBegin  (int Level=-1) const;
     const_TriangTetraIteratorCL  GetTriangTetraEnd    (int Level=-1) const;
+
+    Uint GetLastLevel() const { return _Tetras.GetLevelEnd()-1; }
 
     void Refine ();
     void Scale( double);
@@ -1097,62 +1098,6 @@ inline void GetTrafoTr( SMatrixCL<3,3>& T, double& det, const TetraCL& t)
     T(2,2)= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
 }
 
-
-// TODO: Test these functions
-class LocatorCL;
-
-class LocationCL
-{
-    friend class LocatorCL;
-
-  private:
-    const TetraCL* _Tetra;
-    SVectorCL<4>   _Coord;
-
-  public:
-    LocationCL()
-        :_Tetra(0), _Coord() {}
-    LocationCL(const TetraCL* t, const SVectorCL<4>& p)
-        :_Tetra(t), _Coord(p) {}
-
-    bool IsValid() const { return _Tetra; }
-    const TetraCL& GetTetra() const { return *_Tetra; }
-    const SVectorCL<4>& GetBaryCoord() const { return _Coord; }
-};
-
-class LocatorCL
-{
-  private:
-    const MultiGridCL& _MG;
-
-    bool
-    InTetra(const SVectorCL<4>& b) const
-        { return b[0]>=0. && b[0]<=1. && b[1]>=0. && b[1]<=1. && b[2]>=0. && b[2]<= 1. && b[3]>=0. && b[3]<=1.;}
-    inline void
-    MakeMatrix(const TetraCL&, SMatrixCL<4,4>&) const;
-
-  public:
-    LocatorCL(const MultiGridCL& MG)
-        :_MG(MG) {}
-    // default copy-ctor, dtor, assignment-op
-
-    bool
-    LocateInTetra(const Point3DCL&, Uint, LocationCL&) const;
-    bool
-    Locate(const Point3DCL&, Uint, LocationCL&) const;
-
-};
-
-inline void
-LocatorCL::MakeMatrix(const TetraCL& t, SMatrixCL<4,4>& M) const
-{
-    for (Uint j=0; j<4; ++j)
-    {
-        for (Uint i=0; i<3; ++i)
-            M(i, j)= t.GetVertex(j)->GetCoord()[i];
-        M(3, j)= 1.;
-    }
-}
 
 void MarkAll (MultiGridCL&);
 void UnMarkAll (MultiGridCL&);
