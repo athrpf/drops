@@ -2,15 +2,28 @@
   ToDo-Liste
 ==============
 
-* Es sollte eine Art "Testsuite" fuer DROPS geben, mit der die Funktionalitaet
-  nach Codeaenderungen getestet werden kann (z.B. Poissonproblem, Stokes,
-  Navier-Stokes, jeweils stationaer/instationaer). Dass sich alles fehlerfrei
-  uebersetzen laesst, heisst ja noch lange nicht, dass sich keine semantischen
-  Fehler eingeschlichen haben... Der Test sollte mit dem Top-level-Makefile
-  gestartet werden koennen, um das Ueberpruefen einfach durchfuehren zu
-  koennen, z.B. mit "make check".
+* (Navier-)Stokes-Diskretisierung: Nutzen der neuen Randbedingungen
+  Dir, Dir0, Nat, Nat0. Hinweis: Code fuer Nat-BC ist bislang fehlerhaft.
 
-sg, 4. Maerz 2003
+* Die Anzahl der Parameter nimmt langsam ueberhand. Statt ueberlangen
+  Kommandozeilenaufrufen bzw. Aendern der Parameter im Code sollten
+  wir auf das Einlesen der Parameter aus entsprechenden Dateien umsteigen.
+  Wie koennte das elegant geschehen?
+  
+* Template-Parameter Coeff der Problemklassen Poisson, Stokes, NavStokes
+  entfernen. Der ehemalige Grund, aus Laufzeitgruenden auf virtuelle
+  Funktionsaufrufe oder Funktionszeiger zu verzichten, scheint unwesentlich,
+  da die Diskretisierung vergleichsweise billig ist.
+  
+* einheitlicher Code fuer stat./instat. Probleme: Funktionen, die 
+  Koeffizienten/Randbedingungen beschreiben sollten einheitlich den
+  Zeitparameter t enthalten. Dann wuerde viel doppelter Code gespart, und
+  umstaendliche Programmiertricks (s. P2EvalCL, StriptimeCL) koennten
+  entfallen.
+  
+sg, 17. Dez. 03
+
+
 
 * Die Datei-Header sollten vereinheitlicht und mit sinnvollem Inhalt
   gefuellt werden.
@@ -26,3 +39,16 @@ sg, 4. Maerz 2003
 * CVS: History aufraeumen. Versionen 1.1.1 und 1.1.1.1 entfernen.
 
 vr, 16. Mai 2003
+
+
+
+* Es sollte eine Art "Testsuite" fuer DROPS geben, mit der die Funktionalitaet
+  nach Codeaenderungen getestet werden kann (z.B. Poissonproblem, Stokes,
+  Navier-Stokes, jeweils stationaer/instationaer). Dass sich alles fehlerfrei
+  uebersetzen laesst, heisst ja noch lange nicht, dass sich keine semantischen
+  Fehler eingeschlichen haben... Der Test sollte mit dem Top-level-Makefile
+  gestartet werden koennen, um das Ueberpruefen einfach durchfuehren zu
+  koennen, z.B. mit "make check".
+
+sg, 4. Maerz 2003
+
