@@ -1163,7 +1163,7 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
         // Check Vertices
         for (const_VertexIterator vIt(_Vertices[Level].begin()); vIt!=_Vertices[Level].end(); ++vIt)
         {
-            if ( vIt->GetLevel()!=Level )
+            if ( int(vIt->GetLevel())!=Level )
             {
                 sane=false;
                 os <<"Wrong Level (should be "<<Level<<") for\n";
@@ -1178,7 +1178,7 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
         // Check Edges
         for (const_EdgeIterator eIt(_Edges[Level].begin()); eIt!=_Edges[Level].end(); ++eIt)
         {
-            if ( eIt->GetLevel()!=Level )
+            if ( int(eIt->GetLevel())!=Level )
             {
                 sane=false;
                 os <<"Wrong Level (should be "<<Level<<") for\n";

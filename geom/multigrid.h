@@ -7,8 +7,6 @@
 // Begin:   August, 3rd, 2000                                              *
 //**************************************************************************
 
-// TODO: Sort data for better alignment.
-// TODO: Use bitfields for more compact storage.
 // TODO: Use information hiding, access control and const-qualification more
 //       extensively to avoid accidental changes of the multigrid structure.
 // TODO: Parallelization
@@ -113,11 +111,11 @@ class VertexCL
 
   private:
     IdCL<VertexCL>           _Id;
-    Uint                     _Level;
     Point3DCL                _Coord;
     std::vector<BndPointCL>* _BndVerts;
-    bool                     _RemoveMark;
     RecycleBinCL*            _Bin;
+    Uint                     _Level : 8;
+    bool                     _RemoveMark;
 
   public:
     UnknownHandleCL          Unknowns;
@@ -159,7 +157,7 @@ class VertexCL
 // ===== Public interface =====
 
     const IdCL<VertexCL>& GetId           () const { return _Id; }
-    Usint                 GetLevel        () const { return _Level; }
+    Uint                  GetLevel        () const { return _Level; }
     const Point3DCL&      GetCoord        () const { return _Coord; }
     bool                  IsOnBoundary    () const { return _BndVerts; }
     const_BndVertIt       GetBndVertBegin () const { return _BndVerts->begin(); }
@@ -188,11 +186,11 @@ class EdgeCL
     typedef MG_EdgeContT::LevelCont   EdgeContT;
 
   private:
-    Usint                  _Level;
     SArrayCL<VertexCL*, 2> _Vertices;
     VertexCL*              _MidVertex;
     SArrayCL<BndIdxT, 2>   _Bnd;
     short int              _MFR;
+    Uint                   _Level : 8;
     bool                   _RemoveMark;
 
   public:
@@ -200,7 +198,7 @@ class EdgeCL
 
 // ===== Interface for refinement =====
 
-    inline EdgeCL (VertexCL* vp0, VertexCL* vp1, Usint Level, BndIdxT bnd0= NoBndC, BndIdxT bnd1= NoBndC);
+    inline EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0= NoBndC, BndIdxT bnd1= NoBndC);
     EdgeCL (const EdgeCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
     // default dtor
 
@@ -228,7 +226,7 @@ class EdgeCL
 
 // ===== Public interface =====
 
-    Usint           GetLevel      ()                   const { return _Level; }
+    Uint            GetLevel      ()                   const { return _Level; }
     const VertexCL* GetVertex     (Uint i)             const { return _Vertices[i]; }
     const VertexCL* GetMidVertex  ()                   const { return _MidVertex; }
     const VertexCL* GetNeighbor   (const VertexCL* vp) const { return vp==_Vertices[0] ? _Vertices[1] : _Vertices[0]; }
@@ -256,9 +254,9 @@ class EdgeCL
 class FaceCL
 {
   private:
-    Usint                      _Level;
     SArrayCL<const TetraCL*,4> _Neighbors;
     const BndIdxT              _Bnd;
+    Uint                       _Level : 8;
     bool                       _RemoveMark;
 
   public:
@@ -266,7 +264,7 @@ class FaceCL
 
 // ===== Interface for refinement =====
 
-    FaceCL (Usint Level, BndIdxT bnd= NoBndC) : _Level(Level), _Bnd(bnd), _RemoveMark(false) {}
+    FaceCL (Uint Level, BndIdxT bnd= NoBndC) : _Bnd(bnd), _Level(Level), _RemoveMark(false) {}
     FaceCL (const FaceCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
     // default dtor
 
@@ -344,9 +342,9 @@ friend class MultiGridCL;
     static SArrayCL<FaceCL*, NumAllFacesC> _fPtrs;
 
     IdCL<TetraCL> _Id;
-    Usint         _Level;
-    Usint         _RefRule; // the actual refinement of the tetrahedron
-    mutable Usint _RefMark; // the refinement-mark (e.g. set by the error estimator)
+    Uint          _Level : 8;
+    Uint          _RefRule : 8; // the actual refinement of the tetrahedron
+    mutable Uint  _RefMark : 8; // the refinement-mark (e.g. set by the error estimator)
 
     // subsimplices, parent, children
     SArrayCL<VertexCL*,NumVertsC>    _Vertices;
@@ -866,15 +864,15 @@ inline const TetraCL* RecycleBinCL::FindTetra (const VertexCL* v1, const VertexC
 // ********** VertexCL **********
 
 inline VertexCL::VertexCL (const Point3DCL& Coord, Uint FirstLevel)
-    : _Id(), _Level(FirstLevel), _Coord(Coord), _BndVerts(0),
-      _RemoveMark(false), _Bin(0) {}
+    : _Id(), _Coord(Coord), _BndVerts(0), _Bin(0), _Level(FirstLevel),
+      _RemoveMark(false) {}
 
 
 inline VertexCL::VertexCL (const VertexCL& v)
-    : _Id(v._Id), _Level (v._Level), _Coord(v._Coord),
+    : _Id(v._Id), _Coord(v._Coord),
       _BndVerts(v._BndVerts ? new std::vector<BndPointCL>(*v._BndVerts) : 0),
-      _RemoveMark(v._RemoveMark), _Bin(v._Bin ? new RecycleBinCL(*v._Bin) : 0),
-      Unknowns(v.Unknowns) {}
+      _Bin(v._Bin ? new RecycleBinCL(*v._Bin) : 0), _Level (v._Level),
+      _RemoveMark(v._RemoveMark), Unknowns(v.Unknowns) {}
 
 
 inline VertexCL::~VertexCL ()
@@ -898,8 +896,8 @@ inline void VertexCL::BndSort ()
 
 // ********** EdgeCL **********
 
-inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Usint Level, BndIdxT bnd0, BndIdxT bnd1)
-    : _Level(Level), _MidVertex(0), _MFR(0), _RemoveMark(false)
+inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, BndIdxT bnd1)
+    : _MidVertex(0), _MFR(0), _Level(Level), _RemoveMark(false)
 {
     _Vertices[0]= vp0; _Vertices[1]= vp1;
     _Bnd[0]= bnd0; _Bnd[1]= bnd1;
@@ -907,8 +905,9 @@ inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Usint Level, BndIdxT bnd0, 
 
 
 inline EdgeCL::EdgeCL (const EdgeCL& e)
-    : _Level(e._Level), _Vertices(e._Vertices), _MidVertex(e._MidVertex),
-      _Bnd(e._Bnd), _MFR(e._MFR), _RemoveMark(e._RemoveMark), Unknowns(e.Unknowns) {}
+    : _Vertices(e._Vertices), _MidVertex(e._MidVertex), _Bnd(e._Bnd),
+      _MFR(e._MFR), _Level(e._Level), _RemoveMark(e._RemoveMark),
+      Unknowns(e.Unknowns) {}
 
 
 inline void EdgeCL::BuildSubEdges(EdgeContT& edgecont, VertContT& vertcont, const BoundaryCL& Bnd)
@@ -921,7 +920,7 @@ inline void EdgeCL::BuildSubEdges(EdgeContT& edgecont, VertContT& vertcont, cons
 // ********** FaceCL **********
 
 inline FaceCL::FaceCL (const FaceCL& f)
-    : _Level(f._Level), _Neighbors(f._Neighbors), _Bnd(f._Bnd),
+    : _Neighbors(f._Neighbors), _Bnd(f._Bnd), _Level(f._Level),
       _RemoveMark(f._RemoveMark), Unknowns(f.Unknowns) {}
 
 
