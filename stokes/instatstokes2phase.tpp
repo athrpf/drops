@@ -32,6 +32,20 @@ void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
     DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
 }
 
+
+template<class _Cont, class DataT>
+  inline DataT
+      P2(const _Cont& dof, const DataT& , double v1, double v2, double v3)
+{
+    return dof[0] * FE_P2CL::H0( v1, v2, v3)
+        + dof[1] * FE_P2CL::H1( v1, v2, v3) + dof[2] * FE_P2CL::H2( v1, v2, v3)
+        + dof[3] * FE_P2CL::H3( v1, v2, v3) + dof[4] * FE_P2CL::H4( v1, v2, v3)
+        + dof[5] * FE_P2CL::H5( v1, v2, v3) + dof[6] * FE_P2CL::H6( v1, v2, v3)
+        + dof[7] * FE_P2CL::H7( v1, v2, v3) + dof[8] * FE_P2CL::H8( v1, v2, v3)
+        + dof[9] * FE_P2CL::H9( v1, v2, v3);
+}
+
+
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset, double nu1, double nu2) const
 // Sets up the mass matrix for the pressure
@@ -304,19 +318,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     mM.Build();
     std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
-}
-
-
-template<class _Cont, class DataT>
-  inline DataT
-      P2(const _Cont& dof, const DataT& , double v1, double v2, double v3)
-{
-    return dof[0] * FE_P2CL::H0( v1, v2, v3)
-        + dof[1] * FE_P2CL::H1( v1, v2, v3) + dof[2] * FE_P2CL::H2( v1, v2, v3)
-        + dof[3] * FE_P2CL::H3( v1, v2, v3) + dof[4] * FE_P2CL::H4( v1, v2, v3)
-        + dof[5] * FE_P2CL::H5( v1, v2, v3) + dof[6] * FE_P2CL::H6( v1, v2, v3)
-        + dof[7] * FE_P2CL::H7( v1, v2, v3) + dof[8] * FE_P2CL::H8( v1, v2, v3)
-        + dof[9] * FE_P2CL::H9( v1, v2, v3);
 }
 
 
