@@ -194,6 +194,14 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
 
 
 template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const
+// This only works, if Interpolate is called after every refinement of the multigrid.
+{
+    SetupP1ProlongationMatrix( _MG, P, cIdx, fIdx);
+}
+
+
+template<class Coeff>
 void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
     Uint lvl= vec.RowIdx->TriangLevel,

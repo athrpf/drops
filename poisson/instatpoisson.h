@@ -138,7 +138,10 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     // If the function is called with the same vector for some arguments, 
     // the vector will contain the sum of the results after the call
     void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
-		
+  
+    // create prolongation
+    void SetupProlongation( MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const;
+
     // Set initial value
     void Init( VecDescCL&, scalar_instat_fun_ptr, double t0= 0.) const;
 		
