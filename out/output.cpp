@@ -49,8 +49,8 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
 
     for (int Level=0; Level<=lastLevel; ++Level)
     {
-        for ( MultiGridCL::const_VertexIterator vCIt(_MG->GetVertices()[Level].begin());
-              vCIt!=_MG->GetVertices()[Level].end(); ++vCIt)
+        for ( MultiGridCL::const_VertexIterator vCIt( _MG->GetVerticesBegin( Level));
+              vCIt!=_MG->GetVerticesEnd( Level); ++vCIt)
         {
             vCIt->DebugInfo(os);
         }
@@ -59,8 +59,8 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
     os << std::endl;
     for (int Level=0; Level<=lastLevel; ++Level)
     {
-        for ( MultiGridCL::const_EdgeIterator eCIt(_MG->GetEdges()[Level].begin());
-              eCIt!=_MG->GetEdges()[Level].end(); ++eCIt )
+        for ( MultiGridCL::const_EdgeIterator eCIt( _MG->GetEdgesBegin( Level));
+              eCIt!=_MG->GetEdgesEnd( Level); ++eCIt )
         {
             eCIt->DebugInfo(os);
         }
@@ -69,8 +69,8 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
     os << std::endl;
     for (int Level=0; Level<=lastLevel; ++Level)
     {
-        for ( MultiGridCL::const_FaceIterator fCIt(_MG->GetFaces()[Level].begin());
-              fCIt!=_MG->GetFaces()[Level].end(); ++fCIt )
+        for ( MultiGridCL::const_FaceIterator fCIt( _MG->GetFacesBegin( Level));
+              fCIt!=_MG->GetFacesEnd( Level); ++fCIt )
         {
             fCIt->DebugInfo(os);
         }
@@ -79,8 +79,8 @@ std::ostream& DumpMGCL::put (std::ostream& os) const
     os << std::endl;
     for (int Level=0; Level<=lastLevel; ++Level)
     {
-        for ( MultiGridCL::const_TetraIterator tCIt(_MG->GetTetras()[Level].begin());
-              tCIt!=_MG->GetTetras()[Level].end(); ++tCIt)
+        for ( MultiGridCL::const_TetraIterator tCIt( _MG->GetTetrasBegin( Level));
+              tCIt!=_MG->GetTetrasEnd( Level); ++tCIt)
         {
             tCIt->DebugInfo(os);
         }

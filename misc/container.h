@@ -677,6 +677,99 @@ Uint GlobalListCL<T>::GetFullSize () const
 }
 
 
+//**************************************************************************
+// Class:    NewGlobalListCL                                               *
+// Purpose:  List of lists per level                                       *
+// Remarks:  efficient random access for levels                            *
+//**************************************************************************
+template <class T>
+class SubListCL
+{
+  public:
+    typedef std::list<T>                  Cont;
+    typedef typename Cont::iterator       iterator;
+
+  private:
+    Cont& c_;
+    iterator begin_;
+    iterator end_;
+
+  public:
+    SubListCL(Cont& c, iterator b, iterator e)
+        : c_( c), begin_( b), end_( e) {}
+
+    iterator begin() { return begin_; }
+    iterator end  () { return end_; }
+
+    void push_back( const T& t) { c_.insert( end_, t); }
+    T& back() { iterator tmp( end_); return *--tmp; }
+};
+
+
+
+template <class T>
+class NewGlobalListCL
+{
+  public:
+    typedef std::list<T>                  Cont;
+    typedef typename Cont::iterator       iterator;
+    typedef typename Cont::const_iterator const_iterator;
+
+    typedef SubListCL<T>                  LevelCont;
+
+    typedef typename Cont::iterator       LevelIterator;
+    typedef typename Cont::const_iterator const_LevelIterator;
+
+  private:
+    Cont Data_;
+    std::vector<iterator> LevelStarts_;
+
+  public:
+    NewGlobalListCL(Uint Size= 0)
+        : LevelStarts_( Size > 0 ? Size + 1 : 0, Data_.end())
+        { if (Size > 0) LevelStarts_[0]= Data_.begin(); }
+    // standard dtor 
+
+    Uint GetSize     () const { return LevelStarts_.size(); }
+    Uint GetFullSize () const { return Data_.size(); }
+    // One greater than the last accessible Level!
+    Uint GetLevelEnd () const { return LevelStarts_.size(); }
+    bool IsEmpty     () const { return LevelStarts_.empty(); }
+
+    bool IsLevelEmpty (Uint Level) const
+        { return LevelStarts_[Level] == LevelStarts_[1+Level]; }
+
+    const_iterator begin () const { return Data_.begin(); }
+          iterator begin ()       { return Data_.begin(); }
+    const_iterator end   () const { return Data_.end(); }
+          iterator end   ()       { return Data_.end(); }
+
+    const_LevelIterator level_begin (Uint Level) const { return LevelStarts_[Level]; }
+          LevelIterator level_begin (Uint Level)       { return LevelStarts_[Level]; }
+    const_LevelIterator level_end   (Uint Level) const { return LevelStarts_[Level + 1]; }
+          LevelIterator level_end   (Uint Level)       { return LevelStarts_[Level + 1]; }
+
+    void
+    AppendLevel() {
+        if (IsEmpty())
+            LevelStarts_.push_back( Data_.begin());
+        LevelStarts_.push_back( Data_.end());
+    }
+    void
+    RemoveLastLevel() { 
+        Assert( GetSize() != 0, DROPSErrCL("LevelList: RemoveLastLevel: There are no levels to be removed."), DebugContainerC);
+        Assert( IsLevelEmpty( GetSize() - 1), DROPSErrCL("LevelList: RemoveLastLevel: Last level not empty"), DebugContainerC);
+        LevelStarts_.pop_back();
+        if (LevelStarts_.size() == 1) // There are no further levels.
+              LevelStarts_.pop_back();
+        }
+
+    LevelCont
+    operator[](Uint Level)
+        { return LevelCont( Data_, LevelStarts_[Level], LevelStarts_[Level+1]); }
+};
+
+
 } // end of namespace DROPS
 
 #endif
