@@ -1,12 +1,5 @@
-//**************************************************************************
-// File:    instatstokes2phase.tpp                                         *
-// Content: classes that constitute the 2-phase stokes-problem             *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
-
-/** \file instatstokes2phase.tpp
- *  \brief classes that constitute the 2-phase stokes-problem
- */
+/// \file 
+/// \brief classes that constitute the 2-phase Stokes problem
 
 #include "num/discretize.h"
 
@@ -37,8 +30,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 }
 
 
-/// Set up the mass matrix for the pressure, scaled by \f$\mu^{-1}\f$.
 template <class Coeff>
+/// Needed for preconditioning of the Schur complement. Uses natural
+/// boundary conditions for the pressure unknowns.
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset) const
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
@@ -75,11 +69,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const Levelse
     M_pr.Build();
 }
 
-/// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
+
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr, const LevelsetP2CL& lset) const
-// Assumes, that indices for A_pr are set up. We know, there are only natural
-// boundary conditions.
+/// Needed for preconditioning of the Schur complement. Uses natural
+/// boundary conditions for the pressure unknowns.
 {
     MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
     const Uint lvl= A_pr->GetRowLevel();

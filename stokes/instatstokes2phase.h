@@ -1,5 +1,5 @@
 /// \file
-/// \brief classes that constitute the 2-phase stokes-problem
+/// \brief classes that constitute the 2-phase Stokes problem
 
 #ifndef DROPS_INSTATSTOKES2PHASE_H
 #define DROPS_INSTATSTOKES2PHASE_H
@@ -10,7 +10,7 @@
 namespace DROPS
 {
 
-/// problem class for instationary two pase stokes flow
+/// problem class for instationary two-pase Stokes flow
 
 template <class Coeff>
 class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
@@ -47,6 +47,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base(mg, coeff, bdata), vel_idx(3,3), pr_idx(1), t( 0.) {}  
 
+    /// \name Numbering
     //@{
     /// Create/delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
@@ -56,7 +57,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void DeleteNumberingVel( IdxDescCL*);
     void DeleteNumberingPr ( IdxDescCL*);
     //@}
-    
+    /// \name Discretization
+    //@{
     /// Set up matrices A, M and rhs b (depending on phase bnd)
     void SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
     /// Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
@@ -65,17 +67,18 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const;
     /// Set up rhs c (time dependent)
     void SetupRhs2( VecDescCL* c, double t) const;
-    
-    // Set up mass/stiffness matrix for pressure-unknowns (P1, time-independent) 
-    // needed for preconditioning of the Schur complement
+    /// Set up the mass matrix for the pressure, scaled by \f$\mu^{-1}\f$.
     void SetupPrMass( MatDescCL* prM, const LevelsetP2CL& lset) const;
+    /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
     void SetupPrStiff(MatDescCL* prA, const LevelsetP2CL& lset) const;
+    //@}
 
     /// Initialize velocity field
     void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
 
+    /// \name Evaluate Solution
     //@{
-    /// Get solution as FE-function
+    /// Get solution as FE-function for evaluation
     const_DiscPrSolCL GetPrSolution() const
         { return const_DiscPrSolCL( &p, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution() const

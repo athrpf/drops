@@ -1,8 +1,5 @@
-//**************************************************************************
-// File:    params.cpp                                                     *
-// Content: read parameters from file                                      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
+/// \file 
+/// \brief parameters for two-phase flow problems.
 
 #include "levelset/params.h"
 

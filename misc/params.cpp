@@ -1,8 +1,5 @@
-//**************************************************************************
-// File:    params.cpp                                                     *
-// Content: read parameters from file                                      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
+/// \file
+/// \brief read parameters from file.
 
 #include "misc/params.h"
 
@@ -160,6 +157,8 @@ void ReadParamsCL::ReadParams( std::istream& is)
         throw DROPSErrCL("ReadParamCL: group "+group_+" not terminated properly");
 }
 
+/// \note This routine can be used to generate a standard parameter file
+///
 void ReadParamsCL::WriteParams( std::ostream& os) const
 {
     os << "#=============================================\n"

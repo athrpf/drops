@@ -1,10 +1,5 @@
-//**************************************************************************
-// File:    instatnavstokes2phase.h                                        *
-// Content: classes that constitute the 2-phase navier-stokes-problem      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - Dec, 16 2001                                           *
-//**************************************************************************
+/// \file
+/// \brief classes that constitute the 2-phase Navier-Stokes problem
 
 #ifndef DROPS_INSTATNAVSTOKES2PHASE_H
 #define DROPS_INSTATNAVSTOKES2PHASE_H
@@ -14,6 +9,8 @@
 
 namespace DROPS
 {
+
+/// problem class for instationary two-pase Navier-Stokes flow
 
 template <class Coeff>
 class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
@@ -45,10 +42,11 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
         : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata) {}  
 
-    // Set up matrix for nonlinearity; 
-    // couplings with dir.bnd are accumulated in cplN,
-    // so call cplN->Clear() before if only couplings are needed.
+    /// \name Discretization
+    //@{
+    /// \brief Set up matrix for nonlinearity 
     void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
+    //@}
 };
 
 } // end of namespace DROPS

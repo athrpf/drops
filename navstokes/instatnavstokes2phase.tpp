@@ -1,8 +1,5 @@
-//**************************************************************************
-// File:    instatnavstokes2phase.tpp                                      *
-// Content: classes that constitute the 2-phase navier-stokes-problem      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
+/// \file
+/// \brief classes that constitute the 2-phase Navier-Stokes problem
 
 #include "num/discretize.h"
 
@@ -13,6 +10,8 @@ template<class Coeff>
 void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear 
     ( MatDescCL* N, const VelVecDescCL* vel, VelVecDescCL* cplN, 
       const LevelsetP2CL& lset, double t) const
+/// Couplings with dirichlet BCs are accumulated in cplN,
+/// so call cplN->Clear() before if only couplings are needed.
 {
     const IdxT num_unks_vel= N->RowIdx->NumUnknowns;
 

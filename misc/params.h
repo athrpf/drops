@@ -1,8 +1,5 @@
-//**************************************************************************
-// File:    params.h                                                       *
-// Content: read parameters from file                                      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
+/// \file
+/// \brief read parameters from file.
 
 #ifndef DROPS_MISC_PARAMS_H
 #define DROPS_MISC_PARAMS_H
@@ -17,10 +14,12 @@ namespace DROPS
 
 using std::string;
 
-//   ReadParamsCL: Parser for parameter files. 
-//   Usage:
-//   * register all parameters via RegXXX
-//   * read parameters from file via ReadParams
+///   \brief Parser for parameter files used by ParamBaseCL. 
+///
+///   Usage:
+///   - register all parameters via register functions RegXXX
+///   - read parameters from file via ReadParams
+///   \todo Describe syntax of a parameter file
 class ReadParamsCL
 {
   private:
@@ -43,31 +42,47 @@ class ReadParamsCL
   public:
     ReadParamsCL() {}
     
-    // register parameters
+    /// \name Registration
+    //@{
+    /// Register parameters under a certain name.
     void RegInt   ( int&,       string);
     void RegDouble( double&,    string);
     void RegCoord ( Point3DCL&, string);
     void RegString( string&,    string);
+    //@}
     
-    // build groups (may be used recursively)
+    /// \name Groups 
+    ///
+    /// Parameters can be arranged in groups by enclosing Begin/EndGroup-calls 
+    /// during the registration. Recursive calls lead to nested groups.
+    //@{
     void BeginGroup( const string& group);
     void EndGroup();
+    //@}
     
-    // IO
+    /// \name Input/Output
+    //@{
     void ReadParams( std::istream&);
     void WriteParams( std::ostream&) const;
+    //@}
     
-    //cleanup
-    void Clear(); // deallocate memory
+    /// Cleanup: deallocate memory 
+    void Clear();
 };
 
+/// \brief Base class for parameter classes
+///
+/// All problem dependent parameter classes should be derivated from this class.
+/// For an example see e.g. ParamMesszelleCL in levelset/params.h
 class ParamBaseCL
 {
   protected:
+    /// Does all the work: registrating parameters, parsing parameter file
     ReadParamsCL rp_;
     
   public:
-    void Clear() { rp_.Clear(); }		// cleanup
+    /// Cleanup: deallocate memory
+    void Clear() { rp_.Clear(); }
 
     friend std::istream& operator >> ( std::istream& is, ParamBaseCL& P)       { P.rp_.ReadParams(  is); return is; }
     friend std::ostream& operator << ( std::ostream& os, const ParamBaseCL& P) { P.rp_.WriteParams( os); return os; }

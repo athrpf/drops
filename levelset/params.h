@@ -1,8 +1,5 @@
-//**************************************************************************
-// File:    params.h                                                       *
-// Content: parameters for two-phase flow problems                         *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
+/// \file 
+/// \brief parameters for two-phase flow problems.
 
 #ifndef DROPS_LSET_PARAMS_H
 #define DROPS_LSET_PARAMS_H
@@ -12,62 +9,99 @@
 namespace DROPS
 {
 
+/// \brief Parameter class for the problem case
+/// 'Droplet in measurement device', Stokes flow
 class ParamMesszelleCL: public ParamBaseCL
 {
   private:
     void RegisterParams();
     
   public:
-    int    StokesMethod;                        // Loeserklasse fuer die Stokesprobleme
-    double inner_tol, outer_tol, 		// Parameter der Loeser
-           lset_tol, lset_SD;			// fuer Flow & Levelset
-    int    inner_iter, outer_iter, lset_iter;	
-    int    FPsteps;				// Kopplung Levelset/Flow: Anzahl Fixpunkt-Iterationen
-
-    double dt;					// Zeitschrittweite
-    int    num_steps;				// Anzahl Zeitschritte
-    double theta, lset_theta;			// 0=FwdEuler, 1=BwdEuler, 0.5=CN
-
-    double sigma,				// Oberflaechenspannung
-           CurvDiff,				// num. Glaettung Kruemmungstermberechnung
-           rhoD, rhoF, muD, muF, 	 	// Stoffdaten: Dichte/Viskositaet
-           sm_eps; 				// Glaettungszone fuer Dichte-/Viskositaetssprung
-
-    Point3DCL g;				// Schwerkraft
-    double    Radius;				// Radius und 
-    Point3DCL Mitte;				// Position des Tropfens
-    int       num_dropref,			// zusaetzliche Tropfenverfeinerung
-              VolCorr,				// Volumenkorrektur (0=false)
-              IniCond;				// Anfangsbedingung (0=Null, 1/2= stat. flow mit/ohne Tropfen)
-              
-    int    ref_flevel, ref_freq;		// Parameter fuer
-    double ref_width;				// adaptive Verfeinerung
+    /// \name Stokes
+    //@{
+    int    StokesMethod;                        ///< solver for the Stokes problems
+    double inner_tol, 				///< tolerance for Stokes solver
+           outer_tol;
+    int    inner_iter, 				///< max. number of iterations for Stokes solver
+           outer_iter;    
+    //@}
+    /// \name Level Set
+    //@{
+    double lset_tol; 				///< tolerance for Level Set solver
+    int    lset_iter; 				///< max. number of iterations for Level Set solver
+    double lset_SD,				///< streamline diffusion parameter
+           CurvDiff;				///< smoothing of Level Set function before curvature term discretization
+    int    VolCorr;				///< volume correction (0=no)
+    //@}
+    /// \name Time discretization
+    //@{
+    double dt;					///< time step size
+    int    num_steps;				///< number of timesteps
+    double theta, lset_theta;			///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
+    //@}
     
-    double Anstroem, 				// max. Einstroemgeschwindigkeit (Parabelprofil)
-           r_inlet;				// Radius am Einlass der Messzelle
-    int    flow_dir;				// Stroemungsrichtung (x/y/z = 0/1/2)
+    /// \name Material data
+    ///
+    /// D = drop,    F =  surrounding fluid
+    //@{
+    double sigma,				///< surface tension coefficient
+           rhoD, 				///< density
+           rhoF, 
+           muD, 				///< dynamic viscosity
+           muF,
+           sm_eps; 				///< width of smooth transition zone for jumping coefficients
+    //@}
+    ///\name Experimental setup
+    //@{
+    double Radius;				///< radius of the droplet
+    Point3DCL Mitte;				///< position of the droplet
+    double Anstroem, 				///< max. inflow velocity (parabolic profile)
+           r_inlet;				///< radius at inlet of measuring device
+    int    flow_dir;				///< flow direction (x/y/z = 0/1/2)
+    Point3DCL g;				///< gravity
+    //@}
+    ///\name Adaptive refinement
+    //@{
+    int    ref_freq,				///< frequency (after how many time steps grid should be adapted)
+           ref_flevel; 				///< finest level of refinement
+    double ref_width;				///< width of refinement zone around zero-level
+    //@}
+    ///\name Reparametrization
+    //@{
+    int    RepFreq, 				///< frequency (after how many time steps grid should be reparametrized)
+           RepMethod,				///< 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
+           RepSteps;				///< parameter for evolution of rep. equation
+    double RepTau, RepDiff; 			///< parameter for evolution of rep. equation
+    //@}
 
-    int    RepFreq, RepSteps, RepMethod;	// Parameter fuer
-    double RepTau, RepDiff;  			// Reparametrisierung
-
-    string EnsCase,				// Ensight Case, 
-           EnsDir,				// lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
-           IniData,
-           meshfile;				// Meshfile (von GAMBIT im FLUENT/UNS-Format)
+    int    FPsteps;				///< coupling Level Set and Flow: max. number of fixed point iterations
+    int    num_dropref,				///< number of grid refinements at position of drops
+           IniCond;				///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
+              
+    string IniData,				///< file prefix when reading data for initial condition
+           EnsCase,				///< name of Ensight Case
+           EnsDir,				///< local directory for Ensight files
+           meshfile;				///< mesh file (created by GAMBIT, FLUENT/UNS format)
 
     ParamMesszelleCL()                        { RegisterParams(); }
     ParamMesszelleCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
+/// \brief Parameter class for the problem case
+/// 'Droplet in measurement device', Navier-Stokes flow
 class ParamMesszelleNsCL: public ParamMesszelleCL
 {
   private:
     void RegisterParams();
     
   public:
-    int    scheme;				// 0=Baensch, 1=theta-scheme
-    double nonlinear,				// Anteil Nichtlinearitaet
-           stat_nonlinear, stat_theta;		// stat. Rechnung fuer Anfangswerte
+    /// \name Navier-Stokes
+    //@{
+    int    scheme;				///< time discretization scheme: 0=operator splitting, 1=theta-scheme
+    double nonlinear;				///< magnitude of nonlinear term
+    double stat_nonlinear, 			///< parameter for stationary solution
+           stat_theta;		
+    //@}
   
     ParamMesszelleNsCL()
       : ParamMesszelleCL() { RegisterParams(); }
