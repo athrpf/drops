@@ -13,18 +13,17 @@ namespace DROPS {
 class BndCL
 {
   public:
-    typedef BndCL self;
     typedef double bnd_type;
 
-    inline bool IsOnDirBnd (const VertexCL& v) const { return false; }
+    inline bool IsOnDirBnd (const VertexCL&) const { return false; }
     inline bool IsOnNeuBnd (const VertexCL&) const { return false; }
-    inline bool IsOnDirBnd (const EdgeCL& e) const { return false; }
+    inline bool IsOnDirBnd (const EdgeCL&) const { return false; }
     inline bool IsOnNeuBnd (const EdgeCL&) const { return false; }
     
     static inline bnd_type GetDirBndValue (const VertexCL&)
         { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
     static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
+        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
 } Bnd;
 
 } // end of namespace DROPS
