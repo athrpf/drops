@@ -115,6 +115,12 @@
             COPTIMFLAGS='-O -DNDEBUG'
             CDEBUGFLAGS='-g'
 #
+            CXX='g++'
+            CXXFLAGS="$CFLAGS"
+            CXXLIBS="$RPATH $MLIBS -lm"
+            CXXOPTIMFLAGS='-O -DNDEBUG'
+            CXXDEBUGFLAGS='-g'
+#
             LD="$COMPILER"
             LDFLAGS="-pthread -shared -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
