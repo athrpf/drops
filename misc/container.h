@@ -22,6 +22,28 @@
 namespace DROPS
 {
 
+//**************************************************************************
+// Class:    DMatrixCL                                                     *
+// Purpose:  dynamical storage for 2D data                                 *
+// Remarks:  just the bare minimum                                         *
+//**************************************************************************
+
+template <typename T>
+class DMatrixCL
+{
+  private:
+    size_t Cols_;
+    T* Array_;
+
+  public:
+    DMatrixCL(size_t row, size_t col) : Cols_(col), Array_(new T[row*col]) {}
+    ~DMatrixCL() { delete[] Array_; }
+
+    T& operator() (size_t row, size_t col)       { return Array_[row*Cols_+col]; }
+    T  operator() (size_t row, size_t col) const { return Array_[row*Cols_+col]; }
+};
+
+
 template <class T, Uint _Size>
   class SArrayCL;
 template <Uint _Size>

@@ -8,6 +8,8 @@
 #ifndef DROPS_SOLVER_H
 #define DROPS_SOLVER_H
 
+#include <vector>
+#include "misc/container.h"
 #include "spmat.h"
 
 namespace DROPS
@@ -26,27 +28,28 @@ namespace DROPS
 // Available methods
 enum PreMethGS
 {
-    P_JAC,    // Jacobi
-    P_GS,     // Gauss-Seidel
-    P_SGS,    // symmetric Gauss-Seidel
-    P_SGS0,   // symmetric Gauss-Seidel with initial vector 0
-    P_JOR,    // P_JAC with over-relaxation
-    P_SOR,    // P_GS with over-relaxation
-    P_SSOR,   // P_SGS with over-relaxation
-    P_SSOR0,  // P_SGS0 with over-relaxation
-    P_SGS0_D, // P_SGS0 using SparseMatDiagCL
-    P_SSOR0_D // P_SSOR0 using SparseMatDiagCL
+    P_JAC,     // Jacobi
+    P_GS,      // Gauss-Seidel
+    P_SGS,     // symmetric Gauss-Seidel
+    P_SGS0,    // symmetric Gauss-Seidel with initial vector 0
+    P_JOR,     // P_JAC with over-relaxation
+    P_SOR,     // P_GS with over-relaxation
+    P_SSOR,    // P_SGS with over-relaxation
+    P_SSOR0,   // P_SGS0 with over-relaxation
+    P_SGS0_D,  // P_SGS0 using SparseMatDiagCL
+    P_SSOR0_D, // P_SSOR0 using SparseMatDiagCL
+    P_DUMMY    // identity
 };
 
 // Base methods
-enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0 };
+enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0, PB_DUMMY };
 
 // Properties of the methods
 template <PreMethGS PM> struct PreTraitsCL
 {
-    static const PreBaseGS BaseMeth= PreBaseGS(PM<8 ? PM%4 : PB_SGS0);
+    static const PreBaseGS BaseMeth= PreBaseGS(PM<8 ? PM%4 : (PM==10 ? PB_DUMMY : PB_SGS0) );
     static const bool      HasOmega= (PM>=4 && PM<8) || PM==9;
-    static const bool      HasDiag=  PM>=8;
+    static const bool      HasDiag=  PM==8 || PM==9;
 };
 
 // Used to make a distinct type from each method
@@ -214,6 +217,13 @@ SolveGSstep(const PreDummyCL<PB_SGS0>&, const MatrixCL& A, Vec& x, const Vec& b,
 }
 
 
+template <bool HasOmega, typename Vec, typename Real>
+void
+SolveGSstep(const PreDummyCL<PB_DUMMY>&, const SparseMatBaseCL<Real>&, Vec& x, const Vec& b, double)
+{
+    x=b;
+}
+
 //=============================================================================
 //  Preconditioner classes
 //=============================================================================
@@ -320,7 +330,7 @@ class PreGSOwnMatCL<PM,true>
 
 //*****************************************************************************
 //
-//  Conjugate gradients - CG, PCG
+//  Conjugate gradients (CG, PCG) and GMRES
 //
 //*****************************************************************************
 
@@ -437,8 +447,132 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 }
 
 
+//-----------------------------------------------------------------------------
+// GMRES:
+//-----------------------------------------------------------------------------
+
+inline void GMRES_GeneratePlaneRotation(double &dx, double &dy, double &cs, double &sn)
+{
+    if (dy == 0.0)
+    {
+        cs = 1.0;
+        sn = 0.0;
+    }
+    else
+    {
+        const double r=std::sqrt(dx*dx+dy*dy);
+        cs = dx/r;
+        sn = dy/r;
+    }
+}
+
+
+inline void GMRES_ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn)
+{
+    const double tmp = cs*dx + sn*dy;
+    dy = -sn*dx + cs*dy;
+    dx = tmp;
+}
+
+
+template <typename Mat, typename Vec>
+void GMRES_Update(Vec &x, int k, const Mat &H, const Vec &s, const std::vector<Vec> &v)
+{
+    Vec y(s);
+
+    // Backsolve:
+    for ( int i=k; i>=0; --i )
+    {
+        y[i] /= H(i,i);
+        for ( int j=i-1; j>=0; --j )
+            y[j] -= H(j,i) * y[i];
+    }
+
+    for ( int i=0; i<=k; ++i )
+        x += y[i] * v[i];
+}
+
+
+template <typename Mat, typename Vec, typename PreCon>
+bool
+GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
+      int m, int& max_iter, double& tol)
+{
+    DMatrixCL<double> H(m,m);
+    Vec               s(m), cs(m), sn(m), w(b.size()), r;
+    std::vector<Vec>  v(m);
+    double            beta = r.norm(), normb, resid;
+
+    for ( int i=0; i<m; ++i )
+        v[i].resize(b.size());
+
+    M.Apply(A, r, b-A*x);
+    M.Apply(A, w, b);
+    normb=w.norm();
+    if (normb == 0.0) normb=1;
+
+    resid = beta/normb;
+    if (resid<=tol)
+    {
+        tol = resid;
+        max_iter = 0;
+        return true;
+    }
+
+    int j=1;
+    while (j <= max_iter)
+    {
+        v[0] = r * (1.0 / beta);
+        s = 0.0;
+        s[0] = beta;
+
+        for ( int i=0; i<m-1 && j<=max_iter; ++i, ++j )
+        {
+            M.Apply(A, w, A*v[i]);
+            for ( int k=0; k<=i; ++k )
+            {
+                H(k, i) = w * v[k];
+                w -= H(k, i) * v[k];
+            }
+            H(i+1, i) = w.norm();
+            v[i+1] = w * (1.0 / H(i+1,i));
+
+            for ( int k=0; k<i; ++k )
+                GMRES_ApplyPlaneRotation(H(k,i), H(k+1,i), cs[k], sn[k]);
+
+            GMRES_GeneratePlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
+            GMRES_ApplyPlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
+            GMRES_ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
+
+            resid = std::abs(s[i+1])/normb;
+            if (resid<=tol)
+            {
+                GMRES_Update(x, i, H, s, v);
+                tol = resid;
+                max_iter = j;
+                return true;
+            }
+        }
+
+        GMRES_Update(x, m - 2, H, s, v);
+        M.Apply(A, r, b-A*x);
+        beta = r.norm();
+        resid = beta/normb;
+        if (resid<=tol)
+        {
+            tol = resid;
+            max_iter = j;
+            return true;
+        }
+    }
+
+    tol = resid;
+    return false;
+}
+
+
 //=============================================================================
-//  Drivers for the CG methods
+//  Drivers
 //=============================================================================
 
 // What every iterative solver should have
@@ -516,6 +650,39 @@ class PCGSolverCL : public SolverBaseCL
 };
 
 
+// GMRES
+template <typename PC>
+class GMResSolverCL : public SolverBaseCL
+{
+  private:
+    PC  pc_;
+    int restart_;
+
+  public:
+    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol)
+        : SolverBaseCL(maxiter,tol), pc_(pc) {}
+
+    PC&       GetPc      ()       { return pc_; }
+    const PC& GetPc      () const { return pc_; }
+    int       GetRestart () const { return restart_; }
+
+    template <typename Vec>
+    void Solve(const MatrixCL& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        GMRES(A, x, b, pc_, restart_, _iter, _res);
+    }
+    template <typename Vec>
+    void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        GMRES(A, x, b, pc_, restart_, numIter, resid);
+    }
+};
+
+
 //=============================================================================
 //  Typedefs
 //=============================================================================
@@ -524,6 +691,7 @@ typedef PreGSCL<P_SOR>     SORsmoothCL;
 typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
+typedef PreGSCL<P_DUMMY>   DummyPcCL;
 
 typedef PCGSolverCL<SGSPcCL>      PCG_SgsCL;
 typedef PCGSolverCL<SSORPcCL>     PCG_SsorCL;
