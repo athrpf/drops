@@ -18,6 +18,49 @@ namespace DROPS
 
 typedef double (*scalar_fun_ptr)(const Point3DCL&);
 typedef Point3DCL (*vector_fun_ptr)(const Point3DCL&);
+typedef double (*SmoothFunT) (double,double);
+
+
+// SmoothedJumpCL for jumping coefficients
+
+class JumpCL
+{
+  private:
+    double Coeff[2];
+
+  public:
+    JumpCL (double In, double Out) { Coeff[0]=In; Coeff[1]=Out; }
+
+    double operator() (bool b)   const { return Coeff[b]; }
+    double operator() (double x) const { return (1-x)*Coeff[0]+x*Coeff[1]; }
+};
+
+class SmoothedJumpCL
+{
+  private:
+    const JumpCL     jc;
+    const SmoothFunT smf;
+    const double     eps;
+
+  public:
+    SmoothedJumpCL (const JumpCL& myjc, const SmoothFunT f, double myeps)
+      : jc(myjc), smf(f), eps(myeps) {}
+
+    double operator() (double x) const { return jc(smf(x,eps)); }
+};
+
+// smoothed Heaviside function
+inline double H_sm( double s, double eps)
+{
+    if (s <= -eps) return 0;
+    if (s >=  eps) return 1;
+    // -eps < s < eps
+    s/= eps;
+    const double s2= s*s, s3= s2*s;
+    return 0.5 + 1.40625*s - 1.5625*s3 + 0.65625*s2*s3;
+}
+
+
 
 // ===================================
 //        Quadrature formulas
@@ -309,6 +352,28 @@ inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
     const double d2= p[0]*q[1] - p[1]*q[0];
     return sqrt(d0*d0 + d1*d1 + d2*d2);
 }
+
+/*
+template<class T=double>
+class P1ElemCL
+{
+  private:
+    valarray<T> val;
+    
+  public:
+    P1ElemCL()
+      : val(4) {}
+    
+    const T& operator[] (int i) const { return val[i]; }
+    
+    T eval( const BaryCoordCL& c) const
+    {
+        T sum= T();
+        for (int i=0; i<4; ++i) sum+= val[i]*c[i];
+        return sum;
+    }
+};
+*/
 
 
 /********************************************************************************
