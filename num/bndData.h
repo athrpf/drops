@@ -103,6 +103,10 @@ template<class BndValT= double>
 class NoBndDataCL
 {
   public:
+    typedef BndSegDataCL<BndValT>             BndSegT;
+    typedef BndValT                           bnd_type;
+    typedef typename BndSegT::bnd_val_fun     bnd_val_fun;
+
     // default ctor, dtor, whatever
 
     template<class SimplexT>
