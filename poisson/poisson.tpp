@@ -169,7 +169,7 @@ void PoissonP1CL<MGB,Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                 if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
                     for (int f=0; f < 3; ++f)
                         if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                            b.Data[UnknownIdx[i]]-= Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndFun(sit->GetBndIdx(FaceOfVert(i,f))) );
+                            b.Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndFun(sit->GetBndIdx(FaceOfVert(i,f))) );
             }
     }
     

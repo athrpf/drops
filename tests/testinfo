@@ -1,0 +1,128 @@
+#!/bin/sh
+#
+# Testcase-database
+#
+# *Each testcase carries the following pieces of information (token):
+#   arguments = Command-line arguments for the test; may be empty (="").
+#   command = The command issued by "runtest" to run the test.
+#   diff = Name of the diff-file to be produced (testname.diff).
+#   input= Name of parameter-input file; may be empty.
+#   makedir = The directory, in which "make" is to be executed to build the
+#             executable for the test. 
+#   maketarget = Target for make to build the executable.
+#   output = File, to which stdout and stderr are redirected (testname.out).
+#   reference-output = Reference-output (testname.ref).
+#
+# *The return status is 0 on success and 1 otherwise (unknown token resp.
+#  testname).
+# *Call this script as "testinfo token testname".
+# *For a new test, simply add a new clause to the first case statement. Then,
+#  provide a new reference output, named testname.ref and possibly a file
+#  for input to the programme via redirected stdin. At last, add the name of the
+#  testcase to the variable TESTNAME in tests/Makefile.
+#
+token=$1
+testname=$2
+
+case $testname in
+  "drivencavity-adaptiv-schur")
+    arguments="1e-9 1e-7 1 7 0.01 0.8 1 5"
+    command=stokes/drcavad
+    input=""
+    makedir=stokes
+    maketarget=drcavad
+    ;;
+  "drivencavity-adaptiv-uzawa")
+    arguments="1e-9 1e-7 0 7 0.01 0.8 1 5"
+    command=stokes/drcavad
+    input=""
+    makedir=stokes
+    maketarget=drcavad
+    ;;
+  "poisson-instationaer-uniform")
+    arguments=""
+    command=poisson/ipdropsrep
+    input="poisson-instationaer-uniform.in"
+    makedir=poisson
+    maketarget=ipdropsrep
+    ;;
+  "poisson-stationaer-adaptiv")
+    arguments="1 0.01 0.8 7"
+    command=poisson/dropsrep
+    input=""
+    makedir=poisson
+    maketarget=dropsrep
+    ;;
+  "poisson-stationaer-multigrid")
+    arguments="1"
+    command=poisson/MGdrops
+    input="poisson-stationaer-multigrid.in"
+    makedir=poisson
+    maketarget=MGdrops
+    ;;
+  "poisson-stationaer-neumann")
+    arguments="1 0.01 1.1 3"
+    command=poisson/drops_neumann
+    input=""
+    makedir=poisson
+    maketarget=drops_neumann
+    ;;
+  "poisson-stationaer-uniform")
+    arguments="1 0.01 1.1 3"
+    command=poisson/dropsrep
+    input=""
+    makedir=poisson
+    maketarget=dropsrep
+    ;;
+  "stokes-instationaer-uniform")
+    arguments="1 1e-7 2"
+    command=stokes/FSdrops
+    input="stokes-instationaer-uniform.in"
+    makedir=stokes
+    maketarget=FSdrops
+    ;;
+  "stokes-stationaer-uniform")
+    arguments="1 1e-09 1e-07 0 3 0.001 1.1 1 5"
+    command=stokes/sdropsP2
+    input="stokes-stationaer-uniform.in"
+    makedir=stokes
+    maketarget=sdropsP2
+    ;;
+  *)
+    echo "testinfo: The test named " $testname " does not exist."
+    exit 1
+    ;;
+  esac
+
+case $token in
+  "arguments")
+    echo -n $arguments
+    ;;
+  "command")
+    echo -n $command
+    ;;
+  "diff")
+    echo -n ${testname}.diff
+    ;;
+  "input")
+    echo -n $input
+    ;;
+  "makedir")
+    echo -n $makedir
+    ;;
+  "maketarget")
+    echo -n $maketarget
+    ;;
+  "output")
+    echo -n ${testname}.out
+    ;;
+  "reference-output")
+    echo -n ${testname}.ref
+    ;;
+  *)
+    echo "testinfo: The token named " $token " does not exist."
+    exit 1
+    ;;
+esac
+exit 0
+

@@ -1,14 +1,11 @@
 inner iter tol: 1e-09, tol: 1e-07, meth: 0, refinements: 7, relative error reduction: 0.01, markratio: 0.8, tau: 1, uzawa inner iter: 5
-altes und neues TriangLevel: 1074588168, 0
+altes und neues TriangLevel: 1074588064, 0
 27 Verts, 98 Edges, 120 Faces, 48 Tetras
 Anzahl der Druck-Unbekannten: 0, 27
 Anzahl der Geschwindigkeitsunbekannten: 0, 81
 entering SetupSystem: 81 vels, 27 prs
 done: value part fill
-705 nonzeros in A, 560 nonzeros in B! 
-0.02 seconds for setting up all systems!
- A*x took 0 seconds!
-AT*x took 0 seconds!
+705 nonzeros in A, 561 nonzeros in B! 
 step 0: norm of 1st eq= 0.893953, norm of 2nd eq= 0.067379
 step 50: norm of 1st eq= 0.00383447, norm of 2nd eq= 0.000953745
 step 100: norm of 1st eq= 0.000633584, norm of 2nd eq= 0.000156625
@@ -18,10 +15,8 @@ step 250: norm of 1st eq= 6.29789e-06, norm of 2nd eq= 1.56309e-06
 step 300: norm of 1st eq= 1.36896e-06, norm of 2nd eq= 3.39756e-07
 step 350: norm of 1st eq= 2.9763e-07, norm of 2nd eq= 7.38556e-08
 Iterationen: 388	Norm des Res.: 9.57655e-08
-Das Verfahren brauchte 0.31 Sekunden.
 ErrorEstimator is initialized now; initial error: 51.7737 We try to reduce by a factor of 0.01 by marking the tetrahedrons with largest error-estimates, until the error marked is at least 0.8 of the actual global error.
 Estimated global |v|1 + ||pr||0-error: 51.7737. This is a reduction of 1 compared to the last estimation. Marked 5, unmarked 0 out of 48 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 0.03 seconds
 
 altes und neues TriangLevel: 0, 1
 48 Verts, 220 Edges, 304 Faces, 132 Tetras
@@ -29,10 +24,7 @@ Anzahl der Druck-Unbekannten: 27, 48
 Anzahl der Geschwindigkeitsunbekannten: 81, 243
 entering SetupSystem: 243 vels, 48 prs
 done: value part fill
-2931 nonzeros in A, 1698 nonzeros in B! 
-0.03 seconds for setting up all systems!
- A*x took 0 seconds!
-AT*x took 0 seconds!
+3009 nonzeros in A, 1700 nonzeros in B! 
 step 0: norm of 1st eq= 1.41718, norm of 2nd eq= 0.0394804
 step 50: norm of 1st eq= 0.00101867, norm of 2nd eq= 0.000197926
 step 100: norm of 1st eq= 7.61295e-05, norm of 2nd eq= 1.74575e-05
@@ -40,9 +32,7 @@ step 150: norm of 1st eq= 1.01319e-05, norm of 2nd eq= 2.34153e-06
 step 200: norm of 1st eq= 1.52575e-06, norm of 2nd eq= 3.52516e-07
 step 250: norm of 1st eq= 2.39326e-07, norm of 2nd eq= 5.52691e-08
 Iterationen: 275	Norm des Res.: 9.77339e-08
-Das Verfahren brauchte 0.72 Sekunden.
 Estimated global |v|1 + ||pr||0-error: 48.5746. This is a reduction of 0.93821 compared to the last estimation. Marked 9, unmarked 0 out of 111 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 0.07 seconds
 
 altes und neues TriangLevel: 1, 2
 86 Verts, 445 Edges, 635 Faces, 280 Tetras
@@ -50,19 +40,14 @@ Anzahl der Druck-Unbekannten: 48, 86
 Anzahl der Geschwindigkeitsunbekannten: 243, 546
 entering SetupSystem: 546 vels, 86 prs
 done: value part fill
-7572 nonzeros in A, 3839 nonzeros in B! 
-0.07 seconds for setting up all systems!
- A*x took 0 seconds!
-AT*x took 0 seconds!
+7668 nonzeros in A, 3851 nonzeros in B! 
 step 0: norm of 1st eq= 1.32789, norm of 2nd eq= 0.0357798
 step 50: norm of 1st eq= 0.000650462, norm of 2nd eq= 0.000112237
 step 100: norm of 1st eq= 2.68489e-05, norm of 2nd eq= 6.00343e-06
 step 150: norm of 1st eq= 3.35097e-06, norm of 2nd eq= 7.74025e-07
 step 200: norm of 1st eq= 5.4565e-07, norm of 2nd eq= 1.26456e-07
 Iterationen: 250	Norm des Res.: 9.55756e-08
-Das Verfahren brauchte 1.62 Sekunden.
 Estimated global |v|1 + ||pr||0-error: 32.8437. This is a reduction of 0.67615 compared to the last estimation. Marked 24, unmarked 0 out of 229 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 0.14 seconds
 
 altes und neues TriangLevel: 2, 3
 168 Verts, 952 Edges, 1405 Faces, 634 Tetras
@@ -70,10 +55,7 @@ Anzahl der Druck-Unbekannten: 86, 168
 Anzahl der Geschwindigkeitsunbekannten: 546, 1335
 entering SetupSystem: 1335 vels, 168 prs
 done: value part fill
-20667 nonzeros in A, 9413 nonzeros in B! 
-0.17 seconds for setting up all systems!
- A*x took 0 seconds!
-AT*x took 0 seconds!
+20901 nonzeros in A, 9457 nonzeros in B! 
 step 0: norm of 1st eq= 1.21795, norm of 2nd eq= 0.0206137
 step 50: norm of 1st eq= 0.0015206, norm of 2nd eq= 0.000188904
 step 100: norm of 1st eq= 0.000126951, norm of 2nd eq= 1.50406e-05
@@ -81,9 +63,7 @@ step 150: norm of 1st eq= 1.09342e-05, norm of 2nd eq= 1.3419e-06
 step 200: norm of 1st eq= 9.93358e-07, norm of 2nd eq= 1.37178e-07
 step 250: norm of 1st eq= 1.05322e-07, norm of 2nd eq= 1.70162e-08
 Iterationen: 251	Norm des Res.: 9.753e-08
-Das Verfahren brauchte 4.72 Sekunden.
 Estimated global |v|1 + ||pr||0-error: 25.1059. This is a reduction of 0.764407 compared to the last estimation. Marked 29, unmarked 0 out of 511 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 0.32 seconds
 
 altes und neues TriangLevel: 3, 3
 246 Verts, 1456 Edges, 2189 Faces, 1004 Tetras
@@ -91,19 +71,14 @@ Anzahl der Druck-Unbekannten: 168, 246
 Anzahl der Geschwindigkeitsunbekannten: 1335, 2247
 entering SetupSystem: 2247 vels, 246 prs
 done: value part fill
-37377 nonzeros in A, 15833 nonzeros in B! 
-0.29 seconds for setting up all systems!
- A*x took 0.01 seconds!
-AT*x took 0 seconds!
+37791 nonzeros in A, 15936 nonzeros in B! 
 step 0: norm of 1st eq= 1.3542, norm of 2nd eq= 0.0115251
 step 50: norm of 1st eq= 0.000689266, norm of 2nd eq= 9.04369e-05
 step 100: norm of 1st eq= 5.32369e-05, norm of 2nd eq= 6.9045e-06
 step 150: norm of 1st eq= 4.54665e-06, norm of 2nd eq= 6.7053e-07
 step 200: norm of 1st eq= 4.24546e-07, norm of 2nd eq= 7.32638e-08
 Iterationen: 233	Norm des Res.: 9.37996e-08
-Das Verfahren brauchte 8.58 Sekunden.
 Estimated global |v|1 + ||pr||0-error: 17.0902. This is a reduction of 0.680721 compared to the last estimation. Marked 97, unmarked 0 out of 809 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 0.52 seconds
 
 altes und neues TriangLevel: 3, 4
 535 Verts, 3293 Edges, 5038 Faces, 2337 Tetras
@@ -111,18 +86,13 @@ Anzahl der Druck-Unbekannten: 246, 535
 Anzahl der Geschwindigkeitsunbekannten: 2247, 5430
 entering SetupSystem: 5430 vels, 535 prs
 done: value part fill
-95874 nonzeros in A, 38365 nonzeros in B! 
-0.7 seconds for setting up all systems!
- A*x took 0.01 seconds!
-AT*x took 0.01 seconds!
+96582 nonzeros in A, 38679 nonzeros in B! 
 step 0: norm of 1st eq= 1.44974, norm of 2nd eq= 0.0082324
 step 50: norm of 1st eq= 0.000205286, norm of 2nd eq= 1.67877e-05
 step 100: norm of 1st eq= 1.31466e-05, norm of 2nd eq= 3.97286e-07
 step 150: norm of 1st eq= 1.03198e-06, norm of 2nd eq= 3.08193e-08
 Iterationen: 196	Norm des Res.: 9.30738e-08
-Das Verfahren brauchte 20.39 Sekunden.
 Estimated global |v|1 + ||pr||0-error: 10.112. This is a reduction of 0.591685 compared to the last estimation. Marked 292, unmarked 0 out of 1874 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 1.21 seconds
 
 altes und neues TriangLevel: 4, 5
 1338 Verts, 8672 Edges, 13694 Faces, 6492 Tetras
@@ -130,17 +100,12 @@ Anzahl der Druck-Unbekannten: 535, 1338
 Anzahl der Geschwindigkeitsunbekannten: 5430, 16335
 entering SetupSystem: 16335 vels, 1338 prs
 done: value part fill
-316161 nonzeros in A, 116110 nonzeros in B! 
-2.1 seconds for setting up all systems!
- A*x took 0.02 seconds!
-AT*x took 0.02 seconds!
+318561 nonzeros in A, 117145 nonzeros in B! 
 step 0: norm of 1st eq= 1.55883, norm of 2nd eq= 0.00465453
 step 50: norm of 1st eq= 8.34126e-05, norm of 2nd eq= 1.00004e-05
 step 100: norm of 1st eq= 4.19068e-06, norm of 2nd eq= 2.12696e-07
 step 150: norm of 1st eq= 3.28568e-07, norm of 2nd eq= 1.57262e-08
 Iterationen: 174	Norm des Res.: 9.10112e-08
-Das Verfahren brauchte 58.69 Sekunden.
 Estimated global |v|1 + ||pr||0-error: 6.13102. This is a reduction of 0.606312 compared to the last estimation. Marked 548, unmarked 0 out of 5211 tetrahedrons, which account for 0.8 of the global error.
-Estimation took 3.45 seconds
 
 pressure min/max: -152.235, 136.676

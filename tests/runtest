@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# Runs a testcase and compares the result against a reference run.
+#
+# Call this script as "runtest testname".
+# The data for the testcase is aquired via the script testinfo.
+# The file testname.out contains the output of the testrun. testname.diff
+# contains a diff against the reference data.
+# Nonempty diffs are indicated by a WARNING output.
+#
+testname=$1
+
+# Query the database.
+arguments=$(./testinfo arguments $testname)
+command=$(./testinfo command $testname)
+diff=$(./testinfo diff $testname)
+input=$(./testinfo input $testname)
+output=$(./testinfo output $testname)
+refoutput=$(./testinfo reference-output $testname)
+
+if test -n "$input"; then
+  ../$command $arguments > $output 2>&1 < $input
+else
+  ../$command $arguments > $output 2>&1
+fi
+grep -E --invert-match "seconds|Sekunde" < $output | diff -w $refoutput - > $diff
+$(test -s $diff) && echo "runtest: WARNING! " $testname " produced different results."
+exit 0

@@ -1,6 +1,6 @@
 Omega: 1 rel_red: 0.01 markratio: 1.1 maxiter: 3
 As far as I can tell the MultigridCL is sane.
-altes und neues TriangLevel: 134862152, 1
+altes und neues TriangLevel: 134859624, 1
 Anzahl der Unbekannten: 0, 343
 729 Verts, 4788 Edges, 7392 Faces, 3456 Tetras
 ErrorEstimator is initialized now; initial error: 22.2817 We try to reduce by a factor of 0.01 by marking the tetrahedrons with largest error-estimates, until the error marked is at least 1.1 of the actual global error.

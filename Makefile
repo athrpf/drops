@@ -21,6 +21,9 @@ distclean: $(PACKAGES:%=distclean_%)
         
 dep: deldepend $(PACKAGES:%=depend_%)
 	@echo "--> Actual dependencies generated in $(DEPFILE)!"
+
+check:
+	cd ./tests; make check
         
 all_%:
 	cd $*; make all
@@ -43,7 +46,7 @@ prog_%:
 	cd $(@D); make $(*F)
 
         
-.PHONY: all clean distclean dep
+.PHONY: all clean distclean dep check
 
 # include settings from the config file drops.conf:
 DROPS_ROOT = .

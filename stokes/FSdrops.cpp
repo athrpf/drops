@@ -611,9 +611,9 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc!=3)
+    if (argc!=4)
     {
-        std::cerr << "You have to specify two parameters:\n\tFSdrops <omega> <inner_iter_tol>" << std::endl;
+        std::cerr << "You have to specify three parameters:\n\tFSdrops <omega> <inner_iter_tol> <maxStep>" << std::endl;
         return 1;
     }
 
@@ -639,9 +639,12 @@ int main (int argc, char** argv)
 
     double omega= atof(argv[1]);
     double inner_iter_tol= atof(argv[2]);
-    std::cerr << "Omega: " << omega << " inner iter tol: " << inner_iter_tol << std::endl;
+    DROPS::Uint maxStep= atoi(argv[3]);
+    
+    std::cerr << "Omega: " << omega << " inner iter tol: " << inner_iter_tol
+              << "maxStep: " << maxStep << std::endl;
 
-    Strategy(prob, omega, inner_iter_tol, 3);
+    Strategy(prob, omega, inner_iter_tol, maxStep);
 
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
