@@ -89,8 +89,8 @@ template <class DiscSol>
 std::ostream&
 GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
 {
-    const double val_diff= _max-_min;
-    ColorMapperCL::RGBAType rgba;
+//    const double val_diff= _max-_min;
+//    ColorMapperCL::RGBAType rgba;
 //    std::ios_base::fmtflags my_format= std::ios_base::fixed|std::ios_base::showpoint;
 //    std::ios_base::fmtflags old_format= os.flags(my_format);
     std::ios::fmtflags my_format= std::ios::fixed|std::ios::showpoint;

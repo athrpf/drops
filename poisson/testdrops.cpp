@@ -78,8 +78,8 @@ template <class DiscSol>
 std::ostream&
 GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
 {
-    const double val_diff= _max-_min;
-    ColorMapperCL::RGBAType rgba;
+//    const double val_diff= _max-_min;
+//    ColorMapperCL::RGBAType rgba;
 //    std::ios_base::fmtflags my_format= std::ios_base::fixed|std::ios_base::showpoint;
 //    std::ios_base::fmtflags old_format= os.flags(my_format);
     std::ios::fmtflags my_format= std::ios::fixed|std::ios::showpoint;
@@ -546,10 +546,10 @@ int main (int argc, char** argv)
 //    std::cerr << "Refinement: 0=regular, 1=adaptive > ";   std::cin >> adaptiv;
     if(adaptiv)
     {
-        double rel_red;
+//        double rel_red;
 //        std::cerr << "error reduction: ";   std::cin >> rel_red;
         std::cerr << "Creating Grid..." << std::endl;
-        for (DROPS::Uint i=0; i<1; ++i)
+        for (int i=0; i<1; ++i)
         {
     //        MarkDrop(mg,mg.GetLastLevel());
             DROPS::MarkAll(mg);  
@@ -560,7 +560,7 @@ int main (int argc, char** argv)
     else
     {
 //        std::cerr << "Creating Grid..." << std::endl;
-        for (DROPS::Uint i=0; i<grids; ++i)
+        for (int i=0; i<grids; ++i)
         {
     //        MarkDrop(mg,mg.GetLastLevel());
             DROPS::MarkAll(mg);  
