@@ -100,7 +100,8 @@ public:
                                               return Array[i]; }
     Uint           size      ()       const { return _Size; }
 
-    friend bool operator==<>(const SArrayCL&, const SArrayCL&);
+    friend bool operator==<>(const SArrayCL&, const SArrayCL&); // Component-wise equality
+    friend bool operator< <>(const SArrayCL&, const SArrayCL&); // lexicographic ordering
 };
 
 template <class T, Uint _Size>
@@ -110,6 +111,16 @@ template <class T, Uint _Size>
     for (Uint i=0; i<_Size; ++i)
         if (a0[i] != a1[i]) return false;
     return true;
+}
+
+template <class T, Uint _Size>
+  inline bool
+  operator<(const SArrayCL<T, _Size>& a0, const SArrayCL<T, _Size>& a1)
+{
+    for (Uint i=0; i<_Size; ++i)
+        if (a0[i] < a1[i]) return true;
+        else if ( a0[i] > a1[i]) return false;
+    return false;
 }
 
 //**************************************************************************
