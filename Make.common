@@ -13,8 +13,12 @@ distclean: clean
 
 # .cpp -> .o
 ../%.o: ../%.cpp
+ifeq ($(CC),mex)
+	$(CC) $(CFLAGS) -outdir ../$(*D) -c ../$*.cpp
+else
 	$(CC) $(CFLAGS) -o ../$*.o -c ../$*.cpp
-        
+endif
+
 # override implicit c++ rule
 %.o: %.cpp
 
