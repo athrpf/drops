@@ -60,8 +60,8 @@ cgtol= L_data(5);
 cgiter= L_data(6);
 M= L_data(7);
 
-T0= 20*ones(npyz,npx);
-qh= 2*ones(npyz, ndt+1);
+T0= 38*ones(npyz,npx);
+qh= 6e-3*ones(npyz, ndt+1);
 qc= zeros(npyz, ndt+1);
 
 % Loesung mit DROPS
