@@ -72,8 +72,8 @@ class InstatStokesThetaSchemeCL
 };
 
 
-template <class StokesT, class SolverT>
-class InstatStokesFracStepSchemeCL
+//template <class StokesT, class SolverT>
+//class InstatStokesFracStepSchemeCL
 /*****************************************************************************
 *   for solving the instationary Stokes equation of type StokesT with a 
 *   fractional-step-scheme.
@@ -84,7 +84,7 @@ class InstatStokesFracStepSchemeCL
 *   every DoStep performs one step in time. Changing time steps require 
 *   further calls to SetTimeStep.
 ******************************************************************************/
-{
+/*{
   private:
     StokesT& _Stokes;
     SolverT& _solver;
@@ -191,7 +191,7 @@ void InstatStokesFracStepSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorC
         std::swap( _cplM, _old_cplM);
 
         _Stokes.t+= _dt;
-}
+}*/
 
 }    // end of namespace DROPS
 
