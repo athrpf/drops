@@ -143,7 +143,7 @@ void InstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& 
          + _dt*( _theta*_b->Data + (1.-_theta)*_old_b->Data);
 
     p*= _dt;
-    _solver.solve( _mat, _Stokes.B.Data, v, p, _rhs, _Stokes.c.Data);
+    _solver.Solve( _mat, _Stokes.B.Data, v, p, _rhs, _Stokes.c.Data);
     p/= _dt;
 
     std::swap( _b, _old_b);
