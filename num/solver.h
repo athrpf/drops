@@ -342,6 +342,27 @@ class PreGSOwnMatCL<PM,true>
     }
 };
 
+class MultiSSORPcCL
+// do multiple SSOR-steps
+{
+  private:
+    double _omega;
+    int   _num;
+
+  public:
+    MultiSSORPcCL(double om= 1.0, int num= 1) : _omega(om), _num(num) {}
+
+    template <typename Mat, typename Vec>
+    void Apply(const Mat& A, Vec& x, const Vec& b) const
+    {
+        // one SSOR0-step
+        SolveGSstep<PreTraitsCL<P_SSOR0>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<P_SSOR0>::BaseMeth>(), A, x, b, _omega);
+        // _num-1 SSOR-steps
+        for (int i=1; i<_num; ++i)
+            SolveGSstep<PreTraitsCL<P_SSOR>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<P_SSOR>::BaseMeth>(), A, x, b, _omega);
+    }
+};
+
 
 //*****************************************************************************
 //
