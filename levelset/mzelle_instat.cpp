@@ -190,10 +190,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
       case 3: // read from file
       {
         ReadEnsightP2SolCL reader( MG);
-        reader.ReadVector( C.IniData, Stokes.v, Stokes.GetBndData().Vel);
-//        reader.ReadScalar( dat, Stokes.p, Stokes.GetBndData().Pr);
-//        reader.ReadScalar( dat, lset.Phi, Stokes.GetBndData());
-        lset.Init( DistanceFct);
+        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
       } break;
       
       default:  

@@ -70,7 +70,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( FPsteps,      "CouplingSteps");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
-    rp_.RegString( IniData,   "InitialVel");
+    rp_.RegString( IniData,   "InitialFile");
     rp_.RegString( meshfile,  "MeshFile");
 }
 
