@@ -82,7 +82,7 @@ SolveGSstep(const PreDummyCL<PB_JAC>&, const MatrixCL& A, Vec& x, const Vec& b, 
             y[i]= sum/aii;
     }
 
-    swap(x,y);
+    std::swap(x,y);
 }
 
 
@@ -690,6 +690,7 @@ class GMResSolverCL : public SolverBaseCL
 //=============================================================================
 
 typedef PreGSCL<P_SOR>     SORsmoothCL;
+typedef PreGSCL<P_JAC>     JACsmoothCL;
 typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
