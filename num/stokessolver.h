@@ -242,15 +242,15 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     {
         VectorCL tmp( v.size());
         _poissonSolver.Solve( A, tmp, b);
-        std::cerr << "Iterationen: " << _poissonSolver.GetIter()
-                  << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+        std::cerr << "iterations: " << _poissonSolver.GetIter()
+                  << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
     CG( SchurComplMatrixCL( A, B, _poissonSolver.GetTol(), 1.), p, rhs, iter, tol);
-    std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
+    std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
     const double old_tol= _poissonSolver.GetTol();
@@ -258,10 +258,13 @@ void SchurSolverCL<PoissonSolverT>::Solve(
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
     _poissonSolver.SetTol( old_tol);   // reset old tolerance, so that nothing has changed
     std::cerr << "Iterationen: " << _poissonSolver.GetIter()
-              << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+              << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
     _iter= iter+_poissonSolver.GetIter();
     _res= tol + _poissonSolver.GetResid();
+std::cerr << "Real residuals are: "
+          << (A*v+transp_mul(B, p)-b).norm() << ", "
+          << (B*v-c).norm() << std::endl;
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
@@ -317,26 +320,29 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
     {
         VectorCL tmp( v.size());
         _poissonSolver.Solve( A, tmp, b);
-        std::cerr << "Iterationen: " << _poissonSolver.GetIter()
-                  << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+        std::cerr << "iterations: " << _poissonSolver.GetIter()
+                  << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
     PCG( SchurComplMatrixCL( A, B, _poissonSolver.GetTol(), 1.), p, rhs, _schurPc, iter, tol);
-    std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
+    std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
 
     const double old_tol= _poissonSolver.GetTol();
     _poissonSolver.SetTol( _tol);      // same tolerance as for pressure
     _poissonSolver.Solve( A, v, b - transp_mul(B, p));
     _poissonSolver.SetTol( old_tol);   // reset old tolerance, so that nothing has changed
-    std::cerr << "Iterationen: " << _poissonSolver.GetIter()
-              << "    Norm des Residuums: " << _poissonSolver.GetResid() << std::endl;
+    std::cerr << "iterations: " << _poissonSolver.GetIter()
+              << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
     _iter= iter+_poissonSolver.GetIter();
     _res= tol+_poissonSolver.GetResid();
+std::cerr << "Real residuals are: "
+          << (A*v+transp_mul(B, p)-b).norm() << ", "
+          << (B*v-c).norm() << std::endl;
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
