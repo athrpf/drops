@@ -245,6 +245,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            if (C.VolCorr)
+            {
+                double dphi= lset.AdjustVolume( Vol, 1e-9);
+                std::cerr << "volume correction is " << dphi << std::endl;
+                lset.Phi.Data+= dphi;
+                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            }
 
             if (C.RepFreq && step%C.RepFreq==0)
             {
@@ -254,6 +261,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
                 ensight.Commit();
                 std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                if (C.VolCorr)
+                {
+                    double dphi= lset.AdjustVolume( Vol, 1e-9);
+                    std::cerr << "volume correction is " << dphi << std::endl;
+                    lset.Phi.Data+= dphi;
+                    std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                }
             }
         }
     }

@@ -24,6 +24,8 @@ Levelset {
   Tol		=	1e-14
   Iter		=	10000
   SD		=	0.1
+  CurvDiff	=	0
+  VolCorrection	=	1
 }
 
 # re-initialization of levelset function

@@ -28,6 +28,8 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( lset_iter,    "Iter");
     rp_.RegDouble( lset_tol,  "Tol");
     rp_.RegDouble( lset_SD,   "SD");
+    rp_.RegDouble( CurvDiff,  "CurvDiff");
+    rp_.RegInt( VolCorr,      "VolCorrection");
     rp_.EndGroup();
 
     rp_.BeginGroup("Reparam");

@@ -248,7 +248,7 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
 
 double func_abs( double x) { return std::abs(x); }
 
-void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, VectorCL& b)
+void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, VectorCL& b) const
 // R, b describe the following terms used for reparametrization:  
 // b_i  = ( S(Phi0),           v_i              + SD * w(Psi) grad v_i )
 // R_ij = ( w(Psi) grad v_j,   v_i              + SD * w(Psi) grad v_i )
@@ -455,6 +455,13 @@ inline void Solve2x2( const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<
 
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
+    VectorCL    SmPhi= Phi.Data;
+    if (_curvDiff>0)
+    {
+        std::cerr << "Smoothing for curvature calculation.\n";
+        SmoothPhi( SmPhi, _curvDiff);
+    }
+        
     BaryCoordCL BaryDoF[10];
     Point3DCL   Coord[10];
     BaryDoF[0][0]= BaryDoF[1][1]= BaryDoF[2][2]= BaryDoF[3][3]= 1.;
@@ -491,13 +498,13 @@ fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
             Coord[v]= v<4 ? it->GetVertex(v)->GetCoord() : GetBaryCenter( *it->GetEdge(v-4));
             if (v<4) 
             {
-                PhiLoc[v]= Phi.Data[it->GetVertex(v)->Unknowns(idx_phi)];
+                PhiLoc[v]= SmPhi[it->GetVertex(v)->Unknowns(idx_phi)];
                 Numb[v]= it->GetVertex(v)->Unknowns.Exist(idx_f) ?
                             it->GetVertex(v)->Unknowns(idx_f) : NoIdx;
             }
             else
             {
-                PhiLoc[v]= Phi.Data[it->GetEdge(v-4)->Unknowns(idx_phi)];
+                PhiLoc[v]= SmPhi[it->GetEdge(v-4)->Unknowns(idx_phi)];
                 Numb[v]= it->GetEdge(v-4)->Unknowns.Exist(idx_f) ?
                              it->GetEdge(v-4)->Unknowns(idx_f) : NoIdx;
             }
@@ -695,7 +702,64 @@ double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
     }
 }
 
+void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
+{
+    SmPhi= Phi.Data;
+    MatrixCL M, A, C;
+    SetupSmoothSystem( M, A); 
+    C.LinComb( 1, M, diff, A);
+    PCG_SsorCL( _pc, _gm.GetIter(),_gm.GetTol()).Solve( C, SmPhi, M*Phi.Data);
+}
 
+void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
+// used for smoothing of Phi before computing curvature term
+//
+// M = mass matrix for P2 elements
+// A = stiffness matrix for P2 elements
+{
+    const IdxT num_unks= Phi.RowIdx->NumUnknowns;
+    const Uint lvl= Phi.RowIdx->TriangLevel,
+               idx= Phi.RowIdx->GetIdx();
+
+    SparseMatBuilderCL<double> Mb(&M, num_unks, num_unks);
+    SparseMatBuilderCL<double> Ab(&A, num_unks, num_unks);
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
+    SMatrixCL<3,3>     T;
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    
+    IdxT         Numb[10];
+    double det, absdet;
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit!=send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        absdet= fabs( det);
+        
+        for (int i=0; i<4; ++i)
+            Numb[i]= sit->GetVertex(i)->Unknowns(idx);
+        for (int i=0; i<6; ++i)
+            Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+        {
+            for(int j=0; j<=i; ++j)
+            {
+                // M_ij = ( v_j, v_i),    A_ij = ( grad v_j, grad v_i)
+                const double mij= GetMassP2(i,j)*absdet,
+                             aij= Quad2CL<>(dot( Grad[j], Grad[i])).quad( absdet);
+                Mb( Numb[i], Numb[j])+= mij;
+                Mb( Numb[j], Numb[i])+= mij;
+                Ab( Numb[i], Numb[j])+= aij;
+                Ab( Numb[j], Numb[i])+= aij;
+            }
+        }
+    }
+    Mb.Build();
+    Ab.Build();
+}
 
 } // end of namespace DROPS
 

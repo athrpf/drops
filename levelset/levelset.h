@@ -22,25 +22,28 @@ class LevelsetP2CL
 
     IdxDescCL           idx;
     VecDescCL           Phi;
-    double              sigma;   // surface tension
+    double              sigma;     // surface tension
 
   private:
     MultiGridCL&        _MG;
-    double              _diff,   // amount of diffusion in reparametrization
-                        _SD,     // streamline diffusion
+    double              _diff,     // amount of diffusion in reparametrization
+                        _curvDiff, // amount of diffusion in curvature calculation
+                        _SD,       // streamline diffusion
                         _theta, _dt;  
     MatrixCL            _E, _H, _L;
     NoBndDataCL<>       _dummyBnd;
     SSORPcCL            _pc;
     GMResSolverCL<SSORPcCL>  _gm;
 
-    void SetupReparamSystem( MatrixCL&, const VectorCL&, VectorCL&);
+    void SetupReparamSystem( MatrixCL&, const VectorCL&, VectorCL&) const;
+    void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                  const;
+    void SmoothPhi( VectorCL& SmPhi, double diff)                   const;
     
   public:
     LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0., 
-                  double diff= 0., Uint iter=1000, double tol=1e-7)
-      : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _SD( SD), _theta( theta), _dt( 0.),  
-        _gm( _pc, 10, iter, tol)
+                  double diff= 0., Uint iter=1000, double tol=1e-7, double curvDiff= -1)
+      : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
+        _theta( theta), _dt( 0.), _gm( _pc, 10, iter, tol)
     {}
     
     GMResSolverCL<SSORPcCL>& GetSolver() { return _gm; }

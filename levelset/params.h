@@ -28,14 +28,16 @@ class ParamMesszelleCL: public ParamBaseCL
     double theta;				// 0=FwdEuler, 1=BwdEuler, 0.5=CN
 
     double sigma,				// Oberflaechenspannung
+           CurvDiff,				// num. Glaettung Kruemmungstermberechnung
            rhoD, rhoF, muD, muF, 	 	// Stoffdaten: Dichte/Viskositaet
            sm_eps; 				// Glaettungszone fuer Dichte-/Viskositaetssprung
 
     Point3DCL g;				// Schwerkraft
     double    Radius;				// Radius und 
     Point3DCL Mitte;				// Position des Tropfens
-    int       num_dropref;			// zusaetzliche Tropfenverfeinerung
-
+    int       num_dropref,			// zusaetzliche Tropfenverfeinerung
+              VolCorr;				// Volumenkorrektur (0=false)
+              
     double Anstroem, 				// max. Einstroemgeschwindigkeit (Parabelprofil)
            r_inlet;				// Radius am Einlass der Messzelle
     int    flow_dir;				// Stroemungsrichtung (x/y/z = 0/1/2)
