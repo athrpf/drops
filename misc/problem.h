@@ -48,6 +48,11 @@ class IdxDescCL
     
     void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
     Uint GetIdx() const { if (Idx==NoIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index. Probably using copy instead of original IdxDescCL-object."); return Idx; }
+
+    // Compare two IdxDescCL-objects. If a multigrid is given via mg, the
+    // unknown-numbers on it are compared, too.
+    static bool
+    Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg= 0);
 };
 
 

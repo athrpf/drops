@@ -62,21 +62,25 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
+    double       t;        // time, 0.0 in the stationary case
     VelVecDescCL v;
     VecDescCL    p;
     VelVecDescCL b;
     VecDescCL    c;
     MatDescCL    A, 
-                 B;
+                 B,
+                 M;
     
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1) {}  
+        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}  
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg, coeff, bdata), vel_idx( 3, 3), pr_idx( 1) {}  
+        : _base( mg, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}  
 
     // Create and delete numbering of unknowns
-    void CreateNumberingVel(Uint, IdxDescCL*);
-    void CreateNumberingPr (Uint, IdxDescCL*);
+    void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
     void DeleteNumberingVel(IdxDescCL*);
     void DeleteNumberingPr (IdxDescCL*);
     
@@ -96,7 +100,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     DiscPrSolCL GetPrSolution() const
         { return DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
     DiscVelSolCL GetVelSolution() const
-        { return DiscVelSolCL(&v, &GetBndData().Vel, &GetMG()); }
+        { return DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
 
 };
 

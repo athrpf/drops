@@ -76,6 +76,82 @@ void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
     NumUnknownsTetra  = unkTetra;
 }
 
+bool
+IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
+// Compare two IdxDescCL-objects. If a multigrid is given via mg, the
+// unknown-numbers on it are compared, too.
+{
+    const Uint lvl= i.TriangLevel;
+    if (lvl != j.TriangLevel) {
+        std::cerr << "Compare_Indices: Indices on different levels.\n";
+        return false;
+    }
+    if (i.NumUnknownsVertex != j.NumUnknownsVertex) {
+        std::cerr << "Compare_Indices: NumUnknownsVertex different.\n";
+        return false;
+    }
+    if (i.NumUnknownsEdge != j.NumUnknownsEdge) {
+        std::cerr << "Compare_Indices: NumUnknownsEdge different.\n";
+        return false;
+    }
+    if (i.NumUnknownsFace != j.NumUnknownsFace) {
+        std::cerr << "Compare_Indices: NumUnknownsFace different.\n";
+        return false;
+    }
+    if (i.NumUnknownsTetra != j.NumUnknownsTetra) {
+        std::cerr << "Compare_Indices: NumUnknownsTetra different.\n";
+        return false;
+    }
+    if (i.NumUnknowns != j.NumUnknowns) {
+        std::cerr << "Compare_Indices: NumUnknowns different.\n";
+        return false;
+    }
+    if (!mg)
+        return true;
+
+    const Uint iidx= i.GetIdx(),
+               jidx= j.GetIdx();
+    if (iidx == jidx)
+        return true;
+    if ( i.NumUnknownsVertex != 0)
+        for (MultiGridCL::const_TriangVertexIteratorCL it= mg->GetTriangVertexBegin( lvl),
+             theend= mg->GetTriangVertexEnd( lvl); it != theend; ++it)
+            if (it->Unknowns.Exist())
+                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
+                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                    std::cerr << "Compare_Indices: Vertex difference.\n";
+                    return false;
+                }
+    if (i.NumUnknownsEdge != 0)
+        for (MultiGridCL::const_TriangEdgeIteratorCL it= mg->GetTriangEdgeBegin( lvl),
+             theend= mg->GetTriangEdgeEnd( lvl); it != theend; ++it)
+            if (it->Unknowns.Exist())
+                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
+                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                    std::cerr << "Compare_Indices: Edge difference.\n";
+                    return false;
+                }
+    if (i.NumUnknownsFace != 0)
+        for (MultiGridCL::const_TriangFaceIteratorCL it= mg->GetTriangFaceBegin( lvl),
+             theend= mg->GetTriangFaceEnd( lvl); it != theend; ++it)
+            if (it->Unknowns.Exist())
+                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
+                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                    std::cerr << "Compare_Indices: Face difference.\n";
+                    return false;
+                }
+    if ( i.NumUnknownsTetra != 0)
+        for (MultiGridCL::const_TriangTetraIteratorCL it= mg->GetTriangTetraBegin( lvl),
+             theend= mg->GetTriangTetraEnd( lvl); it != theend; ++it)
+            if (it->Unknowns.Exist())
+                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
+                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                    std::cerr << "Compare_Indices: Tetra difference.\n";
+                    return false;
+                }
+    return true;
+}
+
 void MatDescCL::SetIdx(IdxDescCL* row, IdxDescCL* col)
 {
     // create new matrix and set up the matrix description

@@ -232,49 +232,6 @@ inline StokesBndDataCL::VelBndDataCL::bnd_type Quad2D(const TetraCL& t, Uint fac
 **************************************************************************************************/
 
 template <class Coeff>
-void StokesP2P1CL<Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, thatIdxDesc[idxnr].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level; "true" generates unknowns on
-    // the boundary
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level),
-                        _BndData.Pr );
-}
-
-template <class Coeff>
-void StokesP2P1CL<Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, thatIdxDesc[idxnr].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level),
-                        _BndData.Vel );
-    CreateNumbOnEdge( idxnum, idx->NumUnknowns, idx->NumUnknownsEdge,
-                      _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level),
-                      _BndData.Vel );
-}
-
-
-template <class Coeff>
 void StokesP2P1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
 {
     const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
