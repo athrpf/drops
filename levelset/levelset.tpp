@@ -69,7 +69,8 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
     }
 }
 
-inline double QuadVel( double f[10], int i)
+/*
+inline double QuadP2( double f[10], int i)
 {
     double sum, result;
     if (i<4) // hat function on vert
@@ -120,11 +121,12 @@ inline double QuadVel( double f[10], int i)
         return result;
     }
 }
+*/
 
 inline double GetMassP2( int i, int j)
 {
 // zur Erlaeuterung der zurueckgegebenen Gewichte
-// beachte Kommentare zu Funktion QuadVel obendrueber!
+// beachte Kommentare zu Funktion QuadP2 obendrueber!
 
     if (i>j) { int h=i; i=j; j=h; } // swap such that i<=j holds
     if (j<4) // i,j are vertex-indices
@@ -155,149 +157,6 @@ inline double GetMassP2( int i, int j)
     }
 }
 
-
-inline double QuadVelGrad( double f[10], double g[4], int phi_i)
-// approximates int ( f*g*v_i ) on reference tetrahedron,
-// where f, g are scalar functions. 
-// f is P2, g is P1 and v_i is the P2 ansatz function.
-{
-    switch( phi_i)
-    {
-      case 0: return -f[8] * g[3] / 0.1260e4 - f[7] * g[3] / 0.1260e4 - f[9] * g[0] / 0.2520e4 - f[9] * g[1] / 0.2520e4 - f[6] * g[2] / 0.1260e4 - f[5] * g[3] / 0.2520e4 - f[5] * g[2] / 0.1260e4 + f[2] * g[3] / 0.5040e4 - f[6] * g[3] / 0.2520e4 + f[3] * g[1] / 0.5040e4 + f[3] * g[2] / 0.5040e4 - f[7] * g[2] / 0.2520e4 - f[8] * g[2] / 0.2520e4 - f[4] * g[3] / 0.2520e4 - f[4] * g[2] / 0.2520e4 - f[9] * g[3] / 0.1260e4 + f[0] * g[3] / 0.2520e4 + f[1] * g[3] / 0.5040e4 + f[0] * g[2] / 0.2520e4 + f[1] * g[2] / 0.5040e4 - f[7] * g[1] / 0.2520e4 - f[9] * g[2] / 0.1260e4 - g[0] * f[8] / 0.2520e4 - f[8] * g[1] / 0.1260e4 - g[0] * f[6] / 0.2520e4 - f[6] * g[1] / 0.1260e4 + f[2] * g[1] / 0.5040e4 - f[5] * g[1] / 0.2520e4 + f[0] * g[1] / 0.2520e4 - f[4] * g[1] / 0.1260e4 + f[0] * g[0] / 0.840e3;
-      case 1: return -f[8] * g[3] / 0.1260e4 - f[7] * g[3] / 0.1260e4 - f[9] * g[0] / 0.2520e4 - f[9] * g[1] / 0.2520e4 - f[6] * g[2] / 0.1260e4 - f[5] * g[3] / 0.2520e4 - f[5] * g[2] / 0.1260e4 + f[2] * g[3] / 0.5040e4 - f[6] * g[3] / 0.2520e4 + f[3] * g[2] / 0.5040e4 - f[7] * g[2] / 0.2520e4 + g[0] * f[3] / 0.5040e4 - f[8] * g[2] / 0.2520e4 - f[4] * g[3] / 0.2520e4 - f[4] * g[2] / 0.2520e4 - f[9] * g[3] / 0.1260e4 + f[0] * g[3] / 0.5040e4 + f[1] * g[3] / 0.2520e4 + f[0] * g[2] / 0.5040e4 + f[1] * g[2] / 0.2520e4 - f[7] * g[1] / 0.2520e4 - f[9] * g[2] / 0.1260e4 - g[0] * f[8] / 0.2520e4 - g[0] * f[7] / 0.1260e4 - g[0] * f[6] / 0.2520e4 - f[5] * g[1] / 0.2520e4 + g[0] * f[2] / 0.5040e4 - g[0] * f[5] / 0.1260e4 + g[0] * f[1] / 0.2520e4 - g[0] * f[4] / 0.1260e4 + f[1] * g[1] / 0.840e3;
-      case 2: return -f[6] * g[1] / 0.1260e4 - f[8] * g[3] / 0.1260e4 - f[7] * g[3] / 0.1260e4 - f[9] * g[0] / 0.2520e4 - f[9] * g[1] / 0.2520e4 + f[2] * g[2] / 0.840e3 - f[5] * g[3] / 0.2520e4 + f[2] * g[3] / 0.2520e4 - f[6] * g[3] / 0.2520e4 + f[3] * g[1] / 0.5040e4 - f[7] * g[2] / 0.2520e4 + g[0] * f[3] / 0.5040e4 - f[8] * g[2] / 0.2520e4 - f[4] * g[3] / 0.2520e4 - f[4] * g[2] / 0.2520e4 - f[9] * g[3] / 0.1260e4 + f[0] * g[3] / 0.5040e4 + f[1] * g[3] / 0.5040e4 - f[7] * g[1] / 0.2520e4 - g[0] * f[8] / 0.2520e4 - g[0] * f[7] / 0.1260e4 - g[0] * f[6] / 0.2520e4 + f[2] * g[1] / 0.2520e4 - f[5] * g[1] / 0.2520e4 + g[0] * f[2] / 0.2520e4 - f[8] * g[1] / 0.1260e4 - g[0] * f[5] / 0.1260e4 + f[0] * g[1] / 0.5040e4 + g[0] * f[1] / 0.5040e4 - g[0] * f[4] / 0.1260e4 - f[4] * g[1] / 0.1260e4;
-      case 3: return -f[6] * g[1] / 0.1260e4 + f[3] * g[3] / 0.840e3 - f[9] * g[0] / 0.2520e4 - f[9] * g[1] / 0.2520e4 - f[6] * g[2] / 0.1260e4 - f[5] * g[3] / 0.2520e4 - f[5] * g[2] / 0.1260e4 - f[6] * g[3] / 0.2520e4 + f[3] * g[1] / 0.2520e4 + f[3] * g[2] / 0.2520e4 - f[7] * g[2] / 0.2520e4 + g[0] * f[3] / 0.2520e4 - f[8] * g[2] / 0.2520e4 - f[4] * g[3] / 0.2520e4 - f[4] * g[2] / 0.2520e4 + f[0] * g[2] / 0.5040e4 + f[1] * g[2] / 0.5040e4 - f[7] * g[1] / 0.2520e4 - f[9] * g[2] / 0.1260e4 - g[0] * f[8] / 0.2520e4 - g[0] * f[7] / 0.1260e4 - g[0] * f[6] / 0.2520e4 + f[2] * g[1] / 0.5040e4 - f[5] * g[1] / 0.2520e4 + g[0] * f[2] / 0.5040e4 - f[8] * g[1] / 0.1260e4 - g[0] * f[5] / 0.1260e4 + f[0] * g[1] / 0.5040e4 + g[0] * f[1] / 0.5040e4 - g[0] * f[4] / 0.1260e4 - f[4] * g[1] / 0.1260e4;
-      case 4: return f[6] * g[1] / 0.420e3 + f[7] * g[3] / 0.630e3 - f[3] * g[3] / 0.2520e4 + f[9] * g[0] / 0.1260e4 + f[9] * g[1] / 0.1260e4 + f[6] * g[2] / 0.630e3 - f[2] * g[2] / 0.2520e4 + f[5] * g[3] / 0.1260e4 + f[5] * g[2] / 0.630e3 - f[2] * g[3] / 0.2520e4 + f[6] * g[3] / 0.1260e4 - f[3] * g[1] / 0.1260e4 - f[3] * g[2] / 0.2520e4 + f[7] * g[2] / 0.1260e4 - g[0] * f[3] / 0.1260e4 + f[8] * g[2] / 0.1260e4 + f[4] * g[3] / 0.630e3 + f[4] * g[2] / 0.630e3 - f[0] * g[3] / 0.2520e4 - f[1] * g[3] / 0.2520e4 - f[0] * g[2] / 0.2520e4 - f[1] * g[2] / 0.2520e4 + f[7] * g[1] / 0.630e3 + f[9] * g[2] / 0.1260e4 + g[0] * f[8] / 0.630e3 + g[0] * f[7] / 0.420e3 + g[0] * f[6] / 0.630e3 - f[2] * g[1] / 0.1260e4 + f[5] * g[1] / 0.630e3 - g[0] * f[2] / 0.1260e4 + f[8] * g[1] / 0.420e3 + g[0] * f[5] / 0.420e3 - f[0] * g[1] / 0.1260e4 - g[0] * f[1] / 0.1260e4 + g[0] * f[4] / 0.210e3 + f[4] * g[1] / 0.210e3 + f[8] * g[3] / 0.630e3 + f[9] * g[3] / 0.1260e4;
-      case 5: return f[6] * g[1] / 0.630e3 + f[7] * g[3] / 0.630e3 - f[3] * g[3] / 0.2520e4 + f[9] * g[0] / 0.630e3 + f[9] * g[1] / 0.1260e4 + f[6] * g[2] / 0.420e3 + f[5] * g[3] / 0.630e3 + f[5] * g[2] / 0.210e3 - f[2] * g[3] / 0.2520e4 + f[6] * g[3] / 0.1260e4 - f[3] * g[1] / 0.2520e4 - f[3] * g[2] / 0.1260e4 + f[7] * g[2] / 0.630e3 - g[0] * f[3] / 0.1260e4 + f[8] * g[2] / 0.1260e4 + f[4] * g[3] / 0.1260e4 + f[4] * g[2] / 0.630e3 - f[0] * g[3] / 0.2520e4 - f[1] * g[3] / 0.2520e4 - f[0] * g[2] / 0.1260e4 - f[1] * g[2] / 0.1260e4 + f[7] * g[1] / 0.1260e4 + f[9] * g[2] / 0.420e3 + g[0] * f[8] / 0.1260e4 + g[0] * f[7] / 0.420e3 + g[0] * f[6] / 0.630e3 - f[2] * g[1] / 0.2520e4 + f[5] * g[1] / 0.630e3 - g[0] * f[2] / 0.1260e4 + f[8] * g[1] / 0.1260e4 + g[0] * f[5] / 0.210e3 - f[0] * g[1] / 0.2520e4 - g[0] * f[1] / 0.1260e4 + g[0] * f[4] / 0.420e3 - f[1] * g[1] / 0.2520e4 + f[4] * g[1] / 0.630e3 + f[8] * g[3] / 0.1260e4 + f[9] * g[3] / 0.630e3;
-      case 6: return f[6] * g[1] / 0.210e3 + f[7] * g[3] / 0.1260e4 - f[3] * g[3] / 0.2520e4 + f[9] * g[0] / 0.1260e4 + f[9] * g[1] / 0.630e3 + f[6] * g[2] / 0.210e3 + f[5] * g[3] / 0.1260e4 + f[5] * g[2] / 0.420e3 - f[2] * g[3] / 0.2520e4 + f[6] * g[3] / 0.630e3 - f[3] * g[1] / 0.1260e4 - f[3] * g[2] / 0.1260e4 + f[7] * g[2] / 0.1260e4 - g[0] * f[3] / 0.2520e4 + f[8] * g[2] / 0.630e3 + f[4] * g[3] / 0.1260e4 + f[4] * g[2] / 0.630e3 - f[0] * g[3] / 0.2520e4 - f[1] * g[3] / 0.2520e4 - f[0] * g[2] / 0.1260e4 - f[1] * g[2] / 0.1260e4 + f[7] * g[1] / 0.1260e4 + f[9] * g[2] / 0.420e3 + g[0] * f[8] / 0.1260e4 + g[0] * f[7] / 0.1260e4 + g[0] * f[6] / 0.630e3 - f[2] * g[1] / 0.1260e4 + f[5] * g[1] / 0.630e3 - g[0] * f[2] / 0.2520e4 + f[8] * g[1] / 0.420e3 + g[0] * f[5] / 0.630e3 - f[0] * g[1] / 0.1260e4 - g[0] * f[1] / 0.2520e4 + g[0] * f[4] / 0.630e3 + f[4] * g[1] / 0.420e3 + f[8] * g[3] / 0.630e3 + f[9] * g[3] / 0.630e3 - f[0] * g[0] / 0.2520e4;
-      case 7: return f[6] * g[1] / 0.1260e4 + f[7] * g[3] / 0.210e3 + f[9] * g[0] / 0.630e3 + f[9] * g[1] / 0.1260e4 + f[6] * g[2] / 0.1260e4 - f[2] * g[2] / 0.2520e4 + f[5] * g[3] / 0.630e3 + f[5] * g[2] / 0.630e3 - f[2] * g[3] / 0.1260e4 + f[6] * g[3] / 0.1260e4 - f[3] * g[1] / 0.2520e4 - f[3] * g[2] / 0.2520e4 + f[7] * g[2] / 0.630e3 - g[0] * f[3] / 0.1260e4 + f[8] * g[2] / 0.1260e4 + f[4] * g[3] / 0.630e3 + f[4] * g[2] / 0.1260e4 - f[0] * g[3] / 0.1260e4 - f[1] * g[3] / 0.1260e4 - f[0] * g[2] / 0.2520e4 - f[1] * g[2] / 0.2520e4 + f[7] * g[1] / 0.630e3 + f[9] * g[2] / 0.630e3 + g[0] * f[8] / 0.630e3 + g[0] * f[7] / 0.210e3 + g[0] * f[6] / 0.1260e4 - f[2] * g[1] / 0.2520e4 + f[5] * g[1] / 0.1260e4 - g[0] * f[2] / 0.1260e4 + f[8] * g[1] / 0.630e3 + g[0] * f[5] / 0.420e3 - f[0] * g[1] / 0.2520e4 - g[0] * f[1] / 0.1260e4 + g[0] * f[4] / 0.420e3 - f[1] * g[1] / 0.2520e4 + f[4] * g[1] / 0.630e3 + f[8] * g[3] / 0.420e3 + f[9] * g[3] / 0.420e3;
-      case 8: return f[6] * g[1] / 0.420e3 + f[7] * g[3] / 0.420e3 + f[9] * g[0] / 0.1260e4 + f[9] * g[1] / 0.630e3 + f[6] * g[2] / 0.630e3 - f[2] * g[2] / 0.2520e4 + f[5] * g[3] / 0.1260e4 + f[5] * g[2] / 0.1260e4 - f[2] * g[3] / 0.1260e4 + f[6] * g[3] / 0.630e3 - f[3] * g[1] / 0.1260e4 - f[3] * g[2] / 0.2520e4 + f[7] * g[2] / 0.1260e4 - g[0] * f[3] / 0.2520e4 + f[8] * g[2] / 0.630e3 + f[4] * g[3] / 0.630e3 + f[4] * g[2] / 0.1260e4 - f[0] * g[3] / 0.1260e4 - f[1] * g[3] / 0.1260e4 - f[0] * g[2] / 0.2520e4 - f[1] * g[2] / 0.2520e4 + f[7] * g[1] / 0.630e3 + f[9] * g[2] / 0.630e3 + g[0] * f[8] / 0.630e3 + g[0] * f[7] / 0.630e3 + g[0] * f[6] / 0.1260e4 - f[2] * g[1] / 0.1260e4 + f[5] * g[1] / 0.1260e4 - g[0] * f[2] / 0.2520e4 + f[8] * g[1] / 0.210e3 + g[0] * f[5] / 0.1260e4 - f[0] * g[1] / 0.1260e4 - g[0] * f[1] / 0.2520e4 + g[0] * f[4] / 0.630e3 + f[4] * g[1] / 0.420e3 + f[8] * g[3] / 0.210e3 + f[9] * g[3] / 0.420e3 - f[0] * g[0] / 0.2520e4;
-      case 9: return f[6] * g[1] / 0.630e3 + f[7] * g[3] / 0.420e3 + f[9] * g[0] / 0.630e3 + f[9] * g[1] / 0.630e3 + f[6] * g[2] / 0.420e3 + f[5] * g[3] / 0.630e3 + f[5] * g[2] / 0.420e3 - f[2] * g[3] / 0.1260e4 + f[6] * g[3] / 0.630e3 - f[3] * g[1] / 0.2520e4 - f[3] * g[2] / 0.1260e4 + f[7] * g[2] / 0.630e3 - g[0] * f[3] / 0.2520e4 + f[8] * g[2] / 0.630e3 + f[4] * g[3] / 0.1260e4 + f[4] * g[2] / 0.1260e4 - f[0] * g[3] / 0.1260e4 - f[1] * g[3] / 0.1260e4 - f[0] * g[2] / 0.1260e4 - f[1] * g[2] / 0.1260e4 + f[7] * g[1] / 0.1260e4 + f[9] * g[2] / 0.210e3 + g[0] * f[8] / 0.1260e4 + g[0] * f[7] / 0.630e3 + g[0] * f[6] / 0.1260e4 - f[2] * g[1] / 0.2520e4 + f[5] * g[1] / 0.1260e4 - g[0] * f[2] / 0.2520e4 + f[8] * g[1] / 0.630e3 + g[0] * f[5] / 0.630e3 - f[0] * g[1] / 0.2520e4 - g[0] * f[1] / 0.2520e4 + g[0] * f[4] / 0.1260e4 + f[4] * g[1] / 0.1260e4 + f[8] * g[3] / 0.420e3 + f[9] * g[3] / 0.210e3 - f[1] * g[1] / 0.2520e4 - f[0] * g[0] / 0.2520e4;
-    }
-    return 0;
-}
-
-
-inline double QuadVelGrad( SVectorCL<3> f[10], SMatrixCL<3,5> g, int phi_i)
-// approximates int ( f*g*v_i ) on reference tetrahedron,
-// where f, g are vector-valued functions.
-// f is P2, g is P1 and v_i is the P2 ansatz function.
-{
-    double ff[10], gg[4], sum= 0;
-    for (int i=0; i<3; ++i)
-    {
-        for (int j=0; j<10; ++j) ff[j]= f[j][i];
-        for (int j=0; j<4; ++j)  gg[j]= g(i,j);
-        sum+= QuadVelGrad( ff, gg, phi_i);
-    }
-    return sum;
-}
-
-
-inline double QuadVelGrad( SVectorCL<3> f[10], SMatrixCL<3,5> g, double h[10])
-// approximates int ( f*g h ) on reference tetrahedron,
-// where f, g are vector-valued functions, h is a scalar function. 
-// f, h are P2, g is P1.
-{
-    double sum= 0;
-    for (int i=0; i<10; ++i)
-        sum+= h[i]* QuadVelGrad( f, g, i);
-    return sum;
-}
-
-
-inline double QuadVelGrad( SVectorCL<3> f[10], SMatrixCL<3,5> g, SMatrixCL<3,5> h)
-// approximates int ( f*g f*h ) on reference tetrahedron,
-// where f, g, h are vector-valued functions.
-// f is P2, g, h are P1.
-{
-    double sum= 0;
-    
-    for (int i=0; i<10; ++i)
-    {
-        SVectorCL<3> grad;
-        if (i<4)
-        {
-            for (int k=0; k<3; ++k) 
-                grad[k]= h(k,i);
-        }
-        else
-        {
-            for (int k=0; k<3; ++k) 
-                grad[k]= 0.5*( h(k,VertOfEdge(i-4,0)) + h(k,VertOfEdge(i-4,1)) );
-        }
-        double fh_i= 0;
-        for (int k=0; k<3; ++k)
-            fh_i+= grad[k]*f[i][k];
-        // fh_i = f*h in DoF i
-        sum+= fh_i * QuadVelGrad( f, g, i);
-    }
-    
-    return sum;
-}
-/*
-void LevelsetP2CL::SetupSystem( const DiscVelSolCL& vel)
-// Sets up the stiffness matrices:
-// E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-// H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-// where v_i, v_j denote the ansatz functions.
-{
-    const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.RowIdx->TriangLevel,
-               idx= Phi.RowIdx->GetIdx();
-
-    SparseMatBuilderCL<double> E(&_E, num_unks, num_unks), 
-                               H(&_H, num_unks, num_unks);
-    IdxT Numb[10];
-    
-    std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns." << std::endl;                            
-
-    // fill value part of matrices
-    SMatrixCL<3,5> Grad[10], GradRef[10]; // jeweils Werte des Gradienten in 5 Stuetzstellen
-    SMatrixCL<3,3> T;
-    SVectorCL<3> u_loc[10];
-    double det, absdet, h_T;
-
-    GetGradientsOnRef(GradRef);
-    
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
-         sit!=send; ++sit)
-    {
-        GetTrafoTr( T, det, *sit);
-        MakeGradients( Grad, GradRef, T);
-        absdet= fabs( det);
-        h_T= pow( absdet, 1./3);
-        
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb and u_loc
-        for(int i=0; i<4; ++i)
-        {
-            Numb[i]= sit->GetVertex(i)->Unknowns(idx);
-	    u_loc[i]= vel.val( *sit->GetVertex(i));
-        }
-        for(int i=0; i<6; ++i)
-        {
-            Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
-	    u_loc[i+4]= vel.val( *sit->GetEdge(i));
-        }
-
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            for(int j=0; j<10; ++j)
-            {
-                E( Numb[i], Numb[j])+= GetMassP2(i,j)*absdet; 
-                E( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(u_loc,Grad[i],j)*absdet; 
-                
-                H( Numb[i], Numb[j])+= QuadVelGrad(u_loc,Grad[j],i)*absdet;
-                H( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(u_loc,Grad[j],Grad[i])*absdet;
-            }
-    }
-    
-    E.Build();
-    H.Build();
-    std::cerr << _E.num_nonzeros() << " nonzeros in E, "
-              << _H.num_nonzeros() << " nonzeros in H! " << std::endl;
-}
-*/
 template<class DiscVelSolT>
 void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 // Sets up the stiffness matrices:
@@ -313,7 +172,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
                                H(&_H, num_unks, num_unks);
     IdxT Numb[10];
     
-    std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns." << std::endl;                            
+    std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns. ";
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10], u_loc;
@@ -351,12 +210,12 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
             for(int j=0; j<10; ++j)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-                E( Numb[i], Numb[j])+= ( GetMassP2(i,j) 
-                                       + u_Grad[i].quadP2(j)*_SD*h_T )*absdet; 
+                E( Numb[i], Numb[j])+= GetMassP2(i,j) * absdet
+                                     + u_Grad[i].quadP2(j, absdet)*_SD*h_T; 
                 
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-                H( Numb[i], Numb[j])+= ( u_Grad[j].quadP2(i)
-                                       + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad() * _SD*h_T )*absdet;
+                H( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
+                                     + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * _SD*h_T;
             }
     }
     
@@ -400,65 +259,54 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _R, const VectorCL& Psi, Vector
     SparseMatBuilderCL<double> R(&_R, num_unks, num_unks);
     b.resize( 0);
     b.resize( num_unks);
-    
-    IdxT Numb[10];
-    
-    std::cerr << "entering SetupReparamSystem: " << num_unks << " levelset unknowns." << std::endl;                            
+    std::cerr << "entering SetupReparamSystem: " << num_unks << " levelset unknowns. ";
 
-    // fill value part of matrices
-    SMatrixCL<3,5> Grad[10], GradRef[10]; // jeweils Werte des Gradienten in 5 Stuetzstellen
-    SMatrixCL<3,3> T;
-    SVectorCL<3> w_loc[10], grad_Psi[4];
-    double Sign_Phi[10];
-    double det, absdet, h_T;
-    const double alpha= 0.1;  // for smoothing of signum fct
+    Quad2CL<double>    Sign_Phi;
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
+    SMatrixCL<3,3>     T;
+    P2DiscCL::GetGradientsOnRef( GradRef);
     
-    GetGradientsOnRef(GradRef);
+    IdxT         Numb[10];
+    SVectorCL<3> grad_Psi[4];
+    DiscSolCL    phi= GetSolution();
+    double det, absdet;
+    const double alpha= 0.1;  // for smoothing of signum fct
     
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
-        MakeGradients( Grad, GradRef, T);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= fabs( det);
-        h_T= pow( absdet, 1./3);
         
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb
         for (int i=0; i<4; ++i)
             Numb[i]= sit->GetVertex(i)->Unknowns(idx);
         for (int i=0; i<6; ++i)
             Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
+        // init Sign_Phi, w_loc
         for (int i=0; i<4; ++i)
         {
-            Sign_Phi[i]= SmoothedSign( Phi.Data[ Numb[i]], alpha);
-            for (int k=0; k<3; ++k)
-            {
-                double sum= 0;
-                for (int l=0; l<10; ++l)
-                    sum+= Psi[ Numb[l]]*Grad[l](k,i);
-                grad_Psi[i][k]= sum;
-            }
-	    w_loc[i]= Sign_Phi[i]*grad_Psi[i]/grad_Psi[i].norm();
+            Sign_Phi.val[i]= SmoothedSign( phi.val( *sit->GetVertex(i)), alpha);
+            grad_Psi[i]= Point3DCL();  // init with zero
+            for (int l=0; l<10; ++l)
+                grad_Psi[i]+= Psi[ Numb[l]] * Grad[l].val[i];
+	    w_loc.val[i]= (Sign_Phi.val[i]/grad_Psi[i].norm() )*grad_Psi[i];
         }
-        for (int i=0; i<6; ++i)
-        {
-            Sign_Phi[i+4]= SmoothedSign( Phi.Data[ Numb[i+4]], alpha);
-            // gradient on edge is the average of the gradient on the vertices, since gradient is linear
-            SVectorCL<3> gr= 0.5*(grad_Psi[VertOfEdge(i,0)]+grad_Psi[VertOfEdge(i,1)]);
-	    w_loc[i+4]= Sign_Phi[i+4]*gr/gr.norm();
-        }
+        // values in barycenter
+        Point3DCL gr= 0.25*(grad_Psi[0]+grad_Psi[1]+grad_Psi[2]+grad_Psi[3]);
+        Sign_Phi.val[4]= SmoothedSign( phi.val( *sit, 0.25, 0.25, 0.25), alpha);
+        w_loc.val[4]=    Sign_Phi.val[4]*gr/gr.norm();
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
         {
             // b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
-            b[ Numb[i]]+= QuadVel( Sign_Phi, i)*absdet;
-            b[ Numb[i]]+= _SD*h_T*QuadVelGrad(w_loc,Grad[i], Sign_Phi)*absdet; 
+            b[ Numb[i]]+= Sign_Phi.quadP2( i, absdet);
+//            b[ Numb[i]]+= _SD*h_T*QuadVelGrad(w_loc,Grad[i], Sign_Phi)*absdet; 
             for(int j=0; j<10; ++j)
             {
                 // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
-                R( Numb[i], Numb[j])+= QuadVelGrad(w_loc,Grad[j],i)*absdet;
-                R( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(w_loc,Grad[j],Grad[i])*absdet;
+                R( Numb[i], Numb[j])+= Quad2CL<>(dot( w_loc, Grad[j])).quadP2(i, absdet);
+//                R( Numb[i], Numb[j])+= _SD*h_T*QuadVelGrad(w_loc,Grad[j],Grad[i])*absdet;
             }
         }
     }
@@ -591,7 +439,6 @@ inline void Solve2x2( const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<
     x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;
     x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det;
 }
-
 
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {

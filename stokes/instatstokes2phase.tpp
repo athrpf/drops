@@ -120,7 +120,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
                     M_pr( prNumb[i], prNumb[j])+= (i!=j ? coupl_ij : coupl_ii) * absdet;
-                    //mu_Re.quadP1(i,j) * absdet;
+                    //mu_Re.quadP1(i,j, absdet);
     }
     M_pr.Build();
 }
@@ -195,7 +195,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_f
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
 // Set up matrices A, M and rhs b (depending on phase bnd)
 {
     const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
@@ -204,6 +204,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                     mM( &M->Data, num_unks_vel, num_unks_vel);
     b->Clear();
     cplM->Clear();
+    cplA->Clear();
     
     const Uint lvl         = A->RowIdx->TriangLevel,
                vidx        = A->RowIdx->GetIdx();
@@ -211,7 +212,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     IdxT Numb[10];
     bool IsOnDirBnd[10];
     
-    std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels." << std::endl;                            
+    std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     Quad2CL<double> rho, mu_Re, H, kreuzterm;
@@ -268,8 +269,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
             {
                 // dot-product of the gradients
                 const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
-                coupA[i][j]= coupA[j][i]= dotGrad.quad()*absdet;
-                coupM[i][j]= coupM[j][i]= rho.quadP2(i,j)*absdet;
+                coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
+                coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
             }
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
@@ -289,7 +290,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
                                     kreuzterm.val[m]= Grad[i].val[m][l] * Grad[j].val[m][k] * mu_Re.val[m];
 
-                                mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad()*absdet;
+                                mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad( absdet);
                             }
                         mM( Numb[i],   Numb[j]  )+= coupM[j][i];
                         mM( Numb[i]+1, Numb[j]+1)+= coupM[j][i];
@@ -303,14 +304,14 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                                      cM= coupM[j][i];
                         for (int k=0; k<3; ++k)
                         {
-                            b->Data[Numb[i]+k]-= cA*tmp[k];
+                            cplA->Data[Numb[i]+k]-= cA*tmp[k];
                             
                             for (int l=0; l<3; ++l)
                             {
                                 // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
                                     kreuzterm.val[m]= Grad[i].val[m][l] * Grad[j].val[m][k] * mu_Re.val[m];
-                                b->Data[Numb[i]+k]-= kreuzterm.quad()*absdet*tmp[l];
+                                cplA->Data[Numb[i]+k]-= kreuzterm.quad( absdet)*tmp[l];
                             }
                         }
                         cplM->Data[Numb[i]  ]-= cM*tmp[0];
@@ -318,7 +319,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         cplM->Data[Numb[i]+2]-= cM*tmp[2];
                     }
                 }
-                tmp= rhs.quadP2( i)*absdet;
+                tmp= rhs.quadP2( i, absdet);
                 b->Data[Numb[i]  ]+= tmp[0];
                 b->Data[Numb[i]+1]+= tmp[1];
                 b->Data[Numb[i]+2]+= tmp[2];
@@ -365,7 +366,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
     
-    std::cerr << "entering SetupSystem2: " << B->RowIdx->NumUnknowns << " prs." << std::endl;                            
+    std::cerr << "entering SetupSystem2: " << B->RowIdx->NumUnknowns << " prs. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
         
@@ -403,7 +404,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, 
             if (!IsOnDirBnd[vel])
                 for(int pr=0; pr<4; ++pr)
                 {
-                    tmp= Grad[vel].quadP1( pr)*absdet;
+                    tmp= Grad[vel].quadP1( pr, absdet);
                     mB( prNumb[pr], Numb[vel])  -=  tmp[0];
                     mB( prNumb[pr], Numb[vel]+1)-=  tmp[1];
                     mB( prNumb[pr], Numb[vel]+2)-=  tmp[2];
@@ -413,7 +414,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, 
                 tmp= vel<4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex(vel), t)
                            : _BndData.Vel.GetDirBndValue( *sit->GetEdge(vel-4), t);
                 for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr), tmp)*absdet;
+                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
             }
         }
     }
@@ -468,7 +469,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, double t) const
                 tmp= vel<4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex(vel), t)
                            : _BndData.Vel.GetDirBndValue( *sit->GetEdge(vel-4), t);
                 for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad_vel.quadP1( pr), tmp)*absdet;
+                    c->Data[ prNumb[pr]]+= inner_prod( Grad_vel.quadP1( pr, absdet), tmp);
             }
         }
     }

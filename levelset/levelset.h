@@ -49,8 +49,8 @@ class LevelsetP2CL
                         _theta, _dt;  
     MatrixCL            _E, _H, _L;
     DummyBndDataCL      _dummyBnd;
-    DummyPcCL           _pc;
-    GMResSolverCL<DummyPcCL>  _gm;
+    SSORPcCL            _pc;
+    GMResSolverCL<SSORPcCL>  _gm;
 
     void SetupReparamSystem( MatrixCL&, const VectorCL&, VectorCL&);
     
@@ -60,7 +60,7 @@ class LevelsetP2CL
         _gm( _pc, 10, iter, tol)
     {}
     
-    GMResSolverCL<DummyPcCL>& GetSolver() { return _gm; }
+    GMResSolverCL<SSORPcCL>& GetSolver() { return _gm; }
     
     const DummyBndDataCL& GetBndData() const { return _dummyBnd; }
     

@@ -95,26 +95,30 @@ class Quad2CL: public QuadBaseCL<T>
       { for (size_t i=0; i<size(); ++i) val[i]= e.eval( Node[i]); }
 */
     // Werte Quadraturformel aus
-    T quad () const
-      { T sum= T(); for (size_t i=0; i<size(); ++i) sum+= Wght[i]*val[i]; return sum; }
+    // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
+    // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
+    T quad (double absdet) const
+      { T sum= T(); for (size_t i=0; i<size(); ++i) sum+= Wght[i]*val[i]; return sum*absdet; }
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
     // zur Annaeherung von \int f*phi,    phi = P1-/P2-Hutfunktion
-    T quadP1 (int i) const
-      { return (1./120.)*val[i] + (1./30.)*val[4]; }
-    T quadP1 (int i, int j) const
-      { return i!=j ? (1./720.)*(val[i]+val[j]) + (1./180.)*val[4]
-                    : (1./180.)*val[i]          + (1./90.)*val[4]; }
-    T quadP2 (int i) const
+    T quadP1 (int i, double absdet) const
+      { return ((1./120.)*val[i] + (1./30.)*val[4])*absdet; }
+    T quadP1 (int i, int j, double absdet) const
+      { return (i!=j ? (1./720.)*(val[i]+val[j]) + (1./180.)*val[4]
+                     : (1./180.)*val[i]          + (1./90.)*val[4]  )*absdet;}
+    T quadP2 (int i, double absdet) const
     { 
-        return i<4 ? (1./360.)*val[i] - (1./90.)*val[4]
-                   : (1./180.)*(val[VertOfEdge(i-4,0)]+val[VertOfEdge(i-4,1)]) + (1./45.)*val[4];
+        return (i<4 ? (1./360.)*val[i] - (1./90.)*val[4]
+                    : (1./180.)*(val[VertOfEdge(i-4,0)]+val[VertOfEdge(i-4,1)]) + (1./45.)*val[4]
+               )*absdet;
     }
 
-    T quadP2 (int i, int j) const
+    T quadP2 (int i, int j, double absdet) const
     { 
         const double valBary= (i<4 ? -0.125 : 0.25)*(j<4 ? -0.125 : 0.25);
-        return (i!=j || i>=4) ? Wght[4]*val[4]*valBary
-                              : Wght[4]*val[4]*valBary + Wght[i]*val[i];
+        return ((i!=j || i>=4) ? Wght[4]*val[4]*valBary
+                               : Wght[4]*val[4]*valBary + Wght[i]*val[i]
+               )*absdet;
     }
 };
 

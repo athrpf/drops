@@ -17,6 +17,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     const IdxT num_unks_vel= N->RowIdx->NumUnknowns;
 
     MatrixBuilderCL mN( &N->Data, num_unks_vel, num_unks_vel);
+    cplN->Clear();
     
     const Uint lvl         = N->RowIdx->TriangLevel,
                vidx        = N->RowIdx->GetIdx();
@@ -24,7 +25,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     IdxT Numb[10];
     bool IsOnDirBnd[10];
     
-    std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels." << std::endl;                            
+    std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
     Quad2CL<double> rho, H;
@@ -69,12 +70,12 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
 
         u_rho= u_loc*rho;
         
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+        for(int i=0; i<10; ++i)  // assemble row Numb[i]
             if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
             {
                 for(int j=0; j<10; ++j)
                 {   // N(u)_ij = int( phi_i * rho*u * grad phi_j )
-                    const double N_ij= Quad2CL<double>(dot( u_rho, Grad[j])).quadP2( i);
+                    const double N_ij= Quad2CL<double>(dot( u_rho, Grad[j])).quadP2( i, absdet);
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
                         mN( Numb[i],   Numb[j]  )+= N_ij;
