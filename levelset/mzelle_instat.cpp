@@ -15,9 +15,13 @@
 #include "levelset/coupling.h"
 #include <fstream>
 
-double      delta_t= 1e-3;
-DROPS::Uint num_steps= 5;
-const int   FPsteps= -1;
+double       delta_t= 1e-3;
+DROPS::Uint  num_steps= 5;
+const int    FPsteps= -1,
+             ReparamFreq= 1,
+             ReparamSteps= 1;
+const double ReparamDiff= 1e-4,
+             ReparamTau= 0.01;
 
 // rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
 //                          -div u = 0
@@ -102,7 +106,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson, SD=0.1
-    LevelsetP2CL lset( MG, sigma, 0.5, 0.1); 
+    LevelsetP2CL lset( MG, sigma, 0.5, 0.1, ReparamDiff); 
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -139,8 +143,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     double outer_tol;
     std::cerr << "tol = "; std::cin >> outer_tol;
 
-    lset.GetSolver().SetTol( outer_tol);
-    lset.GetSolver().SetMaxIter( 50000);
+    lset.GetSolver().SetTol( 1e-12); //outer_tol);
+    lset.GetSolver().SetMaxIter( 5000);
 
     ISPSchur_PCG_CL ISPschurSolver( ispc, 1000, outer_tol, 1000, inner_iter_tol);
     PSchur_PCG_CL    schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
@@ -194,6 +198,14 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
         ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
         ensight.Commit();
+        if (ReparamFreq && step%ReparamFreq==0)
+        {
+            lset.Reparam( ReparamSteps, ReparamTau);
+            ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*delta_t);
+            ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*delta_t);
+            ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*delta_t);
+            ensight.Commit();
+        }
 //            Stokes.SetupPrMass( &prM, lset);
     }
 
@@ -258,7 +270,7 @@ int main (int argc, char** argv)
     
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
-        std::cerr << "BC: " << dynamic_cast<const DROPS::MeshBoundaryCL*>(bnd.GetBndSeg( i))->GetBC() << std::endl;
+        std::cerr << "BC: "; BndCondInfo( bc[i], std::cerr);
     }
     
     for (int i=0; i<num_dropref; ++i)
@@ -267,10 +279,9 @@ int main (int argc, char** argv)
         mg.Refine();
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-    std::ofstream geomout( "gambit/mzelle.off");
-    geomout << DROPS::GeomMGOutCL( mg, -1, false, 0);
 
     Strategy(prob, inner_iter_tol, sigma);
+
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
