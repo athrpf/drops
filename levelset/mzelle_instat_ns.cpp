@@ -5,7 +5,6 @@
 //**************************************************************************
 
 #include "geom/multigrid.h"
-#include "out/output.h"
 #include "geom/builder.h"
 #include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
@@ -29,15 +28,31 @@ class ZeroFlowCL
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
     const DROPS::SmoothedJumpCL rho, mu;
-    const double Re, We;
+    const double Re, SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& c) 
-      : rho( DROPS::JumpCL( c.rhoD, c.rhoF ), DROPS::H_sm, c.sm_eps),
-         mu( DROPS::JumpCL( c.muD,  c.muF),   DROPS::H_sm, c.sm_eps),
-        Re(1.), We(1.), g( c.g)    {}
-
+    ZeroFlowCL( const DROPS::ParamMesszelleCL& C) 
+      : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
+        mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
+        Re( 1.), SurfTens( C.sigma), g( C.g)    {}
 };
+
+class DimLessCoeffCL
+{
+// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
+  public:
+    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
+        { DROPS::Point3DCL ret(0.0); return ret; }
+    const DROPS::SmoothedJumpCL rho, mu;
+    const double Re, SurfTens;
+    const DROPS::Point3DCL g;
+
+    DimLessCoeffCL( const DROPS::ParamMesszelleCL& C) 
+      : rho( DROPS::JumpCL( 1., C.rhoF/C.rhoD ), DROPS::H_sm, C.sm_eps),
+        mu ( DROPS::JumpCL( 1., C.muF/C.muD),    DROPS::H_sm, C.sm_eps),
+        Re( C.rhoD/C.muD), SurfTens( C.sigma/C.rhoD), g( C.g)    {}
+};
+
 
 DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 { return DROPS::SVectorCL<3>(0.); }
@@ -131,7 +146,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff); 
+    LevelsetP2CL lset( MG, Stokes.GetCoeff().SurfTens, C.lset_theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -157,10 +172,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.putGeom( datgeo);
 
     lset.Phi.SetIdx( lidx);
-    lset.Init( DistanceFct);
-    const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
-    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-    
 
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
@@ -179,41 +190,68 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     prA.SetIdx( pidx, pidx);
     
     Stokes.InitVel( &Stokes.v, Null);
-
     Stokes.SetupPrMass(  &prM);
     Stokes.SetupPrStiff( &prA);
-    MatrixCL prM_A;
    
-    PSchur_PCG_CL schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-//    Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-
-    // solve stationary problem for initial velocities    
-    TimerCL time;
-    VelVecDescCL curv( vidx);
-    time.Reset();
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
-    curv.Clear();
-    lset.AccumulateBndIntegral( curv);
-    time.Stop();
-    std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
-
-    double theta= C.stat_theta, nl= C.stat_nonlinear;
-//    std::cerr << "theta = "; std::cin >> theta;
-//    std::cerr << "nonlinear = "; std::cin >> nl;
-    time.Reset();
-    do
+    switch (C.IniCond)
     {
-        Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
-        MatrixCL mat;
-        mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
-        cplN.Data-= (1-theta)*nl * (Stokes.N.Data * Stokes.v.Data);
-        schurSolver.Solve( mat, Stokes.B.Data, 
-            Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data + nl*cplN.Data, Stokes.c.Data);
-    } while (schurSolver.GetIter() > 0);
-    time.Stop();
-    std::cerr << "Solving NavStokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+      case 1: case 2: // stationary flow with/without drop
+      {
+        PSchur_PCG_CL schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    //    Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
+        const double old_Radius= C.Radius;
+        if (C.IniCond==2) // stationary flow without drop
+            C.Radius= -10;
+        lset.Init( DistanceFct);
+        // solve stationary problem for initial velocities    
+        TimerCL time;
+        VelVecDescCL curv( vidx);
+        time.Reset();
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
+        curv.Clear();
+        lset.AccumulateBndIntegral( curv);
+        time.Stop();
+        std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
+
+        double theta= C.stat_theta, nl= C.stat_nonlinear;
+        time.Reset();
+        do
+        {
+            Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
+            MatrixCL mat;
+            mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
+            cplN.Data-= (1-theta)*nl * (Stokes.N.Data * Stokes.v.Data);
+            schurSolver.Solve( mat, Stokes.B.Data, 
+                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + nl*cplN.Data, Stokes.c.Data);
+        } while (schurSolver.GetIter() > 0);
+        time.Stop();
+        std::cerr << "Solving NavStokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+
+        if (C.IniCond==2)
+        { 
+            C.Radius= old_Radius;
+            lset.Init( DistanceFct);
+        }
+      } break;
+      
+      case 3: // read from file
+      {
+        ReadEnsightP2SolCL reader( MG);
+        reader.ReadVector( C.IniData, Stokes.v, Stokes.GetBndData().Vel);
+//        reader.ReadScalar( dat, Stokes.p, Stokes.GetBndData().Pr);
+//        reader.ReadScalar( dat, lset.Phi, Stokes.GetBndData());
+        lset.Init( DistanceFct);
+      } break;
+      
+      default:  
+        lset.Init( DistanceFct);
+    }
+    
+    const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
+    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
@@ -250,7 +288,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
             ensight.Commit();
 
-            if (C.RepFreq && step%C.RepFreq==0)
+            if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
             {
                 if (C.RepMethod>1)
                     lset.Reparam( C.RepSteps, C.RepTau);
@@ -273,7 +311,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     }
     else // Baensch scheme
     {
-        ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF*(1.-std::sqrt(2.)/2));
+        ISPreCL ispc( prA.Data, prM.Data, C.dt*C.muF/C.rhoF*(3 - 2*std::sqrt(2.)));
         ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
         CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
@@ -341,17 +379,13 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc>2)
+    if (argc!=2)
     {
-        std::cerr << "You have to specify at most one parameter:\n\t" 
-                  << argv[0] << " [<param_file>]" << std::endl;
+        std::cerr << "You have to specify one parameter:\n\t" 
+                  << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
-    std::ifstream param;
-    if (argc>1)
-        param.open( argv[1]);
-    else
-        param.open( "NMRnsmzi.param");
+    std::ifstream param( argv[1]);
     if (!param)
     {
         std::cerr << "error while opening parameter file\n";
@@ -361,7 +395,8 @@ int main (int argc, char** argv)
     param.close();
     std::cerr << C << std::endl;
 
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
+    typedef ZeroFlowCL                                    CoeffT;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     std::ifstream meshfile( C.meshfile.c_str());
     if (!meshfile)
