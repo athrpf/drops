@@ -23,6 +23,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( outer_iter,   "OuterIter");
     rp_.RegDouble( inner_tol, "InnerTol");
     rp_.RegDouble( outer_tol, "OuterTol");
+    rp_.RegInt( StokesMethod, "StokesMethod");
     rp_.EndGroup();
 
     rp_.BeginGroup("Levelset");

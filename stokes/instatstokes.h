@@ -11,8 +11,8 @@
 
 #include <vector>
 #include "misc/problem.h"
-#include "num/stokessolver.h"
 #include "stokes/stokes.h"
+#include "num/stokessolver.h"
 
 
 namespace DROPS

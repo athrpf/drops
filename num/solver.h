@@ -364,6 +364,14 @@ class MultiSSORPcCL
 };
 
 
+//=============================================================================
+// SSOR-PCG as preconditioner. 
+// Needed for InexactUzawa. This shall be replaced an by MG-preconditioner.
+//=============================================================================
+// Defined below, where the typedefs for PCGSolverCL and alikes have been made.
+class SSORPCG_PreCL;
+
+
 //*****************************************************************************
 //
 //  Conjugate gradients (CG, PCG) and GMRES
@@ -1031,6 +1039,30 @@ typedef PreGSCL<P_DUMMY>   DummyPcCL;
 typedef PCGSolverCL<SGSPcCL>      PCG_SgsCL;
 typedef PCGSolverCL<SSORPcCL>     PCG_SsorCL;
 typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
+
+
+//=============================================================================
+// SSOR-PCG as preconditioner. 
+// Needed for InexactUzawa. This shall be replaced an by MG-preconditioner.
+//=============================================================================
+class SSORPCG_PreCL
+{
+  private:
+    double reltol_; // The solver shall reduce the residual by this factor.
+    mutable PCGSolverCL<SSORPcCL> solver_;
+
+  public:
+    SSORPCG_PreCL(int maxiter, double reltol)
+        : reltol_( reltol), solver_( SSORPcCL( 1.0), maxiter, reltol) // Note, that the
+    {}                                                                // real tol for
+                                                                      // solver_ is
+    template <typename Mat, typename Vec>                             // computed in Apply.
+    void
+    Apply(const Mat& A, Vec& x, const Vec& b) const {
+        solver_.SetTol( reltol_*(b-A*x).norm());
+	solver_.Solve( A, x, b);
+    }
+};
 
 //*****************************************************************************
 //

@@ -11,6 +11,7 @@
 
 #include "num/solver.h"
 #include "num/MGsolver.h"
+#include "stokes/integrTime.h"
 
 namespace DROPS
 {
@@ -136,6 +137,32 @@ class Uzawa_IPCG_CL : public SolverBaseCL
     inline void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                        const VectorCL& b, const VectorCL& c);
 };
+
+
+//=============================================================================
+// Ready-to-use solver-class with inexact Uzawa method InexactUzawa. 
+//=============================================================================
+// Inexact Uzawa-method from "Fast Iterative Solvers for Discrete Stokes
+// Equations", Peters, Reichelt, Reusken, Chapter 3.3.
+// The preconditioner Apc for A must be "good" (MG-like) to guarantee
+// convergence.
+//=============================================================================
+class InexactUzawa_CL: public SolverBaseCL
+{
+  private:
+    SSORPCG_PreCL Apc_;
+    ISPreCL& Spc_;
+
+  public:
+    InexactUzawa_CL(ISPreCL& Spc, int outer_iter, double outer_tol)
+        :SolverBaseCL( outer_iter, outer_tol),
+	 Apc_( 1000, 0.2), Spc_( Spc)
+    {}
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+};
+
+
 
 
 // One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
@@ -334,13 +361,13 @@ class PLanczosONB_SPCL
 //-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename Lanczos>
 bool
-PMINRES_SP(const Mat& A, const Mat& B,
-           Vec& u, Vec& pr, const Vec& rhsu, const Vec& rhspr,
+PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
+           Vec& u, Vec& pr, const Vec& /*rhsu*/, const Vec& /*rhspr*/,
            Lanczos& q, int& max_iter, double& tol)
 {
     Vec dxu( u.size()); // Vector for updating x, thus the name.
     Vec dxpr( pr.size()); // Vector for updating x, thus the name.
-    double err= 0.0; // Sink gcc-warnings.
+//    double err= 0.0; // Sink gcc-warnings.
     double res= 0.0; // Sink gcc-warnings.
 
     const double norm_r0= q.norm_r0();
@@ -353,7 +380,13 @@ PMINRES_SP(const Mat& A, const Mat& B,
     pu[0].resize( u.size()); pu[1].resize( u.size()); pu[2].resize( u.size());
     ppr[0].resize( pr.size()); ppr[1].resize( pr.size()); ppr[2].resize( pr.size());
     SBufferCL<SVectorCL<2>, 2> b;
-    
+
+    if (norm_r0 < tol) { // Needed as a stopping criterion in the Stokes-levelset-fp-iteration.
+            tol= norm_r0;
+            max_iter= 0;
+            return true;
+        }
+
     for (int k=1; k<=max_iter; ++k) {
         switch (k) {
           case 1:
@@ -401,11 +434,11 @@ PMINRES_SP(const Mat& A, const Mat& B,
         pr.raw()+= dxpr.raw();
 
         // This is for fair comparisons of different solvers:
-        err= std::sqrt( (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2());
+//        err= std::sqrt( (rhsu - (A*u + transp_mul( B, pr))).norm2() + (rhspr - B*u).norm2());
         res= std::fabs( norm_r0*b[0][1]);
 //        std::cerr << "PMINRES: residual: " << res << '\t' << " 2-residual: " << err << '\n';
-        if (err<=tol || lucky==true) {
-            tol= err;
+        if (res<=tol || lucky==true) {
+            tol= res;
             max_iter= k;
             return true;
         }
@@ -416,7 +449,7 @@ PMINRES_SP(const Mat& A, const Mat& B,
         }
         c.rotate(); s.rotate(); r.rotate(); pu.rotate(); ppr.rotate(); b.rotate();
     }
-    tol= err;
+    tol= res;
     return false;
 }
 
@@ -443,6 +476,7 @@ class PMResSPCL : public SolverBaseCL
         _res=  _tol;
         _iter= _maxiter;
         PMINRES_SP( A, B, v, p, b, c, *q_, _iter, _res);
+	std::cerr << "PMResSPCL::Solve: iterations: " << GetIter() << "\tresidual: " << GetResid() << '\n';
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c, int& numIter, double& resid) const
@@ -516,6 +550,30 @@ class DiagMGPreCL
         for (DROPS::Uint i=0; i<iter_vel_; ++i)
             MGM( A_.begin(), --A_.end(), v, b, smoother, sm, solver, lvl, -1);
         P1.Apply( M_, p, c);
+    }
+};
+
+
+//=============================================================================
+// Preconditioner for Minres-like solvers: SSOR-steps for A, ISPreCL for S. 
+//=============================================================================
+class Minres_SSOR_IS_PreCL
+{
+  private:
+    SSORPcCL Apc_; // Preconditioner for A.
+    const ISPreCL& Spc_; // Preconditioner for S.
+    Uint iter_vel_;
+
+  public:
+    Minres_SSOR_IS_PreCL(const ISPreCL& Spc, Uint iter_vel= 1)
+      :Apc_( 1.0), Spc_( Spc), iter_vel_( iter_vel) {}
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+        for (Uint i=0; i<iter_vel_; ++i)
+	    Apc_.Apply( A, v, b);
+	Spc_.Apply( B, p, c); // B is just a dummy.
     }
 };
 
@@ -694,6 +752,22 @@ class PMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL
     {}
 };
 
+//=============================================================================
+// PMinres solver for the instationary Stokes-Equations without MG.
+//=============================================================================
+class PMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> >
+{
+  private:
+    Minres_SSOR_IS_PreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> q_;
+
+  public:
+    PMinresSP_Diag_CL(const ISPreCL& Spc, int iter_vel, int maxiter, double tol)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> >( q_, maxiter, tol),
+         pre_( Spc, iter_vel), q_( pre_)
+    {}
+};
+
 
 //=============================================================================
 //  SchurComplMatrixCL
@@ -740,6 +814,41 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& 
     return M.B_*x;
 }
 
+
+//=============================================================================
+// ApproximateSchurComplMatrixCL
+// BApc^{-1}B^T, where Apc is a preconditioner for A.
+//=============================================================================
+template<typename>
+class ApproximateSchurComplMatrixCL;
+
+template<typename T>
+VectorCL operator*(const ApproximateSchurComplMatrixCL<T>&, const VectorCL&);
+
+template<class APC>
+class ApproximateSchurComplMatrixCL
+{
+  private:
+    const MatrixCL& A_;
+    APC& Apc_;
+    const MatrixCL& B_;
+
+  public:
+    ApproximateSchurComplMatrixCL(const MatrixCL& A, APC& Apc, const MatrixCL& B)
+        : A_( A), Apc_( Apc), B_( B) {}
+
+    friend VectorCL
+    operator*<>(const ApproximateSchurComplMatrixCL<APC>&, const VectorCL&);
+};
+
+template<class APC>
+VectorCL operator*(const ApproximateSchurComplMatrixCL<APC>& M, const VectorCL& v)
+{
+    VectorCL x( 0.0, M.B_.num_cols());
+    VectorCL r= transp_mul( M.B_, v);
+    M.Apc_.Apply( M.A_, x, r);
+    return M.B_*x;
+}
 
 //=============================================================================
 //  The "Solve" functions
@@ -956,6 +1065,94 @@ void PSchurSolver2CL<InnerSolverT, OuterSolverT>::Solve(
                    + std::pow( outerSolver_.GetResid(), 2));
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
+
+
+//=============================================================================
+// Inexact Uzawa-method from "Fast Iterative Solvers for Discrete Stokes
+// Equations", Peters, Reichelt, Reusken, Chapter 3.3.
+// The preconditioner Apc for A must be "good" (MG-like) to guarantee
+// convergence.
+//=============================================================================
+template <typename Mat, typename Vec, typename PC1, typename PC2>
+bool
+InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
+    PC1& Apc, PC2& Spc,
+    int& max_iter, double& tol)
+{
+    VectorCL ru= f - A*xu - transp_mul( B, xp);
+    VectorCL w( f.size());
+    VectorCL z( g.size());
+    VectorCL a( f.size());
+    VectorCL xuneu( f.size());
+    VectorCL b( f.size());
+    ApproximateSchurComplMatrixCL<PC1> asc( A, Apc, B);
+    PCGSolverCL<PC2> pcgsolver( Spc, 100, 0.5);
+    const double resid0= std::sqrt( ru.norm2() + (g - B*xu).norm2());
+    double resid= 0.0;
+    std::cerr << "residual (2-norm): " << resid0 << '\n';
+    if (resid0<=tol) { // The fixed point iteration between levelset and Stokes
+        tol= resid;    // equation uses this to determine convergence.
+        max_iter= 0;
+        return true;
+    }
+    for (int k= 1; k<=max_iter; ++k) {
+        w= 0.0;
+        Apc.Apply( A, w, ru);
+        w+= xu;
+        z= 0.0;
+//        std::cerr << "B*w : " << (B*w).norm() << "\tprojektion auf 1: "
+//                  << (B*w)*VectorCL( 1.0/std::sqrt( (double)g.size()), g.size())
+//                  << "\n";
+        // Due to theory (see paper) we must use relative error of about 0.5. z==0.
+	pcgsolver.SetTol( 0.5*(B*w - g).norm());
+        pcgsolver.Solve( asc, z, B*w - g);
+//        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
+//                  << "\tresid: " << pcgsolver.GetResid() << '\n';
+
+        b= transp_mul( B, z);
+        a= 0.0;
+        Apc.Apply( A, a, b);
+        z_xpay( xuneu, w, -1.0, a); // xuneu= w - a;
+        xp+= z;
+        z_xpaypby2(ru, ru, -1.0, A*(xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
+        xu= xuneu;
+        resid= std::sqrt( (f - A*xu - transp_mul( B, xp)).norm2() + (g - B*xu).norm2());
+//        std::cerr << "relative residual (2-norm): " << resid/resid0 
+//                  << "\tv: " << (f - A*xu - transp_mul( B, xp)).norm()
+//                  << "\tp: " << (g - B*xu).norm()
+//                  << '\n';
+/*
+        if (resid<=tol*resid0) { // relative errors
+            tol= resid0==0.0 ? 0.0 : resid/resid0;
+            max_iter= k;
+            return true;
+        }
+*/
+        if (resid<=tol) { // absolute errors
+            std::cerr << "relative residual (2-norm): " << resid/resid0 
+                      << "\tv: " << (f - A*xu - transp_mul( B, xp)).norm()
+                      << "\tp: " << (g - B*xu).norm()
+                      << '\n';
+            tol= resid;
+            max_iter= k;
+            return true;
+        }
+
+    }
+    tol= resid;
+    return false;
+}
+
+
+void
+InexactUzawa_CL::Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+    const VectorCL& b, const VectorCL& c)
+{
+    _res=  _tol;
+    _iter= _maxiter;
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
+}
+
 
 } // end of namespace DROPS
 

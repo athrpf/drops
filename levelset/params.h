@@ -18,6 +18,7 @@ class ParamMesszelleCL: public ParamBaseCL
     void RegisterParams();
     
   public:
+    int    StokesMethod;                        // Loeserklasse fuer die Stokesprobleme
     double inner_tol, outer_tol, 		// Parameter der Loeser
            lset_tol, lset_SD;			// fuer Flow & Levelset
     int    inner_iter, outer_iter, lset_iter;	

@@ -17,6 +17,7 @@
 
 
 DROPS::ParamMesszelleCL C;
+enum StokesMethod { schur= 0, inexactuzawa= 1, minres= 2 };
 
 // rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
 //                          -div u = 0
@@ -152,7 +153,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MatrixCL prM_A;
     ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt*C.muF/C.rhoF);
    
+    // Available Stokes-solver
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    InexactUzawa_CL inexactUzawaSolver( ispc, C.outer_iter, C.outer_tol);
+    PMinresSP_Diag_CL stokessolver( ispc, 1, C.outer_iter, C.outer_tol);
+
     PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
     switch (C.IniCond)
@@ -207,17 +212,32 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
+    // XXX: Wozu? Das passiert doch schon bei der Konstruktion.
     ISPschurSolver.SetTol( C.outer_tol);
+    inexactUzawaSolver.SetTol( C.outer_tol);
+    stokessolver.SetTol( C.outer_tol);
     
     CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
-        cpl( Stokes, lset, ISPschurSolver, C.theta);
+        cpl1( Stokes, lset, ISPschurSolver, C.theta);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawa_CL> 
+        cpl2( Stokes, lset, inexactUzawaSolver, C.theta);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, PMinresSP_Diag_CL> 
+        cpl3( Stokes, lset, stokessolver, C.theta);
 
-    cpl.SetTimeStep( C.dt);
-
+    switch (C.StokesMethod) {
+      case schur:        cpl1.SetTimeStep( C.dt); break;
+      case inexactuzawa: cpl2.SetTimeStep( C.dt); break;
+      case minres:       cpl3.SetTimeStep( C.dt); break;
+      default: std::cerr << "Strategy: Please Choose a Stokes-solver." << std::endl;
+    }
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.FPsteps);
+        switch (C.StokesMethod) {
+          case schur:        cpl1.DoStep( C.FPsteps); break;
+          case inexactuzawa: cpl2.DoStep( C.FPsteps); break;
+          case minres:       cpl3.DoStep( C.FPsteps); break;
+	}
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)
         {
