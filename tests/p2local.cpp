@@ -110,7 +110,7 @@ class LocalP2CL: public std::valarray<T>
     typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
     
     LocalP2CL() : base_type( value_type(), NumDoFP2C) {}
-    LocalP2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
+    LocalP2CL(const TetraCL&, T (*)(const Point3DCL&, double) , double= 0.0);
     template<class BndDataT, class VecDescT>
       LocalP2CL(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
     // Todo: The time-argument is ignored; if InstatP2EvalCL is used, make sure
@@ -124,7 +124,7 @@ class LocalP2CL: public std::valarray<T>
 DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
     inline void
-    Assign(const TetraCL&, instat_fun_ptr, double t= 0.0);
+    Assign(const TetraCL&, T (*)(const Point3DCL&, double) , double= 0.0);
     template<class BndDataT, class VecDescT>
       inline void
       Assign(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
@@ -138,7 +138,7 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
 template<class T>
   inline void
-  LocalP2CL<T>::Assign(const TetraCL& s, instat_fun_ptr f, double t)
+  LocalP2CL<T>:: Assign(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
 {
     for (Uint i= 0; i< NumVertsC; ++i)
         (*this)[i]= f( s.GetVertex( i)->GetCoord(), t);
@@ -190,8 +190,8 @@ template<class T>
 
 
 template<class T>
-  LocalP2CL<T>::LocalP2CL(const TetraCL& s, instat_fun_ptr f, double t)
-    : base_type( value_type(), NumDoFP2C)
+  LocalP2CL<T>::LocalP2CL<T>(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
+  : base_type( value_type(), NumDoFP2C)
 {
     this->Assign( s, f, t);
 }
@@ -210,7 +210,7 @@ template<class T>
         const VecDescT& vd, const BndDataT& bnd, double t)
     : base_type( value_type(), NumDoFP2C)
 {
-    this-> Assign( s, vd, bnd, t);
+    this->Assign( s, vd, bnd, t);
 }
 
 template<class T>
