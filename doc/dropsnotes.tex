@@ -5,7 +5,13 @@
 
 \ifpdf
     \usepackage[pdftex]{graphicx}
-    \usepackage[pdftex]{hyperref}
+    \usepackage[pdftex,colorlinks=true,pdfview=FitB,pdfstartview=FitB, linkcolor=blue, 
+            citecolor=blue, urlcolor=blue]{hyperref}
+
+    \pdfinfo{
+        /Title (DROPS Manual)
+        /Author(Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers)
+    }
 \else
     \usepackage{graphicx}
 \fi
@@ -218,7 +224,7 @@ abgespeichert (als Beispiel das L-Gebiet $\Omega=[0,1]^3\setminus [0.5,1]^3$):
 Der Builder versteht das Format des "`User's Guide"' zu TGrid 3, Anhang C, welches
 unter anderem von RAMPANT, FLUENT/UNS, TGrid verwendet wird und von dem
 Gittergenerator GAMBIT erzeugt wird.
-Die ID's der erzeugten Simplexe entsprechen denen in der Datei.
+Die ID's der erzeugten Simplices entsprechen denen in der Datei.
 
 Um Randsegmente zu repr"asentieren, wird die Klasse \prg{MeshBoundaryCL} verwendet.
 Pro Zone von Randdreiecken in der .msh-Datei wird ein \prg{MeshBoundaryCL}-Objekt
@@ -503,8 +509,7 @@ stehen zur Verf"ugung. Sie k"onnen auch direkt
 zum L"osen der Stokes-Gleichungen verwendet werden. Beispiele dazu findet man in
 \prg{stokes/sdropsP2}.
 
-Ferner existiert eine GMRES-Implementierung, die zur Zeit nur vom 2D-Code eingesetzt
-wird:
+Ferner existiert eine GMRES-Implementierung:
 \begin{Code}
 \begin{verbatim}
 template <typename Mat, typename Vec, typename PreCon>
@@ -560,7 +565,7 @@ die \prg{SSORPcCL}.
 Damit kann das Schur-Verfahren in \prg{SchurSolverCL} und \prg{PSchurSolverCL} so
 darstellen:
 \begin{enumerate}
-\item $r= BA^{-1}b -c$ berechnen: $r= -c$, $Av = b$ l"osen, $r+= Bv$.
+\item $r= BA^{-1}b -c$ berechnen: \quad $r= -c$, $Av = b$ l"osen, $r+= Bv$.
 \item $Sp=r$ l"osen.
 \item $Av = b - B^Tp$ l"osen.
 \end{enumerate}
@@ -569,7 +574,44 @@ dessen Typ als Template-Parameter in die Klasse gebracht wird (H"alt
 eine Referenz auf den L"oser.). Ein Objekt vom L"osertyp wird
 erst durch "offentliches Ableiten zugef"ugt. In Schritt 2 verwendet
 \prg{SchurSolverCL} das CG-Verfahren und \prg{PSchurSolverCL} ein
-PCG-Verfahren mit SSOR-Vorkonditionierung.
+PCG-Verfahren mit SSOR-Vorkonditionierung einer Matrix in den Druckunbekannten 
+(z.\,B. Massenmatrix).
+
+Zur einfacheren Handhabung werden folgende abgeleiteten Klassen bereitgestellt:
+\begin{Code}
+\begin{verbatim}
+class Schur_PCG_CL: public SchurSolverCL<PCG_SsorCL>
+{
+    Schur_PCG_CL(int outer_iter, double outer_tol, int inner_iter, double inner_tol);
+};
+
+
+class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
+{
+    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol);
+};
+
+
+class PSchur_IPCG_CL: public PSchurSolverCL<PCG_SsorDiagCL>
+{
+    PSchur_IPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol);
+};
+
+
+class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
+{
+    PSchur_GSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol);
+};
+
+
+class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
+{
+    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol, 
+                  MGDataCL& MGData, int inner_iter, double inner_tol );
+};
+\end{verbatim}
+\end{Code}
+
 
 \subsubsection{Uzawa-Verfahren}
 Die folgenden Uzawa-Verfahren stehen zur Verf"ugung:
@@ -578,10 +620,6 @@ Die folgenden Uzawa-Verfahren stehen zur Verf"ugung:
 template <typename PoissonSolverT>
 class UzawaSolverCL : public SolverBaseCL
 {
-  private:
-// ...
-
-  public:
     UzawaSolverCL (PoissonSolverT& solver, MatrixCL& M, int maxiter, double tol, double tau= 1.);
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
@@ -591,10 +629,6 @@ class UzawaSolverCL : public SolverBaseCL
 
 class Uzawa_IPCG_CL : public SolverBaseCL
 {
-  private:
-// ...
-
-  public:
     Uzawa_IPCG_CL(MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.);
 
     // Always call this when A has changed, before Solve()!
@@ -620,6 +654,32 @@ im folgenden Algorithmus auftretenden Poisson-Problemen einsetzen:
 In der Klasse \prg{Uzawa\_IPCG\_CL} k"onnen in Schritt 1 und 3
 unterschiedliche Poisson-Verfahren benutzt werden. Zur Zeit sind beide
 L"oser SSOR-vorkonditionierte PCG-Verfahren.
+
+Zur einfacheren Handhabung werden folgende abgeleiteten Klassen bereitgestellt:
+\begin{Code}
+\begin{verbatim}
+class Uzawa_CG_CL : public UzawaSolverCL<CGSolverCL>
+{
+    Uzawa_CG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.);
+};
+
+class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
+{
+    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.);
+};
+
+class Uzawa_SGSPCG_CL : public UzawaSolverCL<PCG_SgsCL>
+{
+    Uzawa_SGSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.);
+};
+
+class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
+{
+    Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
+                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1.);
+};
+\end{verbatim}
+\end{Code}
 
 \subsection{Navier-Stokes-L"oser}
 Im\prg{num/nssolver.h} sind die L"osungsverfahren f"ur die station"aren
@@ -781,7 +841,8 @@ class EnsightP2SolOutCL
     void putScalar    ( std::string, const DiscScalT&, double t= -1);
     template<class DiscVecT>
     void putVector    ( std::string, const DiscVecT&, double t= -1);
-    // call putCaseEnd() after finishing all other output
+    void Commit    ();    // rewrites case file
+    // call CaseEnd() after finishing all other output
     void CaseEnd   ();
 };
 \end{verbatim}
@@ -797,7 +858,10 @@ vektorwertiger Variablen und werden einmal zu Anfang aufgerufen. Der Parameter
 \prg{timedep} gibt dabei an, ob es sich um transiente Daten handelt. Mit den
 Funktionen \prg{putXXX} k"onnen die Daten dann tats"achlich abgespeichert
 werden. Bei transienten Daten muss dabei noch der entsprechende Zeitpunkt
-angegeben werden.
+angegeben werden. Sind alle Daten f"ur einen Zeitschritt geschrieben, so sollte 
+\prg{Commit} aufgerufen werden, um den Zeitschritt im case-file eintragen zu lassen. 
+Somit k"onnen die bereits berechneten Zeitschritte visualisiert werden, w"ahrend die 
+"ubrige Rechnung noch l"auft.
 
 Hier ein Beispiel zur Ausgabe von transienten skalaren Daten bei festem Gitter
 und festem Geschwindigkeitsfeld:
@@ -826,6 +890,7 @@ for (int i=1; i<=num_steps; ++i)
     // berechne Loesung zum neuen Zeitschritt
     // ...
     ensight.putScalar( datscl, lset.GetSolution(), i/10.);
+    ensight.Commit();
 }
 
 ensight.CaseEnd();
