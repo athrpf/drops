@@ -1,5 +1,5 @@
 //**************************************************************************
-// File:    poisson.cpp                                                    *
+// File:    poisson.tpp                                                    *
 // Content: classes that constitute the poisson-problem                    *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
