@@ -1,6 +1,6 @@
 //**************************************************************************
-// File:    navstokes.tpp                                                     *
-// Content: classes that constitute the navier-stokes-problem                     *
+// File:    navstokes.tpp                                                  *
+// Content: classes that constitute the navier-stokes-problem              *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 // Version: 0.1                                                            *
 // History: begin - March, 16 2001                                         *

@@ -9,6 +9,8 @@
 #ifndef DROPS_NS_INTEGRTIME_H
 #define DROPS_NS_INTEGRTIME_H
 
+#include "misc/problem.h"
+
 // TODO: FracStepScheme fuer instat. NavierStokes
 
 namespace DROPS

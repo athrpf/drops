@@ -9,6 +9,8 @@
 #ifndef DROPS_STO_INTEGRTIME_H
 #define DROPS_STO_INTEGRTIME_H
 
+#include "misc/problem.h"
+
 namespace DROPS
 {
 

@@ -7,6 +7,7 @@
 //**************************************************************************
 
 #include "num/stokessolver.h"
+#include "misc/problem.h"
 
 #ifndef DROPS_NSSOLVER_H
 #define DROPS_NSSOLVER_H

@@ -10,6 +10,8 @@
 #ifndef DROPS_POI_INTEGRTIME_H
 #define DROPS_POI_INTEGRTIME_H
 
+#include "misc/problem.h"
+
 // TODO: FracStepScheme fuer instat. Poisson
 
 

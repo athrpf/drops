@@ -35,12 +35,10 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
 
     // Set up matrix for nonlinearity
     void SetupNonlinear(MatDescCL*, const VelVecDescCL*, VelVecDescCL*, double) const;
-    void SetupNonlinear(MatDescCL* N, const VelVecDescCL* v, VelVecDescCL* cplN) const
-        {SetupNonlinear(
 
     // Check system and computed solution
-    void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr);
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr);
+    void GetDiscError (vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr, double);
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_fun_ptr, scalar_fun_ptr, double);
 };
 
 
@@ -49,6 +47,6 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<MGB, Coeff>
 
 } // end of namespace DROPS
 
-#include "navstokes/navstokes.tpp"
+#include "navstokes/instatnavstokes.tpp"
 
 #endif
