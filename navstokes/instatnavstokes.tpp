@@ -86,9 +86,9 @@ void InstatNavierStokesP2P1CL<Coeff>::CheckSolution(
     rhsN.Data= this->cplN.Data;
 //    N.Data.clear();
 //    SetupNonlinear( &N, lsgvel, &rhsN, t, t);
-    VectorCL res1= A.Data*lsgvel->Data + N.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
-                 - b.Data - rhsN.Data;
-    VectorCL res2= B.Data*lsgvel->Data - c.Data;
+    VectorCL res1( A.Data*lsgvel->Data + N.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
+                 - b.Data - rhsN.Data);
+    VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
 /*    for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
          sit != send; ++sit) {

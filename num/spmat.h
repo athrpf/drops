@@ -95,18 +95,6 @@ template <class T>
     return std::inner_product( Addr( v), Addr( v) + v.size(), Addr( w), T());
 }
 
-template <class VT1, class VT2>
-  inline typename VT1::value_type
-  dot(const VT1& v, const VT2& w)
-{
-    Assert(v.size()==w.size(), "dot: incompatible dimensions", DebugNumericC);
-    typedef typename VT1::value_type valueT;
-    valueT ret= valueT();
-    const size_t s= v.size();
-    for (size_t i= 0; i<s; ++i) ret+= v[i]*w[i];
-    return ret;
-}
-
 template <class VT>
   inline typename VT::value_type
   norm_sq(const VT& v)

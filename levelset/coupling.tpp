@@ -182,7 +182,7 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
 
     _Stokes.p.Data*= _dt;
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _dt*_theta*_curv->Data, _Stokes.c.Data);
+                   VectorCL( _rhs + _dt*_theta*_curv->Data), _Stokes.c.Data);
     _Stokes.p.Data/= _dt;
 
     time.Stop();
@@ -480,7 +480,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     _Stokes.p.Data*= _dt;
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-        _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data + _nonlinear*_cplN->Data), _Stokes.c.Data);
+        VectorCL( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data + _nonlinear*_cplN->Data)), _Stokes.c.Data);
     _Stokes.p.Data/= _dt;
 
     time.Stop();
@@ -637,7 +637,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     time.Reset();
     _Stokes.p.Data*= _theta*_dt;
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _cplM->Data + _dt*_theta*(_alpha*_cplA->Data + _curv->Data + _b->Data), _Stokes.c.Data);
+                   VectorCL( _rhs + _cplM->Data + _dt*_theta*(_alpha*_cplA->Data + _curv->Data + _b->Data)), _Stokes.c.Data);
     _Stokes.p.Data/= _theta*_dt;
     time.Stop();
     std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";

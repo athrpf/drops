@@ -138,7 +138,7 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
     PC1& Apc, PC2& Spc,
     int& max_iter, double& tol)
 {
-    VectorCL ru= f - A*xu - transp_mul( B, xp);
+    VectorCL ru( f - A*xu - transp_mul( B, xp));
     VectorCL w( f.size());
     VectorCL z( g.size());
     VectorCL a( f.size());
@@ -270,11 +270,11 @@ UzawaCGEff(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec
 {
     double err= std::sqrt( norm_sq( f - ( A*xu + transp_mul( B, xp))) + norm_sq( g - B*xu));
     const double err0= err;
-    Vec rbaru= f - (A*xu + transp_mul(  B, xp));
-    Vec rbarp= g - B*xu;
+    Vec rbaru( f - (A*xu + transp_mul(  B, xp)));
+    Vec rbarp( g - B*xu);
     Vec ru( f.size());
     Apc.Apply( A, ru, rbaru);
-    Vec rp= B*ru - rbarp;
+    Vec rp( B*ru - rbarp);
     Vec a( f.size()), b( f.size()), s( f.size()), pu( f.size()), qu( f.size());
     Vec z( g.size()), pp( g.size()), qp( g.size()), t( g.size());
     double alpha= 0.0, initialbeta=0.0, beta= 0.0, beta0= 0.0, beta1= 0.0;
@@ -342,14 +342,14 @@ UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
 {
     double err= std::sqrt( norm_sq( b - (A*u + transp_mul( B, p))) + norm_sq( c - B*u));
     const double err0= err;
-    Vec ru= b - ( A*u + transp_mul(  B, p));
-    Vec rp= c - B*u;
+    Vec ru( b - ( A*u + transp_mul(  B, p)));
+    Vec rp( c - B*u);
     Vec s1( b.size()); // This is r2u...
     Apc.Apply( A, s1, ru);
-    Vec s2= B*s1 - rp;
+    Vec s2( B*s1 - rp);
     Vec r2p( c.size());
     Spc.Apply( B, r2p, s2);
-    double rho0= dot( s1, ( A*s1 - ru)) + dot( r2p, s2);
+    double rho0= dot( s1, VectorCL( A*s1 - ru)) + dot( r2p, s2);
     const double initialrho= rho0;
 //    std::cerr << "UzawaCG: rho: " << rho0 << '\n';
     if (rho0<=0.0) throw DROPSErrCL("UzawaCG: Matrix is not spd.\n");
@@ -361,7 +361,7 @@ UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
 //    }
     Vec pu= s1; // s1 is r2u.
     Vec pp= r2p;
-    Vec qu= A*pu + transp_mul( B, pp);
+    Vec qu( A*pu + transp_mul( B, pp));
     Vec qp= B*pu;
     double rho1= 0.0;
     Vec t1( b.size());
@@ -369,7 +369,7 @@ UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
     for (int i= 1; i<=max_iter; ++i) {
         Apc.Apply( A, t1, qu);
         z_xpay( t2, B*t1, -1.0, qp); // t2= B*t1 - qp;
-        const double alpha= rho0/( dot(pu, ( A*t1 - qu)) + dot( pp, t2));
+        const double alpha= rho0/( dot(pu, VectorCL( A*t1 - qu)) + dot( pp, t2));
         axpy(alpha, pu, u);  // u+= alpha*pu;
         axpy(alpha, pp, p);  // p+= alpha*pp;
         axpy( -alpha, qu, ru);
@@ -379,7 +379,7 @@ UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
         z_xpay( s2, B*s1, -1.0, rp); // s2= B*s1 - rp;
         r2p= 0.0;
         Spc.Apply( B, r2p, s2);
-        rho1= dot( s1, ( A*s1 - ru)) + dot( r2p, s2);
+        rho1= dot( s1, VectorCL( A*s1 - ru)) + dot( r2p, s2);
 //        std::cerr << "UzawaCG: rho: " << rho1 << '\n';
         if (rho1<=0.0) throw DROPSErrCL("UzawaCG: Matrix is not spd.\n");
         // This is for fair comparisons of different solvers:
@@ -891,9 +891,10 @@ PrepareStart( DROPS::VelVecDescCL* v, DROPS::VecDescCL*p, DROPS::MatDescCL* M)
     // p must be in L_2^0(\Omega).
     DROPS::VectorCL ones( 1.0, p->Data.size());
     double c= std::sqrt( dot(M->Data*ones, ones));
-    DROPS::VectorCL one= ones/c;
+    DROPS::VectorCL one( ones/c);
     DROPS::VectorCL oneM= M->Data*one;
-    p->Data-= dot( oneM*p->Data, one);
+    // XXX ??? p->Data-= dot( oneM*p->Data, one);
+    p->Data-= dot( oneM, p->Data);
     p->Data/= norm( p->Data);
     std::cout << "SP: " << dot( p->Data, M->Data*one) << ", " << dot( p->Data, one) << std::endl;
 }

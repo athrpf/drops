@@ -131,9 +131,9 @@ template <class VT>
   inline VT
   TestVector( const VT& v1, const VT& v2, const VT& v3, double a)
 {
-    VT t1= v1 + 3.0* v2 + a*v3;
+    VT t1( v1 + 3.0* v2 + a*v3);
     t1/=2.0;
-    return t1+v2;
+    return VT( t1+v2);
 }
 
 

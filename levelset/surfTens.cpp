@@ -167,7 +167,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         time.Reset();
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
-            Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + curv.Data, Stokes.c.Data);
+            Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + curv.Data), Stokes.c.Data);
         time.Stop();
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
     }

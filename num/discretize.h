@@ -63,6 +63,89 @@ inline double H_sm( double s, double eps)
     return 0.5 + 1.40625*s - 1.5625*s3 + 0.65625*s2*s3;
 }
 
+
+template<class T= double>
+class GridFunctionCL: public std::valarray<T>
+{
+  public:
+    typedef T value_type;
+    typedef std::valarray<T> base_type;
+    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+
+  protected:
+    typedef GridFunctionCL<T> self_;
+
+  public:
+    GridFunctionCL (value_type v= value_type(), Uint s= 0): base_type( v, s) {}
+
+DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, T, base_type)
+
+    template<typename FuncT>
+      inline GridFunctionCL& apply(FuncT fun);
+};
+
+template<class T>
+  template<typename FuncT>
+    inline GridFunctionCL<T>&
+    GridFunctionCL<T>::apply(FuncT fun)
+{
+    for (size_t i= 0; i < this->size(); ++i)
+        (*this)[i]= fun( (*this)[i]);
+    return *this;
+}
+
+template<>
+class GridFunctionCL<Point3DCL>: public std::valarray<Point3DCL>
+{
+  public:
+    typedef Point3DCL value_type;
+    typedef std::valarray<Point3DCL> base_type;
+    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+
+  protected:
+    typedef GridFunctionCL<Point3DCL> self_;
+
+  public:
+    GridFunctionCL (value_type v= value_type(), Uint s= 0): base_type( v, s) {}
+
+DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, Point3DCL, base_type)
+
+    template<typename FuncT>
+      inline GridFunctionCL& apply(FuncT fun);
+
+    inline GridFunctionCL<Point3DCL>&
+    operator*=(const GridFunctionCL<double>& b)
+    {
+        for (size_t i= 0; i < b.size(); ++i)
+            (*this)[i]*=b[i];
+        return *this;
+    }
+};
+
+
+inline GridFunctionCL<Point3DCL>
+operator*(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<double>& b)
+{
+    return GridFunctionCL<Point3DCL>( a)*= b;
+}
+
+inline GridFunctionCL<Point3DCL>
+operator*(const GridFunctionCL<double>& a, const GridFunctionCL<Point3DCL>& b)
+{
+    return b*a;
+}
+
+
+inline GridFunctionCL<double>
+dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
+{
+    GridFunctionCL<double> ret( 0.0, a.size()); 
+    for (size_t i= 0; i<a.size(); ++i) 
+        ret[i]= inner_prod( a[i], b[i]); 
+    return ret; 
+}
+
+
 //**************************************************************************
 // Class:   LocalP2CL                                                      *
 // Template Parameter:                                                     *
@@ -74,12 +157,12 @@ inline double H_sm( double s, double eps)
 //          vertex_0,..., vertex_3, edge_0,..., edge5.                     *
 //**************************************************************************
 template<class T= double>
-class LocalP2CL: public std::valarray<T>
+class LocalP2CL: public GridFunctionCL<T>
 {
   public:
-    typedef T value_type;
-    typedef std::valarray<T> base_type;
-    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+    typedef GridFunctionCL<T> base_type;
+    typedef typename base_type::value_type value_type;
+    typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
   protected:
     typedef LocalP2CL<T> self_;
@@ -88,7 +171,7 @@ class LocalP2CL: public std::valarray<T>
     LocalP2CL() : base_type( value_type(), FE_P2CL::NumDoFC) {}
     // Initialize from a given function
     LocalP2CL(const TetraCL&, instat_fun_ptr , double= 0.0);
-    // Initialize from VecDescCL an boundary-data
+    // Initialize from VecDescCL and boundary-data
     template<class BndDataT, class VecDescT>
       LocalP2CL(const TetraCL&, const VecDescT&, const BndDataT&, double= 0.0);
     // Initialize from PiEvalCl
@@ -118,14 +201,14 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 //        Quadrature formulas
 // ===================================
 template<class T=double>
-class Quad2CL: public std::valarray<T>
+class Quad2CL: public GridFunctionCL<T>
 {
   public:
-    typedef T value_type;
-    typedef std::valarray<T> base_type;
-    typedef value_type (*instat_fun_ptr)(const Point3DCL&, double);
+    typedef GridFunctionCL<T> base_type;
+    typedef typename base_type::value_type value_type;
+    typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
-    static const Uint NumNodesC= 5;
+    static const Uint   NumNodesC= 5;
     static const double Node[NumNodesC][4]; // Stuetzstellen 5*4 doubles
     static const double Wght[NumNodesC];    // Gewichte
 
@@ -153,15 +236,6 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     template <class P2FunT> 
       inline self_&
       assign(const TetraCL&, const P2FunT&, double= 0.0);
-
-    template<typename FuncT>
-    Quad2CL& apply (FuncT fun)
-      { for (size_t i=0; i<NumNodesC; ++i) (*this)[i]=fun( (*this)[i]); return *this; }
-
-    template <typename U> Quad2CL& operator*= (const Quad2CL<U>& q)
-      { for (size_t i=0; i<NumNodesC; ++i) (*this)[i]*=q[i]; return *this; }
-    template <typename U> Quad2CL operator* (const Quad2CL<U> &q) const
-      { return Quad2CL( *this)*= q; }
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
@@ -194,15 +268,6 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
                )*absdet;
     }
 };
-
-inline Quad2CL<double>
-dot (const Quad2CL<Point3DCL>& a, const Quad2CL<Point3DCL>& b)
-{
-    Quad2CL<double> ret; 
-    for (size_t i=0; i<a.size(); ++i) 
-        ret[i]= dot( a[i], b[i]); 
-    return ret; 
-}
 
 
 class Quad3CL

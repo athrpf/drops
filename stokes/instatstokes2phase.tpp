@@ -232,7 +232,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
             for (int j=0; j<=i; ++j)
             {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
             }
@@ -387,7 +387,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
             for (int j=0; j<=i; ++j)
             {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
             }

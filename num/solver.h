@@ -148,21 +148,6 @@ SolveGSstep(const PreDummyCL<PB_SGS>&, const MatrixCL& A, Vec& x, const Vec& b, 
         else
             x[i]= sum/aii;
     }
-/*    for (size_t i= n, nz= A.row_beg( n); i>0; ) { // XXX: Rearrange this loop as the preceding one.
-        --i;
-        double aii, sum= b[i];
-        for (const size_t beg= A.row_beg(i); nz>beg; ) {
-            --nz;
-            if (A.col_ind(nz) != i)
-                sum-= A.val(nz)*x[A.col_ind(nz)];
-            else
-                aii= A.val(nz);
-        }
-        if (HasOmega)
-            x[i]= (1.-omega)*x[i]+omega*sum/aii;
-        else
-            x[i]= sum/aii;
-    }*/
 }
 
 
@@ -397,8 +382,8 @@ template <typename Mat, typename Vec>
 bool
 CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
 {
-    Vec r= A*x - b;
-    Vec d= -r;
+    Vec r( A*x - b);
+    Vec d( -r);
     double resid= norm_sq( r);
 
     tol*= tol;
@@ -451,7 +436,7 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     int& max_iter, double& tol)
 {
     const size_t n= x.size();
-    Vec p(n), z(n), q(n), r= b - A*x;
+    Vec p(n), z(n), q(n), r( b - A*x);
     double rho, rho_1= 0.0, resid= norm_sq( r);
 
     tol*= tol;
@@ -851,7 +836,7 @@ bool
 MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol)
 {
     LanczosONBCL<Mat, Vec> q;
-    q.new_basis( A, rhs - A*x);
+    q.new_basis( A, Vec( rhs - A*x));
     return PMINRES( A,  x, rhs, q, max_iter, tol);
 }
 
@@ -975,7 +960,7 @@ class PMResSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
-        q_.new_basis( A, b - A*x);
+        q_.new_basis( A, Vec( b - A*x));
         PMINRES( A, x, b, q_, _iter, _res);
     }
     template <typename Mat, typename Vec>
@@ -983,7 +968,7 @@ class PMResSolverCL : public SolverBaseCL
     {
         resid=   _tol;
         numIter= _maxiter;
-        q_.new_basis( A, b - A*x);
+        q_.new_basis( A, Vec( b - A*x));
         PMINRES( A, x, b, q_, numIter, resid);
     }
 };

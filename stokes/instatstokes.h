@@ -123,7 +123,7 @@ class FracStepMatrixCL
     
     VectorCL operator* (const VectorCL& v) const
     {
-        return _coeff*(_matA*v) + _matI*v;
+        return VectorCL( _coeff*(_matA*v) + _matI*v);
     }
 };
 

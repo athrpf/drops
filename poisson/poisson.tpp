@@ -302,7 +302,7 @@ void PoissonP1CL<Coeff>::GetDiscError(const MatDescCL& A, scalar_fun_ptr Lsg) co
         }
     }
     
-    VectorCL res= A.Data*lsg-b.Data; 
+    VectorCL res( A.Data*lsg-b.Data); 
     std::cerr <<"|| Ax - b || = "<< norm( res)<<", max "<< supnorm( res)
               <<" (with x=continuous solution)"<<std::endl;
 }

@@ -698,8 +698,8 @@ void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         cc.SetIdx( lsgpr->RowIdx);
         cplM.SetIdx( lsgvel->RowIdx);
         SetupInstatRhs( &bb, &cc, &cplM, t, &bb, t);
-        VectorCL res1= M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data;
-        VectorCL res2= B.Data*lsgvel->Data - cc.Data;
+        VectorCL res1( M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data);
+        VectorCL res2( B.Data*lsgvel->Data - cc.Data);
         std::cerr << "\nChecken der Loesung...\n";    
         std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
         std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;

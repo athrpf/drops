@@ -482,7 +482,7 @@ class PMResSPCL : public SolverBaseCL
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c)
     {
-        q_->new_basis( A, B, b - (A*v + transp_mul( B, p)), c - B*v);
+        q_->new_basis( A, B, Vec( b - (A*v + transp_mul( B, p))), Vec( c - B*v));
         _res=  _tol;
         _iter= _maxiter;
         PMINRES_SP( A, B, v, p, b, c, *q_, _iter, _res);
@@ -1041,7 +1041,7 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
 {
-    VectorCL rhs= -c;
+    VectorCL rhs( -c);
     if (_tmp.size() != v.size())
         _tmp.resize( v.size());
     _poissonSolver.Solve( A, _tmp, b);
@@ -1071,7 +1071,7 @@ void PSchurSolver2CL<InnerSolverT, OuterSolverT>::Solve(
 // solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
 //              A*u = b - BT*p
 {
-    VectorCL rhs= -c;
+    VectorCL rhs( -c);
     if (tmp_.size() != v.size()) tmp_.resize( v.size());
     innerSolver_.Solve( A, tmp_, b);
     std::cerr << "rhs     : iterations: " << innerSolver_.GetIter()
@@ -1168,8 +1168,8 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     PC1& Apc, PC2& Spc,
     int& max_iter, double& tol, bool Apcislinear= false, double innerred= 0.3)
 {
-    VectorCL ru= f - A*xu - transp_mul( B, xp);
-    VectorCL rp= g - B*xu;
+    VectorCL ru( f - A*xu - transp_mul( B, xp));
+    VectorCL rp( g - B*xu);
     VectorCL w( f.size());
     VectorCL z( g.size());
     VectorCL z2( g.size());

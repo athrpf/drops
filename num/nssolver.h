@@ -224,9 +224,9 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             
             d= A*w + alpha*(_NS.N.Data*w) + transp_mul( B, q);
             e= B*w;
-            omega= dot( d, A*v.Data + _NS.N.Data*VectorCL( alpha*v.Data)
-                + transp_mul( B, p) - b - alpha*cplN.Data)
-                + dot( e, B*v.Data - c);
+            omega= dot( d, VectorCL( A*v.Data + _NS.N.Data*VectorCL( alpha*v.Data)
+                + transp_mul( B, p) - b - alpha*cplN.Data))
+                + dot( e, VectorCL( B*v.Data - c));
             omega/= norm_sq( d) + norm_sq( e);
             std::cerr << "omega = " << omega << std::endl;
             

@@ -69,7 +69,7 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 #undef DROPS_EXP_TEMPL_CONSTR_FOR_VALARRAY_DERIVATIVE
 #define DROPS_EXP_TEMPL_CONSTR_FOR_VALARRAY_DERIVATIVE(theClass, thebase_type) \
 template <class X__>                                                           \
-  theClass (const X__& x__): thebase_type( x__) {}
+  explicit theClass (const X__& x__): thebase_type( x__) {}
 
 #undef  DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE
 #define DROPS_ASSIGNMENT_OP_FOR_VALARRAY_DERIVATIVE(theOp, theClass, theT, thebase_type) \

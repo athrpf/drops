@@ -67,9 +67,9 @@ void NavierStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     VecDescCL rhsN( lsgvel->RowIdx);
     N.Data.clear();
     SetupNonlinear( &N, lsgvel, &rhsN);
-    VectorCL res1= A.Data*lsgvel->Data + N.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
-                 - b.Data - rhsN.Data;
-    VectorCL res2= B.Data*lsgvel->Data - c.Data;
+    VectorCL res1( A.Data*lsgvel->Data + N.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
+                 - b.Data - rhsN.Data);
+    VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
     std::cerr << "\nChecken der Loesung...\n";    
     std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;

@@ -229,7 +229,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
 
     for(int j=0; j<4;++j)
     {
-      const Quad2CL<> u_Gradj= dot( u, Quad2CL<Point3DCL>( G[j]));
+      const Quad2CL<> u_Gradj( dot( u, Quad2CL<Point3DCL>( G[j])));
 
       if (UnknownIdx[j] != NoIdx) // vertex j is not on a Dirichlet boundary
       {

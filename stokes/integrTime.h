@@ -324,7 +324,7 @@ void
 ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
     p= 0.0;
-    const Vec c2_= c - dot( ones_.back(), c);
+    const Vec c2_( c - dot( ones_.back(), c));
 //    double new_res= norm( A_.back().A.Data*p - c2_);
 //    double old_res;
 //    std::cerr << "IsMGPcCL: "

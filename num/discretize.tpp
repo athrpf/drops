@@ -72,7 +72,7 @@ template<class T>
 
 
 template<class T>
-  LocalP2CL<T>::LocalP2CL(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
+  LocalP2CL<T>::LocalP2CL(const TetraCL& s, instat_fun_ptr f , double t)
   : base_type( value_type(), FE_P2CL::NumDoFC)
 {
     this->assign( s, f, t);
@@ -151,7 +151,7 @@ template<class T>
 
 template<class T>
   Quad2CL<T>::Quad2CL(const TetraCL& s,
-      value_type (*f)(const Point3DCL&, double), double t)
+      instat_fun_ptr f, double t)
   : base_type( value_type(), NumNodesC)  
 {
     this->assign( s, f, t);

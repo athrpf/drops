@@ -170,7 +170,7 @@ template<class T>
 const double OldQuad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15.};
 
 
-
+/*
 inline std::valarray<double>
 dot (const std::valarray<Point3DCL>& a, const std::valarray<Point3DCL>& b)
 {
@@ -179,7 +179,7 @@ dot (const std::valarray<Point3DCL>& a, const std::valarray<Point3DCL>& b)
         ret[i]= dot( a[i], b[i]); 
     return ret; 
 }
-
+*/
 
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 {

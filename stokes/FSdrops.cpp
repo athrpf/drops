@@ -174,7 +174,7 @@ void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B,
 //                q = dt*p 
 {
     p*=dt;
-    VectorCL rhs= -c;
+    VectorCL rhs( -c);
     {
         double tol= inner_tol;
         int iter= max_iter;        
@@ -208,7 +208,7 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
 //                q = dt*p 
 {
     p*= dt;
-    VectorCL rhs= -c;
+    VectorCL rhs( -c);
     {
         double tol= inner_tol;
         int iter= max_iter;        

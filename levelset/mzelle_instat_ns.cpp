@@ -224,7 +224,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
             cplN.Data-= (1-theta)*nl * (Stokes.N.Data * Stokes.v.Data);
             schurSolver.Solve( mat, Stokes.B.Data, 
-                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data + nl*cplN.Data, Stokes.c.Data);
+                Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + nl*cplN.Data), Stokes.c.Data);
         } while (schurSolver.GetIter() > 0);
         time.Stop();
         std::cerr << "Solving NavStokes for initial velocities took "<<time.GetTime()<<" sec.\n";

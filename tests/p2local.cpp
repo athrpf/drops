@@ -159,7 +159,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         for (int i=0; i<10; ++i)
             for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
                 ret+= coupM[i][j] - coupA[i][j];
@@ -220,7 +220,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         for (int i=0; i<10; ++i)
             for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
                 ret+= coupM[i][j] - coupA[i][j];

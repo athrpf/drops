@@ -47,9 +47,9 @@ void StokesP2P1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_ptr Lsg
         lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord());
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
-    VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
+    VectorCL res( A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data); 
     std::cerr <<"|| Ax + BTy - f || = "<< norm( res) << ", max " << supnorm( res) << std::endl;
-    VectorCL resB= B.Data*lsgvel - c.Data; 
+    VectorCL resB( B.Data*lsgvel - c.Data); 
     std::cerr <<"|| Bx - g || = "<< norm( resB) << ", max " << supnorm( resB) << std::endl;
 }
 
@@ -585,8 +585,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     double mindiff=0, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel();
     
-    VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;
-    VectorCL res2= B.Data*lsgvel->Data - c.Data;
+    VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
+    VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
     std::cerr << "\nChecken der Loesung...\n";    
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
@@ -864,9 +864,9 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(vector_fun_ptr LsgVel, scalar_fun_p
         lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord());
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
-    VectorCL res= A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data; 
+    VectorCL res( A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data); 
     std::cerr <<"|| Ax + BTy - f || = "<< norm( res)<<", max "<< supnorm( res) << std::endl;
-    VectorCL resB= B.Data*lsgvel - c.Data; 
+    VectorCL resB( B.Data*lsgvel - c.Data); 
     std::cerr <<"|| Bx - g || = "<< norm( resB)<<", max "<< supnorm( resB) << std::endl;
 }
 
@@ -1315,8 +1315,8 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
     
-    VectorCL res1= A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data;
-    VectorCL res2= B.Data*lsgvel->Data - c.Data;
+    VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
+    VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
     std::cerr << "\nChecken der Loesung...\n";    
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;

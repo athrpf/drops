@@ -178,7 +178,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             double outer_tol;
             std::cerr << "tol = "; std::cin >> outer_tol;
             time.Start();
-            VectorCL rhs= -c->Data;
+            VectorCL rhs( -c->Data);
             {
                 double tol= inner_iter_tol;
                 int max_iter= 200;        
