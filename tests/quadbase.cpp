@@ -219,14 +219,14 @@ typedef Quad2CL<Point3DCL> NewVQuadT;
 BndCL theBnd;
 
 double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1,
-    VecDescCL& vd2)
+    VecDescCL& /*vd2*/)
 {
     std::cout << "\n-----------------------------------------------------------------"
                  "\nOld Quadrature:\n";
     double ret= 0.;
     P2FuncT f( &vd0, &theBnd, &mg);
     P2FuncT g( &vd1, &theBnd, &mg);
-    P2FuncT h( &vd2, &theBnd, &mg);
+//    P2FuncT h( &vd2, &theBnd, &mg);
     OldQuadT quad;
     OldQuadT quad0;
     OldQuadT quad1;
@@ -264,14 +264,14 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1,
 
 
 double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1,
-    VecDescCL& vd2)
+    VecDescCL& /*vd2*/)
 {
     std::cout << "\n-----------------------------------------------------------------"
                  "\nNew Quadrature:\n";
     double ret= 0.;
     P2FuncT f( &vd0, &theBnd, &mg);
     P2FuncT g( &vd1, &theBnd, &mg);
-    P2FuncT h( &vd2, &theBnd, &mg);
+//    P2FuncT h( &vd2, &theBnd, &mg);
     LocalP2CL<> localg;
     NewQuadT quad;
     NewQuadT quad0;

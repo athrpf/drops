@@ -158,7 +158,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     
     double coupA[10][10], coupM[10][10];
     double det, absdet;
-    Point3DCL tmp, myt;
+    Point3DCL tmp;
     LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
 
     P2DiscCL::GetGradientsOnRef( GradRef);

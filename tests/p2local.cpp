@@ -126,7 +126,6 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     SMatrixCL<3,3> T;
     double coupA[10][10], coupM[10][10];
     double det, absdet;
-    Point3DCL tmp;
 
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(),
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
@@ -186,7 +185,6 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     SMatrixCL<3,3> T;
     double coupA[10][10], coupM[10][10];
     double det, absdet;
-    Point3DCL tmp;
     LocalP2CL<> ls;
     
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(),
