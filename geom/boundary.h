@@ -200,6 +200,7 @@ class MeshBoundaryCL : public BndSegCL
         return Point2DCL(); }
     virtual BndPairCL MidProject (const BndPointCL&, const BndPointCL&) const {
         return std::make_pair( Point2DCL(), Point3DCL()); }
+    Uint GetBC() const { return bc_; }
 };
 
 
