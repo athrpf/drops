@@ -203,8 +203,9 @@ int main (int argc, char** argv)
     
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
-        std::cerr << "BC: " << dynamic_cast<const DROPS::MeshBoundaryCL*>(bnd.GetBndSeg( i))->GetBC() << std::endl;
+        std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
+    mg.SizeInfo( std::cerr);    
     mg.ElemInfo( std::cerr);    
 //    MarkAll( mg); mg.Refine();
     for (int i=0; i<num_dropref; ++i)
@@ -212,10 +213,9 @@ int main (int argc, char** argv)
         MarkDrop( mg);
         mg.Refine();
     }
-    std::cerr << "after refinement: "; mg.ElemInfo( std::cerr);    
+    std::cerr << "after refinement:\n"; mg.ElemInfo( std::cerr);    
+    mg.SizeInfo( std::cerr);    
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-    std::ofstream geomout( "gambit/mzelle.off");
-    geomout << DROPS::GeomMGOutCL( mg, -1, false, 0);
 
     Strategy(prob, inner_iter_tol, sigma);
     double min= prob.p.Data.min(),
