@@ -79,9 +79,11 @@ class InstatStokesThetaSchemeCL
 //     James H. Bramble, Joseph E. Pasciak, January 1994
 //
 // A Poisson-problem with natural boundary-conditions for the pressure is
-// solved via a SSOR-PCG-solver, a problem with the mass-matrix aswell.
+// solved via 1 SSOR-step, a problem with the mass-matrix aswell.
 // The constant k_ has to be chosen according to h and dt, see Theorem 4.1
-// of the above paper.
+// of the above paper. 
+// k_ = theta*dt/Re will do a good job, 
+// where Re is proportional to the ratio density/viscosity.
 //
 // A_ is the pressure-Poisson-Matrix for natural boundary-conditions, M_ the
 // pressure-mass-matrix.
@@ -89,17 +91,15 @@ class InstatStokesThetaSchemeCL
 class ISPreCL
 {
   private:
-    DROPS::PCG_SsorCL solver_;
-    DROPS::MatrixCL& A_;
-    DROPS::MatrixCL& M_;
-    double k_;
+    MatrixCL& A_;
+    MatrixCL& M_;
+    double    k_;
+    SSORPcCL  ssor_;
 
   public:
-    ISPreCL(DROPS::MatrixCL& A_pr, DROPS::MatrixCL& M_pr,
-            double k_pc, DROPS::Uint max_iter)
-        :solver_( DROPS::SSORPcCL( 1.), max_iter, 1e-12),
-         A_( A_pr), M_( M_pr), k_( k_pc)
-    {}
+    ISPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
+            double k_pc= 0, double om= 1)
+      : A_( A_pr), M_( M_pr), k_( k_pc), ssor_( om)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -200,20 +200,13 @@ void InstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& 
 
 
 template <typename Mat, typename Vec>
-void
-ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-    const_cast<ISPreCL*const>( this)->solver_.Solve( A_, p, c);
-//    std::cerr << "ISPreCL: A: iterations: " << solver_.GetIter()
-//              << "\tresidual: " << solver_.GetResid() << '\t';
-    DROPS::VectorCL p2( 0.0, p.size());
-    const_cast<ISPreCL*const>( this)->solver_.SetTol(solver_.GetTol()/k_);
-    const_cast<ISPreCL*const>( this)->solver_.Solve( M_, p2, c);
-//    std::cerr << "M: iterations: " << solver_.GetIter()
-//              << "\tresidual: " << solver_.GetResid() << '\n';
-    const_cast<ISPreCL*const>( this)->solver_.SetTol(solver_.GetTol()*k_);
-//    p+= k_*p2;
-    axpy( k_, p2, p);
+        ssor_.Apply( A_, p, c);
+        VectorCL p2( p.size() );
+        ssor_.Apply( M_, p2, c);
+//      p+= k_*p2;
+        axpy( k_, p2, p);
 }
 
 

@@ -26,6 +26,7 @@ class SchurSolverCL : public SolverBaseCL
 {
   private:
     PoissonSolverT& _poissonSolver;
+    VectorCL        _tmp;
 
   public:
     SchurSolverCL (PoissonSolverT& solver, int maxiter, double tol)
@@ -42,6 +43,7 @@ class PSchurSolverCL : public SolverBaseCL
   private:
     PoissonSolverT&        _poissonSolver;
     PreGSOwnMatCL<P_SSOR0> _schurPc;
+    VectorCL               _tmp;
 
   public:
     PSchurSolverCL (PoissonSolverT& solver, MatrixCL& M, int maxiter, double tol)
@@ -57,6 +59,7 @@ class PSchurSolver2CL : public SolverBaseCL
   private:
     PoissonSolverT&  poissonSolver_;
     PoissonSolver2T& poissonSolver2_;
+    VectorCL         tmp_;
 
   public:
     PSchurSolver2CL(PoissonSolverT& solver, PoissonSolver2T& solver2,
@@ -450,7 +453,7 @@ class PMResSPCL : public SolverBaseCL
 
 // The identity-preconditioner for PMinres.
 // For testing. If you really want plain Minres, use
-// LanczosONB_SPCL instaed of PLanczosONB_SPCL<..., IdPreCL>;
+// LanczosONB_SPCL instead of PLanczosONB_SPCL<..., IdPreCL>;
 // it is about 4% faster.
 class IdPreCL
 {
@@ -524,7 +527,6 @@ class Uzawa_CG_CL : public UzawaSolverCL<CGSolverCL>
   private:
     CGSolverCL _CGsolver;
   public:
-    // XXX M is not used!! Perhaps modify UzawaSolverCL. Or just live with it.
     Uzawa_CG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
         : UzawaSolverCL<CGSolverCL>( _CGsolver, M, outer_iter, outer_tol, tau),
           _CGsolver( inner_iter, inner_tol)
@@ -725,7 +727,7 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& 
     VectorCL x( M.A_.num_cols());
 
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
-//    std::cerr << "iterations: " << M.solver_.GetIter()
+//    std::cerr << "> inner iterations: " << M.solver_.GetIter()
 //              << "\tresidual: " << M.solver_.GetResid() << std::endl;
     return M.B_*x;
 }
@@ -820,13 +822,13 @@ void SchurSolverCL<PoissonSolverT>::Solve(
 //              A*u = b - BT*p
 {
     VectorCL rhs= -c;
-    {
-        VectorCL tmp( v.size());
-        _poissonSolver.Solve( A, tmp, b);
-        std::cerr << "iterations: " << _poissonSolver.GetIter()
-                  << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
-        rhs+= B*tmp;
-    }
+    if (_tmp.size() != v.size())
+        _tmp.resize( v.size());
+    _poissonSolver.Solve( A, _tmp, b);
+    std::cerr << "iterations: " << _poissonSolver.GetIter()
+              << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
+    rhs+= B*_tmp;
+
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
@@ -843,9 +845,9 @@ void SchurSolverCL<PoissonSolverT>::Solve(
 
     _iter= iter+_poissonSolver.GetIter();
     _res= tol + _poissonSolver.GetResid();
-std::cerr << "Real residuals are: "
+/* std::cerr << "Real residuals are: "
           << (A*v+transp_mul(B, p)-b).norm() << ", "
-          << (B*v-c).norm() << std::endl;
+          << (B*v-c).norm() << std::endl; */
     std::cerr << "-----------------------------------------------------" << std::endl;
 }
 
@@ -898,13 +900,13 @@ void PSchurSolverCL<PoissonSolverT>::Solve(
 //              A*u = b - BT*p
 {
     VectorCL rhs= -c;
-    {
-        VectorCL tmp( v.size());
-        _poissonSolver.Solve( A, tmp, b);
-        std::cerr << "iterations: " << _poissonSolver.GetIter()
-                  << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
-        rhs+= B*tmp;
-    }
+    if (_tmp.size() != v.size())
+        _tmp.resize( v.size());
+    _poissonSolver.Solve( A, _tmp, b);
+    std::cerr << "iterations: " << _poissonSolver.GetIter()
+              << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
+    rhs+= B*_tmp;
+
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
@@ -931,12 +933,12 @@ void PSchurSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
 //              A*u = b - BT*p
 {
     VectorCL rhs= -c;
-    {   VectorCL tmp( v.size());
-        poissonSolver_.Solve( A, tmp, b);
-        std::cerr << "rhs: iterations: " << poissonSolver_.GetIter()
-                  << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
-        rhs+= B*tmp;
-    }
+    if (tmp_.size() != v.size()) tmp_.resize( v.size());
+    poissonSolver_.Solve( A, tmp_, b);
+    std::cerr << "rhs: iterations: " << poissonSolver_.GetIter()
+              << "\tresidual: " << poissonSolver_.GetResid() << std::endl;
+    rhs+= B*tmp_;
+
     poissonSolver2_.Solve( SchurComplMatrixCL<PoissonSolverT>( poissonSolver_, A, B), p, rhs);
     std::cerr << "pressure: iterations: " << poissonSolver2_.GetIter()
               << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
