@@ -375,7 +375,7 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 
 
 //**************************************************************************
-// Class:   P1EvalCL                                                       *
+// Class:   P1EvalBaseCL                                                   *
 // Template Parameter:                                                     *
 //          Data     - The result-type of this finite-element-function on  *
 //                     the multigrid                                       *
@@ -403,14 +403,14 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 //          evaluated.                                                     *
 //**************************************************************************
 template<class Data, class _BndData, class _VD>
-class P1EvalCL
+class P1EvalBaseCL
 {
 public:
     typedef Data     DataT;
     typedef _BndData BndDataCL;
     typedef _VD      VecDescT;
     
-private:
+protected:
     // numerical data
     VecDescT*          _sol;
     // boundary-data
@@ -418,16 +418,16 @@ private:
     // the multigrid
     const MultiGridCL* _MG;
 
-    inline DataT // helper-function to evaluate the degree of freedom in a vertex,
-    GetDoF(const VertexCL&) const;// use val() instead
+    virtual inline DataT // helper-function to evaluate the degree of freedom in a vertex,
+    GetDoF(const VertexCL&) const= 0;// use val() instead
        
 public:
-    P1EvalCL() :_sol(0), _MG(0) {}
-    P1EvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
+    P1EvalBaseCL() :_sol(0), _MG(0) {}
+    P1EvalBaseCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
         :_sol(sol), _bnd(bnd), _MG(MG) {}
     // default copy-ctor, dtor, assignment-op
-    // copying P1EvalCL-objects is safe - it is a flat copy, which is fine,
-    // as P1EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
+    // copying P1EvalBaseCL-objects is safe - it is a flat copy, which is fine,
+    // as P1EvalBaseCL does not take possession of the pointed to _sol, _bnd and _MG.
 
     void // set / get the container of numerical data
     SetSolution(VecDescT* sol)
@@ -478,41 +478,77 @@ public:
     val(const TetraCL&, double, double, double) const;
 };
 
-
-template<class Data, class _BndData, class _VD>
-inline Data
-P1EvalCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s) const
+template<class DataT, class BndDataT, class VecDescT>
+class P1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
 {
-    return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                               : DoFHelperCL<Data,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
-}
+  // without using-instruction helper-function will shadow other 
+  // GetDoF member-functions
+  using P1EvalBaseCL<DataT, BndDataT, VecDescT>::GetDoF;
+  
+  private:
+    typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+    
+    inline DataT // helper-function to evaluate on a vertex; use val() instead
+    GetDoF(const VertexCL& s) const
+    {
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+    }
+    
+public:
+    P1EvalCL() : _base() {}
+    P1EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG)
+        : _base( sol, bnd, MG) {}
+    //default copy-ctor, dtor, assignment-op
+};
 
+template<class DataT, class BndDataT, class VecDescT>
+class InstatP1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
+{
+  private:
+    typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+    
+    double _t;
+    
+    inline DataT // helper-function to evaluate on a vertex; use val() instead
+    GetDoF(const VertexCL& s) const
+    {
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->Idx));
+    }
+    
+public:
+    InstatP1EvalCL() : _base(), _t(0) {}
+    InstatP1EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG, double t)
+        : _base( sol, bnd, MG), _t(t) {}
+    //default copy-ctor, dtor, assignment-op
+};
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline void
-P1EvalCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s, _Cont& c) const
+P1EvalBaseCL<Data, _BndData, _VD>::GetDoF(const VertexCL& s, _Cont& c) const
 {
     c.push_back( GetDoF(s) );
 }
 
 template<class Data, class _BndData, class _VD>
 inline void
-P1EvalCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
+P1EvalBaseCL<Data, _BndData, _VD>::SetDoF(const VertexCL& s, const Data& d)
 {
-    Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P1EvalCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."), DebugNumericC);
+    Assert(!_bnd->IsOnDirBnd(s), DROPSErrCL("P1EvalBaseCL::SetDoF: Trying to assign to Dirichlet-boundary-vertex."), DebugNumericC);
     DoFHelperCL<Data, typename VecDescT::DataType>::set(_sol->Data, s.Unknowns(_sol->RowIdx->Idx), d);
 }
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c) const
+P1EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c) const
 {
     return  *c.begin();
 }
 
 template<class Data, class _BndData, class _VD>
 inline Data
-P1EvalCL<Data, _BndData, _VD>::val(const VertexCL& s) const
+P1EvalBaseCL<Data, _BndData, _VD>::val(const VertexCL& s) const
 {
     return GetDoF(s);
 }
@@ -520,7 +556,7 @@ P1EvalCL<Data, _BndData, _VD>::val(const VertexCL& s) const
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline void
-P1EvalCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
+P1EvalBaseCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
 {
     c.push_back( GetDoF(*s.GetVertex(0)) );
     c.push_back( GetDoF(*s.GetVertex(1)) );
@@ -528,7 +564,7 @@ P1EvalCL<Data, _BndData, _VD>::GetDoF(const EdgeCL& s, _Cont& c) const
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
+P1EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
 {
     typename _Cont::const_iterator it= c.begin();
     DataT ret= *it++ * FE_P1CL::H0(v1);
@@ -537,7 +573,7 @@ P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1) const
 
 template<class Data, class _BndData, class _VD>
 inline Data
-P1EvalCL<Data, _BndData, _VD>::val(const EdgeCL& s, double v1) const
+P1EvalBaseCL<Data, _BndData, _VD>::val(const EdgeCL& s, double v1) const
 {
     return  GetDoF(*s.GetVertex(0))*FE_P1CL::H0(v1)
           + GetDoF(*s.GetVertex(1))*FE_P1CL::H1(v1);
@@ -545,7 +581,7 @@ P1EvalCL<Data, _BndData, _VD>::val(const EdgeCL& s, double v1) const
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline void
-P1EvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
+P1EvalBaseCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
 {
     c.push_back( GetDoF(*s.GetVertex(0)) );
     c.push_back( GetDoF(*s.GetVertex(1)) );
@@ -555,7 +591,7 @@ P1EvalCL<Data, _BndData, _VD>::GetDoF(const TetraCL& s, _Cont& c) const
 
 template<class Data, class _BndData, class _VD> template<class _Cont>
 inline Data
-P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
+P1EvalBaseCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
 {
     typename _Cont::const_iterator it= c.begin();
     DataT ret= *it++ * FE_P1CL::H0(v1, v2, v3);
@@ -566,7 +602,7 @@ P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double 
 
 template<class Data, class _BndData, class _VD>
 inline Data
-P1EvalCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, double v3) const
+P1EvalBaseCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, double v3) const
 {
     return  GetDoF(*s.GetVertex(0))*FE_P1CL::H0(v1, v2, v3)
            +GetDoF(*s.GetVertex(1))*FE_P1CL::H1(v1, v2, v3)
@@ -575,8 +611,9 @@ P1EvalCL<Data, _BndData, _VD>::val(const TetraCL& s, double v1, double v2, doubl
 }
 
 
+
 //**************************************************************************
-// Class:   P2EvalBaseCL                                                       *
+// Class:   P2EvalBaseCL                                                   *
 // Template Parameter:                                                     *
 //          Data     - The result-type of this finite-element-function on  *
 //                     the multigrid                                       *
