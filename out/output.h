@@ -1,10 +1,5 @@
-//**************************************************************************
-// File:    output.h                                                       *
-// Content: geometry and solution output in various formats                *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - Nov, 26 2001                                           *
-//**************************************************************************
+/// \file
+/// \brief Classes for output to geomview, maple, text-files, etc.
 
 #ifndef DROPS_OUTPUT_H
 #define DROPS_OUTPUT_H
