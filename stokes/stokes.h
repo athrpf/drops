@@ -283,12 +283,6 @@ class SchurComplMatrixCL
     operator*<>(const SchurComplMatrixCL<PoissonSolverT>&, const VectorCL&);
 };
 
-void Uzawa(const MatrixCL& A, const MatrixCL& B, const MatrixCL& I, VectorCL& x, VectorCL& y, const VectorCL& f, const VectorCL& g, 
-           double tau, int& max_iter, double& tol, Uint inner_iter, double inner_iter_tol);
-
-//double GradPrEstimator(const TetraCL&, const DiscPrSolCL&, const DiscVelSolCL&);
-
-
 
 //======================================
 //        inline functions 

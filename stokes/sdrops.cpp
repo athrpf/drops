@@ -2,6 +2,7 @@
 #include "out/output.h"
 #include "geom/builder.h"
 #include "stokes/stokes.h"
+#include "num/stokessolver.h"
 #include <fstream>
 
 
@@ -211,10 +212,12 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             M.SetIdx( pidx1, pidx1);
             Stokes.SetupMass( &M);
             time.Start();
-            Uzawa( A->Data, B->Data, M.Data, v1->Data, p1->Data, b->Data, c->Data, tau, max_iter, tol, inner_iter, inner_iter_tol);
-//            Uzawa2( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data, max_iter, tol, inner_iter, inner_iter_tol);
+            Uzawa_PCG_CL uzawaSolver( M.Data, max_iter, tol, inner_iter, inner_iter_tol, tau);
+            uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
+//            Uzawa( A->Data, B->Data, M.Data, v1->Data, p1->Data, b->Data, c->Data, tau, max_iter, tol, inner_iter, inner_iter_tol);
             time.Stop();
-            std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
+            std::cerr << "iterations: " << uzawaSolver.GetIter()
+                      << "\tresidual: " << uzawaSolver.GetResid() << std::endl;
         }
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
