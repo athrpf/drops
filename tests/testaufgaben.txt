@@ -2,33 +2,35 @@ Poisson stationaer
 ==================
 
 --uniform: dropsrep 1 0.01 1.1 3
-  erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.txt.
+  erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.ref.
 --adaptiv: dropsrep 1 0.01 0.8 7
-  erzeugt die Ausgabe in der Datei poisson-stationaer-adaptiv.txt.
+  erzeugt die Ausgabe in der Datei poisson-stationaer-adaptiv.ref.
 --multigrid: MGdrops 1 mit tolerance 1e-8, -1 levels, 2 smoothing steps
-  erzeugt die Ausgabe in der Datei poisson-stationaer-multigrid.txt.
+  erzeugt die Ausgabe in der Datei poisson-stationaer-multigrid.ref.
+--neumann: drops_neumann 1 0.01 1.1 3
+  erzeugt die Ausgabe in der Datei poisson-stationaer-neumann.ref.
+  TODO: Was laeuft da schief?
 Das uniforme Problem steht in Abschnitt 7.1 des IGPM-Reports 211 ueber DROPS.
 
 Poisson instationaer
 ====================
 --uniform: ipdropsrep mit dt=0.001, 500 Zeitschritten, 4 Verfeinerungen
-  erzeugt die Ausgabe in der Datei poisson-instationaer-uniform.txt.
+  erzeugt die Ausgabe in der Datei poisson-stationaer-uniform.ref.
 
 Stokes stationaer
 =================
 --uniform: sdropsP2 1 1e-09 1e-07 0 3 0.001 1.1 1 5
-  erzeugt die Ausgabe in der Datei stokes-stationaer-uniform.txt.
+  erzeugt die Ausgabe in der Datei stokes-stationaer-uniform.ref.
 --adaptiv: drcavad 1e-9 1e-7 0 7 0.01 0.8 1 5
   loest das Driven-Cavity-Problem fuer die Stokes-Gleichungen adaptiv mit
   dem Uzawa-Loeser. Die Ausgabe steht in der Datei
-  drivencavity-adaptiv-uzawa.txt.
+  drivencavity-adaptiv-uzawa.ref.
 --drcavad 1e-9 1e-7 1 7 0.01 0.8 1 5
   loest das Driven-Cavity-Problem fuer die Stokes-Gleichungen adaptiv mit
   dem Schur-Komplement-Loeser. Die Ausgabe steht in der Datei
-  drivencavity-adaptiv-schur.txt.
+  drivencavity-adaptiv-schur.ref.
   
 Stokes instationaer
 ===================
---FSdrops 1 1e-7 mit dt=0.005, method 2, theta 1, tol 1e-5
-  erzeugt die Ausgabe in stokes-instationaer-uniform.txt. Das Programm wurde
-  vor der Zeitintegration auf der dritten Verfeinerung manuell beendet.
+--FSdrops 1 1e-7 2 mit dt=0.005, method 2, theta 1, tol 1e-5
+  erzeugt die Ausgabe in stokes-instationaer-uniform.ref.
