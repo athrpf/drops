@@ -25,6 +25,32 @@ Uint IdxDescCL::GetFreeIdx()
     return sysnum;
 }
 
+IdxDescCL::IdxDescCL( const IdxDescCL& orig)
+{
+    Idx= orig.Idx;
+    TriangLevel= orig.TriangLevel;
+    NumUnknownsVertex= orig.NumUnknownsVertex;
+    NumUnknownsEdge= orig.NumUnknownsEdge;
+    NumUnknownsFace= orig.NumUnknownsFace;
+    NumUnknownsTetra= orig.NumUnknownsTetra;
+    NumUnknowns= orig.NumUnknowns;
+    // invalidate orig
+    const_cast<IdxDescCL&>(orig).Idx= NoIdx;
+}
+
+void IdxDescCL::swap( IdxDescCL& obj)
+// Swaps the contents of obj and *this. Note that std::swap cannot be used
+// for IdxDescCL-objects as the assignment operator is not implemented.
+{
+    std::swap( Idx, obj.Idx);
+    std::swap( TriangLevel,       obj.TriangLevel);
+    std::swap( NumUnknownsVertex, obj.NumUnknownsVertex);
+    std::swap( NumUnknownsEdge,   obj.NumUnknownsEdge);
+    std::swap( NumUnknownsFace,   obj.NumUnknownsFace);
+    std::swap( NumUnknownsTetra,  obj.NumUnknownsTetra);
+    std::swap( NumUnknowns,       obj.NumUnknowns);
+}
+
 void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
 // sets up the number of unknowns in every subsimplex for a certain index.
 // Remark: expects _IdxDesc to be long enough

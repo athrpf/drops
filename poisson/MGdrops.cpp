@@ -43,7 +43,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega)
         MGLevelDataCL& tmp= MGData.back();
         
         std::cerr << "Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 1, 0, 0, 0);
+        tmp.Idx.Set( 1);
         Poisson.CreateNumbering(lvl, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         if(lvl==MG.GetLastLevel())

@@ -227,17 +227,15 @@ void StrategyNavSt(NavierStokesP2P1CL<MGB,Coeff>& NS, int maxStep, double fp_tol
         std::cerr << std::endl;
     }
     while (++step<maxStep);
-    // we want the solution to be in _v
+    // we want the solution to be in NS.v, NS.pr
     if (v2 == &loc_v)
     {
+        NS.vel_idx.swap( loc_vidx);
+        NS.pr_idx.swap( loc_pidx);
         NS.v.SetIdx(&NS.vel_idx);
         NS.p.SetIdx(&NS.pr_idx);
-        *NS.v.RowIdx= *loc_v.RowIdx;
-        *NS.p.RowIdx= *loc_p.RowIdx;
         
-        NS.v.Data.resize(loc_v.Data.size());
         NS.v.Data= loc_v.Data;
-        NS.p.Data.resize(loc_p.Data.size());
         NS.p.Data= loc_p.Data;
     }
 }

@@ -118,7 +118,7 @@ void Strategy(PoissonP1CL<MGB,Coeff>& Poisson, double omega, double rel_red, dou
     // I want the solution to be in Poisson.x
     if (old_x == &loc_x)
     {
-        Poisson.idx= loc_idx;
+        Poisson.idx.swap( loc_idx);
         Poisson.x.SetIdx(&Poisson.idx);
 
         Poisson.x.Data.resize(loc_x.Data.size());
