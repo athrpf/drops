@@ -8,111 +8,6 @@ namespace DROPS
 {
 
 // ==============================================
-//              CouplStokesLevelsetCL
-// ==============================================
-
-template <class StokesT, class SolverT>
-CouplStokesLevelsetCL<StokesT,SolverT>::CouplStokesLevelsetCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
-    _rhs( Stokes.b.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta)
-{ 
-    _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
-    _old_curv->SetIdx( _b->RowIdx); _curv->SetIdx( _b->RowIdx);
-    _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
-    ls.AccumulateBndIntegral( *_old_curv);
-}
-
-template <class StokesT, class SolverT>
-CouplStokesLevelsetCL<StokesT,SolverT>::~CouplStokesLevelsetCL()
-{
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b; 
-    delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::InitStep()
-{
-// compute all terms that don't change during the following FP iterations
-
-    _LvlSet.ComputeRhs( _ls_rhs);
-
-    _Stokes.t+= _dt;
-    _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
-
-    _rhs=  _Stokes.A.Data * _Stokes.v.Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*(_old_b->Data + _old_curv->Data));
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::DoFPIter()
-// perform fixed point iteration
-{
-    TimerCL time;
-    time.Reset();
-    time.Start();
-
-    _curv->Clear();
-    _LvlSet.AccumulateBndIntegral( *_curv);
-
-    _Stokes.p.Data*= _dt;
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   _rhs + _dt*_theta*_curv->Data, _Stokes.c.Data);
-    _Stokes.p.Data/= _dt;
-
-    time.Stop();
-    std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
-
-    time.Reset();
-    time.Start();
-
-    // setup system for levelset eq. as velocity has changed
-    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( _dt);
-    _LvlSet.DoStep( _ls_rhs);
-
-    time.Stop();
-    std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::CommitStep()
-{
-    _curv->Clear();
-    _LvlSet.AccumulateBndIntegral( *_curv);
-
-    std::swap( _b, _old_b);
-    std::swap( _cplM, _old_cplM);
-    std::swap( _curv, _old_curv);
-}
-
-template <class StokesT, class SolverT>
-void CouplStokesLevelsetCL<StokesT,SolverT>::DoStep( int maxFPiter)
-{
-    if (maxFPiter==-1)
-        maxFPiter= 99;
-
-    InitStep();
-    for (int i=0; i<maxFPiter; ++i)
-    {
-        DoFPIter();
-        if (_LvlSet.GetSolver().GetIter()==0) // no change of Phi -> no change of vel
-            break;
-    }
-    CommitStep();
-}
-
-
-// ==============================================
 //              CouplLevelsetStokesCL
 // ==============================================
 
@@ -161,6 +56,7 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::InitStep()
 template <class StokesT, class SolverT>
 void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
 // perform fixed point iteration
+// solving the level set equation first is faster than the other way round
 {
     TimerCL time;
     time.Reset();

@@ -13,42 +13,6 @@ namespace DROPS
 {
 
 template <class StokesT, class SolverT>
-class CouplStokesLevelsetCL
-{
-  private:
-    StokesT&      _Stokes;
-    SolverT&      _solver;
-    LevelsetP2CL& _LvlSet;
-    
-    VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
-    VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
-    VecDescCL    *_curv, *_old_curv;  // curvature terms
-    VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
-    
-    double _theta, _dt;
-    
-  public:
-    CouplStokesLevelsetCL( StokesT& Stokes, LevelsetP2CL& ls, 
-                           SolverT& solver, double theta= 0.5);
-    ~CouplStokesLevelsetCL();
-    
-    double GetTheta()    const { return _theta; }
-    double GetTime()     const { return _Stokes.t; }
-    double GetTimeStep() const { return _dt; }
-
-    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data); }
-       
-    void InitStep();
-    // perform fixed point iteration
-    void DoFPIter();
-    void CommitStep();
-    
-    void DoStep( int maxFPiter= -1);  // combines the 3 former routines
-};
-    
-
-template <class StokesT, class SolverT>
 class CouplLevelsetStokesCL
 {
   private:
