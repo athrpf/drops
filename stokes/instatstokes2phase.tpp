@@ -297,6 +297,112 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
 }
 
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
+    MatDescCL* M, const LevelsetP2CL& lset, double t) const
+// Set up matrices A, M (depending on phase bnd)
+{
+    const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
+
+    MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel),
+                    mM( &M->Data, num_unks_vel, num_unks_vel);
+    
+    const Uint lvl         = A->RowIdx->TriangLevel,
+               vidx        = A->RowIdx->GetIdx();
+
+    IdxT Numb[10];
+    bool IsOnDirBnd[10];
+    
+    std::cerr << "entering SetupMatrices1: " << num_unks_vel << " vels. ";
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
+    Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
+        
+    SMatrixCL<3,3> T;
+    
+    double coupA[10][10], coupM[10][10];
+    double det, absdet;
+    Point3DCL tmp;
+    LevelsetP2CL::DiscSolCL ls= lset.GetSolution();
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL 
+            sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+            send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+            sit != send; ++sit) {
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        absdet= fabs( det);
+    
+        // collect some information about the edges and verts of the tetra
+        // and save it in Numb and IsOnDirBnd
+        for (int i=0; i<4; ++i)
+        {
+            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
+                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
+            rhs.val[i]= _Coeff.f( sit->GetVertex(i)->GetCoord(), t);
+            Phi.val[i]= ls.val( *sit->GetVertex(i));
+        }
+        for (int i=0; i<6; ++i)
+        {
+            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
+                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
+        }
+        rhs.val[4]= _Coeff.f( GetBaryCenter( *sit), t);
+        Phi.val[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+
+        // rho = rho( Phi),    mu_Re= mu( Phi)/Re
+        rho=   Phi;     rho.apply( _Coeff.rho);
+        mu_Re= Phi;     mu_Re.apply( _Coeff.mu);     mu_Re*= 1./_Coeff.Re;
+
+        // rhs = f + rho*g
+        rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
+        
+        // compute all couplings between HatFunctions on edges and verts
+        for (int i=0; i<10; ++i)
+            for (int j=0; j<=i; ++j)
+            {
+                // dot-product of the gradients
+                const Quad2CL<double> dotGrad= dot( Grad[i], Grad[j]) * mu_Re;
+                coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
+                coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
+            }
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+            {
+                for(int j=0; j<10; ++j)
+                {
+                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    {
+                        mA( Numb[i],   Numb[j]  )+= coupA[j][i];
+                        mA( Numb[i]+1, Numb[j]+1)+= coupA[j][i];
+                        mA( Numb[i]+2, Numb[j]+2)+= coupA[j][i];
+                        for (int k=0; k<3; ++k)
+                            for (int l=0; l<3; ++l)
+                            {
+                                // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
+                                for (size_t m=0; m<kreuzterm.size();  ++m)
+                                    kreuzterm.val[m]= Grad[i].val[m][l] * Grad[j].val[m][k] * mu_Re.val[m];
+
+                                mA( Numb[i]+k, Numb[j]+l)+= kreuzterm.quad( absdet);
+                            }
+                        mM( Numb[i],   Numb[j]  )+= coupM[j][i];
+                        mM( Numb[i]+1, Numb[j]+1)+= coupM[j][i];
+                        mM( Numb[i]+2, Numb[j]+2)+= coupM[j][i];
+                    }
+                }
+            }
+    }
+
+    mA.Build();
+    mM.Build();
+    std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
+              << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
+}
+
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const
 // Set up matrix B and rhs c (independent of phase bnd, but c is time dependent)

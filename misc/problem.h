@@ -63,6 +63,7 @@ class VecDescBaseCL
     IdxDescCL* RowIdx;
     DataType  Data;
 
+    Uint GetLevel() const { return RowIdx->TriangLevel; }
     void SetIdx(IdxDescCL*);
     void Clear();
     void Reset();
