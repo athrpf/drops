@@ -31,10 +31,24 @@ time= [0:dt:ndt*dt];
 % create measurement data
 [Val,Td]= simdp(C_data,M_data);
 DROPS_Val(1,1)= Val;
-qcf= qcfun(gl,ni,npt,func);
-[Val,Timess]= simip(qcf,C_data,M_data);
-DROPS_Val(1,2)= Val;
-DROPS_Val(1,3)= 0;
+% qcf= qcfun(gl,ni,npt,func);
+% [Val,Timess]= simip(qcf,C_data,M_data);
+% DROPS_Val(1,2)= Val;
+% DROPS_Val(1,3)= 0;
+
+
+% Read Measurement Data
+% oeffne Datei im (r)ead-Modus
+fid= fopen('Daten_gefiltert.dat','r');
+
+% lese Matrix ein
+R= fscanf(fid,'%e',[64,inf]);
+
+% schliesse Datei
+fclose(fid);
+
+Timess=[38*ones(8192,1),reshape(R,8192,190)]-Td;
+
 
 % start approximation
 qc= zeros(npyz,ndt+1);
