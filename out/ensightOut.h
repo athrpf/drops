@@ -57,6 +57,27 @@ class EnsightP2SolOutCL
     void CaseEnd   ();
 };
 
+
+class ReadEnsightP2SolCL
+// read solution from Ensight6 Case format
+{
+  private:
+    const MultiGridCL* _MG;
+
+    void CheckFile( const std::ifstream&) const;
+    
+  public:
+    ReadEnsightP2SolCL( const MultiGridCL& mg)
+      : _MG( &mg) {}
+
+    template<class BndT>
+    void ReadScalar( const std::string&, VecDescCL&, const BndT&) const;
+    template<class BndT>
+    void ReadVector( const std::string&, VecDescCL&, const BndT&) const;
+};
+
+
+
 //=====================================================
 //              template definitions
 //=====================================================
@@ -326,6 +347,76 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
     }
     os << '\n';
 }
+
+
+
+// ========== ReadEnsightP2SolCL ==========
+
+template <class BndT>
+void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, const BndT& bnd) const
+{
+    const Uint lvl= v.RowIdx->TriangLevel,
+               idx= v.RowIdx->GetIdx();
+    char buf[256];
+    double d= 0;
+    
+    std::ifstream is( file.c_str());
+    CheckFile( is);
+    is.getline( buf, 256); // ignore first line
+               
+    for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
+        end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
+    {
+        is >> d;
+        if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
+        v.Data[it->Unknowns(idx)[0]]= d;
+    }
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
+        end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
+    {
+        is >> d;
+        if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
+        v.Data[it->Unknowns(idx)[0]]= d;
+    }
+    CheckFile( is);
+}
+
+template <class BndT>
+void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, const BndT& bnd) const
+{
+    const Uint lvl= v.RowIdx->TriangLevel,
+               idx= v.RowIdx->GetIdx();
+    char buf[256];
+    double d0= 0, d1= 0, d2= 0;
+    
+    std::ifstream is( file.c_str());
+    CheckFile( is);
+    is.getline( buf, 256); // ignore first line
+               
+    for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
+        end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
+    {
+        is >> d0 >> d1 >> d2;
+        if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
+        const IdxT Nr= it->Unknowns(idx);
+        v.Data[Nr]= d0;    v.Data[Nr+1]= d1;    v.Data[Nr+2]= d2;
+    }
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
+        end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
+    {
+        is >> d0 >> d1 >> d2;
+        if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
+        const IdxT Nr= it->Unknowns(idx);
+        v.Data[Nr]= d0;    v.Data[Nr+1]= d1;    v.Data[Nr+2]= d2;
+    }
+    CheckFile( is);
+}
+
+void ReadEnsightP2SolCL::CheckFile( const std::ifstream& is) const
+{
+    if (!is) throw DROPSErrCL( "ReadEnsightP2SolCL: error while reading from file!");
+}
+
 
 } // end of namespace DROPS
 
