@@ -10,9 +10,9 @@ namespace DROPS
 {
 
 template <class Coeff>
-void InstatNavierStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel,
-                                                   vector_instat_fun_ptr DtLsgVel,
-                                                   scalar_instat_fun_ptr LsgPr,
+void InstatNavierStokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel,
+                                                   instat_vector_fun_ptr DtLsgVel,
+                                                   instat_scalar_fun_ptr LsgPr,
 						   double t)
 {
     Uint lvl= A.GetRowLevel(),
@@ -72,9 +72,9 @@ template <class Coeff>
 void InstatNavierStokesP2P1CL<Coeff>::CheckSolution(
     const VelVecDescCL* lsgvel,
     const VecDescCL* lsgpr, 
-    vector_instat_fun_ptr LsgVel,
-    vector_instat_fun_ptr /*DtLsgVel*/,
-    scalar_instat_fun_ptr LsgPr,
+    instat_vector_fun_ptr LsgVel,
+    instat_vector_fun_ptr /*DtLsgVel*/,
+    instat_scalar_fun_ptr LsgPr,
     double t
     )
 {

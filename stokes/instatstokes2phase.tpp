@@ -111,7 +111,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr) const
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
+void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
     const Uint lvl  = vec->GetLevel(),

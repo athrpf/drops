@@ -33,8 +33,6 @@ class InstatStokesBndDataCL
     const InstatStokesVelBndDataCL    Vel;   
 };
 
-typedef double       (*scalar_instat_fun_ptr)( const Point3DCL&, double);
-typedef SVectorCL<3> (*vector_instat_fun_ptr)( const Point3DCL&, double);
 
 template <class Coeff>
 class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
@@ -91,12 +89,12 @@ class InstatStokesP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     // Time-independent
     void SetupMassMatrix(MatDescCL* matI) const;
     // Set initial value for velocities
-    void InitVel( VelVecDescCL*, vector_instat_fun_ptr, double t0= 0.) const;
+    void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
 
     // Check system and computed solution
-    void GetDiscError ( vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const;
+    void GetDiscError ( instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t) const;
     void CheckSolution( const VelVecDescCL*, const VecDescCL*,
-                        vector_instat_fun_ptr, scalar_instat_fun_ptr, double t) const;
+                        instat_vector_fun_ptr, instat_scalar_fun_ptr, double t) const;
 
     // Get solutions as FE-functions
     DiscPrSolCL GetPrSolution() const

@@ -38,7 +38,7 @@ void InstatStokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
 
 
 template <class Coeff>
-void InstatStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
+void InstatStokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t) const
 {
     Uint lvl= A.GetRowLevel(),
         vidx= A.RowIdx->GetIdx(),
@@ -81,7 +81,7 @@ void InstatStokesP2P1CL<Coeff>::GetDiscError(vector_instat_fun_ptr LsgVel, scala
 
 
 
-inline SVectorCL<3> Quad( const TetraCL& tetra, vector_instat_fun_ptr coeff, int i, double t)
+inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr coeff, int i, double t)
 {
     SVectorCL<3> f[5];
     
@@ -651,7 +651,7 @@ void InstatStokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
 }
 
 template <class Coeff>
-void InstatStokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr LsgVel, double t0) const
+void InstatStokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
     Uint lvl        = vec->GetLevel(),
@@ -685,7 +685,7 @@ void InstatStokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, vector_instat_fun_ptr
 
 template <class Coeff>
 void InstatStokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
-                                 vector_instat_fun_ptr LsgVel, scalar_instat_fun_ptr LsgPr, double t) const
+                                 instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t) const
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),

@@ -71,7 +71,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, InstatStokesBndDataCL>
     // needed for preconditioning of the Schur complement
     void SetupPrMass( MatDescCL* prM, const LevelsetP2CL& lset, double nu1=1, double nu2=1) const;
     void SetupPrStiff(MatDescCL* prA) const;
-    void InitVel( VelVecDescCL*, vector_instat_fun_ptr, double t0= 0.) const;
+    void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
 
     // Get solutions as FE-functions
     DiscPrSolCL GetPrSolution() const

@@ -57,9 +57,9 @@ class InstatNavierStokesP2P1CL : public InstatStokesP2P1CL<Coeff>
     void SetTime (double tt) { _t= tt; }
     
     // Check system and computed solution
-    void GetDiscError (vector_instat_fun_ptr LsgVel, vector_instat_fun_ptr DtLsgVel,
-                       scalar_instat_fun_ptr LsgPr, double t);
-    void CheckSolution(const VelVecDescCL*, const VecDescCL*, vector_instat_fun_ptr, vector_instat_fun_ptr, scalar_instat_fun_ptr, double);
+    void GetDiscError (instat_vector_fun_ptr LsgVel, instat_vector_fun_ptr DtLsgVel,
+                       instat_scalar_fun_ptr LsgPr, double t);
+    void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, instat_vector_fun_ptr, instat_scalar_fun_ptr, double);
 };
 
 
