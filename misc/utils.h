@@ -359,6 +359,28 @@ struct ConstHelperCL<const T>
 };
 //@}
 
+/// \brief Deal with value_type of containers in template-metaprogramming.
+///
+/// For a given type container-type T, value_type is the type of the values stored in T
+/// This works for pointers and arrays, too.
+//@{
+template<class T>
+  struct ValueHelperCL
+{
+    typedef typename T::value_type value_type;
+};
+
+template<class T>
+  struct ValueHelperCL<T*>
+{
+    typedef T value_type;
+};
+template<class T, size_t S>
+  struct ValueHelperCL<T[S]>
+{
+    typedef T value_type;
+};
+//@}
 
 } // end of namespace DROPS
 
