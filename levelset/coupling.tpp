@@ -557,9 +557,10 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
 
 template <class StokesT, class SolverT>
 CouplLsNsBaenschCL<StokesT,SolverT>::CouplLsNsBaenschCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double nonlinear)
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, int gm_iter, double gm_tol, double nonlinear)
 
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b),
+  : _Stokes( Stokes), _solver( solver), _gm( _pc, 100, gm_iter, gm_tol),
+    _LvlSet( ls), _b( &Stokes.b),
     _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
     _cplA( new VelVecDescCL), _old_cplA( new VelVecDescCL), 
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL), 
@@ -668,8 +669,6 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
-    SSORPcCL pc;
-    GMResSolverCL<SSORPcCL> gm( pc, 100, _solver.GetInnerSolver().GetMaxIter(), _solver.GetInnerSolver().GetTol());
     std::cerr << "Starting fixed point iterations for solving nonlinear system...\n";
     _iter_nonlinear= 0;
     do
@@ -679,13 +678,13 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
         _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _cplN, _LvlSet, _Stokes.t);
         _AN.LinComb( 1-_alpha, _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
         _mat.LinComb( 1., _Stokes.M.Data, frac_dt, _AN);
-        gm.Solve( _mat, _Stokes.v.Data, 
+        _gm.Solve( _mat, _Stokes.v.Data, 
             VectorCL( _rhs + _cplM->Data + frac_dt * ( (1-_alpha)*_cplA->Data
             +_nonlinear*_cplN->Data+_curv->Data + _b->Data))
         );
         std::cerr << "fp cycle " << ++_iter_nonlinear << ":\titerations: " 
-                  << gm.GetIter() << "\tresidual: " << gm.GetResid() << std::endl;
-    } while (gm.GetIter() > 0 && _iter_nonlinear<20);
+                  << _gm.GetIter() << "\tresidual: " << _gm.GetResid() << std::endl;
+    } while (_gm.GetIter() > 0 && _iter_nonlinear<20);
     time.Stop();
     std::cerr << "Solving nonlinear system took "<<time.GetTime()<<" sec.\n";
 }

@@ -174,6 +174,9 @@ class CouplLsNsBaenschCL
   private:
     StokesT&      _Stokes;
     SolverT&      _solver;
+    SSORPcCL      _pc;
+    GMResSolverCL<SSORPcCL> _gm;
+    
     LevelsetP2CL& _LvlSet;
     
     VelVecDescCL *_b;                 // rhs
@@ -191,7 +194,7 @@ class CouplLsNsBaenschCL
     
   public:
     CouplLsNsBaenschCL( StokesT& Stokes, LevelsetP2CL& ls, 
-                           SolverT& solver, double nonlinear= 1);
+        SolverT& solver, int gm_iter, double gm_tol, double nonlinear= 1);
     ~CouplLsNsBaenschCL();
     
     double GetTime()     const { return _Stokes.t; }
