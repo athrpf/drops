@@ -190,7 +190,7 @@ template<class T>
 
 
 template<class T>
-  LocalP2CL<T>::LocalP2CL<T>(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
+  LocalP2CL<T>::LocalP2CL(const TetraCL& s, T (*f)(const Point3DCL&, double) , double t)
   : base_type( value_type(), NumDoFP2C)
 {
     this->Assign( s, f, t);
