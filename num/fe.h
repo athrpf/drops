@@ -278,7 +278,7 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 
 
 //**************************************************************************
-// Class:   P1EvalBaseCL                                                   *
+// Class:   P1EvalCL                                                   *
 // Template Parameter:                                                     *
 //          Data     - The result-type of this finite-element-function on  *
 //                     the multigrid                                       *
@@ -306,12 +306,13 @@ struct DoFHelperCL<SVectorCL<_Len>, _Vec>
 //          evaluated.                                                     *
 //**************************************************************************
 template<class Data, class _BndData, class _VD>
-class P1EvalBaseCL
+class P1EvalCL
 {
 public:
     typedef Data     DataT;
     typedef _BndData BndDataCL;
     typedef _VD      VecDescT;
+    typedef P1EvalCL<Data, _BndData, _VD> _self;
     
 protected:
     // numerical data
@@ -321,12 +322,23 @@ protected:
     // the multigrid
     const MultiGridCL* _MG;
 
-    virtual DataT // helper-function to evaluate the degree of freedom in a vertex,
-    GetDoF(const VertexCL&) const= 0;// use val() instead
-       
+    inline DataT // helper-function to evaluate on a vertex; use val() instead
+    GetDoFImpl(const VertexCL& s) const
+    {
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
+                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
+    }
+
+    template <class T> // GetDoF is a compile-time virtual function.
+    inline DataT       // It calls the correct version of GetDoFImpl according
+    GetDoF (const VertexCL& s) const // to the template parameter T.
+    {
+        return static_cast<T* const>(this)->GetDoFImpl( s);
+    }
+
 public:
-    P1EvalBaseCL() :_sol(0), _MG(0) {}
-    P1EvalBaseCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
+    P1EvalCL() :_sol(0), _MG(0) {}
+    P1EvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
         :_sol(sol), _bnd(bnd), _MG(MG) {}
     // default copy-ctor, dtor, assignment-op
     // copying P1EvalBaseCL-objects is safe - it is a flat copy, which is fine,
@@ -348,90 +360,136 @@ public:
     GetMG() const // the multigrid we refer to
         { return *_MG; }
 
+    // The following functions use compile-time polymorphism via T to choose
+    // the right version of GetDoF to obtain numerical data.
+    // Don't use them directly. Instead, use the wrappers below, which choose
+    // the right type for T.
+
+    // evaluation on vertices    
+    template<class T, class _Cont>
+      inline void
+      GetDoFImpl(const VertexCL&, _Cont&) const;
+    template<class T>
+    inline DataT
+    valImpl(const VertexCL&) const;
+    
+    // evaluation on edges
+    template<class T, class _Cont>
+      inline void
+      GetDoFImpl(const EdgeCL&, _Cont&) const;
+    template<class T>
+    inline DataT
+    valImpl(const EdgeCL&, double) const;
+
+    // evaluation on the tetrahedron
+    template<class T, class _Cont>
+      inline void
+      GetDoFImpl(const TetraCL&, _Cont&) const;
+    template<class T>
+    inline DataT
+    valImpl(const TetraCL&, double, double, double) const;
+
+    // Wrapper, that insert the correct type for T. Use these.
+
     // evaluation on vertices    
     template<class _Cont>
       inline void
-      GetDoF(const VertexCL&, _Cont&) const;
+      GetDoF(const VertexCL& s, _Cont& c) const { GetDoFImpl<const _self>( s, c); }
     inline void // set the degree of freedom in this vertex; fails for Dirichlet-vertices
     SetDoF(const VertexCL&, const DataT&);
     template<class _Cont>
       inline DataT
       val(const _Cont&) const;
     inline DataT
-    val(const VertexCL&) const;
+    val(const VertexCL& s) const { return valImpl<const _self>( s); }
     
     // evaluation on edges
     template<class _Cont>
       inline void
-      GetDoF(const EdgeCL&, _Cont&) const;
+      GetDoF(const EdgeCL& s, _Cont& c) const { GetDoFImpl<const _self>( s, c); }
     template<class _Cont>
       inline DataT
       val(const _Cont&, double) const;
     inline DataT
-    val(const EdgeCL&, double) const;
+    val(const EdgeCL& s, double v1) const { return valImpl<const _self>( s, v1); }
 
     // evaluation on the tetrahedron
     template<class _Cont>
       inline void
-      GetDoF(const TetraCL&, _Cont&) const;
+      GetDoF(const TetraCL& s, _Cont& c) const { GetDoFImpl<const _self>( s, c); }
     template<class _Cont>
       inline DataT
       val(const _Cont&, double, double, double) const;
     inline DataT
-    val(const TetraCL&, double, double, double) const;
+    val(const TetraCL& s, double v1, double v2, double v3) const
+        { return valImpl<const _self>( s, v1, v2, v3); }
 };
 
+
+//**************************************************************************
+// Class:   InStatP1EvalCL -- derived from P1EvalCL                        *
+// Template Parameter:                                                     *
+//          see P1EvalCL                                                   *
+// Purpose: Adds a time _t to P1EvalCL.                                    *
+//**************************************************************************
 template<class DataT, class BndDataT, class VecDescT>
-class P1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
+class InstatP1EvalCL: public P1EvalCL<DataT, BndDataT, VecDescT>
 {
   private:
-    typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
-
-    // without using-instruction helper-function will shadow other 
-    // GetDoF member-functions
-    using _base::GetDoF;
-    using _base::_sol;
-    using _base::_bnd;
-  
-    typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
-    
-    inline DataT // helper-function to evaluate on a vertex; use val() instead
-    GetDoF(const VertexCL& s) const
-    {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
-    }
-    
-  public:
-    P1EvalCL() : _base() {}
-    P1EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG)
-        : _base( sol, bnd, MG) {}
-    //default copy-ctor, dtor, assignment-op
-};
-
-template<class DataT, class BndDataT, class VecDescT>
-class InstatP1EvalCL: public P1EvalBaseCL<DataT, BndDataT, VecDescT>
-{
-  private:
-    typedef P1EvalBaseCL<DataT, BndDataT, VecDescT> _base;
+    typedef       P1EvalCL<DataT, BndDataT, VecDescT> _base;
+    typedef InstatP1EvalCL<DataT, BndDataT, VecDescT> _self;
 
     using _base::_sol;
     using _base::_bnd;
     
     double _t;
     
-    inline DataT // helper-function to evaluate on a vertex; use val() instead
-    GetDoF(const VertexCL& s) const
-    {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
-                                   : DoFHelperCL<DataT,typename VecDescT::DataType>::get(_sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
-    }
-    
   public:
     InstatP1EvalCL() : _base(), _t(0) {}
     InstatP1EvalCL(VecDescT* sol, BndDataT* bnd, const MultiGridCL* MG, double t)
         : _base( sol, bnd, MG), _t(t) {}
     //default copy-ctor, dtor, assignment-op
+
+    inline DataT // helper-function for compile-time-polymorphism of GetDoF.
+    GetDoFImpl(const VertexCL& s) const // Don't use directly.
+    {
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _t)
+               : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
+                 _sol->Data, s.Unknowns( _sol->RowIdx->GetIdx()));
+    }
+
+    // The time at which boundary data is evaluated.
+    double GetTime() const { return _t; }
+    void SetTime(double t) { _t= t; }
+
+    // Wrapper, that insert the correct type for GetDoF.
+
+    // evaluation on vertices    
+    template<class _Cont>
+      inline void
+      GetDoF(const VertexCL& s, _Cont& c) const
+        { _base::template GetDoFImpl<const _self, _Cont>( s, c); }
+    inline DataT
+    val(const VertexCL& s) const
+        { return  _base::template valImpl<const _self>( s); }
+    
+    // evaluation on edges
+    template<class _Cont>
+      inline void
+      GetDoF(const EdgeCL& s, _Cont& c) const
+        { _base::template GetDoFImpl<const _self>( s, c); }
+    inline DataT
+    val(const EdgeCL& s, double v1) const
+        { return _base::template valImpl<const _self>( s, v1); }
+
+    // evaluation on the tetrahedron
+    template<class _Cont>
+      inline void
+      GetDoF(const TetraCL& s, _Cont& c) const
+        { _base::template GetDoFImpl<const _self>( s, c); }
+    inline DataT
+    val(const TetraCL& s, double v1, double v2, double v3) const
+        { return _base::template valImpl<const _self>( s, v1, v2, v3); }
 };
 
 
