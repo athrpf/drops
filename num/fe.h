@@ -133,8 +133,13 @@ class FE_P2CL
     {
         typedef typename Cont::value_type value_type;
     };
-   template<class T>
+    template<class T>
       struct ValHelperCL<T*>
+    {
+        typedef T value_type;
+    };
+    template<class T, size_t S>
+      struct ValHelperCL<T[S]>
     {
         typedef T value_type;
     };
@@ -146,6 +151,13 @@ class FE_P2CL
           return c[0] * H0( p) + c[1] * H1( p) + c[2] * H2( p) + c[3] * H3( p)
                + c[4] * H4( p) + c[5] * H5( p) + c[6] * H6( p) + c[7] * H7( p)
                + c[8] * H8( p) + c[9] * H9( p);
+      }
+    template <class Cont>
+      static inline typename ValHelperCL<Cont>::value_type
+      val(const Cont& c, double v1, double v2, double v3) {
+          return c[0] * H0( v1, v2, v3) + c[1] * H1( v1, v2, v3) + c[2] * H2( v1, v2, v3) + c[3] * H3( v1, v2, v3)
+               + c[4] * H4( v1, v2, v3) + c[5] * H5( v1, v2, v3) + c[6] * H6( v1, v2, v3) + c[7] * H7( v1, v2, v3)
+               + c[8] * H8( v1, v2, v3) + c[9] * H9( v1, v2, v3);
       }
 
     // gradients of the shape functions on the reference tetrahedron.
