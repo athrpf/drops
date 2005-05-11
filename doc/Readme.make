@@ -10,25 +10,33 @@ Zunaechst muss in der Datei drops.conf im DROPS-Rootverzeichnis die verwendete
 Rechnerarchitektur eingetragen werden (z.B. LINUX). Die Compilereinstellungen
 erfolgen dann in der Datei arch/<Architekur>/mk.conf .
 
-Im DROPS-Rootverzeichnis befindet sich das top-level-Makefile. Mit "make <rule>"
+Im DROPS-Rootverzeichnis befindet sich das top-level-Makefile. Zu dessen
+Benutzung muss GNU Make installiert sein. Mit "make <rule>" bzw. "gmake <rule>
 wird die entsprechende Regel ausgefuehrt, wobei <rule> fuer eine der folgenden
 Regeln steht:
 
-    all        generiert automatisch die Abhaengigkeiten und
-               erzeugt dann alle ausfuehrbaren Programme in DROPS.
+    dep        erzeugt automatisch die Abhaengigkeiten und legt ein
+               entsprechendes dependency-file an.
+	       
+    all        erzeugt alle ausfuehrbaren Programme in DROPS.
+    
+    doc        legt eine html-Dokumentation an (mit doxygen).
+    
+    stat       listet eine Statistik aller Dateien auf.
     
     clean      loescht alle Objektdateien sowie alle ausfuehrbaren Dateien.
     
     distclean  wie "clean", loescht zusaetzlich alle Dateien mit Endungen
-               .off, .dat sowie geom/topo.cpp und das dependency-file.
-	       
-    dep        erzeugt automatisch die Abhaengigkeiten und legt ein
-               entsprechendes dependency-file an.
-	       
+               .off, .dat sowie geom/topo.cpp, das dependency-file und
+               die Dokumentation.
+	 
+Nach einem CVS checkout muessen zunaechst die Abhaengigkeiten mit "make dep"
+erzeugt werden. Erst dann kann das eigentliche Compilieren beginnnen.         
+               
 In den jeweiligen Unterverzeichnissen befinden sich die lokalen Makefiles. 
 Diese verstehen als Regeln 
   - "all", "clean", "distclean", die im jeweiligen Verzeichnis wirken
-  - "dep" ruft die Regel "dep" des top-level-Makefiles auf
+  - "dep", "doc" rufen die entsprechende Regel des top-level-Makefiles auf
   - sowie die jeweiligen Namen der executables und Objektdateien in diesem
     Verzeichnis
 
