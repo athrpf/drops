@@ -1,3 +1,35 @@
+%============================================================================
+\section{Mit GAMBIT Gitter f"ur DROPS erzeugen}
+%============================================================================
+\label{s:Gambit}
+
+Bei der Erstellung eines Gitters mit GAMBIT sind folgende Punkte zu beachten,
+damit das Gitter samt Randbedingungen korrekt mit der \prg{ReadMeshBuilderCL}
+(s. Abschnitt \ref{ss:MeshBuilder}) eingelesen werden kann:
+\begin{itemize}
+  \item Den Volumenk"orper des Rechengebietes konstruieren.
+  \item FLUENT/UNS im Solver-Menu ausw"ahlen, damit die ben"otigten
+  Randbedingungen zur Verf"ugung stehen.
+  \item Rand-Faces mit entsprechenden Randbedingungen versehen:
+  
+  \begin{tabular}{|l|l|l|}
+    \hline
+    Gambit-Randbedingung & DROPS-Randbedingung & Einsatz \\
+    \hline\hline
+    wall            & \prg{Dir0BC, WallBC}    & hom. Dirichlet-RB, Wandhaftung \\\hline
+    velocity-inlet  & \prg{DirBC}             & inhom. Dirichlet-RB, Inflow \\\hline
+    outflow         & \prg{Nat0BC, OutflowBC} & hom. nat"urliche RB, Outflow \\\hline 
+    pressure-inlet  & \prg{NatBC}             & inhom. nat"urliche RB \\\hline
+    periodic        & \prg{Per1BC}            & periodische RB, nicht getestet! \\\hline
+    periodic-shadow & \prg{Per2BC}            & periodische RB, nicht getestet! \\\hline
+  \end{tabular}
+  
+  \emph{Bitte beachten: }Da bislang noch kein Gitter mit periodischen RB mit Gambit erzeugt wurde,
+  liegen hier noch keine Erfahrungen vor...
+  \item Volumen-Gitter erzeugen. Evtl. vorher 2D-Oberfl"achengitter der
+  kritischen Rand-Faces erzeugen, falls 3D-Meshen fehlschlagen sollte.
+  \item Mesh exportieren.
+\end{itemize}
 
 %============================================================================
 \section{Parameter Files}

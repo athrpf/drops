@@ -231,6 +231,7 @@ abgespeichert (als Beispiel das L-Gebiet $\Omega=[0,1]^3\setminus [0.5,1]^3$):
 \end{itemize}
 
 \subsubsection{\prg{ReadMeshBuilderCL}}
+\label{ss:MeshBuilder}
 Der Builder versteht das Format des "`User's Guide"' zu TGrid 3, Anhang C, welches
 unter anderem von RAMPANT, FLUENT/UNS, TGrid verwendet wird und von dem
 Gittergenerator GAMBIT erzeugt wird.
@@ -240,6 +241,9 @@ Um Randsegmente zu repr"asentieren, wird die Klasse \prg{MeshBoundaryCL} verwend
 Pro Zone von Randdreiecken in der .msh-Datei wird ein \prg{MeshBoundaryCL}-Objekt
 erzeugt, welches die zone-id und die boundary-condition enth"alt (siehe Ahnhang C des
 User's Guide).
+
+Zur Erstellung von Gittern mit GAMBIT sei auf die Hinweise in Abschnitt
+\ref{s:Gambit} verwiesen.
 
 %============================================================================
 \section{{\tt poisson}: Poisson-Gleichung}
