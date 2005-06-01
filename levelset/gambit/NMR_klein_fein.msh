@@ -2996,7 +2996,7 @@ a4 11 12 15cb 0
 294 1c0 1c1 160e 0
 1b2 293 1c1 160f 0
 ))
-(13 (4 631 660 4 3) (
+(13 (4 631 660 a 3) (
 1ad 1ae 1a2 245 0
 1a7 19d 1a8 248 0
 1a7 19e 19d 24a 0
@@ -13535,5 +13535,5 @@ ac 1c 333 15e5 140b
 (45 (1 fluid fluid)())
 (45 (2 outflow outflow.1)())
 (45 (3 wall wall.2)())
-(45 (4 inlet-vent inlet_vent.3)())
+(45 (4 velocity-inlet velocity_inlet.3)())
 (45 (6 interior default-interior)())
