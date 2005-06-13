@@ -35,7 +35,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     typedef PoissonP2CL<Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
-    IdxDescCL* c_idx;
+    IdxDescCL* c_idx= 0;
     TimerCL time;
     MGDataCL MGData;
 
