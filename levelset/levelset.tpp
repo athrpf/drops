@@ -437,7 +437,7 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
             num_sign[0]= num_sign[1]= num_sign[2]= 0;
             for (int vert= 0; vert<4; ++vert)
                 ++num_sign[ sign[data.Vertices[vert]] + 1];
-            if (num_sign[0]*num_sign[2]==0 && num_sign[1]!=3) // no change of sign on child
+            if (num_sign[0]*num_sign[2]==0 && num_sign[1]<3) // no change of sign on child
                 continue;
             if (num_sign[1]==4)
             { 
@@ -525,7 +525,7 @@ fil << "\n}\n";
                 // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
             }
 
-            sqrtDetATA/= 6;
+            sqrtDetATA/= num_sign[1]<3 ? 6 : 12;  // 1/6 for quad. rule, 1/12 if face shared by 2 tetras
 
             
             for (int v=0; v<10; ++v)
