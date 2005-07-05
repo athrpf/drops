@@ -92,6 +92,50 @@ class LevelsetP2CL
 };
 
 
+class InterfacePatchCL
+/// computes the planar interface patches, which are the intersection of a child T' of
+/// a tetrahedron T and the zero level of I(phi), where I(phi) is the linear interpolation
+/// of the level set function phi on T'.
+{
+  private:
+    const double    approxZero_;
+    const RefRuleCL RegRef_;
+    int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
+    int             intersec_;
+    double          PhiLoc_[10], sqrtDetATA_;
+    Point3DCL       PQRS_[4], Coord_[10], B_[3];
+    BaryCoordCL     Bary_[4], BaryDoF_[10];
+    Point2DCL       ab_;
+  
+    inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
+    {
+        x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;
+        x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det;
+    }
+
+  public:
+    InterfacePatchCL();
+
+    void Init( TetraCL& t, VecDescCL& ls);
+
+    // Remark: The following functions are only valid, if Init(...) was called before!
+    int  GetSign( Uint DoF) const { return sign_[DoF]; } //< returns -1/0/1
+    bool ComputeForChild( Uint ch); //< returns true, if a patch exists for this child
+
+    // Remark: The following functions are only valid, if ComputeForChild(...) was called before!
+    bool               IsQuadrilateral()     const { return intersec_==4; }
+    bool               EqualToFace()         const { return num_sign_[1]>=3; }   //< returns true, if patch is shared by two tetras
+    Uint               GetNumPoints()        const { return intersec_; }
+    const Point3DCL&   GetPoint( Uint i)     const { return PQRS_[i]; }
+    const BaryCoordCL& GetBary ( Uint i)     const { return Bary_[i]; }
+    int                GetNumSign( int sign) const { return num_sign_[sign+1]; } //< returns number of patch points with given sign, where sign is in {-1, 0, 1}
+    double             GetFuncDet()          const { return sqrtDetATA_; }
+    double             GetAreaFrac()         const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }
+    const Point3DCL&   GetGradId( Uint i)    const { return B_[i]; }
+
+    void               WriteGeom( std::ostream&) const; //< Geomview output for debugging
+};
+
 } // end of namespace DROPS
 
 #include "levelset/levelset.tpp"

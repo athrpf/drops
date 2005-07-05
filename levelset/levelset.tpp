@@ -369,32 +369,13 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
 }
 
 
-inline void Solve2x2( const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
-{
-    const double det= A(0,0)*A(1,1) - A(0,1)*A(1,0);
-    x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;
-    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det;
-}
-
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
-    VectorCL SmPhi= Phi.Data;
+    VecDescCL SmPhi= Phi;
     if (_curvDiff>0)
-        SmoothPhi( SmPhi, _curvDiff);
+        SmoothPhi( SmPhi.Data, _curvDiff);
         
-    BaryCoordCL BaryDoF[10];
-    Point3DCL   Coord[10];
-    BaryDoF[0][0]= BaryDoF[1][1]= BaryDoF[2][2]= BaryDoF[3][3]= 1.;
-    for (int edge=0; edge<6; ++edge)
-        BaryDoF[edge+4]= 0.5*(BaryDoF[VertOfEdge(edge,0)] + BaryDoF[VertOfEdge(edge,1)]);
-
-    const Uint  idx_phi= Phi.RowIdx->GetIdx(),
-                idx_f=     f.RowIdx->GetIdx();
-    double      PhiLoc[10];
-    int         sign[10];
-    int         num_sign[3]; // - 0 + 
-    BaryCoordCL Bary[4];
-    Point3DCL   PQRS[4], B[3];
+    const Uint  idx_f=     f.RowIdx->GetIdx();
     Point2DCL   AT_i, ab, tmp;
     IdxT        Numb[10];
     
@@ -403,7 +384,7 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
-    RefRuleCL RegRef= GetRefRule( RegRefRuleC);
+    InterfacePatchCL patch;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
  
@@ -415,119 +396,29 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
-            Coord[v]= v<4 ? it->GetVertex(v)->GetCoord() : GetBaryCenter( *it->GetEdge(v-4));
-            if (v<4) 
-            {
-                PhiLoc[v]= SmPhi[it->GetVertex(v)->Unknowns(idx_phi)];
-                Numb[v]= it->GetVertex(v)->Unknowns.Exist(idx_f) ?
-                            it->GetVertex(v)->Unknowns(idx_f) : NoIdx;
-            }
-            else
-            {
-                PhiLoc[v]= SmPhi[it->GetEdge(v-4)->Unknowns(idx_phi)];
-                Numb[v]= it->GetEdge(v-4)->Unknowns.Exist(idx_f) ?
-                             it->GetEdge(v-4)->Unknowns(idx_f) : NoIdx;
-            }
-            sign[v]= std::abs(PhiLoc[v])<1e-8 ? 0 : (PhiLoc[v]>0 ? 1 : -1);
+            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
         }
-            
+        
+        patch.Init( *it, SmPhi);
+        
         for (int ch=0; ch<8; ++ch)
         {
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            num_sign[0]= num_sign[1]= num_sign[2]= 0;
-            for (int vert= 0; vert<4; ++vert)
-                ++num_sign[ sign[data.Vertices[vert]] + 1];
-            if (num_sign[0]*num_sign[2]==0 && num_sign[1]<3) // no change of sign on child
+            if (!patch.ComputeForChild(ch)) // no patch for this child
                 continue;
-            if (num_sign[1]==4)
-            { 
-                std::cerr << "WARNING: LevelsetP2CL::AccumulateBndIntegral: found 3-dim. zero level set, grid is too coarse!" << std::endl; 
-                continue; 
-            }
 
-            int intersec= 0;
-            // erst werden die Nullknoten in PQRS gespeichert...
-            for (int vert= 0; vert<4; ++vert)
-            {
-                const int v= data.Vertices[vert];
-                if (sign[v]==0)
-                {
-                    Bary[intersec]= BaryDoF[v];
-                    PQRS[intersec++]= Coord[v];
-                }
-            }
-            // ...dann die echten Schnittpunkte auf den Kanten mit Vorzeichenwechsel
-            for (int edge= 0; edge<6; ++edge)
-            {
-                const int v0= data.Vertices[ VertOfEdge( edge, 0)],
-                          v1= data.Vertices[ VertOfEdge( edge, 1)];
-                if (sign[v0]*sign[v1]<0) // different sign -> 0-level intersects this edge
-                {
-                    const double lambda= PhiLoc[v0]/(PhiLoc[v0]-PhiLoc[v1]);
-                    Bary[intersec]= (1-lambda)*BaryDoF[v0] + lambda * BaryDoF[v1];
-                    // bary-coords of tetra, not of subtetra!
-                    PQRS[intersec++]= (1-lambda) * Coord[v0] + lambda * Coord[v1];
-                }
-            }
-/*
-fil << "geom {OFF " << intersec << " 1 0\n";
-for (int i=0; i<intersec; ++i)
-{
-    for (int j=0; j<3; ++j)
-        fil << PQRS[i][j] << ' ';
-    fil << '\n';
-}
-if (intersec==4)
-    fil << "4 0 1 3 2";
-else
-    fil << "3 0 1 2";
-fil << "\n}\n";
-*/
-            if (intersec<3) continue; // Nullstellenmenge vom Mass 0!
+//patch.WriteGeom( fil);
 
-            SMatrixCL<3,2> A;    // A = [ Q-P | R-P ]
-            A(0,0)= PQRS[1][0]-PQRS[0][0];    A(0,1)= PQRS[2][0]-PQRS[0][0];
-            A(1,0)= PQRS[1][1]-PQRS[0][1];    A(1,1)= PQRS[2][1]-PQRS[0][1];
-            A(2,0)= PQRS[1][2]-PQRS[0][2];    A(2,1)= PQRS[2][2]-PQRS[0][2];
-            SMatrixCL<2,2> ATA; 
-            ATA(0,0)=           A(0,0)*A(0,0)+A(1,0)*A(1,0)+A(2,0)*A(2,0);
-            ATA(0,1)= ATA(1,0)= A(0,0)*A(0,1)+A(1,0)*A(1,1)+A(2,0)*A(2,1);
-            ATA(1,1)=           A(0,1)*A(0,1)+A(1,1)*A(1,1)+A(2,1)*A(2,1);
-            double sqrtDetATA= std::sqrt( ATA(0,0)*ATA(1,1) - ATA(1,0)*ATA(1,0) );
             BaryCoordCL BaryPQR, BarySQR;
             for (int i=0; i<3; ++i)
             {
                 // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= Bary[i];
-                BarySQR+= Bary[i+1];
-            
-                // berechne B = A * (ATA)^-1 * AT
-                AT_i[0]= A(i,0); AT_i[1]= A(i,1);
-                Solve2x2(ATA,tmp,AT_i);
-                B[i]= A*tmp;
+                BaryPQR+= patch.GetBary(i);
+                BarySQR+= patch.GetBary(i+1);
             }
 
-            if (intersec==4) // 4 intersections --> a+b != 1
-            { // berechne a, b
-                // Loese (Q-P)a + (R-P)b = S-P
-                SMatrixCL<2,2> M;  
-                M(0,0)= A(0,0); M(0,1)= A(0,1);          // 1st row of A
-                int row2= 1;
-		if (std::abs(A(0,0)*A(1,1) - A(1,0)*A(0,1))<1e-15 ) // upper 2x2 part of A close to singular
-                    row2= 2;
-                M(1,0)= A(row2,0); M(1,1)= A(row2,1);
-                // now M is nonsingular 2x2 part of A
-                tmp[0]= PQRS[3][0]-PQRS[0][0]; tmp[1]= PQRS[3][row2]-PQRS[0][row2];
-                // tmp = S-P
-                Solve2x2( M, ab, tmp);
-                //if (ab[0]<0 || ab[1]<0) 
-                //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
-                // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
-            }
+            const double C= patch.GetFuncDet()/6*sigma;  // 1/6 for quad. rule
 
-            sqrtDetATA/= num_sign[1]<3 ? 6 : 12;  // 1/6 for quad. rule, 1/12 if face shared by 2 tetras
-
-            
             for (int v=0; v<10; ++v)
             {
                 if (Numb[v]==NoIdx) continue;
@@ -537,26 +428,25 @@ fil << "\n}\n";
                 for (int node=0; node<4; ++node)
                 { // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
                     gradv[node]= Grad[v][node];
+                    gr+= BaryPQR[node]*gradv[node];
                 }
                     
-                for (int k=0; k<4; ++k)
-                    gr+= BaryPQR[k]*gradv[k];
-                if (intersec==4)
+                if (patch.IsQuadrilateral())
                 {
                     Point3DCL grSQR;
                     // grSQR = grad Phi(S) + grad Phi(Q) + grad Phi(R)
                     for (int k=0; k<4; ++k)
                         grSQR+= BarySQR[k]*gradv[k];
 
-                    gr+= (ab[0] + ab[1] - 1) * grSQR;
+                    gr+= patch.GetAreaFrac() * grSQR;
                 }
                 // nun gilt:
                 // gr = [grad Phi(P)+...] + (a+b-1)[grad Phi(S)+...]
                 
                 for (int i=0; i<3; ++i)
                 {
-                    const double val= inner_prod( gr, B[i]);
-                    f.Data[Numb[v]+i]-= sigma * sqrtDetATA * val;
+                    const double val= inner_prod( gr, patch.GetGradId(i));
+                    f.Data[Numb[v]+i]-= C *val;
                 }
             }
         } // Ende der for-Schleife ueber die Kinder
@@ -678,6 +568,130 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     }
     Mb.Build();
     Ab.Build();
+}
+
+InterfacePatchCL::InterfacePatchCL() 
+  : approxZero_(1e-8), RegRef_( GetRefRule( RegRefRuleC)), intersec_(0)
+{
+    BaryDoF_[0][0]= BaryDoF_[1][1]= BaryDoF_[2][2]= BaryDoF_[3][3]= 1.;
+    for (int edge=0; edge<6; ++edge)
+        BaryDoF_[edge+4]= 0.5*(BaryDoF_[VertOfEdge(edge,0)] + BaryDoF_[VertOfEdge(edge,1)]);
+}
+
+void InterfacePatchCL::Init( TetraCL& t, VecDescCL& ls)
+{
+    const Uint idx_ls= ls.RowIdx->GetIdx();
+    for (int v=0; v<10; ++v)
+    { // collect data on all DoF
+        Coord_[v]= v<4 ? t.GetVertex(v)->GetCoord() : GetBaryCenter( *t.GetEdge(v-4));
+        PhiLoc_[v]= ls.Data[v<4 ? t.GetVertex(v)->Unknowns(idx_ls) : t.GetEdge(v-4)->Unknowns(idx_ls)];
+        sign_[v]= std::abs(PhiLoc_[v]) < approxZero_ ? 0 : (PhiLoc_[v]>0 ? 1 : -1);
+    }
+}
+
+bool InterfacePatchCL::ComputeForChild( Uint ch)
+{
+    const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
+    num_sign_[0]= num_sign_[1]= num_sign_[2]= 0;
+    for (int vert= 0; vert<4; ++vert)
+        ++num_sign_[ sign_[data.Vertices[vert]] + 1];
+
+    intersec_= 0;
+    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) // no change of sign on child
+        return false;
+    if (num_sign_[1]==4)
+    { 
+        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl; 
+        return false; 
+    }
+
+    // erst werden die Nullknoten in PQRS gespeichert...
+    for (int vert= 0; vert<4; ++vert)
+    {
+        const int v= data.Vertices[vert];
+        if (sign_[v]==0)
+        {
+            Bary_[intersec_]= BaryDoF_[v];
+            PQRS_[intersec_++]= Coord_[v];
+        }
+    }
+    // ...dann die echten Schnittpunkte auf den Kanten mit Vorzeichenwechsel
+    for (int edge= 0; edge<6; ++edge)
+    {
+        const int v0= data.Vertices[ VertOfEdge( edge, 0)],
+                  v1= data.Vertices[ VertOfEdge( edge, 1)];
+        if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
+        {
+            const double lambda= PhiLoc_[v0]/(PhiLoc_[v0]-PhiLoc_[v1]);
+            Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
+            // bary-coords of tetra, not of subtetra!
+            PQRS_[intersec_++]= (1-lambda) * Coord_[v0] + lambda * Coord_[v1];
+        }
+    }
+    if (intersec_<3) return false; // Nullstellenmenge vom Mass 0!
+
+    SMatrixCL<3,2> A;    // A = [ Q-P | R-P ]
+    A(0,0)= PQRS_[1][0]-PQRS_[0][0];    A(0,1)= PQRS_[2][0]-PQRS_[0][0];
+    A(1,0)= PQRS_[1][1]-PQRS_[0][1];    A(1,1)= PQRS_[2][1]-PQRS_[0][1];
+    A(2,0)= PQRS_[1][2]-PQRS_[0][2];    A(2,1)= PQRS_[2][2]-PQRS_[0][2];
+    SMatrixCL<2,2> ATA; 
+    ATA(0,0)=           A(0,0)*A(0,0)+A(1,0)*A(1,0)+A(2,0)*A(2,0);
+    ATA(0,1)= ATA(1,0)= A(0,0)*A(0,1)+A(1,0)*A(1,1)+A(2,0)*A(2,1);
+    ATA(1,1)=           A(0,1)*A(0,1)+A(1,1)*A(1,1)+A(2,1)*A(2,1);
+    const double detATA= ATA(0,0)*ATA(1,1) - ATA(1,0)*ATA(1,0);
+    sqrtDetATA_= std::sqrt( detATA);
+    
+    Point2DCL AT_i, tmp;
+    for (int i=0; i<3; ++i)
+    {
+        // berechne B = A * (ATA)^-1 * AT
+        AT_i[0]= A(i,0); AT_i[1]= A(i,1);
+        Solve2x2( detATA, ATA, tmp, AT_i);
+        B_[i]= A*tmp;
+    }
+
+    if (intersec_==4) // 4 intersections --> a+b != 1
+    { // berechne a, b
+        // Loese (Q-P)a + (R-P)b = S-P
+        SMatrixCL<2,2> M;  
+        M(0,0)= A(0,0); M(0,1)= A(0,1);          // 1st row of A
+        int row2= 1;
+	double detM= A(0,0)*A(1,1) - A(1,0)*A(0,1);
+        if (std::abs( detM)<1e-15 ) // upper 2x2 part of A close to singular
+        {
+            row2= 2;
+            detM= A(0,0)*A(2,1) - A(2,0)*A(0,1);
+        }
+        M(1,0)= A(row2,0); M(1,1)= A(row2,1);
+        // now M is nonsingular 2x2 part of A
+        tmp[0]= PQRS_[3][0]-PQRS_[0][0]; tmp[1]= PQRS_[3][row2]-PQRS_[0][row2];
+        // tmp = S-P
+        Solve2x2( detM, M, ab_, tmp);
+        //if (ab_[0]<0 || ab_[1]<0) 
+        //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
+        // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
+    }
+
+    if (EqualToFace()) // interface is shared by two tetras
+        sqrtDetATA_/= 2;
+        
+    return true; // computed patch of child;
+}
+
+void InterfacePatchCL::WriteGeom( std::ostream& os) const
+{
+    os << "geom {OFF " << intersec_ << " 1 0\n";
+    for (int i=0; i<intersec_; ++i)
+    {
+        for (int j=0; j<3; ++j)
+            os << PQRS_[i][j] << ' ';
+        os << '\n';
+    }
+    if (IsQuadrilateral())
+        os << "4 0 1 3 2";
+    else
+        os << "3 0 1 2";
+    os << "\n}\n";
 }
 
 } // end of namespace DROPS
