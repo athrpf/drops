@@ -505,6 +505,11 @@ class P2DiscCL
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
+    // cubatur formula for int f(x)*phi_i dx, exact up to degree 2
+    template<class valT>
+    inline valT Quad( valT f[10], int i);
+    // returns int phi_i phi_j dx
+    static inline double GetMass( int i, int j);
 };
 
 
@@ -740,6 +745,91 @@ inline SVectorCL<3> P1BubbleDiscCL::Quad(const SVectorCL<3>* vals, Uint i)
            +32./2835.*(vals[4] + vals[5] + vals[6] + vals[7] + vals[8] + vals[9]);
 }
 
+template<class valT>
+inline valT P2DiscCL::Quad( valT f[10], int i)
+{
+    valT sum= valT(), result;
+    if (i<4) // hat function on vert
+    {
+        // Q = sum c[i]*f[i]
+        // Gewichte c[i] = 1/420 	fuer vert i
+        //                 1/2520	fuer uebrige verts
+        //                -1/630        fuer an vert i anliegende edges
+        //                -1/420        fuer uebrige drei edges   
+        result= f[i]*(1/420.-1./2520.);
+        for (int k=0; k<4; ++k)
+            sum+= f[k];
+        result+= sum/2520.;
+        sum= valT();
+        for (int k=0; k<3; ++k)
+            sum+= f[EdgeByVert(i,k)+4];
+        result+= -sum/630.;
+        sum= valT();
+        const int oppF=OppFace(i);
+        for (int k=0; k<3; ++k)
+            sum+= f[EdgeOfFace(oppF, k)+4];
+        result+= -sum/420.;
+        return result;
+    }
+    else  // hat function on edge
+    {
+        i-= 4;
+        // Q = sum c[i]*f[i]
+        // Gewichte c[i] = 4/315 	fuer egde i
+        //                 1/315	fuer opposite edge
+        //                 2/315	fuer uebrige edges
+        //                -1/630    	fuer an edge i anliegende verts
+        //                -1/420        fuer uebrige zwei verts   
+        result=  f[i+4]*4./315.;
+        const int opp= OppEdge(i);
+        result+= f[opp+4]/315.;
+        for(int k=0; k<6; ++k)
+            if (k!=i && k!=opp)
+                sum+= f[k+4];
+        result+= sum*2./315.;
+        sum= f[VertOfEdge(i,0)] + f[VertOfEdge(i,1)];
+        result+= -sum/630.;
+        sum= f[VertOfEdge(OppEdge(i),0)] + f[VertOfEdge(OppEdge(i),1)];
+        result+= -sum/420.;
+
+        return result;
+    }
+}
+
+
+inline double P2DiscCL::GetMass( int i, int j)
+{
+// zur Erlaeuterung der zurueckgegebenen Gewichte
+// beachte Kommentare zu Funktion P2DiscCL::Quad obendrueber!
+
+    if (i>j) { int h=i; i=j; j=h; } // swap such that i<=j holds
+    if (j<4) // i,j are vertex-indices
+    {
+        if (i==j)
+            return 1./420.;
+        else
+            return 1./2520.;
+    }
+    else if (i>=4) // i,j are edge-indices
+    {
+        if (i==j)
+            return 4./315.;
+        else
+        {
+            if (i==OppEdge(j))
+                return 1./315.;
+            else
+                return 2./315.;
+        }
+    }
+    else // i<4, j>=4: Sonderfall...
+    {
+        if (i==VertOfEdge(j,0) || i==VertOfEdge(j,1))
+            return -1./630.;
+        else
+            return -1./420.;
+    }
+}
 
 } // end of namespace DROPS
 
