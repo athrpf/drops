@@ -122,7 +122,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
           if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
           { 
             vA.Data[UnknownIdx[i]]-= coup[j][i] * bndval;
-            vM.Data[UnknownIdx[i]]-= (i==j ? 1./60. : 1./120.)*absdet * bndval;
+            vM.Data[UnknownIdx[i]]-= P1DiscCL::GetMass( i, j)*absdet * bndval;
           }
         }
       }
@@ -186,7 +186,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
           if (sit->GetVertex(j)->Unknowns.Exist(idx)) // vertex j is not on a Dirichlet boundary
           {
             A( UnknownIdx[i], UnknownIdx[j])+= coup[j][i]; 
-            M( UnknownIdx[i], UnknownIdx[j])+= (i==j ? 1./60. : 1./120.)*absdet;
+            M( UnknownIdx[i], UnknownIdx[j])+= P1DiscCL::GetMass( i, j)*absdet;
           }
           // else coupling with vertex j on right-hand-side  --> 0
         }
