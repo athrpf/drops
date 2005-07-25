@@ -102,7 +102,8 @@ template <class Coeff>
     for(MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
-	Point3DCL sum(0.0), diff, Diff[5];
+	Point3DCL sum(0.0), diff, Diff[10];
+        const double absdet= sit->GetVolume()*6;
 	for(int i=0; i<4; ++i)
 	{
 	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
@@ -110,19 +111,19 @@ template <class Coeff>
 	    sum+= diff;
 	}
 	sum/= 120;
-	Diff[4]= diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
+	diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
 	diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
 	sum+= diff*2./15.;
-	sum*= sit->GetVolume()*6;
+	sum*= absdet;
 	L1_vel+= sum;
+
+	for(int i=4; i<10; ++i) // differences on edges
+	    Diff[i]= LsgVel( GetBaryCenter(*sit->GetEdge(i-4)), t) - vel.val(*sit->GetEdge(i-4));
 
 	for(int i=0; i<10; ++i)
 	{
-	    sum= Quad(Diff, i)*sit->GetVolume()*6;
-	    diff= i<4 ? Diff[i] : LsgVel( (sit->GetEdge(i-4)->GetVertex(0)->GetCoord() +
-	                                   sit->GetEdge(i-4)->GetVertex(1)->GetCoord() )/2, t)
-			          - vel.val(*sit->GetEdge(i-4));
-	    sum[0]*= diff[0]; sum[1]*= diff[1]; sum[2]*= diff[2];
+	    sum= P2DiscCL::Quad(Diff, i)*absdet;
+	    sum*= Diff[i];
 	    L2_vel+= sum;
 	}
     }
@@ -197,38 +198,6 @@ template <class Coeff>
               << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
 
-/*****************************************************************************************************
-* formulas for   n u m e r i c   i n t e g r a t i o n   on the reference tetrahedron
-*****************************************************************************************************/
-
-inline double Quad(double f[5], int i)
-{
-    if (i<4) // hat function on vert
-    {
-        std::swap( f[0], f[i]);
-//        return f[0]*2./81. + (f[1] + f[2] + f[3])*71./3240. - f[4]*8./81.;
-        return f[0]/504. - (f[1] + f[2] + f[3])/1260. - f[4]/126.;
-    }
-    else  // hat function on edge
-    {
-//        const double ve= 19./810.,  // coeff for verts of edge
-//                     vn= 29./1620.,  // coeff for other verts
-//                     vs= -4./81.;   // coeff for barycenter
-        const double ve= 4./945.,  // coeff for verts of edge
-                     vn= -1./756.,  // coeff for other verts
-                     vs= 26./945.;   // coeff for barycenter
-        double a[4];
-        a[VertOfEdge(i-4,0)]= a[VertOfEdge(i-4,1)]= ve;
-        a[VertOfEdge(OppEdge(i-4),0)]= a[VertOfEdge(OppEdge(i-4),1)]= vn;
-
-        double sum= vs * f[4];
-        for(int k=0; k<4; ++k)
-            sum+= a[k] * f[k];
-
-        return sum;
-    }
-}
-
 
 template <class Coeff>
   void
@@ -252,22 +221,22 @@ template <class Coeff>
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
                             
-    SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    Quad2CL<Point3DCL> u_loc;
     SMatrixCL<3,3> T;
-    double coup;
     double det, absdet;
     SVectorCL<3> tmp;
-    double func[5];
 
-    GetGradientsOnRef( GradRef);
+    P2DiscCL::GetGradientsOnRef( GradRef);
     
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
                                                  send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
-        MakeGradients(Grad, GradRef, T);
+        P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= fabs(det);
+        u_loc.assign( *sit, u, t);
         
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -281,33 +250,24 @@ template <class Coeff>
         for(int j=0; j<10; ++j)
         {
             // N(u)_ij = int( phi_i *( u1 phi_j_x + u2 phi_j_y + u3 phi_j_z ) )
-            //                       \______________ func __________________/
             
-            for( Uint pt=0; pt<5; ++pt) // eval func at 5 points:
-            {
-                tmp= pt<4 ? u.val( *sit->GetVertex(pt))      // value of u in vert pt
-                          : u.val( *sit, 0.25, 0.25, 0.25);  // value of u in barycenter
-                func[pt]= Grad[j](0,pt) * tmp[0]
-                        + Grad[j](1,pt) * tmp[1]
-                        + Grad[j](2,pt) * tmp[2];
-            }
             for(int i=0; i<10; ++i)    // assemble row Numb[i]
                 if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
                 {
-                    coup= Quad( func, i) * absdet;
+                    const double N_ij= Quad2CL<>(dot( u_loc, Grad[j])).quadP2( i, absdet);
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
-                        N(Numb[i],          Numb[j])+=          coup; 
-                        N(Numb[i]+stride,   Numb[j]+stride)+=   coup; 
-                        N(Numb[i]+2*stride, Numb[j]+2*stride)+= coup; 
+                        N(Numb[i],          Numb[j])+=          N_ij; 
+                        N(Numb[i]+stride,   Numb[j]+stride)+=   N_ij; 
+                        N(Numb[i]+2*stride, Numb[j]+2*stride)+= N_ij; 
                     }
                     else // coupling with vert/edge j on right-hand-side
                     {
                         tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
                                  : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
-                        b[Numb[i]]-=          coup * tmp[0];
-                        b[Numb[i]+stride]-=   coup * tmp[1];
-                        b[Numb[i]+2*stride]-= coup * tmp[2];
+                        b[Numb[i]]-=          N_ij * tmp[0];
+                        b[Numb[i]+stride]-=   N_ij * tmp[1];
+                        b[Numb[i]+2*stride]-= N_ij * tmp[2];
                     }
                 }
         }

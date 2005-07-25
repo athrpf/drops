@@ -450,6 +450,7 @@ class P1DiscCL
     // cubatur formula for int f(x) dx, exact up to degree 2
     static inline double Quad(const TetraCL&, scalar_fun_ptr);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
+    static inline SVectorCL<3> Quad(const TetraCL&, instat_vector_fun_ptr, double= 0.0);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, Uint, double= 0.0);
@@ -457,11 +458,15 @@ class P1DiscCL
     // cubatur formula for int f(x)*phi_i*phi_j dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint, Uint);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, Uint, Uint, double= 0.0);
+    // cubatur formula for int f(x)*phi_i over face, exact up to degree 1
+    static inline double Quad2D(const TetraCL&, Uint face, instat_scalar_fun_ptr, Uint, double= 0.0);
+    static inline SVectorCL<3> Quad2D(const TetraCL&, Uint face, instat_vector_fun_ptr, Uint, double= 0.0);
     // computes the square of the L2-norm of a given function f: 
     // f^2 is integrated exact up to degree 2
     static inline double norm_L2_sq(const TetraCL&, scalar_fun_ptr);
     static inline double norm_L2_sq(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
-
+    // returns int phi_i*phi_j dx
+    static inline double GetMass( int i, int j) { return i!=j ? 1./120. : 1./60.; }
     // the gradient of hat function i is in column i of H
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
     static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
@@ -505,9 +510,11 @@ class P2DiscCL
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
+    // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
+    static inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr, Uint, double= 0.0);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 2
     template<class valT>
-    inline valT Quad( valT f[10], int i);
+    static inline valT Quad( valT f[10], int i);
     // returns int phi_i phi_j dx
     static inline double GetMass( int i, int j);
 };
@@ -544,6 +551,15 @@ inline double P1DiscCL::Quad(const TetraCL& t, scalar_fun_ptr coeff)
             +coeff(t.GetVertex(2)->GetCoord())
             +coeff(t.GetVertex(3)->GetCoord()))/120. 
             + 2./15.*coeff(GetBaryCenter(t));
+}
+
+inline SVectorCL<3> P1DiscCL::Quad(const TetraCL& s, instat_vector_fun_ptr coeff, double t)
+{
+    return ( coeff(s.GetVertex(0)->GetCoord(), t)
+            +coeff(s.GetVertex(1)->GetCoord(), t)
+            +coeff(s.GetVertex(2)->GetCoord(), t)
+            +coeff(s.GetVertex(3)->GetCoord(), t))/120. 
+            + 2./15.*coeff(GetBaryCenter(s), t);
 }
 
 inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uint i, double t)
@@ -618,6 +634,46 @@ inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i, Ui
             if (k!=i && k!=j) f_Other+= coeff( t.GetVertex(k)->GetCoord() );
         return 11./7560.*f_Vert_ij + f_Other/15120. + f_Bary/189.;
     }
+}
+
+inline double P1DiscCL::Quad2D(const TetraCL& t, Uint face, instat_scalar_fun_ptr bfun, Uint vert, double time)
+// Integrate neu_val() * phi_vert over face
+{
+    Point3DCL v[3];
+    
+    if (face==OppFace(vert)) return 0.; // vert is not on face
+    
+    v[0]= t.GetVertex(vert)->GetCoord();
+    for (Uint i=0, k=1; i<3; ++i)
+    {
+        if (VertOfFace(face,i)!=vert)
+            v[k++]= t.GetVertex( VertOfFace(face,i) )->GetCoord();
+    }
+    const double f0= bfun(v[0], time);
+    const double f1= bfun(v[1], time) +  bfun( v[2], time);
+    const double f2= bfun(1./3.*(v[0] + v[1] + v[2]), time);    //Barycenter of Face
+    const double absdet= FuncDet2D(v[1] - v[0], v[2] - v[0]);
+    return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
+}
+
+inline SVectorCL<3> P1DiscCL::Quad2D(const TetraCL& t, Uint face, instat_vector_fun_ptr bfun, Uint vert, double time)
+// Integrate neu_val() * phi_vert over face
+{
+    Point3DCL v[3];
+    
+    if (face==OppFace(vert)) return 0.; // vert is not on face
+    
+    v[0]= t.GetVertex(vert)->GetCoord();
+    for (Uint i=0, k=1; i<3; ++i)
+    {
+        if (VertOfFace(face,i)!=vert)
+            v[k++]= t.GetVertex( VertOfFace(face,i) )->GetCoord();
+    }
+    const SVectorCL<3> f0= bfun(v[0], time);
+    const SVectorCL<3> f1= bfun(v[1], time) +  bfun( v[2], time);
+    const SVectorCL<3> f2= bfun(1./3.*(v[0] + v[1] + v[2]), time);    //Barycenter of Face
+    const double absdet= FuncDet2D(v[1] - v[0], v[2] - v[0]);
+    return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
 
 inline double P1DiscCL::norm_L2_sq(const TetraCL& s, instat_scalar_fun_ptr coeff, double t)
@@ -743,6 +799,35 @@ inline SVectorCL<3> P1BubbleDiscCL::Quad(const SVectorCL<3>* vals, Uint i)
         return vals[0]/240. + (vals[1] + vals[2] + vals[3])/80.;
     return -4./945.*( vals[0] + vals[1] + vals[2] + vals[3] )
            +32./2835.*(vals[4] + vals[5] + vals[6] + vals[7] + vals[8] + vals[9]);
+}
+
+inline SVectorCL<3> P2DiscCL::Quad( const TetraCL& tetra, instat_vector_fun_ptr coeff, Uint i, double t)
+{
+    SVectorCL<3> f[5];
+    
+    if (i<4) // hat function on vert
+    {
+        f[0]= coeff( tetra.GetVertex(i)->GetCoord(), t);
+        for (Uint k=0, l=1; k<4; ++k)
+            if (k!=i) f[l++]= coeff( tetra.GetVertex(k)->GetCoord(), t);
+        f[4]= coeff( GetBaryCenter(tetra), t);
+        return f[0]/504. - (f[1] + f[2] + f[3])/1260. - f[4]/126.;
+    }
+    else  // hat function on edge
+    {
+        const double ve= 4./945.,  // coeff for verts of edge
+                     vn= -1./756.,  // coeff for other verts
+                     vs= 26./945.;   // coeff for barycenter
+        double a[4];
+        a[VertOfEdge(i-4,0)]= a[VertOfEdge(i-4,1)]= ve;
+        a[VertOfEdge(OppEdge(i-4),0)]= a[VertOfEdge(OppEdge(i-4),1)]= vn;
+
+        SVectorCL<3> sum= vs * coeff( GetBaryCenter(tetra), t);
+        for(Uint k=0; k<4; ++k)
+            sum+= a[k] * coeff( tetra.GetVertex(k)->GetCoord(), t);
+
+        return sum;
+    }
 }
 
 template<class valT>

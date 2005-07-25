@@ -43,7 +43,7 @@ MGsdropsP2: \
 drivcav: \
     ../geom/boundary.o ../geom/builder.o ../stokes/drivcav.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 drcavad: \
@@ -55,7 +55,7 @@ drcavad: \
 FSdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/FSdrops.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o
+    ../misc/problem.o ../misc/utils.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 isdrops: \
