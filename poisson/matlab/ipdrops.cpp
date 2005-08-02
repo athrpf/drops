@@ -39,6 +39,8 @@ class PoissonCoeffCL
       else
         return 0.0; 
     }
+    static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
+      { return DROPS::Point3DCL(0.); } // no convection
 };
 
 int PoissonCoeffCL::_Flag= 0;
