@@ -84,54 +84,38 @@ class MatConnect
     
     template<int num> static int getLexNum(const DROPS::Point2DCL& p)
     {
-      int count= 0;
-      if (num==0)  // Punkt liegt auf der Seite S1 oder S2
+      switch(num)
       {
-        for (double zcoord= .0; zcoord<= _ZLen*p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
-          count+= (_MeshRefY+1);
-        for (double ycoord= .0; ycoord<= _YLen*p[0]+_SpIncrY/2.0; ycoord+= _SpIncrY)
-          count++;
+      	case 0: // y-z plane
+      	{
+      	  int nY= static_cast<int>(_YLen*p[0]+0.5),  nZ= static_cast<int>(_ZLen*p[1]+0.5);
+      	  return nZ*(_MeshRefY+1) + nY;
+      	}
+      	case 1: // x-z plane
+      	{
+      	  int nX= static_cast<int>(_XLen*p[0]+0.5),  nZ= static_cast<int>(_ZLen*p[1]+0.5);
+      	  return nZ*(_MeshRefX+1) + nX;
+      	}
+      	case 2: // x-y plane
+      	{
+      	  int nX= static_cast<int>(_XLen*p[0]+0.5),  nY= static_cast<int>(_YLen*p[1]+0.5);
+      	  return nY*(_MeshRefY+1) + nX;
+      	}
       }
-      else if (num==1)  // Punkt liegt auf einer der Seiten S3 oder S4
-      {
-        for (double zcoord= .0; zcoord<= _ZLen*p[1]-_SpIncrZ/2.0; zcoord+= _SpIncrZ)
-          count+= (_MeshRefX+1);
-        for (double xcoord= .0; xcoord<= _XLen*p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
-          count++;
-      }
-      else  // Punkt liegt auf einer der Seiten S5 oder S6
-      {
-        for (double ycoord= .0; ycoord<= _YLen*p[1]-_SpIncrY/2.0; ycoord+= _SpIncrY)
-          count+= (_MeshRefX+1);
-        for (double xcoord= .0; xcoord<= _XLen*p[0]+_SpIncrX/2.0; xcoord+= _SpIncrX)
-          count++;
-      }
-    
-      return count;
     }
   
     template<int num> static double getBndVal(const DROPS::Point2DCL& p, double t)
     {
-      int count= -1;  // das Feld beginnt mit Index 0
-    
-      // die Matrizen S1..S6 werden spaltenweise uebergeben
-      if (num==0 || num==1)  // Seite S1 oder S2
+      int count= 0;
+      const int nT= static_cast<int>(t/_DeltaT+0.5);   
+      switch(num)
       {
-        for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
-          count+= (_MeshRefY+1)*(_MeshRefZ+1);
-        count+= getLexNum<0>(p);
-      }
-      else if (num==2 || num==3) // Seite S3 oder S4
-      {
-        for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
-          count+= (_MeshRefX+1)*(_MeshRefZ+1);
-        count+= getLexNum<1>(p);
-      }
-      else  // Seite S5 oder S6
-      {
-        for (double time= .0; time< t-_DeltaT/2.0; time+= _DeltaT)
-          count+= (_MeshRefX+1)*(_MeshRefY+1);
-        count+= getLexNum<2>(p);
+      	case 0: case 1: // y-z plane
+      	  count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p);
+      	case 2: case 3: // x-z plane
+      	  count= nT*(_MeshRefX+1)*(_MeshRefZ+1) + getLexNum<1>(p);
+      	case 4: case 5: // x-y plane
+      	  count= nT*(_MeshRefX+1)*(_MeshRefY+1) + getLexNum<2>(p);
       }
     
       return *(_BndData[num]+count);
@@ -165,8 +149,6 @@ class MatConnect
       
       for (ci p= _NodeMap.begin(); p!= _NodeMap.end(); p++)
       {
-        count= 0;
-        
         xc= p->first.first;
         yc= p->first.second.second;
         zc= p->first.second.first;
@@ -175,17 +157,13 @@ class MatConnect
         int b= static_cast<int>((_MeshRefY*yc/_YLen)+0.5);
         int c= static_cast<int>((_MeshRefZ*zc/_ZLen)+0.5);
       
-        for (int j=0; j<a; j++)
-          count+= _FacePtsYZ;
-        for (int k=0; k<c; k++)
-          count+= _MeshRefY+1;
-        count+= b;
+        count= a*_FacePtsYZ + c*(_MeshRefY+1) + b;
         
         //mexPrintf("xc, yc, zc, uh: %g %g %g %g\n", xc, yc, zc, *(_T0+count));
         //mexPrintf("a, b, c: %d %d %d\n", a, b, c);
         //mexPrintf("count: %d\n", count);
         
-        *(p->second)= *(_T0+count);
+        *(p->second)= _T0[count];
       }
     }
     
@@ -322,11 +300,7 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
     {
       VertCoord=It->GetVertex(i)->GetCoord();
       if (fabs(VertCoord[0])<=width || fabs(VertCoord[0]-xl)<=width)
-      {
         It->SetRegRefMark();
-        goto mark;
-      }
-      mark:;
     }
   }
 }
