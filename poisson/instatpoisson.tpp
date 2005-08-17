@@ -89,8 +89,9 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   double det;
   double absdet;
   IdxT UnknownIdx[4];
+  Quad2CL<> rhs;
 
-  StripTimeCL strip( &_Coeff.f, tf);
+//  StripTimeCL strip( &_Coeff.f, tf);
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -127,10 +128,12 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
         }
       }
 
+    rhs.assign( *sit, _Coeff.f, tf);
     for(int i=0; i<4;++i)    // assemble row i
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
       { 
-        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
+//        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
+        vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
         if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
