@@ -7,7 +7,7 @@
 DIR = poisson
 
 EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep drops_neumann \
-       MGdropsP2
+       MGdropsP2 ihcpfilm
 
 DELETE = $(EXEC)
 
@@ -72,10 +72,21 @@ ipdropsrep: \
     ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
+ipfilm: \
+    ../geom/boundary.o ../geom/builder.o ../poisson/ipfilm.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
 matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/instatpoisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
 	$(CC) $(CFLAGS) matlab/ipdrops.cpp -o $@ $^ $(LFLAGS)
+
+matlab/ipfilm: ../geom/boundary.o ../geom/builder.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/instatpoisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
+	$(CC) $(CFLAGS) matlab/ipfilm.cpp -o $@ $^ $(LFLAGS)
 
 
 clean: matlab/clean
