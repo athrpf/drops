@@ -7,7 +7,7 @@
 DIR = poisson
 
 EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep drops_neumann \
-       MGdropsP2 ihcpfilm
+       MGdropsP2 ipfilm
 
 DELETE = $(EXEC)
 
