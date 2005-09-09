@@ -118,8 +118,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
         for (MultiGridCL::const_TriangVertexIteratorCL it= mg->GetTriangVertexBegin( lvl),
              theend= mg->GetTriangVertexEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
-                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
-                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
                     std::cerr << "Compare_Indices: Vertex difference.\n";
                     return false;
                 }
@@ -127,8 +126,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
         for (MultiGridCL::const_TriangEdgeIteratorCL it= mg->GetTriangEdgeBegin( lvl),
              theend= mg->GetTriangEdgeEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
-                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
-                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
                     std::cerr << "Compare_Indices: Edge difference.\n";
                     return false;
                 }
@@ -136,8 +134,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
         for (MultiGridCL::const_TriangFaceIteratorCL it= mg->GetTriangFaceBegin( lvl),
              theend= mg->GetTriangFaceEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
-                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
-                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
                     std::cerr << "Compare_Indices: Face difference.\n";
                     return false;
                 }
@@ -145,8 +142,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
         for (MultiGridCL::const_TriangTetraIteratorCL it= mg->GetTriangTetraBegin( lvl),
              theend= mg->GetTriangTetraEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
-                if ( (it->Unknowns.Exist( iidx) && !it->Unknowns.Exist( jidx))
-                     || (!it->Unknowns.Exist( iidx) && it->Unknowns.Exist( jidx))) {
+                if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
                     std::cerr << "Compare_Indices: Tetra difference.\n";
                     return false;
                 }
@@ -155,7 +151,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
 
 void MatDescCL::SetIdx(IdxDescCL* row, IdxDescCL* col)
 /// Prepares the matrix for usage with new index-objects for
-/// its components. As constructiong sparse matrices is fairly involved,
+/// its components. As constructing sparse matrices is fairly involved,
 /// this routine does not modify Data. SparseMatBuilderCL should be used
 /// to do this.
 {
@@ -182,6 +178,23 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
         it->Unknowns(idx)= counter;
         counter+= stride;
     }
+}
+
+void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG)
+{
+    const Uint idxnum = idx.GetIdx();    // idx is the index in UnknownIdxCL
+    const Uint level  = idx.TriangLevel;
+    idx.NumUnknowns = 0;
+
+    // delete memory allocated for indices
+    if (idx.NumUnknownsVertex)
+        DeleteNumbOnSimplex( idxnum, MG.GetAllVertexBegin(level), MG.GetAllVertexEnd(level) );
+    if (idx.NumUnknownsEdge)
+        DeleteNumbOnSimplex( idxnum, MG.GetAllEdgeBegin(level), MG.GetAllEdgeEnd(level) );
+    if (idx.NumUnknownsFace)
+        DeleteNumbOnSimplex( idxnum, MG.GetAllFaceBegin(level), MG.GetAllFaceEnd(level) );
+    if (idx.NumUnknownsTetra)
+        DeleteNumbOnSimplex( idxnum, MG.GetAllTetraBegin(level), MG.GetAllTetraEnd(level) );
 }
 
 } // end of namespace DROPS

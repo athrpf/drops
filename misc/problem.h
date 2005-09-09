@@ -15,6 +15,19 @@ namespace DROPS
 /// Prints a text-message describing the given boundary-condition.
 void BndCondInfo (BndCondT, std::ostream&);
 
+enum FiniteElementT 
+/// \brief enum for several FE types
+///
+/// Conventions: 
+/// - values < 128 are used for scalar FE
+/// - values >= 128 are used for vector-valued FE, 
+///   the difference to the scalar FE counterpart should be 128
+{ 
+    P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,  // for scalars
+    P1D_FE=4, 
+                      vecP2_FE= 130            // for vectors
+};
+
 
 /// \brief Mapping from the simplices in a triangulation to the components
 ///     of algebraic data-structures.
@@ -50,10 +63,23 @@ class IdxDescCL
     //@}
 
     /// \brief The constructor uses the lowest available index for the
-    ///     numbering. The triangulation must be set separately.
+    ///     numbering. The triangulation level must be set separately.
     IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0) 
       : Idx( GetFreeIdx()), NumUnknownsVertex( unkVertex), NumUnknownsEdge( unkEdge),
         NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra), NumUnknowns( 0) {}
+    explicit IdxDescCL( FiniteElementT fe) 
+      : Idx( GetFreeIdx()), NumUnknownsVertex( 0), NumUnknownsEdge( 0),
+        NumUnknownsFace( 0), NumUnknownsTetra( 0), NumUnknowns( 0) 
+    { 
+        switch(fe) { 
+            case P0_FE:       NumUnknownsTetra= 1; break;
+            case P1_FE:       NumUnknownsVertex= 1; break; 
+            case P1Bubble_FE: NumUnknownsVertex= NumUnknownsTetra= 1; break; 
+            case P1D_FE:      NumUnknownsFace= 1; break;
+            case P2_FE:       NumUnknownsVertex= NumUnknownsEdge= 1; break; 
+            case vecP2_FE:    NumUnknownsVertex= NumUnknownsEdge= 3; break; 
+        }  
+    }
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);              
@@ -651,6 +677,14 @@ void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndDataT& Bnd
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
 }
+
+/// \brief Mark unknown-indices as invalid for given index-description.
+///
+/// This routine writes NoIdx as unknown-index for all indices of the
+/// given index-description. idx.NumUnknowns will be set to zero.
+/// \param idx The index-description to be used.
+/// \param MG The multigrid to be operated on.
+void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG);
 
 } // end of namespace DROPS
 
