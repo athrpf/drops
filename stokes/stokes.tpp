@@ -19,30 +19,6 @@ namespace DROPS
 **************************************************************************************************/
 
 template <class Coeff>
-void StokesP2P1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllEdgeBegin(level), _MG.GetAllEdgeEnd(level) );
-}
-
-template <class Coeff>
-void StokesP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
-}
-
-
-template <class Coeff>
   void
   StokesP2P1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel,
       instat_scalar_fun_ptr LsgPr, double t) const
@@ -1198,73 +1174,6 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scala
 /**************************************************************************************************
 * member functions to handle with index descriptions
 **************************************************************************************************/
-
-//
-template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::CreateNumberingPr(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, thatIdxDesc[idxnr].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level; 
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level),
-                        _BndData.Pr );
-}
-
-//
-template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::CreateNumberingVel(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, thatIdxDesc[idxnr].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level),
-                        _BndData.Vel );
-    CreateNumbOnTetra( idxnum, idx->NumUnknowns, idx->NumUnknownsTetra,
-                      _MG.GetTriangTetraBegin(level), _MG.GetTriangTetraEnd(level) );
-}
-
-//
-template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangTetraBegin(level), _MG.GetTriangTetraEnd(level) );
-}
-
-//
-template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
-}
 
 //
 inline double QuadGradP1Bubble(const SMatrixCL<3,3>& T, Uint i, Uint j)

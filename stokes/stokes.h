@@ -83,8 +83,10 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
-    void DeleteNumberingVel(IdxDescCL*);
-    void DeleteNumberingPr (IdxDescCL*);
+    void DeleteNumberingVel( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
+    void DeleteNumberingPr ( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
     
     // Set up matrices and complete rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*, double= 0.0) const;
@@ -162,10 +164,14 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
         : _base( mgb, coeff, bdata), vel_idx( 3, 0, 0, 3), pr_idx( 1) {}  
 
     // Create and delete numbering of unknowns
-    void CreateNumberingVel(Uint, IdxDescCL*);
-    void CreateNumberingPr (Uint, IdxDescCL*);
-    void DeleteNumberingVel(IdxDescCL*);
-    void DeleteNumberingPr (IdxDescCL*);
+    void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
+    void DeleteNumberingVel( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
+    void DeleteNumberingPr ( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
     
     // Set up matrices and rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;

@@ -54,8 +54,10 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
-    void DeleteNumberingVel( IdxDescCL*);
-    void DeleteNumberingPr ( IdxDescCL*);
+    void DeleteNumberingVel( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
+    void DeleteNumberingPr ( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
     //@}
     /// \name Discretization
     //@{
@@ -134,8 +136,10 @@ class InstatStokes2PhaseP2P1DCL : public ProblemCL<Coeff, StokesBndDataCL>
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
-    void DeleteNumberingVel( IdxDescCL*);
-    void DeleteNumberingPr ( IdxDescCL*);
+    void DeleteNumberingVel( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
+    void DeleteNumberingPr ( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
     //@}
     /// \name Discretization
     //@{

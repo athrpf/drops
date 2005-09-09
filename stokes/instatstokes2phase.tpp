@@ -7,30 +7,6 @@ namespace DROPS
 {
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllEdgeBegin(level), _MG.GetAllEdgeEnd(level) );
-}
-
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
-}
-
-
-template <class Coeff>
 /// Needed for preconditioning of the Schur complement. Uses natural
 /// boundary conditions for the pressure unknowns.
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset) const
@@ -452,30 +428,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, double t) const
 
 
 // InstatStokes2PhaseP2P1DCL
-
-template <class Coeff>
-void InstatStokes2PhaseP2P1DCL<Coeff>::DeleteNumberingVel(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllEdgeBegin(level), _MG.GetAllEdgeEnd(level) );
-}
-
-template <class Coeff>
-void InstatStokes2PhaseP2P1DCL<Coeff>::DeleteNumberingPr(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllFaceBegin(level), _MG.GetAllFaceEnd(level) );
-}
-
 
 template <class Coeff>
 /// Needed for preconditioning of the Schur complement. Uses natural
