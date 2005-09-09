@@ -63,7 +63,8 @@ class LevelsetP2CL
     
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _Bnd, match); }
-    void DeleteNumbering( IdxDescCL*);
+    void DeleteNumbering( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
 
     void Init( scalar_fun_ptr);
 

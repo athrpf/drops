@@ -32,17 +32,6 @@ void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 }
 
 
-template<class Coeff>
-void InstatPoissonP1CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
-}
-
 //========================================================
 //
 //                Set up matrices and rhs
@@ -270,7 +259,7 @@ void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func,
          idx= vec.RowIdx->GetIdx();
     
     
-    for (MultiGridCL::const_TriangVertexIteratorCL sit= _MG.GetTriangVertexBegin(lvl), send= _MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(idx))

@@ -11,36 +11,6 @@
 namespace DROPS
 {
 
-template<class Coeff>
-void PoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, thatIdxDesc[idxnr].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin( level), _MG.GetTriangVertexEnd( level), GetBndData());
-}
-
-
-template<class Coeff>
-void PoissonP1CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin( level), _MG.GetTriangVertexEnd( level) );
-}
-
 //========================================================
 //
 //                Set up matrices and rhs
@@ -478,38 +448,6 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
 }
 
 // PoissonP2CL
-template<class Coeff>
-void PoissonP2CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, that IdxDesc[idxnr].NumUnknownsVertex etc. are set.
-{
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
-    // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level), GetBndData() );
-    CreateNumbOnEdge( idxnum, idx->NumUnknowns, idx->NumUnknownsEdge,
-                      _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level), GetBndData() );
-}
-
-
-template<class Coeff>
-void PoissonP2CL<Coeff>::DeleteNumbering(IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetTriangEdgeBegin(level), _MG.GetTriangEdgeEnd(level) );
-}
 
 // Copy of functions GetGradientsOnRef, MakeGradients, 
 // Quad(t,sf,i,j), Quad(t,sf,i)(new!!!) and QuadGrad (for P2P1) 

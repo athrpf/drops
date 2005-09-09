@@ -50,8 +50,10 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base( mgb, coeff, bdata), idx( 1) {}  
     // numbering of unknowns
-    void CreateNumbering(Uint, IdxDescCL*);
-    void DeleteNumbering(IdxDescCL*);
+    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData, match); }
+    void DeleteNumbering( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
     // set up matrices and rhs
     void SetupSystem         (MatDescCL&, VecDescCL&) const;
     void SetupStiffnessMatrix(MatDescCL&) const;
@@ -100,8 +102,10 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 		const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(1) {}  
 		
     // numbering of unknowns
-    void CreateNumbering(Uint, IdxDescCL*);
-    void DeleteNumbering(IdxDescCL*);
+    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
+        { CreateNumb( level, *idx, _MG, _BndData, match); }
+    void DeleteNumbering( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
     
     // set up matrices and rhs
     void SetupSystem         (MatDescCL&, VecDescCL&) const;

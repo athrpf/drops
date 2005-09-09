@@ -21,17 +21,6 @@ inline double SmoothedSign( double x, double alpha)
     return x/std::sqrt(x*x+alpha);
 }
 
-void LevelsetP2CL::DeleteNumbering( IdxDescCL* idx)
-{
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx->TriangLevel;
-    idx->NumUnknowns = 0;
-
-    // delete memory allocated for indices
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllVertexBegin(level), _MG.GetAllVertexEnd(level) );
-    DeleteNumbOnSimplex( idxnum, _MG.GetAllEdgeBegin(level), _MG.GetAllEdgeEnd(level) );
-}
-
 void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.GetLevel(),

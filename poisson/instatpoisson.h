@@ -129,8 +129,9 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
         : _base( mgb, coeff, bdata), t( 0.), idx( 1) {}  
 				
     // numbering of unknowns
-    void CreateNumbering( Uint, IdxDescCL*);
-    void DeleteNumbering( IdxDescCL*);
+    void CreateNumbering( Uint level, IdxDescCL* idx);
+    void DeleteNumbering( IdxDescCL* idx)
+        { DeleteNumb( *idx, _MG); }
 		
     // set up matrices (which are time independent expressions)
     void SetupInstatSystem( MatDescCL& A, MatDescCL& M) const;
