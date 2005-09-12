@@ -764,11 +764,10 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
 
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const
 // Set up matrix B and rhs c
 {
     std::cerr << "entering SetupSystem2: " << B->RowIdx->NumUnknowns << " prs. ";
-    LevelsetP2CL lset( _MG, _BndData.Pr, 0, 0, 0, 0); // dummy
     switch (prFE_)
     {
       case P0_FE:
@@ -784,10 +783,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, 
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, double t) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const
 // Set up rhs c
 {
-    LevelsetP2CL lset( _MG, _BndData.Pr, 0, 0, 0, 0); // dummy
     switch (prFE_)
     {
       case P0_FE:

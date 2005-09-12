@@ -147,7 +147,6 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::InitStep()
     _LvlSet.ComputeRhs( _ls_rhs);
 
     _Stokes.t+= _dt;
-    _Stokes.SetupRhs2( &_Stokes.c, _Stokes.t);
 
     _rhs=  _Stokes.A.Data * _Stokes.v.Data;
     _rhs*= (_theta-1.)*_dt;
@@ -178,6 +177,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
     _mat->LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
+    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     if (_usematMG) {
         for(MGDataCL::iterator it= _matMG->begin(); it!=_matMG->end(); ++it) {
             MGLevelDataCL& tmp= *it;
@@ -259,7 +259,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
     _LvlSet.AccumulateBndIntegral( *_old_curv);
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _Stokes.t);
+    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
 
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
     if (_usematMG) {
@@ -330,7 +330,6 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::InitStep()
     _LvlSet.ComputeRhs( _ls_rhs);
 
     _Stokes.t+= _dt;
-    _Stokes.SetupRhs2( &_Stokes.c, _Stokes.t);
 
     _rhs=  _AN * _Stokes.v.Data - _nonlinear*_old_cplN->Data;
     _rhs*= (_theta-1.)*_dt;
@@ -369,6 +368,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _cplN, _LvlSet, _Stokes.t);
     _AN.LinComb( 1., _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
     _mat.LinComb( 1., _Stokes.M.Data, _theta*_dt, _AN);
+    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
 
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
@@ -438,7 +438,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _LvlSet.AccumulateBndIntegral( *_old_curv);
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _Stokes.t);
+    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _old_cplN, _LvlSet, _Stokes.t);
     _AN.LinComb( 1., _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
     
@@ -488,7 +488,6 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::InitStep( bool StokesStep)
     _LvlSet.ComputeRhs( _ls_rhs);
 
     _Stokes.t+= frac_dt;
-    _Stokes.SetupRhs2( &_Stokes.c, _Stokes.t);
     
     if (StokesStep)
     {
@@ -528,6 +527,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _cplA, _cplM, _LvlSet, _Stokes.t);
     _mat.LinComb( 1., _Stokes.M.Data, _alpha*_theta*_dt, _Stokes.A.Data);
+    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
@@ -666,7 +666,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::Update()
     // Diskretisierung
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _old_cplA, _old_cplM, _LvlSet, _Stokes.t);
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _Stokes.t);
+    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _old_cplN, _LvlSet, _Stokes.t);
     
     time.Stop();

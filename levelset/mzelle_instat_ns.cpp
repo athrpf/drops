@@ -209,7 +209,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         VelVecDescCL curv( vidx);
         time.Reset();
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, Stokes.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();

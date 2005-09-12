@@ -69,9 +69,9 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     /// Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
     void SetupMatrices1( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;
     /// Set up matrix B and rhs c
-    void SetupSystem2( MatDescCL* B, VecDescCL* c, double t) const;
+    void SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up rhs c
-    void SetupRhs2( VecDescCL* c, double t) const;
+    void SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up the mass matrix for the pressure, scaled by \f$\mu^{-1}\f$.
     void SetupPrMass( MatDescCL* prM, const LevelsetP2CL& lset) const;
     /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
