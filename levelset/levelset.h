@@ -16,6 +16,11 @@
 namespace DROPS
 {
 
+enum SurfaceForceT
+{
+  SF_CSF=0, SF_Const=1
+};
+  
 class LevelsetP2CL
 // P2-discretization and solution of the levelset equation for two phase
 // flow problems.
@@ -39,6 +44,7 @@ class LevelsetP2CL
     BndDataT            _Bnd;
     SSORPcCL            _pc;
     GMResSolverCL<SSORPcCL>  _gm;
+    SurfaceForceT       SF_;
 
     void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
     void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
@@ -48,13 +54,14 @@ class LevelsetP2CL
     LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0, 
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
       : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
-        _theta( theta), _dt( 0.), _Bnd( BndDataT(mg.GetBnd().GetNumBndSeg()) ), _gm( _pc, 100, iter, tol)
+        _theta( theta), _dt( 0.), _Bnd( BndDataT(mg.GetBnd().GetNumBndSeg()) ), 
+        _gm( _pc, 100, iter, tol), SF_(SF_CSF)
     {}
     
     LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, double sig= 0, double theta= 0.5, double SD= 0, 
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
       : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
-        _theta( theta), _dt( 0.), _Bnd( bnd), _gm( _pc, 100, iter, tol)
+        _theta( theta), _dt( 0.), _Bnd( bnd), _gm( _pc, 100, iter, tol), SF_(SF_CSF)
     {}
     
     GMResSolverCL<SSORPcCL>& GetSolver() { return _gm; }
@@ -79,6 +86,7 @@ class LevelsetP2CL
     bool   Intersects( const TetraCL&) const;
     double GetVolume( double translation= 0) const;
     double AdjustVolume( double vol, double tol, double surf= 0) const;
+    void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
     void   AccumulateBndIntegral( VecDescCL& f) const;
     
     const_DiscSolCL GetSolution() const
@@ -117,11 +125,12 @@ class InterfacePatchCL
   public:
     InterfacePatchCL();
 
-    void Init( TetraCL& t, VecDescCL& ls);
+    void Init( const TetraCL& t, const VecDescCL& ls);
 
     // Remark: The following functions are only valid, if Init(...) was called before!
-    int  GetSign( Uint DoF) const { return sign_[DoF]; } //< returns -1/0/1
-    bool ComputeForChild( Uint ch); //< returns true, if a patch exists for this child
+    int    GetSign( Uint DoF) const { return sign_[DoF]; } //< returns -1/0/1
+    double GetPhi( Uint DoF)  const { return PhiLoc_[DoF]; } //< returns value of level set function
+    bool   ComputeForChild( Uint ch); //< returns true, if a patch exists for this child
 
     // Remark: The following functions are only valid, if ComputeForChild(...) was called before!
     bool               IsQuadrilateral()     const { return intersec_==4; }

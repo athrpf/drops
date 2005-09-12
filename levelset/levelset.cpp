@@ -21,6 +21,197 @@ inline double SmoothedSign( double x, double alpha)
     return x/std::sqrt(x*x+alpha);
 }
 
+void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+// computes the integral 
+//         sigma \int_\Gamma v n ds
+// used by levelset/prJump.cpp for testing FE pressure spaces.
+{
+    const Uint idx_f= f.RowIdx->GetIdx();
+    IdxT Numb[10];
+  
+//std::ofstream fil("surf.off");
+//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    SMatrixCL<3,3> T;
+    double det;
+    InterfacePatchCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+ 
+//double area= 0, missing= 0;
+//int num3= 0, num4= 0;
+
+
+    for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
+        it!=end; ++it)
+    {
+        GetTrafoTr( T, det, *it);
+        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+        patch.Init( *it, SmPhi);
+        LocalP1CL<Point3DCL> gradPhi;
+
+        for (int v=0; v<10; ++v)
+        { // collect data on all DoF
+            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+
+            for (int node=0; node<4; ++node)
+            { // gradPhi = Werte von grad Phi in den vier Knoten des Tetra
+                gradPhi[node]+= patch.GetPhi(v)*Grad[v][node];
+            }
+        }
+        
+        for (int ch=0; ch<8; ++ch)
+        {
+            if (!patch.ComputeForChild(ch)) // no patch for this child
+                continue;
+
+//patch.WriteGeom( fil);
+
+            BaryCoordCL BaryPQR, BarySQR;
+            for (int i=0; i<3; ++i)
+            {
+                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+                BaryPQR+= patch.GetBary(i);
+                BarySQR+= patch.GetBary(i+1);
+            }
+            BaryPQR/= 3; BarySQR/= 3;
+
+            double val_hat[4];
+            Point3DCL n[4], nBary, vn_Bary, nBarySQR;
+
+            for (Uint k=0; k<patch.GetNumPoints(); ++k)
+            {
+                // Normale in PQR(S)
+                n[k]= gradPhi( patch.GetBary(k));
+                n[k]/= n[k].norm();
+            }
+            nBary= gradPhi( BaryPQR);
+            nBary/= nBary.norm();
+            if (patch.IsQuadrilateral())
+            {
+                nBarySQR= gradPhi( BarySQR);
+                nBarySQR/= nBarySQR.norm();
+            }
+                
+            for (int v=0; v<10; ++v)
+            {
+                if (Numb[v]==NoIdx) continue;
+                
+                for (Uint k=0; k<patch.GetNumPoints(); ++k)
+                    // Werte der Hutfunktion in P,Q,R,S
+                    val_hat[k]= FE_P2CL::H(v,patch.GetBary(k));
+                
+                vn_Bary= FE_P2CL::H(v,BaryPQR) * nBary;
+
+                Point3DCL sum_vn; // val = v * n
+                for (int k=0; k<3; ++k)
+                     sum_vn+= val_hat[k]*n[k];
+
+                if (patch.IsQuadrilateral())
+                {
+                    Point3DCL sum_vnSQR;
+                    for (int k=1; k<4; ++k)
+                        sum_vnSQR+= val_hat[k]*n[k];
+                    sum_vn+= patch.GetAreaFrac() * sum_vnSQR;
+                    vn_Bary+= patch.GetAreaFrac() * FE_P2CL::H(v,BarySQR) * nBarySQR;
+                }
+                
+                // Quadraturformel auf Dreieck, exakt bis zum Grad 2
+                const Point3DCL int_vn= ((1./12)*sum_vn + 0.75 * vn_Bary);
+                const double C= sigma*patch.GetFuncDet()/2;
+                for (int i=0; i<3; ++i)
+                    f.Data[Numb[v]+i]-= C * int_vn[i];
+            }
+        } // Ende der for-Schleife ueber die Kinder
+    }
+//fil << "}\n";
+}
+
+void SF_CurvatureTerm( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+// computes the integral 
+//         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
+{
+    const Uint  idx_f=     f.RowIdx->GetIdx();
+    IdxT        Numb[10];
+    
+//std::ofstream fil("surf.off");
+//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    SMatrixCL<3,3> T;
+    double det;
+    InterfacePatchCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+ 
+    for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
+        it!=end; ++it)
+    {
+        GetTrafoTr( T, det, *it);
+        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+
+        for (int v=0; v<10; ++v)
+        { // collect data on all DoF
+            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+        }
+        
+        patch.Init( *it, SmPhi);
+        
+        for (int ch=0; ch<8; ++ch)
+        {
+            if (!patch.ComputeForChild(ch)) // no patch for this child
+                continue;
+
+//patch.WriteGeom( fil);
+
+            BaryCoordCL BaryPQR, BarySQR;
+            for (int i=0; i<3; ++i)
+            {
+                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+                BaryPQR+= patch.GetBary(i);
+                BarySQR+= patch.GetBary(i+1);
+            }
+
+            const double C= patch.GetFuncDet()/6*sigma;  // 1/6 for quad. rule
+
+            for (int v=0; v<10; ++v)
+            {
+                if (Numb[v]==NoIdx) continue;
+                
+                Point3DCL gr, gradv[4];
+                // gr= grad Phi(P) + grad Phi(Q) + grad Phi(R)
+                for (int node=0; node<4; ++node)
+                { // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
+                    gradv[node]= Grad[v][node];
+                    gr+= BaryPQR[node]*gradv[node];
+                }
+                    
+                if (patch.IsQuadrilateral())
+                {
+                    Point3DCL grSQR;
+                    // grSQR = grad Phi(S) + grad Phi(Q) + grad Phi(R)
+                    for (int k=0; k<4; ++k)
+                        grSQR+= BarySQR[k]*gradv[k];
+
+                    gr+= patch.GetAreaFrac() * grSQR;
+                }
+                // nun gilt:
+                // gr = [grad Phi(P)+...] + (a+b-1)[grad Phi(S)+...]
+                
+                for (int i=0; i<3; ++i)
+                {
+                    const double val= inner_prod( gr, patch.GetGradId(i));
+                    f.Data[Numb[v]+i]-= C *val;
+                }
+            }
+        } // Ende der for-Schleife ueber die Kinder
+    }
+//fil << "}\n";
+}
+
 void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.GetLevel(),
@@ -207,84 +398,15 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     VecDescCL SmPhi= Phi;
     if (_curvDiff>0)
         SmoothPhi( SmPhi.Data, _curvDiff);
-        
-    const Uint  idx_f=     f.RowIdx->GetIdx();
-    Point2DCL   AT_i, ab, tmp;
-    IdxT        Numb[10];
-    
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
-
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];
-    SMatrixCL<3,3> T;
-    InterfacePatchCL patch;
-
-    P2DiscCL::GetGradientsOnRef( GradRef);
- 
-    for (MultiGridCL::TriangTetraIteratorCL it=_MG.GetTriangTetraBegin(), end=_MG.GetTriangTetraEnd();
-        it!=end; ++it)
+    switch (SF_)
     {
-        GetTrafoTr( T, tmp[0], *it);
-        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
-        }
-        
-        patch.Init( *it, SmPhi);
-        
-        for (int ch=0; ch<8; ++ch)
-        {
-            if (!patch.ComputeForChild(ch)) // no patch for this child
-                continue;
-
-//patch.WriteGeom( fil);
-
-            BaryCoordCL BaryPQR, BarySQR;
-            for (int i=0; i<3; ++i)
-            {
-                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= patch.GetBary(i);
-                BarySQR+= patch.GetBary(i+1);
-            }
-
-            const double C= patch.GetFuncDet()/6*sigma;  // 1/6 for quad. rule
-
-            for (int v=0; v<10; ++v)
-            {
-                if (Numb[v]==NoIdx) continue;
-                
-                Point3DCL gr, gradv[4];
-                // gr= grad Phi(P) + grad Phi(Q) + grad Phi(R)
-                for (int node=0; node<4; ++node)
-                { // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
-                    gradv[node]= Grad[v][node];
-                    gr+= BaryPQR[node]*gradv[node];
-                }
-                    
-                if (patch.IsQuadrilateral())
-                {
-                    Point3DCL grSQR;
-                    // grSQR = grad Phi(S) + grad Phi(Q) + grad Phi(R)
-                    for (int k=0; k<4; ++k)
-                        grSQR+= BarySQR[k]*gradv[k];
-
-                    gr+= patch.GetAreaFrac() * grSQR;
-                }
-                // nun gilt:
-                // gr = [grad Phi(P)+...] + (a+b-1)[grad Phi(S)+...]
-                
-                for (int i=0; i<3; ++i)
-                {
-                    const double val= inner_prod( gr, patch.GetGradId(i));
-                    f.Data[Numb[v]+i]-= C *val;
-                }
-            }
-        } // Ende der for-Schleife ueber die Kinder
+      case SF_CSF: 
+        SF_CurvatureTerm( _MG, SmPhi, sigma, f); break;
+      case SF_Const: 
+        SF_ConstForce( _MG, SmPhi, sigma, f); break;
+      default:
+        throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
-//fil << "}\n";
 }
 
 double LevelsetP2CL::GetVolume( double translation) const
@@ -411,7 +533,7 @@ InterfacePatchCL::InterfacePatchCL()
         BaryDoF_[edge+4]= 0.5*(BaryDoF_[VertOfEdge(edge,0)] + BaryDoF_[VertOfEdge(edge,1)]);
 }
 
-void InterfacePatchCL::Init( TetraCL& t, VecDescCL& ls)
+void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls)
 {
     const Uint idx_ls= ls.RowIdx->GetIdx();
     for (int v=0; v<10; ++v)
