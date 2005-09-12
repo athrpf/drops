@@ -1,0 +1,81 @@
+#=============================================================
+#    DROPS parameter file
+#    simulation of two-phase flow: 
+#    study effect of pressure jump for different FE spaces
+#=============================================================
+
+# time stepping
+Time {
+  NumSteps	=	0
+  StepSize	=	1e-4
+  ThetaLevelset	=	1	# IE
+  ThetaStokes	=	1	# IE
+}
+
+# flow solver
+Stokes {
+  StokesMethod	=	99	# no effect
+  InnerIter	=	1000
+  OuterIter	=	200
+  InnerTol	=	1e-16
+  OuterTol	=	1e-12
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1e-14
+  Iter		=	10000
+  SD		=	0
+  CurvDiff	=	-5e-9
+  VolCorrection	=	0
+}
+
+# re-initialization of levelset function
+Reparam { 
+  Method	=	1
+  Freq		=	0	# 0 = no reparametrization
+  NumSteps	=	1
+  StepSize	=	0.01
+  Diffusion	=	1e-4
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop	=	1e3
+  ViscDrop	=	1e-3
+  DensFluid	=	1e3
+  ViscFluid	=	1e-3	
+  SmoothZone	=	1e-5
+  
+  SurfTension	=	10
+}
+
+# experimental conditions
+Exp {
+  RadDrop	=	1.5e-3
+  PosDrop	=	0	0	0.125e-3 # last component = position of interface
+  
+  Gravity	=	0	0	0
+  
+  FlowDir	=	1	# no effect
+  
+  InflowVel	=	-0.14	# no effect
+  RadInlet	=	3.5e-3	# no effect
+}  
+
+# adaptive refinement
+AdaptRef {
+  Freq		=	0	# no effect
+  FinestLevel	=	1	# no effect
+  Width		=	4.9e-4 # no effect
+}
+
+# miscellaneous
+
+NumDropRef	=	1 #0
+CouplingSteps	=	-1	# -1 = till convergence
+InitialCond	=	1	# stat. flow
+InitialFile	=	xxx
+MeshFile	=	4	# num subdivisions of cube
+EnsightCase	=	surfTens
+EnsightDir	=	ensight
