@@ -1,5 +1,5 @@
 //**************************************************************************
-// File:    ipdrops.cpp                                                    *
+// File:    ipfilm.cpp                                                    *
 // Content: test program for the instat. poisson-problem                   *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
 //          IGPM RWTH Aachen                                               *
@@ -64,6 +64,7 @@ template<class Coeff>
 void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
   double nu, double theta, double tol, int maxiter)
 {
+  typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
   
   MultiGridCL& MG= Poisson.GetMG();
   IdxDescCL& idx= Poisson.idx;
@@ -89,7 +90,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
   SSORPcCL pc(1.0);
   typedef GMResSolverCL<SSORPcCL> SolverT;
   SolverT solver(pc, 50, maxiter, tol);
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, SolverT>
+  InstatPoissonThetaSchemeCL<MyPoissonCL, SolverT>
     ThetaScheme(Poisson, solver, theta, true);
 
   ThetaScheme.SetTimeStep(dt, nu);
