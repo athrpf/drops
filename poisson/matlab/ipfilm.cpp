@@ -15,7 +15,43 @@
 #include "../../out/output.h"
 #include <fstream>
 
+/**
+This code has the same functionality as poisson/ipfilm.cpp, but is extended by a matlab interface.
+It solves a convection-diffusion equation on a brick-shaped domain with certain bnd conditions
+modeling the (effective) heat transfer in a flat film. Bnd conditions:
+- Dirichlet bc at x=0 (inflow)
+- Natural   bc at y=0 (heating)
+- all other bnds: homogeneous natural bc
 
+The program can be called as a mex-function from matlab with the following syntax:
+
+  [MaxIter, Tsol] = ipfilm( T0, T_in, F, lambda, xl, yl, zl, nx, ny, nz, dt, nt, Theta, Tol, Iter, Flag)
+  
+scalar parameters:
+------------------
+  xl, yl, zl:     length of brick in x-/y-/z-direction
+  nx, ny, nz:     number of intervals in x-/y-/z-direction, i.e. Nxyz = (nx+1) x (ny+1) x (nz+1) grid points
+  dt, nt:         length and number of time steps
+  Theta:          parameter of one-step theta-scheme, controlling implicitness of time discretization
+  Tol, Iter:      stopping criterion for the iterative solver (GMRES)
+  Flag:           flag for general purposes, not used at the moment
+
+  MaxIter (output):        number of iterations spent in the iterative solver (maximum over all time steps)
+
+matrix parameters:
+------------------
+  T0:     Nxyz x 1         initial temperature distribution T0(x,y,z)
+  T_in:   Nyz  x Nt        temperature at inflow (x=0): T_in(y,z,t)
+  F:      Nxyz x Nt        rhs term F(x,y,z,t)
+
+  Tsol (output):   Nxyz x nt        solution of the conv-diff problem, 
+                                    temperature distribution T(x,y,z,t) omitting initial time step
+
+Here Nt = nt+1,    Nyz = (ny+1) x (nz+1),    Nxyz = (nx+1) x Nyz.
+
+As one can see, the columns of the matrices correspond to the different time steps.
+
+**/
 
 extern void _main();
 
@@ -84,11 +120,11 @@ class MatlabConnectCL
 	  	    mexErrMsgTxt("Input F must be a double matrix.");
  	 
 	 	// Check the dimensions of the input matrices.
-	 	if (mxGetM(prhs[0]) != Nxyz || mxGetM(prhs[0])!= 1)
+	 	if (mxGetM(prhs[0]) != Nxyz || mxGetN(prhs[0])!= 1)
 	 	    mexErrMsgTxt("Input T0 has wrong dimensions.");
-	 	if (mxGetM(prhs[1]) != Nyz  || mxGetM(prhs[1])!= P.nt+1)
+	 	if (mxGetM(prhs[1]) != Nyz  || mxGetN(prhs[1])!= P.nt+1)
 	 	    mexErrMsgTxt("Input T_in has wrong dimensions.");
-	 	if (mxGetM(prhs[2]) != Nxyz || mxGetM(prhs[2])!= P.nt+1)
+	 	if (mxGetM(prhs[2]) != Nxyz || mxGetN(prhs[2])!= P.nt+1)
 	 	    mexErrMsgTxt("Input F has wrong dimensions.");
  	 
 	 	// Get the matrix input arguments.
