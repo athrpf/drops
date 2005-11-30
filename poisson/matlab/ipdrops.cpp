@@ -88,18 +88,18 @@ class MatConnect
       {
       	case 0: // y-z plane
       	{
-      	  int nY= static_cast<int>(_YLen*p[0]+0.5),  nZ= static_cast<int>(_ZLen*p[1]+0.5);
+      	  int nY= static_cast<int>(_YLen*p[0]/_SpIncrY+0.5),  nZ= static_cast<int>(_ZLen*p[1]/_SpIncrZ+0.5);
       	  return nZ*(_MeshRefY+1) + nY;
       	}
       	case 1: // x-z plane
       	{
-      	  int nX= static_cast<int>(_XLen*p[0]+0.5),  nZ= static_cast<int>(_ZLen*p[1]+0.5);
+      	  int nX= static_cast<int>(_XLen*p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(_ZLen*p[1]/_SpIncrZ+0.5);
       	  return nZ*(_MeshRefX+1) + nX;
       	}
-      	case 2: // x-y plane
+      	case 2: default: // x-y plane
       	{
-      	  int nX= static_cast<int>(_XLen*p[0]+0.5),  nY= static_cast<int>(_YLen*p[1]+0.5);
-      	  return nY*(_MeshRefY+1) + nX;
+      	  int nX= static_cast<int>(_XLen*p[0]/_SpIncrX+0.5),  nY= static_cast<int>(_YLen*p[1]/_SpIncrY+0.5);
+      	  return nY*(_MeshRefX+1) + nX;
       	}
       }
     }
@@ -111,13 +111,15 @@ class MatConnect
       switch(num)
       {
       	case 0: case 1: // y-z plane
-      	  count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p);
+      	  count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p); 
+          break;
       	case 2: case 3: // x-z plane
       	  count= nT*(_MeshRefX+1)*(_MeshRefZ+1) + getLexNum<1>(p);
-      	case 4: case 5: // x-y plane
+          break;
+      	case 4: case 5: default: // x-y plane
       	  count= nT*(_MeshRefX+1)*(_MeshRefY+1) + getLexNum<2>(p);
       }
-    
+      
       return *(_BndData[num]+count);
     }
     
@@ -144,7 +146,6 @@ class MatConnect
     
     static void setInitialData()
     {
-      int count;
       double xc, yc, zc;
       
       for (ci p= _NodeMap.begin(); p!= _NodeMap.end(); p++)
@@ -153,12 +154,11 @@ class MatConnect
         yc= p->first.second.second;
         zc= p->first.second.first;
         
-        int a= static_cast<int>((_MeshRefX*xc/_XLen)+0.5);
-        int b= static_cast<int>((_MeshRefY*yc/_YLen)+0.5);
-        int c= static_cast<int>((_MeshRefZ*zc/_ZLen)+0.5);
-      
-        count= a*_FacePtsYZ + c*(_MeshRefY+1) + b;
-        
+        const int a= static_cast<int>((_MeshRefX*xc/_XLen)+0.5);
+        const int b= static_cast<int>((_MeshRefY*yc/_YLen)+0.5);
+        const int c= static_cast<int>((_MeshRefZ*zc/_ZLen)+0.5);
+
+        const int count= a*_FacePtsYZ + c*(_MeshRefY+1) + b;
         //mexPrintf("xc, yc, zc, uh: %g %g %g %g\n", xc, yc, zc, *(_T0+count));
         //mexPrintf("a, b, c: %d %d %d\n", a, b, c);
         //mexPrintf("count: %d\n", count);
@@ -263,11 +263,7 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel)
           for (VertexCL::const_BndVertIt VertIter=It->GetVertex(i)->GetBndVertBegin();
             VertIter!=It->GetVertex(i)->GetBndVertEnd(); ++VertIter)
               if (VertIter->GetBndIdx()==0 || VertIter->GetBndIdx()==1)
-              {
                 It->SetRegRefMark();
-                goto mark;
-              }
-      mark:;
     }
 }
 */
@@ -387,7 +383,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
   }
   
   *CGMaxIter= static_cast<double>(MaxIterCG);
-  mexPrintf("max. Anzahl CG-Iterationen tatsaechlich: %d\n", MaxIterCG);
+  mexPrintf("Anzahl CG-Iterationen (max. pro Zeitschritt): %d\n", MaxIterCG);
   mexPrintf("Norm des max. Residuums CG: %g\n", MaxResCG);
   
   //MatCon->printData();
