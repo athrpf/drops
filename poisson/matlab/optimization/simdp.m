@@ -1,4 +1,4 @@
-function [Val,Td]=simdp(C_data,L_data)
+function [Iter,Td]=simdp(C_data,L_data)
 
 % ------------------------------------------------------------------------
 % PROBLEM: LOESUNG DER GLEICHUNG 
@@ -49,6 +49,9 @@ ndt= C_data(8);
 nu= C_data(9);
 Flag= C_data(10);
 theta= C_data(11);
+T0_c= C_data(12);
+qh_c= C_data(13);
+Solver= C_data(14);
 
 npx= nix+1;
 npyz= (niy+1)*(niz+1);
@@ -60,18 +63,26 @@ cgtol= L_data(5);
 cgiter= L_data(6);
 M= L_data(7);
 
-T0= 38*ones(npyz,npx);
-qh= 6e-3*ones(npyz, ndt+1);
+T0= T0_c*ones(npyz,npx);
+
+% % bereite die echten Messdaten vor
+% R= produceMeasData(100,200,97,197,1);
+% 
+% T0_ls= reshape(R,19109,1);
+% T0= T0_ls*ones(1,npx);
+
+qh= qh_c*ones(npyz, ndt+1);
 qc= zeros(npyz, ndt+1);
 
 % Loesung mit DROPS
+work_dir= cd;
 cd ..;
-[Value,T]= ipdrops(T0, qh, qc, M, xl, yl, zl, nu, nis(1), nis(2), nis(3), dt, theta, cgtol, cgiter, Flag, BndRef);
-cd optimization;
+[Val1,T]= ipdrops(T0, qh, qc, M, xl, yl, zl, nu, nis(1), nis(2), nis(3), dt, theta, cgtol, cgiter, Flag, BndRef);
+cd( work_dir);
 
 Plane_Pos= round(M*nix/xl);
 Td= [T0(:,Plane_Pos+1) T];
-Val= Value;
+Iter= Val1;
 
 %figure(2);plotsol(npc,ndt,sol)
 

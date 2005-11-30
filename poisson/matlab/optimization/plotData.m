@@ -31,23 +31,65 @@ qcf=qcfun(gl,ni,npt,func);
 %------------------- plot cost functional -----------------------
 
 figure(1)
-semilogy(J);xlabel('Iterations');ylabel('J');
-
-return
+xlim([1 size(J,2)]);
+plot(J);
+%semilogy(J);
+xlabel('Iterations');ylabel('J');
+% 
+% return
 
 %--------------- plot approximation over time -------------------
 
-niter=size(J,2);
+niter=size(J,2)
 figure(2)
-clear qcd fqc
+%set(gca,'FontSize',20)
+
 for t=1:ndt+1
     qcd(:,:)=qc_iter(niter,:,:);
-    plotq(gl,ni,qcd,t,0)
-%     hold on
-%     plotq(gl,ni,qcf,t,1)
-%     hold off
+%     set(gcf,'PaperUnits','centimeters','PaperPosition',[0.1 0.1 18 24]);
+    plotq(gl,ni,qcd,t,0,0)
+    hold on
+    plotq(gl,ni,qcf,t,1,0)
+    hold off
     fqc(t)=getframe(gcf);
+    %legend('computed','exact');
 end
+
+return 
+
+% niter=size(J,2)
+% figure(117)
+% %set(gca,'FontSize',20)
+% 
+% %xlim([1 size(J,2)]);
+% %semilogy(J);xlabel('Iterations');ylabel('J');
+% for cnt= [10 100 300]
+% subplot(2,1,1)
+% t=50;
+%     qcd(:,:)=qc_iter(cnt,:,:);
+%     %set(gcf,'PaperUnits','centimeters','PaperPosition',[0.1 0.1 18 24]);
+%     plotq(gl,ni,qcd,t,0,1)
+%     hold on
+%     plotq(gl,ni,qcf,t,1,1)
+%     hold on
+%     fqc(t)=getframe(gcf);
+%     %legend('computed','exact');
+%     %end
+% subplot(2,1,2)
+% clear qcd fqc
+% %for t=1:ndt+1
+% t=50;
+%     qcd(:,:)=qc_iter(cnt,:,:);
+%     %set(gcf,'PaperUnits','centimeters','PaperPosition',[0.1 0.1 18 24]);
+%     plotq(gl,ni,qcd,t,0,2)
+%     hold on
+%     plotq(gl,ni,qcf,t,1,2)
+%     hold on
+%     fqc(t)=getframe(gcf);
+%     %legend('computed','exact');
+% end
+
+return
 
 %-------------- plot approximation over iterations --------------
 

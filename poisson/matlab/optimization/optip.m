@@ -28,59 +28,75 @@ ndt= C_data(8);
 npt= ndt+1;
 time= [0:dt:ndt*dt];
 
-% create measurement data
-[Val,Td]= simdp(C_data,M_data);
-DROPS_Val(1,1)= Val;
-% qcf= qcfun(gl,ni,npt,func);
-% [Val,Timess]= simip(qcf,C_data,M_data);
-% DROPS_Val(1,2)= Val;
-% DROPS_Val(1,3)= 0;
+%----- create measurement data - begin
 
+tic
+[Val1,Td]= simdp(C_data,M_data);
+comptime(1,1)= toc;
+DROPS_Iter(:,1)= Val1;
 
-% Read Measurement Data
-% oeffne Datei im (r)ead-Modus
-fid= fopen('Daten_gefiltert.dat','r');
+% exakte Messdaten
+qcf= qcfun(gl,ni,npt,func);
+[Val1,Timess]= simip(qcf,C_data,M_data);
 
-% lese Matrix ein
-R= fscanf(fid,'%e',[64,inf]);
+% % Messfehler
+% sigma= 0.7;
+% omega= randn(size(Timess,1), size(Timess,2));
+% Timess= Timess+sigma*omega;
 
-% schliesse Datei
-fclose(fid);
-
-Timess=[38*ones(8192,1),reshape(R,8192,190)]-Td;
-
+% % bereite die echten Messdaten vor
+% R= produceMeasData(100,200,97,197,50);
+% 
+% Rresh= reshape(R,19109,50);
+% T0_ls= Rresh(:,1);
+% 
+% Timess=[T0_ls,Rresh]-Td;
+% clear R Rresh T0_ls;
 
 % start approximation
-qc= zeros(npyz,ndt+1);
-%qc= qcf+1e-3*rand(npyz,ndt+1);
+qc= 278.652e-3*ones(npyz,ndt+1);
 
-niter= 0;
+tic
+[Val1,Tihat]= simip(qc,C_data,D_data);
+comptime(1,2)= toc;
+DROPS_Iter(:,2)= Val1;
+
+% Sicherung der Messdaten
+Tm= Timess+Td;
+
+%----- create measurement data - end
 
 save OptData func C_data M_data D_data A_data S_data;
+save OptResult0 Tm DROPS_Iter comptime
+
+niter= 0;
 
 % Optimization
 while 1    
     niter= niter+1
+    
     % direct problem
-    tic
-    [Val,Tihat]= simip(qc,C_data,D_data);
-    comptime(niter,1)= toc;
-    DROPS_Val(niter+1,1)= Val;
+    %Tihat= Tihat-beta*Tisens;
+    
     % calculate defect
     dThat= Tihat-Timess;
     norm_err= norm(dThat,'fro')^2*dt*dyz;
-    J(niter)= norm_err
-
-    qc_iter(niter,:,:)= qc;
-    That_iter(niter,:,:)= Td+Tihat;
+    J= norm_err
+    
+    % calculate temperature
+    T= Tihat+Td;
+    
+    savename= sprintf('OptResult%d',niter);
+    save(savename,'qc','T','J','DROPS_Iter','comptime');
+    
     if (norm_err < epsT) | (niter >= niter_max)
         break
     else
         % adjoint problem
         tic
-        [Val,lambda]= simipad(fliplr(2*dThat),C_data,A_data);
-        comptime(niter,2)= toc;
-        DROPS_Val(niter+1,2)= Val;
+        [Val1,lambda]= simipad(fliplr(2*dThat),C_data,A_data);
+        comptime(1,1)= toc;
+        DROPS_Iter(:,1)= Val1;
         Tad= fliplr(lambda);
         % determine search direction 
         if niter==1
@@ -92,13 +108,16 @@ while 1
         end
         % sensitivity problem
         tic
-        [Val,Tisens]= simip(Pn,C_data,S_data);
-        comptime(niter,3)= toc;
-        DROPS_Val(niter+1,3)= Val;
-        % date up approximation 
+        [Val1,Tisens]= simip(Pn,C_data,S_data);
+        comptime(1,2)= toc;
+        DROPS_Iter(:,2)= Val1;
+        % update approximation 
         beta= sum(diag(dThat'*Tisens))/(norm(Tisens,'fro'))^2;
         qc= qc-beta*Pn;  
         Tad_old= Tad;
+        
+        % direct problem
+        Tihat= Tihat-beta*Tisens;
     end
-    save OptResult qc_iter J DROPS_Val;
+    
 end

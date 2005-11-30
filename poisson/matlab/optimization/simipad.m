@@ -1,4 +1,4 @@
-function [Val,lambda]=simipad(dTmess,C_data,L_data)
+function [Iter,lambda]=simipad(dTmess,C_data,L_data)
 
 % set common data
 xl= C_data(1);
@@ -12,6 +12,7 @@ ndt= C_data(8);
 nu= C_data(9);
 Flag= C_data(10);
 theta= C_data(11);
+Solver= C_data(14);
 
 npx= nix+1;
 npyz= (niy+1)*(niz+1);
@@ -29,13 +30,14 @@ qc= zeros(npyz, ndt+1);
 %qc= qcp*ones(nfp, ndt+1);
 
 % Loesung mit DROPS
+work_dir= cd;
 cd ..;
-[Value,T]= ipdrops(T0, qh, qc, M, xl, yl, zl, nu, nis(1), nis(2), nis(3), dt, theta, cgtol, cgiter, Flag, BndRef);
-cd optimization;
+[Val1,T]= ipdrops(T0, qh, qc, M, xl, yl, zl, nu, nis(1), nis(2), nis(3), dt, theta, cgtol, cgiter, Flag, BndRef);
+cd( work_dir);
 
 Plane_Pos= round(M*nix/xl);
 lambda= [T0(:,Plane_Pos+1) T];
-Val= Value;
+Iter= Val1;
 
 %figure(2);plotsol(npc,ndt,sol)
 

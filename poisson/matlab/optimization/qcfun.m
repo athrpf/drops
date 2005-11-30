@@ -40,7 +40,8 @@ switch flag
     for t=1:npt
         count=1;
         for i=0:dyd:yl
-            qcfm(count,:)=sin((zd/zl)*4*pi+(t/npt)*4*pi);
+            qcfm(count,:)=278.652e-3+200e-3*sin((zd/zl)*4*pi+(t/npt)*4*pi);
+            %qcfm(count,:)=1e-3*sin((zd/zl)*2*pi+(t/npt)*2*pi);
             count=count+1;
         end
         qcfv=reshape(qcfm,npyz,1);
