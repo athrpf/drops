@@ -1,4 +1,97 @@
 %============================================================================
+\section{Durchf"uhren einer Simulation mit DROPS}
+%============================================================================
+
+\subsection{Erste Schritte: "Ubersetzung des Quelltextes}
+
+Zun"achst muss in der Datei \prg{drops.conf} im DROPS-Rootverzeichnis die verwendete
+Rechnerarchitektur eingetragen werden (z.B. \prg{ARCH=LINUX}). Die Compilereinstellungen
+erfolgen dann in der Datei \prg{arch/<Architekur>/mk.conf}.
+
+Im DROPS-Rootverzeichnis befindet sich das top-level-Makefile. Zu dessen
+Benutzung muss GNU Make installiert sein. Mit \prg{make <rule>} bzw. 
+\prg{gmake <rule>} 
+wird die entsprechende Regel ausgef"uhrt, wobei \prg{<rule>} f"ur eine der folgenden
+Regeln steht:\\\\
+\begin{tabular}[ht]{ll}
+    \prg{dep}       &  erzeugt automatisch die Abh"angigkeiten und legt ein entsprechendes\\
+                    &  dependency-file an.\\
+    \prg{all}       &  erzeugt alle ausf"uhrbaren Programme in DROPS.\\
+    \prg{doc}       &  legt eine html-Dokumentation an (mit doxygen).\\ 
+    \prg{stat}      &   listet eine Statistik aller Dateien auf.\\
+    \prg{clean}     &  l"oscht alle Objektdateien sowie alle ausf"uhrbaren Dateien.\\
+    \prg{distclean} &  wie \prg{clean}, l"oscht zus"atzlich alle Dateien mit Endungen \prg{.off}, \prg{.dat} sowie \prg{geom/topo.cpp},\\ 
+                    & das dependency-file und die Dokumentation.\\
+\end{tabular}\\\\
+Zun"achst m"ussen die Abh"angigkeiten mit
+\begin{Code} \begin{verbatim}
+    make dep
+\end{verbatim} \end{Code}
+erzeugt werden. Erst dann kann das eigentliche Kompilieren beginnnen.         
+               
+In den jeweiligen Unterverzeichnissen befinden sich die lokalen Makefiles. 
+Diese verstehen als Regeln 
+\begin{itemize}
+  \item \prg{all}, \prg{clean}, \prg{distclean}, die im jeweiligen Verzeichnis wirken,
+  \item \prg{dep}, \prg{doc} rufen die entsprechende Regel des top-level-Makefiles auf,
+  \item sowie die jeweiligen Namen der executables und Objektdateien in diesem Verzeichnis.
+\end{itemize}
+
+
+\subsubsection{Hinweise f"ur die DROPS-Entwickler:}
+
+
+Damit die automatische Generierung der Abh"angigkeiten funktioniert, m"ussen
+im Quelltext alle eingebundenen DROPS-Header-Files \emph{immer} mit Pfadangabe 
+versehen sein (auch wenn das Header-File im selben Verzeichnis steht!). 
+Also muss z.B. in \prg{geom/boundary.cpp} stehen: 
+
+\begin{Code} \begin{verbatim}
+#include "geom/boundary.h"
+\end{verbatim}
+\end{Code}
+statt    
+\begin{Code}
+\begin{verbatim}
+#include "boundary.h"
+\end{verbatim}
+\end{Code}
+
+
+Wenn sich die Abh"angigkeiten ge"andert haben, k"onnen diese automatisch 
+mit Hilfe des top-level-Makefiles neu erzeugt werden: Dazu muss im 
+DROPS-Rootverzeichnis der Befehl
+\begin{Code} \begin{verbatim}
+    make dep
+\end{verbatim} \end{Code}
+ausgef"uhrt werden.
+
+Wenn neue executables hinzugekommen sind, m"ussen diese im jeweiligen lokalen
+Makefile eingetragen werden, indem sie der Variablen \prg{EXEC} hinzugef"ugt werden
+und eine neue Regel zum Linken des executable angelegt wird.
+
+Referenzen:
+\begin{itemize}
+  \item How to write a Makefile:\qquad  \verb|http://vertigo.hsrl.rutgers.edu/ug/make_help.html|
+  \item GNU Make:\qquad                 \verb|http://www.gnu.org/manual/make/index.html|
+\end{itemize}
+
+\subsection{Starten einer Rechnung}
+Nachdem die ausf"uhrbare Datei erzeugt wurde, editiert man die Parameterdatei, um
+die Rechnung den experimentellen Gegebenheiten anzupassen, siehe dazu Anhang \ref{s:ParamFiles}. 
+Der Aufruf des Programms heisst dann: \prg{./<executable> <K"urzel>.param}. 
+Einige der executables verwenden keine Parameterdateien, sondern "ubernehmen 
+direkt Kommandozeilenparameter. 
+
+Erfolgt eine Ensight-Ausgabe der berechneten Daten zur Visualisierung der L"osung, muss daf"ur
+Sorge getragen werden, dass im Arbeitsverzeichnis ein Verzeichnis angelegt wird mit dem Namen,
+der in der Parameterdatei unter \prg{EnsightDir} angegeben ist. Geschieht dies nicht, so
+bricht eine durchzuf"uhrende Rechnung kurz nach Beginn ab (wenn zum ersten Mal Ensight-Daten
+geschrieben werden sollen). Da das von Ensight ben"otigte .case-File w"ahrend der
+Rechnung laufend aktualisiert wird, kann auch bei noch laufender Rechnung auf
+die bereits berechneten Daten zugegriffen werden.
+ 
+%============================================================================
 \section{Mit GAMBIT Gitter f"ur DROPS erzeugen}
 %============================================================================
 \label{s:Gambit}

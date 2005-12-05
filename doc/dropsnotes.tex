@@ -819,11 +819,19 @@ DROPS-Verzeichnishierarchie.  In \prg{poisson}, \prg{stokes} und
 Theta-Schema enth"alt.
 
 \subsection{$\theta$-Schema}
-Diese Verfahren ergeben sich dadurch, da"s man
+Diese Verfahren ergeben sich dadurch, da"s man in der gew"ohnlichen Differentialgleichung
+\[
+  u_t = F(u)
+\]
+die Terme durch folgende Approximationen ersetzt:
 $$
-\partial_t u \approx \frac{(1-\theta) u^\text{alt} + \theta u^\text{neu}}{dt}
+  u_t \approx \frac{(1-\theta) u^\text{alt} + \theta u^\text{neu}}{dt}
 $$
-in die entsprechende Differentialgleichung einsetzt. Man erh"alt f"ur
+sowie
+\[
+  F(u) \approx (1-\theta) F(u^\text{alt}) + \theta F(u^\text{neu}).
+\]
+Man erh"alt f"ur
 jeden Zeitschritt ein (nicht-) lineares Gleichungssystem. Bei den Stokes-
 bzw.\ Navier-Stokes-Gleichungen wird der Druck stets vollimplizit
 diskretisiert.  Auf diese Weise wird die Berechnung eines Startwertes
@@ -927,7 +935,7 @@ m"oglich.
 \begin{verbatim}
 class EnsightP2SolOutCL
 {
-    EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx);
+    EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx, bool binary=true);
     // call CaseBegin() before any other member function
     void CaseBegin ( const char casefileName[], Uint numsteps= 0);
     void DescribeGeom  ( const char geoName[], std::string fileName, bool timedep= false);
@@ -955,10 +963,13 @@ vektorwertiger Variablen und werden einmal zu Anfang aufgerufen. Der Parameter
 \prg{timedep} gibt dabei an, ob es sich um transiente Daten handelt. Mit den
 Funktionen \prg{putXXX} k"onnen die Daten dann tats"achlich abgespeichert
 werden. Bei transienten Daten muss dabei noch der entsprechende Zeitpunkt
-angegeben werden. Sind alle Daten f"ur einen Zeitschritt geschrieben, so sollte 
+angegeben werden. 
+Sind alle Daten f"ur einen Zeitschritt geschrieben, so sollte 
 \prg{Commit} aufgerufen werden, um den Zeitschritt im case-file eintragen zu lassen. 
 Somit k"onnen die bereits berechneten Zeitschritte visualisiert werden, w"ahrend die 
-"ubrige Rechnung noch l"auft.
+"ubrige Rechnung noch l"auft. Die Daten werden standardm"a"sig im bin"aren Format 
+abgespeichert, durch Setzen des entsprechenden Konstruktorparameters \prg{binary}
+kann auch auf ASCII-Ausgabe umgeschaltet werden.
 
 Hier ein Beispiel zur Ausgabe von transienten skalaren Daten bei festem Gitter
 und festem Geschwindigkeitsfeld:
@@ -994,12 +1005,99 @@ ensight.CaseEnd();
 \end{verbatim}
 \end{Code}
 
+\subsection{Einlesen von bereits berechneten Daten im Ensight-Format}
+\prg{ReadEnsightP2SolCL}: Einlesen eines bereits berechneten Datensatzes zur 
+Fortf"uhrung einer abgebrochenen Rechnung.
+\begin{Code}
+\begin{verbatim}
+class ReadEnsightP2SolCL
+{
+  private:
+    const MultiGridCL* _MG;
+
+    void CheckFile( const std::ifstream&) const;
+    
+  public:
+    ReadEnsightP2SolCL( const MultiGridCL& mg, bool binary=true)
+      : _MG( &mg) {}
+
+    template<class BndT>
+    void ReadScalar( const std::string&, VecDescCL&, const BndT&) const;
+    template<class BndT>
+    void ReadVector( const std::string&, VecDescCL&, const BndT&) const;
+};
+
+\end{verbatim}
+\end{Code}
+Die Klasse \prg{ReadEnsightP2SolCL} liest die Werte aus den 
+Dateien \prg{XXXX.scl}, \prg{XXXX.pr} und \prg{XXXX.vel} ein. Es ist also n"otig, die 
+Dateien im Ensight-Vezeichnis, die den fortzusetzenden Zeitschritt beschreiben, 
+dementsprechend umzubenennen. Es ist zu beachten, dass die Geometriedaten \emph{nicht}
+ausgelesen werden. Um ein zu den abgespeicherten Daten passendes Gitter muss man sich also
+selber k"ummern\footnote{ToDo: Das Multigrid sollte abgespeichert und wieder eingelesen werden
+k"onnen. Das Ensight-Geometrieformat ist dazu allerdings nicht geeignet (keine Abspeicherung
+der verschiedenen Levels m"oglich).}.
+Sollen die Daten aus den Dateien eingelesen werden, so ist der Parameter \prg{InitialCond} 
+in der benutzten \prg{.param}-Datei auf den Wert $3$ zu setzen. Man beachte, dass die bereits 
+berechneten Werte durch die Werte der fortsetzenden Rechnung "uberschrieben werden.
+Die Funktionen \prg{ReadScalar} und \prg{ReadVector} lesen die entsprechenden Gr"o"sen und 
+die Randbedingungen des Problems ein. Dabei ist zu beachten, dass diese Funktionen eine Datei im Bin"arformat erwarten, solange 
+der Parameter \prg{binary} nicht auf \prg{false} gesetzt wird. Hier ein Beispiel zur Anwendung:
+\begin{Code}
+\begin{verbatim}
+ReadEnsightP2SolCL reader( MG,false);
+reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+\end{verbatim}
+\end{Code}
+
+
+\subsubsection{Implementierungsdetails}
+
+Die Ausgabe \prg{EnsightP2SolOutCL} wurde um die M"oglichkeit erweitert, die Ausgabe im 
+bin"aren Format stattfinden zu lassen. Dazu wurde der Konstruktor der Klasse
+um den Parameter \prg{binary} erweitert, dessen default-Wert \prg{true} ist.
+Innerhalb der Funktionen \prg{putGeom}, \prg{putScalar} und  \prg{putVector} 
+werden dann die errechneten Wert mit Hilfe der unions
+\begin{Code}
+\begin{verbatim}
+
+union showInt
+{
+    int i;
+    char s[sizeof(int)];
+};
+
+
+union showFloat
+{
+    float f;
+    char s[sizeof(float)];
+};
+
+\end{verbatim}
+\end{Code}
+in characters umgewandelt. 
+Nach der Umwandlung werden die Daten wie gewohnt in einen \prg{ofstream} geleitet.
+Ensight akzeptiert die Daten nur als \textit{float}s, d.h. beim evtl. Wiedereinlesen 
+der Daten in DROPS ist mit einem geringen Genauigkeitsverlust zu rechnen. F"ur den Fall, dass
+\prg{binary} den Wert \prg{false} hat, wird die urspr"ungliche ASCII-Ausgabe verwendet. 
+
+Nat"urlich wurden auch entsprechende "Anderungen an der Klasse \prg{class ReadEnsightP2SolCL}
+vorgenommen, d.h. der Konstruktor wurde ebenfalls um einen Parameter \prg{binary} erg"anzt.
+Nach dem Einlesen der Daten erfolgt wieder die Umwandlung "uber unions.
+
+Es ist im "Ubrigen wohl nicht m"oglich, die Geometrie-Datei im bin"aren Format und die Daten
+auf dem Gitter im ASCII-Fromat zu lesen/schreiben, da nur in der Geometrie-Datei das Flag 
+\prg{C binary} f"ur Ensight gesetzt werden darf.
+
+
 %============================================================================
 \section{{\tt misc}: Verschiedenes}
 %============================================================================
 
 \subsection{Einlesen von Parameterdaten}
-
 Zum Einlesen von Parameterdaten aus Dateien wird die Klasse \prg{ReadParamsCL}
 aus \prg{misc/params.h}
 zur Verf"ugung gestellt. Das Einlesen von Paramatern der Typen \prg{int}, 
@@ -1095,6 +1193,7 @@ Ein Beispiel f"ur konkrete Parameterklassen findet sich z.B. in
 \prg{levelset/params.h}. Die Bedeutung der Parameter ist in Anhang
 \ref{s:ParamFiles} 
 erl"autert.
+
 
 
 %============================================================================
