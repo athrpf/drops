@@ -754,7 +754,7 @@ template <class P1T, class VecDesc>
                 DebugNumericC);
         tl= maxlevel;
     }
-    Assert( tl == f.GetLevel(),
+    Assert( tl == vecdesc.GetLevel(),
             "RepairAfterRefine (P1): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
