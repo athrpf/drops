@@ -495,21 +495,21 @@ class TriangCL
 
     void clear () { triang_.clear(); }
     Uint size  (int lvl= -1) const
-        { MaybeCreate( StdIndex( lvl)); return triang_[StdIndex( lvl)].size(); }
+        { MaybeCreate( lvl); return triang_[StdIndex( lvl)].size(); }
 
     ptr_iterator begin (int lvl= -1)
-        { MaybeCreate( StdIndex( lvl)); return &*triang_[StdIndex( lvl)].begin(); }
+        { MaybeCreate( lvl); return &*triang_[StdIndex( lvl)].begin(); }
     ptr_iterator end   (int lvl= -1)
-        { MaybeCreate( StdIndex( lvl)); return &*triang_[StdIndex( lvl)].end(); }
+        { MaybeCreate( lvl); return &*triang_[StdIndex( lvl)].end(); }
     const_ptr_iterator begin (int lvl= -1) const
-        { MaybeCreate( StdIndex( lvl)); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].begin()); }
+        { MaybeCreate( lvl); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].begin()); }
     const_ptr_iterator end   (int lvl= -1) const
-        { MaybeCreate( StdIndex( lvl)); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].end()); }
+        { MaybeCreate( lvl); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].end()); }
 
     LevelCont&       operator[] (int lvl)
-        { MaybeCreate( StdIndex( lvl)); return triang_[StdIndex( lvl)]; }
+        { MaybeCreate( lvl); return triang_[StdIndex( lvl)]; }
     const LevelCont& operator[] (int lvl) const
-        { MaybeCreate( StdIndex( lvl)); return triang_[StdIndex( lvl)]; }
+        { MaybeCreate( lvl); return triang_[StdIndex( lvl)]; }
 
 };
 
@@ -1011,13 +1011,13 @@ template <class SimplexT>
   inline void
   TriangCL<SimplexT>::MaybeCreate(int lvl) const
 {
-    Assert ( StdIndex( lvl) >= 0 && StdIndex( lvl) < mg_.GetNumLevel(),
+    const int level= StdIndex( lvl);
+    Assert ( level >= 0 && level < mg_.GetNumLevel(),
         DROPSErrCL( "TriangCL::MaybeCreate: Wrong level."), DebugContainerC);
     if (triang_.size() != mg_.GetNumLevel()) {
         triang_.clear();
         triang_.resize( mg_.GetNumLevel());
     }
-    const int level= StdIndex( lvl);
     if (triang_[level].empty())
         TriangFillCL<SimplexT>::fill( mg_, triang_[level], level);
 }
