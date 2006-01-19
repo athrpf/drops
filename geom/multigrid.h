@@ -487,7 +487,7 @@ class TriangCL
     mutable std::vector<LevelCont> triang_;
     MultiGridCL&                   mg_;
 
-    int  StdIndex    (int lvl) const { return lvl >= 0 ? lvl : lvl + triang_.size(); }
+    inline int  StdIndex    (int lvl) const;
     inline void MaybeCreate (int lvl) const;
 
   public:
@@ -999,6 +999,13 @@ template <class SimplexT>
   TriangCL<SimplexT>::TriangCL (MultiGridCL& mg)
       : triang_( mg.GetNumLevel()), mg_( mg)
 {}
+
+template <class SimplexT>
+  inline int
+  TriangCL<SimplexT>::StdIndex(int lvl) const
+{
+    return lvl >= 0 ? lvl : lvl + mg_.GetNumLevel();
+}
 
 template <class SimplexT>
   inline void
