@@ -328,7 +328,7 @@ class Quad3CL
 
   public:
     static Uint GetNumPoints() { return 8; }
-    static const Point3DCL* GetPoints() { return reinterpret_cast<const Point3DCL*>(_points); }
+    static const Point3DCL* GetPoints() { return reinterpret_cast<const Point3DCL*>(_points[0]); }
 
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, double);
     static inline double Quad(const TetraCL&, scalar_fun_ptr);
@@ -411,7 +411,7 @@ class FaceQuad2CL
 
   public:
     static Uint GetNumPoints() { return 4; }
-    static const Point2DCL* GetPoints() { return reinterpret_cast<const Point2DCL*>(_points); }
+    static const Point2DCL* GetPoints() { return reinterpret_cast<const Point2DCL*>(_points[0]); }
 
     static inline double Quad(const double*);
     static inline SVectorCL<3> Quad(const SVectorCL<3>*);
