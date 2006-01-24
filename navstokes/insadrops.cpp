@@ -291,13 +291,13 @@ ModifyGridStep(DROPS::MultiGridCL& mg,
                 }
                 else
                     if (l > f_level) { it->SetRemoveMark(); }
-                    else; // nothing
+                    else {} // nothing
             }
             else { // Outside the shell; level should be c_level;
                 if (l < c_level) { it->SetRegRefMark(); }
                 else
                     if (l> c_level) { it->SetRemoveMark(); }
-                    else; // nothing
+                    else {} // nothing
             }
         }
         mg.Refine();
