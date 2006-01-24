@@ -583,12 +583,12 @@ int main (int argc, char** argv)
     }
 {
         std::cerr << "Enter nsdrops parameters: <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
-        double fp_tol; std::cin >> fp_tol;
-        double poi_tol; std::cin >> poi_tol;
-        int fp_maxiter; std::cin >> fp_maxiter;
-        int poi_maxiter; std::cin >> poi_maxiter;
-        double uzawa_red; std::cin >> uzawa_red;
-        int num_ref; std::cin >> num_ref;
+        double fp_tol= 0.0; std::cin >> fp_tol;
+        double poi_tol= 0.0; std::cin >> poi_tol;
+        int fp_maxiter= 0; std::cin >> fp_maxiter;
+        int poi_maxiter= 0; std::cin >> poi_maxiter;
+        double uzawa_red= 0.0; std::cin >> uzawa_red;
+        int num_ref= 0; std::cin >> num_ref;
         std::cerr << "fp_tol: " << fp_tol<< ", ";
         std::cerr << "poi_tol: " << poi_tol << ", ";
         std::cerr << "fp_maxiter: " << fp_maxiter << ", ";

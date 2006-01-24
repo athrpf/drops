@@ -110,7 +110,7 @@ int main( int argc, char **argv)
 {
   try{
     double dt= 0.01, diff= 1e-4;
-    int bsp, num_steps= 100;
+    int bsp= 0, num_steps= 100;
     
     if (argc>1)
         diff= atof( argv[1]);
@@ -128,7 +128,7 @@ int main( int argc, char **argv)
     typedef DROPS::StokesP2P1CL<DROPS::DummyStokesCoeffCL> StokesOnBrickCL;
     typedef StokesOnBrickCL                                                  MyStokesCL;
     
-    int num;
+    int num= 0;
     std::cout << "# Unterteilungen: "; std::cin >> num;
     std::cout << "Beispielnr.: "; std::cin >> bsp;
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);

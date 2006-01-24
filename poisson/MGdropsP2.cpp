@@ -82,10 +82,10 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
 //    CheckMGData( MGData.begin(), MGData.end() );
     const_MGDataIterCL finest= --MGData.end();
 
-    Uint sm;
-    int lvl;
+    Uint sm= 0;
+    int lvl= 0;
     Uint nit;
-    double tol;
+    double tol= 0.0;
     std::cerr << "tolerance: "; std::cin >> tol;
     std::cerr << "how many levels? (-1=all) > "; std::cin >> lvl;
 

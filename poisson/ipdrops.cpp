@@ -350,8 +350,8 @@ int main()
     
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
   
-    double dt;
-    int time_steps, brick_ref;
+    double dt= 0.0;
+    int time_steps= 0, brick_ref= 0;
     
     //dt= 0.000666;
     //time_steps= 190;

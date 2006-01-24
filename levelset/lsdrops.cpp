@@ -126,7 +126,7 @@ int main( int argc, char **argv)
     typedef DROPS::StokesP2P1CL<DROPS::DummyStokesCoeffCL> StokesOnBrickCL;
     typedef StokesOnBrickCL                                                  MyStokesCL;
     
-    int num;
+    int num= 0;
     std::cout << "# Unterteilungen: "; std::cin >> num;
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);
     const bool IsNeumann[6]= 

@@ -246,8 +246,8 @@ int main()
     
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
   
-    double dt;
-    int time_steps, brick_div;
+    double dt= 0.0;
+    int time_steps= 0, brick_div= 0;
   
     std::cerr << "\nDelta t = "; std::cin >> dt;
     std::cerr << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
