@@ -10,7 +10,8 @@
 #include <algorithm>
 #include <iosfwd>
 #include <string>
-#include <ctime>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 
 namespace DROPS
@@ -253,18 +254,24 @@ template <class type> Ulint IdCL<type>::_Counter = 0;
 class TimerCL
 {
   private:
-    clock_t _t_begin, _t_end;
+    rusage _t_begin, _t_end;
     double _time;
 
   public:
-    TimerCL(double time=0.) : _t_begin(clock()), _t_end(clock()), _time(time) {}
+    TimerCL(double time=0.) { Reset(time); }
 
     /// Start, stop, and read timer
     //@{
-    void Reset(double time= 0) { _time= time; _t_begin= clock(); }
-    void Start()               { _t_begin= clock(); }
-    void Stop()                { _t_end= clock(); _time+= double(_t_end - _t_begin)/CLOCKS_PER_SEC; }
     double GetTime() const     { return _time; }
+    void Reset(double time= 0) { _time= time; Start(); }
+    void Start()               { getrusage(RUSAGE_SELF,&_t_begin); }
+    void Stop()
+    {
+        getrusage(RUSAGE_SELF,&_t_end);
+        _time+= (_t_end.ru_utime.tv_sec - _t_begin.ru_utime.tv_sec)
+              + (_t_end.ru_stime.tv_sec - _t_begin.ru_stime.tv_sec)
+              + double(_t_end.ru_utime.tv_usec - _t_begin.ru_utime.tv_usec
+                      +_t_end.ru_stime.tv_usec - _t_begin.ru_stime.tv_usec)/1000000; }
     //@}
 };
 
