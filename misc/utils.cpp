@@ -23,9 +23,4 @@ DROPSErrCL::handle() const
     abort();
 }
 
-double TimerCL::_gtime= 0;
-clock_t TimerCL::_gt_begin= 0, 
-	TimerCL::_gt_end=0;
-
-
 } // end of namespace DROPS
