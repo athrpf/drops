@@ -128,7 +128,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     
     MultiGridCL& MG= Poisson.GetMG();
     IdxDescCL* c_idx=0;
-    TimerCL time;
+    TimerCL time, Ltime;
     MGDataCL MGData;
 
     for(MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(MG.GetLastLevel()), send=MG.GetTriangVertexEnd(MG.GetLastLevel());
@@ -150,14 +150,13 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
         tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
         if(lvl==MG.GetLastLevel())
         {
-	    time.GReset();
-	    time.GStart();
+	    Ltime.Reset();
             Poisson.x.SetIdx(&tmp.Idx);
             Poisson.b.SetIdx(&tmp.Idx);
             std::cerr << "Create System " << std::endl;
             Poisson.SetupSystem( tmp.A, Poisson.b);
 //            std::cerr << "A(0,0)= " << tmp.A.Data(unk,unk) << std::endl;
-	    time.GStop();
+	    Ltime.Stop();
         }
         else        
         {
@@ -174,7 +173,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     }
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime() 
-	      << " seconds including " << time.GetGTime() << " seconds for the largest system." << std::endl;
+	      << " seconds including " << Ltime.GetTime() << " seconds for the largest system." << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
     const_MGDataIterCL finest= --MGData.end();
