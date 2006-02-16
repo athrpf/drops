@@ -176,77 +176,7 @@ typedef InstatNSCL MyPdeCL;
 
 typedef DROPS::SVectorCL<3> (*fun_ptr)(const DROPS::SVectorCL<3>&, double);
 
-int
-CheckVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
-                          const DROPS::StokesVelBndDataCL,
-                          DROPS::VelVecDescCL>& fun,
-         fun_ptr f)
-{
-    using namespace DROPS;
-    int ret= 0;
-    const VertexCL* v= 0;
-    const EdgeCL* e= 0;
-    const DROPS::MultiGridCL& mg= fun.GetMG();
-    const double t= fun.GetTime();
-    const DROPS::Uint trilevel= fun.GetLevel();
-    std::cout << "Verts:" << std::endl;
-    double diff, emaxdiff= 0., vmaxdiff= 0.;
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=mg.GetTriangVertexBegin( trilevel),
-         theend= mg.GetTriangVertexEnd( trilevel); sit!=theend; ++sit) {
-        diff= (fun.val( *sit) - f( sit->GetCoord(), t)).norm();
-        if ( std::abs( diff) > vmaxdiff) { ++ret; vmaxdiff= std::abs( diff); v= &*sit; }
-    }
-    std::cout << "\n\nEdges:" << std::endl;
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit=mg.GetTriangEdgeBegin( trilevel),
-         theend= mg.GetTriangEdgeEnd( trilevel); sit!=theend; ++sit) {
-        diff = (fun.val( *sit, .5) - f( (sit->GetVertex( 0)->GetCoord()
-                                        +sit->GetVertex( 1)->GetCoord())*0.5, t)).norm();
-        if (std::abs( diff) > emaxdiff) { ++ret; emaxdiff= std::abs( diff); e= &*sit; }
-    }
-    {
-        std::cout << "maximale Differenz Vertices: " << vmaxdiff << " auf\n";
-        if (v) v->DebugInfo( std::cout);
-        std::cout << "maximale Differenz Edges: " << emaxdiff << " auf\n";
-        if (e) e->DebugInfo( std::cout);
-        std::cout << std::endl;
-    }
-    return ret;
-}
 
-void
-SetVel(DROPS::P2EvalCL< DROPS::SVectorCL<3>,
-                        const DROPS::StokesVelBndDataCL,
-                        DROPS::VelVecDescCL>& fun,
-       double t)
-{
-    const DROPS::Uint lvl= fun.GetLevel();
-    DROPS::MultiGridCL& mg= const_cast<DROPS::MultiGridCL&>( fun.GetMG());
-    for (DROPS::MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
-         theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
-        if (!fun.GetBndData()->IsOnDirBnd( *sit))
-            fun.SetDoF( *sit, InstatNSCL::LsgVel( sit->GetCoord(), t));
-    }
-    for (DROPS::MultiGridCL::TriangEdgeIteratorCL sit=mg.GetTriangEdgeBegin(lvl),
-         theend= mg.GetTriangEdgeEnd(lvl); sit!=theend; ++sit) {
-        if (!fun.GetBndData()->IsOnDirBnd( *sit))
-            fun.SetDoF( *sit, InstatNSCL::LsgVel( (sit->GetVertex( 0)->GetCoord()
-                                                   + sit->GetVertex( 1)->GetCoord())*0.5, t));
-    }
-}
-
-void
-SetPr(DROPS::P1EvalCL< double,
-                       const DROPS::StokesPrBndDataCL,
-                       DROPS::VecDescCL>& fun,
-      double t)
-{
-    const DROPS::Uint lvl= fun.GetLevel();
-    DROPS::MultiGridCL& mg= const_cast<DROPS::MultiGridCL&>( fun.GetMG());
-    for (DROPS::MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
-         theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
-        fun.SetDoF( *sit, InstatNSCL::LsgPr( sit->GetCoord(), t));
-    }
-}
 
 const double radiusorbit= 0.3; // Radius of the drops' orbit.
 const double radiusdrop= 0.15; // Initial radius of the drop.
