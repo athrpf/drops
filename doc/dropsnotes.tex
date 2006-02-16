@@ -364,9 +364,8 @@ class LevelsetP2CL
     void CreateNumbering( Uint level, IdxDescCL*);
     void DeleteNumbering();
     void Init( scalar_fun_ptr);
-    void SetVel( const DiscVelSolCL& vel);
     // call SetupSystem *before* calling SetTimeStep!
-    void SetupSystem();
+    void SetupSystem( const DiscVelSolCL& vel);
     void SetTimeStep( double dt);
     void DoStep();
     void Reparam( Uint steps, double dt);
