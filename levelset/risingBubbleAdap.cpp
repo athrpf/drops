@@ -19,9 +19,9 @@ double      delta_t= 0.05;
 DROPS::Uint num_steps= 5;
 const int   FPsteps= -1;
 
-// rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
-//                          -div u = 0
-//                               u = u0, t=t0
+// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
+//                        -div u = 0
+//                             u = u0, t=t0
 
 // Tropfendaten:
 DROPS::Point3DCL Mitte(0.5);
@@ -38,13 +38,11 @@ class ZeroFlowCL
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
     DROPS::SmoothedJumpCL rho, mu;
-    const double Re, We;
     DROPS::Point3DCL g;
 
     ZeroFlowCL() 
       : rho( DROPS::JumpCL( 1, 10), DROPS::H_sm, sm_eps),
-         mu( DROPS::JumpCL( 2, 1), DROPS::H_sm, sm_eps),
-        Re(1), We(1) 
+         mu( DROPS::JumpCL( 2, 1), DROPS::H_sm, sm_eps)
     { g[2]= -9.81; }
 };
 

@@ -574,7 +574,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
-    Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
+    Quad2CL<double> rho, mu, Phi, kreuzterm;
         
     SMatrixCL<3,3> T;
     
@@ -599,9 +599,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
         // and save it n.
         n.assign( *sit, *A->RowIdx, _BndData.Vel);
 
-        // rho = rho( Phi),    mu_Re= mu( Phi)/Re
-        rho=   Phi;     rho.apply( _Coeff.rho);
-        mu_Re= Phi;     mu_Re.apply( _Coeff.mu);     mu_Re*= 1./_Coeff.Re;
+        // rho = rho( Phi),    mu= mu( Phi)
+        rho= Phi;     rho.apply( _Coeff.rho);
+        mu=  Phi;     mu.apply( _Coeff.mu);
 
         // rhs = f + rho*g
         rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
@@ -611,7 +611,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
             for (int j=0; j<=i; ++j)
             {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
             }
@@ -629,9 +629,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         for (int k=0; k<3; ++k)
                             for (int l=0; l<3; ++l)
                             {
-                                // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
+                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
 
                                 mA( n.num[i]+k, n.num[j]+l)+= kreuzterm.quad( absdet);
                             }
@@ -653,9 +653,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                             
                             for (int l=0; l<3; ++l)
                             {
-                                // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
+                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
                                 cplA->Data[n.num[i]+k]-= kreuzterm.quad( absdet)*tmp[l];
                             }
                         }
@@ -692,7 +692,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     std::cerr << "entering SetupMatrices1: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
-    Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
+    Quad2CL<double> rho, mu, Phi, kreuzterm;
     LocalP2CL<> ls_loc;
     
     SMatrixCL<3,3> T;
@@ -713,12 +713,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
         locn.assign( *sit, *A->RowIdx, _BndData.Vel);
         ls_loc.assign( *sit, ls, t); // needed for restrictions
         Phi.assign( ls_loc);
-        // rho = rho( Phi),    mu_Re= mu( Phi)/Re
+        // rho = rho( Phi),    mu= mu( Phi)
         rho=   Phi;
         rho.apply( _Coeff.rho);
-        mu_Re= Phi;
-        mu_Re.apply( _Coeff.mu);
-        mu_Re*= 1./_Coeff.Re;
+        mu= Phi;
+        mu.apply( _Coeff.mu);
 
         // rhs = f + rho*g
         rhs.assign( *sit, _Coeff.f, t);
@@ -729,7 +728,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
             for (int j=0; j<=i; ++j)
             {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
             }
@@ -743,9 +742,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
                         mA( locn.num[i]+2, locn.num[j]+2)+= coupA[j][i];
                         for (int k=0; k<3; ++k)
                             for (int l=0; l<3; ++l) {
-                                // kreuzterm = \int mu/Re * (dphi_i / dx_l) * (dphi_j / dx_k)
+                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
                                 for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu_Re[m];
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
                                 mA( locn.num[i]+k, locn.num[j]+l)+= kreuzterm.quad( absdet);
                             }
                         mM( locn.num[i],   locn.num[j]  )+= coupM[j][i];

@@ -102,8 +102,7 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, v_inst_fun_ptr f, doub
 typedef P2EvalCL<double, BndCL, VecDescCL> P2FuncT;
 
 double therho( const Point3DCL& p) { return norm( 1e-2*p); }
-double themu( const Point3DCL& p) { return norm( 1e-2*std_basis<3>( 1) + p); }
-double theRe= 1e1;
+double themu( const Point3DCL& p) { return norm( 1e-2*std_basis<3>( 1) + p)/1e1; }
 Point3DCL theg= 9.81*std_basis<3>( 3);
 const BaryCoordCL bary( 0.25);
 const Point3DCL bary3d( 0.25);
@@ -120,7 +119,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     IdxT Numb[10];
     bool IsOnDirBnd[10];
     double ret= 0.;
-    Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
+    Quad2CL<double> rho, mu, Phi, kreuzterm;
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     P2FuncT ls( &vd2, &theBnd, &mg);
     SMatrixCL<3,3> T;
@@ -148,9 +147,9 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         rhs[4]= h( GetBaryCenter( *sit));
         Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
 
-        // rho = rho( Phi),    mu_Re= mu( Phi)/Re
-        rho=   Phi;     rho.apply( therho);
-        mu_Re= Phi;     mu_Re.apply( themu);     mu_Re*= 1./theRe;
+        // rho = rho( Phi),    mu= mu( Phi)
+        rho= Phi;     rho.apply( therho);
+        mu=  Phi;     mu.apply( themu);
 
         // rhs = f + rho*g
         rhs+= Quad2CL<Point3DCL>( theg)*rho;
@@ -158,7 +157,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         for (int i=0; i<10; ++i)
             for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
                 ret+= coupM[i][j] - coupA[i][j];
@@ -180,7 +179,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     IdxT Numb[10];
     bool IsOnDirBnd[10];
     double ret= 0.;
-    Quad2CL<double> rho, mu_Re, Phi, kreuzterm;
+    Quad2CL<double> rho, mu, Phi, kreuzterm;
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     SMatrixCL<3,3> T;
     double coupA[10][10], coupM[10][10];
@@ -208,9 +207,9 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         rhs[4]= h( GetBaryCenter( *sit));
         Phi[4]= ls( bary);
 
-        // rho = rho( Phi),    mu_Re= mu( Phi)/Re
-        rho=   Phi;     rho.apply( therho);
-        mu_Re= Phi;     mu_Re.apply( themu);     mu_Re*= 1./theRe;
+        // rho = rho( Phi),    mu= mu( Phi)
+        rho= Phi;     rho.apply( therho);
+        mu=  Phi;     mu.apply( themu);
 
         // rhs = f + rho*g
         rhs+= Quad2CL<Point3DCL>( theg)*rho;
@@ -218,7 +217,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         for (int i=0; i<10; ++i)
             for (int j=0; j<=i; ++j) {
                 // dot-product of the gradients
-                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu_Re);
+                const Quad2CL<double> dotGrad( dot( Grad[i], Grad[j]) * mu);
                 coupA[i][j]= coupA[j][i]= dotGrad.quad( absdet);
                 coupM[i][j]= coupM[j][i]= rho.quadP2(i,j, absdet);
                 ret+= coupM[i][j] - coupA[i][j];

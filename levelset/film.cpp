@@ -18,9 +18,9 @@
 
 DROPS::ParamFilmCL C;
 
-// rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
-//                          -div u = 0
-//                               u = u0, t=t0
+// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
+//                        -div u = 0
+//                             u = u0, t=t0
 
 
 class ZeroFlowCL
@@ -30,13 +30,13 @@ class ZeroFlowCL
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
     const DROPS::SmoothedJumpCL rho, mu;
-    const double Re, SurfTens;
+    const double SurfTens;
     const DROPS::Point3DCL g;
 
     ZeroFlowCL( const DROPS::ParamFilmCL& C) 
       : rho( DROPS::JumpCL( C.rhoF, C.rhoG ), DROPS::H_sm, C.sm_eps),
         mu(  DROPS::JumpCL( C.muF,  C.muG),   DROPS::H_sm, C.sm_eps),
-        Re( 1.), SurfTens( C.sigma), g( C.g)    {}
+        SurfTens( C.sigma), g( C.g)    {}
 };
 
 class DimLessCoeffCL
@@ -46,13 +46,13 @@ class DimLessCoeffCL
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
     const DROPS::SmoothedJumpCL rho, mu;
-    const double Re, SurfTens;
+    const double SurfTens;
     const DROPS::Point3DCL g;
 
     DimLessCoeffCL( const DROPS::ParamFilmCL& C) 
       : rho( DROPS::JumpCL( 1., C.rhoG/C.rhoF ), DROPS::H_sm, C.sm_eps),
         mu ( DROPS::JumpCL( 1., C.muG/C.muF),    DROPS::H_sm, C.sm_eps),
-        Re( C.rhoF/C.muF), SurfTens( C.sigma/C.rhoF), g( C.g)    {}
+        SurfTens( C.sigma/C.rhoF), g( C.g)    {}
 };
 
 

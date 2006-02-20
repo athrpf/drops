@@ -15,9 +15,9 @@
 #include "levelset/levelset.h"
 #include <fstream>
 
-// rho*du/dt - mu/Re*laplace u + Dp = f + rho*g - okn
-//                          -div u = 0
-//                               u = u0, t=t0
+// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
+//                        -div u = 0
+//                             u = u0, t=t0
 
 // Tropfendaten:
 DROPS::Point3DCL Mitte;
@@ -36,13 +36,11 @@ class ZeroFlowCL
     static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
         { DROPS::Point3DCL ret(0.0); return ret; }
     DROPS::SmoothedJumpCL rho, mu;
-    const double Re, We;
     DROPS::Point3DCL g;
 
     ZeroFlowCL() 
       : rho( DROPS::JumpCL( 955.,   1107. ), DROPS::H_sm, sm_eps),
-         mu( DROPS::JumpCL( 2.6e-3, 1.2e-3), DROPS::H_sm, sm_eps),
-        Re(1.), We(1.) 
+         mu( DROPS::JumpCL( 2.6e-3, 1.2e-3), DROPS::H_sm, sm_eps)
     { g[0]= 9.81; }
 };
 
