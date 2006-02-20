@@ -52,7 +52,7 @@ class EnsightP2SolOutCL
     // triangulation, i.e. use LevelsetP2CL::CreateNumbering before
     // constructing an EnsightSolOutCL-object.
     EnsightP2SolOutCL( const MultiGridCL& mg, const IdxDescCL* idx, bool binary=true)
-      : _MG( &mg), _idx( idx), _decDigits( 0), _timestep( -1u), _numsteps( 0), binary_( binary)
+      : _MG( &mg), _idx( idx), _decDigits( 0), _timestep( -1u), _numsteps( 0), _lasttime(-1), binary_( binary)
     {}
     ~EnsightP2SolOutCL() { if (_case.is_open()) CaseEnd(); }
       
