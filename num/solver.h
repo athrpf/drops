@@ -525,79 +525,77 @@ void GMRES_Update(Vec &x, int k, const Mat &H, const Vec &s, const std::vector<V
 template <typename Mat, typename Vec, typename PreCon>
 bool
 GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
-      int m, int& max_iter, double& tol)
+      int /*restart parameter*/ m, int& max_iter, double& tol)
 {
-    DMatrixCL<double> H(m,m);
-    Vec               s(m), cs(m), sn(m), w(b.size()), r(b.size());
-    std::vector<Vec>  v(m);
+    m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
+
+    DMatrixCL<double> H( m, m);
+    Vec               s( m), cs( m), sn( m), w( b.size()), r( b.size());
+    std::vector<Vec>  v( m);
     double            beta, normb, resid;
 
-    for ( int i=0; i<m; ++i )
-        v[i].resize(b.size());
+    for (int i= 0; i < m; ++i)
+        v[i].resize( b.size());
 
-    M.Apply(A, r, Vec( b-A*x));
-    beta = norm( r);
+    M.Apply( A, r, Vec( b-A*x));
+    beta= norm( r);
 
-    M.Apply(A, w, b);
+    M.Apply( A, w, b);
     normb= norm( w);
-    if (normb == 0.0) normb=1;
+    if (normb == 0.0) normb= 1.0;
 
     resid = beta/normb;
-    if (resid<=tol)
-    {
-        tol = resid;
-        max_iter = 0;
+    if (resid <= tol) {
+        tol= resid;
+        max_iter= 0;
         return true;
     }
 
-    int j=1;
-    while (j <= max_iter)
-    {
-        v[0] = r * (1.0 / beta);
-        s = 0.0;
-        s[0] = beta;
+    int j= 1;
+    while (j <= max_iter) {
+        v[0]= r*(1.0/beta);
+        s= 0.0;
+        s[0]= beta;
 
-        for ( int i=0; i<m-1 && j<=max_iter; ++i, ++j )
-        {
-            M.Apply(A, w, A*v[i]);
-            for ( int k=0; k<=i; ++k )
-            {
-                H(k, i) = dot( w, v[k]);
-                w -= H(k, i) * v[k];
+        int i;
+        for (i= 0; j <= max_iter; ++i, ++j) {
+            M.Apply( A, w, A*v[i]);
+            for (int k= 0; k <= i; ++k ) {
+                H( k, i)= dot( w, v[k]);
+                w-= H( k, i)*v[k];
             }
-            H(i+1, i) = norm( w);
-            v[i+1] = w * (1.0 / H(i+1,i));
 
-            for ( int k=0; k<i; ++k )
-                GMRES_ApplyPlaneRotation(H(k,i), H(k+1,i), cs[k], sn[k]);
+            if (i == m - 1) break;
 
-            GMRES_GeneratePlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
-            GMRES_ApplyPlaneRotation(H(i,i), H(i+1,i), cs[i], sn[i]);
-            GMRES_ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
+            H( i + 1, i)= norm( w);
+            v[i + 1]= w*(1.0/H( i + 1, i));
 
-            resid = std::abs(s[i+1])/normb;
-            if (resid<=tol)
-            {
-                GMRES_Update(x, i, H, s, v);
-                tol = resid;
-                max_iter = j;
+            for (int k= 0; k < i; ++k)
+                GMRES_ApplyPlaneRotation( H(k,i), H(k + 1, i), cs[k], sn[k]);
+
+            GMRES_GeneratePlaneRotation( H(i,i), H(i+1,i), cs[i], sn[i]);
+            GMRES_ApplyPlaneRotation( H(i,i), H(i+1,i), cs[i], sn[i]);
+            GMRES_ApplyPlaneRotation( s[i], s[i+1], cs[i], sn[i]);
+
+            resid= std::abs( s[i+1])/normb;
+            if (resid <= tol) {
+                GMRES_Update( x, i, H, s, v);
+                tol= resid;
+                max_iter= j;
                 return true;
             }
         }
-
-        GMRES_Update(x, m - 2, H, s, v);
-        M.Apply(A, r, Vec( b-A*x));
-        beta = norm( r);
-        resid = beta/normb;
-        if (resid<=tol)
-        {
-            tol = resid;
-            max_iter = j;
+        GMRES_Update( x, i, H, s, v);
+        M.Apply( A, r, Vec( b - A*x));
+        beta= norm( r);
+        resid= beta/normb;
+        if (resid <= tol) {
+            tol= resid;
+            max_iter= j;
             return true;
         }
     }
-
-    tol = resid;
+    tol= resid;
     return false;
 }
 
