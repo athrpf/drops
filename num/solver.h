@@ -350,11 +350,12 @@ class MultiSSORPcCL
 
 
 //=============================================================================
-// SSOR-PCG as preconditioner. 
+// Krylov-methods as preconditioner. 
 // Needed for InexactUzawa. This shall be replaced an by MG-preconditioner.
 //=============================================================================
 // Defined below, where the typedefs for PCGSolverCL and alikes have been made.
 class SSORPCG_PreCL;
+class SSORGMRes_PreCL;
 
 
 //*****************************************************************************
@@ -1024,7 +1025,7 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 
 
 //=============================================================================
-// SSOR-PCG as preconditioner. 
+// Krylov-methods as preconditioner. 
 // Needed for InexactUzawa. This shall be replaced an by MG-preconditioner.
 //=============================================================================
 class SSORPCG_PreCL
@@ -1041,8 +1042,29 @@ class SSORPCG_PreCL
     template <typename Mat, typename Vec>                             // computed in Apply.
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
-        solver_.SetTol( reltol_*norm( b-A*x));
+        solver_.SetTol( reltol_*norm( b - A*x));
 	solver_.Solve( A, x, b);
+    }
+};
+
+class SSORGMRes_PreCL
+{
+  private:
+    double reltol_; // The solver shall reduce the residual by this factor.
+    mutable GMResSolverCL<SSORPcCL> solver_;
+
+  public:
+    SSORGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.2)
+        : reltol_( reltol), solver_( SSORPcCL( 1.0), restart, maxiter, reltol) // Note, that the
+    {}                                                                         // real tol for
+                                                                               // solver_ is
+    template <typename Mat, typename Vec>                                      // computed in Apply.
+    void
+    Apply(const Mat& A, Vec& x, const Vec& b) const {
+        solver_.SetTol( reltol_*norm( b - A*x));
+	solver_.Solve( A, x, b);
+//        std::cerr << "SSORGMRes_PreCL iterations: " << solver_.GetIter()
+//                  << "\tresidual: " << solver_.GetResid() << std::endl;
     }
 };
 
