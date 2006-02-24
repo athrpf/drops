@@ -439,10 +439,14 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
             for(int j=0; j<=i; ++j)
             {
                 // dot-product of the gradients
-                coup[i][j]= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
-//                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
-                coup[j][i]= coup[i][j];
-                coupMass[j][i]= coupMass[i][j]= P2DiscCL::GetMass( j, i)*absdet;
+                const double c= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
+//                c+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]= c;
+                coup[j][i]= c;
+
+                const double cM= P2DiscCL::GetMass( j, i)*absdet;
+                coupMass[i][j]= cM;
+                coupMass[j][i]= cM;
            }
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
@@ -546,10 +550,14 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
             for(int j=0; j<=i; ++j)
             {
                 // dot-product of the gradients
-                coup[i][j]= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
-//                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
-                coup[j][i]= coup[i][j];
-                coupMass[j][i]= coupMass[i][j]= P2DiscCL::GetMass( j, i)*absdet;
+                const double c= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
+//                c+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]= c;
+                coup[j][i]= c;
+
+                const double cM= P2DiscCL::GetMass( j, i)*absdet;
+                coupMass[i][j]= cM;
+                coupMass[j][i]= cM;
             }
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
@@ -645,7 +653,11 @@ void StokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
         // compute all couplings between HatFunctions on edges and verts
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
-                coupMass[j][i]= coupMass[i][j]= P2DiscCL::GetMass( j, i)*absdet;
+            {
+                const double cM= P2DiscCL::GetMass( j, i)*absdet;
+                coupMass[i][j]= cM;
+                coupMass[j][i]= cM;
+            }
 
         for(int i=0; i<10; ++i)   // assemble row Numb[i]
             if (!IsOnDirBnd[i]) { // vert/edge i is not on a Dirichlet boundary
