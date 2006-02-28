@@ -15,6 +15,8 @@
 #include "../../out/output.h"
 #include <fstream>
 
+const int AdjFlagC= 32;
+
 /**
 This code has the same functionality as poisson/ipfilm.cpp, but is extended by a matlab interface.
 It solves a convection-diffusion equation on a brick-shaped domain with certain bnd conditions
@@ -25,16 +27,18 @@ modeling the (effective) heat transfer in a flat film. Bnd conditions:
 
 The program can be called as a mex-function from matlab with the following syntax:
 
-  [MaxIter, Tsol] = ipfilm( T0, T_in, F, lambda, xl, yl, zl, nx, ny, nz, dt, nt, Theta, Tol, Iter, Flag)
+  [MaxIter, Tsol] = ipfilm( T0, T_in, F, alpha, heat, xl, yl, zl, nx, ny, nz, dt, nt, Theta, Tol, Iter, Flag)
   
 scalar parameters:
 ------------------
-  xl, yl, zl:     length of brick in x-/y-/z-direction
+  xl, yl, zl:     length of brick in x-/y-/z-direction [in mm]
   nx, ny, nz:     number of intervals in x-/y-/z-direction, i.e. Nxyz = (nx+1) x (ny+1) x (nz+1) grid points
   dt, nt:         length and number of time steps
   Theta:          parameter of one-step theta-scheme, controlling implicitness of time discretization
   Tol, Iter:      stopping criterion for the iterative solver (GMRES)
-  Flag:           flag for general purposes, not used at the moment
+  alpha:          diffusion parameter alpha = lambda / (rho c) [in SI]
+  heat:           bnd condition for heating: heat = qh / (-lambda) [in SI]
+  Flag:           used for the adjoint problem: if Flag==AdjFlagC, then the adjoint operator is discretized
 
   MaxIter (output):        number of iterations spent in the iterative solver (maximum over all time steps)
 
@@ -62,12 +66,12 @@ class ParamCL
   public:
     double lx, ly, lz;
     int    nx, ny, nz, nt; // n=number of intervalls
-    double dt, Heat, rho, mu, cp, lambda;
+    double dt, Heat, rho, mu, cp, alpha;
     std::string EnsDir, EnsCase;
     
     ParamCL()
       : lx(100), ly(0.3), lz(1), nx(8), ny(2), nz(2), nt(50), // in mm
-        dt(0.02), Heat(5960), rho(866), mu(1.732e-3), cp(1500), lambda(0.26), // in SI
+        dt(0.02), Heat(5960), rho(866), mu(1.732e-3), cp(1500), alpha(0.26/1500/866), // in SI
         EnsDir("ensight"), EnsCase("FilmTemp")
       {}
 } C;
@@ -84,7 +88,7 @@ class MatlabConnectCL
                              //     max. iterations of solver (1 x 1)
   public:
     int GetNum( double t)                  const { return rd(t/C.dt); }
-    int GetNum( const DROPS::Point2DCL& p) const { return rd(p[0]*C.ny)*Nz + rd(p[1]*C.ny); } // p[i] in range [0.1] !!
+    int GetNum( const DROPS::Point2DCL& p) const { return rd(p[0]*C.ny)*Nz + rd(p[1]*C.nz); } // p[i] in range [0.1] !!
     int GetNum( const DROPS::Point3DCL& p) const { return rd(p[0]/dx)*Nyz + rd(p[1]/dy)*Nz + rd(p[2]/dz); }
 
     double GetInitial( const DROPS::Point3DCL& p) const 
@@ -170,7 +174,7 @@ class PoissonCoeffCL
 };
 
 double Zero(const DROPS::Point2DCL&, double) { return 0.0; }
-double Heat(const DROPS::Point2DCL&, double) { return C.Heat/C.lambda*1e-3; }
+double Heat(const DROPS::Point2DCL&, double) { return C.Heat*1e-3; }
 
 double Inflow(const DROPS::Point2DCL& p, double t) { return MC.GetInflow(p,t); }
 
@@ -205,8 +209,15 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson,
   
   mexPrintf("Anzahl der Unbekannten: %d\n", x.Data.size());
   mexPrintf("Theta: %g\n", theta);
-  mexPrintf("Toleranz GMRES: %g\n", tol);
+  mexPrintf("Toleranz GMRES: %g\t", tol);
   mexPrintf("max. Anzahl GMRES-Iterationen: %d\n", maxiter);
+  Point3DCL pIF; pIF[1]=C.ly; // Punkt auf Phasengrenze
+  const double vel= norm( PoissonCoeffCL::Vel(pIF,0)),
+      cfl= vel*C.dt/(C.lx/C.nx),
+      Re= 9.81*std::pow(C.ly,3)*1e-9/3/C.mu/C.mu*C.rho*C.rho,
+      Pr= C.mu/(C.alpha*C.rho);
+  mexPrintf("Geschwindigkeit Phasengrenze: %g [mm/s]\tentspricht CFL = %g\nRe = %g, Pr = %g\n", vel, cfl, Re, Pr);
+  mexPrintf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
   
   
   // stationaerer Anteil
@@ -214,14 +225,14 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson,
   
   SSORPcCL pc(1.0);
   typedef GMResSolverCL<SSORPcCL> SolverT;
-  SolverT solver(pc, 50, maxiter, tol);
+  SolverT solver(pc, 500, maxiter, tol);
   
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler
   // theta=0.5 -> Crank-Nicholson
   InstatPoissonThetaSchemeCL<MyPoissonCL, SolverT>
     ThetaScheme(Poisson, solver, theta, true);
-  const double nu= C.lambda/C.rho/C.cp*1e6;  
+  const double nu= C.alpha*1e6;  
   ThetaScheme.SetTimeStep(C.dt, nu);
   
   int MaxIter= 0;
@@ -245,6 +256,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson,
   mexPrintf("Anzahl Iterationen durchschnittlich: %g\n", average);
   mexPrintf("Anzahl Iterationen maximal: %d\n", MaxIter);
   mexPrintf("Norm des max. Residuums: %g\n", MaxRes);
+  mexPrintf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
   
   A.Reset(); M.Reset(); U.Reset();
   b.Reset();  
@@ -254,7 +266,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson,
 
 
 static void ipdrops( double theta, double tol, int iter, int Flag)
-{
+{ // create Problem (Multigrid, BndData and Coeff) and call Strategy(...)
   try
   {
     DROPS::Point3DCL null(0.0);
@@ -274,12 +286,14 @@ static void ipdrops( double theta, double tol, int iter, int Flag)
     
     // bnd cond: x=0/lx, y=0/ly, z=0/lz
     const bool isneumann[6]= 
-      { false, true, true, true, true, true };
+      { false, true,   // Gamma_in, Gamma_out
+        true, true,    // Gamma_h (wall), Gamma_r (surface)
+        true, true };  // Gamma_r, Gamma_r
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &Inflow, &Zero, &Heat, &Zero, &Zero, &Zero};
     
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
-    MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
+    MyPoissonCL prob(brick, PoissonCoeffCL(), bdata, Flag==AdjFlagC);
     DROPS::MultiGridCL& mg = prob.GetMG();
     
 //    for (int count=1; count<=brick_ref; count++)
@@ -302,8 +316,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int Iter, Flag;
   
   // Check for proper number of arguments.
-  if(nrhs!=16)
-    mexErrMsgTxt("(T0, T_in, F, lambda, xl, yl, zl, nx, ny, nz, dt, nt, Theta, Tol, Iter, Flag) as input required.");
+  if(nrhs!=17)
+    mexErrMsgTxt("(T0, T_in, F, alpha, heat, xl, yl, zl, nx, ny, nz, dt, nt, Theta, Tol, Iter, Flag) as input required.");
   if(nlhs!=2)
     mexErrMsgTxt("Temperature field (3D instat.) and maximum number of GMRES-iterations as output required.");
   
@@ -317,19 +331,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   
   // Get the scalar input arguments.
-  C.lambda = mxGetScalar(prhs[3]);
-  C.lx = mxGetScalar(prhs[4]);
-  C.ly = mxGetScalar(prhs[5]);
-  C.lz = mxGetScalar(prhs[6]);
-  C.nx = rd( mxGetScalar(prhs[7]));
-  C.ny = rd( mxGetScalar(prhs[8]));
-  C.nz = rd( mxGetScalar(prhs[9]));
-  C.dt = mxGetScalar(prhs[10]);
-  C.nt = rd( mxGetScalar(prhs[11]));
-  theta = mxGetScalar(prhs[12]);
-  Tol =  mxGetScalar(prhs[13]);
-  Iter = rd( mxGetScalar(prhs[14]));
-  Flag = rd( mxGetScalar(prhs[15]));
+  C.alpha = mxGetScalar(prhs[3]);
+  C.Heat = mxGetScalar(prhs[4]);
+  C.lx = mxGetScalar(prhs[5]);
+  C.ly = mxGetScalar(prhs[6]);
+  C.lz = mxGetScalar(prhs[7]);
+  C.nx = rd( mxGetScalar(prhs[8]));
+  C.ny = rd( mxGetScalar(prhs[9]));
+  C.nz = rd( mxGetScalar(prhs[10]));
+  C.dt = mxGetScalar(prhs[11]);
+  C.nt = rd( mxGetScalar(prhs[12]));
+  theta = mxGetScalar(prhs[13]);
+  Tol =  mxGetScalar(prhs[14]);
+  Iter = rd( mxGetScalar(prhs[15]));
+  Flag = rd( mxGetScalar(prhs[16]));
   
   // Set the input matrices and output parameters.
   MC.Init( C, plhs, prhs);
