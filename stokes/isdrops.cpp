@@ -106,11 +106,11 @@ class MyInstatStokesThetaSchemeCL
         _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data);
     }
        
-    void DoStep( VectorCL& v, VectorCL& p, bool first= false);
+    void DoStep( VectorCL& v, VectorCL& p);
 };
 
 template <class StokesT, class SolverT>
-void MyInstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& p, bool first)
+void MyInstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& p)
 {
     _Stokes.t+= _dt;
     _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
@@ -119,12 +119,10 @@ void MyInstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL
     _rhs*= (_theta-1.)*_dt;
     _rhs+= _Stokes.M.Data*v + _cplM->Data - _old_cplM->Data
          + _dt*( _theta*_b->Data + (1.-_theta)*_old_b->Data);
-    if (!first)
-        _rhs+= (_theta-1.0)*_dt*transp_mul( _Stokes.B.Data, p);
 
-    p*= first ? _dt : _dt*_theta;
+    p*= _dt*_theta;
     _solver.Solve( _mat, _Stokes.B.Data, v, p, _rhs, _Stokes.c.Data);
-    p/= first ? _dt : _dt*_theta;
+    p/= _dt*_theta;
 
     std::swap( _b, _old_b);
     std::swap( _cplM, _old_cplM);
