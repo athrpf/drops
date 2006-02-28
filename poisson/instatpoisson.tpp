@@ -219,25 +219,46 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
     }
     u[4]= _Coeff.Vel( GetBaryCenter( *sit), t);
 
-    for(int j=0; j<4;++j)
+    if (!adjoint_)
     {
-      const Quad2CL<> u_Gradj( dot( u, Quad2CL<Point3DCL>( G[j])));
-
-      if (UnknownIdx[j] != NoIdx) // vertex j is not on a Dirichlet boundary
-      {
-        for(int i=0; i<4; ++i)    // assemble row i
-          if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
+        for(int j=0; j<4;++j)
+        {
+          const Quad2CL<> u_Gradj( dot( u, Quad2CL<Point3DCL>( G[j])));
+    
+          if (UnknownIdx[j] != NoIdx) // vertex j is not on a Dirichlet boundary
           {
-            U( UnknownIdx[i], UnknownIdx[j])+= u_Gradj.quadP1( i, absdet); 
+            for(int i=0; i<4; ++i)    // assemble row i
+              if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
+              {
+                U( UnknownIdx[i], UnknownIdx[j])+= u_Gradj.quadP1( i, absdet); 
+              }
           }
-      }
-      else // coupling with vertex j on right-hand-side
-      {
-        const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
-        for(int i=0; i<4; ++i)    // assemble row i
-          if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
-            vU.Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval; 
-      }
+          else // coupling with vertex j on right-hand-side
+          {
+            const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+            for(int i=0; i<4; ++i)    // assemble row i
+              if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
+                vU.Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval; 
+          }
+        }
+    }
+    else // adjoint problem: discretization of u grad phi_i phi_j
+    {
+        for(int i=0; i<4;++i)
+        { // assemble row i
+
+          if (UnknownIdx[i] == NoIdx) continue; // vertex i is on a Dirichlet boundary -> no test function
+
+          const Quad2CL<> u_Gradi( dot( u, Quad2CL<Point3DCL>( G[i])));
+          for(int j=0; j<4; ++j)
+          {
+            const double coupl= u_Gradi.quadP1( j, absdet);
+            if (UnknownIdx[j] != NoIdx)  // vertex j is not on a Dirichlet boundary
+              U( UnknownIdx[i], UnknownIdx[j])+= coupl; 
+            else // coupling with vertex j on right-hand-side
+              vU.Data[ UnknownIdx[i]]-= coupl* _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+          }
+        }
     }
   }
   U.Build();

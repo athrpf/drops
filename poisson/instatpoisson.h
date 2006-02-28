@@ -102,6 +102,9 @@ class StripTimeCL
 template <class Coeff>
 class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 {
+  private:
+    bool adjoint_;
+    
   public:
     typedef ProblemCL<Coeff, InstatPoissonBndDataCL> _base;
     typedef typename _base::BndDataCL                BndDataCL;
@@ -125,8 +128,8 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     MatDescCL U;
 	
     
-    InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), t( 0.), idx( 1) {}  
+    InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
+        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( 1) {}  
 				
     // numbering of unknowns
     void CreateNumbering( Uint level, IdxDescCL* idx);
