@@ -372,8 +372,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         DummyPcCL dpc;
         ISPreCL ispc( prA.Data, prM.Data, 0);
         SSORPCG_PreCL pcg( C.inner_iter, 0.2);
-    //    typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawaT;
-        typedef InexactUzawaCL<SSORPCG_PreCL, DummyPcCL> InexactUzawaT;
+    //    typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawaT;
+        typedef InexactUzawaCL<SSORPCG_PreCL, DummyPcCL, APC_SYM> InexactUzawaT;
         InexactUzawaT inexactUzawaSolver( pcg, dpc, C.outer_iter, C.outer_tol);
 
         time.Reset();
@@ -412,8 +412,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISPschurSolver.SetTol( C.outer_tol);
     
     SSORPCG_PreCL pcg( C.inner_iter, 0.2);
-    typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawaT;
-//    typedef InexactUzawaCL<SSORPCG_PreCL, DummyPcCL> InexactUzawaT;
+    typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawaT;
+//    typedef InexactUzawaCL<SSORPCG_PreCL, DummyPcCL, APC_SYM> InexactUzawaT;
     InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 //    InexactUzawaT inexactUzawaSolver( pcg, dpc, C.outer_iter, C.outer_tol);
 

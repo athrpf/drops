@@ -313,7 +313,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         ISPreCL ispc( prA.Data, prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
         SSORPCG_PreCL pcg( C.inner_iter, 0.2);
-        typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL> InexactUzawaT;
+        typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawaT;
         InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 
 //        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 

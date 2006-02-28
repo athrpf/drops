@@ -142,12 +142,17 @@ class Uzawa_IPCG_CL : public SolverBaseCL
 //=============================================================================
 // Ready-to-use solver-class with inexact Uzawa method InexactUzawa. 
 //=============================================================================
+
+// Characteristics of the preconditioner for the A-block
+enum InexactUzawaApcMethodT { APC_OTHER, APC_SYM, APC_SYM_LINEAR };
+
+//=============================================================================
 // Inexact Uzawa-method from "Fast Iterative Solvers for Discrete Stokes
 // Equations", Peters, Reichelt, Reusken, Chapter 3.3.
 // The preconditioner Apc for A must be "good" (MG-like) to guarantee
 // convergence.
 //=============================================================================
-template <class ApcT, class SpcT, bool ApcislinearBool= false>
+template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
   class InexactUzawaCL: public SolverBaseCL
 {
   private:
@@ -159,18 +164,18 @@ template <class ApcT, class SpcT, bool ApcislinearBool= false>
     InexactUzawaCL(ApcT& Apc, SpcT& Spc, int outer_iter, double outer_tol,
         double innerreduction= 0.3)
         :SolverBaseCL( outer_iter, outer_tol),
-	 Apc_( Apc), Spc_( Spc), innerreduction_(innerreduction)
+	 Apc_( Apc), Spc_( Spc), innerreduction_( innerreduction)
     {}
     inline void
     Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
           const VectorCL& b, const VectorCL& c);
 };
 
-typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, false> InexactUzawa_CL;
-typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, false> InexactUzawaNonlinear_CL;
-typedef InexactUzawaCL<MGPreCL, ISPreCL, true> InexactUzawaMG_CL;
-typedef InexactUzawaCL<MGPreCL, ISMGPreCL, true> InexactUzawaFullMG_CL;
-
+typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawa_CL;
+typedef InexactUzawaCL<SSORGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GMRes_CL;
+typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
+typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
+typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
 
 // One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
 // of the Krylovspace of A for a given starting vector r. This is a three term
@@ -837,8 +842,8 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& 
 //        std::cerr << ", new size is " << x.size() << '\n';
     }
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
-//    std::cerr << "> inner iterations: " << M.solver_.GetIter()
-//              << "\tresidual: " << M.solver_.GetResid() << std::endl;
+    std::cerr << "> inner iterations: " << M.solver_.GetIter()
+              << "\tresidual: " << M.solver_.GetResid() << std::endl;
     return M.B_*x;
 }
 
@@ -1166,7 +1171,8 @@ template <typename Mat, typename Vec, typename PC1, typename PC2>
 bool
 InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
     PC1& Apc, PC2& Spc,
-    int& max_iter, double& tol, bool Apcislinear= false, double innerred= 0.3)
+    int& max_iter, double& tol,
+    InexactUzawaApcMethodT apcmeth= APC_OTHER, double innerred= 0.3)
 {
     VectorCL ru( f - A*xu - transp_mul( B, xp));
     VectorCL rp( g - B*xu);
@@ -1177,33 +1183,43 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     VectorCL zhat( f.size());
     VectorCL du( f.size());
     VectorCL c( g.size());
-    ApproximateSchurComplMatrixCL<PC1>* asc= Apcislinear ? 0 :
+    ApproximateSchurComplMatrixCL<PC1>* asc= apcmeth == APC_SYM_LINEAR ? 0 :
         new ApproximateSchurComplMatrixCL<PC1>( A, Apc, B);
     double innertol;
     int inneriter;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
     double resid= 0.0;
     std::cerr << "residual (2-norm): " << resid0 << '\n';
-    if (resid0<=tol) { // The fixed point iteration between levelset and Stokes
-        tol= resid;    // equation uses this to determine convergence.
+    if (resid0 <= tol) { // The fixed point iteration between levelset and Stokes
+        tol= resid;      // equation uses this to determine convergence.
         max_iter= 0;
         return true;
     }
-    for (int k= 1; k<=max_iter; ++k) {
+    for (int k= 1; k <= max_iter; ++k) {
         w= 0.0;
         Apc.Apply( A, w, ru);
         c= B*w - rp;
         z= 0.0;
         z2= 0.0;
-        inneriter= 500;
+        inneriter= 100;
         innertol= innerred*norm( c);
-        if (Apcislinear) {
+        switch (apcmeth) {
+          case APC_SYM_LINEAR:
             zbar= 0.0;
             zhat= 0.0;
             UzawaPCG( Apc, A, B, z, zbar, zhat, c, Spc, inneriter, innertol);
-        }
-        else {
+            break;
+          case APC_SYM:
             PCG( *asc, z, c, Spc, inneriter, innertol);
+            break;
+          default:
+            std::cerr << "WARNING: InexactUzawa: Unknown apcmeth; using GMRes.\n";
+            // fall through
+          case APC_OTHER:
+            GMRES( *asc, z, c, Spc, /*restart*/ inneriter, inneriter, innertol);
+            break;
+        }
+        if (apcmeth != APC_SYM_LINEAR) {
             zbar= transp_mul( B, z);
             zhat= 0.0;
             Apc.Apply( A, zhat, zbar);
@@ -1242,14 +1258,14 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
 }
 
 
-template <class ApcT, class SpcT, bool ApcislinearBool>
+template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
   inline void
-  InexactUzawaCL<ApcT, SpcT, ApcislinearBool>::Solve( const MatrixCL& A, const MatrixCL& B,
+  InexactUzawaCL<ApcT, SpcT, Apcmeth>::Solve( const MatrixCL& A, const MatrixCL& B,
     VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 {
     _res=  _tol;
     _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, ApcislinearBool);
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth);
 }
 
 } // end of namespace DROPS
