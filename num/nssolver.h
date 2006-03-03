@@ -213,7 +213,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             
             // solve correction:
             double outer_tol= _res/_red;
-            
+            w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e);
             
@@ -259,7 +259,7 @@ void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             
             // solve correction:
             double outer_tol= _res/_red;
-            
+            w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e);
             
