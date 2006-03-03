@@ -173,6 +173,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
 
 typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawa_CL;
 typedef InexactUzawaCL<SSORGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GMRes_CL;
+typedef InexactUzawaCL<GSGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GSGMRes_CL;
 typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
 typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
 typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
@@ -1188,8 +1189,12 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     double innertol;
     int inneriter;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
+    double resid00= resid0;
     double resid= 0.0;
-    std::cerr << "residual (2-norm): " << resid0 << '\n';
+    std::cerr << "residual (2-norm): " << resid0
+              << "\tres-impuls: " << norm( f - A*xu - transp_mul( B, xp))
+              << "\tres-mass: " << norm( g - B*xu)
+              << '\n';
     if (resid0 <= tol) { // The fixed point iteration between levelset and Stokes
         tol= resid;      // equation uses this to determine convergence.
         max_iter= 0;
@@ -1202,22 +1207,25 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         z= 0.0;
         z2= 0.0;
         inneriter= 100;
-        innertol= innerred*norm( c);
         switch (apcmeth) {
           case APC_SYM_LINEAR:
             zbar= 0.0;
             zhat= 0.0;
+            innertol= innerred*norm( c);
             UzawaPCG( Apc, A, B, z, zbar, zhat, c, Spc, inneriter, innertol);
             break;
           case APC_SYM:
+            innertol= innerred*norm( c);
             PCG( *asc, z, c, Spc, inneriter, innertol);
             break;
           default:
             std::cerr << "WARNING: InexactUzawa: Unknown apcmeth; using GMRes.\n";
             // fall through
           case APC_OTHER:
-            GMRES( *asc, z, c, Spc, /*restart*/ inneriter, inneriter, innertol);
-            break;
+            innertol= innerred; // GMRES can do relative tolerances.
+            GMRES( *asc, z, c, Spc, /*restart*/ inneriter, inneriter, innertol,
+                /*relative errors*/ true, /*don't check 2-norm*/ false);
+              break;
         }
         if (apcmeth != APC_SYM_LINEAR) {
             zbar= transp_mul( B, z);
@@ -1228,13 +1236,13 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
                   << "\tresid: " << innertol << '\n';
         du= w - zhat;
         xp+= z;
-        z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar); // ru-= A*du + transp_mul( B, z);
-        xu+= du;
+        ru-= A*du + zbar; // z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar);        xu+= du;
         rp= g - B*xu;
         resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
-        std::cerr << "residual reduction (2-norm): " << resid/resid0 
-//                  << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
-//                  << "\tp: " << norm( g - B*xu)
+        std::cerr << "residual reduction (2-norm): " << resid/resid0
+                  << "\tglobal reduction: " << resid/resid00
+                  << "\nres-impuls: " << norm( f - A*xu - transp_mul( B, xp))
+                  << "\tres-mass: " << norm( g - B*xu)
                   << '\n';
 /*
         if (resid<=tol*resid0) { // relative errors
@@ -1265,7 +1273,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
 {
     _res=  _tol;
     _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth);
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_);
 }
 
 } // end of namespace DROPS
