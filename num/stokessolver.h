@@ -159,12 +159,13 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
     ApcT& Apc_;
     SpcT& Spc_;
     double innerreduction_;
+    int    innermaxiter_;
 
   public:
     InexactUzawaCL(ApcT& Apc, SpcT& Spc, int outer_iter, double outer_tol,
-        double innerreduction= 0.3)
+        double innerreduction= 0.3, double innermaxiter= 500)
         :SolverBaseCL( outer_iter, outer_tol),
-	 Apc_( Apc), Spc_( Spc), innerreduction_( innerreduction)
+	 Apc_( Apc), Spc_( Spc), innerreduction_( innerreduction), innermaxiter_( innermaxiter)
     {}
     inline void
     Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
@@ -1173,7 +1174,8 @@ bool
 InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
     PC1& Apc, PC2& Spc,
     int& max_iter, double& tol,
-    InexactUzawaApcMethodT apcmeth= APC_OTHER, double innerred= 0.3)
+    InexactUzawaApcMethodT apcmeth= APC_OTHER, 
+    double innerred= 0.3, int innermaxiter= 500)
 {
     VectorCL ru( f - A*xu - transp_mul( B, xp));
     VectorCL rp( g - B*xu);
@@ -1192,8 +1194,8 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     double resid00= resid0;
     double resid= 0.0;
     std::cerr << "residual (2-norm): " << resid0
-              << "\tres-impuls: " << norm( f - A*xu - transp_mul( B, xp))
-              << "\tres-mass: " << norm( g - B*xu)
+              << "\tres-impuls: " << norm( ru)
+              << "\tres-mass: " << norm( rp)
               << '\n';
     if (resid0 <= tol) { // The fixed point iteration between levelset and Stokes
         tol= resid;      // equation uses this to determine convergence.
@@ -1206,7 +1208,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         c= B*w - rp;
         z= 0.0;
         z2= 0.0;
-        inneriter= 100;
+        inneriter= innermaxiter;
         switch (apcmeth) {
           case APC_SYM_LINEAR:
             zbar= 0.0;
@@ -1235,8 +1237,9 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         std::cerr << "innersolver: iterations: " << inneriter 
                   << "\tresid: " << innertol << '\n';
         du= w - zhat;
+        xu+= du;
         xp+= z;
-        ru-= A*du + zbar; // z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar);        xu+= du;
+        ru-= A*du + zbar; // z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar);
         rp= g - B*xu;
         resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
         std::cerr << "residual reduction (2-norm): " << resid/resid0
@@ -1273,7 +1276,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
 {
     _res=  _tol;
     _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_);
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_, innermaxiter_);
 }
 
 } // end of namespace DROPS
