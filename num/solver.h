@@ -38,16 +38,18 @@ enum PreMethGS
     P_SSOR0,   // P_SGS0 with over-relaxation
     P_SGS0_D,  // P_SGS0 using SparseMatDiagCL
     P_SSOR0_D, // P_SSOR0 using SparseMatDiagCL
-    P_DUMMY    // identity
+    P_DUMMY,   // identity
+    P_GS0      // Gauss-Seidel with initial vector 0
 };
 
 // Base methods
-enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0, PB_DUMMY };
+enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0, PB_DUMMY, PB_GS0};
 
 // Properties of the methods
 template <PreMethGS PM> struct PreTraitsCL
 {
-    static const PreBaseGS BaseMeth= PreBaseGS(PM<8 ? PM%4 : (PM==10 ? PB_DUMMY : PB_SGS0) );
+    static const PreBaseGS BaseMeth= PreBaseGS(PM<8 ? PM%4
+                                     : (PM==10 ? PB_DUMMY : (PM==11 ? PB_GS0 : PB_SGS0)) );
     static const bool      HasOmega= (PM>=4 && PM<8) || PM==9;
     static const bool      HasDiag=  PM==8 || PM==9;
 };
@@ -102,6 +104,28 @@ SolveGSstep(const PreDummyCL<PB_GS>&, const MatrixCL& A, Vec& x, const Vec& b, d
         aii= A.val( nz++);
         for (; nz<end; ++nz)
             sum-= A.val( nz)*x[A.col_ind( nz)];
+        if (HasOmega)
+            x[i]= (1.-omega)*x[i]+omega*sum/aii;
+        else
+            x[i]= sum/aii;
+    }
+}
+
+// One step of the Gauss-Seidel/SOR method with start vector x
+template <bool HasOmega, typename Vec>
+void
+SolveGSstep(const PreDummyCL<PB_GS0>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
+{
+    const size_t n= A.num_rows();
+    double aii, sum;
+
+    for (size_t i=0, nz=0; i<n; ++i) {
+        sum= b[i];
+        const size_t end= A.row_beg( i+1);
+        for (; A.col_ind( nz) != i; ++nz) // This is safe: Without diagonal entry, Gauss-Seidel would explode anyway.
+            sum-= A.val( nz)*x[A.col_ind( nz)];
+        aii= A.val( nz);
+        nz= end;
         if (HasOmega)
             x[i]= (1.-omega)*x[i]+omega*sum/aii;
         else
@@ -222,7 +246,7 @@ template <bool HasOmega, typename Vec, typename Mat>
 void
 SolveGSstep(const PreDummyCL<PB_DUMMY>&, const Mat&, Vec& x, const Vec& b, double)
 {
-    x=b;
+    x= b;
 }
 
 //=============================================================================
@@ -356,6 +380,7 @@ class MultiSSORPcCL
 // Defined below, where the typedefs for PCGSolverCL and alikes have been made.
 class SSORPCG_PreCL;
 class SSORGMRes_PreCL;
+class GSGMRes_PreCL;
 
 
 //*****************************************************************************
@@ -522,11 +547,27 @@ void GMRES_Update(Vec &x, int k, const Mat &H, const Vec &s, const std::vector<V
         x += y[i] * v[i];
 }
 
-
+//-----------------------------------------------------------------------------
+// GMRES: The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within max_iter iterations (false).
+//
+// Upon successful return, output arguments have the following values:
+//
+// x - approximate solution to Ax = b
+// max_iter - number of iterations performed before tolerance was reached
+// tol - 2-norm of the (relative, see below) preconditioned residual after the
+//     final iteration
+//
+// measure_relative_tol - If true, stop if |M^(-1)( b - Ax)|/|M^(-1)b| <= tol,
+//     if false, stop if |M^(-1)( b - Ax)| <= tol.
+// calculate2norm - If true, the unpreconditioned (absolute) residual is
+//     calculated in every step for debugging. This is rather expensive.
+//-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename PreCon>
 bool
 GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
-      int /*restart parameter*/ m, int& max_iter, double& tol)
+      int /*restart parameter*/ m, int& max_iter, double& tol,
+      bool measure_relative_tol= true, bool calculate2norm= false)
 {
     m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
 
@@ -543,7 +584,7 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
     M.Apply( A, w, b);
     normb= norm( w);
-    if (normb == 0.0) normb= 1.0;
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
     resid = beta/normb;
     if (resid <= tol) {
@@ -579,6 +620,14 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
             GMRES_ApplyPlaneRotation( s[i], s[i+1], cs[i], sn[i]);
 
             resid= std::abs( s[i+1])/normb;
+            if (calculate2norm == true) { // debugging aid
+                Vec y( x);
+                GMRES_Update( y, i, H, s, v);
+                double resid2= norm( Vec( b - A*y));
+                std::cerr << "GMRES: absolute residual 2-norm: " << resid2
+                          << "\tabsolute preconditioned residual 2-norm: "
+                          << std::fabs( s[i+1]) << '\n';
+            }
             if (resid <= tol) {
                 GMRES_Update( x, i, H, s, v);
                 tol= resid;
@@ -848,8 +897,10 @@ MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol)
 class SolverBaseCL
 {
   protected:
-    int    _maxiter, _iter;
-    double _tol, _res;
+    int         _maxiter;
+    mutable int _iter;
+    double         _tol;
+    mutable double _res;
 
     SolverBaseCL (int maxiter, double tol)
         : _maxiter(maxiter), _iter(-1), _tol(tol), _res(-1.) {}
@@ -1018,6 +1069,7 @@ typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
 typedef PreGSCL<P_DUMMY>   DummyPcCL;
+typedef PreGSCL<P_GS0>     GSPcCL;
 
 typedef PCGSolverCL<SGSPcCL>      PCG_SgsCL;
 typedef PCGSolverCL<SSORPcCL>     PCG_SsorCL;
@@ -1026,7 +1078,7 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 
 //=============================================================================
 // Krylov-methods as preconditioner. 
-// Needed for InexactUzawa. This shall be replaced an by MG-preconditioner.
+// Needed for InexactUzawa. These shall be replaced by an MG-preconditioner.
 //=============================================================================
 class SSORPCG_PreCL
 {
@@ -1047,24 +1099,47 @@ class SSORPCG_PreCL
     }
 };
 
-class SSORGMRes_PreCL
+class SSORGMRes_PreCL : public SolverBaseCL
 {
   private:
-    double reltol_; // The solver shall reduce the residual by this factor.
-    mutable GMResSolverCL<SSORPcCL> solver_;
+    int restart_;
 
   public:
     SSORGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.2)
-        : reltol_( reltol), solver_( SSORPcCL( 1.0), restart, maxiter, reltol) // Note, that the
-    {}                                                                         // real tol for
-                                                                               // solver_ is
-    template <typename Mat, typename Vec>                                      // computed in Apply.
+        : SolverBaseCL( maxiter, reltol), restart_( restart)
+    {}
+
+    template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
-        solver_.SetTol( reltol_*norm( b - A*x));
-	solver_.Solve( A, x, b);
-//        std::cerr << "SSORGMRes_PreCL iterations: " << solver_.GetIter()
-//                  << "\tresidual: " << solver_.GetResid() << std::endl;
+        _res= _tol;
+        _iter= _maxiter;
+        GMRES( A, x, b, SSORPcCL( 1.0), restart_, _iter, _res,
+            /*relative errors!*/ true, /*don't check 2-norm*/ false);
+        std::cerr << "SSORGMRes_PreCL iterations: " << GetIter()
+                  << "\trelative residual: " << GetResid() << std::endl;
+    }
+};
+
+class GSGMRes_PreCL : public SolverBaseCL
+{
+  private:
+    int restart_;
+
+  public:
+    GSGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.2)
+        : SolverBaseCL( maxiter, reltol), restart_( restart)
+    {}
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, Vec& x, const Vec& b) const {
+        _res= _tol;
+        _iter= _maxiter;
+        GMRES( A, x, b, GSPcCL( 1.0), restart_, _iter, _res,
+            /*relative errors!*/ true, /*don't check 2-norm*/ false);
+        std::cerr << "GSGMRes_PreCL iterations: " << GetIter()
+                  << "\trelative residual: " << GetResid() << std::endl;
     }
 };
 
