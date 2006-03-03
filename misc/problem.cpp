@@ -6,6 +6,7 @@
 namespace DROPS
 {
 
+const Uint        IdxDescCL::InvalidIdx = std::numeric_limits<Uint>::max();
 std::vector<bool> IdxDescCL::IdxFree;
 
 void BndCondInfo( BndCondT bc, std::ostream& os)
@@ -47,7 +48,7 @@ IdxDescCL::IdxDescCL( const IdxDescCL& orig)
     NumUnknownsTetra= orig.NumUnknownsTetra;
     NumUnknowns= orig.NumUnknowns;
     // invalidate orig
-    const_cast<IdxDescCL&>(orig).Idx= NoIdx;
+    const_cast<IdxDescCL&>(orig).Idx= InvalidIdx;
 }
 
 void IdxDescCL::swap( IdxDescCL& obj)

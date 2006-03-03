@@ -44,8 +44,9 @@ enum FiniteElementT
 class IdxDescCL
 {
   private:
-    static std::vector<bool> IdxFree;  ///< Cache for unused indices; reduces memory-usage.
-    Uint                     Idx;      ///< The unique index.
+    static const Uint        InvalidIdx; ///< Constant representing an invalid index.
+    static std::vector<bool> IdxFree;    ///< Cache for unused indices; reduces memory-usage.
+    Uint                     Idx;        ///< The unique index.
     
     /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
@@ -85,7 +86,7 @@ class IdxDescCL
     IdxDescCL( const IdxDescCL& orig);              
     /// \brief Frees the index, but does not invalidate the numbering on
     ///     the simplices. Call DeleteNumbering to do this.
-    ~IdxDescCL() { if (Idx!=NoIdx) IdxFree[Idx]= true; }
+    ~IdxDescCL() { if (Idx!=InvalidIdx) IdxFree[Idx]= true; }
     
     /// \brief Not implemented, as the private "Idx" should not be the
     ///     same for two different objects.
@@ -98,7 +99,7 @@ class IdxDescCL
     /// \brief Returns the number of the index. This can be used to access
     ///     the numbering on the simplices.
     Uint GetIdx() const {
-        if (Idx==NoIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index."
+        if (Idx==InvalidIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index."
             " Probably using copy instead of original IdxDescCL-object.");
         return Idx;
     }
