@@ -163,7 +163,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
 
   public:
     InexactUzawaCL(ApcT& Apc, SpcT& Spc, int outer_iter, double outer_tol,
-        double innerreduction= 0.3, double innermaxiter= 500)
+        double innerreduction= 0.3, int innermaxiter= 500)
         :SolverBaseCL( outer_iter, outer_tol),
 	 Apc_( Apc), Spc_( Spc), innerreduction_( innerreduction), innermaxiter_( innermaxiter)
     {}
