@@ -607,21 +607,11 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
 
     if (intersec_==4) // 4 intersections --> a+b != 1
     { // berechne a, b
-        // Loese (Q-P)a + (R-P)b = S-P
-        SMatrixCL<2,2> M;  
-        M(0,0)= A(0,0); M(0,1)= A(0,1);          // 1st row of A
-        int row2= 1;
-	double detM= A(0,0)*A(1,1) - A(1,0)*A(0,1);
-        if (std::abs( detM)<1e-15 ) // upper 2x2 part of A close to singular
-        {
-            row2= 2;
-            detM= A(0,0)*A(2,1) - A(2,0)*A(0,1);
-        }
-        M(1,0)= A(row2,0); M(1,1)= A(row2,1);
-        // now M is nonsingular 2x2 part of A
-        tmp[0]= PQRS_[3][0]-PQRS_[0][0]; tmp[1]= PQRS_[3][row2]-PQRS_[0][row2];
-        // tmp = S-P
-        Solve2x2( detM, M, ab_, tmp);
+        // Loese (Q-P)a + (R-P)b = S-P  --> lin. AGP, loese ATA * [a,b]T = AT(S-P)
+        Point3DCL PS= PQRS_[3] - PQRS_[0];
+        tmp[0]= A(0,0)*PS[0] + A(1,0)*PS[1] + A(2,0)*PS[2];
+        tmp[1]= A(0,1)*PS[0] + A(1,1)*PS[1] + A(2,1)*PS[2];
+        Solve2x2( detATA, ATA, ab_, tmp);
         //if (ab_[0]<0 || ab_[1]<0) 
         //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
         // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
