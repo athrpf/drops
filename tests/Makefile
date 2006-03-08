@@ -8,7 +8,7 @@ DIR = tests
 
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
-        p2local quadbase globallist triang
+        p2local quadbase globallist triang quadCut
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -117,6 +117,12 @@ globallist: \
 triang: \
     ../tests/triang.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+quadCut: \
+    ../tests/quadCut.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
+    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:

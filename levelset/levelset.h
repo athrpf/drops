@@ -107,30 +107,34 @@ class InterfacePatchCL
 /// of the level set function phi on T'.
 {
   private:
-    const double    approxZero_;
+    static const double approxZero_;
     const RefRuleCL RegRef_;
     int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
-    int             intersec_;
+    int             intersec_, ch_, Edge_[4];
     double          PhiLoc_[10], sqrtDetATA_;
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
     BaryCoordCL     Bary_[4], BaryDoF_[10];
     Point2DCL       ab_;
   
     inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
-    {
-        x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;
-        x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det;
-    }
+    { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
 
   public:
     InterfacePatchCL();
-
+    
+    static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } //< returns -1/0/1
+    
     void Init( const TetraCL& t, const VecDescCL& ls);
 
     // Remark: The following functions are only valid, if Init(...) was called before!
-    int    GetSign( Uint DoF) const { return sign_[DoF]; } //< returns -1/0/1
-    double GetPhi( Uint DoF)  const { return PhiLoc_[DoF]; } //< returns value of level set function
-    bool   ComputeForChild( Uint ch); //< returns true, if a patch exists for this child
+    int    GetSign( Uint DoF)   const { return sign_[DoF]; }   //< returns -1/0/1
+    double GetPhi( Uint DoF)    const { return PhiLoc_[DoF]; } //< returns value of level set function
+    bool   Intersects()         const                          //< returns wether patch exists (i.e. interface intersects tetra)
+      { for(int i=1; i<10; ++i) if (sign_[0]!=sign_[i]) return true; return false; }
+    bool   IntersectsInterior() const                          //< returns wether patch exists, which is not subset of a face
+      { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
+    bool   ComputeForChild( Uint ch);                          //< returns true, if a patch exists for this child
+    bool   ComputeCutForChild( Uint ch);                       //< returns true, if a patch exists for this child
 
     // Remark: The following functions are only valid, if ComputeForChild(...) was called before!
     bool               IsQuadrilateral()     const { return intersec_==4; }
@@ -138,12 +142,17 @@ class InterfacePatchCL
     Uint               GetNumPoints()        const { return intersec_; }
     const Point3DCL&   GetPoint( Uint i)     const { return PQRS_[i]; }
     const BaryCoordCL& GetBary ( Uint i)     const { return Bary_[i]; }
-    int                GetNumSign( int sign) const { return num_sign_[sign+1]; } //< returns number of patch points with given sign, where sign is in {-1, 0, 1}
+    int                GetNumSign( int sign) const { return num_sign_[sign+1]; } //< returns number of child points with given sign, where sign is in {-1, 0, 1}
     double             GetFuncDet()          const { return sqrtDetATA_; }
     double             GetAreaFrac()         const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }
     const Point3DCL&   GetGradId( Uint i)    const { return B_[i]; }
 
-    void               WriteGeom( std::ostream&) const; //< Geomview output for debugging
+    void               WriteGeom( std::ostream&) const;                          //< Geomview output for debugging
+    void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
+    
+    // Remark: The following functions are only valid, if ComputeCutForChild(...) was called before!
+    template<class ValueT>
+    ValueT quad( const LocalP2CL<ValueT>&, double absdet, bool posPart= true);   //< integrate on pos./neg. part
 };
 
 } // end of namespace DROPS

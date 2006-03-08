@@ -451,6 +451,8 @@ class P1DiscCL
     static inline double Quad(const TetraCL&, scalar_fun_ptr);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
     static inline SVectorCL<3> Quad(const TetraCL&, instat_vector_fun_ptr, double= 0.0);
+    template<class ValueT>
+    static inline ValueT Quad( const LocalP2CL<ValueT>&, BaryCoordCL**);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, Uint, double= 0.0);
@@ -535,6 +537,17 @@ inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
 *
 ********************************************************************************/
 
+inline double VolFrac( BaryCoordCL** bp)
+{
+    double M[3][3];
+    for (int i=0; i<3; ++i)
+        for (int j=0; j<3; ++j)
+            (M[i][j]= (*bp[j+1])[i+1]-(*bp[0])[i+1]);
+    return std::abs( M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+                   - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+                   + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]) );
+}
+
 inline double P1DiscCL::Quad(const TetraCL& s, instat_scalar_fun_ptr coeff, double t)
 {
     return ( coeff(s.GetVertex(0)->GetCoord(), t)
@@ -572,6 +585,14 @@ inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uin
         if (k!=i) f_Other+= coeff( s.GetVertex(k)->GetCoord(), t );
     return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
 }
+
+template<class ValueT>
+inline ValueT P1DiscCL::Quad( const LocalP2CL<ValueT>& f, BaryCoordCL** bp)
+{
+    const BaryCoordCL bc= 0.25*(*bp[0]+*bp[1]+*bp[2]+*bp[3]);
+    return ( f(*bp[0]) + f(*bp[1]) + f(*bp[2]) + f(*bp[3]) )/120. + 2./15. * f(bc);
+}
+
 
 inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i)
 {

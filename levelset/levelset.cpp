@@ -117,7 +117,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
                     sum_vn+= patch.GetAreaFrac() * sum_vnSQR;
                     vn_Bary+= patch.GetAreaFrac() * FE_P2CL::H(v,BarySQR) * nBarySQR;
                 }
-                
+
                 // Quadraturformel auf Dreieck, exakt bis zum Grad 2
                 const Point3DCL int_vn= ((1./12)*sum_vn + 0.75 * vn_Bary);
                 const double C= sigma*patch.GetFuncDet()/2;
@@ -211,6 +211,11 @@ void SF_CurvatureTerm( const MultiGridCL& MG, const VecDescCL& SmPhi, double sig
     }
 //fil << "}\n";
 }
+
+
+//*****************************************************************************
+//                               LevelsetP2CL    
+//*****************************************************************************
 
 void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
@@ -346,7 +351,7 @@ void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
     _gm.Solve( _L, Phi.Data, rhs);
-    std::cout << "res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() <<std::endl;
+    std::cerr << "res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep()
@@ -525,8 +530,14 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     Ab.Build();
 }
 
+//*****************************************************************************
+//                               InterfacePatchCL    
+//*****************************************************************************
+
+const double InterfacePatchCL::approxZero_= 1e-8;
+
 InterfacePatchCL::InterfacePatchCL() 
-  : approxZero_(1e-8), RegRef_( GetRefRule( RegRefRuleC)), intersec_(0)
+  : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
 {
     BaryDoF_[0][0]= BaryDoF_[1][1]= BaryDoF_[2][2]= BaryDoF_[3][3]= 1.;
     for (int edge=0; edge<6; ++edge)
@@ -536,17 +547,19 @@ InterfacePatchCL::InterfacePatchCL()
 void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls)
 {
     const Uint idx_ls= ls.RowIdx->GetIdx();
+    ch_= -1;
     for (int v=0; v<10; ++v)
     { // collect data on all DoF
         Coord_[v]= v<4 ? t.GetVertex(v)->GetCoord() : GetBaryCenter( *t.GetEdge(v-4));
         PhiLoc_[v]= ls.Data[v<4 ? t.GetVertex(v)->Unknowns(idx_ls) : t.GetEdge(v-4)->Unknowns(idx_ls)];
-        sign_[v]= std::abs(PhiLoc_[v]) < approxZero_ ? 0 : (PhiLoc_[v]>0 ? 1 : -1);
+        sign_[v]= Sign(PhiLoc_[v]);
     }
 }
 
 bool InterfacePatchCL::ComputeForChild( Uint ch)
 {
     const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
+    ch_= ch;
     num_sign_[0]= num_sign_[1]= num_sign_[2]= 0;
     for (int vert= 0; vert<4; ++vert)
         ++num_sign_[ sign_[data.Vertices[vert]] + 1];
@@ -621,6 +634,71 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
         sqrtDetATA_/= 2;
         
     return true; // computed patch of child;
+}
+
+bool InterfacePatchCL::ComputeCutForChild( Uint ch)
+{
+    const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
+    ch_= ch;
+    num_sign_[0]= num_sign_[1]= num_sign_[2]= 0;
+    for (int vert= 0; vert<4; ++vert)
+        ++num_sign_[ sign_[data.Vertices[vert]] + 1];
+
+    intersec_= 0;
+    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) // no change of sign on child and no patch on a face
+        return false;
+    if (num_sign_[1]==4)
+    { 
+        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl; 
+        return false; 
+    }
+
+    // erst werden die Nullknoten in PQRS gespeichert...
+    for (int vert= 0; vert<4; ++vert)
+    {
+        const int v= data.Vertices[vert];
+        if (sign_[v]==0)
+        {
+            Bary_[intersec_]= BaryDoF_[v];
+            Edge_[intersec_++]= -1;
+        }
+    }
+    // ...dann die echten Schnittpunkte auf den Kanten mit Vorzeichenwechsel
+    for (int edge= 0; edge<6; ++edge)
+    {
+        const int v0= data.Vertices[ VertOfEdge( edge, 0)],
+                  v1= data.Vertices[ VertOfEdge( edge, 1)];
+        if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
+        {
+            const double lambda= PhiLoc_[v0]/(PhiLoc_[v0]-PhiLoc_[v1]);
+            Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
+            Edge_[intersec_++]= edge;
+        }
+    }
+    if (intersec_<3) return false; // Nullstellenmenge vom Mass 0!
+
+    return true; // computed cut of child;
+}
+
+void InterfacePatchCL::DebugInfo( std::ostream& os, bool InfoForChild) const
+{
+    if (InfoForChild)
+    {
+        const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
+        os << "Patch on child " << ch_ << " with " << GetNumPoints() << " intersections:\nSigns: ";
+        for (int i=0; i<4; ++i)
+            os << GetSign(data.Vertices[i]) << " ";
+        os << std::endl;
+    }
+    else
+    {
+        os << "Signs: ";
+        for (int i=0; i<10; ++i)
+        {
+            os << GetSign(i) << " ";
+        }
+        os << std::endl;
+    }
 }
 
 void InterfacePatchCL::WriteGeom( std::ostream& os) const
