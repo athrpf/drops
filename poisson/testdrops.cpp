@@ -276,9 +276,9 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
     const_MGDataIterCL finest;
     bool new_marks;
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
-        Estimator(1e-10, minratio, markratio, 8, true, &Poisson.ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
+        Estimator(1e-10, minratio, markratio, 8, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
-        EstimatorL2(1e-10, 0., markratio, 8, false, &Poisson.ResidualErrEstimatorL2, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
+        EstimatorL2(1e-10, 0., markratio, 8, false, &MyPoissonCL::ResidualErrEstimatorL2, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
 
 //    std::cerr << "Which method? 0=MG, 1=PCG > ";  std::cin>>meth;
 //    double tol;
