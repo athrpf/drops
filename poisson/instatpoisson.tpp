@@ -80,7 +80,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   IdxT UnknownIdx[4];
   Quad2CL<> rhs;
 
-//  StripTimeCL strip( &_Coeff.f, tf);
+//  StripTimeCL strip( &Coeff::f, tf);
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -96,7 +96,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
       {
         // dot-product of the gradients
         coup[i][j]= inner_prod( G[i], G[j])/6.0*absdet;
-        // coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
+        // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
@@ -164,7 +164,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
       {
         // dot-product of the gradients
         coup[i][j]= inner_prod( G[i], G[j])/6.0*absdet;
-        // coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
+        // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;

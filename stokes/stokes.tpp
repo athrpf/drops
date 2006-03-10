@@ -207,7 +207,7 @@ template <class Coeff>
             {
                 // dot-product of the gradients
                 coup[i][j]= _Coeff.nu * Quad2CL<>( dot(Grad[i], Grad[j])).quad(absdet);
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &Coeff::q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
 
@@ -231,7 +231,7 @@ template <class Coeff>
                         b.Data[Numb[i]+2*stride]-= coup[j][i] * tmp[2];
                     }
                 }
-                tmp= P2DiscCL::Quad(*sit, &_Coeff.f, i, t)*absdet;
+                tmp= P2DiscCL::Quad(*sit, &Coeff::f, i, t)*absdet;
                 b.Data[Numb[i]]+=          tmp[0];
                 b.Data[Numb[i]+stride]+=   tmp[1];
                 b.Data[Numb[i]+2*stride]+= tmp[2];
@@ -327,7 +327,7 @@ void StokesP2P1CL<Coeff>::SetupStiffnessMatrix(MatDescCL* matA) const
             for(int j=0; j<=i; ++j) {
                 // dot-product of the gradients
                 coup[i][j]= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+                coup[i][j]+= Quad(*sit, &Coeff::q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
 
@@ -440,7 +440,7 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
             {
                 // dot-product of the gradients
                 const double c= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
-//                c+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+//                c+= Quad(*sit, &Coeff::q, i, j)*absdet;
                 coup[i][j]= c;
                 coup[j][i]= c;
 
@@ -551,7 +551,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
             {
                 // dot-product of the gradients
                 const double c= _Coeff.nu * Quad2CL<>( dot( Grad[i], Grad[j])).quad(absdet);
-//                c+= Quad(*sit, &_Coeff.q, i, j)*absdet;
+//                c+= Quad(*sit, &Coeff::q, i, j)*absdet;
                 coup[i][j]= c;
                 coup[j][i]= c;
 
@@ -579,7 +579,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
                         id[Numb[i]+2*stride]-= val*tmp[2];
                     }
                 }
-                tmp= P2DiscCL::Quad(*sit, &_Coeff.f, i, tf)*absdet;
+                tmp= P2DiscCL::Quad(*sit, &Coeff::f, i, tf)*absdet;
                 f[Numb[i]]+=          tmp[0];
                 f[Numb[i]+stride]+=   tmp[1];
                 f[Numb[i]+2*stride]+= tmp[2];
@@ -1277,7 +1277,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
             {
                 // negative dot-product of the gradients
                 coup[i][j]= _Coeff.nu * QuadGradP1Bubble(T, i, j)*absdet;
-//                coup[i][j]+= P1BubbleDiscCL::Quad(*sit, &_Coeff.q, i, j)*absdet;
+//                coup[i][j]+= P1BubbleDiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
                 coup[j][i]= coup[i][j];
             }
 
@@ -1300,7 +1300,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
                         b.Data[Numb[i]+2*stride]-= coup[j][i] * tmp[2];
                     }
                 }
-                tmp= P1BubbleDiscCL::Quad(*sit, &_Coeff.f, i)*absdet;
+                tmp= P1BubbleDiscCL::Quad(*sit, &Coeff::f, i)*absdet;
                 b.Data[Numb[i]]+=          tmp[0];
                 b.Data[Numb[i]+stride]+=   tmp[1];
                 b.Data[Numb[i]+2*stride]+= tmp[2];

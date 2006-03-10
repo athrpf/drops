@@ -68,7 +68,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
             {
                 // dot-product of the gradients
                 coup[i][j]= ( G(0,i)*G(0,j) + G(1,i)*G(1,j) + G(2,i)*G(2,j) )/6.0*absdet;
-                coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
+                coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j, 0.0)*absdet;
                 coup[j][i]= coup[i][j];
             }
             UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
@@ -88,7 +88,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                         b.Data[UnknownIdx[i]]-= coup[j][i] * _BndData.GetDirBndValue(*sit->GetVertex(j));
                     }
                 }
-                b.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &_Coeff.f, i, 0.0)*absdet;
+                b.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &Coeff::f, i, 0.0)*absdet;
                 if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
                     for (int f=0; f < 3; ++f)
                         if ( sit->IsBndSeg(FaceOfVert(i, f)) )
@@ -127,7 +127,7 @@ void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
             {
                 // dot-product of the gradients
                 coup[i][j]= ( G(0,i)*G(0,j) + G(1,i)*G(1,j) + G(2,i)*G(2,j) )/6.0*absdet;
-                coup[i][j]+= P1DiscCL::Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
+                coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j, 0.0)*absdet;
                 coup[j][i]= coup[i][j];
             }
             UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
@@ -645,7 +645,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
             {
                 // negative dot-product of the gradients
                 coup[i][j] = QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
+                coup[i][j]+= Quad(*sit, &Coeff::q, i, j, 0.0)*absdet;
                 coup[j][i] = coup[i][j];
             }
 
@@ -667,7 +667,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                         b.Data[Numb[i]]-=          coup[j][i] * tmp;
                     }
                 }
-                tmp= Quad(*sit, &_Coeff.f, i, 0.0)*absdet;
+                tmp= Quad(*sit, &Coeff::f, i, 0.0)*absdet;
                 b.Data[Numb[i]]+=          tmp;
 
                 if ( i<4 ? _BndData.IsOnNeuBnd(*sit->GetVertex(i))
@@ -740,7 +740,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
             {
                 // negative dot-product of the gradients
                 coup[i][j] = QuadGrad( Grad, i, j)*absdet;
-                coup[i][j]+= Quad(*sit, &_Coeff.q, i, j, 0.0)*absdet;
+                coup[i][j]+= Quad(*sit, &Coeff::q, i, j, 0.0)*absdet;
                 coup[j][i] = coup[i][j];
             }
 
