@@ -10,9 +10,9 @@
 inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret;
-    ret[0]=    sin(p[0])*sin(p[1])*sin(p[2])/3.;
-    ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2])/3.;
-    ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2])/3.;
+    ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
+    ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2])/3.;
+    ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2])/3.;
     return ret;
 }
 
@@ -20,17 +20,17 @@ inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
 inline DROPS::SMatrixCL<3, 3> DLsgVel(const DROPS::Point3DCL& p)
 {
     DROPS::SMatrixCL<3, 3> ret;
-        ret(0,0)= cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        ret(0,1)= sin(p[0])*cos(p[1])*sin(p[2])/3.;
-        ret(0,2)= sin(p[0])*sin(p[1])*cos(p[2])/3.;
+        ret(0,0)= std::cos(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
+        ret(0,1)= std::sin(p[0])*std::cos(p[1])*std::sin(p[2])/3.;
+        ret(0,2)= std::sin(p[0])*std::sin(p[1])*std::cos(p[2])/3.;
 
-        ret(1,0)=   sin(p[0])*cos(p[1])*sin(p[2])/3.;
-        ret(1,1)=   cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        ret(1,2)= - cos(p[0])*cos(p[1])*cos(p[2])/3.;
+        ret(1,0)=   std::sin(p[0])*std::cos(p[1])*std::sin(p[2])/3.;
+        ret(1,1)=   std::cos(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
+        ret(1,2)= - std::cos(p[0])*std::cos(p[1])*std::cos(p[2])/3.;
 
-        ret(2,0)= -2.*sin(p[0])*sin(p[1])*cos(p[2])/3.;
-        ret(2,1)=  2.*cos(p[0])*cos(p[1])*cos(p[2])/3.;
-        ret(2,2)= -2.*cos(p[0])*sin(p[1])*sin(p[2])/3.;
+        ret(2,0)= -2.*std::sin(p[0])*std::sin(p[1])*std::cos(p[2])/3.;
+        ret(2,1)=  2.*std::cos(p[0])*std::cos(p[1])*std::cos(p[2])/3.;
+        ret(2,2)= -2.*std::cos(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
     return ret;
 }
 
@@ -39,11 +39,11 @@ inline DROPS::SMatrixCL<3, 3> DLsgVel(const DROPS::Point3DCL& p)
 // int(p)/vol = -0.125208551608365
 inline double LsgPr(const DROPS::Point3DCL& p, double)
 {
-    return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
+    return std::cos(p[0])*std::sin(p[1])*std::sin(p[2]) - 0.125208551608365;
 }
 inline double LsgPr(const DROPS::Point3DCL& p)
 {
-    return cos(p[0])*sin(p[1])*sin(p[2]) - 0.125208551608365;
+    return std::cos(p[0])*std::sin(p[1])*std::sin(p[2]) - 0.125208551608365;
 }
 
 
@@ -54,7 +54,7 @@ class StokesCoeffCL
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
-        { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*cos(p[0])*sin(p[1])*cos(p[2]); return ret; }
+        { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]); return ret; }
     const double nu;
     
     StokesCoeffCL() : nu(1.0) {}
@@ -385,15 +385,15 @@ int main (int argc, char** argv)
                   << std::endl;
         return 1;
     }
-    double omega= atof(argv[1]);
-    double inner_iter_tol= atof(argv[2]);
-    double tol= atof(argv[3]);
-    int meth= atoi(argv[4]);
-    int num_ref= atoi(argv[5]);
-    double rel_red= atof(argv[6]);
-    double markratio= atof(argv[7]);
-    double tau= atof(argv[8]);
-    unsigned int uz_inner_iter= atoi(argv[9]);
+    double omega= std::atof(argv[1]);
+    double inner_iter_tol= std::atof(argv[2]);
+    double tol= std::atof(argv[3]);
+    int meth= std::atoi(argv[4]);
+    int num_ref= std::atoi(argv[5]);
+    double rel_red= std::atof(argv[6]);
+    double markratio= std::atof(argv[7]);
+    double tau= std::atof(argv[8]);
+    unsigned int uz_inner_iter= std::atoi(argv[9]);
     std::cerr << "Omega: " << omega << ", "
               << "inner iter tol: " << inner_iter_tol << ", "
               << "tol: " << tol << ", "

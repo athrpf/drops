@@ -14,15 +14,15 @@ struct StatStokesCL
     static SVectorCL<3> LsgVel(const Point3DCL& p, double)
     {
         SVectorCL<3> ret;
-        ret[0]=    sin(p[0])*sin(p[1])*sin(p[2]);
-        ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2]);
-        ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2]);
+        ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+        ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+        ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
         return ret/3.;
     }
 
     static double LsgPr(const Point3DCL& p, double)
     {
-        return cos(p[0])*sin(p[1])*sin(p[2]);
+        return std::cos(p[0])*std::sin(p[1])*std::sin(p[2]);
     }
 
     // du/dt + q*u - nu*laplace u + Dp = f
@@ -32,7 +32,7 @@ struct StatStokesCL
       public:
         static double q(const Point3DCL&) { return 0.0; }
         static SVectorCL<3> f(const Point3DCL& p, double)
-            { SVectorCL<3> ret(0.0); ret[2]= 3*cos(p[0])*sin(p[1])*cos(p[2]); return ret; }
+            { SVectorCL<3> ret(0.0); ret[2]= 3*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]); return ret; }
         const double nu;
 
         StokesCoeffCL() : nu(1.0) {}
@@ -48,15 +48,15 @@ struct InstatStokes2CL
     static SVectorCL<3> LsgVel(const Point3DCL& p, double t)
     {
         SVectorCL<3> ret;
-        ret[0]=    sin(p[0])*sin(p[1])*sin(p[2])*t*t;
-        ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2])*t*t;
-        ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2])*t*t;
+        ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2])*t*t;
+        ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2])*t*t;
+        ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2])*t*t;
         return ret/3.;
     }
 
     static double LsgPr(const Point3DCL& p, double t)
     {
-        return cos(p[0])*sin(p[1])*sin(p[2])*t*t;
+        return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])*t*t;
     }
 
     // du/dt + q*u - nu*laplace u + Dp = f
@@ -68,9 +68,9 @@ struct InstatStokes2CL
         static SVectorCL<3> f(const Point3DCL& p, double t)
         { 
             SVectorCL<3> ret;
-            ret[0]=       2/3*t*sin(p[0])*sin(p[1])*sin(p[2]);
-            ret[1]=      -2/3*t*cos(p[0])*cos(p[1])*sin(p[2]);
-            ret[2]= (4/3+3*t)*t*cos(p[0])*sin(p[1])*cos(p[2]);
+            ret[0]=       2/3*t*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+            ret[1]=      -2/3*t*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+            ret[2]= (4/3+3*t)*t*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
             return ret;
         }
         const double nu;
@@ -120,9 +120,9 @@ struct InstatStokesCL
     static inline SVectorCL<3> helper( const Point3DCL& p)
     {
         SVectorCL<3> ret;
-        ret[0]=     cos(p[0])*sin(p[1])*sin(p[2]);
-        ret[1]=     sin(p[0])*cos(p[1])*sin(p[2]);
-        ret[2]= -2.*sin(p[0])*sin(p[1])*cos(p[2]);
+        ret[0]=     std::cos(p[0])*std::sin(p[1])*std::sin(p[2]);
+        ret[1]=     std::sin(p[0])*std::cos(p[1])*std::sin(p[2]);
+        ret[2]= -2.*std::sin(p[0])*std::sin(p[1])*std::cos(p[2]);
         return ret;
     }
     
@@ -381,7 +381,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 
         std::cerr << "\nDelta t = "; std::cin >> dt;
         
-        const double theta= 1 - sqrt(2.)/2,
+        const double theta= 1 - std::sqrt(0.5),
                      alpha= (1 - 2*theta)/(1 - theta);
         const double eta= alpha*theta*dt;
         double macrostep;
@@ -449,7 +449,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //        Stokes.CheckSolution(v1, p1, &MyPDE::LsgVel, &MyPDE::LsgPr);
                 std::cerr << "Zeitschritt t = " << t << " dauerte " << time.GetTime()-old_time << " sec\n" << std::endl;
                 old_time= time.GetTime();
-            } while (fabs(t - 1.)>DoubleEpsC);
+            } while (std::fabs(t - 1.)>DoubleEpsC);
 
             delete cplA;
             delete cplI;
@@ -520,7 +520,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //        Stokes.CheckSolution(v1, p1, &MyPDE::LsgVel, &MyPDE::LsgPr, t);
                 std::cerr << "Zeitschritt t = " << t << " dauerte " << time.GetTime()-old_time << " sec\n" << std::endl;
                 old_time= time.GetTime();
-            } while (fabs(t - 1.)>DoubleEpsC);
+            } while (std::fabs(t - 1.)>DoubleEpsC);
 
             delete cplA;
             delete cplI;
@@ -567,7 +567,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //        Stokes.CheckSolution(v1, p1, &MyPDE::LsgVel, &MyPDE::LsgPr, t);
                 std::cerr << "Zeitschritt t = " << t << " dauerte " << time.GetTime()-old_time << " sec\n" << std::endl;
                 old_time= time.GetTime();
-            } while (fabs(t - 1.)>DoubleEpsC);
+            } while (std::fabs(t - 1.)>DoubleEpsC);
             
             if (old_b == &Stokes.b)
                 std::swap( old_b, b);
@@ -688,9 +688,9 @@ int main (int argc, char** argv)
     MyStokesCL prob(brick, MyPDE::Coeff, DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
 
-    double omega= atof(argv[1]);
-    double inner_iter_tol= atof(argv[2]);
-    DROPS::Uint maxStep= atoi(argv[3]);
+    double omega= std::atof(argv[1]);
+    double inner_iter_tol= std::atof(argv[2]);
+    DROPS::Uint maxStep= std::atoi(argv[3]);
     
     std::cerr << "Omega: " << omega << " inner iter tol: " << inner_iter_tol
               << "maxStep: " << maxStep << std::endl;

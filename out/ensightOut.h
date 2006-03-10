@@ -148,7 +148,7 @@ void EnsightP2SolOutCL::AppendTimecode( std::string& str) const
     char format[]= "%0Xi",
          postfix[8];
     format[2]= '0' + char(_decDigits);
-    sprintf( postfix, format, _timestep);
+    std::sprintf( postfix, format, _timestep);
     str+= postfix;
 }
 
@@ -208,17 +208,17 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     if(binary_)
     {
         char buffer[80];
-        strcpy(buffer,"C Binary");     //writing of all necessary information: Binary header
+        std::strcpy(buffer,"C Binary");     //writing of all necessary information: Binary header
         os.write(buffer,80);
-        strcpy(buffer,"DROPS geometry file: ");         //description line 1
+        std::strcpy(buffer,"DROPS geometry file: ");         //description line 1
         os.write(buffer,80);
-        strcpy(buffer,"format: Ensight6 Case format");  //descripiton line 2
+        std::strcpy(buffer,"format: Ensight6 Case format");  //descripiton line 2
         os.write(buffer,80);
-        strcpy(buffer,"node id given");                 //node id status
+        std::strcpy(buffer,"node id given");                 //node id status
         os.write(buffer,80);
-        strcpy(buffer,"element id off");                //element id status
+        std::strcpy(buffer,"element id off");                //element id status
         os.write(buffer,80);
-        strcpy(buffer,"coordinates");                   //coordinates line
+        std::strcpy(buffer,"coordinates");                   //coordinates line
         os.write(buffer,80);
 
         showInt sInt;                  //unions for converting ASCII int to binary
@@ -261,15 +261,15 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
             }
         }
     
-        strcpy(buffer,"part 1");                          //part no. line
+        std::strcpy(buffer,"part 1");                          //part no. line
         os.write(buffer,80);
         int b=0;
         char buff[20];
         for(b=0;b<=20;b++)                                //part description line
             buff[b]=_geom[b];
-        strcpy(buffer,buff);
+        std::strcpy(buffer,buff);
         os.write(buffer,80);
-        strcpy(buffer,"tetra4");                          // element 1 tetrahedron with 4 nodes each
+        std::strcpy(buffer,"tetra4");                          // element 1 tetrahedron with 4 nodes each
         os.write(buffer,80);
         
         sInt.i =  8*std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl));     //number of tetrahedra
@@ -394,7 +394,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
 
     if(binary_)
     {
-        strcpy(buffer,"DROPS data file, scalar variable:");
+        std::strcpy(buffer,"DROPS data file, scalar variable:");
         os.write(buffer,80);
  
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
@@ -463,7 +463,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
    
     if(binary_)
     {
-        strcpy(buffer,"DROPS data file, vector variable:");
+        std::strcpy(buffer,"DROPS data file, vector variable:");
         os.write( buffer, 80);
 
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),

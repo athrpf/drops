@@ -18,7 +18,7 @@ class PoissonCoeffCL
     static double f(const DROPS::Point3DCL& p, double= 0.0)
     {
         const double t0= p.norm();
-        const double t1= exp(a*(t0-b));
+        const double t1= std::exp(a*(t0-b));
         if (t0<1.e-6 || t1 > 1.e10)
             return 0.;
         else
@@ -35,7 +35,7 @@ const double PoissonCoeffCL::b= .3;
 
 inline double Lsg( const DROPS::Point3DCL& p, double= 0.0)
 {
-    return 1/(1.0+exp(PoissonCoeffCL::a*(p.norm()-PoissonCoeffCL::b)));
+    return 1/(1.0+std::exp(PoissonCoeffCL::a*(p.norm()-PoissonCoeffCL::b)));
 }
 
 
@@ -97,7 +97,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
         verts.reserve(3);
         for (Uint i=0; i<4; ++i)
         {
-            if ( fabs(tit->GetVertex(i)->GetCoord()[2] ) < 1.e-10 )
+            if ( std::fabs(tit->GetVertex(i)->GetCoord()[2] ) < 1.e-10 )
                 verts.push_back(i);
         }
         if (verts.size() != 3) continue;
@@ -500,16 +500,16 @@ int main (int argc, char** argv)
         std::cerr << "missing argument! Usage: testdrops <omega> <file> <tol> <meth> <sm> <adap> <grids> <stoperr> <markratio> <minratio>" << std::endl;
         return 1;
     }
-    double omega= atof(argv[1]);
+    double omega= std::atof(argv[1]);
     const char* filename= argv[2];
-    double tol= atof(argv[3]);
-    int meth= atoi(argv[4]);
-    int sm= atoi(argv[5]);
-    int adaptiv= atoi(argv[6]);
-    int grids= atoi(argv[7]);
-    double stoperr= atof(argv[8]);
-    double markratio= atof(argv[9]);
-    double minratio= atof(argv[10]);
+    double tol= std::atof(argv[3]);
+    int meth= std::atoi(argv[4]);
+    int sm= std::atoi(argv[5]);
+    int adaptiv= std::atoi(argv[6]);
+    int grids= std::atoi(argv[7]);
+    double stoperr= std::atof(argv[8]);
+    double markratio= std::atof(argv[9]);
+    double minratio= std::atof(argv[10]);
     std::cout << "omega " << omega << ", ";
     std::cout << "filename " << filename << ", ";
     std::cout << "tol " << tol << ", ";

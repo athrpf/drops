@@ -43,7 +43,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
     
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd

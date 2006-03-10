@@ -277,8 +277,8 @@ int main (int argc, char** argv)
     }
 */
 //    MarkAll(mg);
-    double inner_iter_tol= atof(argv[1]);
-    int num_ref= atoi(argv[2]);
+    double inner_iter_tol= std::atof(argv[1]);
+    int num_ref= std::atoi(argv[2]);
     std::cerr << "inner iter tol: " << inner_iter_tol << std::endl;
     std::cerr << "refinements: " << num_ref << std::endl;
     Strategy(prob, inner_iter_tol, num_ref);

@@ -216,11 +216,11 @@ int main (int argc, char** argv)
                   << argv[0] << " <inner_iter_tol> <num_subdiv> <surf.tension> [<dt> <num_steps>]" << std::endl;
         return 1;
     }
-    double inner_iter_tol= atof(argv[1]);
-    int sub_div= atoi(argv[2]);
-    double sigma= atof(argv[3]);
-    if (argc>4) delta_t= atof(argv[4]);
-    if (argc>5) num_steps= atoi(argv[5]);
+    double inner_iter_tol= std::atof(argv[1]);
+    int sub_div= std::atoi(argv[2]);
+    double sigma= std::atof(argv[3]);
+    if (argc>4) delta_t= std::atof(argv[4]);
+    if (argc>5) num_steps= std::atoi(argv[5]);
 
     std::cerr << "inner iter tol:  " << inner_iter_tol << std::endl;
     std::cerr << "sub divisions:   " << sub_div << std::endl;

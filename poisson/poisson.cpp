@@ -33,7 +33,7 @@ double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const Poisso
                  : Bnd.GetDirBndValue(*t.GetVertex(i));
             val2= (t.GetVertex(j)->Unknowns.Exist()) ? lsg.Data[UnknownIdx[j]] 
                  : Bnd.GetDirBndValue(*t.GetVertex(j));
-            diff= fabs(val1-val2);
+            diff= std::fabs(val1-val2);
             if (diff>maxdiff)
                 maxdiff= diff;
         }

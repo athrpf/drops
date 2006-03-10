@@ -9,15 +9,15 @@
 inline DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret;
-    ret[0]=    sin(p[0])*sin(p[1])*sin(p[2]);
-    ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2]);
-    ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2]);
+    ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+    ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+    ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
     return ret/3.;
 }
 
 inline double LsgPr(const DROPS::Point3DCL& p)
 {
-    return cos(p[0])*sin(p[1])*sin(p[2]);
+    return std::cos(p[0])*std::sin(p[1])*std::sin(p[2]);
 //     return 1.;
 }
 
@@ -34,12 +34,12 @@ class StokesCoeffCL
   public:
     static double q(const DROPS::Point3DCL&) { return 0.0; }
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p)
-        { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*cos(p[0])*sin(p[1])*cos(p[2]); return ret; }
+        { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]); return ret; }
 /*    {
         SVectorCL<3> ret;
-        ret[0]=    sin(p[0])*sin(p[1])*sin(p[2]);
-        ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2]);
-        ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2]);
+        ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+        ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+        ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
         return ret;
     }
 */    
@@ -289,9 +289,9 @@ int main (int argc, char** argv)
     StokesOnBrickCL prob(brick, StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
-    double omega= atof(argv[1]);
-    double inner_iter_tol= atof(argv[2]);
-    double rel_red= atof(argv[3]);
+    double omega= std::atof(argv[1]);
+    double inner_iter_tol= std::atof(argv[2]);
+    double rel_red= std::atof(argv[3]);
     std::cerr << "Omega: " << omega << " inner iter tol: " << inner_iter_tol << " rel. error reduction: " << rel_red << std::endl;
     Strategy(prob, omega, inner_iter_tol, 8, rel_red);
     std::cerr << "hallo" << std::endl;

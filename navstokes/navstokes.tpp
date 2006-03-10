@@ -46,7 +46,7 @@ template <class Coeff>
     {
         double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
         GetTrafoTr(T,det,*sit);
-        absdet= fabs(det);
+        absdet= std::fabs(det);
         for(Uint i= 0; i<10; ++i)
         {
             SVectorCL<3> value= i<4 ? vel.val(*sit->GetVertex(i))
@@ -57,10 +57,10 @@ template <class Coeff>
             div[3]+= inner_prod(T*FE_P2CL::DHRef(i,0,0,1),value);
             div[4]+= inner_prod(T*FE_P2CL::DHRef(i,0.25,0.25,0.25),value);
         }
-        L1_div+= ( (fabs(div[0])+fabs(div[1])+fabs(div[2])+fabs(div[3]))/120 + fabs(div[4])*2./15. ) * absdet;
+        L1_div+= ( (std::fabs(div[0])+std::fabs(div[1])+std::fabs(div[2])+std::fabs(div[3]))/120 + std::fabs(div[4])*2./15. ) * absdet;
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
-    L2_div= ::sqrt(L2_div);
+    L2_div= std::sqrt(L2_div);
     std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
     std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
 
@@ -71,7 +71,7 @@ template <class Coeff>
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
+               diff= std::fabs( LsgVel(sit->GetCoord(), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -87,7 +87,7 @@ template <class Coeff>
         {
            for(int i=0; i<3; ++i)
            {
-               diff= fabs( LsgVel( GetBaryCenter( *sit), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
+               diff= std::fabs( LsgVel( GetBaryCenter( *sit), t)[i] - lsgvel->Data[sit->Unknowns(vidx)+i] );
                norm2+= diff*diff;
                if (diff>maxdiff)
                {
@@ -96,7 +96,7 @@ template <class Coeff>
            }
         }
     }
-    norm2= ::sqrt(norm2 / lsgvel->Data.size());
+    norm2= std::sqrt(norm2 / lsgvel->Data.size());
 
     Point3DCL L1_vel(0.0), L2_vel(0.0);
     for(MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
@@ -107,13 +107,11 @@ template <class Coeff>
 	for(int i=0; i<4; ++i)
 	{
 	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
-	    diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
-	    sum+= diff;
+	    sum+= fabs( diff);
 	}
 	sum/= 120;
 	diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
-	diff[0]= fabs(diff[0]); diff[1]= fabs(diff[1]); diff[2]= fabs(diff[2]);
-	sum+= diff*2./15.;
+	sum+= fabs( diff)*2./15.;
 	sum*= absdet;
 	L1_vel+= sum;
 
@@ -158,7 +156,7 @@ template <class Coeff>
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
-        diff= fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
+        diff= std::fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
         norm2+= diff*diff;
         if (diff>maxdiff)
 	{
@@ -168,7 +166,7 @@ template <class Coeff>
         if (diff<mindiff)
             mindiff= diff;
     }
-    norm2= ::sqrt(norm2 / lsgpr->Data.size() );
+    norm2= std::sqrt(norm2 / lsgpr->Data.size() );
     std::cout << "Maximaler Druckfehler: ";
     maxvert->DebugInfo(std::cout);
     std::cout<<std::endl;
@@ -180,15 +178,15 @@ template <class Coeff>
         for(int i=0; i<4; ++i)
         {
             diff= c_pr + LsgPr(sit->GetVertex(i)->GetCoord(), t) - pr.val(*sit->GetVertex(i));
-            sum+= diff*diff; sum1+= fabs(diff);
+            sum+= diff*diff; sum1+= std::fabs(diff);
         }
         sum/= 120;   sum1/= 120;
         diff= c_pr + LsgPr(GetBaryCenter(*sit), t) - pr.val(*sit, .25, .25, .25);
-        sum+= 2./15.*diff*diff;   sum1+= 2./15.*fabs(diff);
+        sum+= 2./15.*diff*diff;   sum1+= 2./15.*std::fabs(diff);
         L2_pr+= sum * sit->GetVolume()*6.;
         L1_pr+= sum1 * sit->GetVolume()*6.;
     }
-    L2_pr= sqrt( L2_pr);
+    L2_pr= std::sqrt( L2_pr);
 
 
     std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
@@ -235,7 +233,7 @@ template <class Coeff>
     {
         GetTrafoTr(T,det,*sit);
         P2DiscCL::GetGradients(Grad, GradRef, T);
-        absdet= fabs(det);
+        absdet= std::fabs(det);
         u_loc.assign( *sit, u, t);
         
         // collect some information about the edges and verts of the tetra

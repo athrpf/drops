@@ -20,7 +20,7 @@ class PoissonCoeffCL
     static double q(const DROPS::Point3DCL&) { return 0.0; }
 //    static double f(const DROPS::Point3DCL& , double ) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double t)
-      { return (-2.0*exp(t)*exp(p[0]+p[1]+p[2])); }
+      { return (-2.0*std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
     static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
       { return DROPS::Point3DCL(0.); } // no convection
 };
@@ -29,7 +29,7 @@ class PoissonCoeffCL
 //inline double Lsg(const DROPS::Point3DCL& , double )
 //  { return (0.0); }
 inline double Lsg(const DROPS::Point3DCL& p, double t)
-  { return (exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 
 
 // boundary functions (neumann, dirichlet type)
@@ -44,11 +44,11 @@ inline double GradZ(const DROPS::Point3DCL& p, double t)
 */
 
 inline double GradX(const DROPS::Point3DCL& p, double t)
-  { return (exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 inline double GradY(const DROPS::Point3DCL& p, double t)
-  { return (exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 inline double GradZ(const DROPS::Point3DCL& p, double t)
-  { return (exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 
 
 namespace DROPS // for Strategy

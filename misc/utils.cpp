@@ -20,7 +20,7 @@ DROPSErrCL::handle() const
 {
     what(std::cerr);
     std::cerr.flush();
-    abort();
+    std::abort();
 }
 
 } // end of namespace DROPS

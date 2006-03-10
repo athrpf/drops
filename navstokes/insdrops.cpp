@@ -260,15 +260,15 @@ int main (int argc, char** argv)
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
     DROPS::RBColorMapperCL colormap;
 
-    int num_ref= atoi(argv[1]);
-    double fp_tol= atof(argv[2]);
-    int fp_maxiter= atoi(argv[3]);
-    double deco_red= atof(argv[4]);
-    int stokes_maxiter= atoi(argv[5]);
-    double poi_tol= atof(argv[6]);
-    int poi_maxiter= atoi(argv[7]);
-    double theta= atof(argv[8]);
-    double dt= atof(argv[9]);
+    int num_ref= std::atoi(argv[1]);
+    double fp_tol= std::atof(argv[2]);
+    int fp_maxiter= std::atoi(argv[3]);
+    double deco_red= std::atof(argv[4]);
+    int stokes_maxiter= std::atoi(argv[5]);
+    double poi_tol= std::atof(argv[6]);
+    int poi_maxiter= std::atoi(argv[7]);
+    double theta= std::atof(argv[8]);
+    double dt= std::atof(argv[9]);
     std::cerr << "num_ref: " << num_ref << ", ";
     std::cerr << "fp_tol: " << fp_tol<< ", ";
     std::cerr << "fp_maxiter: " << fp_maxiter << ", ";

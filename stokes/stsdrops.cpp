@@ -15,9 +15,9 @@ struct StokesCL
     static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double)
     {
         DROPS::SVectorCL<3> ret;
-        ret[0]=    sin(p[0])*sin(p[1])*sin(p[2]);
-        ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2]);
-        ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2]);
+        ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+        ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+        ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
         return ret/3.;
     }
 
@@ -25,24 +25,24 @@ struct StokesCL
     static inline DROPS::SMatrixCL<3, 3> DLsgVel(const DROPS::Point3DCL& p)
     {
         DROPS::SMatrixCL<3, 3> ret;
-        ret(0,0)= cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        ret(0,1)= sin(p[0])*cos(p[1])*sin(p[2])/3.;
-        ret(0,2)= sin(p[0])*sin(p[1])*cos(p[2])/3.;
+        ret(0,0)= std::cos(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
+        ret(0,1)= std::sin(p[0])*std::cos(p[1])*std::sin(p[2])/3.;
+        ret(0,2)= std::sin(p[0])*std::sin(p[1])*std::cos(p[2])/3.;
 
-        ret(1,0)=   sin(p[0])*cos(p[1])*sin(p[2])/3.;
-        ret(1,1)=   cos(p[0])*sin(p[1])*sin(p[2])/3.;
-        ret(1,2)= - cos(p[0])*cos(p[1])*cos(p[2])/3.;
+        ret(1,0)=   std::sin(p[0])*std::cos(p[1])*std::sin(p[2])/3.;
+        ret(1,1)=   std::cos(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
+        ret(1,2)= - std::cos(p[0])*std::cos(p[1])*std::cos(p[2])/3.;
 
-        ret(2,0)= -2.*sin(p[0])*sin(p[1])*cos(p[2])/3.;
-        ret(2,1)=  2.*cos(p[0])*cos(p[1])*cos(p[2])/3.;
-        ret(2,2)= -2.*cos(p[0])*sin(p[1])*sin(p[2])/3.;
+        ret(2,0)= -2.*std::sin(p[0])*std::sin(p[1])*std::cos(p[2])/3.;
+        ret(2,1)=  2.*std::cos(p[0])*std::cos(p[1])*std::cos(p[2])/3.;
+        ret(2,2)= -2.*std::cos(p[0])*std::sin(p[1])*std::sin(p[2])/3.;
         return ret;
     }
 
     static double LsgPr(const DROPS::Point3DCL& p)
     {
-        return cos(p[0])*sin(p[1])*sin(p[2])
-               -(sin( 1.) -2.*sin( 1.)*cos( 1.) + sin( 1.)*pow( cos( 1.), 2)); // (...)==0.1778213062
+        return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])
+               -(std::sin( 1.) -2.*std::sin( 1.)*std::cos( 1.) + std::sin( 1.)*std::pow( std::cos( 1.), 2)); // (...)==0.1778213062
     }
 
     // q*u - nu*laplace u + Dp = f
@@ -55,9 +55,9 @@ struct StokesCL
         { 
             const double g= StokesCL::g_;
             DROPS::SVectorCL<3> ret;
-            ret[0]= g/3.*sin(p[0])*sin(p[1])*sin(p[2]);
-            ret[1]= -g/3.*cos(p[0])*cos(p[1])*sin(p[2]);
-            ret[2]= cos(p[0])*sin(p[1])*cos(p[2])*(2./3.*g + 3.);
+            ret[0]= g/3.*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+            ret[1]= -g/3.*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+            ret[2]= std::cos(p[0])*std::sin(p[1])*std::cos(p[2])*(2./3.*g + 3.);
             return ret;
         }
         const double nu;
@@ -490,12 +490,12 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
         z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
         res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
-            _res= ::sqrt( res1_norm + res2_norm);
+            _res= std::sqrt( res1_norm + res2_norm);
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
-                      << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
+            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         poissonSolver2_.Apply( A, v_corr, res1);
 //        poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
@@ -504,7 +504,7 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
 //                  << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
         v-= v_corr;
     }
-    _res= ::sqrt( res1_norm + res2_norm );
+    _res= std::sqrt( res1_norm + res2_norm );
 }
 
 void
@@ -646,7 +646,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
          send= const_cast<const DROPS::MultiGridCL&>( mg).GetTriangTetraEnd( lvl);
          sit != send; ++sit) {
         DROPS::P1DiscCL::GetGradients( G,det,*sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         for(int i=0; i<4; ++i) {
             for(int j=0; j<=i; ++j) {
                 // dot-product of the gradients
@@ -1363,15 +1363,15 @@ int main (int argc, char** argv)
         return 1;
     }
 
-    int stokes_maxiter= atoi( argv[1]);
-    double stokes_tol= atof( argv[2]);
-    int poi_maxiter= atoi( argv[3]);
-    double poi_tol= atof( argv[4]);
-    double a= atof( argv[5]);
-    double b= atof( argv[6]);
-    double gamma= atof( argv[7]);
-    int level= atoi( argv[8]);
-    int method= atoi( argv[9]);
+    int stokes_maxiter= std::atoi( argv[1]);
+    double stokes_tol= std::atof( argv[2]);
+    int poi_maxiter= std::atoi( argv[3]);
+    double poi_tol= std::atof( argv[4]);
+    double a= std::atof( argv[5]);
+    double b= std::atof( argv[6]);
+    double gamma= std::atof( argv[7]);
+    int level= std::atoi( argv[8]);
+    int method= std::atoi( argv[9]);
     std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
     std::cerr << "stokes_tol: " << stokes_tol << ", ";
     std::cerr << "poi_maxiter: " << poi_maxiter << ", ";

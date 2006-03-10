@@ -527,7 +527,7 @@ inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
     const double d0= p[1]*q[2] - p[2]*q[1];
     const double d1= p[2]*q[0] - p[0]*q[2];
     const double d2= p[0]*q[1] - p[1]*q[0];
-    return sqrt(d0*d0 + d1*d1 + d2*d2);
+    return std::sqrt(d0*d0 + d1*d1 + d2*d2);
 }
 
 

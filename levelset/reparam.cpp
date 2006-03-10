@@ -113,11 +113,11 @@ int main( int argc, char **argv)
     int bsp= 0, num_steps= 100;
     
     if (argc>1)
-        diff= atof( argv[1]);
+        diff= std::atof( argv[1]);
     if (argc>2)
-        dt= atof( argv[2]);
+        dt= std::atof( argv[2]);
     if (argc>3)
-        num_steps= atoi( argv[3]);
+        num_steps= std::atoi( argv[3]);
 
     std::cout << num_steps << " steps of lenght dt = " << dt 
               << ", diff = " << diff << std::endl;

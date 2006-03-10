@@ -197,9 +197,9 @@ double TetraCL::GetVolume () const
     const Point3DCL p0( _Vertices[0]->GetCoord() );
     for (Uint i=1; i<NumVertsC; ++i)
         v[i-1] = _Vertices[i]->GetCoord() - p0;
-    return fabs(  v[0][0] * (v[1][1]*v[2][2] - v[1][2]*v[2][1])
-                - v[0][1] * (v[1][0]*v[2][2] - v[1][2]*v[2][0])
-                + v[0][2] * (v[1][0]*v[2][1] - v[1][1]*v[2][0]) ) / 6.0;
+    return std::fabs(  v[0][0] * (v[1][1]*v[2][2] - v[1][2]*v[2][1])
+                     - v[0][1] * (v[1][0]*v[2][2] - v[1][2]*v[2][0])
+                     + v[0][2] * (v[1][0]*v[2][1] - v[1][1]*v[2][0]) ) / 6.0;
 }
 
 double
@@ -786,7 +786,7 @@ bool TetraCL::IsSane(std::ostream& os) const
         double vol = 0.0;
         for (const_ChildPIterator tCPIt(GetChildBegin()); tCPIt!=GetChildEnd(); ++tCPIt)
             vol += (*tCPIt)->GetVolume();
-        if ( fabs(GetVolume() - vol) > DoubleEpsC )
+        if ( std::fabs(GetVolume() - vol) > DoubleEpsC )
         {
             sane= false;
             os << "Volume of children does not sum up to parent's volume.";
@@ -1317,9 +1317,9 @@ void circumcircle(const TetraCL& t, Point3DCL& c, double& r)
     gauss_pivot(M, c);
 
     if (DebugRefineEasyC
-        && (fabs( (c-p0).norm() - (c-t.GetVertex(1)->GetCoord()).norm()) > DoubleEpsC
-            || fabs( (c-p0).norm() - (c-t.GetVertex(2)->GetCoord()).norm()) > DoubleEpsC
-            || fabs( (c-p0).norm() - (c-t.GetVertex(3)->GetCoord()).norm()) > DoubleEpsC) )
+        && (std::fabs( (c-p0).norm() - (c-t.GetVertex(1)->GetCoord()).norm()) > DoubleEpsC
+            || std::fabs( (c-p0).norm() - (c-t.GetVertex(2)->GetCoord()).norm()) > DoubleEpsC
+            || std::fabs( (c-p0).norm() - (c-t.GetVertex(3)->GetCoord()).norm()) > DoubleEpsC) )
     {
         std::cerr << "circumcircle: Didn't find circumcenter. c: " << c << '\n';
         t.DebugInfo(std::cerr);
@@ -1344,8 +1344,8 @@ void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r)
     c= v0 + m[0]*p1 + m[1]*p2;
 
     if (DebugRefineEasyC 
-        && (   fabs( (c-v0).norm() - (c-(p1+v0)).norm()) > DoubleEpsC
-            || fabs( (c-v0).norm() - (c-(p2+v0)).norm()) > DoubleEpsC) )
+        && (   std::fabs( (c-v0).norm() - (c-(p1+v0)).norm()) > DoubleEpsC
+            || std::fabs( (c-v0).norm() - (c-(p2+v0)).norm()) > DoubleEpsC) )
     {
         std::cerr << "circumcircle: Didn't find circumcenter. c: " << c << " face: " << face << '\n';
         t.DebugInfo(std::cerr);

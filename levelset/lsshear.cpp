@@ -210,9 +210,9 @@ int main (int argc, char** argv)
         return 1;
     }
 
-    double inner_iter_tol= atof(argv[1]);
-    int sub_div= atoi(argv[2]);
-    double sigma= atof(argv[3]);
+    double inner_iter_tol= std::atof(argv[1]);
+    int sub_div= std::atoi(argv[2]);
+    double sigma= std::atof(argv[3]);
     std::cerr << "inner iter tol:  " << inner_iter_tol << std::endl;
     std::cerr << "sub divisions:   " << sub_div << std::endl;
     std::cerr << "surface tension: " << sigma << std::endl;

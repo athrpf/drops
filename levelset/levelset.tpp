@@ -41,8 +41,8 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
-        h_T= pow( absdet, 1./3.);
+        absdet= std::fabs( det);
+        h_T= std::pow( absdet, 1./3.);
         
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and u_loc

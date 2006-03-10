@@ -914,18 +914,18 @@ void UzawaSolverCL<PoissonSolverT>::Solve(
         z_xpaypby2(res1, A*v, 1.0, transp_mul(B,p), -1.0, b);
         res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
-            _res= ::sqrt( res1_norm + res2_norm );
+            _res= std::sqrt( res1_norm + res2_norm );
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
-                      << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
+            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         _poissonSolver.SetTol( std::sqrt( res1_norm)/20.0);
         _poissonSolver.Solve( A, v_corr, res1);
         v-= v_corr;
     }
-    _res= ::sqrt( res1_norm + res2_norm );
+    _res= std::sqrt( res1_norm + res2_norm );
 }
 
 template <class PoissonSolverT, class PoissonSolver2T>
@@ -953,18 +953,18 @@ void UzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
         z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
         res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
-            _res= ::sqrt( res1_norm + res2_norm);
+            _res= std::sqrt( res1_norm + res2_norm);
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
-                      << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
+            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
         poissonSolver2_.Solve( A, v_corr, res1);
         v-= v_corr;
     }
-    _res= ::sqrt( res1_norm + res2_norm );
+    _res= std::sqrt( res1_norm + res2_norm );
 }
 
 template <class PoissonSolverT>
@@ -1027,19 +1027,19 @@ inline void Uzawa_IPCG_CL::Solve(
 
         if (res1_norm + res2_norm < tol)
         {
-            _res= ::sqrt( res1_norm + res2_norm );
+            _res= std::sqrt( res1_norm + res2_norm );
             return;
         }
 
         if( (_iter%output)==0 )
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
-                      << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
+            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         _A_IPCGsolver.Solve( A, v_corr, res1);
 //        v-= v_corr;
         axpy(-1.0, v_corr, v);
     }
-    _res= ::sqrt( res1_norm + res2_norm );
+    _res= std::sqrt( res1_norm + res2_norm );
 }
 
 template <class PoissonSolverT>
@@ -1152,13 +1152,13 @@ UzawaPCG(const APC& Apc, const Mat& A, const Mat& B,
         resid= norm_sq( r);
         if (resid<=tol)
         {
-            tol= sqrt( resid);
+            tol= std::sqrt( resid);
             max_iter= i;
             return true;
         }
         rho_1= rho;
     }
-    tol= sqrt(resid);
+    tol= std::sqrt(resid);
     return false;
 }
 

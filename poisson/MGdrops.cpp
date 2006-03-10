@@ -191,7 +191,7 @@ int main (int argc, char** argv)
         DROPS::MarkAll(mg);  
         mg.Refine();
     }
-    omega= atof(argv[1]);
+    omega= std::atof(argv[1]);
     std::cerr << omega << std::endl;
     DROPS::Strategy(prob, omega);
     std::cerr << "hallo" << std::endl;

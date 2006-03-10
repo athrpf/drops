@@ -227,7 +227,7 @@ class SVectorCL : public SArrayCL<double,_Size>
     SVectorCL& operator/=(const SVectorCL&);
 
     double norm_sq() const;
-    double norm()    const { return ::sqrt(norm_sq()); }
+    double norm()    const { return std::sqrt(norm_sq()); }
 };
 
 
@@ -393,23 +393,19 @@ bool operator<(const SVectorCL<_Size>& v1,
     return true;
 }
 
-using ::sqrt;
-
 template <Uint _Size>
 SVectorCL<_Size> sqrt(const SVectorCL<_Size>& v)
 {
     SVectorCL<_Size> tempv( Uninitialized);
-    for (Uint i=0; i<_Size; ++i) tempv[i]= sqrt(v[i]);
+    for (Uint i=0; i<_Size; ++i) tempv[i]= std::sqrt(v[i]);
     return tempv;
 }
-
-using ::fabs;
 
 template <Uint _Size>
 SVectorCL<_Size> fabs(const SVectorCL<_Size>& v)
 {
     SVectorCL<_Size> tempv( Uninitialized);
-    for (Uint i=0; i<_Size; ++i) tempv[i]= fabs(v[i]);
+    for (Uint i=0; i<_Size; ++i) tempv[i]= std::fabs(v[i]);
     return tempv;
 }
 

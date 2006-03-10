@@ -40,7 +40,7 @@ class PoissonCoeffCL
     { 
 //        return 0;
         const double u= C.rho*9.81*C.dy*C.dy/2/C.mu*1e-3;
-    	return cos((p[0] + t*u)/C.dx*2*M_PI); 
+    	return std::cos((p[0] + t*u)/C.dx*2*M_PI); 
     }
     static DROPS::Point3DCL Vel(const DROPS::Point3DCL& p, double)
     { 

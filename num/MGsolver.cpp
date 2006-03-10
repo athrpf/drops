@@ -36,7 +36,7 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end)
             Ai= transp_mul( fine->P.Data, fine->A.Data * (fine->P.Data * ei) );
             for(Uint j=0; j<nu; ++j)
             {
-                if (fabs(Ai[j] - coarse->A.Data(i,j))>1e-6)
+                if (std::fabs(Ai[j] - coarse->A.Data(i,j))>1e-6)
                 {
                     std::cerr << "Auf coarse-Level " << lvl << ": A_H(" << i << ", " << j <<")= "
                               << coarse->A.Data(i,j) << " != " << Ai[j] << std::endl;

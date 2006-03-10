@@ -110,13 +110,13 @@ int main( int argc, char **argv)
     int num_steps= 100, num_reparam= 0;
     
     if (argc>1)
-        dt= atof( argv[1]);
+        dt= std::atof( argv[1]);
     if (argc>2)
-        num_steps= atoi( argv[2]);
+        num_steps= std::atoi( argv[2]);
     if (argc>3)
-        SD= atof( argv[3]);
+        SD= std::atof( argv[3]);
     if (argc>4)
-        num_reparam= atoi( argv[4]);
+        num_reparam= std::atoi( argv[4]);
         
     std::cout << "dt = " << dt << ", SD = " << SD << ", num_reparam = " << num_reparam << std::endl;
     DROPS::Point3DCL null(0.0);

@@ -176,7 +176,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 //            e= B->Data*v1->Data                             - c->Data;
             z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
             
-            std::cerr << "fp_step: " << fp_step << ", res = " << (res= sqrt(d*d + e*e) ) << std::endl; 
+            std::cerr << "fp_step: " << fp_step << ", res = " << (res= std::sqrt(d*d + e*e) ) << std::endl; 
             if (res < fp_tol )
                 break;
             
@@ -265,12 +265,12 @@ int main (int argc, char** argv)
         
     DROPS::RBColorMapperCL colormap;
 
-        double fp_tol= atof(argv[1]);
-        double poi_tol= atof(argv[2]);
-        int fp_maxiter= atoi(argv[3]);
-        int poi_maxiter= atoi(argv[4]);
-        double uzawa_red= atof(argv[5]);
-        int num_ref= atoi(argv[6]);
+        double fp_tol= std::atof(argv[1]);
+        double poi_tol= std::atof(argv[2]);
+        int fp_maxiter= std::atoi(argv[3]);
+        int poi_maxiter= std::atoi(argv[4]);
+        double uzawa_red= std::atof(argv[5]);
+        int num_ref= std::atoi(argv[6]);
         std::cerr << "fp_tol: " << fp_tol<< ", ";
         std::cerr << "poi_tol: " << poi_tol << ", ";
         std::cerr << "fp_maxiter: " << fp_maxiter << ", ";

@@ -88,7 +88,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
-    absdet= fabs(det);
+    absdet= std::fabs(det);
 
     for(int i=0; i<4; ++i)
     {
@@ -156,7 +156,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
-    absdet= fabs(det);
+    absdet= std::fabs(det);
 
     for(int i=0; i<4; ++i)
     {
@@ -210,7 +210,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
-    absdet= fabs(det);
+    absdet= std::fabs(det);
     
     for(int i=0; i<4; ++i)
     {
@@ -327,7 +327,7 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
     sum+= 2./15. * diff*diff; 
     L2+= sum*absdet;
   } 
-  L2= sqrt(L2);
+  L2= std::sqrt(L2);
 
   for (MultiGridCL::const_TriangVertexIteratorCL 
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl),
@@ -336,7 +336,7 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   {
     if (sit->Unknowns.Exist(idx.GetIdx()))
     {
-      diff= fabs( Lsg(sit->GetCoord(),t) - lsg.Data[sit->Unknowns(Idx)] );
+      diff= std::fabs( Lsg(sit->GetCoord(),t) - lsg.Data[sit->Unknowns(Idx)] );
       norm2+= diff*diff;
       if (diff>maxdiff)
       {
@@ -344,11 +344,10 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
       }
     }
   }
-  std::cerr << "  2-Norm= " << ::sqrt(norm2)                 << std::endl
-            << "w-2-Norm= " << ::sqrt(norm2/lsg.Data.size()) << std::endl
-            << "max-Norm= " << maxdiff                       << std::endl
-            << " L2-Norm= " << L2                            << std::endl;
-
+  std::cerr << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
+            << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
+            << "max-Norm= " << maxdiff                          << std::endl
+            << " L2-Norm= " << L2                               << std::endl;
 }
 
 

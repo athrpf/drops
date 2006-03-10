@@ -78,16 +78,16 @@ int main()
 //        DebugIt(&mg);
         char str[20];
         std::ofstream ofs;
-        sprintf(str, "drop%i.off", i+1);
+        std::sprintf(str, "drop%i.off", i+1);
         ofs.open(str);
         ofs << DROPS::GeomMGOutCL(mg, -1, false, 0.5) << std::endl;
         ofs.close();
-        sprintf(str, "bary%i.mg", i+1);
+        std::sprintf(str, "bary%i.mg", i+1);
         ofs.open(str);
         for (DROPS::MultiGridCL::TriangTetraIteratorCL it= mg.GetTriangTetraBegin(), end= mg.GetTriangTetraEnd(); it!=end; ++it)
             ofs << GetBaryCenter(*it) << '\n';
         ofs.close();
-        sprintf(str, "verts%i.mg", i+1);
+        std::sprintf(str, "verts%i.mg", i+1);
         ofs.open(str);
         for (DROPS::MultiGridCL::TriangVertexIteratorCL it= mg.GetTriangVertexBegin(), end= mg.GetTriangVertexEnd(); it!=end; ++it)
             ofs << it->GetCoord() << '\n';

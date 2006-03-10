@@ -30,7 +30,7 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
          send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         n.assign( *sit, *B->ColIdx, BndData.Vel);
         const IdxT prNumbTetra= sit->Unknowns(pidx);
 
@@ -74,7 +74,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
          send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         n.assign( *sit, *B->ColIdx, BndData.Vel);
         GetLocalNumbP1NoBnd( prNumb, *sit, *B->RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
@@ -118,7 +118,7 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
         send=MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         n.assign( *sit, *B->ColIdx, BndData.Vel);
         GetLocalNumbP1DNoBnd( prNumb, *sit, *B->RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
@@ -174,7 +174,7 @@ void SetupRhs2_P2P0( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL
         const IdxT prNumbTetra= sit->Unknowns(pidx);
 
         GetTrafoTr( T, det, *sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
 
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
@@ -221,7 +221,7 @@ void SetupRhs2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL
             IsOnDirBnd[i+4]= BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) );
 
         GetTrafoTr( T, det, *sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
     
         // b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
@@ -268,7 +268,7 @@ void SetupRhs2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDataC
             IsOnDirBnd[i+4]= BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) );
 
         GetTrafoTr( T, det, *sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
     
         // b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
@@ -425,7 +425,7 @@ void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_p
         rho_inv.apply( rho_invers);
         
         P1DiscCL::GetGradients( G,det,*sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         const double IntRhoInv= rho_inv.quad( absdet);
         for(int i=0; i<4; ++i) 
         {
@@ -474,7 +474,7 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_
         rho_inv.apply( rho_invers);
         
         P1DDiscCL::GetGradients( G,det,*sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         const double IntRhoInv= rho_inv.quad( absdet);
         for(int i=0; i<4; ++i) 
         {
@@ -591,7 +591,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
     
         rhs.assign( *sit, _Coeff.f, t);
         Phi.assign( *sit, ls, t);
@@ -712,7 +712,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
             sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         // Collect information about Numbering of unknowns and boundary conditions.
         locn.assign( *sit, *A->RowIdx, _BndData.Vel);
         ls_loc.assign( *sit, ls, t); // needed for restrictions

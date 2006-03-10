@@ -175,10 +175,10 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
 
-    omega= atof(argv[1]);
-    rel_red= atof(argv[2]);
-    markratio= atof(argv[3]);
-    maxiter= atoi(argv[4]);
+    omega= std::atof(argv[1]);
+    rel_red= std::atof(argv[2]);
+    markratio= std::atof(argv[3]);
+    maxiter= std::atoi(argv[4]);
     std::cerr << "Omega: " << omega << " rel_red: " << rel_red 
               << " markratio: " << markratio << " maxiter: " << maxiter
 	      << std::endl;

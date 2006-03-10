@@ -416,7 +416,7 @@ CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
 
     if (resid<=tol)
     {
-        tol= sqrt(resid);
+        tol= std::sqrt(resid);
         max_iter= 0;
         return true;
     }
@@ -434,14 +434,14 @@ CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
         resid= norm_sq( r);
         if (resid<=tol)
         {
-            tol= sqrt(resid);
+            tol= std::sqrt(resid);
             max_iter= i;
             return true;
         }
         beta= resid / beta;
         d= beta*d-r;
     }
-    tol= sqrt(resid);
+    tol= std::sqrt(resid);
     return false;
 }
 
@@ -469,7 +469,7 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
     if (resid<=tol)
     {
-        tol= sqrt(resid);
+        tol= std::sqrt(resid);
         max_iter= 0;
         return true;
     }
@@ -491,13 +491,13 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         resid= norm_sq( r);
         if (resid<=tol)
         {
-            tol= sqrt( resid);
+            tol= std::sqrt( resid);
             max_iter= i;
             return true;
         }
         rho_1= rho;
     }
-    tol= sqrt(resid);
+    tol= std::sqrt(resid);
     return false;
 }
 
@@ -1161,12 +1161,12 @@ gauss_pivot(SMatrixCL<_Dim, _Dim>& A, SVectorCL<_Dim>& b)
 
     for (size_t i=0; i<_Dim-1; ++i)
     {
-        max= fabs(A(p[i], i));
+        max= std::fabs(A(p[i], i));
         ind_max= i;
         for (size_t l=i+1; l<_Dim; ++l)
-            if (fabs(A(p[l], i))>max)
+            if (std::fabs(A(p[l], i))>max)
             {
-                max= fabs(A(p[l], i));
+                max= std::fabs(A(p[l], i));
                 ind_max= l;
             }
         if (max == 0.0) throw DROPSErrCL("gauss_pivot: Matrix is singular.");

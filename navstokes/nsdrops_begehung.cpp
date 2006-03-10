@@ -22,8 +22,8 @@ struct NSDrCavCL
     static inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
     {
         const DROPS::SVectorCL<3> ret= 5.*DROPS::std_basis<3>(1);
-        const double d0= fabs(p[0]-.5);
-        const double d1= fabs(p[1]-.5);
+        const double d0= std::fabs(p[0]-.5);
+        const double d1= std::fabs(p[1]-.5);
         const double m= std::max(d0, d1);
         return (.5-st<m) ? ((.5-m)/st)*ret : ret;
     }
@@ -108,7 +108,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
         verts.reserve(3);
         for (Uint i=0; i<4; ++i)
         {
-            if ( fabs(tit->GetVertex(i)->GetCoord()[1] -0.5 ) < 1.e-10 )
+            if ( std::fabs(tit->GetVertex(i)->GetCoord()[1] -0.5 ) < 1.e-10 )
                 verts.push_back(i);
         }
         if (verts.size() != 3) continue;
@@ -121,7 +121,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
         {
             os << tit->GetVertex(verts[i])->GetCoord()[0] << ' '
                << tit->GetVertex(verts[i])->GetCoord()[2] << ' '
-               << log(fabs(val[verts[i]])+0.5)
+               << std::log(std::fabs(val[verts[i]])+0.5)
                << '\n';
         }
         os <<   "3 0 1 2"
@@ -170,7 +170,7 @@ PlotMTVSolOutCL<DiscVel>::put(std::ostream &os) const
     for ( MultiGridCL::const_TriangVertexIteratorCL tit=_MG->GetTriangVertexBegin(_level);
           tit!=_MG->GetTriangVertexEnd(_level); ++tit )
     {
-        if ( fabs(tit->GetCoord()[1] -0.5 ) > 1.e-10 )
+        if ( std::fabs(tit->GetCoord()[1] -0.5 ) > 1.e-10 )
             continue;
          
             os << tit->GetCoord()[0] << ' ' << tit->GetCoord()[2] << " 0.0\t"
@@ -439,7 +439,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 //            e= B->Data*v1->Data                             - c->Data;
             z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
             
-            std::cerr << "fp_step: " << fp_step << ", res = " << (res= sqrt( norm_sq( d) + norm_sq( e))) << std::endl; 
+            std::cerr << "fp_step: " << fp_step << ", res = " << (res= std::sqrt( norm_sq( d) + norm_sq( e))) << std::endl; 
             if (res < fp_tol )
                 break;
             
@@ -529,14 +529,14 @@ int main (int argc, char** argv)
     DROPS::RBColorMapperCL colormap;
 
     {
-        double inner_iter_tol= atof(argv[1]);
-        double tol= atof(argv[2]);
-        int meth= atoi(argv[3]);
-        int num_ref= atoi(argv[4]);
-        double rel_red= atof(argv[5]);
-        double markratio= atof(argv[6]);
-        double tau= atof(argv[7]);
-        unsigned int uz_inner_iter= atoi(argv[8]);
+        double inner_iter_tol= std::atof(argv[1]);
+        double tol= std::atof(argv[2]);
+        int meth= std::atoi(argv[3]);
+        int num_ref= std::atoi(argv[4]);
+        double rel_red= std::atof(argv[5]);
+        double markratio= std::atof(argv[6]);
+        double tau= std::atof(argv[7]);
+        unsigned int uz_inner_iter= std::atoi(argv[8]);
         std::cerr << "inner iter tol: " << inner_iter_tol << ", ";
         std::cerr << "tol: " << tol << ", ";
         std::cerr << "meth: " << meth << ", ";

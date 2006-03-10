@@ -76,7 +76,7 @@ double DistanceFct( const DROPS::Point3DCL& p)
     const DROPS::Point3DCL d= C.Mitte-p;
     double max=-1;
     for (int i=0; i<3; ++i)
-        if (fabs(d[i])>max) max= fabs(d[i]);
+        if (std::fabs(d[i])>max) max= std::fabs(d[i]);
     return max-C.Radius;
 }
 */
@@ -391,8 +391,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     const VectorCL& u= Stokes.v.Data;       
     std::cerr << "\n----------------\n || u ||_oo = " << supnorm(u)
-              << "\n || u ||_M  = " << sqrt( dot( Stokes.M.Data*u, u))
-              << "\n || u ||_A  = " << sqrt( dot( Stokes.A.Data*u, u))
+              << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))
+              << "\n || u ||_A  = " << std::sqrt( dot( Stokes.A.Data*u, u))
               << "\n----------------\n";
 
     ErrorPr( Stokes.p, prM.Data, C.sigma, MG);
@@ -429,8 +429,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         cpl.DoStep( C.FPsteps);
         const VectorCL& u= Stokes.v.Data;       
         std::cerr << "\n----------------\n || u ||_oo = " << supnorm(u)
-                  << "\n || u ||_M  = " << sqrt( dot( Stokes.M.Data*u, u))
-                  << "\n || u ||_A  = " << sqrt( dot( Stokes.A.Data*u, u))
+                  << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))
+                  << "\n || u ||_A  = " << std::sqrt( dot( Stokes.A.Data*u, u))
                   << "\n----------------\n";
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
@@ -470,11 +470,11 @@ void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
             {
                 const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
                 neg+= val<0; 
-                zero+= fabs(val)<1e-9;
+                zero+= std::fabs(val)<1e-9;
             }   
             const double val= DistanceFct( GetBaryCenter(*It));
             neg+= val<0; 
-            zero+= fabs(val)<1e-9;
+            zero+= std::fabs(val)<1e-9;
             
             if ( (neg!=0 && neg!=5) || zero) // change of sign or zero in tetra
                It->SetRegRefMark();
@@ -512,7 +512,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
     
-    const int n= atoi( C.meshfile.c_str());
+    const int n= std::atoi( C.meshfile.c_str());
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
     
     const DROPS::BndCondT bc[6]= 

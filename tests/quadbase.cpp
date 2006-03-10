@@ -22,7 +22,7 @@ double g(const SVectorCL<3>& p)
 {  return p[0] +10.*p[1] +100.*p[2]+1000.; }
 
 double h(const SVectorCL<3>& p)
-{  return sin(M_PI*p[0])*sin(M_PI*p[1])*sin(M_PI*p[2]); }
+{  return std::sin(M_PI*p[0])*std::sin(M_PI*p[1])*std::sin(M_PI*p[2]); }
 
 double g2(const DROPS::Point3DCL& p)
 {

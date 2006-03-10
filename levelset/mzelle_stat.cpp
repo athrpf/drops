@@ -170,11 +170,11 @@ int main (int argc, char** argv)
                   << argv[0] << " <inner_iter_tol> <num_dropref> <surf.tension> [<inflow_vel>]" << std::endl;
         return 1;
     }
-    double inner_iter_tol= atof(argv[1]);
-    int num_dropref= atoi(argv[2]);
-    double sigma= atof(argv[3]);
+    double inner_iter_tol= std::atof(argv[1]);
+    int num_dropref= std::atoi(argv[2]);
+    double sigma= std::atof(argv[3]);
     if (argc>=5)
-        Anstroem= atof(argv[4]);
+        Anstroem= std::atof(argv[4]);
     // bubble position
     Mitte[0]= x_Mitte;
 

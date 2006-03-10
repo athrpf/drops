@@ -291,7 +291,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         
         for (int i=0; i<4; ++i)
             Numb[i]= sit->GetVertex(i)->Unknowns(idx);
@@ -427,7 +427,7 @@ double LevelsetP2CL::GetVolume( double translation) const
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         
         for (int i=0; i<4; ++i)
             Xi[i]= H( phi.val( *sit->GetVertex(i)) + translation);
@@ -509,7 +509,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         
         for (int i=0; i<4; ++i)
             Numb[i]= sit->GetVertex(i)->Unknowns(idx);

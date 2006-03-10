@@ -207,8 +207,8 @@ int main (int argc, char** argv)
     }
 */
 //    MarkAll(mg);
-    omega= atof(argv[1]);
-    rel_red= atof(argv[2]);
+    omega= std::atof(argv[1]);
+    rel_red= std::atof(argv[2]);
     std::cerr << "Omega: " << omega << " rel_red: " << rel_red << std::endl;
     DROPS::Strategy(prob, omega, rel_red);
     std::cerr << "hallo" << std::endl;

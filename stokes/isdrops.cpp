@@ -14,16 +14,16 @@ struct InstatStokesCL
     static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double t)
     {
         DROPS::SVectorCL<3> ret;
-        ret[0]=    sin(p[0])*sin(p[1])*sin(p[2])*t*t;
-        ret[1]=  - cos(p[0])*cos(p[1])*sin(p[2])*t*t;
-        ret[2]= 2.*cos(p[0])*sin(p[1])*cos(p[2])*t*t;
+        ret[0]=    std::sin(p[0])*std::sin(p[1])*std::sin(p[2])*t*t;
+        ret[1]=  - std::cos(p[0])*std::cos(p[1])*std::sin(p[2])*t*t;
+        ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2])*t*t;
         return ret/3.;
     }
 
     static double LsgPr(const DROPS::Point3DCL& p, double t)
     {
-        return cos(p[0])*sin(p[1])*sin(p[2])*t*t
-               -(sin( 1.) -2.*sin( 1.)*cos( 1.) + sin( 1.)*pow( cos( 1.), 2))*t*t; // (...)==0.1778213062
+        return std::cos(p[0])*std::sin(p[1])*std::sin(p[2])*t*t
+               -(std::sin( 1.) -2.*std::sin( 1.)*std::cos( 1.) + std::sin( 1.)*std::pow( std::cos( 1.), 2))*t*t; // (...)==0.1778213062
     }
 
     // du/dt + q*u - nu*laplace u + Dp = f
@@ -35,9 +35,9 @@ struct InstatStokesCL
         static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double t)
         { 
             DROPS::SVectorCL<3> ret;
-            ret[0]= 2./3.*t*sin(p[0])*sin(p[1])*sin(p[2]);
-            ret[1]= -2./3.*t*cos(p[0])*cos(p[1])*sin(p[2]);
-            ret[2]= cos(p[0])*sin(p[1])*cos(p[2])*t*(4./3. + 3.*t);
+            ret[0]= 2./3.*t*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
+            ret[1]= -2./3.*t*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
+            ret[2]= std::cos(p[0])*std::sin(p[1])*std::cos(p[2])*t*(4./3. + 3.*t);
             return ret;
         }
         const double nu;
@@ -175,12 +175,12 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
         z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
         res1_norm= norm_sq( res1);
         if (res1_norm + res2_norm < tol) {
-            _res= ::sqrt( res1_norm + res2_norm);
+            _res= std::sqrt( res1_norm + res2_norm);
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << ::sqrt( res1_norm)
-                      << ", norm of 2nd eq= " << ::sqrt( res2_norm) << std::endl;
+            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         poissonSolver2_.Apply( A, v_corr, res1);
 //        poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
@@ -189,7 +189,7 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
 //                  << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
         v-= v_corr;
     }
-    _res= ::sqrt( res1_norm + res2_norm );
+    _res= std::sqrt( res1_norm + res2_norm );
 }
 
 void
@@ -289,7 +289,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
          send= const_cast<const DROPS::MultiGridCL&>( mg).GetTriangTetraEnd( lvl);
          sit != send; ++sit) {
         DROPS::P1DiscCL::GetGradients( G,det,*sit);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         for(int i=0; i<4; ++i) {
             for(int j=0; j<=i; ++j) {
                 // dot-product of the gradients
@@ -1124,17 +1124,17 @@ int main (int argc, char** argv)
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
 
-    int stokes_maxiter= atoi( argv[1]);
-    double stokes_tol= atof( argv[2]);
-    int poi_maxiter= atoi( argv[3]);
-    double poi_tol= atof( argv[4]);
-    double theta= atof( argv[5]);
-    int num_timestep= atoi( argv[6]);
-    double k_pc= atof( argv[7]);
-    double shell_width= atof( argv[8]);
-    int c_level= atoi( argv[9]);
-    int f_level= atoi( argv[10]);
-    int method= atoi( argv[11]);
+    int stokes_maxiter= std::atoi( argv[1]);
+    double stokes_tol= std::atof( argv[2]);
+    int poi_maxiter= std::atoi( argv[3]);
+    double poi_tol= std::atof( argv[4]);
+    double theta= std::atof( argv[5]);
+    int num_timestep= std::atoi( argv[6]);
+    double k_pc= std::atof( argv[7]);
+    double shell_width= std::atof( argv[8]);
+    int c_level= std::atoi( argv[9]);
+    int f_level= std::atoi( argv[10]);
+    int method= std::atoi( argv[11]);
     std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
     std::cerr << "stokes_tol: " << stokes_tol << ", ";
     std::cerr << "poi_maxiter: " << poi_maxiter << ", ";

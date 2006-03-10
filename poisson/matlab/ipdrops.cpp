@@ -278,7 +278,7 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
     ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
   {
     TetraCenter= GetBaryCenter(*It);
-    if (fabs(TetraCenter[0])<=width || fabs(TetraCenter[0]-xl)<=width)
+    if (std::fabs(TetraCenter[0])<=width || std::fabs(TetraCenter[0]-xl)<=width)
       It->SetRegRefMark();
   }
 }
@@ -295,7 +295,7 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
     for(int i=0; i<4; ++i)
     {
       VertCoord=It->GetVertex(i)->GetCoord();
-      if (fabs(VertCoord[0])<=width || fabs(VertCoord[0]-xl)<=width)
+      if (std::fabs(VertCoord[0])<=width || std::fabs(VertCoord[0]-xl)<=width)
         It->SetRegRefMark();
     }
   }

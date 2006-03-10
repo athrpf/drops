@@ -14,7 +14,7 @@ class PoissonCoeffCL
     static double f(const DROPS::Point3DCL& p, double= 0.0)
     {
         const double t0= p.norm();
-        const double t1= exp(a*(t0-b));
+        const double t1= std::exp(a*(t0-b));
         if (t0<1.e-5 || t1 > 1.e10)
             return 0.;
         else
@@ -31,7 +31,7 @@ const double PoissonCoeffCL::b= .3;
 
 inline double Lsg( const DROPS::Point3DCL& p, double= 0.0)
 {
-    return 1/(1.0+exp(PoissonCoeffCL::a*(p.norm()-PoissonCoeffCL::b)));
+    return 1/(1.0+std::exp(PoissonCoeffCL::a*(p.norm()-PoissonCoeffCL::b)));
 }
 
 
@@ -188,10 +188,10 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
 
-    omega= atof(argv[1]);
-    rel_red= atof(argv[2]);
-    markratio= atof(argv[3]);
-    maxiter= atoi(argv[4]);
+    omega= std::atof(argv[1]);
+    rel_red= std::atof(argv[2]);
+    markratio= std::atof(argv[3]);
+    maxiter= std::atoi(argv[4]);
     std::cerr << "Omega: " << omega << " rel_red: " << rel_red 
               << " markratio: " << markratio << " maxiter: " << maxiter
 	      << std::endl;

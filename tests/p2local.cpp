@@ -23,10 +23,10 @@ double g(const SVectorCL<3>& p)
 {  return p[0] +10.*p[1] +100.*p[2]+1000.; }
 
 double h(const SVectorCL<3>& p)
-{  return sin(M_PI*p[0])*sin(M_PI*p[1])*sin(M_PI*p[2]); }
+{  return std::sin(M_PI*p[0])*std::sin(M_PI*p[1])*std::sin(M_PI*p[2]); }
 
 double h2(const SVectorCL<3>& p)
-{  return cos(M_PI*p[0])*cos(M_PI*p[1])*cos(M_PI*p[2]); }
+{  return std::cos(M_PI*p[0])*std::cos(M_PI*p[1])*std::cos(M_PI*p[2]); }
 
 double g2(const DROPS::Point3DCL& p)
 {
@@ -130,7 +130,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
     
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -194,7 +194,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= fabs( det);
+        absdet= std::fabs( det);
         ls.assign( *sit, vd2, theBnd);
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd

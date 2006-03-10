@@ -31,8 +31,8 @@ const double st= 0.1;
 inline DROPS::SVectorCL<3> Stroem( const DROPS::Point3DCL& p, double)
 {
     const DROPS::SVectorCL<3> ret= DROPS::std_basis<3>(1);
-    const double d0= fabs(p[0]-.5);
-    const double d1= fabs(p[1]-.5);
+    const double d0= std::fabs(p[0]-.5);
+    const double d1= std::fabs(p[1]-.5);
     const double m= std::max(d0, d1);
     return (.5-st<m) ? ((.5-m)/st)*ret : ret;
 }
@@ -263,14 +263,14 @@ int main (int argc, char** argv)
     StokesOnBrickCL prob(brick, DrivenCavityCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
-    double inner_iter_tol= atof(argv[1]);
-    double tol= atof(argv[2]);
-    int meth= atoi(argv[3]);
-    int num_ref= atoi(argv[4]);
-    double rel_red= atof(argv[5]);
-    double markratio= atof(argv[6]);
-    double tau= atof(argv[7]);
-    unsigned int uz_inner_iter= atoi(argv[8]);
+    double inner_iter_tol= std::atof(argv[1]);
+    double tol= std::atof(argv[2]);
+    int meth= std::atoi(argv[3]);
+    int num_ref= std::atoi(argv[4]);
+    double rel_red= std::atof(argv[5]);
+    double markratio= std::atof(argv[6]);
+    double tau= std::atof(argv[7]);
+    unsigned int uz_inner_iter= std::atoi(argv[8]);
     std::cerr << "inner iter tol: " << inner_iter_tol << ", ";
     std::cerr << "tol: " << tol << ", ";
     std::cerr << "meth: " << meth << ", ";

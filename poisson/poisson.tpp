@@ -60,7 +60,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
          sit != send; ++sit)
     {
         P1DiscCL::GetGradients(G,det,*sit);   
-        absdet= fabs(det);
+        absdet= std::fabs(det);
 
         for(int i=0; i<4; ++i)
         {
@@ -120,7 +120,7 @@ void PoissonP1CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
          sit != send; ++sit)
     {
         P1DiscCL::GetGradients(G,det,*sit);
-        absdet= fabs(det);
+        absdet= std::fabs(det);
         for(int i=0; i<4; ++i)
         {
             for(int j=0; j<=i; ++j)
@@ -187,14 +187,14 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
         sum+= 2./15. * diff*diff;
         L2+= sum*absdet;
     }
-    L2= sqrt(L2);
+    L2= std::sqrt(L2);
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(Idx))
         {
-           diff= fabs( Lsg( sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
+           diff= std::fabs( Lsg( sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
            norm2+= diff*diff;
            if (diff>maxdiff)
            {
@@ -202,8 +202,8 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
            }
         }
     }
-    std::cerr << "  2-Norm= " << ::sqrt(norm2)                 << std::endl
-              << "w-2-Norm= " << ::sqrt(norm2/lsg.Data.size()) << std::endl
+    std::cerr << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
+              << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
               << "max-Norm= " << maxdiff                       << std::endl
               << " L2-Norm= " << L2                            << std::endl;
     return L2;
@@ -249,7 +249,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
          sit != send; ++sit)
     {
         localerr= est(*sit, lsg, GetBndData());
-        localerr_dist= localerr/::sqrt(sit->GetVolume());
+        localerr_dist= localerr/std::sqrt(sit->GetVolume());
         globalerr+= localerr*localerr;
         if ( sit->IsUnrefined() )
             if (localerr_dist>rel_loc_tol*exp_err)
@@ -263,7 +263,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
                     ++num_un_ref;
                 }
     }
-    globalerr= ::sqrt(globalerr);
+    globalerr= std::sqrt(globalerr);
     std::cerr << "Estimated global W1_2-error: " << globalerr << ". Marked " << num_ref << ", unmarked " << num_un_ref
               << " out of " << num_tetra << " tetrahedrons." << std::endl;
     return num_ref || num_un_ref;
@@ -287,7 +287,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
     SMatrixCL<3,4> H;
     // Gradient of hat-function for vertex i is in col i
     P1DiscCL::GetGradients(H,det,t);
-    const double absdet= fabs(det);
+    const double absdet= std::fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
     const double P0f= Quad3CL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
@@ -376,7 +376,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
     SMatrixCL<3,4> H;
     // Gradient of hat-function for vertex i is in col i
     P1DiscCL::GetGradients(H,det,t);
-    const double absdet= fabs(det);
+    const double absdet= std::fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
     const double P0f= Quad3CL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
@@ -623,7 +623,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
     {
         GetTrafoTr(T,det,*sit);
         MakeGradients(Grad, GradRef, T);
-        absdet= fabs(det);
+        absdet= std::fabs(det);
 	
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -718,7 +718,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
     {
         GetTrafoTr(T,det,*sit);
         MakeGradients(Grad, GradRef, T);
-        absdet= fabs(det);
+        absdet= std::fabs(det);
 	
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -791,14 +791,14 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
         sum+= 2./15. * diff*diff;
         L2+= sum*absdet;
     }
-    L2= sqrt(L2);
+    L2= std::sqrt(L2);
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(Idx))
         {
-           diff= fabs( Lsg(sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
+           diff= std::fabs( Lsg(sit->GetCoord(), 0.0) - lsg.Data[sit->Unknowns(Idx)] );
            norm2+= diff*diff;
            if (diff>maxdiff)
            {
@@ -806,10 +806,10 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
            }
         }
     }
-    std::cerr << "  2-Norm= " << ::sqrt(norm2)                 << std::endl
-              << "w-2-Norm= " << ::sqrt(norm2/lsg.Data.size()) << std::endl
-              << "max-Norm= " << maxdiff                       << std::endl
-              << " L2-Norm= " << L2                            << std::endl;
+    std::cerr << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
+              << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
+              << "max-Norm= " << maxdiff                          << std::endl
+              << " L2-Norm= " << L2                               << std::endl;
     return L2;
 }
 
@@ -837,7 +837,7 @@ void PoissonErrEstCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndDat
         tmp= _Estimator( *sit, *sol.GetSolution(), bnd);
         _InitGlobErr+= tmp*tmp;
     }
-    _InitGlobErr= sqrt(_InitGlobErr);
+    _InitGlobErr= std::sqrt(_InitGlobErr);
     _ActGlobErr= _InitGlobErr;
     if (_outp)
         *_outp << "ErrorEstimator is initialized now; initial error: " << _InitGlobErr
@@ -853,7 +853,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
     const Uint lvl= sol.GetLevel();
     const VecDescCL& lsg= *sol.GetSolution();
-    const double exp_err= _InitGlobErr*_RelReduction/sqrt(_Meas);
+    const double exp_err= _InitGlobErr*_RelReduction/std::sqrt(_Meas);
     const double unref_bnd= exp_err/2./std::pow(2, _ConvExponent);
     double globalerr= 0;
     double localerr;
@@ -867,7 +867,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
     {
         ++num_tetra;
         localerr= _Estimator(*sit, lsg, bnd);
-        localerr_dist= localerr/sqrt(sit->GetVolume());
+        localerr_dist= localerr/std::sqrt(sit->GetVolume());
         globalerr+= localerr*localerr;
         if ( sit->IsUnrefined() )
             if (localerr_dist>exp_err)
@@ -881,7 +881,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
                     ++_NumLastMarkedForDel;
                 }
     }
-    globalerr= sqrt(globalerr);
+    globalerr= std::sqrt(globalerr);
     if (globalerr<_InitGlobErr*_RelReduction)
     {
         for (MultiGridCL::const_TriangTetraIteratorCL sit=mg.GetTriangTetraBegin(lvl), send=mg.GetTriangTetraEnd(lvl);
@@ -932,7 +932,7 @@ void DoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData
     {
         _InitGlobErr+= _Estimator( *sit, *sol.GetSolution(), bnd);
     }
-    _InitGlobErr= sqrt(_InitGlobErr);
+    _InitGlobErr= std::sqrt(_InitGlobErr);
     _ActGlobErr= _InitGlobErr;
     if (_outp)
         *_outp << "ErrorEstimator is initialized now; initial error: " << _InitGlobErr
@@ -960,7 +960,7 @@ bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bnd
         err_est.push_back( std::make_pair(&*sit, localerr) );
     }
     const double globalerr_sq= std::accumulate(err_est.begin(), err_est.end(), 0.0, AccErrCL() );
-    const double globalerr= sqrt(globalerr_sq);
+    const double globalerr= std::sqrt(globalerr_sq);
     const double ref_threshold_sq= globalerr_sq*_Threshold*_Threshold;
     if (globalerr>=_InitGlobErr*_RelReduction && _DoMark)
     {
