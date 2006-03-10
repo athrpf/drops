@@ -31,8 +31,9 @@ double g2(const DROPS::Point3DCL& p)
 
 Point3DCL fv(const SVectorCL<3>& p)
 {
-    return (p[0]*p[0] +10.*p[1]*p[1] +100.*p[2]*p[2]
-        +1000.*p[0]*p[1] +10000.*p[0]*p[2] +100000.*p[1]*p[2]); }
+    return Point3DCL(p[0]*p[0] +10.*p[1]*p[1] +100.*p[2]*p[2]
+                    +1000.*p[0]*p[1] +10000.*p[0]*p[2] +100000.*p[1]*p[2]));
+}
 
 void MarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 {

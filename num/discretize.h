@@ -682,7 +682,7 @@ inline SVectorCL<3> P1DiscCL::Quad2D(const TetraCL& t, Uint face, instat_vector_
 {
     Point3DCL v[3];
     
-    if (face==OppFace(vert)) return 0.; // vert is not on face
+    if (face==OppFace(vert)) return SVectorCL<3>(0.); // vert is not on face
     
     v[0]= t.GetVertex(vert)->GetCoord();
     for (Uint i=0, k=1; i<3; ++i)
