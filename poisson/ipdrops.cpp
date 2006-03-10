@@ -44,11 +44,11 @@ inline double GradZ(const DROPS::Point3DCL& p, double t)
 */  
 
 inline double GradX(const DROPS::Point3DCL& p, double t)
-  { return (std::exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 inline double GradY(const DROPS::Point3DCL& p, double t)
-  { return (std::exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 inline double GradZ(const DROPS::Point3DCL& p, double t)
-  { return (std::exp(t)*exp(p[0]+p[1]+p[2])); }
+  { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
 /*
 inline double GradX(const DROPS::Point3DCL& p, double t)
 {
