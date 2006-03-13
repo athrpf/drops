@@ -33,49 +33,49 @@ class InstatNavStokesThetaSchemeCL
   private:
 //    typedef typename NavStokesT::VelVecDescCL VelVecDescCL;
     
-    NavStokesT& _NS;
-    SolverT&    _solver;
+    NavStokesT& NS_;
+    SolverT&    solver_;
     
-    VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
-    VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
-    VelVecDescCL *_cplN;              // couplings with nonlinearity N
-    VectorCL      _rhs;
-    MatrixCL      _L;                 // M + theta*dt*A  = linear part 
+    VelVecDescCL *b_, *old_b_;        // rhs + couplings with poisson matrix A
+    VelVecDescCL *cplM_, *old_cplM_;  // couplings with mass matrix M
+    VelVecDescCL *cplN_;              // couplings with nonlinearity N
+    VectorCL      rhs_;
+    MatrixCL      L_;                 // M + theta*dt*A  = linear part 
     
-    double _theta, _dt;
+    double theta_, dt_;
     
   public:
     InstatNavStokesThetaSchemeCL(NavStokesT& NS, SolverT& solver,
                                  double theta= 0.5, double t= 0.0)
-        : _NS( NS), _solver( solver), _b( &NS.b), _old_b( new VelVecDescCL),
-          _cplM( &NS.cplM), _old_cplM( new VelVecDescCL),
-	  _cplN( &NS.cplN), _rhs( NS.b.RowIdx->NumUnknowns), _theta( theta)
+        : NS_( NS), solver_( solver), b_( &NS.b), old_b_( new VelVecDescCL),
+          cplM_( &NS.cplM), old_cplM_( new VelVecDescCL),
+	  cplN_( &NS.cplN), rhs_( NS.b.RowIdx->NumUnknowns), theta_( theta)
     { 
-        _old_b->SetIdx( _b->RowIdx);
-        _old_cplM->SetIdx( _b->RowIdx);
-        // Redundant for _NS.c but does not change its value
-        _NS.SetupInstatRhs( _old_b, &_NS.c, _old_cplM, t, _old_b, t);
+        old_b_->SetIdx( b_->RowIdx);
+        old_cplM_->SetIdx( b_->RowIdx);
+        // Redundant for NS_.c but does not change its value
+        NS_.SetupInstatRhs( old_b_, &NS_.c, old_cplM_, t, old_b_, t);
     }
 
     ~InstatNavStokesThetaSchemeCL()
     {
-        if (_old_b == &_NS.b)
-            delete _b;
+        if (old_b_ == &NS_.b)
+            delete b_;
         else
-            delete _old_b; 
-        if (_old_cplM == &_NS.cplM)
-            delete _cplM;
+            delete old_b_; 
+        if (old_cplM_ == &NS_.cplM)
+            delete cplM_;
         else
-            delete _old_cplM;
+            delete old_cplM_;
     }
     
-    double GetTheta()    const { return _theta; }
-    double GetTimeStep() const { return _dt; }
+    double GetTheta()    const { return theta_; }
+    double GetTimeStep() const { return dt_; }
 
     void SetTimeStep( double dt)
     {
-        _dt= dt;
-        _L.LinComb( 1., _NS.M.Data, _theta*_dt, _NS.A.Data);
+        dt_= dt;
+        L_.LinComb( 1., NS_.M.Data, theta_*dt_, NS_.A.Data);
     }
        
     void DoStep( VecDescCL& v, VectorCL& p);
@@ -89,19 +89,19 @@ class InstatNavStokesThetaSchemeCL
 template <class NavStokesT, class SolverT>
 void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, VectorCL& p)
 {
-    // _NS.t contains the new time!
-    _NS.SetupInstatRhs( _b, &_NS.c, _cplM, _NS.t, _b, _NS.t);
-    const double alpha= _theta*_dt;
-    const double beta= (_theta - 1.)*_dt;
-    _rhs=  alpha*_b->Data
-         - beta*(_old_b->Data + _cplN->Data)
-         + beta*( _NS.A.Data*_NS.v.Data + _NS.N.Data*_NS.v.Data )
-         +_cplM->Data - _old_cplM->Data + _NS.M.Data*_NS.v.Data;
-    p*= _dt;
-    _solver.Solve( _L, _NS.B.Data, v, p, _rhs, *_cplN, _NS.c.Data, alpha);
-    p/= _dt;
-    std::swap( _old_b, _b);
-    std::swap( _old_cplM, _cplM);
+    // NS_.t contains the new time!
+    NS_.SetupInstatRhs( b_, &NS_.c, cplM_, NS_.t, b_, NS_.t);
+    const double alpha= theta_*dt_;
+    const double beta= (theta_ - 1.)*dt_;
+    rhs_=  alpha*b_->Data
+         - beta*(old_b_->Data + cplN_->Data)
+         + beta*( NS_.A.Data*NS_.v.Data + NS_.N.Data*NS_.v.Data )
+         +cplM_->Data - old_cplM_->Data + NS_.M.Data*NS_.v.Data;
+    p*= dt_;
+    solver_.Solve( L_, NS_.B.Data, v, p, rhs_, *cplN_, NS_.c.Data, alpha);
+    p/= dt_;
+    std::swap( old_b_, b_);
+    std::swap( old_cplM_, cplM_);
 }
 
 
