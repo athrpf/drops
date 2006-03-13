@@ -222,13 +222,13 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 	 
-    for (MultiGridCL::TriangVertexIteratorCL it= _MG.GetTriangVertexBegin(lvl),
-        end= _MG.GetTriangVertexEnd(lvl); it!=end; ++it)
+    for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl),
+        end= MG_.GetTriangVertexEnd(lvl); it!=end; ++it)
     {
         Phi.Data[it->Unknowns(idx)]= phi0( it->GetCoord());
     }
-    for (MultiGridCL::TriangEdgeIteratorCL it= _MG.GetTriangEdgeBegin(lvl),
-        end= _MG.GetTriangEdgeEnd(lvl); it!=end; ++it)
+    for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(lvl),
+        end= MG_.GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
         Phi.Data[it->Unknowns(idx)]= phi0( GetBaryCenter( *it));
     }
@@ -243,12 +243,12 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
     for (Uint i=0; i<steps; ++i)
     {
         SetupReparamSystem( M, R, Psi, b);
-        L.LinComb( 1., M, dt*_theta, R);
+        L.LinComb( 1., M, dt*theta_, R);
         
         b*= dt;
-        b+= M*Psi - dt*(1.-_theta) * (R*Psi);
-        _gm.Solve( L, Psi, b);
-        std::cout << "Reparam: res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() << std::endl;
+        b+= M*Psi - dt*(1.-theta_) * (R*Psi);
+        gm_.Solve( L, Psi, b);
+        std::cout << "Reparam: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
     }
     
     Phi.Data= Psi;
@@ -286,7 +286,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
     double det, absdet;
     const double alpha= 0.1;  // for smoothing of signum fct
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
@@ -325,7 +325,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
                 M( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j)*absdet;
                 // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
                 R( Numb[i], Numb[j])+= w_Grad[j].quadP2(i, absdet)
-                    + _diff*Quad2CL<>(dot( Grad[j]*Sign_Phi.apply( func_abs), Grad[i])).quad( absdet);
+                    + diff_*Quad2CL<>(dot( Grad[j]*Sign_Phi.apply( func_abs), Grad[i])).quad( absdet);
             }
         }
     }
@@ -337,21 +337,21 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
 
 void LevelsetP2CL::SetTimeStep( double dt, double theta) 
 { 
-    _dt= dt; 
-    if (theta >= 0) _theta= theta;
+    dt_= dt; 
+    if (theta >= 0) theta_= theta;
     
-    _L.LinComb( 1., _E, _theta*_dt, _H); 
+    L_.LinComb( 1., E_, theta_*dt_, H_); 
 }
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
-    rhs= _E*Phi.Data - _dt*(1-_theta) * (_H*Phi.Data);
+    rhs= E_*Phi.Data - dt_*(1-theta_) * (H_*Phi.Data);
 }
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
-    _gm.Solve( _L, Phi.Data, rhs);
-    std::cerr << "res = " << _gm.GetResid() << ", iter = " << _gm.GetIter() <<std::endl;
+    gm_.Solve( L_, Phi.Data, rhs);
+    std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep()
@@ -381,18 +381,18 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
 // Dabei verschiebt sich der 0-Level nur innerhalb der Elemente, die diesen schneiden.
 // onlyZeroLvl==true  =>  es wird nur lokal an der Phasengrenze reparametrisiert
 {
-    FastMarchCL fm( _MG, Phi);
+    FastMarchCL fm( MG_, Phi);
     
     if (OnlyZeroLvl)
     {
         if (Periodic)
-            fm.InitZeroPer( _Bnd, ModifyZero);
+            fm.InitZeroPer( Bnd_, ModifyZero);
         else
             fm.InitZero( ModifyZero);
         fm.RestoreSigns();
     }
     else if (Periodic)
-        fm.ReparamPer( _Bnd, ModifyZero);
+        fm.ReparamPer( Bnd_, ModifyZero);
     else
         fm.Reparam( ModifyZero);
 }
@@ -401,14 +401,14 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
     VecDescCL SmPhi= Phi;
-    if (_curvDiff>0)
-        SmoothPhi( SmPhi.Data, _curvDiff);
+    if (curvDiff_>0)
+        SmoothPhi( SmPhi.Data, curvDiff_);
     switch (SF_)
     {
       case SF_CSF: 
-        SF_CurvatureTerm( _MG, SmPhi, sigma, f); break;
+        SF_CurvatureTerm( MG_, SmPhi, sigma, f); break;
       case SF_Const: 
-        SF_ConstForce( _MG, SmPhi, sigma, f); break;
+        SF_ConstForce( MG_, SmPhi, sigma, f); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
@@ -423,7 +423,7 @@ double LevelsetP2CL::GetVolume( double translation) const
     double det, absdet, vol= 0;
     SMatrixCL<3,3> T;
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
@@ -479,7 +479,7 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
     MatrixCL M, A, C;
     SetupSmoothSystem( M, A); 
     C.LinComb( 1, M, diff, A);
-    PCG_SsorCL pcg( _pc, _gm.GetMaxIter(),_gm.GetTol());
+    PCG_SsorCL pcg( pc_, gm_.GetMaxIter(),gm_.GetTol());
     pcg.Solve( C, SmPhi, M*Phi.Data);
     std::cerr << "||SmPhi - Phi||_oo = " << supnorm( SmPhi-Phi.Data) << std::endl;
 }
@@ -504,7 +504,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     IdxT         Numb[10];
     double det, absdet;
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);

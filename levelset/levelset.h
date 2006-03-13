@@ -35,15 +35,15 @@ class LevelsetP2CL
     double              sigma;     // surface tension
 
   private:
-    MultiGridCL&        _MG;
-    double              _diff,     // amount of diffusion in reparametrization
-                        _curvDiff, // amount of diffusion in curvature calculation
-                        _SD,       // streamline diffusion
-                        _theta, _dt;  
-    MatrixCL            _E, _H, _L;
-    BndDataT            _Bnd;
-    SSORPcCL            _pc;
-    GMResSolverCL<SSORPcCL>  _gm;
+    MultiGridCL&        MG_;
+    double              diff_,     // amount of diffusion in reparametrization
+                        curvDiff_, // amount of diffusion in curvature calculation
+                        SD_,       // streamline diffusion
+                        theta_, dt_;  
+    MatrixCL            E_, H_, L_;
+    BndDataT            Bnd_;
+    SSORPcCL            pc_;
+    GMResSolverCL<SSORPcCL>  gm_;
     SurfaceForceT       SF_;
 
     void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
@@ -53,25 +53,25 @@ class LevelsetP2CL
   public:
     LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0, 
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
-        _theta( theta), _dt( 0.), _Bnd( BndDataT(mg.GetBnd().GetNumBndSeg()) ), 
-        _gm( _pc, 100, iter, tol), SF_(SF_CSF)
+      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD), 
+        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ), 
+        gm_( pc_, 100, iter, tol), SF_(SF_CSF)
     {}
     
     LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, double sig= 0, double theta= 0.5, double SD= 0, 
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( 1, 1), sigma( sig), _MG( mg), _diff(diff), _curvDiff( curvDiff), _SD( SD), 
-        _theta( theta), _dt( 0.), _Bnd( bnd), _gm( _pc, 100, iter, tol), SF_(SF_CSF)
+      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD), 
+        theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_CSF)
     {}
     
-    GMResSolverCL<SSORPcCL>& GetSolver() { return _gm; }
+    GMResSolverCL<SSORPcCL>& GetSolver() { return gm_; }
     
-    const BndDataT& GetBndData() const { return _Bnd; }
+    const BndDataT& GetBndData() const { return Bnd_; }
     
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _Bnd, match); }
+        { CreateNumb( level, *idx, MG_, Bnd_, match); }
     void DeleteNumbering( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
+        { DeleteNumb( *idx, MG_); }
 
     void Init( scalar_fun_ptr);
 
@@ -90,9 +90,9 @@ class LevelsetP2CL
     void   AccumulateBndIntegral( VecDescCL& f) const;
     
     const_DiscSolCL GetSolution() const
-        { return const_DiscSolCL( &Phi, &_Bnd, &_MG); }
+        { return const_DiscSolCL( &Phi, &Bnd_, &MG_); }
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
-        { return const_DiscSolCL( &MyPhi, &_Bnd, &_MG); }
+        { return const_DiscSolCL( &MyPhi, &Bnd_, &MG_); }
         
     // the following member functions are added to enable an easier implementation
     // of the coupling navstokes-levelset. They should not be called by a common user.

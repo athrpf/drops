@@ -22,8 +22,8 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 
-    SparseMatBuilderCL<double> E(&_E, num_unks, num_unks), 
-                               H(&_H, num_unks, num_unks);
+    SparseMatBuilderCL<double> E(&E_, num_unks, num_unks), 
+                               H(&H_, num_unks, num_unks);
     IdxT Numb[10];
     
     std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns. ";
@@ -36,7 +36,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
@@ -65,18 +65,18 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
                 E( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
-                                     + u_Grad[i].quadP2(j, absdet)*_SD*h_T; 
+                                     + u_Grad[i].quadP2(j, absdet)*SD_*h_T; 
                 
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
                 H( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
-                                     + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * _SD*h_T;
+                                     + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_*h_T;
             }
     }
     
     E.Build();
     H.Build();
-    std::cerr << _E.num_nonzeros() << " nonzeros in E, "
-              << _H.num_nonzeros() << " nonzeros in H! " << std::endl;
+    std::cerr << E_.num_nonzeros() << " nonzeros in E, "
+              << H_.num_nonzeros() << " nonzeros in H! " << std::endl;
 }
 
 template<class ValueT>
