@@ -331,7 +331,7 @@ ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //              << norm( cc) << " " << norm( A_.back().A.Data*c2_) << " "
 //              << "\tPressure: iterations: " << max_iter_ <<'\t';
     for (DROPS::Uint i=0; i<max_iter_; ++i) {
-        MGMPr( --ones_.end(), A_.begin(), --A_.end(), p, c2_, smoother, sm, solver, lvl, -1);
+        MGMPr( ones_.end()-1, A_.begin(), --A_.end(), p, c2_, smoother, sm, solver, lvl, -1);
 //        old_res= new_res;
 //        std::cerr << " residual: " <<  (new_res= norm( A_.back().A.Data*p - c2_))
 //                  << '\t' << norm( p)
@@ -366,7 +366,7 @@ ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const
 //    double old_res;
 //    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';
     for (DROPS::Uint i=0; i<iter_prA_; ++i) {
-        DROPS::MGMPr( --ones_.end(), Apr_.begin(), --Apr_.end(), p, c, smoother, sm, solver, lvl, -1);
+        DROPS::MGMPr( ones_.end()-1, Apr_.begin(), --Apr_.end(), p, c, smoother, sm, solver, lvl, -1);
 //        old_res= new_res;
 //        std::cerr << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
 //        std::cerr << " reduction: " << new_res/old_res << '\n';
