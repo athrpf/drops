@@ -22,12 +22,12 @@ template<class T>
 }
 
 template<class T>
-  template<class BndDataT, class VecDescT>
+  template<class BndDataT>
     inline LocalP1CL<T>&
     LocalP1CL<T>::assign(const TetraCL& s,
-        const VecDescT& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd, double t)
 {
-    typedef typename VecDescT::DataType VecT;
+    typedef VecDescCL::DataType VecT;
     typedef DoFHelperCL<value_type, VecT> DoFT;
     const VecT& v= vd.Data;
     const Uint tlvl= s.GetLevel();
@@ -71,9 +71,9 @@ template<class T>
 }
 
 template<class T>
-  template<class BndDataT, class VecDescT>
+  template<class BndDataT>
     LocalP1CL<T>::LocalP1CL(const TetraCL& s,
-        const VecDescT& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd, double t)
     : base_type( value_type(), FE_P1CL::NumDoFC)
 {
     this->assign( s, vd, bnd, t);
@@ -102,12 +102,12 @@ template<class T>
 }
 
 template<class T>
-  template<class BndDataT, class VecDescT>
+  template<class BndDataT>
     inline LocalP2CL<T>&
     LocalP2CL<T>::assign(const TetraCL& s,
-        const VecDescT& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd, double t)
 {
-    typedef typename VecDescT::DataType VecT;
+    typedef VecDescCL::DataType VecT;
     typedef DoFHelperCL<value_type, VecT> DoFT;
     const VecT& v= vd.Data;
     const Uint tlvl= s.GetLevel();
@@ -165,9 +165,9 @@ template<class T>
 }
 
 template<class T>
-  template<class BndDataT, class VecDescT>
+  template<class BndDataT>
     LocalP2CL<T>::LocalP2CL(const TetraCL& s,
-        const VecDescT& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd, double t)
     : base_type( value_type(), FE_P2CL::NumDoFC)
 {
     this->assign( s, vd, bnd, t);
