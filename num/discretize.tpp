@@ -185,12 +185,12 @@ template<class T>
 // Class: Quad2CL                                                          *
 //**************************************************************************
 template<class T>
-const double Quad2CL<T>::Node[Quad2CL<T>::NumNodesC][4]= {
+const double Quad2CL<T>::Node[5][4]= {
     {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
 }; 
 
 template<class T>
-const double Quad2CL<T>::Wght[Quad2CL<T>::NumNodesC]= {
+const double Quad2CL<T>::Wght[5]= {
     1./120., 1./120., 1./120., 1./120., 2./15.
 };
 

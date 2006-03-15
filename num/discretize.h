@@ -250,8 +250,8 @@ class Quad2CL: public GridFunctionCL<T>
 
     enum { NumNodesC= 5 };
 
-    static const double Node[NumNodesC][4]; // Stuetzstellen 5*4 doubles
-    static const double Wght[NumNodesC];    // Gewichte
+    static const double Node[5][4]; // Stuetzstellen (NumNodesC*4 doubles)
+    static const double Wght[5];    // Gewichte      (NumNodesC   doubles)
 
     static inline BaryCoordCL // Das kopiert leider.
     GetNode( Uint i) { return Node[i]; }
