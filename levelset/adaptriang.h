@@ -22,14 +22,14 @@ class AdapTriangCL
     bool modified_;
     
     template <class DistFctT>
-    double GetValue( DistFctT& dist, const VertexCL& v)      { return dist.val( v); }
+    double GetValue( const DistFctT& dist, const VertexCL& v) { return dist.val( v); }
     template <class DistFctT>
-    double GetValue( DistFctT& dist, const EdgeCL& e)        { return dist.val( e); }
+    double GetValue( const DistFctT& dist, const EdgeCL& e)   { return dist.val( e); }
     template <class DistFctT>
-    double GetValue( DistFctT& dist, const TetraCL& t)       { return dist.val( t, 0.25, 0.25, 0.25); }
-    double GetValue( scalar_fun_ptr dist, const VertexCL& v) { return dist( v.GetCoord() ); }
-    double GetValue( scalar_fun_ptr dist, const EdgeCL& e)   { return dist( GetBaryCenter( e) ); }
-    double GetValue( scalar_fun_ptr dist, const TetraCL& t)  { return dist( GetBaryCenter( t) ); }
+    double GetValue( const DistFctT& dist, const TetraCL& t)  { return dist.val( t, 0.25, 0.25, 0.25); }
+    double GetValue( scalar_fun_ptr dist, const VertexCL& v)  { return dist( v.GetCoord() ); }
+    double GetValue( scalar_fun_ptr dist, const EdgeCL& e)    { return dist( GetBaryCenter( e) ); }
+    double GetValue( scalar_fun_ptr dist, const TetraCL& t)   { return dist( GetBaryCenter( t) ); }
 
     template <class DistFctT>
     bool ModifyGridStep( DistFctT&);
