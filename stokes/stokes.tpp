@@ -1404,8 +1404,8 @@ template <class Coeff>
     for (Uint i=0; i<4; ++i)
         for (Uint j=0; j<4; ++j)
         {
-             err_sq+= inner_prod( vel.val(t.GetVertex(i)->GetCoord()), M*FE_P1BubbleCL::DHRef(i) )
-                     *inner_prod( vel.val(t.GetVertex(j)->GetCoord()), M*FE_P1BubbleCL::DHRef(j) )/6.*absdet;
+             err_sq+= inner_prod( vel.val(*t.GetVertex(i)), M*FE_P1BubbleCL::DHRef(i) )
+                     *inner_prod( vel.val(*t.GetVertex(j)), M*FE_P1BubbleCL::DHRef(j) )/6.*absdet;
         }
 
     // || P_0(f) - grad(p_h) ||_L2 squared * Vol(T)
@@ -1421,7 +1421,7 @@ template <class Coeff>
     SMatrixCL<3,4> vertval;
     for (Uint i=0; i<NumVertsC; ++i)
     {
-        const SVectorCL<3> v= vel.val(t.GetVertex(i)->GetCoord());
+        const SVectorCL<3> v= vel.val(*t.GetVertex(i));
         vertval(0,i)= v[0];
         vertval(1,i)= v[1];
         vertval(2,i)= v[2];
@@ -1442,7 +1442,7 @@ template <class Coeff>
             SMatrixCL<3,4> nvertval;
             for (Uint i=0; i<NumVertsC; ++i)
             {
-                const SVectorCL<3> v= vel.val(neigh.GetVertex(i)->GetCoord());
+                const SVectorCL<3> v= vel.val(*neigh.GetVertex(i));
                 nvertval(0,i)= v[0];
                 nvertval(1,i)= v[1];
                 nvertval(2,i)= v[2];
