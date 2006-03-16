@@ -103,8 +103,8 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, v_inst_fun_ptr f, doub
 
 typedef P2EvalCL<double, BndCL, VecDescCL> P2FuncT;
 
-double therho( const Point3DCL& p) { return norm( 1e-2*p); }
-double themu( const Point3DCL& p) { return norm( 1e-2*std_basis<3>( 1) + p)/1e1; }
+double therho( double x) { return std::fabs(x)+0.1; }
+double themu( double x) { return x*x; }
 Point3DCL theg= 9.81*std_basis<3>( 3);
 const BaryCoordCL bary( 0.25);
 const Point3DCL bary3d( 0.25);
@@ -246,7 +246,7 @@ double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
 
     P2FuncT lsfun( &vd1, &theBnd, &mg);
     LocalP2CL<> ls2( *mg.GetTriangTetraBegin(), lsfun);
-    ret+= ls2[4];
+    ret+= Point3DCL( ls2[4]);
 
     LocalP2CL<Point3DCL> f1;
     LocalP2CL<Point3DCL> f2( *mg.GetTriangTetraBegin(), fv, 0.3);
@@ -255,7 +255,7 @@ double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
         f1.assign( *sit, vd0, theVBnd, 0.5);
         ret+= (c*f1 + f1)[4] + fv( sit->GetVertex( 0)->GetCoord(), 0.1);
-        ret-= f1( bary)[2];
+        ret-= Point3DCL( f1( bary)[2]);
     }
     
     return ret[0] + ret[1] + ret[2] + f2( bary)[2];    
