@@ -482,13 +482,13 @@ void BBuilderCL::build (MultiGridCL* mgp) const
 }
 
 
-TetraBuilderCL::TetraBuilderCL(const Ubyte rule)
+TetraBuilderCL::TetraBuilderCL(Ubyte rule)
     :rule_(rule), p0_( std_basis<3>(0)), p1_( std_basis<3>(1)),
                   p2_( std_basis<3>(2)), p3_( std_basis<3>(3))
 {}
 
-TetraBuilderCL::TetraBuilderCL(const Ubyte rule,  const Point3DCL& p0, const Point3DCL& p1,
-                                                  const Point3DCL& p2, const Point3DCL& p3)
+TetraBuilderCL::TetraBuilderCL(Ubyte rule, const Point3DCL& p0, const Point3DCL& p1,
+                                           const Point3DCL& p2, const Point3DCL& p3)
     :rule_(rule), p0_( p0), p1_( p1), p2_( p2), p3_( p3)
 {}
 
