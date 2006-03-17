@@ -445,11 +445,11 @@ class SMatrixCL : public SVectorCL<_Rows*_Cols>
   public:
     typedef SVectorCL<_Rows*_Cols> _vec_base;
 
-    SMatrixCL()                                                            {}
-    explicit           SMatrixCL(InitStateT i)     : _vec_base( i)         {}
-    explicit           SMatrixCL(double val)       : _vec_base( val)       {}
-    template<class In> SMatrixCL(In start)         : _vec_base( start)     {}
-    template<class In> SMatrixCL(In start, In end) : _vec_base( start,end) {}
+    SMatrixCL()                                                             {}
+    explicit           SMatrixCL(InitStateT i)      : _vec_base( i)         {}
+    explicit           SMatrixCL(double val)        : _vec_base( val)       {}
+    template<class In> explicit SMatrixCL(In start) : _vec_base( start)     {}
+    template<class In> SMatrixCL(In start, In end)  : _vec_base( start,end) {}
 
 // Schreib- & Lesezugriff
     double& operator() (int row, int col)       { return (*this)[row*_Cols+col]; }// Matrix(i,j)
