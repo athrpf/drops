@@ -61,13 +61,13 @@ class FE_P1CL
     /// transformation that maps the reference tetrahefron to T.
     /// Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
     /// \{
-    static SVectorCL<3> DH0Ref() { return _gradient[0]; }
-    static SVectorCL<3> DH1Ref() { return _gradient[1]; }
-    static SVectorCL<3> DH2Ref() { return _gradient[2]; }
-    static SVectorCL<3> DH3Ref() { return _gradient[3]; }
+    static SVectorCL<3> DH0Ref() { return SVectorCL<3>(_gradient[0]); }
+    static SVectorCL<3> DH1Ref() { return SVectorCL<3>(_gradient[1]); }
+    static SVectorCL<3> DH2Ref() { return SVectorCL<3>(_gradient[2]); }
+    static SVectorCL<3> DH3Ref() { return SVectorCL<3>(_gradient[3]); }
 
     /// DHRef(i, ...) == DHiRef(...)
-    static SVectorCL<3> DHRef(Uint i) { return _gradient[i]; }
+    static SVectorCL<3> DHRef(Uint i) { return SVectorCL<3>(_gradient[i]); }
     /// \}
 };
 
@@ -129,13 +129,13 @@ class FE_P1DCL
     /// transformation that maps the reference tetrahefron to T.
     /// Then DHi(y) == inverse(transpose(A))*DHiRef(x), where y=f(x).
     /// \{
-    static SVectorCL<3> DH0Ref() { return _gradient[0]; }
-    static SVectorCL<3> DH1Ref() { return _gradient[1]; }
-    static SVectorCL<3> DH2Ref() { return _gradient[2]; }
-    static SVectorCL<3> DH3Ref() { return _gradient[3]; }
+    static SVectorCL<3> DH0Ref() { return SVectorCL<3>(_gradient[0]); }
+    static SVectorCL<3> DH1Ref() { return SVectorCL<3>(_gradient[1]); }
+    static SVectorCL<3> DH2Ref() { return SVectorCL<3>(_gradient[2]); }
+    static SVectorCL<3> DH3Ref() { return SVectorCL<3>(_gradient[3]); }
 
     /// DHRef(i, ...) == DHiRef(...)
-    static SVectorCL<3> DHRef(Uint i) { return _gradient[i]; }
+    static SVectorCL<3> DHRef(Uint i) { return SVectorCL<3>(_gradient[i]); }
     /// \}
 };
 
