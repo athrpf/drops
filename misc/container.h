@@ -94,9 +94,9 @@ class SArrayCL
     typedef       T  value_type;
 
 //    SArrayCL() {}
-    explicit           SArrayCL(T val= T())       { std::fill_n(Array+0, _Size, val); }
-    template<class In> SArrayCL(In start)         { std::copy(start, start+_Size, Array+0); }
-    template<class In> SArrayCL(In start, In end) { std::copy(start, end, Array+0); }
+    explicit           SArrayCL(T val= T())        { std::fill_n(Array+0, _Size, val); }
+    template<class In> explicit SArrayCL(In start) { std::copy(start, start+_Size, Array+0); }
+    template<class In> SArrayCL(In start, In end)  { std::copy(start, end, Array+0); }
     // Default copy-ctor, assignment operator, dtor
 
     iterator       begin     ()             { return static_cast<T*>(Array); }
@@ -149,9 +149,9 @@ public:
     typedef       T  value_type;
 
 //    SBufferCL() {}
-    explicit           SBufferCL(T val= T())      { std::fill_n(Array+0, _Size, val); Front= 0; }
-    template<class In> SBufferCL(In start)         { std::copy(start, start+_Size, Array+0); Front= 0; }
-    template<class In> SBufferCL(In start, In end) { std::copy(start, end, Array+0); Front= 0; }
+    explicit           SBufferCL(T val= T())        { std::fill_n(Array+0, _Size, val); Front= 0; }
+    template<class In> explicit SBufferCL(In start) { std::copy(start, start+_Size, Array+0); Front= 0; }
+    template<class In> SBufferCL(In start, In end)  { std::copy(start, end, Array+0); Front= 0; }
     SBufferCL(const SBufferCL& b) {
         std::copy( b.Array+0, b.Array+_Size, Array+0);
         Front= b.Front; }
@@ -211,11 +211,11 @@ class SVectorCL : public SArrayCL<double,_Size>
   public:
     typedef SArrayCL<double,_Size> base_type;
 
-    SVectorCL()                                                            {}
-    explicit           SVectorCL(InitStateT i)     : base_type( i)         {}
-    explicit           SVectorCL(double val)       : base_type( val)       {}
-    template<class In> SVectorCL(In start)         : base_type( start)     {}
-    template<class In> SVectorCL(In start, In end) : base_type( start,end) {}
+    SVectorCL()                                                             {}
+    explicit           SVectorCL(InitStateT i)      : base_type( i)         {}
+    explicit           SVectorCL(double val)        : base_type( val)       {}
+    template<class In> explicit SVectorCL(In start) : base_type( start)     {}
+    template<class In> SVectorCL(In start, In end)  : base_type( start,end) {}
 
     SVectorCL& operator+=(const SVectorCL&);
     SVectorCL& operator-=(const SVectorCL&);
