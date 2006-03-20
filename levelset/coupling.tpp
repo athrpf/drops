@@ -203,7 +203,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _Stokes.p.Data/= _dt;
     time.Stop();
     std::cerr << "Solving Stokes: residual: " << _solver.GetResid()
-              << "\titerations:" << _solver.GetIter()
+              << "\titerations: " << _solver.GetIter()
               << "\ttime: " << time.GetTime() << "s\n";
 }
 
@@ -455,7 +455,7 @@ template <class StokesT, class SolverT>
 CouplLsNsBaenschCL<StokesT,SolverT>::CouplLsNsBaenschCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, int gm_iter, double gm_tol, double nonlinear)
 
-  : _Stokes( Stokes), _solver( solver), _gm( _pc, 100, gm_iter, gm_tol),
+  : _Stokes( Stokes), _solver( solver), _gm( _pc, 100, gm_iter, gm_tol, false /*test absolute resid*/),
     _LvlSet( ls), _b( &Stokes.b),
     _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
     _cplA( new VelVecDescCL), _old_cplA( new VelVecDescCL), 
