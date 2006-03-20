@@ -844,8 +844,8 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& 
 //        std::cerr << ", new size is " << x.size() << '\n';
     }
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
-    std::cerr << "> inner iterations: " << M.solver_.GetIter()
-              << "\tresidual: " << M.solver_.GetResid() << std::endl;
+//    std::cerr << "> inner iterations: " << M.solver_.GetIter()
+//              << "\tresidual: " << M.solver_.GetResid() << std::endl;
     return M.B_*x;
 }
 
@@ -1198,8 +1198,9 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
               << "\tres-mass: " << norm( rp)
               << '\n';
     if (resid0 <= tol) { // The fixed point iteration between levelset and Stokes
-        tol= resid;      // equation uses this to determine convergence.
+        tol= resid0;      // equation uses this to determine convergence.
         max_iter= 0;
+        delete asc;
         return true;
     }
     for (int k= 1; k <= max_iter; ++k) {
@@ -1234,7 +1235,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
             zhat= 0.0;
             Apc.Apply( A, zhat, zbar);
         }
-        std::cerr << "innersolver: iterations: " << inneriter 
+        std::cerr << "pr solver: iterations: " << inneriter 
                   << "\tresid: " << innertol << '\n';
         du= w - zhat;
         xu+= du;
@@ -1244,8 +1245,9 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
         std::cerr << "residual reduction (2-norm): " << resid/resid0
                   << "\tglobal reduction: " << resid/resid00
-                  << "\nres-impuls: " << norm( f - A*xu - transp_mul( B, xp))
-                  << "\tres-mass: " << norm( g - B*xu)
+                  << "\nresidual (2-norm): " << resid0
+                  << "\tres-impuls: " << norm( ru)
+                  << "\tres-mass: " << norm( rp)
                   << '\n';
 /*
         if (resid<=tol*resid0) { // relative errors
