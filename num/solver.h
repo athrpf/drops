@@ -1030,10 +1030,11 @@ class GMResSolverCL : public SolverBaseCL
   private:
     PC  pc_;
     int restart_;
+    bool rel_;
 
   public:
-    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol)
-        : SolverBaseCL(maxiter,tol), pc_(pc), restart_(restart) {}
+    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol, bool relative= true)
+        : SolverBaseCL(maxiter,tol), pc_(pc), restart_(restart), rel_(relative) {}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
@@ -1051,7 +1052,7 @@ class GMResSolverCL : public SolverBaseCL
     {
         resid=   _tol;
         numIter= _maxiter;
-        GMRES(A, x, b, pc_, restart_, numIter, resid);
+        GMRES(A, x, b, pc_, restart_, numIter, resid, rel_);
     }
 };
 
@@ -1087,7 +1088,7 @@ class SSORPCG_PreCL
     mutable PCGSolverCL<SSORPcCL> solver_;
 
   public:
-    SSORPCG_PreCL(int maxiter= 500, double reltol= 0.2)
+    SSORPCG_PreCL(int maxiter= 500, double reltol= 0.02)
         : reltol_( reltol), solver_( SSORPcCL( 1.0), maxiter, reltol) // Note, that the
     {}                                                                // real tol for
                                                                       // solver_ is
@@ -1095,7 +1096,7 @@ class SSORPCG_PreCL
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
         solver_.SetTol( reltol_*norm( b - A*x));
-	solver_.Solve( A, x, b);
+	    solver_.Solve( A, x, b);
     }
 };
 
@@ -1105,7 +1106,7 @@ class SSORGMRes_PreCL : public SolverBaseCL
     int restart_;
 
   public:
-    SSORGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.2)
+    SSORGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.02)
         : SolverBaseCL( maxiter, reltol), restart_( restart)
     {}
 
@@ -1127,7 +1128,7 @@ class GSGMRes_PreCL : public SolverBaseCL
     int restart_;
 
   public:
-    GSGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.2)
+    GSGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.02)
         : SolverBaseCL( maxiter, reltol), restart_( restart)
     {}
 
