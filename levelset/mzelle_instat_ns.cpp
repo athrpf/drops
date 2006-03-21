@@ -92,8 +92,8 @@ class Schur_GMRes_CL: public PSchurSolver2CL<GMResSolverCL<SSORPcCL>, GMResSolve
         : PSchurSolver2CL<innerSolverT, outerSolverT>(
               innerSolver_, outerSolver_, outer_iter, outer_tol
           ),
-          innerSolver_( SSORPcCL( 1.), 10, inner_iter, inner_tol),
-          outerSolver_( DummyPcCL(), 10, outer_iter, outer_tol)
+          innerSolver_( SSORPcCL( 1.), 150, inner_iter, inner_tol, false),  // absolute tolerances
+          outerSolver_( DummyPcCL(), 150, outer_iter, outer_tol, false)
         {}
 };
 
@@ -113,8 +113,8 @@ class ISPSchur_GMRes_CL: public PSchurSolver2CL<GMResSolverCL<SSORPcCL>, GMResSo
         : PSchurSolver2CL<innerSolverT, outerSolverT>(
               innerSolver_, outerSolver_, outer_iter, outer_tol
           ),
-          innerSolver_( SSORPcCL( 1.), 10, inner_iter, inner_tol),
-          outerSolver_( Spc, 10, outer_iter, outer_tol)
+          innerSolver_( SSORPcCL( 1.), 150, inner_iter, inner_tol, false),  // absolute tolerances
+          outerSolver_( Spc, 150, outer_iter, outer_tol, false)             
         {}
 };
 
@@ -312,7 +312,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
         ISPreCL ispc( prA.Data, prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-        SSORPCG_PreCL pcg( C.inner_iter, 0.2);
+        SSORPCG_PreCL pcg( C.inner_iter, 0.01);
         typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawaT;
         InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 
