@@ -175,6 +175,8 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
 typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawa_CL;
 typedef InexactUzawaCL<SSORGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GMRes_CL;
 typedef InexactUzawaCL<GSGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GSGMRes_CL;
+typedef InexactUzawaCL<SSORGMRes_PreCL, ISPreCL, APC_OTHER> InexactUzawa_SSORGMRes_ISPre_CL;
+typedef InexactUzawaCL<SSORBiCGStab_PreCL, ISPreCL, APC_OTHER> InexactUzawa_SSORBiCGStab_ISPre_CL;
 typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
 typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
 typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
@@ -1190,6 +1192,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         new ApproximateSchurComplMatrixCL<PC1>( A, Apc, B);
     double innertol;
     int inneriter;
+    int pr_iter_cumulative= 0;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
     double resid00= resid0;
     double resid= 0.0;
@@ -1235,7 +1238,9 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
             zhat= 0.0;
             Apc.Apply( A, zhat, zbar);
         }
-        std::cerr << "pr solver: iterations: " << inneriter 
+        pr_iter_cumulative+= inneriter;
+        std::cerr << "pr solver: iterations: " << inneriter
+                  << "\tcumulative: " << pr_iter_cumulative
                   << "\tresid: " << innertol << '\n';
         du= w - zhat;
         xu+= du;
