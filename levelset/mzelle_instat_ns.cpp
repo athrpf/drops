@@ -222,7 +222,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
             MatrixCL mat;
             mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
-            cplN.Data-= (1-theta)*nl * (Stokes.N.Data * Stokes.v.Data);
+            cplN.Data-= (1-theta) * (Stokes.N.Data * Stokes.v.Data);
             schurSolver.Solve( mat, Stokes.B.Data, 
                 Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + nl*cplN.Data), Stokes.c.Data);
         } while (schurSolver.GetIter() > 0);
@@ -247,7 +247,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
       default:  
         lset.Init( DistanceFct);
     }
-    
+
     const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
     
