@@ -889,6 +889,102 @@ MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol)
 }
 
 
+//*****************************************************************
+// BiCGSTAB
+//
+// BiCGSTAB solves the unsymmetric linear system Ax = b 
+// using the Preconditioned BiConjugate Gradient Stabilized method
+//
+// BiCGSTAB follows the algorithm described on p. 27 of the 
+// SIAM Templates book.
+//
+// The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence or breakdown within
+// max_iter iterations (false). In cases of breakdown a message is printed
+// std::cerr and the iteration returns the approximate solution found. 
+//
+// Upon successful return, output arguments have the following values:
+//  
+//        x  --  approximate solution to Ax = b
+// max_iter  --  the number of iterations performed before the
+//               tolerance was reached
+//      tol  --  the residual after the final iteration
+//
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
+//  
+//*****************************************************************
+template <class Mat, class Vec, class Preconditioner>
+bool
+BICGSTAB( const Mat& A, Vec& x, const Vec& b,
+    const Preconditioner& M, int& max_iter, double& tol,
+    bool measure_relative_tol= true)
+{
+    double rho_1= 0.0, rho_2= 0.0, alpha= 0.0, beta= 0.0, omega= 0.0;
+    Vec p( x.size()), phat( x.size()), s( x.size()), shat( x.size()),
+        t( x.size()), v( x.size());
+
+    double normb= norm( b);
+    Vec r( b - A*x);
+    Vec rtilde= r;
+
+    if (normb == 0.0 || measure_relative_tol == false) normb = 1.0;
+  
+    double resid= norm( r)/normb;
+    if (resid <= tol) {
+        tol= resid;
+        max_iter= 0;
+        return true;
+    }
+
+    for (int i= 1; i <= max_iter; ++i) {
+        rho_1= dot( rtilde, r);
+        if (rho_1 == 0.0) {
+            tol = norm( r)/normb;
+            max_iter= i;
+            std::cerr << "BiCGSTAB: Breakdown with rho_1 = 0.\n";
+            return false;
+        }
+        if (i == 1) p= r;
+        else {
+            beta= (rho_1/rho_2)*(alpha/omega);
+            p= r + beta*(p - omega*v);
+        }
+        M.Apply( A, phat, p);
+        v= A*phat;
+        alpha= rho_1/dot( rtilde, v);
+        s= r - alpha*v;
+        if ((resid= norm( s)/normb) < tol) {
+            x+= alpha*phat;
+            tol= resid;
+            max_iter= i;
+            return true;
+        }
+        M.Apply( A, shat, s);
+        t= A*shat;
+        omega= dot( t, s)/dot( t, t);
+        x+= alpha*phat + omega*shat;
+        r= s - omega*t;
+
+        rho_2= rho_1;
+        if ((resid= norm( r)/normb) < tol) {
+            tol= resid;
+            max_iter= i;
+            return true;
+        }
+        if (omega == 0.0) {
+            tol= norm( r)/normb;
+            max_iter= i;
+            std::cerr << "BiCGSTAB: Breakdown with omega_ = 0.\n";
+            return false;
+        }
+    }
+    tol= resid;
+    return false;
+}
+
+
+
 //=============================================================================
 //  Drivers
 //=============================================================================
@@ -1056,6 +1152,36 @@ class GMResSolverCL : public SolverBaseCL
     }
 };
 
+// BiCGStab
+template <typename PC>
+class BiCGStabSolverCL : public SolverBaseCL
+{
+  private:
+    PC pc_;
+    bool rel_;
+
+  public:
+    BiCGStabSolverCL(const PC& pc, int maxiter, double tol, bool relative= true)
+        : SolverBaseCL( maxiter, tol), pc_( pc), rel_( relative) {}
+
+    PC&       GetPc ()       { return pc_; }
+    const PC& GetPc () const { return pc_; }
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        BICGSTAB( A, x, b, pc_, _iter, _res, rel_);
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        BICGSTAB(A, x, b, pc_, numIter, resid, rel_);
+    }
+};
 
 //=============================================================================
 //  Typedefs
@@ -1140,6 +1266,26 @@ class GSGMRes_PreCL : public SolverBaseCL
         GMRES( A, x, b, GSPcCL( 1.0), restart_, _iter, _res,
             /*relative errors!*/ true, /*don't check 2-norm*/ false);
         std::cerr << "GSGMRes_PreCL iterations: " << GetIter()
+                  << "\trelative residual: " << GetResid() << std::endl;
+    }
+};
+
+
+class SSORBiCGStab_PreCL : public SolverBaseCL
+{
+  public:
+    SSORBiCGStab_PreCL(int maxiter= 500, double reltol= 0.02)
+        : SolverBaseCL( maxiter, reltol)
+    {}
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, Vec& x, const Vec& b) const {
+        _res= _tol;
+        _iter= _maxiter;
+        BICGSTAB( A, x, b, SSORPcCL( 1.0), _iter, _res,
+            /*relative errors!*/ true);
+        std::cerr << "SSORBiCGStab_PreCL iterations: " << GetIter()
                   << "\trelative residual: " << GetResid() << std::endl;
     }
 };
