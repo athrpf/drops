@@ -224,7 +224,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.FPsteps);
+        cpl.DoStep( C.cpl_iter);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)
         {

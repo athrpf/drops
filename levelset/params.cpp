@@ -113,6 +113,11 @@ void ParamFilmCL::RegisterParams()
     rp_.RegInt( VolCorr,      "VolCorrection");
     rp_.EndGroup();
 
+    rp_.BeginGroup("Coupling");
+    rp_.RegInt( cpl_iter,     "Iter");
+    rp_.RegDouble( cpl_tol,   "Tol");
+    rp_.EndGroup();
+
     rp_.BeginGroup("Reparam");
     rp_.RegInt( RepFreq,      "Freq");
     rp_.RegInt( RepMethod,    "Method");
@@ -142,7 +147,6 @@ void ParamFilmCL::RegisterParams()
     
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( num_ref,      "NumRef");
-    rp_.RegInt( FPsteps,      "CouplingSteps");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");
