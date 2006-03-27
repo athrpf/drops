@@ -1243,8 +1243,8 @@ class SSORGMRes_PreCL : public SolverBaseCL
         _iter= _maxiter;
         GMRES( A, x, b, SSORPcCL( 1.0), restart_, _iter, _res,
             /*relative errors!*/ true, /*don't check 2-norm*/ false);
-        std::cerr << "SSORGMRes_PreCL iterations: " << GetIter()
-                  << "\trelative residual: " << GetResid() << std::endl;
+//        std::cerr << "SSORGMRes_PreCL iterations: " << GetIter()
+//                  << "\trelative residual: " << GetResid() << std::endl;
     }
 };
 
@@ -1265,8 +1265,8 @@ class GSGMRes_PreCL : public SolverBaseCL
         _iter= _maxiter;
         GMRES( A, x, b, GSPcCL( 1.0), restart_, _iter, _res,
             /*relative errors!*/ true, /*don't check 2-norm*/ false);
-        std::cerr << "GSGMRes_PreCL iterations: " << GetIter()
-                  << "\trelative residual: " << GetResid() << std::endl;
+//        std::cerr << "GSGMRes_PreCL iterations: " << GetIter()
+//                  << "\trelative residual: " << GetResid() << std::endl;
     }
 };
 
@@ -1285,8 +1285,8 @@ class SSORBiCGStab_PreCL : public SolverBaseCL
         _iter= _maxiter;
         BICGSTAB( A, x, b, SSORPcCL( 1.0), _iter, _res,
             /*relative errors!*/ true);
-        std::cerr << "SSORBiCGStab_PreCL iterations: " << GetIter()
-                  << "\trelative residual: " << GetResid() << std::endl;
+//        std::cerr << "SSORBiCGStab_PreCL iterations: " << GetIter()
+//                  << "\trelative residual: " << GetResid() << std::endl;
     }
 };
 

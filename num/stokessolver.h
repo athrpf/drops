@@ -1194,14 +1194,13 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     int inneriter;
     int pr_iter_cumulative= 0;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
-    double resid00= resid0;
-    double resid= 0.0;
-    std::cerr << "residual (2-norm): " << resid0
+    double resid= resid0;
+    std::cerr << "residual (2-norm): " << resid
               << "\tres-impuls: " << norm( ru)
               << "\tres-mass: " << norm( rp)
               << '\n';
-    if (resid0 <= tol) { // The fixed point iteration between levelset and Stokes
-        tol= resid0;      // equation uses this to determine convergence.
+    if (resid <= tol) { // The fixed point iteration between levelset and Stokes
+        tol= resid;     // equation uses this to determine convergence.
         max_iter= 0;
         delete asc;
         return true;
@@ -1239,8 +1238,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
             Apc.Apply( A, zhat, zbar);
         }
         pr_iter_cumulative+= inneriter;
-        std::cerr << "pr solver: iterations: " << inneriter
-                  << "\tcumulative: " << pr_iter_cumulative
+        std::cerr << "pr solver: iterations: " << pr_iter_cumulative
                   << "\tresid: " << innertol << '\n';
         du= w - zhat;
         xu+= du;
@@ -1249,26 +1247,16 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         rp= g - B*xu;
         resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
         std::cerr << "residual reduction (2-norm): " << resid/resid0
-                  << "\tglobal reduction: " << resid/resid00
-                  << "\nresidual (2-norm): " << resid0
+                  << "\nresidual (2-norm): " << resid
                   << "\tres-impuls: " << norm( ru)
                   << "\tres-mass: " << norm( rp)
                   << '\n';
-/*
-        if (resid<=tol*resid0) { // relative errors
-            tol= resid0==0.0 ? 0.0 : resid/resid0;
-            max_iter= k;
-            delete asc;
-            return true;
-        }
-*/
-        if (resid<=tol) { // absolute errors
+        if (resid <= tol) { // absolute errors
             tol= resid;
             max_iter= k;
             delete asc;
             return true;
         }
-        resid0= resid;
     }
     tol= resid;
     delete asc;
