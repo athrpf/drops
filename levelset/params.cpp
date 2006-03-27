@@ -31,6 +31,11 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( VolCorr,      "VolCorrection");
     rp_.EndGroup();
 
+    rp_.BeginGroup("Coupling");
+    rp_.RegInt( cpl_iter,     "Iter");
+    rp_.RegDouble( cpl_tol,   "Tol");
+    rp_.EndGroup();
+
     rp_.BeginGroup("Reparam");
     rp_.RegInt( RepFreq,      "Freq");
     rp_.RegInt( RepMethod,    "Method");
@@ -65,7 +70,6 @@ void ParamMesszelleCL::RegisterParams()
     
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( num_dropref,  "NumDropRef");
-    rp_.RegInt( FPsteps,      "CouplingSteps");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");
@@ -75,10 +79,13 @@ void ParamMesszelleCL::RegisterParams()
 void ParamMesszelleNsCL::RegisterParams()
 {
     rp_.BeginGroup( "NavStokes");
-    rp_.RegInt( scheme,       "Scheme");
-    rp_.RegDouble( nonlinear, "Nonlinear");
+    rp_.RegInt( scheme,        "Scheme");
+    rp_.RegDouble( nonlinear,  "Nonlinear");
     rp_.RegDouble( stat_nonlinear, "NonlinearStat");
     rp_.RegDouble( stat_theta, "ThetaStat");
+    rp_.RegDouble( ns_tol,     "Tol");
+    rp_.RegDouble( ns_red,     "Reduction");
+    rp_.RegInt( ns_iter,       "Iter");
     rp_.EndGroup();
 }
 

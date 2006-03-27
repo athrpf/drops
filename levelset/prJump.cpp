@@ -426,7 +426,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.FPsteps);
+        cpl.DoStep( C.cpl_iter);
         const VectorCL& u= Stokes.v.Data;       
         std::cerr << "\n----------------\n || u ||_oo = " << supnorm(u)
                   << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))

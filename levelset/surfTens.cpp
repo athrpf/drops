@@ -188,7 +188,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.FPsteps);
+        cpl.DoStep( C.cpl_iter);
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
 

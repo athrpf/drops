@@ -28,6 +28,11 @@ Levelset {
   VolCorrection	=	1
 }
 
+Coupling {
+  Tol		=	1e-12	# not used a.t.m.
+  Iter		=	-1	# -1 = till convergence
+}
+
 # re-initialization of levelset function
 Reparam { 
   Freq		=	0	# 0 = no reparametrization
@@ -64,7 +69,6 @@ Exp {
 # miscellaneous
 
 NumDropRef	=	2
-CouplingSteps	=	-1	# -1 = till convergence
 
 MeshFile	=	gambit/NMR_klein_grob.msh
 EnsightCase	=	NMRmzi

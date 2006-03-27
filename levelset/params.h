@@ -39,6 +39,11 @@ class ParamMesszelleCL: public ParamBaseCL
     int    num_steps;				///< number of timesteps
     double theta, lset_theta;			///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
     //@}
+    /// \name Coupling
+    //@{
+    double cpl_tol; 				///< tolerance for the coupling
+    int    cpl_iter; 				///< max. number of iterations for the fixed-point iteration
+    //@}
     
     /// \name Material data
     ///
@@ -74,7 +79,6 @@ class ParamMesszelleCL: public ParamBaseCL
     double RepTau, RepDiff; 			///< parameter for evolution of rep. equation
     //@}
 
-    int    FPsteps;				///< coupling Level Set and Flow: max. number of fixed point iterations
     int    num_dropref,				///< number of grid refinements at position of drops
            IniCond;				///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
               
@@ -100,7 +104,10 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
     int    scheme;				///< time discretization scheme: 0=operator splitting, 1=theta-scheme
     double nonlinear;				///< magnitude of nonlinear term
     double stat_nonlinear, 			///< parameter for stationary solution
-           stat_theta;		
+           stat_theta,
+           ns_tol,				///< Tolerance of the Navier-Stokes-solver
+           ns_red;				///< The Oseen-residual is reduced by this factor (<1.0)
+    int    ns_iter;				///< Maximal number of iterations of the solver
     //@}
   
     ParamMesszelleNsCL()

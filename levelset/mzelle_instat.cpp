@@ -426,15 +426,15 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         switch (C.StokesMethod) {
-          case schur:              cpl1.DoStep( C.FPsteps); break;
-          case inexactuzawa:       cpl2.DoStep( C.FPsteps); break;
-          case minres:             cpl3.DoStep( C.FPsteps); break;
-          case schurMG:            cpl4.DoStep( C.FPsteps); break;
-          case inexactuzawaMG:     cpl5.DoStep( C.FPsteps); break;
-          case minresMG:           cpl6.DoStep( C.FPsteps); break;
-          case schurfullMG:        cpl7.DoStep( C.FPsteps); break;
-          case inexactuzawafullMG: cpl8.DoStep( C.FPsteps); break;
-          case minresfullMG:       cpl9.DoStep( C.FPsteps); break;
+          case schur:              cpl1.DoStep( C.cpl_iter); break;
+          case inexactuzawa:       cpl2.DoStep( C.cpl_iter); break;
+          case minres:             cpl3.DoStep( C.cpl_iter); break;
+          case schurMG:            cpl4.DoStep( C.cpl_iter); break;
+          case inexactuzawaMG:     cpl5.DoStep( C.cpl_iter); break;
+          case minresMG:           cpl6.DoStep( C.cpl_iter); break;
+          case schurfullMG:        cpl7.DoStep( C.cpl_iter); break;
+          case inexactuzawafullMG: cpl8.DoStep( C.cpl_iter); break;
+          case minresfullMG:       cpl9.DoStep( C.cpl_iter); break;
 	}
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)

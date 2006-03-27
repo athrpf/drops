@@ -30,6 +30,11 @@ Levelset {
   VolCorrection	=	0
 }
 
+Coupling {
+  Tol		=	1e-12	# not used a.t.m.
+  Iter		=	-1	# -1 = till convergence
+}
+
 # re-initialization of levelset function
 Reparam { 
   Method	=	1
@@ -73,7 +78,6 @@ AdaptRef {
 # miscellaneous
 
 NumDropRef	=	1 #0
-CouplingSteps	=	-1	# -1 = till convergence
 InitialCond	=	1	# stat. flow
 InitialFile	=	xxx
 MeshFile	=	4	# num subdivisions of cube
