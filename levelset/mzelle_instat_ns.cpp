@@ -258,22 +258,32 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     if (C.scheme)
     {
-//        Schur_GMRes_CL ISPschurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
         ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
-        ISPSchur_GMRes_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//        Schur_GMRes_CL ISPschurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        SSORBiCGStab_PreCL Asolver( 500, 0.02);
+        InexactUzawa_SSORBiCGStab_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_SSORBiCGStab_ISPre_CL> NSSolverT;
+//        SSORGMRes_PreCL Asolver( 500, /*restart*/ 20, 0.02);
+//        InexactUzawa_SSORGMRes_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_SSORGMRes_ISPre_CL> NSSolverT;
+        NSSolverT nssolver( Stokes, inexactUzawaSolver, C.ns_iter, C.outer_tol, C.ns_red);
+
+//        ISPSchur_GMRes_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
 //        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, Schur_GMRes_CL> 
-        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_GMRes_CL> 
+//        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_GMRes_CL> 
 //        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
-            cpl( Stokes, lset, ISPschurSolver, C.theta, C.nonlinear);
+//            cpl( Stokes, lset, ISPschurSolver, C.theta, C.nonlinear);
+        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> 
+            cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
 
         for (int step= 1; step<=C.num_steps; ++step)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
-            cpl.DoStep( C.FPsteps);
+            cpl.DoStep( C.cpl_iter);
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {
@@ -326,7 +336,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         for (int step= 1; step<=C.num_steps; ++step)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
-            cpl.DoStep( C.FPsteps);
+            cpl.DoStep( C.cpl_iter);
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {

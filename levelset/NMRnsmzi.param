@@ -8,8 +8,8 @@
 
 # time stepping
 Time {
-  NumSteps	=	1000
-  StepSize	=	1e-4
+  NumSteps	=	100
+  StepSize	=	1e-2
   ThetaLevelset	=	1	# backward Euler
   ThetaStokes	=	1	# backward Euler
 }
@@ -19,36 +19,44 @@ Stokes {
   InnerIter	=	1000
   OuterIter	=	200
   InnerTol	=	1e-14
-  OuterTol	=	1e-10
+  OuterTol	=	1e-12
   StokesMethod	=	-1	# no effect 
 }
 
 NavStokes {
   Nonlinear	=	1
-  Scheme	=	0	# time integration: 0=FS op.splitting, 1=theta-scheme
+  Scheme	=	1	# time integration: 0=FS op.splitting, 1=theta-scheme
   NonlinearStat	=	0
   ThetaStat	=	0.5
+  Tol           =       1e-12
+  Iter          =       20
+  Reduction     =       10	# (TODO: Write this as 0.1)
 }
 
 # levelset solver
 Levelset {
-  Tol		=	1e-18
-  Iter		=	10000
+  Tol		=	99
+  Iter		=	0
   SD		=	0.1
-  CurvDiff	=	1e-10
-  VolCorrection	=	1
+  CurvDiff	=	-1
+  VolCorrection	=	0
+}
+
+Coupling {
+  Tol		=	1e-12	# not used a.t.m.
+  Iter		=	1	# -1 = till convergence
 }
 
 # re-initialization of levelset function
 Reparam { 
-  Freq		=	10	# 0 = no reparametrization
+  Freq		=	0	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
   NumSteps	=	5
   StepSize	=	0.001
   Diffusion	=	1e-4
 }
 
-#
+# adaptive refinement
 AdaptRef {
   Freq		=	0
   FinestLevel	=	1
@@ -58,9 +66,9 @@ AdaptRef {
 # material data, all units are SI
 Mat {
   DensDrop	=	955
-  ViscDrop	=	10.4e-3
+  ViscDrop	=	1e-3
   DensFluid	=	1107
-  ViscFluid	=	4.8e-3
+  ViscFluid	=	1e-3
   SmoothZone	=	1e-4
   
   SurfTension	=	2e-3
@@ -68,24 +76,25 @@ Mat {
 
 # experimental conditions
 Exp {
-  RadDrop	=	1.75e-3
+  RadDrop	=	-99 #1.75e-3
   PosDrop	=	0	-7.5e-3	0
   
   Gravity	=	0	-9.81	0
   
   FlowDir	=	1	# flow in y-direction
   
-  InflowVel	=	-0.025
-  RadInlet	=	3.5e-3	# 3.6e-3 for new meas. cell
+  InflowVel	=	-0.05
+  RadInlet	=	3.6e-3	# 3.5e-3 for old meas. cell
 }  
 
 # miscellaneous
 
-NumDropRef	=	2
-CouplingSteps	=	10	# -1 = till convergence
+NumDropRef	=	0
 InitialCond	=	1	# 0=zero, 1/2=flow with/without drop, 3=read from file
 InitialFile	=	ensight/nsmzi
-MeshFile	=	gambit/NMR_klein_grob.msh
-# new cell: MeshFile	=	gambit/NMR_05.msh
+# MeshFile	=	gambit/NMR_klein_grob.msh #old cell
+# MeshFile	=	gambit/mtc_1.msh
+MeshFile	=	gambit/NMR_05.msh
 EnsightCase	=	nsmzi
 EnsightDir	=	ensight
+

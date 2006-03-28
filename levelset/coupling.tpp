@@ -4,6 +4,8 @@
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 //**************************************************************************
 
+#include "../num/nssolver.h"
+
 namespace DROPS
 {
 
@@ -300,14 +302,16 @@ template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetNavStokes2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear)
 
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
+  : _Stokes( Stokes), _solver( solver), _LvlSet( ls),
+    _b( &Stokes.b), _old_b( new VelVecDescCL),
     _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), 
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL), 
     _curv( new VelVecDescCL), _old_curv( new VelVecDescCL), 
     _rhs( Stokes.v.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
     _theta( theta), _nonlinear( nonlinear)
 { 
-    Update(); 
+    _Stokes.SetLevelSet( ls);
+    Update();
 }
 
 template <class StokesT, class SolverT>
@@ -365,9 +369,6 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _LvlSet.AccumulateBndIntegral( *_curv);
 
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
-    _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _cplN, _LvlSet, _Stokes.t);
-    _AN.LinComb( 1., _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
-    _mat.LinComb( 1., _Stokes.M.Data, _theta*_dt, _AN);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
 
     time.Stop();
@@ -375,10 +376,12 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     time.Reset();
 
     _Stokes.p.Data*= _dt;
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-        VectorCL( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data + _nonlinear*_cplN->Data)), _Stokes.c.Data);
+    _mat.LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
+    VectorCL b2( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data));
+    _solver.Solve( _mat, _Stokes.B.Data,
+        _Stokes.v, _Stokes.p.Data,
+        b2, *_cplN, _Stokes.c.Data, /*alpha*/ _dt*_theta*_nonlinear);
     _Stokes.p.Data/= _dt;
-
     time.Stop();
     std::cerr << "Solving NavierStokes took "<<time.GetTime()<<" sec.\n";
 }
