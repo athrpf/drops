@@ -17,7 +17,9 @@
 class PoissonCoeffCL
 {
   public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
+    // static double q(const DROPS::Point3DCL&) { return 0.0; }
+    static double alpha(const DROPS::Point3DCL&, double) 
+      { return 1; }
 //    static double f(const DROPS::Point3DCL& , double ) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double t)
       { return (-2.0*std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
@@ -117,9 +119,6 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   VecDescCL cplA;
   VecDescCL cplM;
 	
-  // Zeitschrittweite, aktueller Zeitpunkt
-  double t= 0;
-  
   // Daten fuer das PCG-Verfahren  
   double tol= 1.0e-7;
   int max_iter= 500;  
@@ -145,10 +144,10 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   M.SetIdx( &idx, &idx);
   
   // stationaerer Anteil
-  Poisson.SetupInstatSystem(A, M);
+  Poisson.SetupInstatSystem(A, M, Poisson.t);
   
   // instationaere rechte Seite 
-  Poisson.SetupInstatRhs( cplA, cplM, t, b, t);
+  Poisson.SetupInstatRhs( cplA, cplM, Poisson.t, b, Poisson.t);
    
   SSORPcCL pc(1.0);
   PCG_SsorCL pcg_solver(pc, max_iter, tol);

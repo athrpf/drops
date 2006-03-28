@@ -35,7 +35,9 @@ class ParamCL
 class PoissonCoeffCL
 {
   public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
+    // static double q(const DROPS::Point3DCL&) { return 0.0; }
+    static double alpha(const DROPS::Point3DCL&, double) 
+      { return 1; }
     static double f(const DROPS::Point3DCL& p, double t) 
     { 
 //        return 0;
@@ -85,7 +87,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
 
   std::cerr << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
     << std::endl;
-  Poisson.SetupInstatSystem(A, M);
+  Poisson.SetupInstatSystem(A, M, 0);
   
   SSORPcCL pc(1.0);
   typedef GMResSolverCL<SSORPcCL> SolverT;

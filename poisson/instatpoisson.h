@@ -136,8 +136,8 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     void DeleteNumbering( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
 		
-    // set up matrices (which are time independent expressions)
-    void SetupInstatSystem( MatDescCL& A, MatDescCL& M) const;
+    // set up matrices (M is time independent)
+    void SetupInstatSystem( MatDescCL& A, MatDescCL& M, double tA) const;
     // set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MatDescCL& U, VecDescCL& vU, double t) const;
 		

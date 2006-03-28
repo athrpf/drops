@@ -31,7 +31,9 @@ class PoissonCoeffCL
     
   public:
     PoissonCoeffCL(int Flag) { _Flag= Flag; }
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
+    // static double q(const DROPS::Point3DCL&) { return 0.0; }
+    static double alpha(const DROPS::Point3DCL&, double) 
+      { return 1; }
     static double f(const DROPS::Point3DCL& p, double t)
     {
       if (_Flag==0)
@@ -317,9 +319,6 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
   VecDescCL cplA;
   VecDescCL cplM;
   
-  // aktueller Zeitpunkt
-  double t= 0;
-   
   idx.Set(1, 0, 0, 0);
   
   MultiGridCL& MG= Poisson.GetMG();
@@ -344,10 +343,10 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
   M.SetIdx(&idx, &idx);
   
   // stationaerer Anteil
-  Poisson.SetupInstatSystem(A, M);
+  Poisson.SetupInstatSystem(A, M, Poisson.t);
   
   // instationaere rechte Seite
-  Poisson.SetupInstatRhs(cplA, cplM, t, b, t);
+  Poisson.SetupInstatRhs(cplA, cplM, Poisson.t, b, Poisson.t);
   
   // PCG-Verfahren mit SSOR-Vorkonditionierer
   SSORPcCL pc(1.0);

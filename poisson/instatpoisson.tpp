@@ -78,7 +78,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   double det;
   double absdet;
   IdxT UnknownIdx[4];
-  Quad2CL<> rhs;
+  Quad2CL<> rhs, quad_a;
 
 //  StripTimeCL strip( &Coeff::f, tf);
 
@@ -90,12 +90,15 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
 
+    quad_a.assign( *sit, _Coeff.alpha, tA);
+    const double int_a= quad_a.quad( absdet);
+
     for(int i=0; i<4; ++i)
     {
       for(int j=0; j<=i; ++j)
       {
         // dot-product of the gradients
-        coup[i][j]= inner_prod( G[i], G[j])/6.0*absdet;
+        coup[i][j]= inner_prod( G[i], G[j])*int_a;
         // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
@@ -134,7 +137,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
 
 
 template<class Coeff>
-void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mmat) const
+void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mmat, double tA) const
 // Sets up the stiffness matrix and the mass matrix
 {
   MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
@@ -149,6 +152,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   double det;
   double absdet;
   IdxT UnknownIdx[4];
+  Quad2CL<> quad_a;
 	 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), 
@@ -157,13 +161,16 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   {
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
+    
+    quad_a.assign( *sit, _Coeff.alpha, tA);
+    const double int_a= quad_a.quad( absdet);
 
     for(int i=0; i<4; ++i)
     {
       for(int j=0; j<=i; ++j)
       {
         // dot-product of the gradients
-        coup[i][j]= inner_prod( G[i], G[j])/6.0*absdet;
+        coup[i][j]= inner_prod( G[i], G[j])*int_a;
         // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }

@@ -19,7 +19,9 @@
 class PoissonCoeffCL
 {
   public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
+    // static double q(const DROPS::Point3DCL&) { return 0.0; }
+    static double alpha(const DROPS::Point3DCL&, double) 
+      { return 1; }
     //static double f(const DROPS::Point3DCL& , double ) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double t)
       { return (-2.0*std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
@@ -138,13 +140,13 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
       Poisson.x.SetIdx(&tmp.Idx);
       Poisson.b.SetIdx(&tmp.Idx);
       std::cerr << "Create System " << std::endl;
-      Poisson.SetupInstatSystem(A, M);
+      Poisson.SetupInstatSystem(A, M, Poisson.t);
       tmp.A.Data.LinComb(1., M.Data, theta*dt*nu, A.Data);
     }
     else
     {
       std::cerr << "Create System" << std::endl;
-      Poisson.SetupInstatSystem(A, M);
+      Poisson.SetupInstatSystem(A, M, Poisson.t);
       tmp.A.Data.LinComb(1., M.Data, theta*dt*nu, A.Data);
     }
     if(lvl!=0)
@@ -254,7 +256,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
 
   std::cerr << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
     << std::endl;
-  Poisson.SetupInstatSystem(A, M);
+  Poisson.SetupInstatSystem(A, M, Poisson.t);
   
   SSORPcCL pc(1.0);
   PCG_SsorCL pcg_solver(pc, maxiter, tol);

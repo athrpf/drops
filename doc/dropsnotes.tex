@@ -302,15 +302,19 @@ Auf dem Gebiet $\Omega$ sei die instation"are Poissongleichung bzw.
 W"armeleitungsgleichung
 \[
 \begin{array}{rcll}
-    \frac{\partial u(x,t)}{\partial t}-\Delta u(x,t) + q(x)\cdot u(x,t) &=& f(x,t) 
+    \frac{\partial u(x,t)}{\partial t} - \alpha(x,t)\Delta u(x,t) &=& f(x,t) 
     & \qquad\mbox{in }\Omega\times[0,t_f]\\
     u(x,0) &=& u_0(x) & \qquad\mbox{in }\Omega\\
     u(x,t) &=& g_D(x) & \qquad\mbox{auf }\Gamma_D\times[0,t_f]\\
-    \frac{\partial u(x,t)}{\partial n} &=& g_N(x) 
+    \alpha(x,t)\frac{\partial u(x,t)}{\partial n} &=& g_N(x) 
     & \qquad\mbox{auf }\Gamma_N\times[0,t_f]
 \end{array}
 \]
-gegeben.
+gegeben. Beachte folgende Unterschiede zum station"aren Problem:
+\begin{itemize}
+  \item Die Temperaturleitf"ahigkeit $\alpha=\frac{\lambda}{\rho c}=\alpha(x,t)$ kann "ortlich und zeitlich variieren und wird in der Diskretisierung der Steifigkeitsmatrix ber"ucksichtigt. Beachte, dass sich dadurch die homogene nat"urliche Randbedingung "andert ($\alpha\frac{\partial u}{\partial n}$ statt $\frac{\partial u}{\partial n}$)!
+  \item Der Term $q(x)\cdot u(x,t)$ taucht in der instation"aren Poissongleichung nicht mehr auf (im Gegensatz zur station"aren Gleichung). Die Diskretisierung dieses Terms wurde auskommentiert, da er bislang nicht gebraucht wurde, er kann bei Bedarf aber wieder ber"uchsichtigt werden.
+\end{itemize}
 
 \begin{Code}
 \begin{verbatim}
