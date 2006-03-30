@@ -259,12 +259,36 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     if (C.scheme)
     {
         ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
+//        DummyPcCL Apcpc;
+//        JACPcCL Apcpc;
+        SSORPcCL Apcpc;
+//        GSPcCL Apcpc;
 //        Schur_GMRes_CL ISPschurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-        SSORBiCGStab_PreCL Asolver( 500, 0.02);
+
+//        DummyBiCGStab_PreCL Asolver( Apcpc, 500, 0.02);
+//        JACBiCGStab_PreCL Asolver( Apcpc, 500, 0.02);
+//        GSBiCGStab_PreCL Asolver( Apcpc, 500, 0.02);
+        SSORBiCGStab_PreCL Asolver( Apcpc, 500, 0.02);
+//        InexactUzawa_BiCGStab_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        InexactUzawa_JACBiCGStab_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        InexactUzawa_GSBiCGStab_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
         InexactUzawa_SSORBiCGStab_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_BiCGStab_ISPre_CL> NSSolverT;
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_JACBiCGStab_ISPre_CL> NSSolverT;
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_GSBiCGStab_ISPre_CL> NSSolverT;
         typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_SSORBiCGStab_ISPre_CL> NSSolverT;
-//        SSORGMRes_PreCL Asolver( 500, /*restart*/ 20, 0.02);
+
+//        DummyGMRes_PreCL Asolver( Apcpc, 500, /*restart*/ 20, 0.02);
+//        JACGMRes_PreCL Asolver( Apcpc, 500, /*restart*/ 20, 0.02);
+//        GSGMRes_PreCL Asolver( Apcpc, 500, /*restart*/ 20, 0.02);
+//        SSORGMRes_PreCL Asolver( Apcpc, 500, /*restart*/ 20, 0.02);
+//        InexactUzawa_GMRes_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        InexactUzawa_JACGMRes_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        InexactUzawa_GSGMRes_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
 //        InexactUzawa_SSORGMRes_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol);
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_GMRes_ISPre_CL> NSSolverT;
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_JACGMRes_ISPre_CL> NSSolverT;
+//        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_GSGMRes_ISPre_CL> NSSolverT;
 //        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawa_SSORGMRes_ISPre_CL> NSSolverT;
         NSSolverT nssolver( Stokes, inexactUzawaSolver, C.ns_iter, C.outer_tol, C.ns_red);
 

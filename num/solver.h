@@ -28,29 +28,30 @@ namespace DROPS
 // Available methods
 enum PreMethGS
 {
-    P_JAC,     // Jacobi
-    P_GS,      // Gauss-Seidel
-    P_SGS,     // symmetric Gauss-Seidel
-    P_SGS0,    // symmetric Gauss-Seidel with initial vector 0
-    P_JOR,     // P_JAC with over-relaxation
-    P_SOR,     // P_GS with over-relaxation
-    P_SSOR,    // P_SGS with over-relaxation
-    P_SSOR0,   // P_SGS0 with over-relaxation
-    P_SGS0_D,  // P_SGS0 using SparseMatDiagCL
-    P_SSOR0_D, // P_SSOR0 using SparseMatDiagCL
-    P_DUMMY,   // identity
-    P_GS0      // Gauss-Seidel with initial vector 0
+    P_JAC,     //  0 Jacobi
+    P_GS,      //  1 Gauss-Seidel
+    P_SGS,     //  2 symmetric Gauss-Seidel
+    P_SGS0,    //  3 symmetric Gauss-Seidel with initial vector 0
+    P_JOR,     //  4 P_JAC with over-relaxation
+    P_SOR,     //  5 P_GS with over-relaxation
+    P_SSOR,    //  6 P_SGS with over-relaxation
+    P_SSOR0,   //  7 P_SGS0 with over-relaxation
+    P_SGS0_D,  //  8 P_SGS0 using SparseMatDiagCL
+    P_SSOR0_D, //  9 P_SSOR0 using SparseMatDiagCL
+    P_DUMMY,   // 10 identity
+    P_GS0,     // 11 Gauss-Seidel with initial vector 0
+    P_JAC0     // 12 Jacobi with initial vector 0
 };
 
 // Base methods
-enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0, PB_DUMMY, PB_GS0};
+enum PreBaseGS { PB_JAC, PB_GS, PB_SGS, PB_SGS0, PB_DUMMY, PB_GS0, PB_JAC0 };
 
 // Properties of the methods
 template <PreMethGS PM> struct PreTraitsCL
 {
     static const PreBaseGS BaseMeth= PreBaseGS(PM<8 ? PM%4
-                                     : (PM==10 ? PB_DUMMY : (PM==11 ? PB_GS0 : PB_SGS0)) );
-    static const bool      HasOmega= (PM>=4 && PM<8) || PM==9;
+                                     : (PM==10 ? PB_DUMMY : (PM==11 ? PB_GS0 : (PM==12 ? PB_JAC0 : PB_SGS0))) );
+    static const bool      HasOmega= (PM>=4 && PM<8) || PM==9 || PM==11 || PM==12;
     static const bool      HasDiag=  PM==8 || PM==9;
 };
 
@@ -87,6 +88,23 @@ SolveGSstep(const PreDummyCL<PB_JAC>&, const MatrixCL& A, Vec& x, const Vec& b, 
     std::swap(x,y);
 }
 
+// One step of the Jacobi method with start vector 0
+template <bool HasOmega, typename Vec>
+void
+SolveGSstep(const PreDummyCL<PB_JAC0>&, const MatrixCL& A, Vec& x, const Vec& b, double omega)
+{
+    const size_t n= A.num_rows();
+    size_t nz;
+
+    for (size_t i= 0; i < n; ++i) {
+        nz= A.row_beg( i);
+        for (const size_t end= A.row_beg( i+1); A.col_ind( nz) != i && nz < end; ++nz); // empty loop
+        if (HasOmega)
+            x[i]= /*(1.-omega)*x[i]=0  + */ omega*b[i]/A.val( nz);
+        else
+            x[i]= b[i]/A.val( nz);
+    }
+}
 
 // One step of the Gauss-Seidel/SOR method with start vector x
 template <bool HasOmega, typename Vec>
@@ -371,16 +389,6 @@ class MultiSSORPcCL
             SolveGSstep<PreTraitsCL<P_SSOR>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<P_SSOR>::BaseMeth>(), A, x, b, _omega);
     }
 };
-
-
-//=============================================================================
-// Krylov-methods as preconditioner. 
-// Needed for InexactUzawa. This shall be replaced an by MG-preconditioner.
-//=============================================================================
-// Defined below, where the typedefs for PCGSolverCL and alikes have been made.
-class SSORPCG_PreCL;
-class SSORGMRes_PreCL;
-class GSGMRes_PreCL;
 
 
 //*****************************************************************************
@@ -1192,6 +1200,7 @@ typedef PreGSCL<P_SOR>     SORsmoothCL;
 typedef PreGSCL<P_SGS>     SGSsmoothCL;
 typedef PreGSCL<P_JOR>     JORsmoothCL;
 typedef PreGSCL<P_GS>      GSsmoothCL;
+typedef PreGSCL<P_JAC0>    JACPcCL;
 typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
@@ -1226,14 +1235,17 @@ class SSORPCG_PreCL
     }
 };
 
-class SSORGMRes_PreCL : public SolverBaseCL
+
+template <class PC>
+class GMRes_PreCL : public SolverBaseCL
 {
   private:
+    PC& pc_;
     int restart_;
 
   public:
-    SSORGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol), restart_( restart)
+    GMRes_PreCL(PC& pc, int maxiter= 500, int restart= 250, double reltol= 0.02)
+        : SolverBaseCL( maxiter, reltol), pc_( pc), restart_( restart)
     {}
 
     template <typename Mat, typename Vec>
@@ -1241,21 +1253,28 @@ class SSORGMRes_PreCL : public SolverBaseCL
     Apply(const Mat& A, Vec& x, const Vec& b) const {
         _res= _tol;
         _iter= _maxiter;
-        GMRES( A, x, b, SSORPcCL( 1.0), restart_, _iter, _res,
+        GMRES( A, x, b, pc_, restart_, _iter, _res,
             /*relative errors!*/ true, /*don't check 2-norm*/ false);
-//        std::cerr << "SSORGMRes_PreCL iterations: " << GetIter()
+//        std::cerr << "GMRes_PreCL iterations: " << GetIter()
 //                  << "\trelative residual: " << GetResid() << std::endl;
     }
 };
 
-class GSGMRes_PreCL : public SolverBaseCL
+typedef GMRes_PreCL<DummyPcCL>  DummyGMRes_PreCL;
+typedef GMRes_PreCL<JACPcCL>    JACGMRes_PreCL;
+typedef GMRes_PreCL<GSPcCL>     GSGMRes_PreCL;
+typedef GMRes_PreCL<SSORPcCL>   SSORGMRes_PreCL;
+
+
+template <class PC>
+class BiCGStab_PreCL : public SolverBaseCL
 {
   private:
-    int restart_;
+    PC& pc_;
 
   public:
-    GSGMRes_PreCL(int maxiter= 500, int restart= 250, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol), restart_( restart)
+    BiCGStab_PreCL(PC& pc, int maxiter= 500, double reltol= 0.02)
+        : SolverBaseCL( maxiter, reltol), pc_( pc)
     {}
 
     template <typename Mat, typename Vec>
@@ -1263,32 +1282,18 @@ class GSGMRes_PreCL : public SolverBaseCL
     Apply(const Mat& A, Vec& x, const Vec& b) const {
         _res= _tol;
         _iter= _maxiter;
-        GMRES( A, x, b, GSPcCL( 1.0), restart_, _iter, _res,
-            /*relative errors!*/ true, /*don't check 2-norm*/ false);
-//        std::cerr << "GSGMRes_PreCL iterations: " << GetIter()
-//                  << "\trelative residual: " << GetResid() << std::endl;
-    }
-};
-
-
-class SSORBiCGStab_PreCL : public SolverBaseCL
-{
-  public:
-    SSORBiCGStab_PreCL(int maxiter= 500, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol)
-    {}
-
-    template <typename Mat, typename Vec>
-    void
-    Apply(const Mat& A, Vec& x, const Vec& b) const {
-        _res= _tol;
-        _iter= _maxiter;
-        BICGSTAB( A, x, b, SSORPcCL( 1.0), _iter, _res,
+        BICGSTAB( A, x, b, pc_, _iter, _res,
             /*relative errors!*/ true);
-//        std::cerr << "SSORBiCGStab_PreCL iterations: " << GetIter()
-//                  << "\trelative residual: " << GetResid() << std::endl;
+        std::cerr << "BiCGStab_PreCL iterations: " << GetIter()
+                  << "\trelative residual: " << GetResid() << std::endl;
     }
 };
+
+typedef BiCGStab_PreCL<DummyPcCL> DummyBiCGStab_PreCL;
+typedef BiCGStab_PreCL<JACPcCL>   JACBiCGStab_PreCL;
+typedef BiCGStab_PreCL<GSPcCL>    GSBiCGStab_PreCL;
+typedef BiCGStab_PreCL<SSORPcCL>  SSORBiCGStab_PreCL;
+
 
 //*****************************************************************************
 //

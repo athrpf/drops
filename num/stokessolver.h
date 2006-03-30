@@ -172,12 +172,22 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
           const VectorCL& b, const VectorCL& c);
 };
 
-typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawa_CL;
-typedef InexactUzawaCL<SSORGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GMRes_CL;
-typedef InexactUzawaCL<GSGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GSGMRes_CL;
-typedef InexactUzawaCL<SSORGMRes_PreCL, ISPreCL, APC_OTHER> InexactUzawa_SSORGMRes_ISPre_CL;
-typedef InexactUzawaCL<SSORBiCGStab_PreCL, ISPreCL, APC_OTHER> InexactUzawa_SSORBiCGStab_ISPre_CL;
+typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM>          InexactUzawa_CL;
 typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
+
+typedef InexactUzawaCL<GSGMRes_PreCL, DummyPcCL, APC_OTHER>   InexactUzawa_GSGMRes_CL;
+typedef InexactUzawaCL<SSORGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GMRes_CL;
+
+typedef InexactUzawaCL<DummyGMRes_PreCL, ISPreCL, APC_OTHER> InexactUzawa_GMRes_ISPre_CL;
+typedef InexactUzawaCL<JACGMRes_PreCL, ISPreCL, APC_OTHER>   InexactUzawa_JACGMRes_ISPre_CL;
+typedef InexactUzawaCL<GSGMRes_PreCL, ISPreCL, APC_OTHER>    InexactUzawa_GSGMRes_ISPre_CL;
+typedef InexactUzawaCL<SSORGMRes_PreCL, ISPreCL, APC_OTHER>  InexactUzawa_SSORGMRes_ISPre_CL;
+
+typedef InexactUzawaCL<DummyBiCGStab_PreCL, ISPreCL, APC_OTHER> InexactUzawa_BiCGStab_ISPre_CL;
+typedef InexactUzawaCL<JACBiCGStab_PreCL, ISPreCL, APC_OTHER>   InexactUzawa_JACBiCGStab_ISPre_CL;
+typedef InexactUzawaCL<GSBiCGStab_PreCL, ISPreCL, APC_OTHER>    InexactUzawa_GSBiCGStab_ISPre_CL;
+typedef InexactUzawaCL<SSORBiCGStab_PreCL, ISPreCL, APC_OTHER>  InexactUzawa_SSORBiCGStab_ISPre_CL;
+
 typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
 typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
 
@@ -1207,6 +1217,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     }
     for (int k= 1; k <= max_iter; ++k) {
         w= 0.0;
+std::cerr << "Stelle 1:\t";
         Apc.Apply( A, w, ru);
         c= B*w - rp;
         z= 0.0;
@@ -1235,6 +1246,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         if (apcmeth != APC_SYM_LINEAR) {
             zbar= transp_mul( B, z);
             zhat= 0.0;
+std::cerr << "Stelle 2:\t";
             Apc.Apply( A, zhat, zbar);
         }
         pr_iter_cumulative+= inneriter;
