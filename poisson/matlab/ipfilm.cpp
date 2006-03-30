@@ -15,7 +15,8 @@
 #include "../../out/output.h"
 #include <fstream>
 
-const int AdjFlagC= 32;
+const int AdjFlagC= 32,
+          DirHeatBCFlagC= 16;
 
 /**
 This code has the same functionality as poisson/ipfilm.cpp, but is extended by a matlab interface.
@@ -38,7 +39,10 @@ scalar parameters:
   Tol, Iter:      stopping criterion for the iterative solver (GMRES)
   alpha:          diffusion parameter alpha = lambda / (rho c) [in SI]
   heat:           bnd condition for heating: heat = qh / (-lambda) [in SI]
-  Flag:           used for the adjoint problem: if Flag==AdjFlagC, then the adjoint operator is discretized
+                                         or  heat = T_wall [K] if Dirichlet bc is used (cf. Flag)
+  Flag:           used for the adjoint problem and for the type of heating bc: 
+                  if Flag & AdjFlagC, then the adjoint operator is discretized.
+                  if Flag & DirHeatBCFlagC, then heating is modeled by a Dirichlet bc (instead of natural bc).
 
   MaxIter (output):        number of iterations spent in the iterative solver (maximum over all time steps)
 
@@ -286,15 +290,16 @@ static void ipdrops( double theta, double tol, int iter, int Flag)
     mexPrintf("\nAnzahl der Zeitschritte = %d\n", C.nt);
     
     // bnd cond: x=0/lx, y=0/ly, z=0/lz
+    const bool HeatBCType= !(Flag & DirHeatBCFlagC);
     const bool isneumann[6]= 
       { false, true,   // Gamma_in, Gamma_out
-        true, true,    // Gamma_h (wall), Gamma_r (surface)
+        HeatBCType, true,    // Gamma_h (wall), Gamma_r (surface)
         true, true };  // Gamma_r, Gamma_r
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &Inflow, &Zero, &Heat, &Zero, &Zero, &Zero};
     
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
-    MyPoissonCL prob(brick, PoissonCoeffCL(), bdata, Flag==AdjFlagC);
+    MyPoissonCL prob(brick, PoissonCoeffCL(), bdata, Flag & AdjFlagC);
     DROPS::MultiGridCL& mg = prob.GetMG();
     
 //    for (int count=1; count<=brick_ref; count++)
