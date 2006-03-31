@@ -991,6 +991,63 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
     return false;
 }
 
+//*****************************************************************
+// GCR
+//
+// GCR solves the unsymmetric linear system Ax = b 
+// using the Preconditioned Generalized Conjugate Residuals method;
+//
+// The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within
+// max_iter iterations (false).
+//
+// Upon successful return, output arguments have the following values:
+//  
+//        x  --  approximate solution to Ax = b
+// max_iter  --  the number of iterations performed before the
+//               tolerance was reached
+//      tol  --  the residual after the final iteration
+//
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
+//  
+//*****************************************************************
+template <class Mat, class Vec, class Preconditioner>
+bool
+GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
+    int /*truncation parameter m*/, int& max_iter, double& tol,
+    bool measure_relative_tol= true)
+{
+    Vec r( b - A*x);
+    std::vector<Vec> s( 1), v( 1); // Positions s[0], v[0] are unused below.
+    double normb= norm( b);
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
+    double resid= -1.0;
+
+    for (int k= 0; k < max_iter; ++k) {
+        if ((resid= norm( r)/normb) < tol) {
+            tol= resid;
+            max_iter= k;
+            return true;
+        }
+        s.push_back( Vec( b.size()));
+        M.Apply( A, s[k+1], r);
+        v.push_back( A*s[k+1]);
+        for (int i= 1; i <= k; ++i) {
+            const double alpha= dot( v[k+1], v[i]);
+            v[k+1]-= alpha*v[i];
+            s[k+1]-= alpha*s[i];
+        }
+        const double beta= norm( v[k+1]);
+        v[k+1]/= beta;
+        s[k+1]/= beta;
+        const double gamma= dot( r, v[k+1]);
+        x+= gamma*s[k+1];
+        r-= gamma*v[k+1];
+    }
+    tol= resid;
+    return false;
+}
 
 
 //=============================================================================
@@ -1188,6 +1245,39 @@ class BiCGStabSolverCL : public SolverBaseCL
         resid=   _tol;
         numIter= _maxiter;
         BICGSTAB(A, x, b, pc_, numIter, resid, rel_);
+    }
+};
+// GMRES
+
+template <typename PC>
+class GCRSolverCL : public SolverBaseCL
+{
+  private:
+    PC  pc_;
+    int truncate_;
+    bool rel_;
+
+  public:
+    GCRSolverCL(const PC& pc, int truncate, int maxiter, double tol, bool relative= true)
+        : SolverBaseCL( maxiter, tol), pc_( pc), truncate_( truncate), rel_( relative) {}
+
+    PC&       GetPc      ()       { return pc_; }
+    const PC& GetPc      () const { return pc_; }
+    int       GetTruncate() const { return truncate_; }
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        GCR( A, x, b, pc_, truncate_, _iter, _res);
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        GCR( A, x, b, pc_, truncate_, numIter, resid, rel_);
     }
 };
 
