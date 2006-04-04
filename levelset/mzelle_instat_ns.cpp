@@ -276,11 +276,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // Oseen solver
         typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> InexactUzawaSolverT;
-        InexactUzawa_JACBiCGStab_ISPre_CL inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol, 0.1);
+        InexactUzawaSolverT inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol, 0.1);
 
         // Navier-Stokes solver
         typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawaSolverT> NSSolverT;
-        NSSolverT nssolver( Stokes, inexactUzawaSolver, C.ns_iter, C.outer_tol, C.ns_red);
+        NSSolverT nssolver( Stokes, inexactUzawaSolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> 
             cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
