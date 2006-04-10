@@ -1,0 +1,97 @@
+#=============================================================
+#    DROPS parameter file for    brickflow
+#    test case: flow in square pipe with oscillating inflow
+#    Note: for this parameters we have one-phase Stokes flow
+#=============================================================
+
+
+
+# time stepping
+Time {
+  NumSteps	=	100
+  StepSize	=	1e-3
+  ThetaLevelset	=	1	# backward Euler
+  ThetaStokes	=	1	# backward Euler
+}
+
+# flow solver
+Stokes {
+  InnerIter	=	1000
+  OuterIter	=	200
+  InnerTol	=	1e-16
+  OuterTol	=	1e-12
+  StokesMethod	=	-1	# no effect 
+}
+
+NavStokes {
+  Nonlinear	=	0
+  Scheme	=	1		# time integration: 0=FS op.splitting, 1=theta-scheme
+  NonlinearStat	=	0
+  ThetaStat	=	0.5
+  Tol           =       1e-12
+  Iter          =       20
+  Reduction     =       10	# (TODO: Write this as 0.1)
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1
+  Iter		=	0
+  SD		=	0.1
+  CurvDiff	=	0
+  VolCorrection	=	0
+}
+
+Coupling {
+  Tol		=	1e-12	# not used a.t.m.
+  Iter		=	1	# -1 = till convergence
+}
+
+# re-initialization of levelset function
+Reparam { 
+  Freq		=	0	# 0 = no reparametrization
+  Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
+  NumSteps	=	5
+  StepSize	=	0.001
+  Diffusion	=	1e-4
+}
+
+#
+AdaptRef {
+  Freq		=	0
+  FinestLevel	=	1
+  Width		=	2e-4
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop	=	1107
+  ViscDrop	=	1.2e-3
+  DensFluid	=	1107
+  ViscFluid	=	1.2e-3
+  SmoothZone	=	1e-4
+  
+  SurfTension	=	0
+}
+
+# experimental conditions
+Exp {
+  RadDrop	=	-99
+  PosDrop	=	0	-7.5e-3	0
+  
+  Gravity	=	0	0	0
+  
+  FlowDir	=	1	# flow in y-direction
+  
+  InflowVel	=	-0.15
+  RadInlet	=	3.5e-3
+}  
+
+# miscellaneous
+
+NumDropRef	=	0
+InitialCond	=	1	# 0=zero, 1/2=flow with/without drop, 3=read from file
+InitialFile	=	ensight/nsmzi
+MeshFile	=	XXX
+EnsightCase	=	nsmzi
+EnsightDir	=	ensight

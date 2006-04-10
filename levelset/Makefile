@@ -8,7 +8,7 @@ DIR = levelset
 
 EXEC = lsdrops reparam lsdrivcav lsshear curvDriven risingBubble \
     risingBubbleAdap mzelle_stat mzelle_instat mzelle_instat_ns \
-    surfTens prJump film
+    surfTens prJump film brickflow
 
 DELETE = $(EXEC)
 
@@ -78,6 +78,13 @@ mzelle_instat: \
 
 mzelle_instat_ns: \
     ../levelset/mzelle_instat_ns.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
+    ../misc/params.o ../levelset/fastmarch.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
+brickflow: \
+    ../levelset/brickflow.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o
