@@ -231,6 +231,38 @@ class BlockMatrixSolverCL
     }
 };
 
+template <class PC1T, class PC2T>
+class DiagBlockPreCL
+{
+  private:
+    PC1T& pc1_; // Preconditioner for A.
+    PC2T& pc2_; // Preconditioner for S.
+
+  public:
+    DiagBlockPreCL( PC1T& pc1, PC2T& pc2)
+      : pc1_( pc1), pc2_( pc2) {}
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
+        pc1_.Apply( A, v, b);
+        pc2_.Apply( /*dummy*/ B, p, c);
+    }
+
+    template <typename Mat, typename Vec>
+    void
+    Apply(const BlockMatrixBaseCL<Mat>& A, Vec& x, const Vec& b) const {
+        VectorCL b0( b[std::slice( 0, A.num_rows( 0), 1)]);
+        VectorCL b1( b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
+        VectorCL x0( x[std::slice( 0, A.num_cols( 0), 1)]);
+        VectorCL x1( b[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]);
+        pc1_.Apply( *A.GetBlock( 0), x0, b0); // assumes GetBlock( 0) != 0
+        pc2_.Apply( /*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 1)),
+            x1, b1);
+        x[std::slice( 0, A.num_cols( 0), 1)]= x0;
+        x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]= x1;
+    }
+};
 
 // One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
 // of the Krylovspace of A for a given starting vector r. This is a three term
