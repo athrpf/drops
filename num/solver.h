@@ -1328,83 +1328,29 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 
 //=============================================================================
 // Krylov-methods as preconditioner. 
-// Needed for InexactUzawa. These shall be replaced by an MG-preconditioner.
+// Needed for, e.g., InexactUzawa.
 //=============================================================================
-class SSORPCG_PreCL
+template <class SolverT>
+class SolverAsPreCL
 {
   private:
-    mutable PCGSolverCL<SSORPcCL> solver_;
+    mutable SolverT& solver_;
+    mutable std::ostream* output_;
 
   public:
-    SSORPCG_PreCL(int maxiter= 500, double reltol= 0.02)
-        : solver_( SSORPcCL( 1.0), maxiter, reltol, /*relative residuals*/ true) {}                                                                // real tol for
+    SolverAsPreCL( SolverT& solver, std::ostream* output= 0)
+        : solver_( solver), output_( output) {}
 
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
         x= 0.0;
         solver_.Solve( A, x, b);
+        if (output_ != 0)
+            *output_ << "SolverAsPreCL: iterations: " << solver_.GetIter()
+                     << "\trelative residual: " << solver_.GetResid() << std::endl;
     }
 };
-
-
-template <class PC>
-class GMRes_PreCL : public SolverBaseCL
-{
-  private:
-    PC& pc_;
-    int restart_;
-
-  public:
-    GMRes_PreCL(PC& pc, int maxiter= 500, int restart= 250, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol, /*relative residual*/true), pc_( pc), restart_( restart)
-    {}
-
-    template <typename Mat, typename Vec>
-    void
-    Apply(const Mat& A, Vec& x, const Vec& b) const {
-        _res= _tol;
-        _iter= _maxiter;
-        GMRES( A, x, b, pc_, restart_, _iter, _res,
-            /*relative errors!*/ true, /*don't check 2-norm*/ false);
-//        std::cerr << "GMRes_PreCL iterations: " << GetIter()
-//                  << "\trelative residual: " << GetResid() << std::endl;
-    }
-};
-
-typedef GMRes_PreCL<DummyPcCL>  DummyGMRes_PreCL;
-typedef GMRes_PreCL<JACPcCL>    JACGMRes_PreCL;
-typedef GMRes_PreCL<GSPcCL>     GSGMRes_PreCL;
-typedef GMRes_PreCL<SSORPcCL>   SSORGMRes_PreCL;
-
-
-template <class PC>
-class BiCGStab_PreCL : public SolverBaseCL
-{
-  private:
-    PC& pc_;
-
-  public:
-    BiCGStab_PreCL(PC& pc, int maxiter= 500, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol, /*relative residual*/true), pc_( pc)
-    {}
-
-    template <typename Mat, typename Vec>
-    void
-    Apply(const Mat& A, Vec& x, const Vec& b) const {
-        _res= _tol;
-        _iter= _maxiter;
-        BICGSTAB( A, x, b, pc_, _iter, _res,
-            /*relative errors!*/ true);
-        std::cerr << "BiCGStab_PreCL iterations: " << GetIter()
-                  << "\trelative residual: " << GetResid() << std::endl;
-    }
-};
-
-typedef BiCGStab_PreCL<DummyPcCL> DummyBiCGStab_PreCL;
-typedef BiCGStab_PreCL<JACPcCL>   JACBiCGStab_PreCL;
-typedef BiCGStab_PreCL<GSPcCL>    GSBiCGStab_PreCL;
-typedef BiCGStab_PreCL<SSORPcCL>  SSORBiCGStab_PreCL;
 
 
 //*****************************************************************************

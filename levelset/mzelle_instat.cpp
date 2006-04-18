@@ -302,11 +302,16 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MGDataCL prM_MG;
     SetupPrMassMG( Stokes, prM_MG, lset);
     ISMGPreCL ispcMG( prA_MG, prM_MG, C.theta*C.dt, 1);
-    SSORPCG_PreCL velpc;
+    typedef PCG_SsorCL ASolverT;
+    ASolverT Asolver( SSORPcCL( 1.0), 500, 0.02, /*relative*/true);
+    typedef SolverAsPreCL<ASolverT> APcT;
+    APcT velpc( Asolver);
    
     // Available Stokes-solver
     ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//    typedef InexactUzawaCL<APcT, ISPreCL, APC_SYM> InexactUzawa_CL;
 //    InexactUzawa_CL inexactUzawaSolver( velpc, ispc, C.outer_iter, C.outer_tol);
+    typedef InexactUzawaCL<APcT, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
     InexactUzawaNonlinear_CL inexactUzawaSolver( velpc, isnonlinpc, C.outer_iter, C.outer_tol);
     PMinresSP_Diag_CL stokessolver( ispc, 1, C.outer_iter, C.outer_tol);
 
@@ -315,12 +320,14 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MGPreCL velmgpc( VelMGPreData);
     ISPSchur2_MG_CL ISPschur2SolverMG( velmgpc, ispc,
         C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
     InexactUzawaMG_CL inexactUzawaSolverMG( velmgpc, ispc, C.outer_iter, C.outer_tol);
     MyPMinresSP_Diag_CL stokessolverMG( velmgpc, ispc, C.outer_iter, C.outer_tol);
 
     // Available Stokes-solver: full MG
     ISPSchur2_fullMG_CL ISPschur2SolverfullMG( velmgpc, ispcMG,
         C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
     InexactUzawaFullMG_CL inexactUzawaSolverFullMG( velmgpc, ispcMG, C.outer_iter, C.outer_tol);
     MyPMinresSP_fullMG_CL stokessolverfullMG( velmgpc, ispcMG, C.outer_iter, C.outer_tol);
 

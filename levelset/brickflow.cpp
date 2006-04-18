@@ -261,28 +261,43 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     if (C.scheme)
     {
         // PC for instat. Schur complement
-        ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
+        typedef ISPreCL SPcT;
+        SPcT ispc( prA.Data, prM.Data, C.theta*C.dt);
+//        typedef ISNonlinearPreCL SPcT;
+//        SPcT ispc( prA.Data, prM.Data, 0.0);
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
-        typedef JACPcCL APcPcT;
+        typedef JACPcCL  APcPcT;
 //        typedef SSORPcCL APcPcT;
-//        typedef GSPcCL APcPcT;
+//        typedef GSPcCL   APcPcT;
         APcPcT Apcpc;
 
         // PC for A-block
-        typedef BiCGStab_PreCL<APcPcT> APcT;        // BiCGStab-based APcT
-        APcT Asolver( Apcpc, 500, 0.02);
-//        typedef GMRes_PreCL<APcPcT> APcT;        // GMRes-based APcT
-//        APcT Asolver( Apcpc, 500, /*restart*/ 20, 0.02);
+        typedef BiCGStabSolverCL<APcPcT> ASolverT;        // BiCGStab-based APcT
+        ASolverT Asolver( Apcpc, 500, 0.02, /*relative=*/ true);
+//        typedef GMResSolverCL<APcPcT>    ASolverT;        // GMRes-based APcT
+//        ASolverT Asolver( Apcpc, 500, /*restart*/ 20, 0.02, /*relative=*/ true);
+        typedef SolverAsPreCL<ASolverT> APcT;
+        APcT Apc( Asolver);
+
+        // PC for Oseen solver
+//        typedef DummyPcCL OseenPcT;
+//        OseenPcT oseenpc;
+        typedef DiagBlockPreCL<APcT, SPcT> OseenPcT;
+        OseenPcT oseenpc( Apc, ispc);
 
         // Oseen solver
-        typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> InexactUzawaSolverT;
-        InexactUzawaSolverT inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol, 0.1);
+//        typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> OseenSolverT;
+//        OseenSolverT oseensolver( Apc, ispc, C.outer_iter, C.outer_tol, 0.1);
+        typedef GCRSolverCL<OseenPcT> OseenBaseSolverT;
+        OseenBaseSolverT oseensolver0( oseenpc, /*truncate*/ 50, C.outer_iter, C.outer_tol, /*relative*/ false);
+        typedef BlockMatrixSolverCL<OseenBaseSolverT> OseenSolverT;
+        OseenSolverT oseensolver( oseensolver0);
 
         // Navier-Stokes solver
-        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawaSolverT> NSSolverT;
-        NSSolverT nssolver( Stokes, inexactUzawaSolver, C.ns_iter, C.ns_tol, C.ns_red);
+        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
+        NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> 
             cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
@@ -333,11 +348,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         ISPreCL ispc( prA.Data, prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
 
         // PC for A-block
-        SSORPCG_PreCL pcg( C.inner_iter, 0.01);
+        typedef PCG_SsorCL ASolverT;
+        ASolverT Asolver( SSORPcCL( 1.0), C.inner_iter, 0.01, /*relative*/true);
+        typedef SolverAsPreCL<ASolverT> APcT;
+        APcT pcg( Asolver);
         
         // Stokes solver
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-        typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM> InexactUzawaT;
+        typedef InexactUzawaCL<APcT, ISPreCL, APC_SYM> InexactUzawaT;
         InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 
 //        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 

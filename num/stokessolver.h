@@ -172,25 +172,6 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
           const VectorCL& b, const VectorCL& c);
 };
 
-typedef InexactUzawaCL<SSORPCG_PreCL, ISPreCL, APC_SYM>          InexactUzawa_CL;
-typedef InexactUzawaCL<SSORPCG_PreCL, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
-
-typedef InexactUzawaCL<GSGMRes_PreCL, DummyPcCL, APC_OTHER>   InexactUzawa_GSGMRes_CL;
-typedef InexactUzawaCL<SSORGMRes_PreCL, DummyPcCL, APC_OTHER> InexactUzawa_GMRes_CL;
-
-typedef InexactUzawaCL<DummyGMRes_PreCL, ISPreCL, APC_OTHER> InexactUzawa_GMRes_ISPre_CL;
-typedef InexactUzawaCL<JACGMRes_PreCL, ISPreCL, APC_OTHER>   InexactUzawa_JACGMRes_ISPre_CL;
-typedef InexactUzawaCL<GSGMRes_PreCL, ISPreCL, APC_OTHER>    InexactUzawa_GSGMRes_ISPre_CL;
-typedef InexactUzawaCL<SSORGMRes_PreCL, ISPreCL, APC_OTHER>  InexactUzawa_SSORGMRes_ISPre_CL;
-
-typedef InexactUzawaCL<DummyBiCGStab_PreCL, ISPreCL, APC_OTHER> InexactUzawa_BiCGStab_ISPre_CL;
-typedef InexactUzawaCL<JACBiCGStab_PreCL, ISPreCL, APC_OTHER>   InexactUzawa_JACBiCGStab_ISPre_CL;
-typedef InexactUzawaCL<GSBiCGStab_PreCL, ISPreCL, APC_OTHER>    InexactUzawa_GSBiCGStab_ISPre_CL;
-typedef InexactUzawaCL<SSORBiCGStab_PreCL, ISPreCL, APC_OTHER>  InexactUzawa_SSORBiCGStab_ISPre_CL;
-
-typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
-typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
-
 
 // Use a Krylow-method (from num/solver.h) with the standard-interface of
 // the Stokessolvers in this file.
@@ -207,13 +188,15 @@ class BlockMatrixSolverCL
 
 // This is a hack: We should derive from SolverBaseCL and overwrite these functions. Then,
 // the functions could not get out of sync.
-    void   SetTol    (double tol) { solver_.SetTol( tol); }
-    void   SetMaxIter(int iter)   { solver_.SetmaxIter( iter); }
+    void   SetTol     (double tol) { solver_.SetTol( tol); }
+    void   SetMaxIter (int iter)   { solver_.SetmaxIter( iter); }
+    void   SetRelError(bool rel)   { solver_.SetRelError( rel); }
 
-    double GetTol    () const { return solver_.GetTol(); }
-    int    GetMaxIter() const { return solver_.GetMaxIter(); }
-    double GetResid  () const { return solver_.GetResid(); }
-    int    GetIter   () const { return solver_.GetIter; }
+    double GetTol     () const { return solver_.GetTol(); }
+    int    GetMaxIter () const { return solver_.GetMaxIter(); }
+    double GetResid   () const { return solver_.GetResid(); }
+    int    GetIter    () const { return solver_.GetIter; }
+    bool   GetRelError() const { return solver_.GetRelError(); }
 
     void
     Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
