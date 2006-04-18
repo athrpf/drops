@@ -8,7 +8,7 @@ DIR = tests
 
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
-        p2local quadbase globallist triang quadCut bicgstab gcr
+        p2local quadbase globallist triang quadCut bicgstab gcr blockmat
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -131,6 +131,9 @@ bicgstab: \
 
 gcr: \
     ../tests/gcr.o ../misc/utils.o 
+	$(CC) -o $@ $^ $(LFLAGS)
+blockmat: \
+    ../tests/blockmat.o ../misc/utils.o 
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:

@@ -376,6 +376,140 @@ class SparseMatDiagCL
 };
 
 
+
+
+
+//*****************************************************************************
+//
+//  2x2-Blockmatrix: ( A & B \\ C & D)
+//
+//*****************************************************************************
+enum BlockMatrixOperationT { MUL, TRANSP_MUL };
+
+template <class MatT>
+class BlockMatrixBaseCL
+{
+  public:
+    typedef BlockMatrixOperationT OperationT;
+
+  private:
+    const MatT* block_[4];
+    OperationT operation_[4];
+
+    bool block_num_rows(size_t b, size_t& nr) const;
+    bool block_num_cols(size_t b, size_t& nc) const;
+
+  public:
+    BlockMatrixBaseCL( const MatT* A, OperationT Aop, const MatT* B, OperationT Bop,
+        const MatT* C, OperationT Cop, const MatT* D= 0, OperationT Dop= MUL);
+
+    size_t num_rows(size_t) const;
+    size_t num_cols(size_t) const;
+    size_t num_rows() const { return this->num_rows( 0) + this->num_rows( 1); }
+    size_t num_cols() const { return this->num_cols( 0) + this->num_cols( 1); }
+
+    const MatT* GetBlock( size_t b) const { return block_[b]; }
+
+    OperationT GetOperation( size_t b) const { return operation_[b]; }
+    OperationT GetTransposeOperation( size_t b) const {
+        return operation_[b] == MUL ? TRANSP_MUL : MUL;
+    }
+
+    BlockMatrixBaseCL GetTranspose() const;
+};
+
+template <class MatT>
+BlockMatrixBaseCL<MatT>::BlockMatrixBaseCL( const MatT* A, OperationT Aop,
+    const MatT* B, OperationT Bop, const MatT* C, OperationT Cop,
+    const MatT* D, OperationT Dop)
+{
+    block_[0]= A; operation_[0]= Aop;
+    block_[1]= B; operation_[1]= Bop;
+    block_[2]= C; operation_[2]= Cop;
+    block_[3]= D; operation_[3]= Dop;
+}
+
+template <class MatT>
+bool
+BlockMatrixBaseCL<MatT>::block_num_rows(size_t b, size_t& nr) const
+{
+    if (block_[b] == 0) return false;
+    switch (operation_[b]) {
+      case MUL:        nr= block_[b]->num_rows(); return true;
+      case TRANSP_MUL: nr= block_[b]->num_cols(); return true;
+      default:
+        Comment("BlockMatrixBaseCL::block_num_rows: No such operation.\n", DebugNumericC);
+        return false;
+    }
+}
+
+template <class MatT>
+bool
+BlockMatrixBaseCL<MatT>::block_num_cols(size_t b, size_t& nc) const
+{
+    if (block_[b] == 0) return false;
+    switch (operation_[b]) {
+      case MUL:        nc= block_[b]->num_cols(); return true;
+      case TRANSP_MUL: nc= block_[b]->num_rows(); return true;
+      default:
+        Comment("BlockMatrixBaseCL::block_num_cols: No such operation.\n", DebugNumericC);
+        return false;
+    }
+}
+
+template <class MatT>
+size_t
+BlockMatrixBaseCL<MatT>::num_rows(size_t block_row) const
+{
+    size_t ret;
+    bool block_found;
+    switch (block_row) {
+      case 0:
+        block_found= block_num_rows( 0, ret) || block_num_rows( 1, ret);
+        break;
+      case 1:
+        block_found= block_num_rows( 2, ret) || block_num_rows( 3, ret);
+        break;
+      default:
+        Comment("BlockMatrixBaseCL::num_rows: No such block_row.\n", DebugNumericC);
+        return 0;
+    }
+    Assert( block_found, "BlockMatrixBaseCL::num_rows: All pointers are 0.\n", DebugNumericC);
+    return ret;
+}
+
+template <class MatT>
+size_t
+BlockMatrixBaseCL<MatT>::num_cols(size_t block_col) const
+{
+    size_t ret;
+    bool block_found;
+    switch (block_col) {
+      case 0:
+        block_found= block_num_cols( 0, ret) || block_num_cols( 2, ret);
+        break;
+      case 1:
+        block_found= block_num_cols( 1, ret) || block_num_cols( 3, ret);
+        break;
+      default:
+        Comment("BlockMatrixBaseCL::num_cols: No such block_col.\n", DebugNumericC);
+        return 0;
+    }
+    Assert( block_found, "BlockMatrixBaseCL::num_cols: All pointers are 0.\n", DebugNumericC);
+    return ret;
+}
+
+
+template <class MatT>
+BlockMatrixBaseCL<MatT>
+BlockMatrixBaseCL<MatT>::GetTranspose() const
+{
+    return BlockMatrixBaseCL<MatT>( block_[0], GetTransposeOperation( 0),
+        block_[2], GetTransposeOperation( 2),
+        block_[1], GetTransposeOperation( 1),
+        block_[3], GetTransposeOperation( 3));
+}
+
 //*****************************************************************************
 //
 //  I/O for vectors and matrices
@@ -630,13 +764,72 @@ VectorBaseCL<_VecEntry> transp_mul (const SparseMatBaseCL<_MatEntry>& A, const V
 }
 
 
+template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry>
+operator*(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
+    const VectorBaseCL<_VecEntry>& x)
+{
+    VectorBaseCL<_VecEntry> x0( x[std::slice( 0, A.num_cols( 0), 1)]),
+                            x1( x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]);
+    VectorBaseCL<_VecEntry> r0( A.num_rows( 0)),
+                            r1( A.num_rows( 1));
+    const SparseMatBaseCL<_MatEntry>* mat;
+
+    if ( (mat= A.GetBlock( 0)) != 0) {
+        switch( A.GetOperation( 0)) {
+          case MUL:
+            r0= (*mat)*x0; break;
+          case TRANSP_MUL:
+            r0= transp_mul( *mat, x0); break;
+        }
+    }
+    if ( (mat= A.GetBlock( 1)) != 0) {
+        switch( A.GetOperation( 1)) {
+          case MUL:
+            r0+= (*mat)*x1; break;
+          case TRANSP_MUL:
+            r0+= transp_mul( *mat, x1); break;
+        }
+    }
+    if ( (mat= A.GetBlock( 2)) != 0) {
+        switch( A.GetOperation( 2)) {
+          case MUL:
+            r1= (*mat)*x0; break;
+          case TRANSP_MUL:
+            r1= transp_mul( *mat, x0); break;
+        }
+    }
+    if ( (mat= A.GetBlock( 3)) != 0) {
+        switch( A.GetOperation( 3)) {
+          case MUL:
+            r1+= (*mat)*x1; break;
+          case TRANSP_MUL:
+            r1+= transp_mul( *mat, x1); break;
+        }
+    }
+    VectorBaseCL<_VecEntry> ret( A.num_rows());
+    ret[std::slice( 0, A.num_rows( 0), 1)]= r0;
+    ret[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]= r1;
+    return ret;
+}
+
+template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry>
+transp_mul(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
+    const VectorBaseCL<_VecEntry>& x)
+{
+    return A.GetTranspose()*x;
+}
+
+
 //=============================================================================
 //  Typedefs
 //=============================================================================
 
-typedef VectorBaseCL<double>       VectorCL;
-typedef SparseMatBaseCL<double>    MatrixCL;
-typedef SparseMatBuilderCL<double> MatrixBuilderCL;
+typedef VectorBaseCL<double>         VectorCL;
+typedef SparseMatBaseCL<double>      MatrixCL;
+typedef SparseMatBuilderCL<double>   MatrixBuilderCL;
+typedef BlockMatrixBaseCL<MatrixCL>  BlockMatrixCL;
 
 } // end of namespace DROPS
 
