@@ -1217,7 +1217,6 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     }
     for (int k= 1; k <= max_iter; ++k) {
         w= 0.0;
-std::cerr << "Stelle 1:\t";
         Apc.Apply( A, w, ru);
         c= B*w - rp;
         z= 0.0;
@@ -1246,7 +1245,6 @@ std::cerr << "Stelle 1:\t";
         if (apcmeth != APC_SYM_LINEAR) {
             zbar= transp_mul( B, z);
             zhat= 0.0;
-std::cerr << "Stelle 2:\t";
             Apc.Apply( A, zhat, zbar);
         }
         pr_iter_cumulative+= inneriter;
