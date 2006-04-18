@@ -192,7 +192,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
-   
+
     switch (C.IniCond)
     {
       case 1: case 2: // stationary flow with/without drop
@@ -263,9 +263,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
-        typedef JACPcCL APcPcT;
+        typedef JACPcCL  APcPcT;
 //        typedef SSORPcCL APcPcT;
-//        typedef GSPcCL APcPcT;
+//        typedef GSPcCL   APcPcT;
         APcPcT Apcpc;
 
         // PC for A-block
@@ -275,12 +275,17 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 //        APcT Asolver( Apcpc, 500, /*restart*/ 20, 0.02);
 
         // Oseen solver
-        typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> InexactUzawaSolverT;
-        InexactUzawaSolverT inexactUzawaSolver( Asolver, ispc, C.outer_iter, C.outer_tol, 0.1);
+//        typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> OseenSolverT;
+//        OseenSolverT oseensolver( Asolver, ispc, C.outer_iter, C.outer_tol, 0.1);
+        DummyPcCL oseenpc;
+        typedef GCRSolverCL<DummyPcCL> OseenBaseSolverT;
+        OseenBaseSolverT oseensolver0( oseenpc, /*truncate*/ 50, C.outer_iter, C.outer_tol, /*relative*/ false);
+        typedef BlockMatrixSolverCL<OseenBaseSolverT> OseenSolverT;
+        OseenSolverT oseensolver( oseensolver0);
 
         // Navier-Stokes solver
-        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, InexactUzawaSolverT> NSSolverT;
-        NSSolverT nssolver( Stokes, inexactUzawaSolver, C.ns_iter, C.ns_tol, C.ns_red);
+        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
+        NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> 
             cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);

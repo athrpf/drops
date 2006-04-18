@@ -191,6 +191,47 @@ typedef InexactUzawaCL<SSORBiCGStab_PreCL, ISPreCL, APC_OTHER>  InexactUzawa_SSO
 typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;
 typedef InexactUzawaCL<MGPreCL, ISMGPreCL, APC_SYM_LINEAR> InexactUzawaFullMG_CL;
 
+
+// Use a Krylow-method (from num/solver.h) with the standard-interface of
+// the Stokessolvers in this file.
+template <class SolverT>
+class BlockMatrixSolverCL
+{
+  private:
+    SolverT& solver_;
+
+  public:
+    BlockMatrixSolverCL( SolverT& solver)
+        : solver_( solver) {}
+
+
+// This is a hack: We should derive from SolverBaseCL and overwrite these functions. Then,
+// the functions could not get out of sync.
+    void   SetTol    (double tol) { solver_.SetTol( tol); }
+    void   SetMaxIter(int iter)   { solver_.SetmaxIter( iter); }
+
+    double GetTol    () const { return solver_.GetTol(); }
+    int    GetMaxIter() const { return solver_.GetMaxIter(); }
+    double GetResid  () const { return solver_.GetResid(); }
+    int    GetIter   () const { return solver_.GetIter; }
+
+    void
+    Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+          const VectorCL& b, const VectorCL& c) {
+        BlockMatrixCL M( &A, MUL, &B, TRANSP_MUL, &B, MUL);
+        VectorCL rhs( M.num_rows());
+        rhs[std::slice( 0, M.num_rows( 0), 1)]= b;
+        rhs[std::slice( M.num_rows( 0), M.num_rows( 1), 1)]= c;
+        VectorCL x( M.num_cols());
+        x[std::slice( 0, M.num_cols( 0), 1)]= v;
+        x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)]= p;
+        solver_.Solve( M, x, rhs);
+        v= x[std::slice( 0, M.num_cols( 0), 1)];
+        p= x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)];
+    }
+};
+
+
 // One recursive step of Lanzcos' algorithm for computing an ONB (q1, q2, q3,...)
 // of the Krylovspace of A for a given starting vector r. This is a three term
 // recursion, computing the next q_i from the two previous ones.
