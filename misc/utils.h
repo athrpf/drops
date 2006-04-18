@@ -292,7 +292,7 @@ struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
 };
 
 
-/// \brief Iterator for a sequence of objects that is given as a sequnece of pointers
+/// \brief Iterator for a sequence of objects that is given as a sequence of pointers
 ///     to these objects.
 ///
 /// This is a random access iterator. The iterator_traits of the standard-library work
