@@ -1206,7 +1206,7 @@ class GMResSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
-        GMRES(A, x, b, pc_, restart_, _iter, _res);
+        GMRES(A, x, b, pc_, restart_, _iter, _res, rel_);
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
@@ -1247,8 +1247,8 @@ class BiCGStabSolverCL : public SolverBaseCL
         BICGSTAB(A, x, b, pc_, numIter, resid, rel_);
     }
 };
-// GMRES
 
+// GCR
 template <typename PC>
 class GCRSolverCL : public SolverBaseCL
 {
@@ -1270,7 +1270,9 @@ class GCRSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
-        GCR( A, x, b, pc_, truncate_, _iter, _res);
+        GCR( A, x, b, pc_, truncate_, _iter, _res, rel_);
+        std::cerr << "GCRSolverCL iterations: " << GetIter()
+                  << "\tresidual: " << GetResid() << std::endl;
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
