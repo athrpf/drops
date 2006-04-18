@@ -146,7 +146,7 @@ dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
 //          functions. As LocalP1CL is derived from valarray, arithmetic   *
 //          operations are carried out efficiently.                        *
 //          The valarray holds the values in the 4 degrees of freedom,     *
-//          vertex_0,..., vertex_3, edge_0,..., edge5.                     *
+//          vertex_0,..., vertex_3.                                        *
 //**************************************************************************
 template<class T= double>
 class LocalP1CL: public GridFunctionCL<T>
