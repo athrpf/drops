@@ -409,27 +409,31 @@ class MultiSSORPcCL
 //
 //        x - approximate solution to Ax = b
 // max_iter - number of iterations performed before tolerance was reached
-//      tol - residual after the final iteration
+//      tol - (relative, see next parameter) 2-norm of the residual after the
+//    final iteration
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//     if false, stop if |b - Ax| <= tol.
 //-----------------------------------------------------------------------------
 
 template <typename Mat, typename Vec>
 bool
-CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
+CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol,
+    bool measure_relative_tol= false)
 {
     Vec r( A*x - b);
     Vec d( -r);
-    double resid= norm_sq( r);
+    double normb= norm( b), res, resid= norm_sq( r);
 
-    tol*= tol;
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
-    if (resid<=tol)
+    if ((res= std::sqrt( resid)/normb) <= tol)
     {
-        tol= std::sqrt(resid);
+        tol= res;
         max_iter= 0;
         return true;
     }
 
-    for (int i=1; i<=max_iter; ++i)
+    for (int i= 1; i <= max_iter; ++i)
     {
         const Vec    Ad= A*d;
         const double delta= dot( Ad, d);
@@ -440,16 +444,16 @@ CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
         axpy(alpha, Ad, r); // r+= alpha*Ad;
 
         resid= norm_sq( r);
-        if (resid<=tol)
+        if ((res= std::sqrt( resid)/normb) <= tol)
         {
-            tol= std::sqrt(resid);
+            tol= res;
             max_iter= i;
             return true;
         }
         beta= resid / beta;
         d= beta*d-r;
     }
-    tol= std::sqrt(resid);
+    tol= res;
     return false;
 }
 
@@ -461,28 +465,30 @@ CG(const Mat& A, Vec& x, const Vec& b, int& max_iter, double& tol)
 //
 //        x - approximate solution to Ax = b
 // max_iter - number of iterations performed before tolerance was reached
-//      tol - residual after the final iteration
+//      tol - 2-norm of the (relative, see below) residual after the final iteration
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//     if false, stop if |b - Ax| <= tol.
 //-----------------------------------------------------------------------------
 
 template <typename Mat, typename Vec, typename PreCon>
 bool
 PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
-    int& max_iter, double& tol)
+    int& max_iter, double& tol, bool measure_relative_tol= false)
 {
     const size_t n= x.size();
     Vec p(n), z(n), q(n), r( b - A*x);
-    double rho, rho_1= 0.0, resid= norm_sq( r);
+    double rho, rho_1= 0.0, normb= norm( b), resid;
 
-    tol*= tol;
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
-    if (resid<=tol)
+    if ((resid= norm( r)/normb) <= tol)
     {
-        tol= std::sqrt(resid);
+        tol= resid;
         max_iter= 0;
         return true;
     }
 
-    for (int i=1; i<=max_iter; ++i)
+    for (int i= 1; i <= max_iter; ++i)
     {
         M.Apply(A, z, r);
         rho= dot( r, z);
@@ -493,19 +499,18 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
         q= A*p;
         const double alpha= rho/dot( p, q);
-        axpy(alpha, p, x);                // x+= alpha*p;
-        axpy(-alpha, q, r);               // r-= alpha*q;
+        axpy( alpha, p, x);                // x+= alpha*p;
+        axpy( -alpha, q, r);               // r-= alpha*q;
 
-        resid= norm_sq( r);
-        if (resid<=tol)
+        if ((resid= norm( r)/normb)<= tol)
         {
-            tol= std::sqrt( resid);
+            tol= resid;
             max_iter= i;
             return true;
         }
         rho_1= rho;
     }
-    tol= std::sqrt(resid);
+    tol= resid;
     return false;
 }
 
@@ -810,14 +815,19 @@ class PLanczosONBCL
 //
 //        x - approximate solution to Ax = rhs
 // max_iter - number of iterations performed before tolerance was reached
-//      tol - 2-norm of the last correction dx to x after the final iteration.
+//      tol - (relative, see below) residual b - Ax measured in the (M^-1 ., .)-
+//     inner-product-norm.
+// measure_relative_tol - If true, stop if (M^(-1)( b - Ax), b - Ax)/(M^(-1)b, b) <= tol,
+//     if false, stop if (M^(-1)( b - Ax), b - Ax) <= tol.
 //-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename Lanczos>
 bool
-PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol)
+PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol,
+    bool measure_relative_tol= false)
 {
     Vec dx( x.size());
     const double norm_r0= q.norm_r0();
+    double normb= std::fabs( norm_r0);
     double res= norm_r0;
     bool lucky= q.breakdown();
     SBufferCL<double, 3> c;
@@ -826,8 +836,16 @@ PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol)
     SBufferCL<Vec, 3> p;
     p[0].resize( x.size()); p[1].resize( x.size()); p[2].resize( x.size());
     SBufferCL<SVectorCL<2>, 2> b;
-    
-    for (int k=1; k<=max_iter; ++k) {
+
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
+
+    if ((res= norm_r0/normb) <= tol) {
+        tol= res;
+        max_iter= 0;
+        return true;
+    }
+
+    for (int k= 1; k <= max_iter; ++k) {
         switch (k) {
           case 1:
             // Compute r1
@@ -868,7 +886,7 @@ PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol)
         dx= norm_r0*b[0][0]*p[0];
         x+= dx;
 
-        res= std::fabs( norm_r0*b[0][1]);
+        res= std::fabs( norm_r0*b[0][1])/normb;
 //        std::cerr << "PMINRES: residual: " << res << '\n';
         if (res<= tol || lucky==true) {
             tol= res;
@@ -889,11 +907,12 @@ PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol)
 
 template <typename Mat, typename Vec>
 bool
-MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol)
+MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol,
+    bool measure_relative_tol= false)
 {
     LanczosONBCL<Mat, Vec> q;
     q.new_basis( A, Vec( rhs - A*x));
-    return PMINRES( A,  x, rhs, q, max_iter, tol);
+    return PMINRES( A,  x, rhs, q, max_iter, tol, measure_relative_tol);
 }
 
 
@@ -1062,18 +1081,22 @@ class SolverBaseCL
     mutable int _iter;
     double         _tol;
     mutable double _res;
+    bool rel_;
 
-    SolverBaseCL (int maxiter, double tol)
-        : _maxiter(maxiter), _iter(-1), _tol(tol), _res(-1.) {}
+    SolverBaseCL (int maxiter, double tol, bool rel= false)
+        : _maxiter( maxiter), _iter( -1), _tol( tol), _res( -1.), rel_( rel)  {}
 
   public:
-    void   SetTol    (double tol) { _tol= tol; }
-    void   SetMaxIter(int iter)   { _maxiter= iter; }
+    void   SetTol     (double tol) { _tol= tol; }
+    void   SetMaxIter (int iter)   { _maxiter= iter; }
+    void   SetRelError(bool rel)   { rel_= rel; }
 
-    double GetTol    () const { return _tol; }
-    int    GetMaxIter() const { return _maxiter; }
-    double GetResid  () const { return _res; }
-    int    GetIter   () const { return _iter; }
+    double GetTol     () const { return _tol; }
+    int    GetMaxIter () const { return _maxiter; }
+    double GetResid   () const { return _res; }
+    int    GetIter    () const { return _iter; }
+    bool   GetRelError() const { return rel_; }
+
 };
 
 
@@ -1081,21 +1104,22 @@ class SolverBaseCL
 class CGSolverCL : public SolverBaseCL
 {
   public:
-    CGSolverCL(int maxiter, double tol) : SolverBaseCL(maxiter,tol) {}
+    CGSolverCL(int maxiter, double tol, bool rel= false)
+        : SolverBaseCL(maxiter, tol, rel) {}
 
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
-        CG(A, x, b, _iter, _res);
+        CG(A, x, b, _iter, _res, rel_);
     }
     template <typename Mat, typename Vec>
     void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
-        CG(A, x, b, numIter, resid);
+        CG(A, x, b, numIter, resid, rel_);
     }
 };
 
@@ -1108,8 +1132,8 @@ class PCGSolverCL : public SolverBaseCL
     PC _pc;
 
   public:
-    PCGSolverCL(const PC& pc, int maxiter, double tol)
-        : SolverBaseCL(maxiter,tol), _pc(pc) {}
+    PCGSolverCL(const PC& pc, int maxiter, double tol, bool rel= false)
+        : SolverBaseCL(maxiter, tol, rel), _pc(pc) {}
 
     PC&       GetPc ()       { return _pc; }
     const PC& GetPc () const { return _pc; }
@@ -1119,14 +1143,14 @@ class PCGSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
-        PCG(A, x, b, _pc, _iter, _res);
+        PCG(A, x, b, _pc, _iter, _res, rel_);
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
-        PCG(A, x, b, _pc, numIter, resid);
+        PCG(A, x, b, _pc, numIter, resid, rel_);
     }
 };
 
@@ -1134,21 +1158,22 @@ class PCGSolverCL : public SolverBaseCL
 class MResSolverCL : public SolverBaseCL
 {
   public:
-    MResSolverCL(int maxiter, double tol) : SolverBaseCL( maxiter,tol) {}
+    MResSolverCL(int maxiter, double tol, bool rel= false)
+        : SolverBaseCL( maxiter, tol, rel) {}
 
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b)
     {
         _res=  _tol;
         _iter= _maxiter;
-        MINRES( A, x, b, _iter, _res);
+        MINRES( A, x, b, _iter, _res, rel_);
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
-        MINRES( A, x, b, numIter, resid);
+        MINRES( A, x, b, numIter, resid, rel_);
     }
 };
 
@@ -1160,8 +1185,8 @@ class PMResSolverCL : public SolverBaseCL
     Lanczos& q_;
 
   public:
-    PMResSolverCL(Lanczos& q, int maxiter, double tol)
-      :SolverBaseCL( maxiter,tol), q_( q) {}
+    PMResSolverCL(Lanczos& q, int maxiter, double tol, bool rel= false)
+      :SolverBaseCL( maxiter, tol, rel), q_( q) {}
 
     Lanczos&       GetONB ()       { return q_; }
     const Lanczos& GetONB () const { return q_; }
@@ -1172,7 +1197,7 @@ class PMResSolverCL : public SolverBaseCL
         _res=  _tol;
         _iter= _maxiter;
         q_.new_basis( A, Vec( b - A*x));
-        PMINRES( A, x, b, q_, _iter, _res);
+        PMINRES( A, x, b, q_, _iter, _res, rel_);
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
@@ -1180,7 +1205,7 @@ class PMResSolverCL : public SolverBaseCL
         resid=   _tol;
         numIter= _maxiter;
         q_.new_basis( A, Vec( b - A*x));
-        PMINRES( A, x, b, q_, numIter, resid);
+        PMINRES( A, x, b, q_, numIter, resid, rel_);
     }
 };
 
@@ -1191,11 +1216,10 @@ class GMResSolverCL : public SolverBaseCL
   private:
     PC  pc_;
     int restart_;
-    bool rel_;
 
   public:
     GMResSolverCL(const PC& pc, int restart, int maxiter, double tol, bool relative= true)
-        : SolverBaseCL(maxiter,tol), pc_(pc), restart_(restart), rel_(relative) {}
+        : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart) {}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
@@ -1223,11 +1247,10 @@ class BiCGStabSolverCL : public SolverBaseCL
 {
   private:
     PC pc_;
-    bool rel_;
 
   public:
     BiCGStabSolverCL(const PC& pc, int maxiter, double tol, bool relative= true)
-        : SolverBaseCL( maxiter, tol), pc_( pc), rel_( relative) {}
+        : SolverBaseCL( maxiter, tol, relative), pc_( pc){}
 
     PC&       GetPc ()       { return pc_; }
     const PC& GetPc () const { return pc_; }
@@ -1254,12 +1277,11 @@ class GCRSolverCL : public SolverBaseCL
 {
   private:
     PC  pc_;
-    int truncate_;
-    bool rel_;
+    int truncate_; // no effect atm.
 
   public:
     GCRSolverCL(const PC& pc, int truncate, int maxiter, double tol, bool relative= true)
-        : SolverBaseCL( maxiter, tol), pc_( pc), truncate_( truncate), rel_( relative) {}
+        : SolverBaseCL( maxiter, tol, relative), pc_( pc), truncate_( truncate) {}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
@@ -1311,19 +1333,17 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 class SSORPCG_PreCL
 {
   private:
-    double reltol_; // The solver shall reduce the residual by this factor.
     mutable PCGSolverCL<SSORPcCL> solver_;
 
   public:
     SSORPCG_PreCL(int maxiter= 500, double reltol= 0.02)
-        : reltol_( reltol), solver_( SSORPcCL( 1.0), maxiter, reltol) // Note, that the
-    {}                                                                // real tol for
-                                                                      // solver_ is
-    template <typename Mat, typename Vec>                             // computed in Apply.
+        : solver_( SSORPcCL( 1.0), maxiter, reltol, /*relative residuals*/ true) {}                                                                // real tol for
+
+    template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
-        solver_.SetTol( reltol_*norm( b - A*x));
-	    solver_.Solve( A, x, b);
+        x= 0.0;
+        solver_.Solve( A, x, b);
     }
 };
 
@@ -1337,7 +1357,7 @@ class GMRes_PreCL : public SolverBaseCL
 
   public:
     GMRes_PreCL(PC& pc, int maxiter= 500, int restart= 250, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol), pc_( pc), restart_( restart)
+        : SolverBaseCL( maxiter, reltol, /*relative residual*/true), pc_( pc), restart_( restart)
     {}
 
     template <typename Mat, typename Vec>
@@ -1366,7 +1386,7 @@ class BiCGStab_PreCL : public SolverBaseCL
 
   public:
     BiCGStab_PreCL(PC& pc, int maxiter= 500, double reltol= 0.02)
-        : SolverBaseCL( maxiter, reltol), pc_( pc)
+        : SolverBaseCL( maxiter, reltol, /*relative residual*/true), pc_( pc)
     {}
 
     template <typename Mat, typename Vec>
