@@ -124,7 +124,7 @@ class ISNonlinearPreCL
     ISNonlinearPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
         double k_pc= 0, double omega= 1.0)
         : A_( A_pr), M_( M_pr), k_( k_pc),
-          solver_( SSORPcCL( omega), 6, 1e-30)  {}
+          solver_( SSORPcCL( omega), 10, 1e-2, /*relative*/true)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -271,9 +271,16 @@ void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
     p= 0.0;
     solver_.Solve( A_, p, c);
-    Vec p2_( c.size());
-    solver_.Solve( M_, p2_, c);
-    axpy( k_, p2_, p); // p+= k_*p2_;
+//    std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
+//              << "\tresidual: " <<  solver_.GetResid();
+    if ( k_ != 0.0) {
+        Vec p2_( c.size());
+        solver_.Solve( M_, p2_, c);
+//        std::cerr << "\t p2: iterations: " << solver_.GetIter()
+//                  << "\tresidual: " <<  solver_.GetResid()
+//                  << '\n';
+        axpy( k_, p2_, p); // p+= k_*p2_;
+    }
 }
 
 
