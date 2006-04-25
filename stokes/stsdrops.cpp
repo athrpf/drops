@@ -1318,7 +1318,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetupPrMass( &M_pr);  
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
-//    ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 10);
+//    ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 1.0);
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
