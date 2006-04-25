@@ -260,9 +260,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
         // PC for instat. Schur complement
         typedef ISPreCL SPcT;
-        SPcT ispc( prA.Data, prM.Data, C.theta*C.dt);
+        SPcT ispc( prA.Data, prM.Data, /*kA*/ 1./C.dt, /*kM*/ C.theta);
 //        typedef ISNonlinearPreCL SPcT;
-//        SPcT ispc( prA.Data, prM.Data, 0.0);
+//        SPcT ispc( prA.Data, prM.Data, /*kA*/ 1./C.dt, /*kM*/ C.theta);
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
@@ -287,6 +287,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // Oseen solver
         typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> OseenSolverT;
+//        typedef InexactUzawaCL<APcT, ISNonlinearPreCL, APC_OTHER> OseenSolverT;
         OseenSolverT oseensolver( Apc, ispc, C.outer_iter, C.outer_tol, 0.1);
 //        typedef GCRSolverCL<OseenPcT> OseenBaseSolverT;
 //        OseenBaseSolverT oseensolver0( oseenpc, /*truncate*/ 50, C.outer_iter, C.outer_tol, /*relative*/ false);

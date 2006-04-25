@@ -66,7 +66,7 @@ class InstatStokesThetaSchemeCL
     void SetTimeStep( double dt)
     {
         _dt= dt;
-        _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data);
+        _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     }
        
     void DoStep( VectorCL& v, VectorCL& p);
@@ -80,9 +80,9 @@ class InstatStokesThetaSchemeCL
 //
 // A Poisson-problem with natural boundary-conditions for the pressure is
 // solved via 1 SSOR-step, a problem with the mass-matrix aswell.
-// The constant k_ has to be chosen according to h and dt, see Theorem 4.1
+// The constants kA_, kM_ have to be chosen according to h and dt, see Theorem 4.1
 // of the above paper. 
-// k_ = theta*dt/Re will do a good job, 
+// kA_ = theta/Re and kM_ = 1/dt will do a good job, 
 // where Re is proportional to the ratio density/viscosity.
 //
 // A_ is the pressure-Poisson-Matrix for natural boundary-conditions, M_ the
@@ -93,13 +93,13 @@ class ISPreCL
   private:
     MatrixCL& A_;
     MatrixCL& M_;
-    double    k_;
+    double    kA_, kM_;
     SSORPcCL  ssor_;
 
   public:
     ISPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
-        double k_pc= 0, double om= 1)
-        : A_( A_pr), M_( M_pr), k_( k_pc), ssor_( om)  {}
+        double kA= 0., double kM= 1., double om= 1.)
+        : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM), ssor_( om)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -117,14 +117,14 @@ class ISNonlinearPreCL
   private:
     MatrixCL&  A_;
     MatrixCL&  M_;
-    double     k_;
+    double     kA_, kM_;
     mutable PCG_SsorCL solver_;
 
   public:
     ISNonlinearPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
-        double k_pc= 0, double omega= 1.0)
-        : A_( A_pr), M_( M_pr), k_( k_pc),
-          solver_( SSORPcCL( omega), 10, 1e-2, /*relative*/true)  {}
+        double kA= 0., double kM= 1., double omega= 1.0)
+        : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM),
+          solver_( SSORPcCL( omega), 100, 1e-2, /*relative*/true)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -151,14 +151,14 @@ class ISMGPreCL
     DROPS::MGDataCL& A_;
     DROPS::MGDataCL& M_;
     DROPS::Uint max_iter_;
-    double k_;
+    double kA_, kM_;
     std::vector<DROPS::VectorCL> ones_;
 
   public:
     ISMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
-              double k_pc, DROPS::Uint max_iter)
+              double kA, double kM, DROPS::Uint max_iter)
         :sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
-         A_( A_pr), M_( M_pr), max_iter_( max_iter), k_( k_pc),
+         A_( A_pr), M_( M_pr), max_iter_( max_iter), kA_( kA), kM_( kM),
          ones_( M_.size()) {
         // Compute projection on constant pressure function only once.
         Uint i= 0;
@@ -198,17 +198,17 @@ class ISMinresMGPreCL
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
     double tol_prA_;
-    double k_;
+    double kA_, kM_;
     std::vector<DROPS::VectorCL> ones_;
 
   public:
     ISMinresMGPreCL(DROPS::MGDataCL& A_vel,
                     DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
-                    double k_pc, DROPS::Uint iter_vel, DROPS::Uint iter_prA,
+                    double kA, double kM, DROPS::Uint iter_vel, DROPS::Uint iter_prA,
                     DROPS::Uint iter_prM, double tol_prA)
         : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
           Avel_( A_vel), Apr_( A_pr), Mpr_( M_pr), iter_vel_( iter_vel),
-         iter_prA_( iter_prA), iter_prM_( iter_prM), tol_prA_( tol_prA), k_( k_pc),
+         iter_prA_( iter_prA), iter_prM_( iter_prM), tol_prA_( tol_prA), kA_( kA), kM_( kM),
          ones_( Mpr_.size())
     {
         // Compute projection on constant pressure function only once.
@@ -235,13 +235,11 @@ void InstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& 
     _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
 
     _rhs=  _Stokes.A.Data * v;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*v + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*_old_b->Data);
+    _rhs*= (_theta-1.);
+    _rhs+= (1./_dt)*(_Stokes.M.Data*v + _cplM->Data - _old_cplM->Data)
+         +  _theta*_b->Data + (1.-_theta)*_old_b->Data;
 
-    p*= _dt;
     _solver.Solve( _mat, _Stokes.B.Data, v, p, _rhs, _Stokes.c.Data);
-    p/= _dt;
 
     std::swap( _b, _old_b);
     std::swap( _cplM, _old_cplM);
@@ -254,6 +252,7 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //    double new_res;
 //    double old_res= norm( c);
     ssor_.Apply( A_, p, c);
+    p*= kA_;
 //    std::cerr << " residual: " <<  (new_res= norm( A_*p - c)) << '\t';
 //    std::cerr << " reduction: " << new_res/old_res << '\n';
 //    if (c.size() != p2_.size()) p2_.resize( c.size());
@@ -263,7 +262,7 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     ssor_.Apply( M_, p2_, c);
 //    std::cerr << " residual: " <<  (mnew_res= norm( M_*p2_ - c)) << '\t';
 //    std::cerr << " reduction: " << mnew_res/mold_res << '\n';
-    axpy( k_, p2_, p); // p+= k_*p2_;
+    p+= kM_*p2_;
 }
 
 template <typename Mat, typename Vec>
@@ -271,15 +270,16 @@ void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
     p= 0.0;
     solver_.Solve( A_, p, c);
-//    std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
-//              << "\tresidual: " <<  solver_.GetResid();
-    if ( k_ != 0.0) {
+    p*= kA_;
+    std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
+              << "\tresidual: " <<  solver_.GetResid();
+    if ( kM_ != 0.0) {
         Vec p2_( c.size());
         solver_.Solve( M_, p2_, c);
-//        std::cerr << "\t p2: iterations: " << solver_.GetIter()
-//                  << "\tresidual: " <<  solver_.GetResid()
-//                  << '\n';
-        axpy( k_, p2_, p); // p+= k_*p2_;
+        std::cerr << "\t p2: iterations: " << solver_.GetIter()
+                  << "\tresidual: " <<  solver_.GetResid()
+                  << '\n';
+        p+= kM_*p2_;
     }
 }
 
@@ -344,6 +344,7 @@ ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //                  << '\t' << norm( p)
 //        std::cerr << " reduction: " << new_res/old_res << '\n';
     }
+    p*= kA_;
     Vec p2_( c.size());
 //    double mnew_res= norm( M_.back().A.Data*p2_ - c);
 //    double mold_res;
@@ -355,7 +356,7 @@ ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     }
 //    std::cerr << "M: iterations: " << 1 << '\t'
 //              << "residual: " << norm( M_.back().A.Data*p2_ - c) << '\n';
-    axpy( k_, p2_, p); // p+= k_*p2_;
+    p+= kM_*p2_;
 }
 
 
@@ -368,7 +369,7 @@ ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const
 //    std::cerr << "ISMinresMGPreCL: Velocity: iterations: " << iter_vel_ << '\t'
 //              << " residual: " <<  (Avel_.back().A.Data*v - b).norm() << '\t';
 
-    p-= dot( ones_.back(), p);
+    p= 0.0;
 //    double new_res= (Apr_.back().A.Data*p - c).norm();
 //    double old_res;
 //    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';
@@ -378,6 +379,7 @@ ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const
 //        std::cerr << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
 //        std::cerr << " reduction: " << new_res/old_res << '\n';
     }
+    p*= kA_;
 //    std::cerr << " residual: " <<  (Apr_.back().A.Data*p - c).norm() << '\t';
 
     Vec p2( p.size());
@@ -386,8 +388,7 @@ ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const
 //    std::cerr << "Mass: iterations: " << iter_prM_ << '\t'
 //              << " residual: " <<  (Mpr_.back().A.Data*p2 - c).norm() << '\n';
 
-//    p+= k_*p2;
-    axpy( k_, p2, p);
+    p+= kM_*p2;
 }
 
 }    // end of namespace DROPS

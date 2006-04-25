@@ -243,10 +243,9 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
     for (Uint i=0; i<steps; ++i)
     {
         SetupReparamSystem( M, R, Psi, b);
-        L.LinComb( 1., M, dt*theta_, R);
+        L.LinComb( 1./dt, M, theta_, R);
         
-        b*= dt;
-        b+= M*Psi - dt*(1.-theta_) * (R*Psi);
+        b+= (1./dt)*(M*Psi) - (1.-theta_) * (R*Psi);
         gm_.Solve( L, Psi, b);
         std::cout << "Reparam: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
     }
@@ -340,12 +339,12 @@ void LevelsetP2CL::SetTimeStep( double dt, double theta)
     dt_= dt; 
     if (theta >= 0) theta_= theta;
     
-    L_.LinComb( 1., E_, theta_*dt_, H_); 
+    L_.LinComb( 1./dt_, E_, theta_, H_); 
 }
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
-    rhs= E_*Phi.Data - dt_*(1-theta_) * (H_*Phi.Data);
+    rhs= (1./dt_)*(E_*Phi.Data) - (1-theta_)*(H_*Phi.Data);
 }
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)

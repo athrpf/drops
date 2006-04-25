@@ -410,7 +410,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.Commit();
 
     DummyPcCL dpc;
-    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
+    ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
     

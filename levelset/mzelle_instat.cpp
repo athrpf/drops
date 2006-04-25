@@ -295,13 +295,13 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
-    ISPreCL ispc( prA.Data, prM.Data, C.theta*C.dt);
-    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, C.theta*C.dt); // May be used for inexact Uzawa.
+    ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
+    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
     MGDataCL prA_MG;
     SetupPrStiffMG( Stokes, prA_MG, lset);
     MGDataCL prM_MG;
     SetupPrMassMG( Stokes, prM_MG, lset);
-    ISMGPreCL ispcMG( prA_MG, prM_MG, C.theta*C.dt, 1);
+    ISMGPreCL ispcMG( prA_MG, prM_MG, 1./C.dt, C.theta, 1);
     typedef PCG_SsorCL ASolverT;
     ASolverT Asolver( SSORPcCL( 1.0), 500, 0.02, /*relative*/true);
     typedef SolverAsPreCL<ASolverT> APcT;

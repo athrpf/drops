@@ -24,7 +24,7 @@ class CouplLevelsetStokesCL
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VecDescCL    *_curv, *_old_curv;  // curvature terms
     VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
+    MatrixCL      _mat;               // 1./dt*M + theta*A
     
     double _theta, _dt;
     
@@ -37,7 +37,7 @@ class CouplLevelsetStokesCL
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
 
-    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data); }
+    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data); }
        
     void InitStep();
     // perform fixed point iteration
@@ -60,7 +60,7 @@ class CouplLevelsetStokes2PhaseCL
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VecDescCL    *_curv, *_old_curv;  // curvature terms
     VectorCL      _rhs, _ls_rhs;
-    MatrixCL*     _mat;               // M + theta*dt*A
+    MatrixCL*     _mat;               // 1./dt*M + theta*A
 
     bool          _usematMG;          // MG-hierachy for _mat
     MGDataCL*     _matMG;
@@ -104,7 +104,7 @@ class CouplLevelsetNavStokes2PhaseCL
     VecDescCL    *_curv, *_old_curv;  // curvature terms
     VectorCL      _rhs, _ls_rhs;
     MatrixCL      _AN,                // A + N
-                  _mat;               // M + theta*dt*(A+N)
+                  _mat;               // 1./dt*M + theta*(A+N)
     
     double _theta, _dt;
     const double _nonlinear;
@@ -150,7 +150,7 @@ class CouplLsNsBaenschCL
     VecDescCL    *_curv;              // curvature term
     VectorCL      _rhs, _ls_rhs;
     MatrixCL      _AN,                // A + N
-                  _mat;               // M + theta*dt*(A+N)
+                  _mat;               // 1./dt*M + theta*(A+N)
     
     double        _theta, _alpha, _dt;
     const double  _nonlinear;

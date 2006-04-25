@@ -543,10 +543,10 @@ class PMinresSP_FullMG_CL : public PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, D
 
   public:
     PMinresSP_FullMG_CL( DROPS::MGDataCL& MGAvel, DROPS::MGDataCL& MGApr,
-                         DROPS::MGDataCL& Mpr, double k_pc,
+                         DROPS::MGDataCL& Mpr, double kA, double kM,
                          int iter_vel, int iter_prA, int iter_prM, double /*s*/, int maxiter, double tol)
         :PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> >( q_, maxiter, tol),
-         pre_( MGAvel, MGApr, Mpr, k_pc, iter_vel, iter_prA, iter_prM, /*s,*/ tol), q_( pre_)
+         pre_( MGAvel, MGApr, Mpr, kM, kA, iter_vel, iter_prA, iter_prM, /*s,*/ tol), q_( pre_)
     {}
 };
 
@@ -968,7 +968,7 @@ template<class Coeff>
 void
 StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     int stokes_maxiter, double stokes_tol,
-    double a, double /*b*/)
+    double kA, double kM)
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
@@ -1009,7 +1009,7 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
-    ispcp= new ISMGPreCL( MG_pr, MG_Mpr, a, /*b,*/ 1);
+    ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
 //    ispcp= new DiagMatrixPCCL( ML_pr.Data);
     PrepareStart( v1, p1, &M_pr);
     VectorCL xx( 1.0, vidx1->NumUnknowns);
@@ -1048,7 +1048,7 @@ template<class Coeff>
 void
 StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
-         double a, double /*b*/)
+         double kA, double kM)
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
@@ -1085,11 +1085,11 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
 //    M_pr.Data*= 1e2;
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
-//    ispcp= new ISPreCL( A_pr.Data, M_pr.Data, k_pc, 1.0);
+//    ispcp= new ISPreCL( A_pr.Data, M_pr.Data, kA, kM, 1.0);
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
-    ispcp= new ISMGPreCL( MG_pr, MG_Mpr, a, /*b,*/ 1);
+    ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
 //    PCGSolverCL<ISPreCL> sol1( ispc, stokes_maxiter, stokes_tol);
 //    PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
     VectorCL xx( 1.0, vidx1->NumUnknowns);
@@ -1123,7 +1123,7 @@ template<class Coeff>
 void
 StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
-         double a, double /*b*/)
+         double kA, double kM)
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
@@ -1163,11 +1163,11 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetupPrMass( &M_pr);  
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
-//    ispcp= new ISPreCL( A_pr.Data, M_pr.Data, k_pc, 1.0);
+//    ispcp= new ISPreCL( A_pr.Data, M_pr.Data, kA, kM, 1.0);
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
-    ispcp= new ISMGPreCL( MG_pr, MG_Mpr, a, /*b,*/ 1);
+    ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
 //    PCGSolverCL<ISPreCL> sol1( ispc, stokes_maxiter, stokes_tol);
 //    PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
     velprep= new MGPreCL( MG_vel, 1);
@@ -1187,7 +1187,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     statsolver= new MyUzawaSolver2CL<ISMGPreCL, MGPreCL>(
                         *ispcp,
                         *velprep,
-                        M_pr.Data, stokes_maxiter, stokes_tol, 1.0/a);
+                        M_pr.Data, stokes_maxiter, stokes_tol, 1.0/kA);
     std::cerr << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
     std::cerr << "After solve." << std::endl;
@@ -1212,7 +1212,7 @@ void
 StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
          int /*poi_maxiter*/, double /*poi_tol*/,
-         double a, double /*b*/)
+         double kA, double kM)
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
@@ -1252,7 +1252,7 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
     PrepareStart( v1, p1, &M_pr);
-    ISMGPreCL ispc( MG_pr, MG_Mpr, a, /*b,*/ 1);
+    ISMGPreCL ispc( MG_pr, MG_Mpr, kA, kM, 1);
 //    DiagMatrixPCCL ispc( ML_pr.Data);
     statsolver= new PSchur_AR_CL( MG_vel, ispc, stokes_maxiter, stokes_tol);
 //    statsolver= new PSchur_Diag_AR_CL( MG_vel, ispc, stokes_maxiter, stokes_tol);
@@ -1279,7 +1279,7 @@ void
 Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
          int poi_maxiter, double poi_tol,
-         double k, double /*gamma*/)
+         double kA, double kM)
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
@@ -1318,11 +1318,11 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetupPrMass( &M_pr);  
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
-//    ISPreCL ispc( A_pr.Data, M_pr.Data, k_pc, 10);
+//    ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 10);
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
-    ISMGPreCL ispc( MG_pr, MG_Mpr, k, /*gamma,*/ 1);
+    ISMGPreCL ispc( MG_pr, MG_Mpr, kA, kM, 1);
 //    statsolver= new PSchur_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
 //                                   poi_maxiter, poi_tol);
 //    statsolver= new PSchur2_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
@@ -1359,16 +1359,15 @@ int main (int argc, char** argv)
     if (argc!=10) {
         std::cerr <<
 "Usage (stsdrops): <stokes_maxiter> <stokes_tol> <poi_maxiter> <poi_tol>\n"
-"    <a> <b> <gamma> <level> <method>" << std::endl;
+"    <kA> <kM> <gamma> <level> <method>" << std::endl;
         return 1;
     }
-
     int stokes_maxiter= std::atoi( argv[1]);
     double stokes_tol= std::atof( argv[2]);
     int poi_maxiter= std::atoi( argv[3]);
     double poi_tol= std::atof( argv[4]);
-    double a= std::atof( argv[5]);
-    double b= std::atof( argv[6]);
+    double kA= std::atof( argv[5]);
+    double kM= std::atof( argv[6]);
     double gamma= std::atof( argv[7]);
     int level= std::atoi( argv[8]);
     int method= std::atoi( argv[9]);
@@ -1376,8 +1375,8 @@ int main (int argc, char** argv)
     std::cerr << "stokes_tol: " << stokes_tol << ", ";
     std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
     std::cerr << "poi_tol: " << poi_tol << ", ";
-    std::cerr << "a: " << a << ", ";
-    std::cerr << "b: " << b << ", ";
+    std::cerr << "kA: " << kA << ", ";
+    std::cerr << "kM: " << kM << ", ";
     std::cerr << "gamma: " << gamma << ", ";
     std::cerr << "level: " << level << ", ";
     std::cerr << "method: " << method << std::endl;
@@ -1406,27 +1405,27 @@ int main (int argc, char** argv)
     switch (method) {
       case 0:
         StrategyUzawa( prob, stokes_maxiter, stokes_tol,
-                       a, b);
+                       kA, kM);
         break;
       case 1:
         Strategy( prob, stokes_maxiter, stokes_tol, poi_maxiter, poi_tol,
-                  a, b);
+                  kA, kM);
         break;
       case 2:
         StrategyMRes( prob, stokes_maxiter, stokes_tol,
-                      a, b);
+                      kA, kM);
         break;
       case 3:
         StrategyUzawaCG( prob, stokes_maxiter, stokes_tol,
-                         a, b);
+                         kA, kM);
         break;
       case 4:
         StrategyUzawaCGEff( prob, stokes_maxiter, stokes_tol,
-                            a, b);
+                            kA, kM);
         break;
       case 5:
         StrategyAR( prob, stokes_maxiter, stokes_tol, poi_maxiter, poi_tol,
-                    a, b);
+                    kA, kM);
         break;
       default:
         std::cerr << "Unknown method.\n";

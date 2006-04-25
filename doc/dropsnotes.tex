@@ -432,8 +432,8 @@ class SparseMatBaseCL
 \end{verbatim}
 \end{Code}
 Mit Hilfe der Funktion \verb|LinComb| wird die Matrix als Linearkombination
-zweier anderer Matrizen erzeugt (interessant bei der Zeitintegration: $M+\theta
-dtA$). Die Funktion \verb|clear| dagegen l"oscht den Inhalt der Matrix.
+zweier anderer Matrizen erzeugt (interessant bei der Zeitintegration: $\frac{1}{dt}M+\theta
+A$). Die Funktion \verb|clear| dagegen l"oscht den Inhalt der Matrix.
 
 Matrix-Vektor-Multiplikation erfolgt mit \verb|A*x| f"ur $Ax$ 
 und \verb|transp_mul(A,x)| f"ur $A^Tx$.

@@ -40,7 +40,7 @@ class InstatNavStokesThetaSchemeCL
     VelVecDescCL *cplM_, *old_cplM_;  // couplings with mass matrix M
     VelVecDescCL *cplN_;              // couplings with nonlinearity N
     VectorCL      rhs_;
-    MatrixCL      L_;                 // M + theta*dt*A  = linear part 
+    MatrixCL      L_;                 // 1./dt*M + theta*A  = linear part 
     
     double theta_, dt_;
     
@@ -75,7 +75,7 @@ class InstatNavStokesThetaSchemeCL
     void SetTimeStep( double dt)
     {
         dt_= dt;
-        L_.LinComb( 1., NS_.M.Data, theta_*dt_, NS_.A.Data);
+        L_.LinComb( 1./dt_, NS_.M.Data, theta_, NS_.A.Data);
     }
        
     void DoStep( VecDescCL& v, VectorCL& p);
@@ -91,15 +91,13 @@ void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, Vec
 {
     // NS_.t contains the new time!
     NS_.SetupInstatRhs( b_, &NS_.c, cplM_, NS_.t, b_, NS_.t);
-    const double alpha= theta_*dt_;
-    const double beta= (theta_ - 1.)*dt_;
+    const double alpha= theta_;
+    const double beta= (theta_ - 1.);
     rhs_=  alpha*b_->Data
          - beta*(old_b_->Data + cplN_->Data)
          + beta*( NS_.A.Data*NS_.v.Data + NS_.N.Data*NS_.v.Data )
-         +cplM_->Data - old_cplM_->Data + NS_.M.Data*NS_.v.Data;
-    p*= dt_;
+         +(1./dt_)*(cplM_->Data - old_cplM_->Data + NS_.M.Data*NS_.v.Data);
     solver_.Solve( L_, NS_.B.Data, v, p, rhs_, *cplN_, NS_.c.Data, alpha);
-    p/= dt_;
     std::swap( old_b_, b_);
     std::swap( old_cplM_, cplM_);
 }

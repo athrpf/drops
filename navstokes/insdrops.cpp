@@ -176,7 +176,7 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         // If the saddlepoint-problem is solved via an Uzawa-method, the mass-matrix alone is
         // not an appropriate preconditioner for the Schur-Complement-Matrix. M has to be scaled
         // by 1/(theta*dt).
-        statsolver.GetStokesSolver().SetTau(theta*dt);
+        statsolver.GetStokesSolver().SetTau(theta*dt); // Betrachte den Code in num/stokessolver.h: M ist bei zeitabhaqengigen Problemen kein geeigneter Vorkonditionierer.
         time.Reset();
         time.Start();
         NS.SetupNonlinear(N, v1, cplN, 0., 0.);

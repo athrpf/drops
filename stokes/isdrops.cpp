@@ -73,7 +73,7 @@ class MyInstatStokesThetaSchemeCL
     VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VectorCL      _rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
+    MatrixCL      _mat;               // (1./dt)*M + theta*A
     
     double _theta, _dt;
     
@@ -103,7 +103,7 @@ class MyInstatStokesThetaSchemeCL
     void SetTimeStep( double dt)
     {
         _dt= dt;
-        _mat.LinComb( 1., _Stokes.M.Data, _theta*dt, _Stokes.A.Data);
+        _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     }
        
     void DoStep( VectorCL& v, VectorCL& p);
@@ -116,13 +116,11 @@ void MyInstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL
     _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
 
     _rhs=  _Stokes.A.Data * v;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*v + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*_old_b->Data);
+    _rhs*= (_theta-1.);
+    _rhs+= (1./_dt)*(_Stokes.M.Data*v + _cplM->Data - _old_cplM->Data)
+         +  _theta*_b->Data + (1.-_theta)*_old_b->Data;
 
-    p*= _dt*_theta;
     _solver.Solve( _mat, _Stokes.B.Data, v, p, _rhs, _Stokes.c.Data);
-    p/= _dt*_theta;
 
     std::swap( _b, _old_b);
     std::swap( _cplM, _old_cplM);
@@ -228,10 +226,10 @@ class PMinresSP_FullMG_CL : public PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, D
 
   public:
     PMinresSP_FullMG_CL( DROPS::MGDataCL& MGAvel, DROPS::MGDataCL& MGApr,
-                         DROPS::MGDataCL& Mpr, double k_pc,
+                         DROPS::MGDataCL& Mpr, double kA, double kM,
                          int iter_vel, int iter_prA, int iter_prM, int maxiter, double tol)
         :PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> >( q_, maxiter, tol),
-         pre_( MGAvel, MGApr, Mpr, k_pc, iter_vel, iter_prA, iter_prM, tol), q_( pre_)
+         pre_( MGAvel, MGApr, Mpr, kA, kM, iter_vel, iter_prA, iter_prM, tol), q_( pre_)
     {}
 };
 
@@ -260,7 +258,7 @@ SetupPoissonVelocityMG(
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns << std::endl;
         stokes.SetupStiffnessMatrix( &A);
         stokes.SetupMassMatrix( &M);
-        tmp.A.Data.LinComb( 1., M.Data, theta*dt, A.Data);
+        tmp.A.Data.LinComb( 1./dt, M.Data, theta, A.Data);
         if(lvl!=0) {
             std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
             SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
@@ -760,7 +758,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
              int stokes_maxiter, double stokes_tol,
              double theta,
              DROPS::Uint num_timestep,
-             double k_pc,
+             double kA, double kM,
              double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
 {
     using namespace DROPS;
@@ -828,7 +826,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
             SetupPoissonPressureMG( NS, MG_pr);
             SetupPressureMassMG( NS, MG_Mpr);
 //            statsolver= new StatsolverCL( stokes_maxiter, stokes_tol);
-            statsolver= new PMinresSP_FullMG_CL( MG_vel, MG_pr, MG_Mpr, k_pc,
+            statsolver= new PMinresSP_FullMG_CL( MG_vel, MG_pr, MG_Mpr, kA, kM,
                                                  1, 1, 1, stokes_maxiter, stokes_tol);
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
@@ -859,7 +857,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
          int stokes_maxiter, double stokes_tol,
          double theta,
          DROPS::Uint num_timestep,
-         double k_pc,
+         double kA, double kM,
          double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
 {
     using namespace DROPS;
@@ -933,11 +931,11 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
             NS.SetupPrMass( &M_pr);  
 //            A_pr.SetIdx( pidx1, pidx1);
 //            SetupPoissonPressure( mg, A_pr);
-//            ispcp= new ISPreCL( A_pr.Data, M_pr.Data, k_pc, 1.0);
+//            ispcp= new ISPreCL( A_pr.Data, M_pr.Data, kA, kM, 1.0);
             SetupPoissonVelocityMG( NS, MG_vel, theta, dt);
             SetupPoissonPressureMG( NS, MG_pr);
             SetupPressureMassMG( NS, MG_Mpr);
-            ispcp= new ISMGPreCL( MG_pr, MG_Mpr, k_pc, 1);
+            ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
 //            PCGSolverCL<ISPreCL> sol1( ispc, stokes_maxiter, stokes_tol);
 //            PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
             velprep= new MGPreCL( MG_vel, 1);
@@ -990,7 +988,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
          int poi_maxiter, double poi_tol,
          double theta,
          DROPS::Uint num_timestep,
-         double k_pc,
+         double kA, double kM,
          double shell_width, DROPS::Uint c_level, DROPS::Uint f_level)
 {
     using namespace DROPS;
@@ -1062,11 +1060,11 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
             NS.SetupPrMass( &M_pr);  
 //            A_pr.SetIdx( pidx1, pidx1);
 //            SetupPoissonPressure( mg, A_pr);
-//            ISPreCL ispc( A_pr.Data, M_pr.Data, k_pc, 10);
+//            ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 1.0);
             SetupPoissonVelocityMG( NS, MG_vel, theta, dt);
             SetupPoissonPressureMG( NS, MG_pr);
             SetupPressureMassMG( NS, MG_Mpr);
-            ISMGPreCL ispc( MG_pr, MG_Mpr, k_pc, 1);
+            ISMGPreCL ispc( MG_pr, MG_Mpr, kA, kM, 1);
 //            statsolver= new PSchur_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
 //                                           poi_maxiter, poi_tol);
 //            statsolver= new PSchur2_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
@@ -1105,10 +1103,10 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc!=12) {
+    if (argc!=13) {
         std::cerr <<
 "Usage (isadrops): <stokes_maxiter> <stokes_tol> <poi_maxiter> <poi_tol>\n"
-"    <theta> <num_timestep> <k_pc> <shell_width> <c_level> <f_level>\n"
+"    <theta> <num_timestep> <kA> <kM> <shell_width> <c_level> <f_level>\n"
 "    <method>" << std::endl;
         return 1;
     }
@@ -1130,18 +1128,20 @@ int main (int argc, char** argv)
     double poi_tol= std::atof( argv[4]);
     double theta= std::atof( argv[5]);
     int num_timestep= std::atoi( argv[6]);
-    double k_pc= std::atof( argv[7]);
-    double shell_width= std::atof( argv[8]);
-    int c_level= std::atoi( argv[9]);
-    int f_level= std::atoi( argv[10]);
-    int method= std::atoi( argv[11]);
+    double kA= std::atof( argv[7]);
+    double kM= std::atof( argv[8]);
+    double shell_width= std::atof( argv[9]);
+    int c_level= std::atoi( argv[10]);
+    int f_level= std::atoi( argv[11]);
+    int method= std::atoi( argv[12]);
     std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
     std::cerr << "stokes_tol: " << stokes_tol << ", ";
     std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
     std::cerr << "poi_tol: " << poi_tol << ", ";
     std::cerr << "theta: " << theta << ", ";
     std::cerr << "num_timestep: " << num_timestep <<  ", ";
-    std::cerr << "k_pc: " << k_pc <<  ", ";
+    std::cerr << "kA: " << kA <<  ", ";
+    std::cerr << "kM: " << kM <<  ", ";
     std::cerr << "shell_width: " << shell_width <<  ", ";
     std::cerr << "c_level: " << c_level << ", ";
     std::cerr << "f_level: " << f_level << ", ";
@@ -1157,15 +1157,15 @@ int main (int argc, char** argv)
     switch (method) {
       case 0:
         StrategyUzawa( prob, stokes_maxiter, stokes_tol,
-                       theta, num_timestep, k_pc, shell_width, c_level, f_level);
+                       theta, num_timestep, kA, kM, shell_width, c_level, f_level);
         break;
       case 1:
         Strategy( prob, stokes_maxiter, stokes_tol, poi_maxiter, poi_tol,
-                  theta, num_timestep, k_pc, shell_width, c_level, f_level);
+                  theta, num_timestep, kA, kM, shell_width, c_level, f_level);
         break;
       case 2:
         StrategyMRes( prob, stokes_maxiter, stokes_tol,
-                      theta, num_timestep, k_pc, shell_width, c_level, f_level);
+                      theta, num_timestep, kA, kM, shell_width, c_level, f_level);
         break;
       default:
         std::cerr << "Unknown method.\n";

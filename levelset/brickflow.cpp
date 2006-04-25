@@ -262,9 +262,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
         // PC for instat. Schur complement
         typedef ISPreCL SPcT;
-        SPcT ispc( prA.Data, prM.Data, C.theta*C.dt);
+        SPcT ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
 //        typedef ISNonlinearPreCL SPcT;
-//        SPcT ispc( prA.Data, prM.Data, 0.0);
+//        SPcT ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
@@ -345,7 +345,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     else // Baensch scheme
     {
         // PC for instat. Schur complement
-        ISPreCL ispc( prA.Data, prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
+        const double theta= 1-std::sqrt(2.)/2, frac_dt= C.dt*theta, alpha= (1-2*theta)/(1-theta);
+        ISPreCL ispc( prA.Data, prM.Data, 1./frac_dt, alpha);
 
         // PC for A-block
         typedef PCG_SsorCL ASolverT;

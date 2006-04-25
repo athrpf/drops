@@ -50,9 +50,9 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::InitStep()
     _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
 
     _rhs=  _Stokes.A.Data * _Stokes.v.Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data + _cplM->Data - _old_cplM->Data
-         + _dt*( _theta*_b->Data + (1.-_theta)*(_old_b->Data + _old_curv->Data));
+    _rhs*= (_theta-1.);
+    _rhs+= (1./_dt)*(_Stokes.M.Data*_Stokes.v.Data + _cplM->Data - _old_cplM->Data)
+         + _theta*_b->Data + (1.-_theta)*(_old_b->Data + _old_curv->Data);
 }
 
 template <class StokesT, class SolverT>
@@ -78,10 +78,8 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
 
-    _Stokes.p.Data*= _dt;
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   VectorCL( _rhs + _dt*_theta*_curv->Data), _Stokes.c.Data);
-    _Stokes.p.Data/= _dt;
+                   VectorCL( _rhs + _theta*_curv->Data), _Stokes.c.Data);
 
     time.Stop();
     std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
@@ -151,9 +149,9 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::InitStep()
     _Stokes.t+= _dt;
 
     _rhs=  _Stokes.A.Data * _Stokes.v.Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data
-         + (_dt*(1.-_theta))*(_old_b->Data + _old_curv->Data);
+    _rhs*= (_theta-1.);
+    _rhs+= (1./_dt)*(_Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data)
+         + (1.-_theta)*(_old_b->Data + _old_curv->Data);
 }
 
 template <class StokesT, class SolverT>
@@ -178,7 +176,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
-    _mat->LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
+    _mat->LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     if (_usematMG) {
         for(MGDataCL::iterator it= _matMG->begin(); it!=_matMG->end(); ++it) {
@@ -191,18 +189,15 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
                       << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
             if(&tmp != &_matMG->back()) {
                 _Stokes.SetupMatrices1( &A, &M, _LvlSet, _Stokes.t);
-                tmp.A.Data.LinComb( 1., M.Data, _theta*_dt, A.Data);
+                tmp.A.Data.LinComb( 1./_dt, M.Data, _theta, A.Data);
             }
         }
     }
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
-
-    _Stokes.p.Data*= _dt;
     _solver.Solve( *_mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   VectorCL( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data)), _Stokes.c.Data);
-    _Stokes.p.Data/= _dt;
+                   VectorCL( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data)), _Stokes.c.Data);
     time.Stop();
     std::cerr << "Solving Stokes: residual: " << _solver.GetResid()
               << "\titerations: " << _solver.GetIter()
@@ -336,9 +331,9 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::InitStep()
     _Stokes.t+= _dt;
 
     _rhs=  _AN * _Stokes.v.Data - _nonlinear*_old_cplN->Data;
-    _rhs*= (_theta-1.)*_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data
-         + (_dt*(1.-_theta))*(_old_b->Data + _old_curv->Data);
+    _rhs*= (_theta-1.);
+    _rhs+= (1./_dt)*(_Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data)
+         + (1.-_theta)*(_old_b->Data + _old_curv->Data);
 }
 
 template <class StokesT, class SolverT>
@@ -375,13 +370,11 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
 
-    _Stokes.p.Data*= _dt;
-    _mat.LinComb( 1., _Stokes.M.Data, _theta*_dt, _Stokes.A.Data);
-    VectorCL b2( _rhs + _cplM->Data + _dt*_theta*(_curv->Data + _b->Data));
+    _mat.LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
+    VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data));
     _solver.Solve( _mat, _Stokes.B.Data,
         _Stokes.v, _Stokes.p.Data,
-        b2, *_cplN, _Stokes.c.Data, /*alpha*/ _dt*_theta*_nonlinear);
-    _Stokes.p.Data/= _dt;
+        b2, *_cplN, _Stokes.c.Data, /*alpha*/ _theta*_nonlinear);
     time.Stop();
     std::cerr << "Solving NavierStokes took "<<time.GetTime()<<" sec.\n";
 }
@@ -502,8 +495,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::InitStep( bool StokesStep)
         _rhs= -_alpha*(_Stokes.A.Data * _Stokes.v.Data - _old_cplA->Data)
               - transp_mul( _Stokes.B.Data, _Stokes.p.Data);
     }
-    _rhs*= frac_dt;
-    _rhs+= _Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data;
+    _rhs+= (1./frac_dt)*(_Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data);
         
 }
 
@@ -515,9 +507,10 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     TimerCL time;
     time.Reset();
     time.Start();
+    const double frac_dt= _theta*_dt;
     // setup system for levelset eq.
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
-    _LvlSet.SetTimeStep( _theta*_dt, _alpha);
+    _LvlSet.SetTimeStep( frac_dt, _alpha);
     time.Stop();
     std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
     time.Reset();
@@ -529,15 +522,13 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _cplA, _cplM, _LvlSet, _Stokes.t);
-    _mat.LinComb( 1., _Stokes.M.Data, _alpha*_theta*_dt, _Stokes.A.Data);
+    _mat.LinComb( 1./frac_dt, _Stokes.M.Data, _alpha, _Stokes.A.Data);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
-    _Stokes.p.Data*= _theta*_dt;
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data, 
-                   VectorCL( _rhs + _cplM->Data + _dt*_theta*(_alpha*_cplA->Data + _curv->Data + _b->Data)), _Stokes.c.Data);
-    _Stokes.p.Data/= _theta*_dt;
+                   VectorCL( _rhs + (1./frac_dt)*_cplM->Data + _alpha*_cplA->Data + _curv->Data + _b->Data), _Stokes.c.Data);
     time.Stop();
     std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
 }
@@ -571,16 +562,13 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
     std::cerr << "Starting fixed point iterations for solving nonlinear system...\n";
     _iter_nonlinear= 0;
     do
-    // restart loop; restart after 10 iterations
-    // matrix is recomputed at every restart
     {
         _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _cplN, _LvlSet, _Stokes.t);
         _AN.LinComb( 1-_alpha, _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
-        _mat.LinComb( 1., _Stokes.M.Data, frac_dt, _AN);
+        _mat.LinComb( 1./frac_dt, _Stokes.M.Data, 1., _AN);
         _gm.Solve( _mat, _Stokes.v.Data, 
-            VectorCL( _rhs + _cplM->Data + frac_dt * ( (1-_alpha)*_cplA->Data
-            +_nonlinear*_cplN->Data+_curv->Data + _b->Data))
-        );
+            VectorCL( _rhs + (1./frac_dt)*_cplM->Data + (1-_alpha)*_cplA->Data
+            + _nonlinear*_cplN->Data + _curv->Data + _b->Data));
         std::cerr << "fp cycle " << ++_iter_nonlinear << ":\titerations: " 
                   << _gm.GetIter() << "\tresidual: " << _gm.GetResid() << std::endl;
     } while (_gm.GetIter() > 0 && _iter_nonlinear<20);

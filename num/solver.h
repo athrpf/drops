@@ -1049,6 +1049,7 @@ GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
             max_iter= k;
             return true;
         }
+        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
         s.push_back( Vec( b.size()));
         M.Apply( A, s[k+1], r);
         v.push_back( A*s[k+1]);
