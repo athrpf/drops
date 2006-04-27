@@ -1049,7 +1049,7 @@ GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
             max_iter= k;
             return true;
         }
-        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+//        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
         s.push_back( Vec( b.size()));
         M.Apply( A, s[k+1], r);
         v.push_back( A*s[k+1]);
@@ -1078,14 +1078,17 @@ GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
 class SolverBaseCL
 {
   protected:
-    int         _maxiter;
-    mutable int _iter;
+    int            _maxiter;
+    mutable int    _iter;
     double         _tol;
     mutable double _res;
-    bool rel_;
+    bool           rel_;
 
-    SolverBaseCL (int maxiter, double tol, bool rel= false)
-        : _maxiter( maxiter), _iter( -1), _tol( tol), _res( -1.), rel_( rel)  {}
+    mutable std::ostream* output_;
+
+    SolverBaseCL (int maxiter, double tol, bool rel= false, std::ostream* output= 0)
+        : _maxiter( maxiter), _iter( -1), _tol( tol), _res( -1.),
+          rel_( rel), output_( output)  {}
 
   public:
     void   SetTol     (double tol) { _tol= tol; }
@@ -1281,8 +1284,10 @@ class GCRSolverCL : public SolverBaseCL
     int truncate_; // no effect atm.
 
   public:
-    GCRSolverCL(const PC& pc, int truncate, int maxiter, double tol, bool relative= true)
-        : SolverBaseCL( maxiter, tol, relative), pc_( pc), truncate_( truncate) {}
+    GCRSolverCL(const PC& pc, int truncate, int maxiter, double tol,
+        bool relative= true, std::ostream* output= 0)
+        : SolverBaseCL( maxiter, tol, relative, output), pc_( pc),
+          truncate_( truncate) {}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
@@ -1294,8 +1299,9 @@ class GCRSolverCL : public SolverBaseCL
         _res=  _tol;
         _iter= _maxiter;
         GCR( A, x, b, pc_, truncate_, _iter, _res, rel_);
-        std::cerr << "GCRSolverCL iterations: " << GetIter()
-                  << "\tresidual: " << GetResid() << std::endl;
+        if (output_ != 0)
+            *output_ << "GCRSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl;
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
@@ -1303,6 +1309,9 @@ class GCRSolverCL : public SolverBaseCL
         resid=   _tol;
         numIter= _maxiter;
         GCR( A, x, b, pc_, truncate_, numIter, resid, rel_);
+        if (output_ != 0)
+            *output_ << "GCRSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl;
     }
 };
 
