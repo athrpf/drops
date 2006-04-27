@@ -1038,7 +1038,7 @@ GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
     bool measure_relative_tol= true)
 {
     Vec r( b - A*x);
-    std::vector<Vec> s( 1), v( 1); // Positions s[0], v[0] are unused below.
+    std::vector<Vec> s, v;
     double normb= norm( b);
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
     double resid= -1.0;
@@ -1051,19 +1051,19 @@ GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
         }
 //        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
         s.push_back( Vec( b.size()));
-        M.Apply( A, s[k+1], r);
-        v.push_back( A*s[k+1]);
-        for (int i= 1; i <= k; ++i) {
-            const double alpha= dot( v[k+1], v[i]);
-            v[k+1]-= alpha*v[i];
-            s[k+1]-= alpha*s[i];
+        M.Apply( A, s[k], r);
+        v.push_back( A*s[k]);
+        for (int i= 0; i < k; ++i) {
+            const double alpha= dot( v[k], v[i]);
+            v[k]-= alpha*v[i];
+            s[k]-= alpha*s[i];
         }
-        const double beta= norm( v[k+1]);
-        v[k+1]/= beta;
-        s[k+1]/= beta;
-        const double gamma= dot( r, v[k+1]);
-        x+= gamma*s[k+1];
-        r-= gamma*v[k+1];
+        const double beta= norm( v[k]);
+        v[k]/= beta;
+        s[k]/= beta;
+        const double gamma= dot( r, v[k]);
+        x+= gamma*s[k];
+        r-= gamma*v[k];
     }
     tol= resid;
     return false;
