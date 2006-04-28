@@ -1027,43 +1027,67 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
 //               tolerance was reached
 //      tol  --  the residual after the final iteration
 //
-// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//
+// m -- truncation parameter; only m >= 1 residual vectors are kept; the
+//     one with the smallest a (in modulus) is overwritten by the
+//     new vector sn (min-alpha strategy).
+// measure_relative_tol -- If true, stop if |b - Ax|/|b| <= tol,
 //     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
 //  
 //*****************************************************************
 template <class Mat, class Vec, class Preconditioner>
 bool
-GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
-    int /*truncation parameter m*/, int& max_iter, double& tol,
-    bool measure_relative_tol= true)
+GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
+    int m, int& max_iter, double& tol, bool measure_relative_tol= true)
 {
+    m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
+
     Vec r( b - A*x);
+    Vec sn( b.size()), vn( b.size());
     std::vector<Vec> s, v;
+    std::vector<double> a( m);
+
     double normb= norm( b);
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
-    double resid= -1.0;
+    double resid= norm( r)/normb;
 
     for (int k= 0; k < max_iter; ++k) {
-        if ((resid= norm( r)/normb) < tol) {
+        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+        if (resid < tol) {
             tol= resid;
             max_iter= k;
             return true;
         }
-//        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
-        s.push_back( Vec( b.size()));
-        M.Apply( A, s[k], r);
-        v.push_back( A*s[k]);
-        for (int i= 0; i < k; ++i) {
-            const double alpha= dot( v[k], v[i]);
-            v[k]-= alpha*v[i];
-            s[k]-= alpha*s[i];
+        M.Apply( A, sn, r);
+        vn= A*sn;
+        for (int i= 0; i < k && i < m; ++i) {
+            const double alpha= dot( vn, v[i]);
+            a[i]= alpha;
+            vn-= alpha*v[i];
+            sn-= alpha*s[i];
         }
-        const double beta= norm( v[k]);
-        v[k]/= beta;
-        s[k]/= beta;
-        const double gamma= dot( r, v[k]);
-        x+= gamma*s[k];
-        r-= gamma*v[k];
+        const double beta= norm( vn);
+        vn/= beta;
+        sn/= beta;
+        const double gamma= dot( r, vn);
+        x+= gamma*sn;
+        r-= gamma*vn;
+        resid= norm( r)/normb;
+        if (k < m) {
+            s.push_back( sn);
+            v.push_back( vn);
+        }
+        else {
+            int min_idx= 0;
+            double a_min= std::fabs( a[0]); // m >= 1, thus this access is valid.
+            for (int i= 1; i < k && i < m; ++i)
+                if ( std::fabs( a[i]) < a_min) {
+                    min_idx= i;
+                    a_min= std::fabs( a[i]);
+                }
+            s[min_idx]= sn;
+            v[min_idx]= vn;
+        }
     }
     tol= resid;
     return false;
