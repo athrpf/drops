@@ -461,7 +461,7 @@ template <class MatT>
 size_t
 BlockMatrixBaseCL<MatT>::num_rows(size_t block_row) const
 {
-    size_t ret;
+    size_t ret= 0;
     bool block_found;
     switch (block_row) {
       case 0:
@@ -482,7 +482,7 @@ template <class MatT>
 size_t
 BlockMatrixBaseCL<MatT>::num_cols(size_t block_col) const
 {
-    size_t ret;
+    size_t ret= 0;
     bool block_found;
     switch (block_col) {
       case 0:
