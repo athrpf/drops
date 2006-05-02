@@ -179,7 +179,8 @@ class PoissonCoeffCL
 };
 
 double Zero(const DROPS::Point2DCL&, double) { return 0.0; }
-double Heat(const DROPS::Point2DCL&, double) { return C.Heat*1e-3; }
+double HeatFlux(const DROPS::Point2DCL&, double) { return C.Heat*1e-3; }
+double HeatTemp(const DROPS::Point2DCL&, double) { return C.Heat; }
 
 double Inflow(const DROPS::Point2DCL& p, double t) { return MC.GetInflow(p,t); }
 
@@ -296,7 +297,7 @@ static void ipdrops( double theta, double tol, int iter, int Flag)
         HeatBCType, true,    // Gamma_h (wall), Gamma_r (surface)
         true, true };  // Gamma_r, Gamma_r
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-      { &Inflow, &Zero, &Heat, &Zero, &Zero, &Zero};
+      { &Inflow, &Zero, HeatBCType ? &HeatFlux : &HeatTemp, &Zero, &Zero, &Zero};
     
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata, Flag & AdjFlagC);
