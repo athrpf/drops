@@ -66,6 +66,13 @@ ipdrops: \
     ../num/fe.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
+ipdropsAD: \
+    ../geom/boundary.o ../geom/builder.o ../poisson/ipdropsAD.o \
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o \
+    ../num/fe.o
+	$(CC) -o $@ $^ $(LFLAGS)
+
 ipdropsrep: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdropsrep.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
