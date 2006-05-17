@@ -4,7 +4,7 @@
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
 //**************************************************************************
 
-#include "../num/nssolver.h"
+#include "num/nssolver.h"
 
 namespace DROPS
 {
@@ -330,7 +330,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::InitStep()
 
     _Stokes.t+= _dt;
 
-    _rhs=  _AN * _Stokes.v.Data - _nonlinear*_old_cplN->Data;
+    _rhs=  _Stokes.A.Data * _Stokes.v.Data + _nonlinear*(_Stokes.N.Data * _Stokes.v.Data - _old_cplN->Data);
     _rhs*= (_theta-1.);
     _rhs+= (1./_dt)*(_Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data)
          + (1.-_theta)*(_old_b->Data + _old_curv->Data);
@@ -436,7 +436,6 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _old_cplN, _LvlSet, _Stokes.t);
-    _AN.LinComb( 1., _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
     
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";

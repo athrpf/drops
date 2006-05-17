@@ -103,8 +103,7 @@ class CouplLevelsetNavStokes2PhaseCL
     VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
     VecDescCL    *_curv, *_old_curv;  // curvature terms
     VectorCL      _rhs, _ls_rhs;
-    MatrixCL      _AN,                // A + N
-                  _mat;               // 1./dt*M + theta*(A+N)
+    MatrixCL      _mat;               // 1./dt*M + theta*(A+N)
     
     double _theta, _dt;
     const double _nonlinear;
