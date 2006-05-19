@@ -202,6 +202,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
         for(;;++_iter) // ever
         {
             _NS.SetupNonlinear(&_NS.N, &v, &cplN);
+//std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
             _AN.LinComb( 1., A, alpha, _NS.N.Data);
             
             // calculate defect:
@@ -215,7 +216,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             double outer_tol= _res/_red;
             w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
-            _solver.Solve( _AN, B, w, q, d, e);
+            _solver.Solve( _AN, B, w, q, d, e); // _solver should use a relative termination criterion.
             
             // calculate adaption:
             _NS.N.Data.clear();

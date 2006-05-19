@@ -309,6 +309,7 @@ public:
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz,
                      const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
         : _rows(rows), _cols(cols), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
+    SparseMatBaseCL (const std::valarray<T>&); // Creates a square diagonal matrix.
 
     const T*      raw_val() const { return Addr( _val); }
     T*            raw_val()       { return &_val[0]; }
@@ -316,6 +317,9 @@ public:
     size_t*       raw_row()       { return &_rowbeg[0]; }
     const size_t* raw_col() const { return Addr( _colind); }
     size_t*       raw_col()       { return &_colind[0]; }
+
+    std::valarray<T>&       val()       { return _val; }
+    const std::valarray<T>& val() const { return _val; }
 
     size_t num_rows     () const { return _rows; }
     size_t num_cols     () const { return _cols; }
@@ -340,6 +344,16 @@ public:
 
     friend class SparseMatBuilderCL<T>;
 };
+
+template <typename T>
+  SparseMatBaseCL<T>::SparseMatBaseCL(const std::valarray<T>& v)
+      : _rows( v.size()), _cols( v.size()), _rowbeg( v.size() + 1),
+        _colind( v.size()), _val( v)
+{
+    for (size_t i= 0; i < _rows; ++i)
+        _rowbeg[i]= _colind[i]= i;
+    _rowbeg[_rows]= _rows;
+}
 
 template <typename T>
 T SparseMatBaseCL<T>::operator() (size_t i, size_t j) const
@@ -584,9 +598,13 @@ void in (std::istream& is, SparseMatBaseCL<T>& A)
     size_t numrows, numcols, numnz;
     is >> numrows >> numcols >> numnz;
     A.resize(numrows, numcols, numnz);
-    for (size_t row=0; row<=numrows; ++row) is >> A.row_beg(row);
-    for (size_t nz=0; nz<numnz; ++nz) is >> A.col_ind(nz);
-    for (size_t nz=0; nz<numnz; ++nz) is >> A.val(nz);
+    T* val= A.raw_val();
+    size_t* row_beg= A.raw_row();
+    size_t* col_ind= A.raw_col();
+    
+    for (size_t row=0; row<=numrows; ++row) is >> row_beg[row];
+    for (size_t nz=0; nz<numnz; ++nz) is >> col_ind[nz];
+    for (size_t nz=0; nz<numnz; ++nz) is >> val[nz];
 }
 
 
@@ -595,6 +613,57 @@ void in (std::istream& is, SparseMatBaseCL<T>& A)
 //  Matrix- and vector-operations
 //
 //*****************************************************************************
+
+template <typename T>
+  inline typename SparseMatBaseCL<T>::value_type
+  supnorm(const SparseMatBaseCL<T>& M)
+{
+    typedef typename SparseMatBaseCL<T>::value_type valueT;
+    const size_t nr= M.num_rows();
+    valueT ret= valueT(), tmp;
+    for (size_t i= 0; i < nr; ++i) {
+        tmp= valueT();
+        const size_t rowend= M.row_beg( i + 1);
+        for (size_t j= M.row_beg( i); j < rowend; ++j)
+            tmp+= std::fabs( M.val( j));
+        if (tmp > ret) ret= tmp;
+    }
+    return ret;
+}
+
+template <typename T>
+  std::valarray<typename SparseMatBaseCL<T>::value_type>
+  LumpInRows(const SparseMatBaseCL<T>& M)
+{
+    std::valarray<typename SparseMatBaseCL<T>::value_type>
+        v( M.num_rows());
+    for (size_t r= 0, nz= 0; nz < M.num_nonzeros(); ++r)
+        for (; nz < M.row_beg( r + 1); )
+            v[r]+= M.val( nz++);
+    return v;
+}
+
+template <typename T>
+  void
+  ScaleRows(SparseMatBaseCL<T>& M,
+    const std::valarray<typename SparseMatBaseCL<T>::value_type>& v)
+{
+    typename SparseMatBaseCL<T>::value_type* val= M.raw_val();
+    for (size_t r= 0, nz= 0; nz < M.num_nonzeros(); ++r)
+        for (; nz < M.row_beg( r + 1); )
+            val[nz++]*= v[r];
+}
+
+template <typename T>
+  void
+  ScaleCols(SparseMatBaseCL<T>& M,
+    const std::valarray<typename SparseMatBaseCL<T>::value_type>& v)
+{
+    typename SparseMatBaseCL<T>::value_type* val= M.raw_val();
+    size_t* col= M.raw_col();
+    for (size_t nz= 0; nz < M.num_nonzeros(); ++nz)
+        val[nz]*= v[col[nz]];
+}
 
 template <typename T>
 SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
