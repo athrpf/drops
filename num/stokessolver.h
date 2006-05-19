@@ -237,8 +237,8 @@ class DiagBlockPreCL
     Apply(const BlockMatrixBaseCL<Mat>& A, Vec& x, const Vec& b) const {
         VectorCL b0( b[std::slice( 0, A.num_rows( 0), 1)]);
         VectorCL b1( b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
-        VectorCL x0( x[std::slice( 0, A.num_cols( 0), 1)]);
-        VectorCL x1( b[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]);
+        VectorCL x0( A.num_cols( 0));
+        VectorCL x1( A.num_cols( 1));
         pc1_.Apply( *A.GetBlock( 0), x0, b0); // assumes GetBlock( 0) != 0
         pc2_.Apply( /*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 1)),
             x1, b1);
@@ -911,6 +911,7 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& 
         x.resize( M.A_.num_cols() );
 //        std::cerr << ", new size is " << x.size() << '\n';
     }
+    else x= 0.0;
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
 //    std::cerr << "> inner iterations: " << M.solver_.GetIter()
 //              << "\tresidual: " << M.solver_.GetResid() << std::endl;
