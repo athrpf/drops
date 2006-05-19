@@ -633,7 +633,6 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
             GMRES_ApplyPlaneRotation( s[i], s[i+1], cs[i], sn[i]);
 
             resid= std::abs( s[i+1])/normb;
-std::cerr << "GMRES: j: " << j << "\tresidual: " << resid << '\n';
             if (calculate2norm == true) { // debugging aid
                 Vec y( x);
                 GMRES_Update( y, i, H, s, v);
@@ -1061,9 +1060,6 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
         }
         M.Apply( A, sn, r);
         vn= A*sn;
-std::cerr << "norm r: " << norm( r)
-          << "\tnorm sn: " << norm( sn)
-          << "\tnorm vn: " << norm( vn) << '\n';
         for (int i= 0; i < k && i < m; ++i) {
             const double alpha= dot( vn, v[i]);
             a[i]= alpha;
@@ -1089,7 +1085,6 @@ std::cerr << "norm r: " << norm( r)
                     min_idx= i;
                     a_min= std::fabs( a[i]);
                 }
-//            std::cerr << "min_idx: " << min_idx << "\ta_min: " << a_min << '\n';
             s[min_idx]= sn;
             v[min_idx]= vn;
         }
