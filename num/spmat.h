@@ -513,7 +513,6 @@ BlockMatrixBaseCL<MatT>::num_cols(size_t block_col) const
     return ret;
 }
 
-
 template <class MatT>
 BlockMatrixBaseCL<MatT>
 BlockMatrixBaseCL<MatT>::GetTranspose() const
@@ -523,6 +522,95 @@ BlockMatrixBaseCL<MatT>::GetTranspose() const
         block_[1], GetTransposeOperation( 1),
         block_[3], GetTransposeOperation( 3));
 }
+
+
+//*****************************************************************************
+//
+//  Composition of 2 matrices
+//
+//*****************************************************************************
+template <class MatT>
+class CompositeMatrixBaseCL
+{
+  public:
+    typedef BlockMatrixOperationT OperationT;
+
+  private:
+    const MatT* block_[2]; // The matrices are applied as block_[1]*block[0]*v
+    OperationT operation_[2];
+
+  public:
+    CompositeMatrixBaseCL( const MatT* A, OperationT Aop, const MatT* B, OperationT Bop);
+
+    size_t num_rows() const;
+    size_t num_cols() const;
+    size_t intermediate_dim() const;
+
+    const MatT* GetBlock( size_t b) const { return block_[b]; }
+
+    OperationT GetOperation( size_t b) const { return operation_[b]; }
+    OperationT GetTransposeOperation( size_t b) const {
+        return operation_[b] == MUL ? TRANSP_MUL : MUL;
+    }
+
+    CompositeMatrixBaseCL GetTranspose() const;
+};
+
+template <class MatT>
+CompositeMatrixBaseCL<MatT>::CompositeMatrixBaseCL( const MatT* A, OperationT Aop,
+    const MatT* B, OperationT Bop)
+{
+    block_[0]= A; operation_[0]= Aop;
+    block_[1]= B; operation_[1]= Bop;
+}
+
+template <class MatT>
+size_t
+CompositeMatrixBaseCL<MatT>::num_rows() const
+{
+    switch (operation_[1]) {
+      case MUL:        return block_[1]->num_rows();
+      case TRANSP_MUL: return block_[1]->num_cols();
+      default:
+        Comment("CompositeMatrixBaseCL::num_rows: No such operation.\n", DebugNumericC);
+        return (size_t)-1;
+    }
+}
+
+template <class MatT>
+size_t
+CompositeMatrixBaseCL<MatT>::num_cols() const
+{
+    switch (operation_[0]) {
+      case MUL:        return block_[0]->num_cols();
+      case TRANSP_MUL: return block_[0]->num_rows();
+      default:
+        Comment("CompositeMatrixBaseCL::num_cols: No such operation.\n", DebugNumericC);
+        return (size_t)-1;
+    }
+}
+
+template <class MatT>
+size_t
+CompositeMatrixBaseCL<MatT>::intermediate_dim() const
+{
+    switch (operation_[0]) {
+      case MUL:        return block_[0]->num_rows();
+      case TRANSP_MUL: return block_[0]->num_cols();
+      default:
+        Comment("CompositeMatrixBaseCL::intermediate_dim: No such operation.\n", DebugNumericC);
+        return (size_t)-1;
+    }
+}
+
+template <class MatT>
+CompositeMatrixBaseCL<MatT>
+CompositeMatrixBaseCL<MatT>::GetTranspose() const
+{
+    return CompositeMatrixBaseCL<MatT>( block_[1], GetTransposeOperation( 1),
+        block_[0], GetTransposeOperation( 0));
+}
+
 
 //*****************************************************************************
 //
@@ -891,14 +979,46 @@ transp_mul(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
 }
 
 
+template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry>
+operator*(const CompositeMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
+    const VectorBaseCL<_VecEntry>& x)
+{
+    VectorBaseCL<_VecEntry> tmp( A.intermediate_dim());
+    switch( A.GetOperation( 0)) {
+      case MUL:
+        tmp= (*A.GetBlock( 0))*x; break;
+      case TRANSP_MUL:
+        tmp= transp_mul( *A.GetBlock( 0), x); break;
+    }
+    VectorBaseCL<_VecEntry> ret( A.num_cols());
+    switch( A.GetOperation( 1)) {
+      case MUL:
+        ret= (*A.GetBlock( 1))*tmp; break;
+      case TRANSP_MUL:
+        ret= transp_mul( *A.GetBlock( 1), tmp); break;
+    }
+    return ret;
+    
+}
+
+template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry>
+transp_mul(const CompositeMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
+    const VectorBaseCL<_VecEntry>& x)
+{
+    return A.GetTranspose()*x;
+}
+
 //=============================================================================
 //  Typedefs
 //=============================================================================
 
-typedef VectorBaseCL<double>         VectorCL;
-typedef SparseMatBaseCL<double>      MatrixCL;
-typedef SparseMatBuilderCL<double>   MatrixBuilderCL;
-typedef BlockMatrixBaseCL<MatrixCL>  BlockMatrixCL;
+typedef VectorBaseCL<double>            VectorCL;
+typedef SparseMatBaseCL<double>         MatrixCL;
+typedef SparseMatBuilderCL<double>      MatrixBuilderCL;
+typedef BlockMatrixBaseCL<MatrixCL>     BlockMatrixCL;
+typedef CompositeMatrixBaseCL<MatrixCL> CompositeMatrixCL;
 
 } // end of namespace DROPS
 
