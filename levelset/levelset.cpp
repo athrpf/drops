@@ -36,12 +36,9 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
     SMatrixCL<3,3> T;
     double det;
     InterfacePatchCL patch;
-
     P2DiscCL::GetGradientsOnRef( GradRef);
  
-//double area= 0, missing= 0;
-//int num3= 0, num4= 0;
-
+    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
 
     for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
         it!=end; ++it)
@@ -49,17 +46,11 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
         GetTrafoTr( T, det, *it);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
         patch.Init( *it, SmPhi);
-        LocalP1CL<Point3DCL> gradPhi;
 
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
             const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
             Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
-
-            for (int node=0; node<4; ++node)
-            { // gradPhi = Werte von grad Phi in den vier Knoten des Tetra
-                gradPhi[node]+= patch.GetPhi(v)*Grad[v][node];
-            }
         }
         
         for (int ch=0; ch<8; ++ch)
@@ -78,23 +69,27 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
             }
             BaryPQR/= 3; BarySQR/= 3;
 
-            double val_hat[4];
-            Point3DCL n[4], nBary, vn_Bary, nBarySQR;
+            Point3DCL n; // senkrecht auf PQ, PR, nach aussen gerichtet...
+            cross_product( n, patch.GetPoint(1)-patch.GetPoint(0), patch.GetPoint(2)-patch.GetPoint(0));
+            n/= n.norm();
 
-            for (Uint k=0; k<patch.GetNumPoints(); ++k)
+            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
+            const int find_sign= patch.GetNumSign( 1) ? 1 : -1;
+            Point3DCL pos_dir;
+            for (Uint i=0; i<4; ++i) // compute vector with positive direction
             {
-                // Normale in PQR(S)
-                n[k]= gradPhi( patch.GetBary(k));
-                n[k]/= n[k].norm();
+                const Uint vert= data.Vertices[i];
+                if (patch.GetSign(vert)==find_sign) 
+                { 
+                    const Point3DCL signedPoint= vert<4 ? it->GetVertex(vert)->GetCoord() : GetBaryCenter( *it->GetEdge(vert-4));
+                    pos_dir= signedPoint - patch.GetPoint(0);
+                    if (find_sign == -1) pos_dir= -pos_dir;
+                    break; 
+                }
             }
-            nBary= gradPhi( BaryPQR);
-            nBary/= nBary.norm();
-            if (patch.IsQuadrilateral())
-            {
-                nBarySQR= gradPhi( BarySQR);
-                nBarySQR/= nBarySQR.norm();
-            }
-                
+            if (inner_prod( n, pos_dir) < 0) n= -n;
+            
+            double val_hat[4];    
             for (int v=0; v<10; ++v)
             {
                 if (Numb[v]==NoIdx) continue;
@@ -103,26 +98,25 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
                     // Werte der Hutfunktion in P,Q,R,S
                     val_hat[k]= FE_P2CL::H(v,patch.GetBary(k));
                 
-                vn_Bary= FE_P2CL::H(v,BaryPQR) * nBary;
-
-                Point3DCL sum_vn; // val = v * n
+                double v_Bary= FE_P2CL::H(v,BaryPQR),
+                    sum_v= 0;
                 for (int k=0; k<3; ++k)
-                     sum_vn+= val_hat[k]*n[k];
+                     sum_v+= val_hat[k];
 
                 if (patch.IsQuadrilateral())
                 {
-                    Point3DCL sum_vnSQR;
+                    double sum_vSQR= 0;
                     for (int k=1; k<4; ++k)
-                        sum_vnSQR+= val_hat[k]*n[k];
-                    sum_vn+= patch.GetAreaFrac() * sum_vnSQR;
-                    vn_Bary+= patch.GetAreaFrac() * FE_P2CL::H(v,BarySQR) * nBarySQR;
+                        sum_vSQR+= val_hat[k];
+                    sum_v+= patch.GetAreaFrac() * sum_vSQR;
+                    v_Bary+= patch.GetAreaFrac() * FE_P2CL::H(v,BarySQR);
                 }
 
                 // Quadraturformel auf Dreieck, exakt bis zum Grad 2
-                const Point3DCL int_vn= ((1./12)*sum_vn + 0.75 * vn_Bary);
+                const double int_v= (1./12)*sum_v + 0.75 * v_Bary;
                 const double C= sigma*patch.GetFuncDet()/2;
                 for (int i=0; i<3; ++i)
-                    f.Data[Numb[v]+i]-= C * int_vn[i];
+                    f.Data[Numb[v]+i]-= C * int_v*n[i];
             }
         } // Ende der for-Schleife ueber die Kinder
     }
@@ -255,7 +249,7 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
 
 double func_abs( double x) { return std::abs(x); }
 
-void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorCL& Psi, VectorCL& b) const
+void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorCL& Psi, VectorCL& b) const
 // M, R, b describe the following terms used for reparametrization:  
 // b_i  = ( S(Phi0),           v_i     )
 // M_ij = ( v_j,               v_i     )
@@ -268,8 +262,8 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
 
-    SparseMatBuilderCL<double> R(&_R, num_unks, num_unks);
-    SparseMatBuilderCL<double> M(&_M, num_unks, num_unks);
+    SparseMatBuilderCL<double> R(&R_, num_unks, num_unks);
+    SparseMatBuilderCL<double> M(&M_, num_unks, num_unks);
     b.resize( 0);
     b.resize( num_unks);
     std::cerr << "entering SetupReparamSystem: " << num_unks << " levelset unknowns. ";
@@ -330,8 +324,8 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& _M, MatrixCL& _R, const VectorC
     }
     M.Build();
     R.Build();
-    std::cerr << _M.num_nonzeros() << " nonzeros in M, " 
-              << _R.num_nonzeros() << " nonzeros in R!" << std::endl;
+    std::cerr << M_.num_nonzeros() << " nonzeros in M, " 
+              << R_.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
 
 void LevelsetP2CL::SetTimeStep( double dt, double theta) 
@@ -478,7 +472,7 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
     MatrixCL M, A, C;
     SetupSmoothSystem( M, A); 
     C.LinComb( 1, M, diff, A);
-    PCG_SsorCL pcg( pc_, gm_.GetMaxIter(),gm_.GetTol());
+    PCG_SsorCL pcg( pc_, gm_.GetMaxIter(), gm_.GetTol());
     pcg.Solve( C, SmPhi, M*Phi.Data);
     std::cerr << "||SmPhi - Phi||_oo = " << supnorm( SmPhi-Phi.Data) << std::endl;
 }
@@ -533,7 +527,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 //                               InterfacePatchCL    
 //*****************************************************************************
 
-const double InterfacePatchCL::approxZero_= 1e-8;
+const double InterfacePatchCL::approxZero_= 1e-18;
 
 InterfacePatchCL::InterfacePatchCL() 
   : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
@@ -684,7 +678,10 @@ void InterfacePatchCL::DebugInfo( std::ostream& os, bool InfoForChild) const
     if (InfoForChild)
     {
         const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
-        os << "Patch on child " << ch_ << " with " << GetNumPoints() << " intersections:\nSigns: ";
+        os << "Patch on child " << ch_ << " with " << GetNumPoints() << " intersections:\n";
+        for (Uint i=0; i<GetNumPoints(); ++i)
+            os << "\tP" << i << " = " << GetPoint(i) << '\n';
+        os << "Signs of verts: ";
         for (int i=0; i<4; ++i)
             os << GetSign(data.Vertices[i]) << " ";
         os << std::endl;
