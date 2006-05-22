@@ -615,7 +615,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                 coupA[i][j]= cA;
                 coupA[j][i]= cA;
 
-                const double cM= rho.quadP2(i,j, absdet);
+// FIXME:                const double cM= rho.quadP2(i,j, absdet);
+                const double cM= rho[4]*P2DiscCL::GetMass( j, i)*absdet;
+//                if (std::fabs(cM - cMold) > 1e-10)
+//                    std::cerr << "cM: " << cM << "\tcMold: " << cMold
+//                              << "\tbei i, j: " << i << ", " << j << '\n';
                 coupM[i][j]= cM;
                 coupM[j][i]= cM;
             }
@@ -736,7 +740,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
                 coupA[i][j]= cA;
                 coupA[j][i]= cA;
 
-                const double cM= rho.quadP2(i,j, absdet);
+// FIXME:                const double cM= rho.quadP2(i,j, absdet);
+                const double cM= rho[4]*P2DiscCL::GetMass( j, i)*absdet;
                 coupM[i][j]= cM;
                 coupM[j][i]= cM;
             }
