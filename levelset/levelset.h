@@ -111,7 +111,8 @@ class InterfacePatchCL
     const RefRuleCL RegRef_;
     int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
     int             intersec_, ch_, Edge_[4];
-    double          PhiLoc_[10], sqrtDetATA_;
+    double          sqrtDetATA_;
+    LocalP2CL<>     PhiLoc_;
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
     BaryCoordCL     Bary_[4], BaryDoF_[10];
     Point2DCL       ab_;
