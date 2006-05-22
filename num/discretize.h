@@ -286,7 +286,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     T quad (double absdet) const
     {
         value_type sum= this->sum()/120.;
-        return (sum + 2./15.*(*this)[NumNodesC-1])*absdet;
+        return (sum + 0.125*(*this)[NumNodesC-1])*absdet;
     }
 
     // Folgende Spezialformeln nutzen die spezielle Lage der Stuetzstellen aus
