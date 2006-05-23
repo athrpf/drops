@@ -904,14 +904,7 @@ class SchurComplMatrixCL
 template<class PoissonSolverT>
 VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT>& M, const VectorCL& v)
 {
-    static VectorCL x( M.A_.num_cols());
-    if (x.size() != M.A_.num_cols())
-    {
-//        std::cerr << "> vector resized: old size was " << x.size();
-        x.resize( M.A_.num_cols() );
-//        std::cerr << ", new size is " << x.size() << '\n';
-    }
-    else x= 0.0;
+    VectorCL x( M.A_.num_cols());
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
 //    std::cerr << "> inner iterations: " << M.solver_.GetIter()
 //              << "\tresidual: " << M.solver_.GetResid() << std::endl;
