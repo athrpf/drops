@@ -47,9 +47,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
         GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
 
         // save velocities inside tetra for quadrature in u_loc
-        for(int i=0; i<4; ++i)
-	    u_loc[i]= vel.val( *sit->GetVertex(i));
-        u_loc[4]= vel.val( *sit, 0.25, 0.25, 0.25);
+        u_loc.assign( *sit, vel);
 
         for(int i=0; i<10; ++i)
             u_Grad[i]= dot( u_loc, Grad[i]);
