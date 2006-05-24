@@ -19,8 +19,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 // where v_i, v_j denote the ansatz functions.
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.GetLevel(),
-               idx= Phi.RowIdx->GetIdx();
+    const Uint lvl= Phi.GetLevel();
 
     SparseMatBuilderCL<double> E(&E_, num_unks, num_unks), 
                                H(&H_, num_unks, num_unks);
@@ -43,18 +42,13 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
         h_T= std::pow( absdet, 1./3.);
-        
-        // collect some information about the edges and verts of the tetra
-        // and save it in Numb and u_loc
+
+        // save information about the edges and verts of the tetra in Numb
+        GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
+
+        // save velocities inside tetra for quadrature in u_loc
         for(int i=0; i<4; ++i)
-        {
-            Numb[i]= sit->GetVertex(i)->Unknowns(idx);
 	    u_loc[i]= vel.val( *sit->GetVertex(i));
-        }
-        for(int i=0; i<6; ++i)
-        {
-            Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
-        }
         u_loc[4]= vel.val( *sit, 0.25, 0.25, 0.25);
 
         for(int i=0; i<10; ++i)

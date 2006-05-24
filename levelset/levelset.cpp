@@ -259,8 +259,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
 // and w(Psi) = sign(Phi0) * grad Psi / |grad Psi| the scaled gradient of Psi
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.GetLevel(),
-               idx= Phi.RowIdx->GetIdx();
+    const Uint lvl= Phi.GetLevel();
 
     SparseMatBuilderCL<double> R(&R_, num_unks, num_unks);
     SparseMatBuilderCL<double> M(&M_, num_unks, num_unks);
@@ -286,10 +285,8 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
         
-        for (int i=0; i<4; ++i)
-            Numb[i]= sit->GetVertex(i)->Unknowns(idx);
-        for (int i=0; i<6; ++i)
-            Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
+        GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
+
         // init Sign_Phi, w_loc
         for (int i=0; i<4; ++i)
         {
@@ -484,8 +481,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 // A = stiffness matrix for P2 elements
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
-    const Uint lvl= Phi.GetLevel(),
-               idx= Phi.RowIdx->GetIdx();
+    const Uint lvl= Phi.GetLevel();
 
     SparseMatBuilderCL<double> Mb(&M, num_unks, num_unks);
     SparseMatBuilderCL<double> Ab(&A, num_unks, num_unks);
@@ -504,10 +500,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
         
-        for (int i=0; i<4; ++i)
-            Numb[i]= sit->GetVertex(i)->Unknowns(idx);
-        for (int i=0; i<6; ++i)
-            Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
+        GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
         {
