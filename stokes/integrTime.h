@@ -112,19 +112,20 @@ class ISPreCL
 // to solve the linear systems.
 // It is well suited for InexactUzawa-Solvers.
 //**************************************************************************
+template <class SolverT>
 class ISNonlinearPreCL
 {
   private:
     MatrixCL&  A_;
     MatrixCL&  M_;
     double     kA_, kM_;
-    mutable PCG_SsorCL solver_;
+    mutable    SolverT& solver_;
 
   public:
-    ISNonlinearPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
-        double kA= 0., double kM= 1., double omega= 1.0)
+    ISNonlinearPreCL(SolverT& solver, MatrixCL& A_pr, MatrixCL& M_pr,
+        double kA= 0., double kM= 1.)
         : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM),
-          solver_( SSORPcCL( omega), 100, 1e-2, /*relative*/true)  {}
+          solver_( solver)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -252,10 +253,9 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //    double new_res;
 //    double old_res= norm( c);
     ssor_.Apply( A_, p, c);
-    p*= kA_;
 //    std::cerr << " residual: " <<  (new_res= norm( A_*p - c)) << '\t';
-//    std::cerr << " reduction: " << new_res/old_res << '\n';
-//    if (c.size() != p2_.size()) p2_.resize( c.size());
+//    std::cerr << " reduction: " << new_res/old_res << '\t';
+    p*= kA_;
 //    double mnew_res;
 //    double mold_res= norm( c);
     Vec p2_( c.size());
@@ -265,14 +265,15 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     p+= kM_*p2_;
 }
 
+template <class SolverT>
 template <typename Mat, typename Vec>
-void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+void ISNonlinearPreCL<SolverT>::Apply(const Mat&, Vec& p, const Vec& c) const
 {
     p= 0.0;
     solver_.Solve( A_, p, c);
-    p*= kA_;
     std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
               << "\tresidual: " <<  solver_.GetResid();
+    p*= kA_;
     if ( kM_ != 0.0) {
         Vec p2_( c.size());
         solver_.Solve( M_, p2_, c);
@@ -283,6 +284,33 @@ void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     }
 }
 
+/* with orthogonalization
+template <typename Mat, typename Vec>
+void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+{
+    VectorCL e( 1., p.size());
+    const double ee= p.size(); // = dot( e, e);
+    VectorCL c2( (dot(c, e)/ee)*e);
+    VectorCL c3( c - c2);
+std::cerr << "norm( c): " << norm( c) << "\tnorm( e): " << norm( e)
+          << "\tdot(c, e)/norm( c)/norm( e): " << dot(c, e)/norm( c)/ee << '\n';
+    p= 0.0;
+    solver_.Solve( A_, p, c3);
+    p+= c2;
+    std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
+              << "\tresidual: " <<  solver_.GetResid();
+    p*= kA_;
+    if ( kM_ != 0.0) {
+        Vec p2_( c.size());
+        solver_.Solve( M_, p2_, c);
+std::cerr << "norm( p2): " << norm( p2_);
+        std::cerr << "\t p2: iterations: " << solver_.GetIter()
+                  << "\tresidual: " <<  solver_.GetResid()
+                  << '\n';
+        p+= kM_*p2_;
+    }
+}
+*/
 
 template<class SmootherCL, class DirectSolverCL>
 void

@@ -208,14 +208,16 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
 //    ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
-    ISNonlinearPreCL isnonlinpc( prA.Data, prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
+    typedef PCG_SsorCL SPcSolverT;
+    SPcSolverT spcsolver( SSORPcCL( 1.0), 100, 0.02, /*relative*/ true);
+    ISNonlinearPreCL<SPcSolverT> isnonlinpc( spcsolver, prA.Data, prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
     typedef PCG_SsorCL ASolverT;
     ASolverT Asolver( SSORPcCL( 1.0), 500, 0.02, /*relative*/true);
     typedef SolverAsPreCL<ASolverT> APcT;
     APcT velpc( Asolver);
 
 //    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-    typedef InexactUzawaCL<APcT, ISNonlinearPreCL, APC_SYM> InexactUzawaNonlinear_CL;
+    typedef InexactUzawaCL<APcT, ISNonlinearPreCL<SPcSolverT>, APC_SYM> InexactUzawaNonlinear_CL;
     InexactUzawaNonlinear_CL inexactUzawaSolver( velpc, isnonlinpc, C.outer_iter, C.outer_tol);
     
 //    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
