@@ -10,14 +10,13 @@
 namespace DROPS
 {
 
+typedef std::vector<IdxT> ExtendedIdxT;  
+
 /// problem class for instationary two-pase Stokes flow
 
 template <class Coeff>
 class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
-  private:
-    FiniteElementT prFE_;
-    
   public:
     typedef ProblemCL<Coeff, StokesBndDataCL>      _base;
     typedef InstatStokes2PhaseP2P1CL<Coeff>        _self;
@@ -34,6 +33,11 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   const_DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
+  private:
+    FiniteElementT prFE_;       ///< controls FE type for pressure space
+    ExtendedIdxT   Xidx_;       ///< extended index for P1X_FE
+
+  public:    
     IdxDescCL    vel_idx;  ///< for velocity unknowns
     IdxDescCL    pr_idx;   ///< for pressure unknowns
     double       t;        ///< time
@@ -44,7 +48,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     MatDescCL    A, 
                  B,
                  M;
-    
+
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE)
         : _base(mgb, coeff, bdata), prFE_(prFE), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}  
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE)
@@ -55,8 +59,10 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     /// Create/delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
-    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
+    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0)
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); if (lsetp) { UpdateXNumbering( idx, *lsetp, true); } }
+    /// \brief Only used for P1X_FE
+    void UpdateXNumbering( IdxDescCL*, const LevelsetP2CL&, bool NumberingChanged= false);
     void DeleteNumberingVel( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
     void DeleteNumberingPr ( IdxDescCL* idx)
@@ -80,7 +86,14 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     /// Initialize velocity field
     void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
-
+    
+    /// Get FE type for pressure space
+    FiniteElementT GetPrFE() const { return prFE_; }
+    /// Get extended index (only makes sense for P1X_FE)
+    const ExtendedIdxT& GetXidx() const { return Xidx_; }
+    /// Get pressure solution on inner/outer part (especially for P1X_FE)
+    void GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart= true); // false = inner = Phi<0, true = outer = Phi>0 
+    
     /// \name Evaluate Solution
     //@{
     /// Get solution as FE-function for evaluation
@@ -88,7 +101,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { return const_DiscPrSolCL( &p, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution() const
         { return const_DiscVelSolCL( &v, &GetBndData().Vel, &GetMG(), t); }
-
+ 
     const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
         { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
