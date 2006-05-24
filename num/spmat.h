@@ -293,8 +293,6 @@ private:
     std::valarray<size_t> _colind;  // (_nz elements) column-number of corresponding entry in _val
     std::valarray<T>      _val;     // nonzero-entries
 
-    void resize (size_t rows, size_t cols, size_t nz)
-        { _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
     void resize_rows (size_t rows)            { _rows=rows; _rowbeg.resize(rows+1); }
     void resize_cols (size_t cols, size_t nz) { _cols=cols; _colind.resize(nz); }
     void resize_val  (size_t nz)              { _val.resize(nz); }
@@ -340,6 +338,8 @@ public:
     SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&);
 
+    void resize (size_t rows, size_t cols, size_t nz)
+        { _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
     void clear() { resize(0,0,0); }
 
     friend class SparseMatBuilderCL<T>;
@@ -685,7 +685,7 @@ void in (std::istream& is, SparseMatBaseCL<T>& A)
 {
     size_t numrows, numcols, numnz;
     is >> numrows >> numcols >> numnz;
-    A.resize(numrows, numcols, numnz);
+    A.resize( numrows, numcols, numnz);
     T* val= A.raw_val();
     size_t* row_beg= A.raw_row();
     size_t* col_ind= A.raw_col();
