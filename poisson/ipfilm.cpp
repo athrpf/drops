@@ -1,5 +1,5 @@
 //**************************************************************************
-// File:    ipfilm.cpp                                                    *
+// File:    ipfilm.cpp                                                     *
 // Content: test program for the instat. poisson-problem                   *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
 //          IGPM RWTH Aachen                                               *
@@ -42,7 +42,7 @@ class PoissonCoeffCL
     { 
 //        return 0;
         const double u= C.rho*9.81*C.dy*C.dy/2/C.mu*1e-3;
-    	return std::cos((p[0] + t*u)/C.dx*2*M_PI); 
+        return std::cos((p[0] + t*u)/C.dx*2*M_PI); 
     }
     static DROPS::Point3DCL Vel(const DROPS::Point3DCL& p, double)
     { 
@@ -55,8 +55,8 @@ class PoissonCoeffCL
 };
 
 
-double Zero(const DROPS::Point2DCL&, double) { return 0.0; }
-double Heat(const DROPS::Point2DCL&, double) { return C.Heat/C.lambda*1e-3; }
+double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
+double Heat(const DROPS::Point3DCL&, double) { return C.Heat/C.lambda*1e-3; }
 
 
 namespace DROPS 

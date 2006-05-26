@@ -83,7 +83,7 @@ class ParamCL
 class MatlabConnectCL
 { // holds the Matlab input matrices and Matlab output parameters
   private:
-    int Nz, Nyz, Nxyz; // N=number of points
+    int Ny, Nz, Nyz, Nxyz; // N=number of points
     double dx, dy, dz;
 
     double *T0, *T_in, *F,   // input  matrices: initial temp (Nxyz x 1), 
@@ -92,13 +92,27 @@ class MatlabConnectCL
                              //     max. iterations of solver (1 x 1)
   public:
     int GetNum( double t)                  const { return rd(t/C.dt); }
-    int GetNum( const DROPS::Point2DCL& p) const { return rd(p[0]*C.ny)*Nz + rd(p[1]*C.nz); } // p[i] in range [0.1] !!
     int GetNum( const DROPS::Point3DCL& p) const { return rd(p[0]/dx)*Nyz + rd(p[1]/dy)*Nz + rd(p[2]/dz); }
+    template<int Bnd>
+    int GetNumOnBnd( const DROPS::Point3DCL& p) const 
+    { 
+        switch(Bnd)
+        {
+            case 0: // y-z plane
+                return rd(p[1]/dy)*Nz + rd(p[2]/dz); 
+            case 1: // x-z plane
+                return rd(p[0]/dx)*Nz + rd(p[2]/dz); 
+            case 2: // x-y plane
+                return rd(p[0]/dx)*Ny + rd(p[1]/dy); 
+            default:
+                throw DROPS::DROPSErrCL( "MatlabConnectCL::GetNumOnBnd: unknown boundary!\n");
+        }
+    }
 
     double GetInitial( const DROPS::Point3DCL& p) const 
       { return T0[GetNum(p)]; };
-    double GetInflow( const DROPS::Point2DCL& p, double t) const
-      { return T_in[GetNum(p) + GetNum(t)*Nyz]; };
+    double GetInflow( const DROPS::Point3DCL& p, double t) const
+      { return T_in[GetNumOnBnd<0>(p) + GetNum(t)*Nyz]; };
     double GetRhs( const DROPS::Point3DCL& p, double t) const 
       { return F[GetNum(p) + GetNum(t)*Nxyz]; };
   	
@@ -116,7 +130,7 @@ class MatlabConnectCL
 
   	void Init( const ParamCL& P, mxArray *plhs[], const mxArray *prhs[])
   	{
-    	Nz= P.nz+1; Nyz=Nz*(P.ny+1); Nxyz= Nyz*(P.nx+1);
+    	Ny= P.ny+1; Nz= P.nz+1; Nyz=Ny*Nz; Nxyz= Nyz*(P.nx+1);
     	dx= P.lx/P.nx; dy= P.ly/P.ny; dz= P.lz/P.nz; 
 
 		// Check to make sure the first input arguments are double matrices.
@@ -178,11 +192,11 @@ class PoissonCoeffCL
     } 
 };
 
-double Zero(const DROPS::Point2DCL&, double) { return 0.0; }
-double HeatFlux(const DROPS::Point2DCL&, double) { return C.Heat*1e-3; }
-double HeatTemp(const DROPS::Point2DCL&, double) { return C.Heat; }
+double Zero(const DROPS::Point3DCL&, double) { return 0.0; }
+double HeatFlux(const DROPS::Point3DCL&, double) { return C.Heat*1e-3; }
+double HeatTemp(const DROPS::Point3DCL&, double) { return C.Heat; }
 
-double Inflow(const DROPS::Point2DCL& p, double t) { return MC.GetInflow(p,t); }
+double Inflow(const DROPS::Point3DCL& p, double t) { return MC.GetInflow(p,t); }
 
 namespace DROPS
 {

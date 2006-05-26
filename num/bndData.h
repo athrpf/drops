@@ -143,6 +143,7 @@ class BndDataCL
     inline BndSegT GetBndSeg( const EdgeCL&)   const;
     inline BndSegT GetBndSeg( const FaceCL&)   const;
            BndSegT GetBndSeg( BndIdxT idx)     const { return BndData_[idx]; }
+    bnd_val_fun    GetBndFun( BndIdxT idx)     const { return BndData_[idx].GetBndFun(); }
     /// \}
 };
 

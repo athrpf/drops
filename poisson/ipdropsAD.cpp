@@ -1,6 +1,6 @@
 //**************************************************************************
 // File:    ipdropsAD.cpp                                                  *
-// Content: ipdrops, test case for AD					   *
+// Content: ipdrops, test case for AD	                                   *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
 //          IGPM RWTH Aachen                                               *
 // Version: 0.1                                                            *
@@ -58,9 +58,9 @@ class PoissonCoeffCL
       { return DROPS::Point3DCL(0.); } // no convection
 };
 
-double SinusWave( const DROPS::Point2DCL& p, double t)
+double SinusWave( const DROPS::Point3DCL& p, double t)
 {
-    return C.q_h + 200e-3*sin((p[1]+t/0.2)*4*M_PI);
+    return C.q_h + 200e-3*sin((p[2]/C.zl+t/0.2)*4*M_PI);
 }
 
 
@@ -74,7 +74,7 @@ class MatConnect
     typedef std::pair<double, d_pair> cmp_key;
     typedef std::map<cmp_key, double*> node_map;
     typedef node_map::const_iterator ci;
-    typedef double (*BndFuncT)(const DROPS::Point2DCL&, double);
+    typedef DROPS::InstatPoissonBndDataCL::bnd_val_fun BndFuncT;
   
     node_map _NodeMap;
     static const DROPS::VectorCL* _BndData[6];
@@ -129,29 +129,29 @@ class MatConnect
       std::cerr << "Quadrature weights initialized!\n";
     }
     
-    template<int num> static int getLexNum(const DROPS::Point2DCL& p)
+    template<int num> static int getLexNum(const DROPS::Point3DCL& p)
     {
       switch(num)
       {
       	case 0: // y-z plane
       	{
-      	  int nY= static_cast<int>(_YLen*p[0]/_SpIncrY+0.5),  nZ= static_cast<int>(_ZLen*p[1]/_SpIncrZ+0.5);
+      	  int nY= static_cast<int>(p[1]/_SpIncrY+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
       	  return nZ*(_MeshRefY+1) + nY;
       	}
       	case 1: // x-z plane
       	{
-      	  int nX= static_cast<int>(_XLen*p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(_ZLen*p[1]/_SpIncrZ+0.5);
+      	  int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
       	  return nZ*(_MeshRefX+1) + nX;
       	}
       	case 2: default: // x-y plane
       	{
-      	  int nX= static_cast<int>(_XLen*p[0]/_SpIncrX+0.5),  nY= static_cast<int>(_YLen*p[1]/_SpIncrY+0.5);
+      	  int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nY= static_cast<int>(p[1]/_SpIncrY+0.5);
       	  return nY*(_MeshRefX+1) + nX;
       	}
       }
     }
   
-    template<int num> static double getBndVal(const DROPS::Point2DCL& p, double t)
+    template<int num> static double getBndVal(const DROPS::Point3DCL& p, double t)
     {
       int count= 0;
       const int nT= static_cast<int>(t/_DeltaT+0.5);   
@@ -173,30 +173,36 @@ class MatConnect
     template<int num> static void InitVec( DROPS::VectorCL& v, BndFuncT f)
     {
         double t= 0;
-        DROPS::Point2DCL p;
-        int n0, n1;
+        DROPS::Point3DCL p;
+        int n0, n1, c0, c1;
+        double d0, d1;
         switch (num)
         {
       	  case 0: case 1: // y-z plane
+            c0= 1;            c1= 2;
       	    n0= _MeshRefY;    n1= _MeshRefZ;
+            d0= _SpIncrY;     d1= _SpIncrZ;
             break;
       	  case 2: case 3: // x-z plane
+            c0= 0;            c1= 2;
       	    n0= _MeshRefX;    n1= _MeshRefZ;
+            d0= _SpIncrX;     d1= _SpIncrZ;
             break;
       	  case 4: case 5: default: // x-y plane
+            c0= 0;            c1= 1;
       	    n0= _MeshRefX;    n1= _MeshRefY;
+            d0= _SpIncrX;     d1= _SpIncrY;
         }
         const int FacePts= (n0+1)*(n1+1);
-        const double d0= 1./n0, d1= 1./n1;
 
         for (int it= 0; it<=_nt; ++it)
         {
             for (int i1= 0; i1<=n1; ++i1)
             {
-                p[1]= i1*d1;
+                p[c1]= i1*d1;
                 for (int i0= 0; i0<=n0; ++i0)
                 {
-                    p[0]= i0*d0;
+                    p[c0]= i0*d0;
                     const int idx= it*FacePts + getLexNum<num>(p);
                     v[idx]= f(p,t);
                 }
@@ -325,7 +331,7 @@ int MatConnect::_FacePtsYZ= 0;
 namespace DROPS // for Strategy
 {
 
-double getIsolatedBndVal(const Point2DCL&, double) { return 0.0; }
+double getIsolatedBndVal(const Point3DCL&, double) { return 0.0; }
 
 template<class Coeff>
 void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConnect& MatCon)

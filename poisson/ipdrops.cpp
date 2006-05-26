@@ -66,40 +66,26 @@ inline double GradZ(const DROPS::Point3DCL& p, double t) { return 0.0; }
 namespace DROPS 
 {
 
-class DirValCL
-{
-  private:
-    static MultiGridCL* _mg;
-    
-  public:
-    void SetMG( MultiGridCL* mg) { _mg= mg; }
-    template<int seg> static double dir_val(const DROPS::Point2DCL& p, double t)
-      { return Lsg(_mg->GetBnd().GetBndSeg(seg)->Map(p), t); }
-};
-
 class NeuValCL
 {
-  private:
-    static MultiGridCL* _mg;
-    
   public:
-    void SetMG( MultiGridCL* mg) { _mg= mg; }
-    template<int seg> static double neu_val(const DROPS::Point2DCL& p, double t)
+    template<int seg>
+    static double neu_val(const DROPS::Point3DCL& p, double t)
     { 
       switch (seg)
       {
         case 0:
-          return (-GradX(_mg->GetBnd().GetBndSeg(seg)->Map(p), t));
+          return (-GradX( p, t));
         case 1:
-          return GradX(_mg->GetBnd().GetBndSeg(seg)->Map(p), t);
+          return GradX( p, t);
         case 2:
-          return (-GradY(_mg->GetBnd().GetBndSeg(seg)->Map(p), t));
+          return (-GradY( p, t));
         case 3:
-          return GradY(_mg->GetBnd().GetBndSeg(seg)->Map(p), t);
+          return GradY( p, t);
         case 4:
-          return (-GradZ(_mg->GetBnd().GetBndSeg(seg)->Map(p), t));
+          return (-GradZ( p, t));
         case 5:
-          return GradZ(_mg->GetBnd().GetBndSeg(seg)->Map(p), t);
+          return GradZ( p, t);
         default:
         {
           std::cerr <<"error: neu_val";
@@ -108,9 +94,6 @@ class NeuValCL
       }
     }
 };
-
-MultiGridCL* DirValCL::_mg= NULL;
-MultiGridCL* NeuValCL::_mg= NULL;
 
 template<class Coeff>
 void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
@@ -369,9 +352,7 @@ int main()
     const bool isneumann[6]= 
       { false, false, false, false, false, false };
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-      { &DROPS::DirValCL::dir_val<0>, &DROPS::DirValCL::dir_val<1>,
-        &DROPS::DirValCL::dir_val<2>, &DROPS::DirValCL::dir_val<3>,
-        &DROPS::DirValCL::dir_val<4>, &DROPS::DirValCL::dir_val<5> };
+      { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg };
     */
 
     // Neumann boundary conditions 
@@ -386,11 +367,6 @@ int main()
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
-    
-    DROPS::DirValCL dvd;
-    DROPS::NeuValCL dvn;
-    dvd.SetMG( &mg);
-    dvn.SetMG( &mg);
     
     for (int count=1; count<=brick_ref; count++)
     {

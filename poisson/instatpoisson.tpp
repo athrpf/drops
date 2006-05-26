@@ -42,7 +42,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDat
 // Integrate neu_val() * phi_vert over face
 {
     const BndIdxT bidx= t.GetBndIdx(face);
-    Point2DCL vc2D[3];
+    Point3DCL vc[3];
     const VertexCL* v[3];
     const BndPointSegEqCL comp(bidx);
     
@@ -51,15 +51,68 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDat
     {
         if (VertOfFace(face,i)!=vert)
             v[k++]= t.GetVertex( VertOfFace(face,i) );
-        vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
+        vc[i]= v[i]->GetCoord();
+//        vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
     }
-    const double f0= bfun(vc2D[0], time);
-    const double f1= bfun(vc2D[1], time) +  bfun( vc2D[2], time);
-    const double f2= bfun(1./3.*(vc2D[0] + vc2D[1] + vc2D[2]), time);    //Barycenter of Face
+    const double f0= bfun(vc[0], time);
+    const double f1= bfun(vc[1], time) +  bfun( vc[2], time);
+    const double f2= bfun(1./3.*(vc[0] + vc[1] + vc[2]), time);    //Barycenter of Face
     const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
 
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_ptr T, scalar_instat_fun_ptr dalpha, double t) const
+{
+  src.Clear();
+  const Uint lvl = src.GetLevel(),
+             idx = src.RowIdx->GetIdx();
+  Point3DCL G[4];
+
+  double det;
+  double absdet;
+  IdxT UnknownIdx[4];
+  Quad2CL<> rhs, quad_a;
+
+//  StripTimeCL strip( &Coeff::f, tf);
+
+  for (MultiGridCL::const_TriangTetraIteratorCL
+    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
+    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    sit != send; ++sit)
+  {
+    P1DiscCL::GetGradients(G,det,*sit);
+    absdet= std::fabs(det);
+
+    quad_a.assign( *sit, dalpha, t);
+    const double int_a= quad_a.quad( absdet);
+    Point3DCL gradT;
+    
+    for(int i=0; i<4; ++i)
+    {
+      gradT+= G[i]*T(sit->GetVertex(i)->GetCoords(), t);
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
+                                                            : NoIdx;
+    }
+    
+    for(int i=0; i<4;++i)    // assemble row i
+    {
+      if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
+      {
+        src.Data[UnknownIdx[i]]-= int_a*inner_prod( gradT, G[i]);
+        if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
+          for (int f=0; f < 3; ++f)
+            if ( sit->IsBndSeg(FaceOfVert(i, f)) )
+            {
+              Point3DCL n;
+              sit->GetOuterNormal(FaceOfVert(i, f), n);
+              src.Data[UnknownIdx[i]]+= 
+                Quad2D(*sit, FaceOfVert(i, f), i, dalpha, t) * inner_prod( gradT, n);
+            }
+      }
+    }
+  }
+}
 
 template<class Coeff>
 void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const

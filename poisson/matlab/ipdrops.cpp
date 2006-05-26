@@ -84,29 +84,29 @@ class MatConnect
       _BndData[3]= S4; _BndData[4]= S5; _BndData[5]= S6;
     }
     
-    template<int num> static int getLexNum(const DROPS::Point2DCL& p)
+    template<int num> static int getLexNum(const DROPS::Point3DCL& p)
     {
       switch(num)
       {
       	case 0: // y-z plane
       	{
-      	  int nY= static_cast<int>(_YLen*p[0]/_SpIncrY+0.5),  nZ= static_cast<int>(_ZLen*p[1]/_SpIncrZ+0.5);
+      	  int nY= static_cast<int>(p[1]/_SpIncrY+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
       	  return nZ*(_MeshRefY+1) + nY;
       	}
       	case 1: // x-z plane
       	{
-      	  int nX= static_cast<int>(_XLen*p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(_ZLen*p[1]/_SpIncrZ+0.5);
+      	  int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
       	  return nZ*(_MeshRefX+1) + nX;
       	}
       	case 2: default: // x-y plane
       	{
-      	  int nX= static_cast<int>(_XLen*p[0]/_SpIncrX+0.5),  nY= static_cast<int>(_YLen*p[1]/_SpIncrY+0.5);
+      	  int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nY= static_cast<int>(p[1]/_SpIncrY+0.5);
       	  return nY*(_MeshRefX+1) + nX;
       	}
       }
     }
   
-    template<int num> static double getBndVal(const DROPS::Point2DCL& p, double t)
+    template<int num> static double getBndVal(const DROPS::Point3DCL& p, double t)
     {
       int count= 0;
       const int nT= static_cast<int>(t/_DeltaT+0.5);   
@@ -169,8 +169,9 @@ class MatConnect
       }
     }
     
-    static void setOutputData(double* sol2D)
-    {   
+    static void setOutputData(DROPS::VectorCL& sol2D, bool firstStep= false)
+    {
+      if (firstStep) _Count= 0;   
       ci p= _NodeMap.begin();
       double xc= p->first.first;
       while ((xc<_CutPos)&&(p!=_NodeMap.end()))
@@ -239,7 +240,7 @@ int MatConnect::_FacePtsYZ= 0;
 namespace DROPS // for Strategy
 {
 
-double getIsolatedBndVal(const Point2DCL& p, double t) { return 0.0; };
+double getIsolatedBndVal(const Point3DCL&, double) { return 0.0; };
 
 /*
 void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel)
@@ -378,7 +379,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
     //mexPrintf("    Norm des Residuums: %g\n", pcg_solver.GetResid());
     //Poisson.CheckSolution(exact_sol, Poisson.t);
     
-    MatCon->setOutputData(sol2D);
+    MatCon->setOutputData(sol2D, step==1);
   }
   
   *CGMaxIter= static_cast<double>(MaxIterCG);
