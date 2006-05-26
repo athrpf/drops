@@ -24,7 +24,7 @@ enum FiniteElementT
 ///   the difference to the scalar FE counterpart should be 128
 { 
     P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,  // for scalars
-    P1D_FE=4, 
+    P1D_FE=4, P1X_FE=5,
                       vecP2_FE= 130            // for vectors
 };
 
@@ -74,7 +74,8 @@ class IdxDescCL
     { 
         switch(fe) { 
             case P0_FE:       NumUnknownsTetra= 1; break;
-            case P1_FE:       NumUnknownsVertex= 1; break; 
+            case P1_FE:
+            case P1X_FE:      NumUnknownsVertex= 1; break; 
             case P1Bubble_FE: NumUnknownsVertex= NumUnknownsTetra= 1; break; 
             case P1D_FE:      NumUnknownsFace= 1; break;
             case P2_FE:       NumUnknownsVertex= NumUnknownsEdge= 1; break; 
