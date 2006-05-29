@@ -317,6 +317,62 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
 };
 
 
+template<class T=double>
+class Quad5CL: public GridFunctionCL<T>
+{
+  public:
+    typedef GridFunctionCL<T> base_type;
+    typedef typename base_type::value_type value_type;
+    typedef typename base_type::instat_fun_ptr instat_fun_ptr;
+
+    enum { NumNodesC= 15 };
+
+    static bool         HaveNodes;       // Sind die Stuetzstellen berechnet?
+    static BaryCoordCL  Node[NumNodesC]; // Stuetzstellen
+    static const double Wght[4];         // Gewichte
+
+  protected:
+    typedef Quad5CL<T> self_;
+    void MaybeInitNodes() const;
+
+
+  public:
+    Quad5CL(): base_type( value_type(), NumNodesC) { MaybeInitNodes(); }
+    Quad5CL(const value_type& t): base_type( t, NumNodesC) { MaybeInitNodes(); }
+
+    Quad5CL(const TetraCL&, instat_fun_ptr, double= 0.0);
+    Quad5CL(const LocalP2CL<value_type>&);
+    template <class PFunT> 
+      Quad5CL(const TetraCL&, const PFunT&, double= 0.0);
+    
+    // Every constructor must be prepared to setup the Nodes-array, thus we cannot
+    // use DROPS_DEFINE_VALARRAY_DERIVATIVE directly.
+    template <class X__>
+      explicit Quad5CL(const X__& x__): base_type( x__) { MaybeInitNodes(); }
+DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
+
+    inline self_&
+    assign(const TetraCL&, instat_fun_ptr , double= 0.0);
+    inline self_&
+    assign(const LocalP1CL<value_type>&);
+    inline self_&
+    assign(const LocalP2CL<value_type>&);
+    template <class P2FunT> 
+      inline self_&
+      assign(const TetraCL&, const P2FunT&, double= 0.0);
+
+    // Integration:
+    // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
+    // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
+    T quad (double absdet) const {
+        return absdet*(Wght[0]*(*this)[0]
+            + Wght[1]*(*this)[std::slice( 1, 4, 1)].sum()
+            + Wght[2]*(*this)[std::slice( 5, 4, 1)].sum()
+            + Wght[3]*(*this)[std::slice( 9, 6, 1)].sum());
+    }
+};
+
+
 class Quad3CL
 // contains cubatur on reference-tetra, that is exact up to degree 3, positive,
 // and uses only 8 points.

@@ -9,7 +9,7 @@ DIR = tests
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
-        mass
+        mass quad5
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -139,6 +139,12 @@ blockmat: \
 
 mass: \
     ../tests/mass.o ../misc/utils.o 
+	$(CC) -o $@ $^ $(LFLAGS)
+
+quad5: \
+    ../tests/quad5.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
+    ../num/fe.o ../num/discretize.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 # include common rules:

@@ -285,4 +285,124 @@ template<class T>
 
 }
 
+
+//**************************************************************************
+// Class: Quad5CL                                                          *
+//**************************************************************************
+
+template<class T>
+bool Quad5CL<T>::HaveNodes= false;
+
+template <class T>
+BaryCoordCL Quad5CL<T>::Node[NumNodesC];
+
+template<class T>
+const double Quad5CL<T>::Wght[4]= {
+    16./135.,                                 /*Node[0]*/
+    (2665.0 + 14.0*std::sqrt( 15.0))/37800.0, /*Node[1] bis Node[4]*/
+    (2665.0 - 14.0*std::sqrt( 15.0))/37800.0, /*Node[5] bis Node[8]*/
+    10./189.                                  /*Node[9] bis Node[14]*/
+};
+
+
+template<class T>
+  void
+  Quad5CL<T>::MaybeInitNodes() const
+{
+    if (HaveNodes) return;
+
+    Node[0]= BaryCoordCL( 0.25);
+    const double A1= (7.0 - std::sqrt( 15.0))/34.0,
+                 B1= (13.0 + 3.0*std::sqrt( 15.0))/34.0;
+    Node[1]= MakeBaryCoord( A1,A1,A1,B1);
+    Node[2]= MakeBaryCoord( A1,A1,B1,A1);
+    Node[3]= MakeBaryCoord( A1,B1,A1,A1);
+    Node[4]= MakeBaryCoord( B1,A1,A1,A1);
+    const double A2= (7.0 + std::sqrt( 15.0))/34.0,
+                 B2= (13.0 - 3.0*std::sqrt( 15.0))/34.0;
+    Node[5]= MakeBaryCoord( A2,A2,A2,B2);
+    Node[6]= MakeBaryCoord( A2,A2,B2,A2);
+    Node[7]= MakeBaryCoord( A2,B2,A2,A2);
+    Node[8]= MakeBaryCoord( B2,A2,A2,A2);
+    const double A3= (10.0 - 2.0*std::sqrt( 15.0))/40.0,
+                 B3= (10.0 + 2.0*std::sqrt( 15.0))/40.0;
+    Node[9] = MakeBaryCoord( A3,A3,B3,B3);
+    Node[10]= MakeBaryCoord( A3,B3,A3,B3);
+    Node[11]= MakeBaryCoord( A3,B3,B3,A3);
+    Node[12]= MakeBaryCoord( B3,A3,A3,B3);
+    Node[13]= MakeBaryCoord( B3,A3,B3,A3);
+    Node[14]= MakeBaryCoord( B3,B3,A3,A3);
+
+    HaveNodes= true;
+}
+
+
+template<class T>
+  inline Quad5CL<T>&
+  Quad5CL<T>::assign(const TetraCL& s, instat_fun_ptr f , double t)
+{
+    (*this)[0]= f( GetBaryCenter( s), t);
+    for (Uint i= 1; i < NumNodesC; ++i)
+        (*this)[i]= f( GetWorldCoord( s, Node[i]), t);
+    return *this;
+}
+
+template<class T>
+  inline Quad5CL<T>&
+  Quad5CL<T>::assign(const LocalP1CL<value_type>& f)
+{
+    for (size_t i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f( Node[i]);
+    return *this;
+}
+
+template<class T>
+  inline Quad5CL<T>&
+  Quad5CL<T>::assign(const LocalP2CL<value_type>& f)
+{
+    for (size_t i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f( Node[i]);
+    return *this;
+}
+
+template<class T>
+  template <class PFunT> 
+    inline Quad5CL<T>&
+    Quad5CL<T>::assign(const TetraCL& s, const PFunT& f, double t)
+{
+    const double oldt= f.GetTime();
+    const_cast<PFunT&>( f).SetTime( t);
+    for (size_t i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f.val( s, Node[i]);
+    const_cast<PFunT&>( f).SetTime( oldt);
+    return *this;
+}
+
+template<class T>
+  Quad5CL<T>::Quad5CL(const TetraCL& s,
+      instat_fun_ptr f, double t)
+  : base_type( value_type(), NumNodesC)  
+{
+    MaybeInitNodes();
+    this->assign( s, f, t);
+}
+
+template<class T>
+  Quad5CL<T>::Quad5CL(const LocalP2CL<value_type>& f)
+  : base_type( value_type(), NumNodesC)  
+{
+    MaybeInitNodes();
+    this->assign( f);
+}
+
+template<class T>
+  template <class PFunT> 
+    Quad5CL<T>::Quad5CL(const TetraCL& s, const PFunT& f, double t)
+  : base_type( value_type(), NumNodesC)  
+{
+    MaybeInitNodes();
+    this->assign( s, f, t);
+}
+
+
 } // end of namespace DROPS
