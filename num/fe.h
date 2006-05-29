@@ -56,6 +56,14 @@ class FE_P1CL
     static inline double H( Uint dof, double v1, double v2, double v3);
     /// \}
 
+    /// \name Shape functions on the reference tetrahedron, barycentric coordinates
+    /// \{
+    static inline double H0(const BaryCoordCL& p) { return p[0]; }
+    static inline double H1(const BaryCoordCL& p) { return p[1]; }
+    static inline double H2(const BaryCoordCL& p) { return p[2]; }
+    static inline double H3(const BaryCoordCL& p) { return p[3]; }
+    /// \}
+
     /// \name Gradients of the shape functions on the reference tetrahedron.
     /// \note To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
     /// transformation that maps the reference tetrahefron to T.
@@ -487,6 +495,8 @@ public:
       GetDoF(const TetraCL&, _Cont&) const;
     inline DataT
     val(const TetraCL&, double, double, double) const;
+    inline DataT
+    val(const TetraCL&, const BaryCoordCL&) const;
     template<class _Cont>
       inline Data
       val(const _Cont&, double, double, double) const;
@@ -742,6 +752,8 @@ public:
       val(const _Cont&, double, double, double) const;
     inline DataT
     val(const TetraCL& s, double v1, double v2, double v3) const;
+    inline DataT
+    val(const TetraCL& s, const BaryCoordCL&) const;
 };
 
 

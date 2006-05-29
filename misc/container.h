@@ -438,6 +438,14 @@ inline SVectorCL<_Size> std_basis(Uint i)
     return ret;
 }
 
+inline BaryCoordCL
+MakeBaryCoord(double a, double b, double c, double d)
+{
+    BaryCoordCL ret( Uninitialized);
+    ret[0]= a; ret[1]= b; ret[2]= c; ret[3]= d;
+    return ret;
+}
+
 
 template <Uint _Rows, Uint _Cols>
 class SMatrixCL : public SVectorCL<_Rows*_Cols>

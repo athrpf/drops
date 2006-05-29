@@ -260,6 +260,16 @@ template<class Data, class _BndData, class _VD>
 }
 
 template<class Data, class _BndData, class _VD>
+    inline Data
+    P1EvalCL<Data, _BndData, _VD>::val(const TetraCL& s, const BaryCoordCL& p) const
+{
+    return  GetDoF( *s.GetVertex( 0))*FE_P1CL::H0( p)
+           +GetDoF( *s.GetVertex( 1))*FE_P1CL::H1( p)
+           +GetDoF( *s.GetVertex( 2))*FE_P1CL::H2( p)
+           +GetDoF( *s.GetVertex( 3))*FE_P1CL::H3( p);
+}
+
+template<class Data, class _BndData, class _VD>
   template<class _Cont>
     inline Data
     P1EvalCL<Data, _BndData, _VD>::val(const _Cont& c, double v1, double v2, double v3) const
@@ -492,6 +502,21 @@ template<class Data, class _BndData, class _VD>
            +GetDoF( *s.GetEdge( 5))*FE_P2CL::H9( v1, v2, v3);
 }
 
+template<class Data, class _BndData, class _VD>
+  inline Data
+  P2EvalCL<Data, _BndData, _VD>::val(const TetraCL& s, const BaryCoordCL& p) const
+{
+    return  GetDoF( *s.GetVertex( 0))*FE_P2CL::H0( p)
+           +GetDoF( *s.GetVertex( 1))*FE_P2CL::H1( p)
+           +GetDoF( *s.GetVertex( 2))*FE_P2CL::H2( p)
+           +GetDoF( *s.GetVertex( 3))*FE_P2CL::H3( p)
+           +GetDoF( *s.GetEdge( 0))*FE_P2CL::H4( p)
+           +GetDoF( *s.GetEdge( 1))*FE_P2CL::H5( p)
+           +GetDoF( *s.GetEdge( 2))*FE_P2CL::H6( p)
+           +GetDoF( *s.GetEdge( 3))*FE_P2CL::H7( p)
+           +GetDoF( *s.GetEdge( 4))*FE_P2CL::H8( p)
+           +GetDoF( *s.GetEdge( 5))*FE_P2CL::H9( p);
+}
 
 template<class Data, class _BndData, class _VD>
 inline bool P2EvalCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t) const

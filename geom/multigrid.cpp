@@ -164,6 +164,14 @@ Point3DCL GetWorldCoord(const TetraCL& t, const SVectorCL<3>& c)
           +c[2]*t.GetVertex(3)->GetCoord();
 }
 
+Point3DCL GetWorldCoord(const TetraCL& t, const SVectorCL<4>& c)
+{
+    return c[0]*t.GetVertex(0)->GetCoord()
+          +c[1]*t.GetVertex(1)->GetCoord()
+          +c[2]*t.GetVertex(2)->GetCoord()
+          +c[3]*t.GetVertex(3)->GetCoord();
+}
+
 Point3DCL GetWorldCoord(const TetraCL& t, Uint face, const SVectorCL<2>& c)
 {
     return (1. -c[0] -c[1])*t.GetVertex(VertOfFace(face, 0))->GetCoord()

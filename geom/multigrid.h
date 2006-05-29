@@ -458,6 +458,8 @@ Point3DCL GetBaryCenter(const TetraCL& t, Uint face);
 
 Point3DCL GetWorldCoord(const TetraCL&, const SVectorCL<3>&);
 Point3DCL GetWorldCoord(const TetraCL&, Uint face, const SVectorCL<2>&);
+// barycentric coordinates:
+Point3DCL GetWorldCoord(const TetraCL&, const SVectorCL<4>&);
 
 SVectorCL<3> FaceToTetraCoord(const TetraCL& t, Uint f, SVectorCL<2> c);
 
