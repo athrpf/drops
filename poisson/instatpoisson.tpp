@@ -41,10 +41,8 @@ void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDataCL::bnd_val_fun bfun, double time)
 // Integrate neu_val() * phi_vert over face
 {
-    const BndIdxT bidx= t.GetBndIdx(face);
     Point3DCL vc[3];
     const VertexCL* v[3];
-    const BndPointSegEqCL comp(bidx);
     
     v[0]= t.GetVertex(vert);
     for (Uint i=0, k=1; i<3; ++i)
@@ -52,12 +50,11 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDat
         if (VertOfFace(face,i)!=vert)
             v[k++]= t.GetVertex( VertOfFace(face,i) );
         vc[i]= v[i]->GetCoord();
-//        vc2D[i]= std::find_if( v[i]->GetBndVertBegin(), v[i]->GetBndVertEnd(), comp)->GetCoord2D();
     }
     const double f0= bfun(vc[0], time);
     const double f1= bfun(vc[1], time) +  bfun( vc[2], time);
     const double f2= bfun(1./3.*(vc[0] + vc[1] + vc[2]), time);    //Barycenter of Face
-    const double absdet= FuncDet2D(v[1]->GetCoord() - v[0]->GetCoord(), v[2]->GetCoord() - v[0]->GetCoord());
+    const double absdet= FuncDet2D(vc[1] - vc[0], vc[2] - vc[0]);
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
 
@@ -74,8 +71,6 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
   IdxT UnknownIdx[4];
   Quad2CL<> rhs, quad_a;
 
-//  StripTimeCL strip( &Coeff::f, tf);
-
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
     send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
@@ -90,7 +85,7 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
     
     for(int i=0; i<4; ++i)
     {
-      gradT+= G[i]*T(sit->GetVertex(i)->GetCoords(), t);
+      gradT+= G[i]*T(sit->GetVertex(i)->GetCoord(), t);
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
                                                             : NoIdx;
     }
