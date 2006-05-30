@@ -220,6 +220,11 @@ class FE_P2CL
                + c[8] * H8( v1, v2, v3) + c[9] * H9( v1, v2, v3);
       }
 
+    // pt[0]...pt[numpt-1] are coordinates where the shape-functions are evaluated.
+    // v is an array of 10 valarrays. They are resized to have numpt components.
+    // v[i] contains H_i( pt[0])...H_i( pt[numpt-1])
+    static void ApplyAll(Uint numpt, const BaryCoordCL* const pt, std::valarray<double>* v);
+
     // gradients of the shape functions on the reference tetrahedron.
     // To obtain the gradient on tetra T: See comments in FE_P1CL.
     static inline SVectorCL<3> DH0Ref(double, double, double);
