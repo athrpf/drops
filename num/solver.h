@@ -559,7 +559,7 @@ void GMRES_Update(Vec &x, int k, const Mat &H, const Vec &s, const std::vector<V
     for ( int i=0; i<=k; ++i )
         x += y[i] * v[i];
 }
-
+enum PreMethGMRES { R, L};
 //-----------------------------------------------------------------------------
 // GMRES: The return value indicates convergence within max_iter (input)
 // iterations (true), or no convergence within max_iter iterations (false).
@@ -575,12 +575,14 @@ void GMRES_Update(Vec &x, int k, const Mat &H, const Vec &s, const std::vector<V
 //     if false, stop if |M^(-1)( b - Ax)| <= tol.
 // calculate2norm - If true, the unpreconditioned (absolute) residual is
 //     calculated in every step for debugging. This is rather expensive.
+// method - If  R, solve the right-preconditioned GMRES: A*M^(-1)*u = b, u=Mx
+//                 if L,   solve the left-preconditioned GMRES:   M^(-1)*A*x= M^(-1)*b,
 //-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename PreCon>
 bool
 GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
       int /*restart parameter*/ m, int& max_iter, double& tol,
-      bool measure_relative_tol= true, bool calculate2norm= false)
+      bool measure_relative_tol= true, bool calculate2norm= false, PreMethGMRES method =  R)
 {
     m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
 
@@ -588,15 +590,23 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     Vec               s( m), cs( m), sn( m), w( b.size()), r( b.size());
     std::vector<Vec>  v( m);
     double            beta, normb, resid;
-
+    Vec z(x.size()), t(x.size());
     for (int i= 0; i < m; ++i)
         v[i].resize( b.size());
-
-    M.Apply( A, r, Vec( b-A*x));
-    beta= norm( r);
-
-    M.Apply( A, w, b);
-    normb= norm( w);
+     
+     if (method ==  R)
+     {
+      r= b-A*x;  
+      beta= norm( r); 
+      normb= norm(b);  
+     }
+     else
+     {  
+     M.Apply( A, r, Vec( b-A*x));    
+     beta= norm( r);
+     M.Apply( A, w, b);  
+     normb= norm( w);  
+     }
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
     resid = beta/normb;
@@ -614,7 +624,12 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
         int i;
         for (i= 0; j <= max_iter; ++i, ++j) {
-            M.Apply( A, w, A*v[i]);
+            if (method ==  R R)
+              {
+                M.Apply( A, w, v[i]);  
+                w=A*w; 
+              } 
+            else M.Apply( A, w, A*v[i]);   
             for (int k= 0; k <= i; ++k ) {
                 H( k, i)= dot( w, v[k]);
                 w-= H( k, i)*v[k];
@@ -635,22 +650,48 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
             resid= std::abs( s[i+1])/normb;
             if (calculate2norm == true) { // debugging aid
                 Vec y( x);
-                GMRES_Update( y, i, H, s, v);
+                if (method ==  R)
+                 {
+                  z=0.;
+                  GMRES_Update( z, i, H, s, v); 
+                  M.Apply( A, t, z); 
+                  y+=t;  
+                 }
+                else GMRES_Update( y, i, H, s, v);
                 double resid2= norm( Vec( b - A*y));
                 std::cerr << "GMRES: absolute residual 2-norm: " << resid2
                           << "\tabsolute preconditioned residual 2-norm: "
                           << std::fabs( s[i+1]) << '\n';
             }
             if (resid <= tol) {
-                GMRES_Update( x, i, H, s, v);
+                if (method ==  R)
+                 {
+                  z=0.;
+                  GMRES_Update( z, i, H, s, v);  
+                  M.Apply( A, t, z); 
+                  x+=t;  
+                 }
+                else GMRES_Update( x, i, H, s, v);   
                 tol= resid;
                 max_iter= j;
                 return true;
             }
         }
-        GMRES_Update( x, i, H, s, v);
-        M.Apply( A, r, Vec( b - A*x));
-        beta= norm( r);
+        
+        if (method ==  R)
+        {
+          z=0.;
+          GMRES_Update( z, i, H, s, v); 
+          M.Apply( A, t, z); 
+          x+=t; 
+          r= b-A*x;
+        }
+        else
+        { 
+          GMRES_Update( x, i, H, s, v);   
+          M.Apply( A, r, Vec( b - A*x));   
+        } 
+        beta=norm(r); 
         resid= beta/normb;
         if (resid <= tol) {
             tol= resid;
@@ -1027,67 +1068,150 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
 //               tolerance was reached
 //      tol  --  the residual after the final iteration
 //
-//
-// m -- truncation parameter; only m >= 1 residual vectors are kept; the
-//     one with the smallest a (in modulus) is overwritten by the
-//     new vector sn (min-alpha strategy).
-// measure_relative_tol -- If true, stop if |b - Ax|/|b| <= tol,
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
 //     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
 //  
 //*****************************************************************
 template <class Mat, class Vec, class Preconditioner>
 bool
-GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
-    int m, int& max_iter, double& tol, bool measure_relative_tol= true)
+GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
+    int /*truncation parameter m*/, int& max_iter, double& tol,
+    bool measure_relative_tol= true)
 {
-    m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
-
     Vec r( b - A*x);
-    Vec sn( b.size()), vn( b.size());
-    std::vector<Vec> s, v;
-    std::vector<double> a( m);
-
+    std::vector<Vec> s( 1), v( 1); // Positions s[0], v[0] are unused below.
     double normb= norm( b);
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
-    double resid= norm( r)/normb;
+    double resid= -1.0;
 
     for (int k= 0; k < max_iter; ++k) {
-        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
-        if (resid < tol) {
+        if ((resid= norm( r)/normb) < tol) {
             tol= resid;
             max_iter= k;
             return true;
         }
-        M.Apply( A, sn, r);
-        vn= A*sn;
-        for (int i= 0; i < k && i < m; ++i) {
-            const double alpha= dot( vn, v[i]);
-            a[i]= alpha;
-            vn-= alpha*v[i];
-            sn-= alpha*s[i];
+//        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+        s.push_back( Vec( b.size()));
+        M.Apply( A, s[k+1], r);
+        v.push_back( A*s[k+1]);
+        for (int i= 1; i <= k; ++i) {
+            const double alpha= dot( v[k+1], v[i]);
+            v[k+1]-= alpha*v[i];
+            s[k+1]-= alpha*s[i];
         }
-        const double beta= norm( vn);
-        vn/= beta;
-        sn/= beta;
-        const double gamma= dot( r, vn);
-        x+= gamma*sn;
-        r-= gamma*vn;
-        resid= norm( r)/normb;
-        if (k < m) {
-            s.push_back( sn);
-            v.push_back( vn);
+        const double beta= norm( v[k+1]);
+        v[k+1]/= beta;
+        s[k+1]/= beta;
+        const double gamma= dot( r, v[k+1]);
+        x+= gamma*s[k+1];
+        r-= gamma*v[k+1];
+    }
+    tol= resid;
+    return false;
+}
+//*****************************************************************
+template <class Mat, class Vec, class Preconditioner>
+bool
+GCR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
+    int /*truncation parameter m*/, int& max_iter, double& tol,
+    bool measure_relative_tol= true, std::ostream *os)
+{
+    Vec r( b - A*x);
+    std::vector<Vec> s( 1), v( 1); // Positions s[0], v[0] are unused below.
+    double normb= norm( b);
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
+    double resid= -1.0;
+
+    for (int k= 0; k < max_iter; ++k) {
+        if ((resid= norm( r)/normb) < tol) {
+            tol= resid;
+            max_iter= k;
+            return true;
         }
-        else {
-            int min_idx= 0;
-            double a_min= std::fabs( a[0]); // m >= 1, thus this access is valid.
-            for (int i= 1; i < k && i < m; ++i)
-                if ( std::fabs( a[i]) < a_min) {
-                    min_idx= i;
-                    a_min= std::fabs( a[i]);
-                }
-            s[min_idx]= sn;
-            v[min_idx]= vn;
+        *os << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+        s.push_back( Vec( b.size()));
+        M.Apply( A, s[k+1], r);
+        v.push_back( A*s[k+1]);
+        for (int i= 1; i <= k; ++i) {
+            const double alpha= dot( v[k+1], v[i]);
+            v[k+1]-= alpha*v[i];
+            s[k+1]-= alpha*s[i];
         }
+        const double beta= norm( v[k+1]);
+        v[k+1]/= beta;
+        s[k+1]/= beta;
+        const double gamma= dot( r, v[k+1]);
+        x+= gamma*s[k+1];
+        r-= gamma*v[k+1];
+    }
+    tol= resid;
+    return false;
+}
+
+//*****************************************************************
+// GMRESR
+//
+// GMRESR solves the unsymmetric linear system Ax = b 
+// using the GMRES Recursive method;
+//
+// The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within
+// max_iter iterations (false).
+//
+// Upon successful return, output arguments have the following values:
+//  
+//        x  --  approximate solution to Ax = b
+// max_iter  --  the number of iterations performed before the
+//               tolerance was reached
+//      tol  --  the residual after the final iteration
+//
+// measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+//     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
+//  
+//*****************************************************************
+template <class Mat, class Vec, class Preconditioner>
+bool
+GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
+    int /*restart parameter m*/ m, int& max_iter, int& inner_max_iter, double& tol, double& inner_tol,
+    bool measure_relative_tol= true, PreMethGMRES method =  R)
+{  Vec r( b - A*x);
+    std::vector<Vec> u(1), c(1); // Positions u[0], c[0] are unused below.
+    double normb= norm( b);
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
+    double resid= -1.0;
+
+    for (int k= 0; k < max_iter; ++k) {
+        if ((resid= norm( r)/normb) < tol) {
+            tol= resid;
+            max_iter= k;
+            return true;
+        }
+        std::cerr << "GMRESR: k: " << k << "\tresidual: " << resid << '\n';
+        u.push_back( Vec( b.size()));
+        u[k+1]=0;
+        inner_tol=0.0;
+        double in_tol = inner_tol;
+        int in_max_iter = inner_max_iter;
+        GMRES(A, u[k+1], r, M, m, in_max_iter, in_tol, true, false, method);
+        std::cerr << "norm of u_k_0: "<<norm(u[k+1])<<"\n";
+        std::cerr << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << '\n';
+        if (norm(A*u[k+1]-r)>0.999*norm(r) and norm(u[k+1]) < 1e-3) 
+          {
+            u[k+1] = transp_mul(A, r); 
+            std::cerr<<"LSQR switch!\n";
+          }       
+        c.push_back( A*u[k+1]);
+        for (int i= 1; i <= k; ++i) {
+            const double alpha= dot( c[k+1], c[i]);
+            c[k+1]-= alpha*c[i];
+            u[k+1]-= alpha*u[i];
+        }
+        const double beta= norm( c[k+1]);
+        c[k+1]/= beta;
+        u[k+1]/= beta;
+        const double gamma= dot( r, c[k+1]);
+        x+= gamma*u[k+1];
+        r-= gamma*c[k+1];
     }
     tol= resid;
     return false;
@@ -1244,10 +1368,10 @@ class GMResSolverCL : public SolverBaseCL
   private:
     PC  pc_;
     int restart_;
-
+    PreMethGMRES method_;
   public:
-    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol, bool relative= true)
-        : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart) {}
+    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol, bool relative= true, PreMethGMRES method = R)
+        : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart), method_(method){}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
@@ -1258,14 +1382,14 @@ class GMResSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
-        GMRES(A, x, b, pc_, restart_, _iter, _res, rel_);
+        GMRES(A, x, b, pc_, restart_, _iter, _res, rel_, method_);
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
-        GMRES(A, x, b, pc_, restart_, numIter, resid, rel_);
+        GMRES(A, x, b, pc_, restart_, numIter, resid, rel_, method_);
     }
 };
 
@@ -1325,6 +1449,51 @@ class GCRSolverCL : public SolverBaseCL
         GCR( A, x, b, pc_, truncate_, _iter, _res, rel_);
         if (output_ != 0)
             *output_ << "GCRSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl; 
+    }  
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        GCR(A, x, b, pc_, numIter, resid, rel_);
+        if (output_ != 0)
+            *output_ << "GCRSolverCL: iterations: " << GetIter()
+                    << "\tresidual: " << GetResid() << std::endl;     
+    }
+};
+// GMRESR
+template <typename PC>
+class GMResRSolverCL : public SolverBaseCL
+{
+  private:
+    PC  pc_;
+    int restart_;
+    int inner_maxiter_;
+    double inner_tol_;
+    PreMethGMRES method_;
+  public:
+    GMResRSolverCL(const PC& pc, int restart, int maxiter, int  inner_maxiter,
+        double tol, double  inner_tol, bool relative= true, PreMethGMRES method =  R, std::ostream* output= 0)
+        : SolverBaseCL( maxiter, tol, relative, output), pc_(pc), restart_(restart),
+         inner_maxiter_( inner_maxiter), inner_tol_(inner_tol), method_(method){}
+
+    PC&       GetPc      ()       { return pc_; }
+    const PC& GetPc      () const { return pc_; }
+    int       GetRestart () const { return restart_; }
+    void   SetInnerTol     (double tol) { inner_tol_= tol; }
+    void   SetInnerMaxIter (int iter)   { inner_maxiter_= iter; }
+    
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        GMRESR(A, x, b, pc_, restart_, _iter, inner_maxiter_, _res, inner_tol_, rel_, method_);
+        if (output_ != 0)
+            *output_ << "GmresRSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl;
+            std::cerr << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
     }
     template <typename Mat, typename Vec>
@@ -1332,9 +1501,11 @@ class GCRSolverCL : public SolverBaseCL
     {
         resid=   _tol;
         numIter= _maxiter;
-        GCR( A, x, b, pc_, truncate_, numIter, resid, rel_);
+        GMRESR(A, x, b, pc_, restart_, numIter, inner_maxiter_, resid, inner_tol_, rel_, method_);
         if (output_ != 0)
-            *output_ << "GCRSolverCL: iterations: " << GetIter()
+            *output_ << "GmresRSolverCL: iterations: " << GetIter()
+                     << "\tresidual: " << GetResid() << std::endl;
+            std::cerr << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
     }
 };
