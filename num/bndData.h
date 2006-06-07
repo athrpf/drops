@@ -68,7 +68,7 @@ class BndSegDataCL
     bool        WithUnknowns() const { return bc_ & 1; }
     bool        IsDirichlet()  const { return bc_==Dir0BC || bc_==DirBC; }
     bool        IsNeumann()    const { return bc_==Nat0BC || bc_==NatBC; }
-    bool	IsPeriodic()   const { return bc_==Per1BC || bc_==Per2BC ; }
+    bool        IsPeriodic()   const { return bc_==Per1BC || bc_==Per2BC ; }
     BndCondT    GetBC()        const { return bc_; }
     bnd_val_fun GetBndFun()    const { return bnd_val_; }
     BndValT     GetBndVal( const Point3DCL& p, double t= 0.0) const { return bnd_val_( p, t); }
@@ -127,8 +127,6 @@ class BndDataCL
     inline BndValT GetDirBndValue( const VertexCL&, double) const;
     inline BndValT GetDirBndValue( const EdgeCL&, double)   const;
     inline BndValT GetDirBndValue( const FaceCL&, double)   const;
-    inline BndValT GetNeuBndValue( const VertexCL&, double) const;
-    inline BndValT GetNeuBndValue( const EdgeCL&, double)   const;
     inline BndValT GetNeuBndValue( const FaceCL&, double)   const;
 
     inline BndValT GetDirBndValue( const VertexCL& v) const { return GetDirBndValue( v, 0); }
@@ -409,17 +407,6 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const VertexCL& v, double t) 
 }
 
 template<class BndValT>
-inline BndValT BndDataCL<BndValT>::GetNeuBndValue( const VertexCL& v, double t) const
-/// Returns value of the Neumann boundary value. 
-/// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( BndData_[it->GetBndIdx()].IsNeumann() )
-            return BndData_[it->GetBndIdx()].GetBndVal( v.GetCoord(), t);
-    throw DROPSErrCL("GetNeuBndValue(VertexCL): No Neumann Boundary Segment!");
-}
-
-template<class BndValT>
 inline BndValT BndDataCL<BndValT>::GetDirBndValue( const EdgeCL& e, double t) const
 /// Returns value of the Dirichlet boundary value. 
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
@@ -428,17 +415,6 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const EdgeCL& e, double t) co
         if ( BndData_[*it].IsDirichlet() )
             return BndData_[*it].GetBndVal( GetBaryCenter(e), t);
     throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
-}
-
-template<class BndValT>
-inline BndValT BndDataCL<BndValT>::GetNeuBndValue( const EdgeCL& e, double t) const
-/// Returns value of the Neumann boundary value. 
-/// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
-{
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( BndData_[*it].IsNeumann() )
-            return BndData_[*it].GetBndVal( GetBaryCenter(e), t);
-    throw DROPSErrCL("GetNeuBndValue(EdgeCL): No Neumann Boundary Segment!");
 }
 
 template<class BndValT>
