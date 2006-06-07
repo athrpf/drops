@@ -37,7 +37,7 @@ class CouplLevelsetStokesCL
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
 
-    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data); }
+    void SetTimeStep( double dt) { _dt= dt; _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data); _LvlSet.SetTimeStep( dt); }
        
     void InitStep();
     // perform fixed point iteration
@@ -76,7 +76,7 @@ class CouplLevelsetStokes2PhaseCL
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
 
-    void SetTimeStep( double dt) { _dt= dt; }
+    void SetTimeStep( double dt) { _dt= dt; _LvlSet.SetTimeStep( dt); }
        
     void InitStep();
     // perform fixed point iteration
@@ -117,7 +117,7 @@ class CouplLevelsetNavStokes2PhaseCL
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
 
-    void SetTimeStep( double dt) { _dt= dt; }
+    void SetTimeStep( double dt) { _dt= dt; _LvlSet.SetTimeStep( dt); }
        
     void InitStep();
     // perform fixed point iteration
