@@ -985,7 +985,7 @@ inline double P2DiscCL::GetMass( int i, int j)
             return 4./315.;
         else
         {
-            if (i==OppEdge(j))
+            if (i-4==OppEdge(j-4))
                 return 1./315.;
             else
                 return 2./315.;
@@ -993,7 +993,7 @@ inline double P2DiscCL::GetMass( int i, int j)
     }
     else // i<4, j>=4: Sonderfall...
     {
-        if (i==VertOfEdge(j,0) || i==VertOfEdge(j,1))
+        if (i==VertOfEdge(j-4,0) || i==VertOfEdge(j-4,1))
             return -1./630.;
         else
             return -1./420.;
