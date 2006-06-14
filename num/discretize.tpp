@@ -304,6 +304,8 @@ const double Quad5CL<T>::Wght[4]= {
     5./567.                                    /*Node[9] bis Node[14]*/
 };
 
+template <class T>
+std::valarray<double> Quad5CL<T>::hatval[10]; // hatval[i] contains FE_P2CL::H_i( Node).
 
 template<class T>
   void
@@ -332,6 +334,8 @@ template<class T>
     Node[12]= MakeBaryCoord( B3,A3,A3,B3);
     Node[13]= MakeBaryCoord( B3,A3,B3,A3);
     Node[14]= MakeBaryCoord( B3,B3,A3,A3);
+
+    FE_P2CL::ApplyAll( NumNodesC, Node, hatval);
 
     HaveNodes= true;
 }

@@ -331,6 +331,8 @@ class Quad5CL: public GridFunctionCL<T>
     static BaryCoordCL  Node[NumNodesC]; // Stuetzstellen
     static const double Wght[4];         // Gewichte
 
+    static std::valarray<double> hatval[10]; // hatval[i] contains FE_P2CL::H_i( Node).
+
   protected:
     typedef Quad5CL<T> self_;
     void MaybeInitNodes() const;
@@ -371,10 +373,8 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
             + Wght[3]*(*this)[std::slice( 9, 6, 1)].sum());
     }
 
-    // Quadraturormeln zur Annaeherung von \int f*phi, phi = P1-/P1D-/P2-Hutfunktion
+    // Quadraturformel zur Annaeherung von \int f*phi, phi = P2-Hutfunktion
     T quadP2 (int i, double absdet) const {
-        static std::valarray<double> hatval[10]; // hatval[i] contains FE_P2CL::H_i( Node).
-        if (hatval[0].size() == 0) FE_P2CL::ApplyAll( NumNodesC, Node, hatval);
         return self_( hatval[i]*(*this)).quad( absdet);
     }
 };
