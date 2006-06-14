@@ -570,11 +570,16 @@ class P2DiscCL
   public:
     // gradients on reference tetra
     static void GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10]);
+    static void GetGradientsOnRef( Quad5CL<Point3DCL> GRef[10]);
     // compute gradients
     static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
+    static void GetGradients( Quad5CL<Point3DCL> G[10], Quad5CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    { for (int i=0; i<10; ++i) for (int j=0; j<Quad5CL<Point3DCL>::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
+    static void GetGradient( Quad5CL<Point3DCL> &G, Quad5CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
+    { for (int j=0; j<Quad5CL<Point3DCL>::NumNodesC; ++j) G[j]= T*GRef[j]; }
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr, Uint, double= 0.0);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 2
