@@ -664,7 +664,7 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
-    double t_;
+    mutable double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const VertexCL& s) const
@@ -703,7 +703,7 @@ public:
     GetLevel() const { return _sol->GetLevel(); }
     // The time at which boundary data is evaluated.
     double GetTime() const { return t_; }
-    void SetTime(double t) { t_= t; }
+    void SetTime(double t) const { t_= t; }
 
     inline bool UnknownsMissing(const TetraCL& t) const;
     // True, iff the function can be evaluated on the given simplex.
