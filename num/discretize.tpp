@@ -298,10 +298,10 @@ BaryCoordCL Quad5CL<T>::Node[NumNodesC];
 
 template<class T>
 const double Quad5CL<T>::Wght[4]= {
-    16./135.,                                 /*Node[0]*/
-    (2665.0 + 14.0*std::sqrt( 15.0))/37800.0, /*Node[1] bis Node[4]*/
-    (2665.0 - 14.0*std::sqrt( 15.0))/37800.0, /*Node[5] bis Node[8]*/
-    10./189.                                  /*Node[9] bis Node[14]*/
+    8./405.,                                   /*Node[0]*/
+    (2665.0 + 14.0*std::sqrt( 15.0))/226800.0, /*Node[1] bis Node[4]*/
+    (2665.0 - 14.0*std::sqrt( 15.0))/226800.0, /*Node[5] bis Node[8]*/
+    5./567.                                    /*Node[9] bis Node[14]*/
 };
 
 
