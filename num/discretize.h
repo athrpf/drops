@@ -344,6 +344,8 @@ class Quad5CL: public GridFunctionCL<T>
 
     Quad5CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad5CL(const LocalP2CL<value_type>&);
+    template <class _BndData, class _VD>
+      Quad5CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
     template <class PFunT> 
       Quad5CL(const TetraCL&, const PFunT&, double= 0.0);
     
@@ -359,9 +361,12 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
     assign(const LocalP1CL<value_type>&);
     inline self_&
     assign(const LocalP2CL<value_type>&);
-    template <class P2FunT> 
+    template <class _BndData, class _VD>
       inline self_&
-      assign(const TetraCL&, const P2FunT&, double= 0.0);
+      assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+    template <class PFunT> 
+      inline self_&
+      assign(const TetraCL&, const PFunT&, double= 0.0);
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
