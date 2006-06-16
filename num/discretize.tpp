@@ -364,7 +364,8 @@ template<class T>
   inline Quad5CL<T>&
   Quad5CL<T>::assign(const LocalP2CL<value_type>& f)
 {
-    for (size_t i= 0; i < 10; ++i)
+    (*this)= f[0]*P2_Val[0];
+    for (size_t i= 1; i < 10; ++i)
         (*this)+= f[i]*P2_Val[i];
     return *this;
 }
@@ -378,7 +379,8 @@ template<class T>
     f.SetTime( t);
     value_type dof[10];
     f.GetDoF( s, dof);
-    for (size_t i= 0; i < 10; ++i)
+    (*this)= dof[0]*P2_Val[0];
+    for (size_t i= 1; i < 10; ++i)
         (*this)+= dof[i]*P2_Val[i];
     f.SetTime( oldt);
     return *this;
