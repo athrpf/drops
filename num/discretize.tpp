@@ -379,9 +379,10 @@ template<class T>
     f.SetTime( t);
     value_type dof[10];
     f.GetDoF( s, dof);
-    (*this)= dof[0]*P2_Val[0];
-    for (size_t i= 1; i < 10; ++i)
-        (*this)+= dof[i]*P2_Val[i];
+    (*this)= T();
+    for (size_t i= 0; i < NumNodesC; ++i)
+        for (size_t j= 0; j < 10; ++j)
+            (*this)[i]+= dof[j]*P2_Val[j][i];
     f.SetTime( oldt);
     return *this;
 }
