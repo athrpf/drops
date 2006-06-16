@@ -373,14 +373,18 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
     // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
     T quad (double absdet) const {
         return absdet*(Wght[0]*(*this)[0]
-            + Wght[1]*(*this)[std::slice( 1, 4, 1)].sum()
-            + Wght[2]*(*this)[std::slice( 5, 4, 1)].sum()
-            + Wght[3]*(*this)[std::slice( 9, 6, 1)].sum());
+            + Wght[1]*((*this)[1]+(*this)[2]+(*this)[3]+(*this)[4])
+            + Wght[2]*((*this)[5]+(*this)[6]+(*this)[7]+(*this)[8])
+            + Wght[3]*((*this)[9]+(*this)[10]+(*this)[11]+(*this)[12]+(*this)[13]+(*this)[14]));
     }
 
     // Quadraturformel zur Annaeherung von \int f*phi, phi = P2-Hutfunktion
     T quadP2 (int i, double absdet) const {
-        return self_( P2_Val[i]*(*this)).quad( absdet);
+        return absdet*(Wght[0]*P2_Val[i][0]*(*this)[0]
+            + Wght[1]*(P2_Val[i][1]*(*this)[1]+P2_Val[i][2]*(*this)[2]+P2_Val[i][3]*(*this)[3]+P2_Val[i][4]*(*this)[4])
+            + Wght[2]*(P2_Val[i][5]*(*this)[5]+P2_Val[i][6]*(*this)[6]+P2_Val[i][7]*(*this)[7]+P2_Val[i][8]*(*this)[8])
+            + Wght[3]*(P2_Val[i][9]*(*this)[9]+P2_Val[i][10]*(*this)[10]+P2_Val[i][11]*(*this)[11]
+                      +P2_Val[i][12]*(*this)[12]+P2_Val[i][13]*(*this)[13]+P2_Val[i][14]*(*this)[14]));
     }
 };
 
