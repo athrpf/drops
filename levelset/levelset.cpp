@@ -444,7 +444,7 @@ double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
     // Sekantenverfahren fuer Startwert
     while (v1*v0 > 0) // gleiches Vorzeichen
     {
-        const double d2=1.2*(v1*d0-v0*d1)/(v1-v0);
+        const double d2=d1-1.2*v1*(d1-d0)/(v1-v0);
         d0=d1; d1=d2; v0=v1; v1=GetVolume(d1)-vol;
         if (std::abs(v1)<=tol) return d1;
     }
