@@ -64,6 +64,15 @@ class FE_P1CL
     static inline double H3(const BaryCoordCL& p) { return p[3]; }
     /// \}
 
+    template <class Cont>
+      static inline typename ValueHelperCL<Cont>::value_type
+      val(const Cont& c, const BaryCoordCL& p)
+          { return c[0]*p[0] + c[1]*p[1] + c[2]*p[2] + c[3]*p[3]; }
+    template <class Cont>
+      static inline typename ValueHelperCL<Cont>::value_type
+      val(const Cont& c, double v1, double v2, double v3)
+          { return c[0]*(1-v1-v2-v3) + c[1]*v1 + c[2]*v2 + c[3]*v3; }
+
     /// \name Gradients of the shape functions on the reference tetrahedron.
     /// \note To obtain the gradient on tetra T: Let f:x->A*x+b be the affine
     /// transformation that maps the reference tetrahefron to T.

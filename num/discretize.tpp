@@ -83,7 +83,7 @@ template<class T>
   inline typename LocalP1CL<T>::value_type
   LocalP1CL<T>::operator() (const BaryCoordCL& p) const
 {
-    return FE_P1DCL::val( *this, p);
+    return FE_P1CL::val( *this, p);
 }
 
 
