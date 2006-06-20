@@ -88,8 +88,8 @@ class GridFunctionCL: public std::valarray<T>
     typedef GridFunctionCL<T> self_;
 
   public:
-    GridFunctionCL (value_type v= value_type(), Uint s= 0): base_type( v, s) {}
-    GridFunctionCL (const value_type* p, Uint s= 0): base_type( p, s) {}
+    GridFunctionCL (value_type v= value_type(), Uint s): base_type( v, s) {}
+    GridFunctionCL (const value_type* p, Uint s): base_type( p, s) {}
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, T, base_type)
 
@@ -128,6 +128,29 @@ operator*(const GridFunctionCL<double>& a, const GridFunctionCL<Point3DCL>& b)
     return b*a;
 }
 
+inline GridFunctionCL<Point3DCL>&
+operator*=(GridFunctionCL<Point3DCL>& a, double b)
+{
+    for (size_t i= 0; i < a.size(); ++i)
+        a[i]*= b;
+    return a;
+}
+
+inline GridFunctionCL<Point3DCL>
+operator*( double a, const GridFunctionCL<Point3DCL>& b)
+{
+    
+    GridFunctionCL<SVectorCL<3> > ret( b);
+    return ret*= a;
+}
+
+inline GridFunctionCL<Point3DCL>
+operator*( const GridFunctionCL<Point3DCL>& a, double b)
+{
+    
+    return b*a;
+}
+
 inline GridFunctionCL<double>
 dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
 {
@@ -161,6 +184,7 @@ class LocalP1CL: public GridFunctionCL<T>
 
   public:
     LocalP1CL() : base_type( value_type(), FE_P1CL::NumDoFC) {}
+    LocalP1CL(const value_type& t): base_type( t, FE_P1CL::NumDoFC) {}
     // Initialize from a given function
     LocalP1CL(const TetraCL&, instat_fun_ptr , double= 0.0);
     // Initialize from VecDescCL and boundary-data
@@ -210,6 +234,7 @@ class LocalP2CL: public GridFunctionCL<T>
 
   public:
     LocalP2CL() : base_type( value_type(), FE_P2CL::NumDoFC) {}
+    LocalP2CL(const value_type& t): base_type( t, FE_P2CL::NumDoFC) {}
     // Initialize from a given function
     LocalP2CL(const TetraCL&, instat_fun_ptr , double= 0.0);
     // Initialize from VecDescCL and boundary-data
