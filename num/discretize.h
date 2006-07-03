@@ -88,7 +88,7 @@ class GridFunctionCL: public std::valarray<T>
     typedef GridFunctionCL<T> self_;
 
   public:
-    GridFunctionCL (value_type v= value_type(), Uint s): base_type( v, s) {}
+    GridFunctionCL (value_type v, Uint s): base_type( v, s) {}
     GridFunctionCL (const value_type* p, Uint s): base_type( p, s) {}
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, T, base_type)
