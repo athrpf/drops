@@ -833,6 +833,17 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_
 //                        InstatStokes2PhaseP2P1CL
 // =============================================================================
   
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SmoothVel( VelVecDescCL* v, int num, double tau)
+{
+    VectorCL diag;
+    GetDiag( A.Data, diag);
+
+    for (int i=0; i<num; ++i)
+        v->Data-= tau*((A.Data*v->Data)/diag);
+}
+
 template <class Coeff>
 /// Needed for preconditioning of the Schur complement. Uses natural
 /// boundary conditions for the pressure unknowns.

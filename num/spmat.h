@@ -732,6 +732,16 @@ template <typename T>
 }
 
 template <typename T>
+void GetDiag( const SparseMatBaseCL<T>& M, std::valarray<typename SparseMatBaseCL<T>::value_type>& diag)
+{
+    const size_t n=M.num_rows();
+    diag.resize( n);
+
+    for (size_t i=0; i<n; ++i)
+        diag[i]= M( i, i);
+}
+
+template <typename T>
   void
   ScaleRows(SparseMatBaseCL<T>& M,
     const std::valarray<typename SparseMatBaseCL<T>::value_type>& v)

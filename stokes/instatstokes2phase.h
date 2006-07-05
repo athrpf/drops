@@ -86,6 +86,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     /// Initialize velocity field
     void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
+    /// Smooth velocity field
+    void SmoothVel( VelVecDescCL*, int num= 1, double tau=0.5);
     
     /// Get FE type for pressure space
     FiniteElementT GetPrFE() const { return prFE_; }
