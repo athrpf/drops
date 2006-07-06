@@ -298,8 +298,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
         NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
-        CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> 
-            cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+        CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT>
+            cpl( Stokes, lset, nssolver, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
 

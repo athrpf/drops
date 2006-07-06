@@ -117,7 +117,8 @@ class CouplLevelsetNavStokes2PhaseCL
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
 
-    void SetTimeStep( double dt) { _dt= dt; _LvlSet.SetTimeStep( dt); }
+    void SetTimeStep( double dt, double theta= -1)
+      { _dt= dt; if (theta>=0) _theta= theta; _LvlSet.SetTimeStep( dt, theta); }
        
     void InitStep();
     // perform fixed point iteration
@@ -129,6 +130,67 @@ class CouplLevelsetNavStokes2PhaseCL
     // update after grid has changed
     void Update();
 };
+
+
+template <class StokesT, class SolverT>
+class CouplLsNsFracStep2PhaseCL
+{
+  private:
+    static const double facdt_[3];
+    static const double theta_[3];
+
+    typedef CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT> ThetaSchemeCL;
+
+    ThetaSchemeCL ts_;
+    double        dt3_;
+    int           step_;
+
+  public:
+    CouplLsNsFracStep2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
+                              SolverT& solver, double nonlinear= 1, int step = -1)
+        : ts_( Stokes, ls, solver, 0.5, nonlinear), step_((step>=0) ? step%3 : 0) {}
+    // default destructor
+
+    double GetTimeStep()    const { return dt3_; }
+    double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
+    double GetSubTheta()    const { return theta_[step_]; }
+    int    GetSubStep()     const { return step_; }
+
+    void SetTimeStep( double dt3, int step = -1)
+    {
+        dt3_= dt3;
+        if (step>=0) step_=step%3;
+    }
+
+    void DoSubStep( int maxFPiter= -1)
+    {
+        ts_.SetTimeStep( GetSubTimeStep(), GetSubTheta());
+        ts_.DoStep( maxFPiter);
+        step_= (step_+1)%3;
+    }
+
+    void DoStep( int maxFPiter= -1)
+    {
+        DoSubStep( maxFPiter);
+        DoSubStep( maxFPiter);
+        DoSubStep( maxFPiter);
+    }
+
+    // update after grid has changed
+    void Update() { ts_.Update(); }
+};
+
+template <class NavStokesT, class SolverT>
+const double CouplLsNsFracStep2PhaseCL<NavStokesT,SolverT>::facdt_[3]
+//  = { 1./3, 1./3, 1./3 };
+//  = { 1./3, 1./3, 1./3 };
+  = { 1-std::sqrt(0.5), std::sqrt(2.0)-1, 1-std::sqrt(0.5) };
+
+template <class NavStokesT, class SolverT>
+const double CouplLsNsFracStep2PhaseCL<NavStokesT,SolverT>::theta_[3]
+//  = { 1.0, 1.0, 1.0 };
+//  = { 1./3, 5./6, 1./3 };
+  = { std::sqrt(2.0)-1, 2-std::sqrt(2.0), std::sqrt(2.0)-1 };
 
 
 template <class StokesT, class SolverT>
