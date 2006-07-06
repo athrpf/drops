@@ -123,7 +123,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
 //fil << "}\n";
 }
 
-void SF_CurvatureTerm( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
 // computes the integral 
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
@@ -175,30 +175,110 @@ void SF_CurvatureTerm( const MultiGridCL& MG, const VecDescCL& SmPhi, double sig
             {
                 if (Numb[v]==NoIdx) continue;
                 
-                Point3DCL gr, gradv[4];
-                // gr= grad Phi(P) + grad Phi(Q) + grad Phi(R)
+                LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
                 for (int node=0; node<4; ++node)
-                { // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
                     gradv[node]= Grad[v][node];
-                    gr+= BaryPQR[node]*gradv[node];
-                }
+
+                Point3DCL gr= gradv( BaryPQR); // gr= grad v(P) + grad v(Q) + grad v(R)
                     
                 if (patch.IsQuadrilateral())
-                {
-                    Point3DCL grSQR;
-                    // grSQR = grad Phi(S) + grad Phi(Q) + grad Phi(R)
-                    for (int k=0; k<4; ++k)
-                        grSQR+= BarySQR[k]*gradv[k];
-
-                    gr+= patch.GetAreaFrac() * grSQR;
-                }
+                    gr+= patch.GetAreaFrac() * gradv( BarySQR);
                 // nun gilt:
-                // gr = [grad Phi(P)+...] + (a+b-1)[grad Phi(S)+...]
+                // gr = [grad v(P)+...] + (a+b-1)[grad v(S)+...]
                 
                 for (int i=0; i<3; ++i)
                 {
                     const double val= inner_prod( gr, patch.GetGradId(i));
                     f.Data[Numb[v]+i]-= C *val;
+                }
+            }
+        } // Ende der for-Schleife ueber die Kinder
+    }
+//fil << "}\n";
+}
+
+void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+// computes the integral 
+//         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
+{
+    const Uint  idx_f=     f.RowIdx->GetIdx();
+    IdxT        Numb[10];
+    
+//std::ofstream fil("surf.off");
+//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    SMatrixCL<3,3> T;
+    double det;
+    InterfacePatchCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+ 
+    for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
+        it!=end; ++it)
+    {
+        GetTrafoTr( T, det, *it);
+        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+        LocalP1CL<Point3DCL> n;
+
+        patch.Init( *it, SmPhi);
+        for (int v=0; v<10; ++v)
+        { // collect data on all DoF
+            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+            for (int k=0; k<4; ++k)
+                n[k]+= patch.GetPhi(v)*Grad[v][k];
+        }
+
+        for (int ch=0; ch<8; ++ch)
+        {
+            if (!patch.ComputeForChild(ch)) // no patch for this child
+                continue;
+
+//patch.WriteGeom( fil);
+            BaryCoordCL BaryPQR, BarySQR;
+            for (int i=0; i<3; ++i)
+            {
+                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+                BaryPQR+= patch.GetBary(i);
+                BarySQR+= patch.GetBary(i+1);
+            }
+            BaryPQR/= 3.;    BarySQR/= 3.;
+
+            typedef SArrayCL<Point3DCL,3> ProjT;
+            GridFunctionCL<ProjT> GradId( ProjT(), 6);  // values in P, Q, R, S, BaryPQR, BarySQR
+            for (int p=0; p<6; ++p)
+            {
+                Point3DCL np= n( p<4 ? patch.GetBary(p) : p==4 ? BaryPQR : BarySQR);
+                if (np.norm()>1e-8) np/= np.norm(); 
+                for (int i=0; i<3; ++i)
+                    GradId[p][i]= patch.ApplyProj( std_basis<3>(i+1) - np[i]*np);
+//                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
+            }
+
+            const double C= patch.GetFuncDet()*sigma/2.;
+
+            for (int v=0; v<10; ++v)
+            {
+                if (Numb[v]==NoIdx) continue;
+                
+                LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
+                for (int node=0; node<4; ++node)
+                    gradv[node]= Grad[v][node];
+                    
+                for (int i=0; i<3; ++i)
+                {
+                    double intSum= 0; // sum of the integrand in PQR, SQR
+                    for (int k=0; k<3; ++k)
+                    {
+                        intSum+= inner_prod( GradId[k][i], gradv(patch.GetBary(k)));
+                        if (patch.IsQuadrilateral())
+                            intSum+= patch.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(patch.GetBary(k+1)));
+                    }
+                    double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
+                    if (patch.IsQuadrilateral())
+                        intBary+= patch.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
+                    f.Data[Numb[v]+i]-= C *(intSum/12. + 0.75*intBary);
                 }
             }
         } // Ende der for-Schleife ueber die Kinder
@@ -352,7 +432,7 @@ void LevelsetP2CL::DoStep()
 }
 
 bool LevelsetP2CL::Intersects( const TetraCL& t) const
-// Teste, ob Phi in allen DoFs das gleiche Vorzeichen hat
+/// tests whether level set function changes its sign on tetra \p t.
 {
     const Uint idx= Phi.RowIdx->GetIdx();
     double PhiV0= Phi.Data[t.GetVertex(0)->Unknowns(idx)];
@@ -367,9 +447,11 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 
 
 void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl)
-// Reparametrisierung durch Fast Marching Method
-// Dabei verschiebt sich der 0-Level nur innerhalb der Elemente, die diesen schneiden.
-// onlyZeroLvl==true  =>  es wird nur lokal an der Phasengrenze reparametrisiert
+/// Reparametrization by Fast Marching method.
+/** @param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
+ *  @param onlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
+ * @param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
+ */
 {
     FastMarchCL fm( MG_, Phi);
     
@@ -395,10 +477,12 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
         SmoothPhi( SmPhi.Data, curvDiff_);
     switch (SF_)
     {
-      case SF_CSF: 
-        SF_CurvatureTerm( MG_, SmPhi, sigma, f); break;
+      case SF_LB: 
+        SF_LaplBeltrami( MG_, SmPhi, sigma, f); break;
       case SF_Const: 
         SF_ConstForce( MG_, SmPhi, sigma, f); break;
+      case SF_ImprovedLB: 
+        SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma, f); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
