@@ -288,7 +288,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         OseenPcT oseenpc( Apc, ispc);
 
         // Oseen solver
-//        typedef InexactUzawaCL<APcT, ISPreCL, APC_OTHER> OseenSolverT;
+//        typedef InexactUzawaCL<APcT, SPcT, APC_OTHER> OseenSolverT;
 //        OseenSolverT oseensolver( Apc, ispc, C.outer_iter, C.outer_tol, 0.1);
         typedef GCRSolverCL<OseenPcT> OseenBaseSolverT;
         OseenBaseSolverT oseensolver0( oseenpc, /*truncate*/ 50, C.outer_iter, C.outer_tol, /*relative*/ false);
