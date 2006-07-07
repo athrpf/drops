@@ -432,7 +432,6 @@ void LevelsetP2CL::DoStep()
 }
 
 bool LevelsetP2CL::Intersects( const TetraCL& t) const
-/// tests whether level set function changes its sign on tetra \p t.
 {
     const Uint idx= Phi.RowIdx->GetIdx();
     double PhiV0= Phi.Data[t.GetVertex(0)->Unknowns(idx)];
@@ -447,10 +446,9 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 
 
 void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl)
-/// Reparametrization by Fast Marching method.
-/** @param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
- *  @param onlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
- * @param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
+/** \param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
+ *  \param OnlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
+ *  \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
  */
 {
     FastMarchCL fm( MG_, Phi);

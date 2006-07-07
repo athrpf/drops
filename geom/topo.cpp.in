@@ -1,12 +1,6 @@
-//**************************************************************************
-// File:    topo.cpp                                                       *
-// Content: automatically generated refinement rules                       *
-// Author:  Joerg Peters, Volker Reichelt, IGPM RWTH Aachen                *
-// Version: 0.8                                                            *
-// History: begin - September, 20, 2000                                    *
-//                                                                         *
-// Remarks: generated from 'topo.cpp.in' by 'maketopo'                     *
-//**************************************************************************
+/// \file 
+/// \brief constains automatically generated refinement rules
+/// \remarks generated from 'topo.cpp.in' by 'maketopo'
 
 #include "geom/topo.h"
 

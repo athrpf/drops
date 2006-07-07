@@ -1,8 +1,6 @@
-//**************************************************************************
-// File:    levelset.h                                                     *
-// Content: levelset equation for two phase flow problems                  *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//**************************************************************************
+/// \file 
+/// \brief levelset equation for two phase flow problems
+/// \author Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen
 
 #ifndef DROPS_LEVELSET_H
 #define DROPS_LEVELSET_H
@@ -70,42 +68,62 @@ class LevelsetP2CL
     
     const BndDataT& GetBndData() const { return Bnd_; }
     
+    /// \name Numbering
+    ///@{
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, MG_, Bnd_, match); }
     void DeleteNumbering( IdxDescCL* idx)
         { DeleteNumb( *idx, MG_); }
-
+    ///@}
+    
+    /// initialize level set function
     void Init( scalar_fun_ptr);
 
+    /// \remarks call SetupSystem \em before calling SetTimeStep!
     void SetTimeStep( double dt, double theta=-1);
-    // call SetupSystem *before* calling SetTimeStep!
+    /// \remarks call SetupSystem \em before calling SetTimeStep!
     template<class DiscVelSolT>
     void SetupSystem( const DiscVelSolT&);
+    /// perform one time step
     void DoStep();
+    /// Reparametrization by solving evolution equation (not recommended).
     void Reparam( Uint steps, double dt);
+    /// Reparametrization by Fast Marching method (recommended).
     void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false);
     
+    /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
+    /// returns approximate volume of domain where level set function is negative.
     double GetVolume( double translation= 0) const;
+    /// volume correction to ensure no loss or gain of mass.
     double AdjustVolume( double vol, double tol, double surf= 0) const;
+    /// Set type of surface force.
     void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
+    /// Discretize surface force
     void   AccumulateBndIntegral( VecDescCL& f) const;
     
+    /// \name Evaluate Solution
+    ///@{
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL( &Phi, &Bnd_, &MG_); }
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &Bnd_, &MG_); }
+    ///@}
         
-    // the following member functions are added to enable an easier implementation
-    // of the coupling navstokes-levelset. They should not be called by a common user.
+    /// \name For internal use only
+    /// The following member functions are added to enable an easier implementation
+    /// of the coupling navstokes-levelset. They should not be called by a common user.
+    /// Use LevelsetP2CL::DoStep() instead.
+    ///@{
     void ComputeRhs( VectorCL&) const;
     void DoStep    ( const VectorCL&);
+    ///@}
 };
 
 
 class InterfacePatchCL
-/// compute approximation to interface.
-/** computes the planar interface patches, which are the intersection of a child T' of
+/// Computes approximation of interface.
+/** Computes the planar interface patches, which are the intersection of a child T' of
  *  a tetrahedron T and the zero level of I(phi), where I(phi) is the linear interpolation
  *  of the level set function phi on T'.
  */
@@ -131,7 +149,9 @@ class InterfacePatchCL
     
     void Init( const TetraCL& t, const VecDescCL& ls);
 
-    // Remark: The following functions are only valid, if Init(...) was called before!
+    /// \name Use after Init
+    /// \remarks The following functions are only valid, if Init(...) was called before!
+    ///@{
     int    GetSign( Uint DoF)   const { return sign_[DoF]; }   ///< returns -1/0/1
     double GetPhi( Uint DoF)    const { return PhiLoc_[DoF]; } ///< returns value of level set function
     bool   Intersects()         const                          ///  returns wether patch exists (i.e. interface intersects tetra)
@@ -140,8 +160,11 @@ class InterfacePatchCL
       { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
     bool   ComputeForChild( Uint ch);                          ///< returns true, if a patch exists for this child
     bool   ComputeCutForChild( Uint ch);                       ///< returns true, if a patch exists for this child
+    ///@}
 
-    // Remark: The following functions are only valid, if ComputeForChild(...) was called before!
+    /// \name Use after ComputeForChild
+    /// \remarks The following functions are only valid, if ComputeForChild(...) was called before!
+    ///@{
     bool               IsQuadrilateral()     const { return intersec_==4; }
     bool               EqualToFace()         const { return num_sign_[1]>=3; }   ///< returns true, if patch is shared by two tetras
     Uint               GetNumPoints()        const { return intersec_; }
@@ -155,10 +178,14 @@ class InterfacePatchCL
 
     void               WriteGeom( std::ostream&) const;                          ///< Geomview output for debugging
     void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
+    ///@}
     
-    // Remark: The following functions are only valid, if ComputeCutForChild(...) was called before!
+    /// \name Use after ComputeCutForChild
+    /// \remarks The following functions are only valid, if ComputeCutForChild(...) was called before!
+    ///@{
     template<class ValueT>
     ValueT quad( const LocalP2CL<ValueT>&, double absdet, bool posPart= true);   ///< integrate on pos./neg. part
+    ///@}
 };
 
 } // end of namespace DROPS
