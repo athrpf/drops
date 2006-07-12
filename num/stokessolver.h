@@ -195,7 +195,7 @@ class BlockMatrixSolverCL
     double GetTol     () const { return solver_.GetTol(); }
     int    GetMaxIter () const { return solver_.GetMaxIter(); }
     double GetResid   () const { return solver_.GetResid(); }
-    int    GetIter    () const { return solver_.GetIter; }
+    int    GetIter    () const { return solver_.GetIter(); }
     bool   GetRelError() const { return solver_.GetRelError(); }
 
     void
