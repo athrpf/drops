@@ -64,7 +64,7 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
                  z = p[2]*(2*C.r_inlet-p[2]) / (C.r_inlet*C.r_inlet),
                  freq= 50, ampl= 0.1;
     
-    ret[1]= x * z * C.Anstroem * (1-ampl*cos(2*M_PI*freq*t));  // Rohr
+    ret[1]= x * z * C.Anstroem * (1-ampl*std::cos(2*M_PI*freq*t));  // Rohr
     return ret; 
 }
 
