@@ -1014,7 +1014,7 @@ template <class SimplexT>
   TriangCL<SimplexT>::MaybeCreate(int lvl) const
 {
     const int level= StdIndex( lvl);
-    Assert ( level >= 0 && level < mg_.GetNumLevel(),
+    Assert ( level >= 0 && level < static_cast<int>( mg_.GetNumLevel()),
         DROPSErrCL( "TriangCL::MaybeCreate: Wrong level."), DebugContainerC);
     if (triang_.size() != mg_.GetNumLevel()) {
         triang_.clear();
