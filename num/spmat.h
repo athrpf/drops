@@ -44,6 +44,8 @@ class VectorBaseCL: public std::valarray<T>
 DROPS_DEFINE_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
 
 #if (DROPSDebugC & DebugNumericC)
+    using base_type::operator[];
+
     // For checking new code; the following functions interfere with the expression
     // template mechanism of std::valarray, but do some checks before the
     // operations.

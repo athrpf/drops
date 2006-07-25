@@ -111,8 +111,8 @@ template <class VT>                                                             
   inline theClass<theT>&                                                                 \
   operator theOp (const VT& v)                                                           \
 {                                                                                        \
-    Assert( this->size()==v.size(), #theClass #theOp ": incompatible dimensions",        \
-        DebugNumericC);                                                                  \
+    Assert( this->size()==thebase_type( v).size(),                                       \
+            #theClass #theOp ": incompatible dimensions", DebugNumericC);                \
     *static_cast<thebase_type*>( this) theOp v; return *this;                            \
 }
 
