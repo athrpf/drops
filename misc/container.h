@@ -446,6 +446,14 @@ MakeBaryCoord(double a, double b, double c, double d)
     return ret;
 }
 
+inline Point3DCL
+MakePoint3D(double a, double b, double c)
+{
+    Point3DCL ret( Uninitialized);
+    ret[0]= a; ret[1]= b; ret[2]= c;
+    return ret;
+}
+
 
 template <Uint _Rows, Uint _Cols>
 class SMatrixCL : public SVectorCL<_Rows*_Cols>
