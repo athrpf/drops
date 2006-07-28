@@ -8,6 +8,7 @@
 #ifndef DROPS_ADAPTRIANG_H
 #define DROPS_ADAPTRIANG_H
 
+#include "stokes/stokes.h"
 #include "levelset/levelset.h"
 
 namespace DROPS

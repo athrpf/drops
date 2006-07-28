@@ -17,6 +17,7 @@
 #define DROPS_BNDDATA_H
 
 #include "misc/utils.h"
+#include "geom/multigrid.h"
 #include "geom/boundary.h"
 
 namespace DROPS

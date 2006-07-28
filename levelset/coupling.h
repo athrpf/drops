@@ -7,7 +7,9 @@
 #ifndef DROPS_COUPLING_H
 #define DROPS_COUPLING_H
 
+#include "stokes/stokes.h"
 #include "levelset/levelset.h"
+#include "num/MGsolver.h"
 
 namespace DROPS
 {

@@ -11,6 +11,8 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include "geom/multigrid.h"
+#include "misc/problem.h"
 
 namespace DROPS
 {
