@@ -522,11 +522,11 @@ template<class Data, class _BndData, class _VD>
 inline bool P2EvalCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t) const
 {
     const Uint idx= _sol->RowIdx->GetIdx();
-    for (TetraCL::const_VertexPIterator it= t.GetVertBegin(), end= t.GetVertEnd();  
-         it!=end; ++it) 
+    for (TetraCL::const_VertexPIterator it= t.GetVertBegin(), end= t.GetVertEnd();
+         it!=end; ++it)
         if ( !IsDefinedOn( **it)) return true;
     for (TetraCL::const_EdgePIterator it= t.GetEdgesBegin(), end= t.GetEdgesEnd();
-         it!=end; ++it) 
+         it!=end; ++it)
         if ( !(_bnd->IsOnDirBnd( **it) || (*it)->Unknowns.Exist(idx) )) return true;
     return false;
 }
@@ -715,12 +715,12 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
     typedef typename P1EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
 
-    const MultiGridCL& _MG= old_sol.GetMG();    
+    const MultiGridCL& _MG= old_sol.GetMG();
     const Uint old_level= old_sol.GetLevel();
     const Uint level= sol.GetLevel();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     Uint counter1= 0, counter2= 0;
-    
+
 //    Assert( level==old_level || old_level==level-1, DROPSErrCL("Interpolate: successive triangs are expected\n"));
     // Iterate over all edges, interpolate values on new mid vertices
     for (MultiGridCL::const_EdgeIterator sit= _MG.GetAllEdgeBegin(level), theend= _MG.GetAllEdgeEnd(level);
@@ -736,13 +736,13 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
         if ( !_bnd->IsOnDirBnd(*sit) )
         {
 // @@@ Handle missing unknowns: Do it right here?
-if (sit->Unknowns.Exist(old_idx))        
+if (sit->Unknowns.Exist(old_idx))
             sol.SetDoF(*sit, old_sol.val(*sit));
 //else they were set in the for-loop before !
             ++counter1;
         }
 
-        std::cerr << "Interpolate: " << counter1 << " vertex-Dof of " << old_sol.GetSolution()->Data.size() << " copied, " 
+        std::cerr << "Interpolate: " << counter1 << " vertex-Dof of " << old_sol.GetSolution()->Data.size() << " copied, "
                                      << counter2 << " new Mid-vertex-DoF interpolated." << std::endl;
 }
 
@@ -760,7 +760,7 @@ if (sit->Unknowns.Exist(old_idx))
 //     represents a P1-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
-//**************************************************************************    
+//**************************************************************************
 template <class P1T, class VecDesc>
   Uint
   RepairAfterRefineP1( const P1T& old_f, VecDesc& vecdesc)
@@ -841,10 +841,10 @@ void InterpolateChildren( const TetraCL& t, P2EvalCL<Data, _BndData, _VD>& sol, 
           {0.5 , 0.25},
           {0.25, 0.5}
         };
-      
+
     // Hole des Tetraeders RefRule; gehe ueber alle Kinder ;-): durchlaufe die edges in
     // der childrule des kindes: falls IsSubEdge(edge): finde mit ParentEdge & NumOfSubEdge heraus,
-    // von welcher Kante des tetras, (falls der wert bei edge != 0) und interpoliere ueber kante. 
+    // von welcher Kante des tetras, (falls der wert bei edge != 0) und interpoliere ueber kante.
     // sonst, falls IsSubInParFace(subedge): WhichEdgeInFace(subedge, face, pos) und interpoliere ueber face;
     // sonst, behandele raumdiagonale;
     const RefRuleCL& refrule= t.GetRefData();
@@ -887,7 +887,7 @@ inline void CopyValues( const TetraCL& t, P2EvalCL<Data, _BndData, _VD>& sol, co
 {
     typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
-    
+
     for (TetraCL::const_VertexPIterator it= t.GetVertBegin(), end= t.GetVertEnd();
         it!=end; ++it)
         if (!_bnd->IsOnDirBnd( **it) )
@@ -904,7 +904,7 @@ void Adapt( P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, c
 // Adapt a solution on a triangulation of a certain level, that has changed during the refinement.
 // Notation: T = old triang, T' = new triang. Both T and T' are of the same level.
 // This change can be classified in several cases (not complete...): Fot tetra t in T:
-//    a) t is missing not only in T' but in all new triang levels  
+//    a) t is missing not only in T' but in all new triang levels
 //       -> information is lost
 //    b) t is missing in T', but is member of the new MultiGrid
 //       -> t was refined, children of t are members of T', for these information is interpolated from t!
@@ -914,11 +914,11 @@ void Adapt( P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, c
 
 // Adapt should be very robust in all occuring situations!!!
 
-    const MultiGridCL& _MG= old_sol.GetMG();    
+    const MultiGridCL& _MG= old_sol.GetMG();
     const Uint level= sol.GetLevel();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
     const Uint NumUnknowns=  old_sol.GetSolution()->RowIdx->NumUnknownsEdge;
-    
+
     Assert( level==old_sol.GetLevel(),
         DROPSErrCL("Adapt: Same triang levels are expected\n"), ~0);
 
@@ -931,8 +931,8 @@ void Adapt( P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, c
     {
          if ( old_sol.UnknownsMissing( *sit) )
          // Tetra war in T vorhanden -> neu in T'! Fall b)c)
-             if ( sol.UnknownsMissing( *sit) ) 
-             {    
+             if ( sol.UnknownsMissing( *sit) )
+             {
                  // Ergaenze evtl. fehlenden Idx des Vaters auf Edges! (nur fuer c) noetig)
                  for (TetraCL::const_EdgePIterator it= sit->GetParent()->GetEdgesBegin(), end= sit->GetParent()->GetEdgesEnd();
                      it!=end; ++it)
@@ -948,7 +948,7 @@ void Adapt( P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndData, c
                  InterpolateChildren( *sit->GetParent(), sol, old_sol);
              }
     }
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(level), theend= _MG.GetTriangTetraEnd(level);
          sit!=theend; ++sit)
     {
@@ -968,13 +968,13 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
     typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
-      
+
     // All velocity-components use the same row-index and the same trianglevel
-    const MultiGridCL& _MG= old_sol.GetMG();    
+    const MultiGridCL& _MG= old_sol.GetMG();
     const Uint old_level= old_sol.GetLevel();
     const Uint level= sol.GetLevel();
     Uint num_vert_copy= 0, num_edge_copy= 0, num_child_edge= 0;
-    
+
 //    Assert( level==old_level || old_level==level-1, DROPSErrCL("Interpolate: successive triangs are expected\n"));
 
     // Iterate over all tetras in old_level, interpolate edge-DoF on diagonal, if there is one;
@@ -993,13 +993,13 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
         if ( sit->IsRefined() && sit->IsInTriang(old_level)
              && sit->GetMidVertex()->IsInTriang(level) && !_bnd->IsOnDirBnd(*sit->GetMidVertex()) ) // only new non-boundary vertices are interpolated
         {
-            if (!sit->Unknowns.Exist(old_idx)) continue;        
+            if (!sit->Unknowns.Exist(old_idx)) continue;
                 sol.SetDoF( *sit->GetMidVertex(), old_sol.val(*sit, 0.5) );
                 ++num_edge_copy;
         }
         else if ( sit->IsInTriang(old_level) && sit->IsInTriang(level) && !_bnd->IsOnDirBnd(*sit) )
             {
-                if (!sit->Unknowns.Exist(old_idx)) continue;        
+                if (!sit->Unknowns.Exist(old_idx)) continue;
                     sol.SetDoF( *sit, old_sol.val(*sit, 0.5) );
                     ++num_edge_copy;
             }
@@ -1009,12 +1009,12 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
          sit!=theend; ++sit)
         if ( !_bnd->IsOnDirBnd(*sit) )
         {
-            if (!sit->Unknowns.Exist(old_idx)) continue;        
+            if (!sit->Unknowns.Exist(old_idx)) continue;
                 sol.SetDoF(*sit, old_sol.val(*sit) );
                 ++num_vert_copy;
         }
 
-        std::cerr << "Interpolate: " << num_vert_copy << " vertex-DoF copied, " 
+        std::cerr << "Interpolate: " << num_vert_copy << " vertex-DoF copied, "
                                      << num_edge_copy << " edge-DoF copied, "
                                      << num_child_edge << " edge-DoF interpolated."
                                      << std::endl;
@@ -1049,7 +1049,7 @@ template <class P2T>
                 v[i+3]= f.val( *ep->GetMidVertex());
             else return false;
         }
-    }    
+    }
     return true;
 }
 
@@ -1082,7 +1082,7 @@ template <class P2T>
                 v[i+4]= f.val( *ep->GetMidVertex());
             else return false;
         }
-    }    
+    }
     return true;
 }
 
@@ -1108,7 +1108,7 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
           {0.5 , 0.25},
           {0.25, 0.5}
         };
-      
+
     const RefRuleCL& refrule= t.GetRefData();
     TetraCL::const_ChildPIterator child= t.GetChildBegin();
     const TetraCL::const_ChildPIterator childend= t.GetChildEnd();
@@ -1116,7 +1116,7 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
         const ChildDataCL& childdata= GetChildData( refrule.Children[childnum]);
         for (Uint chedge=0; chedge<NumEdgesC; ++chedge) {
             const EdgeCL* const edgep= (*child)->GetEdge( chedge);
-            if (!bnd->IsOnDirBnd( *edgep) 
+            if (!bnd->IsOnDirBnd( *edgep)
                 && edgep->Unknowns.Exist()
                 && edgep->Unknowns.Exist( idx)
                 && !edgep->Unknowns.Exist( old_idx)) { // not just a copy on the edge itself
@@ -1131,7 +1131,7 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
                         f.SetDoF( *edgep, old_f.val( *paredgep, 0.25+0.5*num) );
                     }
                     else {  // this edge has been unrefined;
-                            // There is not enough information available for 
+                            // There is not enough information available for
                             // more than linear interpolation.
                         f.SetDoF( *edgep, 0.5*(old_f.val( *edgep->GetVertex( 0))
                                                + old_f.val( *edgep->GetVertex( 1))));
@@ -1183,7 +1183,7 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
 //     represents a P2-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel -1; else tl is the level of old_f.            *
-//**************************************************************************    
+//**************************************************************************
 template <class P2T, class VecDesc>
 Uint
 RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
@@ -1197,7 +1197,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG, old_f.GetTime());
 
     // The first two loops interpolate the values of all vertices (new ones as
-    // mid-vertices and old ones as copies). This works similar to the P1 case.    
+    // mid-vertices and old ones as copies). This works similar to the P1 case.
 
     // Iterate over all edges on grids with smaller level than tl. If the
     // edge **is refined and its midvertex *does not have the old index,
@@ -1208,7 +1208,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     // (Actually, the old vertices do not matter, as their dof are 0 in the midvertex.)
     // As new vertices in a grid are always midvertices of edges on the next coarser grid,
     // all new vertices in triangulation tl are initialized.
-    // Also iterate over tl. This will not trigger the first if-statrement below as 
+    // Also iterate over tl. This will not trigger the first if-statrement below as
     // sit->GetMidVertex()->Unknowns.Exist( idx) will always be false; this is used to
     // copy edge-dofs, that did not change.
     Uint counter2= 0, counter3= 0;
@@ -1223,7 +1223,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
         else if (sit->Unknowns.Exist()
                  && sit->Unknowns.Exist( old_idx)
                  && sit->Unknowns.Exist( idx)) {
-                f.SetDoF( *sit, old_f.val( *sit));   
+                f.SetDoF( *sit, old_f.val( *sit));
                 ++counter3;
             }
     }

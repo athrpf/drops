@@ -24,14 +24,14 @@ class StokesBndDataCL
   public:
     typedef BndDataCL<Point3DCL> VelBndDataCL;
     typedef BndDataCL<double>    PrBndDataCL;
-    
+
     StokesBndDataCL( Uint numbndseg, const BndCondT* bc_vel, const VelBndDataCL::bnd_val_fun* fun, const BndCondT* bc_pr= 0)
         : Pr( numbndseg, bc_pr), Vel( numbndseg, bc_vel, fun) {}
     StokesBndDataCL(Uint numbndseg, const bool* isneumann, const VelBndDataCL::bnd_val_fun* fun)
         : Pr( numbndseg), Vel(numbndseg, isneumann, fun) {} // deprecated
-    
+
     const PrBndDataCL  Pr;
-    const VelBndDataCL Vel;   
+    const VelBndDataCL Vel;
 };
 
 
@@ -61,7 +61,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
     typedef double (*est_fun)(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double);
-    
+
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
     double       t;        // time, 0.0 in the stationary case
@@ -69,14 +69,14 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     VecDescCL    p;
     VelVecDescCL b;
     VecDescCL    c;
-    MatDescCL    A, 
+    MatDescCL    A,
                  B,
                  M;
-    
+
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}  
+        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}  
+        : _base( mg, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
@@ -87,7 +87,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { DeleteNumb( *idx, _MG); }
     void DeleteNumberingPr ( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
-    
+
     // Set up matrices and complete rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*, double= 0.0) const;
     // Set up only A.
@@ -101,7 +101,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     // Setup time independent part of system
     void SetupInstatSystem( MatDescCL* A, MatDescCL* B, MatDescCL* M) const;
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
-    // If the function is called with the same vector for some arguments (out of 1, 2, 4), 
+    // If the function is called with the same vector for some arguments (out of 1, 2, 4),
     // the vector will contain the sum of the results after the call
     void SetupInstatRhs( VelVecDescCL* vA, VelVecDescCL* vB, VelVecDescCL* vI, double tA, VelVecDescCL* vf, double tf) const;
     // Set initial value for velocities
@@ -150,7 +150,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
     typedef double (*est_fun)(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double);
-    
+
     IdxDescCL    vel_idx;  // for velocity unknowns
     IdxDescCL    pr_idx;   // for pressure unknowns
     VelVecDescCL v;
@@ -159,9 +159,9 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     VecDescCL    c;
     MatDescCL    A,        // Bad, bad comma.
                  B;
-    
+
     StokesP1BubbleP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( 3, 0, 0, 3), pr_idx( 1) {}  
+        : _base( mgb, coeff, bdata), vel_idx( 3, 0, 0, 3), pr_idx( 1) {}
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
@@ -172,7 +172,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
         { DeleteNumb( *idx, _MG); }
     void DeleteNumberingPr ( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
-    
+
     // Set up matrices and rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;
     void SetupPrMass(MatDescCL*) const;
@@ -248,7 +248,7 @@ class StokesDoerflerMarkCL
 };
 
 //======================================
-//        inline functions 
+//        inline functions
 //======================================
 
 

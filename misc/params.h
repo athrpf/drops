@@ -14,7 +14,7 @@ namespace DROPS
 
 using std::string;
 
-///   \brief Parser for parameter files used by ParamBaseCL. 
+///   \brief Parser for parameter files used by ParamBaseCL.
 ///
 ///   Usage:
 ///   - register all parameters via register functions RegXXX
@@ -24,24 +24,24 @@ class ReadParamsCL
 {
   private:
     typedef std::map<string,std::pair<char,bool> > InfoT; // (type,initialized)
-  
+
     string                      group_, name_;
-    InfoT                       info_;    
+    InfoT                       info_;
 
     std::map<string,int*>       iparam_;
     std::map<string,double*>    dparam_;
     std::map<string,Point3DCL*> cparam_;
     std::map<string,string*>    sparam_;
-    
+
     bool IsKnown( const string& s) { return info_.find( s) != info_.end(); }
     void ReadEntry( std::istream&);
     void ReadData ( std::istream&);
     void SetInfo( string&, char);
     void PrintWarning() const;
-    
+
   public:
     ReadParamsCL() {}
-    
+
     /// \name Registration
     //@{
     /// Register parameters under a certain name.
@@ -50,23 +50,23 @@ class ReadParamsCL
     void RegCoord ( Point3DCL&, string);
     void RegString( string&,    string);
     //@}
-    
-    /// \name Groups 
+
+    /// \name Groups
     ///
-    /// Parameters can be arranged in groups by enclosing Begin/EndGroup-calls 
+    /// Parameters can be arranged in groups by enclosing Begin/EndGroup-calls
     /// during the registration. Recursive calls lead to nested groups.
     //@{
     void BeginGroup( const string& group);
     void EndGroup();
     //@}
-    
+
     /// \name Input/Output
     //@{
     void ReadParams( std::istream&);
     void WriteParams( std::ostream&) const;
     //@}
-    
-    /// Cleanup: deallocate memory 
+
+    /// Cleanup: deallocate memory
     void Clear();
 };
 
@@ -79,7 +79,7 @@ class ParamBaseCL
   protected:
     /// Does all the work: registrating parameters, parsing parameter file
     ReadParamsCL rp_;
-    
+
   public:
     /// Cleanup: deallocate memory
     void Clear() { rp_.Clear(); }
@@ -91,7 +91,7 @@ class ParamBaseCL
 } // end of namespace DROPS
 
 #endif
-    
-    
-    
-    
+
+
+
+

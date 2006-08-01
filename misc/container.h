@@ -85,7 +85,7 @@ class SArrayCL
   protected:
     /*uninitialized memory; mainly for faster SVectorCL-math*/
     explicit SArrayCL(InitStateT) {}
-    
+
   public:
     typedef       T*       iterator;
     typedef const T* const_iterator;
@@ -184,7 +184,7 @@ public:
         Front+= i;
         if (Front >= static_cast<int>( _Size)) Front-= _Size;
         else if (Front < 0) Front+= _Size; }
-        
+
 
     friend bool operator==<>(const SBufferCL&, const SBufferCL&);
 };
@@ -221,7 +221,7 @@ class SVectorCL : public SArrayCL<double,_Size>
     SVectorCL& operator-=(const SVectorCL&);
     SVectorCL& operator*=(double);
     SVectorCL& operator/=(double);
-    
+
     // komponentenweise Operatoren
     SVectorCL& operator*=(const SVectorCL&);
     SVectorCL& operator/=(const SVectorCL&);
@@ -656,12 +656,12 @@ class GlobalListCL
 
     int
     StdLevel (int lvl) const { return lvl >= 0 ? lvl : lvl + GetNumLevel(); }
-    
+
   public:
     GlobalListCL (bool modifiable= true) : modifiable_( modifiable) {}
-    // standard dtor 
+    // standard dtor
 
-    Uint GetNumLevel () const { 
+    Uint GetNumLevel () const {
         return modifiable_ ? LevelViews_.size()
             : (LevelStarts_.size() > 0 ? LevelStarts_.size()-1 : 0);
     }
@@ -738,7 +738,7 @@ template <class T>
     Assert( Data_.empty(), DROPSErrCL("GlobalListCL::FinalizeModify:"
         "Inconsistent Data_."), DebugContainerC );
     modifiable_= false;
-    if (LevelViews_.empty()) return; 
+    if (LevelViews_.empty()) return;
     LevelStarts_.resize( LevelViews_.size() + 1);
     LevelStarts_[LevelViews_.size()]= Data_.end();
     const_LevelStarts_.resize( LevelViews_.size() + 1);
@@ -767,7 +767,7 @@ template <class T>
 template <class T>
   void
   GlobalListCL<T>::RemoveLastLevel()
-{ 
+{
     Assert( modifiable_, DROPSErrCL("GlobalListCL::RemoveLast: "
         "Data not modifiable."), DebugContainerC );
     Assert( LevelViews_.size() > 0, DROPSErrCL("GlobalListCL: RemoveLastLevel: "

@@ -49,7 +49,7 @@ const double NSDrCavCL::st= .1;
 inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
 inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
-typedef DROPS::StokesP2P1CL<NSDrCavCL::StokesCoeffCL> 
+typedef DROPS::StokesP2P1CL<NSDrCavCL::StokesCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 typedef NSDrCavCL MyPdeCL;
@@ -112,7 +112,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
                 verts.push_back(i);
         }
         if (verts.size() != 3) continue;
-         
+
         std::vector<double> val( NumVertsC);
         _discsol.GetDoF(*tit, val);
 
@@ -172,7 +172,7 @@ PlotMTVSolOutCL<DiscVel>::put(std::ostream &os) const
     {
         if ( std::fabs(tit->GetCoord()[1] -0.5 ) > 1.e-10 )
             continue;
-         
+
             os << tit->GetCoord()[0] << ' ' << tit->GetCoord()[2] << " 0.0\t"
                << _discsol.val(*tit)[0] << ' ' << _discsol.val(*tit)[2] << _discsol.val(*tit)[1]
                << '\n';
@@ -218,13 +218,13 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
     pidx1->Set( 1, 0, 0, 0);
     pidx2->Set( 1, 0, 0, 0);
 
-//    MarkLower(MG,0.25); 
+//    MarkLower(MG,0.25);
     TimerCL time;
     do
     {
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
         MG.SizeInfo(std::cerr);
@@ -266,7 +266,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-/*        
+/*
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
             Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
@@ -328,7 +328,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx(&Stokes.vel_idx);
         Stokes.p.SetIdx(&Stokes.pr_idx);
-        
+
         Stokes.v.Data= loc_v.Data;
         Stokes.p.Data= loc_p.Data;
     }
@@ -336,7 +336,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 
 
 template<class Coeff>
-void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter, 
+void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, int fp_maxiter,
                                               double uzawa_red, double poi_tol, int poi_maxiter)
 // flow control
 {
@@ -366,13 +366,13 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     vidx2->Set( 3, 3, 0, 0);
     pidx1->Set( 1, 0, 0, 0);
     pidx2->Set( 1, 0, 0, 0);
-    
+
     TimerCL time;
     do
     {
         MG.Refine();
-        NS.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        NS.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        NS.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        NS.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
         MG.SizeInfo(std::cerr);
@@ -411,7 +411,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-      
+
 //        { // write system in files for MatLab
 //            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), Ndat("Nmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
 //            Adat << A->Data;   Bdat << B->Data; Ndat << N->Data;   bdat << b->Data;    cdat << c->Data;
@@ -433,16 +433,16 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             NS.SetupNonlinear( N, v1, &rhsN);
             MatrixCL AN;
             AN.LinComb( 1., A->Data, 1., N->Data);
-            
+
             // calculate defect:
             d= AN*v1->Data + transp_mul( B->Data, p1->Data) - b->Data - rhsN.Data;
 //            e= B->Data*v1->Data                             - c->Data;
             z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
-            
-            std::cerr << "fp_step: " << fp_step << ", res = " << (res= std::sqrt( norm_sq( d) + norm_sq( e))) << std::endl; 
+
+            std::cerr << "fp_step: " << fp_step << ", res = " << (res= std::sqrt( norm_sq( d) + norm_sq( e))) << std::endl;
             if (res < fp_tol )
                 break;
-            
+
             // solve correction:
             double uzawa_tol= res/uzawa_red;
             if (uzawa_tol < fp_tol) uzawa_tol= fp_tol;
@@ -451,13 +451,13 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             uzawaSolver.Solve(AN, B->Data, w, q, d, e);
             std::cerr << "iteration stopped after step " << uzawaSolver.GetIter()
                       << " with res = " << uzawaSolver.GetResid() << std::endl;
-            
+
             // calculate adaption:
             N->Data.clear();
 //            v_omw.Data= v1->Data - omega*w;
             z_xpay(v_omw.Data, v1->Data, -omega, w);
             NS.SetupNonlinear( N, &v_omw, &rhsN);
-            
+
 //            d= A->Data*w + N->Data*w + transp_mul( B->Data, q);
             z_xpaypby2(d, A->Data*w, 1.0, N->Data*w, 1.0, transp_mul(B->Data, q) );
             e= B->Data*w;
@@ -466,7 +466,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
                 + dot( e, VectorCL( B->Data*v1->Data - c->Data));
             omega/= norm_sq( d) + norm_sq( e);
             std::cerr << "omega = " << omega << std::endl;
-            
+
             // update solution:
 //            v1->Data-= omega*w;
             axpy(-omega, w, v1->Data);
@@ -475,7 +475,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         }
         time.Stop();
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
-        
+
         A->Reset();
         B->Reset();
         b->Reset();
@@ -494,7 +494,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         NS.pr_idx.swap( loc_pidx);
         NS.v.SetIdx(&NS.vel_idx);
         NS.p.SetIdx(&NS.pr_idx);
-        
+
         NS.v.Data= loc_v.Data;
         NS.p.Data= loc_p.Data;
     }
@@ -519,11 +519,11 @@ int main (int argc, char** argv)
     e1[0]= e2[1]= e3[2]= 1.;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Null, &Null, &NSDrCavCL::Stroem};
-        
+
     StokesOnBrickCL stokesprob(brick, NSDrCavCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = stokesprob.GetMG();
     DROPS::RBColorMapperCL colormap;
@@ -557,8 +557,8 @@ int main (int argc, char** argv)
 
         DROPS::IdxDescCL tecIdx;
         tecIdx.Set( 1, 0, 0, 0);
-        stokesprob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
-    
+        stokesprob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
+
         std::ofstream v2d("stokestec2D.dat");
         DROPS::TecPlot2DSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
             tecplot2d( mg, stokesprob.GetVelSolution(), stokesprob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
@@ -596,13 +596,13 @@ int main (int argc, char** argv)
         std::cerr << "uzawa_red: " << uzawa_red << ", ";
         std::cerr << "num_ref: " << num_ref << std::endl;
 
-        typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> 
+        typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL>
                 NSOnBrickCL;
         typedef NSOnBrickCL MyNavierStokesCL;
 
         MyNavierStokesCL prob(stokesprob.GetMG(), MyPdeCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
         DROPS::MultiGridCL& mg = prob.GetMG();
-    
+
         StrategyNavSt(prob, num_ref, fp_tol, fp_maxiter, uzawa_red, poi_tol, poi_maxiter);
 
         std::cerr << "hallo" << std::endl;
@@ -617,8 +617,8 @@ int main (int argc, char** argv)
 
         DROPS::IdxDescCL tecIdx;
         tecIdx.Set( 1, 0, 0, 0);
-        prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
-    
+        prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
+
         std::ofstream v2d("navstokestec2D.dat");
         DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
             tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5

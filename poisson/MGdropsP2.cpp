@@ -40,14 +40,14 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     MGDataCL MGData;
 
     MG.SizeInfo(std::cerr);
-    
+
     // Initialize the MGData: Idx, A, P, R
-    time.Reset();    
+    time.Reset();
     for(Uint i=0, lvl= 0; lvl<=MG.GetLastLevel(); ++lvl, ++i)
     {
         MGData.push_back(MGLevelDataCL());
         MGLevelDataCL& tmp= MGData.back();
-     
+
         std::cerr << "Create MGData on Level " << lvl << std::endl;
         tmp.Idx.Set( 1, 1);
         Poisson.CreateNumbering(lvl, &tmp.Idx);
@@ -61,12 +61,12 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
 //	    std::cout << "P2: SetupSystem: A.Data =" << tmp.A.Data << std::endl;
             std::cerr << "Create System <<<--- " << std::endl;
         }
-        else        
+        else
         {
             std::cerr << "Create StiffMatrix" << std::endl;
             Poisson.SetupStiffnessMatrix( tmp.A);
         }
-            
+
         if(i!=0)
         {
             std::cerr << "Create Prolongation on Level " << lvl << std::endl;
@@ -76,7 +76,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
        c_idx= &tmp.Idx;
     }
     time.Stop();
-    std::cerr << "Setting up all stuff took " << time.GetTime() 
+    std::cerr << "Setting up all stuff took " << time.GetTime()
 	      << " seconds. " << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
@@ -108,7 +108,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
         resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
         std::cerr << "initial residuum: " << resid <<std::endl;
 	nit = 0;
-        time.Reset();    
+        time.Reset();
         do
         {
             MGM( MGData.begin(), finest, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, lvl, -1);
@@ -116,8 +116,8 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
             old_resid= resid;
             resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
 	    nit = nit+1;
-            std::cerr << "iteration: " << nit 
-	              << "\tresiduum: " << resid 
+            std::cerr << "iteration: " << nit
+	              << "\tresiduum: " << resid
 	              << "\tred. " << resid/old_resid << std::endl;
         } while ( resid > tol);
         time.Stop();
@@ -161,7 +161,7 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc<2) 
+    if (argc<2)
     {
         std::cerr << "missing argument! Usage: MGdrops <omega>" << std::endl;
         return 1;
@@ -198,7 +198,7 @@ int main (int argc, char** argv)
     std::cerr << "Creating Grid..." << std::endl;
     for (DROPS::Uint i=0; i<4; ++i)
     {
-        DROPS::MarkAll(mg);  
+        DROPS::MarkAll(mg);
         mg.Refine();
     }
 //    omega= 1.0;

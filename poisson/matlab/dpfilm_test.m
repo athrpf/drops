@@ -19,11 +19,11 @@ yd=linspace(0,ly,Ny);
 [Xd,Yd]=meshgrid(xd,yd);
 
 TempLast= reshape(Tsol(:,Nt-1),[Nz,Ny,Nx]);  % last time step
-Txy= reshape( TempLast(Nz/2,:,:), [Ny, Nx]); 
+Txy= reshape( TempLast(Nz/2,:,:), [Ny, Nx]);
 
 pp=0;
-if pp==1  
-    %colormap(gray)  
+if pp==1
+    %colormap(gray)
     surfl(Xd,Yd,Txy);
     shading interp
 else
@@ -31,7 +31,7 @@ else
 end
 
 xlabel x
-ylabel y    
+ylabel y
 zlabel T
 
 figure(2)

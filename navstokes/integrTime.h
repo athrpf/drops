@@ -19,38 +19,38 @@ namespace DROPS
 template <class NavStokesT, class SolverT>
 class InstatNavStokesThetaSchemeCL
 /*****************************************************************************
-*   for solving the instat. Navier-Stokes equation of type NavStokesT with a 
+*   for solving the instat. Navier-Stokes equation of type NavStokesT with a
 *   1-step-theta-scheme: theta=1   -> impl. Euler (BDF1, backward Euler)
 *                        theta=1/2 -> Crank-Nicholson (Trapezregel)
 *
 *   Inner stat. Navier-Stokes-type problems are solved with a SolverT-solver.
 *   The matrices A, B, M, N and the rhs b, c, cplN of the NavStokes class have
 *   to be set properly! After construction, SetTimeStep has to be called once.
-*   Then every DoStep performs one step in time. Changing time steps require 
+*   Then every DoStep performs one step in time. Changing time steps require
 *   further calls to SetTimeStep.
 ******************************************************************************/
 {
   private:
 //    typedef typename NavStokesT::VelVecDescCL VelVecDescCL;
-    
+
     NavStokesT& NS_;
     SolverT&    solver_;
-    
+
     VelVecDescCL *b_, *old_b_;        // rhs + couplings with poisson matrix A
     VelVecDescCL *cplM_, *old_cplM_;  // couplings with mass matrix M
     VelVecDescCL *cplN_;              // couplings with nonlinearity N
     VectorCL      rhs_;
-    MatrixCL      L_;                 // 1./dt*M + theta*A  = linear part 
-    
+    MatrixCL      L_;                 // 1./dt*M + theta*A  = linear part
+
     double theta_, dt_;
-    
+
   public:
     InstatNavStokesThetaSchemeCL(NavStokesT& NS, SolverT& solver,
                                  double theta= 0.5, double t= 0.0)
         : NS_( NS), solver_( solver), b_( &NS.b), old_b_( new VelVecDescCL),
           cplM_( &NS.cplM), old_cplM_( new VelVecDescCL),
 	  cplN_( &NS.cplN), rhs_( NS.b.RowIdx->NumUnknowns), theta_( theta)
-    { 
+    {
         old_b_->SetIdx( b_->RowIdx);
         old_cplM_->SetIdx( b_->RowIdx);
         // Redundant for NS_.c but does not change its value
@@ -62,13 +62,13 @@ class InstatNavStokesThetaSchemeCL
         if (old_b_ == &NS_.b)
             delete b_;
         else
-            delete old_b_; 
+            delete old_b_;
         if (old_cplM_ == &NS_.cplM)
             delete cplM_;
         else
             delete old_cplM_;
     }
-    
+
     double GetTheta()    const { return theta_; }
     double GetTimeStep() const { return dt_; }
 
@@ -77,7 +77,7 @@ class InstatNavStokesThetaSchemeCL
         dt_= dt;
         L_.LinComb( 1./dt_, NS_.M.Data, theta_, NS_.A.Data);
     }
-       
+
     void DoStep( VecDescCL& v, VectorCL& p);
 };
 

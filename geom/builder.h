@@ -105,7 +105,7 @@ class TetraBuilderCL : public MGBuilderCL
     const Point3DCL p1_;
     const Point3DCL p2_;
     const Point3DCL p3_;
-    
+
   public:
 
     TetraBuilderCL(Ubyte rule);
@@ -169,7 +169,7 @@ struct MeshNodeCL
     std::vector<NodeSectionCL> section;
     Uint num_expected;
 
-    void 
+    void
     Check( std::ostream* msg= &std::cerr);
 };
 
@@ -234,7 +234,7 @@ struct MeshCellCL
 // is stored in the faces.
 class HybridCellCL
 {
-  private:  
+  private:
     std::vector<FaceCL*> fp;
     std::vector<MFaceCL> mf;
 
@@ -289,7 +289,7 @@ class ReadMeshBuilderCL : public MGBuilderCL
     Uint // The id is appended to the section-history.
     ReadId();
     HeaderInfoCL // Read ( hexnum0, hexnum1, .... )
-    ReadHeaderInfoHex(); 
+    ReadHeaderInfoHex();
     void // Read a node-section
     ReadNode();
     void // Read a face-section
@@ -321,7 +321,7 @@ class ReadMeshBuilderCL : public MGBuilderCL
 
     static const char* // Symbolic section-names per TGrid User's Guide.
     Symbolic(Uint id);
-    
+
     BndCondT GetBC( Uint i)                    const { return BC_[i]; }
     void     GetBC( std::vector<BndCondT>& BC) const { BC= BC_; }
 };

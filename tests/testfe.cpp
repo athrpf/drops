@@ -19,7 +19,7 @@ inline double Quad(const TetraCL& t, scalar_coeff_ptr coeff)
     return ( coeff(t.GetVertex(0)->GetCoord())
             +coeff(t.GetVertex(1)->GetCoord())
             +coeff(t.GetVertex(2)->GetCoord())
-            +coeff(t.GetVertex(3)->GetCoord()))/120. 
+            +coeff(t.GetVertex(3)->GetCoord()))/120.
             + 2./15.*coeff(GetBaryCenter(t));
 }
 
@@ -29,7 +29,7 @@ inline double Quad(const TetraCL& t, scalar_coeff_ptr coeff)
     return ( coeff(t.GetVertex(0)->GetCoord())
             +coeff(t.GetVertex(1)->GetCoord())
             +coeff(t.GetVertex(2)->GetCoord())
-            +coeff(t.GetVertex(3)->GetCoord()))/120. 
+            +coeff(t.GetVertex(3)->GetCoord()))/120.
             + 2./15.*coeff(GetBaryCenter(t));
 }
 */
@@ -37,11 +37,11 @@ inline double QuadGrad(const SMatrixCL<3,5>* G, int i, int j)
 // computes int( grad(phi_i) * grad(phi_j) ) for P2-elements on ref. tetra
 {
     SVectorCL<5> tmp(0.0);
-    
+
     for(int k=0; k<5; ++k)
         for(int l=0; l<3; ++l)
             tmp[k]+= G[i](l,k) * G[j](l,k);
-            
+
     return ( tmp[0] + tmp[1] + tmp[2] + tmp[3] )/120. + 2./15.*tmp[4];
 }
 
@@ -49,7 +49,7 @@ inline double QuadGrad(const SMatrixCL<3,5>* G, int i, int j)
 inline double Quad( const TetraCL& t, scalar_coeff_ptr coeff, int i)
 {
     double f[5];
-    
+
     if (i<4) // hat function on vert
     {
         f[0]= coeff( t.GetVertex(i)->GetCoord() );
@@ -190,14 +190,14 @@ void testHat( int i)
     std::cout << "Values on Edges 01 02 03 12 13 23: "
               << H(0.5,0,0)<<", "<<H(0,0.5,0)<<", "<<H(0,0,0.5)<<", "
               << H(0.5,0.5,0)<<", "<<H(0.5,0,0.5)<<", "<<H(0,0.5,0.5)<<", "<<std::endl;
-}         
+}
 
 void testGrad( int i)
 {
     std::cout << "Values on Verts 0 1 2 3: "
               << FE_P2CL::DHRef(i,0,0,0)<<", "<<FE_P2CL::DHRef(i,1,0,0)<<", "
               << FE_P2CL::DHRef(i,0,1,0)<<", "<<FE_P2CL::DHRef(i,0,0,1)<<std::endl;
-}         
+}
 
 void testQuad(const TetraCL& t, int i)
 {
@@ -251,4 +251,4 @@ int main()
     std::cout << "Checking numeric integration of two Hat Fcts:"<<std::endl;
     testQuad2(tetra);
     return 0;
-}                      
+}

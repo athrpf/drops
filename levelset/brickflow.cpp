@@ -1,6 +1,6 @@
 //****************************************************************************
 // File:    brickflow.cpp                                                    *
-// Content: test case: one-phase flow in square pipe with oscillating inflow * 
+// Content: test case: one-phase flow in square pipe with oscillating inflow *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen      *
 //****************************************************************************
 
@@ -31,7 +31,7 @@ class ZeroFlowCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& C) 
+    ZeroFlowCL( const DROPS::ParamMesszelleCL& C)
       : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
         mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}
@@ -47,7 +47,7 @@ class DimLessCoeffCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    DimLessCoeffCL( const DROPS::ParamMesszelleCL& C) 
+    DimLessCoeffCL( const DROPS::ParamMesszelleCL& C)
       : rho( DROPS::JumpCL( 1., C.rhoF/C.rhoD ), DROPS::H_sm, C.sm_eps),
         mu ( DROPS::JumpCL( 1., C.muF/C.muD),    DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma/C.rhoD), g( C.g)    {}
@@ -58,14 +58,14 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 { return DROPS::SVectorCL<3>(0.); }
 
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
-{ 
-    DROPS::SVectorCL<3> ret(0.); 
+{
+    DROPS::SVectorCL<3> ret(0.);
     const double x = p[0]*(2*C.r_inlet-p[0]) / (C.r_inlet*C.r_inlet),
                  z = p[2]*(2*C.r_inlet-p[2]) / (C.r_inlet*C.r_inlet),
                  freq= 50, ampl= 0.1;
-    
+
     ret[1]= x * z * C.Anstroem * (1-ampl*std::cos(2*M_PI*freq*t));  // Rohr
-    return ret; 
+    return ret;
 }
 
 double DistanceFct( const DROPS::Point3DCL& p)
@@ -156,21 +156,21 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     MatDescCL prM, prA;
     VecDescCL cplN;
 
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
 
     EnsightP2SolOutCL ensight( MG, lidx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo", 
+    const string datgeo= filename+".geo",
                  datpr = filename+".pr" ,
                  datvec= filename+".vel",
                  datscl= filename+".scl";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr, true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr, true);
+    ensight.DescribeVector( "Velocity", datvec, true);
     ensight.putGeom( datgeo);
 
     lset.Phi.SetIdx( lidx);
@@ -190,11 +190,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.N.SetIdx(vidx, vidx);
     prM.SetIdx( pidx, pidx);
     prA.SetIdx( pidx, pidx);
-    
+
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
-   
+
     switch (C.IniCond)
     {
       case 1: case 2: // stationary flow with/without drop
@@ -206,7 +206,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         if (C.IniCond==2) // stationary flow without drop
             C.Radius= -10;
         lset.Init( DistanceFct);
-        // solve stationary problem for initial velocities    
+        // solve stationary problem for initial velocities
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
@@ -225,19 +225,19 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             MatrixCL mat;
             mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
             cplN.Data-= (1-theta) * (Stokes.N.Data * Stokes.v.Data);
-            schurSolver.Solve( mat, Stokes.B.Data, 
+            schurSolver.Solve( mat, Stokes.B.Data,
                 Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + nl*cplN.Data), Stokes.c.Data);
         } while (schurSolver.GetIter() > 0);
         time.Stop();
         std::cerr << "Solving NavStokes for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         if (C.IniCond==2)
-        { 
+        {
             C.Radius= old_Radius;
             lset.Init( DistanceFct);
         }
       } break;
-      
+
       case 3: // read from file
       {
         ReadEnsightP2SolCL reader( MG);
@@ -245,14 +245,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
       } break;
-      
-      default:  
+
+      default:
         lset.Init( DistanceFct);
     }
-    
+
     const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-    
+
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
@@ -353,15 +353,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         ASolverT Asolver( SSORPcCL( 1.0), C.inner_iter, 0.01, /*relative*/true);
         typedef SolverAsPreCL<ASolverT> APcT;
         APcT pcg( Asolver);
-        
+
         // Stokes solver
 //        ISPSchur_PCG_CL ISPschurSolver( ispc, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
         typedef InexactUzawaCL<APcT, ISPreCL, APC_SYM> InexactUzawaT;
         InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 
-//        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL> 
+//        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL>
 //            cpl( Stokes, lset, ISPschurSolver, C.inner_iter, C.inner_tol, C.nonlinear);
-        CouplLsNsBaenschCL<StokesProblemT, InexactUzawaT> 
+        CouplLsNsBaenschCL<StokesProblemT, InexactUzawaT>
             cpl( Stokes, lset, inexactUzawaSolver, C.inner_iter, C.inner_tol, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
@@ -428,7 +428,7 @@ int main (int argc, char** argv)
   {
     if (argc!=2)
     {
-        std::cerr << "You have to specify one parameter:\n\t" 
+        std::cerr << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
@@ -449,10 +449,10 @@ int main (int argc, char** argv)
     e1[0]=2*C.r_inlet; e2[1]=0.03; e3[2]= 2*C.r_inlet;
     DROPS::BrickBuilderCL builder(orig,e1,e2,e3,5,30,5);
 
-    const bool bc[6]= 
+    const bool bc[6]=
         {false, false, true, false, false, false};  // Rohr
 //        {false, false, true, false, true, true};      // Kanal
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Inflow, &Null, &Null};
 
     DROPS::MultiGridCL mg( builder);

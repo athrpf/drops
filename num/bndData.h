@@ -24,7 +24,7 @@ namespace DROPS
 {
 
 enum BndCondT
-/// \brief enum for boundary conditions in DROPS. 
+/// \brief enum for boundary conditions in DROPS.
 ///
 /// Conventions:
 /// - boundary condition with lower number is superior
@@ -41,7 +41,7 @@ enum BndCondT
     NatBC= 23,                   ///< inhom. natural   boundary conditions
     OutflowBC= 21,               ///< same as Nat0BC, for convenience
     WallBC= 0,                   ///< same as Dir0BC, for convenience
-    
+
     NoBC= -1,                    ///< interior simplices
     UndefinedBC_= 99,            ///< ReadMeshBuilderCL: error, unknown bc
     MaxBC_= 100                  ///< upper bound for valid bc's
@@ -57,7 +57,7 @@ class BndSegDataCL
 {
   public:
     typedef BndValT (*bnd_val_fun)( const Point3DCL&, double);
-    
+
   private:
     BndCondT     bc_;
     bnd_val_fun  bnd_val_;
@@ -65,7 +65,7 @@ class BndSegDataCL
   public:
     BndSegDataCL( BndCondT bc= Nat0BC, bnd_val_fun f= 0)
       : bc_(bc), bnd_val_(f) {}
-    
+
     bool        WithUnknowns() const { return bc_ & 1; }
     bool        IsDirichlet()  const { return bc_==Dir0BC || bc_==DirBC; }
     bool        IsNeumann()    const { return bc_==Nat0BC || bc_==NatBC; }
@@ -78,7 +78,7 @@ class BndSegDataCL
 
 /// \brief Contains the boundary data of all boundary segments for a certain variable.
 ///
-/// For each sub-simplex on the boundary, the boundary condition and corresponding boundary values 
+/// For each sub-simplex on the boundary, the boundary condition and corresponding boundary values
 /// can be accessed.
 template<class BndValT = double>
 class BndDataCL
@@ -90,12 +90,12 @@ class BndDataCL
 
   private:
     std::vector<BndSegT> BndData_;
-    
+
   public:
     /// If \a bc and \a fun are given, they are assumed to be arrays of length \a numbndseg
     /// containing the boundary conditions and boundary data resp. of the boundary segments.
     /// If \a bc is omitted, hom. natural boundary conditions are imposed (Nat0BC) for all boundary segments.
-    /// \a fun should only be omitted, if all boundary conditions given are homogenious 
+    /// \a fun should only be omitted, if all boundary conditions given are homogenious
     /// and thus no boundary values have to be specified.
     BndDataCL( BndIdxT numbndseg, const BndCondT* bc= 0, const bnd_val_fun* fun= 0);
     /// Deprecated ctor, just for compatibility with older code
@@ -111,7 +111,7 @@ class BndDataCL
     inline BndCondT GetBC( const EdgeCL&, BndIdxT&)   const;
     inline BndCondT GetBC( const FaceCL&, BndIdxT&)   const;
     /// \}
-    
+
     inline bool IsOnDirBnd( const VertexCL&) const;
     inline bool IsOnDirBnd( const EdgeCL&)   const;
     inline bool IsOnDirBnd( const FaceCL&)   const;
@@ -165,7 +165,7 @@ class NoBndDataCL
     static inline bool IsOnNeuBnd (const SimplexT&) { return false; }
     template<class SimplexT>
     static inline bool IsOnPerBnd (const SimplexT&) { return false; }
-    
+
     static inline BndValT GetDirBndValue (const VertexCL&, double= 0.0)
         { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
     static inline BndValT GetDirBndValue (const EdgeCL&, double= 0.0)
@@ -176,7 +176,7 @@ class NoBndDataCL
 
 
 //======================================
-//        inline functions 
+//        inline functions
 //======================================
 
 template<class BndValT>
@@ -206,8 +206,8 @@ inline bool BndDataCL<BndValT>::IsOnDirBnd( const VertexCL& v) const
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
         if ( BndData_[it->GetBndIdx()].IsDirichlet() )
             return true;
-    return false; 
-}        
+    return false;
+}
 
 template<class BndValT>
 inline bool BndDataCL<BndValT>::IsOnNeuBnd( const VertexCL& v) const
@@ -217,7 +217,7 @@ inline bool BndDataCL<BndValT>::IsOnNeuBnd( const VertexCL& v) const
         if ( !BndData_[it->GetBndIdx()].IsNeumann() )
             return false;
     return true;
-}        
+}
 
 template<class BndValT>
 inline bool BndDataCL<BndValT>::IsOnPerBnd( const VertexCL& v) const
@@ -233,7 +233,7 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const VertexCL& v) const
             HasPer= true;
     }
     return HasPer;
-}        
+}
 
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v) const
@@ -243,7 +243,7 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v) const
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
         bc= std::min( bc, BndData_[it->GetBndIdx()].GetBC());
     return bc;
-}        
+}
 
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v, BndIdxT& bidx) const
@@ -257,7 +257,7 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v, BndIdxT& bidx) con
             bidx= tmp2;
         }
     return bc;
-}        
+}
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const VertexCL& v) const
@@ -271,7 +271,7 @@ inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const
         if (bc<bc_min) { bc_min= bc;    idx= it->GetBndIdx(); }
     }
     return BndData_[idx];
-}        
+}
 
 //---------------------------------------
 // functions for edges
@@ -294,7 +294,7 @@ inline bool BndDataCL<BndValT>::IsOnNeuBnd( const EdgeCL& e) const
         if ( !BndData_[*it].IsNeumann() )
             return false;
     return true;
-}        
+}
 
 template<class BndValT>
 inline bool BndDataCL<BndValT>::IsOnPerBnd( const EdgeCL& e) const
@@ -310,7 +310,7 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const EdgeCL& e) const
             HasPer= true;
     }
     return HasPer;
-}        
+}
 
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e) const
@@ -320,7 +320,7 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e) const
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         bc= std::min( bc, BndData_[*it].GetBC());
     return bc;
-}        
+}
 
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e, BndIdxT& bidx) const
@@ -334,7 +334,7 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e, BndIdxT& bidx) const
             bidx= tmp2;
         }
     return bc;
-}        
+}
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const EdgeCL& e) const
@@ -348,7 +348,7 @@ inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const
         if (bc<bc_min) { bc_min= bc;    idx= *it; }
     }
     return BndData_[idx];
-}        
+}
 
 //---------------------------------------
 // functions for faces
@@ -363,34 +363,34 @@ template<class BndValT>
 inline bool BndDataCL<BndValT>::IsOnNeuBnd(const FaceCL& f) const
 {
     return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsNeumann();
-}        
+}
 
 template<class BndValT>
 inline bool BndDataCL<BndValT>::IsOnPerBnd( const FaceCL& f) const
 {
     return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsPeriodic();
-}        
+}
 
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const FaceCL& f) const
 { // Returns BC on f
     if ( !f.IsOnBoundary() ) return NoBC;
     return BndData_[f.GetBndIdx()].GetBC();
-}        
+}
 
 template<class BndValT>
 inline BndCondT BndDataCL<BndValT>::GetBC( const FaceCL& f, BndIdxT& bidx) const
-{ // Returns BC and number of boundary segment on f 
+{ // Returns BC and number of boundary segment on f
     if ( !f.IsOnBoundary() ) { bidx= NoBndC; return NoBC; }
     return BndData_[bidx= f.GetBndIdx()].GetBC();
-}        
+}
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const FaceCL& f) const
-{ 
+{
     Assert( f.IsOnBoundary(), DROPSErrCL("BndDataCL::GetBndSeg(FaceCL): Not on boundary!"), ~0);
     return BndData_[f.GetBndIdx()];
-}        
+}
 
 
 //---------------------------------------------------------
@@ -398,7 +398,7 @@ inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const
 
 template<class BndValT>
 inline BndValT BndDataCL<BndValT>::GetDirBndValue( const VertexCL& v, double t) const
-/// Returns value of the Dirichlet boundary value. 
+/// Returns value of the Dirichlet boundary value.
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
@@ -409,7 +409,7 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const VertexCL& v, double t) 
 
 template<class BndValT>
 inline BndValT BndDataCL<BndValT>::GetDirBndValue( const EdgeCL& e, double t) const
-/// Returns value of the Dirichlet boundary value. 
+/// Returns value of the Dirichlet boundary value.
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
     for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
@@ -420,7 +420,7 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const EdgeCL& e, double t) co
 
 template<class BndValT>
 inline BndValT BndDataCL<BndValT>::GetDirBndValue( const FaceCL& f, double t) const
-/// Returns value of the Dirichlet boundary value. 
+/// Returns value of the Dirichlet boundary value.
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
     Assert( BndData_[f.GetBndIdx()].IsDirichlet(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
@@ -429,7 +429,7 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const FaceCL& f, double t) co
 
 template<class BndValT>
 inline BndValT BndDataCL<BndValT>::GetNeuBndValue( const FaceCL& f, double t) const
-/// Returns value of the Neumann boundary value. 
+/// Returns value of the Neumann boundary value.
 /// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
     Assert( BndData_[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);

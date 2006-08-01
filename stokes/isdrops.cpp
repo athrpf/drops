@@ -33,7 +33,7 @@ struct InstatStokesCL
       public:
         static double q(const DROPS::Point3DCL&) { return 0.0; }
         static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double t)
-        { 
+        {
             DROPS::SVectorCL<3> ret;
             ret[0]= 2./3.*t*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
             ret[1]= -2./3.*t*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
@@ -62,27 +62,27 @@ class MyInstatStokesThetaSchemeCL
 //  Inner stationary Stokes-type problems are solved with a SolverT-solver.
 //  The matrices A, B, M and the rhs b, c of the Stokes class have to be set
 //  properly! After construction, SetTimeStep has to be called once. Then
-//  every DoStep performs one step in time. Changing time steps require 
+//  every DoStep performs one step in time. Changing time steps require
 //  further calls to SetTimeStep.
 //**************************************************************************
 {
   private:
     StokesT& _Stokes;
     SolverT& _solver;
-    
+
     VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VectorCL      _rhs;
     MatrixCL      _mat;               // (1./dt)*M + theta*A
-    
+
     double _theta, _dt;
-    
+
   public:
     MyInstatStokesThetaSchemeCL( StokesT& Stokes, SolverT& solver, double theta= 0.5)
         : _Stokes( Stokes), _solver( solver), _b( &Stokes.b), _old_b( new VelVecDescCL),
-          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _rhs( Stokes.b.RowIdx->NumUnknowns), 
+          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _rhs( Stokes.b.RowIdx->NumUnknowns),
           _theta( theta)
-    { 
+    {
         _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
         _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
     }
@@ -92,10 +92,10 @@ class MyInstatStokesThetaSchemeCL
         if (_old_b == &_Stokes.b)
             delete _b;
         else
-            delete _old_b; 
+            delete _old_b;
         delete _cplM; delete _old_cplM;
     }
-    
+
     double GetTheta()    const { return _theta; }
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
@@ -105,7 +105,7 @@ class MyInstatStokesThetaSchemeCL
         _dt= dt;
         _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     }
-       
+
     void DoStep( VectorCL& v, VectorCL& p);
 };
 
@@ -298,7 +298,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
         }
         for(int i=0; i<4; ++i)    // assemble row i
             for(int j=0; j<4;++j)
-                A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i]; 
+                A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
     }
     A.Build();
     std::cerr << A_pr.Data.num_nonzeros() << " nonzeros in A_pr.\n";
@@ -667,12 +667,12 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
             throw DROPSErrCL( "Strategy: Sorry, not yet implemented.");
         }
         v1->SetIdx( vidx1);
-        P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL, 
+        P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
                   const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
         NS.DeleteNumberingVel( vidx2);
-//P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL, 
+//P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
 //          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
 //CheckVel( funv1, &MyPdeCL::LsgVel);
         // Repair pressure
@@ -691,7 +691,7 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
         NS.pr_idx.swap( loc_pidx);
         NS.v.SetIdx( &NS.vel_idx);
         NS.p.SetIdx( &NS.pr_idx);
-        
+
         NS.v.Data= loc_v.Data;
         NS.p.Data= loc_p.Data;
     }
@@ -763,7 +763,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -789,7 +789,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     InstatsolverCL* instatsolver= 0;
 
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
@@ -821,7 +821,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
             std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
 //            M_pr.SetIdx( pidx1, pidx1);
-//            NS.SetupPrMass( &M_pr);  
+//            NS.SetupPrMass( &M_pr);
             SetupPoissonVelocityMG( NS, MG_vel, theta, dt);
             SetupPoissonPressureMG( NS, MG_pr);
             SetupPressureMassMG( NS, MG_Mpr);
@@ -862,7 +862,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -891,7 +891,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
 //    ISPreCL* ispcp= 0;
     MGPreCL* velprep= 0;
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
@@ -928,7 +928,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
             std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
             M_pr.SetIdx( pidx1, pidx1);
-            NS.SetupPrMass( &M_pr);  
+            NS.SetupPrMass( &M_pr);
 //            A_pr.SetIdx( pidx1, pidx1);
 //            SetupPoissonPressure( mg, A_pr);
 //            ispcp= new ISPreCL( A_pr.Data, M_pr.Data, kA, kM, 1.0);
@@ -993,7 +993,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -1012,7 +1012,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.t= 0;
     Uint timestep= 0;
 
-//    typedef PSchur_PCG_CL StatsolverCL; 
+//    typedef PSchur_PCG_CL StatsolverCL;
 //    typedef PSchur2_PCG_CL StatsolverCL;
 //    typedef PSchur2_PCG_Pr_CL StatsolverCL;
 //    typedef PSchur2_PCG_Pr_MG_CL StatsolverCL;
@@ -1022,7 +1022,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 //    typedef MyInstatStokesThetaSchemeCL<StokesCL, StatsolverCL> InstatsolverCL;
     InstatsolverCL* instatsolver= 0;
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
@@ -1057,7 +1057,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
             std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
             M_pr.SetIdx( pidx1, pidx1);
-            NS.SetupPrMass( &M_pr);  
+            NS.SetupPrMass( &M_pr);
 //            A_pr.SetIdx( pidx1, pidx1);
 //            SetupPoissonPressure( mg, A_pr);
 //            ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 1.0);
@@ -1118,7 +1118,7 @@ int main (int argc, char** argv)
 				DROPS::std_basis<3>(3),
 				2,2,2);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
 
@@ -1147,7 +1147,7 @@ int main (int argc, char** argv)
     std::cerr << "f_level: " << f_level << ", ";
     std::cerr << "method: " << method << std::endl;
 
-    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL> 
+    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL>
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyStokesCL;
     MyStokesCL prob( brick, MyPdeCL::StokesCoeffCL(),

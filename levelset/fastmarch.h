@@ -19,10 +19,10 @@ class FastMarchCL
 {
   public:
     enum { Finished= 1, Close= 2, Far= 0};
-    
+
     typedef SArrayCL<IdxT,4>        ReprTetraT;
     typedef std::vector<ReprTetraT> VertexNeighT;
-    
+
   private:
     MultiGridCL&               MG_;
     VecDescCL&                 v_;
@@ -33,23 +33,23 @@ class FastMarchCL
     VectorBaseCL<Point3DCL>    Coord_;
     VectorCL                   Old_;
     VectorBaseCL<IdxT>         map_;
-    
+
     void   InitClose();
     IdxT   FindTrial() const;
     void   Update( const IdxT);
     double CompValueProj( IdxT, int num, const IdxT upd[3]) const;
-    
+
     // variants for periodic boundaries
     void   InitClosePer();
     IdxT   FindTrialPer() const;
     void   UpdatePer( const IdxT);
     double CompValueProjPer( IdxT, int num, const IdxT upd[3]) const;
     inline IdxT Map( IdxT i) const { return i<size_ ? i: map_[i-size_]; }
-    
+
   public:
     FastMarchCL( MultiGridCL& mg, VecDescCL& v)
       : MG_(mg), v_(v), size_(v.RowIdx->NumUnknowns), Typ_(Far, size_) {}
-        
+
     void InitZero( bool ModifyZero= true);
     void RestoreSigns();
     void Reparam( bool ModifyZero= true);

@@ -42,15 +42,15 @@ class StokesCoeffCL
         ret[2]= 2.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]);
         return ret;
     }
-*/    
+*/
     const double nu;
-    
+
     StokesCoeffCL() : nu(1.0) {}
 };
 
-    typedef DROPS::StokesP1BubbleP1CL<StokesCoeffCL> 
+    typedef DROPS::StokesP1BubbleP1CL<StokesCoeffCL>
             StokesOnBrickCL;
-//    typedef DROPS::StokesP2P1CL<StokesCoeffCL> 
+//    typedef DROPS::StokesP2P1CL<StokesCoeffCL>
 //            StokesOnBrickCL;
     typedef StokesOnBrickCL MyStokesCL;
 
@@ -93,16 +93,16 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
     vidx2->Set(3, 0, 0, 3);
     pidx1->Set(1, 0, 0, 0);
     pidx2->Set(1, 0, 0, 0);
-    
+
     TimerCL time;
 //    err_idx->Set(0, 0, 0, 1);
     do
     {
 //        akt_glob_err= glob_err;
-//        MarkAll(MG); 
+//        MarkAll(MG);
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
         MG.SizeInfo(std::cerr);
@@ -145,7 +145,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-/*        
+/*
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
             Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
@@ -158,7 +158,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
         IdxT unk= vert->Unknowns(A->RowIdx->Idx);
         std::cerr << vert->GetCoord() << " has index " << unk << std::endl;
-        std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;    
+        std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;
         std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
 */        Uint meth;
         int max_iter;
@@ -181,7 +181,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             VectorCL rhs( -c->Data);
             {
                 double tol= inner_iter_tol;
-                int max_iter= 200;        
+                int max_iter= 200;
                 VectorCL tmp(vidx1->NumUnknowns);
                 PCG(A->Data, tmp, b->Data, pc, max_iter, tol);
                 std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
@@ -189,14 +189,14 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             }
             std::cerr << "rhs has been set!" << std::endl;
 //            tol= 1.0e-14;
-            max_iter= 200;   
-            tol= outer_tol;     
+            max_iter= 200;
+            tol= outer_tol;
     //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
             PCG(BABT, p1->Data, rhs, schur_pc, max_iter, tol);
             std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
 
             tol= outer_tol;
-            max_iter= 200;        
+            max_iter= 200;
             PCG(A->Data, v1->Data, VectorCL( b->Data - transp_mul(B->Data, p1->Data)), pc, max_iter, tol);
             time.Stop();
         }
@@ -221,7 +221,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         }
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
-        typename MyStokesCL::const_DiscPrSolCL  pr(p1, &PrBndData, &MG); 
+        typename MyStokesCL::const_DiscPrSolCL  pr(p1, &PrBndData, &MG);
         typename MyStokesCL::const_DiscVelSolCL vel(v1, &VelBndData, &MG);
         if (step==0)
         {
@@ -254,7 +254,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx(&Stokes.vel_idx);
         Stokes.p.SetIdx(&Stokes.pr_idx);
-        
+
         Stokes.v.Data= loc_v.Data;
         Stokes.p.Data= loc_p.Data;
     }
@@ -281,11 +281,11 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 1, 1, 1);
 //    DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2, 2);
 //    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel};
-        
+
     StokesOnBrickCL prob(brick, StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;

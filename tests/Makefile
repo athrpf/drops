@@ -80,7 +80,7 @@ sbuffer: \
 	$(CC) -o $@ $^ $(LFLAGS)
 
 minres: \
-    ../tests/minres.o ../misc/utils.o 
+    ../tests/minres.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 meshreader: \
@@ -127,18 +127,18 @@ quadCut: \
 	$(CC) -o $@ $^ $(LFLAGS)
 
 bicgstab: \
-    ../tests/bicgstab.o ../misc/utils.o 
+    ../tests/bicgstab.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 gcr: \
-    ../tests/gcr.o ../misc/utils.o 
+    ../tests/gcr.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 blockmat: \
-    ../tests/blockmat.o ../misc/utils.o 
+    ../tests/blockmat.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 mass: \
-    ../tests/mass.o ../misc/utils.o 
+    ../tests/mass.o ../misc/utils.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 quad5: \

@@ -25,7 +25,7 @@ void AdapTriangCL::MakeInitialTriang( DistFctT& Dist)
               << "last level: " << mg_.GetLastLevel() << '\n';
     mg_.SizeInfo( std::cout);
 }
-    
+
 template <class DistFctT>
 bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
 // One step of grid change; returns true if modifications were necessary,
@@ -33,24 +33,24 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
 {
     bool modified= false;
     for (MultiGridCL::TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(),
-         end= mg_.GetTriangTetraEnd(); it!=end; ++it) 
+         end= mg_.GetTriangTetraEnd(); it!=end; ++it)
     {
         double d= 1e99;
         int num_pos= 0;
-        for (Uint j=0; j<4; ++j) 
+        for (Uint j=0; j<4; ++j)
         {
             const double dist= GetValue( Dist, *it->GetVertex( j));
             if (dist>=0) ++num_pos;
             d= std::min( d, std::abs( dist));
         }
-        for (Uint j=0; j<6; ++j) 
+        for (Uint j=0; j<6; ++j)
         {
             const double dist= GetValue( Dist, *it->GetEdge( j));
             if (dist>=0) ++num_pos;
             d= std::min( d, std::abs( dist));
         }
         d= std::min( d, std::abs( GetValue( Dist, *it)));
-        
+
         const bool vzw= num_pos!=0 && num_pos!=10; // change of sign
         const Uint l= it->GetLevel();
 	// In the shell:      level should be f_level_.
@@ -60,13 +60,13 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
         if (l !=  soll_level)
 	{ // tetra will be marked for refinement/removement
 	    modified= true;
-            if (l < soll_level) 
+            if (l < soll_level)
                 it->SetRegRefMark();
-            else // l > soll_level 
+            else // l > soll_level
                 it->SetRemoveMark();
         }
     }
-    if (modified) 
+    if (modified)
 	mg_.Refine();
     return modified;
 }
@@ -81,7 +81,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     VelVecDescCL  loc_v;
     VecDescCL     loc_p;
     VecDescCL     loc_l;
-    VelVecDescCL *v1= &NS.v, 
+    VelVecDescCL *v1= &NS.v,
                  *v2= &loc_v;
     VecDescCL    *p1= &NS.p,
                  *p2= &loc_p,
@@ -99,7 +99,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     Uint i, LastLevel= mg_.GetLastLevel();
 
     for (i=0; i<2*min_ref_num; ++i)
-    {            
+    {
 	LevelsetP2CL::const_DiscSolCL sol= lset.GetSolution( *l1);
         if (!ModifyGridStep(sol))
             break;
@@ -110,7 +110,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         std::swap( v2, v1);
         std::swap( vidx2, vidx1);
         NS.CreateNumberingVel( LastLevel, vidx1);
-        if ( LastLevel != vidx2->TriangLevel) 
+        if ( LastLevel != vidx2->TriangLevel)
         {
             std::cout << "LastLevel: " << LastLevel
                       << " vidx2->TriangLevel: " << vidx2->TriangLevel << std::endl;
@@ -143,7 +143,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         lset.DeleteNumbering( lidx2);
     }
     // We want the solution to be in NS.v, NS.pr, lset.Phi
-    if (v1 == &loc_v) 
+    if (v1 == &loc_v)
     {
         NS.vel_idx.swap( loc_vidx);
         NS.pr_idx.swap( loc_pidx);

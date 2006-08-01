@@ -32,7 +32,7 @@ class ZeroFlowCL
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
         { DROPS::SVectorCL<3> ret(0.0); return ret; }
     const double nu;
-    
+
     ZeroFlowCL() : nu(1.0) {}
 };
 
@@ -75,14 +75,14 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     MatDescCL prM;
 
     LevelsetP2CL lset( MG, sigma, 0.5, 0.1);
-    
+
     vidx->Set( 3, 3);
     pidx->Set( 1);
     lidx.Set(  1, 1);
-    
+
     TimerCL time;
-    Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx);
     lset.CreateNumbering( MG.GetLastLevel(), &lidx);
     lset.Phi.SetIdx( &lidx);
     lset.Init( DistanceFct);
@@ -107,7 +107,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     Stokes.SetupPrMass( &prM);
     time.Stop();
     std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
-    
+
     Stokes.InitVel( v, Null);
     lset.SetupSystem( Stokes.GetVelSolution() );
 /*
@@ -144,16 +144,16 @@ v->Clear();
     std::cerr << "tol = "; std::cin >> outer_tol;
 
     EnsightP2SolOutCL ensight( MG, &lidx);
-    
-    const char datgeo[]= "ensight/curvdriv.geo", 
+
+    const char datgeo[]= "ensight/curvdriv.geo",
                datpr[] = "ensight/curvdriv.pr",
                datvec[]= "ensight/curvdriv.vec",
                datscl[]= "ensight/curvdriv.scl";
     ensight.CaseBegin( "curvdriv.case", num_steps+1);
     ensight.DescribeGeom( "curvature driven flow", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
     ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
@@ -162,7 +162,7 @@ v->Clear();
     if (meth)
     {
         PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
-        CouplLevelsetStokesCL<StokesProblemT, PSchur_GSPCG_CL> 
+        CouplLevelsetStokesCL<StokesProblemT, PSchur_GSPCG_CL>
             cpl( Stokes, lset, schurSolver);
         cpl.SetTimeStep( delta_t);
 
@@ -182,7 +182,7 @@ v->Clear();
         tau=  0.5*delta_t;
         std::cerr << "#PCG steps = "; std::cin >> inner_iter;
         Uzawa_PCG_CL uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
-        CouplLevelsetStokesCL<StokesProblemT, Uzawa_PCG_CL> 
+        CouplLevelsetStokesCL<StokesProblemT, Uzawa_PCG_CL>
             cpl( Stokes, lset, uzawaSolver);
         cpl.SetTimeStep( delta_t);
 
@@ -199,7 +199,7 @@ v->Clear();
     }
 
     ensight.CaseEnd();
-    
+
     std::cerr << std::endl;
 }
 
@@ -212,7 +212,7 @@ int main (int argc, char** argv)
   {
     if (argc<4)
     {
-        std::cerr << "You have to specify at least three parameters:\n\t" 
+        std::cerr << "You have to specify at least three parameters:\n\t"
                   << argv[0] << " <inner_iter_tol> <num_subdiv> <surf.tension> [<dt> <num_steps>]" << std::endl;
         return 1;
     }
@@ -234,11 +234,11 @@ int main (int argc, char** argv)
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
 
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &Null, &Null, &Null, &Null, &Null, &Null }; 
-        
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Null, &Null, &Null, &Null, &Null, &Null };
+
     MyStokesCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     Strategy(prob, inner_iter_tol, sigma);

@@ -30,7 +30,7 @@ struct RawTriangCL
     IsOuterFace(const FacCL&) const;
     void
     Print(std::ostream&) const;
-};    
+};
 
 
 FaceRefRuleBaseCL facetriang[8]=
@@ -245,7 +245,7 @@ void SetChildren(const RawTriangCL& r, RefRuleCL& refrule)
 void SetChildData(const TetCL& t, ChildDataCL& cdata)
 {
     Uint VertIndex= GetTetraNumByVert(t);
-    
+
     for (Uint v=0; v<NumVertsC; ++v)
         cdata.Vertices[v]= VertOfChildAr[VertIndex][v];
     for (Uint e=0; e<NumEdgesC; ++e)
@@ -254,7 +254,7 @@ void SetChildData(const TetCL& t, ChildDataCL& cdata)
         cdata.Faces[f]= GetFaceNumByVert( GetFaceOfTetra(t, f) );
 }
 
-       
+
 void WriteChildData(const Uint VertIndex, std::ostream& os)
 {
     Uint v[NumVertsC];
@@ -275,7 +275,7 @@ void WriteChildData(const Uint VertIndex, std::ostream& os)
         os << static_cast<int>( GetFaceByVert(v[VertOfFace(i, 0)], v[VertOfFace(i, 1)], v[VertOfFace(i, 2)] ) );
         if (i != NumFacesC-1) os << ", ";
     }
-}    
+}
 
 
 void WriteRule(const RefRuleCL& rr, std::ostream& os)

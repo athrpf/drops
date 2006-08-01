@@ -41,7 +41,7 @@ double Phi2( const DROPS::Point3DCL& p)
 {
     const double depth= 0.8-p[1],
                  alpha= 0.1;
-    
+
     if (depth>0)
         return SmoothedSign( DistFct( p), alpha);
     else
@@ -69,20 +69,20 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
     lset.Phi.SetIdx( &lidx);
     switch (bsp)
     {
-        case 0:  lset.Init( Phi0); break;        
+        case 0:  lset.Init( Phi0); break;
         case 1:  lset.Init( Phi1); break;
         case 2:  lset.Init( Phi2); break;
         default: lset.Init( DistFct);	
     }
     lset.SetupSystem( prob.GetVelSolution() );
-    
+
     EnsightP2SolOutCL sol( mg, &lidx);
-    
-    const char datgeo[]= "ensight/rep.geo", 
+
+    const char datgeo[]= "ensight/rep.geo",
                datscl[]= "ensight/rep.scl";
     sol.CaseBegin( "rep.case", num_steps+1);
     sol.DescribeGeom( "Cube", datgeo);
-    sol.DescribeScalar( "Levelset", datscl, true); 
+    sol.DescribeScalar( "Levelset", datscl, true);
     sol.putGeom( datgeo);
     sol.putScalar( datscl, lset.GetSolution(), 0.);
 
@@ -92,13 +92,13 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
     time.Stop();
     std::cerr << time.GetTime() << " sec for Fast Marching\n";
     sol.putScalar( datscl, lset.GetSolution(), dt/2);
-    
+
     for (int i=1; i<=num_steps; ++i)
     {
         lset.Reparam( 1, dt);
         sol.putScalar( datscl, lset.GetSolution(), i*dt);
     }
-    
+
     sol.CaseEnd();
 }
 
@@ -111,7 +111,7 @@ int main( int argc, char **argv)
   try{
     double dt= 0.01, diff= 1e-4;
     int bsp= 0, num_steps= 100;
-    
+
     if (argc>1)
         diff= std::atof( argv[1]);
     if (argc>2)
@@ -119,7 +119,7 @@ int main( int argc, char **argv)
     if (argc>3)
         num_steps= std::atoi( argv[3]);
 
-    std::cout << num_steps << " steps of lenght dt = " << dt 
+    std::cout << num_steps << " steps of lenght dt = " << dt
               << ", diff = " << diff << std::endl;
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
@@ -127,18 +127,18 @@ int main( int argc, char **argv)
 
     typedef DROPS::StokesP2P1CL<DROPS::DummyStokesCoeffCL> StokesOnBrickCL;
     typedef StokesOnBrickCL                                                  MyStokesCL;
-    
+
     int num= 0;
     std::cout << "# Unterteilungen: "; std::cin >> num;
     std::cout << "Beispielnr.: "; std::cin >> bsp;
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {true, true, true, true, true, true};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Null, &Null, &Null };
-        
+
     MyStokesCL prob(brick, DROPS::DummyStokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
- 
+
     Strategy( prob, dt, num_steps, diff, bsp);
 
     return 0;

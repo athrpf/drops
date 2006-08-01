@@ -19,8 +19,8 @@
 
 DROPS::ParamMesszelleCL C;
 
-// program for testing various FE pressure spaces 
-// using a special constant surface force: 
+// program for testing various FE pressure spaces
+// using a special constant surface force:
 //     \sigma \int_\Gamma v n ds
 // => implies a constant pressure jump [p] = \sigma across \Gamma.
 
@@ -38,7 +38,7 @@ class ZeroFlowCL
     const DROPS::SmoothedJumpCL rho, mu;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& c) 
+    ZeroFlowCL( const DROPS::ParamMesszelleCL& c)
       : rho( DROPS::JumpCL( c.rhoD, c.rhoF ), DROPS::H_sm, c.sm_eps),
          mu( DROPS::JumpCL( c.muD,  c.muF),   DROPS::H_sm, c.sm_eps),
         g( c.g)    {}
@@ -54,7 +54,7 @@ class DimLessCoeffCL
     const DROPS::SmoothedJumpCL rho, mu;
     const DROPS::Point3DCL g;
 
-    DimLessCoeffCL( double l, double u, const DROPS::ParamMesszelleCL& c) 
+    DimLessCoeffCL( double l, double u, const DROPS::ParamMesszelleCL& c)
       : L( l), U( u),
         rho( DROPS::JumpCL( 1, c.rhoF/c.rhoD ), DROPS::H_sm, c.sm_eps/L),
          mu( DROPS::JumpCL( 1, c.muF/c.muD),   DROPS::H_sm, c.sm_eps/L),
@@ -116,29 +116,29 @@ void InitPr( VecDescCL& p, double delta_p, const MultiGridCL& mg)
     const IdxDescCL& idx= *p.RowIdx;
     const Uint lvl= p.RowIdx->TriangLevel,
         idxnum= p.RowIdx->GetIdx();
-    
+
     delta_p/= 2;
     if (idx.NumUnknownsVertex && idx.NumUnknownsTetra) // P01_FE
-        for( MultiGridCL::const_TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl), 
+        for( MultiGridCL::const_TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl),
             end= mg.GetTriangVertexEnd(lvl); it != end; ++it)
         {
             p.Data[it->Unknowns(idxnum)]= 0;
-        }    
+        }
     if (idx.NumUnknownsVertex && !idx.NumUnknownsTetra) // P1_FE
-        for( MultiGridCL::const_TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl), 
+        for( MultiGridCL::const_TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl),
             end= mg.GetTriangVertexEnd(lvl); it != end; ++it)
         {
             const double dist= DistanceFct( it->GetCoord());
             p.Data[it->Unknowns(idxnum)]= dist > 0 ? -delta_p : delta_p;
-        }    
+        }
 
     if (idx.NumUnknownsTetra)
-        for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl), 
+        for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl),
             end= mg.GetTriangTetraEnd(lvl); it != end; ++it)
         {
             const double dist= DistanceFct( GetBaryCenter( *it));
             p.Data[it->Unknowns(idxnum)]= dist > 0 ? -delta_p : delta_p;
-        }    
+        }
 }
 
 double my_abs( double x) { return std::abs(x); }
@@ -146,7 +146,7 @@ double my_abs( double x) { return std::abs(x); }
 void ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, double delta_p, const MultiGridCL& mg)
 {
     if (p.RowIdx->NumUnknownsTetra) return;
-    
+
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const Uint lvl= p.GetLevel();
     IdxT prNumb[4];
@@ -154,11 +154,11 @@ void ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, double delta_p, cons
     JumpCL PressureJump( delta_p/2, -delta_p/2);
     LocalP2CL<double> locallset;
     Quad2CL<double> diff, exact;
-    
+
     // ToDo: compute avg. of p for scaling
     double vol= 0, integr= 0, integr_ex= 0;
     for (MultiGridCL::const_TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(lvl),
-      send= mg.GetTriangTetraEnd(lvl); sit != send; ++sit) 
+      send= mg.GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
         vol+= sit->GetVolume();
         const double absdet= sit->GetVolume()*6.;
@@ -175,11 +175,11 @@ void ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, double delta_p, cons
         integr_ex+= exact.quad( absdet);
     }
     const double avg= integr/vol, avg_ex= integr_ex/vol;
-    std::cerr << "\navg pr = " << avg << "\tavg. exact pr = " << avg_ex << "\n";    
+    std::cerr << "\navg pr = " << avg << "\tavg. exact pr = " << avg_ex << "\n";
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(lvl),
       send= mg.GetTriangTetraEnd(lvl); sit != send; ++sit) {
-        
+
         const double absdet= sit->GetVolume()*6.;
 
         const double pr_ex= DistanceFct(GetBaryCenter( *sit)) > 0 ? -delta_p/2 : delta_p/2;
@@ -190,11 +190,11 @@ void ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, double delta_p, cons
         for (int i=0; i<4; ++i)
             sum+= diff[i]= p.Data[prNumb[i]] - avg;
         diff[4]= sum/4; // value in barycenter
-        
+
 
 
         diff-= exact;
-//std::cerr << diff[0] << "\t" << diff[4] << "\n";        
+//std::cerr << diff[0] << "\t" << diff[4] << "\n";
         L2Err+= Quad2CL<>(diff*diff).quad( absdet);
 
         diff.apply( my_abs);
@@ -209,7 +209,7 @@ void ErrorPr( const VecDescCL& p, const MatrixCL& prM, double delta_p, const Mul
 {
     const double min= p.Data.min(), max= p.Data.max();
     std::cerr << "pressure min/max/diff:\t" << min << "\t" << max << "\t" << (max-min-delta_p) << "\n";
-    
+
     VectorCL ones( 1.0, p.Data.size());
     const double Vol= (prM*ones).sum()*C.muD; // note that prM is scaled by 1/mu !!
 // std::cerr << "Vol = " << Vol << '\n';
@@ -229,19 +229,19 @@ void ErrorPr( const VecDescCL& p, const MatrixCL& prM, double delta_p, const Mul
 }
 
 void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
-// as Ensight output is for cont. data only, put values of P0 DoFs in tetras 
+// as Ensight output is for cont. data only, put values of P0 DoFs in tetras
 // into P1 DoFs in vertices (s.t. the average over each tetra gives
 // the former P0 value)
 {
     VectorCL num( new_p.Data.size()), sum( new_p.Data.size());
-    
+
     const Uint lvl= p.RowIdx->TriangLevel,
         idxnum= p.RowIdx->GetIdx(),
         idxnum2= new_p.RowIdx->GetIdx();
-    
+
     if (!p.RowIdx->NumUnknownsTetra) { new_p= p; return; }
-    
-    for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl), 
+
+    for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl),
         end= mg.GetTriangTetraEnd(lvl); it != end; ++it)
     {
         const double val= p.Data[it->Unknowns(idxnum)];
@@ -251,21 +251,21 @@ void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
             sum[nr2]+= val;
             num[nr2]+= 1;
         }
-    }    
+    }
 
     if (new_p.RowIdx->NumUnknownsVertex)
-        for( MultiGridCL::const_TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl), 
+        for( MultiGridCL::const_TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl),
             end= mg.GetTriangVertexEnd(lvl); it != end; ++it)
         {
             const IdxT nr= it->Unknowns(idxnum),
                 nr2= it->Unknowns(idxnum2);
             new_p.Data[nr2]= p.Data[nr] + sum[nr2]/num[nr2];
-        }    
+        }
 }
 
 void PrintNorm( string name, const VectorCL& v)
 {
-    std::cerr << name << ":\t2-norm: " 
+    std::cerr << name << ":\t2-norm: "
         << norm( v) << "\tmax: " << supnorm( v) << std::endl;
 }
 
@@ -277,7 +277,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff); 
+    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
     lset.SetSurfaceForce( SF_Const);
 
     IdxDescCL* lidx= &lset.idx;
@@ -286,28 +286,28 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MatDescCL prM, prA;
     VecDescCL new_pr;  // for pressure output in Ensight
 
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
 
     EnsightP2SolOutCL ensight( MG, lidx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo", 
+    const string datgeo= filename+".geo",
                  datpr = filename+".pr" ,
                  datvec= filename+".vel",
                  datcrv= filename+".crv",
                  datscl= filename+".scl";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
-    ensight.DescribeVector( "Curvature", datcrv, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
+    ensight.DescribeVector( "Curvature", datcrv, true);
     ensight.putGeom( datgeo);
 
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
-    
+
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
@@ -356,10 +356,10 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         std::cerr << "Solving velocity for exact pressure given...\n";
         PCG.Solve( Stokes.A.Data, Stokes.v.Data, VectorCL( Stokes.b.Data + curv.Data - transp_mul( Stokes.B.Data, Stokes.p.Data)) );
       } break;
-      
+
     case 1:
       {
-        // solve stationary problem for initial velocities    
+        // solve stationary problem for initial velocities
         TimerCL time;
         time.Reset();
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
@@ -380,8 +380,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         InexactUzawaT inexactUzawaSolver( pcg, dpc, C.outer_iter, C.outer_tol);
 
         time.Reset();
-        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
-//        inexactUzawaSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
+        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
+//        inexactUzawaSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + curv.Data), Stokes.c.Data);
         time.Stop();
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
@@ -392,7 +392,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
       }
     }
 
-    const VectorCL& u= Stokes.v.Data;       
+    const VectorCL& u= Stokes.v.Data;
     std::cerr << "\n----------------\n || u ||_oo = " << supnorm(u)
               << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))
               << "\n || u ||_A  = " << std::sqrt( dot( Stokes.A.Data*u, u))
@@ -400,7 +400,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     ErrorPr( Stokes.p, prM.Data, C.sigma, MG);
     ErrorPr( Stokes.p, lset, C.sigma, MG);
-    
+
     PostProcessPr( Stokes.p, new_pr, MG);
 
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
@@ -413,7 +413,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
-    
+
     typedef PCG_SsorCL ASolverT;
     ASolverT Asolver( SSORPcCL( 1.0), C.inner_iter, 0.2, /*relative*/true);
     typedef SolverAsPreCL<ASolverT> APcT;
@@ -423,9 +423,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     InexactUzawaT inexactUzawaSolver( pcg, ispc, C.outer_iter, C.outer_tol);
 //    InexactUzawaT inexactUzawaSolver( pcg, dpc, C.outer_iter, C.outer_tol);
 
-//    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
+//    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
 //        cpl( Stokes, lset, ISPschurSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaT> 
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaT>
         cpl( Stokes, lset, inexactUzawaSolver, C.theta);
     cpl.SetTimeStep( C.dt);
 
@@ -433,7 +433,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_iter);
-        const VectorCL& u= Stokes.v.Data;       
+        const VectorCL& u= Stokes.v.Data;
         std::cerr << "\n----------------\n || u ||_oo = " << supnorm(u)
                   << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))
                   << "\n || u ||_A  = " << std::sqrt( dot( Stokes.A.Data*u, u))
@@ -465,23 +465,23 @@ void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
             {
                 const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
                 if ( val<C.ref_width && val > -C.ref_width)
-                    It->SetRegRefMark();   
+                    It->SetRegRefMark();
             }
-            const double val= DistanceFct( GetBaryCenter(*It));    
+            const double val= DistanceFct( GetBaryCenter(*It));
             if ( val<C.ref_width && val > -C.ref_width)
-                It->SetRegRefMark();   
+                It->SetRegRefMark();
 */
             int neg= 0, zero= 0;
             for (int i=0; i<4; ++i)
             {
                 const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
-                neg+= val<0; 
+                neg+= val<0;
                 zero+= std::fabs(val)<1e-9;
-            }   
+            }
             const double val= DistanceFct( GetBaryCenter(*It));
-            neg+= val<0; 
+            neg+= val<0;
             zero+= std::fabs(val)<1e-9;
-            
+
             if ( (neg!=0 && neg!=5) || zero) // change of sign or zero in tetra
                It->SetRegRefMark();
     }
@@ -494,7 +494,7 @@ int main (int argc, char** argv)
   {
     if (argc>2)
     {
-        std::cerr << "You have to specify at most one parameter:\n\t" 
+        std::cerr << "You have to specify at most one parameter:\n\t"
                   << argv[0] << " [<param_file>]" << std::endl;
         return 1;
     }
@@ -513,25 +513,25 @@ int main (int argc, char** argv)
     std::cerr << C << std::endl;
 
     typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
-    
+
     const double L= 2e-3; // Vol= 8*L*L*L;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
-    
+
     const int n= std::atoi( C.meshfile.c_str());
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
-    
-    const DROPS::BndCondT bc[6]= 
+
+    const DROPS::BndCondT bc[6]=
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &Null, &Null, &Null, &Null, &Null, &Null}; 
-        
-    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun), 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Null, &Null, &Null, &Null, &Null, &Null};
+
+    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
         DROPS::P0_FE);
 //               ^--------- FE type for pressure space
-        
+
     DROPS::MultiGridCL& mg = prob.GetMG();
-    
+
     for (int i=0; i<C.num_dropref; ++i)
     {
         MarkDrop( mg);
@@ -540,7 +540,7 @@ int main (int argc, char** argv)
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
     Strategy( prob);  // do all the stuff
-    
+
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;

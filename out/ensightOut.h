@@ -44,11 +44,11 @@ class EnsightP2SolOutCL
     std::ofstream      _case;
     std::string        _geom;
     const bool         binary_;
-     
+
     void AppendTimecode( std::string&) const;
     void putTime( double time);
     void CheckFile( const std::ofstream&) const;
-  
+
   public:
     // idx must refer to a numbering of the verts and edges of a certain
     // triangulation, i.e. use LevelsetP2CL::CreateNumbering before
@@ -57,7 +57,7 @@ class EnsightP2SolOutCL
       : _MG( &mg), _idx( idx), _decDigits( 0), _timestep( -1u), _numsteps( 0), _lasttime(-1), binary_( binary)
     {}
     ~EnsightP2SolOutCL() { if (_case.is_open()) CaseEnd(); }
-      
+
     // call CaseBegin() before any other member function
     void CaseBegin ( const char casefileName[], Uint numsteps= 0);
     void DescribeGeom  ( const char geoName[], std::string fileName, bool timedep= false);
@@ -82,7 +82,7 @@ class ReadEnsightP2SolCL
     const bool         binary_;
 
     void CheckFile( const std::ifstream&) const;
-    
+
   public:
     ReadEnsightP2SolCL( const MultiGridCL& mg, bool binary=true)
       : _MG(&mg), binary_(binary) {}
@@ -104,7 +104,7 @@ void EnsightP2SolOutCL::CaseBegin( const char casefileName[], Uint numsteps)
     _case.open( casefileName);
     CheckFile( _case);
     _descstr << "FORMAT\ntype: ensight\n\n";
-    
+
     _numsteps= numsteps;
     _decDigits= 1;
     while( numsteps>9)
@@ -177,7 +177,7 @@ void EnsightP2SolOutCL::Commit()
     // rewrite case file
     _case.seekp( 0, std::ios_base::beg);  // rewind to the very beginning
     _case << _descstr.str();
-    if (!_timestr.str().empty()) 
+    if (!_timestr.str().empty())
     {
         _case << "\nTIME\ntime set:\t\t1\nnumber of steps:\t" << _timestep+1
               << "\nfilename start number:\t0\nfilename increment:\t1\ntime values:\t\t";
@@ -202,11 +202,11 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     {
         putTime( t);
         AppendTimecode( fileName);
-    }    
-    
+    }
+
     std::ofstream os( fileName.c_str());
     CheckFile( os);
-   
+
     if(binary_)
     {
         char buffer[80];
@@ -226,32 +226,32 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         showInt sInt;                  //unions for converting ASCII int to binary
         showFloat sFlo;
         sInt.i= (int)idxDesc->NumUnknowns;            //write number of nodes
-        os.write( sInt.s, sizeof(int));        
+        os.write( sInt.s, sizeof(int));
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),     //write node ids
                  end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
-        {     
-            sInt.i=(int)it->Unknowns(idx)+1;            
-            os.write( sInt.s, sizeof(int));        
+        {
+            sInt.i=(int)it->Unknowns(idx)+1;
+            os.write( sInt.s, sizeof(int));
         }
-        
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),          //write ids of additional nodes
                  end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {
-            sInt.i=(int)it->Unknowns(idx)+1;  
-            os.write( sInt.s, sizeof(int));        
+            sInt.i=(int)it->Unknowns(idx)+1;
+            os.write( sInt.s, sizeof(int));
         }
-    
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),     //write coordinates of nodes
                  end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
-            Point3DCL c= it->GetCoord();          
+            Point3DCL c= it->GetCoord();
             for(int i=0; i<3; ++i)
             {
                 sFlo.f=c[i];
-                os.write( sFlo.s, sizeof(float));        
+                os.write( sFlo.s, sizeof(float));
             }
         }
-        
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),           //write coordinates of additional nodes
                  end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {
@@ -259,10 +259,10 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
             for(int i=0; i<3; ++i)
             {
                 sFlo.f=c[i];
-                os.write( sFlo.s, sizeof(float));        
+                os.write( sFlo.s, sizeof(float));
             }
         }
-    
+
         std::strcpy(buffer,"part 1");                          //part no. line
         os.write(buffer,80);
         int b=0;
@@ -273,10 +273,10 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         os.write(buffer,80);
         std::strcpy(buffer,"tetra4");                          // element 1 tetrahedron with 4 nodes each
         os.write(buffer,80);
-        
+
         sInt.i =  8*std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl));     //number of tetrahedra
-        os.write( sInt.s, sizeof(int));        
-        
+        os.write( sInt.s, sizeof(int));
+
         RefRuleCL RegRef= GetRefRule( RegRefRuleC);
         for (MultiGridCL::const_TriangTetraIteratorCL it= _MG->GetTriangTetraBegin(lvl),
                       end= _MG->GetTriangTetraEnd(lvl); it!=end; ++it)
@@ -284,19 +284,19 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
             for (int ch=0; ch<8; ++ch)
             {
                 ChildDataCL data= GetChildData( RegRef.Children[ch]);
-                               
+
                 for (int vert= 0; vert<4; ++vert)
                 {
                     int v= data.Vertices[vert];
-                    if (v<4) 
+                    if (v<4)
                     {
                         sInt.i= it->GetVertex(v)->Unknowns(idx)+1;
-                        os.write( sInt.s, sizeof(int));        
-                    }     
+                        os.write( sInt.s, sizeof(int));
+                    }
                     else
                     {
                         sInt.i=it->GetEdge(v-4)->Unknowns(idx)+1;
-                        os.write( sInt.s, sizeof(int));        
+                        os.write( sInt.s, sizeof(int));
                     }
                 }
             }
@@ -311,11 +311,11 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
          os << "DROPS geometry file: " << "\nformat: Ensight6 Case format\n";
          os << "node id given\nelement id off\n";
          os << "coordinates\n" << std::setw(8) << idxDesc->NumUnknowns << '\n';
-    
+
          for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
              end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
          {
-             os << std::setw(8) << it->Unknowns(idx)+1; 
+             os << std::setw(8) << it->Unknowns(idx)+1;
              Point3DCL c= it->GetCoord();
              for (int i=0; i<3; ++i)
                  os << std::setw(12) << c[i];
@@ -334,8 +334,8 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
          os << "part 1\n" << _geom << "\n";
          // Ausgabe auf virtuell reg. verfeinertem Gitter, da Ensight zur Berechnung
          // der Isoflaechen anscheinend nur die Werte in den Vertices beruecksichtigt...
-         os << "tetra4\n" 
-            << std::setw(8) << 8*std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl)) << '\n'; 
+         os << "tetra4\n"
+            << std::setw(8) << 8*std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl)) << '\n';
 
          RefRuleCL RegRef= GetRefRule( RegRefRuleC);
          for (MultiGridCL::const_TriangTetraIteratorCL it= _MG->GetTriangTetraBegin(lvl),
@@ -348,7 +348,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
                  {
                      int v= data.Vertices[vert];
                      os << std::setw(8);
-                     if (v<4) 
+                     if (v<4)
                          os << it->GetVertex(v)->Unknowns(idx)+1;
                      else
                          os << it->GetEdge(v-4)->Unknowns(idx)+1;
@@ -356,11 +356,11 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
                  os << '\n';
              }
          }
-     
-     }     
+
+     }
 /*  // alte Version mit P2-Ausgabe auf tatsaechlichem Gitter
-    os << "tetra10\n" 
-       << std::setw(8) << std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl)) << '\n'; 
+    os << "tetra10\n"
+       << std::setw(8) << std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl)) << '\n';
     for (MultiGridCL::const_TriangTetraIteratorCL it= _MG->GetTriangTetraBegin(lvl),
         end= _MG->GetTriangTetraEnd(lvl); it!=end; ++it)
     {
@@ -384,12 +384,12 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
     const Uint lvl= _idx->TriangLevel;
     char buffer[80];
     showFloat sFlo;
-    
+
     if ( t!=-1)
     {
         putTime( t);
         AppendTimecode( fileName);
-    }    
+    }
 
     std::ofstream os( fileName.c_str());
     CheckFile( os);
@@ -398,14 +398,14 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
     {
         std::strcpy(buffer,"DROPS data file, scalar variable:");
         os.write(buffer,80);
- 
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
            end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
             sFlo.f=v.val(*it);
             os.write(sFlo.s,sizeof(float));
         }
-    
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
            end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {
@@ -431,7 +431,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
                 os << '\n';
             }
         }
-         
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
              end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {
@@ -452,17 +452,17 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
     const Uint lvl= _idx->TriangLevel;
     char buffer[80];
     showFloat sFlo;
-    
+
     if ( t!=-1)
     {
         putTime( t);
         AppendTimecode( fileName);
-    }    
+    }
 
     std::ofstream os( fileName.c_str());
     CheckFile( os);
     os.flags(std::ios_base::scientific);
-   
+
     if(binary_)
     {
         std::strcpy(buffer,"DROPS data file, vector variable:");
@@ -494,7 +494,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
         os.width(12);
 
         os << "DROPS data file, vector variable:\n";
-         
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
             end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
@@ -530,13 +530,13 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
                idx= v.RowIdx->GetIdx();
     std::ifstream is( file.c_str());
     CheckFile( is);
-     
+
     if (binary_)
     {
         showFloat fl;
         char buffer[80];
         is.read( buffer, 80);           //ignore first 80 characters
-    
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
              end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
@@ -544,7 +544,7 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
             if (bnd.IsOnDirBnd( *it) || !(it->Unknowns.Exist(idx)) ) continue;
             v.Data[it->Unknowns(idx)]= (double)fl.f;
         }
-          
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
             end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {
@@ -557,9 +557,9 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
     { // ASCII
         char buf[256];
         double d= 0;
-    
+
         is.getline( buf, 256); // ignore first line
-               
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
              end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
@@ -586,16 +586,16 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
                idx= v.RowIdx->GetIdx();
     std::ifstream is( file.c_str());
     CheckFile( is);
-    
+
     double d0= 0, d1= 0, d2= 0;
-    
+
     if(binary_)
     {
         showFloat fl;
         //std::cout<<"READVECTOR: "<<file.c_str()<<"\n";
         char buffer[80];
         is.read( buffer, 80);       //ignore first 80 characters
-                   
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
             end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
@@ -609,7 +609,7 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
             const IdxT Nr= it->Unknowns(idx);
             v.Data[Nr]= d0;    v.Data[Nr+1]= d1;    v.Data[Nr+2]= d2;
         }
-          
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
              end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {
@@ -627,11 +627,11 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
     else
     { // ASCII
         char buf[256];
-  
+
         std::ifstream is( file.c_str());
         CheckFile( is);
         is.getline( buf, 256); // ignore first line
-               
+
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
             end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
         {
@@ -641,7 +641,7 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
             const IdxT Nr= it->Unknowns(idx);
             v.Data[Nr]= d0;    v.Data[Nr+1]= d1;    v.Data[Nr+2]= d2;
         }
-         
+
         for (MultiGridCL::const_TriangEdgeIteratorCL it= _MG->GetTriangEdgeBegin(lvl),
             end= _MG->GetTriangEdgeEnd(lvl); it!=end; ++it)
         {

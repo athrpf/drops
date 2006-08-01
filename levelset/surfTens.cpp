@@ -33,7 +33,7 @@ class ZeroFlowCL
     const DROPS::SmoothedJumpCL rho, mu;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& c) 
+    ZeroFlowCL( const DROPS::ParamMesszelleCL& c)
       : rho( DROPS::JumpCL( c.rhoD, c.rhoF ), DROPS::H_sm, c.sm_eps),
          mu( DROPS::JumpCL( c.muD,  c.muF),   DROPS::H_sm, c.sm_eps),
         g( c.g)    {}
@@ -49,7 +49,7 @@ class DimLessCoeffCL
     const DROPS::SmoothedJumpCL rho, mu;
     const DROPS::Point3DCL g;
 
-    DimLessCoeffCL( double l, double u, const DROPS::ParamMesszelleCL& c) 
+    DimLessCoeffCL( double l, double u, const DROPS::ParamMesszelleCL& c)
       : L( l), U( u),
         rho( DROPS::JumpCL( 1, c.rhoF/c.rhoD ), DROPS::H_sm, c.sm_eps/L),
          mu( DROPS::JumpCL( 1, c.muF/c.muD),   DROPS::H_sm, c.sm_eps/L),
@@ -98,37 +98,37 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff); 
+    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
     MatDescCL prM, prA;
 
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
 
     EnsightP2SolOutCL ensight( MG, lidx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo", 
+    const string datgeo= filename+".geo",
                  datpr = filename+".pr" ,
                  datvec= filename+".vel",
                  datcrv= filename+".crv",
                  datscl= filename+".scl";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
-    ensight.DescribeVector( "Curvature", datcrv, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
+    ensight.DescribeVector( "Curvature", datcrv, true);
     ensight.putGeom( datgeo);
 
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
     const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-    
+
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
@@ -142,7 +142,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.M.SetIdx(vidx, vidx);
     prM.SetIdx( pidx, pidx);
     prA.SetIdx( pidx, pidx);
-    
+
     Stokes.InitVel( &Stokes.v, Null);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
@@ -152,7 +152,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     if (C.IniCond != 0)
     {
-        // solve stationary problem for initial velocities    
+        // solve stationary problem for initial velocities
         TimerCL time;
         time.Reset();
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
@@ -163,7 +163,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         time.Reset();
-        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
+        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + curv.Data), Stokes.c.Data);
         time.Stop();
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
@@ -180,8 +180,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
-    
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
+
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
         cpl( Stokes, lset, ISPschurSolver, C.theta);
     cpl.SetTimeStep( C.dt);
 
@@ -244,11 +244,11 @@ void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
             for (int i=0; i<4; ++i)
             {
                 const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
-                neg+= val<0; 
-            }   
+                neg+= val<0;
+            }
 //            const double val= DistanceFct( GetBaryCenter(*It));
-//            neg+= val<0; 
-            
+//            neg+= val<0;
+
             if (neg!=0 && neg!=4)
                It->SetRegRefMark();
     }
@@ -261,7 +261,7 @@ int main (int argc, char** argv)
   {
     if (argc>2)
     {
-        std::cerr << "You have to specify at most one parameter:\n\t" 
+        std::cerr << "You have to specify at most one parameter:\n\t"
                   << argv[0] << " [<param_file>]" << std::endl;
         return 1;
     }
@@ -280,23 +280,23 @@ int main (int argc, char** argv)
     std::cerr << C << std::endl;
 
     typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
-    
+
     const double L= 3e-3;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
-    
+
     const int n= std::atoi( C.meshfile.c_str());
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
-    
-    const DROPS::BndCondT bc[6]= 
+
+    const DROPS::BndCondT bc[6]=
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &Null, &Null, &Null, &Null, &Null, &Null}; 
-        
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Null, &Null, &Null, &Null, &Null, &Null};
+
     MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
-    
+
     for (int i=0; i<C.num_dropref; ++i)
     {
         MarkDrop( mg);
@@ -305,7 +305,7 @@ int main (int argc, char** argv)
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
     Strategy( prob);  // do all the stuff
-    
+
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;

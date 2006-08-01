@@ -8,7 +8,7 @@
 #   diff = Name of the diff-file to be produced (testname.diff).
 #   input= Name of parameter-input file; may be empty.
 #   makedir = The directory, in which "make" is to be executed to build the
-#             executable for the test. 
+#             executable for the test.
 #   maketarget = Target for make to build the executable.
 #   output = File, to which stdout and stderr are redirected (testname.out).
 #   reference-output = Reference-output (testname.ref).

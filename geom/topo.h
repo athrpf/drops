@@ -124,7 +124,7 @@ inline Ubyte EdgeOfFace    (Ubyte face, Ubyte num) { return EdgeOfFaceAr[face][n
 /// Returns, on which face of the parent chedge lies and also determines,
 /// whether the barycenter of chedge lies at v0 (0), v1 (1) or v2 (2) of the face.
 /// As to why why this works, take a look at topo.h, specifically the sorting
-/// of VertOfEdgeAr. 
+/// of VertOfEdgeAr.
 inline void WhichEdgeInFace(Uint chedge, Uint& parface, Uint& pos)
 { parface= chedge<30 ? chedge/3 -6 : chedge/3 -10; pos= chedge%3; }
 /// Vertex opposing a given face
@@ -144,12 +144,12 @@ inline bool IsMidVert     (Ubyte vert) { return vert >= NumVertsC; }
 /// true, if the edge is an edge of the parent-tetra
 inline bool IsParentEdge(Ubyte edge) { return edge < NumEdgesC; }
 /// returns, if edge is a sub-edge of an edge in the parent-tetrahedron
-inline bool IsSubEdge     (Ubyte edge) { return edge < NumEdgesC+12 && edge > NumEdgesC-1; } 
+inline bool IsSubEdge     (Ubyte edge) { return edge < NumEdgesC+12 && edge > NumEdgesC-1; }
 /// First or second subedge of a given edge
 inline Ubyte SubEdge       (Ubyte edge, Ubyte num) { return NumEdgesC+2*edge+num; }
 /// returns the number of the parent-edge
 inline Ubyte ParentEdge    (Ubyte subedge) { return (subedge-NumEdgesC)/2; }
-/// returns, whether subedge is subedge zero or one in the parent-edge  
+/// returns, whether subedge is subedge zero or one in the parent-edge
 inline Ubyte NumOfSubEdge  (Ubyte subedge) { return subedge%2; }
 /// true, if subedge is not an edge of the parent, not a subedge of a parent-edge and not a diagonal
 inline bool IsSubInParFace(Ubyte subedge) { return subedge > 17 && subedge < 42; }

@@ -53,7 +53,7 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 /// error-reporting is activated.
 //#define DROPSDebugC 25  //(DROPS::DebugNumericC | DROPS::DebugUnknownsC | DROPS::DebugContainerC )
 //#define DROPSDebugC ~0  // all bits set
-#define DROPSDebugC 0 
+#define DROPSDebugC 0
 
 /// \brief Throws an error upon a failed assertion.
 ///
@@ -201,7 +201,7 @@ template <class E, class A>
 inline void
 _Assert(A assertion, E exc, Uint DebugLevel=~0)
 {
-    if (DebugLevel&DROPSDebugC) 
+    if (DebugLevel&DROPSDebugC)
         if (!assertion) throw exc;
 }
 
@@ -210,7 +210,7 @@ template <class A>
 inline void
 _Assert(A assertion, const char* msg, Uint DebugLevel=~0)
 {
-    if (DebugLevel&DROPSDebugC) 
+    if (DebugLevel&DROPSDebugC)
         if (!assertion) throw DROPSErrCL(msg);
 }
 //@}
@@ -313,7 +313,7 @@ class ptr_iter
   public:
     // default copy-ctor, copy-assignment-op and dtor
     ptr_iter (T** p) : p_( p) {}
-    
+
     reference operator*  () const { return **p_; }
     pointer   operator-> () const { return *p_; }
 

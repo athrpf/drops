@@ -593,19 +593,19 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     Vec z(x.size()), t(x.size());
     for (int i= 0; i < m; ++i)
         v[i].resize( b.size());
-     
+
      if (method == RightPreconditioning)
      {
-          r= b - A*x;  
-          beta= norm( r); 
-          normb= norm(b);  
+          r= b - A*x;
+          beta= norm( r);
+          normb= norm(b);
      }
      else
-     {  
-          M.Apply( A, r, Vec( b - A*x));    
+     {
+          M.Apply( A, r, Vec( b - A*x));
           beta= norm( r);
-          M.Apply( A, w, b);  
-          normb= norm( w);  
+          M.Apply( A, w, b);
+          normb= norm( w);
      }
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
@@ -626,10 +626,10 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         for (i= 0; j <= max_iter; ++i, ++j) {
             if (method == RightPreconditioning)
             {
-                M.Apply( A, w, v[i]);  
-                w=A*w; 
-            } 
-            else M.Apply( A, w, A*v[i]);   
+                M.Apply( A, w, v[i]);
+                w=A*w;
+            }
+            else M.Apply( A, w, A*v[i]);
             for (int k= 0; k <= i; ++k ) {
                 H( k, i)= dot( w, v[k]);
                 w-= H( k, i)*v[k];
@@ -653,9 +653,9 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
                 if (method == RightPreconditioning)
                 {
                     z=0.;
-                    GMRES_Update( z, i, H, s, v); 
-                    M.Apply( A, t, z); 
-                    y+=t;  
+                    GMRES_Update( z, i, H, s, v);
+                    M.Apply( A, t, z);
+                    y+=t;
                 }
                 else GMRES_Update( y, i, H, s, v);
                 double resid2= norm( Vec( b - A*y));
@@ -667,31 +667,31 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
                 if (method == RightPreconditioning)
                 {
                     z=0.;
-                    GMRES_Update( z, i, H, s, v);  
-                    M.Apply( A, t, z); 
-                    x+=t;  
+                    GMRES_Update( z, i, H, s, v);
+                    M.Apply( A, t, z);
+                    x+=t;
                 }
-                else GMRES_Update( x, i, H, s, v);   
+                else GMRES_Update( x, i, H, s, v);
                 tol= resid;
                 max_iter= j;
                 return true;
             }
         }
-        
+
         if (method == RightPreconditioning)
         {
             z=0.;
-            GMRES_Update( z, i, H, s, v); 
-            M.Apply( A, t, z); 
-            x+=t; 
+            GMRES_Update( z, i, H, s, v);
+            M.Apply( A, t, z);
+            x+=t;
             r= b - A*x;
         }
         else
-        { 
-            GMRES_Update( x, i, H, s, v);   
-            M.Apply( A, r, Vec( b - A*x));   
-        } 
-        beta=norm(r); 
+        {
+            GMRES_Update( x, i, H, s, v);
+            M.Apply( A, r, Vec( b - A*x));
+        }
+        beta=norm(r);
         resid= beta/normb;
         if (resid <= tol) {
             tol= resid;
@@ -960,19 +960,19 @@ MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol,
 //*****************************************************************
 // BiCGSTAB
 //
-// BiCGSTAB solves the unsymmetric linear system Ax = b 
+// BiCGSTAB solves the unsymmetric linear system Ax = b
 // using the Preconditioned BiConjugate Gradient Stabilized method
 //
-// BiCGSTAB follows the algorithm described on p. 27 of the 
+// BiCGSTAB follows the algorithm described on p. 27 of the
 // SIAM Templates book.
 //
 // The return value indicates convergence within max_iter (input)
 // iterations (true), or no convergence or breakdown within
 // max_iter iterations (false). In cases of breakdown a message is printed
-// std::cerr and the iteration returns the approximate solution found. 
+// std::cerr and the iteration returns the approximate solution found.
 //
 // Upon successful return, output arguments have the following values:
-//  
+//
 //        x  --  approximate solution to Ax = b
 // max_iter  --  the number of iterations performed before the
 //               tolerance was reached
@@ -980,7 +980,7 @@ MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol,
 //
 // measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
 //     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
-//  
+//
 //*****************************************************************
 template <class Mat, class Vec, class Preconditioner>
 bool
@@ -997,7 +997,7 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
     Vec rtilde= r;
 
     if (normb == 0.0 || measure_relative_tol == false) normb = 1.0;
-  
+
     double resid= norm( r)/normb;
     if (resid <= tol) {
         tol= resid;
@@ -1054,7 +1054,7 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
 //*****************************************************************
 // GCR
 //
-// GCR solves the unsymmetric linear system Ax = b 
+// GCR solves the unsymmetric linear system Ax = b
 // using the Preconditioned Generalized Conjugate Residuals method;
 //
 // The return value indicates convergence within max_iter (input)
@@ -1062,7 +1062,7 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
 // max_iter iterations (false).
 //
 // Upon successful return, output arguments have the following values:
-//  
+//
 //        x  --  approximate solution to Ax = b
 // max_iter  --  the number of iterations performed before the
 //               tolerance was reached
@@ -1074,7 +1074,7 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
 //     new vector sn (min-alpha strategy).
 // measure_relative_tol -- If true, stop if |b - Ax|/|b| <= tol,
 //     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
-//  
+//
 //*****************************************************************
 template <class Mat, class Vec, class Preconditioner>
 bool
@@ -1137,7 +1137,7 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
 //*****************************************************************
 // GMRESR
 //
-// GMRESR solves the unsymmetric linear system Ax = b 
+// GMRESR solves the unsymmetric linear system Ax = b
 // using the GMRES Recursive method;
 //
 // The return value indicates convergence within max_iter (input)
@@ -1145,7 +1145,7 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
 // max_iter iterations (false).
 //
 // Upon successful return, output arguments have the following values:
-//  
+//
 //        x  --  approximate solution to Ax = b
 // max_iter  --  the number of iterations performed before the
 //               tolerance was reached
@@ -1153,7 +1153,7 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
 //
 // measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
 //     if false, stop if |b - Ax| <= tol. ( |.| is the euclidean norm.)
-//  
+//
 //*****************************************************************
 template <class Mat, class Vec, class Preconditioner>
 bool
@@ -1181,11 +1181,11 @@ GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
         GMRES(A, u[k+1], r, M, m, in_max_iter, in_tol, true, false, method);
         std::cerr << "norm of u_k_0: "<<norm(u[k+1])<<"\n";
         std::cerr << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << '\n';
-        if (norm(A*u[k+1]-r)>0.999*norm(r) and norm(u[k+1]) < 1e-3) 
+        if (norm(A*u[k+1]-r)>0.999*norm(r) and norm(u[k+1]) < 1e-3)
         {
-            u[k+1] = transp_mul(A, r); 
+            u[k+1] = transp_mul(A, r);
             std::cerr<<"LSQR switch!\n";
-        }       
+        }
         c.push_back( A*u[k+1]);
         for (int i= 1; i <= k; ++i) {
             const double alpha= dot( c[k+1], c[i]);
@@ -1355,7 +1355,7 @@ class GMResSolverCL : public SolverBaseCL
     PC  pc_;
     int restart_;
     PreMethGMRES method_;
-  
+
   public:
     GMResSolverCL(const PC& pc, int restart, int maxiter, double tol, bool relative= true, PreMethGMRES method= RightPreconditioning)
         : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart), method_(method){}
@@ -1436,8 +1436,8 @@ class GCRSolverCL : public SolverBaseCL
         GCR( A, x, b, pc_, truncate_, _iter, _res, rel_);
         if (output_ != 0)
             *output_ << "GCRSolverCL: iterations: " << GetIter()
-                     << "\tresidual: " << GetResid() << std::endl; 
-    }  
+                     << "\tresidual: " << GetResid() << std::endl;
+    }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
@@ -1446,7 +1446,7 @@ class GCRSolverCL : public SolverBaseCL
         GCR(A, x, b, pc_, truncate_, numIter, resid, rel_);
         if (output_ != 0)
             *output_ << "GCRSolverCL: iterations: " << GetIter()
-                    << "\tresidual: " << GetResid() << std::endl;     
+                    << "\tresidual: " << GetResid() << std::endl;
     }
 };
 // GMRESR
@@ -1470,7 +1470,7 @@ class GMResRSolverCL : public SolverBaseCL
     int       GetRestart () const { return restart_; }
     void   SetInnerTol     (double tol) { inner_tol_= tol; }
     void   SetInnerMaxIter (int iter)   { inner_maxiter_= iter; }
-    
+
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b)
     {
@@ -1519,7 +1519,7 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 
 
 //=============================================================================
-// Krylov-methods as preconditioner. 
+// Krylov-methods as preconditioner.
 // Needed for, e.g., InexactUzawa.
 //=============================================================================
 template <class SolverT>

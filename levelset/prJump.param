@@ -1,6 +1,6 @@
 #=============================================================
 #    DROPS parameter file
-#    simulation of two-phase flow: 
+#    simulation of two-phase flow:
 #    study effect of pressure jump for different FE spaces
 #=============================================================
 
@@ -36,7 +36,7 @@ Coupling {
 }
 
 # re-initialization of levelset function
-Reparam { 
+Reparam {
   Method	=	1
   Freq		=	0	# 0 = no reparametrization
   NumSteps	=	1
@@ -51,7 +51,7 @@ Mat {
   DensFluid	=	1e3
   ViscFluid	=	1e-3	
   SmoothZone	=	1e-5
-  
+
   SurfTension	=	10
 }
 
@@ -59,14 +59,14 @@ Mat {
 Exp {
   RadDrop	=	1.5e-3
   PosDrop	=	0	0	0.125e-3 # last component = position of interface
-  
+
   Gravity	=	0	0	0
-  
+
   FlowDir	=	1	# no effect
-  
+
   InflowVel	=	-0.14	# no effect
   RadInlet	=	3.5e-3	# no effect
-}  
+}
 
 # adaptive refinement
 AdaptRef {

@@ -12,14 +12,14 @@ namespace DROPS
 template <class Coeff>
   void
   NavierStokesP2P1CL<Coeff>::CheckSolution(
-    const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+    const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
     instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr,
     double t)
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
-    
+
     VecDescCL rhsN( lsgvel->RowIdx);
     MatDescCL myN( lsgvel->RowIdx, lsgvel->RowIdx);
     SetupNonlinear( &myN, lsgvel, &rhsN, t, t);
@@ -31,16 +31,16 @@ template <class Coeff>
     // mass-matrix-parts from the time-discretization. Also, InstatNavStokesThetaSchemeCL
     // swaps some right-hand-sides (b) with local vectors, so that we use the wrong one
     // in every second timestep.
-    std::cerr << "\nChecken der Loesung des LGS:\n";    
+    std::cerr << "\nChecken der Loesung des LGS:\n";
     std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||      Bx       - g || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
-    
+
     typename _base::const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
 
-    
+
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
@@ -204,7 +204,7 @@ template <class Coeff>
 // Sets up the approximation of the nonlinear term and the corresponding right hand side.
 {
     vecb->Clear();
-    
+
     const IdxT num_unks_vel= matN->RowIdx->NumUnknowns;
     MatrixBuilderCL N( &matN->Data, num_unks_vel, num_unks_vel);
 
@@ -215,10 +215,10 @@ template <class Coeff>
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];
-    
+
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-                            
+
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
     Quad2CL<Point3DCL> u_loc;
     SMatrixCL<3,3> T;
@@ -226,7 +226,7 @@ template <class Coeff>
     SVectorCL<3> tmp;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
                                                  send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -235,7 +235,7 @@ template <class Coeff>
         P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
         u_loc.assign( *sit, u, t);
-        
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -248,16 +248,16 @@ template <class Coeff>
         for(int j=0; j<10; ++j)
         {
             // N(u)_ij = int( phi_i *( u1 phi_j_x + u2 phi_j_y + u3 phi_j_z ) )
-            
+
             for(int i=0; i<10; ++i)    // assemble row Numb[i]
                 if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
                 {
                     const double N_ij= Quad2CL<>(dot( u_loc, Grad[j])).quadP2( i, absdet);
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
-                        N(Numb[i],          Numb[j])+=          N_ij; 
-                        N(Numb[i]+stride,   Numb[j]+stride)+=   N_ij; 
-                        N(Numb[i]+2*stride, Numb[j]+2*stride)+= N_ij; 
+                        N(Numb[i],          Numb[j])+=          N_ij;
+                        N(Numb[i]+stride,   Numb[j]+stride)+=   N_ij;
+                        N(Numb[i]+2*stride, Numb[j]+2*stride)+= N_ij;
                     }
                     else // coupling with vert/edge j on right-hand-side
                     {

@@ -26,7 +26,7 @@ zer_x= zeros(N,1);
 % initial temperature
 T0= zeros(N,1);
 
-% temperature for exact heat flux 
+% temperature for exact heat flux
 Y= solve_direct(T0,exflux(1,:),zer,tf,L);
 Y_x1= Y(N,:);
 
@@ -39,15 +39,15 @@ Y_x1= Y_x1+sigma*omega;
 % startapproximation
 %q_app= exflux-res_q;
 
-% criterion functional 
+% criterion functional
 %J= zeros(1,nmax);
 
 while 1
-    
+
 	% loese das direkte Problem
 	T= solve_direct(T0,q_app(1,:),zer,tf,L);
     T_x1= T(N,:);
-    
+
     % plot temperature
     figure(4)
     plot(t,T_x1,'b')
@@ -56,28 +56,28 @@ while 1
     legend('approximation','exact value')
     title 'temperature vs. time'
     hold off
-  
+
     % calculate defect
     res= T_x1-Y_x1;
     defect= dt*norm(res)^2;
-    
+
     J(1,n+1)= defect;
     q_iter(n+1,:,:)= q_app;
-    
-    % save data 
+
+    % save data
     save OptResult.mat J q_iter tf L ntimes N exflux sigma tol;
-    
-    if (defect >= tol & n<nmax) 
-        
+
+    if (defect >= tol & n<nmax)
+
         ad_x1= fliplr(2*res);
-        
+
         % solve adjoint problem
 		ad_sol= solve_direct(zer_x,zer,ad_x1(1,:),tf,L);
         lambda= fliplr(ad_sol);
-        
-        % determine gradient of functional 
+
+        % determine gradient of functional
 		Grad_new= lambda(1,:);
-        % correction for the last time step 
+        % correction for the last time step
         %Grad_new(1,end) = Grad_new(1,end-1);
 		
         % determine direction of descent with conjugate coefficients
@@ -92,34 +92,34 @@ while 1
 		delta_q= d;
 		delta_T= solve_direct(zer_x,delta_q(1,:),zer,tf,L);
 		delta_Tx1= delta_T(N,:);
-   
-        %beta= (norm(Grad_new)^2)/(norm(delta_Tx1)^2);     
+
+        %beta= (norm(Grad_new)^2)/(norm(delta_Tx1)^2);
         beta= dot(res',delta_Tx1')/(norm(delta_Tx1)^2);
-        
+
         % determine new approximation
         q_app= q_app-beta*d;
-    else 
+    else
         break
     end
     Grad_old= Grad_new;
     n= n+1;
-    
+
     % plot approximation of heat flux near x=0
  	figure(1)
     plot(t,q_app,'b')
-    
-    % plot(t,q_app,'--bs','LineWidth',1,... 
-    %    'MarkerEdgeColor','k',... 
-    %    'MarkerFaceColor','w',... 
+
+    % plot(t,q_app,'--bs','LineWidth',1,...
+    %    'MarkerEdgeColor','k',...
+    %    'MarkerFaceColor','w',...
     %    'MarkerSize',2)
-    
-	% add exact heat flux 
+
+	% add exact heat flux
 	hold on
 	plot(t,exflux,'g')
 	legend('approximation','exact value')
 	title 'heat flux vs. time'
 	hold off
-    
+
     % plot residual
 %     figure(2)
 %     res_q= exflux-q_app;

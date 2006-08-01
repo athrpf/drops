@@ -133,7 +133,7 @@ double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-    
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for (int i=0; i<4; ++i) {
@@ -191,7 +191,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     double coupA[10][10], coupM[10][10];
     double det, absdet;
     LocalP2CL<> ls;
-    
+
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(),
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
         GetTrafoTr( T, det, *sit);
@@ -257,8 +257,8 @@ double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
         ret+= (c*f1 + f1)[4] + fv( sit->GetVertex( 0)->GetCoord(), 0.1);
         ret-= Point3DCL( f1( bary)[2]);
     }
-    
-    return ret[0] + ret[1] + ret[2] + f2( bary)[2];    
+
+    return ret[0] + ret[1] + ret[2] + f2( bary)[2];
 
 }
 
@@ -349,14 +349,14 @@ int main ()
             + tet.GetVertex( 3)->GetCoord()*0.25)));
         for (int i=0; i<4; ++i) {
             maxdiff2= std::max( maxdiff2, std::abs( restr1( std_basis<4>( i+1))
-                - f( tet.GetVertex( i)->GetCoord()))); 
+                - f( tet.GetVertex( i)->GetCoord())));
         }
         for (int i=0; i<6; ++i) {
-            maxdiff2= std::max( maxdiff2, std::abs( restr1( 0.5*(std_basis<4>( VertOfEdge( i, 0)+1) 
+            maxdiff2= std::max( maxdiff2, std::abs( restr1( 0.5*(std_basis<4>( VertOfEdge( i, 0)+1)
                 + std_basis<4>( VertOfEdge( i, 1)+1)))
-                - f( GetBaryCenter( *tet.GetEdge( i))))); 
+                - f( GetBaryCenter( *tet.GetEdge( i)))));
         }
-        
+
     }
     std::cout << "max. Differenz im Schwerpunkt: " << maxdiff
         << "\tin den Freiheitsgraden: " << maxdiff2 << std::endl;

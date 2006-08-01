@@ -42,9 +42,9 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     VelVecDescCL cplM;
 
     NavierStokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : StokesP2P1CL<Coeff>( mgb, coeff, bdata) {}  
+        : StokesP2P1CL<Coeff>( mgb, coeff, bdata) {}
     NavierStokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : StokesP2P1CL<Coeff>( mg, coeff, bdata) {}  
+        : StokesP2P1CL<Coeff>( mg, coeff, bdata) {}
 
     // Set up matrix and rhs for nonlinearity: use time t1 for the velocity in N,
     // t2 for the boundary-data in the velocity unknowns

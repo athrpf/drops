@@ -411,7 +411,7 @@ int TestInterpolateOld()
     v0.SetIdx( &i0);
     v1.SetIdx( &i1);
     SetFun( v0, mg, f);
-    
+
     v1.Data.resize( v1.RowIdx->NumUnknowns);
     P2EvalCL<double, BndCL, const VecDescBaseCL<VectorCL> > fun0( &v0, &Bnd, &mg);
     P2EvalCL<double, BndCL,VecDescBaseCL<VectorCL> > fun1( &v1, &Bnd, &mg);
@@ -421,7 +421,7 @@ int TestInterpolateOld()
     double diff;
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(1),
          theend= mg.GetTriangVertexEnd(1); sit!=theend; ++sit) {
-        diff= fun1.val(*sit) - f(sit->GetCoord()); 
+        diff= fun1.val(*sit) - f(sit->GetCoord());
         std::cout << diff << "\t";
         if (diff!=0.) return 1;
     }

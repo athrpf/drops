@@ -29,20 +29,20 @@ class AdaptFixedPtDefectCorrCL
     NavStokesT& _NS;
     SolverT&    _solver;
     MatrixCL    _AN;
-    
+
     int         _maxiter, _iter;
     double      _tol, _res, _red;
-  
+
   public:
     AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 100.)
         : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
     ~AdaptFixedPtDefectCorrCL() {}
-    
+
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( int iter  ) { _maxiter= iter; }
     void SetReduction( double red) { _red= red; }
-    
+
     double   GetResid()        const { return _res; }
     int      GetIter ()        const { return _iter; }
     SolverT& GetStokesSolver() const { return _solver; }
@@ -68,20 +68,20 @@ class FixedPtDefectCorrCL
     NavStokesT& _NS;
     SolverT&    _solver;
     MatrixCL    _AN;
-    
+
     int         _maxiter, _iter;
     double      _tol, _res, _red;
-  
+
   public:
     FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 100.)
         : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
     ~FixedPtDefectCorrCL() {}
-    
+
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( Uint iter ) { _maxiter= iter; }
     void SetReduction( double red) { _red= red; }
-    
+
     double GetResid()          const { return _res; }
     Uint   GetIter ()          const { return _iter; }
     SolverT& GetStokesSolver() const { return _solver; }
@@ -103,7 +103,7 @@ class AFPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PC
 {
   private:
     Uzawa_PCG_CL _uzawaSolver;
-  
+
   public:
     AFPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
                           int poiss_maxiter, double poiss_tol, double reduction= 100.)
@@ -117,7 +117,7 @@ class AFPDeCo_Schur_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Schur_PC
 {
   private:
     Schur_PCG_CL _schurSolver;
-  
+
   public:
     AFPDeCo_Schur_PCG_CL( NavStokesT& NS, int fp_maxiter, double fp_tol, int stokes_maxiter,
                           int poiss_maxiter, double poiss_tol, double reduction= 100.)
@@ -131,7 +131,7 @@ class FPDeCo_Uzawa_CG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_CG_CL>
 {
   private:
     Uzawa_CG_CL _uzawaSolver;
-  
+
   public:
     FPDeCo_Uzawa_CG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
@@ -145,7 +145,7 @@ class FPDeCo_Uzawa_SGSPCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_SGSPC
 {
   private:
     Uzawa_SGSPCG_CL _uzawaSolver;
-  
+
   public:
     FPDeCo_Uzawa_SGSPCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
@@ -159,7 +159,7 @@ class FPDeCo_Uzawa_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
 {
   private:
     Uzawa_PCG_CL _uzawaSolver;
-  
+
   public:
     FPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
@@ -173,7 +173,7 @@ class FPDeCo_Schur_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>
 {
   private:
     Schur_PCG_CL _schurSolver;
-  
+
   public:
     FPDeCo_Schur_PCG_CL( NavStokesT& NS, int fp_maxiter, double fp_tol, int stokes_maxiter,
                          int poiss_maxiter, double poiss_tol, double reduction= 1000.)
@@ -190,7 +190,7 @@ class FPDeCo_Schur_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>
 
 template<class NavStokesT, class SolverT>
 void
-AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve( 
+AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
     const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
     VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
 {
@@ -204,25 +204,25 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             _NS.SetupNonlinear(&_NS.N, &v, &cplN);
 //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
             _AN.LinComb( 1., A, alpha, _NS.N.Data);
-            
+
             // calculate defect:
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
-	    std::cerr << _iter << ": res = " << (_res= std::sqrt( dot( d, d) + dot( e, e)) ) << std::endl; 
+	    std::cerr << _iter << ": res = " << (_res= std::sqrt( dot( d, d) + dot( e, e)) ) << std::endl;
             if (_res < _tol || _iter>=_maxiter)
                 break;
-            
+
             // solve correction:
             double outer_tol= _res/_red;
             w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e); // _solver should use a relative termination criterion.
-            
+
             // calculate adaption:
             _NS.N.Data.clear();
             v_omw.Data= v.Data - omega*w;
             _NS.SetupNonlinear( &_NS.N, &v_omw, &cplN);
-            
+
             d= A*w + alpha*(_NS.N.Data*w) + transp_mul( B, q);
             e= B*w;
             omega= dot( d, VectorCL( A*v.Data + _NS.N.Data*VectorCL( alpha*v.Data)
@@ -230,7 +230,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
                 + dot( e, VectorCL( B*v.Data - c));
             omega/= norm_sq( d) + norm_sq( e);
             std::cerr << "omega = " << omega << std::endl;
-            
+
             // update solution:
             v.Data-= omega*w;
             p     -= omega*q;
@@ -249,21 +249,21 @@ void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
         {
             _NS.SetupNonlinear(&_NS.N, &v, &cplN);
             _AN.LinComb( 1., A, alpha, _NS.N.Data);
-           
+
             // calculate defect:
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
-            
-            std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq(e))) << std::endl; 
+
+            std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq(e))) << std::endl;
             if (_res < _tol || _iter>=_maxiter)
                 break;
-            
+
             // solve correction:
             double outer_tol= _res/_red;
             w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e);
-            
+
             // update solution:
             v.Data-= w;
             p     -= q;

@@ -30,10 +30,10 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red, double 
 
     MultiGridCL& MG= Poisson.GetMG();
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
-    
+
     IdxDescCL  loc_idx;
     VecDescCL  loc_x;
-    
+
     IdxDescCL* new_idx= &Poisson.idx;
     IdxDescCL* old_idx= &loc_idx;
 //    IdxDescCL* err_idx= &_err_idx;
@@ -71,7 +71,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red, double 
         {
             P1EvalCL<double, const PoissonBndDataCL, const VecDescCL>  oldx(old_x, &BndData, &MG);
             P1EvalCL<double, const PoissonBndDataCL, VecDescCL>        newx(new_x, &BndData, &MG);
-// TODO: what happens, if refinement creates new vertices in old_level? FIXED in fe.h!       
+// TODO: what happens, if refinement creates new vertices in old_level? FIXED in fe.h!
             Interpolate(newx, oldx);
 //            CheckSolution(*new_x, &::Lsg);
             old_x->Reset();
@@ -81,7 +81,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red, double 
 //        Poisson.GetDiscError(&::Lsg);
 //std::cout << A->Data << std::endl << b->Data << std::endl;
         double tol= 1.0e-7;
-        int max_iter= 100;        
+        int max_iter= 100;
         PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
 //        CG(A->Data, new_x->Data, b->Data, max_iter, tol);
         A->Reset();
@@ -163,13 +163,13 @@ int main (int argc, char** argv)
 
     typedef DROPS::PoissonP1CL<PoissonCoeffCL> PoissonOnBCL;
     typedef PoissonOnBCL                       MyPoissonCL;
-    
+
     DROPS::BrickBuilderCL brick(orig, e1, e2, e3, 4, 4, 4);
-    const bool isneumann[6]= 
+    const bool isneumann[6]=
         {false, false, false, false, false, true};
     const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Null, &Null, &neu_val};
- 
+
     DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
     PoissonOnBCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
@@ -179,7 +179,7 @@ int main (int argc, char** argv)
     rel_red= std::atof(argv[2]);
     markratio= std::atof(argv[3]);
     maxiter= std::atoi(argv[4]);
-    std::cerr << "Omega: " << omega << " rel_red: " << rel_red 
+    std::cerr << "Omega: " << omega << " rel_red: " << rel_red
               << " markratio: " << markratio << " maxiter: " << maxiter
 	      << std::endl;
     DROPS::MarkAll(mg);

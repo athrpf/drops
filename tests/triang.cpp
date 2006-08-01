@@ -100,7 +100,7 @@ int main ()
     MarkDrop( mg, -1);
     mg.Refine();
     mg.SizeInfo( std::cout);
-   
+
     TriangVertexCL vt( mg);
     TriangEdgeCL et( mg);
     TriangFaceCL ft( mg);

@@ -48,11 +48,11 @@ class PoissonCoeffCL
 {
   public:
     // static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double alpha(const DROPS::Point3DCL&, double) 
+    static double alpha(const DROPS::Point3DCL&, double)
       { return 1; }
     static double f(const DROPS::Point3DCL&, double)
     {
-        return 0.0; 
+        return 0.0;
     }
     static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
       { return DROPS::Point3DCL(0.); } // no convection
@@ -75,7 +75,7 @@ class MatConnect
     typedef std::map<cmp_key, double*> node_map;
     typedef node_map::const_iterator ci;
     typedef DROPS::InstatPoissonBndDataCL::bnd_val_fun BndFuncT;
-  
+
     node_map _NodeMap;
     static const DROPS::VectorCL* _BndData[6];
     const DROPS::VectorCL* _T0;
@@ -86,10 +86,10 @@ class MatConnect
     int _Count;
 	
   public:
-    MatConnect(double DeltaT, int time_steps, 
+    MatConnect(double DeltaT, int time_steps,
       double xl, double yl, double zl,
       int mrx, int mry, int mrz,
-      double CutPos, int FacePtsYZ,  
+      double CutPos, int FacePtsYZ,
       const DROPS::VectorCL& T0,
       const DROPS::VectorCL& S1, const DROPS::VectorCL& S2, const DROPS::VectorCL& S3,
       const DROPS::VectorCL& S4, const DROPS::VectorCL& S5, const DROPS::VectorCL& S6)
@@ -103,7 +103,7 @@ class MatConnect
       _T0= &T0;
       _BndData[0]= &S1; _BndData[1]= &S2; _BndData[2]= &S3;
       _BndData[3]= &S4; _BndData[4]= &S5; _BndData[5]= &S6;
-      
+
       // init weights for quadrature on cartesian grid
       const int N= FacePtsYZ*(time_steps+1);
       _weight.resize(N);
@@ -128,7 +128,7 @@ class MatConnect
         }
       std::cerr << "Quadrature weights initialized!\n";
     }
-    
+
     template<int num> static int getLexNum(const DROPS::Point3DCL& p)
     {
       switch(num)
@@ -150,15 +150,15 @@ class MatConnect
       	}
       }
     }
-  
+
     template<int num> static double getBndVal(const DROPS::Point3DCL& p, double t)
     {
       int count= 0;
-      const int nT= static_cast<int>(t/_DeltaT+0.5);   
+      const int nT= static_cast<int>(t/_DeltaT+0.5);
       switch(num)
       {
       	case 0: case 1: // y-z plane
-      	  count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p); 
+      	  count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p);
           break;
       	case 2: case 3: // x-z plane
       	  count= nT*(_MeshRefX+1)*(_MeshRefZ+1) + getLexNum<1>(p);
@@ -166,10 +166,10 @@ class MatConnect
       	case 4: case 5: default: // x-y plane
       	  count= nT*(_MeshRefX+1)*(_MeshRefY+1) + getLexNum<2>(p);
       }
-      
+
       return (*_BndData[num])[count];
     }
-    
+
     template<int num> static void InitVec( DROPS::VectorCL& v, BndFuncT f)
     {
         double t= 0;
@@ -210,7 +210,7 @@ class MatConnect
             t+= _DeltaT;
         }
     }
-    
+
     double L2ScalarProd( const DROPS::VectorCL& u, const DROPS::VectorCL& v)
     {
         double sum= 0;
@@ -220,16 +220,16 @@ class MatConnect
         }
         return sum*_SpIncrX*_SpIncrY*_SpIncrZ*_DeltaT;
     }
-    
+
     static void setBndData( int num, const DROPS::VectorCL& S) { _BndData[num]= &S; }
     void setInitialData( const DROPS::VectorCL& S) { _T0= &S; }
-    
+
     void setNodeMap(DROPS::VecDescCL& x, DROPS::MultiGridCL& MG)
     {
       DROPS::Point3DCL pt;
       DROPS::Uint lvl= x.GetLevel();
       DROPS::Uint indx= x.RowIdx->GetIdx();
-  
+
       d_pair help;
       cmp_key key;
       for (DROPS::MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(lvl),
@@ -237,13 +237,13 @@ class MatConnect
       {
         DROPS::IdxT i= sit->Unknowns(indx);
         pt= sit->GetCoord();
-    
+
         help= std::make_pair(pt[2], pt[1]);
         key= std::make_pair(pt[0], help);
         _NodeMap[key]= &(x.Data[i]);
       }
     }
-    
+
     void getInitialData()
     {
       double xc, yc, zc;
@@ -252,7 +252,7 @@ class MatConnect
         xc= p->first.first;
         yc= p->first.second.second;
         zc= p->first.second.first;
-        
+
         const int a= static_cast<int>((_MeshRefX*xc/_XLen)+0.5);
         const int b= static_cast<int>((_MeshRefY*yc/_YLen)+0.5);
         const int c= static_cast<int>((_MeshRefZ*zc/_ZLen)+0.5);
@@ -261,14 +261,14 @@ class MatConnect
         //printf("xc, yc, zc, uh: %g %g %g %g\n", xc, yc, zc, (*_T0)[count]);
         //printf("a, b, c: %d %d %d\n", a, b, c);
         //printf("count: %d\n", count);
-        
+
         *(p->second)= (*_T0)[count];
       }
     }
-    
+
     void setOutputData(DROPS::VectorCL& sol2D, bool firstStep= false)
     {
-      if (firstStep) _Count= 0;   
+      if (firstStep) _Count= 0;
       ci p= _NodeMap.begin();
       double xc= p->first.first;
       while ((xc<_CutPos)&&(p!=_NodeMap.end()))
@@ -289,7 +289,7 @@ class MatConnect
         _Count++;
       }
     }
-        
+
     void printData() const
     {
       printf("DeltaT: %g\n", _DeltaT);
@@ -337,49 +337,49 @@ template<class Coeff>
 void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConnect& MatCon)
 {
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
-  
+
   IdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
   VecDescCL& b= Poisson.b;
   MatDescCL& A= Poisson.A;
   MatDescCL& M= Poisson.M;
-  
+
   VecDescCL cplA;
   VecDescCL cplM;
-  
+
   idx.Set(1, 0, 0, 0);
-  
+
   MultiGridCL& MG= Poisson.GetMG();
-  
+
   // erzeuge Nummerierung zu diesem Index
   Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
-  
+
   // Vektoren mit Index idx
   b.SetIdx(&idx);
   x.SetIdx(&idx);
   cplA.SetIdx(&idx);
   cplM.SetIdx(&idx);
-  
+
   printf("Anzahl der Unbekannten: %d\n", x.Data.size());
 //  printf("Theta: %g\n", C.theta);
 //  printf("Toleranz CG: %g\n", C.cgtol);
 //  printf("max. Anzahl CG-Iterationen: %d\n", C.cgiter);
-  
+
   // Steifigkeitsmatrix mit Index idx (Zeilen und Spalten)
   A.SetIdx(&idx, &idx);
   // Massematrix mit Index idx (Zeilen und Spalten)
   M.SetIdx(&idx, &idx);
-  
+
   // stationaerer Anteil
   Poisson.SetupInstatSystem(A, M, Poisson.t);
-  
+
   // instationaere rechte Seite
   Poisson.SetupInstatRhs(cplA, cplM, Poisson.t, b, Poisson.t);
-  
+
   // PCG-Verfahren mit SSOR-Vorkonditionierer
   SSORPcCL pc(1.0);
   PCG_SsorCL pcg_solver(pc, C.cgiter, C.cgtol);
-  
+
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler
   // theta=0.5 -> Crank-Nicholson
@@ -389,10 +389,10 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConn
   MatCon.setNodeMap(x, MG);
   MatCon.getInitialData();
   MatCon.setOutputData(sol2D, true);
-   
+
   int MaxIterCG= 0;
   double MaxResCG= 0.;
-     
+
   for (int step=1;step<=C.nt;step++)
   {
     ThetaScheme.DoStep(x);
@@ -400,21 +400,21 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConn
       MaxIterCG= pcg_solver.GetIter();
     if (MaxResCG<=pcg_solver.GetResid())
       MaxResCG= pcg_solver.GetResid();
-      
+
     //printf("t= %g\n", Poisson.t);
     //printf("Iterationen: %d", pcg_solver.GetIter());
     //printf("    Norm des Residuums: %g\n", pcg_solver.GetResid());
-    
+
     MatCon.setOutputData(sol2D);
   }
-  
+
   printf("\nAnzahl CG-Iterationen (max. pro Zeitschritt): %d\n", MaxIterCG);
   printf("Norm des max. Residuums CG: %g\n", MaxResCG);
-  
+
   //MatCon.printData();
-  
+
   A.Reset();
-  b.Reset();  
+  b.Reset();
 }
 
 } // end of namespace DROPS
@@ -427,38 +427,38 @@ void ipdrops(DROPS::VectorCL& sol2D, MatConnect& MatCon)
   {
     //DROPS::TimerCL time;
     //time.Reset();
-  
+
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= C.xl;
     e2[1]= C.yl;
     e3[2]= C.zl;
-    
+
     typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL>
       InstatPoissonOnBrickCL;
     typedef InstatPoissonOnBrickCL MyPoissonCL;
-    
+
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, C.nx, C.ny, C.nz);
-    
+
     printf("\nDelta t = %g", C.dt);
     printf("\nAnzahl der Zeitschritte = %d\n", C.nt);
-    
-    // Randdaten 
+
+    // Randdaten
     const bool isneumann[6]= { true, true, true, true, true, true };
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &MatConnect::getBndVal<0>, &MatConnect::getBndVal<1>,
         &DROPS::getIsolatedBndVal, &DROPS::getIsolatedBndVal,
         &DROPS::getIsolatedBndVal, &DROPS::getIsolatedBndVal };
-    
+
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
-    
+
     // mg.SizeInfo();
     DROPS::Strategy(prob, sol2D, MatCon);
-    
+
     //time.Stop();
     //printf("Zeit fuer das Loesen des direkten Problems: %g sek\n", time.GetTime());
-    
+
     return;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
@@ -479,12 +479,12 @@ double Guetefunktional( DROPS::VectorCL& q_Film)
 
     DROPS::VectorCL VecXY(DiscPtsXY); // Nullvektor
     DROPS::VectorCL VecXZ(DiscPtsXZ);
-    
-    MatConnect MatCon(C.dt, C.nt, C.xl, C.yl, C.zl, C.nx, C.ny, C.nz, C.M, (C.ny+1)*(C.nz+1), 
-      T0, q_heat, q_Film_exakt, VecXZ, VecXZ, VecXY, VecXY);  
-    
+
+    MatConnect MatCon(C.dt, C.nt, C.xl, C.yl, C.zl, C.nx, C.ny, C.nz, C.M, (C.ny+1)*(C.nz+1),
+      T0, q_heat, q_Film_exakt, VecXZ, VecXZ, VecXY, VecXY);
+
     MatCon.InitVec<1>( q_Film_exakt, &SinusWave);
-    
+
     /* Call the solver. */
     // erzeuge Messdaten zu exaktem q_Film
     MatCon.setBndData( 1, q_Film_exakt);
@@ -493,7 +493,7 @@ double Guetefunktional( DROPS::VectorCL& q_Film)
     // Temperatur zu uebergebenem q_Film
     MatCon.setBndData( 1, q_Film);
     ipdrops( sol2D, MatCon);
-    
+
     DROPS::VectorCL diff( T_mess - sol2D);
     const double J= MatCon.L2ScalarProd( diff, diff);
     return J;

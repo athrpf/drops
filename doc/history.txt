@@ -6,7 +6,7 @@ merge von lx-22/experimente/drivencavity/drops/src
       und lx-22/experimente/nsdrivencavity/drops/src:
  * typename an verschiedenen Stellen eingefuegt (container.h, fe.h, spmat.h, ...),
    um die Warnung "implicit typename is deprecated" loszuwerden
- * fe.h, l. 1195: Aufruf von MGIterBaseCL::GetInc (um den Inkrementor zu 
+ * fe.h, l. 1195: Aufruf von MGIterBaseCL::GetInc (um den Inkrementor zu
    erhalten) entfernt, da bisher nicht realisiert.
  * poisson.tpp: Hinzufuegen einiger const_casts (problem.h hat sich geaendert!)
  * stokes.tpp: Hinzufuegen einiger const_casts (problem.h hat sich geaendert!)
@@ -14,18 +14,18 @@ merge von lx-22/experimente/drivencavity/drops/src
  * kleine Modifikation der StokesDoerflerMarkCL, um sie sowohl fuer
    StokesP2P1CL als auch fuer StokesP1BubbleP1CL verwenden zu koennen.
  * integrTime.h aufgeteilt in stokes und navstokes
- * parallel.h/cpp entfernt (da par. Verwaltung mit DDD), 
+ * parallel.h/cpp entfernt (da par. Verwaltung mit DDD),
    IdCL ist in utils.h umgezogen.
 --> neueste DROPS-Version fuer CVS
 sg, 26. Feb 2003
 
 
-merge von lx-22/recent/drops/src 
+merge von lx-22/recent/drops/src
       und lx-22/recent/drops2002Jan8.tgz:
  * keine grossen Unterschiede:
     - multigrid.h/cpp: (recent) Face-Bug im Verfeinerungsalg. gefixt,
         ausserdem einige zusaetzliche Funktionen gegenueber (2002Jan8).
-    - einige zusaetzliche typenames in (recent), um 
+    - einige zusaetzliche typenames in (recent), um
       Compilerwarnungen "implicit typename is deprecated" gerecht zu werden.
  * integrTime.h aufgeteilt in stokes und navstokes
  * Einfuehren der Verzeichnisstruktur + Makefiles.

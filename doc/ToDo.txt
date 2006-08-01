@@ -9,18 +9,18 @@
   Kommandozeilenaufrufen bzw. Aendern der Parameter im Code sollten
   wir auf das Einlesen der Parameter aus entsprechenden Dateien umsteigen.
   Wie koennte das elegant geschehen?
-  
+
 * Template-Parameter Coeff der Problemklassen Poisson, Stokes, NavStokes
   entfernen. Der ehemalige Grund, aus Laufzeitgruenden auf virtuelle
   Funktionsaufrufe oder Funktionszeiger zu verzichten, scheint unwesentlich,
   da die Diskretisierung vergleichsweise billig ist.
-  
-* einheitlicher Code fuer stat./instat. Probleme: Funktionen, die 
+
+* einheitlicher Code fuer stat./instat. Probleme: Funktionen, die
   Koeffizienten/Randbedingungen beschreiben sollten einheitlich den
   Zeitparameter t enthalten. Dann wuerde viel doppelter Code gespart, und
   umstaendliche Programmiertricks (s. P2EvalCL, StriptimeCL) koennten
   entfallen.
-  
+
 sg, 17. Dez. 03
 
 

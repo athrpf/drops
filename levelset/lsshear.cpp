@@ -31,7 +31,7 @@ class ShearFlowCL
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
         { DROPS::SVectorCL<3> ret(0.0); return ret; }
     const double nu;
-    
+
     ShearFlowCL() : nu(1.0) {}
 };
 
@@ -50,7 +50,7 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVe
 
 DROPS::SVectorCL<3> Parabol( const DROPS::Point3DCL& p, double)
 {
-    DROPS::SVectorCL<3> ret(0.); 
+    DROPS::SVectorCL<3> ret(0.);
     if (p[0]<0.5)
         ret[2]= 4*p[0]*(p[0]-0.5);
     else
@@ -76,7 +76,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
 
     MultiGridCL& MG= Stokes.GetMG();
     LevelsetP2CL lset( MG, sigma, 0.5, 0.1);
-    
+
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
@@ -91,8 +91,8 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     MatDescCL prM;
 
     TimerCL time;
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr( MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr( MG.GetLastLevel(), pidx);
     lset.CreateNumbering(     MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
@@ -119,7 +119,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     Stokes.SetupPrMass( &prM);
     time.Stop();
     std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
-    
+
     Stokes.InitVel( v, Null);
     lset.SetupSystem( Stokes.GetVelSolution() );
 
@@ -134,19 +134,19 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
         std::cerr << "Computing initial velocity..." << std::endl;
         PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
         schurSolver.Solve( A->Data, B->Data, v->Data, p->Data, b->Data, c->Data);
-    }    
+    }
 
     EnsightP2SolOutCL ensight( MG, lidx);
-    
-    const char datgeo[]= "ensight/shear.geo", 
+
+    const char datgeo[]= "ensight/shear.geo",
                datpr[] = "ensight/shear.pr",
                datvec[]= "ensight/shear.vec",
                datscl[]= "ensight/shear.scl";
     ensight.CaseBegin( "shear.case", num_steps+1);
     ensight.DescribeGeom( "shear flow field", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
     ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
@@ -156,7 +156,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     {
 //            PSchur_PCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
         PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
-        CouplLevelsetStokesCL<StokesProblemT, PSchur_GSPCG_CL> 
+        CouplLevelsetStokesCL<StokesProblemT, PSchur_GSPCG_CL>
             cpl( Stokes, lset, schurSolver);
         cpl.SetTimeStep( delta_t);
 
@@ -176,7 +176,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
         tau=  0.5*delta_t;
         std::cerr << "#PCG steps = "; std::cin >> inner_iter;
         Uzawa_PCG_CL uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
-        CouplLevelsetStokesCL<StokesProblemT, Uzawa_PCG_CL> 
+        CouplLevelsetStokesCL<StokesProblemT, Uzawa_PCG_CL>
             cpl( Stokes, lset, uzawaSolver);
         cpl.SetTimeStep( delta_t);
 
@@ -193,7 +193,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     }
 
     ensight.CaseEnd();
-    
+
     std::cerr << std::endl;
 }
 
@@ -224,12 +224,12 @@ int main (int argc, char** argv)
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
 
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &Null, &Null, &Null, &Null,  &Parabol, &Parabol }; 
-    // parabol. Einstroembedingungen bei z=0 und z=1 
-        
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Null, &Null, &Null, &Null,  &Parabol, &Parabol };
+    // parabol. Einstroembedingungen bei z=0 und z=1
+
     MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(24, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     Strategy(prob, inner_iter_tol, sigma);

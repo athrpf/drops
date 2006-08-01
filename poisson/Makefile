@@ -58,7 +58,7 @@ testdrops: \
     ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o \
     ../num/fe.o
 	$(CC) -o $@ $^ $(LFLAGS)
-  
+
 ipdrops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \

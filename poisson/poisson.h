@@ -37,7 +37,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     using                                      _base::_BndData;
     using                                      _base::GetBndData;
     using                                      _base::GetMG;
-    
+
     typedef P1EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
@@ -46,9 +46,9 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     VecDescCL x;
     VecDescCL b;
     MatDescCL A;
-    
+
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), idx( 1) {}  
+        : _base( mgb, coeff, bdata), idx( 1) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData, match); }
@@ -86,7 +86,7 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     using                                           _base::_BndData;
     using                                           _base::GetBndData;
     using                                           _base::GetMG;
-    
+
     typedef P2EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
     typedef P2EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
@@ -96,21 +96,21 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     VecDescCL x;
     VecDescCL b;
     MatDescCL A;
-    
+
     //create an element of the class
-    PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff, 
-		const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(1) {}  
+    PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
+		const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(1) {}
 		
     // numbering of unknowns
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData, match); }
     void DeleteNumbering( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
-    
+
     // set up matrices and rhs
     void SetupSystem         (MatDescCL&, VecDescCL&) const;
     void SetupStiffnessMatrix(MatDescCL&) const;
-    
+
     // check computed solution, etc.
     double CheckSolution(const VecDescCL&, instat_scalar_fun_ptr) const;
     double CheckSolution(instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }

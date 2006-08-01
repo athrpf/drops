@@ -70,7 +70,7 @@ class PSchurSolver2CL : public SolverBaseCL
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c);
-                
+
     InnerSolverT& GetInnerSolver() { return innerSolver_; }
 };
 
@@ -140,7 +140,7 @@ class Uzawa_IPCG_CL : public SolverBaseCL
 
 
 //=============================================================================
-// Ready-to-use solver-class with inexact Uzawa method InexactUzawa. 
+// Ready-to-use solver-class with inexact Uzawa method InexactUzawa.
 //=============================================================================
 
 // Characteristics of the preconditioner for the A-block
@@ -520,7 +520,7 @@ PMINRES_SP(const Mat& /*A*/, const Mat& /*B*/,
 //        err= std::sqrt( norm_sq( rhsu - (A*u + transp_mul( B, pr))) + norm_sq( rhspr - B*u));
         res= std::fabs( norm_r0*b[0][1]);
         std::cerr << "PMINRES: residual: " << res
-//                  << '\t' << " 2-residual: " << err 
+//                  << '\t' << " 2-residual: " << err
                   << '\n';
         if (res<=tol || lucky==true) {
             tol= res;
@@ -600,7 +600,7 @@ class DiagPreCL
     DiagPreCL(APreT& apc, SPreT& spc)
     : apc_( apc), spc_( spc)
     {}
-    
+
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const
@@ -659,7 +659,7 @@ class DiagMGPreCL
 
 
 //=============================================================================
-// Preconditioner for Minres-like solvers: SSOR-steps for A, ISPreCL for S. 
+// Preconditioner for Minres-like solvers: SSOR-steps for A, ISPreCL for S.
 //=============================================================================
 class Minres_SSOR_IS_PreCL
 {
@@ -774,7 +774,7 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
   private:
     MGSolverCL _MGsolver;
   public:
-    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol, 
+    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
                   MGDataCL& MGData, int inner_iter, double inner_tol )
         : PSchurSolverCL<MGSolverCL>( _MGsolver, M, outer_iter, outer_tol ),
           _MGsolver( MGData, inner_iter, inner_tol )
@@ -1182,7 +1182,7 @@ UzawaPCG(const APC& Apc, const Mat& A, const Mat& B,
     Vec p(n), z(n), q(n), d(n), e(n), r= b;
     Vec q1( B.num_cols()), q2( B.num_cols());
     double rho, rho_1= 0.0, resid= norm_sq( r);
-    
+
     tol*= tol;
     if (resid<=tol)
     {
@@ -1205,7 +1205,7 @@ UzawaPCG(const APC& Apc, const Mat& A, const Mat& B,
         q2= 0.0;
         Apc.Apply( A, q2, q1);
         q= B*q2;
-        
+
         const double alpha= rho/dot( p, q);
         axpy(alpha, p, x);                // x+= alpha*p;
         axpy(-alpha, q, r);               // r-= alpha*q;
@@ -1236,7 +1236,7 @@ bool
 InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
     PC1& Apc, PC2& Spc,
     int& max_iter, double& tol,
-    InexactUzawaApcMethodT apcmeth= APC_OTHER, 
+    InexactUzawaApcMethodT apcmeth= APC_OTHER,
     double innerred= 0.3, int innermaxiter= 500)
 {
     VectorCL ru( f - A*xu - transp_mul( B, xp));

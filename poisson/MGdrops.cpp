@@ -35,13 +35,13 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
     IdxDescCL* c_idx=0;
     MGDataCL MGData;
 
-    
+
     // Initialize the MGData: Idx, A, P, R
     for(Uint i=0, lvl= 1; lvl<=MG.GetLastLevel(); ++lvl, ++i)
     {
         MGData.push_back(MGLevelDataCL());
         MGLevelDataCL& tmp= MGData.back();
-        
+
         std::cerr << "Create MGData on Level " << lvl << std::endl;
         tmp.Idx.Set( 1);
         Poisson.CreateNumbering(lvl, &tmp.Idx);
@@ -53,12 +53,12 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
             std::cerr << "Create System " << std::endl;
             Poisson.SetupSystem( tmp.A, Poisson.b);
         }
-        else        
+        else
         {
             std::cerr << "Create StiffMatrix" << std::endl;
             Poisson.SetupStiffnessMatrix( tmp.A);
         }
-            
+
         if(i!=0)
         {
             std::cerr << "Create Prolongation on Level " << lvl << std::endl;
@@ -75,7 +75,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
     double tol= 0.0;
     std::cerr << "tolerance: "; std::cin >> tol;
     std::cerr << "how many levels? (-1=all) > "; std::cin >> lvl;
-    
+
     double resid, old_resid;
     SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
     CGSolverCL  solver(200, tol); //CG-Verfahren
@@ -99,7 +99,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
             std::cerr << "residuum: " << resid << "\tred. " << resid/old_resid << std::endl;
         } while ( resid > tol);
     } while (sm>0);
-  
+
 }
 
 
@@ -139,7 +139,7 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc<2) 
+    if (argc<2)
     {
         std::cerr << "missing argument! Usage: MGdrops <omega>" << std::endl;
         return 1;
@@ -188,7 +188,7 @@ int main (int argc, char** argv)
     for (DROPS::Uint i=0; i<3; ++i)
     {
 //        MarkDrop(mg,mg.GetLastLevel());
-        DROPS::MarkAll(mg);  
+        DROPS::MarkAll(mg);
         mg.Refine();
     }
     omega= std::atof(argv[1]);

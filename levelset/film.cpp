@@ -33,7 +33,7 @@ class ZeroFlowCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamFilmCL& C) 
+    ZeroFlowCL( const DROPS::ParamFilmCL& C)
       : rho( DROPS::JumpCL( C.rhoF, C.rhoG ), DROPS::H_sm, C.sm_eps),
         mu(  DROPS::JumpCL( C.muF,  C.muG),   DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}
@@ -49,7 +49,7 @@ class DimLessCoeffCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    DimLessCoeffCL( const DROPS::ParamFilmCL& C) 
+    DimLessCoeffCL( const DROPS::ParamFilmCL& C)
       : rho( DROPS::JumpCL( 1., C.rhoG/C.rhoF ), DROPS::H_sm, C.sm_eps),
         mu ( DROPS::JumpCL( 1., C.muG/C.muF),    DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma/C.rhoF), g( C.g)    {}
@@ -60,13 +60,13 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 { return DROPS::SVectorCL<3>(0.); }
 
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
-{ 
-    DROPS::SVectorCL<3> ret(0.); 
+{
+    DROPS::SVectorCL<3> ret(0.);
     const double d= p[1]/C.Filmdicke;
     static const double u= C.rhoF*C.g[0]*C.Filmdicke*C.Filmdicke/C.muF/2;
     ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.PumpAmpl*std::sin(2*M_PI*t*C.PumpFreq))
                  : (C.mesh_size[1]-p[1])/(C.mesh_size[1]-C.Filmdicke)*u;
-    return ret; 
+    return ret;
 }
 
 double DistanceFct( const DROPS::Point3DCL& p)
@@ -123,12 +123,12 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     MatDescCL prM, prA;
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_x);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_x);    
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_x);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_x);
     CreateNumb( MG.GetLastLevel(), ens_idx, MG, NoBndDataCL<>());
-    
+
     lset.Phi.SetIdx( lidx);
-    
+
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
@@ -159,18 +159,18 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 
         time.Reset();
         PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
+        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
         time.Stop();
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
       } break;
-      
+
       case 2: // Nusselt solution
       {
         lset.Init( DistanceFct);
         Stokes.InitVel( &Stokes.v, Inflow);
       } break;
-      
+
       case -1: // read from file
       {
         ReadEnsightP2SolCL reader( MG);
@@ -178,26 +178,26 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
         reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
       } break;
-      
-      default:  
+
+      default:
         lset.Init( DistanceFct);
         Stokes.InitVel( &Stokes.v, Null);
     }
-    
+
     const double Vol= C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     EnsightP2SolOutCL ensight( MG, &ens_idx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo", 
+    const string datgeo= filename+".geo",
                  datpr = filename+".pr" ,
                  datvec= filename+".vel",
                  datscl= filename+".scl";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "falling film", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
 
     ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
@@ -219,10 +219,10 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 //    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     typedef InexactUzawaCL<APcT, ISNonlinearPreCL<SPcSolverT>, APC_SYM> InexactUzawaNonlinear_CL;
     InexactUzawaNonlinear_CL inexactUzawaSolver( velpc, isnonlinpc, C.outer_iter, C.outer_tol);
-    
-//    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL> 
+
+//    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
 //        cpl( Stokes, lset, ISPschurSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaNonlinear_CL> 
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaNonlinear_CL>
         cpl( Stokes, lset, inexactUzawaSolver, C.theta);
 
     cpl.SetTimeStep( C.dt);
@@ -310,7 +310,7 @@ int main (int argc, char** argv)
   {
     if (argc!=2)
     {
-        std::cerr << "You have to specify one parameter:\n\t" 
+        std::cerr << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
@@ -333,74 +333,74 @@ int main (int argc, char** argv)
     e2[1]= C.mesh_size[1];
     e3[2]= C.mesh_size[2];
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, int( C.mesh_res[0]), int( C.mesh_res[1]), int( C.mesh_res[2]) );
-    
+
     if (C.BndCond.size()!=6)
     {
         std::cerr << "too many/few bnd conditions!\n"; return 1;
     }
     DROPS::BndCondT bc[6], bc_ls[6];
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6];
-    
+
     for (int i=0; i<6; ++i)
     {
         bc_ls[i]= DROPS::Nat0BC;
         switch(C.BndCond[i])
         {
-            case 'w': case 'W': 
+            case 'w': case 'W':
                 bc[i]= DROPS::WallBC;    bnd_fun[i]= &Null;   break;
-            case 'i': case 'I': 
+            case 'i': case 'I':
                 bc[i]= DROPS::DirBC;     bnd_fun[i]= &Inflow; break;
-            case 'o': case 'O': 
+            case 'o': case 'O':
                 bc[i]= DROPS::OutflowBC; bnd_fun[i]= &Null;   break;
-            case '1': 
+            case '1':
                 bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &Null;   break;
-            case '2': 
+            case '2':
                 bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &Null;   break;
-            default: 
+            default:
                 std::cerr << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
                 return 1;
         }
     }
 
 /*
-    const DROPS::BndCondT bc[6]= 
+    const DROPS::BndCondT bc[6]=
 //        { DROPS::WallBC, DROPS::DirBC, DROPS::OutflowBC, DROPS::OutflowBC, DROPS::DirBC, DROPS::OutflowBC};
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
     //    foil, air_infty, side, side, top, bottom
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-//        { &Null, &Inflow, &Null, &Null, &Inflow, &Null}; 
-        { &Null, &Null, &Null, &Null, &Null, &Null}; 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+//        { &Null, &Inflow, &Null, &Null, &Inflow, &Null};
+        { &Null, &Null, &Null, &Null, &Null, &Null};
     */
-        
+
     MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
-    
-    DROPS::LevelsetP2CL lset( mg, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls), 
+
+    DROPS::LevelsetP2CL lset( mg, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
         prob.GetCoeff().SurfTens, C.lset_theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
-    
+
     for (int i=0; i<C.num_ref; ++i)
     {
 //        MarkFilm( mg);
 //        MarkHalf( mg);
         MarkAll( mg);
         mg.Refine();
-    } 
+    }
 
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     mg.SizeInfo( std::cerr);
-    std::cerr << "Film Reynolds number Re_f = " 
+    std::cerr << "Film Reynolds number Re_f = "
               << C.rhoF*C.rhoF*C.g[0]*std::pow(C.Filmdicke,3)/C.muF/C.muF/3 << std::endl;
     std::cerr << "max. inflow velocity at film surface = "
               << C.rhoF*C.g[0]*C.Filmdicke*C.Filmdicke/C.muF/2 << std::endl;
     Strategy( prob, lset);  // do all the stuff
-    
+
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;

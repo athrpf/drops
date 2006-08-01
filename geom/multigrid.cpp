@@ -76,7 +76,7 @@ Point3DCL GetBaryCenter(const EdgeCL& e)
 
 // F a c e C L
 
-// Assumptions: 
+// Assumptions:
 // - a green child and its parent with a common face are both stored on the same side
 
 void FaceCL::LinkTetra(const TetraCL* tp)
@@ -106,7 +106,7 @@ void FaceCL::UnlinkTetra(const TetraCL* tp)
     for ( i=0; i<4; ++i )
         if (_Neighbors[i] == tp) break;
     Assert(i<4, DROPSErrCL("FaceCL::UnlinkTetra: No such tetra."), DebugRefineEasyC);
-//    Assert(!(i<2 && IsOnNextLevel()), DROPSErrCL("FaceCL::UnlinkTetra: First unlink tetras on next level!"), 
+//    Assert(!(i<2 && IsOnNextLevel()), DROPSErrCL("FaceCL::UnlinkTetra: First unlink tetras on next level!"),
     if (i == 0)
     {
         i= 1;
@@ -119,16 +119,16 @@ void FaceCL::UnlinkTetra(const TetraCL* tp)
 
 const TetraCL* FaceCL::GetNeighInTriang(const TetraCL* tp, Uint TriLevel) const
 {
-    Assert( tp->IsInTriang(TriLevel) && IsInTriang(TriLevel), 
+    Assert( tp->IsInTriang(TriLevel) && IsInTriang(TriLevel),
             DROPSErrCL("FaceCL::GetNeighInTriang: Face or Tetra not in triangulation!"), DebugRefineEasyC);
-    Assert( !IsOnBoundary(), 
+    Assert( !IsOnBoundary(),
             DROPSErrCL("FaceCL::GetNeighInTriang: Face of tetra lies on boundary!"), DebugRefineEasyC);
 
     const Uint oppSide= _Neighbors[ tp->GetLevel()==GetLevel() ? 0 : 2 ]==tp;
 
     return _Neighbors[oppSide]->IsInTriang(TriLevel) ?
            _Neighbors[oppSide] : _Neighbors[oppSide+2];
-}    
+}
 
 
 Point3DCL GetBaryCenter(const FaceCL& f)
@@ -145,14 +145,14 @@ Point3DCL GetBaryCenter(const FaceCL& f)
 
 Point3DCL GetBaryCenter(const TetraCL& t)
 {
-    return 0.25*( t.GetVertex(0)->GetCoord() + t.GetVertex(1)->GetCoord() 
+    return 0.25*( t.GetVertex(0)->GetCoord() + t.GetVertex(1)->GetCoord()
                 + t.GetVertex(2)->GetCoord() + t.GetVertex(3)->GetCoord() );
 }
 
 Point3DCL GetBaryCenter(const TetraCL& t, Uint face)
 {
     return ( t.GetVertex(VertOfFace(face, 0))->GetCoord()
-            +t.GetVertex(VertOfFace(face, 1))->GetCoord() 
+            +t.GetVertex(VertOfFace(face, 1))->GetCoord()
             +t.GetVertex(VertOfFace(face, 2))->GetCoord() )/3.;
 }
 
@@ -291,7 +291,7 @@ BndIdxT GetCommonBndSeg(const VertexCL* v0, const VertexCL* v1, const VertexCL* 
                            std::back_inserter(intersec012), BndPointSegLessCL() );
     if (intersec012.empty() )
         return NoBndC;
-    Assert( intersec012.size()==1, 
+    Assert( intersec012.size()==1,
         DROPSErrCL("GetCommonBndSeg: found more than one BndSeg connected to three different boundary vertices"), ~0);
     return intersec012.begin()->GetBndIdx();
 }
@@ -303,7 +303,7 @@ void TetraCL::BuildAndLinkFaces (FaceContT& facecont)  // used by XXXBuilderCL
               VertexCL* const vp0= GetVertMidVert(VertOfFace(face, 0));
         VertexCL* const vp1= GetVertMidVert(VertOfFace(face, 1));
         VertexCL* const vp2= GetVertMidVert(VertOfFace(face, 2));
-        
+
         if ( !(_Faces[face]= vp0->FindFace(vp1,vp2) ) )
         {
             facecont.push_back( FaceCL(_Level, GetCommonBndSeg(vp0, vp1, vp2) ) );
@@ -325,9 +325,9 @@ TetraCL::SetFace(Uint f, FaceCL* fp)
 void TetraCL::RecycleReusables()
 // is called, if the refinement rule has changed.
 // It recycles and rescues simplices, that will be reused:
-// - Edges of children, that are not edges of the parent, if they are used by the new rule 
+// - Edges of children, that are not edges of the parent, if they are used by the new rule
 // - Faces of children, that are not faces of the parent,  -- " --
-// - Children                                           ,  -- " -- 
+// - Children                                           ,  -- " --
 {
     const RefRuleCL& myRule= GetRefData();
     const RefRuleCL& newRule= DROPS::GetRefRule(GetRefMark() & 63);
@@ -336,7 +336,7 @@ void TetraCL::RecycleReusables()
     std::list<byte> commonEdges;
     std::list<byte> commonFaces;
     std::list<byte> commonChildren;
-    
+
     typedef std::list<byte>::iterator SetIterT;
 
     std::set_intersection( myRule.Edges,  myRule.Edges +  myRule.EdgeNum,
@@ -359,7 +359,7 @@ void TetraCL::RecycleReusables()
             if ( IsParentEdge(childdat.Edges[edge]) ) continue;
             SetIterT it= std::lower_bound( commonEdges.begin(), commonEdges.end(), childdat.Edges[edge]);
             if (it != commonEdges.end() && *it == childdat.Edges[edge])
-            { 
+            {
                 child->_Vertices[VertOfEdge(edge,0)]->ClearRemoveMark();
                 child->_Vertices[VertOfEdge(edge,1)]->ClearRemoveMark();
                 child->_Edges[edge]->ClearRemoveMark();
@@ -377,7 +377,7 @@ void TetraCL::RecycleReusables()
                 VertexCL* const vp0= child->_Vertices[VertOfFace(face, 0)];
                 VertexCL* const vp1= child->_Vertices[VertOfFace(face, 1)];
                 VertexCL* const vp2= child->_Vertices[VertOfFace(face, 2)];
-            
+
                 child->_Faces[face]->ClearRemoveMark();
                 child->_Faces[face]->RecycleMe(vp0,vp1,vp2);
                 commonFaces.erase(it);  // because face is now already recycled
@@ -400,10 +400,10 @@ void TetraCL::RecycleReusables()
 
 
 void TetraCL::ClearAllRemoveMarks()
-// is called if MarkEqRule(). It safes all sub simplices from removement. 
+// is called if MarkEqRule(). It safes all sub simplices from removement.
 {
     const RefRuleCL& myRule= GetRefData();
-    
+
     for (Uint ch=0; ch<myRule.ChildNum; ++ch)
     {
         const ChildDataCL childdat= GetChildData(myRule.Children[ch]);
@@ -413,7 +413,7 @@ void TetraCL::ClearAllRemoveMarks()
             (*vertPIt)->ClearRemoveMark();
         for (Uint edge= 0; edge<NumEdgesC; ++edge)
         {
-            child->_Edges[edge]->ClearRemoveMark(); 
+            child->_Edges[edge]->ClearRemoveMark();
         }
         for (Uint face= 0; face<NumFacesC; ++face)
         {
@@ -503,7 +503,7 @@ void TetraCL::CollectEdges (const RefRuleCL& refrule,
             else
             {
                 ep->BuildSubEdges(edgecont, vertcont, Bnd);
-                
+
                 EdgeContT::iterator sub= edgecont.end();
                 _ePtrs[SubEdge(edge, 1)]= &*(--sub);
                 sub->RecycleMe();
@@ -763,7 +763,7 @@ void FaceCL::DebugInfo(std::ostream& os) const
     os << "\nNeighbors in this Level:";
     for (Uint i=0; i<2; ++i)
     {
-        if (i==1 && IsOnBoundary() ) 
+        if (i==1 && IsOnBoundary() )
             os << " BndIdx "<< GetBndIdx();
         else
             os << " Tetra " << _Neighbors[i]->GetId().GetIdent();
@@ -773,7 +773,7 @@ void FaceCL::DebugInfo(std::ostream& os) const
         os << "\nNeighbors in next Level:";
         for (Uint i=2; i<4; ++i)
         {
-            if (i==3 && IsOnBoundary() ) 
+            if (i==3 && IsOnBoundary() )
                 os << " BndIdx "<< GetBndIdx();
             else if (_Neighbors[i])
                 os << " Tetra " << _Neighbors[i]->GetId().GetIdent();
@@ -801,7 +801,7 @@ bool TetraCL::IsSane(std::ostream& os) const
         }
     }
     // Check, if the neighbor-connections are right:
-    // If it is another tetra, check, if the numbering 
+    // If it is another tetra, check, if the numbering
     // across the face is consistent
     // If it is a boundary-segment, check,
     // if the three vertices belong to this boundary-segment
@@ -872,7 +872,7 @@ bool TetraCL::IsSane(std::ostream& os) const
 
 void TetraCL::DebugInfo (std::ostream& os) const
 {
-    os << "TetraCL:  Id " << _Id.GetIdent() 
+    os << "TetraCL:  Id " << _Id.GetIdent()
        << " Level " << GetLevel() << "\t"
        << "RefRule " << GetRefRule() << " RefMark " << GetRefMark() << std::endl;
 
@@ -1112,7 +1112,7 @@ void MultiGridCL::MakeConsistentNumbering()
                                std::find(sit->GetVertBegin(), sit->GetVertEnd(), vp[VertOfFace(face, 2)]) );
             sit->_Faces[FaceByVert(v0, v1, v2)]= fp[face];
         }
-        
+
     }
 }
 
@@ -1174,7 +1174,7 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
                 os <<"Wrong Level (should be "<<Level<<") for\n";
                 eIt->DebugInfo(os);
             }
-        
+
             if ( !eIt->IsSane(os) )
             {
                 sane=false;
@@ -1346,12 +1346,12 @@ void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r)
     const double p2_sq= p2.norm_sq();
     const double p1p2= inner_prod(p1,p2);
     const double det= p1_sq*p2_sq - p1p2*p1p2;
-    
+
     m[0]= 0.5*p2_sq*(p1_sq - p1p2)/det;
     m[1]= 0.5*p1_sq*(p2_sq - p1p2)/det;
     c= v0 + m[0]*p1 + m[1]*p2;
 
-    if (DebugRefineEasyC 
+    if (DebugRefineEasyC
         && (   std::fabs( (c-v0).norm() - (c-(p1+v0)).norm()) > DoubleEpsC
             || std::fabs( (c-v0).norm() - (c-(p2+v0)).norm()) > DoubleEpsC) )
     {

@@ -56,11 +56,11 @@ class StokesCoeffCL
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
         { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]); return ret; }
     const double nu;
-    
+
     StokesCoeffCL() : nu(1.0) {}
 };
 
-typedef DROPS::StokesP2P1CL<StokesCoeffCL> 
+typedef DROPS::StokesP2P1CL<StokesCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
@@ -112,8 +112,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
     do
     {
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
         MG.SizeInfo(std::cerr);
@@ -156,7 +156,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x: " << time.GetTime() << " seconds." << std::endl;
-        
+
 //        { // write system in files for MatLab
 //            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
 //            Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
@@ -366,7 +366,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx(&Stokes.vel_idx);
         Stokes.p.SetIdx(&Stokes.pr_idx);
-        
+
         Stokes.v.Data= loc_v.Data;
         Stokes.p.Data= loc_p.Data;
     }
@@ -410,11 +410,11 @@ int main (int argc, char** argv)
     e1[0]= e2[1]= e3[2]= M_PI/4.;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 3, 3, 3);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel};
-        
+
     StokesOnBrickCL prob(brick, StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;

@@ -70,7 +70,7 @@ depend_%:
 prog_%:
 	cd $(@D) && $(MAKE) $(*F)
 
-         
+
 .PHONY: all clean distclean distclean_dox default dep deldepend doc stat topo check
 
 # include settings from the config file drops.conf:

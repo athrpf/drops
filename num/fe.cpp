@@ -49,7 +49,7 @@ FE_P2CL::ApplyAll(Uint numpt, const BaryCoordCL* const pt, std::valarray<double>
 
 //**************************************************************************
 // P1-Prolongation                                                         *
-//**************************************************************************    
+//**************************************************************************
 void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                                IdxDescCL* cIdx, IdxDescCL* fIdx)
 {
@@ -58,8 +58,8 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     const Uint f_idx= fIdx->GetIdx();
     MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
     IdxT i;
-    
-    
+
+
     // do matrix description
     P.RowIdx= fIdx;
     P.ColIdx= cIdx;
@@ -91,7 +91,7 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
 /// \name Coefficient-tables for P2-prolongation.
 /// For each refinement rule the local P2 prolongation matrix is stored
 /// as a sequence of matrix rows in P2_local_prolongation_row_idx.
-/// Beginning and one-past-the-end of each sequence are stored in 
+/// Beginning and one-past-the-end of each sequence are stored in
 /// P2_local_prolongation_mat_beg.
 /// Conceptually, rows of the local prolongation matrices are represented
 /// by an index into an array of the 35 possible different rows.
@@ -117,7 +117,7 @@ const unsigned char P2_local_prolongation_rows[1438]= {
     18, 0, 1, 2, 3, 4, 6, 5, 7, 8, 9, 10, 11, 19, 20, 21, 12, 13, 17, 0, 1, 2, 3,
     5, 6, 4, 7, 8, 9, 14, 15, 19, 20, 21, 16, 17, 13, 0, 1, 2, 3, 4, 5, 6, 7, 8,
     9, 10, 11, 14, 15, 19, 20, 21, 16, 12, 18, 17, 13, 0, 1, 2, 3, 7, 4, 5, 6, 8,
-    9, 22, 23, 24, 25, 0, 1, 2, 3, 4, 7, 5, 6, 8, 9, 10, 11, 22, 23, 24, 12, 13, 
+    9, 22, 23, 24, 25, 0, 1, 2, 3, 4, 7, 5, 6, 8, 9, 10, 11, 22, 23, 24, 12, 13,
     26, 0, 1, 2, 3, 5, 7, 4, 6, 8, 9, 14, 15, 22, 23, 16, 25, 17, 27, 0, 1, 2, 3,
     4, 5, 7, 6, 8, 9, 10, 11, 14, 15, 22, 23, 16, 12, 13, 27, 26, 18, 0, 1, 2, 3,
     6, 7, 4, 5, 8, 9, 19, 20, 22, 23, 21, 24, 25, 18, 28, 0, 1, 2, 3, 4, 6, 7, 5,
@@ -142,7 +142,7 @@ const unsigned char P2_local_prolongation_rows[1438]= {
     6, 7, 8, 9, 10, 11, 14, 15, 19, 20, 22, 23, 29, 30, 21, 16, 32, 27, 26, 25, 12,
     18, 17, 13, 28, 0, 1, 2, 3, 9, 4, 5, 6, 7, 8, 33, 34, 32, 27, 0, 1, 2, 3, 4,
     9, 5, 6, 7, 8, 10, 11, 33, 34, 32, 27, 12, 13, 28, 0, 1, 2, 3, 5, 9, 4, 6, 7,
-    8, 14, 15, 33, 34, 32, 16, 17, 24, 0, 1, 2, 3, 4, 5, 9, 6, 7, 8, 10, 11, 14, 
+    8, 14, 15, 33, 34, 32, 16, 17, 24, 0, 1, 2, 3, 4, 5, 9, 6, 7, 8, 10, 11, 14,
     15, 33, 34, 32, 16, 12, 13, 24, 18, 28, 0, 1, 2, 3, 6, 9, 4, 5, 7, 8, 19, 20,
     33, 34, 21, 27, 18, 31, 0, 1, 2, 3, 4, 6, 9, 5, 7, 8, 10, 11, 19, 20, 33, 34,
     21, 27, 12, 13, 31, 17, 28, 0, 1, 2, 3, 5, 6, 9, 4, 7, 8, 14, 15, 19, 20, 33,
@@ -157,7 +157,7 @@ const unsigned char P2_local_prolongation_rows[1438]= {
     2, 3, 5, 6, 7, 9, 4, 8, 14, 15, 19, 20, 22, 23, 33, 34, 21, 25, 17, 31, 27,
     24, 16, 13, 28, 0, 1, 2, 3, 4, 5, 6, 7, 9, 8, 10, 11, 14, 15, 19, 20, 22, 23,
     33, 34, 21, 12, 31, 27, 24, 16, 26, 18, 17, 13, 28, 0, 1, 2, 3, 8, 9, 4, 5, 6,
-    7, 29, 30, 33, 34, 31, 27, 26, 21, 0, 1, 2, 3, 4, 8, 9, 5, 6, 7, 10, 11, 29, 
+    7, 29, 30, 33, 34, 31, 27, 26, 21, 0, 1, 2, 3, 4, 8, 9, 5, 6, 7, 10, 11, 29,
     30, 33, 34, 31, 27, 12, 13, 21, 25, 28, 0, 1, 2, 3, 5, 8, 9, 4, 6, 7, 14, 15,
     29, 30, 33, 34, 31, 16, 26, 17, 21, 24, 28, 0, 1, 2, 3, 4, 5, 8, 9, 6, 7, 10,
     11, 14, 15, 29, 30, 33, 34, 31, 16, 12, 13, 21, 24, 25, 18, 28, 0, 1, 2, 3, 6,
@@ -206,7 +206,7 @@ const unsigned char P2_prolongation_coeff_idx[116]= {
 
 /// The coefficients in the prolongation matrices.
 const double P2_prolongation_coeff[6]= {
-    -0.125, 0.25, 0.375, 0.5, 0.75, 1.0 
+    -0.125, 0.25, 0.375, 0.5, 0.75, 1.0
 };
 /// \}
 
@@ -255,7 +255,7 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
     P.RowIdx= fIdx;
     P.ColIdx= cIdx;
-/*    std::cout << "    alt                    cIdx " 
+/*    std::cout << "    alt                    cIdx "
               << cIdx->TriangLevel       << ", "
               << cIdx->NumUnknownsVertex << ", "
               << cIdx->NumUnknownsEdge   << ", "
@@ -263,7 +263,7 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
               << cIdx->NumUnknownsTetra  << ", "
               << cIdx->NumUnknowns
               << std::endl;
-    std::cout << "    neu                    fIdx " 
+    std::cout << "    neu                    fIdx "
               << fIdx->TriangLevel       << ", "
               << fIdx->NumUnknownsVertex << ", "
               << fIdx->NumUnknownsEdge   << ", "
@@ -278,7 +278,7 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
             IdxT cUnknowns[10];
             // Collect the coarse indices.
             for (Uint i=0; i<4; ++i)
-                cUnknowns[i]= (sit->GetVertex( i)->Unknowns.Exist() 
+                cUnknowns[i]= (sit->GetVertex( i)->Unknowns.Exist()
                                && sit->GetVertex( i)->Unknowns.Exist( c_idx))
                               ? sit->GetVertex( i)->Unknowns( c_idx) : NoIdx;
             for (Uint i=0; i<6; ++i)
@@ -309,14 +309,14 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
         }
         else { // coarse and fine tetra are identical; the prolongation is trivial.
             for (Uint i=0; i<4; ++i)
-                if (sit->GetVertex( i)->Unknowns.Exist() 
+                if (sit->GetVertex( i)->Unknowns.Exist()
                     && sit->GetVertex( i)->Unknowns.Exist( c_idx)
                     && sit->GetVertex( i)->Unknowns.Exist( f_idx))
                     for (Uint k=0; k<ndofs; k++)
                         mat(sit->GetVertex( i)->Unknowns( f_idx)+k,
                             sit->GetVertex( i)->Unknowns( c_idx)+k)= 1.0;
             for (Uint i=0; i<6; ++i)
-                if (sit->GetEdge( i)->Unknowns.Exist() 
+                if (sit->GetEdge( i)->Unknowns.Exist()
                     && sit->GetEdge( i)->Unknowns.Exist( c_idx)
                     && sit->GetEdge( i)->Unknowns.Exist( f_idx))
 		    for (Uint k=0; k<ndofs; k++)

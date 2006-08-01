@@ -186,7 +186,7 @@ int TestReading()
     DROPS::MultiGridCL mg( builder);
     std::cerr << DROPS::DumpMGCL( mg) << std::endl;
     std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
-    
+
     return 0;
 }
 
@@ -197,7 +197,7 @@ int Test()
     DROPS::MultiGridCL mg( builder);
 //    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
     std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
-    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;   
+    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;
     return 0;
 }
 
@@ -210,7 +210,7 @@ int TestRefineUniform()
     mg.Refine();
 //    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
     std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
-    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;   
+    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;
     return 0;
 }
 
@@ -226,7 +226,7 @@ int TestRefine()
     mg.Refine();
 //    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
     std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
-    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;   
+    std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;
     return 0;
 }
 
@@ -238,7 +238,7 @@ int main (int, char**)
     std::cout << i << std::endl;
     std::cin >>  i;
     std::cout << i << std::endl;
-*/    
+*/
 
   try {
     return TestRefine();

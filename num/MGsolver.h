@@ -31,15 +31,15 @@ typedef MGDataCL::iterator       MGDataIterCL;
 typedef MGDataCL::const_iterator const_MGDataIterCL;
 
 
-// Multigrid method, V-cycle, beginning from level 'fine' 
+// Multigrid method, V-cycle, beginning from level 'fine'
 // numLevel and numUnknDirect specify, when the direct solver 'Solver' is used:
 //      after 'numLevel' visited levels or if #Unknowns <= 'numUnknDirect'
-// If one of the parameters is -1, it will be neglected. 
+// If one of the parameters is -1, it will be neglected.
 // If the coarsest level 'begin' has been reached, the direct solver is used too.
 // NOTE: Assumes, that the levels are stored in an ascending order (first=coarsest, last=finest)
 template<class SmootherCL, class DirectSolverCL>
-void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
-          const SmootherCL& Smoother, Uint smoothSteps, 
+void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b,
+          const SmootherCL& Smoother, Uint smoothSteps,
           DirectSolverCL& Solver, int numLevel, int numUnknDirect);
 
 
@@ -49,7 +49,7 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
 
 // Uses MGM for solving to tolerance tol or until maxiter iterations are reached.
 // The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
-void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
+void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
         int& maxiter, double& tol, const bool residerr= true);
 
 
@@ -95,8 +95,8 @@ class MGSolverCL : public SolverBaseCL
 
 template<class SmootherCL, class DirectSolverCL>
 void
-MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
-    const SmootherCL& Smoother, Uint smoothSteps, 
+MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b,
+    const SmootherCL& Smoother, Uint smoothSteps,
     DirectSolverCL& Solver, int numLevel, int numUnknDirect)
 // Multigrid method, V-cycle. If numLevel==0 or #Unknowns <= numUnknDirect,
 // the direct solver Solver is used.
@@ -107,7 +107,7 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
     --coarse;
 
     if(  ( numLevel==-1      ? false : numLevel==0 )
-       ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) ) 
+       ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) )
        || fine==begin)
     { // use direct solver
         // We use relative residual-measurement, as otherwise the accuracy and

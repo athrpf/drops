@@ -39,22 +39,22 @@ class UnknownIdxCL
     UnknownIdxCL& operator=( const UnknownIdxCL&);
 
     IdxT& GetIdx( Uint sysnum)
-    { 
+    {
         Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range"), DebugUnknownsC);
         return _Idx[sysnum];
     }
     IdxT  GetIdx( Uint sysnum) const
-    { 
+    {
         Assert( sysnum<GetNumSystems(), DROPSErrCL("UnknownIdxCL: Sysnum out of range"), DebugUnknownsC);
         return _Idx[sysnum];
     }
     Uint GetNumSystems()            const { return _Idx.size(); }
 
-    void resize( Uint size, const IdxT defaultIdx= NoIdx)   
-    { 
+    void resize( Uint size, const IdxT defaultIdx= NoIdx)
+    {
         _Idx.resize(size, defaultIdx);
     }
-    
+
     void push_back(IdxT idx= NoIdx) { _Idx.push_back( idx); }
 };
 
@@ -70,7 +70,7 @@ class UnknownHandleCL
 {
   private:
     UnknownIdxCL* _unk;
-  
+
   public:
     UnknownHandleCL() : _unk(0) {}
     UnknownHandleCL( const UnknownHandleCL& orig)
@@ -78,7 +78,7 @@ class UnknownHandleCL
         _unk= orig._unk ? new UnknownIdxCL( *orig._unk)
                         : 0;
     }
-        
+
     UnknownHandleCL& operator=( const UnknownHandleCL& rhs)
     {
         if (this==&rhs) return *this;
@@ -87,23 +87,23 @@ class UnknownHandleCL
                        : 0;
         return *this;
     }
-        
+
     ~UnknownHandleCL() { delete _unk; }
-    
-    void Init(Uint numsys= 0)   
-    { 
+
+    void Init(Uint numsys= 0)
+    {
         Assert( _unk==0, DROPSErrCL("UnknownHandleCL: Init was called twice"), DebugUnknownsC);
         _unk= new UnknownIdxCL(numsys);
     }
 
     void Destroy() { delete _unk; _unk= 0; }
-    
+
     /// True, iff this instance has already acquired an UnknownIdxCL-object.
     bool Exist()             const { return _unk; }
     /// True, iff the system sysnum exists and has a valid index-entry.
     bool Exist( Uint sysnum) const { return _unk && sysnum<_unk->GetNumSystems() && _unk->GetIdx(sysnum) != NoIdx; }
 
-    /// Effectively deletes the index belonging to system sysnum. 
+    /// Effectively deletes the index belonging to system sysnum.
     void Invalidate( Uint sysnum) { _unk->GetIdx(sysnum)= NoIdx; }
 
     UnknownIdxCL* Get() const { return _unk; }
@@ -119,7 +119,7 @@ class UnknownHandleCL
     {
         if (!_unk) _unk= new UnknownIdxCL( sysnum+1);
         else if ( !(sysnum < _unk->GetNumSystems()) )
-            _unk->resize( sysnum+1, NoIdx); 
+            _unk->resize( sysnum+1, NoIdx);
     }
 };
 

@@ -52,7 +52,7 @@ struct StokesCL
       public:
         static double q(const DROPS::Point3DCL&) { return StokesCL::g_; }
         static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
-        { 
+        {
             const double g= StokesCL::g_;
             DROPS::SVectorCL<3> ret;
             ret[0]= g/3.*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
@@ -159,7 +159,7 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
 //                  << (B*w)*VectorCL( 1.0/std::sqrt( (double)g.size()), g.size())
 //                  << "\n";
         pcgsolver.Solve( asc, z, VectorCL( B*w - g));
-        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter() 
+        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter()
                   << "\tresid: " << pcgsolver.GetResid() << '\n';
 
         b= transp_mul( B, z);
@@ -170,7 +170,7 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
         z_xpaypby2(ru, ru, -1.0, A*VectorCL(xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
         xu= xuneu;
         resid= std::sqrt( norm_sq( f - A*xu - transp_mul( B, xp)) + norm_sq( g - B*xu));
-        std::cerr << "relative residual (2-norm): " << resid/resid0 
+        std::cerr << "relative residual (2-norm): " << resid/resid0
                   << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
                   << "\tp: " << norm( g - B*xu)
                   << '\n';
@@ -289,7 +289,7 @@ UzawaCGEff(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec
         if (beta1 <= 0.0) throw DROPSErrCL( "UzawaCGEff: Matrix is not spd.\n");
         // This is for fair comparisons of different solvers:
         err= std::sqrt( norm_sq( f - (A*xu + transp_mul( B, xp))) + norm_sq( g - B*xu));
-        std::cerr << "relative residual (2-norm): " << err/err0 
+        std::cerr << "relative residual (2-norm): " << err/err0
                   << "\t(problem norm): " << std::sqrt( beta1/initialbeta) << '\n';
 //        if (beta1/initialbeta <= tol*tol) {
 //            tol= std::sqrt( beta1/initialbeta);
@@ -657,7 +657,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
         }
         for(int i=0; i<4; ++i)    // assemble row i
             for(int j=0; j<4;++j)
-                A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i]; 
+                A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
     }
     A.Build();
     std::cerr << A_pr.Data.num_nonzeros() << " nonzeros in A_pr.\n";
@@ -725,7 +725,7 @@ SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
 template<class Coeff>
 void
 SetupLumpedPrMass(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MatDescCL& matM)
-{  
+{
     const DROPS::IdxT num_unks_pr=  matM.RowIdx->NumUnknowns;
 
     DROPS::MatrixBuilderCL M(&matM.Data, num_unks_pr,  num_unks_pr);
@@ -744,7 +744,7 @@ SetupLumpedPrMass(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MatDescCL& matM)
          sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6;
-        
+
         for(int i=0; i<4; ++i)
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
 
@@ -908,7 +908,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -927,7 +927,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
 //    typedef PMinresSP_FullMG_CL StatsolverCL;
     StatsolverCL* statsolver= 0;
 
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
@@ -941,8 +941,8 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     SetupPoissonPressureMG( NS, MG_pr);
     ML_pr.SetIdx( pidx1, pidx1);
     M_pr.SetIdx( pidx1, pidx1);
-    SetupLumpedPrMass( NS, ML_pr);  
-    NS.SetupPrMass( &M_pr);  
+    SetupLumpedPrMass( NS, ML_pr);
+    NS.SetupPrMass( &M_pr);
 //    SetupPressureMassMG( NS, MG_Mpr);
     PrepareStart( v1, p1, &M_pr);
     statsolver= new StatsolverCL( MG_vel, ML_pr.Data, 1, stokes_maxiter, stokes_tol);
@@ -972,7 +972,7 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -992,7 +992,7 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     ISMGPreCL* ispcp= 0;
 //    DiagMatrixPCCL* ispcp= 0;
     ScaledMGPreCL* velprep= 0;
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
@@ -1052,7 +1052,7 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -1070,7 +1070,7 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
     StatsolverCL* statsolver= 0;
     ISMGPreCL* ispcp= 0;
     ScaledMGPreCL* velprep= 0;
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
@@ -1127,7 +1127,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -1149,7 +1149,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     ISMGPreCL* ispcp= 0;
 //    ISPreCL* ispcp= 0;
     MGPreCL* velprep= 0;
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
@@ -1160,7 +1160,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupPrMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
 //    ispcp= new ISPreCL( A_pr.Data, M_pr.Data, kA, kM, 1.0);
@@ -1216,7 +1216,7 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -1234,7 +1234,7 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     typedef PSchur_AR_CL StatsolverCL;
 //    typedef PSchur_Diag_AR_CL StatsolverCL;
     StatsolverCL* statsolver= 0;
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
@@ -1245,9 +1245,9 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     ML_pr.SetIdx( pidx1, pidx1);
-//    SetupLumpedPrMass( NS, ML_pr);  
+//    SetupLumpedPrMass( NS, ML_pr);
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupPrMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);
     SetupPoissonVelocityMG( NS, MG_vel);
     SetupPoissonPressureMG( NS, MG_pr);
     SetupPressureMassMG( NS, MG_Mpr);
@@ -1283,7 +1283,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 {
     using namespace DROPS;
     typedef StokesP2P1CL<Coeff> StokesCL;
-    
+
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL* vidx1= &NS.vel_idx;
     IdxDescCL* pidx1= &NS.pr_idx;
@@ -1298,13 +1298,13 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     pidx1->Set( 1, 0, 0, 0);
     TimerCL time;
 
-//    typedef PSchur_PCG_CL StatsolverCL; 
+//    typedef PSchur_PCG_CL StatsolverCL;
 //    typedef PSchur2_PCG_CL StatsolverCL;
 //    typedef PSchur2_PCG_Pr_CL StatsolverCL;
 //    typedef PSchur2_PCG_Pr_MG_CL StatsolverCL;
     typedef PSchur2_Full_MG_CL StatsolverCL;
     StatsolverCL* statsolver= 0;
-    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);    
+    NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
@@ -1315,7 +1315,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     M_pr.SetIdx( pidx1, pidx1);
-    NS.SetupPrMass( &M_pr);  
+    NS.SetupPrMass( &M_pr);
 //    A_pr.SetIdx( pidx1, pidx1);
 //    SetupPoissonPressure( mg, A_pr);
 //    ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 1.0);
@@ -1387,11 +1387,11 @@ int main (int argc, char** argv)
 				DROPS::std_basis<3>(3),
 				2, 2, 2);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
 	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
     StokesCL::g_= gamma;
-    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL> 
+    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL>
     	    NSOnBrickCL;
     typedef NSOnBrickCL MyStokesCL;
     MyStokesCL prob( brick, MyPdeCL::StokesCoeffCL(),

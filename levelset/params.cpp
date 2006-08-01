@@ -1,4 +1,4 @@
-/// \file 
+/// \file
 /// \brief parameters for two-phase flow problems.
 
 #include "levelset/params.h"
@@ -49,7 +49,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( ref_flevel,   "FinestLevel");
     rp_.RegDouble( ref_width, "Width");
     rp_.EndGroup();
-    
+
     rp_.BeginGroup("Mat");
     rp_.RegDouble( rhoD,      "DensDrop");
     rp_.RegDouble( muD,       "ViscDrop");
@@ -58,7 +58,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( sm_eps,    "SmoothZone");
     rp_.RegDouble( sigma,     "SurfTension");
     rp_.EndGroup();
-    
+
     rp_.BeginGroup("Exp");
     rp_.RegDouble( Radius,    "RadDrop");
     rp_.RegCoord( Mitte,      "PosDrop");
@@ -67,7 +67,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( r_inlet,   "RadInlet");
     rp_.RegInt( flow_dir,     "FlowDir");
     rp_.EndGroup();
-    
+
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( num_dropref,  "NumDropRef");
     rp_.RegString( EnsCase,   "EnsightCase");
@@ -128,7 +128,7 @@ void ParamFilmCL::RegisterParams()
     rp_.RegInt( ref_flevel,   "FinestLevel");
     rp_.RegDouble( ref_width, "Width");
     rp_.EndGroup();
-    
+
     rp_.BeginGroup("Mat");
     rp_.RegDouble( rhoF,      "DensFluid");
     rp_.RegDouble( muF,       "ViscFluid");
@@ -137,14 +137,14 @@ void ParamFilmCL::RegisterParams()
     rp_.RegDouble( sm_eps,    "SmoothZone");
     rp_.RegDouble( sigma,     "SurfTension");
     rp_.EndGroup();
-    
+
     rp_.BeginGroup("Exp");
     rp_.RegDouble( Filmdicke, "Thickness");
     rp_.RegCoord( g,          "Gravity");
     rp_.RegDouble( PumpFreq,  "PumpFreq");
     rp_.RegDouble( PumpAmpl,  "PumpAmpl");
     rp_.EndGroup();
-    
+
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( num_ref,      "NumRef");
     rp_.RegString( EnsCase,   "EnsightCase");
@@ -156,6 +156,6 @@ void ParamFilmCL::RegisterParams()
 }
 
 } // end of namespace DROPS
-    
+
 
 

@@ -39,7 +39,7 @@ template <class Coeff>
                 lsgvel[sit->Unknowns( vidx)+i]= tmp[i];
         }
     }
-    
+
     for (MultiGridCL::const_TriangEdgeIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeBegin( lvl),
          send= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeEnd( lvl);
          sit != send; ++sit) {
@@ -55,9 +55,9 @@ template <class Coeff>
         lsgpr[sit->Unknowns( pidx)]= LsgPr( sit->GetCoord(), t);
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): " << std::endl;
-    VectorCL res( A.Data*lsgvel + transp_mul(B.Data, lsgpr) - b.Data); 
+    VectorCL res( A.Data*lsgvel + transp_mul(B.Data, lsgpr) - b.Data);
     std::cerr << "|| Ax + BTy - f || = "<< norm( res)<< ", max "<< supnorm( res) << std::endl;
-    VectorCL resB( B.Data*lsgvel - c.Data); 
+    VectorCL resB( B.Data*lsgvel - c.Data);
     std::cerr << "|| Bx - g || = " <<  norm( resB) << ", max " << supnorm( resB) << std::endl;
 }
 
@@ -145,7 +145,7 @@ inline double Quad( const TetraCL& t, scalar_fun_ptr f, int i, int j)
 
 template <class Coeff>
   void
-  StokesP2P1CL<Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* vecA, 
+  StokesP2P1CL<Coeff>::SetupSystem( MatDescCL* matA, VelVecDescCL* vecA,
       MatDescCL* matB, VelVecDescCL* vecB, double t) const
 // Sets up the stiffness matrices and right hand sides
 {
@@ -155,7 +155,7 @@ template <class Coeff>
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel),
                     B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
@@ -165,11 +165,11 @@ template <class Coeff>
 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
-    
+
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-                            
-    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;                            
+
+    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -179,14 +179,14 @@ template <class Coeff>
     SVectorCL<3> tmp;
 
     P2DiscCL::GetGradientsOnRef(GradRef);
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
         P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
-        
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -218,9 +218,9 @@ template <class Coeff>
                 {
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
-                        A(Numb[i],          Numb[j])+=          coup[j][i]; 
-                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i]; 
-                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i]; 
+                        A(Numb[i],          Numb[j])+=          coup[j][i];
+                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i];
+                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
                     }
                     else // coupling with vert/edge j on right-hand-side
                     {
@@ -253,7 +253,7 @@ template <class Coeff>
                     }
                 }
             }
-            
+
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel)
         {
@@ -299,7 +299,7 @@ void StokesP2P1CL<Coeff>::SetupStiffnessMatrix(MatDescCL* matA) const
     bool IsOnDirBnd[10];
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-    std::cerr << "entering SetupStiffnessMatrix: " <<num_unks_vel<<" vels, " << std::endl;                            
+    std::cerr << "entering SetupStiffnessMatrix: " <<num_unks_vel<<" vels, " << std::endl;
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -335,8 +335,8 @@ void StokesP2P1CL<Coeff>::SetupStiffnessMatrix(MatDescCL* matA) const
             if (!IsOnDirBnd[i]) { // vert/edge i is not on a Dirichlet boundary
                 for(int j=0; j<10; ++j) {
                     if (!IsOnDirBnd[j]) { // vert/edge j is not on a Dirichlet boundary
-                        A(Numb[i],          Numb[j])+=          coup[j][i]; 
-                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i]; 
+                        A(Numb[i],          Numb[j])+=          coup[j][i];
+                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i];
                         A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
                     }
                 }
@@ -371,7 +371,7 @@ template <class Coeff>
          sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6.;
-        
+
         for(int i=0; i<4; ++i)
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
 
@@ -389,7 +389,7 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel),
                     B(&matB->Data, num_unks_pr,  num_unks_vel),
                     I(&matI->Data, num_unks_vel, num_unks_vel);
 
@@ -399,11 +399,11 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
-    
+
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-                            
-    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;                            
+
+    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -412,14 +412,14 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
     double det, absdet;
 
     P2DiscCL::GetGradientsOnRef(GradRef);
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
         P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
-        
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -456,8 +456,8 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
                 {
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
-                        A(Numb[i],          Numb[j])+=          coup[j][i]; 
-                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i]; 
+                        A(Numb[i],          Numb[j])+=          coup[j][i];
+                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i];
                         A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
                         I(Numb[i],          Numb[j])
                         = I(Numb[i]+stride,   Numb[j]+stride)
@@ -466,7 +466,7 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
                 }
 
             }
-            
+
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel)
         {
@@ -492,8 +492,8 @@ void StokesP2P1CL<Coeff>::SetupInstatSystem(MatDescCL* matA, MatDescCL* matB, Ma
 }
 
 template <class Coeff>
-void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB, 
-                                                VelVecDescCL* vecI, double tA, 
+void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB,
+                                                VelVecDescCL* vecI, double tA,
                                                 VelVecDescCL* vecf, double tf) const
 // Sets up the couplings with hat fcts on bnd (for matrices A, I) and discretizes the PDE coeff f(t)
 {
@@ -512,10 +512,10 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
 
     IdxT Numb[10], prNumb[4];
     bool IsOnDirBnd[10];
-    
+
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-                            
+
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
     SMatrixCL<3,3> T;
     double coup[10][10], coupMass[10][10];
@@ -523,14 +523,14 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
     SVectorCL<3> tmp;
 
     P2DiscCL::GetGradientsOnRef(GradRef);
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
         P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
-        
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -632,7 +632,7 @@ void StokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
     bool IsOnDirBnd[10];
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-    std::cerr << "entering SetupMass: " << num_unks_vel << " vels, " << std::endl;                            
+    std::cerr << "entering SetupMass: " << num_unks_vel << " vels, " << std::endl;
 
     // fill value part of matrices
     double absdet, coupMass[10][10];
@@ -649,7 +649,7 @@ void StokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
             if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
         }
-        
+
         // compute all couplings between HatFunctions on edges and verts
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
@@ -669,7 +669,7 @@ void StokesP2P1CL<Coeff>::SetupMassMatrix(MatDescCL* matI) const
                     }
                 }
             }
-            
+
     }
     std::cerr << "done: value part fill" << std::endl;
     I.Build();
@@ -682,9 +682,9 @@ void StokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVe
     VectorCL& lsgvel= vec->Data;
     Uint lvl        = vec->GetLevel(),
          vidx       = vec->RowIdx->GetIdx();
-    
+
     SVectorCL<3> tmp;
-    
+
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
@@ -695,7 +695,7 @@ void StokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVe
                 lsgvel[sit->Unknowns(vidx)+i]= tmp[i];
         }
     }
-    
+
     for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
@@ -712,19 +712,19 @@ void StokesP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVe
 
 
 template <class Coeff>
-void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
     instat_vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
 {
     double mindiff=0, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel();
-    
+
     VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
     VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
-    std::cerr << "\nChecken der Loesung...\n";    
+    std::cerr << "\nChecken der Loesung...\n";
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
-    
+
     const_DiscPrSolCL  pr(lsgpr, &_BndData.Pr, &_MG);
     const_DiscVelSolCL  vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
@@ -838,7 +838,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 
 template <class Coeff>
   void
-  StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+  StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
       instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t) const
 {
     double diff, maxdiff=0, norm2= 0;
@@ -855,7 +855,7 @@ template <class Coeff>
         SetupInstatRhs( &bb, &cc, &cplM, t, &bb, t);
         VectorCL res1( M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data);
         VectorCL res2( B.Data*lsgvel->Data - cc.Data);
-        std::cerr << "\nChecken der Loesung...\n";    
+        std::cerr << "\nChecken der Loesung...\n";
         std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
         std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
     }
@@ -866,7 +866,7 @@ template <class Coeff>
     SMatrixCL<3,3> T;
     double det, absdet;
 
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
          send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -907,7 +907,7 @@ template <class Coeff>
            }
         }
     }
-    
+
     for (MultiGridCL::const_TriangEdgeIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
@@ -932,7 +932,7 @@ template <class Coeff>
     {
 	Point3DCL sum(0.0), diff, Diff[10];
         const double absdet= sit->GetVolume()*6;
-        
+
 	for(int i=0; i<4; ++i)
 	{
 	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
@@ -1053,7 +1053,7 @@ template <class Coeff>
     // Put pressure degrees of freedom in prdof
     std::vector< double > prdof(NumVertsC);
     pr.GetDoF(s, prdof);
-    
+
     // || div(u_h) ||_L2(T) squared; the integrand is linear, thus we only need a quadrature-formula,
     // which is exact up to degree 2 (squares in L2-norm...); optimize this later.
     for (Uint i=0; i<numpts; ++i)
@@ -1155,7 +1155,7 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scala
                lsgvel[sit->Unknowns(vidx)+i]= LsgVel(sit->GetCoord(), 0.)[i];
         }
     }
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {  // Tetras are never on the boundary.
@@ -1176,9 +1176,9 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scala
         lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord());
 
     std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
-    VectorCL res( A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data); 
+    VectorCL res( A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data);
     std::cerr <<"|| Ax + BTy - f || = "<< norm( res)<<", max "<< supnorm( res) << std::endl;
-    VectorCL resB( B.Data*lsgvel - c.Data); 
+    VectorCL resB( B.Data*lsgvel - c.Data);
     std::cerr <<"|| Bx - g || = "<< norm( resB)<<", max "<< supnorm( resB) << std::endl;
 }
 
@@ -1228,11 +1228,11 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
 {
     vecA->Clear();
     vecB->Clear();
-    
+
     const IdxT num_unks_vel= matA->RowIdx->NumUnknowns;
     const IdxT num_unks_pr=  matB->RowIdx->NumUnknowns;
 
-    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel), 
+    MatrixBuilderCL A(&matA->Data, num_unks_vel, num_unks_vel),
                     B(&matB->Data, num_unks_pr,  num_unks_vel);
     VelVecDescCL& b   = *vecA;
     VelVecDescCL& c   = *vecB;
@@ -1242,11 +1242,11 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
 
     IdxT Numb[5], prNumb[4];
     bool IsOnDirBnd[5];
-    
+
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-                            
-    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;                            
+
+    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
 
     // fill value part of matrices
     SMatrixCL<3,3> T;
@@ -1259,7 +1259,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
     {
         GetTrafoTr(T,det,*sit);
         absdet= std::fabs(det);
-        
+
         // collect some information about the verts and the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -1288,9 +1288,9 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
                 {
                     if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
                     {
-                        A(Numb[i],          Numb[j])+=          coup[j][i]; 
-                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i]; 
-                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i]; 
+                        A(Numb[i],          Numb[j])+=          coup[j][i];
+                        A(Numb[i]+stride,   Numb[j]+stride)+=   coup[j][i];
+                        A(Numb[i]+2*stride, Numb[j]+2*stride)+= coup[j][i];
                     }
                     else // coupling with vert/edge j on right-hand-side; j is always <4!
                     {
@@ -1322,7 +1322,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
                     }
                 }
             }
-            
+
         // Setup B:   B(i,j) = int( psi_i * div( phi_j) )
         for(int vel=0; vel<5; ++vel)
         {
@@ -1374,7 +1374,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupPrMass(MatDescCL* matM) const
          sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6;
-        
+
         for(int i=0; i<4; ++i)
             prNumb[i]= sit->GetVertex(i)->Unknowns(pidx);
 
@@ -1505,7 +1505,7 @@ void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const const_DiscPrSolCL& 
     if (_outp)
         *_outp << "ErrorEstimator is initialized now; initial error: " << _InitGlobErr
                << " We try to reduce by a factor of " << _RelReduction
-               << " by marking the tetrahedrons with largest error-estimates, until the error marked" 
+               << " by marking the tetrahedrons with largest error-estimates, until the error marked"
                << " is at least " << _Threshold << " of the actual global error." << std::endl;
 }
 
@@ -1553,26 +1553,26 @@ bool StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const const_DiscPrSol
 
 
 template <class Coeff>
-void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr, 
+void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
     instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
 {
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
-    
+
     VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
     VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
-    std::cerr << "\nChecken der Loesung...\n";    
+    std::cerr << "\nChecken der Loesung...\n";
     std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
     std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
-    
+
     const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
 
-// We only use the linear part of the velocity-solution!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+// We only use the linear part of the velocity-solution!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     double* pvals= new double[Quad3CL::GetNumPoints()];
     double* pvals_sq= new double[Quad3CL::GetNumPoints()];
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
@@ -1596,7 +1596,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
     std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
     delete[] pvals_sq; delete[] pvals;
-    
+
     Uint countverts=0;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)

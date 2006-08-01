@@ -22,13 +22,13 @@ inline double SmoothedSign( double x, double alpha)
 }
 
 void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
-// computes the integral 
+// computes the integral
 //         sigma \int_\Gamma v n ds
 // used by levelset/prJump.cpp for testing FE pressure spaces.
 {
     const Uint idx_f= f.RowIdx->GetIdx();
     IdxT Numb[10];
-  
+
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
@@ -37,7 +37,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
     double det;
     InterfacePatchCL patch;
     P2DiscCL::GetGradientsOnRef( GradRef);
- 
+
     const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
 
     for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
@@ -52,7 +52,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
             const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
             Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
         }
-        
+
         for (int ch=0; ch<8; ++ch)
         {
             if (!patch.ComputeForChild(ch)) // no patch for this child
@@ -79,25 +79,25 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
             for (Uint i=0; i<4; ++i) // compute vector with positive direction
             {
                 const Uint vert= data.Vertices[i];
-                if (patch.GetSign(vert)==find_sign) 
-                { 
+                if (patch.GetSign(vert)==find_sign)
+                {
                     const Point3DCL signedPoint= vert<4 ? it->GetVertex(vert)->GetCoord() : GetBaryCenter( *it->GetEdge(vert-4));
                     pos_dir= signedPoint - patch.GetPoint(0);
                     if (find_sign == -1) pos_dir= -pos_dir;
-                    break; 
+                    break;
                 }
             }
             if (inner_prod( n, pos_dir) < 0) n= -n;
-            
-            double val_hat[4];    
+
+            double val_hat[4];
             for (int v=0; v<10; ++v)
             {
                 if (Numb[v]==NoIdx) continue;
-                
+
                 for (Uint k=0; k<patch.GetNumPoints(); ++k)
                     // Werte der Hutfunktion in P,Q,R,S
                     val_hat[k]= FE_P2CL::H(v,patch.GetBary(k));
-                
+
                 double v_Bary= FE_P2CL::H(v,BaryPQR),
                     sum_v= 0;
                 for (int k=0; k<3; ++k)
@@ -124,12 +124,12 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
 }
 
 void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
-// computes the integral 
+// computes the integral
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
     const Uint  idx_f=     f.RowIdx->GetIdx();
     IdxT        Numb[10];
-    
+
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
@@ -139,7 +139,7 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
     InterfacePatchCL patch;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
- 
+
     for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
         it!=end; ++it)
     {
@@ -151,9 +151,9 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
             const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
             Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
         }
-        
+
         patch.Init( *it, SmPhi);
-        
+
         for (int ch=0; ch<8; ++ch)
         {
             if (!patch.ComputeForChild(ch)) // no patch for this child
@@ -174,18 +174,18 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
             for (int v=0; v<10; ++v)
             {
                 if (Numb[v]==NoIdx) continue;
-                
+
                 LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
                 for (int node=0; node<4; ++node)
                     gradv[node]= Grad[v][node];
 
                 Point3DCL gr= gradv( BaryPQR); // gr= grad v(P) + grad v(Q) + grad v(R)
-                    
+
                 if (patch.IsQuadrilateral())
                     gr+= patch.GetAreaFrac() * gradv( BarySQR);
                 // nun gilt:
                 // gr = [grad v(P)+...] + (a+b-1)[grad v(S)+...]
-                
+
                 for (int i=0; i<3; ++i)
                 {
                     const double val= inner_prod( gr, patch.GetGradId(i));
@@ -198,12 +198,12 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
 }
 
 void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
-// computes the integral 
+// computes the integral
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
     const Uint  idx_f=     f.RowIdx->GetIdx();
     IdxT        Numb[10];
-    
+
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
@@ -213,7 +213,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
     InterfacePatchCL patch;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
- 
+
     for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
         it!=end; ++it)
     {
@@ -250,7 +250,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
             for (int p=0; p<6; ++p)
             {
                 Point3DCL np= n( p<4 ? patch.GetBary(p) : p==4 ? BaryPQR : BarySQR);
-                if (np.norm()>1e-8) np/= np.norm(); 
+                if (np.norm()>1e-8) np/= np.norm();
                 for (int i=0; i<3; ++i)
                     GradId[p][i]= patch.ApplyProj( std_basis<3>(i+1) - np[i]*np);
 //                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
@@ -261,11 +261,11 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
             for (int v=0; v<10; ++v)
             {
                 if (Numb[v]==NoIdx) continue;
-                
+
                 LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
                 for (int node=0; node<4; ++node)
                     gradv[node]= Grad[v][node];
-                    
+
                 for (int i=0; i<3; ++i)
                 {
                     double intSum= 0; // sum of the integrand in PQR, SQR
@@ -288,14 +288,14 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
 
 
 //*****************************************************************************
-//                               LevelsetP2CL    
+//                               LevelsetP2CL
 //*****************************************************************************
 
 void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
-	 
+	
     for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl),
         end= MG_.GetTriangVertexEnd(lvl); it!=end; ++it)
     {
@@ -318,19 +318,19 @@ void LevelsetP2CL::Reparam( Uint steps, double dt)
     {
         SetupReparamSystem( M, R, Psi, b);
         L.LinComb( 1./dt, M, theta_, R);
-        
+
         b+= (1./dt)*(M*Psi) - (1.-theta_) * (R*Psi);
         gm_.Solve( L, Psi, b);
         std::cout << "Reparam: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
     }
-    
+
     Phi.Data= Psi;
 }
 
 double func_abs( double x) { return std::abs(x); }
 
 void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorCL& Psi, VectorCL& b) const
-// M, R, b describe the following terms used for reparametrization:  
+// M, R, b describe the following terms used for reparametrization:
 // b_i  = ( S(Phi0),           v_i     )
 // M_ij = ( v_j,               v_i     )
 // R_ij = ( w(Psi) grad v_j,   v_i     )
@@ -351,20 +351,20 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
     Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
     SMatrixCL<3,3>     T;
     P2DiscCL::GetGradientsOnRef( GradRef);
-    
+
     IdxT         Numb[10];
     SVectorCL<3> grad_Psi[4];
     const_DiscSolCL    phi= GetSolution();
     double det, absdet;
     const double alpha= 0.1;  // for smoothing of signum fct
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-        
+
         GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
 
         // init Sign_Phi, w_loc
@@ -401,16 +401,16 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
     }
     M.Build();
     R.Build();
-    std::cerr << M_.num_nonzeros() << " nonzeros in M, " 
+    std::cerr << M_.num_nonzeros() << " nonzeros in M, "
               << R_.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
 
-void LevelsetP2CL::SetTimeStep( double dt, double theta) 
-{ 
-    dt_= dt; 
+void LevelsetP2CL::SetTimeStep( double dt, double theta)
+{
+    dt_= dt;
     if (theta >= 0) theta_= theta;
-    
-    L_.LinComb( 1./dt_, E_, theta_, H_); 
+
+    L_.LinComb( 1./dt_, E_, theta_, H_);
 }
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
@@ -435,7 +435,7 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 {
     const Uint idx= Phi.RowIdx->GetIdx();
     double PhiV0= Phi.Data[t.GetVertex(0)->Unknowns(idx)];
-    
+
     for (int i=1; i<4; ++i)
         if( PhiV0*Phi.Data[t.GetVertex(i)->Unknowns(idx)] <= 0) return true;
     for (int i=0; i<6; ++i)
@@ -452,7 +452,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
  */
 {
     FastMarchCL fm( MG_, Phi);
-    
+
     if (OnlyZeroLvl)
     {
         if (Periodic)
@@ -475,11 +475,11 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
         SmoothPhi( SmPhi.Data, curvDiff_);
     switch (SF_)
     {
-      case SF_LB: 
+      case SF_LB:
         SF_LaplBeltrami( MG_, SmPhi, sigma, f); break;
-      case SF_Const: 
+      case SF_Const:
         SF_ConstForce( MG_, SmPhi, sigma, f); break;
-      case SF_ImprovedLB: 
+      case SF_ImprovedLB:
         SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma, f); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
@@ -494,18 +494,18 @@ double LevelsetP2CL::GetVolume( double translation) const
     Quad2CL<> Xi;    // 1 fuer phi<0, 0 sonst
     double det, absdet, vol= 0;
     SMatrixCL<3,3> T;
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
-        
+
         for (int i=0; i<4; ++i)
             Xi[i]= H( phi.val( *sit->GetVertex(i)) + translation);
         // values in barycenter
         Xi[4]= H( phi.val( *sit, 0.25, 0.25, 0.25) + translation);
-        
+
         vol+= Xi.quad( absdet);
     }
     return vol;
@@ -549,7 +549,7 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
 {
     std::cerr << "Smoothing for curvature calculation... ";
     MatrixCL M, A, C;
-    SetupSmoothSystem( M, A); 
+    SetupSmoothSystem( M, A);
     C.LinComb( 1, M, diff, A);
     PCG_SsorCL pcg( pc_, gm_.GetMaxIter(), gm_.GetTol());
     pcg.Solve( C, SmPhi, M*Phi.Data);
@@ -571,17 +571,17 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
     SMatrixCL<3,3>     T;
     P2DiscCL::GetGradientsOnRef( GradRef);
-    
+
     IdxT         Numb[10];
     double det, absdet;
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-        
+
         GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
@@ -599,12 +599,12 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 }
 
 //*****************************************************************************
-//                               InterfacePatchCL    
+//                               InterfacePatchCL
 //*****************************************************************************
 
 const double InterfacePatchCL::approxZero_= 1e-18;
 
-InterfacePatchCL::InterfacePatchCL() 
+InterfacePatchCL::InterfacePatchCL()
   : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
 {
     BaryDoF_[0][0]= BaryDoF_[1][1]= BaryDoF_[2][2]= BaryDoF_[3][3]= 1.;
@@ -636,9 +636,9 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
     if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) // no change of sign on child
         return false;
     if (num_sign_[1]==4)
-    { 
-        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl; 
-        return false; 
+    {
+        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        return false;
     }
 
     // erst werden die Nullknoten in PQRS gespeichert...
@@ -670,13 +670,13 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
     A(0,0)= PQRS_[1][0]-PQRS_[0][0];    A(0,1)= PQRS_[2][0]-PQRS_[0][0];
     A(1,0)= PQRS_[1][1]-PQRS_[0][1];    A(1,1)= PQRS_[2][1]-PQRS_[0][1];
     A(2,0)= PQRS_[1][2]-PQRS_[0][2];    A(2,1)= PQRS_[2][2]-PQRS_[0][2];
-    SMatrixCL<2,2> ATA; 
+    SMatrixCL<2,2> ATA;
     ATA(0,0)=           A(0,0)*A(0,0)+A(1,0)*A(1,0)+A(2,0)*A(2,0);
     ATA(0,1)= ATA(1,0)= A(0,0)*A(0,1)+A(1,0)*A(1,1)+A(2,0)*A(2,1);
     ATA(1,1)=           A(0,1)*A(0,1)+A(1,1)*A(1,1)+A(2,1)*A(2,1);
     const double detATA= ATA(0,0)*ATA(1,1) - ATA(1,0)*ATA(1,0);
     sqrtDetATA_= std::sqrt( detATA);
-    
+
     Point2DCL AT_i, tmp;
     for (int i=0; i<3; ++i)
     {
@@ -693,14 +693,14 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
         tmp[0]= A(0,0)*PS[0] + A(1,0)*PS[1] + A(2,0)*PS[2];
         tmp[1]= A(0,1)*PS[0] + A(1,1)*PS[1] + A(2,1)*PS[2];
         Solve2x2( detATA, ATA, ab_, tmp);
-        //if (ab_[0]<0 || ab_[1]<0) 
+        //if (ab_[0]<0 || ab_[1]<0)
         //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
         // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
     }
 
     if (EqualToFace()) // interface is shared by two tetras
         sqrtDetATA_/= 2;
-        
+
     return true; // computed patch of child;
 }
 
@@ -716,9 +716,9 @@ bool InterfacePatchCL::ComputeCutForChild( Uint ch)
     if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) // no change of sign on child and no patch on a face
         return false;
     if (num_sign_[1]==4)
-    { 
-        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl; 
-        return false; 
+    {
+        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        return false;
     }
 
     // erst werden die Nullknoten in PQRS gespeichert...

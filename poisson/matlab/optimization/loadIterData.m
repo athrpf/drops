@@ -27,9 +27,9 @@ disp('complete !');
 
 % clear
 % cd nestedIter;
-% 
+%
 % level= 0;
-% 
+%
 % disp('load data...');
 % filename= sprintf('OptData_l%d',level);
 % load (filename);
@@ -50,6 +50,6 @@ disp('complete !');
 % comptime= comptime_iter;
 % clear DROPS_Iter_iter J_iter comptime_iter;
 % disp('complete !');
-% 
+%
 % % % Skalierung des Waermestroms
 % % qc_iter= 0.023*qc_iter;

@@ -19,7 +19,7 @@ ndt= C_data(8);
 %     plotq(gl,ni,qh,t,1,0)
 %     fqc(t)=getframe(gcf);
 % %end
-% 
+%
 % return
 
 %--------------- plot temperature over time -------------------
@@ -41,16 +41,16 @@ if flag==0
     end
 else
     count=1;
-    
+
     niy=ni(2);
     niz=ni(3);
     npy=niy+1;
     npz=niz+1;
-    
+
     for t=1:n+1
         % create time-independent matrix
         Tm=reshape(Ti(:,t),npy,npz);
-        
+
         % output in the middle of the y-z-plane
         Tmp(1,count)=Tm(niy/2+1,niz/2+1);
         count=count+1;
@@ -62,7 +62,7 @@ else
     clear Tm;
     clear Tmp;
 end
-        
+
 %         hold on
 %         plot_T(gl,ni,T,t,1,flag)
 %         title('u_h(0.5,0.5,1,t)');

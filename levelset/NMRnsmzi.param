@@ -1,6 +1,6 @@
 #=============================================================
 #    DROPS parameter file for    mzelle_instat_ns
-#    simulation of two-phase flow: 
+#    simulation of two-phase flow:
 #    droplet in measuring cell used in NMR measurements
 #=============================================================
 
@@ -20,7 +20,7 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-12
   OuterTol	=	1e-10
-  StokesMethod	=	-1	# no effect 
+  StokesMethod	=	-1	# no effect
 }
 
 NavStokes {
@@ -48,7 +48,7 @@ Coupling {
 }
 
 # re-initialization of levelset function
-Reparam { 
+Reparam {
   Freq		=	0	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
   NumSteps	=	5
@@ -70,7 +70,7 @@ Mat {
   DensFluid	=	1107
   ViscFluid	=	1e-3
   SmoothZone	=	1e-4
-  
+
   SurfTension	=	2e-3
 }
 
@@ -78,14 +78,14 @@ Mat {
 Exp {
   RadDrop	=	-99 #1.75e-3
   PosDrop	=	0	-7.5e-3	0
-  
+
   Gravity	=	0	-9.81	0
-  
+
   FlowDir	=	1	# flow in y-direction
-  
+
   InflowVel	=	-0.05
   RadInlet	=	3.6e-3	# 3.5e-3 for old meas. cell
-}  
+}
 
 # miscellaneous
 

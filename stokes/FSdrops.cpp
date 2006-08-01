@@ -66,7 +66,7 @@ struct InstatStokes2CL
       public:
         static double q(const Point3DCL&) { return 0.0; }
         static SVectorCL<3> f(const Point3DCL& p, double t)
-        { 
+        {
             SVectorCL<3> ret;
             ret[0]=       2/3*t*std::sin(p[0])*std::sin(p[1])*std::sin(p[2]);
             ret[1]=      -2/3*t*std::cos(p[0])*std::cos(p[1])*std::sin(p[2]);
@@ -102,7 +102,7 @@ struct InstatStokes3CL
       public:
         static double q(const Point3DCL&) { return 0.0; }
         static SVectorCL<3> f(const Point3DCL&, double)
-        { 
+        {
             return SVectorCL<3>(-2.);
         }
         const double nu;
@@ -125,7 +125,7 @@ struct InstatStokesCL
         ret[2]= -2.*std::sin(p[0])*std::sin(p[1])*std::cos(p[2]);
         return ret;
     }
-    
+
     static SVectorCL<3> LsgVel(const Point3DCL& p, double t)
     {
         return t*helper(p);
@@ -173,13 +173,13 @@ class FracStepMatrixCL
     const MatrixCL& _matA;
     const MatrixCL& _matI;
     double          _coeff;
-    
+
   public:
     FracStepMatrixCL( const MatrixCL& I, const MatrixCL& A, double coeff)
         : _matA( A), _matI( I), _coeff( coeff) {}
-    
+
     Uint num_cols() const { return _matA.num_cols(); }
-    
+
     VectorCL operator* (const VectorCL& v) const
     {
         return VectorCL( _coeff*(_matA*v) + _matI*v);
@@ -192,7 +192,7 @@ class SchurComplNoPcMatrixCL
     const FracStepMatrixCL& _matA;
     const MatrixCL&         _matB;
     double    _tol;
-    
+
   public:
     SchurComplNoPcMatrixCL( const FracStepMatrixCL& A, const MatrixCL& B, double tol)
         : _matA(A), _matB(B), _tol(tol) {}
@@ -215,36 +215,36 @@ VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v)
                   DebugNumericC);
 //    std::cerr << "Inner iteration took " << maxiter << " steps, residuum is " << tol << std::endl;
     return M._matB*x;
-}    
+}
 
 
-void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B, 
+void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B,
                 VectorCL& u, VectorCL& p, const VectorCL& b, const VectorCL& c,
                 const double inner_tol, const double outer_tol, const Uint max_iter, double dt)
 // solve:       S*q = B*(M^-1)*b - c
 //              M*u = b - BT*q
-//                q = dt*p 
+//                q = dt*p
 {
     p*=dt;
     VectorCL rhs( -c);
     {
         double tol= inner_tol;
-        int iter= max_iter;        
+        int iter= max_iter;
         VectorCL tmp( u.size());
         CG(M, tmp, b, iter, tol);
         std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
-    int iter= max_iter;   
-    double tol= outer_tol;     
+    int iter= max_iter;
+    double tol= outer_tol;
     //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
     CG( SchurComplNoPcMatrixCL( M, B, inner_tol), p, rhs, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
 
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
     tol= outer_tol;
-    iter= max_iter;        
+    iter= max_iter;
     CG(M, u, VectorCL( b - transp_mul(B, p)), iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     p/=dt;
@@ -252,26 +252,26 @@ void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B,
 }
 
 template<class PreCondT>
-void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B, 
+void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
             VectorCL& u, VectorCL& p, const VectorCL& b, const VectorCL& c,
             const double inner_tol, const double outer_tol, const Uint max_iter, const double omega, double dt)
 // solve:       S*q = B*(M^-1)*b - c
 //              M*u = b - BT*q
-//                q = dt*p 
+//                q = dt*p
 {
     p*= dt;
     VectorCL rhs( -c);
     {
         double tol= inner_tol;
-        int iter= max_iter;        
+        int iter= max_iter;
         VectorCL tmp( u.size());
         PCG(M, tmp, b, pc, iter, tol);
         std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
         rhs+= B*tmp;
     }
     std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
-    int iter= max_iter;   
-    double tol= outer_tol;     
+    int iter= max_iter;
+    double tol= outer_tol;
     //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
     SSORPcCL poissonpc(omega);
     PCG_SsorCL poissonsolver( poissonpc, 500, inner_tol);
@@ -281,7 +281,7 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
 
     std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
     tol= outer_tol;
-    iter= max_iter;        
+    iter= max_iter;
     PCG(M, u, VectorCL( b - transp_mul(B, p)), pc, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
     p/= dt;
@@ -320,7 +320,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
     vidx2->Set( 3, 3, 0, 0);
     pidx1->Set( 1, 0, 0, 0);
     pidx2->Set( 1, 0, 0, 0);
-    
+
     TimerCL time;
 //    err_idx->Set( 0, 0, 0, 1);
     do
@@ -328,8 +328,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //        akt_glob_err= glob_err;
         MarkAll( MG);
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
@@ -375,17 +375,17 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-        
+
         Uint meth;
         double dt, t= 0;
 
         std::cerr << "\nDelta t = "; std::cin >> dt;
-        
+
         const double theta= 1 - std::sqrt(0.5),
                      alpha= (1 - 2*theta)/(1 - theta);
         const double eta= alpha*theta*dt;
         double macrostep;
-        
+
         std::cerr << "which method? 0=Schur, 1=SchurNoPc, 2=impl./expl. Euler > "; std::cin >> meth;
         time.Reset();
         switch(meth)
@@ -393,7 +393,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         case 1: {
             FracStepMatrixCL M( I->Data, A->Data, eta);
             VectorCL rhs( v1->Data.size());
-                     
+
             double outer_tol, old_time= 0;
             std::cerr << "tol = "; std::cin >> outer_tol;
 
@@ -407,11 +407,11 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             cplI->SetIdx(vidx1);
             old_cplA->SetIdx(vidx1);
             old_cplI->SetIdx(vidx1);
-            
+
             do
             {
                 time.Start();
-                
+
                 macrostep= theta*dt;
                 Stokes.SetupInstatRhs( cplA, c, cplI, t+macrostep, f, t);
                 rhs= A->Data * v1->Data;
@@ -443,7 +443,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                 std::swap( cplI, old_cplI);
 
                 t+= dt;
-                
+
                 time.Stop();
 //        Stokes.SetupInstatRhs( b, t);
 //        Stokes.CheckSolution(v1, p1, &MyPDE::LsgVel, &MyPDE::LsgPr);
@@ -460,13 +460,13 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         case 0: {
             SSORPcCL pc(omega);
             VectorCL rhs( v1->Data.size());
-                     
+
             MatrixCL M;
             M.LinComb( 1., I->Data, eta, A->Data);
 
             double outer_tol, old_time= 0;
             std::cerr << "tol = "; std::cin >> outer_tol;
-            
+
             VelVecDescCL *cplA= new VelVecDescCL,
                          *cplI= new VelVecDescCL,
                          *old_cplA= new VelVecDescCL,
@@ -482,7 +482,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             do
             {
                 time.Start();
-                
+
                 macrostep= theta*dt;
                 Stokes.SetupInstatRhs( cplA, c, cplI, t+macrostep, f, t);
                 rhs= A->Data * v1->Data;
@@ -514,7 +514,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                 std::swap( cplI, old_cplI);
 
                 t+= dt;
-                
+
                 time.Stop();
 //        Stokes.SetupInstatRhs( b, t);
 //        Stokes.CheckSolution(v1, p1, &MyPDE::LsgVel, &MyPDE::LsgPr, t);
@@ -531,18 +531,18 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         case 2: {
             SSORPcCL pc(omega);
             VectorCL v( v1->Data.size());
-                     
+
             double outer_tol, theta, old_time= 0;
             std::cerr << "theta = "; std::cin >> theta;
             std::cerr << "tol = "; std::cin >> outer_tol;
-            
+
             MatrixCL M;
             M.LinComb( 1., I->Data, theta*dt, A->Data);
 
             VelVecDescCL* old_b= new VelVecDescCL;
             VelVecDescCL* cplI= new VelVecDescCL;
             VelVecDescCL* old_cplI= new VelVecDescCL;
-                          
+
             old_b->SetIdx( b->RowIdx);
             cplI->SetIdx( b->RowIdx);
             old_cplI->SetIdx( b->RowIdx);
@@ -550,7 +550,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             do
             {
                 time.Start();
-                
+
                 Stokes.SetupInstatRhs( b, c, cplI, t+dt, b, t+dt);
                 v= A->Data * v1->Data;
                 v*= (theta-1)*dt;
@@ -568,16 +568,16 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                 std::cerr << "Zeitschritt t = " << t << " dauerte " << time.GetTime()-old_time << " sec\n" << std::endl;
                 old_time= time.GetTime();
             } while (std::fabs(t - 1.)>DoubleEpsC);
-            
+
             if (old_b == &Stokes.b)
                 std::swap( old_b, b);
             delete old_b;
             delete cplI;
             delete old_cplI;
         } break;
-        
+
         default: std::cerr << "ERROR: No such method!" << std::endl;
-        
+
         } // switch
 
 /*        else
@@ -616,7 +616,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         std::cerr << std::endl;
     }
     while (++step<maxStep);
-    
+
     // we want the solution to be in Stokes.v, Stokes.pr
     if (v2 == &loc_v)
     {
@@ -624,7 +624,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx(&Stokes.vel_idx);
         Stokes.p.SetIdx(&Stokes.pr_idx);
-        
+
         Stokes.v.Data= loc_v.Data;
         Stokes.p.Data= loc_p.Data;
     }
@@ -672,26 +672,26 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= M_PI/4.;
 
-    typedef DROPS::StokesP2P1CL<MyPDE::StokesCoeffCL> 
+    typedef DROPS::StokesP2P1CL<MyPDE::StokesCoeffCL>
             InstatStokesOnBrickCL;
     typedef InstatStokesOnBrickCL MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 1, 1, 1);
 //    DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2, 2);
 //    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &MyPDE::LsgVel, &MyPDE::LsgVel, &MyPDE::LsgVel, 
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &MyPDE::LsgVel, &MyPDE::LsgVel, &MyPDE::LsgVel,
           &MyPDE::LsgVel, &MyPDE::LsgVel, &MyPDE::LsgVel};
-        
+
     MyStokesCL prob(brick, MyPDE::Coeff, DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
 
     double omega= std::atof(argv[1]);
     double inner_iter_tol= std::atof(argv[2]);
     DROPS::Uint maxStep= std::atoi(argv[3]);
-    
+
     std::cerr << "Omega: " << omega << " inner iter tol: " << inner_iter_tol
               << "maxStep: " << maxStep << std::endl;
 

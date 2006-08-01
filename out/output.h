@@ -29,7 +29,7 @@ class ColorMapperCL
 {
   public:
     typedef SArrayCL<double, 4> RGBAType;
-    
+
     virtual RGBAType map(double val) const
         { RGBAType rgba; rgba[3]= 1.0; rgba[2]= val; rgba[1]= val; rgba[0]= val; return rgba; }
     // returns an RGBA-quadruple for input between 0.0 and 1.0
@@ -136,16 +136,16 @@ class TecPlot2DSolOutCL: public MGOutCL
 
     DiscVelT _v;
     DiscPrT  _p;
-    
+
     bool IsInPlane( const Point3DCL& p) const { return p[_cut]==_cutplane; }
-    
+
   public:
-    TecPlot2DSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, 
+    TecPlot2DSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p,
                        const IdxDescCL& freeVertIdx, int lvl, Uint cutvar, double cutplane)
-      : MGOutCL( &mg), _idx( freeVertIdx.GetIdx()), _level( lvl<0 ? mg.GetLastLevel() : lvl), 
-        _cut( cutvar), _cutplane( cutplane), _v( v), _p( p) 
+      : MGOutCL( &mg), _idx( freeVertIdx.GetIdx()), _level( lvl<0 ? mg.GetLastLevel() : lvl),
+        _cut( cutvar), _cutplane( cutplane), _v( v), _p( p)
     {}
-      
+
     std::ostream& put( std::ostream&) const;
 };
 
@@ -159,12 +159,12 @@ class TecPlotSolOutCL: public MGOutCL
 
     DiscVelT _v;
     DiscPrT  _p;
-    
+
   public:
     TecPlotSolOutCL( const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, int lvl= -1)
-      : MGOutCL( &mg), _level( lvl<0 ? mg.GetLastLevel() : lvl), _v( v), _p( p) 
+      : MGOutCL( &mg), _level( lvl<0 ? mg.GetLastLevel() : lvl), _v( v), _p( p)
     {}
-      
+
     std::ostream& put( std::ostream&) const;
 };
 
@@ -259,18 +259,18 @@ class MapleSolOutCL: public MGOutCL
     _Write_Intersection(const TetraCL&, std::ostream&, bool) const;
     bool
     _Write_Vel_Intersection(const TetraCL&, std::ostream&, bool) const;
-    
+
   public:
     int gridlines;  // Maple linestyle for the grid; -1 == no grid
 
-    MapleSolOutCL(const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p, 
+    MapleSolOutCL(const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p,
                   int TriLevel= -1, const PlaneCL& pl= PlaneCL() ,
 		  Maple3DOptionCL opt=Maple3DOptionCL(), double scale= 1.0, int gr= 0)
-      : MGOutCL(&mg), _level(TriLevel<0 ? mg.GetLastLevel() : TriLevel), 
+      : MGOutCL(&mg), _level(TriLevel<0 ? mg.GetLastLevel() : TriLevel),
         _plane(pl), _options(opt), _scalevec(scale), _v( v), _p( p), gridlines(gr)
     {}
     virtual ~MapleSolOutCL() {}
-      
+
     std::ostream& put(std::ostream&) const;
 };
 
@@ -347,12 +347,12 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
 {
     const char xyz[]= "XYZ",
                uvw[]= "UVW";
-               
+
     const MultiGridCL::const_TriangTetraIteratorCL tbegin= _MG->GetTriangTetraBegin( _level),
                                                    tend=   _MG->GetTriangTetraEnd( _level);
-               
-    const MultiGridCL::TriangVertexIteratorCL vbegin= const_cast<MultiGridCL*>(_MG)->GetTriangVertexBegin( _level), 
-                                              vend=   const_cast<MultiGridCL*>(_MG)->GetTriangVertexEnd( _level); 
+
+    const MultiGridCL::TriangVertexIteratorCL vbegin= const_cast<MultiGridCL*>(_MG)->GetTriangVertexBegin( _level),
+                                              vend=   const_cast<MultiGridCL*>(_MG)->GetTriangVertexEnd( _level);
     Uint numv= 0, numel= 0;
     for (MultiGridCL::TriangVertexIteratorCL it=vbegin; it!=vend; ++it)
         if (IsInPlane( it->GetCoord() ))
@@ -368,11 +368,11 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
         if (VertsInPlane==3) // found triangle in plane!
             ++numel;
     }
-            
+
     os << "# output written by DROPS::TecPlot2DSolOutCL,\n";
     os << "# cutplane is " << xyz[_cut] << " = " << _cutplane << "\n\n";
     os << "TITLE = " << '"' << "cutplane " << xyz[_cut] << " = " << _cutplane << '"' << '\n';
-    
+
     os << "VARIABLES = ";
     for (Uint i=0; i<3; ++i)
         if (i!=_cut) os << '"' << xyz[i] << '"' << " , ";
@@ -390,13 +390,13 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
             data= it->GetCoord();  // XYZ
             for (Uint i=0; i<3; ++i)
                 if (i!=_cut) os << data[i] << ' ';
-                
+
             data= _v.val( *it);    // UVW
             for (Uint i=0; i<3; ++i)
                 if (i!=_cut) os << data[i] << ' ';
-            
+
             os << _p.val( *it) << '\n';
-                
+
         }
     os << '\n';
     // write connectivity of the verts -> triangles
@@ -419,26 +419,26 @@ std::ostream& TecPlot2DSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
 
     return os;
 }
-    
-    
+
+
 template<class DiscVelT, class DiscPrT>
 std::ostream& TecPlotSolOutCL<DiscVelT,DiscPrT>::put( std::ostream& os) const
 {
     const char xyz[]= "XYZ",
                uvw[]= "UVW";
-               
+
     const MultiGridCL::const_TriangTetraIteratorCL tbegin= _MG->GetTriangTetraBegin( _level),
                                                    tend=   _MG->GetTriangTetraEnd( _level);
-               
-    const MultiGridCL::TriangVertexIteratorCL vbegin= const_cast<MultiGridCL*>(_MG)->GetTriangVertexBegin( _level), 
-                                              vend=   const_cast<MultiGridCL*>(_MG)->GetTriangVertexEnd( _level); 
-    Uint numv= std::distance( vbegin, vend), 
+
+    const MultiGridCL::TriangVertexIteratorCL vbegin= const_cast<MultiGridCL*>(_MG)->GetTriangVertexBegin( _level),
+                                              vend=   const_cast<MultiGridCL*>(_MG)->GetTriangVertexEnd( _level);
+    Uint numv= std::distance( vbegin, vend),
          numel= std::distance( tbegin, tend),
          pidx= _p.GetSolution()->RowIdx->GetIdx();
-            
+
     os << "# output written by DROPS::TecPlotSolOutCL,\n";
     os << "TITLE = " << '"' << "3D-Solution" << '"' << '\n';
-    
+
     os << "VARIABLES = ";
     for (Uint i=0; i<3; ++i)
         os << '"' << xyz[i] << '"' << " , ";
@@ -519,7 +519,7 @@ MapleSolOutCL<DiscVelT, DiscPrT>::put(std::ostream& os) const
         grid._Intersect_Plot(os);
         os << ", LINESTYLE(" << gridlines << ")) ):" << std::endl;
     }
-    
+
     bool have_previous= false;
     os << _options.name << "_v:= arrow([ ";
     for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level); tit!=_MG->GetTriangTetraEnd(_level); ++tit )

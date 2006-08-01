@@ -79,16 +79,16 @@ void ReadParamsCL::ReadEntry( std::istream& is)
         switch(is.peek())
         {
           case '#': SkipComment( is); break;
-          case '=': is.get(); SkipComment( is); 
-                    name_= group_ + name_; 
-                    ReadData( is); 
-                    name_.clear(); 
+          case '=': is.get(); SkipComment( is);
+                    name_= group_ + name_;
+                    ReadData( is);
+                    name_.clear();
                     return;
-          case '{': is.get(); if (!name_.empty()) 
+          case '{': is.get(); if (!name_.empty())
                                { BeginGroup( name_); name_.clear(); }
                                else throw DROPSErrCL("ReadParamsCL: group name missing before '{'");
                                break;
-          case '}': is.get(); if (name_.empty()) EndGroup(); 
+          case '}': is.get(); if (name_.empty()) EndGroup();
                                else throw DROPSErrCL("ReadParamsCL: end of group "+group_+" before defining parameter "+name_);
                                break;
           default: name_+= is.get(); break;
@@ -130,7 +130,7 @@ void ReadParamsCL::ReadData( std::istream& is)
 
 void ReadParamsCL::Clear()
 {
-    info_.clear(); iparam_.clear(); dparam_.clear(); cparam_.clear(); sparam_.clear(); 
+    info_.clear(); iparam_.clear(); dparam_.clear(); cparam_.clear(); sparam_.clear();
 }
 
 void ReadParamsCL::ReadParams( std::istream& is)
@@ -138,18 +138,18 @@ void ReadParamsCL::ReadParams( std::istream& is)
     if (!group_.empty())
         throw DROPSErrCL("ReadParamCL: group "+group_+" not terminated properly");
 
-    if (!is) 
+    if (!is)
         throw DROPSErrCL("ReadParamsCL: file error");
 
     name_.clear(); group_.clear();
     // reset info: all parameters uninitialized
     for (InfoT::iterator it= info_.begin(), end= info_.end(); it!=end; ++it)
         it->second.second= false;
-    
+
     while (!is.eof())
     {
         ReadEntry( is);
-        if (!name_.empty()) 
+        if (!name_.empty())
             throw DROPSErrCL("ReadParamsCL: error while reading parameter "+name_);
     }
     PrintWarning();
@@ -164,7 +164,7 @@ void ReadParamsCL::WriteParams( std::ostream& os) const
     os << "#=============================================\n"
        << "#    DROPS parameter file\n"
        << "#=============================================\n\n";
-    for (InfoT::const_iterator it= info_.begin(), end= info_.end(); 
+    for (InfoT::const_iterator it= info_.begin(), end= info_.end();
         it!=end; ++it)
     {
         string bez= it->first;
@@ -194,6 +194,6 @@ void ReadParamsCL::PrintWarning() const
 }
 
 } // end of namespace DROPS
-    
+
 
 

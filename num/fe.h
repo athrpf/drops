@@ -27,7 +27,7 @@ class FE_P1CL
 {
   private:
     static const double _gradient[4][3];
-    
+
   public:
     /// default ctor, copy-ctor, assignment-op, dtor
 
@@ -103,7 +103,7 @@ class FE_P1DCL
   private:
     static const double _gradient[4][3];
     static const double _vertexvalue[4][4]; ///< _vv[i][j] is the value of shape-function i in vertex j.
-    
+
   public:
     /// default ctor, copy-ctor, assignment-op, dtor
 
@@ -273,7 +273,7 @@ class FE_P1BubbleCL
 {
 private:
     static const FE_P1CL _LinFun;
-    
+
 public:
     // default ctor, copy-ctor, assignment-op, dtor
 
@@ -341,7 +341,7 @@ struct DoFHelperCL
     static inline Data
     get(const _Vec&, const IdxT)
     { throw DROPSErrCL("DoFHelperCL::get: Unknown data-type"); return Data(); }
-    // write the Data-object at position IdxT to the _Vec-object 
+    // write the Data-object at position IdxT to the _Vec-object
     static inline void
     set(_Vec&, const IdxT, const Data&)
     { throw DROPSErrCL("DoFHelperCL::set: Unknown data-type"); }
@@ -434,7 +434,7 @@ public:
     typedef P1EvalCL<Data, _BndData, _VD> _self;
     typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P1EvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
-    
+
 protected:
     // numerical data
     VecDescT*          _sol;
@@ -483,7 +483,7 @@ public:
     GetTime() const
         { return t_; }
 
-    // evaluation on vertices    
+    // evaluation on vertices
     template<class _Cont>
       inline void
       GetDoF(const VertexCL&, _Cont&) const;
@@ -492,7 +492,7 @@ public:
     template<class _Cont>
       inline DataT
       val(const _Cont&) const;
-    
+
     // evaluation on edges
     template<class _Cont>
       inline void
@@ -559,7 +559,7 @@ public:
     typedef P1DEvalCL<Data, _BndData, _VD> _self;
     typedef P1DEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P1DEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
-    
+
 protected:
     // numerical data
     VecDescT*          _sol;
@@ -721,7 +721,7 @@ public:
     inline bool IsDefinedOn(const TetraCL&, Uint) const;
     inline bool IsDefinedOn(const TetraCL&) const;
 
-    // evaluation on vertices    
+    // evaluation on vertices
     inline void // set the degree of freedom in the vertex; fails if, we are on a Dirichlet-boundary
     SetDoF(const VertexCL&, const DataT&);
     template<class _Cont>
@@ -732,7 +732,7 @@ public:
       val(const _Cont&) const;
     inline DataT
     val(const VertexCL& s) const;
-    
+
     // evaluation on edges
     inline void // set the degree of freedom on the edge; fails if, we are on a Dirichlet-boundary
     SetDoF(const EdgeCL&, const DataT&);
@@ -810,7 +810,7 @@ public:
     typedef P1BubbleEvalCL<Data, _BndData, _VD> _self;
     typedef P1BubbleEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::stripped_type> modifiable_type;
     typedef P1BubbleEvalCL<Data, _BndData, typename ConstHelperCL<_VD>::const_type>    const_type;
-    
+
 private:
     // numerical data
     VecDescT*          _sol;
@@ -823,7 +823,7 @@ private:
     GetDoF(const VertexCL&) const;// use val() instead
     inline DataT // helper-function to evaluate the degree of freedom in a tetra
     GetDoF(const TetraCL&) const;
-       
+
 public:
     P1BubbleEvalCL() :_sol(0), _MG(0) {}
     P1BubbleEvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
@@ -851,7 +851,7 @@ public:
     GetLevel() const // Triangulation level of this function
         { return _sol->GetLevel(); }
 
-    // evaluation on vertices    
+    // evaluation on vertices
     template<class _Cont>
       inline void
       GetDoF(const VertexCL&, _Cont&) const;
@@ -862,7 +862,7 @@ public:
       val(const _Cont&) const;
     inline DataT
     val(const VertexCL&) const;
-    
+
     // evaluation on edges
     template<class _Cont>
       inline void
@@ -909,7 +909,7 @@ template<class Data, class _BndData, class _VD>
 //     represents a P1-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
-//**************************************************************************    
+//**************************************************************************
 template <class P1T, class VecDesc>
   Uint
   RepairAfterRefineP1( const P1T& old_f, VecDesc& f);
@@ -918,7 +918,7 @@ template <class P1T, class VecDesc>
 // Adapt a solution on a triangulation of a certain level, that has changed during the refinement.
 // Notation: T = old triang, T' = new triang. Both T and T' are of the same level.
 // This change can be classified in several cases (not complete...): Fot tetra t in T:
-//    a) t is missing not only in T' but in all new triang levels  
+//    a) t is missing not only in T' but in all new triang levels
 //       -> information is lost
 //    b) t is missing in T', but is member of the new MultiGrid
 //       -> t was refined, children of t are members of T', for these information is interpolated from t!
@@ -949,7 +949,7 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
 //     represents a P2-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
-//**************************************************************************    
+//**************************************************************************
 template <class P2T, class VecDesc>
 Uint
 RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc);
@@ -967,7 +967,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc);
 //     P is an uninitialized MatDescCL-object.                             *
 // Postcondition: P contains the row-index fIdx, the column-index cIdx and *
 //     the corresponding standard prolongation matrix for P2-elements.     *
-//**************************************************************************    
+//**************************************************************************
 void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                                IdxDescCL* cIdx, IdxDescCL* fIdx);
 
@@ -983,7 +983,7 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
 //     P is an uninitialized MatDescCL-object.                             *
 // Postcondition: P contains the row-index fIdx, the column-index cIdx and *
 //     the corresponding standard prolongation matrix for P2-elements.     *
-//**************************************************************************    
+//**************************************************************************
 void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                                IdxDescCL* cIdx, IdxDescCL* fIdx);
 
@@ -996,7 +996,7 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
 //     return type.                                                        *
 // Postcondition: c contains the value of f in the 10 DoF in the order used*
 //     by FE_P2CL.                                                         *
-//**************************************************************************    
+//**************************************************************************
 template <class VecDescT, class BndDataT, class Cont>
 void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t= 0.0);
 

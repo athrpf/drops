@@ -187,7 +187,7 @@ template<class T>
 template<class T>
 const double Quad2CL<T>::Node[5][4]= {
     {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
-}; 
+};
 
 template<class T>
 const double Quad2CL<T>::Wght[5]= {
@@ -223,7 +223,7 @@ template<class T>
 }
 
 template<class T>
-  template <class P2FunT> 
+  template <class P2FunT>
     inline Quad2CL<T>&
     Quad2CL<T>::assign(const TetraCL& s, const P2FunT& f, double t)
 {
@@ -239,22 +239,22 @@ template<class T>
 template<class T>
   Quad2CL<T>::Quad2CL(const TetraCL& s,
       instat_fun_ptr f, double t)
-  : base_type( value_type(), NumNodesC)  
+  : base_type( value_type(), NumNodesC)
 {
     this->assign( s, f, t);
 }
 
 template<class T>
   Quad2CL<T>::Quad2CL(const LocalP2CL<value_type>& f)
-  : base_type( value_type(), NumNodesC)  
+  : base_type( value_type(), NumNodesC)
 {
     this->assign( f);
 }
 
 template<class T>
-  template <class PFunT> 
+  template <class PFunT>
     Quad2CL<T>::Quad2CL(const TetraCL& s, const PFunT& f, double t)
-  : base_type( value_type(), NumNodesC)  
+  : base_type( value_type(), NumNodesC)
 {
     this->assign( s, f, t);
 }
@@ -388,7 +388,7 @@ template<class T>
 }
 
 template<class T>
-  template <class PFunT> 
+  template <class PFunT>
     inline Quad5CL<T>&
     Quad5CL<T>::assign(const TetraCL& s, const PFunT& f, double t)
 {
@@ -403,7 +403,7 @@ template<class T>
 template<class T>
   Quad5CL<T>::Quad5CL(const TetraCL& s,
       instat_fun_ptr f, double t)
-  : base_type( value_type(), NumNodesC)  
+  : base_type( value_type(), NumNodesC)
 {
     MaybeInitNodes();
     this->assign( s, f, t);
@@ -411,7 +411,7 @@ template<class T>
 
 template<class T>
   Quad5CL<T>::Quad5CL(const LocalP2CL<value_type>& f)
-  : base_type( value_type(), NumNodesC)  
+  : base_type( value_type(), NumNodesC)
 {
     MaybeInitNodes();
     this->assign( f);
@@ -420,16 +420,16 @@ template<class T>
 template<class T>
   template <class _BndData, class _VD>
     Quad5CL<T>::Quad5CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
-    : base_type( value_type(), NumNodesC)  
+    : base_type( value_type(), NumNodesC)
 {
     MaybeInitNodes();
     this->assign( s, f, t);
 }
 
 template<class T>
-  template <class PFunT> 
+  template <class PFunT>
     Quad5CL<T>::Quad5CL(const TetraCL& s, const PFunT& f, double t)
-    : base_type( value_type(), NumNodesC)  
+    : base_type( value_type(), NumNodesC)
 {
     MaybeInitNodes();
     this->assign( s, f, t);

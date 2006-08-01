@@ -1,6 +1,6 @@
 #=============================================================
 #    DROPS parameter file
-#    simulation of two-phase flow: 
+#    simulation of two-phase flow:
 #    droplet in measuring cell used in NMR measurements
 #=============================================================
 
@@ -34,7 +34,7 @@ Coupling {
 }
 
 # re-initialization of levelset function
-Reparam { 
+Reparam {
   Freq		=	0	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep.eq.
   NumSteps	=	1
@@ -49,7 +49,7 @@ Mat {
   DensFluid	=	1107
   ViscFluid	=	1.2e-3
   SmoothZone	=	1e-4
-  
+
   SurfTension	=	0
 }
 
@@ -57,14 +57,14 @@ Mat {
 Exp {
   RadDrop	=	1.75e-3
   PosDrop	=	0	-8.25e-3	0
-  
+
   Gravity	=	0	-9.81	0
-  
+
   FlowDir	=	1	# flow in y-direction
-  
+
   InflowVel	=	-0.14
   RadInlet	=	3.5e-3
-}  
+}
 
 # miscellaneous
 

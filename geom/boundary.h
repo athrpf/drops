@@ -112,10 +112,10 @@ class BndPointSegEqCL : public std::unary_function<BndPointCL,bool>
 {
   private:
     BndIdxT _bidx;
-    
+
   public:
     BndPointSegEqCL(BndIdxT bidx) :_bidx(bidx) {}
-    
+
     bool operator () (const BndPointCL& bp) const
         { return bp.GetBndIdx() == _bidx; }
 };

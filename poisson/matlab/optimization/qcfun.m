@@ -18,7 +18,7 @@ switch flag
         %iz2=find([1:npz]~=iz)
         qcfm(:,izl)=-3;
         qcfv=reshape(qcfm,npyz,1);
-        qcf=repmat(qcfv,1,npt);        
+        qcf=repmat(qcfv,1,npt);
     case 2
         izl=find((zd <20) | (zd >80));
         iyl=find((yd <10) | (yd >30));
@@ -32,7 +32,7 @@ switch flag
         for i=0:dyd:yl
           qcfm(count,:)=sin((zd/zl)*4*pi);
           count=count+1;
-        end  
+        end
         qcfv=reshape(qcfm,npyz,1);
         qcf=repmat(qcfv,1,npt);
     case 4

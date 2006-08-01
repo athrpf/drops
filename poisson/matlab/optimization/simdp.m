@@ -1,7 +1,7 @@
 function [Iter,Td]=simdp(C_data,L_data)
 
 % ------------------------------------------------------------------------
-% PROBLEM: LOESUNG DER GLEICHUNG 
+% PROBLEM: LOESUNG DER GLEICHUNG
 %           dT/dt - nu * laplace(T) = 0
 % T: Temperatur
 % t: Zeit
@@ -11,7 +11,7 @@ function [Iter,Td]=simdp(C_data,L_data)
 % GEOMETRIE und RAUMDISKRETISIERUNG
 % xl,yl und zl = Laenge des Quaders in x-, y- und z-Richtung
 % npx = Anzahl der Punkte in die x-Koordinatenrichtung
-% npyz= Anzahl der Punkte auf yz-Seitenflaeche 
+% npyz= Anzahl der Punkte auf yz-Seitenflaeche
 % ------------------------------------------------------------------------
 %
 % ANFANGSTEMPERATUR
@@ -19,21 +19,21 @@ function [Iter,Td]=simdp(C_data,L_data)
 % von x=0 bis x=1
 %
 % ------------------------------------------------------------------------
-% RANDBEDINGUNGEN 
+% RANDBEDINGUNGEN
 % Null auf allen Seiten ausser x=0 und x=1
-% qh: Newman auf Wuerfelseite x=0 
+% qh: Newman auf Wuerfelseite x=0
 % qc: Newman auf Wuerfelseite x=1
 % lexikographische Nummerierung der Gitterpunkte
 %
 % ------------------------------------------------------------------------
 % ZEITDISKRETISIERUNG
 % dt: Zeitschrittweite
-% ndt: Anzahl der Zeitschritte 
+% ndt: Anzahl der Zeitschritte
 %
 % ------------------------------------------------------------------------
 % MESSPUNKTE
-% M: Parameter, der die Flaeche spezifiziert an der die 
-% Messungen durchgefuehrt werden 
+% M: Parameter, der die Flaeche spezifiziert an der die
+% Messungen durchgefuehrt werden
 % (Schnitt durch den Wuerfel an der Stelle x=M)
 %--------------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ T0= T0_c*ones(npyz,npx);
 
 % % bereite die echten Messdaten vor
 % R= produceMeasData(100,200,97,197,1);
-% 
+%
 % T0_ls= reshape(R,19109,1);
 % T0= T0_ls*ones(1,npx);
 

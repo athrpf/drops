@@ -37,7 +37,7 @@ Stokes stationaer
   loest das Driven-Cavity-Problem fuer die Stokes-Gleichungen adaptiv mit
   dem Schur-Komplement-Loeser. Die Ausgabe steht in der Datei
   drivencavity-adaptiv-schur.ref.
-  
+
 Stokes instationaer
 ===================
 --FSdrops 1 1e-7 2 mit dt=0.005, method 2, theta 1, tol 1e-5

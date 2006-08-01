@@ -120,7 +120,7 @@ int Test()
                                                  DROPS::Point3DCL( 1.0));
             DROPS::MultiGridCL mg( tet);
             DROPS::TetraCL& t0= *mg.GetTriangTetraBegin( 0);
-            
+
             DROPS::IdxDescCL i0, i1;
             i0.Set( 1,1,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
             DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,

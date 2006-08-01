@@ -1,4 +1,4 @@
-/// \file 
+/// \file
 /// \brief levelset equation for two phase flow problems
 /// \author Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen
 
@@ -21,7 +21,7 @@ enum SurfaceForceT
     SF_ImprovedLB=1,    ///< improved Laplace-Beltrami discretization: \f$\mathcal O(h)\f$
     SF_Const=2          ///< surface force with constant curvature
 };
-  
+
 class LevelsetP2CL
 /// P2-discretization and solution of the level set equation for two phase flow problems.
 {
@@ -39,7 +39,7 @@ class LevelsetP2CL
     double              diff_,     ///< amount of diffusion in reparametrization
                         curvDiff_, ///< amount of diffusion in curvature calculation
                         SD_,       ///< streamline diffusion
-                        theta_, dt_;  
+                        theta_, dt_;
     MatrixCL            E_, H_, L_;
     BndDataT            Bnd_;
     SSORPcCL            pc_;
@@ -49,25 +49,25 @@ class LevelsetP2CL
     void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
     void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
-    
+
   public:
-    LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0, 
+    LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0,
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD), 
-        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ), 
+      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ),
         gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
     {}
-    
-    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, double sig= 0, double theta= 0.5, double SD= 0, 
+
+    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, double sig= 0, double theta= 0.5, double SD= 0,
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD), 
+      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
         theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
     {}
-    
+
     GMResSolverCL<SSORPcCL>& GetSolver() { return gm_; }
-    
+
     const BndDataT& GetBndData() const { return Bnd_; }
-    
+
     /// \name Numbering
     ///@{
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
@@ -75,7 +75,7 @@ class LevelsetP2CL
     void DeleteNumbering( IdxDescCL* idx)
         { DeleteNumb( *idx, MG_); }
     ///@}
-    
+
     /// initialize level set function
     void Init( scalar_fun_ptr);
 
@@ -90,7 +90,7 @@ class LevelsetP2CL
     void Reparam( Uint steps, double dt);
     /// Reparametrization by Fast Marching method (recommended).
     void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false);
-    
+
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
     /// returns approximate volume of domain where level set function is negative.
@@ -101,7 +101,7 @@ class LevelsetP2CL
     void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
     /// Discretize surface force
     void   AccumulateBndIntegral( VecDescCL& f) const;
-    
+
     /// \name Evaluate Solution
     ///@{
     const_DiscSolCL GetSolution() const
@@ -109,7 +109,7 @@ class LevelsetP2CL
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &Bnd_, &MG_); }
     ///@}
-        
+
     /// \name For internal use only
     /// The following member functions are added to enable an easier implementation
     /// of the coupling navstokes-levelset. They should not be called by a common user.
@@ -138,15 +138,15 @@ class InterfacePatchCL
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
     BaryCoordCL     Bary_[4], BaryDoF_[10];
     Point2DCL       ab_;
-  
+
     inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
     { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
 
   public:
     InterfacePatchCL();
-    
+
     static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
-    
+
     void Init( const TetraCL& t, const VecDescCL& ls);
 
     /// \name Use after Init
@@ -179,7 +179,7 @@ class InterfacePatchCL
     void               WriteGeom( std::ostream&) const;                          ///< Geomview output for debugging
     void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
     ///@}
-    
+
     /// \name Use after ComputeCutForChild
     /// \remarks The following functions are only valid, if ComputeCutForChild(...) was called before!
     ///@{

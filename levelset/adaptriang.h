@@ -21,7 +21,7 @@ class AdapTriangCL
     double width_;
     int c_level_, f_level_;
     bool modified_;
-    
+
     template <class DistFctT>
     double GetValue( const DistFctT& dist, const VertexCL& v) { return dist.val( v); }
     template <class DistFctT>
@@ -39,9 +39,9 @@ class AdapTriangCL
 
   public:
     AdapTriangCL( MultiGridCL& mg, double width, int c_level, int f_level)
-      : mg_(mg), width_(width), c_level_(c_level), f_level_(f_level), modified_(false) 
+      : mg_(mg), width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
       { Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0); }
-    
+
     template <class DistFctT>
     void MakeInitialTriang( DistFctT&);
 

@@ -101,7 +101,7 @@ GeomSolOutReport1CL<DiscSol>::put(std::ostream &os) const
                 verts.push_back(i);
         }
         if (verts.size() != 3) continue;
-         
+
         std::vector<double> val( NumVertsC);
         _discsol.GetDoF(*tit, val);
 
@@ -125,7 +125,7 @@ template<class Coeff>
 void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, int sm)
 {
     typedef PoissonP1CL<Coeff> MyPoissonCL;
-    
+
     MultiGridCL& MG= Poisson.GetMG();
     IdxDescCL* c_idx=0;
     TimerCL time, Ltime;
@@ -143,7 +143,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     {
         MGData.push_back(MGLevelDataCL());
         MGLevelDataCL& tmp= MGData.back();
-        
+
         std::cerr << "Create MGData on Level " << lvl << std::endl;
         tmp.Idx.Set(1, 0, 0, 0);
         Poisson.CreateNumbering(lvl, &tmp.Idx);
@@ -158,12 +158,12 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
 //            std::cerr << "A(0,0)= " << tmp.A.Data(unk,unk) << std::endl;
 	    Ltime.Stop();
         }
-        else        
+        else
         {
             std::cerr << "Create StiffMatrix" << std::endl;
             Poisson.SetupStiffnessMatrix( tmp.A);
         }
-            
+
         if(i!=0)
         {
             std::cerr << "Create Prolongation on Level " << lvl << std::endl;
@@ -172,7 +172,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
         c_idx= &tmp.Idx;
     }
     time.Stop();
-    std::cerr << "Setting up all stuff took " << time.GetTime() 
+    std::cerr << "Setting up all stuff took " << time.GetTime()
 	      << " seconds including " << Ltime.GetTime() << " seconds for the largest system." << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
@@ -181,7 +181,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     MG.SizeInfo(std::cerr);
     std::cerr << "Checking the discretization error: ";
     Poisson.GetDiscError(finest->A, &::Lsg);
-    
+
     for(Uint level=1; level<=MG.GetLastLevel(); ++level)
     {
         Uint num= std::distance(MG.GetTriangTetraBegin(level), MG.GetTriangTetraEnd(level));
@@ -272,7 +272,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
     IdxDescCL *c_idx=0;
     TimerCL time, time2;
     MGDataCL MGData;
-    
+
     const_MGDataIterCL finest;
     bool new_marks;
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
@@ -339,7 +339,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
                     std::cerr << "Create System " << std::endl;
                     Poisson.SetupSystem( tmp.A, Poisson.b);
                 }
-                else        
+                else
                 {
                     std::cerr << "Create StiffMatrix" << std::endl;
                     Poisson.SetupStiffnessMatrix( tmp.A);
@@ -434,7 +434,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
 //        std::cerr << "Checking the discretization error: ";
 //        Poisson.GetDiscError(finest->A, &::Lsg);
         MGData.resize(0);
-        
+
         ++step;
     } while ( true_err > stoperr /*&& step<14*/ );
     std::cout << "cumulative solving time: " << time2.GetTime() << std::endl;
@@ -495,7 +495,7 @@ int main (int argc, char** argv)
 {
   try
   {
-    if (argc!=11) 
+    if (argc!=11)
     {
         std::cerr << "missing argument! Usage: testdrops <omega> <file> <tol> <meth> <sm> <adap> <grids> <stoperr> <markratio> <minratio>" << std::endl;
         return 1;
@@ -528,8 +528,8 @@ int main (int argc, char** argv)
     typedef PoissonOnBrickCL                   MyPoissonCL;
 
     DROPS::BrickBuilderCL domain(orig, e1, e2, e3, 4, 4, 4);
-//    DROPS::LBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 2, 2); 
-//    DROPS::BBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 1, 1, 1); 
+//    DROPS::LBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 2, 2);
+//    DROPS::BBuilderCL domain(null, e1, e2, e3, 2, 2, 2, 1, 1, 1);
 
     bool isneumann[6]= { false, false, false, false, false, false };
     DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
@@ -549,7 +549,7 @@ int main (int argc, char** argv)
         for (int i=0; i<1; ++i)
         {
     //        MarkDrop(mg,mg.GetLastLevel());
-            DROPS::MarkAll(mg);  
+            DROPS::MarkAll(mg);
             mg.Refine();
         }
         StrategyAdaptive(MGprob, omega, tol, meth, sm, stoperr, markratio, minratio);
@@ -560,7 +560,7 @@ int main (int argc, char** argv)
         for (int i=0; i<grids; ++i)
         {
     //        MarkDrop(mg,mg.GetLastLevel());
-            DROPS::MarkAll(mg);  
+            DROPS::MarkAll(mg);
             mg.Refine();
         }
         Strategy(MGprob, omega, tol, meth, sm);

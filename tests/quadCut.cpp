@@ -9,7 +9,7 @@ void ComputeIntOnCuts( const TetraCL& t, const VecDescCL& ls, const LocalP2CL<>&
     cut.Init( t, ls);
     if (!cut.Intersects()) // kein Beitrag
     { std::cout << "No cut on tetra...\n"; }
-    
+
     for (int ch=0; ch<8; ch++)
     {
         cut.ComputeCutForChild(ch);
@@ -18,14 +18,14 @@ void ComputeIntOnCuts( const TetraCL& t, const VecDescCL& ls, const LocalP2CL<>&
         quadNeg[ch]= cut.quad( f, absdet, false); // integrate on negative part
     }
 }
-    
+
 bool CheckSum( const VectorCL& v1, const VectorCL& v2, const VectorCL& v)
 {
     // check v == v1 + v2
     const VectorCL diff(v1+v2-v);
     if (norm(diff)>1e-18)
     {
-        std::cerr << ">>> inconsistency!\nquadPos = \t" << v1 << "\nquadNeg = \t" << v2 << "\nsum = \t\t" << VectorCL(v1+v2) 
+        std::cerr << ">>> inconsistency!\nquadPos = \t" << v1 << "\nquadNeg = \t" << v2 << "\nsum = \t\t" << VectorCL(v1+v2)
                   << "should be\t" << v << "\ndiff = \t\t" << diff << std::endl;
         return false;
     }
@@ -39,7 +39,7 @@ int main ()
     TetraBuilderCL tetra( 0); // unrefined reference tetra
     MultiGridCL mg( tetra);
     TetraCL& t= *mg.GetAllTetraBegin();
-    
+
     IdxDescCL idx( P2_FE);
     CreateNumb( 0, idx, mg, NoBndDataCL<>());
     VecDescCL ones( &idx), ls( &idx);
@@ -54,28 +54,28 @@ int main ()
     {
         LocalP2CL<> f;    f[i]= 1.;
         std::cerr << "======== testing P2 basis function " << i << "===========\n";
-        
+
         ComputeIntOnCuts( t, ones, f, absdet, quadSum, quadNeg);
         if (norm(quadNeg)>0) { std::cerr << ">>> quadNeg should be zero!\n"; return 1; }
-        
+
         Quad2CL<> q( f);
         const double integral= q.quad(absdet),
             diff= std::abs(integral-quadSum.sum());
-        if (diff>1e-17) 
-        { 
+        if (diff>1e-17)
+        {
             std::cerr << ">>> sum of quadSum should be equal to integral over tetra!\n";
             std::cerr << quadSum.sum() << " != " << integral << ",\tdiff = " << diff << std::endl;
             return 1;
         }
-        
+
         ls.Data= ones.Data; ls.Data[0]= -3;
         ComputeIntOnCuts( t, ls, f, absdet, quadPos, quadNeg);
         ok= ok && CheckSum( quadPos, quadNeg, quadSum);
-        
+
         ls.Data[4]= -7;
         ComputeIntOnCuts( t, ls, f, absdet, quadPos, quadNeg);
         ok= ok && CheckSum( quadPos, quadNeg, quadSum);
-        
+
         ls.Data[5]= 0;
         ComputeIntOnCuts( t, ls, f, absdet, quadPos, quadNeg);
         ok= ok && CheckSum( quadPos, quadNeg, quadSum);
@@ -87,7 +87,7 @@ int main ()
         ls.Data[7]= 0;
         ComputeIntOnCuts( t, ls, f, absdet, quadPos, quadNeg);
         ok= ok && CheckSum( quadPos, quadNeg, quadSum);
-    }    
+    }
     if (ok) std::cerr << "\n\nCONGRATULATIONS! All tests successfully!\n";
     else    std::cerr << "\n\n>>> HELP! Some errors occured!\n";
     return 0;

@@ -1,4 +1,4 @@
-% Diese Funktion realisiert die graphische Ausgabe 
+% Diese Funktion realisiert die graphische Ausgabe
 %---------------------------------------------------------
 
 % Geometrieparameter
@@ -35,7 +35,7 @@ xlim([1 size(J,2)]);
 plot(J);
 %semilogy(J);
 xlabel('Iterations');ylabel('J');
-% 
+%
 % return
 
 %--------------- plot approximation over time -------------------
@@ -55,12 +55,12 @@ for t=1:ndt+1
     %legend('computed','exact');
 end
 
-return 
+return
 
 % niter=size(J,2)
 % figure(117)
 % %set(gca,'FontSize',20)
-% 
+%
 % %xlim([1 size(J,2)]);
 % %semilogy(J);xlabel('Iterations');ylabel('J');
 % for cnt= [10 100 300]

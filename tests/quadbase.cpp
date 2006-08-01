@@ -71,13 +71,13 @@ class OldQuadBaseCL
   protected:
     OldQuadBaseCL( size_t size) : val( size) {}
     OldQuadBaseCL( size_t size, const T& t) : val( t, size) {}
-    
+
   public:
     std::valarray<T> val;
-    
-    size_t size() const 
+
+    size_t size() const
         { return val.size(); }
-        
+
     // Arithmetik
     template<typename FuncT>
     OldQuadBaseCL& apply ( FuncT fun)
@@ -108,11 +108,11 @@ class OldQuadBaseCL
 };
 
 inline OldQuadBaseCL<double> dot (const OldQuadBaseCL<Point3DCL> &q1, const OldQuadBaseCL<Point3DCL> &q2)
-{ 
-    OldQuadBaseCL<double> res( q1.size()); 
-    for (size_t i=0; i<q1.size(); ++i) 
-        res.val[i]= inner_prod( q1.val[i], q2.val[i]); 
-    return res; 
+{
+    OldQuadBaseCL<double> res( q1.size());
+    for (size_t i=0; i<q1.size(); ++i)
+        res.val[i]= inner_prod( q1.val[i], q2.val[i]);
+    return res;
 }
 
 
@@ -125,13 +125,13 @@ class OldQuad2CL: public OldQuadBaseCL<T>
 
     static const BaryCoordCL Node[5]; // Stuetzstellen
     static const double      Wght[5]; // Gewichte
-    
+
     OldQuad2CL() : OldQuadBaseCL<T>( 5) {}
     OldQuad2CL( const T& t) : OldQuadBaseCL<T>( 5, t) {}
     OldQuad2CL( const OldQuadBaseCL<T>& q) : OldQuadBaseCL<T>(q) {}
-    
+
     // Initialisiere die Knotenwerte
-/*    template <ElemT et> 
+/*    template <ElemT et>
     void set( const ElemBaseCL<et,T>& e)
       { for (size_t i=0; i<size(); ++i) val[i]= e.eval( Node[i]); }
 */
@@ -148,14 +148,14 @@ class OldQuad2CL: public OldQuadBaseCL<T>
       { return (i!=j ? (1./720.)*(val[i]+val[j]) + (1./180.)*val[4]
                      : (1./180.)*val[i]          + (1./90.)*val[4]  )*absdet;}
     T quadP2 (int i, double absdet) const
-    { 
+    {
         return (i<4 ? (1./360.)*val[i] - (1./90.)*val[4]
                     : (1./180.)*(val[VertOfEdge(i-4,0)]+val[VertOfEdge(i-4,1)]) + (1./45.)*val[4]
                )*absdet;
     }
 
     T quadP2 (int i, int j, double absdet) const
-    { 
+    {
         const double valBary= (i<4 ? -0.125 : 0.25)*(j<4 ? -0.125 : 0.25);
         return ((i!=j || i>=4) ? Wght[4]*val[4]*valBary
                                : Wght[4]*val[4]*valBary + Wght[i]*val[i]
@@ -166,7 +166,7 @@ class OldQuad2CL: public OldQuadBaseCL<T>
 template<class T>
 const BaryCoordCL OldQuad2CL<T>::Node[5]= {
     {1.,0.,0.,0.}, {0.,1.,0.,0.}, {0.,0.,1.,0.}, {0.,0.,0.,1.}, {.25,.25,.25,.25}
-    }; 
+    };
 template<class T>
 const double OldQuad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15.};
 
@@ -175,10 +175,10 @@ const double OldQuad2CL<T>::Wght[5]= { 1./120., 1./120., 1./120., 1./120., 2./15
 inline std::valarray<double>
 dot (const std::valarray<Point3DCL>& a, const std::valarray<Point3DCL>& b)
 {
-    std::valarray<double> ret; 
-    for (size_t i=0; i<a.size(); ++i) 
-        ret[i]= dot( a[i], b[i]); 
-    return ret; 
+    std::valarray<double> ret;
+    for (size_t i=0; i<a.size(); ++i)
+        ret[i]= dot( a[i], b[i]);
+    return ret;
 }
 */
 
@@ -283,7 +283,7 @@ double NewQuadrature(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1,
         const double absdet= 6.0*it->GetVolume();
 
         quad0.assign( *it, f);
-        
+
         localg.assign( *it, g);
         quad1.assign( localg);
 

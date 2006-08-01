@@ -46,10 +46,10 @@ qcf= qcfun(gl,ni,npt,func);
 
 % % bereite die echten Messdaten vor
 % R= produceMeasData(100,200,97,197,50);
-% 
+%
 % Rresh= reshape(R,19109,50);
 % T0_ls= Rresh(:,1);
-% 
+%
 % Timess=[T0_ls,Rresh]-Td;
 % clear R Rresh T0_ls;
 
@@ -72,23 +72,23 @@ save OptResult0 Tm DROPS_Iter comptime
 niter= 0;
 
 % Optimization
-while 1    
+while 1
     niter= niter+1
-    
+
     % direct problem
     %Tihat= Tihat-beta*Tisens;
-    
+
     % calculate defect
     dThat= Tihat-Timess;
     norm_err= norm(dThat,'fro')^2*dt*dyz;
     J= norm_err
-    
+
     % calculate temperature
     T= Tihat+Td;
-    
+
     savename= sprintf('OptResult%d',niter);
     save(savename,'qc','T','J','DROPS_Iter','comptime');
-    
+
     if (norm_err < epsT) | (niter >= niter_max)
         break
     else
@@ -98,11 +98,11 @@ while 1
         comptime(1,1)= toc;
         DROPS_Iter(:,1)= Val1;
         Tad= fliplr(lambda);
-        % determine search direction 
+        % determine search direction
         if niter==1
             gamma= 0;
             Pn= Tad;
-        else        
+        else
             gamma= (norm(Tad,'fro')/norm(Tad_old,'fro'))^2;
             Pn= Tad+gamma*Pn;
         end
@@ -111,13 +111,13 @@ while 1
         [Val1,Tisens]= simip(Pn,C_data,S_data);
         comptime(1,2)= toc;
         DROPS_Iter(:,2)= Val1;
-        % update approximation 
+        % update approximation
         beta= sum(diag(dThat'*Tisens))/(norm(Tisens,'fro'))^2;
-        qc= qc-beta*Pn;  
+        qc= qc-beta*Pn;
         Tad_old= Tad;
-        
+
         % direct problem
         Tihat= Tihat-beta*Tisens;
     end
-    
+
 end

@@ -31,23 +31,23 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     using _base::A;
     using _base::B;
     using _base::t;
-    
+
     typedef Coeff                              CoeffCL;
     typedef typename _base::BndDataCL          BndDataCL;
     typedef typename _base::DiscVelSolCL       DiscVelSolCL;
     typedef typename _base::const_DiscVelSolCL const_DiscVelSolCL;
-  
+
     MatDescCL    N;
     const LevelsetP2CL* ls_;
-    
+
     InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : InstatStokes2PhaseP2P1CL<Coeff>( mgb, coeff, bdata), ls_( 0) {}  
+        : InstatStokes2PhaseP2P1CL<Coeff>( mgb, coeff, bdata), ls_( 0) {}
     InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata), ls_( 0) {}  
+        : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata), ls_( 0) {}
 
     /// \name Discretization
     //@{
-    /// \brief Set up matrix for nonlinearity 
+    /// \brief Set up matrix for nonlinearity
     void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
     /// \brief Set up matrix for nonlinearity at the time in the base-class using the registered Levelset-object.
     void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN) const {

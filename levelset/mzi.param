@@ -1,6 +1,6 @@
 #=============================================================
 #    DROPS parameter file
-#    simulation of two-phase flow: 
+#    simulation of two-phase flow:
 #    droplet in measuring cell used for optimal design
 #=============================================================
 
@@ -32,7 +32,7 @@ Coupling {
 }
 
 # re-initialization of levelset function
-Reparam { 
+Reparam {
   Freq		=	0	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep.eq.
   NumSteps	=	1
@@ -47,7 +47,7 @@ Mat {
   DensFluid	=	1107
   ViscFluid	=	1.2e-3
   SmoothZone	=	1e-4
-  
+
   SurfTension	=	0
 }
 
@@ -55,14 +55,14 @@ Mat {
 Exp {
   RadDrop	=	1.75e-3
   PosDrop	=	8e-3	0	0
-  
+
   Gravity	=	9.81	0	0
-  
+
   FlowDir	=	0	# flow in x-direction
-  
+
   InflowVel	=	0.04
   RadInlet	=	2e-2
-}  
+}
 
 # miscellaneous
 

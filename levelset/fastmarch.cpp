@@ -7,7 +7,7 @@ namespace DROPS
 double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
 {
     double val= 1e99;
-    
+
     switch (num)
     {
         case 2: // Projektion auf Edge
@@ -23,7 +23,7 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
             }
         }
         break;
-        
+
         case 3: // Projektion auf Face
         {
             const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
@@ -39,7 +39,7 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
             }
         }
     }
-    
+
     return val;
 }
 
@@ -49,7 +49,7 @@ void FastMarchCL::InitZero( bool ModifyZero)
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
     const Uint idx= v_.RowIdx->GetIdx();
     int        sign[10];
-    int        num_sign[3]; // - 0 + 
+    int        num_sign[3]; // - 0 +
     IdxT       Numb[10];
 
 //std::ofstream fil("surf.off");
@@ -65,23 +65,23 @@ void FastMarchCL::InitZero( bool ModifyZero)
     for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(), end=MG_.GetTriangEdgeEnd();
         it!=end; ++it)
         Coord_[it->Unknowns(idx)]= GetBaryCenter( *it);
-    
+
     // store copy of v_.Data in Old_
     Old_.resize( size_);
     Old_= v_.Data;
-    
+
     for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
         it!=end; ++it)
     {
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
-            Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(idx) 
+            Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(idx)
                          : it->GetEdge(v-4)->Unknowns(idx);
             sign[v]= std::abs(Old_[Numb[v]])<1e-8 ? 0 : (Old_[Numb[v]]>0 ? 1 : -1);
             if (sign[v]==0)
                 Typ_[Numb[v]]= Finished;
         }
-            
+
         for (int ch=0; ch<8; ++ch)
         {
             const ChildDataCL data= GetChildData( RegRef.Children[ch]);
@@ -92,7 +92,7 @@ void FastMarchCL::InitZero( bool ModifyZero)
             const bool intersec= (num_sign[0]*num_sign[2]!=0); // Vorzeichenwechsel
 
             if (!intersec) continue;
-            
+
             if (!ModifyZero)
             {
                 for (int vert= 0; vert<4; ++vert)
@@ -103,9 +103,9 @@ void FastMarchCL::InitZero( bool ModifyZero)
                 }
                 continue;
             }
-            
+
             // ab hier gilt intersec && ModifyZero == true
-            
+
             Point3DCL Schnitt[4];
             int num= 0;
             // Berechnung der Schnittpunkte mit den Kanten des Tetra
@@ -142,10 +142,10 @@ fil << "\n}\n";
             if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
 
             for (int repeat=0; repeat<num-2; ++repeat)
-            { // fuer num==4 (Schnitt ABDC ist viereckig) 
+            { // fuer num==4 (Schnitt ABDC ist viereckig)
               // zwei Dreiecke ABC + DBC betrachten
                 if (repeat) Schnitt[0]= Schnitt[3];
-            
+
                 const Point3DCL a= Schnitt[1] - Schnitt[0],
                                 b= Schnitt[2] - Schnitt[0];
 
@@ -178,7 +178,7 @@ fil << "\n}\n";
             }
         }
     }
-//fil << "}\n";    
+//fil << "}\n";
 }
 
 void FastMarchCL::InitClose()
@@ -189,7 +189,7 @@ void FastMarchCL::InitClose()
     neigh_.resize( size_);
 
     IdxT Numb[10];
-    
+
     const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
 
     for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
@@ -197,12 +197,12 @@ void FastMarchCL::InitClose()
     {
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
-            if (v<4) 
+            if (v<4)
                 Numb[v]= it->GetVertex(v)->Unknowns(idx);
             else
                 Numb[v]= it->GetEdge(v-4)->Unknowns(idx);
         }
-            
+
         for (int ch=0; ch<8; ++ch)
         {
             const ChildDataCL data= GetChildData( RegRef.Children[ch]);
@@ -215,11 +215,11 @@ void FastMarchCL::InitClose()
                 if (Typ_[Nr] == Finished)
                     ContainsFinished= true;
             }
-            
+
             if (ContainsFinished)
                 for (int vert= 0; vert<4; ++vert)
                     Update( t[vert]);
-                
+
             // init neigh_
             for (int vert= 0; vert<4; ++vert)
                 neigh_[t[vert]].push_back( t);
@@ -232,7 +232,7 @@ IdxT FastMarchCL::FindTrial() const
 {
     double min= 1e99;
     IdxT min_idx= NoIdx;
-    
+
     for (std::set<IdxT>::const_iterator it= Close_.begin(), end= Close_.end(); it!=end; ++it)
     {
         if (v_.Data[*it]<=min)
@@ -281,17 +281,17 @@ void FastMarchCL::Reparam( bool ModifyZero)
 {
     InitZero( ModifyZero);
     InitClose();
-    
+
     IdxT next;
-    
-    while ((next= FindTrial()) != NoIdx) 
+
+    while ((next= FindTrial()) != NoIdx)
     {
         Close_.erase( next);
         Typ_[next]= Finished;
-        
+
         std::set<IdxT> neighVerts;
         for (Uint n=0; n<neigh_[next].size(); ++n)
-        { // collect all neighboring verts in neighVerts 
+        { // collect all neighboring verts in neighVerts
             for (Uint i=0; i<4; ++i)
                 neighVerts.insert( neigh_[next][n][i]);
         }
@@ -302,7 +302,7 @@ void FastMarchCL::Reparam( bool ModifyZero)
         }
         neigh_[next].clear(); // will not be needed anymore
     }
-    
+
     RestoreSigns();
 }
 
@@ -321,7 +321,7 @@ void FastMarchCL::RestoreSigns()
 double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
 {
     double val= 1e99;
-    
+
     switch (num)
     {
         case 2: // Projektion auf Edge
@@ -337,7 +337,7 @@ double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
             }
         }
         break;
-        
+
         case 3: // Projektion auf Face
         {
             const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
@@ -353,7 +353,7 @@ double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
             }
         }
     }
-    
+
     return val;
 }
 
@@ -364,7 +364,7 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
     const Uint idx= v_.RowIdx->GetIdx(),
                lvl= v_.GetLevel();
     int        sign[10];
-    int        num_sign[3]; // - 0 + 
+    int        num_sign[3]; // - 0 +
     IdxT       Numb[10];
 
 //std::ofstream fil("surf.off");
@@ -413,26 +413,26 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
         Coord_[it->Unknowns(augm_idx)]= GetBaryCenter( *it);
     }
     ini.clear();
-    
+
     // store copy of v_.Data in Old_
     Old_.resize( size_);
     Old_= v_.Data;
 
     neigh_.resize( size_);
-    
+
     for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(lvl), end=MG_.GetTriangTetraEnd(lvl);
         it!=end; ++it)
     {
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
-            Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(augm_idx) 
+            Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(augm_idx)
                          : it->GetEdge(v-4)->Unknowns(augm_idx);
             const IdxT MapNr= Map(Numb[v]);
             sign[v]= std::abs(Old_[MapNr])<1e-8 ? 0 : (Old_[MapNr]>0 ? 1 : -1);
             if (sign[v]==0)
                 Typ_[MapNr]= Finished;
         }
-            
+
         for (int ch=0; ch<8; ++ch)
         {
             const ChildDataCL data= GetChildData( RegRef.Children[ch]);
@@ -451,7 +451,7 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
             const bool intersec= (num_sign[0]*num_sign[2]!=0); // Vorzeichenwechsel
 
             if (!intersec) continue;
-            
+
             if (!ModifyZero)
             {
                 for (int vert= 0; vert<4; ++vert)
@@ -462,9 +462,9 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
                 }
                 continue;
             }
-            
+
             // ab hier gilt intersec && ModifyZero == true
-            
+
             Point3DCL Schnitt[4];
             int num= 0;
             // Berechnung der Schnittpunkte mit den Kanten des Tetra
@@ -501,10 +501,10 @@ fil << "\n}\n";
             if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
 
             for (int repeat=0; repeat<num-2; ++repeat)
-            { // fuer num==4 (Schnitt ABDC ist viereckig) 
+            { // fuer num==4 (Schnitt ABDC ist viereckig)
               // zwei Dreiecke ABC + DBC betrachten
                 if (repeat) Schnitt[0]= Schnitt[3];
-            
+
                 const Point3DCL a= Schnitt[1] - Schnitt[0],
                                 b= Schnitt[2] - Schnitt[0];
 
@@ -538,7 +538,7 @@ fil << "\n}\n";
             }
         }
     }
-//fil << "}\n";    
+//fil << "}\n";
     // delete memory allocated for augmIdx
     DeleteNumbOnSimplex( augm_idx, MG_.GetAllVertexBegin(lvl), MG_.GetAllVertexEnd(lvl) );
     DeleteNumbOnSimplex( augm_idx, MG_.GetAllEdgeBegin(lvl), MG_.GetAllEdgeEnd(lvl) );
@@ -576,7 +576,7 @@ tim.Start();
         }
     }
 
-    for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end(); 
+    for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
         it!=end; ++it)
     { // update all neighboring verts, mark as Close
         UpdatePer( *it);
@@ -622,18 +622,18 @@ void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero)
 {
     InitZeroPer( bnd, ModifyZero);
     InitClosePer();
-    
+
     IdxT next;
-    
-    while ((next= FindTrial()) != NoIdx) 
+
+    while ((next= FindTrial()) != NoIdx)
     {
         // remark: next < size_   =>   Map not needed for next
         Close_.erase( next);
         Typ_[next]= Finished;
-        
+
         std::set<IdxT> neighVerts;
         for (Uint n=0; n<neigh_[next].size(); ++n)
-        { // collect all neighboring verts in neighVerts 
+        { // collect all neighboring verts in neighVerts
             for (Uint i=0; i<4; ++i)
                 neighVerts.insert( neigh_[next][n][i]);
         }
@@ -644,7 +644,7 @@ void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero)
         }
         neigh_[next].clear(); // will not be needed anymore
     }
-    
+
     RestoreSigns();
 }
 

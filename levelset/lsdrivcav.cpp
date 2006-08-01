@@ -24,7 +24,7 @@ class ZeroFlowCL
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
         { DROPS::SVectorCL<3> ret(0.0); return ret; }
     const double nu;
-    
+
     ZeroFlowCL() : nu(1.0) {}
 };
 
@@ -49,7 +49,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
 // flow control
 {
     typedef StokesP2P1CL<Coeff> StokesProblemT;
-    
+
     MultiGridCL& MG= Stokes.GetMG();
     LevelsetP2CL lset( MG, sigma);
 
@@ -62,10 +62,10 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     VelVecDescCL* c= &Stokes.c;
     MatDescCL* A= &Stokes.A;
     MatDescCL* B= &Stokes.B;
-    
+
     TimerCL time;
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
@@ -125,18 +125,18 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
     }
     std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
     std::cerr << std::endl;
-    
+
     EnsightP2SolOutCL ensight( MG, lidx);
-    
-    const char datgeo[]= "ensight/curv.geo", 
+
+    const char datgeo[]= "ensight/curv.geo",
                datpr[] = "ensight/curv.pr",
                datvec[]= "ensight/curv.vel",
                datscl[]= "ensight/curv.scl";
     ensight.CaseBegin( "curv.case");
     ensight.DescribeGeom( "curvature driven flow", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl); 
-    ensight.DescribeScalar( "Pressure", datpr ); 
-    ensight.DescribeVector( "Velocity", datvec); 
+    ensight.DescribeScalar( "Levelset", datscl);
+    ensight.DescribeScalar( "Pressure", datpr );
+    ensight.DescribeVector( "Velocity", datvec);
     ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution());
     ensight.putScalar( datpr,  Stokes.GetPrSolution());
@@ -170,11 +170,11 @@ int main (int argc, char** argv)
     typedef DROPS::StokesP2P1CL<ZeroFlowCL> MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &Null, &Null, &Null, &Null, &Null, &Null }; 
-        
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Null, &Null, &Null, &Null, &Null, &Null };
+
     MyStokesCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
 

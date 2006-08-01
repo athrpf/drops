@@ -691,7 +691,7 @@ void in (std::istream& is, SparseMatBaseCL<T>& A)
     T* val= A.raw_val();
     size_t* row_beg= A.raw_row();
     size_t* col_ind= A.raw_col();
-    
+
     for (size_t row=0; row<=numrows; ++row) is >> row_beg[row];
     for (size_t nz=0; nz<numnz; ++nz) is >> col_ind[nz];
     for (size_t nz=0; nz<numnz; ++nz) is >> val[nz];
@@ -862,7 +862,7 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
 template <typename T>
 inline void
 y_Ax(T* __restrict y,
-     size_t num_rows, 
+     size_t num_rows,
      const T* __restrict Aval,
      const size_t* __restrict Arow,
      const size_t* __restrict Acol,
@@ -902,7 +902,7 @@ VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const V
 template <typename T>
 inline void
 y_ATx(T* __restrict y,
-     size_t num_rows, 
+     size_t num_rows,
      const T* __restrict Aval,
      const size_t* __restrict Arow,
      const size_t* __restrict Acol,
@@ -1011,7 +1011,7 @@ operator*(const CompositeMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
         ret= transp_mul( *A.GetBlock( 1), tmp); break;
     }
     return ret;
-    
+
 }
 
 template <typename _MatEntry, typename _VecEntry>

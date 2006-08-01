@@ -103,7 +103,7 @@ class RecycleBinCL
 class VertexCL
 {
     friend class MultiGridCL;
-    
+
   public:
     typedef std::vector<BndPointCL>::iterator       BndVertIt;
     typedef std::vector<BndPointCL>::const_iterator const_BndVertIt;
@@ -532,7 +532,7 @@ class BoundaryCL
 
     // deletes the objects pointed to in _Boundary
     ~BoundaryCL();
-    
+
     const BndSegCL* GetBndSeg(BndIdxT idx) const { return _Bnd[idx]; }
     BndIdxT         GetNumBndSeg()         const { return _Bnd.size(); }
 };
@@ -578,10 +578,10 @@ class MultiGridCL
     FaceCont   _Faces;
     TetraCont  _Tetras;
 
-    TriangVertexCL _TriangVertex;    
-    TriangEdgeCL   _TriangEdge;    
-    TriangFaceCL   _TriangFace;    
-    TriangTetraCL  _TriangTetra;    
+    TriangVertexCL _TriangVertex;
+    TriangEdgeCL   _TriangEdge;
+    TriangFaceCL   _TriangFace;
+    TriangTetraCL  _TriangTetra;
 
     void PrepareModify   () { _Vertices.PrepareModify(); _Edges.PrepareModify(); _Faces.PrepareModify(); _Tetras.PrepareModify(); }
     void FinalizeModify  () { _Vertices.FinalizeModify(); _Edges.FinalizeModify(); _Faces.FinalizeModify(); _Tetras.FinalizeModify(); }
@@ -600,7 +600,7 @@ class MultiGridCL
     MultiGridCL (const MultiGridCL&); // Dummy
     // default ctor
 
-    const BoundaryCL& GetBnd     () const { return _Bnd; } 
+    const BoundaryCL& GetBnd     () const { return _Bnd; }
     const VertexCont& GetVertices() const { return _Vertices; }
     const EdgeCont&   GetEdges   () const { return _Edges; }
     const FaceCont&   GetFaces   () const { return _Faces; }
@@ -936,7 +936,7 @@ inline TetraCL::~TetraCL()
 inline void TetraCL::CommitRegRefMark() const
 {
     for (const_EdgePIterator epiter(_Edges.begin()); epiter!=_Edges.end(); ++epiter)
-        (*epiter)->IncMarkForRef(); 
+        (*epiter)->IncMarkForRef();
 }
 
 

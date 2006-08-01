@@ -1,4 +1,4 @@
-/// \file 
+/// \file
 /// \brief parameters for two-phase flow problems.
 
 #ifndef DROPS_LSET_PARAMS_H
@@ -15,7 +15,7 @@ class ParamMesszelleCL: public ParamBaseCL
 {
   private:
     void RegisterParams();
-    
+
   public:
     /// \name Stokes
     //@{
@@ -23,7 +23,7 @@ class ParamMesszelleCL: public ParamBaseCL
     double inner_tol, 				///< tolerance for Stokes solver
            outer_tol;
     int    inner_iter, 				///< max. number of iterations for Stokes solver
-           outer_iter;    
+           outer_iter;
     //@}
     /// \name Level Set
     //@{
@@ -44,14 +44,14 @@ class ParamMesszelleCL: public ParamBaseCL
     double cpl_tol; 				///< tolerance for the coupling
     int    cpl_iter; 				///< max. number of iterations for the fixed-point iteration
     //@}
-    
+
     /// \name Material data
     ///
     /// D = drop,    F =  surrounding fluid
     //@{
     double sigma,				///< surface tension coefficient
            rhoD, 				///< density
-           rhoF, 
+           rhoF,
            muD, 				///< dynamic viscosity
            muF,
            sm_eps; 				///< width of smooth transition zone for jumping coefficients
@@ -81,7 +81,7 @@ class ParamMesszelleCL: public ParamBaseCL
 
     int    num_dropref,				///< number of grid refinements at position of drops
            IniCond;				///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
-              
+
     string IniData,				///< file prefix when reading data for initial condition
            EnsCase,				///< name of Ensight Case
            EnsDir,				///< local directory for Ensight files
@@ -97,7 +97,7 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
 {
   private:
     void RegisterParams();
-    
+
   public:
     /// \name Navier-Stokes
     //@{
@@ -109,10 +109,10 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
            ns_red;				///< The Oseen-residual is reduced by this factor (<1.0)
     int    ns_iter;				///< Maximal number of iterations of the solver
     //@}
-  
+
     ParamMesszelleNsCL()
       : ParamMesszelleCL() { RegisterParams(); }
-    ParamMesszelleNsCL( const string& filename) 
+    ParamMesszelleNsCL( const string& filename)
       : ParamMesszelleCL() { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
@@ -120,7 +120,7 @@ class ParamFilmCL: public ParamBaseCL
 { // y = Filmnormal, x = Ablaufrichtung
   private:
     void RegisterParams();
-    
+
   public:
     double inner_tol, outer_tol, 		// Parameter der Loeser
            lset_tol, lset_SD, cpl_tol;		// fuer Flow & Levelset
@@ -144,13 +144,13 @@ class ParamFilmCL: public ParamBaseCL
     int       num_ref,				// zusaetzliche Verfeinerung
               VolCorr,				// Volumenkorrektur (0=false)
               IniCond;				// Anfangsbedingung (0=Null, 1= stat. flow, -1= read from file )
-              
+
     int    ref_flevel, ref_freq;		// Parameter fuer
     double ref_width;				// adaptive Verfeinerung
-    
+
     int    RepFreq, RepMethod;			// Parameter fuer Reparametrisierung
 
-    string EnsCase,				// Ensight Case, 
+    string EnsCase,				// Ensight Case,
            EnsDir,				// lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
            IniData,
            BndCond;
@@ -162,7 +162,7 @@ class ParamFilmCL: public ParamBaseCL
 } // end of namespace DROPS
 
 #endif
-    
-    
-    
-    
+
+
+
+

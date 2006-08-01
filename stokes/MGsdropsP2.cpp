@@ -57,11 +57,11 @@ class StokesCoeffCL
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double)
         { DROPS::SVectorCL<3> ret(0.0); ret[2]= 3.*std::cos(p[0])*std::sin(p[1])*std::cos(p[2]); return ret; }
     const double nu;
-    
+
     StokesCoeffCL() : nu(1.0) {}
 };
 
-typedef DROPS::StokesP2P1CL<StokesCoeffCL> 
+typedef DROPS::StokesP2P1CL<StokesCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
@@ -84,7 +84,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
     IdxDescCL* pidx1= &Stokes.pr_idx;
     IdxDescCL* vidx2= &loc_vidx;
     IdxDescCL* pidx2= &loc_pidx;
-    
+
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
     VelVecDescCL* v1= &Stokes.v;
@@ -111,12 +111,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
     do
     {
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
-		  
-/*     std::cout << "    altes                    vidx2 " 
+		
+/*     std::cout << "    altes                    vidx2 "
                << vidx2->TriangLevel       << ", "
                << vidx2->NumUnknownsVertex << ", "
                << vidx2->NumUnknownsEdge   << ", "
@@ -124,7 +124,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
                << vidx2->NumUnknownsTetra  << ", "
                << vidx2->NumUnknowns
                << std::endl;
-     std::cout << "    neues                    vidx1 " 
+     std::cout << "    neues                    vidx1 "
                << vidx1->TriangLevel       << ", "
                << vidx1->NumUnknownsVertex << ", "
                << vidx1->NumUnknownsEdge   << ", "
@@ -142,7 +142,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
                   << p1->Data.size() << std::endl;
         std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
-    
+
         if (p2->RowIdx)
         {
             P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, const VecDescCL>  pr2(p2, &PrBndData, &MG);
@@ -172,7 +172,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-        
+
 //        { // write system in files for MatLab
 //            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
 //            Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
@@ -182,7 +182,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
 //          << B->Data << std::endl << c->Data << std::endl
 //          << v1->Data << std::endl << p1->Data << std::endl;
 
-// Initialize the preconditioners 
+// Initialize the preconditioners
 //            for Laplace operator: MGDataMatrix (Idx,A,P)
 // and        for Schur complement: MassMatrix
 
@@ -194,20 +194,20 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         {
            MGData.push_back(MGLevelDataCL());
            MGLevelDataCL& tmp= MGData.back();
-     
+
            std::cerr << "                        Create MGData on Level " << lvl << std::endl;
            tmp.Idx.Set( 3, 3);
            Stokes.CreateNumberingVel(lvl, &tmp.Idx);
            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
            std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
            Stokes.SetupStiffnessMatrix( &tmp.A );
-            
+
            if(lvl!=0)
            {
                std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
                SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
 //               std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-	       
+	
            }
            c_idx= &tmp.Idx;
         }
@@ -218,9 +218,9 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         Stokes.SetupPrMass( &M);
 
         time.Stop();
-        std::cerr << "Setting up all preconditioners took " << time.GetTime() 
+        std::cerr << "Setting up all preconditioners took " << time.GetTime()
 	          << " seconds. " << std::endl;
-		  
+		
         std::cerr << "Check MG-Data..." << std::endl;
         std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
         std::cerr << "                end       " << MGData.end()->Idx.NumUnknowns << std::endl;
@@ -288,7 +288,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx(&Stokes.vel_idx);
         Stokes.p.SetIdx(&Stokes.pr_idx);
-        
+
         Stokes.v.Data= loc_v.Data;
         Stokes.p.Data= loc_p.Data;
     }
@@ -330,11 +330,11 @@ int main (int argc, char** argv)
     e1[0]= e2[1]= e3[2]= M_PI/4.;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 3, 3, 3);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel, &LsgVel};
-        
+
     StokesOnBrickCL prob(brick, StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;

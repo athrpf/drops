@@ -15,14 +15,14 @@ namespace DROPS
 /// Prints a text-message describing the given boundary-condition.
 void BndCondInfo (BndCondT, std::ostream&);
 
-enum FiniteElementT 
+enum FiniteElementT
 /// \brief enum for several FE types
 ///
-/// Conventions: 
+/// Conventions:
 /// - values < 128 are used for scalar FE
-/// - values >= 128 are used for vector-valued FE, 
+/// - values >= 128 are used for vector-valued FE,
 ///   the difference to the scalar FE counterpart should be 128
-{ 
+{
     P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,  // for scalars
     P1D_FE=4, P1X_FE=5,
                       vecP2_FE= 130            // for vectors
@@ -47,10 +47,10 @@ class IdxDescCL
     static const Uint        InvalidIdx; ///< Constant representing an invalid index.
     static std::vector<bool> IdxFree;    ///< Cache for unused indices; reduces memory-usage.
     Uint                     Idx;        ///< The unique index.
-    
+
     /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
-    
+
   public:
     Uint TriangLevel;        ///< Triangulation of the index.
 
@@ -65,36 +65,36 @@ class IdxDescCL
 
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
-    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0) 
+    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0)
       : Idx( GetFreeIdx()), NumUnknownsVertex( unkVertex), NumUnknownsEdge( unkEdge),
         NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra), NumUnknowns( 0) {}
-    explicit IdxDescCL( FiniteElementT fe) 
+    explicit IdxDescCL( FiniteElementT fe)
       : Idx( GetFreeIdx()), NumUnknownsVertex( 0), NumUnknownsEdge( 0),
-        NumUnknownsFace( 0), NumUnknownsTetra( 0), NumUnknowns( 0) 
-    { 
-        switch(fe) { 
+        NumUnknownsFace( 0), NumUnknownsTetra( 0), NumUnknowns( 0)
+    {
+        switch(fe) {
             case P0_FE:       NumUnknownsTetra= 1; break;
             case P1_FE:
-            case P1X_FE:      NumUnknownsVertex= 1; break; 
-            case P1Bubble_FE: NumUnknownsVertex= NumUnknownsTetra= 1; break; 
+            case P1X_FE:      NumUnknownsVertex= 1; break;
+            case P1Bubble_FE: NumUnknownsVertex= NumUnknownsTetra= 1; break;
             case P1D_FE:      NumUnknownsFace= 1; break;
-            case P2_FE:       NumUnknownsVertex= NumUnknownsEdge= 1; break; 
-            case vecP2_FE:    NumUnknownsVertex= NumUnknownsEdge= 3; break; 
-        }  
+            case P2_FE:       NumUnknownsVertex= NumUnknownsEdge= 1; break;
+            case vecP2_FE:    NumUnknownsVertex= NumUnknownsEdge= 3; break;
+        }
     }
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
-    IdxDescCL( const IdxDescCL& orig);              
+    IdxDescCL( const IdxDescCL& orig);
     /// \brief Frees the index, but does not invalidate the numbering on
     ///     the simplices. Call DeleteNumbering to do this.
     ~IdxDescCL() { if (Idx!=InvalidIdx) IdxFree[Idx]= true; }
-    
+
     /// \brief Not implemented, as the private "Idx" should not be the
     ///     same for two different objects.
     IdxDescCL& operator= ( const IdxDescCL&);
     /// \brief Swaps the contents of obj and *this.
     void swap( IdxDescCL&);
-    
+
     /// \brief Set the number of unknowns per simplex-type for this index.
     void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
     /// \brief Returns the number of the index. This can be used to access
@@ -169,7 +169,7 @@ class LocalNumbP2CL
     ///     from a tetrahedron and a BndDataCL-like object.
     template<class BndDataT>
       LocalNumbP2CL(const TetraCL&, const IdxDescCL&, const BndDataT&);
-    
+
     /// \brief Read indices, boundary-segment numbers and boundary conditions
     ///     from a tetrahedron and a BndDataCL-like object.
     template<class BndDataT>
@@ -190,7 +190,7 @@ class VecDescBaseCL
     /// \brief The type of the numerical vector.
     typedef T DataType;
 
-    /// \brief The default-constructor creates an empty vector and sets RowIdx to 0.    
+    /// \brief The default-constructor creates an empty vector and sets RowIdx to 0.
     VecDescBaseCL()
         :RowIdx(0) {}
     /// \brief Initialize RowIdx with idx and contruct Data with the given size.
@@ -223,7 +223,7 @@ class MatDescCL
   public:
     /// \brief The type of the matrix.
     typedef MatrixCL DataType;
-    
+
     /// \brief The default-constructor creates an empty matrix and sets
     /// the index-pointers to 0.
     MatDescCL()
@@ -299,7 +299,7 @@ template<class BndDataT>
 {
     BndIdxT bidx= 0;
     const Uint sys= idx.GetIdx();
-    
+
     for (Uint i= 0; i < NumVertsC; ++i)
         if (NoBC == (bc[i]= bnd.GetBC( *s.GetVertex( i), bidx))) {
             bndnum[i]= NoBndC;
@@ -351,7 +351,7 @@ void VecDescBaseCL<T>::Reset()
 }
 
 
-/// \name Routines to number unknowns. 
+/// \name Routines to number unknowns.
 /// These functions should not be used directly. CreateNumb is much more
 /// comfortable and as efficient.
 ///
@@ -373,7 +373,7 @@ void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint stride,
     for (MultiGridCL::TriangVertexIteratorCL it= begin; it != end; ++it)
     {
         if ( !Bnd.IsOnDirBnd( *it) )
-        {        
+        {
             it->Unknowns.Prepare( idx);
             it->Unknowns( idx)= counter;
             counter+= stride;
@@ -391,7 +391,7 @@ void CreateNumbOnEdge( const Uint idx, IdxT& counter, Uint stride,
     for (MultiGridCL::TriangEdgeIteratorCL it=begin; it!=end; ++it)
     {
         if ( !Bnd.IsOnDirBnd(*it) )
-        {        
+        {
             it->Unknowns.Prepare( idx);
             it->Unknowns( idx)= counter;
             counter+= stride;
@@ -409,7 +409,7 @@ void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint stride,
     for (MultiGridCL::TriangFaceIteratorCL it=begin; it!=end; ++it)
     {
         if ( !Bnd.IsOnDirBnd(*it) )
-        {        
+        {
             it->Unknowns.Prepare( idx);
             it->Unknowns( idx)= counter;
             counter+= stride;
@@ -446,8 +446,8 @@ inline void
 DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 {
 
-    for (Iter it=begin; it!=end; ++it) 
-        if (it->Unknowns.Exist() && it->Unknowns.Exist( idx) ) 
+    for (Iter it=begin; it!=end; ++it)
+        if (it->Unknowns.Exist() && it->Unknowns.Exist( idx) )
             it->Unknowns.Invalidate( idx);
 }
 
@@ -457,11 +457,11 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 typedef bool (*match_fun)(const Point3DCL&, const Point3DCL&);
 
 
-/// \name Routines to number unknowns on periodic boundaries. 
+/// \name Routines to number unknowns on periodic boundaries.
 /// These functions should not be used directly. CreateNumb is much more
 /// comfortable and as efficient.
 ///
-/// For interior simplices and boundary-conditions other than Per1BC and Per2BC, 
+/// For interior simplices and boundary-conditions other than Per1BC and Per2BC,
 /// nothing unusual happens.
 /// The matching works as follows:
 ///     - Simplices with Per1BC are memoized in list l1, those with Per2BC in list l2.
@@ -483,7 +483,7 @@ void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun
                         const BndDataT& Bnd)
 {
     if (stride == 0) return;
-    
+
     typedef std::list<VertexCL*> psetT;
     psetT s1, s2;
     // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
@@ -536,7 +536,7 @@ void CreatePeriodicNumbOnEdge( Uint idx, IdxT& counter, Uint stride, match_fun m
                         const BndDataT& Bnd)
 {
     if (stride == 0) return;
-    
+
     typedef std::list<EdgeCL*> psetT;
     psetT s1, s2;
     // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
@@ -589,7 +589,7 @@ void CreatePeriodicNumbOnFace( Uint idx, IdxT& counter, Uint stride, match_fun m
                         const BndDataT& Bnd)
 {
     if (stride == 0) return;
-    
+
     typedef std::list<FaceCL*> psetT;
     psetT s1, s2;
     // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.

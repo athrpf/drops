@@ -203,7 +203,7 @@ Maple3DOptionCL::WriteGlobalOptions(std::ostream& os) const
     {
         if (have_previous) os << ", ";
         os << "AXESLABELS(`" << xlabel << "`, `" << ylabel << "`, `" << zlabel << "`)";
-        have_previous= true; 
+        have_previous= true;
     }
     if ( !axesstyle.empty() )
     {

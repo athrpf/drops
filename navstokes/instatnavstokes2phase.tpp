@@ -7,8 +7,8 @@ namespace DROPS
 {
 
 template<class Coeff>
-void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear 
-    ( MatDescCL* N, const VelVecDescCL* vel, VelVecDescCL* cplN, 
+void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
+    ( MatDescCL* N, const VelVecDescCL* vel, VelVecDescCL* cplN,
       const LevelsetP2CL& lset, double t) const
 /// Couplings with dirichlet BCs are accumulated in cplN,
 /// so call cplN->Clear() before if only couplings are needed.
@@ -17,34 +17,34 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
 
     MatrixBuilderCL mN( &N->Data, num_unks_vel, num_unks_vel);
     cplN->Clear();
-    
+
     const Uint lvl         = N->GetRowLevel(),
                vidx        = N->RowIdx->GetIdx();
 
     IdxT Numb[10];
     bool IsOnDirBnd[10];
-    
+
     std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
     Quad2CL<double> rho, Phi;
-        
+
     SMatrixCL<3,3> T;
-    
+
     double det, absdet;
     Point3DCL tmp;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const_DiscVelSolCL u( vel, &GetBndData().Vel, &GetMG(), t);
 
     P2DiscCL::GetGradientsOnRef( GradRef);
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-    
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for (int i=0; i<4; ++i)
@@ -66,7 +66,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
         rho= Phi;    rho.apply( _Coeff.rho);
 
         u_rho= u_loc*rho;
-        
+
         for(int i=0; i<10; ++i)  // assemble row Numb[i]
             if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
             {

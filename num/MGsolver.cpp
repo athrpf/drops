@@ -21,15 +21,15 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end)
         VectorCL ei(nu), Ai(nu);
 
         std::cerr << nu << " unknowns on level " << lvl << std::endl;
-        
-        
+
+
         if (nu>700)
         {
             std::cerr << "Check skipped: too many unknowns, too much time..." << std::endl;
             continue;
         }
-        
-        
+
+
         for(Uint i=0; i<nu; ++i)
         {
             if (i!=0) ei[i-1]=0; else ei[nu-1]=0; ei[i]=1;
@@ -42,13 +42,13 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end)
                               << coarse->A.Data(i,j) << " != " << Ai[j] << std::endl;
                 }
             }
-        }    
+        }
     }
 }
 
 
-//template <typename Vec> 
-void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b, 
+//template <typename Vec>
+void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
         int& maxiter, double& tol, const bool residerr)
 {
     const_MGDataIterCL finest= --MGData.end();
@@ -64,7 +64,7 @@ void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
     }
     else
         tmp.resize( x.size());
-    
+
 //    JORsmoothCL smoother( omega); // Jacobi
 //    GSsmoothCL smoother( omega); // Gauss-Seidel
 //    SGSsmoothCL smoother( omega); // symmetric Gauss-Seidel

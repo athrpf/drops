@@ -21,10 +21,10 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
     const Uint lvl= Phi.GetLevel();
 
-    SparseMatBuilderCL<double> E(&E_, num_unks, num_unks), 
+    SparseMatBuilderCL<double> E(&E_, num_unks, num_unks),
                                H(&H_, num_unks, num_unks);
     IdxT Numb[10];
-    
+
     std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns. ";
 
     // fill value part of matrices
@@ -34,7 +34,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
     double det, absdet, h_T;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
-    
+
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit!=send; ++sit)
     {
@@ -51,20 +51,20 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 
         for(int i=0; i<10; ++i)
             u_Grad[i]= dot( u_loc, Grad[i]);
-        
+
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             for(int j=0; j<10; ++j)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
                 E( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
-                                     + u_Grad[i].quadP2(j, absdet)*SD_*h_T; 
-                
+                                     + u_Grad[i].quadP2(j, absdet)*SD_*h_T;
+
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
                 H( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
                                      + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_*h_T;
             }
     }
-    
+
     E.Build();
     H.Build();
     std::cerr << E_.num_nonzeros() << " nonzeros in E, "
@@ -99,7 +99,7 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
         for (int i=0; i<3; ++i)
             BaryPtr[i]= &Bary_[i];
         BaryPtr[3]= &BaryDoF_[data.Vertices[vertA]];
-        
+
         const double volFrac= VolFrac( BaryPtr);
         const ValueT quadTetra= P1DiscCL::Quad( f, BaryPtr)*(absdet*volFrac);
 //if (debug) std::cerr << "vertA = " << vertA << "\tvolFrac = " << volFrac << "\t= 1 / " << 1/volFrac << std::endl;
@@ -131,9 +131,9 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
 //if (debug) std::cerr << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cerr << Edge_[i] << "\t"; std::cerr << std::endl;
         // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
         // ABPR    (bzw. ABPQ)
-        BaryPtr[0]= &BaryDoF_[data.Vertices[vertAB[0]]];    
-        BaryPtr[1]= &BaryDoF_[data.Vertices[vertAB[1]]]; 
-        BaryPtr[2]= &Bary_[0];    BaryPtr[3]= &Bary_[AR ? 2 : 1]; 
+        BaryPtr[0]= &BaryDoF_[data.Vertices[vertAB[0]]];
+        BaryPtr[1]= &BaryDoF_[data.Vertices[vertAB[1]]];
+        BaryPtr[2]= &Bary_[0];    BaryPtr[3]= &Bary_[AR ? 2 : 1];
 //if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         ValueT integral= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
         // QBPR    (bzw. RBPQ)
@@ -144,9 +144,9 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
         BaryPtr[2]= &Bary_[3];
 //if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
-        
+
         return absdet*integral;
-    }    
+    }
 }
 
 } // end of namespace DROPS

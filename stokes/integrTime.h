@@ -25,27 +25,27 @@ class InstatStokesThetaSchemeCL
 //  Inner stationary Stokes-type problems are solved with a SolverT-solver.
 //  The matrices A, B, M and the rhs b, c of the Stokes class have to be set
 //  properly! After construction, SetTimeStep has to be called once. Then
-//  every DoStep performs one step in time. Changing time steps require 
+//  every DoStep performs one step in time. Changing time steps require
 //  further calls to SetTimeStep.
 //**************************************************************************
 {
   private:
     StokesT& _Stokes;
     SolverT& _solver;
-    
+
     VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VectorCL      _rhs;
     MatrixCL      _mat;               // M + theta*dt*A
-    
+
     double _theta, _dt;
-    
+
   public:
     InstatStokesThetaSchemeCL( StokesT& Stokes, SolverT& solver, double theta= 0.5)
         : _Stokes( Stokes), _solver( solver), _b( &Stokes.b), _old_b( new VelVecDescCL),
-          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _rhs( Stokes.b.RowIdx->NumUnknowns), 
+          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _rhs( Stokes.b.RowIdx->NumUnknowns),
           _theta( theta)
-    { 
+    {
         _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
         _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
     }
@@ -55,10 +55,10 @@ class InstatStokesThetaSchemeCL
         if (_old_b == &_Stokes.b)
             delete _b;
         else
-            delete _old_b; 
+            delete _old_b;
         delete _cplM; delete _old_cplM;
     }
-    
+
     double GetTheta()    const { return _theta; }
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
@@ -68,7 +68,7 @@ class InstatStokesThetaSchemeCL
         _dt= dt;
         _mat.LinComb( 1./dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     }
-       
+
     void DoStep( VectorCL& v, VectorCL& p);
 };
 
@@ -81,8 +81,8 @@ class InstatStokesThetaSchemeCL
 // A Poisson-problem with natural boundary-conditions for the pressure is
 // solved via 1 SSOR-step, a problem with the mass-matrix aswell.
 // The constants kA_, kM_ have to be chosen according to h and dt, see Theorem 4.1
-// of the above paper. 
-// kA_ = theta/Re and kM_ = 1/dt will do a good job, 
+// of the above paper.
+// kA_ = theta/Re and kM_ = 1/dt will do a good job,
 // where Re is proportional to the ratio density/viscosity.
 //
 // A_ is the pressure-Poisson-Matrix for natural boundary-conditions, M_ the
@@ -315,8 +315,8 @@ std::cerr << "norm( p2): " << norm( p2_);
 template<class SmootherCL, class DirectSolverCL>
 void
 MGMPr(const std::vector<VectorCL>::const_iterator& ones,
-      const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b, 
-      const SmootherCL& Smoother, const Uint smoothSteps, 
+      const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b,
+      const SmootherCL& Smoother, const Uint smoothSteps,
     DirectSolverCL& Solver, const int numLevel, const int numUnknDirect)
 // Multigrid method, V-cycle. If numLevel==0 or #Unknowns <= numUnknDirect,
 // the direct solver Solver is used.
@@ -329,7 +329,7 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
     const_MGDataIterCL coarse= fine;
     --coarse;
     if(  ( numLevel==-1      ? false : numLevel==0 )
-       ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) ) 
+       ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) )
        || fine==begin)
     { // use direct solver
         Solver.Solve( fine->A.Data, x, b);

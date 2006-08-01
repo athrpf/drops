@@ -36,7 +36,7 @@ reparam: \
 lsdrivcav: \
     ../levelset/lsdrivcav.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o 
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o
 	$(CC) -o $@ $^ $(LFLAGS)
 
 lsshear: \

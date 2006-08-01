@@ -20,7 +20,7 @@ class PoissonCoeffCL
 {
   public:
     // static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static double alpha(const DROPS::Point3DCL&, double) 
+    static double alpha(const DROPS::Point3DCL&, double)
       { return 1; }
     //static double f(const DROPS::Point3DCL& , double ) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double t)
@@ -43,7 +43,7 @@ inline double GradY(const DROPS::Point3DCL& p, double t)
   { return (0.0); }
 inline double GradZ(const DROPS::Point3DCL& p, double t)
   { return (0.0); }
-*/  
+*/
 
 inline double GradX(const DROPS::Point3DCL& p, double t)
   { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
@@ -63,7 +63,7 @@ inline double GradY(const DROPS::Point3DCL& p, double t) { return 0.0; }
 inline double GradZ(const DROPS::Point3DCL& p, double t) { return 0.0; }
 */
 
-namespace DROPS 
+namespace DROPS
 {
 
 class NeuValCL
@@ -71,7 +71,7 @@ class NeuValCL
   public:
     template<int seg>
     static double neu_val(const DROPS::Point3DCL& p, double t)
-    { 
+    {
       switch (seg)
       {
         case 0:
@@ -149,55 +149,55 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   ThetaScheme.SetTimeStep(dt);
 
   scalar_instat_fun_ptr exact_sol = &Lsg;
-  
+
   // ****** Startwert
-  
+
   typedef std::pair<double, double> d_pair;
   typedef std::pair<double, d_pair> cmp_key;
   typedef std::map<cmp_key, double*> node_map;
   typedef node_map::const_iterator ci;
-  
+
   Point3DCL pt;
   VecDescCL& x= Poisson.x;
   Uint lvl= x.GetLevel();
   Uint indx= x.RowIdx->GetIdx();
-    
+
   d_pair help;
   cmp_key key;
   node_map nmap;
-    
-  for (MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(lvl), 
+
+  for (MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(lvl),
     send=MG.GetTriangVertexEnd(lvl); sit != send; ++sit)
-  { 
+  {
     if (sit->Unknowns.Exist())
     {
       IdxT i= sit->Unknowns(indx);
       pt= sit->GetCoord();
-    
+
       help= std::make_pair(pt[2], pt[1]);
       key= std::make_pair(pt[0], help);
       x.Data[i]= Lsg(pt, 0.0);
       nmap[key]= &(x.Data[i]);
     }
   }
-  
-  
+
+
   // Ausgabe Startwert
-  
+
   //for (ci p= nmap.begin(); p!= nmap.end(); p++)
   //{
   //  std::cerr << *(p->second) << "\n";
   //}
-  
- 
+
+
   // ****** Ende Startwert
-  
+
   double average= 0.0;
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
     std::cerr << "t= " << Poisson.t << std::endl;
-    std::cerr << "Iterationen: " << mg_solver.GetIter() 
+    std::cerr << "Iterationen: " << mg_solver.GetIter()
       << "    Norm des Residuums: " << mg_solver.GetResid() << std::endl;
     Poisson.CheckSolution(x, exact_sol, Poisson.t);
     average+= mg_solver.GetIter();
@@ -205,23 +205,23 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   average/= time_steps;
   std::cerr << "Anzahl der Iterationen im Durchschnitt: " << average
     << std::endl;
-  
+
   /*
-  // Ausgabe Loesung   
-  
+  // Ausgabe Loesung
+
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
     std::cerr << *(p->second) << "\n";
   }
   */
-  
+
 }
 
 template<class Coeff>
 void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   double nu, double theta, double tol, int maxiter)
 {
-  
+
   MultiGridCL& MG= Poisson.GetMG();
   IdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
@@ -232,7 +232,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   idx.Set(1);
   Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
 
-  x.SetIdx(&idx); 
+  x.SetIdx(&idx);
   b.SetIdx(&idx);
   A.SetIdx(&idx, &idx);
   M.SetIdx(&idx, &idx);
@@ -240,7 +240,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   std::cerr << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
     << std::endl;
   Poisson.SetupInstatSystem(A, M, Poisson.t);
-  
+
   SSORPcCL pc(1.0);
   PCG_SsorCL pcg_solver(pc, maxiter, tol);
   InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, PCG_SsorCL>
@@ -249,54 +249,54 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   ThetaScheme.SetTimeStep(dt, nu);
 
   scalar_instat_fun_ptr exact_sol = &Lsg;
-  
+
   // ****** Startwert
-  
+
   typedef std::pair<double, double> d_pair;
   typedef std::pair<double, d_pair> cmp_key;
   typedef std::map<cmp_key, double*> node_map;
   typedef node_map::const_iterator ci;
-  
+
   Point3DCL pt;
   Uint lvl= x.GetLevel();
   Uint indx= x.RowIdx->GetIdx();
-    
+
   d_pair help;
   cmp_key key;
   node_map nmap;
-    
-  for (MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(lvl), 
+
+  for (MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(lvl),
     send=MG.GetTriangVertexEnd(lvl); sit != send; ++sit)
-  { 
+  {
     if (sit->Unknowns.Exist())
     {
       IdxT i= sit->Unknowns(indx);
       pt= sit->GetCoord();
-    
+
       help= std::make_pair(pt[2], pt[1]);
       key= std::make_pair(pt[0], help);
       x.Data[i]= Lsg(pt, 0.0);
       nmap[key]= &(x.Data[i]);
     }
   }
-  
-  
+
+
   // Ausgabe Startwert
-  
+
   //for (ci p= nmap.begin(); p!= nmap.end(); p++)
   //{
   //  std::cerr << *(p->second) << "\n";
   //}
-  
- 
+
+
   // ****** Ende Startwert
-  
+
   double average= 0.0;
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
     std::cerr << "t= " << Poisson.t << std::endl;
-    std::cerr << "Iterationen: " << pcg_solver.GetIter() 
+    std::cerr << "Iterationen: " << pcg_solver.GetIter()
       << "    Norm des Residuums: " << pcg_solver.GetResid() << std::endl;
     Poisson.CheckSolution(x, exact_sol, Poisson.t);
     average+= pcg_solver.GetIter();
@@ -305,14 +305,14 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   std::cerr << "Anzahl der Iterationen im Durchschnitt: " << average
     << std::endl;
   /*
-  // Ausgabe Loesung   
-  
+  // Ausgabe Loesung
+
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
     std::cerr << *(p->second) << "\n";
   }
   */
- 
+
 }
 
 } // end of namespace DROPS
@@ -329,15 +329,15 @@ int main()
     e2[1]= 1;
     e3[2]= 1;
 
-    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL> 
+    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL>
       InstatPoissonOnBrickCL;
     typedef InstatPoissonOnBrickCL MyPoissonCL;
-    
+
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
-  
+
     double dt= 0.0;
     int time_steps= 0, brick_ref= 0;
-    
+
     //dt= 0.000666;
     //time_steps= 190;
     //dt= 0.01;
@@ -348,26 +348,26 @@ int main()
     std::cerr << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_ref;
 
     /*
-    // Dirichlet boundary conditions 
-    const bool isneumann[6]= 
+    // Dirichlet boundary conditions
+    const bool isneumann[6]=
       { false, false, false, false, false, false };
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg };
     */
 
-    // Neumann boundary conditions 
-    const bool isneumann[6]= 
+    // Neumann boundary conditions
+    const bool isneumann[6]=
       { true, true, true, true, true, true };
     const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &DROPS::NeuValCL::neu_val<0>, &DROPS::NeuValCL::neu_val<1>,
         &DROPS::NeuValCL::neu_val<2>, &DROPS::NeuValCL::neu_val<3>,
         &DROPS::NeuValCL::neu_val<4>, &DROPS::NeuValCL::neu_val<5> };
- 
-      
+
+
     DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
-    
+
     for (int count=1; count<=brick_ref; count++)
     {
       MarkAll(mg);
@@ -378,21 +378,21 @@ int main()
     // Diffusionskoeffizient
     //double nu= 6.303096;
     double nu= 1;
-    
-    // one-step-theta scheme 
+
+    // one-step-theta scheme
     double theta= 0.5;
-  
+
     // Daten fuer den Loeser
     double tol= 1.0e-7;
-    int maxiter= 5000; 
+    int maxiter= 5000;
 
     DROPS::CGStrategy(prob, dt, time_steps, nu, theta, tol, maxiter);
     //DROPS::MGStrategy(prob, dt, time_steps, nu, theta, tol, maxiter);
-   
+
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
-  
+
 }
 
 

@@ -27,7 +27,7 @@ if flag==2
     qcm_2d(:,1)=qcm(:,1);
     if pp==1
         plot(yd,qcm_2d);
-    else 
+    else
         plot(yd,qcm_2d,'red--','linewidth',2);
     end
     xlabel y
@@ -41,7 +41,7 @@ elseif flag==1
     if pp==1
         %ylim([-0.015 0.015]);
         plot(zd,qcm_2d,'linewidth',1.5);
-    else 
+    else
         plot(zd,qcm_2d,'red','linewidth',2);
         %axis([0 39 6.25e-3 6.6e-3])
     end
@@ -52,9 +52,9 @@ else
     if pp==1
         %colormap(gray)
         surfl(Yd,Zd,qcm');
-        
+
         shading interp
-    else 
+    else
         mesh(Yd,Zd,qcm');
         %axis([0 20 0 40 6.2e-3 6.7e-3])
         %axis([0 20 0 40 6e-3 7e-3])

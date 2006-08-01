@@ -7,9 +7,9 @@ function batch(index)
 % ntimes - number of temporal steps from t=0 to t=tf
 % N - number of meshpoints in space
 % q_app - start approximation for heat flux
-% exflux - exact heat flux 
+% exflux - exact heat flux
 % sigma - noise
-% nmax - max number of iterations 
+% nmax - max number of iterations
 
 switch index
 case 1

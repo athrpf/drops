@@ -10,7 +10,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
     DROPS::Point3DCL Mitte; Mitte[0]=0.5; Mitte[1]=0.5; Mitte[2]=0.5;
 
     long ct= 0;
-    
+
     for (DROPS::MultiGridCL::TetraIterator It(mg.GetAllTetraBegin(maxLevel)),
              ItEnd(mg.GetAllTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
@@ -51,7 +51,7 @@ int main()
 
 //        std::cout << DROPS::DumpMGCL(mg) << std::endl << "hallo" << std::endl;
     mg.MakeConsistentNumbering();
-    
+
 //        std::cout << DROPS::DumpMGCL(mg);
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     mg.SizeInfo(std::cerr);

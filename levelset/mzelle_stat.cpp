@@ -38,7 +38,7 @@ class ZeroFlowCL
     DROPS::SmoothedJumpCL rho, mu;
     DROPS::Point3DCL g;
 
-    ZeroFlowCL() 
+    ZeroFlowCL()
       : rho( DROPS::JumpCL( 955.,   1107. ), DROPS::H_sm, sm_eps),
          mu( DROPS::JumpCL( 2.6e-3, 1.2e-3), DROPS::H_sm, sm_eps)
     { g[0]= 9.81; }
@@ -49,12 +49,12 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 { return DROPS::SVectorCL<3>(0.); }
 
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
-{ 
-    DROPS::SVectorCL<3> ret(0.); 
+{
+    DROPS::SVectorCL<3> ret(0.);
     const double s= 0.02,    // Radius Messzelle Einlauf
                  r= std::sqrt(p[1]*p[1]+p[2]*p[2]);
-    ret[0]= -(r-s)*(r+s)/s/s*Anstroem; 
-    return ret; 
+    ret[0]= -(r-s)*(r+s)/s/s*Anstroem;
+    return ret;
 }
 
 double DistanceFct( const DROPS::Point3DCL& p)
@@ -82,8 +82,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     MatDescCL prM;
 
     TimerCL time;
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
@@ -100,30 +100,30 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
     prM.SetIdx( pidx, pidx);
-    
+
     Stokes.InitVel( &Stokes.v, Null);
 
     Stokes.SetupPrMass( &prM, lset);
-    
+
     VelVecDescCL curv( vidx);
     Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
     Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
     curv.Clear();
     lset.AccumulateBndIntegral( curv);
-    
+
     double outer_tol;
     std::cerr << "tol = "; std::cin >> outer_tol;
 
     EnsightP2SolOutCL ensight( MG, lidx);
-    const char datgeo[]= "ensight/mz.geo", 
+    const char datgeo[]= "ensight/mz.geo",
                datpr[] = "ensight/mz.pr",
                datvec[]= "ensight/mz.vec",
                datscl[]= "ensight/mz.scl";
     ensight.CaseBegin( "mz.case", 2);
     ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.DescribeScalar( "Levelset", datscl);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
     ensight.putGeom( datgeo);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
@@ -133,7 +133,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, d
     PSchur_GSPCG_CL schurSolver( prM.Data, 1000, outer_tol, 1000, inner_iter_tol);
 
     time.Reset();
-    schurSolver.Solve( Stokes.A.Data, Stokes.B.Data, 
+    schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
         Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + curv.Data), Stokes.c.Data);
     time.Stop();
     std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
@@ -166,7 +166,7 @@ int main (int argc, char** argv)
   {
     if (argc<4)
     {
-        std::cerr << "You have to specify three parameters:\n\t" 
+        std::cerr << "You have to specify three parameters:\n\t"
                   << argv[0] << " <inner_iter_tol> <num_dropref> <surf.tension> [<inflow_vel>]" << std::endl;
         return 1;
     }
@@ -187,32 +187,32 @@ int main (int argc, char** argv)
 
     std::ifstream meshfile( "gambit/messzelle.msh");
     DROPS::ReadMeshBuilderCL builder( meshfile);
-    
-    const DROPS::BndCondT bc[3]= 
+
+    const DROPS::BndCondT bc[3]=
         { DROPS::OutflowBC, DROPS::WallBC, DROPS::DirBC};
     //    bottom,           side,          top
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[3]= 
-        { &Null, &Null, &Inflow}; 
-        
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[3]=
+        { &Null, &Null, &Inflow};
+
     MyStokesCL prob(builder, ZeroFlowCL(), DROPS::StokesBndDataCL( 3, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
-    
+
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
-    mg.SizeInfo( std::cerr);    
-    mg.ElemInfo( std::cerr);    
+    mg.SizeInfo( std::cerr);
+    mg.ElemInfo( std::cerr);
 //    MarkAll( mg); mg.Refine();
     for (int i=0; i<num_dropref; ++i)
     {
         MarkDrop( mg);
         mg.Refine();
     }
-    std::cerr << "after refinement:\n"; mg.ElemInfo( std::cerr);    
-    mg.SizeInfo( std::cerr);    
+    std::cerr << "after refinement:\n"; mg.ElemInfo( std::cerr);
+    mg.SizeInfo( std::cerr);
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
     Strategy(prob, inner_iter_tol, sigma);

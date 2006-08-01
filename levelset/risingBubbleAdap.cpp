@@ -40,7 +40,7 @@ class ZeroFlowCL
     DROPS::SmoothedJumpCL rho, mu;
     DROPS::Point3DCL g;
 
-    ZeroFlowCL() 
+    ZeroFlowCL()
       : rho( DROPS::JumpCL( 1, 10), DROPS::H_sm, sm_eps),
          mu( DROPS::JumpCL( 2, 1), DROPS::H_sm, sm_eps)
     { g[2]= -9.81; }
@@ -72,9 +72,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     IdxDescCL* pidx= &Stokes.pr_idx;
     MatDescCL  prM;
     TimerCL time;
-    
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);    
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);    
+
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
 
     lset.Phi.SetIdx( lidx);
@@ -85,10 +85,10 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
     prM.SetIdx( pidx, pidx);
     Stokes.SetupPrMass( &prM, lset);
-    
+
     Stokes.InitVel( &Stokes.v, Null);
     lset.Init( DistanceFct);
-    
+
     time.Reset();
 
     double outer_tol;
@@ -100,16 +100,16 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     IdxDescCL ens_idx( 1, 1);
     lset.CreateNumbering( MG.GetLastLevel(), &ens_idx);
     EnsightP2SolOutCL ensight( MG, &ens_idx);
-    
-    const char datgeo[]= "ensight/risebubbleadap.geo", 
+
+    const char datgeo[]= "ensight/risebubbleadap.geo",
                datpr[] = "ensight/risebubbleadap.pr",
                datvec[]= "ensight/risebubbleadap.vec",
                datscl[]= "ensight/risebubbleadap.scl";
     ensight.CaseBegin( "risebubbleadap.case", num_steps+1);
     ensight.DescribeGeom( "zero flow", datgeo,  true);
-    ensight.DescribeScalar( "Levelset", datscl, true); 
-    ensight.DescribeScalar( "Pressure", datpr,  true); 
-    ensight.DescribeVector( "Velocity", datvec, true); 
+    ensight.DescribeScalar( "Levelset", datscl, true);
+    ensight.DescribeScalar( "Pressure", datpr,  true);
+    ensight.DescribeVector( "Velocity", datvec, true);
     ensight.putGeom( datgeo, 0);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
@@ -117,7 +117,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
 
     PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
 
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, PSchur_GSPCG_CL> 
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, PSchur_GSPCG_CL>
         cpl( Stokes, lset, schurSolver, 1.0); // impl. Euler
     cpl.SetTimeStep( delta_t);
 
@@ -138,7 +138,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
             lset.DeleteNumbering( &ens_idx);
             adap.UpdateTriang( Stokes, lset);
             lset.CreateNumbering( MG.GetLastLevel(), &ens_idx);
-/*            
+/*
         ensight.putGeom( datgeo, (step+0.01)*delta_t);
         ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.01)*delta_t);
         ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.01)*delta_t);
@@ -154,7 +154,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
 	}
     }
     ensight.CaseEnd();
-    
+
     std::cerr << std::endl;
 }
 
@@ -167,7 +167,7 @@ int main (int argc, char** argv)
   {
     if (argc<4)
     {
-        std::cerr << "You have to specify at least three parameters:\n\t" 
+        std::cerr << "You have to specify at least three parameters:\n\t"
                   << argv[0] << " <inner_iter_tol> <num_subdiv> <surf.tension> [<dt> <num_steps>]" << std::endl;
         return 1;
     }
@@ -185,17 +185,17 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= 1.; e3[2]= 2.;
 
-    typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL> 
+    typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>
             StokesOnBrickCL;
     typedef StokesOnBrickCL MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, DROPS::Uint(sub_div*e3[2]));
 
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]= 
-        { &Null, &Null, &Null, &Null, &Null, &Null }; 
-        
+    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
+        { &Null, &Null, &Null, &Null, &Null, &Null };
+
     StokesOnBrickCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::AdapTriangCL adap( mg, 0.1, 0, 3);

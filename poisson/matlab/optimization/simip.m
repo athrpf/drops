@@ -1,7 +1,7 @@
 function [Iter,Ti]=simip(qc,C_data,L_data)
 
 % ------------------------------------------------------------------------
-% PROBLEM: LOESUNG DER GLEICHUNG 
+% PROBLEM: LOESUNG DER GLEICHUNG
 %           dT/dt - nu * laplace(T) = 0
 % T: Temperatur
 % t: Zeit
@@ -13,7 +13,7 @@ function [Iter,Ti]=simip(qc,C_data,L_data)
 % xl= Laenge des Quaders in x-Richtung
 % mr = Anzahl der Verfeinerungen
 % npc = Anzahl der Punkte pro Koordinatenrichtung
-% nfp= Anzahl der Punkte pro Seitenflaeche 
+% nfp= Anzahl der Punkte pro Seitenflaeche
 % ------------------------------------------------------------------------
 %
 % ANFANGSTEMPERATUR
@@ -21,21 +21,21 @@ function [Iter,Ti]=simip(qc,C_data,L_data)
 % von x=0 bis x=1
 %
 % ------------------------------------------------------------------------
-% RANDBEDINGUNGEN 
+% RANDBEDINGUNGEN
 % Null auf allen Seiten ausser x=0 und x=1
-% qh: Newman auf Wuerfelseite x=0 
+% qh: Newman auf Wuerfelseite x=0
 % qc: Newman auf Wuerfelseite x=1
 % lexikographische Nummerierung der Gitterpunkte
 %
 % ------------------------------------------------------------------------
 % ZEITDISKRETISIERUNG
 % dt: Zeitschrittweite
-% ndt: Anzahl der Zeitschritte 
+% ndt: Anzahl der Zeitschritte
 %
 % ------------------------------------------------------------------------
 % MESSPUNKTE
-% M: Parameter, der die Flaeche spezifiziert an der die 
-% Messungen durchgefuehrt werden 
+% M: Parameter, der die Flaeche spezifiziert an der die
+% Messungen durchgefuehrt werden
 % (Schnitt durch den Wuerfel an der Stelle x=M)
 %--------------------------------------------------------------------------
 

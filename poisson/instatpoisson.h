@@ -34,12 +34,12 @@ class StripTimeCL
     static double                _t;
   public:
     StripTimeCL( scalar_instat_fun_ptr func, double t)
-      { _func= func; _t= t; }     
+      { _func= func; _t= t; }
     void SetTime( double t) { _t= t; }
-    
+
     static double GetFunc( const Point3DCL& x)
       { return _func( x, _t); }
-};  
+};
 
 
 template <class Coeff>
@@ -47,7 +47,7 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 {
   private:
     bool adjoint_;
-    
+
   public:
     typedef ProblemCL<Coeff, InstatPoissonBndDataCL> _base;
     typedef typename _base::BndDataCL                BndDataCL;
@@ -57,12 +57,12 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     using _base::_BndData;
     using _base::_MG;
     using _base::_Coeff;
-    
+
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
-    
+
     double     	t;        // time
-    
+
     IdxDescCL idx;
     VecDescCL x;
     VecDescCL b;
@@ -70,9 +70,9 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     MatDescCL M;
     MatDescCL U;
 	
-    
+
     InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( 1) {}  
+        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( 1) {}
 				
     // numbering of unknowns
     void CreateNumbering( Uint level, IdxDescCL* idx);
@@ -85,12 +85,12 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     void SetupConvection( MatDescCL& U, VecDescCL& vU, double t) const;
 		
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
-    // If the function is called with the same vector for some arguments, 
+    // If the function is called with the same vector for some arguments,
     // the vector will contain the sum of the results after the call
     void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
     // Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, scalar_instat_fun_ptr T, scalar_instat_fun_ptr dalpha, double t= 0.) const;
-  
+
     // create prolongation
     void SetupProlongation( MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const;
 
@@ -100,7 +100,7 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     // check computed solution etc.
     void CheckSolution( const VecDescCL&, scalar_instat_fun_ptr, double) const;
     void CheckSolution( scalar_instat_fun_ptr Lsg, double t) const { CheckSolution(x, Lsg, t); }
-    
+
     // void GetDiscError ( const VecDescCL&, scalar_instat_fun_ptr, double) const;
     // void GetDiscError ( scalar_instat_fun_ptr Lsg, double t) const { GetDiscError(x, Lsg, t); }
 	

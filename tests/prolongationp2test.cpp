@@ -19,7 +19,7 @@ class BndCL
     inline bool IsOnNeuBnd (const VertexCL&) const { return false; }
     inline bool IsOnDirBnd (const EdgeCL&) const { return false; }
     inline bool IsOnNeuBnd (const EdgeCL&) const { return false; }
-    
+
     static inline bnd_type GetDirBndValue (const VertexCL&)
         { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
     static inline bnd_type GetDirBndValue (const EdgeCL&)
@@ -91,7 +91,7 @@ int TestProlongation()
             VectorCL v( 10u);
             v[k]= 1.0;
             VectorCL w= P.Data*v;
-            
+
 //            for (TetraCL::ChildPIterator cp= t->GetChildBegin(); cp != t->GetChildEnd(); ++cp) {
 //                (*cp)->DebugInfo( std::cout);
 //                std::cout << std::endl;
@@ -103,7 +103,7 @@ int TestProlongation()
                 if ( std::abs( w[vi->Unknowns( i1.GetIdx())] - FE_P2CL::H(k, c[0], c[1], c[2])) > 1e-15) {
                     std::cout << "Inconsistency: rule= " << i << ", k= " << k << std::endl;
                     ++ret;
-                } 
+                }
 //                std::cout << "coarse: " << vi->Unknowns( i0.GetIdx()) << "\tfine: " << vi->Unknowns( i1.GetIdx())
 //                          << std::endl << std::endl;
             }

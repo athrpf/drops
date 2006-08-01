@@ -33,10 +33,10 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
 
     MultiGridCL& MG= Poisson.GetMG();
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
-    
+
     IdxDescCL  loc_idx;
     VecDescCL  loc_x;
-    
+
     IdxDescCL* new_idx= &Poisson.idx;
     IdxDescCL* old_idx= &loc_idx;
 //    IdxDescCL* err_idx= &_err_idx;
@@ -74,7 +74,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
         {
             P1EvalCL<double, const PoissonBndDataCL, const VecDescCL>  oldx(old_x, &BndData, &MG);
             P1EvalCL<double, const PoissonBndDataCL, VecDescCL>        newx(new_x, &BndData, &MG);
-// TODO: what happens, if refinement creates new vertices in old_level? FIXED in fe.h!       
+// TODO: what happens, if refinement creates new vertices in old_level? FIXED in fe.h!
             Interpolate(newx, oldx);
 //            CheckSolution(*new_x, &::Lsg);
             old_x->Reset();
@@ -84,7 +84,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
 //        Poisson.GetDiscError(&::Lsg);
 //std::cout << A->Data << std::endl << b->Data << std::endl;
         double tol= 1.0e-7;
-        int max_iter= 100;        
+        int max_iter= 100;
         PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
 //        CG(A->Data, new_x->Data, b->Data, max_iter, tol);
         A->Reset();
@@ -167,11 +167,11 @@ int main (int argc, char** argv)
 
     typedef DROPS::PoissonP1CL<PoissonCoeffCL> PoissonOnBCL;
     typedef PoissonOnBCL                       MyPoissonCL;
-    
+
 //    DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
     DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2, 2);
 //    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
-    const bool isneumann[24]= 
+    const bool isneumann[24]=
         {false, false, false, false, false, false, false, false,
          false, false, false, false, false, false, false, false,
          false, false, false, false, false, false, false, false};
@@ -179,7 +179,7 @@ int main (int argc, char** argv)
         { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg,
           &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg,
           &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg };
- 
+
     DROPS::PoissonBndDataCL bdata(24, isneumann, bnd_fun);
     PoissonOnBCL prob(brick, PoissonCoeffCL(), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();

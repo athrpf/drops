@@ -1,10 +1,10 @@
-% Diese Funktion liefert saemtliche Parameter, die fuer den Aufruf von DROPS notwendig sind 
+% Diese Funktion liefert saemtliche Parameter, die fuer den Aufruf von DROPS notwendig sind
 %-------------------------------------------------------------------------------------------
 
 function [C_data,func,niter_max,epsT,M_data,D_data,A_data,S_data]=getParameters()
 
 
-% Geometrieparameter 
+% Geometrieparameter
 xl= 0.025;
 yl= 19.5;
 zl= 39;
@@ -18,7 +18,7 @@ nu= 6.303096;
 % 0->ohne, 1->mit
 Flag= 0;
 
-% Zeitdiskretisierung 
+% Zeitdiskretisierung
 % 0 expl. Euler, 0.5 Crank-Nicholson, 1 impl. Euler
 theta= 0.5;
 
@@ -28,10 +28,10 @@ dt= 2e-3;
 % Anzahl Zeitschritte
 ndt= 100;
 
-% exakter Waermestrom 
+% exakter Waermestrom
 func= 4;
 
-% ni* =   Anzahl der Intervalle pro Koordinatenrichtung 
+% ni* =   Anzahl der Intervalle pro Koordinatenrichtung
 %         nach uniformer Verfeinerung
 nix= 2;
 niy= 4;
@@ -62,7 +62,7 @@ niter_max= 20;
 % Abbruch ueber Residuum
 epsT= 1e-14;
 
-% allgemeines Abbruchkriterium 
+% allgemeines Abbruchkriterium
 SolverMaxIter= 200;
 
 %-------------------- measurement data ---------------------
@@ -72,8 +72,8 @@ M_plane= 0;
 
 M_BndRef= 0;
 
-% M_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung 
-%           vor der Verfeinerung 
+% M_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung
+%           vor der Verfeinerung
 M_nixs= 2;
 M_niys= 4;
 M_nizs= 20;
@@ -97,7 +97,7 @@ D_plane= 0;
 
 D_BndRef= 0;
 
-% D_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung 
+% D_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung
 %           vor der Verfeinerung
 D_nixs= 2;
 D_niys= 4;
@@ -122,7 +122,7 @@ A_plane= xl;
 
 A_BndRef= 0;
 
-% A_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung 
+% A_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung
 %           vor der Verfeinerung
 A_nixs= 2;
 A_niys= 4;
@@ -147,7 +147,7 @@ S_plane= 0;
 
 S_BndRef= 0;
 
-% S_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung 
+% S_ni*s =  Anzahl der Intervalle pro Koordinatenrichtung
 %           vor der Verfeinerung
 S_nixs= 2;
 S_niys= 4;

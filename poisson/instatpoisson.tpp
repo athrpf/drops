@@ -43,7 +43,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDat
 {
     Point3DCL vc[3];
     const VertexCL* v[3];
-    
+
     v[0]= t.GetVertex(vert);
     for (Uint i=0, k=1; i<3; ++i)
     {
@@ -82,14 +82,14 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
     quad_a.assign( *sit, dalpha, t);
     const double int_a= quad_a.quad( absdet);
     Point3DCL gradT;
-    
+
     for(int i=0; i<4; ++i)
     {
       gradT+= G[i]*T(sit->GetVertex(i)->GetCoord(), t);
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
                                                             : NoIdx;
     }
-    
+
     for(int i=0; i<4;++i)    // assemble row i
     {
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
@@ -101,7 +101,7 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
             {
               Point3DCL n;
               sit->GetOuterNormal(FaceOfVert(i, f), n);
-              src.Data[UnknownIdx[i]]+= 
+              src.Data[UnknownIdx[i]]+=
                 Quad2D(*sit, FaceOfVert(i, f), i, dalpha, t) * inner_prod( gradT, n);
             }
       }
@@ -111,7 +111,7 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
 
 template<class Coeff>
 void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const
-// Sets up the time dependent right hand sides including couplings 
+// Sets up the time dependent right hand sides including couplings
 // resulting from inhomogeneous dirichlet bnd conditions
 {
   vA.Clear();
@@ -150,10 +150,10 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
         // coup[i][j]+= P1DiscCL::Quad(*sit, &Coeff::q, i, j)*absdet;
         coup[j][i]= coup[i][j];
       }
-      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) 
+      UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx)
                                                             : NoIdx;
     }
-    
+
     for(int j=0; j<4; ++j)
       if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
       { // coupling with vertex j on right-hand-side
@@ -161,7 +161,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
         for(int i=0; i<4;++i)    // assemble row i
         {
           if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-          { 
+          {
             vA.Data[UnknownIdx[i]]-= coup[j][i] * bndval;
             vM.Data[UnknownIdx[i]]-= P1DiscCL::GetMass( i, j)*absdet * bndval;
           }
@@ -171,7 +171,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
     rhs.assign( *sit, _Coeff.f, tf);
     for(int i=0; i<4;++i)    // assemble row i
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
-      { 
+      {
 //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
         vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
         if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
@@ -190,26 +190,26 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
 {
   MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
 	MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
-	 
+	
   const Uint lvl = Amat.GetRowLevel();
   const Uint idx = Amat.RowIdx->GetIdx();
 
   Point3DCL G[4];
-    
+
   double coup[4][4];
   double det;
   double absdet;
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
-	 
+	
   for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), 
+    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
     send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
-    
+
     quad_a.assign( *sit, _Coeff.alpha, tA);
     const double int_a= quad_a.quad( absdet);
 
@@ -224,7 +224,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
     }
-		  
+		
     for(int i=0; i<4; ++i)    // assemble row i
       if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
       {
@@ -232,7 +232,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
         {
           if (sit->GetVertex(j)->Unknowns.Exist(idx)) // vertex j is not on a Dirichlet boundary
           {
-            A( UnknownIdx[i], UnknownIdx[j])+= coup[j][i]; 
+            A( UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
             M( UnknownIdx[i], UnknownIdx[j])+= P1DiscCL::GetMass( i, j)*absdet;
           }
           // else coupling with vertex j on right-hand-side  --> 0
@@ -249,24 +249,24 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
 {
   vU.Clear();
   MatrixBuilderCL U( &Umat.Data, Umat.RowIdx->NumUnknowns, Umat.ColIdx->NumUnknowns);
-	 
+	
   const Uint lvl = Umat.GetRowLevel();
   const Uint idx = Umat.RowIdx->GetIdx();
 
   Point3DCL G[4];
-    
+
   double det;
   double absdet;
   IdxT UnknownIdx[4];
   Quad2CL<Point3DCL> u;
   for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), 
+    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
     send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
-    
+
     for(int i=0; i<4; ++i)
     {
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
@@ -279,13 +279,13 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
         for(int j=0; j<4;++j)
         {
           const Quad2CL<> u_Gradj( dot( u, Quad2CL<Point3DCL>( G[j])));
-    
+
           if (UnknownIdx[j] != NoIdx) // vertex j is not on a Dirichlet boundary
           {
             for(int i=0; i<4; ++i)    // assemble row i
               if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
               {
-                U( UnknownIdx[i], UnknownIdx[j])+= u_Gradj.quadP1( i, absdet); 
+                U( UnknownIdx[i], UnknownIdx[j])+= u_Gradj.quadP1( i, absdet);
               }
           }
           else // coupling with vertex j on right-hand-side
@@ -293,7 +293,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
             const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
             for(int i=0; i<4; ++i)    // assemble row i
               if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
-                vU.Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval; 
+                vU.Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval;
           }
         }
     }
@@ -309,7 +309,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
           {
             const double coupl= u_Gradi.quadP1( j, absdet);
             if (UnknownIdx[j] != NoIdx)  // vertex j is not on a Dirichlet boundary
-              U( UnknownIdx[i], UnknownIdx[j])+= coupl; 
+              U( UnknownIdx[i], UnknownIdx[j])+= coupl;
             else // coupling with vertex j on right-hand-side
               vU.Data[ UnknownIdx[i]]-= coupl* _BndData.GetDirBndValue(*sit->GetVertex(j), t);
           }
@@ -333,8 +333,8 @@ void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func,
 {
     Uint lvl= vec.GetLevel(),
          idx= vec.RowIdx->GetIdx();
-    
-    
+
+
     for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
@@ -343,35 +343,35 @@ void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func,
             vec.Data[sit->Unknowns(idx)]= func( sit->GetCoord(), t0);
         }
     }
-    
+
 }
 
 //========================================================
 //
-//                Check solution 
+//                Check solution
 //
 //========================================================
 
 template<class Coeff>
-void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, 
+void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   scalar_instat_fun_ptr Lsg, double t) const
 {
   double diff, maxdiff=0, norm2= 0, L2=0;
   Uint lvl=lsg.GetLevel(),
        Idx=lsg.RowIdx->GetIdx();
-  
+
   DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);
-    
+
   std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
-  for (MultiGridCL::const_TriangTetraIteratorCL 
+  for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
     send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     double absdet= sit->GetVolume()*6.,
            sum= 0;
-    
+
     for(Uint i=0; i<4; ++i)
     {
       diff= (sol.val(*sit->GetVertex(i)) - Lsg(sit->GetVertex(i)->GetCoord(),t));
@@ -379,12 +379,12 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
     }
     sum/= 120;
     diff= sol.val(*sit, 0.25, 0.25, 0.25) - Lsg(GetBaryCenter(*sit),t);
-    sum+= 2./15. * diff*diff; 
+    sum+= 2./15. * diff*diff;
     L2+= sum*absdet;
-  } 
+  }
   L2= std::sqrt(L2);
 
-  for (MultiGridCL::const_TriangVertexIteratorCL 
+  for (MultiGridCL::const_TriangVertexIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl),
     send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
     sit != send; ++sit)

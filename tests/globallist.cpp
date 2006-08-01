@@ -55,7 +55,7 @@ int main()
             cout << " Adresse gleich fuer:      " << i << endl;
 
     Info( l);
-    SeqOut( l.begin(), l.end());        
+    SeqOut( l.begin(), l.end());
     for (int i= 0; i < 4; ++i)
         SeqOut( l.level_begin( i), l.level_end( i));
 
@@ -71,18 +71,18 @@ int main()
     l.FinalizeModify();
 
     Info( l);
-    SeqOut( l.begin(), l.end());        
+    SeqOut( l.begin(), l.end());
     for (int i= 0; i < 4; ++i)
         SeqOut( l.level_begin( i), l.level_end( i));
     cout << "IsLevelEmpty( 0): " << l.IsLevelEmpty( 0) << endl;
     cout << "IsLevelEmpty( 3): " << l.IsLevelEmpty( 3) << endl;
-    
+
     l.PrepareModify();
     l.RemoveLastLevel();
     l.FinalizeModify();
 
     Info( l);
-    SeqOut( l.begin(), l.end());        
+    SeqOut( l.begin(), l.end());
     for (int i= 0; i < 3; ++i)
         SeqOut( l.level_begin( i), l.level_end( i));
 

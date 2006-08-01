@@ -139,7 +139,7 @@ operator*=(GridFunctionCL<Point3DCL>& a, double b)
 inline GridFunctionCL<Point3DCL>
 operator*( double a, const GridFunctionCL<Point3DCL>& b)
 {
-    
+
     GridFunctionCL<SVectorCL<3> > ret( b);
     return ret*= a;
 }
@@ -147,17 +147,17 @@ operator*( double a, const GridFunctionCL<Point3DCL>& b)
 inline GridFunctionCL<Point3DCL>
 operator*( const GridFunctionCL<Point3DCL>& a, double b)
 {
-    
+
     return b*a;
 }
 
 inline GridFunctionCL<double>
 dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
 {
-    GridFunctionCL<double> ret( 0.0, a.size()); 
-    for (size_t i= 0; i<a.size(); ++i) 
-        ret[i]= inner_prod( a[i], b[i]); 
-    return ret; 
+    GridFunctionCL<double> ret( 0.0, a.size());
+    for (size_t i= 0; i<a.size(); ++i)
+        ret[i]= inner_prod( a[i], b[i]);
+    return ret;
 }
 
 
@@ -191,7 +191,7 @@ class LocalP1CL: public GridFunctionCL<T>
     template<class BndDataT>
       LocalP1CL(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
     // Initialize from PiEvalCl
-    template <class P1FunT> 
+    template <class P1FunT>
       LocalP1CL(const TetraCL&, const P1FunT&, double= 0.0);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP1CL, T, base_type)
@@ -203,11 +203,11 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP1CL, T, base_type)
     template<class BndDataT>
       inline self_&
       assign(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
-    template <class P1FunT> 
+    template <class P1FunT>
       inline self_&
       assign(const TetraCL&, const P1FunT&, double= 0.0);
 
-    // pointwise evaluation in barycentric coordinates    
+    // pointwise evaluation in barycentric coordinates
     inline value_type operator()(const BaryCoordCL&) const;
 };
 
@@ -241,7 +241,7 @@ class LocalP2CL: public GridFunctionCL<T>
     template<class BndDataT>
       LocalP2CL(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
     // Initialize from PiEvalCl
-    template <class P2FunT> 
+    template <class P2FunT>
       LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
@@ -253,11 +253,11 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
     template<class BndDataT>
       inline self_&
       assign(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
-    template <class P2FunT> 
+    template <class P2FunT>
       inline self_&
       assign(const TetraCL&, const P2FunT&, double= 0.0);
 
-    // pointwise evaluation in barycentric coordinates    
+    // pointwise evaluation in barycentric coordinates
     inline value_type operator()(const BaryCoordCL&) const;
 };
 
@@ -290,9 +290,9 @@ class Quad2CL: public GridFunctionCL<T>
 
     Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad2CL(const LocalP2CL<value_type>&);
-    template <class PFunT> 
+    template <class PFunT>
       Quad2CL(const TetraCL&, const PFunT&, double= 0.0);
-    
+
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
 
     inline self_&
@@ -301,7 +301,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     assign(const LocalP1CL<value_type>&);
     inline self_&
     assign(const LocalP2CL<value_type>&);
-    template <class P2FunT> 
+    template <class P2FunT>
       inline self_&
       assign(const TetraCL&, const P2FunT&, double= 0.0);
 
@@ -326,14 +326,14 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     T quadP1D (int i, int j, double absdet) const;
 
     T quadP2 (int i, double absdet) const
-    { 
+    {
         return (i<4 ? (1./360.)*(*this)[i] - (1./90.)*(*this)[4]
                     : (1./180.)*((*this)[VertOfEdge(i-4,0)]+(*this)[VertOfEdge(i-4,1)]) + (1./45.)*(*this)[4]
                )*absdet;
     }
 
     T quadP2 (int i, int j, double absdet) const
-    { 
+    {
         const double valBary= (i<4 ? -0.125 : 0.25)*(j<4 ? -0.125 : 0.25);
         return ((i!=j || i>=4) ? Wght[4]*(*this)[4]*valBary
                                : Wght[4]*(*this)[4]*valBary + Wght[i]*(*this)[i]
@@ -371,9 +371,9 @@ class Quad5CL: public GridFunctionCL<T>
     Quad5CL(const LocalP2CL<value_type>&);
     template <class _BndData, class _VD>
       Quad5CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
-    template <class PFunT> 
+    template <class PFunT>
       Quad5CL(const TetraCL&, const PFunT&, double= 0.0);
-    
+
     // Every constructor must be prepared to setup the Nodes-array, thus we cannot
     // use DROPS_DEFINE_VALARRAY_DERIVATIVE directly.
     template <class X__>
@@ -389,7 +389,7 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
     template <class _BndData, class _VD>
       inline self_&
       assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
-    template <class PFunT> 
+    template <class PFunT>
       inline self_&
       assign(const TetraCL&, const PFunT&, double= 0.0);
 
@@ -560,7 +560,7 @@ class P1DiscCL
     // cubatur formula for int f(x)*phi_i over face, exact up to degree 1
     static inline double Quad2D(const TetraCL&, Uint face, instat_scalar_fun_ptr, Uint, double= 0.0);
     static inline SVectorCL<3> Quad2D(const TetraCL&, Uint face, instat_vector_fun_ptr, Uint, double= 0.0);
-    // computes the square of the L2-norm of a given function f: 
+    // computes the square of the L2-norm of a given function f:
     // f^2 is integrated exact up to degree 2
     static inline double norm_L2_sq(const TetraCL&, scalar_fun_ptr);
     static inline double norm_L2_sq(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
@@ -655,7 +655,7 @@ inline double P1DiscCL::Quad(const TetraCL& s, instat_scalar_fun_ptr coeff, doub
     return ( coeff(s.GetVertex(0)->GetCoord(), t)
             +coeff(s.GetVertex(1)->GetCoord(), t)
             +coeff(s.GetVertex(2)->GetCoord(), t)
-            +coeff(s.GetVertex(3)->GetCoord(), t))/120. 
+            +coeff(s.GetVertex(3)->GetCoord(), t))/120.
             + 2./15.*coeff(GetBaryCenter(s), t);
 }
 
@@ -664,7 +664,7 @@ inline double P1DiscCL::Quad(const TetraCL& t, scalar_fun_ptr coeff)
     return ( coeff(t.GetVertex(0)->GetCoord())
             +coeff(t.GetVertex(1)->GetCoord())
             +coeff(t.GetVertex(2)->GetCoord())
-            +coeff(t.GetVertex(3)->GetCoord()))/120. 
+            +coeff(t.GetVertex(3)->GetCoord()))/120.
             + 2./15.*coeff(GetBaryCenter(t));
 }
 
@@ -673,7 +673,7 @@ inline SVectorCL<3> P1DiscCL::Quad(const TetraCL& s, instat_vector_fun_ptr coeff
     return ( coeff(s.GetVertex(0)->GetCoord(), t)
             +coeff(s.GetVertex(1)->GetCoord(), t)
             +coeff(s.GetVertex(2)->GetCoord(), t)
-            +coeff(s.GetVertex(3)->GetCoord(), t))/120. 
+            +coeff(s.GetVertex(3)->GetCoord(), t))/120.
             + 2./15.*coeff(GetBaryCenter(s), t);
 }
 
@@ -682,7 +682,7 @@ inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uin
     double f_Vert_i= coeff( s.GetVertex(i)->GetCoord(), t ),
            f_Bary  = coeff( GetBaryCenter(s), t ),
            f_Other = 0;
-    
+
     for (Uint k=0; k<4; ++k)
         if (k!=i) f_Other+= coeff( s.GetVertex(k)->GetCoord(), t );
     return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
@@ -701,7 +701,7 @@ inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i)
     double f_Vert_i= coeff( t.GetVertex(i)->GetCoord() ),
            f_Bary  = coeff( GetBaryCenter(t) ),
            f_Other = 0;
-    
+
     for (Uint k=0; k<4; ++k)
         if (k!=i) f_Other+= coeff( t.GetVertex(k)->GetCoord() );
     return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
@@ -711,7 +711,7 @@ inline SVectorCL<3> P1DiscCL::Quad( const TetraCL& t, vector_fun_ptr coeff, Uint
     SVectorCL<3> f_Vert_i= coeff( t.GetVertex(i)->GetCoord() ),
                  f_Bary  = coeff( GetBaryCenter(t) ),
                  f_Other(0.0);;
-    
+
     for (Uint k=0; k<4; ++k)
         if (k!=i) f_Other+= coeff( t.GetVertex(k)->GetCoord() );
     return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
@@ -722,7 +722,7 @@ inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uin
     double f_Vert_ij= coeff( s.GetVertex(i)->GetCoord(), t ),
            f_Bary  = coeff( GetBaryCenter(s), t ),
            f_Other = 0;
-    
+
     if (i==j)
     {
         for (Uint k=0; k<4; ++k)
@@ -743,7 +743,7 @@ inline double P1DiscCL::Quad( const TetraCL& t, scalar_fun_ptr coeff, Uint i, Ui
     double f_Vert_ij= coeff( t.GetVertex(i)->GetCoord() ),
            f_Bary  = coeff( GetBaryCenter(t) ),
            f_Other = 0;
-    
+
     if (i==j)
     {
         for (Uint k=0; k<4; ++k)
@@ -763,9 +763,9 @@ inline double P1DiscCL::Quad2D(const TetraCL& t, Uint face, instat_scalar_fun_pt
 // Integrate neu_val() * phi_vert over face
 {
     Point3DCL v[3];
-    
+
     if (face==OppFace(vert)) return 0.; // vert is not on face
-    
+
     v[0]= t.GetVertex(vert)->GetCoord();
     for (Uint i=0, k=1; i<3; ++i)
     {
@@ -783,9 +783,9 @@ inline SVectorCL<3> P1DiscCL::Quad2D(const TetraCL& t, Uint face, instat_vector_
 // Integrate neu_val() * phi_vert over face
 {
     Point3DCL v[3];
-    
+
     if (face==OppFace(vert)) return SVectorCL<3>(0.); // vert is not on face
-    
+
     v[0]= t.GetVertex(vert)->GetCoord();
     for (Uint i=0, k=1; i<3; ++i)
     {
@@ -807,7 +807,7 @@ inline double P1DiscCL::norm_L2_sq(const TetraCL& s, instat_scalar_fun_ptr coeff
     const double f3= coeff(s.GetVertex(3)->GetCoord(), t);
     const double fb= coeff(GetBaryCenter(s), t);
     return (f0*f0 + f1*f1 + f2*f2 + f3*f3)/120. + 2./15.*fb*fb;
-    
+
 }
 
 inline double P1DiscCL::norm_L2_sq(const TetraCL& t, scalar_fun_ptr coeff)
@@ -818,7 +818,7 @@ inline double P1DiscCL::norm_L2_sq(const TetraCL& t, scalar_fun_ptr coeff)
     const double f3= coeff(t.GetVertex(3)->GetCoord());
     const double fb= coeff(GetBaryCenter(t));
     return (f0*f0 + f1*f1 + f2*f2 + f3*f3)/120. + 2./15.*fb*fb;
-    
+
 }
 
 
@@ -927,7 +927,7 @@ inline SVectorCL<3> P1BubbleDiscCL::Quad(const SVectorCL<3>* vals, Uint i)
 inline SVectorCL<3> P2DiscCL::Quad( const TetraCL& tetra, instat_vector_fun_ptr coeff, Uint i, double t)
 {
     SVectorCL<3> f[5];
-    
+
     if (i<4) // hat function on vert
     {
         f[0]= coeff( tetra.GetVertex(i)->GetCoord(), t);
@@ -963,7 +963,7 @@ inline valT P2DiscCL::Quad( valT f[10], int i)
         // Gewichte c[i] = 1/420 	fuer vert i
         //                 1/2520	fuer uebrige verts
         //                -1/630        fuer an vert i anliegende edges
-        //                -1/420        fuer uebrige drei edges   
+        //                -1/420        fuer uebrige drei edges
         result= f[i]*(1/420.-1./2520.);
         for (int k=0; k<4; ++k)
             sum+= f[k];
@@ -987,7 +987,7 @@ inline valT P2DiscCL::Quad( valT f[10], int i)
         //                 1/315	fuer opposite edge
         //                 2/315	fuer uebrige edges
         //                -1/630    	fuer an edge i anliegende verts
-        //                -1/420        fuer uebrige zwei verts   
+        //                -1/420        fuer uebrige zwei verts
         result=  f[i+4]*4./315.;
         const int opp= OppEdge(i);
         result+= f[opp+4]/315.;

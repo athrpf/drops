@@ -8,19 +8,19 @@
 
 * Entsprechend der in der Datei drops.conf eingetragenen Rechnerarchitektur
   muessen die Compilereinstellungen in der Datei arch/<Architekur>/mk.conf
-  modifiziert werden. Das Compilerflag "-fPIC" muss dort gesetzt werden.   
+  modifiziert werden. Das Compilerflag "-fPIC" muss dort gesetzt werden.
 
-* Im DROPS-Rootverzeichnis befindet sich das top-level-Makefile. In diesem 
+* Im DROPS-Rootverzeichnis befindet sich das top-level-Makefile. In diesem
   File muss der lokale Pfad des MATLAB-Tools "mex" eingetragen werden.
-  
+
 * In den jeweiligen Unterverzeichnissen befinden sich die lokalen Makefiles.
   Folgende Aenderungen muessen in dem File poisson/matlab/Makefile durchgefuehrt
   werden:
     + "MC" erhaelt den lokalen Pfad des MATLAB-Tools "mex"
     + "FLAGS" werden nicht gesetzt
-    + in den "MCFLAGS" werden vorhandene "FLAGS" entfernt 
+    + in den "MCFLAGS" werden vorhandene "FLAGS" entfernt
     + unter der Regel "clean" aufgefuehrte Dateien mit der Endung ".mex*"
-      ehalten die Endung ".mexsol" 
+      ehalten die Endung ".mexsol"
 
 weitere Informationen ueber die MEX-Schnittstelle von MATLAB:
 * MATLAB-MEX - Ein offenes System:  poisson/matlab/doc/MexDll.pdf

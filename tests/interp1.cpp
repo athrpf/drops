@@ -59,7 +59,7 @@ int CheckResult(DROPS::P1EvalCL<double, BndCL, DROPS::VecDescCL>& fun)
     double diff;
     for (MultiGridCL::const_TriangVertexIteratorCL sit= mg.GetTriangVertexBegin( trilevel),
          theend= mg.GetTriangVertexEnd( trilevel); sit!=theend; ++sit) {
-        diff= fun.val( *sit) - f( sit->GetCoord()); 
+        diff= fun.val( *sit) - f( sit->GetCoord());
         std::cout << diff << "\t";
         if (std::abs( diff) > 1e-9) return 1;
     }
@@ -200,7 +200,7 @@ int TestInterpolateOld()
     v0.SetIdx(&i0);
     v1.SetIdx(&i1);
     SetFun(v0, mg);
-    
+
     DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
     DROPS::P1EvalCL<double, BndCL, VecDescCL > fun1( &v1, &Bnd, &mg);
     Interpolate(fun1, fun0);

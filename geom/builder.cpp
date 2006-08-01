@@ -61,8 +61,8 @@ void BrickBuilderCL::build (MultiGridCL* mgp) const
         for (Uint i2=0; i2<=_n2; ++i2)
             for (Uint i1=0; i1<=_n1; ++i1)
             {
-                verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1 
-                                                + static_cast<double>(i2)*off2 
+                verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1
+                                                + static_cast<double>(i2)*off2
                                                 + static_cast<double>(i3)*off3, 0) );
                 va[v_idx(i3,i2,i1)]= &verts.back();
                 if (i1 == 0)    // y-z-plane
@@ -86,7 +86,7 @@ void BrickBuilderCL::build (MultiGridCL* mgp) const
                 if ( verts.back().IsOnBoundary() ) verts.back().BndSort();
             }
 
-    // Create edges by calling BuildEdges() an BuildFaces() for every new tetrahedron; 
+    // Create edges by calling BuildEdges() an BuildFaces() for every new tetrahedron;
     // this will search for all the ones needed and add missing edges automatically;
     // Create tetras
     MultiGridCL::EdgeLevelCont& edges= GetEdges(mgp)[0];
@@ -131,7 +131,7 @@ LBuilderCL::LBuilderCL(const Point3DCL& origin,
                        const Point3DCL& e1,
                        const Point3DCL& e2,
                        const Point3DCL& e3,
-                       Uint n1, Uint n2, Uint n3, 
+                       Uint n1, Uint n2, Uint n3,
                        Uint b1, Uint b2)
     :_orig(origin), _e1(e1), _e2(e2), _e3(e3), _n1(n1), _n2(n2), _n3(n3), _b1(b1), _b2(b2)
 {}
@@ -144,7 +144,7 @@ void LBuilderCL::build (MultiGridCL* mgp) const
     const double _dn3= static_cast<double>(_n3);
     const double _db1= static_cast<double>(_b1);
     const double _db2= static_cast<double>(_b2);
-    
+
     const double b1= _db1/_dn1;
     const double b2= _db2/_dn2;
 
@@ -159,12 +159,12 @@ void LBuilderCL::build (MultiGridCL* mgp) const
     Bnd.push_back( new AffineSquareCL(_orig+b2*_e2, _orig+_e2, _orig+b2*_e2+_e3) ); // e2-e3-plane
     Bnd.push_back( new AffineSquareCL(_orig+_e1, _orig+_e1+b2*_e2, _orig+_e1+_e3) ); // e2-e3-plane
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1+b2*_e2, _orig+b1*_e1+_e2, _orig+b1*_e1+b2*_e2+_e3) ); // e2-e3-plane
-    
+
     Bnd.push_back( new AffineSquareCL(_orig, _orig+b1*_e1, _orig+_e3) ); // e1-e3-plane
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1, _orig+_e1, _orig+b1*_e1+_e3) ); // e1-e3-plane
     Bnd.push_back( new AffineSquareCL(_orig+_e2, _orig+b1*_e1+_e2, _orig+_e2+_e3) ); // e1-e3-plane
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1+b2*_e2, _orig+_e1+b2*_e2, _orig+b1*_e1+b2*_e2+_e3) ); // e1-e3-plane
-    
+
     Bnd.push_back( new AffineSquareCL(_orig, _orig+b1*_e1, _orig+b2*_e2) ); // e1-e2-plane
     Bnd.push_back( new AffineSquareCL(_orig+b2*_e2, _orig+b1*_e1+b2*_e2, _orig+_e2) ); // e1-e2-plane
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1, _orig+_e1, _orig+b1*_e1+b2*_e2) ); // e1-e2-plane
@@ -187,8 +187,8 @@ void LBuilderCL::build (MultiGridCL* mgp) const
             for (Uint i1=0; i1<=_n1; ++i1)
                 if (i1<=_b1 || (i1>_b1 && i2<=_b2)) // stay in the L-shaped form
                 {
-                    verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1 
-                                                    + static_cast<double>(i2)*off2 
+                    verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1
+                                                    + static_cast<double>(i2)*off2
                                                     + static_cast<double>(i3)*off3,
                                               static_cast<Uint>(0)) );
                     va[v_idx(i3,i2,i1)]= &verts.back();
@@ -284,7 +284,7 @@ BBuilderCL::BBuilderCL(const Point3DCL& origin,
                        const Point3DCL& e1,
                        const Point3DCL& e2,
                        const Point3DCL& e3,
-                       Uint n1, Uint n2, Uint n3, 
+                       Uint n1, Uint n2, Uint n3,
                        Uint b1, Uint b2, Uint b3)
     :_orig(origin), _e1(e1), _e2(e2), _e3(e3), _n1(n1), _n2(n2), _n3(n3), _b1(b1), _b2(b2), _b3(b3)
 {}
@@ -298,7 +298,7 @@ void BBuilderCL::build (MultiGridCL* mgp) const
     const double _db1= static_cast<double>(_b1);
     const double _db2= static_cast<double>(_b2);
     const double _db3= static_cast<double>(_b3);
-    
+
     const double b1= _db1/_dn1;
     const double b2= _db2/_dn2;
     const double b3= _db3/_dn3;
@@ -329,7 +329,7 @@ void BBuilderCL::build (MultiGridCL* mgp) const
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1+_e2, _orig+_e1+_e2, _orig+b1*_e1+_e2+b3*_e3) );
     Bnd.push_back( new AffineSquareCL(_orig+_e2+b3*_e3, _orig+b1*_e1+_e2+b3*_e3, _orig+_e2+_e3) );
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1+b2*_e2+b3*_e3, _orig+_e1+b2*_e2+b3*_e3, _orig+b1*_e1+b2*_e2+_e3) );
-    // e1-e2-plane  
+    // e1-e2-plane
     Bnd.push_back( new AffineSquareCL(_orig, _orig+b1*_e1, _orig+b2*_e2) );
     Bnd.push_back( new AffineSquareCL(_orig+b2*_e2, _orig+b1*_e1+b2*_e2, _orig+_e2) );
     Bnd.push_back( new AffineSquareCL(_orig+b1*_e1, _orig+_e1, _orig+b1*_e1+b2*_e2) );
@@ -354,8 +354,8 @@ void BBuilderCL::build (MultiGridCL* mgp) const
             for (Uint i1=0; i1<=_n1; ++i1)
                 if (i3<=_b3 || i2<=_b2 || i1<=_b1 ) // stay in the domain
                 {
-                    verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1 
-                                                    + static_cast<double>(i2)*off2 
+                    verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1
+                                                    + static_cast<double>(i2)*off2
                                                     + static_cast<double>(i3)*off3,
                                               static_cast<Uint>(0)) );
                     va[v_idx(i3,i2,i1)]= &verts.back();
@@ -597,7 +597,7 @@ void TetraBuilderCL::build(MultiGridCL* mgp) const
     verts.back().AddBnd( BndPointCL( 3, std_basis<2>( 2)));
     verts.back().BndSort();
 
-    // Create edges by calling BuildEdges() an BuildFaces() for every new tetrahedron; 
+    // Create edges by calling BuildEdges() an BuildFaces() for every new tetrahedron;
     // this will search for all the ones needed and add missing edges automatically;
     // Create tetras
     MultiGridCL::EdgeLevelCont& edges= GetEdges(mgp)[0];
@@ -859,7 +859,7 @@ ReadMeshBuilderCL::ReadHeaderInfoHex()
     f_ >> std::dec; // TODO: Preserve Stream-State by copying.
     f_ >> c; // Eat whitespace and ).
     return ret;
-} 
+}
 
 void
 ReadMeshBuilderCL::ReadNode()

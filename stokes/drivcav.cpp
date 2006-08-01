@@ -15,7 +15,7 @@ class DrivenCavityCL
     static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
         { DROPS::SVectorCL<3> ret(0.0); return ret; }
     const double nu;
-    
+
     DrivenCavityCL() : nu(1.0) {}
 };
 
@@ -67,17 +67,17 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
     vidx2->Set( 3, 3, 0, 0);
     pidx1->Set( 1, 0, 0, 0);
     pidx2->Set( 1, 0, 0, 0);
-    
+
     TimerCL time;
 //    err_idx->Set( 0, 0, 0, 1);
     do
     {
 //        akt_glob_err= glob_err;
-        MarkLower(MG,0.25); 
-//        MarkAll(MG); 
+        MarkLower(MG,0.25);
+//        MarkAll(MG);
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);    
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);    
+        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
         MG.SizeInfo(std::cerr);
@@ -121,7 +121,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
         transp_mul( A->Data, v1->Data);
         time.Stop();
         std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
-/*        
+/*
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
             Adat << A->Data;   Bdat << B->Data;    bdat << b->Data;    cdat << c->Data;
@@ -133,7 +133,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
         IdxT unk= vert->Unknowns(A->RowIdx->Idx);
         std::cerr << vert->GetCoord() << " has index " << unk << std::endl;
-        std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;    
+        std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;
         std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
 */        Uint meth;
         std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
@@ -195,7 +195,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
         Stokes.pr_idx.swap( loc_pidx);
         Stokes.v.SetIdx( &Stokes.vel_idx);
         Stokes.p.SetIdx( &Stokes.pr_idx);
-        
+
         Stokes.v.Data= loc_v.Data;
         Stokes.p.Data= loc_p.Data;
     }
@@ -243,18 +243,18 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
 
-    typedef DROPS::StokesP2P1CL<DrivenCavityCL> 
+    typedef DROPS::StokesP2P1CL<DrivenCavityCL>
             StokesOnBrickCL;
     typedef StokesOnBrickCL MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, 2, 2, 2);
 //    DROPS::BBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2, 2);
 //    DROPS::LBuilderCL brick(null, e1, e2, e3, 4, 4, 4, 2, 2);
-    const bool IsNeumann[6]= 
+    const bool IsNeumann[6]=
         {false, false, false, false, false, false};
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]= 
+    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Null, &Null, &Stroem };
-        
+
     StokesOnBrickCL prob(brick, DrivenCavityCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     DROPS::RBColorMapperCL colormap;
@@ -291,8 +291,8 @@ int main (int argc, char** argv)
 
     DROPS::IdxDescCL tecIdx;
     tecIdx.Set( 1, 0, 0, 0);
-    prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);    
-std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;    
+    prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
+std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;
     std::ofstream v2d("data2D.dat");
     DROPS::TecPlot2DSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
         tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
@@ -311,7 +311,7 @@ std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;
 /*
     int nv= 2*cbrt( mg.GetVertices().size()) - 1; // cbrt = 3. Wurzel;
     int n= nv-1;  // = Anzahl der Bloecke in einer Dimension
-    
+
     typedef void* voidpointerT;
     void **data= new voidpointerT[nv*nv*nv];
     DROPS::Point3DCL coord;
@@ -355,7 +355,7 @@ std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;
                     << vel.val( *vp)[0] << "  " << vel.val( *vp)[2] << "  " << pr.val( *vp) <<'\n';
             }
         }
-        
+
     v2d.close();
     n= (nv+1)/2;
     std::ofstream v3d("data3D.dat");
