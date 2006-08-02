@@ -1,6 +1,6 @@
 //**************************************************************************
 // File:    ipdropsAD.cpp                                                  *
-// Content: ipdrops, test case for AD	                                   *
+// Content: ipdrops, test case for AD                                      *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
 //          IGPM RWTH Aachen                                               *
 // Version: 0.1                                                            *
@@ -84,7 +84,7 @@ class MatConnect
     double _CutPos;
     static int _nt, _MeshRefX, _MeshRefY, _MeshRefZ, _FacePtsYZ;
     int _Count;
-	
+
   public:
     MatConnect(double DeltaT, int time_steps,
       double xl, double yl, double zl,
@@ -111,20 +111,20 @@ class MatConnect
       // spatial/temporal boundaries get factor 1/2
       for (int i=0; i<FacePtsYZ; ++i)
       {
-        _weight[i]*= 0.5; 		// t=0
-        _weight[N-FacePtsYZ+i]*= 0.5; 	// t=nt*dt
+        _weight[i]*= 0.5;               // t=0
+        _weight[N-FacePtsYZ+i]*= 0.5;   // t=nt*dt
       }
       for (int it=0; it<=_nt; ++it)
         for (int iz=0; iz<=_MeshRefZ; ++iz)
         {
-          _weight[it*FacePtsYZ+iz*(_MeshRefY+1)]*= 0.5; 		// y=0
-          _weight[it*FacePtsYZ+iz*(_MeshRefY+1)+_MeshRefY]*= 0.5; 	// y=yl
+          _weight[it*FacePtsYZ+iz*(_MeshRefY+1)]*= 0.5;                 // y=0
+          _weight[it*FacePtsYZ+iz*(_MeshRefY+1)+_MeshRefY]*= 0.5;       // y=yl
         }
       for (int it=0; it<=_nt; ++it)
         for (int iy=0; iy<=_MeshRefY; ++iy)
         {
-          _weight[it*FacePtsYZ+                         +iy]*= 0.5;	// z=0
-          _weight[it*FacePtsYZ+(_MeshRefZ)*(_MeshRefY+1)+iy]*= 0.5; 	// z=zl
+          _weight[it*FacePtsYZ+                         +iy]*= 0.5;     // z=0
+          _weight[it*FacePtsYZ+(_MeshRefZ)*(_MeshRefY+1)+iy]*= 0.5;     // z=zl
         }
       std::cerr << "Quadrature weights initialized!\n";
     }
@@ -133,21 +133,21 @@ class MatConnect
     {
       switch(num)
       {
-      	case 0: // y-z plane
-      	{
-      	  int nY= static_cast<int>(p[1]/_SpIncrY+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
-      	  return nZ*(_MeshRefY+1) + nY;
-      	}
-      	case 1: // x-z plane
-      	{
-      	  int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
-      	  return nZ*(_MeshRefX+1) + nX;
-      	}
-      	case 2: default: // x-y plane
-      	{
-      	  int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nY= static_cast<int>(p[1]/_SpIncrY+0.5);
-      	  return nY*(_MeshRefX+1) + nX;
-      	}
+        case 0: // y-z plane
+        {
+          int nY= static_cast<int>(p[1]/_SpIncrY+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
+          return nZ*(_MeshRefY+1) + nY;
+        }
+        case 1: // x-z plane
+        {
+          int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nZ= static_cast<int>(p[2]/_SpIncrZ+0.5);
+          return nZ*(_MeshRefX+1) + nX;
+        }
+        case 2: default: // x-y plane
+        {
+          int nX= static_cast<int>(p[0]/_SpIncrX+0.5),  nY= static_cast<int>(p[1]/_SpIncrY+0.5);
+          return nY*(_MeshRefX+1) + nX;
+        }
       }
     }
 
@@ -157,14 +157,14 @@ class MatConnect
       const int nT= static_cast<int>(t/_DeltaT+0.5);
       switch(num)
       {
-      	case 0: case 1: // y-z plane
-      	  count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p);
+        case 0: case 1: // y-z plane
+          count= nT*(_MeshRefY+1)*(_MeshRefZ+1) + getLexNum<0>(p);
           break;
-      	case 2: case 3: // x-z plane
-      	  count= nT*(_MeshRefX+1)*(_MeshRefZ+1) + getLexNum<1>(p);
+        case 2: case 3: // x-z plane
+          count= nT*(_MeshRefX+1)*(_MeshRefZ+1) + getLexNum<1>(p);
           break;
-      	case 4: case 5: default: // x-y plane
-      	  count= nT*(_MeshRefX+1)*(_MeshRefY+1) + getLexNum<2>(p);
+        case 4: case 5: default: // x-y plane
+          count= nT*(_MeshRefX+1)*(_MeshRefY+1) + getLexNum<2>(p);
       }
 
       return (*_BndData[num])[count];
@@ -178,19 +178,19 @@ class MatConnect
         double d0, d1;
         switch (num)
         {
-      	  case 0: case 1: // y-z plane
+          case 0: case 1: // y-z plane
             c0= 1;            c1= 2;
-      	    n0= _MeshRefY;    n1= _MeshRefZ;
+            n0= _MeshRefY;    n1= _MeshRefZ;
             d0= _SpIncrY;     d1= _SpIncrZ;
             break;
-      	  case 2: case 3: // x-z plane
+          case 2: case 3: // x-z plane
             c0= 0;            c1= 2;
-      	    n0= _MeshRefX;    n1= _MeshRefZ;
+            n0= _MeshRefX;    n1= _MeshRefZ;
             d0= _SpIncrX;     d1= _SpIncrZ;
             break;
-      	  case 4: case 5: default: // x-y plane
+          case 4: case 5: default: // x-y plane
             c0= 0;            c1= 1;
-      	    n0= _MeshRefX;    n1= _MeshRefY;
+            n0= _MeshRefX;    n1= _MeshRefY;
             d0= _SpIncrX;     d1= _SpIncrY;
         }
         const int FacePts= (n0+1)*(n1+1);

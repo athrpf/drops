@@ -15,7 +15,7 @@ class PoissonCoeffCL
     static double q(const DROPS::Point3DCL&, double= 0.0) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double= 0.0)
         { return 128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
-	                                             + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
+                                                     + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
 //    static double f(const Point3DCL& p, double= 0.0) { return p[2]>0.49?-15.:0; }
 //    static double f(const DROPS::Point3DCL& p, double= 0.0) { return 0.0; }
 };
@@ -58,7 +58,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
             Poisson.b.SetIdx( &tmp.Idx);
             std::cerr << "Create System --->>> " << std::endl;
             Poisson.SetupSystem( tmp.A, Poisson.b);
-//	    std::cout << "P2: SetupSystem: A.Data =" << tmp.A.Data << std::endl;
+//            std::cout << "P2: SetupSystem: A.Data =" << tmp.A.Data << std::endl;
             std::cerr << "Create System <<<--- " << std::endl;
         }
         else
@@ -70,14 +70,14 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
         if(i!=0)
         {
             std::cerr << "Create Prolongation on Level " << lvl << std::endl;
-//	    Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
-	    SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
+//            Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
+            SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
        }
        c_idx= &tmp.Idx;
     }
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime()
-	      << " seconds. " << std::endl;
+              << " seconds. " << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
     const_MGDataIterCL finest= --MGData.end();
@@ -107,7 +107,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
         Poisson.CheckSolution(&::Lsg);
         resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
         std::cerr << "initial residuum: " << resid <<std::endl;
-	nit = 0;
+        nit = 0;
         time.Reset();
         do
         {
@@ -115,10 +115,10 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
             Poisson.CheckSolution(&::Lsg);
             old_resid= resid;
             resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
-	    nit = nit+1;
+            nit = nit+1;
             std::cerr << "iteration: " << nit
-	              << "\tresiduum: " << resid
-	              << "\tred. " << resid/old_resid << std::endl;
+                      << "\tresiduum: " << resid
+                      << "\tred. " << resid/old_resid << std::endl;
         } while ( resid > tol);
         time.Stop();
         std::cerr << " time = "<< time.GetTime() <<std::endl;

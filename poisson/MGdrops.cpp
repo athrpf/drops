@@ -13,7 +13,7 @@ class PoissonCoeffCL
     static double q(const DROPS::Point3DCL&, double= 0.0) { return 0.0; }
     static double f(const DROPS::Point3DCL& p, double= 0.0)
         { return 128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
-	                                             + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
+                                                     + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
 //    static double f(const Point3DCL& p, double= 0.0) { return p[2]>0.49?-15.:0; }
 };
 

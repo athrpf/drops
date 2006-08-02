@@ -319,7 +319,7 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
                 if (sit->GetEdge( i)->Unknowns.Exist()
                     && sit->GetEdge( i)->Unknowns.Exist( c_idx)
                     && sit->GetEdge( i)->Unknowns.Exist( f_idx))
-		    for (Uint k=0; k<ndofs; k++)
+                    for (Uint k=0; k<ndofs; k++)
                         mat(sit->GetEdge( i)->Unknowns( f_idx)+k,
                             sit->GetEdge( i)->Unknowns( c_idx)+k)= 1.0;
         }

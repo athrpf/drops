@@ -223,10 +223,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                       << "\tresidual: " << solver.GetResid()/**std::sqrt( err0)*/ << std::endl;
             break;
           }
-          case 4: {	
+          case 4: {
             std::cerr << "MG_Schur!\n";
             MGDataCL MGData;
-	    IdxDescCL* c_idx=0;
+            IdxDescCL* c_idx=0;
             time.Reset();
             time.Start();
             for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
@@ -242,12 +242,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                     std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
                     SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
 //                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-	        }
+                }
                 c_idx= &tmp.Idx;
             }
             time.Stop();
             std::cerr <<"MG-Setup: " << time.GetTime() << " seconds." << std::endl;
-	    MGDataCL& MGD = MGData;
+            MGDataCL& MGD = MGData;
             std::cerr << "Check MG-Data..." << std::endl;
             std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
             std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
@@ -264,7 +264,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           case 5: { // Stokes-MG-PMinres
             std::cerr << "Stokes-MG-PMINRES!\n";
             MGDataCL MGData;
-	    IdxDescCL* c_idx=0;
+            IdxDescCL* c_idx=0;
             time.Reset();
             time.Start();
             for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
@@ -280,7 +280,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                     std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
                     SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
 //                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-	        }
+                }
                 c_idx= &tmp.Idx;
             }
             time.Stop();
@@ -300,7 +300,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           case 6: { // MG-Uzawa
             std::cerr << "MG_Uzawa!\n";
             MGDataCL MGData;
-	    IdxDescCL* c_idx=0;
+            IdxDescCL* c_idx=0;
             time.Reset();
             time.Start();
             for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
@@ -316,12 +316,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
                     std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
                     SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
 //                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-	        }
+                }
                 c_idx= &tmp.Idx;
             }
             time.Stop();
             std::cerr <<"MG-Setup: " << time.GetTime() << " seconds." << std::endl;
-	    MGDataCL& MGD = MGData;
+            MGDataCL& MGD = MGData;
             std::cerr << "Check MG-Data..." << std::endl;
             std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
             std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;

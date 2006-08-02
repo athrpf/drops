@@ -150,13 +150,13 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
         tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
         if(lvl==MG.GetLastLevel())
         {
-	    Ltime.Reset();
+            Ltime.Reset();
             Poisson.x.SetIdx(&tmp.Idx);
             Poisson.b.SetIdx(&tmp.Idx);
             std::cerr << "Create System " << std::endl;
             Poisson.SetupSystem( tmp.A, Poisson.b);
 //            std::cerr << "A(0,0)= " << tmp.A.Data(unk,unk) << std::endl;
-	    Ltime.Stop();
+            Ltime.Stop();
         }
         else
         {
@@ -173,7 +173,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     }
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime()
-	      << " seconds including " << Ltime.GetTime() << " seconds for the largest system." << std::endl;
+              << " seconds including " << Ltime.GetTime() << " seconds for the largest system." << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
     const_MGDataIterCL finest= --MGData.end();

@@ -960,10 +960,10 @@ inline valT P2DiscCL::Quad( valT f[10], int i)
     if (i<4) // hat function on vert
     {
         // Q = sum c[i]*f[i]
-        // Gewichte c[i] = 1/420 	fuer vert i
-        //                 1/2520	fuer uebrige verts
-        //                -1/630        fuer an vert i anliegende edges
-        //                -1/420        fuer uebrige drei edges
+        // Gewichte c[i] = 1/420    fuer vert i
+        //                 1/2520   fuer uebrige verts
+        //                -1/630    fuer an vert i anliegende edges
+        //                -1/420    fuer uebrige drei edges
         result= f[i]*(1/420.-1./2520.);
         for (int k=0; k<4; ++k)
             sum+= f[k];
@@ -983,11 +983,11 @@ inline valT P2DiscCL::Quad( valT f[10], int i)
     {
         i-= 4;
         // Q = sum c[i]*f[i]
-        // Gewichte c[i] = 4/315 	fuer egde i
-        //                 1/315	fuer opposite edge
-        //                 2/315	fuer uebrige edges
-        //                -1/630    	fuer an edge i anliegende verts
-        //                -1/420        fuer uebrige zwei verts
+        // Gewichte c[i] = 4/315    fuer egde i
+        //                 1/315    fuer opposite edge
+        //                 2/315    fuer uebrige edges
+        //                -1/630    fuer an edge i anliegende verts
+        //                -1/420    fuer uebrige zwei verts
         result=  f[i+4]*4./315.;
         const int opp= OppEdge(i);
         result+= f[opp+4]/315.;

@@ -208,7 +208,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             // calculate defect:
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
-	    std::cerr << _iter << ": res = " << (_res= std::sqrt( dot( d, d) + dot( e, e)) ) << std::endl;
+            std::cerr << _iter << ": res = " << (_res= std::sqrt( dot( d, d) + dot( e, e)) ) << std::endl;
             if (_res < _tol || _iter>=_maxiter)
                 break;
 

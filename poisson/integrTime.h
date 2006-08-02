@@ -35,15 +35,15 @@ template <class PoissonT, class SolverT>
 class InstatPoissonThetaSchemeCL
 {
   private:
-    PoissonT& 	_Poisson;
-    SolverT& 	_solver;
-	
-    VecDescCL *_b, *_old_b;		// rhs
-    VecDescCL *_cplA, *_old_cplA;	// couplings with poisson matrix A
-    VecDescCL *_cplM, *_old_cplM;	// couplings with mass matrix M
-    VecDescCL *_cplU;			// couplings with convection matrix U
+    PoissonT&   _Poisson;
+    SolverT&    _solver;
+
+    VecDescCL *_b, *_old_b;             // rhs
+    VecDescCL *_cplA, *_old_cplA;       // couplings with poisson matrix A
+    VecDescCL *_cplM, *_old_cplM;       // couplings with mass matrix M
+    VecDescCL *_cplU;                   // couplings with convection matrix U
     VectorCL  _rhs;
-    MatrixCL  _Lmat;			// M + theta*dt*nu*A  = linear part
+    MatrixCL  _Lmat;                    // M + theta*dt*nu*A  = linear part
 
     double _theta, _dt, _nu;
     bool   _Convection;

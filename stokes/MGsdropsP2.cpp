@@ -115,7 +115,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
                   << vidx1->TriangLevel << std::endl;
-		
+
 /*     std::cout << "    altes                    vidx2 "
                << vidx2->TriangLevel       << ", "
                << vidx2->NumUnknownsVertex << ", "
@@ -187,9 +187,9 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
 // and        for Schur complement: MassMatrix
 
         time.Reset();
-	
-	MGDataCL MGData;
-	IdxDescCL* c_idx=0;
+
+        MGDataCL MGData;
+        IdxDescCL* c_idx=0;
         for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl)
         {
            MGData.push_back(MGLevelDataCL());
@@ -207,20 +207,20 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
                std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
                SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
 //               std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-	
+
            }
            c_idx= &tmp.Idx;
         }
-	MGDataCL& MGD = MGData;
-	
+        MGDataCL& MGD = MGData;
+
         MatDescCL M;
         M.SetIdx( pidx1, pidx1);
         Stokes.SetupPrMass( &M);
 
         time.Stop();
         std::cerr << "Setting up all preconditioners took " << time.GetTime()
-	          << " seconds. " << std::endl;
-		
+                  << " seconds. " << std::endl;
+
         std::cerr << "Check MG-Data..." << std::endl;
         std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
         std::cerr << "                end       " << MGData.end()->Idx.NumUnknowns << std::endl;

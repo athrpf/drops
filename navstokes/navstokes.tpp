@@ -102,28 +102,28 @@ template <class Coeff>
     for(MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
-	Point3DCL sum(0.0), diff, Diff[10];
+        Point3DCL sum(0.0), diff, Diff[10];
         const double absdet= sit->GetVolume()*6;
-	for(int i=0; i<4; ++i)
-	{
-	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
-	    sum+= fabs( diff);
-	}
-	sum/= 120;
-	diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
-	sum+= fabs( diff)*2./15.;
-	sum*= absdet;
-	L1_vel+= sum;
+        for(int i=0; i<4; ++i)
+        {
+            Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
+            sum+= fabs( diff);
+        }
+        sum/= 120;
+        diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
+        sum+= fabs( diff)*2./15.;
+        sum*= absdet;
+        L1_vel+= sum;
 
-	for(int i=4; i<10; ++i) // differences on edges
-	    Diff[i]= LsgVel( GetBaryCenter(*sit->GetEdge(i-4)), t) - vel.val(*sit->GetEdge(i-4));
+        for(int i=4; i<10; ++i) // differences on edges
+            Diff[i]= LsgVel( GetBaryCenter(*sit->GetEdge(i-4)), t) - vel.val(*sit->GetEdge(i-4));
 
-	for(int i=0; i<10; ++i)
-	{
-	    sum= P2DiscCL::Quad(Diff, i)*absdet;
-	    sum*= Diff[i];
-	    L2_vel+= sum;
-	}
+        for(int i=0; i<10; ++i)
+        {
+            sum= P2DiscCL::Quad(Diff, i)*absdet;
+            sum*= Diff[i];
+            L2_vel+= sum;
+        }
     }
     L2_vel= sqrt(L2_vel);
     std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
@@ -159,10 +159,10 @@ template <class Coeff>
         diff= std::fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
         norm2+= diff*diff;
         if (diff>maxdiff)
-	{
+        {
             maxdiff= diff;
-	    maxvert= &*sit;
-	}
+            maxvert= &*sit;
+        }
         if (diff<mindiff)
             mindiff= diff;
     }
@@ -187,7 +187,6 @@ template <class Coeff>
         L1_pr+= sum1 * sit->GetVolume()*6.;
     }
     L2_pr= std::sqrt( L2_pr);
-
 
     std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
               << "w-2-Norm= " << norm2 << std::endl

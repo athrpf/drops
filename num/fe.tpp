@@ -736,14 +736,15 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
         if ( !_bnd->IsOnDirBnd(*sit) )
         {
 // @@@ Handle missing unknowns: Do it right here?
-if (sit->Unknowns.Exist(old_idx))
-            sol.SetDoF(*sit, old_sol.val(*sit));
+            if (sit->Unknowns.Exist(old_idx))
+                sol.SetDoF(*sit, old_sol.val(*sit));
 //else they were set in the for-loop before !
             ++counter1;
         }
 
-        std::cerr << "Interpolate: " << counter1 << " vertex-Dof of " << old_sol.GetSolution()->Data.size() << " copied, "
-                                     << counter2 << " new Mid-vertex-DoF interpolated." << std::endl;
+    std::cerr << "Interpolate: " << counter1 << " vertex-DoF of "
+              << old_sol.GetSolution()->Data.size() << " copied, "
+              << counter2 << " new Mid-vertex-DoF interpolated." << std::endl;
 }
 
 

@@ -181,7 +181,7 @@ int main (int argc, char** argv)
     maxiter= std::atoi(argv[4]);
     std::cerr << "Omega: " << omega << " rel_red: " << rel_red
               << " markratio: " << markratio << " maxiter: " << maxiter
-	      << std::endl;
+              << std::endl;
     DROPS::MarkAll(mg);
     DROPS::Strategy(prob, omega, rel_red, markratio, maxiter);
     std::cerr << "hallo" << std::endl;

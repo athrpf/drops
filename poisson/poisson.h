@@ -99,8 +99,8 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
-		const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(1) {}
-		
+                const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(1) {}
+
     // numbering of unknowns
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData, match); }

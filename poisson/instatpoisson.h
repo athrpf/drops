@@ -21,8 +21,8 @@ namespace DROPS
 
 typedef BndSegDataCL<double> InstatPoissonBndSegDataCL;
 typedef BndDataCL<double>    InstatPoissonBndDataCL;
-typedef double	(*scalar_instat_fun_ptr)( const Point3DCL&, double);
-typedef double 	(*scalar_fun_ptr)( const Point3DCL&);
+typedef double  (*scalar_instat_fun_ptr)( const Point3DCL&, double);
+typedef double  (*scalar_fun_ptr)( const Point3DCL&);
 
 class StripTimeCL
 // converts time dependent function to one, that is time independent.
@@ -61,7 +61,7 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
-    double     	t;        // time
+    double    t;        // time
 
     IdxDescCL idx;
     VecDescCL x;
@@ -69,21 +69,21 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     MatDescCL A;
     MatDescCL M;
     MatDescCL U;
-	
+
 
     InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
         : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( 1) {}
-				
+
     // numbering of unknowns
     void CreateNumbering( Uint level, IdxDescCL* idx);
     void DeleteNumbering( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
-		
+
     // set up matrices (M is time independent)
     void SetupInstatSystem( MatDescCL& A, MatDescCL& M, double tA) const;
     // set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MatDescCL& U, VecDescCL& vU, double t) const;
-		
+
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
     // If the function is called with the same vector for some arguments,
     // the vector will contain the sum of the results after the call
@@ -96,14 +96,14 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 
     // Set initial value
     void Init( VecDescCL&, scalar_instat_fun_ptr, double t0= 0.) const;
-		
+
     // check computed solution etc.
     void CheckSolution( const VecDescCL&, scalar_instat_fun_ptr, double) const;
     void CheckSolution( scalar_instat_fun_ptr Lsg, double t) const { CheckSolution(x, Lsg, t); }
 
     // void GetDiscError ( const VecDescCL&, scalar_instat_fun_ptr, double) const;
     // void GetDiscError ( scalar_instat_fun_ptr Lsg, double t) const { GetDiscError(x, Lsg, t); }
-	
+
 
     DiscSolCL GetSolution() const
       { return DiscSolCL(&x, &GetBndData(), &GetMG(), t); }

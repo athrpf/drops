@@ -88,7 +88,7 @@ class NeuValCL
 template<class Coeff>
 void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   double time_steps)
-{	
+{
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
 
   IdxDescCL& idx= Poisson.idx;
@@ -99,7 +99,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
 
   VecDescCL cplA;
   VecDescCL cplM;
-	
+
   // Daten fuer das PCG-Verfahren
   double tol= 1.0e-7;
   int max_iter= 500;

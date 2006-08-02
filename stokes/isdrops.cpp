@@ -1114,13 +1114,13 @@ int main (int argc, char** argv)
     std::ios::sync_with_stdio(false);
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
-				DROPS::std_basis<3>(2),
-				DROPS::std_basis<3>(3),
-				2,2,2);
+                                DROPS::std_basis<3>(2),
+                                DROPS::std_basis<3>(3),
+                                2,2,2);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
-	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
+          &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
 
     int stokes_maxiter= std::atoi( argv[1]);
     double stokes_tol= std::atof( argv[2]);
@@ -1147,8 +1147,7 @@ int main (int argc, char** argv)
     std::cerr << "f_level: " << f_level << ", ";
     std::cerr << "method: " << method << std::endl;
 
-    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL>
-    	    NSOnBrickCL;
+    typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL> NSOnBrickCL;
     typedef NSOnBrickCL MyStokesCL;
     MyStokesCL prob( brick, MyPdeCL::StokesCoeffCL(),
                      DROPS::StokesBndDataCL( 6, IsNeumann, bnd_fun));

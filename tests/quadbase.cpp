@@ -305,9 +305,9 @@ int main ()
   try {
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
-				DROPS::std_basis<3>(2),
-				DROPS::std_basis<3>(3),
-				40, 40, 40);
+                                DROPS::std_basis<3>(2),
+                                DROPS::std_basis<3>(3),
+                                40, 40, 40);
     DROPS::MultiGridCL mg( brick);
     DROPS::IdxDescCL idx( 1,1,0,0);
     idx.TriangLevel= 0;

@@ -143,20 +143,20 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         M.SetIdx( pidx1, pidx1);
         NS.SetupPrMass( &M);
         AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
-	                                             2000, poi_maxiter, poi_tol, uzawa_red);
+                                                     2000, poi_maxiter, poi_tol, uzawa_red);
 //        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
-//	                                            2000, poi_maxiter, poi_tol, uzawa_red);
+//                                                  2000, poi_maxiter, poi_tol, uzawa_red);
 //        AFPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
-//	                                             2000, poi_maxiter, poi_tol, uzawa_red);
+//                                                   2000, poi_maxiter, poi_tol, uzawa_red);
 //        FPDeCo_Schur_PCG_CL<NavStokesCL> statsolver(NS, fp_maxiter, fp_tol,
-//	                                            2000, poi_maxiter, poi_tol, uzawa_red);
+//                                                  2000, poi_maxiter, poi_tol, uzawa_red);
         VelVecDescCL old_v1( vidx1);
-	old_v1.Data= v1->Data;
-	VelVecDescCL rhsN( vidx1);
-	NS.SetupNonlinear( N, v1, &rhsN);
+        old_v1.Data= v1->Data;
+        VelVecDescCL rhsN( vidx1);
+        NS.SetupNonlinear( N, v1, &rhsN);
         statsolver.Solve( A->Data, B->Data, *v1, p1->Data, b->Data, rhsN, c->Data, 1.);
 
-/*	
+/*
         VectorCL d( vidx1->NumUnknowns), e( pidx1->NumUnknowns),
                  w( vidx1->NumUnknowns), q( pidx1->NumUnknowns);
         VelVecDescCL rhsN( vidx1), v_omw( vidx1);
@@ -213,8 +213,8 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 
         time.Stop();
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
-	NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
-	MarkAll(MG);
+        NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
+        MarkAll(MG);
 
         A->Reset();
         B->Reset();

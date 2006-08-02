@@ -191,12 +191,12 @@ void TestExactness()
         for (degy= 0; degy + degz <= 5; ++degy) {
             for (degx= 0; degx + degy + degz <= 5; ++degx) {
                 q.assign( s, f);
-		std::cout << "degz: " << degz << "\tdegy: " << degy << "\tdegx: " << degx
+                std::cout << "degz: " << degz << "\tdegy: " << degy << "\tdegx: " << degx
                           << "\t\tI-Q_h: " << exactint[c++] - q.quad( 1.)
                           << "\tIntegral: " << q.quad( 1.) <<  "             ";
-		for (size_t i= 0; i < q.size(); ++i)
-        	    std::cout << '\t' << q[i];
-		std::cout << std::endl;
+                for (size_t i= 0; i < q.size(); ++i)
+                    std::cout << '\t' << q[i];
+                std::cout << std::endl;
             }
         }
     }
@@ -240,9 +240,9 @@ int main ()
 
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
-				DROPS::std_basis<3>(2),
-				DROPS::std_basis<3>(3),
-				40, 40, 40);
+                                DROPS::std_basis<3>(2),
+                                DROPS::std_basis<3>(3),
+                                40, 40, 40);
     DROPS::MultiGridCL mg( brick);
     DROPS::IdxDescCL idx( 1,1,0,0);
     idx.TriangLevel= 0;

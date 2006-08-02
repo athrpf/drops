@@ -15,10 +15,10 @@ struct InstatNSCL
     static DROPS::SVectorCL<3> LsgVel(const DROPS::Point3DCL& p, double t)
     {
         DROPS::SVectorCL<3> ret;
-	ret[0]= (2.*t - 1.)*p[0];
-	ret[1]= (2.*t - 1.)*p[1];
-	ret[2]= (2. - 4.*t)*p[2];
-	return ret;	
+        ret[0]= (2.*t - 1.)*p[0];
+        ret[1]= (2.*t - 1.)*p[1];
+        ret[2]= (2. - 4.*t)*p[2];
+        return ret;
     }
 
     // int_{x=0..1, y=0..1,z=0..1} p(x,y,z,t) dx dy dz = 0 for all t.
@@ -55,11 +55,11 @@ struct InstatNSCL
         static DROPS::SVectorCL<3> f(const DROPS::Point3DCL& p, double t)
         {
             DROPS::SVectorCL<3> ret;
-	    ret[0]= (4.*t*t - 6.*t + 4.)*p[0];
-	    ret[1]= (4.*t*t - 6.*t + 4.)*p[1];
-	    ret[2]= (16.*t*t -18.*t + 1.)*p[2];
-	    return ret;
-	}
+            ret[0]= (4.*t*t - 6.*t + 4.)*p[0];
+            ret[1]= (4.*t*t - 6.*t + 4.)*p[1];
+            ret[2]= (16.*t*t -18.*t + 1.)*p[2];
+            return ret;
+        }
         const double nu;
 
         StokesCoeffCL() : nu(1.0) {}
@@ -483,19 +483,19 @@ int main (int argc, char** argv)
     if (argc!=12)
     {
         std::cerr << "Usage (insadrops):  <fp_tol> <fp_maxiter> "
-	          << "<deco_red> <stokes_maxiter> <poi_tol> <poi_maxiter> "
+                  << "<deco_red> <stokes_maxiter> <poi_tol> <poi_maxiter> "
                   << "<theta> <num_timestep> <shell_width> <c_level> <f_level>" << std::endl;
         return 1;
     }
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
-				DROPS::std_basis<3>(2),
-				DROPS::std_basis<3>(3),
-				2,2,2);
+                                DROPS::std_basis<3>(2),
+                                DROPS::std_basis<3>(3),
+                                2,2,2);
     const bool IsNeumann[6]= {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel,
-	  &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
+          &MyPdeCL::LsgVel, &MyPdeCL::LsgVel, &MyPdeCL::LsgVel };
     DROPS::RBColorMapperCL colormap;
 
     double fp_tol= std::atof(argv[1]);
@@ -522,8 +522,7 @@ int main (int argc, char** argv)
     std::cerr << "c_level: " << c_level << ", ";
     std::cerr << "f_level: " << f_level << std::endl;
 
-    typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL>
-    	    NSOnBrickCL;
+    typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> NSOnBrickCL;
     typedef NSOnBrickCL MyNavierStokesCL;
     MyNavierStokesCL prob(brick, MyPdeCL::StokesCoeffCL(),
                           DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
@@ -536,7 +535,7 @@ int main (int argc, char** argv)
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("navstokespr.off");
     double min= prob.p.Data.min(),
-    	   max= prob.p.Data.max();
+           max= prob.p.Data.max();
     fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
     fil.close();
 
@@ -545,12 +544,12 @@ int main (int argc, char** argv)
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
     std::ofstream v2d("navstokestec2D.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-    	tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 2, 0.5); // cutplane is z=0.5
+        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 2, 0.5); // cutplane is z=0.5
     v2d << tecplot2d;
     v2d.close();
     v2d.open("navstokestec2D2.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-    	tecplot2d2( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is z=0.5
+        tecplot2d2( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is z=0.5
     v2d << tecplot2d2;
     v2d.close();
     return 0;

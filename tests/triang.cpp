@@ -88,9 +88,9 @@ int main ()
   try {
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
-				DROPS::std_basis<3>(2),
-				DROPS::std_basis<3>(3),
-				30, 30, 30);
+                                DROPS::std_basis<3>(2),
+                                DROPS::std_basis<3>(3),
+                                30, 30, 30);
     DROPS::MultiGridCL mg( brick);
     mg.SizeInfo( std::cout);
     MarkDrop( mg, -1);
