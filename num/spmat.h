@@ -232,7 +232,7 @@ public:
                     first= middle+1;
                 else if (mval==j)
                     return _mat->_val[middle];
-	        else
+                else
                     last= middle;
             }*/
         }
