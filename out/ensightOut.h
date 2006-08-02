@@ -426,7 +426,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
         {
             os << std::setw(12) << v.val( *it);
             if ( (++cnt)==6)
-            {                                                   // Ensight expects six real numbers per line
+            { // Ensight expects six real numbers per line
                 cnt= 0;
                 os << '\n';
             }
@@ -437,7 +437,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
         {
             os << std::setw(12) << v.val( *it, 0.5);
             if ( (++cnt)==6)
-            {                                                    // Ensight expects six real numbers per line
+            { // Ensight expects six real numbers per line
                 cnt= 0;
                 os << '\n';
             }
@@ -501,7 +501,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
             for (int i=0; i<3; ++i)
                 os << std::setw(12) << v.val( *it)[i];
             if ( (cnt+=3)==6)
-            {                                                       // Ensight expects six real numbers per line
+            { // Ensight expects six real numbers per line
                  cnt= 0;
                  os << '\n';
             }
@@ -512,7 +512,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
             for (int i=0; i<3; ++i)
                 os << std::setw(12) << v.val( *it)[i];
             if ( (cnt+=3)==6)
-            {                                                   // Ensight expects six real numbers per line
+            { // Ensight expects six real numbers per line
                  cnt= 0;
                  os << '\n';
             }
