@@ -33,15 +33,16 @@ template <typename T>
 class DMatrixCL
 {
   private:
-    size_t Cols_;
+    size_t Rows_;
     T* Array_;
 
   public:
-    DMatrixCL(size_t row, size_t col) : Cols_(col), Array_(new T[row*col]) {}
+    DMatrixCL(size_t row, size_t col) : Rows_(row), Array_(new T[row*col]) {}
     ~DMatrixCL() { delete[] Array_; }
 
-    T& operator() (size_t row, size_t col)       { return Array_[row*Cols_+col]; }
-    T  operator() (size_t row, size_t col) const { return Array_[row*Cols_+col]; }
+    T& operator() (size_t row, size_t col)       { return Array_[col*Rows_+row]; }
+    T  operator() (size_t row, size_t col) const { return Array_[col*Rows_+row]; }
+    T* GetCol     (size_t col)                   { return Array_+col*Rows_; }
 };
 
 
