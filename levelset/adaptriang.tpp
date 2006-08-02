@@ -53,13 +53,13 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
 
         const bool vzw= num_pos!=0 && num_pos!=10; // change of sign
         const Uint l= it->GetLevel();
-	// In the shell:      level should be f_level_.
+        // In the shell:      level should be f_level_.
         // Outside the shell: level should be c_level_.
         const Uint soll_level= (d<=width_ || vzw) ? f_level_ : c_level_;
 
         if (l !=  soll_level)
-	{ // tetra will be marked for refinement/removement
-	    modified= true;
+        { // tetra will be marked for refinement/removement
+            modified= true;
             if (l < soll_level)
                 it->SetRegRefMark();
             else // l > soll_level
@@ -67,7 +67,7 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
         }
     }
     if (modified)
-	mg_.Refine();
+        mg_.Refine();
     return modified;
 }
 
@@ -85,22 +85,22 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
                  *v2= &loc_v;
     VecDescCL    *p1= &NS.p,
                  *p2= &loc_p,
-		 *l1= &lset.Phi,
-		 *l2= &loc_l;
+                 *l1= &lset.Phi,
+                 *l2= &loc_l;
     IdxDescCL  loc_vidx( 3, 3), loc_pidx( 1), loc_lidx( 1, 1);
     IdxDescCL  *vidx1= v1->RowIdx,
                *vidx2= &loc_vidx,
-	       *pidx1= p1->RowIdx,
-	       *pidx2= &loc_pidx,
-	       *lidx1= l1->RowIdx,
-	       *lidx2= &loc_lidx;
+               *pidx1= p1->RowIdx,
+               *pidx2= &loc_pidx,
+               *lidx1= l1->RowIdx,
+               *lidx2= &loc_lidx;
     modified_= false;
     const Uint min_ref_num= f_level_ - c_level_;
     Uint i, LastLevel= mg_.GetLastLevel();
 
     for (i=0; i<2*min_ref_num; ++i)
     {
-	LevelsetP2CL::const_DiscSolCL sol= lset.GetSolution( *l1);
+        LevelsetP2CL::const_DiscSolCL sol= lset.GetSolution( *l1);
         if (!ModifyGridStep(sol))
             break;
         LastLevel= mg_.GetLastLevel();
@@ -147,14 +147,14 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     {
         NS.vel_idx.swap( loc_vidx);
         NS.pr_idx.swap( loc_pidx);
-	lset.idx.swap( loc_lidx);
+        lset.idx.swap( loc_lidx);
         NS.v.SetIdx( &NS.vel_idx);
         NS.p.SetIdx( &NS.pr_idx);
-	lset.Phi.SetIdx( &lset.idx);
+        lset.Phi.SetIdx( &lset.idx);
 
         NS.v.Data= loc_v.Data;
         NS.p.Data= loc_p.Data;
-	lset.Phi.Data= loc_l.Data;
+        lset.Phi.Data= loc_l.Data;
     }
     time.Stop();
     std::cout << "UpdateTriang: " << i

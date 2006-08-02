@@ -444,7 +444,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
           case schurfullMG:        cpl7.DoStep( C.cpl_iter); break;
           case inexactuzawafullMG: cpl8.DoStep( C.cpl_iter); break;
           case minresfullMG:       cpl9.DoStep( C.cpl_iter); break;
-	}
+        }
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)
         {

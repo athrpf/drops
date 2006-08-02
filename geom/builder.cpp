@@ -1201,13 +1201,13 @@ ReadMeshBuilderCL::Symbolic(const Uint id)
 BndCondT ReadMeshBuilderCL::MapBC( Uint gambit_bc)
 {
     switch(gambit_bc)
-    { // gambit code: drops bc		gambit name
-      case  3: return WallBC;		// wall
-      case  4: return NatBC;		// pressure-inlet
-      case 10: return DirBC;		// velocity-inlet
-      case 36: return OutflowBC;	// outflow
-      case 12: return Per1BC;		// periodic
-      case  8: return Per2BC;		// periodic-shadow
+    { // gambit code: drops bc          gambit name
+      case  3: return WallBC;           // wall
+      case  4: return NatBC;            // pressure-inlet
+      case 10: return DirBC;            // velocity-inlet
+      case 36: return OutflowBC;        // outflow
+      case 12: return Per1BC;           // periodic
+      case  8: return Per2BC;           // periodic-shadow
       default: return UndefinedBC_;
     }
 }

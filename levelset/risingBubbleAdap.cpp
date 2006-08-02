@@ -132,8 +132,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
         ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
         ensight.Commit();
-	if (step<num_steps) // omit in last step
-	{
+        if (step<num_steps) // omit in last step
+        {
 //            LevelsetP2CL::DiscSolCL sol= lset.GetSolution();
             lset.DeleteNumbering( &ens_idx);
             adap.UpdateTriang( Stokes, lset);
@@ -151,7 +151,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
                 prM.SetIdx( pidx, pidx);
                 Stokes.SetupPrMass( &prM, lset);
             }
-	}
+        }
     }
     ensight.CaseEnd();
 

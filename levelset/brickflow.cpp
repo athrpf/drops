@@ -336,7 +336,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                     std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
                 }
                 ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
-                ensight.putVector( datvec, Stokes.GetVelSolution(),	(step+0.1)*C.dt);
+                ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
                 ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
                 ensight.Commit();
             }
@@ -397,8 +397,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                     lset.Phi.Data+= dphi;
                     std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
                 }
-                ensight.putScalar( datpr, Stokes.GetPrSolution(),	(step+0.1)*C.dt);
-                ensight.putVector( datvec, Stokes.GetVelSolution(),	(step+0.1)*C.dt);
+                ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
+                ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
                 ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
                 ensight.Commit();
             }
@@ -473,7 +473,7 @@ int main (int argc, char** argv)
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
-	
+
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

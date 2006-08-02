@@ -295,7 +295,7 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
-	
+
     for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl),
         end= MG_.GetTriangVertexEnd(lvl); it!=end; ++it)
     {
@@ -374,7 +374,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
             grad_Psi[i]= Point3DCL();  // init with zero
             for (int l=0; l<10; ++l)
                 grad_Psi[i]+= Psi[ Numb[l]] * Grad[l][i];
-	    w_loc[i]= (Sign_Phi[i]/grad_Psi[i].norm() )*grad_Psi[i];
+            w_loc[i]= (Sign_Phi[i]/grad_Psi[i].norm() )*grad_Psi[i];
         }
         // values in barycenter
         Point3DCL gr= 0.25*(grad_Psi[0]+grad_Psi[1]+grad_Psi[2]+grad_Psi[3]);

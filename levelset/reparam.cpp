@@ -72,7 +72,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
         case 0:  lset.Init( Phi0); break;
         case 1:  lset.Init( Phi1); break;
         case 2:  lset.Init( Phi2); break;
-        default: lset.Init( DistFct);	
+        default: lset.Init( DistFct);
     }
     lset.SetupSystem( prob.GetVelSolution() );
 
