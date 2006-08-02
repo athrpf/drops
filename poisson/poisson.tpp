@@ -608,7 +608,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
 
     std::cerr << "entering SetupSystem: " << Amat.ColIdx->NumUnknowns
               << " unknowns, " << std::endl;
-	
+
 // fill value part of matrices
     SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
     SMatrixCL<3,3> T;
@@ -624,7 +624,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
         GetTrafoTr(T,det,*sit);
         MakeGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
-	
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -633,12 +633,12 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                 Numb[i]= sit->GetVertex(i)->Unknowns(idx);
         }
 
-	for(int i=0; i<6; ++i)
+        for(int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
         }
-	
+
         // compute all couplings between HatFunctions on edges and verts
         for(int i=0; i<10; ++i)
             for(int j=0; j<=i; ++j)
@@ -704,7 +704,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
 
     std::cerr << "entering SetupStiffnessMatrix: " << Amat.ColIdx->NumUnknowns
               << " unknowns, " << std::endl;
-	
+
 // fill value part of matrices
     SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
     SMatrixCL<3,3> T;
@@ -719,7 +719,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
         GetTrafoTr(T,det,*sit);
         MakeGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
-	
+
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
@@ -728,7 +728,7 @@ void PoissonP2CL<Coeff>::SetupStiffnessMatrix(MatDescCL& Amat) const
                 Numb[i]= sit->GetVertex(i)->Unknowns(idx);
         }
 
-	for(int i=0; i<6; ++i)
+        for(int i=0; i<6; ++i)
         {
             if (!(IsOnDirBnd[i+4]= _BndData.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);

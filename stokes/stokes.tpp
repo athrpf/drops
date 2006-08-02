@@ -808,7 +808,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
             for (Uint k=0; k<3; ++k)
             {
                 Point3DCL tmpD;
-		tmpD[0]= -JacobiVel_T(k, 0); tmpD[1]= -JacobiVel_T(k, 1); tmpD[2]= -JacobiVel_T(k, 2);
+                tmpD[0]= -JacobiVel_T(k, 0); tmpD[1]= -JacobiVel_T(k, 1); tmpD[2]= -JacobiVel_T(k, 2);
                 for (Uint j=0; j<10; ++j)
                     tmpD+= veldof[j][k]*Db_xi[j];
                 Dvals[i]+= inner_prod(tmpD, tmpD);
@@ -930,31 +930,31 @@ template <class Coeff>
     for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
-	Point3DCL sum(0.0), diff, Diff[10];
+        Point3DCL sum(0.0), diff, Diff[10];
         const double absdet= sit->GetVolume()*6;
 
-	for(int i=0; i<4; ++i)
-	{
-	    Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
-	    diff[0]= std::fabs(diff[0]); diff[1]= std::fabs(diff[1]); diff[2]= std::fabs(diff[2]);
-	    sum+= diff;
-	}
-	sum/= 120;
-	diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
-	diff[0]= std::fabs(diff[0]); diff[1]= std::fabs(diff[1]); diff[2]= std::fabs(diff[2]);
-	sum+= diff*2./15.;
-	sum*= absdet;
-	L1_vel+= sum;
+        for(int i=0; i<4; ++i)
+        {
+            Diff[i]= diff= LsgVel(sit->GetVertex(i)->GetCoord(), t) - vel.val(*sit->GetVertex(i));
+            diff[0]= std::fabs(diff[0]); diff[1]= std::fabs(diff[1]); diff[2]= std::fabs(diff[2]);
+            sum+= diff;
+        }
+        sum/= 120;
+        diff= LsgVel(GetBaryCenter(*sit), t) - vel.val(*sit, 0.25, 0.25, 0.25);
+        diff[0]= std::fabs(diff[0]); diff[1]= std::fabs(diff[1]); diff[2]= std::fabs(diff[2]);
+        sum+= diff*2./15.;
+        sum*= absdet;
+        L1_vel+= sum;
 
-	for(int i=4; i<10; ++i) // differences on edges
-	    Diff[i]= LsgVel( GetBaryCenter(*sit->GetEdge(i-4)), t) - vel.val(*sit->GetEdge(i-4));
+        for(int i=4; i<10; ++i) // differences on edges
+            Diff[i]= LsgVel( GetBaryCenter(*sit->GetEdge(i-4)), t) - vel.val(*sit->GetEdge(i-4));
 
-	for(int i=0; i<10; ++i)
-	{
-	    sum= P2DiscCL::Quad(Diff, i)*absdet;
-	    sum*= Diff[i];
-	    L2_vel+= sum;
-	}
+        for(int i=0; i<10; ++i)
+        {
+            sum= P2DiscCL::Quad(Diff, i)*absdet;
+            sum*= Diff[i];
+            L2_vel+= sum;
+        }
     }
     L2_vel= sqrt(L2_vel);
     std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
@@ -991,7 +991,7 @@ template <class Coeff>
         norm2+= diff*diff;
         if (diff>maxdiff) {
             maxdiff= diff;
-	    maxvert= &*sit;
+            maxvert= &*sit;
         }
         if (diff<mindiff)
             mindiff= diff;

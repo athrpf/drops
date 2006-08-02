@@ -189,8 +189,8 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
 // Sets up the stiffness matrix and the mass matrix
 {
   MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
-	MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
-	
+  MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
+
   const Uint lvl = Amat.GetRowLevel();
   const Uint idx = Amat.RowIdx->GetIdx();
 
@@ -201,7 +201,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   double absdet;
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
-	
+
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
     send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
@@ -224,7 +224,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
       }
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
     }
-		
+
     for(int i=0; i<4; ++i)    // assemble row i
       if (sit->GetVertex(i)->Unknowns.Exist(idx))  // vertex i is not on a Dirichlet boundary
       {
@@ -249,7 +249,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
 {
   vU.Clear();
   MatrixBuilderCL U( &Umat.Data, Umat.RowIdx->NumUnknowns, Umat.ColIdx->NumUnknowns);
-	
+
   const Uint lvl = Umat.GetRowLevel();
   const Uint idx = Umat.RowIdx->GetIdx();
 
