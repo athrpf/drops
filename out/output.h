@@ -265,7 +265,7 @@ class MapleSolOutCL: public MGOutCL
 
     MapleSolOutCL(const MultiGridCL& mg, const DiscVelT& v, const DiscPrT& p,
                   int TriLevel= -1, const PlaneCL& pl= PlaneCL() ,
-		  Maple3DOptionCL opt=Maple3DOptionCL(), double scale= 1.0, int gr= 0)
+                  Maple3DOptionCL opt=Maple3DOptionCL(), double scale= 1.0, int gr= 0)
       : MGOutCL(&mg), _level(TriLevel<0 ? mg.GetLastLevel() : TriLevel),
         _plane(pl), _options(opt), _scalevec(scale), _v( v), _p( p), gridlines(gr)
     {}
