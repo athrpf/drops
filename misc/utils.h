@@ -162,6 +162,14 @@ inline bool is_in_if( In beg, In end, Pred p )
 }
 
 
+/// \brief Iterate through a STL-container and do an operation if a condition holds
+template <class In, class Op, class Pred>
+void for_each_if( In beg, In end, Op f, Pred p )
+{
+    while (beg!=end) { if (p(*beg)) f(*beg); ++beg; }
+}
+
+
 /// \brief Functor, that converts a reference to a pointer.
 ///
 /// Useful for some STL-like algorithms.
