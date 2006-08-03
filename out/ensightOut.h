@@ -302,7 +302,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
             }
         }
      }
-     else           //hier started die normale ASCII-Ausgabe
+     else // hier startet die normale ASCII-Ausgabe
      {
          os.flags(std::ios_base::scientific);
          os.precision(5);
