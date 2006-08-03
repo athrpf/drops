@@ -165,7 +165,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
     InexactUzawaCL(ApcT& Apc, SpcT& Spc, int outer_iter, double outer_tol,
         double innerreduction= 0.3, int innermaxiter= 500)
         :SolverBaseCL( outer_iter, outer_tol),
-	 Apc_( Apc), Spc_( Spc), innerreduction_( innerreduction), innermaxiter_( innermaxiter)
+         Apc_( Apc), Spc_( Spc), innerreduction_( innerreduction), innermaxiter_( innermaxiter)
     {}
     inline void
     Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
@@ -561,7 +561,7 @@ class PMResSPCL : public SolverBaseCL
         _res=  _tol;
         _iter= _maxiter;
         PMINRES_SP( A, B, v, p, b, c, *q_, _iter, _res);
-	std::cerr << "PMResSPCL::Solve: iterations: " << GetIter() << "\tresidual: " << GetResid() << '\n';
+        std::cerr << "PMResSPCL::Solve: iterations: " << GetIter() << "\tresidual: " << GetResid() << '\n';
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c, int& numIter, double& resid) const
@@ -676,8 +676,8 @@ class Minres_SSOR_IS_PreCL
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
         for (Uint i=0; i<iter_vel_; ++i)
-	    Apc_.Apply( A, v, b);
-	Spc_.Apply( B, p, c); // B is just a dummy.
+            Apc_.Apply( A, v, b);
+        Spc_.Apply( B, p, c); // B is just a dummy.
     }
 };
 
