@@ -80,11 +80,13 @@ class GeomMGOutCL : public MGOutCL
     Uint   _level;
     bool   _onlyBnd;
     double _explode;
+    double _procExplode;
 
   public:
-    GeomMGOutCL (const MultiGridCL& MG, int TriLevel=-1, bool onlyBnd=false, double explode=0.5)
+    GeomMGOutCL (const MultiGridCL& MG, int TriLevel=-1, bool onlyBnd=false,
+                 double explode=0, double procExplode=0.5)
         : MGOutCL(&MG), _level( TriLevel<0 ? MG.GetLastLevel() : TriLevel ),
-          _onlyBnd(onlyBnd), _explode(explode) {}
+          _onlyBnd(onlyBnd), _explode(explode), _procExplode(procExplode) {}
 
     void   SetExplode (double explode) { _explode = explode; }
     double GetExplode () const         { return _explode; }

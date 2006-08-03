@@ -17,6 +17,7 @@ std::ostream& GeomMGOutCL::put(std::ostream &os) const
     const char Color[NumColors][11] =
         {{" 1 0 0"}, {" 0 1 0"}, {" 0 0 1"}, {" 0 1 1"}, {" 1 0 1"},
          {" 1 1 0"}, {" 0.5 0 0"}, {" 0 0.5 0"}, {" 0 0 0.5"}, {" 0 0.5 0.5"}};
+    Point3DCL GlobalOffset( 0.0);
 
     os << "LIST {\n";
     for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level); tit!=_MG->GetTriangTetraEnd(_level); ++tit )
@@ -29,10 +30,13 @@ std::ostream& GeomMGOutCL::put(std::ostream &os) const
 
         for ( TetraCL::const_VertexPIterator it=tit->GetVertBegin(), vend=tit->GetVertEnd(); it!=vend; ++it )
             Offset+= (*it)->GetCoord();
+        Offset= (_explode/4)*Offset + GlobalOffset;
+
         os << "geom { OFF 4 4 6\n";
         for ( int i=0; i<4; i++ )
             for ( int j=0; j<3; j++ )
-                os << _explode*Offset[j]/4+tit->GetVertex(i)->GetCoord()[j] << (j<2?" ":"\n");
+                os << Offset[j]+tit->GetVertex(i)->GetCoord()[j] << (j<2?" ":"\n");
+
         os <<   "3 1 2 3" << (tit->IsBndSeg(0)?Color[tit->GetBndIdx(0)%NumColors]:" 0.7 0.7 0.7")
            << "\n3 0 2 3" << (tit->IsBndSeg(1)?Color[tit->GetBndIdx(1)%NumColors]:" 0.7 0.7 0.7")
            << "\n3 0 1 3" << (tit->IsBndSeg(2)?Color[tit->GetBndIdx(2)%NumColors]:" 0.7 0.7 0.7")
