@@ -362,7 +362,8 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
 
   DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);
 
-  std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+  IF_MASTER
+    std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -399,10 +400,13 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
       }
     }
   }
-  std::cerr << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
-            << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
-            << "max-Norm= " << maxdiff                          << std::endl
-            << " L2-Norm= " << L2                               << std::endl;
+
+  int Lsize = lsg.Data.size();
+  IF_MASTER
+    std::cout << "  2-Norm= " << std::sqrt(norm2)
+              << "\nw-2-Norm= " << std::sqrt(norm2/Lsize)
+              << "\nmax-Norm= " << maxdiff
+              << "\n L2-Norm= " << std::sqrt(L2) << std::endl;
 }
 
 
