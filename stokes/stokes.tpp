@@ -721,9 +721,16 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
     VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
-    std::cerr << "\nChecken der Loesung...\n";
-    std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
-    std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
+    const double norm_res1      = norm(res1);
+    const double norm_res2      = norm(res2);
+    const double norm_sup_res_1 = supnorm(res1);
+    const double norm_sup_res_2 = supnorm(res2);
+
+    IF_MASTER
+        std::cerr << "\nChecken der Loesung..."
+                  << "\n|| Ax + BTy - F || = " << norm_res1 << ", max. " << norm_sup_res_1
+                  << "\n||       Bx - G || = " << norm_res2 << ", max. " << norm_sup_res_2
+                  << '\n' << std::endl;
 
     const_DiscPrSolCL  pr(lsgpr, &_BndData.Pr, &_MG);
     const_DiscVelSolCL  vel(lsgvel, &_BndData.Vel, &_MG);
@@ -752,8 +759,10 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
     L2_div= std::sqrt(L2_div);
-    std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
-    std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
+
+    IF_MASTER
+        std::cerr << "|| div x ||_L1 = " << L1_div
+                  << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
     // Compute the pressure-coefficient in direction of 1/std::sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
@@ -773,7 +782,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         vol+= volT;
     }
     const double c_pr= MW_pr/vol;
-    std::cerr << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
+    IF_MASTER
+        std::cerr << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
 
     // Some norms of velocities: u_h - u
     double L2_Dvel(0.0), L2_vel(0.0);
@@ -825,15 +835,15 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     delete[] Dvals;
     delete[] vals;
     delete[] pvals;
-    std::cerr << "|| (u_h, p_h) - (u, p) ||_X = " << X_norm
-              << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << L2_Dvel
-              << ", || p_h - p ||_L2 = " << L2_pr
-              << std::endl;
 
-    std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
-              << "w-2-Norm= " << norm2 << std::endl
-              << " L2-Norm= " << L2_pr << std::endl
-              << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
+    IF_MASTER
+        std::cerr << "|| (u_h, p_h) - (u, p) ||_X = " << X_norm
+                  << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << L2_Dvel
+                  << ", || p_h - p ||_L2 = " << L2_pr
+                  << "\nDruck: Abweichung von der tatsaechlichen Loesung:"
+                  << "\nw-2-Norm= " << norm2
+                  << "\n L2-Norm= " << L2_pr
+                  << "\nDifferenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
 
 template <class Coeff>
@@ -888,8 +898,10 @@ template <class Coeff>
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
     L2_div= std::sqrt(L2_div);
-    std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
-    std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
+
+    IF_MASTER
+        std::cerr << "|| div x ||_L1 = " << L1_div
+                  << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
@@ -957,11 +969,12 @@ template <class Coeff>
         }
     }
     L2_vel= sqrt(L2_vel);
-    std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
-              << "w-2-Norm= " << norm2 << std::endl
-              << " L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")" << std::endl
-              << " L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")" << std::endl
-              << "max-Norm= " << maxdiff << std::endl;
+    IF_MASTER
+        std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:"
+                  << "\nw-2-Norm= " << norm2
+                  << "\n L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")"
+                  << "\n L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")"
+                  << "\nmax-Norm= " << maxdiff << std::endl;
 
     norm2= 0; maxdiff= 0; double mindiff= 1000;
 
@@ -981,7 +994,8 @@ template <class Coeff>
         vol+= sit->GetVolume();
     }
     const double c_pr= MW_pr / vol;
-    std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
+    IF_MASTER
+        std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
     const VertexCL* maxvert= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
@@ -996,10 +1010,15 @@ template <class Coeff>
         if (diff<mindiff)
             mindiff= diff;
     }
-    norm2= std::sqrt( norm2 / lsgpr->Data.size());
-    std::cerr << "Maximaler Druckfehler: ";
-    if (maxvert) maxvert->DebugInfo( std::cerr);
-    std::cerr << std::endl;
+    size_t pr_size= lsgpr->Data.size();
+    norm2= std::sqrt( norm2 / pr_size);
+
+    if (maxvert)
+    {
+        std::cerr << "Maximaler Druckfehler: ";
+        maxvert->DebugInfo( std::cerr);
+        std::cerr << std::endl;
+    }
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -1018,12 +1037,12 @@ template <class Coeff>
     }
     L2_pr= std::sqrt( L2_pr);
 
-
-    std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
-              << "w-2-Norm= " << norm2 << std::endl
-              << " L2-Norm= " << L2_pr << std::endl
-              << " L1-Norm= " << L1_pr << std::endl
-              << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
+    IF_MASTER
+        std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:"
+                  << "\nw-2-Norm= " << norm2
+                  << "\n L2-Norm= " << L2_pr
+                  << "\n L1-Norm= " << L1_pr
+                  << "\nDifferenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
 
 template <class Coeff>
