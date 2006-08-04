@@ -35,6 +35,18 @@ typedef unsigned char     Ubyte;
 /// Used in equality-tests for floating point numbers.
 const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 
+/// Master process
+#ifdef _PAR
+#  define Drops_MasterC 0
+#  define MASTER (MPI::COMM_WORLD.Get_rank() == Drops_MasterC)
+#  define IF_MASTER if (MASTER)
+#  define IF_NOT_MASTER if (!MASTER)
+#else
+#  define MASTER true
+#  define IF_MASTER
+#  define IF_NOT_MASTER if (false)
+#endif
+
 /// \name Code-groups for debugging.
 /// \brief Constants that group the code for debugging and error-reporting.
 //@{
@@ -44,10 +56,19 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 #define DebugNumericC        8
 #define DebugUnknownsC      16
 #define DebugNoReuseSparseC 32
+#define DebugParallelC      64
+#define DebugParallelHardC 128
+#define DebugParallelNumC  256
+#define DebugLoadBalC      512
 //@}
 
 /// The stream for dedug output.
-#define cdebug std::cout
+/// In parallel mode, the proc number is printed in front of the message
+#ifndef _PAR
+#  define cdebug std::cerr
+#else
+#  define cdebug std::cerr << "["<<MPI::COMM_WORLD.Get_rank()<<"]: "
+#endif
 
 /// \brief This macro controls, for which portions of the code debugging and
 /// error-reporting is activated.
@@ -73,13 +94,17 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 ///
 /// The condition will be checked if any debugging-class is active. If the
 /// condition is true, the message will be written to the debug-stream.
+/// In parallel mode only the master-process will write this comment.
+/// If the comment should be written by any process use AllComment.
 /// \param a The message to be written. This must be an expression suitable
 ///     for writing after cdebug <<.
 /// \param b The condition, under which the message is written; must be convertible
 ///     to bool.
 #if DROPSDebugC
-#  define Comment(a,b) do { if ((b) & DROPSDebugC) cdebug << a; } while (false)
+#  define AllComment(a,b) do { if ((b) & DROPSDebugC) cdebug << a; } while (false)
+#  define Comment(a,b) do { if ((b) & DROPSDebugC) IF_MASTER cdebug << a; } while (false)
 #else
+#  define AllComment(a,b) ((void)0)
 #  define Comment(a,b) ((void)0)
 #endif
 
@@ -385,5 +410,10 @@ template<class T, size_t S>
 //@}
 
 } // end of namespace DROPS
+
+#ifdef _PAR
+#  pragma GCC system_header  // Suppress warnings from mpi.h
+#  include <mpi.h>
+#endif
 
 #endif
