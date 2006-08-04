@@ -837,8 +837,7 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SmoothVel( VelVecDescCL* v, int num, double tau)
 {
-    VectorCL diag;
-    GetDiag( A.Data, diag);
+    const VectorCL diag= A.Data.GetDiag();
 
     for (int i=0; i<num; ++i)
         v->Data-= tau*((A.Data*v->Data)/diag);

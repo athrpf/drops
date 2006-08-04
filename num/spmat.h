@@ -344,6 +344,8 @@ public:
         { _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
     void clear() { resize(0,0,0); }
 
+    VectorBaseCL<T> GetDiag() const;
+
     friend class SparseMatBuilderCL<T>;
 };
 
@@ -366,6 +368,16 @@ T SparseMatBaseCL<T>::operator() (size_t i, size_t j) const
     return (pos != GetFirstCol(i+1) && *pos==j) ? _val[pos-GetFirstCol(0)] : T();
 }
 
+template <typename T>
+VectorBaseCL<T> SparseMatBaseCL<T>::GetDiag() const
+{
+    const size_t n=num_rows();
+    Assert(n==num_cols(), "SparseMatBaseCL::GetDiag: no square Matrix", DebugParallelC);
+    VectorBaseCL<T> diag(n);
+    for (size_t i=0; i<n; ++i)
+        diag[i] = (*this)(i,i);
+    return diag;
+}
 
 //**********************************************************************************
 //
@@ -432,6 +444,8 @@ class BlockMatrixBaseCL
     }
 
     BlockMatrixBaseCL GetTranspose() const;
+
+    VectorBaseCL<typename MatT::value_type> GetDiag() const;
 };
 
 template <class MatT>
@@ -523,6 +537,26 @@ BlockMatrixBaseCL<MatT>::GetTranspose() const
         block_[2], GetTransposeOperation( 2),
         block_[1], GetTransposeOperation( 1),
         block_[3], GetTransposeOperation( 3));
+}
+
+template <typename MatT>
+VectorBaseCL<typename MatT::value_type> BlockMatrixBaseCL<MatT>::GetDiag() const
+{
+    const size_t n=num_rows();
+    Assert(n==num_cols(), "SparseMatBaseCL::GetDiag: no square Matrix", DebugParallelC);
+    VectorBaseCL<typename MatT::value_type> diag(n);
+
+    if (block_[0])
+        diag[std::slice(0,num_rows(0),1)] = block_[0]->GetDiag();
+    else
+        diag[std::slice(0,num_rows(0),1)] = 1.;
+
+    if (block_[3])
+        diag[std::slice(num_rows(0),num_rows(1),1)] = block_[3]->GetDiag();
+    else
+        diag[std::slice(num_rows(0),num_rows(1),1)] = 1.;
+
+    return diag;
 }
 
 
@@ -731,16 +765,6 @@ template <typename T>
         for (; nz < M.row_beg( r + 1); )
             v[r]+= M.val( nz++);
     return v;
-}
-
-template <typename T>
-void GetDiag( const SparseMatBaseCL<T>& M, std::valarray<typename SparseMatBaseCL<T>::value_type>& diag)
-{
-    const size_t n=M.num_rows();
-    diag.resize( n);
-
-    for (size_t i=0; i<n; ++i)
-        diag[i]= M( i, i);
 }
 
 template <typename T>
