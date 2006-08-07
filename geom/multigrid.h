@@ -180,77 +180,82 @@ class VertexCL
 };
 
 
-//****************************************************************************
-// Class:   EdgeCL                                                           *
-// Purpose: Represents an edge in the multigrid                              *
-//          The refinement algorithm works by manipulating the marks '_MFR'  *
-//          of the edges. This is possible, because the refinement pattern   *
-//          of a face/tetrahedron is determined by the pattern of its edges. *
-//          Marking the edges ensures consistency between the neighbors.     *
-//****************************************************************************
-
+/*******************************************************************
+*   E D G E  C L                                                   *
+*******************************************************************/
+/// \brief Represents an edge in the multigrid
+/** The refinement algorithm works by manipulating the marks '_MFR'
+    of the edges. This is possible, because the refinement pattern
+    of a face/tetrahedron is determined by the pattern of its edges.
+    Marking the edges ensures consistency between the neighbors.  */
+/*******************************************************************
+*   E D G E  C L                                                   *
+*******************************************************************/
 class EdgeCL
 {
   public:
-    typedef MG_VertexContT::LevelCont VertContT;
-    typedef MG_EdgeContT::LevelCont   EdgeContT;
+    typedef MG_VertexContT::LevelCont VertContT;                                    ///< container for vertices
+    typedef MG_EdgeContT::LevelCont   EdgeContT;                                    ///< container for subedges
 
   private:
-    SArrayCL<VertexCL*, 2> _Vertices;
-    VertexCL*              _MidVertex;
-    SArrayCL<BndIdxT, 2>   _Bnd;
-    short int              _MFR;
-    Uint                   _Level : 8;
-    bool                   _RemoveMark;
+    SArrayCL<VertexCL*, 2> _Vertices;                                               // "left" and "right" vertex of the edge
+    VertexCL*              _MidVertex;                                              // midvertex, if the edge is refined
+    SArrayCL<BndIdxT, 2>   _Bnd;                                                    // an edge can be found on (max) two boundary-segments
+    short int              _MFR;                                                    // mark, if the edge should be/is refined (set by refinement-algo)
+    Uint                   _Level : 8;                                              // level of the edge (according to owning tetras)
+    bool                   _RemoveMark;                                             // mark for removement
 
   public:
-    UnknownHandleCL Unknowns;
+    UnknownHandleCL Unknowns;                                                   ///< access to unknowns on this edge
 
 // ===== Interface for refinement =====
-
+    ///< Create an edge
     inline EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0= NoBndC, BndIdxT bnd1= NoBndC);
-    EdgeCL (const EdgeCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
+    EdgeCL (const EdgeCL&);                                                     ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     // default dtor
 
-    void AddBndIdx(BndIdxT idx) { if (_Bnd[0]==NoBndC) _Bnd[0]= idx; else _Bnd[1]= idx; }
+    void AddBndIdx(BndIdxT idx)                                                 ///< add boundary-information
+      { if (_Bnd[0]==NoBndC) _Bnd[0]= idx; else _Bnd[1]= idx; }
 
     // Midvertex
-    VertexCL*   GetMidVertex   ()             { return _MidVertex; }
-    void        SetMidVertex   (VertexCL* vp) { _MidVertex= vp; }
-    void        RemoveMidVertex()             { _MidVertex= 0; }
-    void        BuildMidVertex (VertContT&, const BoundaryCL&);
-    inline void BuildSubEdges  (EdgeContT&, VertContT&, const BoundaryCL&);
+    VertexCL*   GetMidVertex   ()             { return _MidVertex; }            ///< get pointer to midvertex
+    void        SetMidVertex   (VertexCL* vp) { _MidVertex= vp; }               ///< set pointer to midvertex
+    void        RemoveMidVertex()             { _MidVertex= 0; }                ///< remove pointer to midvertex without deleting it
+    void        BuildMidVertex (VertContT&, const BoundaryCL&);                 ///< create midvertex
+    inline void BuildSubEdges  (EdgeContT&, VertContT&, const BoundaryCL&);     ///< build both subedges
 
     // Marks
-    bool IsMarkedForRef       () const { return _MFR; }
-    void IncMarkForRef        ()       { ++_MFR; }
-    void DecMarkForRef        ()       { --_MFR; }
-    void ResetMarkForRef      ()       { _MFR= 0; }
-    bool IsMarkedForRemovement() const { return _RemoveMark; }
-    void SetRemoveMark        ()       { _RemoveMark= true; }
-    void ClearRemoveMark      ()       { _RemoveMark= false; }
+    bool IsMarkedForRef       () const { return _MFR; }                         ///< check if this edge is marked for refinement
+    void IncMarkForRef        ()       { ++_MFR; }                              ///< increase mark for refinement count
+    void DecMarkForRef        ()       { --_MFR; }                              ///< decrease mark for refinement count
+    void ResetMarkForRef      ()       { _MFR= 0; }                             ///< remove mark for refinement
+    bool IsMarkedForRemovement() const { return _RemoveMark; }                  ///< check if edge is marked for removement
+    void SetRemoveMark        ()       { _RemoveMark= true; }                   ///< set mark for removement
+    void ClearRemoveMark      ()       { _RemoveMark= false; }                  ///< clear mark for removement
 
     // etc.
-    void RecycleMe   () const { _Vertices[0]->Recycle(this); }
-    void SortVertices()       { if (_Vertices[1]->GetId() < _Vertices[0]->GetId()) std::swap(_Vertices[0],_Vertices[1]); }
+    void RecycleMe   () const { _Vertices[0]->Recycle(this); }                  ///< put a pointer to this edge into the recycle-bin of the "left" vertex
+    void SortVertices()                                                         ///< sort vertices by id
+      { if (_Vertices[1]->GetId() < _Vertices[0]->GetId()) std::swap(_Vertices[0],_Vertices[1]); }
 
 // ===== Public interface =====
 
-    Uint            GetLevel      ()                   const { return _Level; }
-    const VertexCL* GetVertex     (Uint i)             const { return _Vertices[i]; }
-    const VertexCL* GetMidVertex  ()                   const { return _MidVertex; }
-    const VertexCL* GetNeighbor   (const VertexCL* vp) const { return vp==_Vertices[0] ? _Vertices[1] : _Vertices[0]; }
-    bool            HasVertex     (const VertexCL* vp) const { return vp==_Vertices[0] || vp==_Vertices[1]; }
-    bool            IsRefined     ()                   const { return _MidVertex; }
-    bool            IsOnBoundary  ()                   const { return _Bnd[0] != NoBndC; }
+    Uint            GetLevel      ()                   const { return _Level; }             ///< return level
+    const VertexCL* GetVertex     (Uint i)             const { return _Vertices[i]; }       ///< get pointer to the "left" or the "right" vertex
+    const VertexCL* GetMidVertex  ()                   const { return _MidVertex; }         ///< get midvertex
+    const VertexCL* GetNeighbor   (const VertexCL* vp) const { return vp==_Vertices[0] ? _Vertices[1] : _Vertices[0]; } ///< get opposite vertex
+    bool            HasVertex     (const VertexCL* vp) const { return vp==_Vertices[0] || vp==_Vertices[1]; }           ///< check if the edge has a vertex
+    bool            IsRefined     ()                   const { return _MidVertex; }         ///< check if edge is refined
+    bool            IsOnBoundary  ()                   const { return _Bnd[0] != NoBndC; }  ///< check if edge lies on the domain boundary
     const BndIdxT*  GetBndIdxBegin()                   const { return _Bnd.begin(); }
-    const BndIdxT*  GetBndIdxEnd  ()                   const { return IsOnBoundary() ? (_Bnd[1] == NoBndC ? _Bnd.begin()+1 : _Bnd.end() ) : _Bnd.begin(); }
-    bool            IsInTriang    (Uint TriLevel)      const
-        { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && !IsRefined() ); }
+    const BndIdxT*  GetBndIdxEnd  ()                   const
+      { return IsOnBoundary() ? (_Bnd[1] == NoBndC ? _Bnd.begin()+1 : _Bnd.end() ) : _Bnd.begin(); }
+    bool            IsInTriang    (Uint TriLevel)      const                                ///< check if edge can be found in a triangulation level
+      { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && !IsRefined() ); }
 
     // Debugging
-    bool IsSane    (std::ostream&) const;
-    void DebugInfo (std::ostream&) const;
+    bool IsSane    (std::ostream&) const;                                                   ///< check for sanity
+    void DebugInfo (std::ostream&) const;                                                   ///< get debug-information
 };
 
 
