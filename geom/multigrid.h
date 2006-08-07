@@ -840,8 +840,8 @@ inline EdgeCL::EdgeCL (const EdgeCL& e)
 inline void EdgeCL::BuildSubEdges(EdgeContT& edgecont, VertContT& vertcont, const BoundaryCL& Bnd)
 {
     BuildMidVertex(vertcont, Bnd);
-    edgecont.push_back( EdgeCL(_Vertices[0], GetMidVertex(), _Level+1, _Bnd[0], _Bnd[1]) );
-    edgecont.push_back( EdgeCL(GetMidVertex(), _Vertices[1], _Level+1, _Bnd[0], _Bnd[1]) );
+    edgecont.push_back( EdgeCL(_Vertices[0], GetMidVertex(), GetLevel()+1, _Bnd[0], _Bnd[1]) );
+    edgecont.push_back( EdgeCL(GetMidVertex(), _Vertices[1], GetLevel()+1, _Bnd[0], _Bnd[1]) );
 }
 
 // ********** FaceCL **********
