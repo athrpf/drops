@@ -804,8 +804,8 @@ inline VertexCL::VertexCL (const VertexCL& v)
 
 inline VertexCL::~VertexCL ()
 {
-  if (_BndVerts) delete _BndVerts;
-  if ( HasRecycleBin() ) DestroyRecycleBin();
+  delete _BndVerts;
+  DestroyRecycleBin();
 }
 
 inline void VertexCL::AddBnd (const BndPointCL& BndVert)
