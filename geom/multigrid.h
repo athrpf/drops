@@ -9,7 +9,6 @@
 
 // TODO: Use information hiding, access control and const-qualification more
 //       extensively to avoid accidental changes of the multigrid structure.
-// TODO: Parallelization
 
 #ifndef DROPS_MULTIGRID_H
 #define DROPS_MULTIGRID_H
@@ -91,15 +90,18 @@ class RecycleBinCL
 };
 
 
-//**************************************************************************
-// Class:   VertexCL                                                       *
-// Purpose: Contains the geometric part ('_Coord', '_BndVerts') of a       *
-//          point in the multigrid as well as some topological ('_Level')  *
-//          information.                                                   *
-//          It also stores some algorithmic information like '_RemoveMark' *
-//          and the RecycleBins.                                           *
-//**************************************************************************
-
+/*******************************************************************
+*   V E R T E X  C L                                               *
+*******************************************************************/
+/// \brief Represents vertices in the multigrid
+/** Contains the geometric part ('_Coord', '_BndVerts') of a
+    point in the multigrid as well as some topological ('_Level')
+    information.
+    It also stores some algorithmic information like '_RemoveMark'
+    and the RecycleBins.                                          */
+/*******************************************************************
+*   V E R T E X  C L                                               *
+*******************************************************************/
 class VertexCL
 {
     friend class MultiGridCL;
@@ -109,63 +111,72 @@ class VertexCL
     typedef std::vector<BndPointCL>::const_iterator const_BndVertIt;
 
   private:
-    IdCL<VertexCL>           _Id;
-    Point3DCL                _Coord;
-    std::vector<BndPointCL>* _BndVerts;
-    RecycleBinCL*            _Bin;
+    IdCL<VertexCL>           _Id;                                               // id of the vertex
+    Point3DCL                _Coord;                                            // global coordinates of the vertex
+    std::vector<BndPointCL>* _BndVerts;                                         // Parameterdarstellung dieses Knotens auf evtl. mehreren Randsegmenten
+    RecycleBinCL*            _Bin;                                              // recycle-bin
     Uint                     _Level : 8;
-    bool                     _RemoveMark;
+    bool                     _RemoveMark;                                       // flag, if this vertex should be removed
 
   public:
-    UnknownHandleCL          Unknowns;
+    UnknownHandleCL          Unknowns;                                          ///< access to the unknowns on the vertex
 
   private:
     // RecycleBin
-    bool                HasRecycleBin       () const { return _Bin; }
+    bool                HasRecycleBin       () const { return _Bin; }           ///< check if recycle-bin is not empty
     const RecycleBinCL* GetRecycleBin       () const { return _Bin; }
           RecycleBinCL* GetCreateRecycleBin ()       { return HasRecycleBin() ? _Bin : (_Bin= new RecycleBinCL); }
 
 // ===== Interface for refinement algorithm =====
 
   public:
-    inline  VertexCL (const Point3DCL& Point3D, Uint FirstLevel);
-    inline  VertexCL (const VertexCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
-    inline ~VertexCL ();
+    inline  VertexCL (const Point3DCL& Point3D, Uint FirstLevel);               ///< create a vertex by coordinate and level
+    inline  VertexCL (const VertexCL&);                                         ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
+    inline ~VertexCL ();                                                        ///< also deletes the recycle-bin and boundary information
 
     // Boundary
-    inline void AddBnd  (const BndPointCL& BndVert);
-    inline void BndSort ();
+    inline void AddBnd  (const BndPointCL& BndVert);                            ///< add boundary-information
+    inline void BndSort ();                                                     ///< sort boundary-segments
 
     // RemovementMarks
-    bool IsMarkedForRemovement () const { return _RemoveMark; }
-    void SetRemoveMark         ()       { _RemoveMark = true; }
-    void ClearRemoveMark       ()       { _RemoveMark = false; }
+    bool IsMarkedForRemovement () const { return _RemoveMark; }                 ///< check if vertex is marked for removement
+    void SetRemoveMark         ()       { _RemoveMark = true; }                 ///< set mark for removement
+    void ClearRemoveMark       ()       { _RemoveMark = false; }                ///< clear mark for removement
 
     // RecycleBin
-    void DestroyRecycleBin () { delete _Bin; _Bin= 0; }
+    void DestroyRecycleBin () { delete _Bin; _Bin= 0; }                         ///< empty recycle-bin
 
-    void Recycle (const EdgeCL* ep)  { GetCreateRecycleBin()->Recycle(ep); }
-    void Recycle (const FaceCL* fp, const VertexCL* vp1, const VertexCL* vp2)
-                                     { GetCreateRecycleBin()->Recycle(fp,vp1,vp2); }
-    void Recycle (const TetraCL* tp) { GetCreateRecycleBin()->Recycle(tp); }
+    void Recycle (const EdgeCL* ep)                                             ///< put a pointer to an edge into the recycle-bin of this vertex
+      { GetCreateRecycleBin()->Recycle(ep); }
+    void Recycle (const FaceCL* fp, const VertexCL* vp1, const VertexCL* vp2)   ///< put a pointer to a face into the recycle-bin of this vertex
+      { GetCreateRecycleBin()->Recycle(fp,vp1,vp2); }
+    void Recycle (const TetraCL* tp)                                            ///< put a pointer to a tetra into the recycle-bin of this vertex
+      { GetCreateRecycleBin()->Recycle(tp); }
 
-    EdgeCL*  FindEdge  (const VertexCL* v)                                          const { return HasRecycleBin() ? const_cast<EdgeCL*>(GetRecycleBin()->FindEdge(v))          : 0; }
-    FaceCL*  FindFace  (const VertexCL* v1, const VertexCL* v2)                     const { return HasRecycleBin() ? const_cast<FaceCL*>(GetRecycleBin()->FindFace(v1,v2))      : 0; }
-    TetraCL* FindTetra (const VertexCL* v1, const VertexCL* v2, const VertexCL* v3) const { return HasRecycleBin() ? const_cast<TetraCL*>(GetRecycleBin()->FindTetra(v1,v2,v3)) : 0; }
+    /// Find an edge in the recycle-bin by the opposite vertex. Returns 0 if no edge is found.
+    EdgeCL*  FindEdge  (const VertexCL* v) const
+      { return HasRecycleBin() ? const_cast<EdgeCL*>(GetRecycleBin()->FindEdge(v))          : 0; }
+    /// Find a face in the recycle-bin by the other vertices. Returns 0 if no face is found.
+    FaceCL*  FindFace  (const VertexCL* v1, const VertexCL* v2) const
+      { return HasRecycleBin() ? const_cast<FaceCL*>(GetRecycleBin()->FindFace(v1,v2))      : 0; }
+    /// Find a tetra in the recycle-bin by the other vertices. Returns 0 if no tetra is found.
+    TetraCL* FindTetra (const VertexCL* v1, const VertexCL* v2, const VertexCL* v3) const
+      { return HasRecycleBin() ? const_cast<TetraCL*>(GetRecycleBin()->FindTetra(v1,v2,v3)) : 0; }
 
 // ===== Public interface =====
 
-    const IdCL<VertexCL>& GetId           () const { return _Id; }
-    Uint                  GetLevel        () const { return _Level; }
-    const Point3DCL&      GetCoord        () const { return _Coord; }
-    bool                  IsOnBoundary    () const { return _BndVerts; }
+    const IdCL<VertexCL>& GetId           () const { return _Id; }                          ///< get id of this vertex
+    Uint                  GetLevel        () const { return _Level; }                       ///< get level of vertex (=first appearance in the multigrid)
+    const Point3DCL&      GetCoord        () const { return _Coord; }                       ///< get coordinate of this vertex
+    bool                  IsOnBoundary    () const { return _BndVerts; }                    ///< check if this vertex lies on domain boundary
     const_BndVertIt       GetBndVertBegin () const { return _BndVerts->begin(); }
     const_BndVertIt       GetBndVertEnd   () const { return _BndVerts->end(); }
-    bool                  IsInTriang      (Uint TriLevel) const { return  GetLevel() <= TriLevel; }
+    bool                  IsInTriang      (Uint TriLevel) const                             ///< check if the vertex can be found in a triangulation level
+      { return  GetLevel() <= TriLevel; }
 
     // Debugging
-    bool IsSane    (std::ostream&, const BoundaryCL& ) const;
-    void DebugInfo (std::ostream&) const;
+    bool IsSane    (std::ostream&, const BoundaryCL& ) const;                               ///< check for sanity of this vertex
+    void DebugInfo (std::ostream&) const;                                                   ///< get debug-information
 };
 
 
