@@ -246,7 +246,7 @@ class EdgeCL
     const BndIdxT*  GetBndIdxBegin()                   const { return _Bnd.begin(); }
     const BndIdxT*  GetBndIdxEnd  ()                   const { return IsOnBoundary() ? (_Bnd[1] == NoBndC ? _Bnd.begin()+1 : _Bnd.end() ) : _Bnd.begin(); }
     bool            IsInTriang    (Uint TriLevel)      const
-        { return _Level == TriLevel || ( _Level < TriLevel && !IsRefined() ); }
+        { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && !IsRefined() ); }
 
     // Debugging
     bool IsSane    (std::ostream&) const;
@@ -299,7 +299,7 @@ class FaceCL
     BndIdxT       GetBndIdx    ()              const { return _Bnd; }
     inline bool   IsRefined    ()              const;
     bool          IsInTriang   (Uint TriLevel) const
-        { return _Level==TriLevel || (_Level < TriLevel && !IsRefined() ); }
+        { return GetLevel() == TriLevel || (GetLevel() < TriLevel && !IsRefined() ); }
 
     // Get simplex
     inline const VertexCL* GetVertex(Uint)       const;
@@ -424,7 +424,7 @@ friend class MultiGridCL;
     bool IsUnrefined    () const { return _RefRule == UnRefRuleC; }
     bool IsRegularlyRef () const { return _RefRule == RegRefRuleC; }
     bool IsRegular      () const
-        { return _Level!=0 ? _Parent->GetRefRule() == RegRefRuleC : true; }
+        { return GetLevel()!=0 ? _Parent->GetRefRule() == RegRefRuleC : true; }
 
     bool IsMarkedForRef        () const
         { return _RefMark != NoRefMarkC && _RefMark != RemoveMarkC; }
@@ -456,7 +456,7 @@ friend class MultiGridCL;
     double               GetNormal     (Uint face, Point3DCL& normal, double& dir) const;
     double               GetOuterNormal(Uint face, Point3DCL& normal)              const;
     bool                 IsInTriang    (Uint TriLevel) const
-        { return _Level == TriLevel || ( _Level < TriLevel && IsUnrefined() ); }
+        { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && IsUnrefined() ); }
 
     bool IsSane    (std::ostream&) const;
     void DebugInfo (std::ostream&) const;
