@@ -259,68 +259,71 @@ class EdgeCL
 };
 
 
-//**************************************************************************
-// Class:   FaceCL                                                         *
-// Purpose: Represents a face in the multigrid                             *
-//          It can have neighbors on two levels: two regular ones (one per *
-//          side) on level '_Level' and two green ones on the next.        *
-//**************************************************************************
-
+/*******************************************************************
+*   F A C E  C L                                                   *
+*******************************************************************/
+/// \brief Represents a face in the multigrid
+/** It can have neighbors on two levels: two regular ones (one per
+    side) on level '_Level' and two green ones on the next.       */
+/*******************************************************************
+*   F A C E  C L                                                   *
+*******************************************************************/
 class FaceCL
 {
   private:
-    SArrayCL<const TetraCL*,4> _Neighbors;
-    const BndIdxT              _Bnd;
-    Uint                       _Level : 8;
-    bool                       _RemoveMark;
+    SArrayCL<const TetraCL*,4> _Neighbors;                               // neighbor tetras of the face
+    const BndIdxT              _Bnd;                                     // boundary-index of this face
+    Uint                       _Level : 8;                               // level of the face (=level according to tetras)
+    bool                       _RemoveMark;                              // mark for removement
 
   public:
-    UnknownHandleCL Unknowns;
+    UnknownHandleCL Unknowns;                                                      ///< access to unknowns on a face (not yet used)
 
 // ===== Interface for refinement =====
 
-    FaceCL (Uint Level, BndIdxT bnd= NoBndC) : _Bnd(bnd), _Level(Level), _RemoveMark(false) {}
-    FaceCL (const FaceCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
+    FaceCL (Uint Level, BndIdxT bnd= NoBndC)                                       ///< create a face
+      : _Bnd(bnd), _Level(Level), _RemoveMark(false) {}
+    FaceCL (const FaceCL&);                                                        ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     // default dtor
 
     // RemovementMarks
-    bool IsMarkedForRemovement() const { return _RemoveMark; }
-    void SetRemoveMark        ()       { _RemoveMark= true; }
-    void ClearRemoveMark      ()       { _RemoveMark= false; }
+    bool IsMarkedForRemovement() const { return _RemoveMark; }                     ///< check if marked for removement
+    void SetRemoveMark        ()       { _RemoveMark= true; }                      ///< set mark for removement
+    void ClearRemoveMark      ()       { _RemoveMark= false; }                     ///< clear mark for removement
 
     // Neighbors
-    void LinkTetra  (const TetraCL*);
-    void UnlinkTetra(const TetraCL*);
+    void LinkTetra  (const TetraCL*);                                              ///< link a tetra to face
+    void UnlinkTetra(const TetraCL*);                                              ///< unlink a tetra of face
 
     // Recycling
-    void RecycleMe(VertexCL* vp0, const VertexCL* vp1, const VertexCL* vp2) const
-        { vp0->Recycle(this,vp1,vp2); }
+    void RecycleMe(VertexCL* vp0, const VertexCL* vp1, const VertexCL* vp2) const  ///< put a pointer to this face into the recycle-bin of the first vertex
+      { vp0->Recycle(this,vp1,vp2); }
 
 // ===== Public Interface =====
 
-    Uint          GetLevel     ()              const { return _Level; }
-    bool          IsOnNextLevel()              const { return _Neighbors[2] || _Neighbors[3]; }
-    bool          IsOnBoundary ()              const { return _Bnd != NoBndC; }
-    BndIdxT       GetBndIdx    ()              const { return _Bnd; }
-    inline bool   IsRefined    ()              const;
-    bool          IsInTriang   (Uint TriLevel) const
-        { return GetLevel() == TriLevel || (GetLevel() < TriLevel && !IsRefined() ); }
+    Uint        GetLevel     () const { return _Level; }                                ///< get level of the face (stored within the class)
+    bool        IsOnNextLevel() const { return _Neighbors[2] || _Neighbors[3]; }        ///< check if face can be found in the next level
+    bool        IsOnBoundary () const { return _Bnd != NoBndC; }                        ///< check if face lies on the domain-boundary
+    BndIdxT     GetBndIdx    () const { return _Bnd; }                                  ///< get index of the boundary-segment
+    inline bool IsRefined    () const;                                                  ///< check if face is refined
+    bool        IsInTriang   (Uint TriLevel) const                                      ///< check if face can be found in a triangulation level
+      { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && !IsRefined() ); }
 
     // Get simplex
-    inline const VertexCL* GetVertex(Uint)       const;
-    inline const EdgeCL*   GetEdge  (Uint)       const;
-    inline const TetraCL*  GetTetra (Uint, Uint) const;
+    inline const VertexCL* GetVertex(Uint)       const;                                 ///< get i'th vertex of the face
+    inline const EdgeCL*   GetEdge  (Uint)       const;                                 ///< get i'th edge of the face
+    inline const TetraCL*  GetTetra (Uint, Uint) const;                                 ///< get tetra of level and number
 
     // Neighboring tetras
-           const TetraCL* GetSomeTetra     () const { return _Neighbors[0]; }
-    inline bool           HasNeighborTetra (const TetraCL*)       const;
-    inline const TetraCL* GetNeighborTetra (const TetraCL*)       const;
-           const TetraCL* GetNeighInTriang (const TetraCL*, Uint) const;
-    inline Uint           GetFaceNumInTetra(const TetraCL*)       const;
+           const TetraCL* GetSomeTetra     () const { return _Neighbors[0]; }           ///< return pointer to first neighbor
+    inline bool           HasNeighborTetra (const TetraCL*)       const;                ///< check if a tetra is neighbor
+    inline const TetraCL* GetNeighborTetra (const TetraCL*)       const;                ///< get neighbor tetra of another tetra
+           const TetraCL* GetNeighInTriang (const TetraCL*, Uint) const;                ///< get neighbor tetra in triangulation level
+    inline Uint           GetFaceNumInTetra(const TetraCL*)       const;                ///< get number of face within a tetra
 
     // Debugging
-    bool IsSane   (std::ostream&) const;
-    void DebugInfo(std::ostream&) const;
+    bool IsSane   (std::ostream&) const;                                                ///< check for sanity
+    void DebugInfo(std::ostream&) const;                                                ///< get debug-information
 };
 
 
