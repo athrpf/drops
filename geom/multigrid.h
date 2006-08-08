@@ -327,119 +327,123 @@ class FaceCL
 };
 
 
-//**************************************************************************
-// Class:   TetraCL                                                        *
-// Purpose: Represents a tetrahedron                                       *
-//          This is probably the most important data structure of DROPS.   *
-//          All major routines that work on the grid (i.e. the refinement  *
-//          algorithm, the routines to set up a discretized system, the    *
-//          error estimator) "do it tetra by tetra".                       *
-//**************************************************************************
-
+/*******************************************************************
+*   T E T R A  C L                                                 *
+*******************************************************************/
+/// \brief Represents a tetrahedron in multigrid
+/** This is probably the most important data structure of DROPS.
+    All major routines that work on the grid (i.e. the refinement
+    algorithm, the routines to set up a discretized system, the
+    error estimator) "do it tetra by tetra".                      */
+/*******************************************************************
+*   T E T R A  C L                                                 *
+*******************************************************************/
 class TetraCL
 {
-friend class MultiGridCL;
+    friend class MultiGridCL;
 
   public:
-    typedef SArrayCL<VertexCL*,NumVertsC>::iterator         VertexPIterator;
-    typedef SArrayCL<VertexCL*,NumVertsC>::const_iterator   const_VertexPIterator;
-    typedef SArrayCL<EdgeCL*,NumEdgesC>::iterator           EdgePIterator;
-    typedef SArrayCL<EdgeCL*,NumEdgesC>::const_iterator     const_EdgePIterator;
-    typedef SArrayCL<FaceCL*,NumFacesC>::iterator           FacePIterator;
-    typedef SArrayCL<FaceCL*,NumFacesC>::const_iterator     const_FacePIterator;
-    typedef SArrayCL<TetraCL*,MaxChildrenC>::iterator       ChildPIterator;
-    typedef SArrayCL<TetraCL*,MaxChildrenC>::const_iterator const_ChildPIterator;
-    typedef MG_VertexContT::LevelCont                       VertContT;
-    typedef MG_EdgeContT::LevelCont                         EdgeContT;
-    typedef MG_FaceContT::LevelCont                         FaceContT;
-    typedef MG_TetraContT::LevelCont                        TetraContT;
+    typedef SArrayCL<VertexCL*,NumVertsC>::iterator         VertexPIterator;            ///< iterator of pointers to vertices of this tetra
+    typedef SArrayCL<VertexCL*,NumVertsC>::const_iterator   const_VertexPIterator;      ///< const version
+    typedef SArrayCL<EdgeCL*,NumEdgesC>::iterator           EdgePIterator;              ///< iterator of pointers to edges of this tetra
+    typedef SArrayCL<EdgeCL*,NumEdgesC>::const_iterator     const_EdgePIterator;        ///< const version
+    typedef SArrayCL<FaceCL*,NumFacesC>::iterator           FacePIterator;              ///< iterator of pointers to faces of this tetra
+    typedef SArrayCL<FaceCL*,NumFacesC>::const_iterator     const_FacePIterator;        ///< const version
+    typedef SArrayCL<TetraCL*,MaxChildrenC>::iterator       ChildPIterator;             ///< iterator of pointers to children of this tetra
+    typedef SArrayCL<TetraCL*,MaxChildrenC>::const_iterator const_ChildPIterator;       ///< const version
+    typedef MG_VertexContT::LevelCont                       VertContT;                  ///< container for verts for linking purpose
+    typedef MG_EdgeContT::LevelCont                         EdgeContT;                  ///< container for edges for linking purpose
+    typedef MG_FaceContT::LevelCont                         FaceContT;                  ///< container for faces for linking purpose
+    typedef MG_TetraContT::LevelCont                        TetraContT;                 ///< container for children for linking purpose
 
   private:
     // static arrays for computations
-    static SArrayCL<EdgeCL*, NumAllEdgesC> _ePtrs;
-    static SArrayCL<FaceCL*, NumAllFacesC> _fPtrs;
+    static SArrayCL<EdgeCL*, NumAllEdgesC> _ePtrs;                      // EdgePointers for linking edges within refinement
+    static SArrayCL<FaceCL*, NumAllFacesC> _fPtrs;                      // FacePointers for linking faces within refinement
 
-    IdCL<TetraCL> _Id;
+    IdCL<TetraCL> _Id;                                                  // id-number
     Uint          _Level : 8;
-    Uint          _RefRule : 8; // the actual refinement of the tetrahedron
-    mutable Uint  _RefMark : 8; // the refinement-mark (e.g. set by the error estimator)
+    Uint          _RefRule : 8;                                         // actual refinement of the tetrahedron
+    mutable Uint  _RefMark : 8;                                         // refinement-mark (e.g. set by the error estimator)
 
     // subsimplices, parent, children
-    SArrayCL<VertexCL*,NumVertsC>    _Vertices;
-    SArrayCL<EdgeCL*,NumEdgesC>      _Edges;
-    SArrayCL<FaceCL*,NumFacesC>      _Faces;
-    TetraCL*                         _Parent;
-    SArrayCL<TetraCL*,MaxChildrenC>* _Children; // for leaves: NULL-pointer
+    SArrayCL<VertexCL*,NumVertsC>    _Vertices;                         // container for verts of tetra
+    SArrayCL<EdgeCL*,NumEdgesC>      _Edges;                            // container for edges of tetra
+    SArrayCL<FaceCL*,NumFacesC>      _Faces;                            // container for faces of tetra
+    TetraCL*                         _Parent;                           // container for parent of tetra
+    SArrayCL<TetraCL*,MaxChildrenC>* _Children;                         // container for children of tetra, for leaves: NULL-pointer
 // ??? TODO: Kann man das ohne Speicherluecken und ohne Fragmentieren hinkriegen ???
 
   public:
-    UnknownHandleCL          Unknowns;
+    UnknownHandleCL Unknowns;                                                   ///< access to unknowns on tetras
 
 // ===== Interface for refinement =====
-
-    inline  TetraCL (VertexCL*, VertexCL*, VertexCL*, VertexCL*, TetraCL*);
-    TetraCL (const TetraCL&); // Danger!!! Copying simplices might corrupt the multigrid structure!!!
+    inline  TetraCL (VertexCL*, VertexCL*, VertexCL*, VertexCL*, TetraCL*);     ///< constructor of verts and parent
+    TetraCL (const TetraCL&);                                                   ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     inline ~TetraCL ();
 
     // access to children, vertices
-    ChildPIterator GetChildBegin  () { return _Children->begin(); }
-    ChildPIterator GetChildEnd    () { return _Children->begin() + GetRefData().ChildNum; }
-    VertexCL*      GetVertMidVert (Uint i)
-        { return IsMidVert(i) ? _Edges[EdgeOfMidVert(i)]->GetMidVertex() : _Vertices[i]; }
+    ChildPIterator GetChildBegin  ()                                            ///< "Pointer-Iterator" to first child
+      { return _Children->begin(); }    
+    ChildPIterator GetChildEnd    ()                                            ///< "Pointer-Iterator" to end of children
+      { return _Children->begin() + GetRefData().ChildNum; }
+    VertexCL*      GetVertMidVert (Uint i)                                      ///< return pointer to midvertex of edge or vertex of tetra
+      { return IsMidVert(i) ? _Edges[EdgeOfMidVert(i)]->GetMidVertex() : _Vertices[i]; }
 
     // rules and marks
-    void        SetRefRule          (Uint RefRule) { _RefRule = RefRule; }
-    void        RestrictMark        ();
-    inline void CommitRegRefMark    () const;
-    inline void UnCommitRegRefMark  () const;
-    inline void Close               ();
-    void        ClearAllRemoveMarks ();
+    void        SetRefRule          (Uint RefRule) { _RefRule = RefRule; }      ///< set refinement rule for this tetra
+    void        RestrictMark        ();                                         ///< set regular refinement if marked and manipulate MFR on edges
+    inline void CommitRegRefMark    () const;                                   ///< increase MFR on edges
+    inline void UnCommitRegRefMark  () const;                                   ///< decrease MFR on edges
+    inline void Close               ();                                         ///< calculate green closure
+    void        ClearAllRemoveMarks ();                                         ///< save all subsimplices of this tetra and all child tetras from removement
 
     // recycling
-    void RecycleMe        () const { _Vertices[0]->Recycle(this); }
-    void RecycleReusables ();
+    void RecycleMe        () const { _Vertices[0]->Recycle(this); }             ///< put pointer to the tetra into recycle-bin of vertex(0)
+    void RecycleReusables ();                                                   ///< put all subsimplices of the tetra and children that are needed in next refinement step into recycle-bins
 
     // building children
-    void        CollectEdges           (const RefRuleCL&, VertContT&, EdgeContT&, const BoundaryCL&);
-    void        CollectFaces           (const RefRuleCL&, FaceContT&);
-    inline void LinkEdges              (const ChildDataCL&);
-    inline void LinkFaces              (const ChildDataCL&);
-    inline void CollectAndLinkChildren (const RefRuleCL&, TetraContT&);
-
-    void        UnlinkFromFaces        ()    { for (Uint face=0; face<NumFacesC; ++face) _Faces[face]->UnlinkTetra(this); }
+    void        CollectEdges           (const RefRuleCL&, VertContT&, EdgeContT&, const BoundaryCL&);   ///< build or unrecycle edges that are needed for refinement
+    void        CollectFaces           (const RefRuleCL&, FaceContT&);                                  ///< build or unrecycle faces that are needed for refinement
+    inline void LinkEdges              (const ChildDataCL&);                                            ///< link edges from "_ePtrs" to the tetra according to the ChildDataCL
+    inline void LinkFaces              (const ChildDataCL&);                                            ///< link faces from "_fPtrs" to the tetra according to the ChildDataCL
+    inline void CollectAndLinkChildren (const RefRuleCL&, TetraContT&);                                 ///< build, unrecycle and link children
+    void        UnlinkFromFaces        ()                                                               ///< remove link from faces to the tetra
+      { for (Uint face=0; face<NumFacesC; ++face) _Faces[face]->UnlinkTetra(this); }
 
     // used by builder
-    void BuildEdges        (EdgeContT&);
-    void BuildAndLinkFaces (FaceContT&);
-    void SetFace           (Uint, FaceCL*);
+    void BuildEdges        (EdgeContT&);                                         ///< build edges
+    void BuildAndLinkFaces (FaceContT&);                                         ///< build and link faces
+    void SetFace           (Uint, FaceCL*);                                      ///< set face
 
 //
 // Public Interface
 //
-    const IdCL<TetraCL>& GetId       () const { return _Id; }
-    Uint                 GetLevel    () const { return _Level; }
-
-    Uint GetRefMark    () const { return _RefMark; }
-    Uint GetRefRule    () const { return _RefRule; }
-    inline const RefRuleCL& GetRefData () const;
+    Uint GetLevel              () const { return _Level; }
+    const IdCL<TetraCL>& GetId () const { return _Id; }                          ///< get local id
+    Uint GetRefMark            () const { return _RefMark; }                     ///< get refinement mark
+    Uint GetRefRule            () const { return _RefRule; }                     ///< get refinement rule
+    inline const RefRuleCL& GetRefData () const;                                 ///< get information about refinement data
 
 // _RefMark is mutable
-    void SetRegRefMark () const { _RefMark= RegRefMarkC; }
-    void SetRemoveMark () const { _RefMark= RemoveMarkC; }
-    void SetNoRefMark  () const { _RefMark= NoRefMarkC; }
+    void SetRegRefMark () const { _RefMark= RegRefMarkC; }                       ///< mark tetra for regular refinement
+    void SetRemoveMark () const { _RefMark= RemoveMarkC; }                       ///< mark tetra for removement
+    void SetNoRefMark  () const { _RefMark= NoRefMarkC; }                        ///< mark tetra for no refinement
 
-    bool IsMarkEqRule   () const { return _RefMark == _RefRule; }
-    bool IsUnrefined    () const { return _RefRule == UnRefRuleC; }
-    bool IsRegularlyRef () const { return _RefRule == RegRefRuleC; }
-    bool IsRegular      () const
-        { return GetLevel()!=0 ? _Parent->GetRefRule() == RegRefRuleC : true; }
+    bool IsMarkEqRule   () const { return _RefMark == _RefRule; }                ///< check if tetra is refined as the mark says
+    bool IsUnrefined    () const { return _RefRule == UnRefRuleC; }              ///< check if tetra is unrefined
+    bool IsRegularlyRef () const { return _RefRule == RegRefRuleC; }             ///< check if tetra is regular refined
+    bool IsRegular      () const                                                 ///< check if the tetra is regular
+      { return GetLevel()!=0 ? _Parent->GetRefRule() == RegRefRuleC : true; }
 
-    bool IsMarkedForRef        () const
-        { return _RefMark != NoRefMarkC && _RefMark != RemoveMarkC; }
-    bool IsMarkedForRegRef     () const { return _RefMark == RegRefMarkC; }
-    bool IsMarkedForRemovement () const { return _RefMark == RemoveMarkC; }
-    bool IsMarkedForNoRef      () const { return _RefMark == NoRefMarkC; }
+    bool IsMarkedForRef        () const                                          ///< check if tetra is marked for refinement
+      { return _RefMark != NoRefMarkC && _RefMark != RemoveMarkC; }
+    bool IsMarkedForRegRef     () const { return _RefMark == RegRefMarkC; }      ///< check if tetra is marked for regular refinement
+    bool IsMarkedForRemovement () const { return _RefMark == RemoveMarkC; }      ///< check if tetra is marked for removement
+    bool IsMarkedForNoRef      () const { return _RefMark == NoRefMarkC; }       ///< check if tetra is marked for no refinement
 
+    /// \name access to subsimplices
+    //@{
     const_VertexPIterator GetVertBegin ()   const { return _Vertices.begin(); }
     const_VertexPIterator GetVertEnd   ()   const { return _Vertices.end(); }
     const_EdgePIterator   GetEdgesBegin()   const { return _Edges.begin(); }
@@ -449,25 +453,31 @@ friend class MultiGridCL;
     const VertexCL*       GetVertex(Uint i) const { return _Vertices[i]; }
     const EdgeCL*         GetEdge  (Uint i) const { return _Edges[i]; }
     const FaceCL*         GetFace  (Uint i) const { return _Faces[i]; }
+    //@}
 
-    bool           IsBndSeg        (Uint face) const { return _Faces[face]->IsOnBoundary(); }
-    bool           IsNeighbor      (Uint face) const { return _Faces[face]->HasNeighborTetra(this); }
-    BndIdxT        GetBndIdx       (Uint face) const { return _Faces[face]->GetBndIdx(); }
-    const TetraCL* GetNeighbor     (Uint face) const { return _Faces[face]->GetNeighborTetra(this); }
+    bool           IsBndSeg        (Uint face) const { return _Faces[face]->IsOnBoundary(); }           ///< check if face lies on domain-boundary
+    bool           IsNeighbor      (Uint face) const { return _Faces[face]->HasNeighborTetra(this); }   ///< check if this tetra is neigbor to a face
+    BndIdxT        GetBndIdx       (Uint face) const { return _Faces[face]->GetBndIdx(); }              ///< get boundary index of a face
+    const TetraCL* GetNeighbor     (Uint face) const { return _Faces[face]->GetNeighborTetra(this); }   ///< get pointer to neighbor tetra over face
     const TetraCL* GetNeighInTriang(Uint face, Uint trilevel) const
-                                                { return _Faces[face]->GetNeighInTriang( this, trilevel); }
-    const TetraCL*       GetParent     ()          const { return _Parent; }
+      { return _Faces[face]->GetNeighInTriang( this, trilevel); }
+
+    /// \name access to parent and children
+    //@{
+    const TetraCL*       GetParent     ()       const { return _Parent; }
     const_ChildPIterator GetChildBegin ()       const { return _Children->begin(); }
     const_ChildPIterator GetChildEnd   ()       const { return _Children->begin() + GetRefData().ChildNum; }
     const TetraCL*       GetChild      (Uint i) const { return (*_Children)[i]; }
-    double               GetVolume     ()       const;
-    double               GetNormal     (Uint face, Point3DCL& normal, double& dir) const;
-    double               GetOuterNormal(Uint face, Point3DCL& normal)              const;
-    bool                 IsInTriang    (Uint TriLevel) const
-        { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && IsUnrefined() ); }
+    //@}
 
-    bool IsSane    (std::ostream&) const;
-    void DebugInfo (std::ostream&) const;
+    double               GetVolume     () const;                                           ///< get volume of tetra
+    double               GetNormal     (Uint face, Point3DCL& normal, double& dir) const;  ///< get normal onto face with direction
+    double               GetOuterNormal(Uint face, Point3DCL& normal)              const;  ///< get outer normal onto face
+    bool                 IsInTriang    (Uint TriLevel) const                               ///< check if tetra is in triangulation level
+      { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && IsUnrefined() ); }
+
+    bool IsSane    (std::ostream&) const;                                                  ///< check for sanity
+    void DebugInfo (std::ostream&) const;                                                  ///< get debug-information
 };
 
 Point3DCL GetBaryCenter(const EdgeCL&);
