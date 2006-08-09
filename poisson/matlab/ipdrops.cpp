@@ -169,7 +169,7 @@ class MatConnect
       }
     }
 
-    static void setOutputData(DROPS::VectorCL& sol2D, bool firstStep= false)
+    static void setOutputData(double* sol2D, bool firstStep= false)
     {
       if (firstStep) _Count= 0;
       ci p= _NodeMap.begin();
