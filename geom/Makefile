@@ -20,12 +20,12 @@ OBJ = $(CPP:%.cpp=%.o)
 default: ClrScr
 
 topo.o: topo.cpp topo.h ../misc/utils.h
-	$(CC) $(CFLAGS) -c topo.cpp
+	$(CXX) $(CXXFLAGS) -c topo.cpp
 
 maketopo: maketopo.cpp topo.h topo.cpp.in ../misc/utils.o
 	cp -f topo.cpp.in maketopo_helper.cpp
-	$(CC) $(CFLAGS) -c maketopo_helper.cpp
-	$(CC) $(CFLAGS) -o maketopo maketopo.cpp maketopo_helper.o ../misc/utils.o $(LFLAGS)
+	$(CXX) $(CXXFLAGS) -c maketopo_helper.cpp
+	$(CXX) $(CXXFLAGS) -o maketopo maketopo.cpp maketopo_helper.o ../misc/utils.o $(LFLAGS)
 	rm -f maketopo_helper.cpp maketopo_helper.o
 
 topo.cpp: maketopo topo.cpp.in

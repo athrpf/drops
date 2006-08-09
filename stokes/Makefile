@@ -26,51 +26,51 @@ sdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/sdrops.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../num/discretize.o ../out/output.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 sdropsP2: \
     ../geom/boundary.o ../geom/builder.o ../stokes/sdropsP2.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../num/MGsolver.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 MGsdropsP2: \
     ../geom/boundary.o ../geom/builder.o ../stokes/MGsdropsP2.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/MGsolver.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 drivcav: \
     ../geom/boundary.o ../geom/builder.o ../stokes/drivcav.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 drcavad: \
     ../geom/boundary.o ../geom/builder.o ../stokes/drcavad.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 FSdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/FSdrops.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../num/discretize.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 isdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 stsdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/stsdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
-	$(CC) -o $@ $^ $(LFLAGS)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:
 include ../Make.common
