@@ -103,8 +103,10 @@ void FaceCL::UnlinkTetra(const TetraCL* tp)
 {
     int i;
 
+    // find tetra in neighbor list
     for ( i=0; i<4; ++i )
         if (_Neighbors[i] == tp) break;
+
     Assert(i<4, DROPSErrCL("FaceCL::UnlinkTetra: No such tetra."), DebugRefineEasyC);
 //    Assert(!(i<2 && IsOnNextLevel()), DROPSErrCL("FaceCL::UnlinkTetra: First unlink tetras on next level!"),
     if (i == 0)
@@ -212,12 +214,14 @@ double TetraCL::GetVolume () const
 
 double
 TetraCL::GetNormal(Uint face, Point3DCL& normal, double& dir) const
-// dir is set to 1.0 if the normal points out of the tetra,
-// else it is set to -1.0.
-// Normal has unit length, but the length of the cross-product is returned,
-// which is useful for integration over that face
-// If the triangulation is consistently numbered, both tetras on a face will
-// return the same normal in "normal" (, of course "dir" will be different).
+/**
+dir is set to 1.0 if the normal points out of the tetra,
+else it is set to -1.0.
+Normal has unit length, but the length of the cross-product is returned,
+which is useful for integration over that face
+If the triangulation is consistently numbered, both tetras on a face will
+return the same normal in "normal" (, of course "dir" will be different).
+*/
 {
     const VertexCL* v[3];
     for (Uint i=0; i<3; ++i)
@@ -234,8 +238,10 @@ TetraCL::GetNormal(Uint face, Point3DCL& normal, double& dir) const
 
 double
 TetraCL::GetOuterNormal(Uint face, Point3DCL& normal) const
-// Returns the length of the cross-product;
-// "normal" is set to the unit outward normal of face "face"
+/**
+Returns the length of the cross-product;
+"normal" is set to the unit outward normal of face "face"
+*/
 {
     double dir;
     const double absdet2D= GetNormal(face, normal, dir);
@@ -300,7 +306,7 @@ void TetraCL::BuildAndLinkFaces (FaceContT& facecont)  // used by XXXBuilderCL
 {
     for (Uint face=0; face<NumFacesC; ++face)
     {
-              VertexCL* const vp0= GetVertMidVert(VertOfFace(face, 0));
+        VertexCL* const vp0= GetVertMidVert(VertOfFace(face, 0));
         VertexCL* const vp1= GetVertMidVert(VertOfFace(face, 1));
         VertexCL* const vp2= GetVertMidVert(VertOfFace(face, 2));
 
@@ -323,11 +329,13 @@ TetraCL::SetFace(Uint f, FaceCL* fp)
 // member functions for r e f i n e m e n t
 
 void TetraCL::RecycleReusables()
-// is called, if the refinement rule has changed.
-// It recycles and rescues simplices, that will be reused:
-// - Edges of children, that are not edges of the parent, if they are used by the new rule
-// - Faces of children, that are not faces of the parent,  -- " --
-// - Children                                           ,  -- " --
+/**
+is called, if the refinement rule has changed.
+It recycles and rescues simplices, that will be reused:
+- Edges of children, that are not edges of the parent, if they are used by the new rule
+- Faces of children, that are not faces of the parent,  -- " --
+- Children                                           ,  -- " --
+*/
 {
     const RefRuleCL& myRule= GetRefData();
     const RefRuleCL& newRule= DROPS::GetRefRule(GetRefMark() & 63);
@@ -353,7 +361,7 @@ void TetraCL::RecycleReusables()
     {
         const ChildDataCL childdat= GetChildData(myRule.Children[ch]);
         TetraCL* const child= (*_Children)[ch];
-        // recycle and rescue common faces
+        // recycle and rescue common edges
         for (Uint edge= 0; edge<NumEdgesC; ++edge)
         {
             if ( IsParentEdge(childdat.Edges[edge]) ) continue;
@@ -400,7 +408,9 @@ void TetraCL::RecycleReusables()
 
 
 void TetraCL::ClearAllRemoveMarks()
-// is called if MarkEqRule(). It safes all sub simplices from removement.
+/**
+is called if MarkEqRule(). It safes all sub simplices from removement.
+*/
 {
     const RefRuleCL& myRule= GetRefData();
 
@@ -412,13 +422,9 @@ void TetraCL::ClearAllRemoveMarks()
         for (VertexPIterator vertPIt(child->_Vertices.begin()); vertPIt!=child->_Vertices.end(); ++vertPIt)
             (*vertPIt)->ClearRemoveMark();
         for (Uint edge= 0; edge<NumEdgesC; ++edge)
-        {
             child->_Edges[edge]->ClearRemoveMark();
-        }
         for (Uint face= 0; face<NumFacesC; ++face)
-        {
             child->_Faces[face]->ClearRemoveMark();
-        }
     }
 }
 
@@ -479,9 +485,11 @@ void TetraCL::RestrictMark()
 void TetraCL::CollectEdges (const RefRuleCL& refrule,
                             VertContT& vertcont, EdgeContT& edgecont,
                             const BoundaryCL& Bnd)
-// The edges for new refinement are stored in the static TetraCL::ePtrs array.
-// First look for them in the recycle bin (maybe they were created before),
-// if the edge cannot be found, create it.
+/**
+The edges for new refinement are stored in the static TetraCL::ePtrs array.
+First look for them in the recycle bin (maybe they were created before),
+if the edge cannot be found, create it.
+*/
 {
     const Uint nextLevel= GetLevel()+1;
 
@@ -538,9 +546,11 @@ void TetraCL::CollectEdges (const RefRuleCL& refrule,
 }
 
 void TetraCL::CollectFaces (const RefRuleCL& refrule, FaceContT& facecont)
-// The faces for new refinement are stored in the static TetraCL::fPtrs array.
-// First look for them in the recycle bin (maybe they were created before),
-// if the face cannot be found, create it and link boundary, if necessary.
+/**
+The faces for new refinement are stored in the static TetraCL::fPtrs array.
+First look for them in the recycle bin (maybe they were created before),
+if the face cannot be found, create it and link boundary, if necessary.
+*/
 {
     const Uint nextLevel= GetLevel()+1;
 
@@ -561,6 +571,7 @@ void TetraCL::CollectFaces (const RefRuleCL& refrule, FaceContT& facecont)
                     facecont.push_back( FaceCL(nextLevel, GetFace(ParentFace(face))->GetBndIdx() ) );
                 else
                     facecont.push_back( FaceCL(nextLevel) );
+
                 _fPtrs[face] = &facecont.back();
                 _fPtrs[face]->RecycleMe(vp0, vp1, vp2);
             }
@@ -569,9 +580,11 @@ void TetraCL::CollectFaces (const RefRuleCL& refrule, FaceContT& facecont)
 }
 
 void TetraCL::CollectAndLinkChildren (const RefRuleCL& refrule, TetraContT& tcont)
-// The child tetras for new refinement are stored in the _Children array.
-// First look for them in the recycle bin (maybe they are still left from the old rule),
-// if the child cannot be found, create it.
+/**
+The child tetras for new refinement are stored in the _Children array.
+First look for them in the recycle bin (maybe they are still left from the old rule),
+if the child cannot be found, create it.
+*/
 {
     if ( !_Children ) _Children= new SArrayCL<TetraCL*, MaxChildrenC>;
     Uint ChildNum= refrule.ChildNum;
@@ -582,6 +595,7 @@ void TetraCL::CollectAndLinkChildren (const RefRuleCL& refrule, TetraContT& tcon
         VertexCL* const vp1= GetVertMidVert(childdat.Vertices[1]);
         VertexCL* const vp2= GetVertMidVert(childdat.Vertices[2]);
         VertexCL* const vp3= GetVertMidVert(childdat.Vertices[3]);
+
         if (!( (*_Children)[ch]= vp0->FindTetra(vp1, vp2, vp3) ))
         {
             tcont.push_back(TetraCL(vp0, vp1, vp2, vp3, this) );
@@ -611,7 +625,7 @@ void RecycleBinCL::DebugInfo(std::ostream& os) const
     os << std::endl;
 }
 
-// TODO: Checke die BoundarySegments!!
+/// \todo: Checke die BoundarySegments!!
 
 bool VertexCL::IsSane(std::ostream& os, const BoundaryCL& Bnd) const
 {
@@ -701,7 +715,7 @@ void EdgeCL::DebugInfo (std::ostream& os) const
     else               os << "not found ";
     if ( IsOnBoundary() )
     {
-        os << "BndIndices ";
+        os << " BndIndices ";
         for (const BndIdxT *it= GetBndIdxBegin(), *end= GetBndIdxEnd(); it!=end; ++it)
             os << *it << ' ';
     }
@@ -935,7 +949,8 @@ void MultiGridCL::CloseGrid(Uint Level)
     for (TetraIterator tIt(_Tetras[Level].begin()), tEnd(_Tetras[Level].end()); tIt!=tEnd; ++tIt)
     {
         Comment("Now closing tetra " << tIt->GetId().GetIdent() << std::endl, DebugRefineHardC);
-        if ( tIt->IsRegular() && !tIt->IsMarkedForRegRef() ) tIt->Close();
+        if ( tIt->IsRegular() && !tIt->IsMarkedForRegRef() )
+            tIt->Close();
     }
 
     Comment("Closing grid " << Level << " done." << std::endl, DebugRefineEasyC);
@@ -992,11 +1007,10 @@ void MultiGridCL::UnrefineGrid (Uint Level)
 
 void MultiGridCL::RefineGrid (Uint Level)
 {
-    const Uint nextLevel(Level+1);
-
     Comment("Refining grid " << Level << std::endl, DebugRefineEasyC);
+
+    const Uint nextLevel(Level+1);
     if ( Level==GetLastLevel() ) AppendLevel();
-    Comment("Now refining tetras." << std::endl, DebugRefineEasyC);
 
     for (TetraIterator tIt(_Tetras[Level].begin()), tEnd(_Tetras[Level].end()); tIt!=tEnd; ++tIt)
     {
