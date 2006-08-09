@@ -268,11 +268,11 @@ void TetraCL::BuildEdges (EdgeContT& edgecont)
             switch( commonBndVerts.size() )
             {
               case 0:
-                edgecont.push_back( EdgeCL(v0, v1, _Level) );   break;
+                edgecont.push_back( EdgeCL(v0, v1, GetLevel()) );   break;
               case 1:
-                edgecont.push_back( EdgeCL(v0, v1, _Level, commonBndVerts[0].GetBndIdx() ) );   break;
+                edgecont.push_back( EdgeCL(v0, v1, GetLevel(), commonBndVerts[0].GetBndIdx() ) );   break;
               case 2:
-                edgecont.push_back( EdgeCL(v0, v1, _Level, commonBndVerts[0].GetBndIdx(), commonBndVerts[1].GetBndIdx()) );   break;
+                edgecont.push_back( EdgeCL(v0, v1, GetLevel(), commonBndVerts[0].GetBndIdx(), commonBndVerts[1].GetBndIdx()) );   break;
               default:
                 v0->DebugInfo( std::cerr); std::cerr << std::endl;
                 v1->DebugInfo( std::cerr); std::cerr << std::endl;
@@ -312,7 +312,7 @@ void TetraCL::BuildAndLinkFaces (FaceContT& facecont)  // used by XXXBuilderCL
 
         if ( !(_Faces[face]= vp0->FindFace(vp1,vp2) ) )
         {
-            facecont.push_back( FaceCL(_Level, GetCommonBndSeg(vp0, vp1, vp2) ) );
+            facecont.push_back( FaceCL(GetLevel(), GetCommonBndSeg(vp0, vp1, vp2) ) );
             _Faces[face]= &facecont.back();
             _Faces[face]->RecycleMe(vp0, vp1, vp2);
         }
