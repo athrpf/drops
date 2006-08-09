@@ -1,147 +1,158 @@
 #
-# cxxopts.sh	Shell script for configuring MEX-file creation script,
+# mexopts.sh	Shell script for configuring MEX-file creation script,
 #               mex.  These options were tested with the specified compiler.
 #
 # usage:        Do not call this file directly; it is sourced by the
 #               mex shell script.  Modify only if you don't like the
-#               defaults after running mex.  The version tested against
-#               is specified by platform.  No spaces are allowed
+#               defaults after running mex.  No spaces are allowed
 #               around the '=' in the variable assignment.
 #
-# Copyright 1984-2000 The MathWorks, Inc.
+# SELECTION_TAGs occur in template option files and are used by MATLAB
+# tools, such as mex and mbuild, to determine the purpose of the contents
+# of an option file. These tags are only interpreted when preceded by '#'
+# and followed by ':'.
+#
+#SELECTION_TAG_MEX_OPT: Template Options file for building MEX-files via the system ANSI compiler
+#
+# Copyright 1984-2004 The MathWorks, Inc.
 # $Revision$  $Date$
 #----------------------------------------------------------------------------
 #
     TMW_ROOT="$MATLAB"
     MFLAGS=''
-    MLIBS="-L$TMW_ROOT/bin/$Arch -lmx -lmex"
+    if [ "$ENTRYPOINT" = "mexLibrary" ]; then
+        MLIBS="-L$TMW_ROOT/bin/$Arch -lmx -lmex -lmat -lmwservices -lut"
+    else  
+        MLIBS="-L$TMW_ROOT/bin/$Arch -lmx -lmex -lmat"
+    fi
     case "$Arch" in
         Undetermined)
 #----------------------------------------------------------------------------
 # Change this line if you need to specify the location of the MATLAB
-# root directory.  The cmex script needs to know where to find utility
+# root directory.  The script needs to know where to find utility
 # routines so that it can determine the architecture; therefore, this
 # assignment needs to be done while the architecture is still
 # undetermined.
 #----------------------------------------------------------------------------
             MATLAB="$MATLAB"
             ;;
-        alpha)
-#----------------------------------------------------------------------------
-#           cxx -V
-#           Compaq C++ V6.2-024 for Digital UNIX V4.0F  (Rev. 1229)
-            CC='cxx'
-            CFLAGS='-shared -ieee -pthread'
-            CLIBS="$MLIBS -lm"
-            COPTIMFLAGS='-O -DNDEBUG'
-            CDEBUGFLAGS='-g'
-#
-            LD="$COMPILER"
-            LDFLAGS="-pthread -shared -Wl,-expect_unresolved,'*',-hidden,-exported_symbol,$ENTRYPOINT,-exported_symbol,mexVersion,-exported_symbol,'__*'"
-            LDOPTIMFLAGS='-O'
-            LDDEBUGFLAGS='-g'
-#
-            POSTLINK_CMDS=':'
-#----------------------------------------------------------------------------
-            ;;
         hpux)
 #----------------------------------------------------------------------------
-#           what `which aCC`
-#           HP aC++ B3910B A.03.13
-#           HP aC++ B3910B X.03.11.10 Language Support Library
-            CC='aCC'
-            CFLAGS='+Z +DA2.0 -D_POSIX_C_SOURCE=199506L -D_HPUX_SOURCE'
-            CLIBS="$MLIBS -lm"
+#           what `which cc`
+#           HP92453-01 B.11.11.06 HP C Compiler
+            CC='cc'
+            COMPFLAGS='-z +Z +DA2.0 -mt'
+            CFLAGS="-Ae $COMPFLAGS -Wp,-H65535"
+            CLIBS="$MLIBS -lm -lc"
             COPTIMFLAGS='-O -DNDEBUG'
             CDEBUGFLAGS='-g'
 #
+#           what `which aCC`
+#           HP aC++ B3910B A.03.37
+#           HP aC++ B3910B A.03.30 Language Support Library
+            CXX='aCC'
+            CXXFLAGS="$MCXXFLAGS -AA -D_HPUX_SOURCE $COMPFLAGS"
+            CXXLIBS="$MLIBS -lm -lstd_v2 -lCsup_v2"
+            CXXOPTIMFLAGS='-O -DNDEBUG +Oconservative'
+            CXXDEBUGFLAGS='-g'
+#
+#           what `which f90`
+#           HP-UX f90 20020606 (083554)  B3907DB/B3909DB B.11.01.60
+#           HP F90 v2.6
+#            $ PATCH/11.00:PHCO_95167  Oct  1 1998 13:46:32 $
+            F90LIBDIR='/opt/fortran90/lib/pa2.0'
+            FC='f90'
+            FFLAGS='+Z +DA2.0'
+            FLIBS="$MLIBS -lm -L$F90LIBDIR -lF90 -lcl -lc -lisamstub"
+            FOPTIMFLAGS='-O +Oconservative'
+            FDEBUGFLAGS='-g'
+#
+            if [ "$ffiles" = "1" ]; then
+            LD='cc'
+            else
             LD="$COMPILER"
-            LDFLAGS="-b -Wl,+e,$ENTRYPOINT,+e,mexVersion,+e,_shlInit"
+            fi
+            LDEXTENSION='.mexhpux'
+            LDFLAGS="-b -Wl,+e,mexVersion,+e,mexFunction,+e,mexfunction,+e,mexLibrary,+e,_shlInit $COMPFLAGS"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
-#
-            POSTLINK_CMDS=':'
-#----------------------------------------------------------------------------
-            ;;
-        hp700)
-#----------------------------------------------------------------------------
-#           what `which aCC`
-#           HP aC++ B3910B A.01.21
-#           HP aC++ B3910B A.01.19.02 Language Support Library
-            CC='aCC'
-#           Remove +DAportable from CFLAGS if you wish to optimize
-#           for target machine
-            CFLAGS='+Z -D_HPUX_SOURCE +DAportable'
-            CLIBS="$MLIBS"
-            COPTIMFLAGS='-O -DNDEBUG'
-            CDEBUGFLAGS='-g'
-#
-            LD="$COMPILER"
-            LDFLAGS="-b -Wl,+e,$ENTRYPOINT,+e,mexVersion,+e,_shlInit,+e,errno"
-            LDOPTIMFLAGS='-O'
-            LDDEBUGFLAGS='-g'
-#
-            POSTLINK_CMDS=':'
-#----------------------------------------------------------------------------
-            ;;
-        ibm_rs)
-#----------------------------------------------------------------------------
-#           lslpp -l ibmcxx.cmp
-#           3.6.6.0  COMMITTED  IBM C and C++ Compilers
-            CC='/usr/vacpp/bin/xlC'
-            CFLAGS='-D_THREAD_SAFE -D_ALL_SOURCE -qrtti=all'
-            CLIBS="$MLIBS -lmatlb -lmat -lm"
-            COPTIMFLAGS='-O -DNDEBUG'
-            CDEBUGFLAGS='-g'
-#
-            LD='/usr/vacpp/bin/makeC++SharedLib'
-            LDFLAGS='-p 0'
-            LDOPTIMFLAGS=''
-            LDDEBUGFLAGS=''
 #
             POSTLINK_CMDS=':'
 #----------------------------------------------------------------------------
             ;;
         glnx86)
 #----------------------------------------------------------------------------
-            RPATH="-Wl,--rpath-link,$TMW_ROOT/extern/lib/$Arch,--rpath-link,$TMW_ROOT/bin/$Arch"
-#           g++ -v
-#           gcc version 2.95.2 19991024 (release)
-            CC='g++'
-#           Add -fhandle-exceptions to CFLAGS to support exception handling
-#            CFLAGS='-fPIC -ansi -D_GNU_SOURCE -pthread'
-            CFLAGS='-ansi -O2 -fPIC -ffast-math -funroll-loops -fomit-frame-pointer'
-            CLIBS="$RPATH $MLIBS -lm"
+            RPATH="-Wl,-rpath-link,$TMW_ROOT/bin/$Arch"
+#           gcc -v
+#           gcc version 3.2.3
+            CC='gcc'
+            CFLAGS='-fPIC -ansi -D_GNU_SOURCE -pthread -fexceptions -m32'
+            CLIBS="$RPATH $MLIBS -lm -lstdc++"
             COPTIMFLAGS='-O -DNDEBUG'
             CDEBUGFLAGS='-g'
-#
+#           
+#           g++ -v
+#           gcc version 3.2.3
             CXX='g++'
-            CXXFLAGS="$CFLAGS"
+            CXXFLAGS='-fPIC -ansi -D_GNU_SOURCE -pthread -m32'
             CXXLIBS="$RPATH $MLIBS -lm"
             CXXOPTIMFLAGS='-O -DNDEBUG'
             CXXDEBUGFLAGS='-g'
 #
+#           g77 -fversion
+#           GNU Fortran (GCC 3.2.3) 3.2.3 20030422 (release)
+#           NOTE: g77 is not thread safe
+            FC='g77'
+            FFLAGS='-fPIC -fexceptions'
+            FLIBS="$RPATH $MLIBS -lm -lstdc++"
+            FOPTIMFLAGS='-O'
+            FDEBUGFLAGS='-g'
+#
             LD="$COMPILER"
-            LDFLAGS="-pthread -shared -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
+            LDEXTENSION='.mexglx'
+            LDFLAGS="-pthread -shared -m32 -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
 #
             POSTLINK_CMDS=':'
 #----------------------------------------------------------------------------
             ;;
-        sgi)
+        glnxi64)
 #----------------------------------------------------------------------------
-#           CC -version
-#           MIPSpro Compilers: Version 7.3.1.2m
-            CC='CC'
-#           Add -exceptions to CFLAGS to support exception handling
-            CFLAGS='-n32 -D_POSIX_C_SOURCE=199506L -D__EXTENSIONS__ -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED'
-            CLIBS="-dont_warn_unused $MLIBS -lm -lC"
+echo "Error: Did not imbed 'options.sh' code"; exit 1 #imbed options.sh glnxi64 12
+#----------------------------------------------------------------------------
+            ;;
+        glnxa64)
+#----------------------------------------------------------------------------
+            RPATH="-Wl,-rpath-link,$TMW_ROOT/bin/$Arch"
+#           gcc -v
+#           gcc version 3.2.3
+            CC='gcc'
+            CFLAGS='-fPIC -fno-omit-frame-pointer -ansi -D_GNU_SOURCE -pthread -fexceptions'
+            CLIBS="$RPATH $MLIBS -lm -lstdc++"
             COPTIMFLAGS='-O -DNDEBUG'
             CDEBUGFLAGS='-g'
+#           
+#           g++ -v
+#           gcc version 3.2.3
+            CXX='g++'
+            CXXFLAGS='-fPIC -fno-omit-frame-pointer -ansi -D_GNU_SOURCE -pthread '
+            CXXLIBS="$RPATH $MLIBS -lm"
+            CXXOPTIMFLAGS='-O -DNDEBUG'
+            CXXDEBUGFLAGS='-g'
+#
+#           g77 -fversion
+#           GNU Fortran (GCC 3.2.3) 3.2.3 20030422 (release)
+#           NOTE: g77 is not thread safe
+            FC='g77'
+            FFLAGS='-fPIC -fno-omit-frame-pointer -fexceptions'
+            FLIBS="$RPATH $MLIBS -lm -lstdc++"
+            FOPTIMFLAGS='-O'
+            FDEBUGFLAGS='-g'
 #
             LD="$COMPILER"
-            LDFLAGS="-n32 -shared -exported_symbol $ENTRYPOINT -exported_symbol mexVersion"
+            LDEXTENSION='.mexa64'
+            LDFLAGS="-pthread -shared -Wl,--version-script,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
 #
@@ -150,22 +161,75 @@
             ;;
         sol2)
 #----------------------------------------------------------------------------
+#           cc -V
+#           Sun C 5.5 Patch 112760-06 2004/01/13
+            CC='cc'
+            CFLAGS='-KPIC -dalign -xlibmieee -D__EXTENSIONS__ -D_POSIX_C_SOURCE=199506L -mt'
+            CFLAGS="$CFLAGS -D_XOPEN_SOURCE=600"
+            CLIBS="$MLIBS -lm -lc"
+            COPTIMFLAGS='-xO3 -xlibmil -DNDEBUG'
+            CDEBUGFLAGS='-xs -g'
+#           
 #           CC -V
-#           WorkShop Compilers 5.0 98/12/15 C++ 5.0
-            CC='CC -compat=5'
+#           Sun C++ 5.5 Patch 113817-05 2004/01/13
+            CXX='CC -compat=5'
             CCV=`CC -V 2>&1`
             version=`expr "$CCV" : '.*\([0-9][0-9]*\)\.'`
             if [ "$version" = "4" ]; then
                     echo "SC5.0 or later C++ compiler is required"
             fi
-            CFLAGS='-KPIC -dalign -xlibmieee -D__EXTENSIONS__ -D_POSIX_C_SOURCE=199506L -mt'
-            CLIBS="$MLIBS -lm -lCstd -lCrun"
-
-            COPTIMFLAGS='-xO3 -xlibmil -DNDEBUG'
-            CDEBUGFLAGS='-g'
+            CXXFLAGS='-KPIC -dalign -xlibmieee -D__EXTENSIONS__ -D_POSIX_C_SOURCE=199506L -mt'
+            CXXLIBS="$MLIBS -lm -lCstd -lCrun"
+            CXXOPTIMFLAGS='-xO3 -xlibmil -DNDEBUG'
+            CXXDEBUGFLAGS='-xs -g'
+#
+#           f90 -V
+#           Sun Fortran 95 7.1 Patch 112762-09 2004/01/26
+            FC='f90'
+            FFLAGS='-KPIC -dalign -mt'
+            FLIBS="$MLIBS -lfui -lfsu -lsunmath -lm -lc"
+            FOPTIMFLAGS='-O'
+            FDEBUGFLAGS='-xs -g'
 #
             LD="$COMPILER"
+            LDEXTENSION='.mexsol'
             LDFLAGS="-G -mt -M$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
+            LDOPTIMFLAGS='-O'
+            LDDEBUGFLAGS='-xs -g'
+#
+            POSTLINK_CMDS=':'
+#----------------------------------------------------------------------------
+            ;;
+        mac)
+#----------------------------------------------------------------------------
+#           gcc-3.3 -v
+#           gcc version 3.3 20030304 (Apple Computer, Inc. build 1435)
+            CC='gcc-3.3'
+            CFLAGS='-fno-common -no-cpp-precomp -fexceptions'
+            CLIBS="$MLIBS -lstdc++"
+            COPTIMFLAGS='-O3 -DNDEBUG'
+            CDEBUGFLAGS='-g'
+#
+#           g++-3.3 -v
+#           gcc version 3.3 20030304 (Apple Computer, Inc. build 1435)
+            CXX=g++-3.3
+            CXXFLAGS='-fno-common -no-cpp-precomp -fexceptions'
+            CXXLIBS="$MLIBS -lstdc++"
+            CXXOPTIMFLAGS='-O3 -DNDEBUG'
+            CXXDEBUGFLAGS='-g'
+#
+#           f77 -V
+#           FORTRAN 77 Compiler 8.2a
+            FC='f77'
+            FFLAGS='-f -N15 -N11 -s -Q51 -W'
+            ABSOFTLIBDIR=`which $FC | sed -n -e '1s|bin/'$FC'|lib|p'`
+            FLIBS="-L$ABSOFTLIBDIR -lfio -lf77math"
+            FOPTIMFLAGS='-O -cpu:g4'
+            FDEBUGFLAGS='-g'
+#
+            LD="$CC"
+            LDEXTENSION='.mexmac'
+            LDFLAGS="-bundle -Wl,-flat_namespace -undefined suppress -Wl,-exported_symbols_list,$TMW_ROOT/extern/lib/$Arch/$MAPFILE"
             LDOPTIMFLAGS='-O'
             LDDEBUGFLAGS='-g'
 #
@@ -185,6 +249,12 @@
 #           COPTIMFLAGS="$COPTIMFLAGS"
 #           CDEBUGFLAGS="$CDEBUGFLAGS"
 #           CLIBS="$CLIBS"
+#
+#           FC="$FC"
+#           FFLAGS="$FFLAGS"
+#           FOPTIMFLAGS="$FOPTIMFLAGS"
+#           FDEBUGFLAGS="$FDEBUGFLAGS"
+#           FLIBS="$FLIBS"
 #
 #           LD="$LD"
 #           LDFLAGS="$LDFLAGS"
