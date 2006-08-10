@@ -12,7 +12,11 @@
 #include <string>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <cmath>
 
+#ifndef M_PI
+#  include <math.h>
+#endif
 
 namespace DROPS
 {
