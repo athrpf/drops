@@ -3,6 +3,10 @@
 
 #include <cmath>
 
+#ifdef __SUNPRO_CC
+#  include <stdlib.h>
+#endif
+
 using namespace DROPS;
 using namespace std;
 
