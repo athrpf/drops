@@ -28,7 +28,7 @@ main()
     MatrixCL I( std::valarray<double>( 1.0, M.num_rows()));
 
     MatrixCL N;
-    N.LinComb(1e-2*M.val().apply( std::fabs).max(), I, 1.0, M);
+    N.LinComb(1e-2*M.val().apply( std::abs).max(), I, 1.0, M);
 //    MatrixCL N( M1);
 
     // GMResSolverCL<SSORPcCL> ExactAsolver( SSORPcCL( 1.0), 500, 1000, 1e-6, /*relative=*/ true);
