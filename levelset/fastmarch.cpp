@@ -44,6 +44,8 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
 }
 
 void FastMarchCL::InitZero( bool ModifyZero)
+/// \param[in] ModifyZero If this flag is set, the value around the zero level of the levelset function are new computed. Otherwise
+///                       the old values are kept.
 {
     // Knoten an der Phasengrenze als Finished markieren
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
