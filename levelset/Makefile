@@ -54,61 +54,61 @@ curvDriven: \
 risingBubble: \
     ../levelset/risingBubble.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 risingBubbleAdap: \
     ../levelset/risingBubbleAdap.o ../geom/boundary.o ../geom/builder.o ../levelset/levelset.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_stat: \
     ../levelset/mzelle_stat.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_instat: \
     ../levelset/mzelle_instat.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o ../num/MGsolver.o
+    ../misc/params.o ../levelset/fastmarch.o ../num/MGsolver.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_instat_ns: \
     ../levelset/mzelle_instat_ns.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 brickflow: \
     ../levelset/brickflow.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfTens: \
     ../levelset/surfTens.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prJump: \
     ../levelset/prJump.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \
     ../levelset/film.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 

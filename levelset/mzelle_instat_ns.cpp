@@ -151,12 +151,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    MatDescCL prM, prA;
     VecDescCL cplN;
 
+    lset.CreateNumbering( MG.GetLastLevel(), lidx);
+    lset.Phi.SetIdx( lidx);
+    lset.Init( DistanceFct);
+
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
-    lset.CreateNumbering(      MG.GetLastLevel(), lidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
 
     EnsightP2SolOutCL ensight( MG, lidx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
@@ -171,45 +173,54 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.DescribeVector( "Velocity", datvec, true);
     ensight.putGeom( datgeo);
 
-    lset.Phi.SetIdx( lidx);
 
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
-    Stokes.c.SetIdx( pidx);
-    Stokes.p.SetIdx( pidx);
     Stokes.v.SetIdx( vidx);
     cplN.SetIdx( vidx);
+//    Stokes.c.SetIdx( pidx);
+    Stokes.p.SetIdx( pidx);
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
     Stokes.A.SetIdx(vidx, vidx);
-    Stokes.B.SetIdx(pidx, vidx);
+//    Stokes.B.SetIdx(pidx, vidx);
+//    Stokes.prM.SetIdx( pidx, pidx);
+//    Stokes.prA.SetIdx( pidx, pidx);
     Stokes.M.SetIdx(vidx, vidx);
     Stokes.N.SetIdx(vidx, vidx);
-    prM.SetIdx( pidx, pidx);
-    prA.SetIdx( pidx, pidx);
 
     Stokes.InitVel( &Stokes.v, Null);
-    Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA, lset);
+//    Stokes.SetupPrMass(  &Stokes.prM, lset);
+//    Stokes.SetupPrStiff( &Stokes.prA, lset);
 
     switch (C.IniCond)
     {
       case 1: case 2: // stationary flow with/without drop
       {
-        PSchur_PCG_CL schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        PSchur_PCG_CL schurSolver( Stokes.prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     //    Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
         const double old_Radius= C.Radius;
         if (C.IniCond==2) // stationary flow without drop
             C.Radius= -10;
         lset.Init( DistanceFct);
+
         // solve stationary problem for initial velocities
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
+    Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
+    Stokes.UpdatePressure( &Stokes.p);
+    Stokes.c.SetIdx( pidx);
+    Stokes.p.SetIdx( pidx);
+    Stokes.B.SetIdx(pidx, vidx);
+    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
+//    Stokes.prA.SetIdx( pidx, pidx);
+//    Stokes.SetupPrStiff( &Stokes.prA, lset);
+    Stokes.prM.SetIdx( pidx, pidx);
+    Stokes.SetupPrMass(  &Stokes.prM, lset);
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();
@@ -227,7 +238,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + nl*cplN.Data), Stokes.c.Data);
         } while (schurSolver.GetIter() > 0);
         time.Stop();
-        std::cerr << "Solving NavStokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cerr << "Solving NavStokes for initial velocities took "<< time.GetTime()<<" sec.\n";
 
         if (C.IniCond==2)
         {
@@ -237,17 +248,18 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
       } break;
 
       case 3: // read from file
-      {
+      { // FIXME: only the P1-part of P1X-elements can be read
         ReadEnsightP2SolCL reader( MG);
-        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
+        Stokes.p.SetIdx( pidx); // Zero-vector for now.
+        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
       } break;
 
       default:
         lset.Init( DistanceFct);
     }
-
     const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
@@ -260,9 +272,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
         // PC for instat. Schur complement
         typedef ISPreCL SPcT;
-        SPcT ispc( prA.Data, prM.Data, /*kA*/ 1./C.dt, /*kM*/ C.theta);
+        SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM*/ C.theta);
 //        typedef ISNonlinearPreCL SPcT;
-//        SPcT ispc( prA.Data, prM.Data, /*kA*/ 1./C.dt, /*kM*/ C.theta);
+//        SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM*/ C.theta);
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
@@ -346,7 +358,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     else // Baensch scheme
     {
         // PC for instat. Schur complement
-        ISPreCL ispc( prA.Data, prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
+        ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, C.dt*(3 - 2*std::sqrt(2.)));
 
         // PC for A-block
         typedef PCG_SsorCL ASolverT;
@@ -472,7 +484,8 @@ int main (int argc, char** argv)
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
-    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun));
+    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL(
+        num_bnd, bc, bnd_fun), DROPS::P1X_FE);
 
     Strategy( prob);    // do all the stuff
 

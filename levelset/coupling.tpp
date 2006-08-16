@@ -349,13 +349,13 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _LvlSet.SetTimeStep( _dt);
 
     time.Stop();
-    std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
+    std::cerr << "Discretizing Levelset took " << time.GetTime() << " sec.\n";
     time.Reset();
 
     _LvlSet.DoStep( _ls_rhs);
 
     time.Stop();
-    std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
+    std::cerr << "Solving Levelset took " << time.GetTime() << " sec.\n";
 
     time.Reset();
     time.Start();
@@ -364,7 +364,15 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _LvlSet.AccumulateBndIntegral( *_curv);
 
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
+    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+    _Stokes.UpdatePressure( &_Stokes.p);
+    _Stokes.c.SetIdx( &_Stokes.pr_idx);
+    _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+    _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
@@ -411,7 +419,7 @@ template <class StokesT, class SolverT>
 void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
 {
     IdxDescCL* const vidx= &_Stokes.vel_idx;
-    IdxDescCL* const pidx= &_Stokes.pr_idx;
+//    IdxDescCL* const pidx= &_Stokes.pr_idx;
     TimerCL time;
     time.Reset();
     time.Start();
@@ -424,9 +432,9 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _curv->SetIdx( vidx);    _old_curv->SetIdx( vidx);
     _rhs.resize( vidx->NumUnknowns);
     _ls_rhs.resize( _LvlSet.idx.NumUnknowns);
-    _Stokes.c.SetIdx( pidx);
+//    _Stokes.c.SetIdx( pidx);
     _Stokes.A.SetIdx( vidx, vidx);
-    _Stokes.B.SetIdx( pidx, vidx);
+//    _Stokes.B.SetIdx( pidx, vidx);
     _Stokes.M.SetIdx( vidx, vidx);
     _Stokes.N.SetIdx( vidx, vidx);
 
@@ -434,7 +442,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _LvlSet.AccumulateBndIntegral( *_old_curv);
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+//    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _old_cplN, _LvlSet, _Stokes.t);
 
     time.Stop();

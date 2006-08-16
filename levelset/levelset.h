@@ -64,6 +64,8 @@ class LevelsetP2CL
         theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
     {}
 
+    const MultiGridCL& GetMG() const { return MG_; }
+
     GMResSolverCL<SSORPcCL>& GetSolver() { return gm_; }
 
     const BndDataT& GetBndData() const { return Bnd_; }

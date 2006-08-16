@@ -100,7 +100,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
 }
 
 template <class CoeffT>
-void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, const ExtendedIdxT& Xidx, double t)
+void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx, double t)
 // P2 / P1X FEs (X=extended) for vel/pr
 {
     MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
@@ -327,7 +327,7 @@ void SetupRhs2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL
 }
 
 template <class CoeffT>
-void SetupRhs2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, VecDescCL* c, const LevelsetP2CL& lset, const ExtendedIdxT& Xidx, double t)
+void SetupRhs2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, VecDescCL* c, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx, double t)
 // P2 / P1X FEs (X=extended) for vel/pr
 {
     c->Clear();
@@ -513,7 +513,7 @@ void SetupPrMass_P1(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM,
 }
 
 template<class CoeffT>
-void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM, const LevelsetP2CL& lset, const ExtendedIdxT& Xidx)
+void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
     MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
@@ -693,7 +693,7 @@ void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_p
 }
 
 template <class CoeffT>
-void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_pr, const LevelsetP2CL& lset, const ExtendedIdxT& Xidx)
+void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_pr, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
 {
     MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
     const Uint lvl= A_pr->GetRowLevel();
@@ -1163,66 +1163,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, const LevelsetP2C
       default:
         throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2 not implemented for this FE type");
     }
-}
-
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::UpdateXNumbering( IdxDescCL* idx, const LevelsetP2CL& lset, bool NumberingChanged)
-/// Has to be called in two situations:
-/// - when numbering of \p idx has changed, i.e. \p CreateNumbering was called before (set \p NumberingChanged=true)
-/// - whenever level set function has changed to account for the moving interface (set \p NumberingChanged=false).
-{
-    if (prFE_!=P1X_FE) return;
-
-//LocalP2CL<> ones;
-//for (int i=0; i<10; ++i) ones[i]= 1.;
-
-    const Uint sysnum= idx->GetIdx(),
-        level= idx->TriangLevel;
-    IdxT extIdx= NumberingChanged ? idx->NumUnknowns : Xidx_.size();
-    Xidx_.resize( 0);
-    Xidx_.resize( extIdx, NoIdx);
-    InterfacePatchCL cut;
-
-    for (MultiGridCL::TriangTetraIteratorCL it= _MG.GetTriangTetraBegin(level), end= _MG.GetTriangTetraEnd(level); it!=end; ++it)
-    {
-//const double absdet= it->GetVolume()*6.,
-//min_ratio=1./64;
-        cut.Init( *it, lset.Phi);
-        if (cut.Intersects() )
-        {
-/*
-// compute volume of part
-double vol= 0;
-
-for (int ch=0; ch<8; ++ch)
-{
-    cut.ComputeCutForChild(ch);
-    vol+= cut.quad( ones, absdet, false); // integrate on other part
-}
-double ratio[2];
-ratio[0]= std::abs( vol)/absdet*6.;
-ratio[1]= 1-ratio[0];
-*/
-            if (cut.IntersectsInterior())
-                for (Uint i=0; i<4; ++i)
-                { // extend all DoFs
-                    const IdxT nr= it->GetVertex(i)->Unknowns(sysnum);
-//if (ratio[cut.GetSign(i)==1] < min_ratio) { std::cerr << "    >>> Omitted DoF (sign="<<cut.GetSign(i)<<") with ratio = " << ratio[cut.GetSign(i)==1] << std::endl; continue; }
-                    if (Xidx_[nr]==NoIdx) // not extended yet
-                        Xidx_[nr]= extIdx++;
-                }
-            else
-                for (Uint i=0; i<4; ++i)
-                { // extend only DoFs on interface
-                    if (cut.GetSign(i)!=0) continue;
-                    const IdxT nr= it->GetVertex(i)->Unknowns(sysnum);
-//if (ratio[cut.GetSign(i)==1] < min_ratio) { std::cerr << "    >>> Omitted DoF (sign="<<cut.GetSign(i)<<") with ratio = " << ratio[cut.GetSign(i)==1] << std::endl; continue; }
-                    if (Xidx_[nr]==NoIdx) // not extended yet
-                        Xidx_[nr]= extIdx++;
-                }
-        }
-    }
-    idx->NumUnknowns= extIdx;
 }
 
 template <class Coeff>
