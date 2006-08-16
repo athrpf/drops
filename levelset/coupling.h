@@ -166,6 +166,7 @@ class CouplLsNsFracStep2PhaseCL
 
     void DoSubStep( int maxFPiter= -1)
     {
+        std::cerr << "Fractional Step Method: Substep " << step_ << '\n';
         ts_.SetTimeStep( GetSubTimeStep(), GetSubTheta());
         ts_.DoStep( maxFPiter);
         step_= (step_+1)%3;
