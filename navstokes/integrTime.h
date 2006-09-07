@@ -95,8 +95,8 @@ void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, Vec
     const double beta= (theta_ - 1.);
     rhs_=  alpha*b_->Data
          - beta*(old_b_->Data + cplN_->Data)
-         + beta*( NS_.A.Data*NS_.v.Data + NS_.N.Data*NS_.v.Data )
-         +(1./dt_)*(cplM_->Data - old_cplM_->Data + NS_.M.Data*NS_.v.Data);
+         + beta*( NS_.A.Data*v.Data + NS_.N.Data*v.Data )
+         +(1./dt_)*(cplM_->Data - old_cplM_->Data + NS_.M.Data*v.Data);
     solver_.Solve( L_, NS_.B.Data, v, p, rhs_, *cplN_, NS_.c.Data, alpha);
     std::swap( old_b_, b_);
     std::swap( old_cplM_, cplM_);
