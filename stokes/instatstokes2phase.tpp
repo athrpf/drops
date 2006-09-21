@@ -594,7 +594,7 @@ void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM
                     M_pr( prNumb[i], xidx_j)+= coupT2[i][j] - sign[j]*coup[i][j];
                 if (xidx_i!=NoIdx)
                     M_pr( xidx_i, prNumb[j])+= coupT2[i][j] - sign[i]*coup[i][j];
-                if (xidx_i!=NoIdx && xidx_j!=NoIdx)
+                if (xidx_i!=NoIdx && xidx_j!=NoIdx && sign[i]==sign[j])
                     M_pr( xidx_i, xidx_j)+=    coupT2[i][j]*(1-sign[i]-sign[j]) + sign[i]*sign[j]*coup[i][j];
             }
         }
