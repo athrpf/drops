@@ -23,4 +23,15 @@ DROPSErrCL::handle() const
     std::abort();
 }
 
+
+PermutationT
+invert_permutation (const PermutationT& p)
+{
+    PermutationT pi( p.size());
+    for (size_t i= 0; i < p.size(); ++i)
+        pi[p[i]]= i;
+
+    return pi;
+}
+
 } // end of namespace DROPS

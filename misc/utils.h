@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iosfwd>
 #include <string>
+#include <vector>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <cmath>
@@ -313,6 +314,22 @@ class TimerCL
 };
 
 
+/// \brief Represents the permutation i-->p[i].
+typedef std::vector<size_t> PermutationT;
+
+/// \brief Compute the inverse permutation of p, id est pi[p[i]] == i for all i.
+PermutationT
+invert_permutation (const PermutationT& p);
+
+
+/// \brief Output [begin, end) to out, separated by newline.
+template <class Iterator>
+void
+seq_out (Iterator begin, Iterator end, std::ostream& out)
+{
+    for (; begin != end; ++begin) out << *begin << '\n';
+}
+
 /// \brief Functor to select the second component of a std::pair-like type.
 ///
 /// This is needed, as the C++-standard comittee deemed selectors for
@@ -328,6 +345,15 @@ struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
   }
 };
 
+/// \brief Predicate that compares a std::pair-like type by its first
+///     component only.
+template <class Pair>
+struct less1st: public std::binary_function<Pair, Pair, bool>
+{
+  bool operator() (const Pair& x, const Pair& y) const {
+    return x.first < y.first;
+  }
+};
 
 /// \brief Iterator for a sequence of objects that is given as a sequence of pointers
 ///     to these objects.

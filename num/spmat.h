@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <valarray>
+#include <vector>
 #include <numeric>
 #include <map>
 #include <misc/utils.h>
@@ -157,6 +158,19 @@ template <typename T>
 }
 
 
+template <typename T>
+  void
+  permute_Vector (VectorBaseCL<T>& v, const PermutationT& p)
+{
+    Assert( v.size() == p.size(),
+        DROPSErrCL( "permute_Vector: v and p have different dimension.\n"), DebugNumericC);
+
+    VectorBaseCL<T> w( v);
+    for (size_t i= 0; i < v.size(); ++i)
+        v[p[i]]= w[i];
+}
+
+
 //*****************************************************************************
 //
 //  S p a r s e M a t B u i l d e r C L :  used for setting up sparse matrices
@@ -277,6 +291,8 @@ void SparseMatBuilderCL<T>::Build()
 }
 
 
+typedef std::vector<size_t> PermT;
+
 //*****************************************************************************
 //
 //  S p a r s e M a t B a s e C L :  row based sparse matrix format
@@ -346,6 +362,9 @@ public:
 
     VectorBaseCL<T> GetDiag() const;
 
+    void permute_rows (const PermT&);
+    void permute_columns (const PermT&);
+
     friend class SparseMatBuilderCL<T>;
 };
 
@@ -378,6 +397,53 @@ VectorBaseCL<T> SparseMatBaseCL<T>::GetDiag() const
         diag[i] = (*this)(i,i);
     return diag;
 }
+
+template <typename T>
+  void
+  SparseMatBaseCL<T>::permute_rows (const PermutationT& p)
+{
+    Assert( num_rows() == p.size(),
+        DROPSErrCL( "permute_rows: Matrix and Permutation have different dimension.\n"), DebugNumericC);
+
+    PermutationT pi( invert_permutation( p));
+    std::valarray<size_t> r( _rowbeg);
+    std::valarray<size_t> c( _colind);
+    std::valarray<T> v( _val);
+    _rowbeg[0]= 0;
+    for (size_t i= 0; i < num_rows(); ++i) {
+        size_t nonzeros= r[pi[i] + 1] - r[pi[i]];
+        _rowbeg[i + 1]= _rowbeg[i] + nonzeros;
+        std::slice oldpos( std::slice( r[pi[i]], nonzeros, 1));
+        std::slice newpos( std::slice( _rowbeg[i], nonzeros, 1));
+        _val[newpos]= v[oldpos];
+        _colind[newpos]= c[oldpos];
+    }
+}
+
+template <typename T>
+  void
+  SparseMatBaseCL<T>::permute_columns (const PermutationT& p)
+{
+    Assert( num_cols() == p.size(),
+        DROPSErrCL( "permute_columns: Matrix and Permutation have different dimension.\n"), DebugNumericC);
+
+    for (size_t i= 0; i < _colind.size(); ++i)
+        _colind[i]= p[_colind[i]];
+
+    // Sort the indices in each row. This affects the internal matrix-layout only.
+    typedef std::pair<size_t, T> PT;
+    for (size_t r= 0; r < num_rows(); ++r) {
+        std::vector<PT> pv( row_beg( r + 1) - row_beg( r));
+        for (size_t i= row_beg( r), j= 0; i < row_beg( r + 1); ++i, ++j)
+            pv[j]= std::make_pair( _colind[i], _val[i]);
+        std::sort( pv.begin(), pv.end(), less1st<PT>());
+        for (size_t i= row_beg( r), j= 0; i < row_beg( r + 1); ++i, ++j) {
+            _colind[i]= pv[j].first;
+            _val[i]= pv[j].second;
+        }        
+    }
+}
+
 
 //**********************************************************************************
 //
