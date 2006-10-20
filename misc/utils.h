@@ -314,13 +314,42 @@ class TimerCL
 };
 
 
-/// \brief Represents the permutation i-->p[i].
+/// \brief Represents the permutation i-->p[i] on [0, ..., p.size()).
 typedef std::vector<size_t> PermutationT;
 
 /// \brief Compute the inverse permutation of p, id est pi[p[i]] == i for all i.
 PermutationT
 invert_permutation (const PermutationT& p);
 
+
+/// \brief Return the first iterator i from [begin, end) where l(*j, *i) == false for all j in [begin, end) excluding i.
+/// For an empty sequence end is returned.
+template <class Iterator, class Cmp>
+  Iterator
+  arg_min (Iterator begin, Iterator end, Cmp l= std::less<typename std::iterator_traits<Iterator>::value_type>())
+{
+    if (begin == end) return end;
+
+    typename std::iterator_traits<Iterator>::value_type m= *begin;
+    Iterator am= begin;
+    while (++begin != end)
+        if ( l( *begin, m)) {
+            m= *begin;
+            am= begin;
+        }
+    return am;
+}
+
+
+/// \brief Return the first iterator i from [begin, end) where *i<=*j for all j in [begin, end).
+/// For an empty sequence end is returned.
+template <class Iterator>
+  Iterator
+  arg_min (Iterator begin, Iterator end)
+{
+    return arg_min( begin, end,
+        std::less<typename std::iterator_traits<Iterator>::value_type>());
+}
 
 /// \brief Output [begin, end) to out, separated by newline.
 template <class Iterator>
@@ -350,9 +379,9 @@ struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
 template <class Pair>
 struct less1st: public std::binary_function<Pair, Pair, bool>
 {
-  bool operator() (const Pair& x, const Pair& y) const {
-    return x.first < y.first;
-  }
+    bool operator() (const Pair& x, const Pair& y) const {
+        return x.first < y.first;
+    }
 };
 
 /// \brief Iterator for a sequence of objects that is given as a sequence of pointers
