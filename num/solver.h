@@ -577,12 +577,13 @@ enum PreMethGMRES { RightPreconditioning, LeftPreconditioning};
 //     calculated in every step for debugging. This is rather expensive.
 // method - If RightPreconditioning, solve the right-preconditioned GMRES: A*M^(-1)*u = b, u=Mx,
 //     if LeftPreconditioning, solve the left-preconditioned GMRES:   M^(-1)*A*x= M^(-1)*b,
+//TODO: bug in RightPreconditioning?
 //-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename PreCon>
 bool
 GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
       int /*restart parameter*/ m, int& max_iter, double& tol,
-      bool measure_relative_tol= true, bool calculate2norm= false, PreMethGMRES method = RightPreconditioning)
+      bool measure_relative_tol= true, bool calculate2norm= false, PreMethGMRES method = LeftPreconditioning)
 {
     m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
 
@@ -1093,7 +1094,7 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
     double resid= norm( r)/normb;
 
     for (int k= 0; k < max_iter; ++k) {
-        std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+        if (k%10==0) std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
         if (resid < tol) {
             tol= resid;
             max_iter= k;
