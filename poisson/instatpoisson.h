@@ -44,6 +44,7 @@ class StripTimeCL
 
 template <class Coeff>
 class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
+/// \todo Merge InstatPoissonP1CL with PoissonP1CL
 {
   private:
     bool adjoint_;
