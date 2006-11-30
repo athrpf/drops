@@ -250,14 +250,14 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     // Levelset-Disc.: Crank-Nicholson
     LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
 
-    lset.SetSurfaceForce( SF_LB);
-//    lset.SetSurfaceForce( SF_ImprovedLB);
+//    lset.SetSurfaceForce( SF_LB);
+    lset.SetSurfaceForce( SF_ImprovedLB);
 //    lset.SetSurfaceForce( SF_Const);
     const double Vol= 8.,
-    //     prJump= C.sigma, // for SF_Const force
+//        prJump= C.sigma, // for SF_Const force
         prJump= C.sigma*2/C.Radius, // for SF_*LB force
         avg_ex= prJump/2.*(8./3.*M_PI*C.Radius*C.Radius*C.Radius - Vol)/Vol; // for spherical interface
-    //    avg_ex= 0; // for planar interface
+//        avg_ex= 0; // for planar interface
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -293,7 +293,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
-        typedef SSORPcCL APcPcT;
+    typedef SSORPcCL APcPcT;
     APcPcT Apcpc;
 
         // PC for A-block
@@ -320,7 +320,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 //        OseenPcT oseenpc( Apc, ispc);
 
         // Oseen solver
-    typedef InexactUzawaCL<APcT, SPcT, APC_OTHER> OseenSolverT;
+    typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
     OseenSolverT oseensolver( Apc, ispc, C.outer_iter, C.outer_tol, 0.02);
 //        typedef GCRSolverCL<OseenPcT> OseenBaseSolverT;
 //        OseenBaseSolverT oseensolver0( oseenpc, /*truncate*/ 50, C.outer_iter, C.outer_tol, /*relative*/ false);
@@ -390,7 +390,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         const ExtIdxDescCL& Xidx= Stokes.GetXidx();
         const size_t n= Stokes.p.Data.size();
 
-        const double lim_min= -prJump, lim_max= prJump;
+        const double limtol= 10,
+            lim_min= -prJump - limtol*prJump,
+            lim_max= -prJump + limtol*prJump; 
         double xmin= 1e99, xmax= -1e99, sum= 0, sum_lim= 0;
         IdxT num= 0;
         for (size_t i=Xidx.GetNumUnknownsP1(); i<n; ++i)
