@@ -19,6 +19,8 @@ namespace DROPS
 /// NoIdx is stored.
 class ExtIdxDescCL
 {
+  private:
+    double omit_bound_; ///< constant for stabilization of XFEM, controls omission of extended DoFs 
   public:
     typedef std::vector<IdxT> ExtendedIdxT;
 
@@ -27,7 +29,7 @@ class ExtIdxDescCL
     ExtendedIdxT   Xidx;
     ExtendedIdxT   Xidx_old;
 
-    ExtIdxDescCL(IdxDescCL* idx) : Idx( idx) {}
+    ExtIdxDescCL(IdxDescCL* idx, double omit_bound= 1./32.) : omit_bound_(omit_bound), Idx( idx) {}
 
     IdxT operator[](const IdxT i) const { return Xidx[i]; }
     IdxT GetNumUnknownsP1() const { return Xidx.size(); }
@@ -86,7 +88,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); if (lsetp) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); if (lsetp && prFE_==P1X_FE) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
     /// \brief Only used for P1X_FE
     void UpdateXNumbering( IdxDescCL* idx, const LevelsetP2CL& lset, bool NumberingChanged= false)
         { if (prFE_==P1X_FE) Xidx_.UpdateXNumbering( idx, lset, NumberingChanged); }
