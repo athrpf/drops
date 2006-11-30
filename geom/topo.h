@@ -123,7 +123,7 @@ inline Ubyte FaceOfVert    (Ubyte vert, Ubyte num) { return num < vert ? num : n
 inline Ubyte EdgeOfFace    (Ubyte face, Ubyte num) { return EdgeOfFaceAr[face][num]; }
 /// Returns, on which face of the parent chedge lies and also determines,
 /// whether the barycenter of chedge lies at v0 (0), v1 (1) or v2 (2) of the face.
-/// As to why why this works, take a look at topo.h, specifically the sorting
+/// As to why this works, take a look at topo.h, specifically the sorting
 /// of VertOfEdgeAr.
 inline void WhichEdgeInFace(Uint chedge, Uint& parface, Uint& pos)
 { parface= chedge<30 ? chedge/3 -6 : chedge/3 -10; pos= chedge%3; }
