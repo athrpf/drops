@@ -58,16 +58,16 @@ Mat {
 # experimental conditions
 Exp {
 # Gamma 1
-  RadDrop = 0
-  PosDrop = 0 0 -1
+#  RadDrop = 0
+#  PosDrop = 0 0 -1
 
 #  Gamma 2
 #  RadDrop = 0
 #  PosDrop = 0 -1 -1
 
 #  static Bubble
-#  RadDrop = 0.6666666
-#  PosDrop = 0 0 0
+  RadDrop = 0.6666666
+  PosDrop = 0 0 0
 
   Gravity	=	0	0	0
 
@@ -86,7 +86,7 @@ AdaptRef {
 
 # miscellaneous
 
-NumDropRef	=	0 #0
+NumDropRef	=	2 #0
 InitialCond	=	1	# 1 = stat. Lsg,    2 = p einsetzen, nach u loesen
 InitialFile	=	xxx
 MeshFile	=	4	# num subdivisions of cube
