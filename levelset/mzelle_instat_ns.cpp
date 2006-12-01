@@ -76,69 +76,6 @@ double DistanceFct( const DROPS::Point3DCL& p)
 namespace DROPS // for Strategy
 {
 
-class Schur_GMRes_CL: public PSchurSolver2CL<GMResSolverCL<SSORPcCL>, GMResSolverCL<DummyPcCL> >
-{
-  public:
-    typedef GMResSolverCL<SSORPcCL>   innerSolverT;
-    typedef GMResSolverCL<DummyPcCL>  outerSolverT;
-
-  private:
-    innerSolverT innerSolver_;
-    outerSolverT outerSolver_;
-
-  public:
-    Schur_GMRes_CL( int outer_iter, double outer_tol,
-                    int inner_iter, double inner_tol)
-        : PSchurSolver2CL<innerSolverT, outerSolverT>(
-              innerSolver_, outerSolver_, outer_iter, outer_tol
-          ),
-          innerSolver_( SSORPcCL( 1.), 150, inner_iter, inner_tol, false),  // absolute tolerances
-          outerSolver_( DummyPcCL(), 150, outer_iter, outer_tol, false)
-        {}
-};
-
-class ISPSchur_GMRes_CL: public PSchurSolver2CL<GMResSolverCL<SSORPcCL>, GMResSolverCL<ISPreCL> >
-{
-  public:
-    typedef GMResSolverCL<SSORPcCL> innerSolverT;
-    typedef GMResSolverCL<ISPreCL>  outerSolverT;
-
-  private:
-    innerSolverT innerSolver_;
-    outerSolverT outerSolver_;
-
-  public:
-    ISPSchur_GMRes_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
-                                    int inner_iter, double inner_tol)
-        : PSchurSolver2CL<innerSolverT, outerSolverT>(
-              innerSolver_, outerSolver_, outer_iter, outer_tol
-          ),
-          innerSolver_( SSORPcCL( 1.), 150, inner_iter, inner_tol, false),  // absolute tolerances
-          outerSolver_( Spc, 150, outer_iter, outer_tol, false)
-        {}
-};
-
-class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
-{
-  public:
-    typedef PCGSolverCL<SSORPcCL> innerSolverT;
-    typedef PCGSolverCL<ISPreCL>  outerSolverT;
-
-  private:
-    innerSolverT innerSolver_;
-    outerSolverT outerSolver_;
-
-  public:
-    ISPSchur_PCG_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
-                                  int inner_iter, double inner_tol)
-        : PSchurSolver2CL<innerSolverT, outerSolverT>(
-              innerSolver_, outerSolver_, outer_iter, outer_tol
-          ),
-          innerSolver_( SSORPcCL( 1.), inner_iter, inner_tol),
-          outerSolver_( Spc, outer_iter, outer_tol)
-         {}
-};
-
 template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
@@ -178,21 +115,21 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.b.SetIdx( vidx);
     Stokes.v.SetIdx( vidx);
     cplN.SetIdx( vidx);
-//    Stokes.c.SetIdx( pidx);
+    Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
     Stokes.A.SetIdx(vidx, vidx);
-//    Stokes.B.SetIdx(pidx, vidx);
-//    Stokes.prM.SetIdx( pidx, pidx);
-//    Stokes.prA.SetIdx( pidx, pidx);
+    Stokes.B.SetIdx(pidx, vidx);
+    Stokes.prM.SetIdx( pidx, pidx);
+    Stokes.prA.SetIdx( pidx, pidx);
     Stokes.M.SetIdx(vidx, vidx);
     Stokes.N.SetIdx(vidx, vidx);
 
     Stokes.InitVel( &Stokes.v, Null);
-//    Stokes.SetupPrMass(  &Stokes.prM, lset);
-//    Stokes.SetupPrStiff( &Stokes.prA, lset);
+    Stokes.SetupPrMass(  &Stokes.prM, lset);
+    Stokes.SetupPrStiff( &Stokes.prA, lset);
 
     switch (C.IniCond)
     {
@@ -210,17 +147,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
-    Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
-    Stokes.UpdatePressure( &Stokes.p);
-    Stokes.c.SetIdx( pidx);
-    Stokes.p.SetIdx( pidx);
-    Stokes.B.SetIdx(pidx, vidx);
-    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
-//    Stokes.prA.SetIdx( pidx, pidx);
-//    Stokes.SetupPrStiff( &Stokes.prA, lset);
-    Stokes.prM.SetIdx( pidx, pidx);
-    Stokes.SetupPrMass(  &Stokes.prM, lset);
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();
@@ -310,10 +238,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         // Time-integration and coupling
-        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
-//        typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-//        CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
+//        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
+//        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+        typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
+        CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
 
@@ -485,7 +413,7 @@ int main (int argc, char** argv)
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
     MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL(
-        num_bnd, bc, bnd_fun), DROPS::P1X_FE);
+        num_bnd, bc, bnd_fun), DROPS::P1_FE);
 
     Strategy( prob);    // do all the stuff
 
