@@ -40,10 +40,10 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     MatDescCL    N;
     const LevelsetP2CL* ls_;
 
-    InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE)
-        : InstatStokes2PhaseP2P1CL<Coeff>( mgb, coeff, bdata, prFE), ls_( 0) {}
-    InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE)
-        : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata, prFE), ls_( 0) {}
+    InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1)
+        : InstatStokes2PhaseP2P1CL<Coeff>( mgb, coeff, bdata, prFE, XFEMstab), ls_( 0) {}
+    InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1)
+        : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata, prFE, XFEMstab), ls_( 0) {}
 
     /// \name Discretization
     //@{
