@@ -30,7 +30,7 @@ NavStokes {
   ThetaStat	=	0.5
   Tol           =       1e-12
   Iter          =       20
-  Reduction     =       10	# (TODO: Write this as 0.1)
+  Reduction     =       0.1
 }
 
 # levelset solver

@@ -34,7 +34,7 @@ class AdaptFixedPtDefectCorrCL
     double      _tol, _res, _red;
 
   public:
-    AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 100.)
+    AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 0.1)
         : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
     ~AdaptFixedPtDefectCorrCL() {}
@@ -73,7 +73,7 @@ class FixedPtDefectCorrCL
     double      _tol, _res, _red;
 
   public:
-    FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 100.)
+    FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 0.1)
         : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
     ~FixedPtDefectCorrCL() {}
@@ -106,7 +106,7 @@ class AFPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PC
 
   public:
     AFPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
+                          int poiss_maxiter, double poiss_tol, double reduction= 0.1)
         : AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
           _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
@@ -120,7 +120,7 @@ class AFPDeCo_Schur_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Schur_PC
 
   public:
     AFPDeCo_Schur_PCG_CL( NavStokesT& NS, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                          int poiss_maxiter, double poiss_tol, double reduction= 100.)
+                          int poiss_maxiter, double poiss_tol, double reduction= 0.1)
         : AdaptFixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>( NS, _schurSolver, fp_maxiter, fp_tol, reduction),
           _schurSolver( stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
@@ -134,7 +134,7 @@ class FPDeCo_Uzawa_CG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_CG_CL>
 
   public:
     FPDeCo_Uzawa_CG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                         int poiss_maxiter, double poiss_tol, double reduction= 100.)
+                         int poiss_maxiter, double poiss_tol, double reduction= 0.1)
         : FixedPtDefectCorrCL<NavStokesT, Uzawa_CG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
           _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
@@ -148,7 +148,7 @@ class FPDeCo_Uzawa_SGSPCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_SGSPC
 
   public:
     FPDeCo_Uzawa_SGSPCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                         int poiss_maxiter, double poiss_tol, double reduction= 100.)
+                         int poiss_maxiter, double poiss_tol, double reduction= 0.1)
         : FixedPtDefectCorrCL<NavStokesT, Uzawa_SGSPCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
           _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
@@ -162,7 +162,7 @@ class FPDeCo_Uzawa_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
 
   public:
     FPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                         int poiss_maxiter, double poiss_tol, double reduction= 100.)
+                         int poiss_maxiter, double poiss_tol, double reduction= 0.1)
         : FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
           _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
@@ -176,7 +176,7 @@ class FPDeCo_Schur_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>
 
   public:
     FPDeCo_Schur_PCG_CL( NavStokesT& NS, int fp_maxiter, double fp_tol, int stokes_maxiter,
-                         int poiss_maxiter, double poiss_tol, double reduction= 1000.)
+                         int poiss_maxiter, double poiss_tol, double reduction= 0.1)
         : FixedPtDefectCorrCL<NavStokesT, Schur_PCG_CL>( NS, _schurSolver, fp_maxiter, fp_tol, reduction),
           _schurSolver( stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
@@ -213,7 +213,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
                 break;
 
             // solve correction:
-            double outer_tol= _res/_red;
+            double outer_tol= _res*_red;
+            if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
             w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e); // _solver should use a relative termination criterion.
@@ -259,7 +260,8 @@ void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
                 break;
 
             // solve correction:
-            double outer_tol= _res/_red;
+            double outer_tol= _res*_red;
+            if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
             w= 0.0; q= 0.0;
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e);
