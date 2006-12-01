@@ -77,10 +77,10 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  prA,
                  prM;
 
-    InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE)
-        : _base(mgb, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}
-    InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE)
-        : _base(mg, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}
+    InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
+        : _base(mgb, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx, XFEMstab), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}
+    InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
+        : _base(mg, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx, XFEMstab), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}
 
     /// \name Numbering
     //@{
@@ -88,12 +88,12 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
         { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); if (lsetp && prFE_==P1X_FE) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
-    /// \brief Only used for P1X_FE
+        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); if (lsetp && UsesXFEM()) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
+    /// \brief Only used for XFEM
     void UpdateXNumbering( IdxDescCL* idx, const LevelsetP2CL& lset, bool NumberingChanged= false)
-        { if (prFE_==P1X_FE) Xidx_.UpdateXNumbering( idx, lset, NumberingChanged); }
+        { if (UsesXFEM()) Xidx_.UpdateXNumbering( idx, lset, NumberingChanged); }
     void UpdatePressure( VecDescCL* p)
-        { if (prFE_==P1X_FE) Xidx_.Old2New( p); }
+        { if (UsesXFEM()) Xidx_.Old2New( p); }
     void DeleteNumberingVel( IdxDescCL* idx)
         { DeleteNumb( *idx, _MG); }
     void DeleteNumberingPr ( IdxDescCL* idx)
@@ -101,6 +101,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     //@}
     /// \name Discretization
     //@{
+    /// Returns whether extended FEM are used
+    bool UsesXFEM() const { return prFE_==P1X_FE; }
     /// Set up matrices A, M and rhs b (depending on phase bnd)
     void SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
     /// Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
