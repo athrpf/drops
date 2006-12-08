@@ -77,17 +77,17 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
 
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
-    if (_Stokes.UsesXFEM()) {
-	    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	    _Stokes.UpdatePressure( &_Stokes.p);
-	    _Stokes.c.SetIdx( &_Stokes.pr_idx);
-	    _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
-        _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
-        _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
-        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
-    }
-    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
-    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
+//    if (_Stokes.UsesXFEM()) {
+//	    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+//	    _Stokes.UpdatePressure( &_Stokes.p);
+//	    _Stokes.c.SetIdx( &_Stokes.pr_idx);
+//	    _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+//        _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+//        _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+//        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+//    }
+//    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+//    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
     _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data,
                    VectorCL( _rhs + _theta*_curv->Data), _Stokes.c.Data);
