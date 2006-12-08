@@ -49,7 +49,8 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
 
 // Uses MGM for solving to tolerance tol or until maxiter iterations are reached.
 // The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
-void MG(const MGDataCL& MGData, VectorCL& x, const VectorCL& b,
+template<class SmootherCL, class DirectSolverCL>
+void MG(const MGDataCL& MGData, const SmootherCL&, DirectSolverCL&, VectorCL& x, const VectorCL& b,
         int& maxiter, double& tol, const bool residerr= true);
 
 
@@ -70,22 +71,44 @@ class MGPreCL
 };
 
 
-// MG
-class MGSolverCL : public SolverBaseCL
+template<class SmootherT, class DirectSolverT>
+class MGSolverBaseCL : public SolverBaseCL
 {
   private:
-    const MGDataCL& _mgdata;
+    const MGDataCL&      mgdata_;
+    const SmootherT&     smoother_;
+    DirectSolverT&       directSolver_;
 
   public:
-    MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol )
-        : SolverBaseCL(maxiter,tol), _mgdata(mgdata) {}
+    MGSolverBaseCL( const MGDataCL& mgdata, const SmootherT& sm, DirectSolverT& ds, int maxiter, double tol )
+        : SolverBaseCL(maxiter,tol), mgdata_(mgdata), smoother_(sm), directSolver_(ds) {}
 
     void Solve(const MatrixCL& /*A*/, VectorCL& x, const VectorCL& b)
     {
         _res=  _tol;
         _iter= _maxiter;
-        MG( _mgdata, x, b, _iter, _res);
+        MG( mgdata_, smoother_, directSolver_, x, b, _iter, _res);
     }
+};
+
+
+class MGSolverCL : public MGSolverBaseCL<SSORsmoothCL, PCG_SsorCL>
+// standard Multigrid solver: SSOR smoother, PCG(SSOR) direct solver
+{
+  private:
+//    JORsmoothCL  smoother_; // Jacobi
+//    GSsmoothCL   smoother_; // Gauss-Seidel
+//    SGSsmoothCL  smoother_; // symmetric Gauss-Seidel
+//    SORsmoothCL  smoother_; // Gauss-Seidel with over-relaxation
+    SSORsmoothCL smoother_; // symmetric Gauss-Seidel with over-relaxation
+//    CGSolverCL  solver_( 500, tol); //CG-Verfahren
+    SSORPcCL     directpc_; 
+    PCG_SsorCL   solver_;
+
+  public:
+    MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol)
+        : MGSolverBaseCL<SSORsmoothCL, PCG_SsorCL>( mgdata, smoother_, solver_, maxiter, tol), 
+          smoother_(1.), directpc_(1.), solver_(directpc_, 500, tol) {}
 };
 
 
@@ -132,6 +155,45 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
     x+= fine->P.Data * e;
     // postsmoothing
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+}
+
+
+template<class SmootherCL, class DirectSolverCL>
+void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solver, 
+        VectorCL& x, const VectorCL& b,
+        int& maxiter, double& tol, const bool residerr)
+{
+    const_MGDataIterCL finest= --MGData.end();
+    Uint   sm   =  1; // how many smoothing steps?
+    int    lvl  = -1; // how many levels? (-1=all)
+    double resid= -1;
+    double old_resid;
+    VectorCL tmp;
+    if (residerr == true) {
+        resid= norm( b - finest->A.Data * x);
+        std::cerr << "initial residual: " << resid << '\n';
+    }
+    else
+        tmp.resize( x.size());
+
+    int it;
+    for (it= 0; it<maxiter; ++it) {
+        if (residerr == true) {
+            if (resid <= tol) break;
+        }
+        else tmp= x;
+        MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
+        if (residerr == true) {
+            old_resid= resid;
+            resid= norm( b - finest->A.Data * x);
+//            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
+//            std::cerr << "\treduction: " << resid/old_resid;
+//            std::cerr << '\n';
+        }
+        else if ((resid= norm( tmp - x)) <= tol) break;
+    }
+    maxiter= it;
+    tol= resid;
 }
 
 
