@@ -624,7 +624,7 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         s[0]= beta;
 
         int i;
-        for (i= 0; j <= max_iter; ++i, ++j) {
+        for (i= 0; i < m - 1 && j <= max_iter; ++i, ++j) {
             if (method == RightPreconditioning)
             {
                 M.Apply( A, w, v[i]);
@@ -635,8 +635,6 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
                 H( k, i)= dot( w, v[k]);
                 w-= H( k, i)*v[k];
             }
-
-            if (i == m - 1) break;
 
             H( i + 1, i)= norm( w);
             v[i + 1]= w*(1.0/H( i + 1, i));
@@ -682,14 +680,14 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         if (method == RightPreconditioning)
         {
             z=0.;
-            GMRES_Update( z, i, H, s, v);
+            GMRES_Update( z, m - 2, H, s, v);
             M.Apply( A, t, z);
             x+=t;
             r= b - A*x;
         }
         else
         {
-            GMRES_Update( x, i, H, s, v);
+            GMRES_Update( x, m - 2, H, s, v);
             M.Apply( A, r, Vec( b - A*x));
         }
         beta=norm(r);
@@ -1355,11 +1353,14 @@ class GMResSolverCL : public SolverBaseCL
   private:
     PC  pc_;
     int restart_;
+    bool calculate2norm_;
     PreMethGMRES method_;
 
   public:
-    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol, bool relative= true, PreMethGMRES method= RightPreconditioning)
-        : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart), method_(method){}
+    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol,
+        bool relative= true, bool calculate2norm= false, PreMethGMRES method= RightPreconditioning)
+        : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart),
+          calculate2norm_(calculate2norm), method_(method){}
 
     PC&       GetPc      ()       { return pc_; }
     const PC& GetPc      () const { return pc_; }
@@ -1370,14 +1371,14 @@ class GMResSolverCL : public SolverBaseCL
     {
         _res=  _tol;
         _iter= _maxiter;
-        GMRES(A, x, b, pc_, restart_, _iter, _res, rel_, method_);
+        GMRES(A, x, b, pc_, restart_, _iter, _res, rel_, calculate2norm_, method_);
     }
     template <typename Mat, typename Vec>
     void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
-        GMRES(A, x, b, pc_, restart_, numIter, resid, rel_, method_);
+        GMRES(A, x, b, pc_, restart_, numIter, resid, rel_, calculate2norm_, method_);
     }
 };
 
