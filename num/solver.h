@@ -680,14 +680,14 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         if (method == RightPreconditioning)
         {
             z=0.;
-            GMRES_Update( z, m - 2, H, s, v);
+            GMRES_Update( z, i - 1, H, s, v);
             M.Apply( A, t, z);
             x+=t;
             r= b - A*x;
         }
         else
         {
-            GMRES_Update( x, m - 2, H, s, v);
+            GMRES_Update( x, i - 1, H, s, v);
             M.Apply( A, r, Vec( b - A*x));
         }
         beta=norm(r);
