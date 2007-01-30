@@ -1358,7 +1358,7 @@ class GMResSolverCL : public SolverBaseCL
 
   public:
     GMResSolverCL(const PC& pc, int restart, int maxiter, double tol,
-        bool relative= true, bool calculate2norm= false, PreMethGMRES method= RightPreconditioning)
+        bool relative= true, bool calculate2norm= false, PreMethGMRES method= LeftPreconditioning)
         : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart),
           calculate2norm_(calculate2norm), method_(method){}
 
