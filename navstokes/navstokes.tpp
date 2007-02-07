@@ -210,16 +210,13 @@ template <class Coeff>
     typename _base::const_DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
     VectorCL& b= vecb->Data;
     const Uint lvl    = matN->GetRowLevel();
-    const Uint vidx   = matN->RowIdx->GetIdx();
-
-    IdxT Numb[10];
-    bool IsOnDirBnd[10];
+    LocalNumbP2CL n;
 
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
 
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
-    Quad2CL<Point3DCL> u_loc;
+    Quad5CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
+    Quad5CL<Point3DCL> u_loc;
     SMatrixCL<3,3> T;
     double det, absdet;
     SVectorCL<3> tmp;
@@ -237,37 +234,28 @@ template <class Coeff>
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        for(int i=0; i<4; ++i)
-            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-        for(int i=0; i<6; ++i)
-            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
+        n.assign( *sit, *matN->RowIdx, _BndData.Vel);
 
-        for(int j=0; j<10; ++j)
-        {
-            // N(u)_ij = int( phi_i *( u1 phi_j_x + u2 phi_j_y + u3 phi_j_z ) )
-
-            for(int i=0; i<10; ++i)    // assemble row Numb[i]
-                if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
-                {
-                    const double N_ij= Quad2CL<>(dot( u_loc, Grad[j])).quadP2( i, absdet);
-                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+        for (int i= 0; i < 10; ++i) // assemble row n.num[i]
+            if (n.WithUnknowns( i)) // vert/edge i is not on a Dirichlet boundary
+                for (int j= 0; j < 10; ++j)
+                { // N(u)_ij = int( phi_i *( u1 phi_j_x + u2 phi_j_y + u3 phi_j_z ) )
+                    const double N_ij= Quad5CL<>(dot( u_loc, Grad[j])).quadP2( i, absdet);
+                    if (n.WithUnknowns( j)) // vert/edge j is not on a Dirichlet boundary
                     {
-                        N(Numb[i],          Numb[j])+=          N_ij;
-                        N(Numb[i]+stride,   Numb[j]+stride)+=   N_ij;
-                        N(Numb[i]+2*stride, Numb[j]+2*stride)+= N_ij;
+                        N(n.num[i],          n.num[j])+=          N_ij;
+                        N(n.num[i]+stride,   n.num[j]+stride)+=   N_ij;
+                        N(n.num[i]+2*stride, n.num[j]+2*stride)+= N_ij;
                     }
                     else // coupling with vert/edge j on right-hand-side
                     {
                         tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
                                  : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
-                        b[Numb[i]]-=          N_ij * tmp[0];
-                        b[Numb[i]+stride]-=   N_ij * tmp[1];
-                        b[Numb[i]+2*stride]-= N_ij * tmp[2];
+                        b[n.num[i]]-=          N_ij * tmp[0];
+                        b[n.num[i]+stride]-=   N_ij * tmp[1];
+                        b[n.num[i]+2*stride]-= N_ij * tmp[2];
                     }
                 }
-        }
     }
     N.Build();
 }

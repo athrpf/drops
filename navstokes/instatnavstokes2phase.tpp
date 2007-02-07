@@ -18,16 +18,13 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     MatrixBuilderCL mN( &N->Data, num_unks_vel, num_unks_vel);
     cplN->Clear();
 
-    const Uint lvl         = N->GetRowLevel(),
-               vidx        = N->RowIdx->GetIdx();
-
-    IdxT Numb[10];
-    bool IsOnDirBnd[10];
+    const Uint lvl= N->GetRowLevel();
+    LocalNumbP2CL n;
 
     std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
 
-    Quad2CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
-    Quad2CL<double> rho, Phi;
+    Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
+    Quad5CL<double> rho, Phi;
 
     SMatrixCL<3,3> T;
 
@@ -47,45 +44,35 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        for (int i=0; i<4; ++i)
-        {
-            if(!(IsOnDirBnd[i]= _BndData.Vel.IsOnDirBnd( *sit->GetVertex(i) )))
-                Numb[i]= sit->GetVertex(i)->Unknowns(vidx);
-            Phi[i]= ls.val( *sit->GetVertex(i));
-            u_loc[i]= u.val( *sit->GetVertex(i));
-        }
-        for (int i=0; i<6; ++i)
-        {
-            if (!(IsOnDirBnd[i+4]= _BndData.Vel.IsOnDirBnd( *sit->GetEdge(i) )))
-                Numb[i+4]= sit->GetEdge(i)->Unknowns(vidx);
-        }
-        u_loc[4]= u.val( *sit, 0.25, 0.25, 0.25);
-        Phi[4]= ls.val( *sit, 0.25, 0.25, 0.25);
+        Phi.assign( *sit, ls, t);
+        u_loc.assign( *sit, u, t);
+        n.assign( *sit, *N->RowIdx, _BndData.Vel);
 
         // rho = rho( Phi)
-        rho= Phi;    rho.apply( _Coeff.rho);
+        rho= Phi;
+        rho.apply( _Coeff.rho);
 
         u_rho= u_loc*rho;
 
-        for(int i=0; i<10; ++i)  // assemble row Numb[i]
-            if (!IsOnDirBnd[i])  // vert/edge i is not on a Dirichlet boundary
+        for(int i= 0; i < 10; ++i)  // assemble row n.num[i]
+            if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
             {
-                for(int j=0; j<10; ++j)
+                for(int j= 0; j < 10; ++j)
                 {   // N(u)_ij = int( phi_i * rho*u * grad phi_j )
-                    const double N_ij= Quad2CL<double>(dot( u_rho, Grad[j])).quadP2( i, absdet);
-                    if (!IsOnDirBnd[j]) // vert/edge j is not on a Dirichlet boundary
+                    const double N_ij= Quad5CL<double>( dot( u_rho, Grad[j])).quadP2( i, absdet);
+                    if (n.WithUnknowns( j)) // vert/edge j is not on a Dirichlet boundary
                     {
-                        mN( Numb[i],   Numb[j]  )+= N_ij;
-                        mN( Numb[i]+1, Numb[j]+1)+= N_ij;
-                        mN( Numb[i]+2, Numb[j]+2)+= N_ij;
+                        mN( n.num[i],   n.num[j]  )+= N_ij;
+                        mN( n.num[i]+1, n.num[j]+1)+= N_ij;
+                        mN( n.num[i]+2, n.num[j]+2)+= N_ij;
                     }
                     else // put coupling on rhs
                     {
-                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t)
-                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t);
-                        cplN->Data[Numb[i]  ]-= N_ij*tmp[0];
-                        cplN->Data[Numb[i]+1]-= N_ij*tmp[1];
-                        cplN->Data[Numb[i]+2]-= N_ij*tmp[2];
+                        tmp= j < 4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex( j), t)
+                                   : _BndData.Vel.GetDirBndValue( *sit->GetEdge( j - 4), t);
+                        cplN->Data[n.num[i]    ]-= N_ij*tmp[0];
+                        cplN->Data[n.num[i] + 1]-= N_ij*tmp[1];
+                        cplN->Data[n.num[i] + 2]-= N_ij*tmp[2];
                     }
                 }
 
