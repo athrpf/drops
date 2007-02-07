@@ -476,39 +476,36 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     int& max_iter, double& tol, bool measure_relative_tol= false)
 {
     const size_t n= x.size();
-    Vec p(n), z(n), q(n), r( b - A*x);
-    double rho, rho_1= 0.0, normb= norm( b), resid;
+    Vec p( n), z( n), q( n), r( b - A*x);
+    double rho, rho_1, normb= norm( b), resid;
 
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
-    if ((resid= norm( r)/normb) <= tol)
-    {
+    if ((resid= norm( r)/normb) <= tol) {
         tol= resid;
         max_iter= 0;
         return true;
     }
 
-    for (int i= 1; i <= max_iter; ++i)
-    {
-        M.Apply(A, z, r);
-        rho= dot( r, z);
-        if (i == 1)
-            p= z;
-        else
-            z_xpay(p, z, (rho/rho_1), p); // p= z + (rho/rho_1)*p;
-
+    M.Apply(A, z, r);
+    p= z;
+    rho= dot( r, z);
+    for (int i= 1; i <= max_iter; ++i) {
         q= A*p;
         const double alpha= rho/dot( p, q);
         axpy( alpha, p, x);                // x+= alpha*p;
         axpy( -alpha, q, r);               // r-= alpha*q;
 
-        if ((resid= norm( r)/normb)<= tol)
-        {
+        if ((resid= norm( r)/normb)<= tol) {
             tol= resid;
             max_iter= i;
             return true;
         }
+
+        M.Apply(A, z, r);
         rho_1= rho;
+        rho= dot( r, z);      
+        z_xpay( p, z, rho/rho_1, p); // p= z + (rho/rho_1)*p;
     }
     tol= resid;
     return false;
