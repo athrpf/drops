@@ -414,6 +414,65 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
 };
 
 
+template<class T=double>
+class Quad5_2DCL: public GridFunctionCL<T>
+{
+  public:
+    typedef GridFunctionCL<T> base_type;
+    typedef typename base_type::value_type value_type;
+    typedef typename base_type::instat_fun_ptr instat_fun_ptr;
+
+    enum { NumNodesC= 7 };
+    static bool         HaveNodes;       // Sind die Stuetzstellen berechnet?
+    static Point3DCL    Node[NumNodesC]; // Stuetzstellen mit baryzentrischen Koordinaten bezueglich eines Dreiecks.
+    static const double Wght[3];         // Gewichte
+
+  protected:
+    typedef Quad5_2DCL<T> self_;
+    void MaybeInitNodes() const;
+    // Calculates the barycentric coordinates of the quadrature points
+    // of the triangle given by the 1st argument with respect to the
+    // tetrahedron and stores them in the 2nd argument.
+    void SetInterface(const BaryCoordCL* const, BaryCoordCL*);
+
+  public:
+    Quad5_2DCL(): base_type( value_type(), NumNodesC) { MaybeInitNodes(); }
+    Quad5_2DCL(const value_type& t): base_type( t, NumNodesC) { MaybeInitNodes(); }
+    Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, instat_fun_ptr, double= 0.0);
+    Quad5_2DCL(const LocalP2CL<value_type>&, const BaryCoordCL*const );
+    template <class _BndData, class _VD>
+      Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+    template <class PFunT>
+      Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const PFunT&, double= 0.0);
+
+    // Every constructor must be prepared to setup the Nodes-array, thus we cannot
+    // use DROPS_DEFINE_VALARRAY_DERIVATIVE directly.
+    template <class X__>
+      explicit Quad5_2DCL(const X__& x__): base_type( x__) { MaybeInitNodes(); }
+DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
+
+    inline self_&
+    assign(const TetraCL&, const BaryCoordCL* const, instat_fun_ptr , double= 0.0);
+    inline self_&
+    assign(const LocalP1CL<value_type>&, const BaryCoordCL* const);
+    inline self_&
+    assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
+    template <class _BndData, class _VD>
+        inline self_&
+        assign(const TetraCL& s, const BaryCoordCL* const, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+    template <class PFunT>
+      inline self_&
+      assign(const TetraCL&, const BaryCoordCL* const, const PFunT&, double= 0.0);
+
+    // Integration:
+    // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
+    // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
+    T quad (double absdet) const {
+      return absdet*(Wght[0]*(*this)[0] + Wght[1]*((*this)[1]+(*this)[2]+(*this)[3]) + Wght[2]*((*this)[4]+(*this)[5]+(*this)[6]));
+    }
+};
+
+
 class Quad3CL
 // contains cubatur on reference-tetra, that is exact up to degree 3, positive,
 // and uses only 8 points.

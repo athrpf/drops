@@ -436,4 +436,158 @@ template<class T>
 }
 
 
+//**************************************************************************
+// Class: Quad5_2DCL                                                       *
+//**************************************************************************
+template<class T>
+  bool Quad5_2DCL<T>::HaveNodes= false;
+
+template <class T>
+  Point3DCL Quad5_2DCL<T>::Node[NumNodesC];  // Barycentric coord for 2D
+
+template<class T>
+  const double Quad5_2DCL<T>::Wght[3]= {
+      9./80.,                                   /*Node[0]*/
+      (155. - std::sqrt( 15.0))/2400., /*Node[1] to Node[3]*/
+      (155. + std::sqrt( 15.0))/2400., /*Node[4] to Node[6]*/
+};
+
+template<class T>
+  void
+  Quad5_2DCL<T>::MaybeInitNodes() const
+{
+    if (HaveNodes) return;
+
+    Node[0]= Point3DCL( 1./3.);
+    const double A1= (6.0 - std::sqrt( 15.0))/21.0,
+    B1= (9.0 + 2.0*std::sqrt( 15.0))/21.0;
+    Node[1]= MakePoint3D( A1,A1,B1);
+    Node[2]= MakePoint3D( A1,B1,A1);
+    Node[3]= MakePoint3D(B1,A1,A1);
+    const double A2= (6.0 + std::sqrt( 15.0))/21.0,
+    B2= (9.0 - 2.0*std::sqrt( 15.0))/21.0;
+    Node[4]=MakePoint3D( A2,A2,B2);
+    Node[5]= MakePoint3D( A2,B2,A2);
+    Node[6]= MakePoint3D( B2,A2,A2);
+    HaveNodes= true;
+}
+
+template<class T>
+  void
+  Quad5_2DCL<T>::SetInterface(const BaryCoordCL*const p, BaryCoordCL* NodeInTetra)
+{
+    for (Uint i= 0; i < NumNodesC; ++i)
+        NodeInTetra[i]=Node[i][0]*p[0] +Node[i][1]*p[1]+Node[i][2]*p[2];
+}
+
+template<class T>
+  inline Quad5_2DCL<T>&
+  Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p, instat_fun_ptr f , double t)
+{
+    Point3DCL v[3];
+    for (Uint k= 0; k < 3; ++k)
+        v[k]= GetWorldCoord(s, p[k]);
+    for (Uint i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f( Node[i][0]*v[0]+Node[i][1]*v[1]+Node[i][2]*v[2], t) ;
+    return *this;
+}
+
+template<class T>
+  inline Quad5_2DCL<T>&
+  Quad5_2DCL<T>::assign(const LocalP1CL<value_type>& f, const BaryCoordCL* const p)
+{
+    BaryCoordCL NodeInTetra[NumNodesC];
+    SetInterface( p, NodeInTetra);
+    for (size_t i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f( NodeInTetra[i]);
+    return *this;
+}
+
+template<class T>
+  inline Quad5_2DCL<T>&
+  Quad5_2DCL<T>::assign(const LocalP2CL<value_type>& f, const BaryCoordCL* const p)
+{
+    BaryCoordCL NodeInTetra[NumNodesC];
+    SetInterface( p, NodeInTetra);
+    std::valarray<double> P2_Val[10];
+    FE_P2CL::ApplyAll( NumNodesC, NodeInTetra, P2_Val);
+    (*this)= f[0]*P2_Val[0];
+    for (size_t i= 1; i < 10; ++i)
+        (*this)+= f[i]*P2_Val[i];
+    return *this;
+}
+
+template<class T>
+  template <class _BndData, class _VD>
+    inline Quad5_2DCL<T>&
+    Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p,
+        const P2EvalCL<T, _BndData, _VD>& f, double t)
+{
+    BaryCoordCL NodeInTetra[NumNodesC];
+    SetInterface( p, NodeInTetra);
+    std::valarray<double> P2_Val[10];
+    FE_P2CL::ApplyAll( NumNodesC, NodeInTetra, P2_Val);
+    const double oldt= f.GetTime();
+    f.SetTime( t);
+    value_type dof[10];
+    f.GetDoF( s, dof);
+    (*this)= T();
+    for (size_t i= 0; i < NumNodesC; ++i)
+        for (size_t j= 0; j < 10; ++j)
+            (*this)[i]+= dof[j]*P2_Val[j][i];
+    f.SetTime( oldt);
+    return *this;
+}
+
+template<class T>
+  template <class PFunT>
+    inline Quad5_2DCL<T>&
+    Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f, double t)
+{
+    BaryCoordCL NodeInTetra[NumNodesC];
+    SetInterface( p, NodeInTetra);
+    const double oldt= f.GetTime();
+    f.SetTime( t);
+    for (size_t i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f.val( s, NodeInTetra[i]);
+    f.SetTime( oldt);
+    return *this;
+}
+
+template<class T>
+  Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL*const p, instat_fun_ptr f, double t)
+  : base_type( value_type(), NumNodesC)
+{
+    MaybeInitNodes();
+    this->assign( s, p, f, t);
+}
+
+template<class T>
+  Quad5_2DCL<T>::Quad5_2DCL(const LocalP2CL<value_type>& f, const BaryCoordCL* const p)
+  : base_type( value_type(), NumNodesC)
+{
+    MaybeInitNodes();
+    this->assign( f, p);
+}
+
+template<class T>
+  template <class _BndData, class _VD>
+    Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p,
+        const P2EvalCL<T, _BndData, _VD>& f, double t)
+    : base_type( value_type(), NumNodesC)
+{
+    MaybeInitNodes();
+    this->assign( s, p, f, t);
+}
+
+template<class T>
+  template <class PFunT>
+    Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f, double t)
+    : base_type( value_type(), NumNodesC)
+{
+    MaybeInitNodes();
+    this->assign( s, p, f, t);
+}
+
+
 } // end of namespace DROPS
