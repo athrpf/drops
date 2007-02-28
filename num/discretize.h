@@ -95,6 +95,9 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(GridFunctionCL, T, base_type)
 
     template<typename FuncT>
       inline GridFunctionCL& apply(FuncT fun);
+
+    template<typename U, typename MemberFuncT>
+      inline GridFunctionCL& apply(U& obj, MemberFuncT fun);
 };
 
 template<class T>
@@ -104,6 +107,16 @@ template<class T>
 {
     for (size_t i= 0; i < this->size(); ++i)
         (*this)[i]= fun( (*this)[i]);
+    return *this;
+}
+
+template<class T>
+  template<typename U, typename MemberFuncT>
+    inline GridFunctionCL<T>&
+    GridFunctionCL<T>::apply(U& obj, MemberFuncT fun)
+{
+    for (size_t i= 0; i < this->size(); ++i)
+        (*this)[i]= obj.fun( (*this)[i]);
     return *this;
 }
 

@@ -109,6 +109,7 @@ Point3DCL theg= 9.81*std_basis<3>( 3);
 const BaryCoordCL bary( 0.25);
 const Point3DCL bary3d( 0.25);
 
+
 double Quadrature( DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& /*vd1*/,
     VecDescCL& vd2)
 {
@@ -262,9 +263,32 @@ double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
 
 }
 
+
+class MulCL
+{
+  public:
+    int i;
+    MulCL () : i( 1) {}
+    double operator() (double x) { return i++*x;}
+};
+
+void MemberApplyTest()
+{
+    LocalP2CL<> l;
+    l= 1.0;
+    MulCL m;
+    l.apply( m);
+    std::cout << l[0] << '\n' << l[1] << '\n' << l[2] << '\n'
+        << l[3] << '\n' << l[4] << '\n' << l[5] << '\n' 
+        << l[6] << '\n' << l[7] << '\n' << l[8] << '\n' << l[9] << std::endl;
+}
+
+
 int main ()
 {
   try {
+    MemberApplyTest();
+
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
                                 DROPS::std_basis<3>(2),
