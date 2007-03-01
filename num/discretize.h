@@ -443,10 +443,6 @@ class Quad5_2DCL: public GridFunctionCL<T>
   protected:
     typedef Quad5_2DCL<T> self_;
     void MaybeInitNodes() const;
-    // Calculates the barycentric coordinates of the quadrature points
-    // of the triangle given by the 1st argument with respect to the
-    // tetrahedron and stores them in the 2nd argument.
-    void SetInterface(const BaryCoordCL* const, BaryCoordCL*);
 
   public:
     Quad5_2DCL(): base_type( value_type(), NumNodesC) { MaybeInitNodes(); }
@@ -476,6 +472,11 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
     template <class PFunT>
       inline self_&
       assign(const TetraCL&, const BaryCoordCL* const, const PFunT&, double= 0.0);
+
+    // Calculates the barycentric coordinates of the quadrature points
+    // of the triangle given by the 1st argument with respect to the
+    // tetrahedron and stores them in the 2nd argument.
+    static void SetInterface(const BaryCoordCL* const, BaryCoordCL*);
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
@@ -677,11 +678,15 @@ class P2DiscCL
     // gradients on reference tetra
     static void GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10]);
     static void GetGradientsOnRef( Quad5CL<Point3DCL> GRef[10]);
+    // The 2nd arg points to 3 vertices of the triangle
+    static void GetGradientsOnRef( Quad5_2DCL<Point3DCL> GRef[10], const BaryCoordCL* const);
     // compute gradients
     static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradients( Quad5CL<Point3DCL> G[10], Quad5CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<Quad5CL<Point3DCL>::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
+    static void GetGradients( Quad5_2DCL<Point3DCL> G[10], Quad5_2DCL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    { for (int i=0; i<10; ++i) for (int j=0; j<Quad5_2DCL<Point3DCL>::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
     static void GetGradient( Quad5CL<Point3DCL> &G, Quad5CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)

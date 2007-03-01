@@ -477,7 +477,7 @@ template<class T>
   Quad5_2DCL<T>::SetInterface(const BaryCoordCL*const p, BaryCoordCL* NodeInTetra)
 {
     for (Uint i= 0; i < NumNodesC; ++i)
-        NodeInTetra[i]=Node[i][0]*p[0] +Node[i][1]*p[1]+Node[i][2]*p[2];
+        NodeInTetra[i]= Node[i][0]*p[0] + Node[i][1]*p[1] + Node[i][2]*p[2];
 }
 
 template<class T>
