@@ -63,18 +63,21 @@ double DistanceFct( const DROPS::Point3DCL& p)
     return d.norm()-Radius;
 }
 
+double sigma;
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
+
 
 namespace DROPS // for Strategy
 {
 
 template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol, double sigma)
+void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
 // flow control
 {
     typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, sigma, 0.5, 0.1);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, 0.5, 0.1);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -172,7 +175,7 @@ int main (int argc, char** argv)
     }
     double inner_iter_tol= std::atof(argv[1]);
     int num_dropref= std::atoi(argv[2]);
-    double sigma= std::atof(argv[3]);
+    sigma= std::atof(argv[3]);
     if (argc>=5)
         Anstroem= std::atof(argv[4]);
     // bubble position
@@ -215,7 +218,7 @@ int main (int argc, char** argv)
     mg.SizeInfo( std::cerr);
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
-    Strategy(prob, inner_iter_tol, sigma);
+    Strategy(prob, inner_iter_tol);
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;

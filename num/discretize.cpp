@@ -29,6 +29,17 @@ const double P1BubbleDiscCL::_points1[26][3]= {
     {0.,0.,0.}, {1.,0.,0.}, {0.,1.,0.}, {0.,0.,1.}, {.5,0.,0.}, {0.,.5,0.}, {0.,0.,.5}, {.5,.5,0.}, {.5,0.,.5}, {0.,.5,.5}
     };
 
+void P2DiscCL::GetGradientsOnRef( LocalP1CL<Point3DCL> GRef[10])
+{
+    for (int i= 0; i < 10; ++i)
+    {
+        GRef[i][0]= FE_P2CL::DHRef( i, 0,0,0);
+        GRef[i][1]= FE_P2CL::DHRef( i, 1,0,0);
+        GRef[i][2]= FE_P2CL::DHRef( i, 0,1,0);
+        GRef[i][3]= FE_P2CL::DHRef( i, 0,0,1);
+    }
+}
+
 void P2DiscCL::GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10])
 {
     for (int i=0; i<10; ++i)

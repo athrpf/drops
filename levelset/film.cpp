@@ -77,6 +77,8 @@ double DistanceFct( const DROPS::Point3DCL& p)
     return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI/2.));
 }
 
+double sigma;
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
 
 namespace DROPS // for Strategy
 {
@@ -377,8 +379,9 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL& mg = prob.GetMG();
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
 
+    sigma= prob.GetCoeff().SurfTens;
     DROPS::LevelsetP2CL lset( mg, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
-        prob.GetCoeff().SurfTens, C.lset_theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, C.CurvDiff);
+        &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {

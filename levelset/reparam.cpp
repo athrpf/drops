@@ -48,6 +48,7 @@ double Phi2( const DROPS::Point3DCL& p)
         return SmoothedSign( depth, alpha);
 }
 
+double sigma (const DROPS::Point3DCL&, double) { return 0.; } 
 
 namespace DROPS
 {  // for strategy
@@ -57,7 +58,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
 {
     MultiGridCL& mg= prob.GetMG();
     // Levelset: sigma= 0, theta= 0.5, SD= 0
-    LevelsetP2CL lset( mg, 0, 0.5, 0, diff);
+    LevelsetP2CL lset( mg, &sigma, /*grad sigma*/ 0, 0.5, 0, diff);
 
     IdxDescCL& lidx= lset.idx;
     IdxDescCL& vidx= prob.vel_idx;

@@ -54,18 +54,21 @@ double DistanceFct( const DROPS::Point3DCL& p)
     return d.norm()-Radius;
 }
 
+double sigma;
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
+
 
 namespace DROPS // for Strategy
 {
 
 template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, double inner_iter_tol, double sigma)
+void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, double inner_iter_tol)
 // flow control
 {
     typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, sigma, 1, 0.1); // impl. Euler, SD=0.1
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, 1, 0.1); // impl. Euler, SD=0.1
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -173,7 +176,7 @@ int main (int argc, char** argv)
     }
     double inner_iter_tol= std::atof(argv[1]);
     int sub_div= std::atoi(argv[2]);
-    double sigma= std::atof(argv[3]);
+    sigma= std::atof(argv[3]);
     if (argc>4) delta_t= std::atof(argv[4]);
     if (argc>5) num_steps= std::atoi(argv[5]);
 
@@ -201,7 +204,7 @@ int main (int argc, char** argv)
     DROPS::AdapTriangCL adap( mg, 0.1, 0, 3);
 
     adap.MakeInitialTriang( DistanceFct);
-    Strategy( prob, adap, inner_iter_tol, sigma);
+    Strategy( prob, adap, inner_iter_tol);
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

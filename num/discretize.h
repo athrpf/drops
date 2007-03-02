@@ -116,7 +116,7 @@ template<class T>
     GridFunctionCL<T>::apply(U& obj, MemberFuncT fun)
 {
     for (size_t i= 0; i < this->size(); ++i)
-        (*this)[i]= obj.fun( (*this)[i]);
+        (*this)[i]= (obj.*fun)( (*this)[i]);
     return *this;
 }
 
@@ -676,11 +676,14 @@ class P2DiscCL
 {
   public:
     // gradients on reference tetra
+    static void GetGradientsOnRef( LocalP1CL<Point3DCL> GRef[10]);
     static void GetGradientsOnRef( Quad2CL<Point3DCL> GRef[10]);
     static void GetGradientsOnRef( Quad5CL<Point3DCL> GRef[10]);
     // The 2nd arg points to 3 vertices of the triangle
     static void GetGradientsOnRef( Quad5_2DCL<Point3DCL> GRef[10], const BaryCoordCL* const);
     // compute gradients
+    static void GetGradients( LocalP1CL<Point3DCL> G[10], LocalP1CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    { for (int i=0; i<10; ++i) for (int j=0; j<4; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradients( Quad5CL<Point3DCL> G[10], Quad5CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)

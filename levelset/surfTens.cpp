@@ -66,6 +66,9 @@ double DistanceFct( const DROPS::Point3DCL& p)
     return d.norm()-C.Radius;
 }
 
+double sigma;
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
+
 namespace DROPS // for Strategy
 {
 
@@ -98,7 +101,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, C.sigma, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
+    sigma= C.sigma;
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;

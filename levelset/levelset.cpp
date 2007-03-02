@@ -197,93 +197,86 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
 //fil << "}\n";
 }
 
-void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
-// computes the integral
-//         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
+void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL &it, const BaryCoordCL * const p,
+    const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
+    instat_scalar_fun_ptr sigma, instat_vector_fun_ptr /*grad_sigma*/, const Quad5_2DCL<Point3DCL> e[3],
+    double det, VectorCL& f)
 {
-    const Uint  idx_f=     f.RowIdx->GetIdx();
-    IdxT        Numb[10];
+    static Quad5_2DCL<Point3DCL> Grad[10];
+    Quad5_2DCL<Point3DCL> n;
+    for (int v=0; v<10; ++v)
+    {
+        Grad[v].assign( Grad_f[v], p);
+        n+= patch.GetPhi(v)*Grad[v];
+    }
+    for (int i =0; i< 7; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+    Quad5_2DCL<> qsigma(it, p, sigma), q1;
+    Quad5_2DCL<Point3DCL> qPhPht;
+    for (int i=0; i<3; ++i)
+    {
+        qPhPht= (e[i] - dot(e[i],n)*n);
+        qPhPht.apply( patch, &InterfacePatchCL::ApplyProj);
+        qPhPht= qsigma*qPhPht;
+        for (int v=0; v<10; ++v)
+        {
+            q1=dot (qPhPht, Grad[v]);
+            f[Numb[v]+i]-= q1.quad(det);
+        }
+    }
+}
 
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+
+void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
+    instat_scalar_fun_ptr sigma, instat_vector_fun_ptr grad_sigma, VecDescCL& f)
+// computes the integral sigma \int_\Gamma \kappa v n ds = sigma
+// \int_\Gamma grad id grad v ds
+{
+    const Uint idx_f= f.RowIdx->GetIdx();
+    IdxT Numb[10];
+
+// std::ofstream fil("surf.off");
+// fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
+    LocalP1CL<Point3DCL> GradRef[10], Grad[10];
+    P2DiscCL::GetGradientsOnRef( GradRef);
+
     SMatrixCL<3,3> T;
     double det;
     InterfacePatchCL patch;
 
-    P2DiscCL::GetGradientsOnRef( GradRef);
+    Quad5_2DCL<Point3DCL> e[3];
+    for (int i= 0; i<3; ++i)
+        e[i]= std_basis<3>( i + 1);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
-        it!=end; ++it)
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, /*default level*/, it)
     {
-        GetTrafoTr( T, det, *it);
-        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-        LocalP1CL<Point3DCL> n;
-
         patch.Init( *it, SmPhi);
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-            Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
-            for (int k=0; k<4; ++k)
-                n[k]+= patch.GetPhi(v)*Grad[v][k];
-        }
 
-        for (int ch=0; ch<8; ++ch)
+        for (int v= 0; v < 10; ++v)
+        { // collect data on all DoF
+          const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+          Numb[v]= unk.Exist( idx_f) ? unk( idx_f) : NoIdx;
+        }
+        GetTrafoTr( T, det, *it);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+
+        for (int ch= 0; ch < 8; ++ch)
         {
             if (!patch.ComputeForChild(ch)) // no patch for this child
                 continue;
 
-//patch.WriteGeom( fil);
-            BaryCoordCL BaryPQR, BarySQR;
-            for (int i=0; i<3; ++i)
+            double det = patch.GetFuncDet();
+            SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(0),
+                patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
+            if (patch.IsQuadrilateral())
             {
-                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= patch.GetBary(i);
-                BarySQR+= patch.GetBary(i+1);
-            }
-            BaryPQR/= 3.;    BarySQR/= 3.;
-
-            typedef SArrayCL<Point3DCL,3> ProjT;
-            GridFunctionCL<ProjT> GradId( ProjT(), 6);  // values in P, Q, R, S, BaryPQR, BarySQR
-            for (int p=0; p<6; ++p)
-            {
-                Point3DCL np= n( p<4 ? patch.GetBary(p) : p==4 ? BaryPQR : BarySQR);
-                if (np.norm()>1e-8) np/= np.norm();
-                for (int i=0; i<3; ++i)
-                    GradId[p][i]= patch.ApplyProj( std_basis<3>(i+1) - np[i]*np);
-//                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
-            }
-
-            const double C= patch.GetFuncDet()*sigma/2.;
-
-            for (int v=0; v<10; ++v)
-            {
-                if (Numb[v]==NoIdx) continue;
-
-                LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
-                for (int node=0; node<4; ++node)
-                    gradv[node]= Grad[v][node];
-
-                for (int i=0; i<3; ++i)
-                {
-                    double intSum= 0; // sum of the integrand in PQR, SQR
-                    for (int k=0; k<3; ++k)
-                    {
-                        intSum+= inner_prod( GradId[k][i], gradv(patch.GetBary(k)));
-                        if (patch.IsQuadrilateral())
-                            intSum+= patch.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(patch.GetBary(k+1)));
-                    }
-                    double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
-                    if (patch.IsQuadrilateral())
-                        intBary+= patch.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
-                    f.Data[Numb[v]+i]-= C *(intSum/12. + 0.75*intBary);
-                }
+              det*= patch.GetAreaFrac();
+              SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(1),
+                  patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
             }
         } // Ende der for-Schleife ueber die Kinder
     }
-//fil << "}\n";
 }
 
 
@@ -476,11 +469,11 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     switch (SF_)
     {
       case SF_LB:
-        SF_LaplBeltrami( MG_, SmPhi, sigma, f); break;
+        SF_LaplBeltrami( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
       case SF_Const:
-        SF_ConstForce( MG_, SmPhi, sigma, f); break;
+        SF_ConstForce( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLB:
-        SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma, f); break;
+        SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma, grad_sigma, f); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }

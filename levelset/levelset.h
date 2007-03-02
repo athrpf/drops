@@ -30,9 +30,10 @@ class LevelsetP2CL
     typedef P2EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
     typedef P2EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
 
-    IdxDescCL           idx;
-    VecDescCL           Phi;       ///< level set function
-    double              sigma;     ///< surface tension
+    IdxDescCL             idx;
+    VecDescCL             Phi;        ///< level set function
+    instat_scalar_fun_ptr sigma;      ///< variable surface tension
+    instat_vector_fun_ptr grad_sigma; ///< gradient of sigma
 
   private:
     MultiGridCL&        MG_;
@@ -51,16 +52,18 @@ class LevelsetP2CL
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
 
   public:
-    LevelsetP2CL( MultiGridCL& mg, double sig= 0, double theta= 0.5, double SD= 0,
-                  double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ),
-        gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
+    LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
+        double theta= 0.5, double SD= 0., double diff= 0., int iter= 1000, double tol= 1e-7,
+        double curvDiff= -1.)
+    : idx( 1, 1), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())),
+        gm_( pc_, 100, iter, tol), SF_( SF_ImprovedLB)
     {}
 
-    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, double sig= 0, double theta= 0.5, double SD= 0,
-                  double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( 1, 1), sigma( sig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, instat_scalar_fun_ptr sig= 0,
+        instat_vector_fun_ptr gsig= 0, double theta= 0.5, double SD= 0, double diff= 0,
+        Uint iter= 1000, double tol= 1e-7, double curvDiff= -1)
+    : idx( 1, 1), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
         theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
     {}
 
