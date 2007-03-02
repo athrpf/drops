@@ -197,13 +197,103 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
 //fil << "}\n";
 }
 
-void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL &it, const BaryCoordCL * const p,
-    const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
-    instat_scalar_fun_ptr sigma, instat_vector_fun_ptr /*grad_sigma*/, const Quad5_2DCL<Point3DCL> e[3],
-    double det, VectorCL& f)
+void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+// computes the integral
+//         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
-    static Quad5_2DCL<Point3DCL> Grad[10];
+  const Uint  idx_f=     f.RowIdx->GetIdx();
+  IdxT        Numb[10];
+
+//std::ofstream fil("surf.off");
+//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
+  Quad2CL<Point3DCL> Grad[10], GradRef[10];
+  SMatrixCL<3,3> T;
+  double det;
+  InterfacePatchCL patch;
+
+  P2DiscCL::GetGradientsOnRef( GradRef);
+
+  for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
+       it!=end; ++it)
+  {
+    GetTrafoTr( T, det, *it);
+    P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+    LocalP1CL<Point3DCL> n;
+
+    patch.Init( *it, SmPhi);
+    for (int v=0; v<10; ++v)
+    { // collect data on all DoF
+      const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+      Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
+      for (int k=0; k<4; ++k)
+        n[k]+= patch.GetPhi(v)*Grad[v][k];
+    }
+
+    for (int ch=0; ch<8; ++ch)
+    {
+      if (!patch.ComputeForChild(ch)) // no patch for this child
+        continue;
+
+//patch.WriteGeom( fil);
+      BaryCoordCL BaryPQR, BarySQR;
+      for (int i=0; i<3; ++i)
+      {
+                // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
+        BaryPQR+= patch.GetBary(i);
+        BarySQR+= patch.GetBary(i+1);
+      }
+      BaryPQR/= 3.;    BarySQR/= 3.;
+
+      typedef SArrayCL<Point3DCL,3> ProjT;
+      GridFunctionCL<ProjT> GradId( ProjT(), 6);  // values in P, Q, R, S, BaryPQR, BarySQR
+      for (int p=0; p<6; ++p)
+      {
+        Point3DCL np= n( p<4 ? patch.GetBary(p) : p==4 ? BaryPQR : BarySQR);
+        if (np.norm()>1e-8) np/= np.norm();
+        for (int i=0; i<3; ++i)
+          GradId[p][i]= patch.ApplyProj( std_basis<3>(i+1) - np[i]*np);
+//                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
+      }
+
+      const double C= patch.GetFuncDet()*sigma/2.;
+
+      for (int v=0; v<10; ++v)
+      {
+        if (Numb[v]==NoIdx) continue;
+
+        LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
+        for (int node=0; node<4; ++node)
+          gradv[node]= Grad[v][node];
+
+        for (int i=0; i<3; ++i)
+        {
+          double intSum= 0; // sum of the integrand in PQR, SQR
+          for (int k=0; k<3; ++k)
+          {
+            intSum+= inner_prod( GradId[k][i], gradv(patch.GetBary(k)));
+            if (patch.IsQuadrilateral())
+              intSum+= patch.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(patch.GetBary(k+1)));
+          }
+          double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
+          if (patch.IsQuadrilateral())
+            intBary+= patch.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
+          f.Data[Numb[v]+i]-= C *(intSum/12. + 0.75*intBary);
+        }
+      }
+    } // Ende der for-Schleife ueber die Kinder
+  }
+//fil << "}\n";
+}
+
+void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
+                                        const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
+                                        instat_scalar_fun_ptr sigma, const Quad5_2DCL<Point3DCL> e[3],
+                                        double det, VectorCL& f)
+{
+    static Quad5_2DCL<Point3DCL> Grad[10]; // Gradients of the P2-basis-functions
     Quad5_2DCL<Point3DCL> n;
+
     for (int v=0; v<10; ++v)
     {
         Grad[v].assign( Grad_f[v], p);
@@ -211,21 +301,71 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL &it, const BaryCoordCL * c
     }
     for (int i =0; i< 7; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
-    Quad5_2DCL<> qsigma(it, p, sigma), q1;
-    Quad5_2DCL<Point3DCL> qPhPht;
-    for (int i=0; i<3; ++i)
+    Quad5_2DCL<> qsigma( t, p, sigma),  // surface tension
+                 q1;                    // Term 1
+
+    Quad5_2DCL<Point3DCL> qPhPhte,      // Common term in Term 1 and Term 2
+                          qsigmaPhPhte; // for Term 1
+
+    for (int i= 0; i < 3; ++i)
     {
-        qPhPht= (e[i] - dot(e[i],n)*n);
-        qPhPht.apply( patch, &InterfacePatchCL::ApplyProj);
-        qPhPht= qsigma*qPhPht;
-        for (int v=0; v<10; ++v)
+        qPhPhte= (e[i] - dot(e[i],n)*n);
+        qPhPhte.apply( patch, &InterfacePatchCL::ApplyProj);
+        qsigmaPhPhte= qsigma*qPhPhte;
+        for (int v= 0; v < 10; ++v)
         {
-            q1=dot (qPhPht, Grad[v]);
-            f[Numb[v]+i]-= q1.quad(det);
+            q1= dot (qsigmaPhPhte, Grad[v]);
+            f[Numb[v]+i]-= q1.quad( det);
         }
     }
 }
 
+void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
+    const InterfacePatchCL&  patch, const LocalP2CL<> p2_f[10], const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
+    instat_scalar_fun_ptr sigma, instat_vector_fun_ptr grad_sigma, const Quad5_2DCL<Point3DCL> e[3],
+    double det, VectorCL& f)
+{
+    if (grad_sigma == 0)
+    {
+        SF_ImprovedLaplBeltramiOnTriangle( t, p, patch, Grad_f, Numb, sigma, e, det, f);
+        return;
+    }
+    static Quad5_2DCL<>          p2[10];   // P2-Hat-Functions...
+    static Quad5_2DCL<Point3DCL> Grad[10]; // and their gradients
+    Quad5_2DCL<Point3DCL> n;
+    for (int v=0; v<10; ++v)
+    {
+        p2[v].assign( p2_f[v], p);
+        Grad[v].assign( Grad_f[v], p);
+        n+= patch.GetPhi(v)*Grad[v];
+    }
+    for (int i =0; i< 7; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
+
+    Quad5_2DCL<> qsigma( t, p, sigma), // surface tension
+                 q1,                   // Term 1
+                 q2_3;                 // Term 2 minus Term 3
+    Quad5_2DCL<Point3DCL> qPhPhte,                         // Common term in Term 1 and Term 2
+                          qsigmaPhPhte,                    // for Term 1
+                          qgradsigma( t, p, grad_sigma),   // for Term 2
+                          qPhgradsigma( qgradsigma);       // for Term 3
+    Quad5_2DCL<>          qgradsigmaPhPhte_m_Phgradsigmae; // for Term 2 and 3
+    qPhgradsigma.apply( patch, &InterfacePatchCL::ApplyProj);
+
+    for (int i= 0; i < 3; ++i)
+    {
+        qPhPhte= (e[i] - dot(e[i],n)*n);
+        qPhPhte.apply( patch, &InterfacePatchCL::ApplyProj);
+
+        qsigmaPhPhte= qsigma*qPhPhte;
+        qgradsigmaPhPhte_m_Phgradsigmae= dot( qPhPhte, qgradsigma) - dot( qPhgradsigma, e[i]);
+        for (int v= 0; v < 10; ++v)
+        {
+            q1= dot (qsigmaPhPhte, Grad[v]);
+            q2_3= p2[v]*qgradsigmaPhPhte_m_Phgradsigmae;
+            f[Numb[v]+i]-= q1.quad( det) + q2_3.quad( det);
+        }
+    }
+}
 
 void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
     instat_scalar_fun_ptr sigma, instat_vector_fun_ptr grad_sigma, VecDescCL& f)
@@ -237,6 +377,10 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 
 // std::ofstream fil("surf.off");
 // fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+
+    LocalP2CL<> p2[10];
+    for (int i= 0; i < 10; ++i)
+        p2[i][i]= 1.0;
 
     LocalP1CL<Point3DCL> GradRef[10], Grad[10];
     P2DiscCL::GetGradientsOnRef( GradRef);
@@ -255,8 +399,8 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 
         for (int v= 0; v < 10; ++v)
         { // collect data on all DoF
-          const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
-          Numb[v]= unk.Exist( idx_f) ? unk( idx_f) : NoIdx;
+            const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
+            Numb[v]= unk.Exist( idx_f) ? unk( idx_f) : NoIdx;
         }
         GetTrafoTr( T, det, *it);
         P2DiscCL::GetGradients( Grad, GradRef, T);
@@ -268,12 +412,12 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 
             double det = patch.GetFuncDet();
             SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(0),
-                patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
+                patch, p2, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
             if (patch.IsQuadrilateral())
             {
-              det*= patch.GetAreaFrac();
-              SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(1),
-                  patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
+                det*= patch.GetAreaFrac();
+                SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(1),
+                    patch, p2, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
             }
         } // Ende der for-Schleife ueber die Kinder
     }
@@ -473,6 +617,8 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
       case SF_Const:
         SF_ConstForce( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLB:
+        SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
+      case SF_ImprovedLBVar:
         SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma, grad_sigma, f); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");

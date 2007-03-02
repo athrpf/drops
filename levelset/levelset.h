@@ -19,7 +19,8 @@ enum SurfaceForceT
 {
     SF_LB=0,            ///< Laplace-Beltrami discretization: \f$\mathcal O(h^{1/2})\f$
     SF_ImprovedLB=1,    ///< improved Laplace-Beltrami discretization: \f$\mathcal O(h)\f$
-    SF_Const=2          ///< surface force with constant curvature
+    SF_Const=2,          ///< surface force with constant curvature
+    SF_ImprovedLBVar=3
 };
 
 class LevelsetP2CL
@@ -106,7 +107,8 @@ class LevelsetP2CL
     void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
     /// Discretize surface force
     void   AccumulateBndIntegral( VecDescCL& f) const;
-
+    /// Set surface tension and its gradient.
+    void   SetSigma( instat_scalar_fun_ptr sig, instat_vector_fun_ptr gsig= 0) { sigma= sig; grad_sigma= gsig; }
     /// \name Evaluate Solution
     ///@{
     const_DiscSolCL GetSolution() const
