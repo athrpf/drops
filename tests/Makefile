@@ -9,7 +9,7 @@ DIR = tests
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
-        mass quad5 downwind quad5_2D
+        mass quad5 downwind quad5_2D interfaceP1FE
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -155,6 +155,12 @@ quad5_2D: \
     ../tests/quad5_2D.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
     ../num/fe.o ../num/discretize.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+interfaceP1FE: \
+    ../tests/interfaceP1FE.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
+    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:
