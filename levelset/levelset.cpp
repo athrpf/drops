@@ -321,7 +321,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
 }
 
 void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
-    const InterfacePatchCL&  patch, const LocalP2CL<> p2_f[10], const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
+    const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
     instat_scalar_fun_ptr sigma, instat_vector_fun_ptr grad_sigma, const Quad5_2DCL<Point3DCL> e[3],
     double det, VectorCL& f)
 {
@@ -333,9 +333,9 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     static Quad5_2DCL<>          p2[10];   // P2-Hat-Functions...
     static Quad5_2DCL<Point3DCL> Grad[10]; // and their gradients
     Quad5_2DCL<Point3DCL> n;
+    P2DiscCL::GetP2Basis( p2, p);
     for (int v=0; v<10; ++v)
     {
-        p2[v].assign( p2_f[v], p);
         Grad[v].assign( Grad_f[v], p);
         n+= patch.GetPhi(v)*Grad[v];
     }
@@ -378,10 +378,6 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 // std::ofstream fil("surf.off");
 // fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
-    LocalP2CL<> p2[10];
-    for (int i= 0; i < 10; ++i)
-        p2[i][i]= 1.0;
-
     LocalP1CL<Point3DCL> GradRef[10], Grad[10];
     P2DiscCL::GetGradientsOnRef( GradRef);
 
@@ -412,12 +408,12 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 
             double det = patch.GetFuncDet();
             SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(0),
-                patch, p2, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
+                patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
             if (patch.IsQuadrilateral())
             {
                 det*= patch.GetAreaFrac();
                 SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(1),
-                    patch, p2, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
+                    patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
             }
         } // Ende der for-Schleife ueber die Kinder
     }

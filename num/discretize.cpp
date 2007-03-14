@@ -74,4 +74,23 @@ void P2DiscCL::GetGradientsOnRef( Quad5_2DCL<Point3DCL> GRef[10],
         }
 }
 
+void P2DiscCL::GetP2Basis( Quad5_2DCL<> p2[10], const BaryCoordCL* const p)
+{
+    BaryCoordCL NodeInTetra[Quad5_2DCL<Point3DCL>::NumNodesC];
+    Quad5_2DCL<>::SetInterface( p, NodeInTetra);
+    for (int j= 0; j < Quad5_2DCL<Point3DCL>::NumNodesC; ++j) {
+        const BaryCoordCL& Node= NodeInTetra[j];
+        p2[0][j]= FE_P2CL::H0( Node);
+        p2[1][j]= FE_P2CL::H1( Node);
+        p2[2][j]= FE_P2CL::H2( Node);
+        p2[3][j]= FE_P2CL::H3( Node);
+        p2[4][j]= FE_P2CL::H4( Node);
+        p2[5][j]= FE_P2CL::H5( Node);
+        p2[6][j]= FE_P2CL::H6( Node);
+        p2[7][j]= FE_P2CL::H7( Node);
+        p2[8][j]= FE_P2CL::H8( Node);
+        p2[9][j]= FE_P2CL::H9( Node);
+    }
+}
+
 } // end of namespace DROPS
