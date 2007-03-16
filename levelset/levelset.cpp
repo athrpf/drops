@@ -737,7 +737,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 //                               InterfacePatchCL
 //*****************************************************************************
 
-const double InterfacePatchCL::approxZero_= 1e-18;
+const double InterfacePatchCL::approxZero_= 2.*std::numeric_limits<double>::epsilon();
 
 InterfacePatchCL::InterfacePatchCL()
   : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
