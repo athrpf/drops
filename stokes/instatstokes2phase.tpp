@@ -522,80 +522,78 @@ void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM
     IdxT prNumb[4];
     double coup[4][4], coupT2[4][4];
 
-    const double nu_inv_2= 1./Coeff.mu(1);
-    SmoothedJumpCL nu_invers( 1./Coeff.mu(0), 1./Coeff.mu(1), Coeff.mu);
-    Quad2CL<double> nu_inv;
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    const Uint ls_lvl = ls.GetLevel();
-    LocalP2CL<> locallset;
+    const double nu_inv_p= 1./Coeff.mu( 1.0),
+                 nu_inv_n= 1./Coeff.mu( -1.0);
+    double integralp, integraln;
     InterfacePatchCL cut;
     bool sign[4];
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl),
-         send= MG.GetTriangTetraEnd(lvl); sit != send; ++sit) {
-        const double absdet= sit->GetVolume()*6.;
-        if (ls_lvl != lvl) {
-            locallset.assign( *sit, ls);
-            nu_inv.assign( locallset);
+    // The 16 products of the P1-shape-functions
+    LocalP2CL<> pipj[4][4];
+    for(int i= 0; i < 4; ++i) {
+        for(int j= 0; j < i; ++j) {
+            pipj[j][i][EdgeByVert( i, j) + 4]= 0.25;
+            pipj[i][j][EdgeByVert( j, i) + 4]= 0.25;
         }
-        else
-            nu_inv.assign( *sit, ls);
-        nu_inv.apply( nu_invers);
+        pipj[i][i][i]= 1.;
+        for (int vert= 0; vert < 3; ++vert)
+                pipj[i][i][EdgeByVert( i, VertOfFace( i, vert)) + 4]= 0.25;
+    }
+
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
+        const double absdet= sit->GetVolume()*6.;
         cut.Init( *sit, lset.Phi);
         const bool nocut= !cut.Intersects();
-
         GetLocalNumbP1NoBnd( prNumb, *sit, *matM->RowIdx);
-        for(int i=0; i<4; ++i)
-            for(int j=0; j<=i; ++j)
-            {
-                coup[j][i]= nu_inv.quadP1(i,j, absdet);
-                coup[i][j]= coup[j][i];
-            }
-        // write values into matrix
-        for(int i=0; i<4; ++i)
-            for(int j=0; j<4; ++j)
-                M_pr( prNumb[i], prNumb[j])+= coup[i][j];
-
-        if (nocut) continue; // extended basis functions have only support on tetra intersecting Gamma!
-
-        for(int i=0; i<4; ++i) {
-            sign[i]= cut.GetSign(i)==1;
-            for(int j=0; j<=i; ++j) {
-                // compute the integrals
-                // \int_{T_2} p_i p_j dx,    where T_2 = T \cap \Omega_2
-                double integral= 0;
-                LocalP2CL<> pipj;
-                if (i!=j)
-                    pipj[EdgeByVert(i,j)+4]= 0.25;
-                else {
-                    pipj[i]= 1;
-                    for (int vert=0; vert<4; ++vert)
-                        if (i!=vert)
-                            pipj[EdgeByVert(i,vert)+4]= 0.25;
+        if (nocut) {
+            const double nu_inv= cut.GetSign( 0) == 1 ? nu_inv_p : nu_inv_n;
+            for(int i= 0; i < 4; ++i) {
+                for(int j= 0; j < i; ++j) {
+                    coup[j][i]= nu_inv*P1DiscCL::GetMass( i, j)*absdet;
+                    coup[i][j]= coup[j][i];
                 }
-                for (int ch=0; ch<8; ++ch)
-                {
-                    cut.ComputeCutForChild(ch);
-                    integral+= cut.quad( pipj, absdet, true); // integrate on positive part
-                }
-                coupT2[j][i]= integral*nu_inv_2;
-                coupT2[i][j]= coupT2[j][i];
+                coup[i][i]= nu_inv*P1DiscCL::GetMass( i, i)*absdet;
             }
+
+            // write values into matrix
+            for(int i=0; i<4; ++i)
+                for(int j=0; j<4; ++j)
+                    M_pr( prNumb[i], prNumb[j])+= coup[i][j];
         }
+        else { // extended basis functions have only support on tetra intersecting Gamma!
+            for(int i=0; i<4; ++i) {
+                sign[i]= cut.GetSign(i) == 1;
+                for(int j=0; j<=i; ++j) {
+                    // compute the integrals
+                    // \int_{T_2} p_i p_j dx,    where T_2 = T \cap \Omega_2
+                    integralp= integraln= 0.;
+                    for (int ch= 0; ch < 8; ++ch) {
+                        cut.ComputeCutForChild( ch);
+                        integralp+= cut.quad( pipj[i][j], absdet, true);  // integrate on positive part
+                        integraln+= cut.quad( pipj[i][j], absdet, false); // integrate on negative part
+                    }
+                    coup[j][i]= integralp*nu_inv_p + integraln*nu_inv_n;
+                    coup[i][j]= coup[j][i];
+                    coupT2[j][i]= integralp*nu_inv_p;
+                    coupT2[i][j]= coupT2[j][i];
+                }
+            }
 
-        // write values into matrix
-        for(int i=0; i<4; ++i)
-        {
-            const IdxT xidx_i= Xidx[prNumb[i]];
-            for(int j=0; j<4; ++j)
-            { // tetra intersects Gamma => Xidx defined for all DoFs
-                const IdxT xidx_j= Xidx[prNumb[j]];
-                if (xidx_j!=NoIdx)
-                    M_pr( prNumb[i], xidx_j)+= coupT2[i][j] - sign[j]*coup[i][j];
-                if (xidx_i!=NoIdx)
-                    M_pr( xidx_i, prNumb[j])+= coupT2[i][j] - sign[i]*coup[i][j];
-                if (xidx_i!=NoIdx && xidx_j!=NoIdx && sign[i]==sign[j])
-                    M_pr( xidx_i, xidx_j)+=    coupT2[i][j]*(1-sign[i]-sign[j]) + sign[i]*sign[j]*coup[i][j];
+            // write values into matrix
+            for(int i=0; i<4; ++i)
+            {
+                const IdxT xidx_i= Xidx[prNumb[i]];
+                for(int j= 0; j < 4; ++j) {
+                    M_pr( prNumb[i], prNumb[j])+= coup[i][j];
+                    // tetra intersects Gamma => Xidx defined for all DoFs
+                    const IdxT xidx_j= Xidx[prNumb[j]];
+                    if (xidx_j!=NoIdx)
+                        M_pr( prNumb[i], xidx_j)+= coupT2[i][j] - sign[j]*coup[i][j];
+                    if (xidx_i!=NoIdx)
+                        M_pr( xidx_i, prNumb[j])+= coupT2[i][j] - sign[i]*coup[i][j];
+                    if (xidx_i!=NoIdx && xidx_j!=NoIdx && sign[i]==sign[j])
+                        M_pr( xidx_i, xidx_j)+= coupT2[i][j]*(1-sign[i]-sign[j]) + sign[i]*sign[j]*coup[i][j];
+                }
             }
         }
     }
@@ -692,6 +690,8 @@ void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_p
     A.Build();
 }
 
+// TODO: As in SetupPrMass_P1X, replace the smoothed density-function with integration
+//       over the inner and outer part.
 template <class CoeffT>
 void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_pr, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
 {
