@@ -630,88 +630,111 @@ VectorBaseCL<typename MatT::value_type> BlockMatrixBaseCL<MatT>::GetDiag() const
 //  Composition of 2 matrices
 //
 //*****************************************************************************
-template <class MatT>
+template <class MatT0, class MatT1>
 class CompositeMatrixBaseCL
 {
   public:
     typedef BlockMatrixOperationT OperationT;
 
   private:
-    const MatT* block_[2]; // The matrices are applied as block_[1]*block[0]*v
+    // The matrices are applied as block1_*block0_*v
+    const MatT0* block0_;
+    const MatT1* block1_;
     OperationT operation_[2];
 
   public:
-    CompositeMatrixBaseCL( const MatT* A, OperationT Aop, const MatT* B, OperationT Bop);
+    CompositeMatrixBaseCL( const MatT0* A, OperationT Aop, const MatT1* B, OperationT Bop);
 
     size_t num_rows() const;
     size_t num_cols() const;
     size_t intermediate_dim() const;
 
-    const MatT* GetBlock( size_t b) const { return block_[b]; }
+    const MatT0* GetBlock0() const { return block0_; }
+    const MatT1* GetBlock1() const { return block1_; }
 
     OperationT GetOperation( size_t b) const { return operation_[b]; }
     OperationT GetTransposeOperation( size_t b) const {
         return operation_[b] == MUL ? TRANSP_MUL : MUL;
     }
 
-    CompositeMatrixBaseCL GetTranspose() const;
+    CompositeMatrixBaseCL<MatT1, MatT0> GetTranspose() const;
 };
 
-template <class MatT>
-CompositeMatrixBaseCL<MatT>::CompositeMatrixBaseCL( const MatT* A, OperationT Aop,
-    const MatT* B, OperationT Bop)
+template <class MatT0, class MatT1>
+CompositeMatrixBaseCL<MatT0, MatT1>::CompositeMatrixBaseCL( const MatT0* A, OperationT Aop,
+    const MatT1* B, OperationT Bop)
 {
-    block_[0]= A; operation_[0]= Aop;
-    block_[1]= B; operation_[1]= Bop;
+    block0_= A; operation_[0]= Aop;
+    block1_= B; operation_[1]= Bop;
 }
 
-template <class MatT>
+template <class MatT0, class MatT1>
 size_t
-CompositeMatrixBaseCL<MatT>::num_rows() const
+CompositeMatrixBaseCL<MatT0, MatT1>::num_rows() const
 {
     switch (operation_[1]) {
-      case MUL:        return block_[1]->num_rows();
-      case TRANSP_MUL: return block_[1]->num_cols();
+      case MUL:        return block1_->num_rows();
+      case TRANSP_MUL: return block1_->num_cols();
       default:
         Comment("CompositeMatrixBaseCL::num_rows: No such operation.\n", DebugNumericC);
         return (size_t)-1;
     }
 }
 
-template <class MatT>
+template <class MatT0, class MatT1>
 size_t
-CompositeMatrixBaseCL<MatT>::num_cols() const
+CompositeMatrixBaseCL<MatT0, MatT1>::num_cols() const
 {
     switch (operation_[0]) {
-      case MUL:        return block_[0]->num_cols();
-      case TRANSP_MUL: return block_[0]->num_rows();
+      case MUL:        return block0_->num_cols();
+      case TRANSP_MUL: return block0_->num_rows();
       default:
         Comment("CompositeMatrixBaseCL::num_cols: No such operation.\n", DebugNumericC);
         return (size_t)-1;
     }
 }
 
-template <class MatT>
+template <class MatT0, class MatT1>
 size_t
-CompositeMatrixBaseCL<MatT>::intermediate_dim() const
+CompositeMatrixBaseCL<MatT0, MatT1>::intermediate_dim() const
 {
     switch (operation_[0]) {
-      case MUL:        return block_[0]->num_rows();
-      case TRANSP_MUL: return block_[0]->num_cols();
+      case MUL:        return block0_->num_rows();
+      case TRANSP_MUL: return block0_->num_cols();
       default:
         Comment("CompositeMatrixBaseCL::intermediate_dim: No such operation.\n", DebugNumericC);
         return (size_t)-1;
     }
 }
 
-template <class MatT>
-CompositeMatrixBaseCL<MatT>
-CompositeMatrixBaseCL<MatT>::GetTranspose() const
+template <class MatT0, class MatT1>
+CompositeMatrixBaseCL<MatT1, MatT0>
+CompositeMatrixBaseCL<MatT0, MatT1>::GetTranspose() const
 {
-    return CompositeMatrixBaseCL<MatT>( block_[1], GetTransposeOperation( 1),
-        block_[0], GetTransposeOperation( 0));
+    return CompositeMatrixBaseCL<MatT1,MatT0>( block1_, GetTransposeOperation( 1),
+        block0_, GetTransposeOperation( 0));
 }
 
+//*****************************************************************************
+//
+//  Vector as diagonal matrix
+//
+//*****************************************************************************
+template <class T>
+class VectorAsDiagMatrixBaseCL
+{
+  private:
+    const VectorBaseCL<T>* v_;
+
+  public:
+    VectorAsDiagMatrixBaseCL( const VectorBaseCL<T>* v)
+        : v_( v) {}
+
+    const VectorBaseCL<T>& GetDiag() const { return *v_; }
+
+    size_t num_rows() const { return v_->size(); }
+    size_t num_cols() const { return v_->size(); }
+};
 
 //*****************************************************************************
 //
@@ -1139,35 +1162,52 @@ transp_mul(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
 }
 
 
-template <typename _MatEntry, typename _VecEntry>
+template <typename _MatT0, typename _MatT1, typename _VecEntry>
 VectorBaseCL<_VecEntry>
-operator*(const CompositeMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
+operator*(const CompositeMatrixBaseCL<_MatT0, _MatT1>& A,
     const VectorBaseCL<_VecEntry>& x)
 {
     VectorBaseCL<_VecEntry> tmp( A.intermediate_dim());
     switch( A.GetOperation( 0)) {
       case MUL:
-        tmp= (*A.GetBlock( 0))*x; break;
+        tmp= (*A.GetBlock0())*x; break;
       case TRANSP_MUL:
-        tmp= transp_mul( *A.GetBlock( 0), x); break;
+        tmp= transp_mul( *A.GetBlock0(), x); break;
     }
-    VectorBaseCL<_VecEntry> ret( A.num_cols());
+    VectorBaseCL<_VecEntry> ret( A.num_rows());
     switch( A.GetOperation( 1)) {
       case MUL:
-        ret= (*A.GetBlock( 1))*tmp; break;
+        ret= (*A.GetBlock1())*tmp; break;
       case TRANSP_MUL:
-        ret= transp_mul( *A.GetBlock( 1), tmp); break;
+        ret= transp_mul( *A.GetBlock1(), tmp); break;
     }
     return ret;
 
 }
 
-template <typename _MatEntry, typename _VecEntry>
+template <typename _MatT0, typename _MatT1, typename _VecEntry>
 VectorBaseCL<_VecEntry>
-transp_mul(const CompositeMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
+transp_mul(const CompositeMatrixBaseCL<_MatT0, _MatT1>& A,
     const VectorBaseCL<_VecEntry>& x)
 {
     return A.GetTranspose()*x;
+}
+
+template <typename _VecEntry>
+VectorBaseCL<_VecEntry>
+operator* (const VectorAsDiagMatrixBaseCL<_VecEntry>& A,
+    const VectorBaseCL<_VecEntry>& x)
+{
+    return VectorBaseCL<_VecEntry>( A.GetDiag()*x);
+}
+
+
+template <typename _VecEntry>
+VectorBaseCL<_VecEntry>
+transp_mul (const VectorAsDiagMatrixBaseCL<_VecEntry>& A,
+    const VectorBaseCL<_VecEntry>& x)
+{
+    return VectorBaseCL<_VecEntry>( A.GetDiag()*x);
 }
 
 //=============================================================================
@@ -1383,7 +1423,8 @@ typedef VectorBaseCL<double>            VectorCL;
 typedef SparseMatBaseCL<double>         MatrixCL;
 typedef SparseMatBuilderCL<double>      MatrixBuilderCL;
 typedef BlockMatrixBaseCL<MatrixCL>     BlockMatrixCL;
-typedef CompositeMatrixBaseCL<MatrixCL> CompositeMatrixCL;
+typedef CompositeMatrixBaseCL<MatrixCL, MatrixCL> CompositeMatrixCL;
+typedef VectorAsDiagMatrixBaseCL<double>VectorAsDiagMatrixCL;
 
 } // end of namespace DROPS
 
