@@ -28,8 +28,8 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
     std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns. ";
 
     // fill value part of matrices
-    Quad2CL<Point3DCL> Grad[10], GradRef[10], u_loc;
-    Quad2CL<double> u_Grad[10]; // fuer u grad v_i
+    Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc;
+    Quad5CL<double> u_Grad[10]; // fuer u grad v_i
     SMatrixCL<3,3> T;
     double det, absdet, h_T;
 
@@ -52,16 +52,22 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
         for(int i=0; i<10; ++i)
             u_Grad[i]= dot( u_loc, Grad[i]);
 
+        double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
+        for(int i=0; i<Quad5CL<>::NumNodesC; ++i)
+            maxV = std::max( maxV, u_loc[i].norm());
+        if( maxV < 1e-5) maxV= 1.; // no scaling for extremely small velocities
+        /// \todo fixed limit for maxV (1e-5), any better idea?
+
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             for(int j=0; j<10; ++j)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
                 E( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
-                                     + u_Grad[i].quadP2(j, absdet)*SD_*h_T;
+                                     + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
 
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
                 H( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
-                                     + Quad2CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_*h_T;
+                                     + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
             }
     }
 
