@@ -64,7 +64,13 @@ class BndSegDataCL
 
   public:
     BndSegDataCL( BndCondT bc= Nat0BC, bnd_val_fun f= 0)
-      : bc_(bc), bnd_val_(f) {}
+      : bc_(bc), bnd_val_(f)
+    /// \param bc boundary condition for one segment
+    /// \param f  boundary value function on this segment. f has to be specified if bc is non-homogeneous
+    {
+        if ( bc!=Nat0BC && bc!=Dir0BC  && f==0)
+            throw DROPSErrCL("BndSegDataCL: no boundary function for non-homogeneous condition specified!");
+    }
 
     bool        WithUnknowns() const { return bc_ & 1; }
     bool        IsDirichlet()  const { return bc_==Dir0BC || bc_==DirBC; }
@@ -403,7 +409,7 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const VertexCL& v, double t) 
 {
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
         if ( BndData_[it->GetBndIdx()].IsDirichlet() )
-            return BndData_[it->GetBndIdx()].GetBndVal( v.GetCoord(), t);
+            return BndData_[it->GetBndIdx()].GetBndFun() ? BndData_[it->GetBndIdx()].GetBndVal( v.GetCoord(), t) : BndValT();
     throw DROPSErrCL("GetDirBndValue(VertexCL): No Dirichlet Boundary Segment!");
 }
 
@@ -414,7 +420,7 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const EdgeCL& e, double t) co
 {
     for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
         if ( BndData_[*it].IsDirichlet() )
-            return BndData_[*it].GetBndVal( GetBaryCenter(e), t);
+            return BndData_[*it].GetBndFun() ? BndData_[*it].GetBndVal( GetBaryCenter(e), t) : BndValT();
     throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
 }
 
@@ -424,7 +430,7 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const FaceCL& f, double t) co
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
     Assert( BndData_[f.GetBndIdx()].IsDirichlet(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
-    return BndData_[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
+    return BndData_[f.GetBndIdx()].GetBndFun() ? BndData_[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t) : BndValT();
 }
 
 template<class BndValT>
