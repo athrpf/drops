@@ -17,10 +17,10 @@ namespace DROPS
 enum SurfaceForceT
 /// different types of surface forces
 {
-    SF_LB=0,            ///< Laplace-Beltrami discretization: \f$\mathcal O(h^{1/2})\f$
-    SF_ImprovedLB=1,    ///< improved Laplace-Beltrami discretization: \f$\mathcal O(h)\f$
+    SF_LB=0,             ///< Laplace-Beltrami discretization: \f$\mathcal O(h^{1/2})\f$
+    SF_ImprovedLB=1,     ///< improved Laplace-Beltrami discretization: \f$\mathcal O(h)\f$
     SF_Const=2,          ///< surface force with constant curvature
-    SF_ImprovedLBVar=3
+    SF_ImprovedLBVar=3   ///< improved Laplace-Beltrami discretization with variable surface tension
 };
 
 class LevelsetP2CL
@@ -99,6 +99,8 @@ class LevelsetP2CL
 
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
+    /// returns information about level set function and interface.
+    void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& minCoord, Point3DCL& maxCoord) const;
     /// returns approximate volume of domain where level set function is negative.
     double GetVolume( double translation= 0) const;
     /// volume correction to ensure no loss or gain of mass.

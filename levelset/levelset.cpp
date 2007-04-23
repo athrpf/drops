@@ -299,7 +299,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         Grad[v].assign( Grad_f[v], p);
         n+= patch.GetPhi(v)*Grad[v];
     }
-    for (int i =0; i< 7; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
+    for (int i =0; i<Quad5_2DCL<>::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
     Quad5_2DCL<> qsigma( t, p, sigma),  // surface tension
                  q1;                    // Term 1
@@ -339,7 +339,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         Grad[v].assign( Grad_f[v], p);
         n+= patch.GetPhi(v)*Grad[v];
     }
-    for (int i =0; i< 7; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
+    for (int i =0; i<Quad5_2DCL<>::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
     Quad5_2DCL<> qsigma( t, p, sigma), // surface tension
                  q1,                   // Term 1
@@ -620,6 +620,76 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
 }
+
+void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& minCoord, Point3DCL& maxCoord) const
+/** 
+ * - \p maxGradPhi is the maximal 2-norm of the gradient of the level set function. This can be used as an indicator to decide 
+ *   whether a reparametrization should be applied.
+ * - \p Volume is the volume inside the approximate interface consisting of planar segments.
+ * - \p bary is the barycenter of the droplet.
+ * - The entries of \p minCoord store the minimal x, y and z coordinates of the approximative interface, respectively. 
+ * - The entries of \p maxCoord store the maximal x, y and z coordinates of the approximative interface, respectively.
+ */ 
+{
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    InterfacePatchCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    maxGradPhi= -1.;
+    Volume= 0.;
+    bary[0]= bary[1]= bary[2]= 0;
+    minCoord[0]= minCoord[1]= minCoord[2]= 1e99;
+    maxCoord[0]= maxCoord[1]= maxCoord[2]= -1e99;
+    LocalP2CL<double> ones( 1.); 
+    LocalP2CL<Point3DCL> Coord;
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL it=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(), end=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd();
+        it!=end; ++it)
+    {
+        GetTrafoTr( T, det, *it);
+        absdet= std::abs( det);
+        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+    
+        patch.Init( *it, Phi);
+        
+        // compute maximal norm of grad Phi
+        Quad2CL<Point3DCL> gradPhi;
+        for (int v=0; v<10; ++v) // init gradPhi, Coord
+        {
+            gradPhi+= patch.GetPhi(v)*Grad[v];
+            Coord[v]= v<4 ? it->GetVertex(v)->GetCoord() : GetBaryCenter( *it->GetEdge(v-4));
+        }
+        VectorCL normGrad( 5); 
+        for (int v=0; v<5; ++v) // init normGrad
+            normGrad[v]= norm( gradPhi[v]);
+        const double maxNorm= normGrad.max();
+        if (maxNorm > maxGradPhi) maxGradPhi= maxNorm;
+    
+        for (int ch=0; ch<8; ++ch)
+        {
+            // compute volume and barycenter
+            patch.ComputeCutForChild(ch);
+            Volume+= patch.quad( ones, absdet, false);
+            bary+= patch.quad( Coord, absdet, false);
+
+            // find minimal/maximal coordinates of interface
+            if (!patch.ComputeForChild(ch)) // no patch for this child
+                continue;
+            for (Uint i=0; i<patch.GetNumPoints(); ++i)
+            {
+                const Point3DCL p= patch.GetPoint(i);
+                for (int j=0; j<3; ++j)
+                {
+                    if (p[j] < minCoord[j]) minCoord[j]= p[j];
+                    if (p[j] > maxCoord[j]) maxCoord[j]= p[j];
+                }
+            }
+        }
+    }
+    bary/= Volume;
+} 
 
 double LevelsetP2CL::GetVolume( double translation) const
 {
