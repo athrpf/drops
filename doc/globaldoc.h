@@ -62,7 +62,7 @@
 /// \mainpage The DROPS-Package for Numerical Simulations
 ///
 /// This is the programmer's manual of the software package called
-/// DROPS, which has recently been developed at the IGPM (Institut für
+/// DROPS (cf. \ref homepage), which has recently been developed at the \ref IGPM (Institut für
 /// Geometrie und Praktische Mathematik) at the Aachen University of
 /// Technology. This development is still continuing and our aim is to
 /// build an efficient software tool for the numerical simulation of
@@ -94,11 +94,22 @@
 /// Please find the references to the literature cited in this manual
 /// below.
 ///
+/// \section bib-links Links
 /// \par SFB 540
 /// \anchor SFB
 /// ``Model-based Experimental Analysis of Kinetic Phenomena in Fluid
 /// Multi-phase Reactive Systems'',
 /// http://www.sfb540.rwth-aachen.de
+///
+/// \par IGPM
+/// \anchor IGPM
+/// Institut für Geometrie und Praktische Mathematik,
+/// http://www.igpm.rwth-aachen.de
+///
+/// \par DROPS home page
+/// \anchor homepage
+/// <b>D</b>ROPS <b>ro</b>bust <b>p</b>arallel <b>s</b>olver, find some more
+/// information on our home page http://www.igpm.rwth-aachen.de/DROPS
 ///
 /// \section bib-math Mathematics
 /// \par B4Eriksson \anchor B4Eriksson
