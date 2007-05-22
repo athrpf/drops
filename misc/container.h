@@ -64,8 +64,11 @@ template <class T, Uint _Size>
   inline bool
   operator==(const SBufferCL<T, _Size>&, const SBufferCL<T, _Size>&);
 
+/// Stores 2D coordinates
 typedef SVectorCL<2> Point2DCL;
+/// Stores 3D coordinates
 typedef SVectorCL<3> Point3DCL;
+/// Stores barycentric coordinates
 typedef SVectorCL<4> BaryCoordCL;
 
 enum InitStateT { Uninitialized, Initialized };

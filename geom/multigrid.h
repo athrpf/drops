@@ -1057,7 +1057,7 @@ template <class SimplexT>
 void circumcircle(const TetraCL& t, Point3DCL& c, double& r);
 void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r);
 
-// calculates the transpose of the transformation  Tetra -> RefTetra
+/// calculates the transpose of the transformation  Tetra -> RefTetra
 inline void GetTrafoTr( SMatrixCL<3,3>& T, double& det, const TetraCL& t)
 {
     double M[3][3];
@@ -1080,8 +1080,9 @@ inline void GetTrafoTr( SMatrixCL<3,3>& T, double& det, const TetraCL& t)
     T(2,2)= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
 }
 
-
+/// marks all tetrahedra for refinement
 void MarkAll (MultiGridCL&);
+/// marks all tetrahedra for unrefinement/coarsening
 void UnMarkAll (MultiGridCL&);
 
 } // end of namespace DROPS
