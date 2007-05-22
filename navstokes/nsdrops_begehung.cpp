@@ -46,9 +46,6 @@ struct NSDrCavCL
 
 const double NSDrCavCL::st= .1;
 
-inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
-inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
-
 typedef DROPS::StokesP2P1CL<NSDrCavCL::StokesCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
@@ -522,7 +519,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null, &Null, &NSDrCavCL::Stroem};
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &NSDrCavCL::Stroem};
 
     StokesOnBrickCL stokesprob(brick, NSDrCavCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = stokesprob.GetMG();

@@ -54,9 +54,6 @@ class DimLessCoeffCL
 };
 
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -195,7 +192,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     prM.SetIdx( pidx, pidx);
     prA.SetIdx( pidx, pidx);
 
-    Stokes.InitVel( &Stokes.v, Null);
+    Stokes.InitVel( &Stokes.v, ZeroVel);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
 
@@ -457,7 +454,7 @@ int main (int argc, char** argv)
         {false, false, true, false, false, false};  // Rohr
 //        {false, false, true, false, true, true};      // Kanal
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Inflow, &Null, &Null};
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &Inflow, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
     DROPS::MultiGridCL mg( builder);
     const DROPS::BoundaryCL& bnd= mg.GetBnd();

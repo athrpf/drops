@@ -141,7 +141,6 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 // boundary functions (neumann, dirichlet type)
 // used for BndSegCL-object of a UnitCube
 inline double neu_val(const DROPS::Point3DCL& p, double= 0.0) { return -64.0*p[0]*p[1]*(1.0-p[0])*(1.0-p[1]); }
-inline double Null(const DROPS::Point3DCL&, double= 0) { return 0.0; }
 
 
 int main (int argc, char** argv)
@@ -168,7 +167,7 @@ int main (int argc, char** argv)
     const bool isneumann[6]=
         {false, false, false, false, false, true};
     const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null, &Null, &neu_val};
+        { &DROPS::Zero, &DROPS::Zero, &DROPS::Zero, &DROPS::Zero, &DROPS::Zero, &neu_val};
 
     DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
     PoissonOnBCL prob(brick, PoissonCoeffCL(), bdata);

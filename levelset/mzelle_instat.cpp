@@ -59,9 +59,6 @@ class DimLessCoeffCL
 };
 
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -296,7 +293,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     prM.SetIdx( pidx, pidx);
     prA.SetIdx( pidx, pidx);
 
-    Stokes.InitVel( &Stokes.v, Null);
+    Stokes.InitVel( &Stokes.v, ZeroVel);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset);
     ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
@@ -540,7 +537,7 @@ int main (int argc, char** argv)
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[10];
     for (DROPS::BndIdxT i=0; i<num_bnd; ++i)
     {
-        bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &Inflow : &Null;
+        bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &Inflow : &DROPS::ZeroVel;
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
 

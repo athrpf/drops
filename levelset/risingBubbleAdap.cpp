@@ -46,8 +46,6 @@ class ZeroFlowCL
     { g[2]= -9.81; }
 };
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
-
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     const DROPS::Point3DCL d= Mitte-p;
@@ -89,7 +87,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     prM.SetIdx( pidx, pidx);
     Stokes.SetupPrMass( &prM, lset);
 
-    Stokes.InitVel( &Stokes.v, Null);
+    Stokes.InitVel( &Stokes.v, ZeroVel);
     lset.Init( DistanceFct);
 
     time.Reset();
@@ -197,7 +195,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null, &Null, &Null };
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel };
 
     StokesOnBrickCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();

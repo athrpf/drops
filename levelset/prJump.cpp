@@ -49,9 +49,6 @@ class ZeroFlowCL
 };
 
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
 /*
 double DistanceFct( const DROPS::Point3DCL& p)
 { // plane perpendicular to n=PosDrop with distance Radius from origin.
@@ -290,7 +287,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     prM.SetIdx( pidx, pidx);
     prA.SetIdx( pidx, pidx);
     new_pr.SetIdx( lidx);
-    Stokes.InitVel( &Stokes.v, Null);
+    Stokes.InitVel( &Stokes.v, ZeroVel);
     Stokes.SetupPrMass(  &prM, lset);
     Stokes.SetupPrStiff( &prA, lset); // makes no sense for P0
 
@@ -531,7 +528,7 @@ int main (int argc, char** argv)
     const DROPS::BndCondT bc[6]=
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null, &Null, &Null};
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
     MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
         DROPS::P1X_FE);

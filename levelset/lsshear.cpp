@@ -46,8 +46,6 @@ class ShearFlowCL
 DROPS::Point3DCL Mitte(0.5);
 double           Radius= 0.2;
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
-
 DROPS::SVectorCL<3> Parabol( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -122,7 +120,7 @@ void Strategy( StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     time.Stop();
     std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
 
-    Stokes.InitVel( v, Null);
+    Stokes.InitVel( v, ZeroVel);
     lset.SetupSystem( Stokes.GetVelSolution() );
 
     Uint meth;
@@ -229,7 +227,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null,  &Parabol, &Parabol };
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel,  &Parabol, &Parabol };
     // parabol. Einstroembedingungen bei z=0 und z=1
 
     MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(24, IsNeumann, bnd_fun));

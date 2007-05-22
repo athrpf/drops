@@ -155,8 +155,6 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 }
 
 // boundary functions (neumann, dirichlet type)
-inline double Null(const DROPS::Point3DCL&, double= 0) { return 0.0; }
-
 int main (int argc, char** argv)
 {
   try

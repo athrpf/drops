@@ -45,9 +45,6 @@ class ZeroFlowCL
 };
 
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -104,7 +101,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     Stokes.M.SetIdx(vidx, vidx);
     prM.SetIdx( pidx, pidx);
 
-    Stokes.InitVel( &Stokes.v, Null);
+    Stokes.InitVel( &Stokes.v, ZeroVel);
 
     Stokes.SetupPrMass( &prM, lset);
 
@@ -195,7 +192,7 @@ int main (int argc, char** argv)
         { DROPS::OutflowBC, DROPS::WallBC, DROPS::DirBC};
     //    bottom,           side,          top
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[3]=
-        { &Null, &Null, &Inflow};
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &Inflow};
 
     MyStokesCL prob(builder, ZeroFlowCL(), DROPS::StokesBndDataCL( 3, bc, bnd_fun));
 

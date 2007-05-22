@@ -22,9 +22,7 @@ typedef DROPS::StokesP2P1CL<DrivenCavityCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
-inline DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
 //inline DROPS::SMatrixCL<3, 3> NullMat( const DROPS::Point3DCL&)   { return DROPS::SMatrixCL<3, 3>(0.); }
-inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
 
 const double st= 0.1;
 
@@ -130,7 +128,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
             P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL>  corr_vel_read( &corr_v, &VelBndData, &MG);
             Interpolate( vel1, corr_vel_read );   */
 //            CheckSolution(v1,p1,&LsgVel,&LsgPr);
-//            Stokes.CheckSolution(v1,p1,&Null,&Nullsc);
+//            Stokes.CheckSolution(v1,p1,&ZeroVel,&Zero);
             v2->Reset();
             p2->Reset();
         }
@@ -258,7 +256,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null, &Null, &Stroem};
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &Stroem};
 
     StokesOnBrickCL prob(brick, DrivenCavityCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();

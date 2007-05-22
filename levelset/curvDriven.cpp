@@ -40,8 +40,6 @@ class ZeroFlowCL
 DROPS::Point3DCL Mitte(0.5);
 double           Radius= 0.25;
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)   { return DROPS::SVectorCL<3>(0.); }
-
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     DROPS::Point3DCL d= Mitte-p;
@@ -110,7 +108,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     time.Stop();
     std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
 
-    Stokes.InitVel( v, Null);
+    Stokes.InitVel( v, ZeroVel);
     lset.SetupSystem( Stokes.GetVelSolution() );
 /*
 { // output of surface force
@@ -239,7 +237,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &Null, &Null, &Null, &Null, &Null, &Null };
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel };
 
     MyStokesCL prob(brick, ZeroFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();

@@ -56,9 +56,6 @@ class DimLessCoeffCL
 };
 
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -183,7 +180,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 
       default:
         lset.Init( DistanceFct);
-        Stokes.InitVel( &Stokes.v, Null);
+        Stokes.InitVel( &Stokes.v, ZeroVel);
     }
 
     const double Vol= C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
@@ -349,15 +346,15 @@ int main (int argc, char** argv)
         switch(C.BndCond[i])
         {
             case 'w': case 'W':
-                bc[i]= DROPS::WallBC;    bnd_fun[i]= &Null;   break;
+                bc[i]= DROPS::WallBC;    bnd_fun[i]= &DROPS::ZeroVel;   break;
             case 'i': case 'I':
                 bc[i]= DROPS::DirBC;     bnd_fun[i]= &Inflow; break;
             case 'o': case 'O':
-                bc[i]= DROPS::OutflowBC; bnd_fun[i]= &Null;   break;
+                bc[i]= DROPS::OutflowBC; bnd_fun[i]= &DROPS::ZeroVel;   break;
             case '1':
-                bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &Null;   break;
+                bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &DROPS::ZeroVel;   break;
             case '2':
-                bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &Null;   break;
+                bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel;   break;
             default:
                 std::cerr << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
                 return 1;
@@ -370,8 +367,8 @@ int main (int argc, char** argv)
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
     //    foil, air_infty, side, side, top, bottom
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-//        { &Null, &Inflow, &Null, &Null, &Inflow, &Null};
-        { &Null, &Null, &Null, &Null, &Null, &Null};
+//        { &DROPS::ZeroVel, &Inflow, &DROPS::ZeroVel, &DROPS::ZeroVel, &Inflow, &DROPS::ZeroVel};
+        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
     */
 
     MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls));

@@ -39,8 +39,6 @@ struct NS1CL
 
 };
 
-inline double Nullsc( const DROPS::Point3DCL&)   { return 0.; }
-
 typedef DROPS::StokesP2P1CL<NS1CL::StokesCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;

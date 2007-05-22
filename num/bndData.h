@@ -185,6 +185,19 @@ class NoBndDataCL
 //        inline functions
 //======================================
 
+/// \brief returns zero (commonly used boundary data function)
+///
+/// Commonly used boundary data function of type BndSegDataCL<double>::bnd_val_fun
+/// returning zero
+inline double Zero( const Point3DCL&, double) { return 0.; }
+
+/// \brief returns zero vector (commonly used boundary data function)
+///
+/// Commonly used boundary data function of type BndSegDataCL<Point3DCL>::bnd_val_fun
+/// returning zero velocities 
+inline Point3DCL ZeroVel( const Point3DCL&, double) { return Point3DCL(0.); }
+
+
 template<class BndValT>
 inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const BndCondT* bc, const bnd_val_fun* fun)
 {

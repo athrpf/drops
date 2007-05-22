@@ -54,9 +54,6 @@ class DimLessCoeffCL
 };
 
 
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -132,7 +129,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.M.SetIdx(vidx, vidx);
     Stokes.N.SetIdx(vidx, vidx);
 
-    Stokes.InitVel( &Stokes.v, Null);
+    Stokes.InitVel( &Stokes.v, &ZeroVel);
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 
@@ -356,17 +353,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 } // end of namespace DROPS
 
 
-void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
-{
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
-             ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
-    {
-        if ( (GetBaryCenter(*It)-C.Mitte).norm()<=std::max(1.5*C.Radius,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
-            It->SetRegRefMark();
-    }
-}
-
-
 int main (int argc, char** argv)
 {
   try
@@ -406,13 +392,13 @@ int main (int argc, char** argv)
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[10];
     for (DROPS::BndIdxT i=0; i<num_bnd; ++i)
     {
-        bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &Inflow : &Null;
+        bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &Inflow : &DROPS::ZeroVel;
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
 
     for (int i=0; i<C.num_dropref; ++i)
     {
-        MarkDrop( mg);
+        DROPS::MarkInterface( DistanceFct, 0.5*C.Radius, mg);
         mg.Refine();
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;

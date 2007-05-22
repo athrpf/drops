@@ -132,8 +132,6 @@ void UnMarkDrop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 }
 
 // boundary functions (neumann, dirichlet type)
-inline double Null(const DROPS::Point3DCL&, double= 0.0) { return 0.0; }
-
 
 int main (int argc, char** argv)
 {
@@ -159,9 +157,9 @@ int main (int argc, char** argv)
                          false, false, false, false, false, false, false, false,
                          false, false, false, false, false, false, false, false};
     DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[24]=
-        { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Null,
-          &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Null,
-          &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Null };
+        { &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &DROPS::Zero,
+          &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &DROPS::Zero,
+          &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &Lsg, &DROPS::Zero };
     DROPS::PoissonBndDataCL bdata(24, isneumann, bnd_fun);
 
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
