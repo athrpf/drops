@@ -197,6 +197,11 @@ class InterfacePatchCL
     ///@}
 };
 
+/// marks all tetrahedra in the band |\p DistFct(x)| < \p width for refinement
+void MarkInterface (scalar_fun_ptr DistFct, double width, MultiGridCL&);
+/// marks all tetrahedra in the band |\p lset(x)| < \p width for refinement
+void MarkInterface ( const LevelsetP2CL::const_DiscSolCL& lset, double width, MultiGridCL& mg);
+
 } // end of namespace DROPS
 
 #include "levelset/levelset.tpp"

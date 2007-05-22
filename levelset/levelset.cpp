@@ -419,6 +419,46 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
     }
 }
 
+void MarkInterface ( scalar_fun_ptr DistFct, double width, MultiGridCL& mg)
+{
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, it)
+    {
+        double d= 1e99;
+        int num_pos= 0;
+        for (Uint j=0; j<10; ++j)
+        {
+            const double dist= j<4 ? DistFct( it->GetVertex( j)->GetCoord())
+                                   : DistFct( GetBaryCenter( *it->GetEdge(j-4)));
+            if (dist>=0) ++num_pos;
+            d= std::min( d, std::abs( dist));
+        }
+
+        const bool vzw= num_pos!=0 && num_pos!=10; // change of sign
+        if (d<=width || vzw)
+            it->SetRegRefMark();
+    }
+}
+    
+void MarkInterface ( const LevelsetP2CL::const_DiscSolCL& lset, double width, MultiGridCL& mg)
+{
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, it)
+    {
+        double d= 1e99;
+        int num_pos= 0;
+        for (Uint j=0; j<10; ++j)
+        {
+            const double dist= j<4 ? lset.val( *it->GetVertex( j))
+                                   : lset.val( *it->GetEdge(j-4));
+            if (dist>=0) ++num_pos;
+            d= std::min( d, std::abs( dist));
+        }
+
+        const bool vzw= num_pos!=0 && num_pos!=10; // change of sign
+        if (d<=width || vzw)
+            it->SetRegRefMark();
+    }
+}
+    
 
 //*****************************************************************************
 //                               LevelsetP2CL
