@@ -39,9 +39,6 @@ void ParamMesszelleCL::RegisterParams()
     rp_.BeginGroup("Reparam");
     rp_.RegInt( RepFreq,      "Freq");
     rp_.RegInt( RepMethod,    "Method");
-    rp_.RegInt( RepSteps,     "NumSteps");
-    rp_.RegDouble( RepTau,    "StepSize");
-    rp_.RegDouble( RepDiff,   "Diffusion");
     rp_.EndGroup();
 
     rp_.BeginGroup("AdaptRef");
@@ -60,7 +57,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.EndGroup();
 
     rp_.BeginGroup("Exp");
-    rp_.RegDouble( Radius,    "RadDrop");
+    rp_.RegCoord( Radius,     "RadDrop");
     rp_.RegCoord( Mitte,      "PosDrop");
     rp_.RegCoord( g,          "Gravity");
     rp_.RegDouble( Anstroem,  "InflowVel");
@@ -69,7 +66,6 @@ void ParamMesszelleCL::RegisterParams()
     rp_.EndGroup();
 
     rp_.RegInt( IniCond,      "InitialCond");
-    rp_.RegInt( num_dropref,  "NumDropRef");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");
@@ -146,7 +142,6 @@ void ParamFilmCL::RegisterParams()
     rp_.EndGroup();
 
     rp_.RegInt( IniCond,      "InitialCond");
-    rp_.RegInt( num_ref,      "NumRef");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");

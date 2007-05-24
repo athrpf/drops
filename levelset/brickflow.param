@@ -50,16 +50,13 @@ Coupling {
 # re-initialization of levelset function
 Reparam {
   Freq		=	0	# 0 = no reparametrization
-  Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
-  NumSteps	=	5
-  StepSize	=	0.001
-  Diffusion	=	1e-4
+  Method	=	1	# 0/1 = fast marching without/with modification of zero
 }
 
 #
 AdaptRef {
   Freq		=	0
-  FinestLevel	=	1
+  FinestLevel	=	0
   Width		=	2e-4
 }
 
@@ -76,7 +73,7 @@ Mat {
 
 # experimental conditions
 Exp {
-  RadDrop	=	-99
+  RadDrop	=	-99 -99 -99
   PosDrop	=	0	-7.5e-3	0
 
   Gravity	=	0	0	0
@@ -89,8 +86,7 @@ Exp {
 
 # miscellaneous
 
-NumDropRef	=	0
-InitialCond	=	1	# 0=zero, 1/2=flow with/without drop, 3=read from file
+InitialCond	=	0	# 0=zero, 1/2=flow with/without drop, 3=read from file
 InitialFile	=	ensight/nsmzi
 MeshFile	=	XXX
 EnsightCase	=	nsmzi

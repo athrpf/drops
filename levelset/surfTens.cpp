@@ -14,6 +14,7 @@
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
 #include "levelset/params.h"
+#include "levelset/mzelle_hdr.h"
 #include <fstream>
 
 
@@ -22,49 +23,6 @@ DROPS::ParamMesszelleCL C;
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
 //                        -div u = 0
 //                             u = u0, t=t0
-
-
-class ZeroFlowCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
-    const DROPS::Point3DCL g;
-
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& c)
-      : rho( DROPS::JumpCL( c.rhoD, c.rhoF ), DROPS::H_sm, c.sm_eps),
-         mu( DROPS::JumpCL( c.muD,  c.muF),   DROPS::H_sm, c.sm_eps),
-        g( c.g)    {}
-};
-
-class DimLessCoeffCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const double L, U;
-    const DROPS::SmoothedJumpCL rho, mu;
-    const DROPS::Point3DCL g;
-
-    DimLessCoeffCL( double l, double u, const DROPS::ParamMesszelleCL& c)
-      : L( l), U( u),
-        rho( DROPS::JumpCL( 1, c.rhoF/c.rhoD ), DROPS::H_sm, c.sm_eps/L),
-         mu( DROPS::JumpCL( 1, c.muF/c.muD),   DROPS::H_sm, c.sm_eps/L),
-        g( (L/U/U)*c.g)    {}
-};
-
-
-double DistanceFct( const DROPS::Point3DCL& p)
-{
-    const DROPS::Point3DCL d= C.Mitte-p;
-    return d.norm()-C.Radius;
-}
-
-double sigma;
-double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
 
 namespace DROPS // for Strategy
 {
@@ -99,12 +57,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
     sigma= C.sigma;
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    MatDescCL prM, prA;
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
@@ -126,8 +83,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.putGeom( datgeo);
 
     lset.Phi.SetIdx( lidx);
-    lset.Init( DistanceFct);
-    const double Vol= 4./3.*M_PI*std::pow(C.Radius,3);
+    lset.Init( EllipsoidCL::DistanceFct);
+    const double Vol= EllipsoidCL::GetVolume();
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     MG.SizeInfo( std::cerr);
@@ -141,14 +98,14 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
-    prM.SetIdx( pidx, pidx);
-    prA.SetIdx( pidx, pidx);
+    Stokes.prM.SetIdx( pidx, pidx);
+    Stokes.prA.SetIdx( pidx, pidx);
 
     Stokes.InitVel( &Stokes.v, ZeroVel);
-    Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA, lset);
+    Stokes.SetupPrMass(  &Stokes.prM, lset);
+    Stokes.SetupPrStiff( &Stokes.prA, lset);
 
-    PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    PSchur_PCG_CL   schurSolver( Stokes.prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     VelVecDescCL curv( vidx);
 
     if (C.IniCond != 0)
@@ -178,7 +135,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
+    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
 
@@ -209,7 +166,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         if (C.RepFreq && step%C.RepFreq==0)
         {
-            lset.Reparam( C.RepSteps, C.RepTau);
+            lset.ReparamFastMarching( C.RepMethod);
             curv.Clear();
             lset.AccumulateBndIntegral( curv);
 
@@ -234,26 +191,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 }
 
 } // end of namespace DROPS
-
-
-void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
-{
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
-             ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
-    {
-            int neg= 0;
-            for (int i=0; i<4; ++i)
-            {
-                const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
-                neg+= val<0;
-            }
-//            const double val= DistanceFct( GetBaryCenter(*It));
-//            neg+= val<0;
-
-            if (neg!=0 && neg!=4)
-               It->SetRegRefMark();
-    }
-}
 
 
 int main (int argc, char** argv)
@@ -298,9 +235,10 @@ int main (int argc, char** argv)
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 
-    for (int i=0; i<C.num_dropref; ++i)
+    EllipsoidCL::Init( C.Mitte, C.Radius);
+    for (int i=0; i<C.ref_flevel; ++i)
     {
-        MarkDrop( mg);
+        DROPS::MarkInterface( EllipsoidCL::DistanceFct, C.ref_width, mg);
         mg.Refine();
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;

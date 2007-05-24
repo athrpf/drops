@@ -58,7 +58,7 @@ class ParamMesszelleCL: public ParamBaseCL
     //@}
     ///\name Experimental setup
     //@{
-    double Radius;                              ///< radius of the droplet
+    Point3DCL Radius;                           ///< radii of the ellipsoidal droplet
     Point3DCL Mitte;                            ///< position of the droplet
     double Anstroem,                            ///< max. inflow velocity (parabolic profile)
            r_inlet;                             ///< radius at inlet of measuring device
@@ -74,13 +74,10 @@ class ParamMesszelleCL: public ParamBaseCL
     ///\name Reparametrization
     //@{
     int    RepFreq,                             ///< frequency (after how many time steps grid should be reparametrized)
-           RepMethod,                           ///< 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
-           RepSteps;                            ///< parameter for evolution of rep. equation
-    double RepTau, RepDiff;                     ///< parameter for evolution of rep. equation
+           RepMethod;                           ///< 0/1 = fast marching without/with modification of zero level set
     //@}
 
-    int    num_dropref,                         ///< number of grid refinements at position of drops
-           IniCond;                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
+    int    IniCond;                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
 
     string IniData,                             ///< file prefix when reading data for initial condition
            EnsCase,                             ///< name of Ensight Case
@@ -141,8 +138,7 @@ class ParamFilmCL: public ParamBaseCL
     double    Filmdicke;                        // Filmdicke
     Point3DCL mesh_res,                         // Gitteraufloesung und
               mesh_size;                        // Gittergroesse in x-/y-/z-Richtung
-    int       num_ref,                          // zusaetzliche Verfeinerung
-              VolCorr,                          // Volumenkorrektur (0=false)
+    int       VolCorr,                          // Volumenkorrektur (0=false)
               IniCond;                          // Anfangsbedingung (0=Null, 1= stat. flow, -1= read from file )
 
     int    ref_flevel, ref_freq;                // Parameter fuer

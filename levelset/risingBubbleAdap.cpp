@@ -71,7 +71,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    MatDescCL  prM;
     TimerCL time;
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
@@ -84,8 +83,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
-    prM.SetIdx( pidx, pidx);
-    Stokes.SetupPrMass( &prM, lset);
+    Stokes.prM.SetIdx( pidx, pidx);
+    Stokes.SetupPrMass( &Stokes.prM, lset);
 
     Stokes.InitVel( &Stokes.v, ZeroVel);
     lset.Init( DistanceFct);
@@ -116,7 +115,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
 
-    PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
+    PSchur_GSPCG_CL schurSolver( Stokes.prM.Data, 200, outer_tol, 200, inner_iter_tol);
 
     CouplLevelsetStokes2PhaseCL<StokesProblemT, PSchur_GSPCG_CL>
         cpl( Stokes, lset, schurSolver, 1.0); // impl. Euler
@@ -149,8 +148,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap, doub
             {
                 cpl.Update();
                 // don't forget to update the pr mass matrix for the schur compl. preconditioner!!
-                prM.SetIdx( pidx, pidx);
-                Stokes.SetupPrMass( &prM, lset);
+                Stokes.prM.SetIdx( pidx, pidx);
+                Stokes.SetupPrMass( &Stokes.prM, lset);
             }
         }
     }

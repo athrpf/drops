@@ -119,7 +119,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
     IdxDescCL ens_idx( 1, 1);
-    MatDescCL prM, prA;
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_x);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_x);
@@ -138,8 +137,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
-    prM.SetIdx( pidx, pidx);
-    prA.SetIdx( pidx, pidx);
+    Stokes.prM.SetIdx( pidx, pidx);
+    Stokes.prA.SetIdx( pidx, pidx);
     switch (C.IniCond)
     {
       case 1: // stationary flow
@@ -148,7 +147,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
-        Stokes.SetupPrMass(  &prM, lset/*, C.muF, C.muG*/);
+        Stokes.SetupPrMass(  &Stokes.prM, lset/*, C.muF, C.muG*/);
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
         curv.Clear();
@@ -157,7 +156,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         time.Reset();
-        PSchur_PCG_CL   schurSolver( prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        PSchur_PCG_CL   schurSolver( Stokes.prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
         time.Stop();
@@ -204,12 +203,12 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     ensight.Commit();
 
-    Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA, lset);
-//    ISPreCL ispc( prA.Data, prM.Data, 1./C.dt, C.theta);
+    Stokes.SetupPrMass(  &Stokes.prM, lset);
+    Stokes.SetupPrStiff( &Stokes.prA, lset);
+//    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
     typedef PCG_SsorCL SPcSolverT;
     SPcSolverT spcsolver( SSORPcCL( 1.0), 100, 0.02, /*relative*/ true);
-    ISNonlinearPreCL<SPcSolverT> isnonlinpc( spcsolver, prA.Data, prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
+    ISNonlinearPreCL<SPcSolverT> isnonlinpc( spcsolver, Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
     typedef PCG_SsorCL ASolverT;
     ASolverT Asolver( SSORPcCL( 1.0), 500, 0.02, /*relative*/true);
     typedef SolverAsPreCL<ASolverT> APcT;
@@ -385,7 +384,7 @@ int main (int argc, char** argv)
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
 
-    for (int i=0; i<C.num_ref; ++i)
+    for (int i=0; i<C.ref_flevel; ++i)
     {
 //        MarkFilm( mg);
 //        MarkHalf( mg);

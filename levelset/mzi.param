@@ -6,9 +6,10 @@
 
 # time stepping
 Time {
-  NumSteps	=	500
-  StepSize	=	1e-4
-  Theta		=	0.5	# Crank-Nicholson
+  NumSteps		=	500
+  StepSize		=	1e-4
+  ThetaLevelset	=	0.5	# Crank-Nicholson
+  ThetaStokes	=	0.5	# Crank-Nicholson
 }
 
 # flow solver
@@ -17,6 +18,7 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-15
   OuterTol	=	1e-11
+  StokesMethod	= 1
 }
 
 # levelset solver
@@ -24,6 +26,8 @@ Levelset {
   Tol		=	1e-14
   Iter		=	10000
   SD		=	0.1
+  CurvDiff	=	0
+  VolCorrection	=	1
 }
 
 Coupling {
@@ -34,10 +38,14 @@ Coupling {
 # re-initialization of levelset function
 Reparam {
   Freq		=	0	# 0 = no reparametrization
-  Method	=	1	# 0/1 = fast marching without/with modification of zero, 2 = evolve rep.eq.
-  NumSteps	=	1
-  StepSize	=	0.01
-  Diffusion	=	1e-4
+  Method	=	1	# 0/1 = fast marching without/with modification of zero
+}
+
+# adaptive refinement
+AdaptRef {
+  Freq			=	0
+  FinestLevel	=	2
+  Width			=	1e-3
 }
 
 # material data, all units are SI
@@ -53,7 +61,7 @@ Mat {
 
 # experimental conditions
 Exp {
-  RadDrop	=	1.75e-3
+  RadDrop	=	1.75e-3 1.75e-3 1.75e-3
   PosDrop	=	8e-3	0	0
 
   Gravity	=	9.81	0	0
@@ -66,8 +74,10 @@ Exp {
 
 # miscellaneous
 
-NumDropRef	=	2
+InitialCond	=	1
+InitialFile	=	initial/XXX
 
 MeshFile	=	gambit/messzelle.msh
+
 EnsightCase	=	mzi
 EnsightDir	=	ensight

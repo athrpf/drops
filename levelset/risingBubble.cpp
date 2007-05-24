@@ -73,7 +73,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    MatDescCL prM;
 
     TimerCL time;
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
@@ -93,11 +92,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
-    prM.SetIdx( pidx, pidx);
+    Stokes.prM.SetIdx( pidx, pidx);
 
     Stokes.InitVel( &Stokes.v, ZeroVel);
 
-    Stokes.SetupPrMass( &prM, lset);
+    Stokes.SetupPrMass( &Stokes.prM, lset);
 
     Uint meth;
     std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
@@ -123,7 +122,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     ensight.putScalar( datscl, lset.GetSolution(), 0);
     if (meth)
     {
-        PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
+        PSchur_GSPCG_CL schurSolver( Stokes.prM.Data, 200, outer_tol, 200, inner_iter_tol);
         CouplLevelsetStokes2PhaseCL<StokesProblemT, PSchur_GSPCG_CL>
             cpl( Stokes, lset, schurSolver);
 
@@ -147,7 +146,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
         Uint inner_iter;
         tau=  0.5*delta_t;
         std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-        Uzawa_PCG_CL uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
+        Uzawa_PCG_CL uzawaSolver( Stokes.prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
         CouplLevelsetStokes2PhaseCL<StokesProblemT, Uzawa_PCG_CL>
             cpl( Stokes, lset, uzawaSolver);
         cpl.SetTimeStep( delta_t);

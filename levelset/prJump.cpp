@@ -14,6 +14,7 @@
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
 #include "levelset/params.h"
+#include "levelset/mzelle_hdr.h"
 #include <fstream>
 
 
@@ -33,43 +34,24 @@ DROPS::ParamMesszelleCL C;
 //   - different surface forces by applying lset.SetSurfaceForce(...)
 //     -> set prJump: height of pressure jump
 
-class ZeroFlowCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
-    const DROPS::Point3DCL g;
-
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& c)
-      : rho( DROPS::JumpCL( c.rhoD, c.rhoF ), DROPS::H_sm, c.sm_eps),
-         mu( DROPS::JumpCL( c.muD,  c.muF),   DROPS::H_sm, c.sm_eps),
-        g( c.g)    {}
-};
-
-
 /*
 double DistanceFct( const DROPS::Point3DCL& p)
-{ // plane perpendicular to n=PosDrop with distance Radius from origin.
-    return inner_prod( C.Mitte/norm(C.Mitte), p) - C.Radius;
+{ // plane perpendicular to n=PosDrop with distance Radius[0] from origin.
+    return inner_prod( C.Mitte/norm(C.Mitte), p) - C.Radius[0];
 }
 
 double DistanceFct( const DROPS::Point3DCL& p)
-{ // ball
+{ // ball, only first component of C.Radius is considered
     const DROPS::Point3DCL d= C.Mitte-p;
-    return d.norm()-C.Radius;
+    return d.norm()-C.Radius[0];
 }
 */
 
 double DistanceFct( const DROPS::Point3DCL& p)
-{ // ball
+{ // ball, only first component of C.Radius is considered
     const DROPS::Point3DCL d= C.Mitte-p;
-    return d.norm()-C.Radius;
+    return d.norm()-C.Radius[0];
 }
-
-double sigma;
-double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
 
 namespace DROPS // for Strategy
 {
@@ -248,21 +230,20 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MultiGridCL& MG= Stokes.GetMG();
     sigma= C.sigma;
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
 //    lset.SetSurfaceForce( SF_LB);
     lset.SetSurfaceForce( SF_ImprovedLB);
 //    lset.SetSurfaceForce( SF_Const);
     const double Vol= 8.,
 //        prJump= C.sigma, // for SF_Const force
-        prJump= C.sigma*2/C.Radius, // for SF_*LB force
-        avg_ex= prJump/2.*(8./3.*M_PI*C.Radius*C.Radius*C.Radius - Vol)/Vol; // for spherical interface
+        prJump= C.sigma*2/C.Radius[0], // for SF_*LB force
+        avg_ex= prJump/2.*(8./3.*M_PI*C.Radius[0]*C.Radius[0]*C.Radius[0] - Vol)/Vol; // for spherical interface
 //        avg_ex= 0; // for planar interface
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    MatDescCL prM, prA;
     VecDescCL new_pr;  // for pressure output in Ensight
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
@@ -284,12 +265,12 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
-    prM.SetIdx( pidx, pidx);
-    prA.SetIdx( pidx, pidx);
+    Stokes.prM.SetIdx( pidx, pidx);
+    Stokes.prA.SetIdx( pidx, pidx);
     new_pr.SetIdx( lidx);
     Stokes.InitVel( &Stokes.v, ZeroVel);
-    Stokes.SetupPrMass(  &prM, lset);
-    Stokes.SetupPrStiff( &prA, lset); // makes no sense for P0
+    Stokes.SetupPrMass(  &Stokes.prM, lset);
+    Stokes.SetupPrStiff( &Stokes.prA, lset); // makes no sense for P0
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
@@ -311,7 +292,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 //     SPcT ispc( prA.Data, prM.Data, /*kA*/ 0, /*kM*/ 1);
     typedef ISNonlinearPreCL<ASolverT> SPcT;
     ASolverT isnonsolver( Apcpc, 50, 0.001, /*relative=*/ true);
-    SPcT ispc( isnonsolver, prA.Data, prM.Data, /*kA*/ 0, /*kM*/ 1);
+    SPcT ispc( isnonsolver, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 0, /*kM*/ 1);
 
         // PC for Oseen solver
 //        typedef DummyPcCL OseenPcT;
@@ -418,7 +399,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         opr.Data= Stokes.p.Data;
     }
 
-    L2ErrorPr( Stokes.p, lset, prM.Data, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx(), avg_ex);
+    L2ErrorPr( Stokes.p, lset, Stokes.prM.Data, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx(), avg_ex);
 
     PostProcessPr( Stokes.p, new_pr, MG);
 
@@ -458,38 +439,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 }
 
 } // end of namespace DROPS
-
-
-void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
-{
-    for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
-             ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
-    {
-/*            for (int i=0; i<4; ++i)
-            {
-                const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
-                if ( val<C.ref_width && val > -C.ref_width)
-                    It->SetRegRefMark();
-            }
-            const double val= DistanceFct( GetBaryCenter(*It));
-            if ( val<C.ref_width && val > -C.ref_width)
-                It->SetRegRefMark();
-*/
-            int neg= 0, zero= 0;
-            for (int i=0; i<4; ++i)
-            {
-                const double val= DistanceFct( It->GetVertex(i)->GetCoord() );
-                neg+= val<0;
-                zero+= std::fabs(val)<1e-8;
-            }
-            const double val= DistanceFct( GetBaryCenter(*It));
-            neg+= val<0;
-            zero+= std::fabs(val)<1e-8;
-
-            if ( (neg!=0 && neg!=5) || zero) // change of sign or zero in tetra
-               It->SetRegRefMark();
-    }
-}
 
 
 int main (int argc, char** argv)
@@ -536,9 +485,9 @@ int main (int argc, char** argv)
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 
-    for (int i=0; i<C.num_dropref; ++i)
+    for (int i=0; i<C.ref_flevel; ++i)
     {
-        MarkDrop( mg);
+        DROPS::MarkInterface( DistanceFct, C.ref_width, mg);
         mg.Refine();
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
