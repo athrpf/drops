@@ -208,7 +208,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             // calculate defect:
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
-            std::cerr << _iter << ": res = " << (_res= std::sqrt( dot( d, d) + dot( e, e)) ) << std::endl;
+            std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
             if (_res < _tol || _iter>=_maxiter)
                 break;
 
@@ -219,8 +219,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             _solver.SetTol( outer_tol);
             _solver.Solve( _AN, B, w, q, d, e); // _solver should use a relative termination criterion.
 
-            // calculate adaption:
-            _NS.N.Data.clear();
+            // calculate step length omega:
             v_omw.Data= v.Data - omega*w;
             _NS.SetupNonlinear( &_NS.N, &v_omw, &cplN);
 
