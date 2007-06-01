@@ -252,6 +252,8 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
+    _Stokes.ClearMat();
+    _LvlSet.ClearMat();
     // IndexDesc setzen
     _b->SetIdx( vidx);       _old_b->SetIdx( vidx);
     _cplM->SetIdx( vidx);    _old_cplM->SetIdx( vidx);
@@ -292,7 +294,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
         _matMG->clear();
         _matMG->push_back( MGLevelDataCL());
     }
-    // _mat is always a pointer to _matMG->back()A.Data for efficiency.
+    // _mat is always a pointer to _matMG->back().A.Data for efficiency.
     _mat= &_matMG->back().A.Data;
 
     time.Stop();
@@ -438,6 +440,9 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
+    _mat.clear();
+    _Stokes.ClearMat();
+    _LvlSet.ClearMat();
     // IndexDesc setzen
     _b->SetIdx( vidx);       _old_b->SetIdx( vidx);
     _cplM->SetIdx( vidx);    _old_cplM->SetIdx( vidx);
@@ -670,6 +675,10 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
+    _mat.clear();
+    _AN.clear();
+    _Stokes.ClearMat();
+    _LvlSet.ClearMat();
     // IndexDesc setzen
     _b->SetIdx( vidx);
     _cplM->SetIdx( vidx);    _old_cplM->SetIdx( vidx);

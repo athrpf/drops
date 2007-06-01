@@ -111,6 +111,8 @@ class LevelsetP2CL
     void   AccumulateBndIntegral( VecDescCL& f) const;
     /// Set surface tension and its gradient.
     void   SetSigma( instat_scalar_fun_ptr sig, instat_vector_fun_ptr gsig= 0) { sigma= sig; grad_sigma= gsig; }
+    /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
+    void   ClearMat() { E_.clear(); H_.clear(); L_.clear(); }
     /// \name Evaluate Solution
     ///@{
     const_DiscSolCL GetSolution() const

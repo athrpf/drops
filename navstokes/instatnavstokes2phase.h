@@ -58,6 +58,8 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
 
     /// \brief Register a Levelset-object for use in SetupNonlinear; this is needed for Navier-Stokes-solvers.
     void SetLevelSet(const LevelsetP2CL& ls) { ls_= &ls; }
+    /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
+    void ClearMat() { _base::ClearMat(); N.Data.clear(); }
 };
 
 } // end of namespace DROPS

@@ -121,6 +121,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
     /// Smooth velocity field
     void SmoothVel( VelVecDescCL*, int num= 1, double tau=0.5);
+    /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
+    void ClearMat() { A.Data.clear(); B.Data.clear(); M.Data.clear(); prA.Data.clear(); prM.Data.clear(); }
 
     /// Get FE type for pressure space
     FiniteElementT GetPrFE() const { return prFE_; }
