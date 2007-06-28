@@ -194,7 +194,7 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
 
     double det;
     LocalP1CL<> p1[4];
-    p1[0]= p1[1]= p1[2]= p1[3]= 1.; // P1-Basis-Functions
+    p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
     Quad5_2DCL<double> q[4], m;
     
     InterfacePatchCL patch;
