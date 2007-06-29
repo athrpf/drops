@@ -57,10 +57,10 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
         // Outside the shell: level should be c_level_.
         const Uint soll_level= (d<=width_ || vzw) ? f_level_ : c_level_;
 
-        if (l !=  soll_level)
+        if (l !=  soll_level || (l == soll_level && !it->IsRegular()) )
         { // tetra will be marked for refinement/removement
             modified= true;
-            if (l < soll_level)
+            if (l <= soll_level)
                 it->SetRegRefMark();
             else // l > soll_level
                 it->SetRemoveMark();
