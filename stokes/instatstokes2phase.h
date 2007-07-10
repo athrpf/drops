@@ -38,6 +38,27 @@ class ExtIdxDescCL
     void Old2New(VecDescCL*);
 };
 
+/// \brief Repair a P1X-vector if grid changes occur
+///
+/// Create such an object with the variable to be repaired before any grid-modifications.
+/// Repair the linear part however you like and call the operator() to repair the extended part.
+class P1XRepairCL
+{
+  private:
+    bool UsesXFEM_;
+    MultiGridCL& mg_;
+    IdxDescCL idx_;
+    ExtIdxDescCL& extidx_;
+    VectorCL extData_;
+    VecDescCL& p_;
+
+  public:
+    P1XRepairCL( bool UsesXFEM, MultiGridCL& mg, VecDescCL& p,
+        ExtIdxDescCL& extidx);
+
+    void operator() (const LevelsetP2CL& lset);
+};
+
 /// problem class for instationary two-pase Stokes flow
 
 template <class Coeff>
@@ -126,8 +147,11 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     /// Get FE type for pressure space
     FiniteElementT GetPrFE() const { return prFE_; }
-    /// Get extended index (only makes sense for P1X_FE)
+    /// \name Get extended index (only makes sense for P1X_FE)
+    //@{
     const ExtIdxDescCL& GetXidx() const { return Xidx_; }
+    ExtIdxDescCL&       GetXidx()       { return Xidx_; }
+    //@}
     /// Get pressure solution on inner/outer part (especially for P1X_FE)
     void GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart= true); // false = inner = Phi<0, true = outer = Phi>0
 

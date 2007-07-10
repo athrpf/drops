@@ -98,6 +98,8 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     const Uint min_ref_num= f_level_ - c_level_;
     Uint i, LastLevel= mg_.GetLastLevel();
 
+    P1XRepairCL p1xrepair( NS.UsesXFEM(), mg_, NS.p, NS.GetXidx());
+
     for (i=0; i<2*min_ref_num; ++i)
     {
         LevelsetP2CL::const_DiscSolCL sol= lset.GetSolution( *l1);
@@ -156,6 +158,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         NS.p.Data= loc_p.Data;
         lset.Phi.Data= loc_l.Data;
     }
+    p1xrepair( lset);
     time.Stop();
     std::cout << "UpdateTriang: " << i
               << " refinements/interpolations in " << time.GetTime() << " seconds\n"
