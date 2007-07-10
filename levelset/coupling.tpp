@@ -378,12 +378,17 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
     if (_Stokes.UsesXFEM()) {
-	    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	    _Stokes.UpdatePressure( &_Stokes.p);
-	    _Stokes.c.SetIdx( &_Stokes.pr_idx);
-	    _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+	_Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+	_Stokes.UpdatePressure( &_Stokes.p);
+	_Stokes.c.SetIdx( &_Stokes.pr_idx);
+	_Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
         _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        _Stokes.B.Data.clear();
+        _Stokes.prA.Data.clear();
+        _Stokes.prM.Data.clear();
     }
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
@@ -455,6 +460,8 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _Stokes.B.SetIdx( pidx, vidx);
     _Stokes.M.SetIdx( vidx, vidx);
     _Stokes.N.SetIdx( vidx, vidx);
+    _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+    _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
 
     // Diskretisierung
     _LvlSet.AccumulateBndIntegral( *_old_curv);
@@ -462,6 +469,10 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _old_cplN, _LvlSet, _Stokes.t);
+
+    // Vorkonditionierer
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
