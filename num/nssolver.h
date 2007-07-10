@@ -46,6 +46,7 @@ class AdaptFixedPtDefectCorrCL
     double   GetResid()        const { return _res; }
     int      GetIter ()        const { return _iter; }
     SolverT& GetStokesSolver() const { return _solver; }
+    MatrixCL&GetAN()                 { return _AN; }
 
     // solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
     //                                 B v        = c
@@ -85,6 +86,7 @@ class FixedPtDefectCorrCL
     double GetResid()          const { return _res; }
     Uint   GetIter ()          const { return _iter; }
     SolverT& GetStokesSolver() const { return _solver; }
+    MatrixCL&GetAN()                 { return _AN; }
 
     // solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
     //                                 B v        = c
