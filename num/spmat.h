@@ -203,6 +203,7 @@ public:
           _reuse(!(DROPSDebugC & DebugNoReuseSparseC) && mat->num_nonzeros()!=0
                  && mat->num_rows()==rows && mat->num_cols()==cols)
     {
+        mat->IncrementVersion();
         if (_reuse)
         {
             Comment("SparseMatBuilderCL: Reusing OLD matrix" << std::endl, DebugNumericC);
@@ -306,6 +307,8 @@ private:
     size_t _rows;                   // global dimensions
     size_t _cols;
 
+    size_t version_;                // All modifications increment this. Starts with 1.
+
     std::valarray<size_t> _rowbeg;  // (_rows+1 entries, last entry must be <=_nz) index of first non-zero-entry in _val belonging to the row given as subscript
     std::valarray<size_t> _colind;  // (_nz elements) column-number of corresponding entry in _val
     std::valarray<T>      _val;     // nonzero-entries
@@ -317,13 +320,13 @@ private:
 public:
     typedef T value_type;
 
-    SparseMatBaseCL () {}
+    SparseMatBaseCL () : version_( 1) {}
     // default copy-ctor, assignment-op, dtor
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz)
-        : _rows(rows), _cols(cols), _rowbeg(rows+1), _colind(nz), _val(nz) {}
+        : _rows(rows), _cols(cols), version_( 1), _rowbeg(rows+1), _colind(nz), _val(nz) {}
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz,
                      const T* valbeg , const size_t* rowbeg, const size_t* colindbeg)
-        : _rows(rows), _cols(cols), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
+        : _rows(rows), _cols(cols), version_( 1), _rowbeg(rowbeg, rows+1), _colind(colindbeg, nz), _val(valbeg, nz) {}
     SparseMatBaseCL (const std::valarray<T>&); // Creates a square diagonal matrix.
 
     const T*      raw_val() const { return Addr( _val); }
@@ -344,20 +347,23 @@ public:
     size_t col_ind (size_t i) const { return _colind[i]; }
     T      val     (size_t i) const { return _val[i]; }
 
+    void IncrementVersion() { ++version_; }
+    size_t Version() const {  return version_; }
+
     const size_t* GetFirstCol(size_t i) const { return Addr(_colind)+_rowbeg[i]; }
     const T*      GetFirstVal(size_t i) const { return Addr(_val)+_rowbeg[i]; }
 
     inline T  operator() (size_t i, size_t j) const;
 
-    SparseMatBaseCL& operator*= (T c) { _val*= c; return *this; }
-    SparseMatBaseCL& operator/= (T c) { _val/= c; return *this; }
+    SparseMatBaseCL& operator*= (T c) { IncrementVersion(); _val*= c; return *this; }
+    SparseMatBaseCL& operator/= (T c) { IncrementVersion(); _val/= c; return *this; }
 
     SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&);
 
     void resize (size_t rows, size_t cols, size_t nz)
-        { _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
-    void clear() { resize(0,0,0); }
+        { IncrementVersion(); _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
+    void clear() { IncrementVersion(); resize(0,0,0); }
 
     VectorBaseCL<T> GetDiag() const;
 
@@ -369,8 +375,8 @@ public:
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL(const std::valarray<T>& v)
-      : _rows( v.size()), _cols( v.size()), _rowbeg( v.size() + 1),
-        _colind( v.size()), _val( v)
+      : _rows( v.size()), _cols( v.size()), version_( 1),
+        _rowbeg( v.size() + 1), _colind( v.size()), _val( v)
 {
     for (size_t i= 0; i < _rows; ++i)
         _rowbeg[i]= _colind[i]= i;
@@ -404,6 +410,7 @@ template <typename T>
     Assert( num_rows() == p.size(),
         DROPSErrCL( "permute_rows: Matrix and Permutation have different dimension.\n"), DebugNumericC);
 
+    IncrementVersion();
     PermutationT pi( invert_permutation( p));
     std::valarray<size_t> r( _rowbeg);
     std::valarray<size_t> c( _colind);
@@ -426,6 +433,7 @@ template <typename T>
     Assert( num_cols() == p.size(),
         DROPSErrCL( "permute_columns: Matrix and Permutation have different dimension.\n"), DebugNumericC);
 
+    IncrementVersion();
     for (size_t i= 0; i < _colind.size(); ++i)
         _colind[i]= p[_colind[i]];
 
@@ -905,6 +913,7 @@ template <typename T>
   ScaleRows(SparseMatBaseCL<T>& M,
     const std::valarray<typename SparseMatBaseCL<T>::value_type>& v)
 {
+    M.IncrementVersion();
     typename SparseMatBaseCL<T>::value_type* val= M.raw_val();
     for (size_t r= 0, nz= 0; nz < M.num_nonzeros(); ++r)
         for (; nz < M.row_beg( r + 1); )
@@ -916,6 +925,7 @@ template <typename T>
   ScaleCols(SparseMatBaseCL<T>& M,
     const std::valarray<typename SparseMatBaseCL<T>::value_type>& v)
 {
+    M.IncrementVersion();
     typename SparseMatBaseCL<T>::value_type* val= M.raw_val();
     size_t* col= M.raw_col();
     for (size_t nz= 0; nz < M.num_nonzeros(); ++nz)
@@ -929,6 +939,7 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     Assert( A.num_rows()==B.num_rows() && A.num_cols()==B.num_cols(),
             "LinComb: incompatible dimensions", DebugNumericC);
 
+    IncrementVersion();
     if (!(DROPSDebugC & DebugNoReuseSparseC) && _val.size()!=0
         && _rows==A.num_rows() && _cols==A.num_cols())
     {
