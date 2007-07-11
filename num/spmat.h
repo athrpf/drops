@@ -657,8 +657,10 @@ class CompositeMatrixBaseCL
     size_t num_cols() const;
     size_t intermediate_dim() const;
 
-    const MatT0* GetBlock0() const { return block0_; }
-    const MatT1* GetBlock1() const { return block1_; }
+    const MatT0* GetBlock0 () const { return block0_; }
+    const MatT1* GetBlock1 () const { return block1_; }
+    void SetBlock0 (const MatT0* p) { block0_= p; }
+    void SetBlock1 (const MatT1* p) { block1_= p; }
 
     OperationT GetOperation( size_t b) const { return operation_[b]; }
     OperationT GetTransposeOperation( size_t b) const {
@@ -1037,6 +1039,25 @@ transpose (const SparseMatBaseCL<T>& M, SparseMatBaseCL<T>& Mt)
     Tr.Build();
 }   
 
+
+/// \brief Compute the diagonal of B*B^T.
+///
+/// The commented out version computes B*M^(-1)*B^T
+template <typename T>
+VectorBaseCL<T>
+BBTDiag (const SparseMatBaseCL<T>& B /*, const VectorBaseCL<T>& Mdiaginv*/)
+{
+    VectorBaseCL<T> ret( B.num_rows());
+    
+    T Bik;
+    for (size_t i= 0; i < B.num_rows(); ++i) {
+        for (size_t l= B.row_beg( i); l < B.row_beg( i + 1); ++l) {
+            Bik= B.val( l);
+            ret[i]+= /*Mdiaginv[B.col_ind( l)]**/ Bik*Bik;
+        }
+    }
+    return ret;
+}
 
 // y= A*x
 // fails, if num_rows==0.

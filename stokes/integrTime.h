@@ -225,6 +225,114 @@ class ISMinresMGPreCL
 };
 
 
+//**************************************************************************
+// Preconditioner for the instationary Stokes-equations.
+// It uses BB^T instead of a Laplacian on the pressure space and is
+// therefore suited for P1X-elements;
+// cf. "Uniform Preconditioners for a Parameter Dependent Saddle Point
+// Problem with Application to Generalized Stokes Interface Equations",
+// Olshanskii, Peters, Reusken, 2005
+//**************************************************************************
+class ISBBTPreCL
+{
+  private:
+    MatrixCL&  B_;
+    mutable MatrixCL*  Bs_;
+    mutable size_t Bversion_;
+    mutable CompositeMatrixCL BBT_;
+    MatrixCL&  M_;
+    MatrixCL&  Mvel_;
+
+    double     kA_, kM_;
+
+    mutable VectorCL D_;
+    mutable VectorCL Dprsqrtinv_;
+
+    typedef DiagPcCL SPcT_;
+    SPcT_ spc_;
+    mutable PCGSolverCL<SPcT_>   solver_;
+    mutable PCGSolverCL<JACPcCL> solver2_;
+
+    void Update () const;
+
+  public:
+    ISBBTPreCL (MatrixCL& B, MatrixCL& M_pr, MatrixCL& Mvel,
+        double kA= 0., double kM= 1.)
+        : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL),
+          M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM),
+          spc_( D_),
+          solver_( spc_, 500, 0.01, /*relative*/ true),
+          solver2_( JACPcCL( 1.0), 20, 0.01, /*relative*/ true) {}
+
+    ISBBTPreCL (const ISBBTPreCL& pc)
+        : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
+          Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
+          M_( pc.M_), Mvel_( pc.Mvel_),
+          kA_( pc.kA_), kM_( pc.kM_), D_( pc.D_), spc_( D_),
+          solver_( spc_, 500, 0.01, /*relative*/ true),
+          solver2_( JACPcCL( 1.0), 20, 0.01, /*relative*/ true) {}
+
+    ISBBTPreCL& operator= (const ISBBTPreCL&) {
+        throw DROPSErrCL( "ISBBTPreCL::operator= is not permitted.\n");
+    }
+
+    ~ISBBTPreCL () { delete Bs_; }
+
+    template <typename Mat, typename Vec>
+    void Apply(const Mat&, Vec& p, const Vec& c) const;
+};
+
+void ISBBTPreCL::Update() const
+{
+    std::cerr << "ISBBTPreCL::Update: old version: " << Bversion_
+        << "\tnew version: " << B_.Version() << '\n';
+    delete Bs_;
+    Bs_= new MatrixCL( B_);
+    Bversion_= B_.Version();
+
+    BBT_.SetBlock0( Bs_);
+    BBT_.SetBlock1( Bs_);
+
+    VectorCL Dvelinv( 1.0/ Mvel_.GetDiag());
+    ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
+
+    VectorCL Dprsqrt( std::sqrt( M_.GetDiag()));
+    Dprsqrtinv_.resize( M_.num_rows());
+    Dprsqrtinv_= 1.0/Dprsqrt;
+
+    ScaleRows( *Bs_, Dprsqrtinv_);
+
+    D_.resize( M_.num_rows());
+    D_= 1.0/BBTDiag( *Bs_);
+}
+
+template <typename Mat, typename Vec>
+void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+{
+    VectorCL Dvelinv( 1.0/ Mvel_.GetDiag());
+    VectorCL Dprsqrt( std::sqrt( M_.GetDiag()));
+    VectorCL Dprsqrtinv( 1.0/Dprsqrt);
+
+    if ( B_.Version() != Bversion_)
+        Update();
+
+    p= 0.0;
+    if (kA_ != 0.0) {
+        solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv*c));
+        std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
+                  << "\tresidual: " <<  solver_.GetResid();
+        p= kA_*(Dprsqrtinv*p);
+    }
+    if (kM_ != 0.0) {
+        Vec p2_( c.size());
+        solver2_.Solve( M_, p2_, c);
+        std::cerr << "\t p2: iterations: " << solver2_.GetIter()
+                  << "\tresidual: " <<  solver2_.GetResid()
+                  << '\n';
+        p+= kM_*p2_;
+    }
+}
+
 //=================================
 //     template definitions
 //=================================

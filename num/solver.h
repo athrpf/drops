@@ -390,6 +390,20 @@ class MultiSSORPcCL
     }
 };
 
+/// \brief Apply a diagonal-matrix given as a vector.
+class DiagPcCL
+{
+  private:
+    const VectorCL& D_;
+
+  public:
+    DiagPcCL (const VectorCL& D) : D_( D) {}
+
+    template <typename Mat, typename Vec>
+    void Apply (const Mat&, Vec& x, const Vec& b) const
+    { x= D_*b; }
+};
+
 
 //*****************************************************************************
 //
@@ -481,7 +495,8 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
 
-    if ((resid= norm( r)/normb) <= tol) {
+    resid= norm( r)/normb;
+    if (resid <= tol) {
         tol= resid;
         max_iter= 0;
         return true;
@@ -496,7 +511,8 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
         axpy( alpha, p, x);                // x+= alpha*p;
         axpy( -alpha, q, r);               // r-= alpha*q;
 
-        if ((resid= norm( r)/normb)<= tol) {
+        resid= norm( r)/normb;
+        if (resid <= tol) {
             tol= resid;
             max_iter= i;
             return true;
