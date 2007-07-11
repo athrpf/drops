@@ -16,6 +16,8 @@
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
 #include <fstream>
+#include <sstream>
+
 
 DROPS::ParamMesszelleNsCL C;
 
@@ -36,6 +38,48 @@ namespace DROPS // for Strategy
 {
 
 template<class Coeff>
+void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
+{
+    std::string pfad( "matrices/");
+    std::ostringstream n;
+    n << pfad << "A" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    std::ofstream s( n.str().c_str());
+    s << std::setprecision( 15);
+    s << Stokes.A.Data;
+    s.close();
+
+    n.str( "");
+    n << pfad << "B" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.B.Data;
+    s.close();
+
+    n.str( "");
+    n << pfad << "M" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.M.Data;
+    s.close();
+
+    n.str( "");
+    n << pfad << "prA" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.prA.Data;
+    s.close();
+
+    n.str( "");
+    n << pfad << "prM" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.prM.Data;
+    s.close();
+
+    n.str( "");
+    n << pfad << "N" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.N.Data;
+    s.close();
+}
+
+template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
 {
@@ -43,7 +87,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= Stokes.GetCoeff().SurfTens;
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD,
+        -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -56,7 +101,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     lset.SetSurfaceForce( SF_ImprovedLB);
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
 
     EnsightP2SolOutCL ensight( MG, lidx);
     const string filename= C.EnsDir + "/" + C.EnsCase;
@@ -129,7 +174,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
           OseenSolverT schurSolver( Apc, ispc, C.outer_iter, C.outer_tol, 0.1);
 
 //        PSchur_PCG_CL schurSolver( Stokes.prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-    //    Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+//        Schur_GMRes_CL schurSolver( C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
 
         if (C.IniCond==2) // stationary flow without drop
             lset.Init( &One);
@@ -187,20 +232,21 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     if (C.scheme)
     {
         // PC for instat. Schur complement
-        typedef DummyPcCL SPcT;
-        SPcT ispc;
+//        typedef DummyPcCL SPcT;
+//        SPcT ispc;
 //         typedef ISPreCL SPcT;
 //         SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
-//         typedef ISPreJacCL SPcT;
-//         SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
-//       typedef PCGSolverCL<JACPcCL> SPcSolverT;
-//       SPcSolverT JacCG( JACPcCL(), 50, 0.02, /*relative*/ true);
-//       typedef ISNonlinearPreCL<SPcSolverT> SPcT;
-//       SPcT ispc( JacCG, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
-//         typedef CGSolverCL SPcSolverT;
-//         SPcSolverT CGsolver( 50, 0.02, /*relative*/ true);
-//         typedef ISNonlinearPreCL<SPcSolverT> SPcT;
-//         SPcT ispc( CGsolver, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
+        typedef ISBBTPreCL SPcT;
+        SPcT ispc( Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data,
+            /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
+//        typedef PCGSolverCL<JACPcCL> SPcSolverT;
+//        SPcSolverT JacCG( JACPcCL(), 50, 0.02, /*relative*/ true);
+//        typedef ISNonlinearPreCL<SPcSolverT> SPcT;
+//        SPcT ispc( JacCG, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
+//        typedef CGSolverCL SPcSolverT;
+//        SPcSolverT CGsolver( 50, 0.02, /*relative*/ true);
+//        typedef ISNonlinearPreCL<SPcSolverT> SPcT;
+//        SPcT ispc( CGsolver, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
 
         // PC for A-Block-PC
 //      typedef  DummyPcCL APcPcT;
@@ -213,7 +259,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 //        typedef BiCGStabSolverCL<APcPcT> ASolverT;        // BiCGStab-based APcT
 //        ASolverT Asolver( Apcpc, 500, 0.02, /*relative=*/ true);
         typedef GMResSolverCL<APcPcT>    ASolverT;        // GMRes-based APcT
-        ASolverT Asolver( Apcpc, 500, /*restart*/ 100, 2e-5, /*relative=*/ true);
+        ASolverT Asolver( Apcpc, 500, /*restart*/ 100, 1e-5, /*relative=*/ true);
         typedef SolverAsPreCL<ASolverT> APcT;
         APcT Apc( Asolver);
 
@@ -247,6 +293,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
             cpl.DoStep( C.cpl_iter);
+//            WriteMatrices( Stokes, step);
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {
@@ -260,15 +307,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             {
                 lset.ReparamFastMarching( C.RepMethod);
                 
-                adap.UpdateTriang( Stokes, lset);
-                if (adap.WasModified() )
-                {
+                if (C.ref_freq != 0)
+                     adap.UpdateTriang( Stokes, lset);
+                if (adap.WasModified()) {
                     cpl.Update();
                     // don't forget to update the pr mass/stiff matrix for the schur compl. preconditioner!!
-                    Stokes.prM.SetIdx( pidx, pidx);
-                    Stokes.SetupPrMass( &Stokes.prM, lset);
-                    Stokes.prA.SetIdx( pidx, pidx);
-                    Stokes.SetupPrStiff( &Stokes.prA, lset);
+                    // This is now in cpl.Update().
                 }
                 
                 std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
@@ -349,7 +393,7 @@ int main (int argc, char** argv)
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
     MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL(
-        num_bnd, bc, bnd_fun), DROPS::P1_FE);
+        num_bnd, bc, bnd_fun), DROPS::P1X_FE, 1.0);
 
     Strategy( prob);    // do all the stuff
 
