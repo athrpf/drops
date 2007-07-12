@@ -1,0 +1,88 @@
+#=============================================================
+#    DROPS parameter file for    film
+#    simulation of two-phase flow:
+#    film flow
+#=============================================================
+
+
+# time stepping
+Time {
+  NumSteps	=	10000
+  StepSize	=	1e-3
+  ThetaLevelset	=	1	# backward Euler
+  ThetaStokes	=	1	# backward Euler
+}
+
+# flow solver
+Stokes {
+  InnerIter	=	1000
+  OuterIter	=	200
+  InnerTol	=	1e-12
+  OuterTol	=	1e-10
+}
+
+NavStokes {
+  Nonlinear	=	1
+  Scheme	=	1	# time integration: 0=FS op.splitting, 1=theta-scheme
+  NonlinearStat	=	0
+  ThetaStat	=	0.5
+  Tol           =       5e-10
+  Iter          =       20
+  Reduction     =       0.1
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1e-10
+  Iter		=	200
+  SD		=	0.1
+  CurvDiff	=	-1
+  VolCorrection	=	0
+}
+
+Coupling {
+  Tol		=	1e-10	# not used a.t.m.
+  Iter		=	4	# -1 = till convergence
+}
+
+# re-initialization of levelset function
+Reparam {
+  Freq		=	10	# 0 = no reparametrization
+  Method	=	1	# 0/1 = fast marching without/with modification of zero
+}
+
+# adaptive refinement
+AdaptRef {
+  Freq		=	1
+  FinestLevel	=	1
+  Width		=	0.75e-3
+}
+
+# material data, all units are SI
+Mat {
+  DensGas	=	100			# n-Butanol / Wasser
+  ViscGas	=	1e-2
+  DensFluid	=	1000
+  ViscFluid	=	1e-1
+  SmoothZone	=	1e-4
+  SurfTension	=	1e-3
+}
+
+# experimental conditions
+Exp {
+  Gravity     =       5.625  -8.036 0
+  PumpAmpl    =       0.5
+  PumpFreq    =       10
+  Thickness   =       1e-3
+}
+
+# miscellaneous
+
+MeshResolution  =       20 5 5
+MeshSize        =       20e-3 2e-3 5e-3
+InitialCond	=	1
+InitialFile	=	zzz
+BndCond 	=	12woww
+EnsightCase	=	film
+EnsightDir	=	/Work/gross/ensight
+
