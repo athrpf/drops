@@ -264,12 +264,16 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
     _Stokes.A.SetIdx( vidx, vidx);
     _Stokes.B.SetIdx( pidx, vidx);
     _Stokes.M.SetIdx( vidx, vidx);
+    _Stokes.prA.SetIdx( pidx, pidx);
+    _Stokes.prM.SetIdx( pidx, pidx);
 
     // Diskretisierung
     _LvlSet.AccumulateBndIntegral( *_old_curv);
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _old_b, _old_b, _old_cplM, _LvlSet, _Stokes.t);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
     if (_usematMG) {
@@ -460,8 +464,8 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     _Stokes.B.SetIdx( pidx, vidx);
     _Stokes.M.SetIdx( vidx, vidx);
     _Stokes.N.SetIdx( vidx, vidx);
-    _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
-    _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+    _Stokes.prA.SetIdx( pidx, pidx);
+    _Stokes.prM.SetIdx( pidx, pidx);
 
     // Diskretisierung
     _LvlSet.AccumulateBndIntegral( *_old_curv);
@@ -703,12 +707,16 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::Update()
     _Stokes.B.SetIdx( pidx, vidx);
     _Stokes.M.SetIdx( vidx, vidx);
     _Stokes.N.SetIdx( vidx, vidx);
+    _Stokes.prA.SetIdx( pidx, pidx);
+    _Stokes.prM.SetIdx( pidx, pidx);
 
     // Diskretisierung
     _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _old_cplA, _old_cplM, _LvlSet, _Stokes.t);
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _old_cplN, _LvlSet, _Stokes.t);
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
