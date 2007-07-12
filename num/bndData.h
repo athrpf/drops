@@ -68,7 +68,7 @@ class BndSegDataCL
     /// \param bc boundary condition for one segment
     /// \param f  boundary value function on this segment. f has to be specified if bc is non-homogeneous
     {
-        if ( bc!=Nat0BC && bc!=Dir0BC  && f==0)
+        if ( bc!=Nat0BC && bc!=Dir0BC && bc!=Per1BC && bc!=Per2BC && f==0)
             throw DROPSErrCL("BndSegDataCL: no boundary function for non-homogeneous condition specified!");
     }
 
