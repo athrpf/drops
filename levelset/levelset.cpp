@@ -733,25 +733,21 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
 
 double LevelsetP2CL::GetVolume( double translation) const
 {
-    const Uint lvl= Phi.GetLevel();
-    const_DiscSolCL phi= GetSolution();
-    SmoothedJumpCL H( JumpCL( 1, 0), DROPS::H_sm, 1e-4);
-    Quad2CL<> Xi;    // 1 fuer phi<0, 0 sonst
-    double det, absdet, vol= 0;
     SMatrixCL<3,3> T;
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit!=send; ++sit)
-    {
-        GetTrafoTr( T, det, *sit);
-        absdet= std::fabs( det);
-
-        for (int i=0; i<4; ++i)
-            Xi[i]= H( phi.val( *sit->GetVertex(i)) + translation);
-        // values in barycenter
-        Xi[4]= H( phi.val( *sit, 0.25, 0.25, 0.25) + translation);
-
-        vol+= Xi.quad( absdet);
+    InterfacePatchCL patch;
+    double det, absdet, Volume= 0.;
+    LocalP2CL<double> ones( 1.); 
+    
+    for (MultiGridCL::const_TriangTetraIteratorCL it=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(), end=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd();
+        it!=end; ++it) {
+        GetTrafoTr( T, det, *it);
+        absdet= std::abs( det);
+        patch.Init( *it, Phi, translation);
+        for (int ch= 0; ch < 8; ++ch) {
+            // compute volume and barycenter
+            patch.ComputeCutForChild( ch);
+            Volume+= patch.quad( ones, absdet, false);
+        }
     }
     return vol;
 }
@@ -857,14 +853,14 @@ InterfacePatchCL::InterfacePatchCL()
         BaryDoF_[edge+4]= 0.5*(BaryDoF_[VertOfEdge(edge,0)] + BaryDoF_[VertOfEdge(edge,1)]);
 }
 
-void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls)
+void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls, double translation)
 {
     const Uint idx_ls= ls.RowIdx->GetIdx();
     ch_= -1;
     for (int v=0; v<10; ++v)
     { // collect data on all DoF
         Coord_[v]= v<4 ? t.GetVertex(v)->GetCoord() : GetBaryCenter( *t.GetEdge(v-4));
-        PhiLoc_[v]= ls.Data[v<4 ? t.GetVertex(v)->Unknowns(idx_ls) : t.GetEdge(v-4)->Unknowns(idx_ls)];
+        PhiLoc_[v]= ls.Data[v<4 ? t.GetVertex(v)->Unknowns(idx_ls) : t.GetEdge(v-4)->Unknowns(idx_ls)] + translation;
         sign_[v]= Sign(PhiLoc_[v]);
     }
 }

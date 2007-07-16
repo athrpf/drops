@@ -158,7 +158,7 @@ class InterfacePatchCL
 
     static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
 
-    void Init( const TetraCL& t, const VecDescCL& ls);
+    void Init( const TetraCL& t, const VecDescCL& ls, double translation= 0.);
 
     /// \name Use after Init
     /// \remarks The following functions are only valid, if Init(...) was called before!
