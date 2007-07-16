@@ -749,7 +749,7 @@ double LevelsetP2CL::GetVolume( double translation) const
             Volume+= patch.quad( ones, absdet, false);
         }
     }
-    return vol;
+    return Volume;
 }
 
 double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
