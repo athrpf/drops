@@ -509,21 +509,20 @@ void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun
             counter+= stride;
         }
     }
-    if (s1.size() != s2.size())
-        throw DROPSErrCL( "CreatePeriodicNumbOnVertex: Periodic boundaries do not match!");
+    // now we have s1.size() <= s2.size()
     // match objects in s1 and s2
     for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
     {
         // search corresponding object in s2
-        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; ++it2)
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2;)
             if (match( (*it1)->GetCoord(), (*it2)->GetCoord()))
             {
                 // it2 gets same number as it1
                 (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
-                // remove it2 from s2 and stop search
-                s2.erase( it2);
-                break;
+                // remove it2 from s2
+                s2.erase( it2++);
             }
+            else it2++;            
     }
     if (!s2.empty())
         throw DROPSErrCL( "CreatePeriodicNumbOnVertex: Periodic boundaries do not match!");
@@ -562,21 +561,20 @@ void CreatePeriodicNumbOnEdge( Uint idx, IdxT& counter, Uint stride, match_fun m
             counter+= stride;
         }
     }
-    if (s1.size() != s2.size())
-        throw DROPSErrCL( "CreatePeriodicNumbOnEdge: Periodic boundaries do not match!");
+    // now we have s1.size() <= s2.size()
     // match objects in s1 and s2
     for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
     {
         // search corresponding object in s2
-        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; ++it2)
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; )
             if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
             {
                 // it2 gets same number as it1
                 (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
-                // remove it2 from s2 and stop search
-                s2.erase( it2);
-                break;
+                // remove it2 from s2
+                s2.erase( it2++);
             }
+            else it2++;
     }
     if (!s2.empty())
         throw DROPSErrCL( "CreatePeriodicNumbOnEdge: Periodic boundaries do not match!");
@@ -615,21 +613,20 @@ void CreatePeriodicNumbOnFace( Uint idx, IdxT& counter, Uint stride, match_fun m
             counter+= stride;
         }
     }
-    if (s1.size() != s2.size())
-        throw DROPSErrCL( "CreatePeriodicNumbOnFace: Periodic boundaries do not match!");
+    // now we have s1.size() <= s2.size()
     // match objects in s1 and s2
     for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
     {
         // search corresponding object in s2
-        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; ++it2)
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; )
             if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
             {
                 // it2 gets same number as it1
                 (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
-                // remove it2 from s2 and stop search
-                s2.erase( it2);
-                break;
+                // remove it2 from s2
+                s2.erase( it2++);
             }
+            else it2++;
     }
     if (!s2.empty())
         throw DROPSErrCL( "CreatePeriodicNumbOnFace: Periodic boundaries do not match!");

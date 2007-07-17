@@ -35,8 +35,8 @@ enum BndCondT
 {
     Dir0BC= 0,                   ///< hom.   Dirichlet boundary conditions
     DirBC= 2,                    ///< inhom. Dirichlet boundary conditions
-    Per1BC= 11,                  ///< periodic boundary conditions, where
-    Per2BC= 13,                  ///< Per1BC and Per2BC denote corresponding boundaries
+    Per1BC= 13,                  ///< periodic boundary conditions, where
+    Per2BC= 11,                  ///< Per1BC and Per2BC denote corresponding boundaries
     Nat0BC= 21,                  ///< hom.   natural   boundary condition
     NatBC= 23,                   ///< inhom. natural   boundary conditions
     OutflowBC= 21,               ///< same as Nat0BC, for convenience
