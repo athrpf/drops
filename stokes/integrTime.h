@@ -309,19 +309,15 @@ void ISBBTPreCL::Update() const
 template <typename Mat, typename Vec>
 void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-    VectorCL Dvelinv( 1.0/ Mvel_.GetDiag());
-    VectorCL Dprsqrt( std::sqrt( M_.GetDiag()));
-    VectorCL Dprsqrtinv( 1.0/Dprsqrt);
-
-    if ( B_.Version() != Bversion_)
+    if (B_.Version() != Bversion_)
         Update();
 
     p= 0.0;
     if (kA_ != 0.0) {
-        solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv*c));
+        solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
         std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
                   << "\tresidual: " <<  solver_.GetResid();
-        p= kA_*(Dprsqrtinv*p);
+        p= kA_*(Dprsqrtinv_*p);
     }
     if (kM_ != 0.0) {
         Vec p2_( c.size());
