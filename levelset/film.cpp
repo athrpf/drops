@@ -80,10 +80,13 @@ double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
 namespace DROPS // for Strategy
 {
 
-bool periodic_x( const Point3DCL& p, const Point3DCL& q)
+bool periodic_xz( const Point3DCL& p, const Point3DCL& q)
 { // matching y-z- or x-y-coords, resp.
-    return std::abs( p[1]-q[1]) + std::abs( p[2]-q[2]) < 1e-12
-      ||   std::abs( p[0]-q[0]) + std::abs( p[1]-q[1]) < 1e-12;
+    const Point3DCL d= fabs(p-q),
+                    L= fabs(C.mesh_size);
+    return (d[1] + d[2] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12)  // dy=dz=0 and dx=Lx
+      ||   (d[0] + d[1] < 1e-12 && std::abs( d[2] - L[2]) < 1e-12)  // dx=dy=0 and dz=Lz
+      ||   (d[1] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12 && std::abs( d[2] - L[2]) < 1e-12);  // dy=0 and dx=Lx and dz=Lz
 }
 
 class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
@@ -120,9 +123,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     IdxDescCL* pidx= &Stokes.pr_idx;
     IdxDescCL ens_idx( 1, 1);
 
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_x);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_x);
-    lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_x);
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_xz);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_xz);
+    lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_xz);
     CreateNumb( MG.GetLastLevel(), ens_idx, MG, NoBndDataCL<>());
 
     lset.Phi.SetIdx( lidx);
@@ -237,10 +240,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
             lset.Phi.Data+= dphi;
             std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         }
-        ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
-        ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
-        ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
-        ensight.Commit();
 
         if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
         {
@@ -253,11 +252,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
-            ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
-            ensight.Commit();
         }
+        ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
+        ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
+        ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
+        ensight.Commit();
     }
 
     ensight.CaseEnd();
