@@ -403,18 +403,10 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 
         for (int ch= 0; ch < 8; ++ch)
         {
-            if (!patch.ComputeForChild(ch)) // no patch for this child
-                continue;
-
-            double det = patch.GetFuncDet();
-            SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(0),
-                patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
-            if (patch.IsQuadrilateral())
-            {
-                det*= patch.GetAreaFrac();
-                SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary(1),
-                    patch, Grad,  Numb, sigma, grad_sigma, e, det, f.Data);
-            }
+            patch.ComputeForChild( ch);
+            for (int t= 0; t < patch.GetNumTriangles(); ++t)
+                SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary( t),
+                    patch, Grad,  Numb, sigma, grad_sigma, e, patch.GetFuncDet( t), f.Data);
         } // Ende der for-Schleife ueber die Kinder
     }
 }
@@ -744,7 +736,7 @@ double LevelsetP2CL::GetVolume( double translation) const
         absdet= std::abs( det);
         patch.Init( *it, Phi, translation);
         for (int ch= 0; ch < 8; ++ch) {
-            // compute volume and barycenter
+            // compute volume
             patch.ComputeCutForChild( ch);
             Volume+= patch.quad( ones, absdet, false);
         }
@@ -874,11 +866,14 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
         ++num_sign_[ sign_[data.Vertices[vert]] + 1];
 
     intersec_= 0;
-    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) // no change of sign on child
+    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) {// no change of sign on child
+        numchildtriangles_= 0;
         return false;
+    }
     if (num_sign_[1]==4)
     {
         std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        numchildtriangles_= 0;
         return false;
     }
 
@@ -905,7 +900,10 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
             PQRS_[intersec_++]= (1-lambda) * Coord_[v0] + lambda * Coord_[v1];
         }
     }
-    if (intersec_<3) return false; // Nullstellenmenge vom Mass 0!
+    if (intersec_<3) { // Nullstellenmenge vom Mass 0!
+        numchildtriangles_= 0;
+        return false;
+    }
 
     SMatrixCL<3,2> A;    // A = [ Q-P | R-P ]
     A(0,0)= PQRS_[1][0]-PQRS_[0][0];    A(0,1)= PQRS_[2][0]-PQRS_[0][0];
@@ -937,7 +935,10 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
         //if (ab_[0]<0 || ab_[1]<0)
         //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
         // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
+        numchildtriangles_= 2;
     }
+    else
+        numchildtriangles_= 1;
 
     if (EqualToFace()) // interface is shared by two tetras
         sqrtDetATA_/= 2;

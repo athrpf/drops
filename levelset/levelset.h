@@ -107,6 +107,8 @@ class LevelsetP2CL
     double AdjustVolume( double vol, double tol, double surf= 0) const;
     /// Set type of surface force.
     void   SetSurfaceForce( SurfaceForceT SF) { SF_= SF; }
+    /// Get type of surface force.
+    SurfaceForceT GetSurfaceForce() const { return SF_; }
     /// Discretize surface force
     void   AccumulateBndIntegral( VecDescCL& f) const;
     /// Set surface tension and its gradient.
@@ -144,6 +146,7 @@ class InterfacePatchCL
     const RefRuleCL RegRef_;
     int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
     int             intersec_, ch_, Edge_[4];
+    int             numchildtriangles_; // The number of triangles in the intersection of a child with the interface.
     double          sqrtDetATA_;
     LocalP2CL<>     PhiLoc_;
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
@@ -176,13 +179,14 @@ class InterfacePatchCL
     /// \name Use after ComputeForChild
     /// \remarks The following functions are only valid, if ComputeForChild(...) was called before!
     ///@{
+    int                GetNumTriangles()     const { return numchildtriangles_; } ///< Returns, how many triangles form the intersection of the child and the interface.
     bool               IsQuadrilateral()     const { return intersec_==4; }
     bool               EqualToFace()         const { return num_sign_[1]>=3; }   ///< returns true, if patch is shared by two tetras
     Uint               GetNumPoints()        const { return intersec_; }
     const Point3DCL&   GetPoint( Uint i)     const { return PQRS_[i]; }
-    const BaryCoordCL& GetBary ( Uint i)     const { return Bary_[i]; }
-    int                GetNumSign( int sign) const { return num_sign_[sign+1]; } ///< returns number of child points with given sign, where sign is in {-1, 0, 1}
-    double             GetFuncDet()          const { return sqrtDetATA_; }
+    const BaryCoordCL& GetBary ( Uint i)     const { return Bary_[i]; } ///< The first three points are the vertices of the triangular patch; if the patch is quadrilateral, the last three points are the vertices of the second triangle.
+    int                GetNumSign ( int sign) const { return num_sign_[sign+1]; } ///< returns number of child points with given sign, where sign is in {-1, 0, 1}
+    double             GetFuncDet( int i= 0)  const { return sqrtDetATA_*(i==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration for triangle i.
     double             GetAreaFrac()         const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }
     const Point3DCL&   GetGradId( Uint i)    const { return B_[i]; }
     const Point3DCL    ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
