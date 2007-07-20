@@ -148,6 +148,17 @@ template<class T>
     return *this;
 }
 
+template<class T>
+  inline LocalP2CL<T>&
+  LocalP2CL<T>::assign(const LocalP1CL<T>& p1, double)
+{
+    for (size_t i= 0; i < 4; ++i)
+        (*this)[i]= p1[i];
+    for (size_t i= 0; i < 6; ++i)
+        (*this)[i + 4]= 0.5*(p1[VertOfEdge( i, 0)] + p1[VertOfEdge( i, 1)]);
+    return *this;
+}
+
 
 template<class T>
   LocalP2CL<T>::LocalP2CL(const TetraCL& s, instat_fun_ptr f , double t)
@@ -171,6 +182,13 @@ template<class T>
     : base_type( value_type(), FE_P2CL::NumDoFC)
 {
     this->assign( s, vd, bnd, t);
+}
+
+template<class T>
+  LocalP2CL<T>::LocalP2CL (const LocalP1CL<T>& p1, double t)
+    : base_type( value_type(), FE_P2CL::NumDoFC)
+{
+    this->assign( p1, t);
 }
 
 template<class T>

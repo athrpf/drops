@@ -253,9 +253,11 @@ class LocalP2CL: public GridFunctionCL<T>
     // Initialize from VecDescCL and boundary-data
     template<class BndDataT>
       LocalP2CL(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
-    // Initialize from PiEvalCl
+    // Initialize from PiEvalCL
     template <class P2FunT>
       LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
+    // Initialize from LocalP1CL
+    LocalP2CL(const LocalP1CL<T>&, double= 0.0);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
@@ -269,6 +271,8 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
     template <class P2FunT>
       inline self_&
       assign(const TetraCL&, const P2FunT&, double= 0.0);
+    inline self_&
+    assign(const LocalP1CL<T>&, double= 0.0);
 
     // pointwise evaluation in barycentric coordinates
     inline value_type operator()(const BaryCoordCL&) const;
@@ -623,6 +627,8 @@ class P1DiscCL
     static inline SVectorCL<3> Quad(const TetraCL&, instat_vector_fun_ptr, double= 0.0);
     template<class ValueT>
     static inline ValueT Quad( const LocalP2CL<ValueT>&, BaryCoordCL**);
+    template<class ValueT>
+    static inline ValueT Quad( const LocalP2CL<ValueT>& f);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, Uint, double= 0.0);
@@ -775,6 +781,12 @@ inline ValueT P1DiscCL::Quad( const LocalP2CL<ValueT>& f, BaryCoordCL** bp)
 {
     const BaryCoordCL bc= 0.25*(*bp[0]+*bp[1]+*bp[2]+*bp[3]);
     return ( f(*bp[0]) + f(*bp[1]) + f(*bp[2]) + f(*bp[3]) )/120. + 2./15. * f(bc);
+}
+
+template<class ValueT>
+inline ValueT P1DiscCL::Quad( const LocalP2CL<ValueT>& f)
+{
+    return 1./30.*(f[4] + f[5] + f[6] + f[7] + f[8] + f[9]) - 1./120.*(f[0] + f[1] + f[2] + f[3]);
 }
 
 

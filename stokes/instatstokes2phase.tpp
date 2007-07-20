@@ -924,55 +924,125 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
-    Quad2CL<double> rho, mu, Phi, kreuzterm;
+    LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
+    LocalP2CL<Point3DCL> GradLP2[10];
+    Quad2CL<double> rho, Phi, kreuzterm;
+    const double mu_p= _Coeff.mu( 1.0),
+                 mu_n= _Coeff.mu( -1.0),
+                 rho_p= _Coeff.rho( 1.0),
+                 rho_n= _Coeff.rho( -1.0);
 
     SMatrixCL<3,3> T;
 
-    double coupA[10][10], coupM[10][10];
+    double coupA[10][10], coupAk[10][10][3][3],
+           coupM[10][10];
     double det, absdet;
     Point3DCL tmp;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    LocalP2CL<> aij, akreuz[3][3];
 
     P2DiscCL::GetGradientsOnRef( GradRef);
+    P2DiscCL::GetGradientsOnRef( GradRefLP1);
 
+    InterfacePatchCL patch;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
 
         rhs.assign( *sit, _Coeff.f, t);
-        Phi.assign( *sit, ls, t);
+
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, *A->RowIdx, _BndData.Vel);
 
-        // rho = rho( Phi),    mu= mu( Phi)
-        rho= Phi;     rho.apply( _Coeff.rho);
-        mu=  Phi;     mu.apply( _Coeff.mu);
+        patch.Init( *sit, lset.Phi);
+        const bool nocut= !patch.Intersects();
+        if (nocut) {
+            const double mu_const= patch.GetSign( 0) == 1 ? mu_p : mu_n;
+            const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
+            // rhs = f + rho*g
+            rhs+= Quad2CL<Point3DCL>( rho_const*_Coeff.g);
 
-        // rhs = f + rho*g
-        rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
+            P2DiscCL::GetGradients( Grad, GradRef, T);
+            // compute all couplings between HatFunctions on edges and verts
+            for (int i=0; i<10; ++i)
+                for (int j=0; j<=i; ++j)
+                {
+                    // dot-product of the gradients
+                    const double cA= mu_const*Quad2CL<>(dot( Grad[i], Grad[j])).quad( absdet);
+                    coupA[i][j]= cA;
+                    coupA[j][i]= cA;
+                    // kreuzterm
+                    for (int k= 0; k < 3; ++k)
+                        for (int l= 0; l < 3; ++l) {
+                            // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
+                            for (size_t m=0; m<kreuzterm.size();  ++m)
+                                kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k];
 
-        // compute all couplings between HatFunctions on edges and verts
-        for (int i=0; i<10; ++i)
-            for (int j=0; j<=i; ++j)
-            {
-                // dot-product of the gradients
-                const double cA= Quad2CL<>(dot( Grad[i], Grad[j]) * mu).quad( absdet);
-                coupA[i][j]= cA;
-                coupA[j][i]= cA;
+                            coupAk[i][j][k][l]= mu_const*kreuzterm.quad( absdet);
+                            coupAk[j][i][l][k]= coupAk[i][j][k][l];
+                        }
+                    // As we are not at the phase-boundary this is exact:
+                    const double cM= rho_const*P2DiscCL::GetMass( j, i)*absdet;
+                    coupM[i][j]= cM;
+                    coupM[j][i]= cM;
+                }
+        }
+        else { // We are at the phase boundary.
+            //  rhs = f + rho*g    with rho = rho( Phi)
+            // TODO: We should integrate on the children, but we want to use the special quad-rule .quadP2 below.
+            Phi.assign( *sit, ls, t);
+            rho= Phi;
+            rho.apply( _Coeff.rho);
+            rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
 
-// FIXME:                const double cM= rho.quadP2(i,j, absdet);
-                const double cM= rho[4]*P2DiscCL::GetMass( j, i)*absdet;
-//                if (std::fabs(cM - cMold) > 1e-10)
-//                    std::cerr << "cM: " << cM << "\tcMold: " << cMold
-//                              << "\tbei i, j: " << i << ", " << j << '\n';
-                coupM[i][j]= cM;
-                coupM[j][i]= cM;
+            // compute all couplings between HatFunctions on edges and verts
+            std::memset( coupA, 0, 10*10*sizeof( double));
+            std::memset( coupAk, 0, 10*10*3*3*sizeof( double));
+            P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
+            for (int i= 0; i < 10; ++i) {
+                GradLP2[i].assign( GradLP1[i]);
             }
+
+            for (int i=0; i<10; ++i)
+                for (int j=0; j<=i; ++j) {
+                    // A
+                    aij= dot( GradLP2[i], GradLP2[j]);
+                    for (int k= 0; k < 3; ++k)
+                        for (int l= 0; l < 3; ++l) {
+                            // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
+                            for (size_t m= 0; m < /* #Components of akreuz[k][l] */ 10;  ++m)
+                                akreuz[k][l][m]= GradLP2[i][m][l] * GradLP2[j][m][k];
+                        }
+
+                    for (int ch= 0; ch < 8; ++ch) {
+                        patch.ComputeCutForChild( ch);
+                        const double cAp= patch.quad( aij, absdet, true);       // integrate on positive part
+                        const double cAn= P1DiscCL::Quad( aij)*absdet/8. - cAp; // integrate on negative part
+                        coupA[j][i]+= cAp*mu_p + cAn*mu_n;
+                        coupA[i][j]= coupA[j][i];
+                        for (int k= 0; k < 3; ++k)
+                            for (int l= 0; l < 3; ++l) {
+                                const double cAkp= patch.quad( akreuz[k][l], absdet, true);  // integrate on positive part
+                                const double cAkn= P1DiscCL::Quad( akreuz[k][l])*absdet/8. - cAkp; // integrate on negative part
+                                coupAk[i][j][k][l]+= cAkp*mu_p + cAkn*mu_n;
+                                coupAk[j][i][l][k]= coupAk[i][j][k][l];
+                            }
+                    }
+                }
+
+            for (int i=0; i<10; ++i) // FIXME: This belongs in the preceding loop.
+                for (int j=0; j<=i; ++j) {
+                    // M
+                    // FIXME: Ad hoc integration
+                    const double cM= rho[4]*P2DiscCL::GetMass( j, i)*absdet;
+                    coupM[i][j]= cM;
+                    coupM[j][i]= cM;
+                }
+        }
 
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
@@ -986,13 +1056,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         mA( n.num[i]+2, n.num[j]+2)+= coupA[j][i];
                         for (int k=0; k<3; ++k)
                             for (int l=0; l<3; ++l)
-                            {
-                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
-                                for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
+                                mA( n.num[i]+k, n.num[j]+l)+= coupAk[j][i][l][k];
 
-                                mA( n.num[i]+k, n.num[j]+l)+= kreuzterm.quad( absdet);
-                            }
                         mM( n.num[i],   n.num[j]  )+= coupM[j][i];
                         mM( n.num[i]+1, n.num[j]+1)+= coupM[j][i];
                         mM( n.num[i]+2, n.num[j]+2)+= coupM[j][i];
@@ -1008,14 +1073,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         for (int k=0; k<3; ++k)
                         {
                             cplA->Data[n.num[i]+k]-= cA*tmp[k];
-
                             for (int l=0; l<3; ++l)
-                            {
-                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
-                                for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
-                                cplA->Data[n.num[i]+k]-= kreuzterm.quad( absdet)*tmp[l];
-                            }
+                                cplA->Data[n.num[i]+k]-= coupAk[j][i][l][k]*tmp[l];
                         }
                         cplM->Data[n.num[i]  ]-= cM*tmp[0];
                         cplM->Data[n.num[i]+1]-= cM*tmp[1];
@@ -1124,6 +1183,100 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
 }
 
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const
+// Set up the Laplace-Beltrami-matrix
+{
+    const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
+
+    MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel);
+    cplA->Clear();
+
+    const Uint lvl = A->GetRowLevel();
+
+    LocalNumbP2CL n;
+
+    std::cerr << "entering SetupLB: " << num_unks_vel << " vels. ";
+
+    LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
+    LocalP2CL<Point3DCL> GradLP2[10];
+
+    Quad5_2DCL<Point3DCL> surfGrad[10];
+    Quad5_2DCL<> surfTension, LB;
+
+    SMatrixCL<3,3> T;
+
+    double coupA[10][10];
+    double det, absdet;
+    Point3DCL tmp;
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    LocalP2CL<> aij;
+
+    P2DiscCL::GetGradientsOnRef( GradRefLP1);
+
+    InterfacePatchCL patch;
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        patch.Init( *sit, lset.Phi);
+        if (patch.Intersects()) { // We are at the phase boundary.
+            n.assign( *sit, *A->RowIdx, _BndData.Vel);
+            GetTrafoTr( T, det, *sit);
+            absdet= std::fabs( det);
+            P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
+            std::memset( coupA, 0, 10*10*sizeof( double));
+            for (int i= 0; i < 10; ++i)
+                GradLP2[i].assign( GradLP1[i]);
+
+            for (int ch= 0; ch < 8; ++ch) {
+                patch.ComputeForChild( ch);
+                for (int tri= 0; tri < patch.GetNumTriangles(); ++ tri) {
+                    surfTension= _Coeff.SurfTens;
+                    for (int i= 0; i < 10; ++i) {
+                        surfGrad[i].assign( GradLP1[i], &patch.GetBary( tri));
+                        surfGrad[i].apply( patch, &InterfacePatchCL::ApplyProj);
+                    }
+                    for (int i=0; i<10; ++i)
+                        for (int j=0; j<=i; ++j) {
+                            // Laplace-Beltrami... Stabilization
+                            LB= surfTension*dot( surfGrad[i], surfGrad[j]);
+                            const double cLB= LB.quad( patch.GetFuncDet( tri));
+                            coupA[j][i]+= cLB;
+                            coupA[i][j]= coupA[j][i];
+                        }
+                }
+            }
+
+            for(int i=0; i<10; ++i)    // assemble row Numb[i]
+                if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
+                {
+                    for(int j=0; j<10; ++j)
+                    {
+                        if (n.WithUnknowns( j)) // vert/edge j is not on a Dirichlet boundary
+                        {
+                            mA( n.num[i],   n.num[j]  )+= coupA[j][i];
+                            mA( n.num[i]+1, n.num[j]+1)+= coupA[j][i];
+                            mA( n.num[i]+2, n.num[j]+2)+= coupA[j][i];
+                        }
+                        else // put coupling on rhs
+                        {
+                            typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                            bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                            tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
+                                     : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
+                            const double cA= coupA[j][i];
+                            for (int k=0; k<3; ++k)
+                                cplA->Data[n.num[i]+k]-= cA*tmp[k];
+                        }
+                    }
+                }
+        }
+    }
+
+    mA.Build();
+    std::cerr << A->Data.num_nonzeros() << " nonzeros in A_LB" << std::endl;
+}
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const
