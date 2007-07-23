@@ -393,7 +393,7 @@ int main (int argc, char** argv)
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
     MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL(
-        num_bnd, bc, bnd_fun), DROPS::P1X_FE, 1.0);
+        num_bnd, bc, bnd_fun), DROPS::P1X_FE, C.XFEMStab);
 
     Strategy( prob);    // do all the stuff
 

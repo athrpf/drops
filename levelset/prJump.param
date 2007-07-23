@@ -83,6 +83,8 @@ AdaptRef {
 
 # miscellaneous
 
+XFEMStab        =       1.0
+NumRef          =       3       # number of a priori refinements; not used by all programs
 InitialCond	=	1	# 1 = stat. Lsg,    2 = p einsetzen, nach u loesen
 InitialFile	=	xxx
 MeshFile	=	4	# num subdivisions of cube

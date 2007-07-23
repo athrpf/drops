@@ -65,7 +65,9 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( flow_dir,     "FlowDir");
     rp_.EndGroup();
 
+    rp_.RegDouble(XFEMStab,   "XFEMStab");
     rp_.RegInt( IniCond,      "InitialCond");
+    rp_.RegInt( num_ref,      "NumRef");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");

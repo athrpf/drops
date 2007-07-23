@@ -77,7 +77,11 @@ class ParamMesszelleCL: public ParamBaseCL
            RepMethod;                           ///< 0/1 = fast marching without/with modification of zero level set
     //@}
 
-    int    IniCond;                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
+
+    double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
+        
+    int    num_ref,                             ///< number of global refinements of the initial mesh
+           IniCond;                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
 
     string IniData,                             ///< file prefix when reading data for initial condition
            EnsCase,                             ///< name of Ensight Case

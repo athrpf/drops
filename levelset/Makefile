@@ -58,15 +58,15 @@ curvDriven: \
 
 risingBubble: \
     ../levelset/risingBubble.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/params.o ../misc/problem.o ../levelset/levelset.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o \
     ../num/fe.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 risingBubbleAdap: \
     ../levelset/risingBubbleAdap.o ../geom/boundary.o ../geom/builder.o ../levelset/levelset.o \
-    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o
+    ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/params.o ../misc/problem.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_stat: \

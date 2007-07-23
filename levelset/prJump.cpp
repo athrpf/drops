@@ -480,7 +480,7 @@ int main (int argc, char** argv)
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
     MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
-        DROPS::P1X_FE);
+        DROPS::P1X_FE, C.XFEMStab);
 //               ^--------- FE type for pressure space
 
     DROPS::MultiGridCL& mg = prob.GetMG();
