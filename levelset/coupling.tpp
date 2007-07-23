@@ -10,19 +10,39 @@ namespace DROPS
 {
 
 // ==============================================
+//              CouplLevelsetBaseCL
+// ==============================================
+
+template <class StokesT>
+CouplLevelsetBaseCL<StokesT>::CouplLevelsetBaseCL (StokesT& Stokes, LevelsetP2CL& ls, double theta)
+  : _Stokes( Stokes), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
+    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _curv( new VelVecDescCL),
+    _mat( 0), _theta( theta)
+{}
+
+template <class StokesT>
+CouplLevelsetBaseCL<StokesT>::~CouplLevelsetBaseCL()
+{
+    if (_old_b == &_Stokes.b)
+        delete _b;
+    else
+        delete _old_b;
+    delete _cplM; delete _old_cplM; delete _curv;
+}
+
+// ==============================================
 //              CouplLevelsetStokesCL
 // ==============================================
 
 template <class StokesT, class SolverT>
 CouplLevelsetStokesCL<StokesT,SolverT>::CouplLevelsetStokesCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL),
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL),
-    _rhs( Stokes.b.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta)
+  : _base(Stokes, ls, theta), _solver(solver),
+    _old_curv(new VelVecDescCL)
 {
+    _mat= new MatrixCL();
+    _rhs.resize( Stokes.b.RowIdx->NumUnknowns);
+    _ls_rhs.resize( ls.Phi.RowIdx->NumUnknowns);
     _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
     _old_curv->SetIdx( _b->RowIdx); _curv->SetIdx( _b->RowIdx);
     _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
@@ -32,11 +52,8 @@ CouplLevelsetStokesCL<StokesT,SolverT>::CouplLevelsetStokesCL
 template <class StokesT, class SolverT>
 CouplLevelsetStokesCL<StokesT,SolverT>::~CouplLevelsetStokesCL()
 {
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b;
-    delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
+    delete _old_curv;
+    delete _mat;
 }
 
 template <class StokesT, class SolverT>
@@ -89,7 +106,7 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
 //    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
 //    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data,
+    _solver.Solve( *_mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data,
                    VectorCL( _rhs + _theta*_curv->Data), _Stokes.c.Data);
 
     time.Stop();
@@ -120,7 +137,6 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoStep( int maxFPiter)
     CommitStep();
 }
 
-
 // ==============================================
 //              CouplLevelsetStokes2PhaseCL
 // ==============================================
@@ -129,12 +145,8 @@ template <class StokesT, class SolverT>
 CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetStokes2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver,
       double theta, bool usematMG, MGDataCL* matMG)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls), _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL),
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL),
-    _mat( 0), _usematMG( usematMG),
-    _matMG( usematMG ? matMG : new MGDataCL), _theta( theta)
+: _base(Stokes, ls, theta), _solver(solver),
+ _old_curv(new VelVecDescCL), _usematMG( usematMG), _matMG( usematMG ? matMG : new MGDataCL)
 {
     Update();
 }
@@ -142,11 +154,7 @@ CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetStokes2PhaseCL
 template <class StokesT, class SolverT>
 CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::~CouplLevelsetStokes2PhaseCL()
 {
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b;
-    delete _cplM; delete _old_cplM; delete _curv; delete _old_curv;
+    delete _old_curv;
     if (!_usematMG) delete _matMG;
 }
 
@@ -187,8 +195,21 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
-    _mat->LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
+    if (_Stokes.UsesXFEM()) {
+	_Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+	_Stokes.UpdatePressure( &_Stokes.p);
+	_Stokes.c.SetIdx( &_Stokes.pr_idx);
+	_Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.prM.Data.clear();
+        _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+    }
+    _Stokes.B.Data.clear();
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
+
+    _mat->LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     if (_usematMG) {
         for(MGDataCL::iterator it= _matMG->begin(); it!=_matMG->end(); ++it) {
             MGLevelDataCL& tmp= *it;
@@ -300,7 +321,6 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
     }
     // _mat is always a pointer to _matMG->back().A.Data for efficiency.
     _mat= &_matMG->back().A.Data;
-
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
 }
@@ -313,15 +333,13 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
 template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetNavStokes2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear)
-
-  : _Stokes( Stokes), _solver( solver), _LvlSet( ls),
-    _b( &Stokes.b), _old_b( new VelVecDescCL),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL),
+  : _base( Stokes, ls, theta), _solver( solver),
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL),
-    _curv( new VelVecDescCL), _old_curv( new VelVecDescCL),
-    _rhs( Stokes.v.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( theta), _nonlinear( nonlinear)
+    _old_curv(new VelVecDescCL), _nonlinear( nonlinear)
 {
+    _mat= new MatrixCL();
+    _rhs.resize( Stokes.b.RowIdx->NumUnknowns);
+    _ls_rhs.resize( ls.Phi.RowIdx->NumUnknowns);
     _Stokes.SetLevelSet( ls);
     Update();
 }
@@ -329,13 +347,8 @@ CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetNavStokes2PhaseCL
 template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::~CouplLevelsetNavStokes2PhaseCL()
 {
-    if (_old_b == &_Stokes.b)
-        delete _b;
-    else
-        delete _old_b;
-    delete _cplM; delete _old_cplM;
-    delete _cplN; delete _old_cplN;
-    delete _curv; delete _old_curv;
+    delete _old_curv;
+    delete _mat;
 }
 
 template <class StokesT, class SolverT>
@@ -394,6 +407,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
         _Stokes.prA.Data.clear();
         _Stokes.prM.Data.clear();
     }
+    _Stokes.B.Data.clear();// XXX this helps, too! Why?
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
@@ -402,9 +416,9 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
 
-    _mat.LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
+    _mat->LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data));
-    _solver.Solve( _mat, _Stokes.B.Data,
+    _solver.Solve( *_mat, _Stokes.B.Data,
         _Stokes.v, _Stokes.p.Data,
         b2, *_cplN, _Stokes.c.Data, /*alpha*/ _theta*_nonlinear);
     time.Stop();
@@ -449,7 +463,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
-    _mat.clear();
+    _mat->clear();
     _Stokes.ClearMat();
     _LvlSet.ClearMat();
     // IndexDesc setzen
@@ -491,26 +505,24 @@ template <class StokesT, class SolverT>
 CouplLsNsBaenschCL<StokesT,SolverT>::CouplLsNsBaenschCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, int gm_iter, double gm_tol, double nonlinear)
 
-  : _Stokes( Stokes), _solver( solver), _gm( _pc, 100, gm_iter, gm_tol, false /*test absolute resid*/),
-    _LvlSet( ls), _b( &Stokes.b),
-    _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL),
+  : _base( Stokes, ls, /*theta*/ 1.0 - std::sqrt( 2.)/2.), _solver(solver),
+    _gm( _pc, 100, gm_iter, gm_tol, false /*test absolute resid*/),
     _cplA( new VelVecDescCL), _old_cplA( new VelVecDescCL),
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL),
-    _curv( new VelVecDescCL),
-    _rhs( Stokes.v.RowIdx->NumUnknowns), _ls_rhs( ls.Phi.RowIdx->NumUnknowns),
-    _theta( 1-std::sqrt(2.)/2), _alpha( (1-2*_theta)/(1-_theta)), _nonlinear( nonlinear)
+    _alpha( (1.0 - 2.0*_theta)/(1.0 - _theta)), _nonlinear( nonlinear)
 {
-std::cerr << "theta = " << _theta << "\talpha = " << _alpha << std::endl;
+    _mat= new MatrixCL();
+    _rhs.resize(Stokes.v.RowIdx->NumUnknowns);
+    _ls_rhs.resize(ls.Phi.RowIdx->NumUnknowns);
+    std::cerr << "theta = " << _theta << "\talpha = " << _alpha << std::endl;
     Update();
 }
 
 template <class StokesT, class SolverT>
 CouplLsNsBaenschCL<StokesT,SolverT>::~CouplLsNsBaenschCL()
 {
-    delete _cplM; delete _old_cplM;
-    delete _cplA; delete _old_cplA;
     delete _cplN; delete _old_cplN;
-    delete _curv;
+    delete _mat;
 }
 
 template <class StokesT, class SolverT>
@@ -562,7 +574,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _cplA, _cplM, _LvlSet, _Stokes.t);
-    _mat.LinComb( 1./frac_dt, _Stokes.M.Data, _alpha, _Stokes.A.Data);
+    _mat->LinComb( 1./frac_dt, _Stokes.M.Data, _alpha, _Stokes.A.Data);
     if (_Stokes.UsesXFEM()) {
 	    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
 	    _Stokes.UpdatePressure( &_Stokes.p);
@@ -577,7 +589,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     time.Stop();
     std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
     time.Reset();
-    _solver.Solve( _mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data,
+    _solver.Solve( *_mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data,
                    VectorCL( _rhs + (1./frac_dt)*_cplM->Data + _alpha*_cplA->Data + _curv->Data + _b->Data), _Stokes.c.Data);
     time.Stop();
     std::cerr << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
@@ -615,8 +627,8 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoNonlinearFPIter()
     {
         _Stokes.SetupNonlinear( &_Stokes.N, &_Stokes.v, _cplN, _LvlSet, _Stokes.t);
         _AN.LinComb( 1-_alpha, _Stokes.A.Data, _nonlinear, _Stokes.N.Data);
-        _mat.LinComb( 1./frac_dt, _Stokes.M.Data, 1., _AN);
-        _gm.Solve( _mat, _Stokes.v.Data,
+        _mat->LinComb( 1./frac_dt, _Stokes.M.Data, 1., _AN);
+        _gm.Solve( *_mat, _Stokes.v.Data,
             VectorCL( _rhs + (1./frac_dt)*_cplM->Data + (1-_alpha)*_cplA->Data
             + _nonlinear*_cplN->Data + _curv->Data + _b->Data));
         std::cerr << "fp cycle " << ++_iter_nonlinear << ":\titerations: "
@@ -690,7 +702,7 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
-    _mat.clear();
+    _mat->clear();
     _AN.clear();
     _Stokes.ClearMat();
     _LvlSet.ClearMat();
