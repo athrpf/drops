@@ -407,7 +407,6 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
         _Stokes.prA.Data.clear();
         _Stokes.prM.Data.clear();
     }
-    _Stokes.B.Data.clear();// XXX this helps, too! Why?
     _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
