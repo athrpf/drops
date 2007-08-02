@@ -95,10 +95,10 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoFPIter()
     _curv->Clear();
     _LvlSet.AccumulateBndIntegral( *_curv);
 //    if (_Stokes.UsesXFEM()) {
-//	    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-//	    _Stokes.UpdatePressure( &_Stokes.p);
-//	    _Stokes.c.SetIdx( &_Stokes.pr_idx);
-//	    _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+//        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+//        _Stokes.UpdatePressure( &_Stokes.p);
+//        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+//        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
 //        _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
 //        _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
 //        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
@@ -196,16 +196,19 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     _LvlSet.AccumulateBndIntegral( *_curv);
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
     if (_Stokes.UsesXFEM()) {
-	_Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	_Stokes.UpdatePressure( &_Stokes.p);
-	_Stokes.c.SetIdx( &_Stokes.pr_idx);
-	_Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        _Stokes.B.Data.clear();
+        _Stokes.prA.Data.clear();
         _Stokes.prM.Data.clear();
         _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     }
-    _Stokes.B.Data.clear();
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
@@ -395,10 +398,10 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
     if (_Stokes.UsesXFEM()) {
-	_Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	_Stokes.UpdatePressure( &_Stokes.p);
-	_Stokes.c.SetIdx( &_Stokes.pr_idx);
-	_Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
         _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
@@ -406,8 +409,8 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
         _Stokes.B.Data.clear();
         _Stokes.prA.Data.clear();
         _Stokes.prM.Data.clear();
+        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     }
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
@@ -575,14 +578,19 @@ void CouplLsNsBaenschCL<StokesT,SolverT>::DoStokesFPIter()
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _cplA, _cplM, _LvlSet, _Stokes.t);
     _mat->LinComb( 1./frac_dt, _Stokes.M.Data, _alpha, _Stokes.A.Data);
     if (_Stokes.UsesXFEM()) {
-	    _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	    _Stokes.UpdatePressure( &_Stokes.p);
-	    _Stokes.c.SetIdx( &_Stokes.pr_idx);
-	    _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
         _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        _Stokes.B.Data.clear();
+        _Stokes.prA.Data.clear();
+        _Stokes.prM.Data.clear();
+        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     }
-    _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
     time.Stop();
