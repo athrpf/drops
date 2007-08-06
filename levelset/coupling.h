@@ -145,10 +145,13 @@ class CouplLevelsetNavStokes2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
     VecDescCL    *_old_curv;
     const double _nonlinear;
+    const double stab_;
+
+    void MaybeStabilize (VectorCL&);
 
   public:
     CouplLevelsetNavStokes2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                           SolverT& solver, double theta= 0.5, double nonlinear= 1);
+                           SolverT& solver, double theta= 0.5, double nonlinear= 1, double stab= 0.0);
     ~CouplLevelsetNavStokes2PhaseCL();
 
     void SetTimeStep( double dt, double theta= -1) {
@@ -181,8 +184,8 @@ class CouplLsNsFracStep2PhaseCL : public CouplLevelsetNavStokes2PhaseCL<StokesT,
 
   public:
     CouplLsNsFracStep2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                               SolverT& solver, double nonlinear= 1, int step = -1)
-        : _base( Stokes, ls, solver, 0.5, nonlinear), step_((step >= 0) ? step%3 : 0) {}
+                               SolverT& solver, double nonlinear= 1, double stab= 0.0, int step = -1)
+        : _base( Stokes, ls, solver, 0.5, nonlinear, stab), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }

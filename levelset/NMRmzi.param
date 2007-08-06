@@ -33,6 +33,7 @@ Levelset {
 Coupling {
   Tol		=	1e-12	# not used a.t.m.
   Iter		=	-1	# -1 = till convergence
+  Stab		=	0.0     # Laplace-Beltrami-Stabilization
 }
 
 # re-initialization of levelset function

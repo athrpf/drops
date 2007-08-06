@@ -335,10 +335,10 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
 
 template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetNavStokes2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear)
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, double stab)
   : _base( Stokes, ls, theta), _solver( solver),
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL),
-    _old_curv(new VelVecDescCL), _nonlinear( nonlinear)
+    _old_curv(new VelVecDescCL), _nonlinear( nonlinear), stab_( stab)
 {
     _mat= new MatrixCL();
     _rhs.resize( Stokes.b.RowIdx->NumUnknowns);
@@ -352,6 +352,23 @@ CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::~CouplLevelsetNavStokes2PhaseCL
 {
     delete _old_curv;
     delete _mat;
+}
+
+template <class StokesT, class SolverT>
+void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& b)
+{
+    if (stab_ == 0.0) return;
+
+    VelVecDescCL cplLB_( &_Stokes.vel_idx);
+    MatDescCL    LB_( &_Stokes.vel_idx, &_Stokes.vel_idx);
+    _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
+
+    MatrixCL mat0( *_mat);
+    _mat->clear();
+    const double s= stab_*_theta*_dt;
+    std::cerr << "Stabilizing with: " << s << '\n';
+    _mat->LinComb( 1., mat0, stab_*_theta*_dt, LB_.Data); 
+    b+= s*(LB_.Data*_Stokes.v.Data);
 }
 
 template <class StokesT, class SolverT>
@@ -420,6 +437,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     _mat->LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data));
+    MaybeStabilize( b2);
     _solver.Solve( *_mat, _Stokes.B.Data,
         _Stokes.v, _Stokes.p.Data,
         b2, *_cplN, _Stokes.c.Data, /*alpha*/ _theta*_nonlinear);
@@ -445,6 +463,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
     {
+        std::cerr << "~~~~~~~~~~~~~~~~ FP-Iter " << i << '\n';
         DoFPIter();
         if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {

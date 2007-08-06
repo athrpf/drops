@@ -285,7 +285,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 //        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
 //        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
         typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
+        CouplingT cpl( Stokes, lset, nssolver, C.nonlinear, C.cpl_stab);
 
         cpl.SetTimeStep( C.dt);
 
