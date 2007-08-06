@@ -175,8 +175,8 @@ class CouplLsNsFracStep2PhaseCL : public CouplLevelsetNavStokes2PhaseCL<StokesT,
     static const double theta_[3];
 
     typedef CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT> _base;
-    using _base::_dt;
 
+    double dt3_;
     int step_;
 
   public:
@@ -184,12 +184,12 @@ class CouplLsNsFracStep2PhaseCL : public CouplLevelsetNavStokes2PhaseCL<StokesT,
                                SolverT& solver, double nonlinear= 1, int step = -1)
         : _base( Stokes, ls, solver, 0.5, nonlinear), step_((step >= 0) ? step%3 : 0) {}
 
-    double GetSubTimeStep() const { return facdt_[step_]*_dt; }
+    double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
     int    GetSubStep()     const { return step_; }
 
     void SetTimeStep( double dt, int step = -1) {
-        _base::SetTimeStep( dt);
+        dt3_= dt;
         if (step>=0) step_= step%3;
     }
 
