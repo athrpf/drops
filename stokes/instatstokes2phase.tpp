@@ -926,22 +926,20 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     LocalP2CL<Point3DCL> GradLP2[10];
-    Quad2CL<double> rho, /*mu,*/ Phi, kreuzterm; //, kt;
+    Quad2CL<double> Ones( 1.), kreuzterm;
     const double mu_p= _Coeff.mu( 1.0),
                  mu_n= _Coeff.mu( -1.0),
                  rho_p= _Coeff.rho( 1.0),
                  rho_n= _Coeff.rho( -1.0);
 
-// std::cerr << mu_p << mu_n << rho_p << rho_n << '\n';
-
     SMatrixCL<3,3> T;
 
     double coupA[10][10], coupAk[10][10][3][3],
-           coupM[10][10];
-    double det, absdet;
+           coupM[10][10], rho_phi[10];
+    double det, absdet, cAp, cAn, cAkp, cAkn, intHat_p, intHat_n;
     Point3DCL tmp;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    LocalP2CL<> aij, akreuz[3][3];
+    LocalP2CL<> aij, akreuz[3][3], phi_i, ones( 1.);
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     P2DiscCL::GetGradientsOnRef( GradRefLP1);
@@ -959,19 +957,17 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, *A->RowIdx, _BndData.Vel);
-// mu= Phi;
-// mu.apply( _Coeff.mu);
         patch.Init( *sit, lset.Phi);
         const bool nocut= !patch.Intersects();
         if (nocut) {
             const double mu_const= patch.GetSign( 0) == 1 ? mu_p : mu_n;
             const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
-            // rhs = f + rho*g
-            rhs+= Quad2CL<Point3DCL>( rho_const*_Coeff.g);
 
             P2DiscCL::GetGradients( Grad, GradRef, T);
             // compute all couplings between HatFunctions on edges and verts
             for (int i=0; i<10; ++i)
+            {
+                rho_phi[i]= rho_const*Ones.quadP2( i, absdet);
                 for (int j=0; j<=i; ++j)
                 {
                     // dot-product of the gradients
@@ -993,26 +989,40 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                     coupM[i][j]= cM;
                     coupM[j][i]= cM;
                 }
+            }
         }
         else { // We are at the phase boundary.
-            //  rhs = f + rho*g    with rho = rho( Phi)
-            // TODO: We should integrate on the children, but we want to use the special quad-rule .quadP2 below.
-            Phi.assign( *sit, ls, t);
-            rho= Phi;
-            rho.apply( _Coeff.rho);
-            rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
-
             // compute all couplings between HatFunctions on edges and verts
             std::memset( coupA, 0, 10*10*sizeof( double));
             std::memset( coupAk, 0, 10*10*3*3*sizeof( double));
-            P2DiscCL::GetGradients( Grad, GradRef, T);
+            std::memset( rho_phi, 0, 10*sizeof( double));
             P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
             for (int i= 0; i < 10; ++i) {
                 GradLP2[i].assign( GradLP1[i]);
             }
 
+            double Vol_p= 0;
+            for (int ch= 0; ch < 8; ++ch) {
+                patch.ComputeCutForChild( ch);
+                Vol_p+= patch.quad( ones, absdet, true);
+                for (int i=0; i<10; ++i) {
+                    // init phi_i =  i-th P2 hat function
+                    phi_i[i]= 1.; phi_i[i==0 ? 9 : i-1]= 0.;
+                    patch.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
+                    rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
+                }
+            }
+            const double Vol= absdet/6.,
+                Vol_n= Vol - Vol_p, 
+                rho_avg= (rho_p*Vol_p + rho_n*Vol_n)/Vol;  // average of rho on current tetra
+            
             for (int i=0; i<10; ++i)
-                for (int j=0; j<10; ++j) {
+                for (int j=0; j<=i; ++j) {
+                    // M
+                    // FIXME: Ad hoc integration
+                    const double cM= rho_avg*P2DiscCL::GetMass( j, i)*absdet;
+                    coupM[i][j]= cM;
+                    coupM[j][i]= cM;
                     // A
                     aij= dot( GradLP2[i], GradLP2[j]);
                     for (int k= 0; k < 3; ++k)
@@ -1024,27 +1034,23 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
 
                     for (int ch= 0; ch < 8; ++ch) {
                         patch.ComputeCutForChild( ch);
-                        const double cAp= patch.quad( aij, absdet, true);  // integrate on positive part
-                        const double cAn= patch.quad( aij, absdet, false); // P1DiscCL::Quad( aij)*absdet/8. - cAp; // integrate on negative part
-                        coupA[j][i]+= cAp*mu_p + cAn*mu_n;
-//                        coupA[i][j]= coupA[j][i];
+                        patch.quadBothParts( cAp, cAn, aij, absdet);  // integrate on positive and negative part
+                        const double cA= cAp*mu_p + cAn*mu_n;
+                        coupA[j][i]+= cA;
                         for (int k= 0; k < 3; ++k)
                             for (int l= 0; l < 3; ++l) {
-                                const double cAkp= patch.quad( akreuz[k][l], absdet, true);  // integrate on positive part
-                                const double cAkn= patch.quad( akreuz[k][l], absdet, false); // P1DiscCL::Quad( akreuz[k][l])*absdet/8. - cAkp; // integrate on negative part
-                                coupAk[i][j][k][l]+= cAkp*mu_p + cAkn*mu_n;
-//                                coupAk[j][i][l][k]+= cAkp*mu_p + cAkn*mu_n;
+                                patch.quadBothParts( cAkp, cAkn, akreuz[k][l], absdet);  // integrate on positive and negative part
+                                const double cAk= cAkp*mu_p + cAkn*mu_n;
+                                coupAk[i][j][k][l]+= cAk;
                             }
                     }
-                }
-
-            for (int i=0; i<10; ++i) // FIXME: This belongs in the preceding loop.
-                for (int j=0; j<=i; ++j) {
-                    // M
-                    // FIXME: Ad hoc integration
-                    const double cM= rho[4]*P2DiscCL::GetMass( j, i)*absdet;
-                    coupM[i][j]= cM;
-                    coupM[j][i]= cM;
+                    if (i!=j)
+                    { // copy computed entries, as local stiffness matrices coupA, coupAk are symmetric
+                        coupA[i][j]= coupA[j][i];
+                        for (int k= 0; k < 3; ++k)
+                            for (int l= 0; l < 3; ++l)
+                                coupAk[j][i][l][k]= coupAk[i][j][k][l];
+                    }
                 }
         }
 
@@ -1059,17 +1065,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         mA( n.num[i]+1, n.num[j]+1)+= coupA[j][i];
                         mA( n.num[i]+2, n.num[j]+2)+= coupA[j][i];
                         for (int k=0; k<3; ++k)
-                            for (int l=0; l<3; ++l) {
+                            for (int l=0; l<3; ++l)
                                 mA( n.num[i]+k, n.num[j]+l)+= coupAk[i][j][k][l];
-// 
-//                                 // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
-//                                 for (size_t m=0; m<kt.size();  ++m)
-//                                     kt[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
-//                                 if (std::fabs( kt.quad( absdet) - coupAk[i][j][k][l]) > 1e-5 && !nocut)
-//                                     std::cerr << i << '\t' << j << '\t' << k << '\t' << l << '\t'
-//                                               << kt.quad( absdet) << '\t' << coupAk[i][j][k][l] << '\t'
-//                                               << nocut << '\n';
-                            }
                         mM( n.num[i],   n.num[j]  )+= coupM[j][i];
                         mM( n.num[i]+1, n.num[j]+1)+= coupM[j][i];
                         mM( n.num[i]+2, n.num[j]+2)+= coupM[j][i];
@@ -1093,7 +1090,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         cplM->Data[n.num[i]+2]-= cM*tmp[2];
                     }
                 }
-                tmp= rhs.quadP2( i, absdet);
+                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
                 b->Data[n.num[i]  ]+= tmp[0];
                 b->Data[n.num[i]+1]+= tmp[1];
                 b->Data[n.num[i]+2]+= tmp[2];
