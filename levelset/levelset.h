@@ -200,6 +200,8 @@ class InterfacePatchCL
     ///@{
     template<class ValueT>
     ValueT quad( const LocalP2CL<ValueT>&, double absdet, bool posPart= true);   ///< integrate on pos./neg. part
+    template<class ValueT>
+    void   quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>&, double absdet);   ///< integrate on pos. and neg. part
     ///@}
 };
 
