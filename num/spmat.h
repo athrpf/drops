@@ -321,7 +321,8 @@ public:
     typedef T value_type;
 
     SparseMatBaseCL () : version_( 1) {}
-    // default copy-ctor, assignment-op, dtor
+    SparseMatBaseCL& operator= (const SparseMatBaseCL& m);    
+    // default copy-ctor, dtor
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz)
         : _rows(rows), _cols(cols), version_( 1), _rowbeg(rows+1), _colind(nz), _val(nz) {}
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz,
@@ -372,6 +373,20 @@ public:
 
     friend class SparseMatBuilderCL<T>;
 };
+
+template <typename T>
+  SparseMatBaseCL<T>& SparseMatBaseCL<T>::operator= (const SparseMatBaseCL<T>& m)
+{
+    if (&m == this) return *this;
+
+    IncrementVersion();
+    _rows= m._rows;
+    _cols= m.cols_;
+    _rowbeg= m._rowbeg;
+    _colind= m._colind;
+    _val= m._val;
+    return *this;
+}    
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL(const std::valarray<T>& v)
