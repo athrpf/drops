@@ -43,6 +43,7 @@ class ParamMesszelleCL: public ParamBaseCL
     //@{
     double cpl_tol;                             ///< tolerance for the coupling
     int    cpl_iter;                            ///< max. number of iterations for the fixed-point iteration
+    double cpl_stab;                            ///< Laplace-Beltrami-stabilization
     //@}
 
     /// \name Material data

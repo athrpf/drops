@@ -34,6 +34,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.BeginGroup("Coupling");
     rp_.RegInt( cpl_iter,     "Iter");
     rp_.RegDouble( cpl_tol,   "Tol");
+    rp_.RegDouble( cpl_stab,  "Stab");
     rp_.EndGroup();
 
     rp_.BeginGroup("Reparam");
