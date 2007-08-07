@@ -76,7 +76,6 @@ Exp {
 # miscellaneous
 
 XFEMStab        =       1.0
-NumRef          =       3       # number of a priori refinements; not used by all programs
 InitialCond	=	1
 InitialFile	=	initial/XXX
 
