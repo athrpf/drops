@@ -351,6 +351,7 @@ template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::~CouplLevelsetNavStokes2PhaseCL()
 {
     delete _old_curv;
+    delete _cplN; delete _old_cplN;
     delete _mat;
 }
 
@@ -542,6 +543,7 @@ CouplLsNsBaenschCL<StokesT,SolverT>::CouplLsNsBaenschCL
 template <class StokesT, class SolverT>
 CouplLsNsBaenschCL<StokesT,SolverT>::~CouplLsNsBaenschCL()
 {
+    delete _cplA; delete _old_cplA;
     delete _cplN; delete _old_cplN;
     delete _mat;
 }
