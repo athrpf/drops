@@ -87,7 +87,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= Stokes.GetCoeff().SurfTens;
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD,
+    LevelsetP2CL lset( MG, &sigmaf, &gsigma, C.lset_theta, C.lset_SD,
         -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
@@ -99,7 +99,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     lset.Phi.SetIdx( lidx);
     lset.Init( EllipsoidCL::DistanceFct);
     lset.SetSurfaceForce( SF_ImprovedLB);
-
+//    lset.SetSurfaceForce( SF_ImprovedLBVar);
+//    IFInfo.Update( lset);
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
 
@@ -292,6 +293,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         for (int step= 1; step<=C.num_steps; ++step)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
+//            IFInfo.Update( lset);
             cpl.DoStep( C.cpl_iter);
 //            WriteMatrices( Stokes, step);
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
