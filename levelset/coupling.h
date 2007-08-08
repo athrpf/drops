@@ -169,6 +169,49 @@ class CouplLevelsetNavStokes2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     void Update();
 };
 
+template <class StokesT, class SolverT>
+class CouplLevelsetNavStokesDefectCorr2PhaseCL: public CouplLevelsetBaseCL<StokesT>
+{
+  private:
+    typedef CouplLevelsetBaseCL<StokesT> _base;
+    using _base::_Stokes;
+    using _base::_LvlSet;
+    using _base::_b;       using _base::_old_b;
+    using _base::_cplM;    using _base::_old_cplM;
+    using _base::_curv;
+    using _base::_rhs;
+    using _base::_ls_rhs;
+    using _base::_mat; // 1./dt*M + theta*A
+    using _base::_theta;
+    using _base::_dt;
+
+    SolverT&     _solver;
+    VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
+    VecDescCL    *_old_curv;
+    const double _nonlinear;
+    const double stab_;
+
+    void MaybeStabilize (VectorCL&);
+
+  public:
+    CouplLevelsetNavStokesDefectCorr2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
+                           SolverT& solver, double theta= 0.5, double nonlinear= 1, double stab= 0.0);
+    ~CouplLevelsetNavStokesDefectCorr2PhaseCL();
+
+    void SetTimeStep( double dt, double theta= -1) {
+        _base::SetTimeStep( dt);
+        if (theta >=0 ) _theta= theta;
+        _LvlSet.SetTimeStep( dt, theta);
+    }
+
+    void InitStep();
+    void DoFPIter();
+    void CommitStep();
+
+    void DoStep( int maxFPiter= -1);
+
+    void Update();
+};
 
 template <class StokesT, class SolverT>
 class CouplLsNsFracStep2PhaseCL : public CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>

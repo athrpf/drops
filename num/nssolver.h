@@ -29,19 +29,22 @@ class AdaptFixedPtDefectCorrCL
     NavStokesT& _NS;
     SolverT&    _solver;
     MatrixCL    _AN;
+    const VectorCL* _basevel;
 
     int         _maxiter, _iter;
     double      _tol, _res, _red;
 
   public:
     AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 0.1)
-        : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
+        : _NS( NS), _solver( solver), _basevel( 0), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
 
     ~AdaptFixedPtDefectCorrCL() {}
 
     void SetTol      ( double tol) { _tol= tol; }
     void SetMaxIter  ( int iter  ) { _maxiter= iter; }
     void SetReduction( double red) { _red= red; }
+
+    void SetBaseVel( const VectorCL* bv) { _basevel= bv; }
 
     double   GetResid()        const { return _res; }
     int      GetIter ()        const { return _iter; }
@@ -203,7 +206,9 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
         _iter= 0;
         for(;;++_iter) // ever
         {
+            if (_basevel != 0) v.Data= *_basevel - v.Data;
             _NS.SetupNonlinear(&_NS.N, &v, &cplN);
+            if (_basevel != 0) v.Data= *_basevel - v.Data;
 //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
             _AN.LinComb( 1., A, alpha, _NS.N.Data);
 
@@ -211,6 +216,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
             std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
+            //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
             if (_res < _tol || _iter>=_maxiter)
                 break;
 
@@ -223,7 +229,9 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
 
             // calculate step length omega:
             v_omw.Data= v.Data - omega*w;
+            if (_basevel != 0) v_omw.Data= *_basevel - v_omw.Data;
             _NS.SetupNonlinear( &_NS.N, &v_omw, &cplN);
+            if (_basevel != 0) v_omw.Data= *_basevel - v_omw.Data;
 
             d= A*w + alpha*(_NS.N.Data*w) + transp_mul( B, q);
             e= B*w;

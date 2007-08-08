@@ -37,6 +37,34 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
+template <class It>
+  std::pair<double, double>
+  h_interface (It begin, It end, const VecDescCL& ls)
+{
+    double hmin= 1e99, hmax= -1.0; //, hmean= 0.;
+    // size_t num= 0;
+    // EdgeCL* emax= 0;
+
+    for (; begin != end; ++begin)
+        if (   (ls.Data[begin->GetVertex( 0)->Unknowns( ls.RowIdx->GetIdx())]
+                *ls.Data[begin->Unknowns( ls.RowIdx->GetIdx())] <= 0.)
+            || (ls.Data[begin->GetVertex( 1)->Unknowns( ls.RowIdx->GetIdx())]
+                *ls.Data[begin->Unknowns( ls.RowIdx->GetIdx())] <= 0.)) {
+            const double h= (begin->GetVertex( 0)->GetCoord() - begin->GetVertex( 1)->GetCoord()).norm();
+            hmin= std::min( hmin, h);
+            // if (h > hmax) emax= &*begin;
+            hmax= std::max( hmax, h);
+            // hmean+= h;
+            // ++num;
+        }
+    // std::cerr << "mean : " << hmean/num << '\n';
+    // emax->DebugInfo( std::cerr);
+    // emax->GetVertex( 0)->DebugInfo( std::cerr);
+    // emax->GetVertex( 1)->DebugInfo( std::cerr);
+    
+    return std::make_pair( hmin, hmax);
+}
+
 template<class Coeff>
 void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 {
@@ -80,7 +108,7 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 }
 
 template<class Coeff>
-void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
+void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 // flow control
 {
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
@@ -115,8 +143,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.DescribeScalar( "Levelset", datscl, true);
     ensight.DescribeScalar( "Pressure", datpr,  true);
     ensight.DescribeVector( "Velocity", datvec, true);
-
-    AdapTriangCL adap( MG, C.ref_width, 0, C.ref_flevel);
 
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
@@ -223,6 +249,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     }
     const double Vol= EllipsoidCL::GetVolume();
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+
+//     std::pair<double, double> h_int= h_interface( MG.GetTriangEdgeBegin(), MG.GetTriangEdgeEnd(), lset.Phi);
+//     std::cerr << "h interface: " << h_int.first << '\t' << h_int.second << '\n';
 
     ensight.putGeom( datgeo, 0);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
@@ -387,6 +416,8 @@ int main (int argc, char** argv)
     }
 
     EllipsoidCL::Init( C.Mitte, C.Radius );
+    DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
+//    adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
     for (int i=0; i<C.ref_flevel; ++i)
     {
         DROPS::MarkInterface( EllipsoidCL::DistanceFct, C.ref_width, mg);
@@ -397,7 +428,7 @@ int main (int argc, char** argv)
     MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL(
         num_bnd, bc, bnd_fun), DROPS::P1X_FE, C.XFEMStab);
 
-    Strategy( prob);    // do all the stuff
+    Strategy( prob, adap);    // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

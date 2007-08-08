@@ -129,6 +129,7 @@ class LevelsetP2CL
     /// Use LevelsetP2CL::DoStep() instead.
     ///@{
     void ComputeRhs( VectorCL&) const;
+    const MatrixCL& GetL() const { return L_; }
     void DoStep    ( const VectorCL&);
     ///@}
 };

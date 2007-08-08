@@ -628,6 +628,8 @@ class P1DiscCL
     template<class ValueT>
     static inline ValueT Quad( const LocalP2CL<ValueT>&, BaryCoordCL**);
     template<class ValueT>
+    static inline ValueT Quad( const LocalP2CL<ValueT>&, const BaryCoordCL[4]);
+    template<class ValueT>
     static inline ValueT Quad( const LocalP2CL<ValueT>& f);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline double Quad(const TetraCL&, scalar_fun_ptr, Uint);
@@ -781,6 +783,13 @@ inline ValueT P1DiscCL::Quad( const LocalP2CL<ValueT>& f, BaryCoordCL** bp)
 {
     const BaryCoordCL bc= 0.25*(*bp[0]+*bp[1]+*bp[2]+*bp[3]);
     return ( f(*bp[0]) + f(*bp[1]) + f(*bp[2]) + f(*bp[3]) )/120. + 2./15. * f(bc);
+}
+
+template<class ValueT>
+inline ValueT P1DiscCL::Quad( const LocalP2CL<ValueT>& f, const BaryCoordCL bp[4])
+{
+    const BaryCoordCL bc= 0.25*(bp[0]+bp[1]+bp[2]+bp[3]);
+    return ( f(bp[0]) + f(bp[1]) + f(bp[2]) + f(bp[3]) )/120. + 2./15. * f(bc);
 }
 
 template<class ValueT>
