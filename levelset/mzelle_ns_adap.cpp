@@ -168,12 +168,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     {
       case 1: case 2: // stationary flow with/without drop
       {
-          typedef CGSolverCL SPcSolverT;
-          SPcSolverT CGsolver( 50, 0.02, /*relative*/ true);
+//           typedef CGSolverCL SPcSolverT;
+//           SPcSolverT CGsolver( 50, 0.02, /*relative*/ true);
+          typedef PCGSolverCL<JACPcCL> SPcSolverT;
+          SPcSolverT CGsolver( JACPcCL(), 50, 0.02, /*relative*/ true);
           typedef ISNonlinearPreCL<SPcSolverT> SPcT;
           SPcT ispc( CGsolver, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 0., /*kM*/ 1.);
-//            typedef ISPreCL SPcT;
-//            SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 0., /*kM*/ 1.);
+//          typedef ISPreCL SPcT;
+//          SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 0., /*kM*/ 1.);
 
         // PC for A-Block-PC
 //          typedef  DummyPcCL APcPcT;
@@ -313,7 +315,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         // Time-integration and coupling
 //        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-//        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+//        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, C.cpl_stab);
         typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
         CouplingT cpl( Stokes, lset, nssolver, C.nonlinear, C.cpl_stab);
 
