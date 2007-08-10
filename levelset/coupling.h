@@ -265,7 +265,7 @@ template <class NavStokesT, class SolverT>
 const double CouplLsNsFracStep2PhaseCL<NavStokesT,SolverT>::theta_[3]
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
-  = { std::sqrt( 2.0) - 1, 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0 };
+  = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
 
 
 template <class StokesT, class SolverT>
