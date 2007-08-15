@@ -103,6 +103,13 @@ void ParamFilmCL::RegisterParams()
     rp_.RegDouble( outer_tol, "OuterTol");
     rp_.EndGroup();
 
+    rp_.BeginGroup( "NavStokes");
+    rp_.RegDouble( nonlinear,  "Nonlinear");
+    rp_.RegDouble( ns_tol,     "Tol");
+    rp_.RegDouble( ns_red,     "Reduction");
+    rp_.RegInt( ns_iter,       "Iter");
+    rp_.EndGroup();
+
     rp_.BeginGroup("Levelset");
     rp_.RegInt( lset_iter,    "Iter");
     rp_.RegDouble( lset_tol,  "Tol");

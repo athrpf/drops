@@ -8,7 +8,7 @@
 # time stepping
 Time {
   NumSteps	=	10000
-  StepSize	=	1e-3
+  StepSize	=	1e-4
   ThetaLevelset	=	1	# backward Euler
   ThetaStokes	=	1	# backward Euler
 }
@@ -34,15 +34,15 @@ NavStokes {
 # levelset solver
 Levelset {
   Tol		=	1e-10
-  Iter		=	200
-  SD		=	0.1
+  Iter		=	1000
+  SD		=	1
   CurvDiff	=	-1
-  VolCorrection	=	0
+  VolCorrection	=	1
 }
 
 Coupling {
   Tol		=	1e-10	# not used a.t.m.
-  Iter		=	4	# -1 = till convergence
+  Iter		=	2	# -1 = till convergence
 }
 
 # re-initialization of levelset function
@@ -60,29 +60,30 @@ AdaptRef {
 
 # material data, all units are SI
 Mat {
-  DensGas	=	100			# n-Butanol / Wasser
-  ViscGas	=	1e-2
-  DensFluid	=	1000
-  ViscFluid	=	1e-1
+  DensGas	=	9 # 1.2			# "Luft"/Silikonoel
+  ViscGas	=	5e-5 # 17.1e-6
+  DensFluid	=	909.3
+  ViscFluid	=	5.183e-3
   SmoothZone	=	1e-4
   SurfTension	=	1e-3
 }
 
 # experimental conditions
 Exp {
-  Gravity     =       5.625  -8.036 0
-  PumpAmpl    =       0.5
+  Gravity     =       2.539  -9.476 0 # Neigungswinkel 15 Grad
+#  Gravity     =       5.627  -8.036 0 # Neigungswinkel 35 Grad
+  PumpAmpl    =       0.2
   PumpFreq    =       10
-  Thickness   =       1e-3
+  Thickness   =       6.35e-4
 }
 
 # miscellaneous
 
-MeshResolution  =       20 5 5
-MeshSize        =       20e-3 2e-3 5e-3
-InitialCond	=	1
-InitialFile	=	zzz
-BndCond 	=	12woww
+MeshResolution  =       20 6 5
+MeshSize        =       20e-3 3e-3 5e-3
+InitialCond	=	1      # 1=Stokes, 2=Nusselt, -1=read from file
+InitialFile	=	initial/film1000
+BndCond 	=	12ww12
 EnsightCase	=	film
 EnsightDir	=	/Work/gross/ensight
 

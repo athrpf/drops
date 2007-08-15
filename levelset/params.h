@@ -124,8 +124,10 @@ class ParamFilmCL: public ParamBaseCL
 
   public:
     double inner_tol, outer_tol,                // Parameter der Loeser
-           lset_tol, lset_SD, cpl_tol;          // fuer Flow & Levelset
-    int    inner_iter, outer_iter, lset_iter;
+           ns_tol, ns_red, nonlinear,           // fuer Flow & Levelset
+           lset_tol, lset_SD, cpl_tol;
+    int    inner_iter, outer_iter, 
+           ns_iter, lset_iter;
     int    cpl_iter;                            // Kopplung Levelset/Flow: Anzahl Fixpunkt-Iterationen
 
     double dt;                                  // Zeitschrittweite
