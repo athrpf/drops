@@ -384,7 +384,7 @@ class TetraCL
 
     // access to children, vertices
     ChildPIterator GetChildBegin  ()                                            ///< "Pointer-Iterator" to first child
-      { return _Children->begin(); }    
+      { return _Children->begin(); }
     ChildPIterator GetChildEnd    ()                                            ///< "Pointer-Iterator" to end of children
       { return _Children->begin() + GetRefData().ChildNum; }
     VertexCL*      GetVertMidVert (Uint i)                                      ///< return pointer to midvertex of edge or vertex of tetra

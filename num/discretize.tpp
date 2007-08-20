@@ -481,10 +481,10 @@ template<class T>
     B1= (9.0 + 2.0*std::sqrt( 15.0))/21.0;
     Node[1]= MakePoint3D( A1,A1,B1);
     Node[2]= MakePoint3D( A1,B1,A1);
-    Node[3]= MakePoint3D(B1,A1,A1);
+    Node[3]= MakePoint3D( B1,A1,A1);
     const double A2= (6.0 + std::sqrt( 15.0))/21.0,
     B2= (9.0 - 2.0*std::sqrt( 15.0))/21.0;
-    Node[4]=MakePoint3D( A2,A2,B2);
+    Node[4]= MakePoint3D( A2,A2,B2);
     Node[5]= MakePoint3D( A2,B2,A2);
     Node[6]= MakePoint3D( B2,A2,A2);
     HaveNodes= true;
