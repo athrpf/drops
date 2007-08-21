@@ -13,7 +13,8 @@ DROPS::Point3DCL FixedVel( const DROPS::Point3DCL& p, double= 0.0)
 {
     DROPS::Point3DCL midpt( 0.5), q= p-midpt;
     double d= q.norm(),
-           c= d<0.25 ? d : (d<0.5 ? 0.5-d: 0);
+           c= std::max( 0., d*(0.5-d)/0.25);
+//           c= d<0.25 ? d : (d<0.5 ? 0.5-d: 0);
     q[2]= q[0]; q[0]= c*q[1]; q[1]= -c*q[2]; q[2]= 0.;
     return q;
 }
@@ -31,7 +32,7 @@ namespace DROPS
 {  // for strategy
 
 template<class ProblemT>
-void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int num_reparam)
+void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int reparam_freq)
 {
     MultiGridCL& mg= prob.GetMG();
 
@@ -42,25 +43,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int num_repa
 
     prob.CreateNumberingVel( mg.GetLastLevel(), &vidx);
     vel.SetIdx( &vidx);
-    { // init vel
-        IdxT pos= 0;
-        for (MultiGridCL::TriangVertexIteratorCL it= mg.GetTriangVertexBegin(), end= mg.GetTriangVertexEnd();
-            it!=end; ++it)
-        {
-            const Point3DCL val= FixedVel( it->GetCoord());
-            vel.Data[pos++]= val[0];
-            vel.Data[pos++]= val[1];
-            vel.Data[pos++]= val[2];
-        }
-        for (MultiGridCL::TriangEdgeIteratorCL it= mg.GetTriangEdgeBegin(), end= mg.GetTriangEdgeEnd();
-            it!=end; ++it)
-        {
-            const Point3DCL val= FixedVel( GetBaryCenter( *it));
-            vel.Data[pos++]= val[0];
-            vel.Data[pos++]= val[1];
-            vel.Data[pos++]= val[2];
-        }
-    }
+    prob.InitVel( &vel, FixedVel);
 
     lset.CreateNumbering( mg.GetLastLevel(), &lidx);
     lset.Phi.SetIdx( &lidx);
@@ -85,8 +68,11 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int num_repa
     {
         lset.DoStep();
 
-        if (i%20==0)
-            lset.Reparam( num_reparam, 0.01);
+        if (reparam_freq>0 && i%reparam_freq==0)
+        {
+            std::cerr << "Reparametrization...\n";
+            lset.ReparamFastMarching();
+        }
         // after half of the time, the velocity field is turned around
         if (i==num_steps/2)
         {
@@ -95,7 +81,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double SD, int num_repa
             lset.SetTimeStep( dt);
         }
 
-        ensight.putScalar( datscl, lset.GetSolution(), i/10.);
+        ensight.putScalar( datscl, lset.GetSolution(), i*dt);
     }
 
     ensight.CaseEnd();
@@ -108,7 +94,7 @@ class DummyStokesCoeffCL {};
 int main( int argc, char **argv)
 {
     double dt= 0.1, SD= 0.1;
-    int num_steps= 100, num_reparam= 0;
+    int num_steps= 200, reparam_freq= 0;
 
     if (argc>1)
         dt= std::atof( argv[1]);
@@ -117,9 +103,9 @@ int main( int argc, char **argv)
     if (argc>3)
         SD= std::atof( argv[3]);
     if (argc>4)
-        num_reparam= std::atoi( argv[4]);
+        reparam_freq= std::atoi( argv[4]);
 
-    std::cout << "dt = " << dt << ", SD = " << SD << ", num_reparam = " << num_reparam << std::endl;
+    std::cout << "dt = " << dt << ", num_steps = " << num_steps << ", SD = " << SD << ", reparam_freq = " << reparam_freq << std::endl;
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.0;
@@ -128,7 +114,7 @@ int main( int argc, char **argv)
     typedef StokesOnBrickCL                                                  MyStokesCL;
 
     int num= 0;
-    std::cout << "# Unterteilungen: "; std::cin >> num;
+    std::cout << "# subdivisions: "; std::cin >> num;
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, num, num, num);
     const bool IsNeumann[6]=
         {true, true, true, true, true, true};
@@ -137,7 +123,7 @@ int main( int argc, char **argv)
 
     MyStokesCL prob(brick, DROPS::DummyStokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
 
-    Strategy( prob, dt, num_steps, SD, num_reparam);
+    Strategy( prob, dt, num_steps, SD, reparam_freq);
 
     return 0;
 }
