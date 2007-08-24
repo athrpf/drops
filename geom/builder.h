@@ -20,6 +20,7 @@
 #include "geom/multigrid.h"
 #include "num/bndData.h"
 #include <istream>
+#include <map>
 
 namespace DROPS
 {
@@ -39,6 +40,9 @@ class BrickBuilderCL : public MGBuilderCL
     // for tetras:
     Uint t_idx(Uint i, Uint j, Uint k, Uint l) const { return i*_n2*_n1*6 + j*_n1*6 + k*6 + l; }
 
+  protected:
+    void buildBoundary(MultiGridCL* mgp) const;
+    
   public:
     BrickBuilderCL(const Point3DCL&, const Point3DCL&, const Point3DCL&, const Point3DCL&, Uint, Uint, Uint);
 
@@ -61,6 +65,9 @@ class LBuilderCL : public MGBuilderCL
     const Uint _b2;
     Uint v_idx(Uint i, Uint j, Uint k)         const { return i*(_n2+1)*(_n1+1) + j*(_n1+1) + k; }
     Uint t_idx(Uint i, Uint j, Uint k, Uint l) const { return i*_n2*_n1*6 + j*_n1*6 + k*6 + l; }
+
+ protected:
+    void buildBoundary(MultiGridCL* mgp) const;
 
   public:
     LBuilderCL(const Point3DCL&, const Point3DCL&, const Point3DCL&, const Point3DCL&,
@@ -87,6 +94,9 @@ class BBuilderCL : public MGBuilderCL
     Uint v_idx(Uint i, Uint j, Uint k)         const { return i*(_n2+1)*(_n1+1) + j*(_n1+1) + k; }
     Uint t_idx(Uint i, Uint j, Uint k, Uint l) const { return i*_n2*_n1*6 + j*_n1*6 + k*6 + l; }
 
+ protected:
+    void buildBoundary(MultiGridCL* mgp) const;
+
   public:
     BBuilderCL(const Point3DCL&, const Point3DCL&, const Point3DCL&, const Point3DCL&,
                Uint, Uint, Uint, Uint, Uint, Uint);
@@ -105,6 +115,9 @@ class TetraBuilderCL : public MGBuilderCL
     const Point3DCL p1_;
     const Point3DCL p2_;
     const Point3DCL p3_;
+
+  protected:
+    void buildBoundary(MultiGridCL* mgp) const;
 
   public:
 
@@ -279,6 +292,9 @@ class ReadMeshBuilderCL : public MGBuilderCL
     mutable MeshNodeCL nodes_;
     mutable MeshFaceCL mfaces_;
     mutable MeshCellCL cells_;
+    
+    mutable std::map<Uint, BndIdxT> zone_id2bndidx_;
+
 
     bool // Find next (, that is not in a MeshString.
     NextSection() const;
@@ -309,8 +325,15 @@ class ReadMeshBuilderCL : public MGBuilderCL
     void // Deallocate memory of data-members
     Clear() const;
 
+         // Actually creates the boundary-description into the MultiGrid; assumes that the data
+    void // file has been read.
+    buildBoundaryImp(MultiGridCL*) const;
+
     static BndCondT MapBC( Uint gambit_bc); // map gambit bc to DROPS bc
 
+  protected:
+      void buildBoundary(MultiGridCL*) const;
+    
   public:
     // Input stream, from which the mesh is read. Pass a pointer to an output stream,
     // e. g. msg= &std::cerr, if you want to know, what happens during multigrid-construction.
@@ -324,6 +347,80 @@ class ReadMeshBuilderCL : public MGBuilderCL
 
     BndCondT GetBC( Uint i)                    const { return BC_[i]; }
     void     GetBC( std::vector<BndCondT>& BC) const { BC= BC_; }
+};
+
+
+/*******************************************************************
+*   F I L E B U I L D E R  C L                                    *
+*******************************************************************/
+
+class FileBuilderCL : public MGBuilderCL
+{
+  private:
+    // Path or File-Prefix
+    std::string path_;
+
+    MGBuilderCL* bndbuilder_;
+
+    // Int <-> Add
+    mutable std::map<size_t, VertexCL*> vertexAddressMap;
+    mutable std::map<size_t, EdgeCL*>     edgeAddressMap;
+    mutable std::map<size_t, FaceCL*>     faceAddressMap;
+    mutable std::map<size_t, TetraCL*>   tetraAddressMap;
+
+    void BuildVerts   (MultiGridCL*) const;
+
+    void BuildEdges   (MultiGridCL*) const;
+
+    void BuildFacesI  (MultiGridCL*) const;
+
+    void BuildTetras  (MultiGridCL*) const;
+
+    void AddChildren  ()             const;
+
+    void BuildFacesII (MultiGridCL*) const;
+    
+  protected:
+    void buildBoundary (MultiGridCL* mgp) const {bndbuilder_->buildBoundary(mgp);};
+
+  public:
+    FileBuilderCL (std::string path, MGBuilderCL* bndbuilder) : path_(path), bndbuilder_(bndbuilder) {};
+    virtual void build(MultiGridCL*) const;
+};
+
+
+/*******************************************************************
+*   M G S E R I A L I Z A T I O N   C L                           *
+*******************************************************************/
+
+class MGSerializationCL
+{
+  private:
+    MultiGridCL& mg_;
+
+    // Path or File-Prefix
+    std::string  path_;
+
+    // Addr <-> Int
+    std::map<const EdgeCL*,   size_t>   edgeAddressMap;
+    std::map<const VertexCL*, size_t> vertexAddressMap;
+    std::map<const FaceCL*,   size_t>   faceAddressMap;
+    std::map<const TetraCL*,  size_t>  tetraAddressMap;
+
+    template<class itT, class T>
+    void GetAddr (itT b, itT e, std::map<T, size_t> &m);
+
+    void CreateAddrMaps ();
+
+    // Writing-Routines
+    void WriteEdges    ();
+    void WriteFaces    ();
+    void WriteVertices ();
+    void WriteTetras   ();
+
+  public:
+    MGSerializationCL (MultiGridCL& mg, std::string path) : mg_(mg), path_(path) {}
+    void WriteMG ();
 };
 
 

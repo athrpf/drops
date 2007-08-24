@@ -130,7 +130,7 @@ class VertexCL
 // ===== Interface for refinement algorithm =====
 
   public:
-    inline  VertexCL (const Point3DCL& Point3D, Uint FirstLevel);               ///< create a vertex by coordinate and level
+    inline  VertexCL (const Point3DCL& Point3D, Uint FirstLevel, IdCL<VertexCL> id= IdCL<VertexCL>()); ///< create a vertex by coordinate and level; FileBuilderCL has to construct the _Id, too, thus it can optionally be set.
     inline  VertexCL (const VertexCL&);                                         ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     inline ~VertexCL ();                                                        ///< also deletes the recycle-bin and boundary information
 
@@ -210,7 +210,7 @@ class EdgeCL
 
 // ===== Interface for refinement =====
     ///< Create an edge
-    inline EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0= NoBndC, BndIdxT bnd1= NoBndC);
+    inline EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0= NoBndC, BndIdxT bnd1= NoBndC, short int MFR=0);
     EdgeCL (const EdgeCL&);                                                     ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     // default dtor
 
@@ -252,6 +252,7 @@ class EdgeCL
       { return IsOnBoundary() ? (_Bnd[1] == NoBndC ? _Bnd.begin()+1 : _Bnd.end() ) : _Bnd.begin(); }
     bool            IsInTriang    (Uint TriLevel)      const                                ///< check if edge can be found in a triangulation level
       { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && !IsRefined() ); }
+    const short int GetMFR        ()                   const { return _MFR; }
 
     // Debugging
     bool IsSane    (std::ostream&) const;                                                   ///< check for sanity
@@ -294,6 +295,7 @@ class FaceCL
     // Neighbors
     void LinkTetra  (const TetraCL*);                                              ///< link a tetra to face
     void UnlinkTetra(const TetraCL*);                                              ///< unlink a tetra of face
+    void SetNeighbor(Uint i, TetraCL* tp) {_Neighbors[i]=tp;}
 
     // Recycling
     void RecycleMe(VertexCL* vp0, const VertexCL* vp1, const VertexCL* vp2) const  ///< put a pointer to this face into the recycle-bin of the first vertex
@@ -313,6 +315,7 @@ class FaceCL
     inline const VertexCL* GetVertex(Uint)       const;                                 ///< get i'th vertex of the face
     inline const EdgeCL*   GetEdge  (Uint)       const;                                 ///< get i'th edge of the face
     inline const TetraCL*  GetTetra (Uint, Uint) const;                                 ///< get tetra of level and number
+    const TetraCL*         GetNeighbor(Uint i)   const { return _Neighbors[i];}         ///< get raw tetra-pointer from the array
 
     // Neighboring tetras
            const TetraCL* GetSomeTetra     () const { return _Neighbors[0]; }           ///< return pointer to first neighbor
@@ -378,7 +381,7 @@ class TetraCL
     UnknownHandleCL Unknowns;                                                   ///< access to unknowns on tetras
 
 // ===== Interface for refinement =====
-    inline  TetraCL (VertexCL*, VertexCL*, VertexCL*, VertexCL*, TetraCL*);     ///< constructor of verts and parent
+    inline  TetraCL (VertexCL*, VertexCL*, VertexCL*, VertexCL*, TetraCL*, IdCL<TetraCL> id= IdCL<TetraCL>());     ///< constructor of verts and parent; FileBuilderCL has to construct the _Id, too, thus it can optionally be set.
     TetraCL (const TetraCL&);                                                   ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     inline ~TetraCL ();
 
@@ -415,6 +418,9 @@ class TetraCL
     void BuildEdges        (EdgeContT&);                                         ///< build edges
     void BuildAndLinkFaces (FaceContT&);                                         ///< build and link faces
     void SetFace           (Uint, FaceCL*);                                      ///< set face
+    void SetEdge           (Uint, EdgeCL*);                                      ///< set edge
+    void SetRefMark        (Uint refmark) { _RefMark= refmark; }                 ///< set RefMark
+    void SetChild          (Uint, TetraCL*);                                     ///< set a child-pointer; if neccessary the _Children-Array is allocated first
 
 //
 // Public Interface
@@ -780,6 +786,7 @@ class MGBuilderCL
   public:
     // default ctor
     virtual ~MGBuilderCL() {}
+    virtual void buildBoundary(MultiGridCL* _MG) const = 0;
     virtual void build(MultiGridCL*) const = 0;
 };
 
@@ -819,8 +826,8 @@ inline const TetraCL* RecycleBinCL::FindTetra (const VertexCL* v1, const VertexC
 
 // ********** VertexCL **********
 
-inline VertexCL::VertexCL (const Point3DCL& Coord, Uint FirstLevel)
-    : _Id(), _Coord(Coord), _BndVerts(0), _Bin(0), _Level(FirstLevel),
+inline VertexCL::VertexCL (const Point3DCL& Coord, Uint FirstLevel, IdCL<VertexCL> id)
+    : _Id( id), _Coord(Coord), _BndVerts(0), _Bin(0), _Level(FirstLevel),
       _RemoveMark(false) {}
 
 
@@ -852,8 +859,8 @@ inline void VertexCL::BndSort ()
 
 // ********** EdgeCL **********
 
-inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, BndIdxT bnd1)
-    : _MidVertex(0), _MFR(0), _Level(Level), _RemoveMark(false)
+inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, BndIdxT bnd1, short int MFR)
+    : _MidVertex(0), _MFR(MFR), _Level(Level), _RemoveMark(false)
 {
     _Vertices[0]= vp0; _Vertices[1]= vp1;
     _Bnd[0]= bnd0; _Bnd[1]= bnd1;
@@ -938,8 +945,8 @@ inline const TetraCL* FaceCL::GetTetra (Uint Level, Uint side) const
 
 // T e t r a C L
 
-inline TetraCL::TetraCL (VertexCL* vp0, VertexCL* vp1, VertexCL* vp2, VertexCL* vp3, TetraCL* Parent)
-    : _Id(), _Level(Parent==0 ? 0 : Parent->GetLevel()+1),
+inline TetraCL::TetraCL (VertexCL* vp0, VertexCL* vp1, VertexCL* vp2, VertexCL* vp3, TetraCL* Parent, IdCL<TetraCL> id)
+    : _Id( id), _Level(Parent==0 ? 0 : Parent->GetLevel()+1),
       _RefRule(UnRefRuleC), _RefMark(NoRefMarkC),
       _Parent(Parent), _Children(0)
 {

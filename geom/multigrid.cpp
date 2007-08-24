@@ -326,6 +326,19 @@ TetraCL::SetFace(Uint f, FaceCL* fp)
     _Faces[f]= fp;
 }
 
+void
+TetraCL::SetEdge(Uint e, EdgeCL* ep)
+{
+    _Edges[e]= ep;
+}
+
+void
+TetraCL::SetChild(Uint c, TetraCL* cp)
+{
+    if (!_Children) _Children= new SArrayCL<TetraCL*, MaxChildrenC>;
+    (*_Children)[c]= cp;
+}
+
 // member functions for r e f i n e m e n t
 
 void TetraCL::RecycleReusables()

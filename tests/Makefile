@@ -9,7 +9,7 @@ DIR = tests
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
-        mass quad5 downwind quad5_2D interfaceP1FE
+        mass quad5 downwind quad5_2D interfaceP1FE serialization
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -113,6 +113,11 @@ quadbase: \
 
 globallist: \
     ../tests/globallist.o  ../misc/utils.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+serialization: \
+    ../tests/serialization.o  ../misc/utils.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../out/output.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 triang: \
