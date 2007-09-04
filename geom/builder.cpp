@@ -1,7 +1,7 @@
 //**************************************************************************
 // File:    builder.cpp                                                    *
 // Content: MGBuilderCL objects for some domains                           *
-// Author:  Joerg Peters, Volker Reichelt, IGPM RWTH Aachen                *
+// Author:  Joerg Peters, Volker Reichelt, Patrick Esser, IGPM RWTH Aachen *
 // Version: 0.1                                                            *
 // History: begin - October, 3 2000                                        *
 //                                                                         *
