@@ -218,19 +218,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         lset.AccumulateBndIntegral( curv);
         time.Stop();
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
-        double theta= C.stat_theta, nl= C.stat_nonlinear;
         time.Reset();
-        do
-        {
-            Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
-            MatrixCL mat;
-            mat.LinComb( 1, Stokes.A.Data, nl*theta, Stokes.N.Data);
-            cplN.Data-= (1-theta) * (Stokes.N.Data * Stokes.v.Data);
-            schurSolver.Solve( mat, Stokes.B.Data,
-                Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + nl*cplN.Data), Stokes.c.Data);
-        } while (schurSolver.GetIter() > 0);
+        schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
+            Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
         time.Stop();
-        std::cerr << "Solving NavStokes for initial velocities took "<< time.GetTime()<<" sec.\n";
+        std::cerr << "Solving Stokes for initial velocities took "<< time.GetTime()<<" sec.\n";
 
         if (C.IniCond==2)
             lset.Init( EllipsoidCL::DistanceFct);

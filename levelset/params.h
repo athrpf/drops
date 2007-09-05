@@ -104,9 +104,7 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
     //@{
     int    scheme;                              ///< time discretization scheme: 0=operator splitting, 1=theta-scheme
     double nonlinear;                           ///< magnitude of nonlinear term
-    double stat_nonlinear,                      ///< parameter for stationary solution
-           stat_theta,
-           ns_tol,                              ///< Tolerance of the Navier-Stokes-solver
+    double ns_tol,                              ///< Tolerance of the Navier-Stokes-solver
            ns_red;                              ///< The Oseen-residual is reduced by this factor (<1.0)
     int    ns_iter;                             ///< Maximal number of iterations of the solver
     //@}

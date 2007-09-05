@@ -26,8 +26,6 @@ Stokes {
 NavStokes {
   Nonlinear	=	1
   Scheme	=	1	# time integration: 0=FS op.splitting, 1=theta-scheme
-  NonlinearStat	=	0
-  ThetaStat	=	0.5
   Tol           =       1e-10
   Iter          =       20
   Reduction     =       0.1
