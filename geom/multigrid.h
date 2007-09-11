@@ -26,8 +26,11 @@
 namespace DROPS
 {
 
-// Classes for simplices in the triangulation
+// fwd decl
 class BoundaryCL;
+class PeriodicEdgesCL;
+
+// Classes for simplices in the triangulation
 class VertexCL;
 class EdgeCL;
 class FaceCL;
@@ -193,6 +196,8 @@ class VertexCL
 *******************************************************************/
 class EdgeCL
 {
+  friend class PeriodicEdgesCL;
+  
   public:
     typedef MG_VertexContT::LevelCont VertContT;                                    ///< container for vertices
     typedef MG_EdgeContT::LevelCont   EdgeContT;                                    ///< container for subedges
@@ -201,7 +206,8 @@ class EdgeCL
     SArrayCL<VertexCL*, 2> _Vertices;                                               // "left" and "right" vertex of the edge
     VertexCL*              _MidVertex;                                              // midvertex, if the edge is refined
     SArrayCL<BndIdxT, 2>   _Bnd;                                                    // an edge can be found on (max) two boundary-segments
-    short int              _MFR;                                                    // mark, if the edge should be/is refined (set by refinement-algo)
+    short int              _MFR;                                                    // mark, if the edge should be/is refined (set by refinement-algo), counts the number of reg. refined tetrahedra adjacent to this edge
+    short int              _localMFR;                                               // MFR!=localMFR iff edge is on periodic boundary
     Uint                   _Level : 8;                                              // level of the edge (according to owning tetras)
     bool                   _RemoveMark;                                             // mark for removement
 
@@ -226,9 +232,9 @@ class EdgeCL
 
     // Marks
     bool IsMarkedForRef       () const { return _MFR; }                         ///< check if this edge is marked for refinement
-    void IncMarkForRef        ()       { ++_MFR; }                              ///< increase mark for refinement count
-    void DecMarkForRef        ()       { --_MFR; }                              ///< decrease mark for refinement count
-    void ResetMarkForRef      ()       { _MFR= 0; }                             ///< remove mark for refinement
+    void IncMarkForRef        ()       { ++_MFR; ++_localMFR;}                  ///< increase mark for refinement count
+    void DecMarkForRef        ()       { --_MFR; --_localMFR;}                  ///< decrease mark for refinement count
+    void ResetMarkForRef      ()       { _MFR= 0; _localMFR= 0; }               ///< remove mark for refinement
     bool IsMarkedForRemovement() const { return _RemoveMark; }                  ///< check if edge is marked for removement
     void SetRemoveMark        ()       { _RemoveMark= true; }                   ///< set mark for removement
     void ClearRemoveMark      ()       { _RemoveMark= false; }                  ///< clear mark for removement
@@ -555,22 +561,45 @@ typedef  TriangCL<EdgeCL>   TriangEdgeCL;
 typedef  TriangCL<FaceCL>   TriangFaceCL;
 typedef  TriangCL<TetraCL>  TriangTetraCL;
 
+/// \brief Type of functions used to identify points on periodic boundaries,
+///     that share the same dof.
+typedef bool (*match_fun)(const Point3DCL&, const Point3DCL&);
+
+
 class BoundaryCL
+/// \brief stores boundary segments and information on periodic boundaries (if some exist)
 {
   friend class MGBuilderCL;
+  
+  public:
+    enum BndType {
+        Per1Bnd= 1,    ///< periodic boundary 1
+        Per2Bnd= 2,    ///< periodic boundary 2
+        OtherBnd= 0    ///< non-periodic boundary
+    };
+
+    typedef std::vector<BndSegCL*> SegPtrCont;
+    typedef std::vector<BndType>   BndTypeCont;
 
   private:
-    std::vector<BndSegCL*> _Bnd;
+    SegPtrCont           Bnd_;
+    mutable BndTypeCont* BndType_;
+    mutable match_fun    match_;
 
   public:
-    typedef std::vector<BndSegCL*> SegPtrCont;
-
-    // deletes the objects pointed to in _Boundary
+    BoundaryCL() : BndType_(0), match_(0) {}
+    /// deletes the objects pointed to in Bnd_ and BndType_
     ~BoundaryCL();
+    
+    const BndSegCL* GetBndSeg(BndIdxT idx)  const { return Bnd_[idx]; }
+    BndIdxT         GetNumBndSeg()          const { return Bnd_.size(); }
+    BndType         GetBndType(BndIdxT idx) const { return BndType_? (*BndType_)[idx] : OtherBnd; }
 
-    const BndSegCL* GetBndSeg(BndIdxT idx) const { return _Bnd[idx]; }
-    BndIdxT         GetNumBndSeg()         const { return _Bnd.size(); }
+    void SetPeriodicBnd( const BndTypeCont& type, match_fun) const;
+    bool Matching ( const Point3DCL& p, const Point3DCL& q) const { return match_(p,q); }
+    bool HasPeriodicBnd() const { return match_; }
 };
+
 
 class MultiGridCL
 {
@@ -710,6 +739,38 @@ class MultiGridCL
 };
 
 
+class PeriodicEdgesCL
+/// \brief handles edges on periodic boundaries.
+///
+/// This class is used by the refinement algorithm in MultiGridCL to accumulate the MFR counters on linked periodic edges.
+/// This assures that periodic boundaries are matching after refinement.
+{    
+  public:  
+    typedef std::pair<EdgeCL*,EdgeCL*>  IdentifiedEdgesT;
+    typedef std::list<IdentifiedEdgesT> PerEdgeContT;
+    typedef PerEdgeContT::iterator      iterator;
+    typedef MultiGridCL::EdgeIterator   EdgeIterator;
+
+  private:
+    PerEdgeContT      list_;
+    const BoundaryCL& bnd_;
+    
+    /// recompute data structure
+    void Recompute( EdgeIterator begin, EdgeIterator end);
+    /// accumulate local MFR counters of periodic edges and store the sum in the MFR counter
+    void Accumulate();
+    /// delete all data
+    void Shrink();
+    
+  public:
+    PeriodicEdgesCL( const BoundaryCL& bnd) : bnd_(bnd) {}
+    // standard dtor
+        
+    BoundaryCL::BndType GetBndType( const EdgeCL& e) const;
+    void AccumulateMFR( EdgeIterator begin, EdgeIterator end);    
+};
+    
+
 template <class SimplexT>
 struct TriangFillCL
 {
@@ -777,7 +838,7 @@ class MGBuilderCL
     MultiGridCL::EdgeCont&   GetEdges   (MultiGridCL* _MG) const { return _MG->_Edges; }
     MultiGridCL::FaceCont&   GetFaces   (MultiGridCL* _MG) const { return _MG->_Faces; }
     MultiGridCL::TetraCont&  GetTetras  (MultiGridCL* _MG) const { return _MG->_Tetras; }
-    BoundaryCL::SegPtrCont&  GetBnd     (MultiGridCL* _MG) const { return _MG->_Bnd._Bnd; }
+    BoundaryCL::SegPtrCont&  GetBnd     (MultiGridCL* _MG) const { return _MG->_Bnd.Bnd_; }
     void PrepareModify  (MultiGridCL* _MG) const { _MG->PrepareModify(); }
     void FinalizeModify (MultiGridCL* _MG) const { _MG->FinalizeModify(); }
     void AppendLevel    (MultiGridCL* _MG) const { _MG->AppendLevel(); }

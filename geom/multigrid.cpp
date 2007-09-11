@@ -942,10 +942,86 @@ void TetraCL::DebugInfo (std::ostream& os) const
 
 BoundaryCL::~BoundaryCL()
 {
-    for (SegPtrCont::iterator It=_Bnd.begin(); It!=_Bnd.end(); ++It)
+    for (SegPtrCont::iterator It=Bnd_.begin(); It!=Bnd_.end(); ++It)
         delete *It;
+    delete BndType_;
 }
 
+void BoundaryCL::SetPeriodicBnd( const BndTypeCont& type, match_fun match) const
+{
+    if (type.size()!=GetNumBndSeg())
+        throw DROPSErrCL("BoundaryCL::SetPeriodicBnd: inconsistent vector size!");
+    BndType_= new BndTypeCont(type);
+    match_= match;
+}
+
+BoundaryCL::BndType PeriodicEdgesCL::GetBndType( const EdgeCL& e) const
+{
+    BoundaryCL::BndType type= BoundaryCL::OtherBnd;
+    for (const BndIdxT *bndIt= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); bndIt!=end; ++bndIt)
+        type= std::max( type, bnd_.GetBndType(*bndIt));
+    return type;
+}   
+
+void PeriodicEdgesCL::Accumulate()
+{
+    // initialize MFR counters on all Per1 edges
+    for (iterator It( list_.begin()), End(list_.end()); It!=End; ++It)
+        It->first->_MFR= It->first->_localMFR;
+    // compute sum in Per1 MFR counters
+    for (iterator It( list_.begin()), End(list_.end()); It!=End; ++It)
+        It->first->_MFR+= It->second->_localMFR;
+    // copy Per1 MFR counter to Per2 MFR counter 
+    for (iterator It( list_.begin()), End(list_.end()); It!=End; ++It)
+        It->second->_MFR= It->first->_MFR;    
+}
+
+void PeriodicEdgesCL::Recompute( EdgeIterator begin, EdgeIterator end)
+{
+    typedef std::list<EdgeCL*> psetT;
+    psetT s1, s2;
+    // collect all objects on Per1/Per2 bnds in s1, s2 resp.
+    for (EdgeIterator it= begin; it!=end; ++it)
+        if (it->IsOnBoundary())
+        {
+            BoundaryCL::BndType type= GetBndType( *it);
+            if (type==BoundaryCL::Per1Bnd)
+                s1.push_back( &*it);
+            else if (type==BoundaryCL::Per2Bnd)
+                s2.push_back( &*it);
+        }
+    // now we have s1.size() <= s2.size()
+    // match objects in s1 and s2
+    Shrink();
+    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
+    {
+        // search corresponding object in s2
+        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; )
+            if (bnd_.Matching( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
+            {
+                // store pair in list_
+                list_.push_back( IdentifiedEdgesT( *it1, *it2));
+                // remove it2 from s2
+                s2.erase( it2++);
+            }
+            else it2++;
+    }
+    if (!s2.empty())
+        throw DROPSErrCL( "PeriodicEdgesCL::Update: Periodic boundaries do not match!");
+}
+
+void PeriodicEdgesCL::Shrink()
+{
+    list_.clear();
+}
+
+void PeriodicEdgesCL::AccumulateMFR( EdgeIterator begin, EdgeIterator end)
+{
+    if (!bnd_.HasPeriodicBnd()) return;
+    Recompute( begin, end);
+    Accumulate();
+    Shrink();
+}
 
 MultiGridCL::MultiGridCL (const MGBuilderCL& Builder)
     : _TriangVertex( *this), _TriangEdge( *this), _TriangFace( *this), _TriangTetra( *this)
@@ -1059,11 +1135,13 @@ void MultiGridCL::Refine()
 {
     const int tmpLastLevel( GetLastLevel() );
 
+    PeriodicEdgesCL perEdges( _Bnd);
     ClearTriangCache();
     PrepareModify();
     for (int Level=tmpLastLevel; Level>=0; --Level)
     {
         RestrictMarks(Level);
+        perEdges.AccumulateMFR( _Edges[Level].begin(), _Edges[Level].end());
         CloseGrid(Level);
     }
 

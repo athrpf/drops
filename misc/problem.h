@@ -452,11 +452,6 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 }
 
 
-/// \brief Type of functions used to identify points on periodic boundaries,
-///     that share the same dof.
-typedef bool (*match_fun)(const Point3DCL&, const Point3DCL&);
-
-
 /// \name Routines to number unknowns on periodic boundaries.
 /// These functions should not be used directly. CreateNumb is much more
 /// comfortable and as efficient.

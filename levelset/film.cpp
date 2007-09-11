@@ -71,7 +71,17 @@ double DistanceFct( const DROPS::Point3DCL& p)
     // wave length = 100 x film width
     const double wave= C.PumpAmpl*std::sin(2*M_PI*p[0]/C.mesh_size[0]),
         z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
-    return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI/2.));
+    return p[1] - C.Filmdicke * (1 + wave);
+//    return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI));
+}
+
+bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
+{ // matching y-z- or x-y-coords, resp.
+    const DROPS::Point3DCL d= fabs(p-q),
+                           L= fabs(C.mesh_size);
+    return (d[1] + d[2] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12)  // dy=dz=0 and dx=Lx
+      ||   (d[0] + d[1] < 1e-12 && std::abs( d[2] - L[2]) < 1e-12)  // dx=dy=0 and dz=Lz
+      ||   (d[1] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12 && std::abs( d[2] - L[2]) < 1e-12);  // dy=0 and dx=Lx and dz=Lz
 }
 
 double sigma;
@@ -79,15 +89,6 @@ double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
 
 namespace DROPS // for Strategy
 {
-
-bool periodic_xz( const Point3DCL& p, const Point3DCL& q)
-{ // matching y-z- or x-y-coords, resp.
-    const Point3DCL d= fabs(p-q),
-                    L= fabs(C.mesh_size);
-    return (d[1] + d[2] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12)  // dy=dz=0 and dx=Lx
-      ||   (d[0] + d[1] < 1e-12 && std::abs( d[2] - L[2]) < 1e-12)  // dx=dy=0 and dz=Lz
-      ||   (d[1] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12 && std::abs( d[2] - L[2]) < 1e-12);  // dy=0 and dx=Lx and dz=Lz
-}
 
 class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
 {
@@ -123,12 +124,12 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     IdxDescCL* pidx= &Stokes.pr_idx;
     IdxDescCL ens_idx( 1, 1);
 
-    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_xz);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_xz);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_xz);
-    CreateNumb( MG.GetLastLevel(), ens_idx, MG, NoBndDataCL<>());
-
     lset.Phi.SetIdx( lidx);
+    lset.Init( DistanceFct);
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_xz);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_xz, &lset);
+    CreateNumb( MG.GetLastLevel(), ens_idx, MG, NoBndDataCL<>());
 
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
@@ -146,7 +147,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     {
       case 1: // stationary flow
       {
-        lset.Init( DistanceFct);
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
@@ -168,7 +168,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 
       case 2: // Nusselt solution
       {
-        lset.Init( DistanceFct);
         Stokes.InitVel( &Stokes.v, Inflow);
       } break;
 
@@ -176,12 +175,13 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
       {
         ReadEnsightP2SolCL reader( MG);
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+        Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
+        Stokes.p.SetIdx( pidx); // Zero-vector for now.
+        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
       } break;
 
       default:
-        lset.Init( DistanceFct);
         Stokes.InitVel( &Stokes.v, ZeroVel);
     }
 
@@ -209,22 +209,27 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 //    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
-    typedef PCG_SsorCL SPcSolverT;
-    SPcSolverT spcsolver( SSORPcCL( 1.0), 100, 0.02, /*relative*/ true);
-    ISNonlinearPreCL<SPcSolverT> isnonlinpc( spcsolver, Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
+    typedef ISBBTPreCL SPcT;
+    SPcT ispc( Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data,
+            /*kA*/ 1./C.dt, /*kM*/ C.theta);
+//    typedef PCG_SsorCL SPcSolverT;
+//    SPcSolverT spcsolver( SSORPcCL( 1.0), 100, 0.02, /*relative*/ true);
+//    ISNonlinearPreCL<SPcSolverT> isnonlinpc( spcsolver, Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
     typedef PCG_SsorCL ASolverT;
     ASolverT Asolver( SSORPcCL( 1.0), 500, 0.02, /*relative*/true);
     typedef SolverAsPreCL<ASolverT> APcT;
     APcT velpc( Asolver);
 
 //    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-    typedef InexactUzawaCL<APcT, ISNonlinearPreCL<SPcSolverT>, APC_SYM> InexactUzawaNonlinear_CL;
-    InexactUzawaNonlinear_CL inexactUzawaSolver( velpc, isnonlinpc, C.outer_iter, C.outer_tol);
+    typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
+    OseenSolverT oseenSolver( velpc, ispc, C.outer_iter, C.outer_tol);
 
 //    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
 //        cpl( Stokes, lset, ISPschurSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaNonlinear_CL>
-        cpl( Stokes, lset, inexactUzawaSolver, C.theta);
+    CouplLevelsetStokes2PhaseCL<StokesProblemT, OseenSolverT>
+        cpl( Stokes, lset, oseenSolver, C.theta, /*withProjection*/ true);
+//    ProjThetaSchemeStokes2PhaseCL<StokesProblemT, OseenSolverT>
+//        cpl( Stokes, lset, oseenSolver, C.theta);
 
     cpl.SetTimeStep( C.dt);
 
@@ -290,12 +295,12 @@ void MarkFilm (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
 }
 
 
-void MarkHalf (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel= ~0)
+void MarkLower (DROPS::MultiGridCL& mg, double y_max, DROPS::Uint maxLevel= ~0)
 {
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
-        if ( GetBaryCenter(*It)[1] < C.mesh_size[1]/2. )
+        if ( GetBaryCenter(*It)[1] < y_max )
             It->SetRegRefMark();
     }
 }
@@ -336,6 +341,7 @@ int main (int argc, char** argv)
         std::cerr << "too many/few bnd conditions!\n"; return 1;
     }
     DROPS::BndCondT bc[6], bc_ls[6];
+    DROPS::BoundaryCL::BndTypeCont bndType;
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6];
 
     for (int i=0; i<6; ++i)
@@ -344,15 +350,15 @@ int main (int argc, char** argv)
         switch(C.BndCond[i])
         {
             case 'w': case 'W':
-                bc[i]= DROPS::WallBC;    bnd_fun[i]= &DROPS::ZeroVel;   break;
+                bc[i]= DROPS::WallBC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case 'i': case 'I':
-                bc[i]= DROPS::DirBC;     bnd_fun[i]= &Inflow; break;
+                bc[i]= DROPS::DirBC;     bnd_fun[i]= &Inflow;         bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case 'o': case 'O':
-                bc[i]= DROPS::OutflowBC; bnd_fun[i]= &DROPS::ZeroVel;   break;
+                bc[i]= DROPS::OutflowBC; bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case '1':
-                bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &DROPS::ZeroVel;   break;
+                bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per1Bnd); break;
             case '2':
-                bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel;   break;
+                bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
                 std::cerr << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
                 return 1;
@@ -369,10 +375,11 @@ int main (int argc, char** argv)
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
     */
 
-    MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls));
+    MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, 0.1);
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
+    bnd.SetPeriodicBnd( bndType, periodic_xz);
 
     sigma= prob.GetCoeff().SurfTens;
     DROPS::LevelsetP2CL lset( mg, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
@@ -385,9 +392,7 @@ int main (int argc, char** argv)
 
     for (int i=0; i<C.ref_flevel; ++i)
     {
-//        MarkFilm( mg);
-//        MarkHalf( mg);
-        MarkAll( mg);
+        MarkLower( mg, C.ref_width);
         mg.Refine();
     }
 
