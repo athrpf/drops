@@ -103,12 +103,15 @@ class CouplLevelsetStokes2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     
     SolverT&   _solver;
     VecDescCL* _old_curv;
+    VecDescCL  cplLB_;
+    MatDescCL  LB_;
+    bool       withProj_; // preceding projection step
     bool       _usematMG; // MG-hierachy for _mat
     MGDataCL*  _matMG;
     
   public:
     CouplLevelsetStokes2PhaseCL(StokesT& Stokes, LevelsetP2CL& ls,  
-        SolverT& solver, double theta= 0.5, bool usematMG= false, MGDataCL* matMG= 0);
+        SolverT& solver, double theta= 0.5, bool withProjection= false, bool usematMG= false, MGDataCL* matMG= 0);
     ~CouplLevelsetStokes2PhaseCL();
 
     void SetTimeStep( double dt) {
@@ -117,6 +120,7 @@ class CouplLevelsetStokes2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     }
 
     void InitStep();
+    void DoProjectionStep();
     void DoFPIter();
     void CommitStep();
 
@@ -137,21 +141,24 @@ class CouplLevelsetNavStokes2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     using _base::_curv;
     using _base::_rhs;
     using _base::_ls_rhs;
-    using _base::_mat; // 1./dt*M + theta*A
+    using _base::_mat; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
     using _base::_theta;
     using _base::_dt;
 
     SolverT&     _solver;
     VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
     VecDescCL    *_old_curv;
+    VecDescCL    cplLB_;
+    MatDescCL    LB_;
     const double _nonlinear;
+    bool         withProj_;
     const double stab_;
 
     void MaybeStabilize (VectorCL&);
 
   public:
     CouplLevelsetNavStokes2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                           SolverT& solver, double theta= 0.5, double nonlinear= 1, double stab= 0.0);
+                           SolverT& solver, double theta= 0.5, double nonlinear= 1, bool withProjection= false, double stab= 0.0);
     ~CouplLevelsetNavStokes2PhaseCL();
 
     void SetTimeStep( double dt, double theta= -1) {
@@ -161,6 +168,7 @@ class CouplLevelsetNavStokes2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     }
 
     void InitStep();
+    void DoProjectionStep();
     void DoFPIter();
     void CommitStep();
 

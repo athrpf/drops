@@ -144,9 +144,9 @@ void CouplLevelsetStokesCL<StokesT,SolverT>::DoStep( int maxFPiter)
 template <class StokesT, class SolverT>
 CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetStokes2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver,
-      double theta, bool usematMG, MGDataCL* matMG)
-: _base(Stokes, ls, theta), _solver(solver),
- _old_curv(new VelVecDescCL), _usematMG( usematMG), _matMG( usematMG ? matMG : new MGDataCL)
+      double theta, bool withProjection, bool usematMG, MGDataCL* matMG)
+: _base(Stokes, ls, theta), _solver(solver), _old_curv(new VelVecDescCL), 
+  withProj_( withProjection), _usematMG( usematMG), _matMG( usematMG ? matMG : new MGDataCL)
 {
     Update();
 }
@@ -170,7 +170,86 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::InitStep()
     _rhs=  _Stokes.A.Data * _Stokes.v.Data;
     _rhs*= (_theta-1.);
     _rhs+= (1./_dt)*(_Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data)
-         + (1.-_theta)*(_old_b->Data + _old_curv->Data);
+         + (1.-_theta)*_old_b->Data;
+         
+    if (withProj_)
+        DoProjectionStep();
+
+    _rhs+= (1.-_theta)*_old_curv->Data;
+}
+
+template <class StokesT, class SolverT>
+void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoProjectionStep()
+// perform preceding projection step
+{
+    std::cerr << "~~~~~~~~~~~~~~~~ Projection step\n";
+    TimerCL time;
+    // solve Stokes eq.
+    _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
+
+    if (_Stokes.UsesXFEM()) {
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        _Stokes.B.Data.clear();
+        _Stokes.prA.Data.clear();
+        _Stokes.prM.Data.clear();
+        _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+    }
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
+
+    _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
+    MatrixCL mat0;
+    mat0.LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
+    _mat->LinComb( 1., mat0, _theta*_dt, LB_.Data);
+    mat0.clear();
+    if (_usematMG) {
+        for(MGDataCL::iterator it= _matMG->begin(); it!=_matMG->end(); ++it) {
+            MGLevelDataCL& tmp= *it;
+            MatDescCL A, M;
+            A.SetIdx( &tmp.Idx, &tmp.Idx);
+            M.SetIdx( &tmp.Idx, &tmp.Idx);
+            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+            std::cerr << "DoProjectionStep: Create (incomplete) StiffMatrix for "
+                      << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
+            if(&tmp != &_matMG->back()) {
+                _Stokes.SetupMatrices1( &A, &M, _LvlSet, _Stokes.t);
+                tmp.A.Data.LinComb( 1./_dt, M.Data, _theta, A.Data);
+                // TODO: also introduce LB in linear combination. 
+                // SetupLB(..) does not work on grids coarser than that for the level set function.
+                // By the way: does SetupMatrices1(..) work for these coarser grids?
+            }
+        }
+    }
+    time.Stop();
+    std::cerr << "Discretizing Stokes/Curv took "<<time.GetTime()<<" sec.\n";
+    time.Reset();
+    _solver.Solve( *_mat, _Stokes.B.Data, _Stokes.v.Data, _Stokes.p.Data,
+                   VectorCL( _rhs + (1./_dt)*_cplM->Data + _theta*_b->Data + _old_curv->Data + (_theta*_dt)*cplLB_.Data), _Stokes.c.Data);
+    time.Stop();
+    std::cerr << "Solving Stokes: residual: " << _solver.GetResid()
+              << "\titerations: " << _solver.GetIter()
+              << "\ttime: " << time.GetTime() << "s\n";
+
+    // solve level set eq.
+    time.Reset();
+    time.Start();
+    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
+    _LvlSet.SetTimeStep( _dt);
+    time.Stop();
+    std::cerr << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
+    time.Reset();
+
+    _LvlSet.DoStep( _ls_rhs);
+    time.Stop();
+    std::cerr << "Solving Levelset took "<<time.GetTime()<<" sec.\n";
+    time.Reset();
 }
 
 template <class StokesT, class SolverT>
@@ -256,6 +335,7 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
     {
+        std::cerr << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
         DoFPIter();
         if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
@@ -276,6 +356,12 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
+    if (withProj_)
+    {
+        LB_.Data.clear();
+        LB_.SetIdx( vidx, vidx);
+        cplLB_.SetIdx( vidx);
+    }
     _Stokes.ClearMat();
     _LvlSet.ClearMat();
     // IndexDesc setzen
@@ -335,10 +421,10 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::Update()
 
 template <class StokesT, class SolverT>
 CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::CouplLevelsetNavStokes2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, double stab)
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, bool withProjection, double stab)
   : _base( Stokes, ls, theta), _solver( solver),
     _cplN( new VelVecDescCL), _old_cplN( new VelVecDescCL),
-    _old_curv(new VelVecDescCL), _nonlinear( nonlinear), stab_( stab)
+    _old_curv(new VelVecDescCL), _nonlinear( nonlinear), withProj_( withProjection), stab_( stab)
 {
     _mat= new MatrixCL();
     _rhs.resize( Stokes.b.RowIdx->NumUnknowns);
@@ -360,15 +446,15 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& 
 {
     if (stab_ == 0.0) return;
 
-    VelVecDescCL cplLB_( &_Stokes.vel_idx);
-    MatDescCL    LB_( &_Stokes.vel_idx, &_Stokes.vel_idx);
+    cplLB_.SetIdx( &_Stokes.vel_idx);
+    LB_.SetIdx( &_Stokes.vel_idx, &_Stokes.vel_idx);
     _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
 
     MatrixCL mat0( *_mat);
     _mat->clear();
     const double s= stab_*_theta*_dt;
     std::cerr << "Stabilizing with: " << s << '\n';
-    _mat->LinComb( 1., mat0, stab_*_theta*_dt, LB_.Data); 
+    _mat->LinComb( 1., mat0, s, LB_.Data); 
     b+= s*(LB_.Data*_Stokes.v.Data);
 }
 
@@ -384,7 +470,76 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::InitStep()
     _rhs=  _Stokes.A.Data * _Stokes.v.Data + _nonlinear*(_Stokes.N.Data * _Stokes.v.Data - _old_cplN->Data);
     _rhs*= (_theta-1.);
     _rhs+= (1./_dt)*(_Stokes.M.Data*_Stokes.v.Data - _old_cplM->Data)
-         + (1.-_theta)*(_old_b->Data + _old_curv->Data);
+         + (1.-_theta)*_old_b->Data;
+         
+    if (withProj_)
+        DoProjectionStep();
+
+    _rhs+= (1.-_theta)*_old_curv->Data;
+}
+
+template <class StokesT, class SolverT>
+void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoProjectionStep()
+// perform preceding projection step
+{
+    std::cerr << "~~~~~~~~~~~~~~~~ Projection step\n";
+
+    // solve level set eq.
+    TimerCL time;
+    time.Reset();
+    time.Start();
+
+    _curv->Clear();
+    _LvlSet.AccumulateBndIntegral( *_curv);
+
+    _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
+    if (_Stokes.UsesXFEM()) {
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        _Stokes.B.Data.clear();
+        _Stokes.prA.Data.clear();
+        _Stokes.prM.Data.clear();
+        _Stokes.SetupSystem2( &_Stokes.B, &_Stokes.c, _LvlSet, _Stokes.t);
+    }
+    _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
+    _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
+
+    time.Stop();
+    std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
+
+    time.Reset();
+    _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
+    MatrixCL mat0;
+    mat0.LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
+    _mat->LinComb( 1., mat0, _theta*_dt, LB_.Data);
+    mat0.clear();
+    VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*_b->Data + _old_curv->Data + (_theta*_dt)*cplLB_.Data);
+    _solver.Solve( *_mat, _Stokes.B.Data,
+        _Stokes.v, _Stokes.p.Data,
+        b2, *_cplN, _Stokes.c.Data, /*alpha*/ _theta*_nonlinear);
+    time.Stop();
+    std::cerr << "Solving NavierStokes took "<<time.GetTime()<<" sec.\n";
+
+    // solve level set eq.
+    time.Reset();
+    time.Start();
+    _LvlSet.SetupSystem( _Stokes.GetVelSolution() );
+    _LvlSet.SetTimeStep( _dt);
+
+    time.Stop();
+    std::cerr << "Discretizing Levelset took " << time.GetTime() << " sec.\n";
+    time.Reset();
+
+    _LvlSet.DoStep( _ls_rhs);
+
+    time.Stop();
+    std::cerr << "Solving Levelset took " << time.GetTime() << " sec.\n";
 }
 
 template <class StokesT, class SolverT>
@@ -464,7 +619,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
     {
-        std::cerr << "~~~~~~~~~~~~~~~~ FP-Iter " << i << '\n';
+        std::cerr << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
         DoFPIter();
         if (_solver.GetIter()==0 && _LvlSet.GetSolver().GetResid()<_LvlSet.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
@@ -485,6 +640,12 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
+    if (withProj_)
+    {
+        LB_.Data.clear();
+        LB_.SetIdx( vidx, vidx);
+        cplLB_.SetIdx( vidx);
+    }
     _mat->clear();
     _Stokes.ClearMat();
     _LvlSet.ClearMat();
@@ -520,7 +681,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
 
 
 // ==============================================
-//              CouplLevelsetNavStokesDefectCorr2PhaseCL
+//    CouplLevelsetNavStokesDefectCorr2PhaseCL
 // ==============================================
 
 template <class StokesT, class SolverT>
@@ -558,7 +719,7 @@ void CouplLevelsetNavStokesDefectCorr2PhaseCL<StokesT,SolverT>::MaybeStabilize (
     _mat->clear();
     const double s= stab_*_theta*_dt;
     std::cerr << "Stabilizing with: " << s << '\n';
-    _mat->LinComb( 1., mat0, stab_*_theta*_dt, LB_.Data); 
+    _mat->LinComb( 1., mat0, s, LB_.Data); 
     b+= s*(LB_.Data*_Stokes.v.Data);
 }
 
@@ -578,10 +739,10 @@ void CouplLevelsetNavStokesDefectCorr2PhaseCL<StokesT,SolverT>::InitStep()
 
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
     if (_Stokes.UsesXFEM()) {
-	_Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	_Stokes.UpdatePressure( &_Stokes.p);
-	_Stokes.c.SetIdx( &_Stokes.pr_idx);
-	_Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
         // is not save for P1X-elements.
         _Stokes.B.Data.clear();
@@ -621,7 +782,7 @@ void CouplLevelsetNavStokesDefectCorr2PhaseCL<StokesT,SolverT>::DoFPIter()
     std::cerr << "\tresidual norms: v: " << norm( v_d) << "\tp: " << norm( p_d)
               << "\tphi: " << norm( phi_d) << '\n';
     time.Reset();
-
+// TODO: Why cpl_XXX in defect correction? bnd values should be zero!!
     time.Start();
 //    VectorCL phi( _LvlSet.Phi.Data);
 //    _LvlSet.Phi.Data= 0.;
@@ -639,10 +800,10 @@ void CouplLevelsetNavStokesDefectCorr2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     _Stokes.SetupSystem1( &_Stokes.A, &_Stokes.M, _b, _b, _cplM, _LvlSet, _Stokes.t);
     if (_Stokes.UsesXFEM()) {
-	_Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
-	_Stokes.UpdatePressure( &_Stokes.p);
-	_Stokes.c.SetIdx( &_Stokes.pr_idx);
-	_Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
+        _Stokes.UpdateXNumbering( &_Stokes.pr_idx, _LvlSet, /*NumberingChanged*/ false);
+        _Stokes.UpdatePressure( &_Stokes.p);
+        _Stokes.c.SetIdx( &_Stokes.pr_idx);
+        _Stokes.B.SetIdx( &_Stokes.pr_idx, &_Stokes.vel_idx);
         _Stokes.prA.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         _Stokes.prM.SetIdx( &_Stokes.pr_idx, &_Stokes.pr_idx);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
@@ -667,7 +828,7 @@ void CouplLevelsetNavStokesDefectCorr2PhaseCL<StokesT,SolverT>::DoFPIter()
     VelVecDescCL w( _Stokes.v.RowIdx);
     VectorCL q( _Stokes.p.Data.size());
     MaybeStabilize ( v_d);
-    _solver.SetBaseVel( &_Stokes.v.Data);
+    _solver.SetBaseVel( &_Stokes.v.Data); // ?
     _solver.Solve( *_mat, _Stokes.B.Data, w, q,
         v_d, *_cplN, p_d, /*alpha*/ _theta*_nonlinear);
     _Stokes.v.Data-= w.Data;
@@ -700,11 +861,11 @@ void CouplLevelsetNavStokesDefectCorr2PhaseCL<StokesT,SolverT>::DoStep( int maxF
             std::cerr << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
-    VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data));
-    VectorCL v_d( 1./_dt*(_Stokes.M.Data*_Stokes.v.Data) + _theta*(_Stokes.A.Data*_Stokes.v.Data )
-                  + _theta*((_Stokes.N.Data)*_Stokes.v.Data - _cplN->Data)
-                  + transp_mul( _Stokes.B.Data, _Stokes.p.Data) - b2);
-    std::cerr << " Impulsdefekt: " << norm( v_d) << '\n';
+        VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data));
+        VectorCL v_d( 1./_dt*(_Stokes.M.Data*_Stokes.v.Data) + _theta*(_Stokes.A.Data*_Stokes.v.Data )
+                      + _theta*((_Stokes.N.Data)*_Stokes.v.Data - _cplN->Data)
+                      + transp_mul( _Stokes.B.Data, _Stokes.p.Data) - b2);
+        std::cerr << " Impulsdefekt: " << norm( v_d) << '\n';
     }
     CommitStep();
 }

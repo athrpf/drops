@@ -350,22 +350,22 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     CouplLevelsetStokes2PhaseCL<StokesProblemT, PMinresSP_Diag_CL>
         cpl3( Stokes, lset, stokessolver, C.theta);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur2_MG_CL>
-        cpl4( Stokes, lset, ISPschur2SolverMG, C.theta,
+        cpl4( Stokes, lset, ISPschur2SolverMG, C.theta, false,
         C.StokesMethod==schurMG, &VelMGPreData);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaMG_CL>
-        cpl5( Stokes, lset, inexactUzawaSolverMG, C.theta,
+        cpl5( Stokes, lset, inexactUzawaSolverMG, C.theta, false,
         C.StokesMethod==inexactuzawaMG, &VelMGPreData);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, MyPMinresSP_Diag_CL>
-        cpl6( Stokes, lset, stokessolverMG, C.theta,
+        cpl6( Stokes, lset, stokessolverMG, C.theta, false,
         C.StokesMethod==minresMG, &VelMGPreData);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur2_fullMG_CL>
-        cpl7( Stokes, lset, ISPschur2SolverfullMG, C.theta,
+        cpl7( Stokes, lset, ISPschur2SolverfullMG, C.theta, false,
         C.StokesMethod==schurfullMG, &VelMGPreData);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaFullMG_CL>
-        cpl8( Stokes, lset, inexactUzawaSolverFullMG, C.theta,
+        cpl8( Stokes, lset, inexactUzawaSolverFullMG, C.theta, false,
         C.StokesMethod==inexactuzawafullMG, &VelMGPreData);
     CouplLevelsetStokes2PhaseCL<StokesProblemT, MyPMinresSP_fullMG_CL>
-        cpl9( Stokes, lset, stokessolverfullMG, C.theta,
+        cpl9( Stokes, lset, stokessolverfullMG, C.theta, false,
         C.StokesMethod==minresfullMG, &VelMGPreData);
 
     switch (C.StokesMethod) {
