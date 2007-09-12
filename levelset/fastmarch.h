@@ -34,7 +34,7 @@ class FastMarchCL
     VectorCL                   Old_;                    // Old values of the levelset function before reparametrization
     VectorBaseCL<IdxT>         map_;
 
-    void   InitClose();                                 // Mark verts next to finished verts as close update them. Initialize also neigh_
+    void   InitClose();                                 // Mark verts next to finished verts as close and update them. Initialize also neigh_
     IdxT   FindTrial() const;                           // Find vert with minimal value in Close_
     void   Update( const IdxT);                         // Update value on a vert and put this vert into Close_
     double CompValueProj( IdxT, int num, const IdxT upd[3]) const;
@@ -50,12 +50,12 @@ class FastMarchCL
     FastMarchCL( MultiGridCL& mg, VecDescCL& v)
       : MG_(mg), v_(v), size_(v.RowIdx->NumUnknowns), Typ_(Far, size_) {}
 
-    /// \brief Finds the zero level of the levelset function and handle verts aroud it.
+    /// \brief Finds the zero level of the levelset function and handle verts around it.
     void InitZero( bool ModifyZero= true);
-    /// \brief Restore signes of the levelset function according to old signes.
+    /// \brief Restore signs of the levelset function according to old signs.
     void RestoreSigns();
     /// \brief Reparametrization of the levelset function with the fast marching algorithm.
-    /// This function also calls InitZero and RestorSigns.
+    /// This function also calls InitZero and RestoreSigns.
     void Reparam( bool ModifyZero= true);
 
     /// \name variants for periodic boundaries
