@@ -39,10 +39,11 @@ class ZeroFlowCL
         { DROPS::Point3DCL ret(0.0); return ret; }
     DROPS::SmoothedJumpCL rho, mu;
     DROPS::Point3DCL g;
+    const double SurfTens;
 
     ZeroFlowCL()
       : rho( DROPS::JumpCL( 1, 10), DROPS::H_sm, sm_eps),
-         mu( DROPS::JumpCL( 1, 2), DROPS::H_sm, sm_eps)
+         mu( DROPS::JumpCL( 1, 2), DROPS::H_sm, sm_eps), SurfTens(0.)
     { g[2]= -9.81; }
 };
 
