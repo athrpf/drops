@@ -1122,6 +1122,7 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
                 && edgep->Unknowns.Exist( idx)
                 && !edgep->Unknowns.Exist( old_idx)) { // not just a copy on the edge itself
                 const Uint chedgeinparent= childdata.Edges[chedge];
+                if (IsParentEdge( chedgeinparent)) continue; // These were sub-edges, sub-in-par-face-edges or space-diagonals on some coarser level and thus already handled.
                 if (IsSubEdge( chedgeinparent)) { // Sub-Edges of parent edges
                     const Uint paredge= ParentEdge( chedgeinparent);
                     const EdgeCL* const paredgep= t.GetEdge( paredge);
