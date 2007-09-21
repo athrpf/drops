@@ -169,9 +169,9 @@ class InterfacePatchCL
     ///@{
     int    GetSign( Uint DoF)   const { return sign_[DoF]; }   ///< returns -1/0/1
     double GetPhi( Uint DoF)    const { return PhiLoc_[DoF]; } ///< returns value of level set function
-    bool   Intersects()         const                          ///  returns wether patch exists (i.e. interface intersects tetra)
+    bool   Intersects()         const                          ///  returns whether patch exists (i.e. interface intersects tetra)
       { for(int i=1; i<10; ++i) if (sign_[0]!=sign_[i]) return true; return false; }
-    bool   IntersectsInterior() const                          ///  returns wether patch exists, which is not subset of a face
+    bool   IntersectsInterior() const                          ///  returns whether patch exists, which is not subset of a face
       { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
     bool   ComputeForChild( Uint ch);                          ///< returns true, if a patch exists for this child
     bool   ComputeCutForChild( Uint ch);                       ///< returns true, if a patch exists for this child
