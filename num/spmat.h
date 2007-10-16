@@ -364,7 +364,7 @@ public:
 
     void resize (size_t rows, size_t cols, size_t nz)
         { IncrementVersion(); _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
-    void clear() { IncrementVersion(); resize(0,0,0); }
+    void clear() { resize(0,0,0); }
 
     VectorBaseCL<T> GetDiag() const;
 
