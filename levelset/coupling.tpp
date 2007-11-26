@@ -204,6 +204,9 @@ void CouplLevelsetStokes2PhaseCL<StokesT,SolverT>::DoProjectionStep()
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
+    // The MatrixBuilderCL's method of determining when to reuse the pattern
+    // is not save for matrix LB_
+    LB_.Data.clear();
     _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
     MatrixCL mat0;
     mat0.LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
@@ -448,6 +451,9 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& 
 
     cplLB_.SetIdx( &_Stokes.vel_idx);
     LB_.SetIdx( &_Stokes.vel_idx, &_Stokes.vel_idx);
+    // The MatrixBuilderCL's method of determining when to reuse the pattern
+    // is not save for matrix LB_
+    LB_.Data.clear();
     _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
 
     MatrixCL mat0( *_mat);
@@ -510,16 +516,20 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoProjectionStep()
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
 
-    time.Stop();
-    std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
-
-    time.Reset();
+    // The MatrixBuilderCL's method of determining when to reuse the pattern
+    // is not save for matrix LB_
+    LB_.Data.clear();
     _Stokes.SetupLB( &LB_, &cplLB_, _LvlSet, _Stokes.t);
     MatrixCL mat0;
     mat0.LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     _mat->LinComb( 1., mat0, _dt, LB_.Data);
     mat0.clear();
     VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*_b->Data + _old_curv->Data + _dt*cplLB_.Data);
+
+    time.Stop();
+    std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
+
+    time.Reset();
     _solver.Solve( *_mat, _Stokes.B.Data,
         _Stokes.v, _Stokes.p.Data,
         b2, *_cplN, _Stokes.c.Data, /*alpha*/ _theta*_nonlinear);
@@ -586,14 +596,13 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::DoFPIter()
     }
     _Stokes.SetupPrStiff( &_Stokes.prA, _LvlSet);
     _Stokes.SetupPrMass( &_Stokes.prM, _LvlSet);
-
-    time.Stop();
-    std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
-    time.Reset();
-
     _mat->LinComb( 1./_dt, _Stokes.M.Data, _theta, _Stokes.A.Data);
     VectorCL b2( _rhs + (1./_dt)*_cplM->Data + _theta*(_curv->Data + _b->Data));
     MaybeStabilize( b2);
+    time.Stop();
+    std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
+
+    time.Reset();
     _solver.Solve( *_mat, _Stokes.B.Data,
         _Stokes.v, _Stokes.p.Data,
         b2, *_cplN, _Stokes.c.Data, /*alpha*/ _theta*_nonlinear);
@@ -640,7 +649,7 @@ void CouplLevelsetNavStokes2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
-    if (withProj_)
+    if (withProj_ || stab_!=0.0)
     {
         LB_.Data.clear();
         LB_.SetIdx( vidx, vidx);

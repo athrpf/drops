@@ -979,6 +979,7 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
             while ( iB < B.row_beg(row) )
                 _val[i++]=coeffB*B._val[iB++];
         }
+        Assert( i==_val.size() && iA==A._val.size() && iB==B._val.size(), "LinComb: reuse of matrix pattern failed", DebugNumericC);
     }
     else
     {
