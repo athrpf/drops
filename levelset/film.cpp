@@ -69,8 +69,8 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     // wave length = 100 x film width
-    const double wave= C.PumpAmpl*std::sin(2*M_PI*p[0]/C.mesh_size[0]),
-        z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
+    const double wave= C.PumpAmpl*std::sin(2*M_PI*p[0]/C.mesh_size[0]); //,
+        // z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
     return p[1] - C.Filmdicke * (1 + wave);
 //    return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI));
 }
