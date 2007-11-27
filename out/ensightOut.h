@@ -210,6 +210,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     if(binary_)
     {
         char buffer[80];
+        std::memset(buffer, 0, 80);
         std::strcpy(buffer,"C Binary");     //writing of all necessary information: Binary header
         os.write(buffer,80);
         std::strcpy(buffer,"DROPS geometry file: ");         //description line 1
@@ -265,11 +266,8 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 
         std::strcpy(buffer,"part 1");                          //part no. line
         os.write(buffer,80);
-        int b=0;
-        char buff[20];
-        for(b=0;b<=20;b++)                                //part description line
-            buff[b]=_geom[b];
-        std::strcpy(buffer,buff);
+
+        std::strncpy( buffer, _geom.c_str(), 20);
         os.write(buffer,80);
         std::strcpy(buffer,"tetra4");                          // element 1 tetrahedron with 4 nodes each
         os.write(buffer,80);
@@ -383,6 +381,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
 {
     const Uint lvl= _idx->TriangLevel;
     char buffer[80];
+    std::memset(buffer,0,80);
     showFloat sFlo;
 
     if ( t!=-1)
@@ -451,6 +450,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
 {
     const Uint lvl= _idx->TriangLevel;
     char buffer[80];
+    std::memset(buffer,0,80);
     showFloat sFlo;
 
     if ( t!=-1)
