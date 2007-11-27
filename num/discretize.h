@@ -384,8 +384,10 @@ class Quad5CL: public GridFunctionCL<T>
     Quad5CL(): base_type( value_type(), NumNodesC) { MaybeInitNodes(); }
     Quad5CL(const value_type& t): base_type( t, NumNodesC) { MaybeInitNodes(); }
 
-    Quad5CL(const TetraCL&, instat_fun_ptr, double= 0.0);
+    Quad5CL(const TetraCL&, instat_fun_ptr, double= 0.0, const BaryCoordCL* const= Quad5CL::Node);
+    Quad5CL(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad5CL::Node);
     Quad5CL(const LocalP2CL<value_type>&);
+    Quad5CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
       Quad5CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
     template <class PFunT>
@@ -398,17 +400,24 @@ class Quad5CL: public GridFunctionCL<T>
 DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
 
     inline self_&
-    assign(const TetraCL&, instat_fun_ptr , double= 0.0);
+    assign(const TetraCL&, instat_fun_ptr , double= 0.0, const BaryCoordCL* const= Quad5CL::Node);
     inline self_&
-    assign(const LocalP1CL<value_type>&);
+    assign(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad5CL::Node);
     inline self_&
     assign(const LocalP2CL<value_type>&);
+    inline self_&
+    assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
       inline self_&
       assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
     template <class PFunT>
       inline self_&
       assign(const TetraCL&, const PFunT&, double= 0.0);
+
+    /// M contains the barycentric coordinates of a tetrahedron; the
+    /// return-value is a new[]-allocated array of the quadrature-points
+    /// for this tetrahedron.
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M);
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
@@ -729,7 +738,7 @@ inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
 *
 ********************************************************************************/
 
-inline double VolFrac( BaryCoordCL** bp)
+inline double VolFrac(BaryCoordCL** bp)
 {
     double M[3][3];
     for (int i=0; i<3; ++i)
@@ -738,6 +747,17 @@ inline double VolFrac( BaryCoordCL** bp)
     return std::abs( M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
                    - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
                    + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]) );
+}
+
+inline double VolFrac(const SArrayCL<BaryCoordCL,4>& bp)
+{
+    double M[3][3];
+    for (int i=0; i<3; ++i)
+        for (int j=0; j<3; ++j)
+            (M[i][j]= (bp[j+1])[i+1]-(bp[0])[i+1]);
+    return std::abs( M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+            - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+            + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]) );
 }
 
 inline double P1DiscCL::Quad(const TetraCL& s, instat_scalar_fun_ptr coeff, double t)

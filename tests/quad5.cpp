@@ -6,6 +6,7 @@
 #include "num/discretize.h"
 #include "num/fe.h"
 #include "misc/problem.h"
+#include <iomanip>
 
 using namespace DROPS;
 
@@ -34,6 +35,12 @@ Point3DCL fv(const SVectorCL<3>& p)
     return Point3DCL(p[0]*p[0] +10.*p[1]*p[1] +100.*p[2]*p[2]
                     +1000.*p[0]*p[1] +10000.*p[0]*p[2] +100000.*p[1]*p[2]);
 }
+
+double hsq (const Point3DCL& p, double)
+{
+    return pow(p.norm_sq(),1); // p[0];
+}
+
 
 void MarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 {
@@ -231,6 +238,46 @@ void TestP2Mass()
 }
 
 
+void TestTransform()
+{
+    std::cerr << "\n\nTestTransform():\n";
+    Uint rule = 0; // Choose a refinement rule
+    double absdet=0.;
+    double intval=0.;
+    Quad5CL<> qf;
+    TetraBuilderCL builder(rule);
+    MultiGridCL mg( builder);
+
+    DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
+        absdet= sit->GetVolume()*6.0;
+        qf.assign( *sit, &hsq);
+        intval+= qf.quad( absdet);
+        }
+    std::cerr << std::setprecision(10) <<  "Integral: " << intval << '\n';
+
+    SArrayCL<BaryCoordCL,4> M;
+    for (Uint i=0; i<4; ++i)
+        M[i][i]=2.;
+    M[0][0]=1.; M[1][0]= M[2][0]= M[3][0]= -1.;
+    
+/*    M[1][1]=1.;
+    M[1][2]=2.;
+    M[2][2]=3.;
+    M[3][1]=1.;
+    M[3][2]=1.;
+    M[3][3]=1.;*/
+    BaryCoordCL* nodes;
+    nodes= qf.TransformNodes( M);
+    intval=0.;
+    DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
+        absdet= sit->GetVolume()*6.0*8.0;
+
+        qf.assign( *sit, &hsq, 0.0, nodes);
+        intval+= qf.quad( absdet);
+    }
+    std::cerr << "Integral: " << intval << '\n';
+}
+
 
 int main ()
 {
@@ -283,6 +330,8 @@ int main ()
     SetFun( vd3, mg, fv);
     NewVQuadT vq1, vq2;
     std::cout << "dot: "<< dot( vq1, vq2)[1] << std::endl;
+
+    TestTransform();
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }

@@ -358,23 +358,33 @@ template<class T>
     HaveNodes= true;
 }
 
+template<class T>
+  BaryCoordCL* Quad5CL<T>::TransformNodes (const SArrayCL<BaryCoordCL,4>& M)
+{
+    BaryCoordCL* tN = new BaryCoordCL[NumNodesC];
+    for (Uint i=0; i< NumNodesC; ++i)
+        //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+        for (Uint k=0; k<4; ++k)
+            tN[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
+                    + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
+    return tN;
+}
 
 template<class T>
   inline Quad5CL<T>&
-  Quad5CL<T>::assign(const TetraCL& s, instat_fun_ptr f , double t)
+  Quad5CL<T>::assign(const TetraCL& s, instat_fun_ptr f , double t, const BaryCoordCL* const node)
 {
-    (*this)[0]= f( GetBaryCenter( s), t);
-    for (Uint i= 1; i < NumNodesC; ++i)
-        (*this)[i]= f( GetWorldCoord( s, Node[i]), t);
+    for (Uint i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f( GetWorldCoord( s, node[i]), t);
     return *this;
 }
 
 template<class T>
   inline Quad5CL<T>&
-  Quad5CL<T>::assign(const LocalP1CL<value_type>& f)
+  Quad5CL<T>::assign(const LocalP1CL<value_type>& f, const BaryCoordCL* const node)
 {
     for (size_t i= 0; i < NumNodesC; ++i)
-        (*this)[i]= f( Node[i]);
+        (*this)[i]= f( node[i]);
     return *this;
 }
 
@@ -385,6 +395,15 @@ template<class T>
     (*this)= f[0]*P2_Val[0];
     for (size_t i= 1; i < 10; ++i)
         (*this)+= f[i]*P2_Val[i];
+    return *this;
+}
+
+template<class T>
+  inline Quad5CL<T>&
+  Quad5CL<T>::assign(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
+{
+    for (size_t i= 0; i < NumNodesC; ++i)
+        (*this)[i]= f( node[i]);
     return *this;
 }
 
@@ -420,11 +439,19 @@ template<class T>
 
 template<class T>
   Quad5CL<T>::Quad5CL(const TetraCL& s,
-      instat_fun_ptr f, double t)
+                      instat_fun_ptr f, double t, const BaryCoordCL* const node)
   : base_type( value_type(), NumNodesC)
 {
     MaybeInitNodes();
-    this->assign( s, f, t);
+    this->assign( s, f, t, node);
+}
+
+template<class T>
+  Quad5CL<T>::Quad5CL(const LocalP1CL<value_type>& f, const BaryCoordCL* const node)
+    : base_type( value_type(), NumNodesC)
+{
+    MaybeInitNodes();
+    this->assign( f, node);
 }
 
 template<class T>
@@ -433,6 +460,14 @@ template<class T>
 {
     MaybeInitNodes();
     this->assign( f);
+}
+
+template<class T>
+  Quad5CL<T>::Quad5CL(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
+    : base_type( value_type(), NumNodesC)
+{
+    MaybeInitNodes();
+    this->assign( f, node);
 }
 
 template<class T>
