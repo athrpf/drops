@@ -945,6 +945,12 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     P2DiscCL::GetGradientsOnRef( GradRefLP1);
 
     InterfacePatchCL patch;
+    BaryCoordCL* nodes;
+    LocalP2CL<>p2[10];
+    double intpos, intneg;
+    for (int k=0; k<10; ++k)
+        p2[k][k]=1.;
+    Quad5CL<> q[10][48]; //there exists maximally 8*6=48 SubTetras
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -1012,17 +1018,27 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                     rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
                 }
             }
-            const double Vol= absdet/6.,
-                Vol_n= Vol - Vol_p, 
-                rho_avg= (rho_p*Vol_p + rho_n*Vol_n)/Vol;  // average of rho on current tetra
-            
+            patch.ComputeSubTets();
+            for (Uint k=0; k<patch.GetNumTetra(); ++k)
+            {
+                nodes = Quad5CL<>::TransformNodes(patch.GetTetra(k));
+                for (Uint j=0; j<10; ++j)
+                    q[j][k].assign(p2[j], nodes);
+                delete[] nodes;
+            }
             for (int i=0; i<10; ++i)
                 for (int j=0; j<=i; ++j) {
                     // M
-                    // FIXME: Ad hoc integration
-                    const double cM= rho_avg*P2DiscCL::GetMass( j, i)*absdet;
-                    coupM[i][j]= cM;
-                    coupM[j][i]= cM;
+                    intpos = 0.;
+                    intneg = 0.;
+                    for (Uint k=0; k<patch.GetNumTetra(); k++)
+                        if (k<patch.GetNumNegTetra())
+                            intneg += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                        else
+                            intpos += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                    coupM[i][j]= rho_p*intpos + rho_n*intneg;
+                    coupM[j][i]= rho_p*intpos + rho_n*intneg;
+
                     // A
                     aij= dot( GradLP2[i], GradLP2[j]);
                     for (int k= 0; k < 3; ++k)
@@ -1191,6 +1207,120 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
     std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
 }
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1v2( MatDescCL* A,
+    MatDescCL* M, const LevelsetP2CL& lset, double t) const
+// Set up matrices A, M (depending on phase bnd)
+{
+    const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
+    MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel),
+                    mM( &M->Data, num_unks_vel, num_unks_vel);
+    const Uint lvl= A->GetRowLevel();
+    LocalNumbP2CL locn;
+
+    std::cerr << "entering SetupMatrices1v2: " << num_unks_vel << " vels. ";
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
+    Quad2CL<double> rho, mu, Phi, kreuzterm;
+    LocalP2CL<> ls_loc;
+
+    SMatrixCL<3,3> T;
+
+    double coupA[10][10], coupM[10][10];
+    double det, absdet;
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    P2DiscCL::GetGradientsOnRef( GradRef);
+
+    InterfacePatchCL patch;
+    BaryCoordCL* nodes;
+    LocalP2CL<>p2[10];
+    double intpos, intneg;
+    for (int k=0; k<10; ++k)
+        p2[k][k]=1.;
+    Quad5CL<> q[10][48]; //there exist maximally 48 SubTetras
+    const double rho_p= _Coeff.rho( 1.0),
+                 rho_n= _Coeff.rho( -1.0);
+
+    for (MultiGridCL::const_TriangTetraIteratorCL
+            sit= const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
+            send= const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
+            sit != send; ++sit) {
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        absdet= std::fabs( det);
+        // Collect information about Numbering of unknowns and boundary conditions.
+        locn.assign( *sit, *A->RowIdx, _BndData.Vel);
+        ls_loc.assign( *sit, ls, t); // needed for restrictions
+        Phi.assign( ls_loc);
+        // rho = rho( Phi),    mu= mu( Phi)
+        rho=   Phi;
+        rho.apply( _Coeff.rho);
+        mu= Phi;
+        mu.apply( _Coeff.mu);
+
+        // rhs = f + rho*g
+        rhs.assign( *sit, _Coeff.f, t);
+        rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
+
+        patch.Init(*sit, ls_loc);
+        patch.ComputeSubTets();
+        for (Uint k=0; k<patch.GetNumTetra(); ++k)
+        {
+            nodes = Quad5CL<>::TransformNodes(patch.GetTetra(k));
+            for (Uint j=0; j<10; ++j)
+                q[j][k].assign(p2[j], nodes);
+            delete[] nodes;
+        }
+
+        // compute all couplings between HatFunctions on edges and verts
+        for (int i=0; i<10; ++i)
+            for (int j=0; j<=i; ++j)
+            {
+                // dot-product of the gradients
+                const double cA= Quad2CL<>(dot( Grad[i], Grad[j]) * mu).quad( absdet);
+                coupA[i][j]= cA;
+                coupA[j][i]= cA;
+
+                intpos = 0.;
+                intneg = 0.;
+                for (Uint k=0; k<patch.GetNumTetra(); k++)
+                    if (patch.GetNumNegTetra()>k)
+                        intneg += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                    else
+                        intpos += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                coupM[i][j]= rho_p*intpos + rho_n*intneg;
+                coupM[j][i]= rho_p*intpos + rho_n*intneg;
+            }
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+            if (locn.WithUnknowns( i)) { // vert/edge i is not on a Dirichlet boundary
+                for(int j=0; j<10; ++j) {
+                    if (locn.WithUnknowns( j)) { // vert/edge j is not on a Dirichlet boundary
+                        mA( locn.num[i],   locn.num[j]  )+= coupA[j][i];
+                        mA( locn.num[i]+1, locn.num[j]+1)+= coupA[j][i];
+                        mA( locn.num[i]+2, locn.num[j]+2)+= coupA[j][i];
+                        for (int k=0; k<3; ++k)
+                            for (int l=0; l<3; ++l) {
+                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
+                                for (size_t m=0; m<kreuzterm.size();  ++m)
+                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
+                                mA( locn.num[i]+k, locn.num[j]+l)+= kreuzterm.quad( absdet);
+                            }
+                        mM( locn.num[i],   locn.num[j]  )+= coupM[j][i];
+                        mM( locn.num[i]+1, locn.num[j]+1)+= coupM[j][i];
+                        mM( locn.num[i]+2, locn.num[j]+2)+= coupM[j][i];
+                    }
+                }
+            }
+    }
+
+    mA.Build();
+    mM.Build();
+    std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
+              << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
+}
+
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const
