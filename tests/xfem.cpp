@@ -11,6 +11,7 @@
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include <fstream>
+#include <iomanip>
 
 using namespace DROPS;
 
@@ -23,6 +24,8 @@ inline int iSign( double x)
 double phasebnd (const Point3DCL& p)
 {
     return p[1] + p[2] - 0.05;
+//    return p[1] + p[2] - 0.55;
+//    return p[0] + p[1] - 0.5;
 }
 
 double f1 (const Point3DCL& p, double)
@@ -143,15 +146,29 @@ class CoeffCL
     double mu (double) const { return 1.0; }
 };
 
-int main ()
+int main (int argc, char** argv)
 {
   try {
+    int numref=10;
+    double xfemstab=0.;
+    if (argc==3) {
+        numref=atoi(argv[1]);
+        xfemstab=atof(argv[2]);
+    }
+
+    std::cerr << "numref: " << numref << "\txfemstab: " << xfemstab <<'\n';
+
     DROPS::BrickBuilderCL brick( Point3DCL( -1.0),
-                                 2.0*std_basis<3>(1),
-                                 2.0*std_basis<3>(2),
-                                 2.0*std_basis<3>(3),
-                                 10, 10, 10);
+                                  2.0*std_basis<3>(1),
+                                  2.0*std_basis<3>(2),
+                                  2.0*std_basis<3>(3),
+                                  numref, numref, numref);
     MultiGridCL mg( brick);
+
+//    TetraBuilderCL builder( 0);//,   std_basis<3>( 0), 2*std_basis<3>( 1),
+                               //2*std_basis<3>( 2), 2*std_basis<3>( 3));
+ //   MultiGridCL mg( builder);
+
 
     LevelsetP2CL lset( mg);
     CreateNumb( lset.idx.GetIdx(), lset.idx, mg, NoBndDataCL<>());
@@ -160,7 +177,7 @@ int main ()
 
     IdxDescCL idx( P1X_FE);
     CreateNumb( /*Level*/ mg.GetLastLevel(), idx, mg, NoBndDataCL<>());
-    ExtIdxDescCL extidx( &idx, /*omit_bound=*/ 0.1);
+    ExtIdxDescCL extidx( &idx, /*omit_bound=*/ xfemstab);
     extidx.UpdateXNumbering( &idx, lset, true);
     std::cerr << "P1-Unbekannte: " << extidx.GetNumUnknownsP1()
               << " P1X-Unbekannte: " << idx.NumUnknowns << '\n';
@@ -178,51 +195,65 @@ int main ()
     SetupPrMass_P1X( mg, CoeffCL(), &M, lset, extidx);
 
     // Setup the right hand side
-    LocalP2CL<> lf1, lf2, phi[4];
-    Quad5CL<> qphi[4]; // P1-basis-functions
-    for (Uint i= 0; i < 4; ++i) {
-        LocalP1CL<> phip1;
-        phip1[i]= 1.0;
-        phi[i].assign( phip1);
-        qphi[i].assign( phip1);
-    }
     IdxT Numb[4];
     double absdet;
     InterfacePatchCL cut;
     Quad5CL<> qf;
+
     DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
         GetLocalNumbP1NoBnd( Numb, *sit, idx);
         absdet= sit->GetVolume()*6.0;
         cut.Init( *sit, lset.Phi);
-        const bool nocut= !cut.Intersects();
 
-        if (nocut) {
-            qf.assign( *sit, cut.GetSign( 0) == -1 ? &f1 : &f2);
-            for (Uint i= 0; i < 4; ++i)
-                b.Data[Numb[i]]+= Quad5CL<>(qphi[i]*qf).quad( absdet);
-        }
-        else {
-            lf1.assign( *sit, &f1);
-            lf2.assign( *sit, &f2);
-            for (Uint i= 0; i < 4; ++i) {
-                const LocalP2CL<> f1phi( lf1*phi[i]), f2phi( lf2*phi[i]);
-                const IdxT xidx= extidx[Numb[i]];
-                const bool have_xidx( xidx != NoIdx);
-                double intp1= 0.0, intp1x= 0.0, intpos= 0.0, intneg= 0.0;
-                for (int ch= 0; ch < 8; ++ch) { // This is only for higher accuracy quadrature.
-                    cut.ComputeCutForChild( ch);
-                    intpos= cut.quad( f2phi, absdet, true); // integrate on positive part
-                    intneg= cut.quad( f1phi, absdet, false); // integrate on negative part
-                    intp1+= intpos + intneg;
-                    if (have_xidx)
-                        intp1x+= cut.GetSign( i) == 1 ? -intneg : intpos;
-                }
-                b.Data[Numb[i]]+= intp1;
-                if (have_xidx) b.Data[xidx]+= intp1x;
+        cut.ComputeSubTets();
+        BaryCoordCL* nodes;
+        for (Uint i= 0; i < 4; ++i) {
+            const IdxT xidx= extidx[Numb[i]];
+            const bool have_xidx( xidx != NoIdx);
+            double intp1= 0.0, intp1x= 0.0, intpos= 0.0, intneg= 0.0;
+            LocalP1CL<> phip1;
+            phip1[i]= 1.0;
+            for (Uint k=0; k< cut.GetNumTetra(); ++k)
+            {
+                nodes = qf.TransformNodes(cut.GetTetra(k));
+                qf.assign(*sit, cut.GetNumNegTetra()>k ? &f1 : &f2, 0.0, nodes);
+                Quad5CL<> qphi(phip1, nodes);
+                if (cut.GetNumNegTetra()>k)
+                    intneg += Quad5CL<>(qphi*qf).quad(absdet*VolFrac(cut.GetTetra(k)));
+                else
+                    intpos += Quad5CL<>(qphi*qf).quad(absdet*VolFrac(cut.GetTetra(k)));
+                delete nodes;
             }
+            intp1+= intpos + intneg;
+            if (have_xidx)
+                intp1x+= cut.GetSign( i) == 1 ? -intneg : intpos;
+            b.Data[Numb[i]]+= intp1;
+            if (have_xidx) b.Data[xidx]+= intp1x;
         }
     }
 
+    double intval=0.;
+    DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
+        absdet= sit->GetVolume()*6.0;
+        cut.Init( *sit, lset.Phi);
+        cut.ComputeSubTets();
+        BaryCoordCL* nodes;
+        for (Uint i=0; i<cut.GetNumTetra(); i++)
+        {
+            nodes = qf.TransformNodes(cut.GetTetra(i));
+            qf.assign( *sit, cut.GetNumNegTetra()>i ? &f1sq : &f2sq, 0.0, nodes);
+            intval += qf.quad(absdet*std::fabs( VolFrac(cut.GetTetra(i))));
+            delete nodes;
+        }
+    }
+
+    // Solve the linear system...
+    int max_iter= 200;
+    double tol= 1e-16;
+    PCG( M.Data, beta.Data, b.Data, JACPcCL( 1.0), max_iter, tol, /*measure_relative_tol*/ true);
+    std::cerr <<  "iter: " << max_iter << "\ttol: " << tol << '\n';
+
+    //Ensight output
     typedef NoBndDataCL<> BndDataT;
     BndDataT ubnd;
     typedef P2EvalCL<double, BndDataT, VecDescCL> DiscP2CL;
@@ -249,43 +280,6 @@ int main ()
     ensight.putScalar( datup, upd);
     ensight.putScalar( datun, und);
 
-    double intval=0.;
-    DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
-        absdet= sit->GetVolume()*6.0;
-        cut.Init( *sit, lset.Phi);
-        const bool nocut= !cut.Intersects();
-        if (nocut) {
-            if (cut.GetSign( 0) == -1) qf.assign( *sit, &f1sq);
-            else qf.assign( *sit, &f2sq);
-            intval+= qf.quad( absdet);
-        }
-        else {
-            lf1.assign( *sit, &f1sq);
-            lf2.assign( *sit, &f2sq);
-            double intpos= 0.0, intneg= 0.0;
-            for (int ch= 0; ch < 8; ++ch) { // This is only for higher accuracy quadrature.
-                cut.ComputeCutForChild( ch);
-                intpos= cut.quad( lf2, absdet, true); // integrate on positive part
-                intneg= cut.quad( lf1, absdet, false); // integrate on negative part
-                intval+= intpos + intneg;
-            }
-        }
-    }
-
-    //std::fstream Mf( "M.txt");
-    //std::fstream bf( "b.txt");
-    //Mf << M.Data << std::flush;
-    //bf << b.Data << std::flush;
-
-    // Solve the linear system...
-    int max_iter= 200;
-    double tol= 1e-16;
-    //VectorCL x( b.Data.size());
-    PCG( M.Data, beta.Data, b.Data, JACPcCL( 1.0), max_iter, tol, /*measure_relative_tol*/ true);
-    std::cerr <<  "iter: " << max_iter << "\ttol: " << tol << '\n';
-    //std::fstream xf( "x.txt");
-    //xf << x << std::flush;
-
     // Output the L_2-projection
     VecDescCL ulneg, ulpos;
     P1XOnPart( beta, extidx, ulpos, lset, true);
@@ -298,9 +292,28 @@ int main ()
     ensight.Commit();
     ensight.CaseEnd();
 
+    //1D-Plots
+    std::ofstream out ("u.txt");
+    std::ofstream outpr ("up.txt");
+    Point3DCL p;
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    DROPS_FOR_TRIANG_VERTEX( mg, mg.GetLastLevel(), it) {
+        p= it->GetCoord();
+        if (p[0]==0 && p[1]==0) {
+            const double u=  lset.Phi.Data[it->Unknowns( lset.idx.GetIdx())] > 0. ? upos.Data[it->Unknowns( p2idx.GetIdx())] : uneg.Data[it->Unknowns( p2idx.GetIdx())];
+            const IdxT nr= it->Unknowns( idx.GetIdx());
+            const double up= lset.Phi.Data[it->Unknowns( lset.idx.GetIdx())] > 0. ? ulpos.Data[nr] : ulneg.Data[nr];
+            out << p[2] << " " << u << '\n';
+            outpr << p[2] << " " << up << '\n';
+        }
+    }
+
+    std::cerr << std::setprecision(20);
     std::cerr << "||u_l||_0^2 = " << dot (M.Data*beta.Data, beta.Data) <<'\n';
     std::cerr << "|| u ||_0^2 = " << intval << '\n';
-    std::cerr << "|| u ||_0^2 - ||u_l||_0^2 = " << intval - dot (M.Data*beta.Data, beta.Data) << '\n';
+    const double err = intval - dot (M.Data*beta.Data, beta.Data);
+    std::cerr << "|| u - u_l ||_0 = " << std::scientific << std::sqrt(std::abs(err)) << '\n';
+    if (err<0) std::cerr << "Fehler: Norm der Projektion > Norm der Funktion\n";
   } catch (DROPSErrCL d) {
         d.handle();
     }

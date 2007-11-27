@@ -10,6 +10,7 @@
 #include "num/solver.h"
 #include "num/bndData.h"
 #include "num/fe.h"
+#include <vector>
 
 namespace DROPS
 {
@@ -142,6 +143,9 @@ class InterfacePatchCL
  *  of the level set function phi on T'.
  */
 {
+  public:
+    typedef SArrayCL<BaryCoordCL,4> SubTetraT;
+
   private:
     static const double approxZero_;
     const RefRuleCL RegRef_;
@@ -153,6 +157,7 @@ class InterfacePatchCL
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
     BaryCoordCL     Bary_[4], BaryDoF_[10];
     Point2DCL       ab_;
+    std::vector<SubTetraT> posTetras, negTetras;
 
     inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
     { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
@@ -163,6 +168,7 @@ class InterfacePatchCL
     static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
 
     void Init( const TetraCL& t, const VecDescCL& ls, double translation= 0.);
+    void Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation= 0.);
 
     /// \name Use after Init
     /// \remarks The following functions are only valid, if Init(...) was called before!
@@ -175,6 +181,15 @@ class InterfacePatchCL
       { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
     bool   ComputeForChild( Uint ch);                          ///< returns true, if a patch exists for this child
     bool   ComputeCutForChild( Uint ch);                       ///< returns true, if a patch exists for this child
+    void   ComputeSubTets();                                   ///< Computes a tetrahedralization of {lset<0}\cap T and {lset>0}\cap T; the regular children of T are triangulated.
+    ///@}
+
+    /// \name Use after ComputeSubTets
+    /// \remarks The following functions are only valid, if ComputeSubTets() was called before!
+    ///@{
+    const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];}
+    Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of subtetras
+    Uint  GetNumNegTetra()      const {return negTetras.size();}      ///< returns number of tetras with level set function < 0
     ///@}
 
     /// \name Use after ComputeForChild
