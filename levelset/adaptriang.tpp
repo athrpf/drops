@@ -97,6 +97,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     modified_= false;
     const Uint min_ref_num= f_level_ - c_level_;
     Uint i, LastLevel= mg_.GetLastLevel();
+    match_fun match= mg_.GetBnd().GetMatchFun();
 
     P1XRepairCL p1xrepair( NS.UsesXFEM(), mg_, NS.p, NS.GetXidx());
 
@@ -111,7 +112,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         // Repair velocity
         std::swap( v2, v1);
         std::swap( vidx2, vidx1);
-        NS.CreateNumberingVel( LastLevel, vidx1);
+        NS.CreateNumberingVel( LastLevel, vidx1, match);
         if ( LastLevel != vidx2->TriangLevel)
         {
             std::cout << "LastLevel: " << LastLevel
@@ -127,7 +128,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         // Repair pressure
         std::swap( p2, p1);
         std::swap( pidx2, pidx1);
-        NS.CreateNumberingPr( LastLevel, pidx1);
+        NS.CreateNumberingPr( LastLevel, pidx1, match);
         p1->SetIdx( pidx1);
         typename StokesT::const_DiscPrSolCL funpr= NS.GetPrSolution( *p2);
         RepairAfterRefineP1( funpr, *p1);
@@ -137,7 +138,7 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         // Repair levelset
         std::swap( l2, l1);
         std::swap( lidx2, lidx1);
-        lset.CreateNumbering( LastLevel, lidx1);
+        lset.CreateNumbering( LastLevel, lidx1, match);
         l1->SetIdx( lidx1);
         LevelsetP2CL::const_DiscSolCL funlset= lset.GetSolution( *l2);
         RepairAfterRefineP2( funlset, *l1);

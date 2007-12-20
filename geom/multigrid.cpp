@@ -978,6 +978,7 @@ void PeriodicEdgesCL::Accumulate()
 
 void PeriodicEdgesCL::Recompute( EdgeIterator begin, EdgeIterator end)
 {
+    Shrink();
     typedef std::list<EdgeCL*> psetT;
     psetT s1, s2;
     // collect all objects on Per1/Per2 bnds in s1, s2 resp.
@@ -992,7 +993,6 @@ void PeriodicEdgesCL::Recompute( EdgeIterator begin, EdgeIterator end)
         }
     // now we have s1.size() <= s2.size()
     // match objects in s1 and s2
-    Shrink();
     for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
     {
         // search corresponding object in s2

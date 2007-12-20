@@ -595,9 +595,10 @@ class BoundaryCL
     BndIdxT         GetNumBndSeg()          const { return Bnd_.size(); }
     BndType         GetBndType(BndIdxT idx) const { return BndType_? (*BndType_)[idx] : OtherBnd; }
 
-    void SetPeriodicBnd( const BndTypeCont& type, match_fun) const;
-    bool Matching ( const Point3DCL& p, const Point3DCL& q) const { return match_(p,q); }
-    bool HasPeriodicBnd() const { return match_; }
+    void      SetPeriodicBnd( const BndTypeCont& type, match_fun) const;
+    match_fun GetMatchFun() const { return match_; }
+    bool      Matching ( const Point3DCL& p, const Point3DCL& q) const { return match_(p,q); }
+    bool      HasPeriodicBnd() const { return match_; }
 };
 
 
