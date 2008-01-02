@@ -14,7 +14,7 @@
 #include <vector>
 #include <deque>
 #include <numeric>
-#include <map>
+#include <tr1/unordered_map>
 #include <misc/utils.h>
 
 namespace DROPS
@@ -188,7 +188,7 @@ public:
     typedef T                        valueT;
     typedef SparseMatBaseCL<T>       spmatT;
     typedef std::pair<size_t,valueT> entryT;
-    typedef std::map<size_t,valueT>  couplT;
+    typedef std::tr1::unordered_map<size_t,valueT> couplT;
 
 private:
     size_t  _rows;
@@ -235,22 +235,6 @@ public:
 
             Assert(_mat->_colind[rowend]==j, "SparseMatBuilderCL (): no such index", ~0);
             return _mat->_val[rowend];
-
-/*            // search row for the correct entry via binary-search
-            // no visible speed improvement on x86 :-(
-            size_t first= _mat->_rowbeg[i], last= _mat->_rowbeg[i+1];
-
-            while (true)
-            {
-                size_t middle= (first+last) >> 1, mval= _mat->_colind[middle];
-
-                if (mval<j)
-                    first= middle+1;
-                else if (mval==j)
-                    return _mat->_val[middle];
-                else
-                    last= middle;
-            }*/
         }
         else
             return _coupl[i][j];
@@ -259,30 +243,32 @@ public:
     void Build();
 };
 
-
 template <typename T>
 void SparseMatBuilderCL<T>::Build()
 {
     if (_reuse) return;
 
     size_t nz= 0;
-    for (size_t i= 0; i<_rows; ++i)
-        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
-            ++nz;
+    for (size_t i= 0; i < _rows; ++i)
+        nz+= _coupl[i].size();
 
-    _mat->resize(_rows, _cols, nz);
+    _mat->resize( _rows, _cols, nz);
 
     nz= 0;
-    for (size_t i=0; i<_rows; ++i)
-    {
+    typedef std::pair<size_t, T> PT;
+    std::vector<PT> pv;
+    for (size_t i= 0; i < _rows; ++i) {
+        pv.resize( _coupl[i].size());
         _mat->_rowbeg[i]= nz;
-        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
-        {
-            _mat->_colind[nz]= it->first;
-            _mat->_val[nz]=    it->second;
-            ++nz;
+        nz+= pv.size();
+        std::copy( _coupl[i].begin(), _coupl[i].end(), pv.begin());
+        // The col_ind-entries in each row are sorted.
+        std::sort( pv.begin(), pv.end(), less1st<PT>());
+        for (size_t k= _mat->_rowbeg[i], j= 0; k < nz; ++k, ++j) {
+            _mat->_colind[k]= pv[j].first;
+            _mat->_val[k]= pv[j].second;
+        // std::cout << _coupl[i].load_factor() << '\t' << std::setfill('0') << std::setw(3) <<_coupl[i].size() << '\n';
         }
-        // the col_ind-entries in each row are sorted, as they were stored sorted in the map
     }
     _mat->_rowbeg[_rows]= nz;
 
@@ -1477,3 +1463,4 @@ typedef VectorAsDiagMatrixBaseCL<double>VectorAsDiagMatrixCL;
 } // end of namespace DROPS
 
 #endif
+
