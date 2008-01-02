@@ -9,6 +9,8 @@
 
 #include "geom/multigrid.h"
 #include "levelset/params.h"
+#include "levelset/levelset.h"
+#include "num/discretize.h"
 
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
 //                        -div u = 0

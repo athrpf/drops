@@ -151,6 +151,39 @@ GetLocalNumbP2NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
 ///     conditions on a tetrahedron.
 ///
 /// This is convenient for discretisation of operators in the Setup-routines.
+class LocalNumbP1CL
+{
+  public:
+    /// \brief Field of unknown-indices; NoIdx, iff the degree of freedom lies
+    /// on a boundary without unknowns. (Formerly called Numb.)
+    IdxT     num   [4];
+    /// \brief On boundaries, the number of the relevant BndSegDataCL-object
+    /// in the corresponding BndDataCL-object, else NoBndC.
+    BndIdxT  bndnum[4];
+    /// \brief The relevant BndCondT, NoBC in the interior dofs.
+    BndCondT bc    [4];
+
+    /// \brief The default constructors leaves everything uninitialized.
+    LocalNumbP1CL() {}
+    /// \brief Read indices, boundary-segment numbers and boundary conditions
+    ///     from a tetrahedron and a BndDataCL-like object.
+    template<class BndDataT>
+      LocalNumbP1CL(const TetraCL&, const IdxDescCL&, const BndDataT&);
+
+    /// \brief Read indices, boundary-segment numbers and boundary conditions
+    ///     from a tetrahedron and a BndDataCL-like object.
+    template<class BndDataT>
+      void
+      assign(const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd);
+
+    /// \brief True, iff index i has a dof associated with it.
+    bool WithUnknowns(IdxT i) const { return num[i] != NoIdx; }
+};
+
+/// \brief Collect indices of unknowns, boundary-segments and boundary
+///     conditions on a tetrahedron.
+///
+/// This is convenient for discretisation of operators in the Setup-routines.
 class LocalNumbP2CL
 {
   public:
@@ -279,6 +312,38 @@ class ProblemCL
     const BndDataCL&   GetBndData() const { return _BndData; }
 };
 
+
+template<class BndDataT>
+  LocalNumbP1CL::LocalNumbP1CL (const TetraCL& s, const IdxDescCL& idx,
+      const BndDataT& bnd)
+/// \param s The tet, from which index-numbers are read.
+/// \param idx The IdxDescCL  -object to be used.
+/// \param bnd The BndDataCL -like-object, from which boundary-segment-numbers are used.
+{
+    this->assign( s, idx, bnd);
+}
+
+template<class BndDataT>
+  void
+  LocalNumbP1CL::assign (const TetraCL& s, const IdxDescCL& idx, const BndDataT& bnd)
+/// \param s The tet, from which index-numbers are read.
+/// \param idx The IdxDescCL -object to be used.
+/// \param bnd The BndDataCL -like object, from which boundary-segment-numbers are used.
+{
+    BndIdxT bidx= 0;
+    const Uint sys= idx.GetIdx();
+
+    for (Uint i= 0; i < NumVertsC; ++i)
+        if (NoBC == (bc[i]= bnd.GetBC( *s.GetVertex( i), bidx))) {
+            bndnum[i]= NoBndC;
+            num[i]= s.GetVertex( i)->Unknowns( sys);
+        }
+        else {
+            bndnum[i]= bidx;
+            num[i]= (bnd.GetBndSeg( bidx).WithUnknowns())
+                ? s.GetVertex( i)->Unknowns( sys) : NoIdx;
+        }
+}
 
 template<class BndDataT>
   LocalNumbP2CL::LocalNumbP2CL(const TetraCL& s, const IdxDescCL& idx,

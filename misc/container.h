@@ -475,6 +475,8 @@ class SMatrixCL : public SVectorCL<_Rows*_Cols>
     double& operator() (int row, int col)       { return (*this)[row*_Cols+col]; }// Matrix(i,j)
     double  operator() (int row, int col) const { return (*this)[row*_Cols+col]; }
 
+    SVectorCL<_Rows> col( int) const;
+
 // Zuweisung & Co.
     SMatrixCL& operator+=(const SMatrixCL&);                // Matrix=Matrix+Matrix'
     SMatrixCL& operator-=(const SMatrixCL&);                // Matrix=Matrix-Matrix'
@@ -485,6 +487,16 @@ class SMatrixCL : public SVectorCL<_Rows*_Cols>
     Uint num_rows() const { return _Rows; }                        // Zeilenzahl
     Uint num_cols() const { return _Cols; }                        // Spaltenzahl
 };
+
+template<Uint _Rows, Uint _Cols>
+SVectorCL<_Rows>
+SMatrixCL<_Rows, _Cols>::col (int c) const
+{
+    SVectorCL<_Rows> ret( Uninitialized);
+    for (Uint i= 0; i != _Rows; ++i, c+= _Cols)
+        ret[i]= (*this)[c];
+    return ret;
+}
 
 template<Uint _Rows, Uint _Cols>
 SMatrixCL<_Rows, _Cols>&
@@ -589,6 +601,24 @@ operator*(const SMatrixCL<_RowsL, _Dim>& m1, const SMatrixCL<_Dim, _ColsR>& m2)
         for (Uint col=0; col!=_ColsR; ++col)
             for (Uint i=0; i!=_Dim; ++i)
                 ret(row, col)+= m1(row, i)*m2(i, col);
+    return ret;
+}
+
+template<Uint _Rows, Uint _Cols>
+SMatrixCL<_Cols, _Cols>
+GramMatrix(const SMatrixCL<_Rows, _Cols>& m)
+/// Computes m^T*m
+{
+    SMatrixCL<_Cols, _Cols> ret( 0.0);
+    for (Uint row= 0; row != _Cols; ++row) {
+        for (Uint col= 0; col < row; ++col) {
+            for (Uint i= 0; i != _Rows; ++i)
+                ret( row, col)+= m( i, row)*m( i, col);
+            ret( col, row)= ret( row, col);
+        }
+        for (Uint i= 0; i != _Rows; ++i)
+            ret( row, row)+= std::pow( m( i, row), 2);
+    }
     return ret;
 }
 
