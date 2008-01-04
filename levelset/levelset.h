@@ -140,7 +140,8 @@ class InterfacePatchCL
 /// Computes approximation of interface.
 /** Computes the planar interface patches, which are the intersection of a child T' of
  *  a tetrahedron T and the zero level of I(phi), where I(phi) is the linear interpolation
- *  of the level set function phi on T'.
+ *  of the level set function phi on T'. With LinearEdgeIntersection==false the zero level
+ *  of phi is used to calculate the planar interface patches on T'.
  */
 {
   public:
@@ -148,6 +149,7 @@ class InterfacePatchCL
 
   private:
     static const double approxZero_;
+    static const bool   LinearEdgeIntersection= true;
     const RefRuleCL RegRef_;
     int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
     int             intersec_, ch_, Edge_[4];
@@ -155,12 +157,13 @@ class InterfacePatchCL
     double          sqrtDetATA_;
     LocalP2CL<>     PhiLoc_;
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
-    BaryCoordCL     Bary_[4], BaryDoF_[10];
+    BaryCoordCL     Bary_[4], BaryDoF_[10], AllEdgeBaryCenter_[10][10];
     Point2DCL       ab_;
     std::vector<SubTetraT> posTetras, negTetras;
 
     inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
-    { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
+        { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
+    inline double EdgeIntersection (Uint v0, Uint v1); ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
 
   public:
     InterfacePatchCL();

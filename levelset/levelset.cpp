@@ -836,6 +836,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 //*****************************************************************************
 
 const double InterfacePatchCL::approxZero_= 2.*std::numeric_limits<double>::epsilon();
+const bool   InterfacePatchCL::LinearEdgeIntersection;
 
 InterfacePatchCL::InterfacePatchCL()
   : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
@@ -843,6 +844,10 @@ InterfacePatchCL::InterfacePatchCL()
     BaryDoF_[0][0]= BaryDoF_[1][1]= BaryDoF_[2][2]= BaryDoF_[3][3]= 1.;
     for (int edge=0; edge<6; ++edge)
         BaryDoF_[edge+4]= 0.5*(BaryDoF_[VertOfEdge(edge,0)] + BaryDoF_[VertOfEdge(edge,1)]);
+    for (int i= 0; i < 10; ++i)
+        for (int j= 0; j < 10; ++j)
+            AllEdgeBaryCenter_[i][j]= BaryCenter( BaryDoF_[i], BaryDoF_[j]);
+    
 }
 
 void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls, double translation)
@@ -905,7 +910,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
                   v1= data.Vertices[ VertOfEdge( edge, 1)];
         if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
         {
-            const double lambda= PhiLoc_[v0]/(PhiLoc_[v0]-PhiLoc_[v1]);
+            const double lambda= EdgeIntersection( v0,  v1);
             Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
             // bary-coords of tetra, not of subtetra!
             PQRS_[intersec_++]= (1-lambda) * Coord_[v0] + lambda * Coord_[v1];
@@ -991,7 +996,7 @@ bool InterfacePatchCL::ComputeCutForChild( Uint ch)
                   v1= data.Vertices[ VertOfEdge( edge, 1)];
         if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
         {
-            const double lambda= PhiLoc_[v0]/(PhiLoc_[v0]-PhiLoc_[v1]);
+            const double lambda= EdgeIntersection( v0,  v1);
             Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
             Edge_[intersec_++]= edge;
         }
@@ -1040,6 +1045,7 @@ void InterfacePatchCL::WriteGeom( std::ostream& os) const
         os << "3 0 1 2";
     os << "\n}\n";
 }
+
 void InterfacePatchCL::ComputeSubTets()
 {
     posTetras.clear();
