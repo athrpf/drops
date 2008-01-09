@@ -152,7 +152,7 @@ void TransportP1CL::SetupInstatSystem (MatDescCL& matA, VecDescCL& cplA,
 
 void TransportP1CL::Update()
 {
-    IdxDescCL* cidx= c.RowIdx;
+    IdxDescCL* cidx= ct.RowIdx;
 
     c.SetIdx( cidx);
     ct2c();
