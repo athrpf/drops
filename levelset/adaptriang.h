@@ -10,6 +10,7 @@
 
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
+#include "poisson/transport2phase.h"
 
 namespace DROPS
 {
@@ -46,7 +47,7 @@ class AdapTriangCL
     void MakeInitialTriang( DistFctT&);
 
     template <class StokesT>
-    void UpdateTriang( StokesT&, LevelsetP2CL&);
+    void UpdateTriang( StokesT&, LevelsetP2CL&, TransportP1CL* c= 0);
 
     bool WasModified() const { return modified_; }
 };

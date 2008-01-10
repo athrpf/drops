@@ -72,7 +72,7 @@ bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
 }
 
 template <class StokesT>
-void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
+void AdapTriangCL::UpdateTriang (StokesT& NS, LevelsetP2CL& lset, TransportP1CL* c)
 {
     TimerCL time;
 
@@ -81,19 +81,24 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
     VelVecDescCL  loc_v;
     VecDescCL     loc_p;
     VecDescCL     loc_l;
+    VecDescCL     loc_ct;
     VelVecDescCL *v1= &NS.v,
                  *v2= &loc_v;
     VecDescCL    *p1= &NS.p,
                  *p2= &loc_p,
                  *l1= &lset.Phi,
-                 *l2= &loc_l;
-    IdxDescCL  loc_vidx( 3, 3), loc_pidx( 1), loc_lidx( 1, 1);
+                 *l2= &loc_l,
+                 *c1= &c->ct,
+                 *c2= &loc_ct;
+    IdxDescCL  loc_vidx( 3, 3), loc_pidx( 1), loc_lidx( 1, 1), loc_cidx( 1);
     IdxDescCL  *vidx1= v1->RowIdx,
                *vidx2= &loc_vidx,
                *pidx1= p1->RowIdx,
                *pidx2= &loc_pidx,
                *lidx1= l1->RowIdx,
-               *lidx2= &loc_lidx;
+               *lidx2= &loc_lidx,
+               *cidx1= c1->RowIdx,
+               *cidx2= &loc_cidx;
     modified_= false;
     const Uint min_ref_num= f_level_ - c_level_;
     Uint i, LastLevel= mg_.GetLastLevel();
@@ -144,8 +149,21 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         RepairAfterRefineP2( funlset, *l1);
         l2->Clear();
         lset.DeleteNumbering( lidx2);
+
+        // Repair concentration, if it exists.
+        if (c != 0)
+        {
+            std::swap( c2, c1);
+            std::swap( cidx2, cidx1);
+            c->CreateNumbering( LastLevel, cidx1);
+            c1->SetIdx( cidx1);
+            typename TransportP1CL::const_DiscSolCL func= c->GetSolution( *c2);
+            RepairAfterRefineP1( func, *c1);
+            c2->Clear();
+            c->DeleteNumbering( cidx2);
+        }    
     }
-    // We want the solution to be in NS.v, NS.pr, lset.Phi
+    // We want the solution to be in NS.v, NS.pr, lset.Phi and c.ct
     if (v1 == &loc_v)
     {
         NS.vel_idx.swap( loc_vidx);
@@ -154,6 +172,12 @@ void AdapTriangCL::UpdateTriang( StokesT& NS, LevelsetP2CL& lset)
         NS.v.SetIdx( &NS.vel_idx);
         NS.p.SetIdx( &NS.pr_idx);
         lset.Phi.SetIdx( &lset.idx);
+        if(c!=0)
+        {
+            c->idx.swap(loc_cidx);
+            c->c.SetIdx(&c->idx);
+            c->ct.Data =loc_ct.Data;
+        }    
 
         NS.v.Data= loc_v.Data;
         NS.p.Data= loc_p.Data;
