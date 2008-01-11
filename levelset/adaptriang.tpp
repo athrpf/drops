@@ -88,7 +88,7 @@ void AdapTriangCL::UpdateTriang (StokesT& NS, LevelsetP2CL& lset, TransportP1CL*
                  *p2= &loc_p,
                  *l1= &lset.Phi,
                  *l2= &loc_l,
-                 *c1= &c->ct,
+                 *c1= c != 0 ? &c->ct : 0,
                  *c2= &loc_ct;
     IdxDescCL  loc_vidx( 3, 3), loc_pidx( 1), loc_lidx( 1, 1), loc_cidx( 1);
     IdxDescCL  *vidx1= v1->RowIdx,
@@ -97,7 +97,7 @@ void AdapTriangCL::UpdateTriang (StokesT& NS, LevelsetP2CL& lset, TransportP1CL*
                *pidx2= &loc_pidx,
                *lidx1= l1->RowIdx,
                *lidx2= &loc_lidx,
-               *cidx1= c1->RowIdx,
+               *cidx1= c != 0 ? c1->RowIdx : 0,
                *cidx2= &loc_cidx;
     modified_= false;
     const Uint min_ref_num= f_level_ - c_level_;
