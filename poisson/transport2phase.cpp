@@ -177,10 +177,17 @@ void TransportP1CL::Update()
 
 void TransportP1CL::InitStep (VectorCL& rhs)
 {
-    rhs= - (1. - theta_)*(C.Data*ct.Data - oldcplC.Data);
+    VectorCL rhs1( (1./dt_)*ct.Data);
+    if (theta_ != 1.0) {
+        VectorCL tmp( (1. - theta_)*(oldcplA.Data - A.Data*ct.Data + oldcplC.Data - C.Data*ct.Data));
+        VectorCL rhs2( tmp.size());
+        gm_.Solve( M.Data, rhs2, tmp);
+        std::cerr << "Inverting M_old: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
+        rhs1+= rhs2;
+    }
     SetupInstatSystem( A, cplA, M, cplM, C, cplC, t_);
-    rhs+= (1./dt_)*(M.Data*ct.Data - oldcplM.Data + cplM.Data) + theta_*(cplA.Data + cplC.Data)
-        - (1. - theta_)*(A.Data*ct.Data - oldcplA.Data);
+    // Todo: Add 1/dt_*M_new(c_{dirichlet,old}), if there are time-dependant Dirichlet-BC.
+    rhs= M.Data*rhs1 + /*Todo: add together with the above (1./dt_)*cplM.Data + */ theta_*(cplA.Data + cplC.Data);
 
     MatrixCL L;
     L.LinComb( theta_, A.Data, theta_, C.Data);
