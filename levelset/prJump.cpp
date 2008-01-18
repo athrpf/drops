@@ -297,7 +297,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         // PC for Oseen solver
 //        typedef DummyPcCL OseenPcT;
 //        OseenPcT oseenpc;
-//        typedef DiagBlockPreCL<APcT, SPcT> OseenPcT;
+//        typedef BlockPreCL<APcT, SPcT> OseenPcT;
 //        OseenPcT oseenpc( Apc, ispc);
 
         // Oseen solver

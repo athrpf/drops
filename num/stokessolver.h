@@ -214,34 +214,41 @@ class BlockMatrixSolverCL
     }
 };
 
-template <class PC1T, class PC2T>
-class DiagBlockPreCL
+// If isdiagonal == true, this is the diagonal PC ( pc1^(-1) 0 \\ 0 -pc2^(-1) )
+// else it is block-triangular: ( pc1^(-1) B^T \\ 0 -pc2^(-1) )
+template <class PC1T, class PC2T, bool isdiagonal_= true>
+class BlockPreCL
 {
   private:
     PC1T& pc1_; // Preconditioner for A.
     PC2T& pc2_; // Preconditioner for S.
 
   public:
-    DiagBlockPreCL( PC1T& pc1, PC2T& pc2)
-      : pc1_( pc1), pc2_( pc2) {}
+    BlockPreCL (PC1T& pc1, PC2T& pc2)
+        : pc1_( pc1), pc2_( pc2) {}
 
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
-        pc1_.Apply( A, v, b);
-        pc2_.Apply( /*dummy*/ B, p, c);
+        pc2_.Apply( /*dummy*/ B, p, Vec( -c));
+        Vec b2( b);
+        if ( !isdiagonal_)
+            b-= transp_mul( B, p);
+        pc1_.Apply( A, v, b2);
     }
 
     template <typename Mat, typename Vec>
     void
     Apply(const BlockMatrixBaseCL<Mat>& A, Vec& x, const Vec& b) const {
-        VectorCL b0( b[std::slice( 0, A.num_rows( 0), 1)]);
-        VectorCL b1( b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
+        VectorCL b0(  b[std::slice( 0, A.num_rows( 0), 1)]);
+        VectorCL b1( -b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
         VectorCL x0( A.num_cols( 0));
         VectorCL x1( A.num_cols( 1));
-        pc1_.Apply( *A.GetBlock( 0), x0, b0); // assumes GetBlock( 0) != 0
-        pc2_.Apply( /*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 1)),
+        pc2_.Apply( /*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 2)),
             x1, b1);
+        if ( !isdiagonal_)
+            b0-= transp_mul( *A.GetBlock( 2), x1);
+        pc1_.Apply( *A.GetBlock( 0), x0, b0); // assumes GetBlock( 0) != 0
         x[std::slice( 0, A.num_cols( 0), 1)]= x0;
         x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]= x1;
     }
