@@ -230,18 +230,18 @@ class BlockPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
-        pc2_.Apply( /*dummy*/ B, p, Vec( -c));
+        pc2_.Apply( /*dummy*/ B, p, c);
         Vec b2( b);
         if ( !isdiagonal_)
-            b-= transp_mul( B, p);
+            b2-= transp_mul( B, p);
         pc1_.Apply( A, v, b2);
     }
 
     template <typename Mat, typename Vec>
     void
     Apply(const BlockMatrixBaseCL<Mat>& A, Vec& x, const Vec& b) const {
-        VectorCL b0(  b[std::slice( 0, A.num_rows( 0), 1)]);
-        VectorCL b1( -b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
+        VectorCL b0( b[std::slice( 0, A.num_rows( 0), 1)]);
+        VectorCL b1( b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
         VectorCL x0( A.num_cols( 0));
         VectorCL x1( A.num_cols( 1));
         pc2_.Apply( /*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 2)),
