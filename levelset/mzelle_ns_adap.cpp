@@ -260,9 +260,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //        SPcT ispc;
 //         typedef ISPreCL SPcT;
 //         SPcT ispc( Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
-        typedef ISBBTPreCL SPcT;
-        SPcT ispc( Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data,
-            /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
+//        typedef ISBBTPreCL SPcT;
+//        SPcT ispc( Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data,
+//            /*kA*/ 1./C.dt, /*kM=alpha*theta in FracStep*/ 3 - 2*std::sqrt(2.));
+        typedef MinCommPreCL SPcT;
+        SPcT ispc( 0, Stokes.B.Data, Stokes.M.Data, Stokes.prM.Data);
 //        typedef PCGSolverCL<JACPcCL> SPcSolverT;
 //        SPcSolverT JacCG( JACPcCL(), 50, 0.02, /*relative*/ true);
 //        typedef ISNonlinearPreCL<SPcSolverT> SPcT;
@@ -290,7 +292,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         // PC for Oseen solver
 //        typedef DummyPcCL OseenPcT;
 //        OseenPcT oseenpc;
-        typedef BlockPreCL<APcT, SPcT> OseenPcT;
+        typedef BlockPreCL<APcT, SPcT, /*isdiagonal*/ false> OseenPcT;
         OseenPcT oseenpc( Apc, ispc);
 
         // Oseen solver
@@ -309,7 +311,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
 //        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, C.cpl_stab);
         typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, C.nonlinear, C.cpl_stab);
+        CouplingT cpl( Stokes, lset, nssolver, C.nonlinear, /*projection step*/ 0, C.cpl_stab);
+        ispc.SetMatrixA( cpl.GetUpperLeftBlock());
 
         cpl.SetTimeStep( C.dt);
 

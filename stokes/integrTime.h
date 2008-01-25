@@ -268,8 +268,8 @@ class ISBBTPreCL
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
           M_( pc.M_), Mvel_( pc.Mvel_),
-          kA_( pc.kA_), kM_( pc.kM_), D_( pc.D_), spc_( D_),
-          solver_( spc_, 500, 0.01, /*relative*/ true),
+          kA_( pc.kA_), kM_( pc.kM_), D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
+          spc_( D_), solver_( spc_, 500, 0.01, /*relative*/ true),
           solver2_( JACPcCL( 1.0), 20, 0.01, /*relative*/ true) {}
 
     ISBBTPreCL& operator= (const ISBBTPreCL&) {
@@ -281,30 +281,6 @@ class ISBBTPreCL
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
 };
-
-void ISBBTPreCL::Update() const
-{
-    std::cerr << "ISBBTPreCL::Update: old version: " << Bversion_
-        << "\tnew version: " << B_.Version() << '\n';
-    delete Bs_;
-    Bs_= new MatrixCL( B_);
-    Bversion_= B_.Version();
-
-    BBT_.SetBlock0( Bs_);
-    BBT_.SetBlock1( Bs_);
-
-    VectorCL Dvelinv( 1.0/ Mvel_.GetDiag());
-    ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
-
-    VectorCL Dprsqrt( std::sqrt( M_.GetDiag()));
-    Dprsqrtinv_.resize( M_.num_rows());
-    Dprsqrtinv_= 1.0/Dprsqrt;
-
-    ScaleRows( *Bs_, Dprsqrtinv_);
-
-    D_.resize( M_.num_rows());
-    D_= 1.0/BBTDiag( *Bs_);
-}
 
 template <typename Mat, typename Vec>
 void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
@@ -327,6 +303,75 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //                  << '\n';
         p+= kM_*p2_;
     }
+}
+
+//**************************************************************************
+// Preconditioner for the instationary (Navier-) Stokes-equations.
+// It is a scaled version of the Min-Commutator-PC of Elman and can be used
+// with P1X-elements.
+//**************************************************************************
+class MinCommPreCL
+{
+  private:
+    const MatrixCL* A_;
+    MatrixCL  &B_, &Mvel_, &M_;
+    mutable MatrixCL* Bs_;
+    mutable size_t Aversion_, Bversion_, Mvelversion_, Mversion_;
+    mutable CompositeMatrixCL BBT_;
+    mutable VectorCL D_, Dprsqrtinv_, Dvelsqrtinv_;
+    
+    typedef DiagPcCL SPcT_;
+    SPcT_ spc_;
+    mutable PCGSolverCL<SPcT_> solver_;
+
+    void Update () const;
+
+  public:
+    MinCommPreCL (MatrixCL* A, MatrixCL& B, MatrixCL& Mvel, MatrixCL& M_pr)
+        : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
+          Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
+          BBT_( 0, TRANSP_MUL, 0, MUL),
+          spc_( D_), solver_( spc_, 200, 0.01, /*relative*/ true) {}
+
+    MinCommPreCL (const MinCommPreCL & pc)
+        : A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
+          Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
+          Aversion_( pc.Aversion_), Bversion_( pc.Bversion_), Mvelversion_( pc.Mvelversion_),
+          Mversion_( pc.Mversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
+          D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_), Dvelsqrtinv_( pc.Dvelsqrtinv_),
+          spc_( D_), solver_( spc_, 200, 0.01, /*relative*/ true) {}
+
+    MinCommPreCL& operator= (const MinCommPreCL&) {
+        throw DROPSErrCL( "MinCommPreCL::operator= is not permitted.\n");
+    }
+
+    ~MinCommPreCL () { delete Bs_; }
+    
+    template <typename Mat, typename Vec>
+    void Apply (const Mat&, Vec& x, const Vec& b) const;
+
+    void SetMatrixA (const MatrixCL* A) { A_= A; }
+};
+
+template <typename Mat, typename Vec>
+  void
+  MinCommPreCL::Apply (const Mat&, Vec& x, const Vec& b) const
+{
+    if ((A_->Version() != Aversion_) || (Mvel_.Version() != Mvelversion_) || (B_.Version() != Bversion_))
+        Update();
+
+    VectorCL y( b.size());
+    solver_.Solve( BBT_, y, VectorCL( Dprsqrtinv_*b));
+    if (solver_.GetIter() == solver_.GetMaxIter())
+        std::cerr << "MinnCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
+                  << '\t' << solver_.GetResid() << '\n';
+    VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((*A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
+    VectorCL t( b.size());
+    solver_.Solve( BBT_, t, z);
+    if (solver_.GetIter() == solver_.GetMaxIter())
+        std::cerr << "MinnCommPreCL::Apply: 1st BBT-solve: " << "\t2nd BBT-solve: " << solver_.GetIter()
+                  << '\t' << solver_.GetResid() << '\n';
+    x= Dprsqrtinv_*t;
 }
 
 //=================================

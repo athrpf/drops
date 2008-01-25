@@ -36,6 +36,7 @@ class CouplLevelsetBaseCL
     double GetTheta()    const { return _theta; }
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
+    const MatrixCL* GetUpperLeftBlock () const { return _mat; }
 
     virtual void SetTimeStep ( double dt) {_dt= dt;}
 
