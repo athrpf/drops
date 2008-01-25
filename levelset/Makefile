@@ -25,55 +25,56 @@ lsdrops: \
     ../levelset/lsdrops.o ../levelset/fastmarch.o ../levelset/levelset.o \
     ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 reparam: \
     ../levelset/reparam.o ../levelset/fastmarch.o ../levelset/levelset.o \
     ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 lsdrivcav: \
     ../levelset/lsdrivcav.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 lsshear: \
     ../levelset/lsshear.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o
+    ../num/fe.o  ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 curvDriven: \
     ../levelset/curvDriven.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 risingBubble: \
     ../levelset/risingBubble.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/params.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o \
-    ../num/fe.o ../stokes/instatstokes2phase.o
+    ../num/fe.o ../stokes/instatstokes2phase.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 risingBubbleAdap: \
     ../levelset/risingBubbleAdap.o ../geom/boundary.o ../geom/builder.o ../levelset/levelset.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/params.o ../misc/problem.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o ../stokes/instatstokes2phase.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o \
+    ../stokes/instatstokes2phase.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_stat: \
     ../levelset/mzelle_stat.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o ../stokes/instatstokes2phase.o
+    ../num/fe.o ../stokes/instatstokes2phase.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_instat: \
@@ -81,7 +82,7 @@ mzelle_instat: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../num/MGsolver.o \
-    ../num/fe.o ../stokes/instatstokes2phase.o
+    ../num/fe.o ../stokes/instatstokes2phase.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_instat_ns: \
@@ -89,7 +90,7 @@ mzelle_instat_ns: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_ns_adap: \
@@ -97,7 +98,7 @@ mzelle_ns_adap: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 brick_ns_adap: \
@@ -105,7 +106,7 @@ brick_ns_adap: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/vtkOut.o ../out/ensightOut.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 brickflow: \
@@ -113,7 +114,7 @@ brickflow: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfTens: \
@@ -121,7 +122,7 @@ surfTens: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prJump: \
@@ -129,7 +130,7 @@ prJump: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \
@@ -137,14 +138,15 @@ film: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o
+    ../num/fe.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 brick_transp: \
     ../levelset/brick_transp.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
-    ../misc/params.o ../levelset/fastmarch.o ../num/fe.o ../poisson/transport2phase.o
+    ../misc/params.o ../levelset/fastmarch.o ../num/fe.o \
+    ../poisson/transport2phase.o ../out/ensightOut.o ../out/vtkOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 

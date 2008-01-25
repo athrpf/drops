@@ -82,7 +82,7 @@ ipdropsrep: \
 ipfilm: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipfilm.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \

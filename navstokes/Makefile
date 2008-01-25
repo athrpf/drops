@@ -34,13 +34,15 @@ nsdrops_begehung: \
 insdrops: \
     ../geom/boundary.o ../geom/builder.o ../navstokes/insdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o \
+    ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 insadrops: \
     ../geom/boundary.o ../geom/builder.o ../navstokes/insadrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o \
+    ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 

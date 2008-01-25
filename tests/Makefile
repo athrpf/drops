@@ -172,7 +172,7 @@ xfem: \
     ../tests/xfem.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
     ../num/fe.o ../num/discretize.o ../levelset/levelset.o ../levelset/fastmarch.o \
-    ../stokes/instatstokes2phase.o
+    ../stokes/instatstokes2phase.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:

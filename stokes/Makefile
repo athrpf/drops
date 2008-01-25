@@ -61,14 +61,14 @@ FSdrops: \
 isdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o \
+    ../misc/problem.o ../misc/utils.o ../out/ensightOut.o\
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 stsdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/stsdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
-    ../misc/problem.o ../misc/utils.o \
+    ../misc/problem.o ../misc/utils.o ../out/ensightOut.o\
     ../out/output.o ../num/discretize.o ../num/MGsolver.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
