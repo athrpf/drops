@@ -14,7 +14,11 @@
 #include <vector>
 #include <deque>
 #include <numeric>
-#include <tr1/unordered_map>
+#if __GNUC__ >= 4
+#    include <tr1/unordered_map>
+#else
+#    include <map>
+#endif
 #include <misc/utils.h>
 
 namespace DROPS
@@ -188,7 +192,11 @@ public:
     typedef T                        valueT;
     typedef SparseMatBaseCL<T>       spmatT;
     typedef std::pair<size_t,valueT> entryT;
+#if __GNUC__ >= 4
     typedef std::tr1::unordered_map<size_t,valueT> couplT;
+#else
+    typedef std::map<size_t,valueT> couplT;
+#endif
 
 private:
     size_t  _rows;
