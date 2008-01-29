@@ -11,11 +11,6 @@
 namespace DROPS
 {
 
-inline double Sign( double x)
-{
-    return x<0 ? -1 : x>0 ? 1 : 0;
-}
-
 inline double SmoothedSign( double x, double alpha)
 {
     return x/std::sqrt(x*x+alpha);
@@ -837,6 +832,8 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 
 const double InterfacePatchCL::approxZero_= 2.*std::numeric_limits<double>::epsilon();
 const bool   InterfacePatchCL::LinearEdgeIntersection;
+BaryCoordCL  InterfacePatchCL::AllEdgeBaryCenter_[10][10];
+BaryCoordCL  InterfacePatchCL::BaryDoF_[10];
 
 InterfacePatchCL::InterfacePatchCL()
   : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
@@ -910,7 +907,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
                   v1= data.Vertices[ VertOfEdge( edge, 1)];
         if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
         {
-            const double lambda= EdgeIntersection( v0,  v1);
+            const double lambda= EdgeIntersection( v0,  v1, PhiLoc_);
             Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
             // bary-coords of tetra, not of subtetra!
             PQRS_[intersec_++]= (1-lambda) * Coord_[v0] + lambda * Coord_[v1];
@@ -996,7 +993,7 @@ bool InterfacePatchCL::ComputeCutForChild( Uint ch)
                   v1= data.Vertices[ VertOfEdge( edge, 1)];
         if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
         {
-            const double lambda= EdgeIntersection( v0,  v1);
+            const double lambda= EdgeIntersection( v0,  v1, PhiLoc_);
             Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
             Edge_[intersec_++]= edge;
         }

@@ -72,6 +72,9 @@ void FastMarchCL::InitZero( bool ModifyZero)
     Old_.resize( size_);
     Old_= v_.Data;
 
+    VecDescCL oldv( v_);
+    LocalP2CL<> PhiLoc;
+
     for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
         it!=end; ++it)
     {
@@ -83,6 +86,7 @@ void FastMarchCL::InitZero( bool ModifyZero)
             if (sign[v]==0)
                 Typ_[Numb[v]]= Finished;
         }
+        PhiLoc.assign( *it, oldv, NoBndDataCL<>());
 
         for (int ch=0; ch<8; ++ch)
         {
@@ -123,7 +127,7 @@ void FastMarchCL::InitZero( bool ModifyZero)
                 {
                     const IdxT Nr1= Numb[v1],
                                Nr2= Numb[v2];
-                    const double bary= Old_[Nr1]/(Old_[Nr1]-Old_[Nr2]);
+                    const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
                     Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
                 }
             }
@@ -420,6 +424,9 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
     Old_.resize( size_);
     Old_= v_.Data;
 
+    VecDescCL oldv( v_);
+    LocalP2CL<> PhiLoc;
+
     neigh_.resize( size_);
 
     for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(lvl), end=MG_.GetTriangTetraEnd(lvl);
@@ -434,6 +441,7 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
             if (sign[v]==0)
                 Typ_[MapNr]= Finished;
         }
+        PhiLoc.assign( *it, oldv, NoBndDataCL<>());
 
         for (int ch=0; ch<8; ++ch)
         {
@@ -482,7 +490,7 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
                 {
                     const IdxT Nr1= Numb[v1],
                                Nr2= Numb[v2];
-                    const double bary= Old_[Map(Nr1)]/(Old_[Map(Nr1)]-Old_[Map(Nr2)]);
+                    const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
                     Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
                 }
             }

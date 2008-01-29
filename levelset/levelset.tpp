@@ -78,12 +78,12 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 }
 
 inline double
-InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1)
+InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, LocalP2CL<> & philoc)
 {
-    if (LinearEdgeIntersection) return PhiLoc_[v0]/(PhiLoc_[v0]-PhiLoc_[v1]);
+    if (LinearEdgeIntersection) return philoc[v0]/(philoc[v0]-philoc[v1]);
     else {
-        const double l0= PhiLoc_[v0], l1= PhiLoc_[v1],
-            lm= PhiLoc_( AllEdgeBaryCenter_[v0][v1]); // Value of Phi in the edge-barycenter.
+        const double l0= philoc[v0], l1= philoc[v1],
+            lm= philoc( AllEdgeBaryCenter_[v0][v1]); // Value of Phi in the edge-barycenter.
         // If l0*l1<0 the quadratic equation with p(0)=l0, p(1)=l1, p(1/2)=lm has exactly one root in (0,1).
         const double quadcoeff= 2.*l0 + 2.*l1 - 4.*lm, lincoeff= 4.*lm - 3.*l0 - l1;
         if ( std::fabs( quadcoeff) < std::fabs( lincoeff)*8.*std::numeric_limits<double>::epsilon()) // linear LS-function

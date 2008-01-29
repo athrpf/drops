@@ -157,18 +157,20 @@ class InterfacePatchCL
     double          sqrtDetATA_;
     LocalP2CL<>     PhiLoc_;
     Point3DCL       PQRS_[4], Coord_[10], B_[3];
-    BaryCoordCL     Bary_[4], BaryDoF_[10], AllEdgeBaryCenter_[10][10];
+    BaryCoordCL     Bary_[4];
+    static BaryCoordCL BaryDoF_[10], AllEdgeBaryCenter_[10][10];
     Point2DCL       ab_;
     std::vector<SubTetraT> posTetras, negTetras;
 
     inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
         { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
-    inline double EdgeIntersection (Uint v0, Uint v1); ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
 
   public:
     InterfacePatchCL();
 
     static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
+
+   inline static double EdgeIntersection (Uint v0, Uint v1, LocalP2CL<>& philoc); ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
 
     void Init( const TetraCL& t, const VecDescCL& ls, double translation= 0.);
     void Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation= 0.);

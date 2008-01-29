@@ -10,6 +10,7 @@
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 #include "num/spmat.h"
+#include "levelset/levelset.h"
 #include <set>
 
 namespace DROPS
@@ -33,6 +34,7 @@ class FastMarchCL
     VectorBaseCL<Point3DCL>    Coord_;                  // Coordinates for each vert
     VectorCL                   Old_;                    // Old values of the levelset function before reparametrization
     VectorBaseCL<IdxT>         map_;
+    InterfacePatchCL           patch_;
 
     void   InitClose();                                 // Mark verts next to finished verts as close and update them. Initialize also neigh_
     IdxT   FindTrial() const;                           // Find vert with minimal value in Close_
