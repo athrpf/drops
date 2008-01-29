@@ -40,7 +40,7 @@ class TransportP1CL
               M,  ///< mass matrix
               C;  ///< convection matrix
     VecDescCL cplA,    cplM,    cplC,
-              oldcplA, oldcplM, oldcplC,;
+              oldcplA, oldcplM, oldcplC;
 
   private:
     MatrixCL     L_;              ///< sum of matrices
