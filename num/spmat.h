@@ -263,6 +263,7 @@ void SparseMatBuilderCL<T>::Build()
     _mat->resize( _rows, _cols, nz);
 
     nz= 0;
+#if __GNUC__ >= 4
     typedef std::pair<size_t, T> PT;
     std::vector<PT> pv;
     for (size_t i= 0; i < _rows; ++i) {
@@ -278,6 +279,19 @@ void SparseMatBuilderCL<T>::Build()
         // std::cout << _coupl[i].load_factor() << '\t' << std::setfill('0') << std::setw(3) <<_coupl[i].size() << '\n';
         }
     }
+#else
+    for (size_t i=0; i<_rows; ++i)
+    {
+        _mat->_rowbeg[i]= nz;
+        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
+        {
+            _mat->_colind[nz]= it->first;
+            _mat->_val[nz]=    it->second;
+            ++nz;
+        }
+        // the col_ind-entries in each row are sorted, as they were stored sorted in the map
+    }
+#endif
     _mat->_rowbeg[_rows]= nz;
 
     Assert( nz == _mat->num_nonzeros(), "SparseMatBuilderCL::Build: wrong count of nonzeros", ~0);
@@ -285,7 +299,6 @@ void SparseMatBuilderCL<T>::Build()
     delete[] _coupl;
     _coupl= 0;
 }
-
 
 //*****************************************************************************
 //
