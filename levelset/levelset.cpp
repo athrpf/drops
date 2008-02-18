@@ -570,12 +570,12 @@ void LevelsetP2CL::SetTimeStep( double dt, double theta)
     dt_= dt;
     if (theta >= 0) theta_= theta;
 
-    L_.LinComb( 1./dt_, E_, theta_, H_);
+    L_.LinComb( 1./dt_, E, theta_, H);
 }
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
-    rhs= (1./dt_)*(E_*Phi.Data) - (1-theta_)*(H_*Phi.Data);
+    rhs= (1./dt_)*(E*Phi.Data) - (1-theta_)*(H*Phi.Data);
 }
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)

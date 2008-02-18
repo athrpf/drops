@@ -43,7 +43,7 @@ class LevelsetP2CL
                         curvDiff_, ///< amount of diffusion in curvature calculation
                         SD_,       ///< streamline diffusion
                         theta_, dt_;
-    MatrixCL            E_, H_, L_;
+    MatrixCL            L_;
     BndDataT            Bnd_;
     SSORPcCL            pc_;
     GMResSolverCL<SSORPcCL>  gm_;
@@ -54,6 +54,8 @@ class LevelsetP2CL
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
 
   public:
+    MatrixCL            E, H;
+
     LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
         double theta= 0.5, double SD= 0., double diff= 0., int iter= 1000, double tol= 1e-7,
         double curvDiff= -1.)
@@ -115,7 +117,7 @@ class LevelsetP2CL
     /// Set surface tension and its gradient.
     void   SetSigma( instat_scalar_fun_ptr sig, instat_vector_fun_ptr gsig= 0) { sigma= sig; grad_sigma= gsig; }
     /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
-    void   ClearMat() { E_.clear(); H_.clear(); L_.clear(); }
+    void   ClearMat() { E.clear(); H.clear(); L_.clear(); }
     /// \name Evaluate Solution
     ///@{
     const_DiscSolCL GetSolution() const
@@ -140,8 +142,9 @@ class InterfacePatchCL
 /// Computes approximation of interface.
 /** Computes the planar interface patches, which are the intersection of a child T' of
  *  a tetrahedron T and the zero level of I(phi), where I(phi) is the linear interpolation
- *  of the level set function phi on T'. With LinearEdgeIntersection==false the zero level
- *  of phi is used to calculate the planar interface patches on T'.
+ *  of the level set function phi on T'. With LinearEdgeIntersection==false the planar interface 
+ *  patch on T' is determined by computing the roots of the quadratic level set function phi
+ *  on each edge of T' where phi changes its sign.
  */
 {
   public:

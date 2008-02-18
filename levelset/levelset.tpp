@@ -21,8 +21,8 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
     const IdxT num_unks= Phi.RowIdx->NumUnknowns;
     const Uint lvl= Phi.GetLevel();
 
-    SparseMatBuilderCL<double> E(&E_, num_unks, num_unks),
-                               H(&H_, num_unks, num_unks);
+    SparseMatBuilderCL<double> bE(&E, num_unks, num_unks),
+                               bH(&H, num_unks, num_unks);
     IdxT Numb[10];
 
     std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns. ";
@@ -53,28 +53,29 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
             u_Grad[i]= dot( u_loc, Grad[i]);
 
 //        double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
+//        const double maxV_limit= 1e-5;
 //        for(int i=0; i<Quad5CL<>::NumNodesC; ++i)
 //            maxV = std::max( maxV, u_loc[i].norm());
-//        if( maxV < 1e-5) maxV= 1e-5; // no scaling for extremely small velocities
-//        /// \todo fixed limit for maxV (1e-5), any better idea?
+//        if( maxV < maxV_limit) maxV= maxV_limit; // no scaling for extremely small velocities
+//        /// \todo fixed limit for maxV (maxV_limit), any better idea?
         double maxV= 1; // no scaling
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             for(int j=0; j<10; ++j)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-                E( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
-                                     + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
+                bE( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
+                                      + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
 
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-                H( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
-                                     + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
+                bH( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
+                                      + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
             }
     }
 
-    E.Build();
-    H.Build();
-    std::cerr << E_.num_nonzeros() << " nonzeros in E, "
-              << H_.num_nonzeros() << " nonzeros in H! " << std::endl;
+    bE.Build();
+    bH.Build();
+    std::cerr << E.num_nonzeros() << " nonzeros in E, "
+              << H.num_nonzeros() << " nonzeros in H! " << std::endl;
 }
 
 inline double

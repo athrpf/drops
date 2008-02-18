@@ -126,6 +126,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     bool UsesXFEM() const { return prFE_==P1X_FE; }
     /// Set up matrices A, M and rhs b (depending on phase bnd)
     void SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
+    /// Set up rhs b (depending on phase bnd)
+    void SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const;
     /// Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
     void SetupMatrices1( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;
     void SetupMatrices1v2( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;

@@ -333,7 +333,7 @@ void SetupRhs2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataC
     c->Clear();
     const Uint lvl=  c->GetLevel();
     const Uint pidx= c->RowIdx->GetIdx();
-    IdxT prNumb[4], numVerts= std::distance( MG.GetTriangVertexBegin(lvl), MG.GetTriangVertexEnd(lvl));
+    IdxT prNumb[4];
     bool IsOnDirBnd[10];
     Quad2CL<Point3DCL> Grad_vel, GradRef[10];
     SMatrixCL<3,3> T;
@@ -1117,6 +1117,78 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     mM.Build();
     std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
+}
+
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const
+// Set up rhs b (depending on phase bnd)
+{
+    const Uint lvl = b->GetLevel();
+
+    b->Clear();
+
+    LocalNumbP2CL n;
+    SMatrixCL<3,3> T;
+
+    Quad2CL<Point3DCL> rhs;
+    Quad2CL<double> Ones( 1.);
+    LocalP2CL<> phi_i;
+
+    const double rho_p= _Coeff.rho( 1.0),
+                 rho_n= _Coeff.rho( -1.0);
+    double rho_phi[10];
+    double det, absdet, intHat_p, intHat_n;
+    Point3DCL tmp;
+
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    InterfacePatchCL patch;
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        absdet= std::fabs( det);
+
+        rhs.assign( *sit, _Coeff.f, t);
+
+        // collect some information about the edges and verts of the tetra
+        // and save it n.
+        n.assign( *sit, *b->RowIdx, _BndData.Vel);
+        patch.Init( *sit, lset.Phi);
+        const bool nocut= !patch.Intersects();
+        if (nocut) {
+            const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
+
+            // compute all couplings between HatFunctions on edges and verts
+            for (int i=0; i<10; ++i)
+            {
+                rho_phi[i]= rho_const*Ones.quadP2( i, absdet);
+            }
+        }
+        else { // We are at the phase boundary.
+            // compute all couplings between HatFunctions on edges and verts
+            std::memset( rho_phi, 0, 10*sizeof( double));
+            for (int ch= 0; ch < 8; ++ch) {
+                patch.ComputeCutForChild( ch);
+                for (int i=0; i<10; ++i) {
+                    // init phi_i =  i-th P2 hat function
+                    phi_i[i]= 1.; phi_i[i==0 ? 9 : i-1]= 0.;
+                    patch.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
+                    rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
+                }
+            }
+        }
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+            if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
+            {
+                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
+                b->Data[n.num[i]  ]+= tmp[0];
+                b->Data[n.num[i]+1]+= tmp[1];
+                b->Data[n.num[i]+2]+= tmp[2];
+            }
+    }
 }
 
 

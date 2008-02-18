@@ -47,6 +47,49 @@ class CouplLevelsetBaseCL
 };
 
 template <class StokesT, class SolverT>
+class LinThetaScheme2PhaseCL: public CouplLevelsetBaseCL<StokesT>
+{
+  private:
+    typedef CouplLevelsetBaseCL<StokesT> _base;
+    using _base::_Stokes;
+    using _base::_LvlSet;
+    using _base::_b;       using _base::_old_b;
+    using _base::_cplM;    using _base::_old_cplM;
+    using _base::_curv;
+    using _base::_rhs;
+    using _base::_ls_rhs;
+    using _base::_mat; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
+    using _base::_theta;
+    using _base::_dt;
+
+    SolverT&     _solver;
+    VelVecDescCL *_cplN, *_old_cplN;  // couplings with convection matrix N
+    VecDescCL    *_old_curv, *_cplA;
+    VecDescCL    cplLB_;
+    MatDescCL    LB_;
+    const double _nonlinear;
+    bool         implCurv_;
+
+  public:
+    LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
+                           SolverT& solver, double theta= 0.5, double nonlinear= 1, bool implicitCurv= false);
+    ~LinThetaScheme2PhaseCL();
+
+    void SetTimeStep( double dt, double theta= -1) {
+        _base::SetTimeStep( dt);
+        if (theta >=0 ) _theta= theta;
+        _LvlSet.SetTimeStep( dt, theta);
+    }
+
+    void SolveLsNs();
+    void CommitStep();
+
+    void DoStep( int = -1);
+
+    void Update();
+};
+
+template <class StokesT, class SolverT>
 class CouplLevelsetStokesCL: public CouplLevelsetBaseCL<StokesT> 
 {
   private:
