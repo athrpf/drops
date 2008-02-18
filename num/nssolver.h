@@ -99,6 +99,36 @@ class FixedPtDefectCorrCL
 };
 
 
+template<class NavStokesT, class SolverT>
+class DummyFixedPtDefectCorrCL
+/****************************************************************************
+* Used for for Stokes problems. Solve() just calls the inner SolverT-solver.
+****************************************************************************/
+{
+  private:
+    NavStokesT& _NS;
+    SolverT&    _solver;
+  public:
+    DummyFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver)
+        : _NS( NS), _solver( solver) {}
+
+    ~DummyFixedPtDefectCorrCL() {}
+
+    double   GetResid()        const { return _solver.GetResid(); }
+    Uint     GetIter ()        const { return _solver.GetIter(); }
+    SolverT& GetStokesSolver() const { return _solver; }
+
+    // solves the system   A v + BT p = b
+    //                     B v        = c
+    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+                VectorCL& b, VecDescCL& cplN, VectorCL& c, double)
+    {
+        _solver.Solve( A, B, v.Data, p, b, c);
+        cplN.Data= 0.;
+    } 
+};
+
+
 //==================================================
 //        derived classes for easier use
 //==================================================
