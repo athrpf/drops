@@ -60,8 +60,8 @@ class IdxDescCL
     Uint NumUnknownsEdge;
     Uint NumUnknownsFace;
     Uint NumUnknownsTetra;
-    IdxT NumUnknowns;
     //@}
+    IdxT NumUnknowns;       ///< total number of unknowns on the triangulation
 
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
