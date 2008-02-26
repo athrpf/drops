@@ -916,7 +916,7 @@ template <typename T>
     const size_t nz= M.num_nonzeros();
     valueT ret= valueT();
     for (size_t i= 0; i< nz; ++i)
-            ret+= std::pow( M.val( nz), 2);
+            ret+= std::pow( M.val( i), 2);
     return std::sqrt( ret);
 }
 
@@ -964,10 +964,15 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
             "LinComb: incompatible dimensions", DebugNumericC);
 
     IncrementVersion();
-    if (!(DROPSDebugC & DebugNoReuseSparseC) && _val.size()!=0
-        && _rows==A.num_rows() && _cols==A.num_cols())
+    // Todo: Das alte Pattern wiederzuverwenden, macht mal wieder Aerger:
+    // Zur Zeit (2.2008) mit der Matrix im NS-Loeser nach Gitteraenderungen, die
+    // die Anzahl der Unbekannten nicht aendert. Daher schalten wir die
+    // Wiederverwendung vorerst global aus.
+    if (false && (!(DROPSDebugC & DebugNoReuseSparseC) && _val.size()!=0
+        && _rows==A.num_rows() && _cols==A.num_cols()))
     {
         Comment("LinComb: Reusing OLD matrix" << std::endl, DebugNumericC);
+        std::cerr << "LinComb: Reusing OLD matrix" << std::endl;
 
         size_t i=0, iA=0, iB=0;
 
@@ -986,11 +991,12 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
             while ( iB < B.row_beg(row) )
                 _val[i++]=coeffB*B._val[iB++];
         }
-        Assert( i==_val.size() && iA==A._val.size() && iB==B._val.size(), "LinComb: reuse of matrix pattern failed", DebugNumericC);
+        Assert( i==_val.size() && iA==A._val.size() && iB==B._val.size()), "LinComb: reuse of matrix pattern failed", DebugNumericC);
     }
     else
     {
         Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
+        std::cerr << "LinComb: Creating NEW matrix" << std::endl;
 
         _rows=A.num_rows();
         _cols=A.num_cols();
