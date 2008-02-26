@@ -363,13 +363,13 @@ template <typename Mat, typename Vec>
     VectorCL y( b.size());
     solver_.Solve( BBT_, y, VectorCL( Dprsqrtinv_*b));
     if (solver_.GetIter() == solver_.GetMaxIter())
-        std::cerr << "MinnCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
+        std::cerr << "MinCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
     VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((*A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
     VectorCL t( b.size());
     solver_.Solve( BBT_, t, z);
     if (solver_.GetIter() == solver_.GetMaxIter())
-        std::cerr << "MinnCommPreCL::Apply: 1st BBT-solve: " << "\t2nd BBT-solve: " << solver_.GetIter()
+        std::cerr << "MinCommPreCL::Apply: 2nd BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
     x= Dprsqrtinv_*t;
 }

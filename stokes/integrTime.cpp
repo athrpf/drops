@@ -50,11 +50,13 @@ void MinCommPreCL::Update() const
     BBT_.SetBlock0( Bs_);
     BBT_.SetBlock1( Bs_);
 
+    Assert( Mvel_.GetDiag().min() > 0., "MinCommPreCL::Update: Mvel_.GetDiag().min() <= 0\n", DebugNumericC);
     VectorCL Dvelsqrt( std::sqrt( Mvel_.GetDiag()));
     Dvelsqrtinv_.resize( Mvel_.num_rows());
     Dvelsqrtinv_= 1.0/Dvelsqrt;
     ScaleCols( *Bs_, Dvelsqrtinv_);
 
+    Assert( M_.GetDiag().min() > 0., "MinCommPreCL::Update: M_.GetDiag().min() <= 0\n", DebugNumericC);
     VectorCL Dprsqrt( std::sqrt( M_.GetDiag()));
     Dprsqrtinv_.resize( M_.num_rows());
     Dprsqrtinv_= 1.0/Dprsqrt;
