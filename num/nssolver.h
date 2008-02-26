@@ -239,7 +239,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
             if (_basevel != 0) v.Data= *_basevel - v.Data;
             _NS.SetupNonlinear(&_NS.N, &v, &cplN);
             if (_basevel != 0) v.Data= *_basevel - v.Data;
-//std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
+            //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
             _AN.LinComb( 1., A, alpha, _NS.N.Data);
 
             // calculate defect:
