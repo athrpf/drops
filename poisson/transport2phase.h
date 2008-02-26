@@ -54,8 +54,8 @@ class TransportP1CL
     VecDescCL*    v_;      ///< velocity at current time step
     LevelsetP2CL& lset_;   ///< levelset at current time step
 
-    SSORPcCL                pc_;
-    GMResSolverCL<SSORPcCL> gm_;
+    GSPcCL                  pc_;
+    GMResSolverCL<GSPcCL>   gm_;
 
   public:
     TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, VelBndDataT& Bnd_v, 
@@ -66,7 +66,7 @@ class TransportP1CL
     { std::memcpy( D_, D, 2*sizeof( double)); }
 
     const MultiGridCL& GetMG() const { return MG_; }
-    GMResSolverCL<SSORPcCL>& GetSolver() { return gm_; }
+    GMResSolverCL<GSPcCL>& GetSolver() { return gm_; }
     const BndDataT& GetBndData() const { return Bnd_; }
 
     /// \name Numbering
