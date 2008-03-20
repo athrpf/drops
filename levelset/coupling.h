@@ -69,10 +69,13 @@ class LinThetaScheme2PhaseCL: public CouplLevelsetBaseCL<StokesT>
     MatDescCL    LB_;
     const double _nonlinear;
     bool         implCurv_;
+    bool         _usematMG; // MG-hierachy for _mat
+    MGDataCL*    _matMG;
 
   public:
     LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                           SolverT& solver, double theta= 0.5, double nonlinear= 1, bool implicitCurv= false);
+                            SolverT& solver, double theta= 0.5, double nonlinear= 1, bool implicitCurv= false,
+                            bool usematMG= false, MGDataCL* matMG= 0);
     ~LinThetaScheme2PhaseCL();
 
     void SetTimeStep( double dt, double theta= -1) {
