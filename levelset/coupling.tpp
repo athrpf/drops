@@ -192,7 +192,6 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
         LB_.SetIdx( vidx, vidx);
         cplLB_.SetIdx( vidx);
     }
-    _mat->clear();
     _Stokes.ClearMat();
     _LvlSet.ClearMat();
 
