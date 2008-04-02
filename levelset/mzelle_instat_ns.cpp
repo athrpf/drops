@@ -186,7 +186,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         // Time-integration and coupling
 //        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
 //        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
-        typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
+        typedef FracStepScheme2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
         CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
@@ -244,7 +244,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
 //        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL>
 //            cpl( Stokes, lset, ISPschurSolver, C.inner_iter, C.inner_tol, C.nonlinear);
-        CouplLsNsBaenschCL<StokesProblemT, InexactUzawaT>
+        OperatorSplitting2PhaseCL<StokesProblemT, InexactUzawaT>
             cpl( Stokes, lset, inexactUzawaSolver, C.inner_iter, C.inner_tol, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);

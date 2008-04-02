@@ -6,7 +6,7 @@
 
 #include "geom/multigrid.h"
 #include "geom/builder.h"
-#include "stokes/instatstokes2phase.h"
+#include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
 #include "out/output.h"
@@ -112,10 +112,10 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
 };
 
 template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
+void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 // flow control
 {
-    typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
 
@@ -141,6 +141,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
+    Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
     switch (C.IniCond)
@@ -223,11 +224,14 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 //    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
     OseenSolverT oseenSolver( velpc, ispc, C.outer_iter, C.outer_tol);
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> SolverT;
+    SolverT navstokessolver(Stokes, oseenSolver);
 
 //    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
 //        cpl( Stokes, lset, ISPschurSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, OseenSolverT>
-        cpl( Stokes, lset, oseenSolver, C.theta, /*withProjection*/ true);
+
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
+        cpl( Stokes, lset, navstokessolver, C.theta, 0.);
 //    ProjThetaSchemeStokes2PhaseCL<StokesProblemT, OseenSolverT>
 //        cpl( Stokes, lset, oseenSolver, C.theta);
 
@@ -327,7 +331,7 @@ int main (int argc, char** argv)
     std::cerr << C << std::endl;
 
     typedef ZeroFlowCL                              CoeffT;
-    typedef DROPS::InstatStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;
     orig[2]= -C.mesh_size[2]/2;

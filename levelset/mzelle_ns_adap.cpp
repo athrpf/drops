@@ -310,7 +310,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         // Time-integration and coupling
 //        typedef CouplLevelsetNavStokes2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
 //        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, C.cpl_stab);
-        typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
+        typedef FracStepScheme2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
         CouplingT cpl( Stokes, lset, nssolver, C.nonlinear, /*projection step*/ 0, C.cpl_stab);
         ispc.SetMatrixA( cpl.GetUpperLeftBlock());
 

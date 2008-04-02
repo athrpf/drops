@@ -134,6 +134,7 @@ class LevelsetP2CL
     void ComputeRhs( VectorCL&) const;
     const MatrixCL& GetL() const { return L_; }
     void DoStep    ( const VectorCL&);
+    void DoLinStep ( const VectorCL&);
     ///@}
 };
 

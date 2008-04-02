@@ -6,15 +6,15 @@
 
 # time stepping
 Time {
-  NumSteps	=	0
-  StepSize	=	1e-4
+  NumSteps	=	20
+  StepSize	=	0.05
   ThetaLevelset	=	1	# IE
   ThetaStokes	=	1	# IE
 }
 
 # flow solver
 Stokes {
-  StokesMethod	=	11
+  StokesMethod	=	999
   InnerIter	=	1000
   OuterIter	=	100
   InnerTol	=	1e-14
@@ -25,15 +25,16 @@ Stokes {
 Levelset {
   Tol		=	1e-14
   Iter		=	10000
-  SD		=	0
-  CurvDiff	=	-5e-9
-  VolCorrection	=	0
+  SD		=	0.1
+  CurvDiff	=	-1
+  VolCorrection	=	1
 }
 
 Coupling {
   Tol 		= 	1
-  Iter 		= 	-1 	# = till convergence
+  Iter 		= 	10	# -1 = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
+  Projection	=	1       # 1= Perform a projection step before FP-Iteration
 }
 
 # re-initialization of levelset function
@@ -45,10 +46,10 @@ Reparam {
 # material data, all units are SI
 Mat {
   DensDrop	=	1
-  ViscDrop	=	1
-  DensFluid	=	1
+  ViscDrop	=	2
+  DensFluid	=	10
   ViscFluid	=	1
-  SmoothZone	=	1e-5
+  SmoothZone	=	0.05
 
   SurfTension	=	1
 }
@@ -63,30 +64,31 @@ Exp {
 #  RadDrop = 0 0 0
 #  PosDrop = 0 -1 -1
 
-#  static Bubble
-  RadDrop = 0.6666666 0.6666666 0.6666666
-  PosDrop = 0 0 0
+  RadDrop = 0.25 0.25 0.25
+  PosDrop = 0.5 0.5 0.5
 
-  Gravity	=	0	0	0
+  Gravity	=	0	0	-9.81
 
-  FlowDir	=	1	# no effect
+  FlowDir	=	1	
 
-  InflowVel	=	-0.14	# no effect
-  RadInlet	=	3.5e-3	# no effect
+  InflowVel	=	-0.14	
+  RadInlet	=	3.5e-3
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	0	# no effect
-  FinestLevel	=	2
-  Width		=	1e-8
+  Freq		=	0
+  FinestLevel	=	2      # here: uniform refinement level
+  Width		=	0.1
 }
 
 # miscellaneous
 
-XFEMStab        =       1.0
-InitialCond	=	1	# 1 = stat. Lsg,    2 = p einsetzen, nach u loesen
+XFEMStab        =       -0.1    # < 0 => P1-FE
+InitialCond	=	1
 InitialFile	=	xxx
-MeshFile	=	4	# num subdivisions of cube
-EnsightCase	=	prJump
+MeshFile	=	3       # num subdivisions of cube
+EnsightCase	=	risingBubble
 EnsightDir	=	ensight
+SerializationFile =	none
+DeserializationFile =	none

@@ -575,12 +575,25 @@ void LevelsetP2CL::SetTimeStep( double dt, double theta)
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
-    rhs= (1./dt_)*(E*Phi.Data) - (1-theta_)*(H*Phi.Data);
+    rhs= (1./dt_)*Phi.Data;
+    if (theta_ != 1.) {
+        GMResSolverCL<SSORPcCL> gm( gm_);
+        VectorCL tmp( rhs.size());
+        gm.Solve( E, tmp, VectorCL( H*Phi.Data));
+        std::cerr << "ComputeRhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
+        rhs-= (1. - theta_)*tmp;
+    }
+}
+
+void LevelsetP2CL::DoLinStep( const VectorCL& rhs)
+{
+    gm_.Solve( L_, Phi.Data, rhs);
+    std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
-    gm_.Solve( L_, Phi.Data, rhs);
+    gm_.Solve( L_, Phi.Data, VectorCL( E*rhs));
     std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 

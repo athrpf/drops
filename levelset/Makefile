@@ -60,14 +60,15 @@ risingBubble: \
     ../levelset/risingBubble.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/params.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o \
-    ../num/fe.o ../stokes/instatstokes2phase.o ../out/ensightOut.o ../stokes/integrTime.o
+    ../num/fe.o ../stokes/instatstokes2phase.o ../levelset/params.o ../num/MGsolver.o ../out/ensightOut.o \
+    ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 risingBubbleAdap: \
     ../levelset/risingBubbleAdap.o ../geom/boundary.o ../geom/builder.o ../levelset/levelset.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/params.o ../misc/problem.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o ../levelset/params.o \
-    ../stokes/instatstokes2phase.o ../out/ensightOut.o ../stokes/integrTime.o
+    ../stokes/instatstokes2phase.o ../num/MGsolver.o  ../out/ensightOut.o ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 mzelle_stat: \
@@ -130,7 +131,7 @@ prJump: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o
+    ../num/fe.o ../num/MGsolver.o  ../out/ensightOut.o ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \

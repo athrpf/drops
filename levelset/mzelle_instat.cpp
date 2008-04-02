@@ -6,9 +6,10 @@
 
 #include "geom/multigrid.h"
 #include "geom/builder.h"
-#include "stokes/instatstokes2phase.h"
+#include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
+#include "num/nssolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
@@ -143,7 +144,7 @@ class MyPMinresSP_fullMG_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorC
 // We know, there are only natural boundary conditions.
 template<class Coeff>
 void
-SetupPrStiffMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes,
+SetupPrStiffMG(DROPS::InstatNavierStokes2PhaseP2P1CL<Coeff>& stokes,
     DROPS::MGDataCL& MGData, const LevelsetP2CL& lset)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
@@ -171,7 +172,7 @@ SetupPrStiffMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes,
 
 template<class Coeff>
 void
-SetupPrMassMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes,
+SetupPrMassMG(DROPS::InstatNavierStokes2PhaseP2P1CL<Coeff>& stokes,
     DROPS::MGDataCL& MGData, const LevelsetP2CL& lset)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
@@ -199,10 +200,10 @@ SetupPrMassMG(DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes,
 }
 
 template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
+void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
 {
-    typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= Stokes.GetCoeff().SurfTens;
@@ -243,6 +244,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
+    Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
 
@@ -341,31 +343,57 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     inexactUzawaSolver.SetTol( C.outer_tol);
     stokessolver.SetTol( C.outer_tol);
 
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
-        cpl1( Stokes, lset, ISPschurSolver, C.theta);
-//    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawa_CL>
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur_PCG_CL> Solver1T;
+    Solver1T solver1(Stokes, ISPschurSolver);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver1T>
+        cpl1( Stokes, lset, solver1, C.theta, 0.);
+
+//    LinThetaScheme2PhaseCL<StokesProblemT, InexactUzawa_CL>
 //        cpl2( Stokes, lset, inexactUzawaSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaNonlinear_CL>
-        cpl2( Stokes, lset, inexactUzawaSolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, PMinresSP_Diag_CL>
-        cpl3( Stokes, lset, stokessolver, C.theta);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur2_MG_CL>
-        cpl4( Stokes, lset, ISPschur2SolverMG, C.theta, false,
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawaNonlinear_CL> Solver2T;
+    Solver2T solver2(Stokes, inexactUzawaSolver);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver2T>
+        cpl2( Stokes, lset, solver2, C.theta, 0.);
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, PMinresSP_Diag_CL> Solver3T;
+    Solver3T solver3(Stokes, stokessolver);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver3T>
+        cpl3( Stokes, lset, solver3, C.theta, 0.);
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur2_MG_CL> Solver4T;
+    Solver4T solver4(Stokes, ISPschur2SolverMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver4T>
+        cpl4( Stokes, lset, solver4, C.theta, 0., false,
         C.StokesMethod==schurMG, &VelMGPreData);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaMG_CL>
-        cpl5( Stokes, lset, inexactUzawaSolverMG, C.theta, false,
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawaMG_CL> Solver5T;
+    Solver5T solver5(Stokes, inexactUzawaSolverMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver5T>
+        cpl5( Stokes, lset, solver5, C.theta, 0., false,
         C.StokesMethod==inexactuzawaMG, &VelMGPreData);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, MyPMinresSP_Diag_CL>
-        cpl6( Stokes, lset, stokessolverMG, C.theta, false,
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, MyPMinresSP_Diag_CL> Solver6T;
+    Solver6T solver6(Stokes, stokessolverMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver6T>
+        cpl6( Stokes, lset, solver6, C.theta, 0., false,
         C.StokesMethod==minresMG, &VelMGPreData);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur2_fullMG_CL>
-        cpl7( Stokes, lset, ISPschur2SolverfullMG, C.theta, false,
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur2_fullMG_CL> Solver7T;
+    Solver7T solver7(Stokes, ISPschur2SolverfullMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver7T>
+        cpl7( Stokes, lset, solver7, C.theta, 0., false,
         C.StokesMethod==schurfullMG, &VelMGPreData);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, InexactUzawaFullMG_CL>
-        cpl8( Stokes, lset, inexactUzawaSolverFullMG, C.theta, false,
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawaFullMG_CL> Solver8T;
+    Solver8T solver8(Stokes, inexactUzawaSolverFullMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver8T>
+        cpl8( Stokes, lset, solver8, C.theta, 0., false,
         C.StokesMethod==inexactuzawafullMG, &VelMGPreData);
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, MyPMinresSP_fullMG_CL>
-        cpl9( Stokes, lset, stokessolverfullMG, C.theta, false,
+
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, MyPMinresSP_fullMG_CL> Solver9T;
+    Solver9T solver9(Stokes, stokessolverfullMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, Solver9T>
+        cpl9( Stokes, lset, solver9, C.theta, 0., false,
         C.StokesMethod==minresfullMG, &VelMGPreData);
 
     switch (C.StokesMethod) {
@@ -453,7 +481,7 @@ int main (int argc, char** argv)
     std::cerr << C << std::endl;
 
     typedef ZeroFlowCL                              CoeffT;
-    typedef DROPS::InstatStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     std::ifstream meshfile( C.meshfile.c_str());
     if (!meshfile)

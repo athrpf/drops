@@ -245,7 +245,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
         NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
-        CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT>
+        FracStepScheme2PhaseCL<StokesProblemT, NSSolverT>
             cpl( Stokes, lset, nssolver, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);
@@ -304,7 +304,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
 //        CouplLsNsBaenschCL<StokesProblemT, ISPSchur_PCG_CL>
 //            cpl( Stokes, lset, ISPschurSolver, C.inner_iter, C.inner_tol, C.nonlinear);
-        CouplLsNsBaenschCL<StokesProblemT, InexactUzawaT>
+        OperatorSplitting2PhaseCL<StokesProblemT, InexactUzawaT>
             cpl( Stokes, lset, inexactUzawaSolver, C.inner_iter, C.inner_tol, C.nonlinear);
 
         cpl.SetTimeStep( C.dt);

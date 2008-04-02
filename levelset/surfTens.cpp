@@ -7,9 +7,10 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "geom/builder.h"
-#include "stokes/instatstokes2phase.h"
+#include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
+#include "num/nssolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
@@ -49,10 +50,10 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
 };
 
 template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
+void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
 {
-    typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
@@ -98,6 +99,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
+    Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
 
@@ -139,8 +141,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
 
-    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
-        cpl( Stokes, lset, ISPschurSolver, C.theta);
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur_PCG_CL> SolverT;
+    SolverT navstokessolver(Stokes, ISPschurSolver);
+
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
+        cpl( Stokes, lset, navstokessolver, C.theta, 0.);
     cpl.SetTimeStep( C.dt);
 
     for (int step= 1; step<=C.num_steps; ++step)
@@ -217,7 +222,7 @@ int main (int argc, char** argv)
     param.close();
     std::cerr << C << std::endl;
 
-    typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
 
     const double L= 3e-3;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
