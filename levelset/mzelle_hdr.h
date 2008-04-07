@@ -86,7 +86,7 @@ class InterfaceInfoCL
     }
 } IFInfo; 
 
-const double eps=5e-4, // Sprungbreite
+double eps=5e-4, // Sprungbreite
     lambda=1.5, // Position des Sprungs zwischen Oberkante (lambda=0) und Schwerpunkt (lambda=1)
     sigma_dirt_fac= 0.8; // gesenkte OFspannung durch Verunreinigungen im unteren Teil des Tropfens 
 double sigma;
@@ -133,8 +133,9 @@ DROPS::Point3DCL grad_lin (const DROPS::Point3DCL&)
 
 double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
 DROPS::Point3DCL gsigma (const DROPS::Point3DCL&, double) { return DROPS::Point3DCL(); } 
-// double sigmaf(const DROPS::Point3DCL& p, double) { return sm_step( p); } 
-// DROPS::Point3DCL gsigma (const DROPS::Point3DCL& p, double) { return grad_sm_step( p); } 
+
+double sigma_step(const DROPS::Point3DCL& p, double) { return sm_step( p); } 
+DROPS::Point3DCL gsigma_step (const DROPS::Point3DCL& p, double) { return grad_sm_step( p); } 
 
 double One( const DROPS::Point3DCL&) { return 1.; }
 
