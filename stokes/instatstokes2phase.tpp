@@ -1442,6 +1442,71 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, const LevelsetP2C
 }
 
 template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL* vel,
+    const ExtIdxDescCL& v_idx, const LevelsetP2CL& lset, double t) const
+{
+    Bdotv->Clear();
+    const Uint lvl= Bdotv->GetLevel();
+    IdxT prNumb[4];
+    LocalNumbP2CL num;
+
+    LocalP1CL<Point3DCL>  Grad[10], GradRef[10]; // Gradient of p2-hat-functions
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    LocalP2CL<Point3DCL>  lp2Grad;
+    LocalP2CL<Point3DCL> loc_u;
+    LocalP2CL<>  divu;
+    Quad5_2DCL<Point3DCL> qGrad;
+    Quad5_2DCL<Point3DCL> n, qu;
+    Quad5_2DCL<> qdivu, q1, q2;
+    LocalP1CL<double> lp1[4]; // p1-hat-functions
+    for (int i= 0; i < 4; ++i) lp1[i][i]= 1.;
+
+    SMatrixCL<3,3> T;
+    double det;
+    InterfacePatchCL cut;
+
+    DROPS_FOR_TRIANG_TETRA( _MG, lvl, sit) {
+        cut.Init( *sit, lset.Phi);
+        if (!cut.Intersects()) continue;
+
+        num.assign( *sit, *v_idx.Idx, _BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *Bdotv->RowIdx);
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        loc_u.assign( *sit, *vel, GetBndData().Vel, t);
+        divu= 0.;
+        for (int i= 0; i < 10; ++i) {
+            lp2Grad.assign( Grad[i]);
+            divu+= dot( LocalP2CL<Point3DCL>( loc_u[i]), lp2Grad);
+        }
+        for (int ch= 0; ch < 8; ++ch) {
+            cut.ComputeForChild( ch);
+            for (int t= 0; t < cut.GetNumTriangles(); ++t) {
+                const BaryCoordCL* const p( &cut.GetBary( t));
+                qu.assign( loc_u, p);
+                qdivu.assign( divu, p);
+                n= Point3DCL();
+                for (int v= 0; v < 10; ++v) {
+                    qGrad.assign( Grad[v], p);
+                    n+= cut.GetPhi( v)*qGrad;
+                }
+                for (int i= 0; i < Quad5_2DCL<>::NumNodesC; ++i)
+                    if (n[i].norm()>1e-8) n[i]/= n[i].norm();
+                q1= dot( n, qu)*qdivu;
+                for(int pr= 0; pr < 4; ++pr) {
+                    const IdxT xidx( v_idx[prNumb[pr]]);
+                    if (xidx == NoIdx) continue;
+                    q2.assign( lp1[pr], p);
+                    q2*= q1;
+                    // n is the outer normal of {lset <= 0}; we need the outer normal of supp(pr-hat-function)\cap \Gamma).
+                    Bdotv->Data[xidx]-= (cut.GetSign( pr) > 0 ? -1. : 1.)*q2.quad( cut.GetFuncDet( t));
+                }
+            }
+        }
+    }
+}
+
+template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart)
 {
     const Uint lvl= p.RowIdx->TriangLevel,

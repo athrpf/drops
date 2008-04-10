@@ -46,7 +46,7 @@ class TimeDisc2PhaseCL
     double GetTimeStep() const { return dt_; }
     const MatrixCL* GetUpperLeftBlock () const { return mat_; }
 
-    virtual void SetTimeStep ( double dt) {dt_= dt;}
+    virtual void SetTimeStep (double dt) {dt_= dt;}
 
     virtual void DoStep( int maxFPiter= -1) = 0;
 
@@ -137,9 +137,13 @@ class ThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
                          bool usematMG= false, MGDataCL* matMG= 0);
     ~ThetaScheme2PhaseCL();
 
-    void SetTimeStep( double dt, double theta= -1) {
+    void SetTimeStep (double dt) { // overwrites base-class-method
         base_::SetTimeStep( dt);
-        if (theta >=0 ) theta_= theta;
+        LvlSet_.SetTimeStep( dt);
+    }
+    void SetTimeStep (double dt, double theta) { // for fractional-step
+        base_::SetTimeStep( dt);
+        theta_= theta;
         LvlSet_.SetTimeStep( dt, theta);
     }
 
@@ -256,9 +260,69 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
     void Update();
 };
 
+
+template <class StokesT, class SolverT>
+class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
+{
+  private:
+    typedef TimeDisc2PhaseCL<StokesT> base_;
+    using base_::Stokes_;
+    using base_::LvlSet_;
+    using base_::b_;       using base_::old_b_;
+    using base_::cplM_;    using base_::old_cplM_;
+    using base_::cplN_;    using base_::old_cplN_;
+    using base_::curv_;    using base_::old_curv_;
+    using base_::rhs_;
+    using base_::ls_rhs_;
+    using base_::mat_; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
+    using base_::theta_;
+    using base_::nonlinear_;
+    using base_::dt_;
+    using base_::usematMG_;
+    using base_::matMG_;
+    using base_::cplLB_;
+    using base_::LB_;
+
+    VectorCL vdot_, // time derivative of v
+             oldv_; // old velocity
+
+    SolverT&     solver_;
+    bool         withProj_;
+    const double stab_;
+
+    void MaybeStabilize (VectorCL&);
+    void ComputePressure ();
+    void ComputeVelocityDot ();
+
+  public:
+    RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
+                         SolverT& solver, double theta= 0.5, double nonlinear= 1.,
+                         bool withProjection= false, double stab= 0.0,
+                         bool usematMG= false, MGDataCL* matMG= 0);
+    ~RecThetaScheme2PhaseCL();
+
+    void SetTimeStep (double dt) { // overwrites baseclass-version
+        base_::SetTimeStep( dt);
+        LvlSet_.SetTimeStep( dt);
+    }
+    void SetTimeStep (double dt, double theta) { // for the fractional-step-method
+        base_::SetTimeStep( dt);
+        theta_= theta;
+        LvlSet_.SetTimeStep( dt, theta_);
+    }
+
+    void InitStep();
+    void DoProjectionStep(const VectorCL&);
+    void DoFPIter();
+    void CommitStep();
+
+    void DoStep( int maxFPiter= -1);
+
+    void Update();
+};
+
 } // end of namespace DROPS
 
 #include "levelset/coupling.tpp"
 
 #endif
-

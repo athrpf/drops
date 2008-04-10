@@ -164,6 +164,23 @@ operator*( const GridFunctionCL<Point3DCL>& a, double b)
     return b*a;
 }
 
+inline GridFunctionCL<Point3DCL>
+operator*( const Point3DCL& a, const GridFunctionCL<double>& b)
+{
+
+    GridFunctionCL<SVectorCL<3> > ret( a, b.size());
+    for (size_t i= 0; i < b.size(); ++i)
+        ret[i]*= b[i];
+    return ret;
+}
+
+inline GridFunctionCL<Point3DCL>
+operator*( const GridFunctionCL<double>& a, const Point3DCL& b)
+{
+
+    return b*a;
+}
+
 inline GridFunctionCL<double>
 dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
 {

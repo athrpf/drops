@@ -575,6 +575,7 @@ void LevelsetP2CL::SetTimeStep( double dt, double theta)
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
+std::cerr << "ComputeRhs-dt_: " << dt_ << std::endl;
     rhs= (1./dt_)*Phi.Data;
     if (theta_ != 1.) {
         GMResSolverCL<SSORPcCL> gm( gm_);

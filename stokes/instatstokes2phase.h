@@ -136,6 +136,9 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up rhs c
     void SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const;
+    /// Set up the time-derivative of B times velocity
+    void SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL* vel,
+        const ExtIdxDescCL& v_idx, const LevelsetP2CL& lset, double t) const;
     /// Set up the mass matrix for the pressure, scaled by \f$\mu^{-1}\f$.
     void SetupPrMass( MatDescCL* prM, const LevelsetP2CL& lset) const;
     /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
