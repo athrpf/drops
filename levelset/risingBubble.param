@@ -14,7 +14,7 @@ Time {
 
 # flow solver
 Stokes {
-  StokesMethod	=	999
+  StokesMethod	=	11 # 999
   InnerIter	=	1000
   OuterIter	=	100
   InnerTol	=	1e-14
@@ -34,7 +34,7 @@ Coupling {
   Tol 		= 	1
   Iter 		= 	10	# -1 = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
-  Projection	=	1       # 1= Perform a projection step before FP-Iteration
+  Projection	=	0 # 1       # 1= Perform a projection step before FP-Iteration
 }
 
 # re-initialization of levelset function
@@ -84,7 +84,7 @@ AdaptRef {
 
 # miscellaneous
 
-XFEMStab        =       -0.1    # < 0 => P1-FE
+XFEMStab        =       0.1    # < 0 => P1-FE
 InitialCond	=	1
 InitialFile	=	xxx
 MeshFile	=	3       # num subdivisions of cube

@@ -1305,6 +1305,24 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
               << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
 }
 
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1MG (MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const
+// Set up the MG-hierarchy
+{
+    for(MGDataCL::iterator it= matMG->begin(); it!=matMG->end(); ++it) {
+        MGLevelDataCL& tmp= *it;
+        MatDescCL A, M;
+        A.SetIdx( &tmp.Idx, &tmp.Idx);
+        M.SetIdx( &tmp.Idx, &tmp.Idx);
+        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+        std::cerr << "Create StiffMatrix for "
+                  << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
+        if(&tmp != &matMG->back()) {
+            SetupMatrices1( &A, &M, lset, t);
+            tmp.A.Data.LinComb( 1./dt, M.Data, theta, A.Data);
+        }
+    }
+}
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const

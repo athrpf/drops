@@ -188,12 +188,13 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
 class PSchur_AR_CL: public SolverBaseCL
 {
   private:
-    MGPreCL Apc_;
+    MGSolverCL mgc;
+    SolverAsPreCL<MGSolverCL> Apc_;
     ISMGPreCL& Spc_;
 
   public:
     PSchur_AR_CL(MGDataCL& A_MG, ISMGPreCL& Spc, int outer_iter, double outer_tol)
-        :SolverBaseCL( outer_iter, outer_tol), Apc_( A_MG, 1), Spc_( Spc)
+        :SolverBaseCL( outer_iter, outer_tol), mgc(A_MG, 1, -1.), Apc_( mgc), Spc_( Spc)
         {}
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c) {
@@ -206,12 +207,13 @@ class PSchur_AR_CL: public SolverBaseCL
 class PSchur_Diag_AR_CL: public SolverBaseCL
 {
   private:
-    MGPreCL Apc_;
-    DiagMatrixPCCL& Spc_;
+      MGSolverCL mgc;
+      SolverAsPreCL<MGSolverCL> Apc_;
+      DiagMatrixPCCL& Spc_;
 
   public:
     PSchur_Diag_AR_CL(MGDataCL& A_MG, DiagMatrixPCCL& Spc, int outer_iter, double outer_tol)
-        :SolverBaseCL( outer_iter, outer_tol), Apc_( A_MG, 1), Spc_( Spc)
+        :SolverBaseCL( outer_iter, outer_tol), mgc(A_MG, 1, -1.), Apc_( mgc), Spc_( Spc)
         {}
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c) {
@@ -1141,14 +1143,16 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     vidx1->Set( 3, 3, 0, 0);
     pidx1->Set( 1, 0, 0, 0);
     TimerCL time;
+    MGSolverCL mgc (MG_vel, 1, -1.);
+    typedef SolverAsPreCL<MGSolverCL> MGPCT;
+    MGPCT MGPC (mgc);
 //    typedef MyUzawaSolver2CL<ISPreCL, PCG_SsorCL> StatsolverCL;
-//    typedef MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPreCL> > StatsolverCL;
-//    typedef MyUzawaSolver2CL<ISPreCL, MGPreCL> StatsolverCL;
-    typedef MyUzawaSolver2CL<ISMGPreCL, MGPreCL> StatsolverCL;
+//    typedef MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPCT> > StatsolverCL;
+//    typedef MyUzawaSolver2CL<ISPreCL, MGPCT> StatsolverCL;
+    typedef MyUzawaSolver2CL<ISMGPreCL, MGPCT> StatsolverCL;
     StatsolverCL* statsolver= 0;
     ISMGPreCL* ispcp= 0;
 //    ISPreCL* ispcp= 0;
-    MGPreCL* velprep= 0;
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
@@ -1170,23 +1174,22 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
 //    PCGSolverCL<ISPreCL> sol1( ispc, stokes_maxiter, stokes_tol);
 //    PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
-    velprep= new MGPreCL( MG_vel, 1);
-//    PCGSolverCL<MGPreCL> sol2( velpre, stokes_maxiter, stokes_tol);
+//    PCGSolverCL<MGPCT> sol2( MGPC, stokes_maxiter, stokes_tol);
 //    statsolver= new MyUzawaSolver2CL<ISPreCL, PCG_SsorCL>(
 //                       ispc,
 //                        sol2,
 //                        M_pr.Data, stokes_maxiter, stokes_tol);
-//    statsolver= new MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPreCL> >(
+//    statsolver= new MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPCT> >(
 //                        ispc,
 //                        sol2,
 //                        M_pr.Data, stokes_maxiter, stokes_tol);
-//    statsolver= new MyUzawaSolver2CL<ISPreCL, MGPreCL>(
+//    statsolver= new MyUzawaSolver2CL<ISPreCL, MGPCT>(
 //                        *ispcp,
-//                        *velprep,
+//                        MGPC,
 //                        M_pr.Data, stokes_maxiter, stokes_tol);
-    statsolver= new MyUzawaSolver2CL<ISMGPreCL, MGPreCL>(
+    statsolver= new MyUzawaSolver2CL<ISMGPreCL, MGPCT>(
                         *ispcp,
-                        *velprep,
+                        MGPC,
                         M_pr.Data, stokes_maxiter, stokes_tol, 1.0/kA);
     std::cerr << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
@@ -1198,7 +1201,6 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DLsgVel, &MyPdeCL::LsgPr);
     delete statsolver;
     delete ispcp;
-    delete velprep;
     ResetSystem( NS);
     MG_pr.clear();
     MG_vel.clear();

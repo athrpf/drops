@@ -36,6 +36,8 @@ class TimeDisc2PhaseCL
     VecDescCL    cplLB_;
     MatDescCL    LB_;
 
+    void SetupProlongations();
+
 
   public:
     TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1., bool usematMG= false, MGDataCL* matMG= 0);
@@ -172,8 +174,8 @@ class FracStepScheme2PhaseCL : public ThetaScheme2PhaseCL<StokesT,SolverT>
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                SolverT& solver, double nonlinear= 1, bool withProjection= false,
-                               double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
+                               double stab= 0.0, int step = -1, bool usematMG= false, MGDataCL* matMG= 0)
+        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab, usematMG, matMG), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }

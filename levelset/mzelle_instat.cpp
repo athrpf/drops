@@ -10,6 +10,7 @@
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
 #include "num/nssolver.h"
+#include "num/MGsolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
@@ -55,6 +56,8 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
           outerSolver_( Spc, outer_iter, outer_tol)
          {}
 };
+
+typedef SolverAsPreCL<MGSolverCL> MGPreCL;
 
 class ISPSchur2_MG_CL: public PSchurSolver2CL<PCGSolverCL<MGPreCL>,
                                               PCGSolverCL<ISPreCL> >
@@ -275,7 +278,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     // Available Stokes-solver: MG for velocities
     MGDataCL VelMGPreData;
-    MGPreCL velmgpc( VelMGPreData);
+    MGSolverCL mgc (VelMGPreData, 1, -1.);
+    SolverAsPreCL<MGSolverCL> velmgpc( mgc);
+
     ISPSchur2_MG_CL ISPschur2SolverMG( velmgpc, ispc,
         C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     typedef InexactUzawaCL<MGPreCL, ISPreCL, APC_SYM_LINEAR> InexactUzawaMG_CL;

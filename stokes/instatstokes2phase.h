@@ -6,6 +6,7 @@
 
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
+#include "num/MGsolver.h"
 
 namespace DROPS
 {
@@ -130,6 +131,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const;
     /// Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
     void SetupMatrices1( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;
+    /// Set up MG-hierarchy
+    void SetupMatrices1MG( MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const;
     /// Set up the Laplace-Beltrami-Operator
     void SetupLB( MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const;
     /// Set up matrix B and rhs c

@@ -45,39 +45,6 @@ enum StokesMethod {
 namespace DROPS {
 
 template<class Coeff>
-void
-SetupPoissonVelocityMG(
-    DROPS::InstatNavierStokes2PhaseP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData,
-    DROPS::LevelsetP2CL& lset, double t, const double theta, const double dt)
-{
-    DROPS::MultiGridCL& mg= stokes.GetMG();
-    DROPS::IdxDescCL* c_idx= 0;
-    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-        MGData.push_back( DROPS::MGLevelDataCL());
-        DROPS::MGLevelDataCL& tmp= MGData.back();
-        std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 3, 3);
-        stokes.CreateNumberingVel( lvl, &tmp.Idx);
-        DROPS::MatDescCL A, M;
-        A.SetIdx( &tmp.Idx, &tmp.Idx);
-        M.SetIdx( &tmp.Idx, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns << std::endl;
-        stokes.SetupMatrices1( &A, &M, lset, t);
-//        stokes.SetupStiffnessMatrix( &A,lset);
-//        stokes.SetupMassMatrix( &M,lset);
-        tmp.A.Data.LinComb( 1./dt, M.Data, theta, A.Data);
-        if(lvl!=0) {
-            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
-            SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-//           std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-        }
-        c_idx= &tmp.Idx;
-    }
-//    CheckMGData( MGData.begin(), MGData.end());    
-}
-
-template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 // flow control
 {
@@ -143,7 +110,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     // Preconditioner for A
         //Multigrid
     MGDataCL velMG;
-    SetupPoissonVelocityMG( Stokes, velMG, lset, Stokes.t, C.theta, C.dt);
     MGSolverCL mgc (velMG, 1, C.inner_tol);
     typedef SolverAsPreCL<MGSolverCL> MGPCT;
     MGPCT MGPC (mgc);

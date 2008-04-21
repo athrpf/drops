@@ -880,16 +880,18 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     const double dt= 1./num_timestep;
     NS.t= 0;
     Uint timestep= 0;
+    MGSolverCL mgc (MG_vel, 1, -1.);
+    typedef SolverAsPreCL<MGSolverCL> MGPCT;
+    MGPCT MGPC (mgc);
 //    typedef MyUzawaSolver2CL<ISPreCL, PCG_SsorCL> StatsolverCL;
-//    typedef MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPreCL> > StatsolverCL;
-//    typedef MyUzawaSolver2CL<ISPreCL, MGPreCL> StatsolverCL;
-    typedef MyUzawaSolver2CL<ISMGPreCL, MGPreCL> StatsolverCL;
+//    typedef MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPCT> > StatsolverCL;
+//    typedef MyUzawaSolver2CL<ISPreCL, MGPCT> StatsolverCL;
+    typedef MyUzawaSolver2CL<ISMGPreCL, MGPCT> StatsolverCL;
     StatsolverCL* statsolver= 0;
     typedef InstatStokesThetaSchemeCL<StokesCL, StatsolverCL> InstatsolverCL;
     InstatsolverCL* instatsolver= 0;
     ISMGPreCL* ispcp= 0;
 //    ISPreCL* ispcp= 0;
-    MGPreCL* velprep= 0;
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
@@ -909,7 +911,6 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
                 delete statsolver; statsolver= 0;
                 delete instatsolver; instatsolver= 0;
                 delete ispcp; ispcp= 0;
-                delete velprep; velprep= 0;
                 MG_pr.clear();
                 MG_vel.clear();
                 MG_Mpr.clear();
@@ -938,23 +939,22 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
             ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
 //            PCGSolverCL<ISPreCL> sol1( ispc, stokes_maxiter, stokes_tol);
 //            PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
-            velprep= new MGPreCL( MG_vel, 1);
-//            PCGSolverCL<MGPreCL> sol2( velpre, stokes_maxiter, stokes_tol);
+//            PCGSolverCL<MGPCT> sol2( MGPC, stokes_maxiter, stokes_tol);
 //            statsolver= new MyUzawaSolver2CL<ISPreCL, PCG_SsorCL>(
 //                               ispc,
 //                                sol2,
 //                                M_pr.Data, stokes_maxiter, stokes_tol);
-//            statsolver= new MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPreCL> >(
+//            statsolver= new MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPCT> >(
 //                                ispc,
 //                                sol2,
 //                                M_pr.Data, stokes_maxiter, stokes_tol);
-//            statsolver= new MyUzawaSolver2CL<ISPreCL, MGPreCL>(
+//            statsolver= new MyUzawaSolver2CL<ISPreCL,MGPCT>(
 //                                *ispcp,
-//                                *velprep,
+//                                MGPC,
 //                                M_pr.Data, stokes_maxiter, stokes_tol);
-            statsolver= new MyUzawaSolver2CL<ISMGPreCL, MGPreCL>(
+            statsolver= new MyUzawaSolver2CL<ISMGPreCL, MGPCT>(
                                 *ispcp,
-                                *velprep,
+                                MGPC,
                                 M_pr.Data, stokes_maxiter, stokes_tol, 1.0);
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
@@ -972,7 +972,6 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     delete instatsolver;
     delete statsolver;
     delete ispcp;
-    delete velprep;
     ResetSystem( NS);
     MG_pr.clear();
     MG_vel.clear();

@@ -24,6 +24,8 @@ TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, 
     usematMG_( usematMG), matMG_( usematMG ? matMG : new MGDataCL)
 {
     Stokes_.SetLevelSet( ls);
+    matMG_->push_back(MGLevelDataCL());
+    mat_= &matMG_->back().A.Data;
 }
 
 template <class StokesT>
@@ -37,6 +39,31 @@ TimeDisc2PhaseCL<StokesT>::~TimeDisc2PhaseCL()
     delete cplN_; delete old_cplN_;
     delete curv_; delete old_curv_;
     if (!usematMG_) delete matMG_;
+}
+
+template <class StokesT>
+void TimeDisc2PhaseCL<StokesT>::SetupProlongations()
+{
+    MultiGridCL& mg= Stokes_.GetMG();
+    IdxDescCL* c_idx= 0;
+    MGDataIterCL fl=matMG_->begin();
+    MGDataIterCL it;
+    for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
+        if (lvl != mg.GetLastLevel())
+            it = matMG_->insert( fl, MGLevelDataCL());
+        else
+            ++it; // it points now to the finest level
+        MGLevelDataCL& tmp= *it;
+        std::cerr << "    Create indices on Level " << lvl << std::endl;
+        tmp.Idx.Set( 3, 3);
+        Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
+        if(lvl!=0) {
+            std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
+            SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
+//            std::cout << "    Matrix P " << tmp.P.Data << std::endl;
+        }
+        c_idx= &tmp.Idx;
+    }
 }
 
 // ==============================================
@@ -84,22 +111,9 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
         Stokes_.SetupLB( &LB_, &cplLB_, LvlSet_, Stokes_.t);
         mat_->LinComb( 1., mat0, dt_, LB_.Data);
     }
-    //TODO implicite curvature
-    if (usematMG_) {
-        for(MGDataCL::iterator it= matMG_->begin(); it!=matMG_->end(); ++it) {
-            MGLevelDataCL& tmp= *it;
-            MatDescCL A, M;
-            A.SetIdx( &tmp.Idx, &tmp.Idx);
-            M.SetIdx( &tmp.Idx, &tmp.Idx);
-            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-            std::cerr << "DoFPIter: Create StiffMatrix for "
-                    << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
-            if(&tmp != &matMG_->back()) {
-                Stokes_.SetupMatrices1( &A, &M, LvlSet_, Stokes_.t);
-                tmp.A.Data.LinComb( 1./dt_, M.Data, theta_, A.Data);
-            }
-        }
-    }
+    //TODO implicite curvature on coarser levels
+    if (usematMG_)
+        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes for old level set took "<<time.GetTime()<<" sec.\n";
     time.Reset();
@@ -228,31 +242,9 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
-    if (usematMG_) {
-        matMG_->clear();
-        MultiGridCL& mg= Stokes_.GetMG();
-        IdxDescCL* c_idx= 0;
-        for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-            matMG_->push_back( MGLevelDataCL());
-            MGLevelDataCL& tmp= matMG_->back();
-            std::cerr << "    Create indices on Level " << lvl << std::endl;
-            tmp.Idx.Set( 3, 3);
-            Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
-            if(lvl!=0) {
-                std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
-                SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-//                std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-            }
-            c_idx= &tmp.Idx;
-        }
-    }
-    else {
-        matMG_->clear();
-        matMG_->push_back( MGLevelDataCL());
-    }
-    // mat_ is always a pointer to mat_MG->back().A.Data for efficiency.
-    mat_= &matMG_->back().A.Data;
-
+    matMG_->RemoveCoarseResetFinest();
+    if (usematMG_) 
+        base_::SetupProlongations();
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
 }
@@ -371,23 +363,8 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::DoProjectionStep( const VectorCL& rhs
     VectorCL b2( Stokes_.M.Data*VectorCL(rhs_ + rhscurv) + /*(1./dt_)*_cplM->Data + use only if time-dep boundary-data is implemented*/
         theta_*b_->Data + dt_*cplLB_.Data);
 
-    if (usematMG_) {
-        for(MGDataCL::iterator it= matMG_->begin(); it!=matMG_->end(); ++it) {
-            MGLevelDataCL& tmp= *it;
-            MatDescCL A, M;
-            A.SetIdx( &tmp.Idx, &tmp.Idx);
-            M.SetIdx( &tmp.Idx, &tmp.Idx);
-            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-            std::cerr << "DoProjectionStep: Create (incomplete) StiffMatrix for "
-                    << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
-            if(&tmp != &matMG_->back()) {
-                Stokes_.SetupMatrices1( &A, &M, LvlSet_, Stokes_.t);
-                tmp.A.Data.LinComb( 1./dt_, M.Data, theta_, A.Data);
-                // TODO: also introduce LB in linear combination. 
-                // SetupLB(..) does not work on grids coarser than that for the level set function.
-            }
-        }
-    }
+    if (usematMG_)
+        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
 
@@ -461,21 +438,8 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
     mat_->LinComb( 1./dt_, Stokes_.M.Data, theta_, Stokes_.A.Data);
     VectorCL b2( Stokes_.M.Data*rhs_ /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data*/ + theta_*(curv_->Data + b_->Data));
     MaybeStabilize( b2);
-    if (usematMG_) {
-        for(MGDataCL::iterator it= matMG_->begin(); it!=matMG_->end(); ++it) {
-            MGLevelDataCL& tmp= *it;
-            MatDescCL A, M;
-            A.SetIdx( &tmp.Idx, &tmp.Idx);
-            M.SetIdx( &tmp.Idx, &tmp.Idx);
-            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-            std::cerr << "DoFPIter: Create StiffMatrix for "
-                    << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
-            if(&tmp != &matMG_->back()) {
-                Stokes_.SetupMatrices1( &A, &M, LvlSet_, Stokes_.t);
-                tmp.A.Data.LinComb( 1./dt_, M.Data, theta_, A.Data);
-            }
-        }
-    }
+    if (usematMG_)
+        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
 
@@ -586,30 +550,9 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
         ComputePressure();
 
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
-    if (usematMG_) {
-        matMG_->clear();
-        MultiGridCL& mg= Stokes_.GetMG();
-        IdxDescCL* c_idx= 0;
-        for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-            matMG_->push_back( MGLevelDataCL());
-            MGLevelDataCL& tmp= matMG_->back();
-            std::cerr << "    Create indices on Level " << lvl << std::endl;
-            tmp.Idx.Set( 3, 3);
-            Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
-            if(lvl!=0) {
-                std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
-                SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-//                std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-            }
-            c_idx= &tmp.Idx;
-        }
-    }
-    else {
-        matMG_->clear();
-        matMG_->push_back( MGLevelDataCL());
-    }
-    // _mat is always a pointer to _matMG->back().A.Data for efficiency.
-    mat_= &matMG_->back().A.Data;
+    matMG_->RemoveCoarseResetFinest();
+    if (usematMG_) 
+        base_::SetupProlongations();
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
 }
@@ -655,7 +598,6 @@ OperatorSplitting2PhaseCL<StokesT,SolverT>::OperatorSplitting2PhaseCL
     cplA_( new VelVecDescCL), old_cplA_( new VelVecDescCL),
     alpha_( (1.0 - 2.0*theta_)/(1.0 - theta_))
 {
-    mat_= new MatrixCL();
     std::cerr << "theta = " << theta_ << "\talpha = " << alpha_ << std::endl;
     Update();
 }
@@ -664,7 +606,6 @@ template <class StokesT, class SolverT>
 OperatorSplitting2PhaseCL<StokesT,SolverT>::~OperatorSplitting2PhaseCL()
 {
     delete cplA_; delete old_cplA_;
-    delete mat_;
 }
 
 template <class StokesT, class SolverT>
@@ -989,21 +930,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
     mat_->LinComb( 1./dt_, Stokes_.M.Data, theta_, Stokes_.A.Data);
     VectorCL b2( Stokes_.M.Data*rhs_ /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data + coupling of M with vdot_new*/ + theta_*(curv_->Data + b_->Data));
     MaybeStabilize( b2);
-    if (usematMG_) {
-        for(MGDataCL::iterator it= matMG_->begin(); it!=matMG_->end(); ++it) {
-            MGLevelDataCL& tmp= *it;
-            MatDescCL A, M;
-            A.SetIdx( &tmp.Idx, &tmp.Idx);
-            M.SetIdx( &tmp.Idx, &tmp.Idx);
-            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-            std::cerr << "DoFPIter: Create StiffMatrix for "
-                    << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
-            if(&tmp != &matMG_->back()) {
-                Stokes_.SetupMatrices1( &A, &M, LvlSet_, Stokes_.t);
-                tmp.A.Data.LinComb( 1./dt_, M.Data, theta_, A.Data);
-            }
-        }
-    }
+    if (usematMG_)
+        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
 
@@ -1135,30 +1063,9 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
 
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
-    if (usematMG_) {
-        matMG_->clear();
-        MultiGridCL& mg= Stokes_.GetMG();
-        IdxDescCL* c_idx= 0;
-        for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-            matMG_->push_back( MGLevelDataCL());
-            MGLevelDataCL& tmp= matMG_->back();
-            std::cerr << "    Create indices on Level " << lvl << std::endl;
-            tmp.Idx.Set( 3, 3);
-            Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
-            if(lvl!=0) {
-                std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
-                SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-//                std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-            }
-            c_idx= &tmp.Idx;
-        }
-    }
-    else {
-        matMG_->clear();
-        matMG_->push_back( MGLevelDataCL());
-    }
-    // _mat is always a pointer to _matMG->back().A.Data for efficiency.
-    mat_= &matMG_->back().A.Data;
+    matMG_->RemoveCoarseResetFinest();
+    if (usematMG_) 
+        base_::SetupProlongations();
     time.Stop();
     std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
 }
