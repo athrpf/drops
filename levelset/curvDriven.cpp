@@ -8,7 +8,7 @@
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "geom/builder.h"
-#include "stokes/stokes.h"
+#include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
 #include "num/stokessolver.h"
 #include "out/output.h"
@@ -27,13 +27,18 @@ const int   FPsteps= -1;
 
 class ZeroFlowCL
 {
+// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
   public:
-    static double q(const DROPS::Point3DCL&) { return 0.0; }
-    static DROPS::SVectorCL<3> f(const DROPS::Point3DCL&, double)
-        { DROPS::SVectorCL<3> ret(0.0); return ret; }
-    const double nu;
+    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
+        { DROPS::Point3DCL ret(0.0); return ret; }
+    const DROPS::SmoothedJumpCL rho, mu;
+    const double SurfTens;
+    const DROPS::Point3DCL g;
 
-    ZeroFlowCL() : nu(1.0) {}
+    ZeroFlowCL()
+      : rho( DROPS::JumpCL( 1., 1.), DROPS::H_sm, 0.1),
+        mu(  DROPS::JumpCL( 1., 1.), DROPS::H_sm, 0.1),
+        SurfTens( 0.), g( 0.)    {}
 };
 
 // Tropfendaten:
@@ -43,7 +48,7 @@ double           Radius= 0.25;
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     DROPS::Point3DCL d= Mitte-p;
-//    d[0]/= 1.8;
+    d[0]/= 1.8;
     return d.norm()-Radius;
 }
 
@@ -54,12 +59,10 @@ namespace DROPS // for Strategy
 {
 
 
-template<class Coeff>
-void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol)
+template<class StokesProblemT>
+void Strategy(StokesProblemT& Stokes, double inner_iter_tol)
 // flow control
 {
-    typedef StokesP2P1CL<Coeff> StokesProblemT;
-
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL  lidx;
@@ -100,11 +103,11 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol)
     A->SetIdx(vidx, vidx);
     B->SetIdx(pidx, vidx);
     M->SetIdx(vidx, vidx);
+    Stokes.N.SetIdx(vidx, vidx);
     prM.SetIdx( pidx, pidx);
     time.Reset();
     time.Start();
-    Stokes.SetupInstatSystem( A, B, M);
-    Stokes.SetupPrMass( &prM);
+    Stokes.SetupPrMass( &prM, lset);
     time.Stop();
     std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
 
@@ -161,9 +164,12 @@ v->Clear();
 
     if (meth)
     {
-        PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
-        CouplLevelsetStokesCL<StokesProblemT, PSchur_GSPCG_CL>
-            cpl( Stokes, lset, schurSolver);
+        typedef PSchur_GSPCG_CL StokesSolverT;
+        PSchur_GSPCG_CL StokesSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
+        typedef DummyFixedPtDefectCorrCL<StokesProblemT, StokesSolverT> SolverT;
+        SolverT dummyFP( Stokes, StokesSolver);
+        LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
+            cpl( Stokes, lset, dummyFP, /*theta*/ 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
         for (Uint step= 1; step<=num_steps; ++step)
@@ -181,9 +187,12 @@ v->Clear();
         Uint inner_iter;
         tau=  0.5*delta_t;
         std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-        Uzawa_PCG_CL uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
-        CouplLevelsetStokesCL<StokesProblemT, Uzawa_PCG_CL>
-            cpl( Stokes, lset, uzawaSolver);
+        typedef Uzawa_PCG_CL StokesSolverT;
+        StokesSolverT uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
+        typedef DummyFixedPtDefectCorrCL<StokesProblemT, StokesSolverT> SolverT;
+        SolverT dummyFP( Stokes, uzawaSolver);
+        LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
+            cpl( Stokes, lset, dummyFP, /*theta*/ 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
         for (Uint step= 1; step<=num_steps; ++step)
@@ -230,7 +239,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
 
-    typedef DROPS::StokesP2P1CL<ZeroFlowCL> MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<ZeroFlowCL> MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
 

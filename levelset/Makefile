@@ -46,14 +46,14 @@ lsshear: \
     ../levelset/lsshear.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o
+    ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 curvDriven: \
     ../levelset/curvDriven.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o
+    ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 risingBubble: \
