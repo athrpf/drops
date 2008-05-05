@@ -776,15 +776,18 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 };
 
 
-class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL>
+class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
 {
   private:
-    MGSolverCL _MGsolver;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> _MGsolver;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   solver_;
   public:
     PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
                   MGDataCL& MGData, int inner_iter, double inner_tol )
-        : PSchurSolverCL<MGSolverCL>( _MGsolver, M, outer_iter, outer_tol ),
-          _MGsolver( MGData, inner_iter, inner_tol )
+        : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
+          _MGsolver( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
 };
 
@@ -808,19 +811,22 @@ class PSchur2_PCG_CL: public PSchurSolver2CL<PCG_SsorCL,
 };
 */
 
-class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL>
+class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
 {
   private:
     PCG_SsorCL PCGsolver_;
-    MGSolverCL MGsolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGsolver_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   solver_;
 
   public:
     Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
                 MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
-        : UzawaSolver2CL<PCG_SsorCL, MGSolverCL>( PCGsolver_, MGsolver_, M,
+        : UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, M,
                                                   outer_iter, outer_tol, tau),
           PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
-          MGsolver_( MGData, inner_iter, inner_tol)
+          MGsolver_( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          smoother_(1.), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
 };
 

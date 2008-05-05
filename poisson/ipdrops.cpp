@@ -142,8 +142,11 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   std::cerr << "Check Data...\n";
   CheckMGData(MGData.begin(), MGData.end());
 
-  MGSolverCL mg_solver(MGData, maxiter, tol);
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, MGSolverCL>
+  SSORsmoothCL smoother(1.0);
+  SSORPcCL     directpc(1.0);
+  PCG_SsorCL   solver(SSORPcCL(1.0), 500, tol);
+  MGSolverCL<SSORsmoothCL, PCG_SsorCL> mg_solver(MGData, smoother, solver, maxiter, tol);
+  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
     ThetaScheme(Poisson, mg_solver, theta);
 
   ThetaScheme.SetTimeStep(dt);

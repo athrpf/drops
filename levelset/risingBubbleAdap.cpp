@@ -106,8 +106,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     // Preconditioner for A
         //Multigrid
     MGDataCL velMG;
-    MGSolverCL mgc (velMG, 1, C.inner_tol);
-    typedef SolverAsPreCL<MGSolverCL> MGPCT;
+    SSORsmoothCL smoother(1.0);
+    PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, C.inner_tol);
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (velMG, smoother, coarsesolver, 1, -1.0, false);
+    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
     MGPCT MGPC (mgc);
         //PCG
     typedef SSORPcCL APcPcT;

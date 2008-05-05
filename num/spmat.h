@@ -14,7 +14,7 @@
 #include <vector>
 #include <deque>
 #include <numeric>
-#if __GNUC__ >= 4
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
 #    include <tr1/unordered_map>
 #else
 #    include <map>
@@ -192,7 +192,7 @@ public:
     typedef T                        valueT;
     typedef SparseMatBaseCL<T>       spmatT;
     typedef std::pair<size_t,valueT> entryT;
-#if __GNUC__ >= 4
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
     typedef std::tr1::unordered_map<size_t,valueT> couplT;
 #else
     typedef std::map<size_t,valueT> couplT;
@@ -263,7 +263,7 @@ void SparseMatBuilderCL<T>::Build()
     _mat->resize( _rows, _cols, nz);
 
     nz= 0;
-#if __GNUC__ >= 4
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
     typedef std::pair<size_t, T> PT;
     std::vector<PT> pv;
     for (size_t i= 0; i < _rows; ++i) {

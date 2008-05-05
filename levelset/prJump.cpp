@@ -704,8 +704,10 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
             //Multigrid
         MGDataCL velMG;
         SetupPoissonVelocityMG( Stokes, velMG, lset, Stokes.t);
-        MGSolverCL mgc (velMG, 1, C.inner_tol);
-        typedef SolverAsPreCL<MGSolverCL> MGPCT;
+        SSORsmoothCL smoother(1.0);
+        PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, C.inner_tol);
+        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (velMG, smoother, coarsesolver, 1, -1.0, false);
+        typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
         MGPCT MGPC (mgc);
         VectorCL xx( 1.0, vidx->NumUnknowns);
         double rhoinv = 0.99*(1.0-1.1*0.363294);

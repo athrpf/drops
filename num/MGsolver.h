@@ -66,49 +66,33 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
 // The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
 template<class SmootherCL, class DirectSolverCL>
 void MG(const MGDataCL& MGData, const SmootherCL&, DirectSolverCL&, VectorCL& x, const VectorCL& b,
-        int& maxiter, double& tol, const bool residerr= true);
+        int& maxiter, double& tol, const bool residerr= true, Uint sm=1, int lvl=-1);
 
 
 template<class SmootherT, class DirectSolverT>
-class MGSolverBaseCL : public SolverBaseCL
+class MGSolverCL : public SolverBaseCL
 {
   private:
     const MGDataCL&      mgdata_;
     const SmootherT&     smoother_;
     DirectSolverT&       directSolver_;
+    const bool residerr_;
+    Uint smoothSteps_;
+    Uint usedLevels_;
 
   public:
-    MGSolverBaseCL( const MGDataCL& mgdata, const SmootherT& sm, DirectSolverT& ds, int maxiter, double tol )
-        : SolverBaseCL(maxiter,tol), mgdata_(mgdata), smoother_(sm), directSolver_(ds) {}
+    MGSolverCL( const MGDataCL& mgdata, const SmootherT& sm, DirectSolverT& ds, int maxiter, double tol,
+               const bool residerr= true, Uint smsteps= 1, int lvl= -1 )
+        : SolverBaseCL(maxiter,tol), mgdata_(mgdata), smoother_(sm), directSolver_(ds),
+          residerr_(residerr), smoothSteps_(smsteps), usedLevels_(lvl) {}
 
     void Solve(const MatrixCL& /*A*/, VectorCL& x, const VectorCL& b)
     {
         _res=  _tol;
         _iter= _maxiter;
-        MG( mgdata_, smoother_, directSolver_, x, b, _iter, _res);
+        MG( mgdata_, smoother_, directSolver_, x, b, _iter, _res, residerr_, smoothSteps_, usedLevels_);
     }
 };
-
-
-class MGSolverCL : public MGSolverBaseCL<SSORsmoothCL, PCG_SsorCL>
-// standard Multigrid solver: SSOR smoother, PCG(SSOR) direct solver
-{
-  private:
-//    JORsmoothCL  smoother_; // Jacobi
-//    GSsmoothCL   smoother_; // Gauss-Seidel
-//    SGSsmoothCL  smoother_; // symmetric Gauss-Seidel
-//    SORsmoothCL  smoother_; // Gauss-Seidel with over-relaxation
-    SSORsmoothCL smoother_; // symmetric Gauss-Seidel with over-relaxation
-//    CGSolverCL  solver_( 500, tol); //CG-Verfahren
-    SSORPcCL     directpc_; 
-    PCG_SsorCL   solver_;
-
-  public:
-    MGSolverCL( const MGDataCL& mgdata, int maxiter, double tol)
-        : MGSolverBaseCL<SSORsmoothCL, PCG_SsorCL>( mgdata, smoother_, solver_, maxiter, tol), 
-          smoother_(1.), directpc_(1.), solver_(directpc_, 500, tol) {}
-};
-
 
 //===================================
 // definition of template functions
@@ -159,11 +143,9 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
 template<class SmootherCL, class DirectSolverCL>
 void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solver, 
         VectorCL& x, const VectorCL& b,
-        int& maxiter, double& tol, const bool residerr)
+        int& maxiter, double& tol, const bool residerr, Uint sm, int lvl)
 {
     const_MGDataIterCL finest= --MGData.end();
-    Uint   sm   =  1; // how many smoothing steps?
-    int    lvl  = -1; // how many levels? (-1=all)
     double resid= -1;
     double old_resid;
     VectorCL tmp;

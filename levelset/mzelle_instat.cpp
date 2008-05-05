@@ -57,7 +57,7 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
          {}
 };
 
-typedef SolverAsPreCL<MGSolverCL> MGPreCL;
+typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPreCL;
 
 class ISPSchur2_MG_CL: public PSchurSolver2CL<PCGSolverCL<MGPreCL>,
                                               PCGSolverCL<ISPreCL> >
@@ -278,8 +278,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     // Available Stokes-solver: MG for velocities
     MGDataCL VelMGPreData;
-    MGSolverCL mgc (VelMGPreData, 1, -1.);
-    SolverAsPreCL<MGSolverCL> velmgpc( mgc);
+    SSORsmoothCL smoother(1.0);
+    PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, C.inner_tol);
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (VelMGPreData, smoother, coarsesolver, 1, -1., false);
+    SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > velmgpc( mgc);
 
     ISPSchur2_MG_CL ISPschur2SolverMG( velmgpc, ispc,
         C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);

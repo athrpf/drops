@@ -188,13 +188,16 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
 class PSchur_AR_CL: public SolverBaseCL
 {
   private:
-    MGSolverCL mgc;
-    SolverAsPreCL<MGSolverCL> Apc_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   coarsesolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
+    SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > Apc_;
     ISMGPreCL& Spc_;
 
   public:
     PSchur_AR_CL(MGDataCL& A_MG, ISMGPreCL& Spc, int outer_iter, double outer_tol)
-        :SolverBaseCL( outer_iter, outer_tol), mgc(A_MG, 1, -1.), Apc_( mgc), Spc_( Spc)
+        :SolverBaseCL( outer_iter, outer_tol), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
+         mgc(A_MG, smoother_, coarsesolver_, 1, -1., false), Apc_( mgc), Spc_( Spc)
         {}
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c) {
@@ -207,13 +210,16 @@ class PSchur_AR_CL: public SolverBaseCL
 class PSchur_Diag_AR_CL: public SolverBaseCL
 {
   private:
-      MGSolverCL mgc;
-      SolverAsPreCL<MGSolverCL> Apc_;
+      SSORsmoothCL smoother_;
+      PCG_SsorCL   coarsesolver_;
+      MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc_;
+      SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > Apc_;
       DiagMatrixPCCL& Spc_;
 
   public:
     PSchur_Diag_AR_CL(MGDataCL& A_MG, DiagMatrixPCCL& Spc, int outer_iter, double outer_tol)
-        :SolverBaseCL( outer_iter, outer_tol), mgc(A_MG, 1, -1.), Apc_( mgc), Spc_( Spc)
+        :SolverBaseCL( outer_iter, outer_tol), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
+         mgc_(A_MG, smoother_, coarsesolver_, 1, -1., false), Apc_( mgc_), Spc_( Spc)
         {}
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c) {
@@ -796,20 +802,23 @@ class PSchur2_PCG_Pr_MG_CL: public PSchurSolver2CL<PCG_SsorCL,
         {}
 };
 
-class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL,
+class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>,
                                                  PCGSolverCL<ISMGPreCL> >
 {
   private:
-    MGSolverCL             solver_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   coarsesolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> solver_;
     PCGSolverCL<ISMGPreCL> solver2_;
 
   public:
     PSchur2_Full_MG_CL(MGDataCL& A_MG, ISMGPreCL& Spc,
                        int outer_iter, double outer_tol,
                        int inner_iter, double inner_tol)
-        : PSchurSolver2CL<MGSolverCL, PCGSolverCL<ISMGPreCL> >(
-              solver_, solver2_, outer_iter, outer_tol),
-          solver_( A_MG, inner_iter, inner_tol),
+        : PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>, PCGSolverCL<ISMGPreCL> >(
+          solver_, solver2_, outer_iter, outer_tol),
+          smoother_(1.0), coarsesolver_(SSORPcCL(1.0), 500, inner_tol),
+          solver_( A_MG, smoother_, coarsesolver_, inner_iter, inner_tol),
           solver2_( Spc, outer_iter, outer_tol)
         {}
 };
@@ -1143,8 +1152,10 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     vidx1->Set( 3, 3, 0, 0);
     pidx1->Set( 1, 0, 0, 0);
     TimerCL time;
-    MGSolverCL mgc (MG_vel, 1, -1.);
-    typedef SolverAsPreCL<MGSolverCL> MGPCT;
+    SSORsmoothCL smoother(1.0);
+    PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, 1e-14);
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (MG_vel, smoother, coarsesolver, 1, -1.0, false);
+    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
     MGPCT MGPC (mgc);
 //    typedef MyUzawaSolver2CL<ISPreCL, PCG_SsorCL> StatsolverCL;
 //    typedef MyUzawaSolver2CL<ISPreCL, PCGSolverCL<MGPCT> > StatsolverCL;

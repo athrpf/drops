@@ -258,7 +258,7 @@ class EdgeCL
       { return IsOnBoundary() ? (_Bnd[1] == NoBndC ? _Bnd.begin()+1 : _Bnd.end() ) : _Bnd.begin(); }
     bool            IsInTriang    (Uint TriLevel)      const                                ///< check if edge can be found in a triangulation level
       { return GetLevel() == TriLevel || ( GetLevel() < TriLevel && !IsRefined() ); }
-    const short int GetMFR        ()                   const { return _MFR; }
+    short int GetMFR              ()                   const { return _MFR; }
 
     // Debugging
     bool IsSane    (std::ostream&) const;                                                   ///< check for sanity
