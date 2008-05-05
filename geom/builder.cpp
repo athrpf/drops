@@ -1578,8 +1578,7 @@ void MGSerializationCL::WriteTetras()
                    << faceAddressMap[p->GetFace(0)]     << " " << faceAddressMap[p->GetFace(1)] << " "
                    << faceAddressMap[p->GetFace(2)]     << " " << faceAddressMap[p->GetFace(3)] << " "
                    << tetraAddressMap[p->GetParent()];
-        Uint children = p->GetRefData().ChildNum;
-        if (children>0) {
+        if (!p->IsUnrefined()) {
             if (!child_start) child_file << '\n';
             else child_start=false;
             child_file << tetraAddressMap[&*p] << " ";

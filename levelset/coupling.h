@@ -89,7 +89,11 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
                             bool usematMG= false, MGDataCL* matMG= 0);
     ~LinThetaScheme2PhaseCL();
 
-    void SetTimeStep( double dt, double theta= -1) {
+    void SetTimeStep (double dt) { // overwrites base-class-method
+        base_::SetTimeStep( dt);
+        LvlSet_.SetTimeStep( dt);
+    }
+    void SetTimeStep( double dt, double theta) {
         base_::SetTimeStep( dt);
         if (theta >=0 ) theta_= theta;
         LvlSet_.SetTimeStep( dt, theta);
