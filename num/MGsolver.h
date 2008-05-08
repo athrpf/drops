@@ -18,8 +18,6 @@
 namespace DROPS
 {
 
-
-
 struct MGLevelDataCL  // data for one triang level
 {
     IdxDescCL Idx;    // index description
@@ -64,6 +62,7 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
 
 // Uses MGM for solving to tolerance tol or until maxiter iterations are reached.
 // The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
+// sm controls the number of smoothing steps, lvl the number of used levels
 template<class SmootherCL, class DirectSolverCL>
 void MG(const MGDataCL& MGData, const SmootherCL&, DirectSolverCL&, VectorCL& x, const VectorCL& b,
         int& maxiter, double& tol, const bool residerr= true, Uint sm=1, int lvl=-1);
