@@ -75,6 +75,30 @@ namespace DROPS // for Strategy
 
 using ::MyPdeCL;
 
+class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
+        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+        {}
+};
+
+template <class NavStokesT>
+class FPDeCo_Uzawa_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
+{
+  private:
+    Uzawa_PCG_CL _uzawaSolver;
+
+  public:
+    FPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
+                         int poiss_maxiter, double poiss_tol, double reduction= 0.1)
+        : FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
+          _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
+        {}
+};
 
 template<class Coeff>
 void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_maxiter,

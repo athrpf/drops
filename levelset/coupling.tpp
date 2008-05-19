@@ -1092,7 +1092,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     ScaleCols( *Bs, VectorCL( std::sqrt( Dvelinv)));
     VectorCL D( 1.0/BBTDiag( *Bs));
     delete Bs;
-    GCRSolverCL<DiagPcCL> Ssolver( DiagPcCL( D), 200, 200, 1e-10, true);
+    GMResSolverCL<DiagPcCL> Ssolver( DiagPcCL( D), 200, 200, 1e-10, true);
 
     VectorCL b4( Stokes_.B.Data*b3);
     if (Stokes_.UsesXFEM()) {

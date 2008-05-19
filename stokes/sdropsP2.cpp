@@ -70,6 +70,100 @@ namespace DROPS // for Strategy
 
 using ::MyStokesCL;
 
+class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
+        : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+        {}
+};
+
+class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
+{
+  private:
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> _MGsolver;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   solver_;
+  public:
+    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
+                  MGDataCL& MGData, int inner_iter, double inner_tol )
+        : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
+          _MGsolver( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
+        {}
+};
+
+class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
+        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+        {}
+};
+
+class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
+{
+  private:
+    PCG_SsorCL PCGsolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGsolver_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   solver_;
+
+  public:
+    Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
+                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
+        : UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, M,
+                                                  outer_iter, outer_tol, tau),
+          PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
+          MGsolver_( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          smoother_(1.), solver_(SSORPcCL(1.0), 500, inner_tol)
+        {}
+};
+
+class MinresSPCL : public PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >
+{
+  private:
+    LanczosONB_SPCL<MatrixCL, VectorCL> q_;
+
+  public:
+    MinresSPCL(int maxiter, double tol)
+        :PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >( q_, maxiter, tol),
+         q_()
+    {}
+};
+
+class PMinresSP_DiagPCG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >
+{
+  private:
+    DiagPCGPreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> q_;
+
+  public:
+    PMinresSP_DiagPCG_CL(const MatrixCL& M, int maxiter, double tol, double omega= 1.)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >( q_, maxiter, tol),
+         pre_( M, omega), q_( pre_)
+    {}
+};
+
+class PMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >
+{
+  private:
+    DiagMGPreCL pre_;
+    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> q_;
+
+  public:
+    PMinresSP_DiagMG_CL(const MGDataCL& A, const MatrixCL& M, int iter_vel, int maxiter, double tol)
+        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >( q_, maxiter, tol),
+         pre_( A, M, iter_vel), q_( pre_)
+    {}
+};
+
 template<class Coeff>
 void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, double tol, int meth,
                                            Uint maxStep, double rel_red, double markratio,

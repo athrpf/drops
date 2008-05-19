@@ -58,6 +58,17 @@ namespace DROPS // for Strategy
 {
 using ::MyStokesCL;
 
+class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter,
+                  double inner_tol, double tau= 1., double omega=1.)
+        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+        {}
+};
 
 template<class Coeff>
 void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter_tol, Uint maxStep, double rel_red)

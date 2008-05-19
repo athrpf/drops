@@ -69,6 +69,32 @@ namespace DROPS // for Strategy
 {
 using ::MyStokesCL;
 
+class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
+{
+  private:
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> _MGsolver;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   solver_;
+  public:
+    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
+                  MGDataCL& MGData, int inner_iter, double inner_tol )
+        : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
+          _MGsolver( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
+        {}
+};
+
+class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
+        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+        {}
+};
+
 template<class Coeff>
 void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, int meth,
                                             Uint maxStep, double rel_red, double markratio,

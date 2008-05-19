@@ -67,6 +67,18 @@ double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
 namespace DROPS // for Strategy
 {
 
+class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
+{
+  private:
+    PCG_SgsCL _PCGsolver;
+  public:
+    PSchur_GSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
+        : PSchurSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_iter, outer_tol),
+          _PCGsolver(SGSPcCL(), inner_iter, inner_tol)
+        {}
+    PCG_SgsCL& GetPoissonSolver() { return _PCGsolver; }
+};
+
 template<class Coeff>
 void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, double inner_iter_tol)
 // flow control

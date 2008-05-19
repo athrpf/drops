@@ -688,204 +688,6 @@ class Minres_SSOR_IS_PreCL
     }
 };
 
-
-//=============================================================================
-//  Derived classes for easier use
-//=============================================================================
-
-class Uzawa_CG_CL : public UzawaSolverCL<CGSolverCL>
-{
-  private:
-    CGSolverCL _CGsolver;
-  public:
-    Uzawa_CG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
-        : UzawaSolverCL<CGSolverCL>( _CGsolver, M, outer_iter, outer_tol, tau),
-          _CGsolver( inner_iter, inner_tol)
-        {}
-};
-
-class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
-{
-  private:
-    PCG_SsorCL _PCGsolver;
-  public:
-    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
-        : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
-        {}
-};
-
-class Uzawa_SGSPCG_CL : public UzawaSolverCL<PCG_SgsCL>
-{
-  private:
-    PCG_SgsCL _PCGsolver;
-  public:
-    Uzawa_SGSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
-        : UzawaSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
-          _PCGsolver(SGSPcCL(1.), inner_iter, inner_tol)
-        {}
-};
-
-class Schur_PCG_CL: public SchurSolverCL<PCG_SsorCL>
-{
-  private:
-    PCG_SsorCL _PCGsolver;
-  public:
-    Schur_PCG_CL(int outer_iter, double outer_tol, int inner_iter, double inner_tol)
-        : SchurSolverCL<PCG_SsorCL>( _PCGsolver, outer_iter, outer_tol),
-          _PCGsolver(SSORPcCL(1.), inner_iter, inner_tol)
-        {}
-};
-
-
-class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
-{
-  private:
-    PCG_SsorCL _PCGsolver;
-  public:
-    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
-        : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
-        {}
-};
-
-
-class PSchur_IPCG_CL: public PSchurSolverCL<PCG_SsorDiagCL>
-{
-  private:
-    PCG_SsorDiagCL _PCGsolver;
-  public:
-    PSchur_IPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
-        : PSchurSolverCL<PCG_SsorDiagCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SSORDiagPcCL(1.), inner_iter, inner_tol)
-        {}
-    PCG_SsorDiagCL& GetPoissonSolver() { return _PCGsolver; }
-};
-
-
-class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
-{
-  private:
-    PCG_SgsCL _PCGsolver;
-  public:
-    PSchur_GSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
-        : PSchurSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SGSPcCL(), inner_iter, inner_tol)
-        {}
-    PCG_SgsCL& GetPoissonSolver() { return _PCGsolver; }
-};
-
-
-class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
-{
-  private:
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> _MGsolver;
-    SSORsmoothCL smoother_;
-    PCG_SsorCL   solver_;
-  public:
-    PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
-                  MGDataCL& MGData, int inner_iter, double inner_tol )
-        : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
-          _MGsolver( MGData, smoother_, solver_, inner_iter, inner_tol ),
-          smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
-        {}
-};
-
-
-/*
-// Reimplementation of PSchur_PCG_CL with PSchurSolver2CL;
-// this is only a check for the new class.
-class PSchur2_PCG_CL: public PSchurSolver2CL<PCG_SsorCL,
-                                             PCGSolverCL< PreGSOwnMatCL<P_SSOR0> > >
-{
-  private:
-    PCG_SsorCL PCGsolver_;
-    PCGSolverCL< PreGSOwnMatCL<P_SSOR0> > PCGsolver2_;
-
-  public:
-    PSchur2_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
-        : PSchurSolver2CL<PCG_SsorCL, PCGSolverCL< PreGSOwnMatCL<P_SSOR0> > >( PCGsolver_, PCGsolver2_, outer_iter, outer_tol),
-          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
-          PCGsolver2_( PreGSOwnMatCL<P_SSOR0>( M), outer_iter, outer_tol)
-        {}
-};
-*/
-
-class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
-{
-  private:
-    PCG_SsorCL PCGsolver_;
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGsolver_;
-    SSORsmoothCL smoother_;
-    PCG_SsorCL   solver_;
-
-  public:
-    Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
-                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
-        : UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, M,
-                                                  outer_iter, outer_tol, tau),
-          PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
-          MGsolver_( MGData, smoother_, solver_, inner_iter, inner_tol ),
-          smoother_(1.), solver_(SSORPcCL(1.0), 500, inner_tol)
-        {}
-};
-
-
-class MinresSPCL : public PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >
-{
-  private:
-    LanczosONB_SPCL<MatrixCL, VectorCL> q_;
-
-  public:
-    MinresSPCL(int maxiter, double tol)
-        :PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >( q_, maxiter, tol),
-         q_()
-    {}
-};
-
-class PMinresSP_DiagPCG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >
-{
-  private:
-    DiagPCGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> q_;
-
-  public:
-    PMinresSP_DiagPCG_CL(const MatrixCL& M, int maxiter, double tol, double omega= 1.)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >( q_, maxiter, tol),
-         pre_( M, omega), q_( pre_)
-    {}
-};
-
-class PMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >
-{
-  private:
-    DiagMGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> q_;
-
-  public:
-    PMinresSP_DiagMG_CL(const MGDataCL& A, const MatrixCL& M, int iter_vel, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >( q_, maxiter, tol),
-         pre_( A, M, iter_vel), q_( pre_)
-    {}
-};
-
-//=============================================================================
-// PMinres solver for the instationary Stokes-Equations without MG.
-//=============================================================================
-class PMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> >
-{
-  private:
-    Minres_SSOR_IS_PreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> q_;
-
-  public:
-    PMinresSP_Diag_CL(const ISPreCL& Spc, int iter_vel, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> >( q_, maxiter, tol),
-         pre_( Spc, iter_vel), q_( pre_)
-    {}
-};
-
-
 //=============================================================================
 //  SchurComplMatrixCL
 //=============================================================================
@@ -1345,6 +1147,272 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
     _res=  _tol;
     _iter= _maxiter;
     InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_, innermaxiter_);
+}
+
+//-----------------------------------------------------------------------------
+// UzawaPCG: The basic scheme is identical to PCG, but two extra recursions for
+//     InexactUzawa are performed to avoid an evaluation of a preconditioner
+//     there.
+//     Also, the matrix is fixed: BQ_A^{-1}B^T and we assume x=zbar=zhat=0
+//     upon entry to this function.
+//     See "Fast iterative solvers for Stokes equation", Peters, Reichelt,
+//     Reusken, Ch. 3.3 Remark 3.
+//-----------------------------------------------------------------------------
+ 
+template <typename Mat, typename Vec, typename PC1, typename PC2>
+bool
+UzawaCGEff(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
+    PC1& Apc, PC2& Spc,
+    int& max_iter, double& tol)
+{
+    double err= std::sqrt( norm_sq( f - ( A*xu + transp_mul( B, xp))) + norm_sq( g - B*xu));
+    const double err0= err;
+    Vec rbaru( f - (A*xu + transp_mul(  B, xp)));
+    Vec rbarp( g - B*xu);
+    Vec ru( f.size());
+    Apc.Apply( A, ru, rbaru);
+    Vec rp( B*ru - rbarp);
+    Vec a( f.size()), b( f.size()), s( f.size()), pu( f.size()), qu( f.size());
+    Vec z( g.size()), pp( g.size()), qp( g.size()), t( g.size());
+    double alpha= 0.0, initialbeta=0.0, beta= 0.0, beta0= 0.0, beta1= 0.0;
+    for (int i= 0; i < max_iter; ++i) {
+        z= 0.0;
+        Spc.Apply( B, z, rp);
+        a= A*ru;
+        beta1= dot(a, ru) - dot(rbaru,ru) + dot(z,rp);
+        if (i==0) initialbeta= beta1;
+        if (beta1 <= 0.0) {throw DROPSErrCL( "UzawaCGEff: Matrix is not spd.\n");}
+        // This is for fair comparisons of different solvers:
+        err= std::sqrt( norm_sq( f - (A*xu + transp_mul( B, xp))) + norm_sq( g - B*xu));
+        std::cerr << "relative residual (2-norm): " << err/err0
+                  << "\t(problem norm): " << std::sqrt( beta1/initialbeta) << '\n';
+//        if (beta1/initialbeta <= tol*tol) {
+//            tol= std::sqrt( beta1/initialbeta);
+        if (err/err0 <= tol) {
+            tol= err/err0;
+            max_iter= i;
+            return true;
+        }
+        if (i != 0) {
+            beta= beta1/beta0;
+            z_xpay( pu, ru, beta, pu); // pu= ru + beta*pu;
+            z_xpay( pp, z, beta, pp);  // pp= z  + beta*pp;
+            z_xpay( b, a, beta, b);    // b= a + beta*b;
+        }
+        else {
+            pu= ru;
+            pp= z;
+            b= a; // A*pu;
+        }
+        qu= b + transp_mul( B, pp);
+        qp= B*pu;
+        s= 0.0;
+        Apc.Apply( A, s, qu);
+        z_xpay( t, B*s, -1.0, qp); // t= B*s - qp;
+        alpha= beta1/(dot( s, b) - dot(qu, pu) + dot(t, pp));
+        axpy( alpha, pu, xu); // xu+= alpha*pu;
+        axpy( alpha, pp, xp); // xp+= alpha*pp;
+        axpy( -alpha, s, ru); // ru-= alpha*s;
+        axpy( -alpha, t, rp); // rp-= alpha*t;
+        axpy( -alpha, qu, rbaru);// rbaru-= alpha*qu;
+        // rbarp-= alpha*qp; rbarp is not needed in this algo.
+        beta0= beta1;
+    }
+    tol= std::sqrt( beta1);
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+// CG: The return value indicates convergence within max_iter (input)
+// iterations (true), or no convergence within max_iter iterations (false).
+// max_iter - number of iterations performed before tolerance was reached
+//      tol - residual after the final iteration
+//-----------------------------------------------------------------------------
+
+template <typename Mat, typename Vec, typename PC1, typename PC2>
+bool
+UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
+        PC1& Apc, PC2& Spc, int& max_iter, double& tol)
+{
+    double err= std::sqrt( norm_sq( b - (A*u + transp_mul( B, p))) + norm_sq( c - B*u));
+    const double err0= err;
+    Vec ru( b - ( A*u + transp_mul(  B, p)));
+    Vec rp( c - B*u);
+    Vec s1( b.size()); // This is r2u...
+    Apc.Apply( A, s1, ru);
+    Vec s2( B*s1 - rp);
+    Vec r2p( c.size());
+    Spc.Apply( B, r2p, s2);
+    double rho0= dot( s1, VectorCL( A*s1 - ru)) + dot( r2p, s2);
+    const double initialrho= rho0;
+//    std::cerr << "UzawaCG: rho: " << rho0 << '\n';
+    if (rho0<=0.0) throw DROPSErrCL("UzawaCG: Matrix is not spd.\n");
+//    tol*= tol*rho0*rho0; // For now, measure the relative error.
+//    if (rho0<=tol) {
+//        tol= std::sqrt( rho0);
+//        max_iter= 0;
+//        return true;
+//    }
+    Vec pu= s1; // s1 is r2u.
+    Vec pp= r2p;
+    Vec qu( A*pu + transp_mul( B, pp));
+    Vec qp= B*pu;
+    double rho1= 0.0;
+    Vec t1( b.size());
+    Vec t2( c.size());
+    for (int i= 1; i<=max_iter; ++i) {
+        Apc.Apply( A, t1, qu);
+        z_xpay( t2, B*t1, -1.0, qp); // t2= B*t1 - qp;
+        const double alpha= rho0/( dot(pu, VectorCL( A*t1 - qu)) + dot( pp, t2));
+        axpy(alpha, pu, u);  // u+= alpha*pu;
+        axpy(alpha, pp, p);  // p+= alpha*pp;
+        axpy( -alpha, qu, ru);
+        axpy( -alpha, qp, rp);
+        s1= 0.0;
+        Apc.Apply( A, s1, ru);
+        z_xpay( s2, B*s1, -1.0, rp); // s2= B*s1 - rp;
+        //axpy( -alpha, t1, s1); // kann die beiden oberen Zeilen ersetzen,
+        //axpy( -alpha, t2, s2); // Algorithmus wird schneller, aber Matrix bleibt nicht spd
+        r2p= 0.0;
+        Spc.Apply( B, r2p, s2);
+        rho1= dot( s1, VectorCL( A*s1 - ru)) + dot( r2p, s2);
+//        std::cerr << "UzawaCG: rho: " << rho1 << '\n';
+        if (rho1<=0.0) throw DROPSErrCL("UzawaCG: Matrix is not spd.\n");
+        // This is for fair comparisons of different solvers:
+        err= std::sqrt( norm_sq( b - (A*u + transp_mul( B, p))) + norm_sq( c - B*u));
+        std::cerr << "relative residual (2-norm): " << err/err0
+                << "\t(problem norm): " << std::sqrt( rho1/initialrho)<< '\n';
+//        if (rho1 <= tol) {
+//            tol= std::sqrt( rho1);
+        if (err <= tol*err0) {
+            tol= err/err0;
+            max_iter= i;
+            return true;
+        }
+        const double beta= rho1/rho0;
+        z_xpay( pu, s1, beta, pu); // pu= s1 + beta*pu; // s1 is r2u.
+        z_xpay( pp, r2p, beta, pp); // pp= r2p + beta*pp;
+        qu= (A*pu) + transp_mul( B, pp);
+        qp= (B*pu);
+        rho0= rho1;
+        t1= 0.0;
+    }
+    tol= std::sqrt( rho1);
+    return false;
+}
+
+template <typename PC1, typename PC2>
+class UzawaCGSolverEffCL : public SolverBaseCL
+{
+  private:
+    PC1& Apc_;
+    PC2& Spc_;
+
+  public:
+    UzawaCGSolverEffCL (PC1& Apc, PC2& Spc, int maxiter, double tol)
+        : SolverBaseCL(maxiter, tol), Apc_( Apc), Spc_( Spc) {}
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c) {
+        _res=  _tol;
+        _iter= _maxiter;
+        UzawaCGEff( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
+    }
+};
+
+template <typename PC1, typename PC2>
+class UzawaCGSolverCL : public SolverBaseCL
+{
+  private:
+    PC1& Apc_;
+    PC2& Spc_;
+
+  public:
+    UzawaCGSolverCL (PC1& Apc, PC2& Spc, int maxiter, double tol)
+        : SolverBaseCL(maxiter, tol), Apc_( Apc), Spc_( Spc) {}
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c) {
+        _res=  _tol;
+        _iter= _maxiter;
+        UzawaCG( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
+    }
+};
+
+//important for ScaledMGPreCL
+double
+EigenValueMaxMG(const MGDataCL& A, VectorCL& x, int iter, double  tol= 1e-3)
+{
+    const_MGDataIterCL finest= --A.end();
+    Uint   sm   =  1; // how many smoothing steps?
+    int    lvl  = -1; // how many levels? (-1=all)
+    double omega= 1.; // relaxation parameter for smoother
+    double l= -1.0;
+    double l_old= -1.0;
+    VectorCL tmp( x.size());
+    VectorCL z( x.size());
+//    JORsmoothCL smoother( omega); // Jacobi
+//    GSsmoothCL smoother( omega); // Gauss-Seidel
+//    SGSsmoothCL smoother( omega); // symmetric Gauss-Seidel
+//    SORsmoothCL smoother( omega); // Gauss-Seidel with over-relaxation
+    SSORsmoothCL smoother( omega); // symmetric Gauss-Seidel with over-relaxation
+//    CGSolverCL  solver( 200, tol); //CG-Verfahren
+    SSORPcCL directpc; PCG_SsorCL solver( directpc, 200, 1e-15);
+    x/= norm( x);
+    std::cerr << "EigenValueMaxMG:\n";
+    for (int i= 0; i<iter; ++i) {
+        tmp= 0.0;
+        MGM( A.begin(), finest, tmp, A.back().A.Data*x, smoother, sm, solver, lvl, -1);
+        z= x - tmp;
+        l= dot( x, z);
+        std::cerr << "iteration: " << i  << "\tlambda: " << l << "\trelative_change= : " << (i==0 ? -1 : std::fabs( (l-l_old)/l_old)) << '\n';
+        if (i > 0 && std::fabs( (l-l_old)/l_old) < tol) break;
+        l_old= l;
+        x= z/norm( z);
+    }
+    std::cerr << "maximal value for lambda: " << l << '\n';
+    return l;
+}
+
+//scaled MG as preconditioner
+class ScaledMGPreCL
+{
+  private:
+    MGDataCL& A_;
+    Uint iter_;
+    double s_;
+    mutable SSORPcCL directpc_;
+    mutable PCG_SsorCL solver_;
+    Uint sm_; // how many smoothing steps?
+    int lvl_; // how many levels? (-1=all)
+    double omega_; // relaxation parameter for smoother
+    mutable SSORsmoothCL smoother_;  // Symmetric-Gauss-Seidel with over-relaxation
+
+  public:
+    ScaledMGPreCL( MGDataCL& A, Uint iter, double s= 1.0)
+        :A_( A), iter_( iter), s_( s), solver_( directpc_, 200, 1e-12), sm_( 1),
+         lvl_( -1), omega_( 1.0), smoother_( omega_)
+    {}
+
+    template <class Mat, class Vec>
+    inline void
+    Apply( const Mat&, Vec& x, const Vec& r) const;
+};
+
+template <class Mat, class Vec>
+inline void
+ScaledMGPreCL::Apply( const Mat&, Vec& x, const Vec& r) const
+{
+    x= 0.0;
+    const double oldres= norm(r - A_.back().A.Data*x);
+    for (Uint i= 0; i < iter_; ++i) {
+        VectorCL r2( r - A_.back().A.Data*x);
+        VectorCL dx( x.size());
+        MGM( A_.begin(), --A_.end(), dx, r2, smoother_, sm_, solver_, lvl_, -1);
+        x+= dx*s_;
+    }
+    const double res= norm(r - A_.back().A.Data*x);
+    std::cerr << "ScaledMGPreCL: it: " << iter_ << "\treduction: " << (oldres==0.0 ? res : res/oldres) << '\n';
 }
 
 } // end of namespace DROPS

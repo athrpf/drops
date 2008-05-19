@@ -28,6 +28,17 @@ DROPS::ParamMesszelleCL C;
 namespace DROPS // for Strategy
 {
 
+class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
+{
+  private:
+    PCG_SsorCL _PCGsolver;
+  public:
+    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
+        : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
+          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+        {}
+};
+
 class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
 {
   public:
