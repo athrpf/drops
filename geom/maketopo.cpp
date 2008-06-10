@@ -302,7 +302,7 @@ void WriteRule(const RefRuleCL& rr, std::ostream& os)
 void WriteRules(const std::vector<RefRuleCL>& refrules, std::ostream& os)
 {
     os << "\n\nconst byte RefRuleAr[]= {\n";
-    for (int i=1; i<64; ++i)
+    for (int i=0; i<64; ++i)
     {
         WriteRule(refrules[i], os);
         if (i!=63) os << ",\n\n";
@@ -322,7 +322,7 @@ int main()
 {
     std::vector<RawTriangCL> rawrules(64);
     std::vector<RefRuleCL> refrules(64);
-    for(Uint i=1; i<64; ++i)
+    for(Uint i=0; i<64; ++i)
     {
         ParseRaw(i, RawRules[i], rawrules[i]);
 //        rawrules[i].Print(std::cout);
