@@ -9,7 +9,7 @@ DIR = tests
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
-        mass quad5 downwind quad5_2D interfaceP1FE serialization xfem
+        mass quad5 downwind quad5_2D interfaceP1FE serialization xfem directsolver
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -177,3 +177,20 @@ xfem: \
 
 # include common rules:
 include ../Make.common
+
+../tests/directsolver.o:
+ifneq ($(DSOLVER_CXXFLAGS),)
+	$(CXX) $(CXXFLAGS) $(DSOLVER_CXXFLAGS) -o $*.o -c $*.cpp
+else
+	@echo "compilation skipped due to missing CHOLMOD/UMFPACK installation"
+endif
+
+ifneq ($(DSOLVER_LFLAGS),)
+directsolver: \
+    ../tests/directsolver.o ../misc/utils.o
+	$(CXX) -o $@ $^ $(LFLAGS) $(DSOLVER_LFLAGS)
+else
+directsolver:
+	@echo "compilation skipped due to missing CHOLMOD/UMFPACK installation"
+endif
+
