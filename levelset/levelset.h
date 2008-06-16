@@ -214,7 +214,6 @@ class InterfacePatchCL
     double             GetFuncDet( int i= 0) const { return sqrtDetATA_*(i==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration for triangle i.
     double             GetAreaFrac()         const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }
     const Point3DCL&   GetGradId( Uint i)    const { return B_[i]; }
-          Point3DCL    GetNormalgeom ()      const; ///< Returns the unit normal to the linear approximation of \Gamma, that points from {ls<0} to {ls>0}.
           Point3DCL    GetNormal ()          const; ///< Returns the unit normal to the linear approximation of \Gamma, that points from {ls<0} to {ls>0}.
           Point3DCL    ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
 

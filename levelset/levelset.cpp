@@ -973,34 +973,6 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
     return true; // computed patch of child;
 }
 
-Point3DCL InterfacePatchCL::GetNormalgeom() const
-{
-    Point3DCL n;
-    cross_product( n, PQRS_[1] - PQRS_[0], PQRS_[2] - PQRS_[0]);
-    n*= 1./n.norm();
-    // Make n point from {ls<0} to {ls>0}.
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
-    for (int edge= 0; edge < 6; ++edge) {
-        const int v0( data.Vertices[ VertOfEdge( edge, 0)]),
-                  v1( data.Vertices[ VertOfEdge( edge, 1)]);
-        if (sign_[v0]*sign_[v1]<0) {// different sign -> 0-level intersects this edge
-            Point3DCL theEdge(sign_[v1]*(Coord_[v1] - Coord_[v0])); // This vector points from {ls<0} to {ls>0}.
-            return ( inner_prod( theEdge, n) > 0. ? 1. : -1.)*n;
-        }
-    }
-    // No edge is properly cut; the level-set is a face.
-    for (int vert= 0; vert < 4; ++vert) {
-        const int v0( data.Vertices[vert]);
-        if (sign_[v0] != 0) {
-            const int v1= data.Vertices[(vert+1)%4]; // Choose any other vertex...
-            if (sign_[v0] != 0) throw DROPSErrCL( "InterfacePatchCL::GetNormal: Interface should have been a face.\n");
-            Point3DCL theEdge(sign_[v0]*(Coord_[v0] - Coord_[v1])); // This vector points from {ls<0} to {ls>0}.
-            return (inner_prod( theEdge, n) > 0. ? 1. : -1.)*n;
-        }
-    }
-    // Never reached.
-    throw DROPSErrCL( "InterfacePatchCL::GetNormal: Couldn't find a normal.\n");
-}
 
 Point3DCL InterfacePatchCL::GetNormal() const
 {
