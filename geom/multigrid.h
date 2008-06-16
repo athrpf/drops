@@ -1127,6 +1127,29 @@ void circumcircle(const TetraCL& t, Point3DCL& c, double& r);
 void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r);
 
 /// calculates the transpose of the transformation  Tetra -> RefTetra
+inline void GetTrafoTr( SMatrixCL<3,3>& T, double& det, const Point3DCL pt[4])
+{
+    double M[3][3];
+    const Point3DCL& pt0= pt[0];
+    for(int i=0; i<3; ++i)
+        for(int j=0; j<3; ++j)
+            M[j][i]= pt[i+1][j] - pt0[j];
+    det=   M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+         - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+         + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]);
+
+    T(0,0)= (M[1][1]*M[2][2] - M[1][2]*M[2][1])/det;
+    T(0,1)= (M[2][0]*M[1][2] - M[1][0]*M[2][2])/det;
+    T(0,2)= (M[1][0]*M[2][1] - M[2][0]*M[1][1])/det;
+    T(1,0)= (M[2][1]*M[0][2] - M[0][1]*M[2][2])/det;
+    T(1,1)= (M[0][0]*M[2][2] - M[2][0]*M[0][2])/det;
+    T(1,2)= (M[2][0]*M[0][1] - M[0][0]*M[2][1])/det;
+    T(2,0)= (M[0][1]*M[1][2] - M[1][1]*M[0][2])/det;
+    T(2,1)= (M[1][0]*M[0][2] - M[0][0]*M[1][2])/det;
+    T(2,2)= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
+}
+
+/// calculates the transpose of the transformation  Tetra -> RefTetra
 inline void GetTrafoTr( SMatrixCL<3,3>& T, double& det, const TetraCL& t)
 {
     double M[3][3];

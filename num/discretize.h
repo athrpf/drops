@@ -190,6 +190,15 @@ dot(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
     return ret;
 }
 
+inline GridFunctionCL<double>
+dot(const Point3DCL& a, const GridFunctionCL<Point3DCL>& b)
+{
+    GridFunctionCL<double> ret( 0.0, b.size());
+    for (size_t i= 0; i<b.size(); ++i)
+        ret[i]= inner_prod( a, b[i]);
+    return ret;
+}
+
 
 //**************************************************************************
 // Class:   LocalP1CL                                                      *
@@ -676,6 +685,7 @@ class P1DiscCL
     // the gradient of hat function i is in column i of H
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
     static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
+    static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const Point3DCL pt[4]);
 };
 
 class P1DDiscCL
@@ -1012,6 +1022,17 @@ inline void P1DiscCL::GetGradients( Point3DCL H[4], double& det, const TetraCL& 
     H[0]= -H[1]-H[2]-H[3];
 }
 
+inline void P1DiscCL::GetGradients (SMatrixCL<3,4>& H, double& det, const Point3DCL pt[4])
+{
+    SMatrixCL<3 ,3> M;
+    GetTrafoTr( M, det, pt);
+    for (Uint i= 0; i<4; ++i) {
+        const Point3DCL tmp( M*FE_P1CL::DHRef( i));
+        H(0, i)= tmp[0];
+        H(1, i)= tmp[1];
+        H(2, i)= tmp[2];
+    }
+}
 
 inline void P1DDiscCL::GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t)
 {
