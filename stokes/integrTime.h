@@ -244,6 +244,7 @@ class ISBBTPreCL
     MatrixCL&  Mvel_;
 
     double     kA_, kM_;
+    double     tolA_, tolM_;
 
     mutable VectorCL D_;
     mutable VectorCL Dprsqrtinv_;
@@ -257,20 +258,21 @@ class ISBBTPreCL
 
   public:
     ISBBTPreCL (MatrixCL& B, MatrixCL& M_pr, MatrixCL& Mvel,
-        double kA= 0., double kM= 1.)
+        double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
         : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL),
-          M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM),
+          M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
           spc_( D_),
-          solver_( spc_, 500, 0.0001, /*relative*/ true),
-          solver2_( JACPcCL( 1.0), 50, 0.0001, /*relative*/ true) {}
+          solver_( spc_, 500, tolA_, /*relative*/ true),
+          solver2_( JACPcCL( 1.0), 50, tolM_, /*relative*/ true) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
           M_( pc.M_), Mvel_( pc.Mvel_),
-          kA_( pc.kA_), kM_( pc.kM_), D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
-          spc_( D_), solver_( spc_, 500, 0.0001, /*relative*/ true),
-          solver2_( JACPcCL( 1.0), 50, 0.0001, /*relative*/ true) {}
+          kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
+          D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
+          spc_( D_), solver_( spc_, 500, tolA_, /*relative*/ true),
+          solver2_( JACPcCL( 1.0), 50, tolM_, /*relative*/ true) {}
 
     ISBBTPreCL& operator= (const ISBBTPreCL&) {
         throw DROPSErrCL( "ISBBTPreCL::operator= is not permitted.\n");
@@ -319,7 +321,8 @@ class MinCommPreCL
     mutable size_t Aversion_, Bversion_, Mvelversion_, Mversion_;
     mutable CompositeMatrixCL BBT_;
     mutable VectorCL D_, Dprsqrtinv_, Dvelsqrtinv_;
-    
+    double  tol_;
+
     typedef DiagPcCL SPcT_;
     SPcT_ spc_;
     mutable PCGSolverCL<SPcT_> solver_;
@@ -327,19 +330,19 @@ class MinCommPreCL
     void Update () const;
 
   public:
-    MinCommPreCL (MatrixCL* A, MatrixCL& B, MatrixCL& Mvel, MatrixCL& M_pr)
+    MinCommPreCL (MatrixCL* A, MatrixCL& B, MatrixCL& Mvel, MatrixCL& M_pr, double tol=1e-2)
         : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
-          BBT_( 0, TRANSP_MUL, 0, MUL),
-          spc_( D_), solver_( spc_, 200, 0.0001, /*relative*/ true) {}
+          BBT_( 0, TRANSP_MUL, 0, MUL), tol_(tol),
+          spc_( D_), solver_( spc_, 200, tol_, /*relative*/ true) {}
 
     MinCommPreCL (const MinCommPreCL & pc)
         : A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
           Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Aversion_( pc.Aversion_), Bversion_( pc.Bversion_), Mvelversion_( pc.Mvelversion_),
           Mversion_( pc.Mversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
-          D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_), Dvelsqrtinv_( pc.Dvelsqrtinv_),
-          spc_( D_), solver_( spc_, 200, 0.0001, /*relative*/ true) {}
+          D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_), Dvelsqrtinv_( pc.Dvelsqrtinv_), tol_(pc.tol_),
+          spc_( D_), solver_( spc_, 200, tol_, /*relative*/ true) {}
 
     MinCommPreCL& operator= (const MinCommPreCL&) {
         throw DROPSErrCL( "MinCommPreCL::operator= is not permitted.\n");
