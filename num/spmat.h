@@ -14,6 +14,7 @@
 #include <vector>
 #include <deque>
 #include <numeric>
+#include <limits>
 #if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
 #    include <tr1/unordered_map>
 #else
@@ -858,11 +859,11 @@ std::istream& operator>> (std::istream& in, SparseMatBaseCL<T>& A)
     size_t numrows, numcols, numnz;
 
     // Read the leading comment: % rows 'x' columns nonzeros "nonzeros\n"
-    while (in && in.get() != '%');
+    while (in && in.get() != '%') ;
     in >> numrows;
-    while ( in && in.get() != 'x');
+    while ( in && in.get() != 'x') ;
     in >> numcols >> numnz;
-    while ( in && in.get() != '\n');
+    while ( in && in.get() != '\n') ;
     if (!in)
         throw DROPSErrCL( "SparseMatBaseCL operator>>: Missing \"% rows cols nz\" comment.\n");
 

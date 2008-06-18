@@ -743,7 +743,7 @@ MeshFaceCL::operator[](Uint i) const
 {
     Assert( i<=num_expected, "MeshFaceCL::operator[](Uint): Index out of bounds.\n", DebugRefineEasyC);
     Uint s= 0;
-    for (; i>section[s].headerinfo[2]; ++s);
+    for (; i>section[s].headerinfo[2]; ++s) ;
     return section[s].mface[i-section[s].headerinfo[1]];
 }
 

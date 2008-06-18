@@ -261,16 +261,16 @@ class ISBBTPreCL
         : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM),
           spc_( D_),
-          solver_( spc_, 500, 0.01, /*relative*/ true),
-          solver2_( JACPcCL( 1.0), 20, 0.01, /*relative*/ true) {}
+          solver_( spc_, 500, 0.0001, /*relative*/ true),
+          solver2_( JACPcCL( 1.0), 50, 0.0001, /*relative*/ true) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
           M_( pc.M_), Mvel_( pc.Mvel_),
           kA_( pc.kA_), kM_( pc.kM_), D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
-          spc_( D_), solver_( spc_, 500, 0.01, /*relative*/ true),
-          solver2_( JACPcCL( 1.0), 20, 0.01, /*relative*/ true) {}
+          spc_( D_), solver_( spc_, 500, 0.0001, /*relative*/ true),
+          solver2_( JACPcCL( 1.0), 50, 0.0001, /*relative*/ true) {}
 
     ISBBTPreCL& operator= (const ISBBTPreCL&) {
         throw DROPSErrCL( "ISBBTPreCL::operator= is not permitted.\n");
@@ -331,7 +331,7 @@ class MinCommPreCL
         : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
           BBT_( 0, TRANSP_MUL, 0, MUL),
-          spc_( D_), solver_( spc_, 200, 0.01, /*relative*/ true) {}
+          spc_( D_), solver_( spc_, 200, 0.0001, /*relative*/ true) {}
 
     MinCommPreCL (const MinCommPreCL & pc)
         : A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
@@ -339,7 +339,7 @@ class MinCommPreCL
           Aversion_( pc.Aversion_), Bversion_( pc.Bversion_), Mvelversion_( pc.Mvelversion_),
           Mversion_( pc.Mversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
           D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_), Dvelsqrtinv_( pc.Dvelsqrtinv_),
-          spc_( D_), solver_( spc_, 200, 0.01, /*relative*/ true) {}
+          spc_( D_), solver_( spc_, 200, 0.0001, /*relative*/ true) {}
 
     MinCommPreCL& operator= (const MinCommPreCL&) {
         throw DROPSErrCL( "MinCommPreCL::operator= is not permitted.\n");

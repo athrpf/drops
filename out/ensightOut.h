@@ -12,6 +12,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cstring>
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 

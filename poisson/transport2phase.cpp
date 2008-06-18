@@ -12,11 +12,12 @@ void TransportP1CL::Init (instat_scalar_fun_ptr cneg, instat_scalar_fun_ptr cpos
                idx= ct.RowIdx->GetIdx();
 
     DROPS_FOR_TRIANG_VERTEX( MG_, lvl, it) {
-        if (it->Unknowns.Exist( idx))
+        if (it->Unknowns.Exist( idx)) {
             if (lset_.Phi.Data[it->Unknowns( lset_.Phi.RowIdx->GetIdx())] <= 0.)
                 ct.Data[it->Unknowns( idx)]= H_*cneg( it->GetCoord(), 0.);
             else
                 ct.Data[it->Unknowns( idx)]= cpos( it->GetCoord(), 0.);
+        }
     }
 }
 

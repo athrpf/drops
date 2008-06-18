@@ -20,6 +20,7 @@
 #include "num/bndData.h"
 #include <iostream>
 #include <numeric>
+#include <cstring>
 
 namespace DROPS
 {

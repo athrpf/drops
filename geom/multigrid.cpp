@@ -470,7 +470,7 @@ void TetraCL::RestrictMark()
             bool setregrefmark= false;
             for (ChildPIterator chp= GetChildBegin(), end= GetChildEnd(); chp!=end; ++chp)
             {
-                if (!setregrefmark)
+                if (!setregrefmark) {
                     if ( (*chp)->IsMarkedForRef() )
                         setregrefmark= true;
                     else
@@ -483,6 +483,7 @@ void TetraCL::RestrictMark()
                                 break;
                             }
                     }
+                }
                 (*chp)->SetNoRefMark();
             }
             if (setregrefmark)
@@ -1060,7 +1061,7 @@ void MultiGridCL::UnrefineGrid (Uint Level)
     {
         Comment("inspecting children of tetra " << tIt->GetId().GetIdent() << "." << std::endl, DebugRefineHardC);
 
-        if ( !tIt->IsUnrefined() )
+        if ( !tIt->IsUnrefined() ) {
             if ( tIt->IsMarkEqRule() )
                 tIt->ClearAllRemoveMarks();
             else
@@ -1068,6 +1069,7 @@ void MultiGridCL::UnrefineGrid (Uint Level)
                 std::for_each(tIt->GetChildBegin(), tIt->GetChildEnd(), std::mem_fun(&TetraCL::SetRemoveMark));
                 if ( !tIt->IsMarkedForNoRef() ) tIt->RecycleReusables();
             }
+        }
     }
 
     Comment("Now physically unlinking and removing superfluous tetras." << std::endl, DebugRefineEasyC);

@@ -98,7 +98,7 @@ SolveGSstep(const PreDummyCL<PB_JAC0>&, const MatrixCL& A, Vec& x, const Vec& b,
 
     for (size_t i= 0; i < n; ++i) {
         nz= A.row_beg( i);
-        for (const size_t end= A.row_beg( i+1); A.col_ind( nz) != i && nz < end; ++nz); // empty loop
+        for (const size_t end= A.row_beg( i+1); A.col_ind( nz) != i && nz < end; ++nz) ; // empty loop
         if (HasOmega)
             x[i]= /*(1.-omega)*x[i]=0  + */ omega*b[i]/A.val( nz);
         else

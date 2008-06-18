@@ -2,6 +2,7 @@
 /// \brief classes that constitute the 2-phase Stokes problem
 
 #include "num/discretize.h"
+#include <cstring>
 
 namespace DROPS
 {
