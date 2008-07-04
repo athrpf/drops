@@ -258,7 +258,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
         localerr= est(*sit, lsg, GetBndData());
         localerr_dist= localerr/std::sqrt(sit->GetVolume());
         globalerr+= localerr*localerr;
-        if ( sit->IsUnrefined() )
+        if ( sit->IsUnrefined() ) {
             if (localerr_dist>rel_loc_tol*exp_err)
             {
                 sit->SetRegRefMark();
@@ -269,6 +269,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
                     sit->SetRemoveMark();
                     ++num_un_ref;
                 }
+        }
     }
     globalerr= std::sqrt(globalerr);
     std::cerr << "Estimated global W1_2-error: " << globalerr << ". Marked " << num_ref << ", unmarked " << num_un_ref
@@ -876,7 +877,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
         localerr= _Estimator(*sit, lsg, bnd);
         localerr_dist= localerr/std::sqrt(sit->GetVolume());
         globalerr+= localerr*localerr;
-        if ( sit->IsUnrefined() )
+        if ( sit->IsUnrefined() ) {
             if (localerr_dist>exp_err)
             {
                 sit->SetRegRefMark();
@@ -887,6 +888,7 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
                     sit->SetRemoveMark();
                     ++_NumLastMarkedForDel;
                 }
+        }
     }
     globalerr= std::sqrt(globalerr);
     if (globalerr<_InitGlobErr*_RelReduction)
