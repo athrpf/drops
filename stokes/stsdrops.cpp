@@ -282,7 +282,7 @@ ZeroMean(DROPS::P1EvalCL< double,
 
 
 typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
-typedef BlockPreCL<APcT, ISPressureMGPreCL> PcT;
+typedef BlockPreCL<APcT, ISMGPreCL> PcT;
 typedef PMResSolverCL<PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL,PcT> > SolverT;
 class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
 {
@@ -293,7 +293,7 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
     PCG_SsorCL   coarsesolver_;
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
     APcT Apc_;
-    ISPressureMGPreCL Spc_;
+    ISMGPreCL Spc_;
     PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, PcT> q_;
 
   public:
@@ -303,7 +303,7 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
         :BlockMatrixSolverCL<SolverT> (solver_), solver_(q_, maxiter, tol),
          pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
          mgc(MGAvel, smoother_, coarsesolver_, iter_vel, -1., false), Apc_( mgc),
-         Spc_(MGApr, Mpr, kA, kM, iter_prA, iter_prM, tol), q_( pre_)
+         Spc_(MGApr, Mpr, kA, kM, iter_prA, iter_prM), q_( pre_)
     {}
 };
 

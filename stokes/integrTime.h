@@ -137,52 +137,11 @@ class ISNonlinearPreCL
 // cf. "Iterative Techniques For Time Dependent Stokes Problems",
 //     James H. Bramble, Joseph E. Pasciak, January 1994
 //
-// Confer ISPreCL for details. This preconditioner uses multigrid-solvers.
-//**************************************************************************
-class ISMGPreCL
-{
-  private:
-    const Uint sm; // how many smoothing steps?
-    const int lvl; // how many levels? (-1=all)
-    const double omega; // relaxation parameter for smoother
-    DROPS::SSORsmoothCL smoother; // symmetric Gauss-Seidel with over-relaxation
-    DROPS::SSORPcCL directpc;
-    mutable DROPS::PCG_SsorCL solver;
-
-    DROPS::MGDataCL& A_;
-    DROPS::MGDataCL& M_;
-    DROPS::Uint max_iter_;
-    double kA_, kM_;
-    std::vector<DROPS::VectorCL> ones_;
-
-  public:
-    ISMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
-              double kA, double kM, DROPS::Uint max_iter)
-        :sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
-         A_( A_pr), M_( M_pr), max_iter_( max_iter), kA_( kA), kM_( kM),
-         ones_( M_.size()) {
-        // Compute projection on constant pressure function only once.
-        Uint i= 0;
-        for (const_MGDataIterCL it= M_.begin(); it != M_.end(); ++it, ++i) {
-            ones_[i].resize( it->Idx.NumUnknowns, 1.0/it->Idx.NumUnknowns);
-        }
-    }
-
-    template <typename Mat, typename Vec>
-    void Apply(const Mat&, Vec& p, const Vec& c) const;
-};
-
-
-//**************************************************************************
-// Preconditioner for the instationary Stokes-equations.
-// cf. "Iterative Techniques For Time Dependent Stokes Problems",
-//     James H. Bramble, Joseph E. Pasciak, January 1994
-//
 // Confer ISPreCL for details regarding preconditioning of S. This
 // preconditioner uses multigrid-solvers.
-// It is a block-diagonal-preconditioner for Minres-solvers.
+//
 //**************************************************************************
-class ISPressureMGPreCL
+class ISMGPreCL
 {
   private:
     const Uint sm; // how many smoothing steps?
@@ -196,17 +155,16 @@ class ISPressureMGPreCL
     DROPS::MGDataCL& Mpr_;
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
-    double tol_prA_;
     double kA_, kM_;
     std::vector<DROPS::VectorCL> ones_;
 
   public:
-    ISPressureMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
-                    double kA, double kM, DROPS::Uint iter_prA,
-                    DROPS::Uint iter_prM, double tol_prA)
+    ISMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
+                    double kA, double kM, DROPS::Uint iter_prA=1,
+                    DROPS::Uint iter_prM = 1)
         : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
           Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM),
-          tol_prA_( tol_prA), kA_( kA), kM_( kM), ones_( Mpr_.size())
+          kA_( kA), kM_( kM), ones_( Mpr_.size())
     {
         // Compute projection on constant pressure function only once.
         Uint i= 0;
@@ -507,48 +465,15 @@ MGMPr(const std::vector<VectorCL>::const_iterator& ones,
 
 template <typename Mat, typename Vec>
 void
-ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+ISMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
 {
     p= 0.0;
     const Vec c2_( c - dot( ones_.back(), c));
-//    double new_res= norm( A_.back().A.Data*p - c2_);
-//    double old_res;
-//    std::cerr << "IsMGPcCL: "
-//              << norm( cc) << " " << norm( A_.back().A.Data*c2_) << " "
-//              << "\tPressure: iterations: " << max_iter_ <<'\t';
-    for (DROPS::Uint i=0; i<max_iter_; ++i) {
-        MGMPr( ones_.end()-1, A_.begin(), --A_.end(), p, c2_, smoother, sm, solver, lvl, -1);
-//        old_res= new_res;
-//        std::cerr << " residual: " <<  (new_res= norm( A_.back().A.Data*p - c2_))
-//                  << '\t' << norm( p)
-//        std::cerr << " reduction: " << new_res/old_res << '\n';
-    }
-    p*= kA_;
-    Vec p2_( c.size());
-//    double mnew_res= norm( M_.back().A.Data*p2_ - c);
-//    double mold_res;
-    for (DROPS::Uint i=0; i<1; ++i) {
-        DROPS::MGM( M_.begin(), --M_.end(), p2_, c, smoother, sm, solver, lvl, -1);
-//        mold_res= mnew_res;
-//        std::cerr << "IsMGPcCL: Mass: residual: " <<  (mnew_res= norm( M_.back().A.Data*p2_ - c)) << '\t';
-//        std::cerr << " reduction: " << mnew_res/mold_res << '\n';
-    }
-//    std::cerr << "M: iterations: " << 1 << '\t'
-//              << "residual: " << norm( M_.back().A.Data*p2_ - c) << '\n';
-    p+= kM_*p2_;
-}
-
-
-template <typename Mat, typename Vec>
-void
-ISPressureMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
-{
-    p= 0.0;
 //    double new_res= (Apr_.back().A.Data*p - c).norm();
 //    double old_res;
 //    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';
     for (DROPS::Uint i=0; i<iter_prA_; ++i) {
-        DROPS::MGMPr( ones_.end()-1, Apr_.begin(), --Apr_.end(), p, c, smoother, sm, solver, lvl, -1);
+        DROPS::MGMPr( ones_.end()-1, Apr_.begin(), --Apr_.end(), p, c2_, smoother, sm, solver, lvl, -1);
 //        old_res= new_res;
 //        std::cerr << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
 //        std::cerr << " reduction: " << new_res/old_res << '\n';
