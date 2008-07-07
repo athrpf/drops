@@ -182,7 +182,7 @@ class ISMGPreCL
 // preconditioner uses multigrid-solvers.
 // It is a block-diagonal-preconditioner for Minres-solvers.
 //**************************************************************************
-class ISMinresMGPreCL
+class ISPressureMGPreCL
 {
   private:
     const Uint sm; // how many smoothing steps?
@@ -192,10 +192,8 @@ class ISMinresMGPreCL
     SSORPcCL directpc;
     mutable PCG_SsorCL solver;
 
-    DROPS::MGDataCL& Avel_;
     DROPS::MGDataCL& Apr_;
     DROPS::MGDataCL& Mpr_;
-    DROPS::Uint iter_vel_;
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
     double tol_prA_;
@@ -203,14 +201,12 @@ class ISMinresMGPreCL
     std::vector<DROPS::VectorCL> ones_;
 
   public:
-    ISMinresMGPreCL(DROPS::MGDataCL& A_vel,
-                    DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
-                    double kA, double kM, DROPS::Uint iter_vel, DROPS::Uint iter_prA,
+    ISPressureMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
+                    double kA, double kM, DROPS::Uint iter_prA,
                     DROPS::Uint iter_prM, double tol_prA)
         : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
-          Avel_( A_vel), Apr_( A_pr), Mpr_( M_pr), iter_vel_( iter_vel),
-         iter_prA_( iter_prA), iter_prM_( iter_prM), tol_prA_( tol_prA), kA_( kA), kM_( kM),
-         ones_( Mpr_.size())
+          Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM),
+          tol_prA_( tol_prA), kA_( kA), kM_( kM), ones_( Mpr_.size())
     {
         // Compute projection on constant pressure function only once.
         Uint i= 0;
@@ -221,7 +217,7 @@ class ISMinresMGPreCL
 
     template <typename Mat, typename Vec>
     void
-    Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const Vec& b, const Vec& c) const;
+    Apply(const Mat& /*A*/, Vec& p, const Vec& c) const;
 };
 
 
@@ -349,7 +345,7 @@ class MinCommPreCL
     }
 
     ~MinCommPreCL () { delete Bs_; }
-    
+
     template <typename Mat, typename Vec>
     void Apply (const Mat&, Vec& x, const Vec& b) const;
 
@@ -545,13 +541,8 @@ ISMGPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 
 template <typename Mat, typename Vec>
 void
-ISMinresMGPreCL::Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const Vec& b, const Vec& c) const
+ISPressureMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
 {
-    for (DROPS::Uint i=0; i<iter_vel_; ++i)
-        DROPS::MGM( Avel_.begin(), --Avel_.end(), v, b, smoother, sm, solver, lvl, -1);
-//    std::cerr << "ISMinresMGPreCL: Velocity: iterations: " << iter_vel_ << '\t'
-//              << " residual: " <<  (Avel_.back().A.Data*v - b).norm() << '\t';
-
     p= 0.0;
 //    double new_res= (Apr_.back().A.Data*p - c).norm();
 //    double old_res;

@@ -217,19 +217,29 @@ ZeroMean(DROPS::P1EvalCL< double,
     }
 }
 
-
-class PMinresSP_FullMG_CL : public PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> >
+typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
+typedef BlockPreCL<APcT, ISPressureMGPreCL> PcT;
+typedef PMResSolverCL<PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL,PcT> > SolverT;
+class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
 {
   private:
-    ISMinresMGPreCL pre_;
-    PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> q_;
+    SolverT solver_;
+    PcT pre_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   coarsesolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
+    APcT Apc_;
+    ISPressureMGPreCL Spc_;
+    PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, PcT> q_;
 
   public:
     PMinresSP_FullMG_CL( DROPS::MGDataCL& MGAvel, DROPS::MGDataCL& MGApr,
                          DROPS::MGDataCL& Mpr, double kA, double kM,
                          int iter_vel, int iter_prA, int iter_prM, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> >( q_, maxiter, tol),
-         pre_( MGAvel, MGApr, Mpr, kA, kM, iter_vel, iter_prA, iter_prM, tol), q_( pre_)
+        :BlockMatrixSolverCL<SolverT> (solver_), solver_(q_, maxiter, tol),
+         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
+         mgc(MGAvel, smoother_, coarsesolver_, iter_vel, -1., false), Apc_( mgc),
+         Spc_(MGApr, Mpr, kA, kM, iter_prA, iter_prM, tol), q_( pre_)
     {}
 };
 

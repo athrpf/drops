@@ -126,41 +126,66 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, P
         {}
 };
 
-class MinresSPCL : public PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >
+typedef PMResSolverCL<LanczosONBCL<BlockMatrixCL, VectorCL> > MinresSPT;
+class MinresSPCL : public BlockMatrixSolverCL<MinresSPT>
 {
   private:
-    LanczosONB_SPCL<MatrixCL, VectorCL> q_;
+    MinresSPT solver_;
+    LanczosONBCL<BlockMatrixCL, VectorCL> q_;
 
   public:
     MinresSPCL(int maxiter, double tol)
-        :PMResSPCL<LanczosONB_SPCL<MatrixCL, VectorCL> >( q_, maxiter, tol),
+        :BlockMatrixSolverCL<MinresSPT>( solver_), solver_(q_, maxiter, tol),
          q_()
     {}
 };
 
-class PMinresSP_DiagPCG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >
+typedef SolverAsPreCL<PCG_SsorCL> PPcT;
+typedef BlockPreCL<PPcT, ISPreCL> BlockDiagPCGPreCL;
+typedef PMResSolverCL<PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagPCGPreCL> > PMinresSP_DiagPCGT;
+class PMinresSP_DiagPCG_CL : public BlockMatrixSolverCL<PMinresSP_DiagPCGT>
 {
   private:
-    DiagPCGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> q_;
+    PMinresSP_DiagPCGT solver_;
+    PCG_SsorCL PPA_;
+    MatrixCL& M_;
+    PPcT PA_;
+    ISPreCL PS_;
+    BlockDiagPCGPreCL pre_;
+    PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagPCGPreCL> q_;
 
   public:
-    PMinresSP_DiagPCG_CL(const MatrixCL& M, int maxiter, double tol, double omega= 1.)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> >( q_, maxiter, tol),
-         pre_( M, omega), q_( pre_)
+    PMinresSP_DiagPCG_CL(MatrixCL& M, int maxiter, double tol, double omega= 1.)
+        :BlockMatrixSolverCL<PMinresSP_DiagPCGT>( solver_), solver_( q_, maxiter, tol),
+         PPA_(SSORPcCL(omega), 8, 1e-20), M_(M),
+         PA_(PPA_), PS_(M_, M_, 0.0, 1.0, omega),
+         pre_( PA_, PS_), q_( pre_)
     {}
 };
 
-class PMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >
+
+typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
+typedef BlockPreCL<APcT, ISPreCL> BlockDiagMGPreCL;
+typedef PMResSolverCL<PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagMGPreCL> > PMinresSP_DiagMGT;
+class PMinresSP_DiagMG_CL : public BlockMatrixSolverCL<PMinresSP_DiagMGT>
 {
   private:
-    DiagMGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> q_;
+    PMinresSP_DiagMGT solver_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   coarsesolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> PPA_;
+    APcT PA_;
+    ISPreCL PS_;
+    BlockDiagMGPreCL pre_;
+    PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagMGPreCL> q_;
+    MatrixCL& M_;
 
   public:
-    PMinresSP_DiagMG_CL(const MGDataCL& A, const MatrixCL& M, int iter_vel, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> >( q_, maxiter, tol),
-         pre_( A, M, iter_vel), q_( pre_)
+    PMinresSP_DiagMG_CL(const MGDataCL& A, MatrixCL& M, int iter_vel, int maxiter, double tol)
+        :BlockMatrixSolverCL<PMinresSP_DiagMGT> (solver_), solver_( q_, maxiter, tol),
+         smoother_(1.0), coarsesolver_(SSORPcCL(1.0), 200, 1e-12),
+         PPA_( A, smoother_, coarsesolver_, iter_vel, tol), PA_(PPA_), PS_(M_, M_, 0.0, 1.0),
+         pre_( PA_, PS_), q_( pre_), M_(M)
     {}
 };
 

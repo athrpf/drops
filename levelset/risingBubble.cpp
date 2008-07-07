@@ -128,15 +128,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISBBT isbbt (Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data, kA, kM);
 
     // Preconditioner for PMINRES
-    typedef PLanczosONB_SPCL<MatrixCL, VectorCL, IdPreCL> Lanczos1T;
-
     typedef BlockPreCL<MGPCT, ISBBT> Lanczos2PCT;
-    typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos2PCT> Lanczos2T;
-    typedef BlockPreCL<APcT, ISBBT>  Lanczos3PCT;
-    typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos3PCT> Lanczos3T;
+    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos2PCT> Lanczos2T;
 
-    IdPreCL dummy;
-    Lanczos1T lanczos1 (dummy);
+    typedef BlockPreCL<APcT, ISBBT>  Lanczos3PCT;
+    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos3PCT> Lanczos3T;
 
     Lanczos2PCT lanczos2pc (MGPC, isbbt);
     Lanczos2T lanczos2 (lanczos2pc);
@@ -145,20 +141,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Lanczos3T lanczos3 (lanczos3pc);
 
     // available Stokes/NavStokes Solver
-    typedef PMResSPCL<Lanczos1T> PMinres1T; // Minres
-    PMinres1T minressolver        (lanczos1, C.outer_iter, C.outer_tol);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, PMinres1T> Solver1T;
-    Solver1T navminressolver(Stokes, minressolver);
+    MResSolverCL minressolver (C.outer_iter, C.outer_tol);
+    typedef BlockMatrixSolverCL<MResSolverCL> OseenSolver1T;
+    OseenSolver1T oseensolver1( minressolver);
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolver1T> Solver1T;
+    Solver1T navminressolver(Stokes, oseensolver1);
 
-    typedef PMResSPCL<Lanczos2T> PMinres2T; // PMinRes - MG-ISBBTCL
-    PMinres2T pminresmgpcgsolver  (lanczos2, C.outer_iter, C.outer_tol);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, PMinres2T> Solver2T;
-    Solver2T navpminresmgpcgsolver(Stokes, pminresmgpcgsolver);
+    typedef PMResSolverCL<Lanczos2T> PMinres2T; // PMinRes - MG-ISBBTCL
+    PMinres2T pminresmgpcgsolver (lanczos2, C.outer_iter, C.outer_tol);
+    typedef BlockMatrixSolverCL<PMinres2T> OseenSolver2T;
+    OseenSolver2T oseensolver2( pminresmgpcgsolver);
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolver2T> Solver2T;
+    Solver2T navpminresmgpcgsolver(Stokes, oseensolver2);
 
-    typedef PMResSPCL<Lanczos3T> PMinres3T; // PMinRes - PCG-ISBBT
+    typedef PMResSolverCL<Lanczos3T> PMinres3T; // PMinRes - PCG-ISBBT
     PMinres3T pminrespcgpcgsolver (lanczos3, C.outer_iter, C.outer_tol);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, PMinres3T> Solver3T;
-    Solver3T navpminrespcgpcgsolver(Stokes, pminrespcgpcgsolver);
+    typedef BlockMatrixSolverCL<PMinres3T> OseenSolver3T;
+    OseenSolver3T oseensolver3( pminrespcgpcgsolver);
+    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolver3T> Solver3T;
+    Solver3T navpminrespcgpcgsolver(Stokes, oseensolver3);
 
     typedef InexactUzawaCL<MGPCT, ISBBT, APC_SYM> InexactUzawa10T;
     InexactUzawa10T inexactuzawamgpcgsolver( MGPC, isbbt, C.outer_iter, C.outer_tol, 0.6);

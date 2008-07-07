@@ -47,16 +47,21 @@ class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
         {}
 };
 
-class PMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> >
+typedef BlockPreCL<MultiSSORPcCL, ISPreCL> SsorISPrePcT;
+typedef PMResSolverCL<PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, SsorISPrePcT> > PMinresSP_Diag_T;
+class PMinresSP_Diag_CL: public BlockMatrixSolverCL<PMinresSP_Diag_T>
 {
   private:
-    Minres_SSOR_IS_PreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> q_;
+    PMinresSP_Diag_T solver_;
+    SsorISPrePcT pre_;
+    MultiSSORPcCL Apc_;
+    ISPreCL Spc_;
+    PLanczosONBCL<BlockMatrixCL, VectorCL, SsorISPrePcT> q_;
 
   public:
     PMinresSP_Diag_CL(const ISPreCL& Spc, int iter_vel, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, Minres_SSOR_IS_PreCL> >( q_, maxiter, tol),
-         pre_( Spc, iter_vel), q_( pre_)
+        :BlockMatrixSolverCL<PMinresSP_Diag_T> (solver_), solver_(q_, maxiter, tol),
+         pre_( Apc_, Spc_), Apc_(1.0, iter_vel), Spc_(Spc), q_( pre_)
     {}
 };
 
@@ -130,22 +135,23 @@ class ISPSchur2_fullMG_CL: public PSchurSolver2CL<PCGSolverCL<MGPreCL>,
 };
 
 
-typedef DiagPreCL<MGPreCL,ISPreCL>  MyISMinresMGPreCL;
-typedef DiagPreCL<MGPreCL,ISMGPreCL>  MyISMinresfullMGPreCL;
+typedef BlockPreCL<MGPreCL,ISPreCL>  MyISMinresMGPreCL;
+typedef BlockPreCL<MGPreCL,ISMGPreCL>  MyISMinresfullMGPreCL;
 
 //=============================================================================
 // PMinres solver for the instationary Stokes-Equations with MG for velocities
 //=============================================================================
-class MyPMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL,
-    MyISMinresMGPreCL> >
+typedef PMResSolverCL<PLanczosONBCL<BlockMatrixCL, VectorCL, MyISMinresMGPreCL> > MyPMinresSP_Diag_T;
+class MyPMinresSP_Diag_CL: public BlockMatrixSolverCL<MyPMinresSP_Diag_T>
 {
   private:
+    MyPMinresSP_Diag_T solver_;
     MyISMinresMGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresMGPreCL> q_;
+    PLanczosONBCL<BlockMatrixCL, VectorCL, MyISMinresMGPreCL> q_;
 
   public:
     MyPMinresSP_Diag_CL(MGPreCL& Apc, ISPreCL& Spc, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresMGPreCL> >( q_, maxiter, tol),
+        :BlockMatrixSolverCL<MyPMinresSP_Diag_T> (solver_), solver_(q_, maxiter, tol),
          pre_( Apc, Spc), q_( pre_)
     {}
 };
@@ -153,16 +159,17 @@ class MyPMinresSP_Diag_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL,
 //=============================================================================
 // PMinres solver for the instationary Stokes-Equations with full MG
 //=============================================================================
-class MyPMinresSP_fullMG_CL: public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL,
-    MyISMinresfullMGPreCL> >
+typedef PMResSolverCL<PLanczosONBCL<BlockMatrixCL, VectorCL, MyISMinresfullMGPreCL> > MyPMinresSP_fullMG_T;
+class MyPMinresSP_fullMG_CL: public BlockMatrixSolverCL<MyPMinresSP_fullMG_T>
 {
   private:
+    MyPMinresSP_fullMG_T solver_;
     MyISMinresfullMGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresfullMGPreCL> q_;
+    PLanczosONBCL<BlockMatrixCL, VectorCL, MyISMinresfullMGPreCL> q_;
 
   public:
     MyPMinresSP_fullMG_CL(MGPreCL& Apc, ISMGPreCL& Spc, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyISMinresfullMGPreCL> >( q_, maxiter, tol),
+        :BlockMatrixSolverCL<MyPMinresSP_fullMG_T> (solver_), solver_( q_, maxiter, tol),
          pre_( Apc, Spc), q_( pre_)
     {}
 };

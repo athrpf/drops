@@ -1237,15 +1237,15 @@ class SolverBaseCL
           rel_( rel), output_( output)  {}
 
   public:
-    void   SetTol     (double tol) { _tol= tol; }
-    void   SetMaxIter (int iter)   { _maxiter= iter; }
-    void   SetRelError(bool rel)   { rel_= rel; }
+    virtual void   SetTol     (double tol) { _tol= tol; }
+    virtual void   SetMaxIter (int iter)   { _maxiter= iter; }
+    virtual void   SetRelError(bool rel)   { rel_= rel; }
 
-    double GetTol     () const { return _tol; }
-    int    GetMaxIter () const { return _maxiter; }
-    double GetResid   () const { return _res; }
-    int    GetIter    () const { return _iter; }
-    bool   GetRelError() const { return rel_; }
+    virtual double GetTol     () const { return _tol; }
+    virtual int    GetMaxIter () const { return _maxiter; }
+    virtual double GetResid   () const { return _res; }
+    virtual int    GetIter    () const { return _iter; }
+    virtual bool   GetRelError() const { return rel_; }
 
 };
 

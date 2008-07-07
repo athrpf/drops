@@ -33,17 +33,11 @@ enum StokesMethod {
         pminresmgpcg             =  3, // MG-PC for A, PCG for S
                                        // <SolverAsPreCL<MGSolverCL>, ISBBT>
 
-        pminresdiagmg            =  4, // MG-PC for A SSOR for S
-                                       // DiagMGPreCL
-
         pminrespcgssor           =  5, // PCG for A, SSOR for S
                                        // <SolverAsPreCL<PCGSolverCL<SSORPcCL>>, ISPreCL>
 
         pminrespcgpcg            =  6, // PCG for A, PCG for S
                                        // <SolverAsPreCL<PCGSolverCL<SSORPcCL>>, ISBBT>
-
-        pminresdiagpcg           =  7, // PCG for A and S
-                                       // DiagPCGPreCL
 
         pminresmglumped          =  8, // MG-PC for A,    DiagPrMassMatrix for S
 
@@ -477,26 +471,19 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         typedef BlockPreCL<APcT, DiagMatrixPCCL> LanczosPcT;
 
-
         // Preconditioner for PMINRES
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, IdPreCL> Lanczos1T;
         typedef BlockPreCL<MGPCT, ISPreCL> Lanczos2PCT;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos2PCT> Lanczos2T;
+        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos2PCT> Lanczos2T;
         typedef BlockPreCL<MGPCT, ISBBT> Lanczos3PCT;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos3PCT> Lanczos3T;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, DiagMGPreCL> Lanczos4T;
+        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos3PCT> Lanczos3T;
         typedef BlockPreCL<APcT, ISPreCL> Lanczos5PCT;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos5PCT> Lanczos5T;
+        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos5PCT> Lanczos5T;
         typedef BlockPreCL<APcT, ISBBT> Lanczos6PCT;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos6PCT> Lanczos6T;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, DiagPCGPreCL> Lanczos7T;
+        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos6PCT> Lanczos6T;
         typedef BlockPreCL<MGPCT,DiagMatrixPCCL> Lanczos8PCT;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos8PCT> Lanczos8T;
+        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos8PCT> Lanczos8T;
         typedef BlockPreCL<APcT,DiagMatrixPCCL> Lanczos9PCT;
-        typedef PLanczosONB_SPCL<MatrixCL, VectorCL, Lanczos9PCT> Lanczos9T;
-
-        IdPreCL dummy;
-        Lanczos1T lanczos1 (dummy);
+        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos9PCT> Lanczos9T;
 
         Lanczos2PCT lanczos2pc (MGPC, ispc);
         Lanczos2T lanczos2 (lanczos2pc);
@@ -504,17 +491,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         Lanczos3PCT lanczos3pc (MGPC, isbbt);
         Lanczos3T lanczos3 (lanczos3pc);
 
-        DiagMGPreCL lanczos4pc (velMG, Stokes.prM.Data, 1);
-        Lanczos4T lanczos4 (lanczos4pc);
-
         Lanczos5PCT lanczos5pc (Apc, ispc);
         Lanczos5T lanczos5 (lanczos5pc);
 
         Lanczos6PCT lanczos6pc (Apc, isbbt);
         Lanczos6T lanczos6 (lanczos6pc);
-
-        DiagPCGPreCL lanczos7pc (Stokes.prM.Data);
-        Lanczos7T lanczos7 (lanczos7pc);
 
         Lanczos8PCT lanczos8pc (MGPC, lumped);
         Lanczos8T lanczos8 (lanczos8pc);
@@ -523,32 +504,33 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         Lanczos9T lanczos9 (lanczos9pc);
 
         // available Stokes Solver
-        typedef PMResSPCL<Lanczos1T> PMinres1T; // Minres
-        PMinres1T minressolver        (lanczos1, C.outer_iter, C.outer_tol);
+        typedef MResSolverCL PMinres1T; // Minres
+        PMinres1T minressolver        (C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres1T> blockminressolver(minressolver);
 
-        typedef PMResSPCL<Lanczos2T> PMinres2T; // PMinRes - MG-ISPreCL
+        typedef PMResSolverCL<Lanczos2T> PMinres2T; // PMinRes - MG-ISPreCL
         PMinres2T pminresmgssorsolver (lanczos2, C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres2T> blockpminresmgssorsolver(pminresmgssorsolver);
 
-        typedef PMResSPCL<Lanczos3T> PMinres3T; // PMinRes - MG-ISBBTCL
+        typedef PMResSolverCL<Lanczos3T> PMinres3T; // PMinRes - MG-ISBBTCL
         PMinres3T pminresmgpcgsolver  (lanczos3, C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres3T> blockpminresmgpcgsolver(pminresmgpcgsolver);
 
-        typedef PMResSPCL<Lanczos4T> PMinres4T; // PMinRes - DiagMGPreCL
-        PMinres4T pminresdiagmgsolver (lanczos4, C.outer_iter, C.outer_tol);
-
-        typedef PMResSPCL<Lanczos5T> PMinres5T; // PMinRes - PCG-ISPreCL
+        typedef PMResSolverCL<Lanczos5T> PMinres5T; // PMinRes - PCG-ISPreCL
         PMinres5T pminrespcgssorsolver (lanczos5, C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres5T> blockpminrespcgssorsolver(pminrespcgssorsolver);
 
-        typedef PMResSPCL<Lanczos6T> PMinres6T; // PMinRes - PCG-ISBBT
+        typedef PMResSolverCL<Lanczos6T> PMinres6T; // PMinRes - PCG-ISBBT
         PMinres6T pminrespcgpcgsolver (lanczos6, C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres6T> blockpminrespcgpcgsolver(pminrespcgpcgsolver);
 
-        typedef PMResSPCL<Lanczos7T> PMinres7T; // PMinRes - DiagPCG
-        PMinres7T pminresdiagpcgsolver (lanczos7, C.outer_iter, C.outer_tol);
-
-        typedef PMResSPCL<Lanczos8T> PMinres8T; 
+        typedef PMResSolverCL<Lanczos8T> PMinres8T; 
         PMinres8T pminresmgdiagsolver (lanczos8, C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres8T> blockpminresmgdiagsolver(pminresmgdiagsolver);
 
-        typedef PMResSPCL<Lanczos9T> PMinres9T; 
+        typedef PMResSolverCL<Lanczos9T> PMinres9T; 
         PMinres9T pminrespcgdiagsolver (lanczos9, C.outer_iter, C.outer_tol);
+        BlockMatrixSolverCL<PMinres9T> blockpminrespcgdiagsolver(pminrespcgdiagsolver);
 
         typedef InexactUzawaCL<MGPCT, ISPreCL, APC_SYM> InexactUzawa10T;
         InexactUzawa10T inexactuzawamgssorsolver( MGPC, ispc, C.outer_iter, C.outer_tol, 0.5);
@@ -577,123 +559,34 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         typedef UzawaCGSolverEffCL<ScaledMGPreCL, DiagMatrixPCCL> UzawaCGEff18T;
         UzawaCGEff18T pcgmgdiagsolver (velprep, lumped, C.outer_iter, C.outer_tol);
 
-        SolverBaseCL* solver=0;
+        StokesSolverBaseCL* solver=0;
         switch (C.StokesMethod) {
-            case minres: {
-                solver = &minressolver;
-                minressolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                    Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminresmgssor: {
-                solver = &pminresmgssorsolver;
-                pminresmgssorsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                           Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminresmgpcg: {
-                solver = &pminresmgpcgsolver;
-                pminresmgpcgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                          Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminresdiagmg: {
-                solver = &pminresmgdiagsolver;
-                pminresdiagmgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                           Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminrespcgssor: {
-                solver = &pminrespcgssorsolver;
-                pminrespcgssorsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                            Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminrespcgpcg: {
-                solver = &pminrespcgpcgsolver;
-                pminrespcgpcgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                           Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminresdiagpcg: {
-                solver = &pminresdiagpcgsolver;
-                pminresdiagpcgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                            Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminresmglumped: {
-                solver = &pminresmgdiagsolver;
-                pminresmgdiagsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                           Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pminrespcglumped: {
-                solver = &pminrespcgdiagsolver;
-                pminrespcgdiagsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                            Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case inexactuzawamgssor: {
-                solver = &inexactuzawamgssorsolver;
-                inexactuzawamgssorsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                                Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case inexactuzawamgpcg: {
-                solver = &inexactuzawamgpcgsolver;
-                inexactuzawamgpcgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                               Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case inexactuzawapcgssor: {
-                solver = &inexactuzawapcgssorsolver;
-                inexactuzawapcgssorsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                                 Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case inexactuzawapcgpcg: {
-                solver = &inexactuzawapcgpcgsolver;
-                inexactuzawapcgpcgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                                Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case inexactuzawamglumped: {
-                solver = &inexactuzawamgdiagsolver;
-                inexactuzawamgdiagsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                                Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case inexactuzawapcglumped: {
-                solver = &inexactuzawapcgdiagsolver;
-                inexactuzawapcgdiagsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                                 Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pcgmgssor: {
-                solver = &pcgmgssorsolver;
-                pcgmgssorsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                       Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pcgmgpcg: {
-                solver = &pcgmgpcgsolver;
-                pcgmgpcgsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                      Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
-            case pcgmglumped: {
-                solver = &pcgmgdiagsolver;
-                pcgmgdiagsolver.Solve( Stokes.A.Data, Stokes.B.Data,
-                                       Stokes.v.Data, Stokes.p.Data, curv.Data, Stokes.c.Data);
-            }
-            break;
+            case minres:                solver = &blockminressolver;         break;
+            case pminresmgssor:         solver = &blockpminresmgssorsolver;  break;
+            case pminresmgpcg:          solver = &blockpminresmgpcgsolver;   break;
+            case pminrespcgssor:        solver = &blockpminrespcgssorsolver; break;
+            case pminrespcgpcg:         solver = &blockpminrespcgpcgsolver;  break;
+            case pminresmglumped:       solver = &blockpminresmgdiagsolver;  break;
+            case pminrespcglumped:      solver = &blockpminrespcgdiagsolver; break;
+            case inexactuzawamgssor:    solver = &inexactuzawamgssorsolver;  break;
+            case inexactuzawamgpcg:     solver = &inexactuzawamgpcgsolver;   break;
+            case inexactuzawapcgssor:   solver = &inexactuzawapcgssorsolver; break;
+            case inexactuzawapcgpcg:    solver = &inexactuzawapcgpcgsolver;  break;
+            case inexactuzawamglumped:  solver = &inexactuzawamgdiagsolver;  break;
+            case inexactuzawapcglumped: solver = &inexactuzawapcgdiagsolver; break;
+            case pcgmgssor:             solver = &pcgmgssorsolver;           break;
+            case pcgmgpcg:              solver = &pcgmgpcgsolver;            break;
+            case pcgmglumped:           solver = &pcgmgdiagsolver;           break;
 
             default: throw DROPSErrCL( "unknown method\n");
         }
         time.Stop();
-        if (solver != 0)
+        if (solver != 0) {
+            solver->Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data,
+                           curv.Data, Stokes.c.Data);
             std::cerr << "iter: " << solver->GetIter()
                       << "\tresid: " << solver->GetResid() << std::endl;
+        }
 
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
       }

@@ -281,62 +281,71 @@ ZeroMean(DROPS::P1EvalCL< double,
 }
 
 
-class PMinresSP_FullMG_CL : public PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> >
+typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
+typedef BlockPreCL<APcT, ISPressureMGPreCL> PcT;
+typedef PMResSolverCL<PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL,PcT> > SolverT;
+class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
 {
   private:
-    ISMinresMGPreCL pre_;
-    PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> q_;
+    SolverT solver_;
+    PcT pre_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   coarsesolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
+    APcT Apc_;
+    ISPressureMGPreCL Spc_;
+    PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, PcT> q_;
 
   public:
     PMinresSP_FullMG_CL( DROPS::MGDataCL& MGAvel, DROPS::MGDataCL& MGApr,
                          DROPS::MGDataCL& Mpr, double kA, double kM,
-                         int iter_vel, int iter_prA, int iter_prM, double /*s*/, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<DROPS::MatrixCL, DROPS::VectorCL, ISMinresMGPreCL> >( q_, maxiter, tol),
-         pre_( MGAvel, MGApr, Mpr, kM, kA, iter_vel, iter_prA, iter_prM, /*s,*/ tol), q_( pre_)
+                         int iter_vel, int iter_prA, int iter_prM, int maxiter, double tol)
+        :BlockMatrixSolverCL<SolverT> (solver_), solver_(q_, maxiter, tol),
+         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
+         mgc(MGAvel, smoother_, coarsesolver_, iter_vel, -1., false), Apc_( mgc),
+         Spc_(MGApr, Mpr, kA, kM, iter_prA, iter_prM, tol), q_( pre_)
     {}
 };
 
 
-class MyDiagMGPreCL
+class MyDiagPreCL
 {
   private:
-    const MGDataCL& A_; // Preconditioner for A.
     const MatrixCL& M_; // Preconditioner for S.
-    Uint iter_vel_;
 
   public:
-    MyDiagMGPreCL(const MGDataCL& A, const MatrixCL& M, Uint iter_vel)
-      :A_( A), M_( M), iter_vel_( iter_vel) {}
+    MyDiagPreCL(const MatrixCL& M)
+      :M_( M) {}
 
     template <typename Mat, typename Vec>
     void
-    Apply(const Mat& /*A*/, const Mat& /*B*/, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
-//        PA_.SetMaxIter( 1); PA_.SetTol( (bb - K.A_*u).norm()*1e-4);
-        Uint   sm   =  1; // how many smoothing steps?
-        int    lvl  = -1; // how many levels? (-1=all)
-        double omega= 1.; // relaxation parameter for smoother
-        SSORsmoothCL smoother( omega);  // Gauss-Seidel with over-relaxation
-        SSORPcCL P1;
-        PCG_SsorCL solver( P1, 200, 1e-12);
-        v= 0.0;
-        for (DROPS::Uint i= 0; i<iter_vel_; ++i)
-            MGM( A_.begin(), --A_.end(), v, b, smoother, sm, solver, lvl, -1);
+    Apply(const Mat& /*A*/, Vec& p, const Vec& c) const {
         for (Uint i= 0; i<M_.num_rows(); ++i) {
             p[i]= c[i]/M_.val( i); // M_ is a diagonal-matrix: exact inversion
         }
     }
 };
 
-class MyPMinresSP_DiagMG_CL : public PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyDiagMGPreCL> >
+typedef BlockPreCL<APcT, MyDiagPreCL> BlockMGDiagT;
+typedef PMResSolverCL<PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, BlockMGDiagT> > MGDiagSolverT;
+class MyPMinresSP_DiagMG_CL : public BlockMatrixSolverCL<MGDiagSolverT>
 {
   private:
-    MyDiagMGPreCL pre_;
-    PLanczosONB_SPCL<MatrixCL, VectorCL, MyDiagMGPreCL> q_;
+    MGDiagSolverT solver_;
+    BlockMGDiagT pre_;
+    SSORsmoothCL smoother_;
+    PCG_SsorCL   coarsesolver_;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
+    APcT Apc_;
+    MyDiagPreCL Spc_;
+    PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, BlockMGDiagT> q_;
 
   public:
     MyPMinresSP_DiagMG_CL(const MGDataCL& A, const MatrixCL& M, int iter_vel, int maxiter, double tol)
-        :PMResSPCL<PLanczosONB_SPCL<MatrixCL, VectorCL, MyDiagMGPreCL> >( q_, maxiter, tol),
-         pre_( A, M, iter_vel), q_( pre_)
+        :BlockMatrixSolverCL<MGDiagSolverT> (solver_), solver_(q_, maxiter, tol),
+         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
+         mgc(A, smoother_, coarsesolver_, iter_vel, -1., false), Apc_( mgc),
+         Spc_(M), q_( pre_)
     {}
 };
 
