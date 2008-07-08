@@ -224,9 +224,47 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
     }
 };
 
-// If isdiagonal == true, this is the diagonal PC ( pc1^(-1) 0 \\ 0 -pc2^(-1) )
-// else it is block-triangular: ( pc1^(-1) B^T \\ 0 -pc2^(-1) )
-template <class PC1T, class PC2T, bool isdiagonal_= true>
+// Upper block-triangular preconditioning strategy in BlockPreCL
+struct UpperBlockPreCL
+{
+    template <class PC1T, class PC2T, class Mat, class Vec>
+    static void
+    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+        pc2.Apply( /*dummy*/ B, p, c);
+        Vec b2( b);
+        b2-= transp_mul( B, p);
+        pc1.Apply( A, v, b2);
+    }
+};
+
+// Block-diagonal preconditioning strategy in BlockPreCL
+struct DiagBlockPreCL
+{
+    template <class PC1T, class PC2T, class Mat, class Vec>
+    static void
+    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+        pc1.Apply( A, v, b);
+        pc2.Apply( /*dummy*/ B, p, c);
+   }
+};
+
+// Lower block-triangular preconditioning strategy in BlockPreCL
+struct LowerBlockPreCL
+{
+    template <class PC1T, class PC2T, class Mat, class Vec>
+    static void
+    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+        pc1.Apply( A, v, b);
+        Vec c2( c);
+        c2-= B*v;
+        pc2.Apply( /*dummy*/ B, p, c2);
+   }
+};
+
+// With BlockShapeT= DiagBlockPreCL, this is the diagonal PC ( pc1^(-1) 0 \\ 0 pc2^(-1) ),
+// else it is block-triangular:
+// Upper... ( pc1^(-1) B^T \\ 0 pc2^(-1) ), resp. lower: ( pc1^(-1) 0 \\ B pc2^(-1) )
+template <class PC1T, class PC2T, class BlockShapeT= DiagBlockPreCL>
 class BlockPreCL
 {
   private:
@@ -240,11 +278,7 @@ class BlockPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) const {
-        pc2_.Apply( /*dummy*/ B, p, c);
-        Vec b2( b);
-        if ( !isdiagonal_)
-            b2-= transp_mul( B, p);
-        pc1_.Apply( A, v, b2);
+        BlockShapeT::Apply( pc1_, pc2_, A, B, v, p, b, c);
     }
 
     template <typename Mat, typename Vec>
@@ -254,16 +288,11 @@ class BlockPreCL
         VectorCL b1( b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
         VectorCL x0( A.num_cols( 0));
         VectorCL x1( A.num_cols( 1));
-        pc2_.Apply( /*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 2)),
-            x1, b1);
-        if ( !isdiagonal_)
-            b0-= transp_mul( *A.GetBlock( 2), x1);
-        pc1_.Apply( *A.GetBlock( 0), x0, b0); // assumes GetBlock( 0) != 0
+        BlockShapeT::Apply( pc1_, pc2_, *A.GetBlock( 0), *A.GetBlock( 2), x0, x1, b0, b1);
         x[std::slice( 0, A.num_cols( 0), 1)]= x0;
         x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]= x1;
     }
 };
-
 
 //=============================================================================
 //  SchurComplMatrixCL
