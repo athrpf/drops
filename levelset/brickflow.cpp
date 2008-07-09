@@ -253,7 +253,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         OseenSolverT oseensolver( oseensolver0);
 
         // Navier-Stokes solver
-        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
+        typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
         NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         FracStepScheme2PhaseCL<StokesProblemT, NSSolverT>

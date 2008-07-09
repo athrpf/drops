@@ -87,7 +87,7 @@ class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
 };
 
 template <class NavStokesT>
-class FPDeCo_Uzawa_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
+class FPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT>
 {
   private:
     Uzawa_PCG_CL _uzawaSolver;
@@ -95,7 +95,7 @@ class FPDeCo_Uzawa_PCG_CL: public FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
   public:
     FPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
                          int poiss_maxiter, double poiss_tol, double reduction= 0.1)
-        : FixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
+        : AdaptFixedPtDefectCorrCL<NavStokesT>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction, false),
           _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
 };
@@ -200,7 +200,7 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         // If the saddlepoint-problem is solved via an Uzawa-method, the mass-matrix alone is
         // not an appropriate preconditioner for the Schur-Complement-Matrix. M has to be scaled
         // by 1/(theta*dt).
-        statsolver.GetStokesSolver().SetTau(theta*dt); // Betrachte den Code in num/stokessolver.h: M ist bei zeitabhaqengigen Problemen kein geeigneter Vorkonditionierer.
+        static_cast<Uzawa_PCG_CL&>(statsolver.GetStokesSolver()).SetTau(theta*dt); // Betrachte den Code in num/stokessolver.h: M ist bei zeitabhaqengigen Problemen kein geeigneter Vorkonditionierer.
         time.Reset();
         time.Start();
         NS.SetupNonlinear(N, v1, cplN, 0., 0.);

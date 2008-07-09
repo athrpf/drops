@@ -152,7 +152,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     ISPschurSolver.SetTol( C.outer_tol);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur_PCG_CL> SolverT;
+    typedef NSSolverBaseCL<StokesProblemT> SolverT;
     SolverT navstokessolver(Stokes, ISPschurSolver);
 
     LinThetaScheme2PhaseCL<StokesProblemT, SolverT>

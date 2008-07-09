@@ -235,7 +235,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset
 //    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
     typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
     OseenSolverT oseenSolver( velpc, ispc, C.outer_iter, C.outer_tol);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> SolverT;
+    typedef NSSolverBaseCL<StokesProblemT> SolverT;
     SolverT navstokessolver(Stokes, oseenSolver);
 
 //    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>

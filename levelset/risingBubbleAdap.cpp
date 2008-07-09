@@ -137,66 +137,51 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     Lanczos3T lanczos3 (lanczos3pc);
 
     // available Stokes/NavStokes Solver
+    typedef NSSolverBaseCL<StokesProblemT> SolverT;
+    SolverT* solver = 0;
+
     MResSolverCL minressolver (C.outer_iter, C.outer_tol);
     typedef BlockMatrixSolverCL<MResSolverCL> OseenSolver1T;
     OseenSolver1T oseensolver1( minressolver);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolver1T> Solver1T;
-    Solver1T navminressolver(Stokes, oseensolver1);
 
     typedef PMResSolverCL<Lanczos2T> PMinres2T; // PMinRes - MG-ISBBTCL
     PMinres2T pminresmgpcgsolver (lanczos2, C.outer_iter, C.outer_tol);
     typedef BlockMatrixSolverCL<PMinres2T> OseenSolver2T;
     OseenSolver2T oseensolver2( pminresmgpcgsolver);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolver2T> Solver2T;
-    Solver2T navpminresmgpcgsolver(Stokes, oseensolver2);
 
     typedef PMResSolverCL<Lanczos3T> PMinres3T; // PMinRes - PCG-ISBBT
     PMinres3T pminrespcgpcgsolver (lanczos3, C.outer_iter, C.outer_tol);
     typedef BlockMatrixSolverCL<PMinres3T> OseenSolver3T;
     OseenSolver3T oseensolver3( pminrespcgpcgsolver);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, OseenSolver3T> Solver3T;
-    Solver3T navpminrespcgpcgsolver(Stokes, oseensolver3);
 
     typedef InexactUzawaCL<MGPCT, ISBBT, APC_SYM> InexactUzawa10T;
     InexactUzawa10T inexactuzawamgpcgsolver( MGPC, isbbt, C.outer_iter, C.outer_tol, 0.6);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawa10T> Solver10T;
-    Solver10T navinexactuzawamgpcgsolver(Stokes, inexactuzawamgpcgsolver);
 
     typedef InexactUzawaCL<APcT, ISBBT, APC_SYM> InexactUzawa11T;
     InexactUzawa11T inexactuzawapcgpcgsolver( Apc, isbbt, C.outer_iter, C.outer_tol, 0.6);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawa11T> Solver11T;
-    Solver11T navinexactuzawapcgpcgsolver(Stokes, inexactuzawapcgpcgsolver);
 
     // Coupling for all of the NavStokes-Solver
     TimeDisc2PhaseCL<StokesProblemT>* cpl=0;
     switch (C.StokesMethod) {
         case minres:
-            cpl = new ThetaScheme2PhaseCL<StokesProblemT, Solver1T>
-                    ( Stokes, lset, navminressolver, C.theta, /*nonlinear*/ 0., /*implicit Curv.*/ false);
-            break;
+            solver = new SolverT(Stokes, oseensolver1); break;
         case pminresmgpcg:
-            cpl = new ThetaScheme2PhaseCL<StokesProblemT, Solver2T> 
-                    ( Stokes, lset, navpminresmgpcgsolver, C.theta, /*nonlinear*/ 0.,
-                      /*proj.*/ false, C.cpl_stab, true, &velMG);
-            break;
+            solver = new SolverT(Stokes, oseensolver2); break;
         case pminrespcgpcg:
-            cpl = new ThetaScheme2PhaseCL<StokesProblemT, Solver3T> 
-                    ( Stokes, lset, navpminrespcgpcgsolver, C.theta, /*nonlinear*/ 0.,
-                      /*proj.*/ false, C.cpl_stab);
-            break;
+            solver = new SolverT(Stokes, oseensolver3); break;
         case inexactuzawamgpcg:
-            cpl = new ThetaScheme2PhaseCL<StokesProblemT, Solver10T> 
-                    ( Stokes, lset, navinexactuzawamgpcgsolver, C.theta, /*nonlinear*/ 0.,
-                      /*proj.*/ false, C.cpl_stab, true, &velMG);
-            break;
+            solver = new SolverT(Stokes, inexactuzawamgpcgsolver); break;
         case inexactuzawapcgpcg:
-            cpl = new ThetaScheme2PhaseCL<StokesProblemT, Solver11T> 
-                    ( Stokes, lset, navinexactuzawapcgpcgsolver, C.theta, /*nonlinear*/ 0.,
-                      /*proj.*/ false, C.cpl_stab);
-            break;
-
+            solver = new SolverT(Stokes, inexactuzawapcgpcgsolver); break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
+    if (C.StokesMethod == 2 || C.StokesMethod == 4) // MultiGrid used
+        cpl = new ThetaScheme2PhaseCL<StokesProblemT, SolverT>
+            ( Stokes, lset, *solver, C.theta, /*nonlinear*/ 0., /*proj.*/ false, C.cpl_stab, true, &velMG);
+    else
+        cpl = new ThetaScheme2PhaseCL<StokesProblemT, SolverT>
+            ( Stokes, lset, *solver, C.theta, /*nonlinear*/ 0., /*proj.*/ false, C.cpl_stab);
+
     cpl->SetTimeStep (C.dt);
 
     const double Vol= 4./3.*M_PI*C.Radius[0]*C.Radius[1]*C.Radius[2];
@@ -246,6 +231,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     std::cerr << std::endl;
     delete cpl;
+    delete solver;
 }
 
 } // end of namespace DROPS

@@ -61,7 +61,7 @@ class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
 };
 
 template <class NavStokesT>
-class AFPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>
+class AFPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT>
 {
   private:
     Uzawa_PCG_CL _uzawaSolver;
@@ -69,7 +69,7 @@ class AFPDeCo_Uzawa_PCG_CL: public AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PC
   public:
     AFPDeCo_Uzawa_PCG_CL( NavStokesT& NS, MatrixCL& M, int fp_maxiter, double fp_tol, int stokes_maxiter,
                           int poiss_maxiter, double poiss_tol, double reduction= 0.1)
-        : AdaptFixedPtDefectCorrCL<NavStokesT, Uzawa_PCG_CL>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
+        : AdaptFixedPtDefectCorrCL<NavStokesT>( NS, _uzawaSolver, fp_maxiter, fp_tol, reduction),
           _uzawaSolver( M, stokes_maxiter, fp_tol, poiss_maxiter, poiss_tol) // outer_tol will be set by the AFPDeCo-solver!
         {}
 };

@@ -381,56 +381,48 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     inexactUzawaSolver.SetTol( C.outer_tol);
     stokessolver.SetTol( C.outer_tol);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur_PCG_CL> Solver1T;
-    Solver1T solver1(Stokes, ISPschurSolver);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver1T>
+    typedef NSSolverBaseCL<StokesProblemT> SolverT;
+    SolverT solver1(Stokes, ISPschurSolver);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl1( Stokes, lset, solver1, C.theta, 0.);
 
 //    LinThetaScheme2PhaseCL<StokesProblemT, InexactUzawa_CL>
 //        cpl2( Stokes, lset, inexactUzawaSolver, C.theta);
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawaNonlinear_CL> Solver2T;
-    Solver2T solver2(Stokes, inexactUzawaSolver);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver2T>
+    SolverT solver2(Stokes, inexactUzawaSolver);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl2( Stokes, lset, solver2, C.theta, 0.);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, PMinresSP_Diag_CL> Solver3T;
-    Solver3T solver3(Stokes, stokessolver);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver3T>
+    SolverT solver3(Stokes, stokessolver);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl3( Stokes, lset, solver3, C.theta, 0.);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur2_MG_CL> Solver4T;
-    Solver4T solver4(Stokes, ISPschur2SolverMG);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver4T>
+    SolverT solver4(Stokes, ISPschur2SolverMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl4( Stokes, lset, solver4, C.theta, 0., false,
         C.StokesMethod==schurMG, &VelMGPreData);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawaMG_CL> Solver5T;
-    Solver5T solver5(Stokes, inexactUzawaSolverMG);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver5T>
+    SolverT solver5(Stokes, inexactUzawaSolverMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl5( Stokes, lset, solver5, C.theta, 0., false,
         C.StokesMethod==inexactuzawaMG, &VelMGPreData);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, MyPMinresSP_Diag_CL> Solver6T;
-    Solver6T solver6(Stokes, stokessolverMG);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver6T>
+    SolverT solver6(Stokes, stokessolverMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl6( Stokes, lset, solver6, C.theta, 0., false,
         C.StokesMethod==minresMG, &VelMGPreData);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, ISPSchur2_fullMG_CL> Solver7T;
-    Solver7T solver7(Stokes, ISPschur2SolverfullMG);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver7T>
+    SolverT solver7(Stokes, ISPschur2SolverfullMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl7( Stokes, lset, solver7, C.theta, 0., false,
         C.StokesMethod==schurfullMG, &VelMGPreData);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, InexactUzawaFullMG_CL> Solver8T;
-    Solver8T solver8(Stokes, inexactUzawaSolverFullMG);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver8T>
+    SolverT solver8(Stokes, inexactUzawaSolverFullMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl8( Stokes, lset, solver8, C.theta, 0., false,
         C.StokesMethod==inexactuzawafullMG, &VelMGPreData);
 
-    typedef DummyFixedPtDefectCorrCL<StokesProblemT, MyPMinresSP_fullMG_CL> Solver9T;
-    Solver9T solver9(Stokes, stokessolverfullMG);
-    LinThetaScheme2PhaseCL<StokesProblemT, Solver9T>
+    SolverT solver9(Stokes, stokessolverfullMG);
+    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
         cpl9( Stokes, lset, solver9, C.theta, 0., false,
         C.StokesMethod==minresfullMG, &VelMGPreData);
 

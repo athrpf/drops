@@ -292,7 +292,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         // PC for Oseen solver
 //        typedef DummyPcCL OseenPcT;
 //        OseenPcT oseenpc;
-        typedef BlockPreCL<APcT, SPcT, /*isdiagonal*/ false> OseenPcT;
+        typedef BlockPreCL<APcT, SPcT> OseenPcT;
         OseenPcT oseenpc( Apc, ispc);
 
         // Oseen solver
@@ -304,7 +304,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
        OseenSolverT oseensolver( oseensolver0);
 
         // Navier-Stokes solver
-        typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
+        typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
         NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         // Time-integration and coupling

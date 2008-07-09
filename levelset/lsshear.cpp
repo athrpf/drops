@@ -183,7 +183,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
 //        typedef PSchur_PCG_CL StokesSolverT;
         typedef PSchur_GSPCG_CL StokesSolverT;
         PSchur_GSPCG_CL StokesSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
-        typedef DummyFixedPtDefectCorrCL<StokesProblemT, StokesSolverT> SolverT;
+        typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, StokesSolver);
         LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
             cpl( Stokes, lset, dummyFP, /*theta*/ 0.5, /*nonlinear*/ 0.);
@@ -206,7 +206,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         std::cerr << "#PCG steps = "; std::cin >> inner_iter;
         typedef Uzawa_PCG_CL StokesSolverT;
         StokesSolverT uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
-        typedef DummyFixedPtDefectCorrCL<StokesProblemT, StokesSolverT> SolverT;
+        typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, uzawaSolver);
         LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
             cpl( Stokes, lset, dummyFP, /*theta*/ 0.5, /*nonlinear*/ 0.);

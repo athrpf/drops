@@ -1,8 +1,10 @@
+/// \file
+/// \brief nonlinear solvers for the Navier-Stokes equation
+
 //**************************************************************************
-// File:    nssolver.h                                                     *
-// Content: nonlinear solvers for the Navier-Stokes equation               *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
+// Author:  Sven Gross, Joerg Grande, Volker Reichelt, Patrick Esser       *
+//          IGPM RWTH Aachen                                               *
+// Version: 0.2                                                            *
 // History: begin - Nov, 20 2001                                           *
 //**************************************************************************
 
@@ -15,127 +17,91 @@
 namespace DROPS
 {
 
-template <class NavStokesT, class SolverT>
-class AdaptFixedPtDefectCorrCL
-/****************************************************************************
-* adaptive fixedpoint defect correction (TUREK p. 187f)
-* for the Navier-Stokes equation. The NS problem is of type NavStokesT,
-* the inner problems of Stokes-type are solved via a SolverT-solver.
-* After the run, the NS class contains the nonlinear part N / cplN belonging
-* to the iterated solution.
-****************************************************************************/
+/// \brief Base class for Navier-Stokes solver. The base class version forwards all operations to the Stokes solver.
+template<class NavStokesT>
+class NSSolverBaseCL : public SolverBaseCL
 {
-  private:
-    NavStokesT& _NS;
-    SolverT&    _solver;
-    MatrixCL    _AN;
-    const VectorCL* _basevel;
-
-    int         _maxiter, _iter;
-    double      _tol, _res, _red;
+  protected:
+    NavStokesT& NS_;
+    StokesSolverBaseCL& solver_;
+    using SolverBaseCL::_iter;
+    using SolverBaseCL::_maxiter;
+    using SolverBaseCL::_tol;
+    using SolverBaseCL::_res;
 
   public:
-    AdaptFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 0.1)
-        : _NS( NS), _solver( solver), _basevel( 0), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
+    NSSolverBaseCL (NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter= -1, double tol= -1.0)
+        : SolverBaseCL(maxiter, tol), NS_( NS), solver_( solver) {}
+
+    virtual ~NSSolverBaseCL() {}
+
+    virtual double   GetResid ()         const { return solver_.GetResid(); }
+    virtual int      GetIter  ()         const { return solver_.GetIter(); }
+    StokesSolverBaseCL& GetStokesSolver () const { return solver_; }
+    virtual MatrixCL& GetAN()                  { return NS_.A.Data; }
+
+    /// solves the system   A v + BT p = b
+    ///                     B v        = c
+    virtual void Solve (const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+        VectorCL& b, VecDescCL& cplN, VectorCL& c, double)
+    {
+        solver_.Solve( A, B, v.Data, p, b, c);
+        cplN.Data= 0.;
+    }
+};
+
+
+/// \brief adaptive fixedpoint defect correction (TUREK p. 187f) for the Navier-Stokes equation.
+///
+/// The NS problem is of type NavStokesT, the inner problems of Stokes-type
+/// are solved via a StokesSolverBaseCL-solver.
+/// After the run, the NS class contains the nonlinear part N / cplN belonging
+/// to the iterated solution.
+template <class NavStokesT>
+class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
+{
+  private:
+    typedef NSSolverBaseCL<NavStokesT> base_;
+    using base_::NS_;
+    using base_::solver_;
+    using base_::_iter;
+    using base_::_maxiter;
+    using base_::_tol;
+    using base_::_res;
+
+    MatrixCL AN_;
+    const VectorCL* basevel_;
+
+    double      red_;
+    bool        adap_;
+
+  public:
+    AdaptFixedPtDefectCorrCL( NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter,
+                              double tol, double reduction= 0.1, bool adap=true)
+        : base_( NS, solver, maxiter, tol), basevel_( 0), red_( reduction), adap_( adap) {}
 
     ~AdaptFixedPtDefectCorrCL() {}
 
-    void SetTol      ( double tol) { _tol= tol; }
-    void SetMaxIter  ( int iter  ) { _maxiter= iter; }
-    void SetReduction( double red) { _red= red; }
+    void SetReduction( double red) { red_= red; }
 
-    void SetBaseVel( const VectorCL* bv) { _basevel= bv; }
+    void SetBaseVel( const VectorCL* bv) { basevel_= bv; }
 
-    double   GetResid()        const { return _res; }
-    int      GetIter ()        const { return _iter; }
-    SolverT& GetStokesSolver() const { return _solver; }
-    MatrixCL&GetAN()                 { return _AN; }
+    MatrixCL& GetAN()          { return AN_; }
 
-    // solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
-    //                                 B v        = c
-    // (param. alpha is used for time integr. schemes)
+    /// solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
+    ///                                 B v        = c
+    /// (param. alpha is used for time integr. schemes)
     void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
                 VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
-};
-
-template<class NavStokesT, class SolverT>
-class FixedPtDefectCorrCL
-/****************************************************************************
-* fixedpoint defect correction (TUREK p. 187f w/o adaption)
-* for the Navier-Stokes equation. The NS problem is of type NavStokesT,
-* the inner problems of Stokes-type are solved via a SolverT-solver.
-* After the run, the NS class contains the nonlinear part N / cplN belonging
-* to the iterated solution.
-****************************************************************************/
-{
-  private:
-    NavStokesT& _NS;
-    SolverT&    _solver;
-    MatrixCL    _AN;
-
-    int         _maxiter, _iter;
-    double      _tol, _res, _red;
-
-  public:
-    FixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver, int maxiter, double tol, double reduction= 0.1)
-        : _NS( NS), _solver( solver), _maxiter( maxiter), _iter(-1), _tol( tol), _res(-1.), _red( reduction) {}
-
-    ~FixedPtDefectCorrCL() {}
-
-    void SetTol      ( double tol) { _tol= tol; }
-    void SetMaxIter  ( Uint iter ) { _maxiter= iter; }
-    void SetReduction( double red) { _red= red; }
-
-    double GetResid()          const { return _res; }
-    Uint   GetIter ()          const { return _iter; }
-    SolverT& GetStokesSolver() const { return _solver; }
-    MatrixCL&GetAN()                 { return _AN; }
-
-    // solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
-    //                                 B v        = c
-    // (param. alpha is used for time integr. schemes)
-    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
-                VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
-};
-
-
-template<class NavStokesT, class SolverT>
-class DummyFixedPtDefectCorrCL
-/****************************************************************************
-* Used for for Stokes problems. Solve() just calls the inner SolverT-solver.
-****************************************************************************/
-{
-  private:
-    NavStokesT& _NS;
-    SolverT&    _solver;
-  public:
-    DummyFixedPtDefectCorrCL( NavStokesT& NS, SolverT& solver)
-        : _NS( NS), _solver( solver) {}
-
-    ~DummyFixedPtDefectCorrCL() {}
-
-    double   GetResid()        const { return _solver.GetResid(); }
-    Uint     GetIter ()        const { return _solver.GetIter(); }
-    SolverT& GetStokesSolver() const { return _solver; }
-
-    // solves the system   A v + BT p = b
-    //                     B v        = c
-    void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
-                VectorCL& b, VecDescCL& cplN, VectorCL& c, double)
-    {
-        _solver.Solve( A, B, v.Data, p, b, c);
-        cplN.Data= 0.;
-    } 
 };
 
 //=================================
 //     template definitions
 //=================================
 
-
-template<class NavStokesT, class SolverT>
+template<class NavStokesT>
 void
-AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
+AdaptFixedPtDefectCorrCL<NavStokesT>::Solve(
     const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
     VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
 {
@@ -146,14 +112,14 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
         _iter= 0;
         for(;;++_iter) // ever
         {
-            if (_basevel != 0) v.Data= *_basevel - v.Data;
-            _NS.SetupNonlinear(&_NS.N, &v, &cplN);
-            if (_basevel != 0) v.Data= *_basevel - v.Data;
+            if (basevel_ != 0) v.Data= *basevel_ - v.Data;
+            NS_.SetupNonlinear(&NS_.N, &v, &cplN);
+            if (basevel_ != 0) v.Data= *basevel_ - v.Data;
             //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
-            _AN.LinComb( 1., A, alpha, _NS.N.Data);
+            AN_.LinComb( 1., A, alpha, NS_.N.Data);
 
             // calculate defect:
-            d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
+            d= AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
             e= B*v.Data - c;
             std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
             //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
@@ -161,66 +127,33 @@ AdaptFixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
                 break;
 
             // solve correction:
-            double outer_tol= _res*_red;
+            double outer_tol= _res*red_;
             if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
             w= 0.0; q= 0.0;
-            _solver.SetTol( outer_tol);
-            _solver.Solve( _AN, B, w, q, d, e); // _solver should use a relative termination criterion.
+            solver_.SetTol( outer_tol);
+            solver_.Solve( AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
 
             // calculate step length omega:
-            v_omw.Data= v.Data - omega*w;
-            if (_basevel != 0) v_omw.Data= *_basevel - v_omw.Data;
-            _NS.SetupNonlinear( &_NS.N, &v_omw, &cplN);
-            if (_basevel != 0) v_omw.Data= *_basevel - v_omw.Data;
+            if (adap_) {
+                v_omw.Data= v.Data - omega*w;
+                if (basevel_ != 0) v_omw.Data= *basevel_ - v_omw.Data;
+                NS_.SetupNonlinear( &NS_.N, &v_omw, &cplN);
+                if (basevel_ != 0) v_omw.Data= *basevel_ - v_omw.Data;
 
-            d= A*w + alpha*(_NS.N.Data*w) + transp_mul( B, q);
-            e= B*w;
-            omega= dot( d, VectorCL( A*v.Data + _NS.N.Data*VectorCL( alpha*v.Data)
-                + transp_mul( B, p) - b - alpha*cplN.Data))
-                + dot( e, VectorCL( B*v.Data - c));
-            omega/= norm_sq( d) + norm_sq( e);
-            std::cerr << "omega = " << omega << std::endl;
+                d= A*w + alpha*(NS_.N.Data*w) + transp_mul( B, q);
+                e= B*w;
+                omega= dot( d, VectorCL( A*v.Data + NS_.N.Data*VectorCL( alpha*v.Data)
+                    + transp_mul( B, p) - b - alpha*cplN.Data))
+                    + dot( e, VectorCL( B*v.Data - c));
+                omega/= norm_sq( d) + norm_sq( e);
+                std::cerr << "omega = " << omega << std::endl;
+            }
 
             // update solution:
             v.Data-= omega*w;
             p     -= omega*q;
         }
 }
-
-template<class NavStokesT, class SolverT>
-void FixedPtDefectCorrCL<NavStokesT, SolverT>::Solve(
-    const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
-    VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
-{
-        VectorCL d( v.Data.size()), e( p.size()),
-                 w( v.Data.size()), q( p.size());
-        _iter= 0;
-        for(;;++_iter) // ever
-        {
-            _NS.SetupNonlinear(&_NS.N, &v, &cplN);
-            _AN.LinComb( 1., A, alpha, _NS.N.Data);
-
-            // calculate defect:
-            d= _AN*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
-            e= B*v.Data - c;
-
-            std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq(e))) << std::endl;
-            if (_res < _tol || _iter>=_maxiter)
-                break;
-
-            // solve correction:
-            double outer_tol= _res*_red;
-            if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
-            w= 0.0; q= 0.0;
-            _solver.SetTol( outer_tol);
-            _solver.Solve( _AN, B, w, q, d, e);
-
-            // update solution:
-            v.Data-= w;
-            p     -= q;
-        }
-}
-
 
 }    // end of namespace DROPS
 
