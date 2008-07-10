@@ -179,7 +179,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             solver = new SolverT(Stokes, inexactuzawapcgpcgsolver); break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
-    if (C.StokesMethod == 2 || C.StokesMethod == 4) // MultiGrid used
+    if (C.StokesMethod == 2 || C.StokesMethod == 10) // MultiGrid used
         cpl = new ThetaScheme2PhaseCL<StokesProblemT, SolverT>
             ( Stokes, lset, *solver, C.theta, /*nonlinear*/ 0., /*proj.*/ false, C.cpl_stab, true, &velMG);
     else
