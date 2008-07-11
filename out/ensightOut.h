@@ -49,7 +49,6 @@ class EnsightP2SolOutCL
     std::string        _geom;
     const bool         binary_;
 
-    void AppendTimecode( std::string&) const;
     void putTime( double time);
     void CheckFile( const std::ofstream&) const;
 
@@ -83,6 +82,9 @@ class EnsightP2SolOutCL
     /// \brief End writing ensight files
     /** call CaseEnd() after finishing all other output */
     void CaseEnd   ();
+    /// \brief Append current time step to the argument
+    void AppendTimecode( std::string&) const;
+
 };
 
 
