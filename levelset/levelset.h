@@ -10,6 +10,7 @@
 #include "num/solver.h"
 #include "num/bndData.h"
 #include "num/fe.h"
+#include "levelset/mgobserve.h"
 #include <vector>
 
 namespace DROPS
@@ -136,6 +137,26 @@ class LevelsetP2CL
     void DoStep    ( const VectorCL&);
     void DoLinStep ( const VectorCL&);
     ///@}
+};
+
+
+/// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function ls.Phi.
+///
+/// The actual work is done in post_refine().
+class LevelsetRepairCL : public MGObserverCL
+{
+  private:
+    LevelsetP2CL& ls_;
+
+  public:
+    LevelsetRepairCL (LevelsetP2CL& ls)
+        : ls_( ls) {}
+
+    void pre_refine  () {}
+    void post_refine ();
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
 };
 
 

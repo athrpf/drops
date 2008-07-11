@@ -92,6 +92,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     sigma= Stokes.GetCoeff().SurfTens;
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
+    DROPS::LevelsetRepairCL lsetrepair( lset);
+    adap.push_back( &lsetrepair);
+    DROPS::VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    adap.push_back( &velrepair);
+    DROPS::PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    adap.push_back( &prrepair);
+
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
@@ -311,8 +318,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
             {
                 lset.ReparamFastMarching( C.RepMethod);
-                
-                adap.UpdateTriang( Stokes, lset);
+
+                adap.UpdateTriang( lset);
                 if (adap.WasModified() )
                 {
                     cpl.Update();
@@ -322,9 +329,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                     Stokes.prA.SetIdx( pidx, pidx);
                     Stokes.SetupPrStiff( &Stokes.prA, lset);
                 }
-                
+
                 std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-                
+
                 if (C.VolCorr)
                 {
                     double dphi= lset.AdjustVolume( Vol, 1e-9);

@@ -245,5 +245,27 @@ void TransportP1CL::ct2c()
             c.Data[sit->Unknowns( ctidx)]/= H_;
 }
 
+//*****************************************************************************
+//                               TransportRepairCL
+//*****************************************************************************
+inline void
+TransportRepairCL::post_refine ()
+{
+    VecDescCL loc_ct;
+    IdxDescCL loc_cidx( 1);
+    VecDescCL& ct= c_.ct;
+    match_fun match= mg_.GetBnd().GetMatchFun();
+
+    c_.CreateNumbering( mg_.GetLastLevel(), &loc_cidx, match);
+    loc_ct.SetIdx( &loc_cidx);
+    RepairAfterRefineP1( c_.GetSolution( ct), loc_ct);
+
+    ct.Clear();
+    c_.DeleteNumbering( ct.RowIdx);
+    c_.idx.swap( loc_cidx);
+    ct.SetIdx( &c_.idx);
+    ct.Data= loc_ct.Data;
+}
+
 
 } // end of namespace DROPS

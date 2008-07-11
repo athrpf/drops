@@ -4,8 +4,11 @@
 #ifndef DROPS_INSTATSTOKES2PHASE_H
 #define DROPS_INSTATSTOKES2PHASE_H
 
+#include <memory>
+
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
+#include "levelset/mgobserve.h"
 #include "num/MGsolver.h"
 
 namespace DROPS
@@ -178,6 +181,52 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
         { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
     //@}
+};
+
+/// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function stokes_.v.
+///
+/// The actual work is done in post_refine().
+template<class StokesT>
+class VelocityRepairCL : public MGObserverCL
+{
+  private:
+    StokesT& stokes_;
+
+  public:
+    VelocityRepairCL (StokesT& stokes)
+        : stokes_( stokes) {}
+
+    void pre_refine  () {}
+    void post_refine ();
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
+};
+
+/// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function stokes_.pr.
+///
+/// For the P1-part, the actual work is done in post_refine().
+/// For the P1X-part, a P1XRepairCL is created in pre_refine_sequence() and used in
+/// post_refine_sequence(). Holding the P1XRepairCL* in an auto_ptr simplifies the use
+/// of heap-memory: No memory is lost, even if successive calls of pre_refine_sequence()
+/// occur without interleaved post_refine_sequence()-calls.
+template<class StokesT>
+class PressureRepairCL : public MGObserverCL
+{
+  private:
+    StokesT& stokes_;
+    std::auto_ptr<P1XRepairCL> p1xrepair_;
+    const LevelsetP2CL& ls_;
+
+  public:
+    PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls)
+        : stokes_( stokes), ls_( ls) {}
+
+    void pre_refine  () {}
+    void post_refine ();
+
+    void pre_refine_sequence  ();
+    void post_refine_sequence ();
 };
 
 } // end of namespace DROPS

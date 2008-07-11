@@ -118,6 +118,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     LevelsetP2CL lset( MG, &sigmaf, &gsigma, C.lset_theta, C.lset_SD,
         -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
+    DROPS::LevelsetRepairCL lsetrepair( lset);
+    adap.push_back( &lsetrepair);
+    DROPS::VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    adap.push_back( &velrepair);
+    DROPS::PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    adap.push_back( &prrepair);
+
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
@@ -334,17 +341,17 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
             {
                 lset.ReparamFastMarching( C.RepMethod);
-                
+
                 if (C.ref_freq != 0)
-                     adap.UpdateTriang( Stokes, lset);
+                     adap.UpdateTriang( lset);
                 if (adap.WasModified()) {
                     cpl.Update();
                     // don't forget to update the pr mass/stiff matrix for the schur compl. preconditioner!!
                     // This is now in cpl.Update().
                 }
-                
+
                 std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-                
+
                 if (C.VolCorr)
                 {
                     double dphi= lset.AdjustVolume( Vol, 1e-9);

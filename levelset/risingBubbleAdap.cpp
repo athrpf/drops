@@ -55,6 +55,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     sigma=C.sigma;
     MultiGridCL& MG= Stokes.GetMG();
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, C.CurvDiff); // impl. Euler
+
+    DROPS::LevelsetRepairCL lsetrepair( lset);
+    adap.push_back( &lsetrepair);
+    DROPS::VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    adap.push_back( &velrepair);
+    DROPS::PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    adap.push_back( &prrepair);
+
     lset.SetSurfaceForce( SF_ImprovedLB);
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
@@ -205,7 +213,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             lset.ReparamFastMarching( C.RepMethod);
 
             if (C.ref_freq != 0)
-                adap.UpdateTriang( Stokes, lset);
+                adap.UpdateTriang( lset);
             if (adap.WasModified()) {
                 cpl->Update();
             }

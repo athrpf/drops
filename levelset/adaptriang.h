@@ -2,15 +2,15 @@
 // File:    adaptriang.h                                                   *
 // Content: adaptive triangulation based on position of the interface      *
 //          provided by the levelset function                              *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+// Author:  Sven Gross, Joerg Grande, Volker Reichelt, IGPM RWTH Aachen    *
 //**************************************************************************
 
 #ifndef DROPS_ADAPTRIANG_H
 #define DROPS_ADAPTRIANG_H
 
-#include "stokes/stokes.h"
+#include "levelset/mgobserve.h"
 #include "levelset/levelset.h"
-#include "poisson/transport2phase.h"
+#include <vector>
 
 namespace DROPS
 {
@@ -22,6 +22,9 @@ class AdapTriangCL
     double width_;
     int c_level_, f_level_;
     bool modified_;
+
+    typedef std::vector<MGObserverCL*> ObserverContT;
+    ObserverContT observer_;
 
     template <class DistFctT>
     double GetValue( const DistFctT& dist, const VertexCL& v) { return dist.val( v); }
@@ -38,18 +41,26 @@ class AdapTriangCL
     // One step of grid change; returns true if modifications were necessary,
     // false, if nothing changed.
 
+    void notify_pre_refine () {
+        for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
+            (*obs)->pre_refine();
+    }
+    void notify_post_refine () {
+       for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
+            (*obs)->post_refine();
+    }
+
   public:
     AdapTriangCL( MultiGridCL& mg, double width, int c_level, int f_level)
       : mg_(mg), width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
       { Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0); }
 
     template <class DistFctT>
-    void MakeInitialTriang( DistFctT&);
+      void MakeInitialTriang (DistFctT&);
+    void UpdateTriang (const LevelsetP2CL& ls);
+    bool WasModified () const { return modified_; }
 
-    template <class StokesT>
-    void UpdateTriang( StokesT&, LevelsetP2CL&, TransportP1CL* c= 0);
-
-    bool WasModified() const { return modified_; }
+    void push_back (MGObserverCL* o) { observer_.push_back( o); }
 };
 
 } // end of namespace DROPS

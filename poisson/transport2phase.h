@@ -13,6 +13,7 @@
 #define DROPS_TRANSPORT2PHASE_H
 
 #include "levelset/levelset.h"
+#include "levelset/mgobserve.h"
 #include "misc/problem.h"
 #include "num/fe.h"
 #include "num/discretize.h"
@@ -113,6 +114,26 @@ class TransportP1CL
     void c2ct ();
     void ct2c ();
     ///@}
+};
+
+/// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the function c.ct.
+///
+/// The actual work is done in post_refine().
+class TransportRepairCL : public MGObserverCL
+{
+  private:
+    TransportP1CL& c_;
+    const MultiGridCL& mg_;
+
+  public:
+    TransportRepairCL (TransportP1CL& c, const MultiGridCL& mg)
+        : c_( c), mg_( mg) {}
+
+    void pre_refine  () {}
+    void post_refine ();
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
 };
 
 } // end of namespace DROPS

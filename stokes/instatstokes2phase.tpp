@@ -1553,4 +1553,70 @@ void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const Leve
     }
 }
 
+//*****************************************************************************
+//                               VelocityRepairCL
+//*****************************************************************************
+template<class StokesT>
+  inline void
+  VelocityRepairCL<StokesT>::post_refine ()
+{
+    VelVecDescCL loc_v;
+    IdxDescCL    loc_vidx( 3, 3);
+    VelVecDescCL& v= stokes_.v;
+    Uint LastLevel= stokes_.GetMG().GetLastLevel();
+    match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
+
+    stokes_.CreateNumberingVel( LastLevel, &loc_vidx, match);
+    if (LastLevel != v.RowIdx->TriangLevel) {
+        std::cout << "LastLevel: " << LastLevel
+                  << " old v->TriangLevel: " << v.RowIdx->TriangLevel << std::endl;
+        throw DROPSErrCL( "VelocityRepairCL::post_refine: Sorry, not yet implemented.");
+    }
+    loc_v.SetIdx( &loc_vidx);
+    RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
+    v.Clear();
+    stokes_.DeleteNumberingVel( v.RowIdx);
+
+    stokes_.vel_idx.swap( loc_vidx);
+    v.SetIdx( &stokes_.vel_idx);
+    v.Data= loc_v.Data;
+}
+
+//*****************************************************************************
+//                               PressureRepairCL
+//*****************************************************************************
+template<class StokesT>
+  inline void
+  PressureRepairCL<StokesT>::post_refine ()
+{
+    VecDescCL loc_p;
+    IdxDescCL loc_pidx( 1);
+    VecDescCL& p= stokes_.p;
+    match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
+
+    stokes_.CreateNumberingPr( stokes_.GetMG().GetLastLevel(), &loc_pidx, match);
+    loc_p.SetIdx( &loc_pidx);
+    RepairAfterRefineP1( stokes_.GetPrSolution( p), loc_p);
+    p.Clear();
+    stokes_.DeleteNumberingPr( p.RowIdx);
+    stokes_.pr_idx.swap( loc_pidx);
+    p.SetIdx( &stokes_.pr_idx);
+    p.Data= loc_p.Data;
+}
+
+template<class StokesT>
+  inline void
+  PressureRepairCL<StokesT>::pre_refine_sequence ()
+{
+    p1xrepair_= std::auto_ptr<P1XRepairCL>( new P1XRepairCL( stokes_.UsesXFEM(), stokes_.GetMG(), stokes_.p, stokes_.GetXidx()));
+}
+
+template<class StokesT>
+  inline void
+  PressureRepairCL<StokesT>::post_refine_sequence ()
+{
+    (*p1xrepair_)( ls_);
+    p1xrepair_.reset();
+}
+
 } // end of namespace DROPS

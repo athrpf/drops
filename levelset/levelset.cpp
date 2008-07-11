@@ -841,6 +841,28 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 }
 
 //*****************************************************************************
+//                               LevelsetRepairCL
+//*****************************************************************************
+inline void
+LevelsetRepairCL::post_refine ()
+{
+    VecDescCL loc_phi;
+    IdxDescCL loc_lidx( 1, 1);
+    VecDescCL& phi= ls_.Phi;
+    match_fun match= ls_.GetMG().GetBnd().GetMatchFun();
+
+    ls_.CreateNumbering( ls_.GetMG().GetLastLevel(), &loc_lidx, match);
+    loc_phi.SetIdx( &loc_lidx);
+    RepairAfterRefineP2( ls_.GetSolution( phi), loc_phi);
+
+    phi.Clear();
+    ls_.DeleteNumbering( phi.RowIdx);
+    ls_.idx.swap( loc_lidx);
+    phi.SetIdx( &ls_.idx);
+    phi.Data= loc_phi.Data;
+}
+
+//*****************************************************************************
 //                               InterfacePatchCL
 //*****************************************************************************
 
