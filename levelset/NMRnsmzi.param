@@ -44,6 +44,7 @@ Coupling {
   Tol		=	1e-10	# not used a.t.m.
   Iter		=	4	# -1 = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
+  Projection	=	0 # 1       # 1= Perform a projection step before FP-Iteration
 }
 
 # re-initialization of levelset function
@@ -80,7 +81,9 @@ Exp {
 
   InflowVel	=	-25e-3
   RadInlet	=	3.6e-3	# 3.5e-3 for old meas. cell
-}
+  InflowFreq	=	0	# no effect
+  InflowAmpl	=	0	# no effect
+  BoundaryType	=	0	# no effect}
 
 # miscellaneous
 
@@ -91,4 +94,6 @@ InitialFile	=	ensight/nsmzi0
 MeshFile	=	gambit/NMR_05.msh
 EnsightCase	=	nsmzi
 EnsightDir	=	ensight
-
+GeomType	=	0	# no effect
+SerializationFile =	none	# no effect
+DeserializationFile =	none	# no effect

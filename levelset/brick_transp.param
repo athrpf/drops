@@ -34,6 +34,7 @@ Coupling {
   Tol 		= 	1
   Iter 		= 	-1 	# = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
+  Projection	=	0	# 1 = Perform a projection step before FP
 }
 
 # re-initialization of levelset function
@@ -64,8 +65,8 @@ Exp {
 #  PosDrop = 0 -1 -1
 
 #  static Bubble
-  RadDrop = 0.3 0.3 0.3
-  PosDrop = 0.5 0.5 0.5
+  RadDrop	= 0.3 0.3 0.3
+  PosDrop	= 0.5 0.5 0.5
 
   Gravity	=	0	0	0
 
@@ -73,6 +74,9 @@ Exp {
 
   InflowVel	=	1 #-0.14	# no effect
   RadInlet	=	0.5	# no effect
+  InflowFreq	=	0	# no effect
+  InflowAmpl	=	0	# no effect
+  BoundaryType	=	0	# no effect
 }
 
 # adaptive refinement
@@ -90,3 +94,6 @@ InitialFile	=	xxx
 MeshFile	=	4	# num subdivisions of cube
 EnsightCase	=	brick_transp
 EnsightDir	=	ensight
+GeomType	=	0	# no effect
+SerializationFile =	none	# no effect
+DeserializationFile =	none	# no effect

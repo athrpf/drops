@@ -44,6 +44,7 @@ Coupling {
   Tol		=	1e-12	# not used a.t.m.
   Iter		=	1	# -1 = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
+  Projection	=	0	# 1 = Perform a projection step before FP
 }
 
 # re-initialization of levelset function
@@ -81,6 +82,9 @@ Exp {
 
   InflowVel	=	-0.15
   RadInlet	=	3.5e-3
+  InflowFreq	=	0	# no effect
+  InflowAmpl	=	0	# no effect
+  BoundaryType	=	0	# no effect
 }
 
 # miscellaneous
@@ -91,3 +95,6 @@ InitialFile	=	ensight/nsmzi
 MeshFile	=	XXX
 EnsightCase	=	nsmzi
 EnsightDir	=	ensight
+GeomType	=	0	# no effect
+SerializationFile =	none	# no effect
+DeserializationFile =	none	# no effect

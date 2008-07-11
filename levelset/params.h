@@ -44,6 +44,7 @@ class ParamMesszelleCL: public ParamBaseCL
     double cpl_tol;                             ///< tolerance for the coupling
     int    cpl_iter;                            ///< max. number of iterations for the fixed-point iteration
     double cpl_stab;                            ///< Laplace-Beltrami-stabilization
+    double cpl_proj;                            ///< 1 = perform a projection step before FP
     //@}
 
     /// \name Material data
@@ -65,6 +66,9 @@ class ParamMesszelleCL: public ParamBaseCL
            r_inlet;                             ///< radius at inlet of measuring device
     int    flow_dir;                            ///< flow direction (x/y/z = 0/1/2)
     Point3DCL g;                                ///< gravity
+    double inflow_freq,                         ///< inflow frequence
+           inflow_ampl;                         ///< inflow amplitude
+    int    bnd_type;                            ///< boundary type: 1= hom. Dirichlet, 2= inhom. Dirichlet bnd-data for in-/outflow, 3= tube/canal
     //@}
     ///\name Adaptive refinement
     //@{
@@ -80,13 +84,18 @@ class ParamMesszelleCL: public ParamBaseCL
 
 
     double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
-        
-    int    IniCond;                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
+
+    int    IniCond,                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
+           GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
 
     string IniData,                             ///< file prefix when reading data for initial condition
            EnsCase,                             ///< name of Ensight Case
            EnsDir,                              ///< local directory for Ensight files
-           meshfile;                            ///< mesh file (created by GAMBIT, FLUENT/UNS format)
+           meshfile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4@5x6x7)
+           serialization_file,                  ///< writes multigrid to serialisation files, special value "none" to ignore
+           deserialization_file;                ///< reads multigrid from deserialization files, special value "none" to ignore
+
+
 
     ParamMesszelleCL()                        { RegisterParams(); }
     ParamMesszelleCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }

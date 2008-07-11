@@ -34,6 +34,7 @@ Coupling {
   Tol		=	1e-12	# not used a.t.m.
   Iter		=	-1	# -1 = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
+  Projection	=	0 # 1       # 1= Perform a projection step before FP-Iteration
 }
 
 # re-initialization of levelset function
@@ -71,7 +72,9 @@ Exp {
 
   InflowVel	=	-0.14
   RadInlet	=	3.5e-3
-}
+  InflowFreq	=	0	# no effect
+  InflowAmpl	=	0	# no effect
+  BoundaryType	=	0	# no effect}
 
 # miscellaneous
 
@@ -81,3 +84,6 @@ InitialCond =	1
 InitialFile = 	initial/XXX
 EnsightCase	=	NMRmzi
 EnsightDir	=	ensight
+GeomType	=	0	# no effect
+SerializationFile =	none	# no effect
+DeserializationFile =	none	# no effect

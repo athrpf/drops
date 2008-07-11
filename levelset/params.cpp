@@ -35,6 +35,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( cpl_iter,     "Iter");
     rp_.RegDouble( cpl_tol,   "Tol");
     rp_.RegDouble( cpl_stab,  "Stab");
+    rp_.RegDouble( cpl_proj,  "Projection");
     rp_.EndGroup();
 
     rp_.BeginGroup("Reparam");
@@ -64,14 +65,20 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( Anstroem,  "InflowVel");
     rp_.RegDouble( r_inlet,   "RadInlet");
     rp_.RegInt( flow_dir,     "FlowDir");
+    rp_.RegDouble( inflow_freq, "InflowFreq");
+    rp_.RegDouble( inflow_ampl, "InflowAmpl");
+    rp_.RegInt( bnd_type,     "BoundaryType");
     rp_.EndGroup();
 
     rp_.RegDouble(XFEMStab,   "XFEMStab");
     rp_.RegInt( IniCond,      "InitialCond");
+    rp_.RegInt( GeomType,     "GeomType");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");
     rp_.RegString( meshfile,  "MeshFile");
+    rp_.RegString( serialization_file,  "SerializationFile");
+    rp_.RegString( deserialization_file,  "DeserializationFile");
 }
 
 void ParamMesszelleNsCL::RegisterParams()
