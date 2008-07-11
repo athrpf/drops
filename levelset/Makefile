@@ -8,7 +8,8 @@ DIR = levelset
 
 EXEC = lsdrops reparam lsdrivcav lsshear curvDriven risingBubble \
     risingBubbleAdap mzelle_stat mzelle_instat mzelle_instat_ns \
-    surfTens prJump film brickflow mzelle_ns_adap brick_transp
+    surfTens prJump film brickflow mzelle_ns_adap brick_transp \
+    twophasedrops
 
 DELETE = $(EXEC)
 
@@ -150,6 +151,13 @@ brick_transp: \
     ../poisson/transport2phase.o ../out/ensightOut.o ../out/vtkOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
+twophasedrops: \
+    ../levelset/twophasedrops.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
+    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:
 include ../Make.common

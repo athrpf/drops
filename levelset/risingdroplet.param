@@ -1,0 +1,98 @@
+#=============================================================
+#    DROPS parameter file for twophasedrops.cpp
+#    simulation of two-phase flow:
+#    droplet in a cuboid
+#=============================================================
+
+# time stepping
+Time {
+  NumSteps	=	2
+  StepSize	=	0.05
+  ThetaLevelset	=	1	# backward Euler
+  ThetaStokes	=	1	# backward Euler
+}
+
+# flow solver
+Stokes {
+  InnerIter	=	1000
+  OuterIter	=	200
+  InnerTol	=	1e-10
+  OuterTol	=	1e-6
+  StokesMethod	=	211	# 1$= GCR, 2$($)= InexactUzawa(Stokes), 3$ MinRes
+}
+
+NavStokes {
+  Nonlinear	=	0
+  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme
+  Tol           =       5e-10
+  Iter          =       20
+  Reduction     =       0.1
+}
+
+# levelset solver
+Levelset {
+  Tol		=	1e-14
+  Iter		=	1000
+  SD		=	0.1
+  CurvDiff	=	-1
+  VolCorrection	=	1
+}
+
+Coupling {
+  Tol		=	1e-10	# not used a.t.m.
+  Iter		=	8	# -1 = till convergence
+  Stab		=	0       # Laplace-Beltrami-Stabilization
+  Projection	=	0	# 1 = Perform a projection step before FP
+}
+
+# re-initialization of levelset function
+Reparam {
+  Freq		=	10	# 0 = no reparametrization
+  Method	=	1	# 0/1 = fast marching without/with modification of zero
+}
+
+# adaptive refinement
+AdaptRef {
+  Freq		=	5
+  FinestLevel	=	2
+  Width		=	0.1
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop	=	1
+  ViscDrop	=	10
+  DensFluid	=	10
+  ViscFluid	=	1
+  SmoothZone	=	0.05
+
+  SurfTension	=	1
+}
+
+# experimental conditions
+Exp {
+  RadDrop	=	0.25 0.25 0.25
+  PosDrop	=	0.5 0.5 0.5
+
+  Gravity	=	0	0	-9.81
+
+  FlowDir	=	1	# no effect
+
+  InflowVel	=	0
+  InflowFreq	=	0	# inflow frequence
+  InflowAmpl	=	0	# inflow amplitude
+  BoundaryType	=	1	# boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+  RadInlet	=	1
+}
+
+# miscellaneous
+
+XFEMStab        =       1e-1
+InitialCond	=	0	# 0=zero, 1/2=flow with/without drop, -1=read from file
+GeomType	=	1	# 0=ReadMeshBuilder, 1=BrickBuilder
+InitialFile	=	none
+MeshFile	=	1x1x2@3x3x6
+EnsightCase	=	stat_butanol
+EnsightDir	=	ensight
+SerializationFile =	stat_butanol_ser
+DeserializationFile =	none
