@@ -18,12 +18,12 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-12
   OuterTol	=	1e-10
-  StokesMethod	=	25	# 1$= GCR, 2$($)= InexactUzawa(Stokes), 3$ MinRes
+  StokesMethod	=	25	# 1*= GCR, 2*= InexactUzawa(Stokes), 3* MinRes
 }
 
 NavStokes {
   Nonlinear	=	1
-  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting
+  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1

@@ -344,6 +344,10 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
             return (new OperatorSplitting2PhaseCL<StokesProblemT, StokesSolverBaseCL>
                         (Stokes, lset, solver->GetStokesSolver(), C.inner_iter, C.inner_tol, C.nonlinear));
         break;
+        case 5 :
+            return (new CrankNicolsonScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
+                        (Stokes, lset, *solver, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG, matMG));
+        break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
 }

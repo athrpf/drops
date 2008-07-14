@@ -111,7 +111,7 @@ class ParamMesszelleNsCL: public ParamMesszelleCL
   public:
     /// \name Navier-Stokes
     //@{
-    int    scheme;                              ///< time discretization scheme: 1=lintheta-scheme, 2=rectheta-scheme, 3=theta-scheme, 4=operator splitting
+    int    scheme;                              ///< time discretization scheme: 1=lintheta-scheme, 2=rectheta-scheme, 3=theta-scheme, 4=operator splitting, 5=crank-nicolson-scheme
     double nonlinear;                           ///< magnitude of nonlinear term
     double ns_tol,                              ///< Tolerance of the Navier-Stokes-solver
            ns_red;                              ///< The Oseen-residual is reduced by this factor (<1.0)

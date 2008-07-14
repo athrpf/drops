@@ -1112,9 +1112,55 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputeVelocityDot ()
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data)
         - transp_mul( Stokes_.B.Data, Stokes_.p.Data));
     PCG_SsorCL Msolver( SSORPcCL( 1.0), 200, 1e-10, true);
-    
+
     Msolver.Solve( Stokes_.M.Data, vdot_, b2);
     std::cerr << "ComputeVelocityDot: vdot: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';
+}
+
+
+// ==============================================
+//            CrankNicolsonScheme2PhaseCL
+// ==============================================
+
+template <class StokesT, class SolverT>
+CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::CrankNicolsonScheme2PhaseCL
+    ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double nonlinear, bool withProjection, double stab, bool usematMG, MGDataCL* matMG)
+  : base_( Stokes, ls, solver, 1.0, nonlinear, withProjection, stab, usematMG, matMG), step_(1)
+{}
+
+template <class StokesT, class SolverT>
+CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::~CrankNicolsonScheme2PhaseCL()
+{}
+
+template <class StokesT, class SolverT>
+void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::DoStep(int maxFPIter)
+{
+    switch (step_)
+    {
+        case 1 :
+        {
+            std::cerr << "~~~~~~~~~~~~~~~~ initial backward euler step\n";
+            tmpdt_=dt_;
+            base_::SetTimeStep(0.2*tmpdt_*tmpdt_, 1.0);
+            base_::DoStep(maxFPIter);
+            base_::ComputeVelocityDot();
+            base_::SetTimeStep((1.0-0.2*tmpdt_)*tmpdt_, 0.5);
+            step_++;
+        } break;
+        case 2 :
+        {
+            base_::SetTimeStep(tmpdt_, 0.5);
+            step_++;
+        } break;
+    }
+    base_::DoStep(maxFPIter);
+}
+
+template <class StokesT, class SolverT>
+void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::Update()
+{
+    base_::Update();
+    step_= 1;
 }
 
 } // end of namespace DROPS

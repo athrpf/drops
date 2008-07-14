@@ -298,6 +298,8 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 
     void MaybeStabilize (VectorCL&);
     void ComputePressure ();
+
+  protected:
     void ComputeVelocityDot ();
 
   public:
@@ -325,6 +327,28 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void DoStep( int maxFPiter= -1);
 
     void Update();
+};
+
+template <class StokesT, class SolverT>
+class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, SolverT>
+{
+  private:
+    typedef RecThetaScheme2PhaseCL<StokesT, SolverT> base_;
+
+    using base_::dt_;
+    double tmpdt_;
+    int step_;
+
+  public:
+    CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
+                         SolverT& solver, double nonlinear= 1.,
+                         bool withProjection= false, double stab= 0.0,
+                         bool usematMG= false, MGDataCL* matMG= 0);
+    ~CrankNicolsonScheme2PhaseCL();
+
+    void DoStep( int maxFPiter= -1);
+    void Update();
+
 };
 
 } // end of namespace DROPS
