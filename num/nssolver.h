@@ -1,12 +1,7 @@
 /// \file
 /// \brief nonlinear solvers for the Navier-Stokes equation
-
-//**************************************************************************
-// Author:  Sven Gross, Joerg Grande, Volker Reichelt, Patrick Esser       *
-//          IGPM RWTH Aachen                                               *
-// Version: 0.2                                                            *
-// History: begin - Nov, 20 2001                                           *
-//**************************************************************************
+/// \author Sven Gross, Joerg Grande, Volker Reichelt, Patrick Esser
+// History: begin - Nov, 20 2001
 
 #include "num/stokessolver.h"
 #include "misc/problem.h"
@@ -50,14 +45,18 @@ class NSSolverBaseCL : public SolverBaseCL
     }
 };
 
+// forward declaration
+class LineSearchPolicyCL;
 
-/// \brief adaptive fixedpoint defect correction (TUREK p. 187f) for the Navier-Stokes equation.
+/// \brief adaptive fixed-point defect correction (TUREK p. 187f) for the Navier-Stokes equation.
 ///
 /// The NS problem is of type NavStokesT, the inner problems of Stokes-type
 /// are solved via a StokesSolverBaseCL-solver.
 /// After the run, the NS class contains the nonlinear part N / cplN belonging
 /// to the iterated solution.
-template <class NavStokesT>
+/// RelaxationPolicyT defines the method, by which the relaxation factor omega is computed.
+/// The default LineSearchPolicyCL corresponds to the method in Turek's book.
+template <class NavStokesT, class RelaxationPolicyT= LineSearchPolicyCL>
 class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
 {
   private:
@@ -70,7 +69,6 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
     using base_::_res;
 
     MatrixCL AN_;
-    const VectorCL* basevel_;
 
     double      red_;
     bool        adap_;
@@ -78,13 +76,11 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
   public:
     AdaptFixedPtDefectCorrCL( NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter,
                               double tol, double reduction= 0.1, bool adap=true)
-        : base_( NS, solver, maxiter, tol), basevel_( 0), red_( reduction), adap_( adap) {}
+        : base_( NS, solver, maxiter, tol), red_( reduction), adap_( adap) {}
 
     ~AdaptFixedPtDefectCorrCL() {}
 
     void SetReduction( double red) { red_= red; }
-
-    void SetBaseVel( const VectorCL* bv) { basevel_= bv; }
 
     MatrixCL& GetAN()          { return AN_; }
 
@@ -95,64 +91,150 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
                 VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
 };
 
+
+/// \brief Computes the relaxation factor in AdapFixedPtDefectCorrCL by line search.
+class LineSearchPolicyCL
+{
+  private:
+    double omega_;
+    VectorCL d_,
+             e_;
+
+  public:
+    LineSearchPolicyCL (size_t vsize, size_t psize)
+        : omega_( 1.0), d_( vsize), e_( psize) {}
+
+    template<class NavStokesT>
+      void
+      Update (NavStokesT&, const MatrixCL&, const MatrixCL&,
+        const VecDescCL&, VectorCL&, VectorCL&, VecDescCL&, VectorCL&,
+        const VectorCL&, const VectorCL&, double);
+
+    double RelaxFactor () const { return omega_; }
+};
+
+/// \brief Always returns 1 as relaxation factor in AdapFixedPtDefectCorrCL.
+class FixedPolicyCL
+{
+  public:
+    FixedPolicyCL (size_t, size_t) {}
+
+    template<class NavStokesT>
+      void
+      Update (NavStokesT&, const MatrixCL&, const MatrixCL&,
+        const VecDescCL&, VectorCL&, VectorCL&, VecDescCL&, VectorCL&,
+        const VectorCL&, const VectorCL&, double) {}
+
+    double RelaxFactor () const { return 1.0; }
+};
+
+/// \brief Compute the relaxation factor in AdapFixedPtDefectCorrCL by Aitken's delta-squared method.
+///
+/// This vector version of classical delta-squared concergence-acceleration computes the
+/// relaxation factor in span{ (w, q)^T}.
+class DeltaSquaredPolicyCL
+{
+  private:
+    bool firststep_;
+    double omega_;
+    VectorCL w_old_,
+             q_old_,
+             w_diff_,
+             q_diff_;
+
+  public:
+    DeltaSquaredPolicyCL (size_t vsize, size_t psize)
+        : firststep_( true), omega_( 0.8),  w_old_( vsize), q_old_( psize),
+          w_diff_( vsize), q_diff_( psize) {}
+
+    template<class NavStokesT>
+      void
+      Update (NavStokesT& ns, const MatrixCL& A, const MatrixCL& B,
+        const VecDescCL& v, VectorCL& p, VectorCL& b, VecDescCL& cplN, VectorCL& c,
+        const VectorCL& w, const VectorCL& q, double alpha);
+
+    double RelaxFactor () const { return omega_; }
+};
+
 //=================================
 //     template definitions
 //=================================
+template<class NavStokesT>
+  inline void
+  LineSearchPolicyCL::Update (NavStokesT& ns, const MatrixCL& A, const MatrixCL& B,
+    const VecDescCL& v, VectorCL& p, VectorCL& b, VecDescCL& cplN, VectorCL& c,
+    const VectorCL& w, const VectorCL& q, double alpha)
+{
+    VecDescCL v_omw( v.RowIdx);
+    v_omw.Data= v.Data - omega_*w;
+    ns.SetupNonlinear( &ns.N, &v_omw, &cplN);
+
+    d_= A*w + alpha*(ns.N.Data*w) + transp_mul( B, q);
+    e_= B*w;
+    omega_= dot( d_, VectorCL( A*v.Data + alpha*(ns.N.Data*v.Data)
+    + transp_mul( B, p) - b - alpha*cplN.Data))
+    + dot( e_, VectorCL( B*v.Data - c));
+    omega_/= norm_sq( d_) + norm_sq( e_);
+}
 
 template<class NavStokesT>
+  inline void
+  DeltaSquaredPolicyCL::Update (NavStokesT&, const MatrixCL&, const MatrixCL&,
+    const VecDescCL&, VectorCL&, VectorCL&, VecDescCL&, VectorCL&,
+    const VectorCL& w, const VectorCL& q, double)
+{
+    if (firststep_) {
+        w_old_= w; q_old_= q;
+        firststep_ = false;
+        return;
+    }
+    w_diff_=  w - w_old_; q_diff_= q - q_old_;
+    omega_*= -(dot( w_diff_, w_old_) + dot( q_diff_, q_old_))
+              / (norm_sq( w_diff_) + norm_sq( q_diff_));
+
+    w_old_= w; q_old_= q;
+}
+
+template<class NavStokesT, class RelaxationPolicyT>
 void
-AdaptFixedPtDefectCorrCL<NavStokesT>::Solve(
+AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
     VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
 {
-        VecDescCL v_omw( v.RowIdx);
-        VectorCL d( v.Data.size()), e( p.size()),
-                 w( v.Data.size()), q( p.size());
-        double omega= 1.; // initial value (no damping)
-        _iter= 0;
-        for(;;++_iter) // ever
-        {
-            if (basevel_ != 0) v.Data= *basevel_ - v.Data;
-            NS_.SetupNonlinear(&NS_.N, &v, &cplN);
-            if (basevel_ != 0) v.Data= *basevel_ - v.Data;
-            //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
-            AN_.LinComb( 1., A, alpha, NS_.N.Data);
+    VectorCL d( v.Data.size()), e( p.size()),
+             w( v.Data.size()), q( p.size());
+    RelaxationPolicyT relax( v.Data.size(), p.size());
 
-            // calculate defect:
-            d= AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
-            e= B*v.Data - c;
-            std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
-            //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
-            if (_res < _tol || _iter>=_maxiter)
-                break;
+    _iter= 0;
+    for(;;++_iter) { // ever
+        NS_.SetupNonlinear(&NS_.N, &v, &cplN);
+        //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
+        AN_.LinComb( 1., A, alpha, NS_.N.Data);
 
-            // solve correction:
-            double outer_tol= _res*red_;
-            if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
-            w= 0.0; q= 0.0;
-            solver_.SetTol( outer_tol);
-            solver_.Solve( AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
+        // calculate defect:
+        d= AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
+        e= B*v.Data - c;
+        std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
+        //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
+        if (_res < _tol || _iter>=_maxiter)
+            break;
 
-            // calculate step length omega:
-            if (adap_) {
-                v_omw.Data= v.Data - omega*w;
-                if (basevel_ != 0) v_omw.Data= *basevel_ - v_omw.Data;
-                NS_.SetupNonlinear( &NS_.N, &v_omw, &cplN);
-                if (basevel_ != 0) v_omw.Data= *basevel_ - v_omw.Data;
+        // solve correction:
+        double outer_tol= _res*red_;
+        if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
+        w= 0.0; q= 0.0;
+        solver_.SetTol( outer_tol);
+        solver_.Solve( AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
 
-                d= A*w + alpha*(NS_.N.Data*w) + transp_mul( B, q);
-                e= B*w;
-                omega= dot( d, VectorCL( A*v.Data + NS_.N.Data*VectorCL( alpha*v.Data)
-                    + transp_mul( B, p) - b - alpha*cplN.Data))
-                    + dot( e, VectorCL( B*v.Data - c));
-                omega/= norm_sq( d) + norm_sq( e);
-                std::cerr << "omega = " << omega << std::endl;
-            }
+        // calculate step length omega:
+        relax.Update( NS_, A,  B, v, p, b, cplN, c, w,  q, alpha);
 
-            // update solution:
-            v.Data-= omega*w;
-            p     -= omega*q;
-        }
+        // update solution:
+        const double omega( relax.RelaxFactor());
+        std::cerr << "omega = " << omega << std::endl;
+        v.Data-= omega*w;
+        p     -= omega*q;
+    }
 }
 
 }    // end of namespace DROPS
