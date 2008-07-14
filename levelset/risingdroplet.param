@@ -6,7 +6,7 @@
 
 # time stepping
 Time {
-  NumSteps	=	2
+  NumSteps	=	20
   StepSize	=	0.05
   ThetaLevelset	=	1	# backward Euler
   ThetaStokes	=	1	# backward Euler
@@ -23,7 +23,7 @@ Stokes {
 
 NavStokes {
   Nonlinear	=	0
-  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme
+  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1
@@ -53,7 +53,7 @@ Reparam {
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	5
+  Freq		=	10
   FinestLevel	=	2
   Width		=	0.1
 }

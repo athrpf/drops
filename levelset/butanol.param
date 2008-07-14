@@ -6,7 +6,7 @@
 
 # time stepping
 Time {
-  NumSteps	=	11
+  NumSteps	=	10000
   StepSize	=	2e-4
   ThetaLevelset	=	1	# backward Euler
   ThetaStokes	=	1	# backward Euler
@@ -18,12 +18,12 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-12
   OuterTol	=	1e-10
-  StokesMethod	=	11	# 1$= GCR, 2$($)= InexactUzawa(Stokes), 3$ MinRes
+  StokesMethod	=	25	# 1$= GCR, 2$($)= InexactUzawa(Stokes), 3$ MinRes
 }
 
 NavStokes {
   Nonlinear	=	1
-  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme
+  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1
@@ -47,13 +47,13 @@ Coupling {
 
 # re-initialization of levelset function
 Reparam {
-  Freq		=	5	# 0 = no reparametrization
+  Freq		=	10	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	5
+  Freq		=	10
   FinestLevel	=	3
   Width		=	0.25e-3
 }
