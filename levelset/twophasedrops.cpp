@@ -117,6 +117,28 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
     s.close();
 }
 
+/* Available stokes solver
+ *   no | Solver         | APc       | SPc     | PC structure
+ ------------------------------------------------------------
+ *   11 | GCR            | MG        | BBT     | lower block
+ *   12 | GCR            | MG        | MinComm | lower block
+ *   13 | GCR            | GMRes     | BBT     | lower block
+ *   14 | GCR            | GMRes     | MinComm | lower block
+ ------------------------------------------------------------
+ *   21 | Inexact Uzawa  | asymm. MG | BBT     |
+ *   22 | Inexact Uzawa  | asymm. MG | MinComm |
+ *  221 | Inexact Uzawa  | symm. MG  | BBT     |
+ *  222 | Inexact Uzawa  | symm. MG  | MinComm |
+ *   23 | Inexact Uzawa  | GMRes     | BBT     |
+ *   24 | Inexact Uzawa  | GMRes     | MinComm |
+ *   25 | Inexact Uzawa  | SSORPCG   | BBT     |
+ *   26 | Inexact Uzawa  | SSORPCG   | MinComm |
+ ------------------------------------------------------------
+ *   31 | PMinRes        | MG        | BBT     | diag
+ *   32 | PMinRes        | MG        | MinComm | diag
+ *   33 | PMinRes        | SSORPCG   | BBT     | diag
+ *   34 | PMinRes        | SSORPCG   | MinComm | diag*/
+
 template <class StokesT>
 class StokesSolverFactory
 {
@@ -208,8 +230,8 @@ class StokesSolverFactory
             MGSolver_ ( velMG_, smoother_, coarsesolver_, 2, -1.0, false), MGPc_( MGSolver_),
             GMResSolver_( JACPc_, 500, /*restart*/ 100, 1e-2, /*relative=*/ true), GMResPc_( GMResSolver_),
             PCGSolver_( SSORPc_, 500, 0.02, true), PCGPc_( PCGSolver_),
-            DiagMGBBTOseenPc_       ( MGPc_,    bbtispc_), DiagMGMinCommOseenPc_    ( MGPc_,    mincommispc_),
-            DiagPCGBBTOseenPc_      ( PCGPc_,   bbtispc_), DiagPCGMinCommOseenPc_   ( PCGPc_,   mincommispc_),
+            DiagMGBBTOseenPc_        ( MGPc_,    bbtispc_), DiagMGMinCommOseenPc_    ( MGPc_,    mincommispc_),
+            DiagPCGBBTOseenPc_       ( PCGPc_,   bbtispc_), DiagPCGMinCommOseenPc_   ( PCGPc_,   mincommispc_),
             LBlockMGBBTOseenPc_      ( MGPc_,    bbtispc_), LBlockMGMinCommOseenPc_   ( MGPc_,    mincommispc_),
             LBlockGMResBBTOseenPc_   ( GMResPc_, bbtispc_), LBlockGMResMinCommOseenPc_( GMResPc_, mincommispc_),
             GCRMGBBT_        ( LBlockMGBBTOseenPc_,        /*trunc*/ outer_iter, outer_iter, outer_tol, /*rel*/ false),
@@ -317,6 +339,10 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         case 3 :
             return (new ThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
                         (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG, matMG));
+        break;
+        case 4 :
+            return (new OperatorSplitting2PhaseCL<StokesProblemT, StokesSolverBaseCL>
+                        (Stokes, lset, solver->GetStokesSolver(), C.inner_iter, C.inner_tol, C.nonlinear));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
