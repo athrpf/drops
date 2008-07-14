@@ -1,8 +1,10 @@
 #=============================================================
-#    DROPS parameter file for twophasedrops.cpp
+#    DROPS parameter file for    mzelle_instat_ns
 #    simulation of two-phase flow:
 #    droplet in measuring cell used in NMR measurements
 #=============================================================
+
+
 
 # time stepping
 Time {
@@ -18,15 +20,15 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-12
   OuterTol	=	1e-10
-  StokesMethod	=	11	# 1*= GCR, 2*= InexactUzawa(Stokes), 3* MinRes
+  StokesMethod	=	11      # 1*= GCR, 2*= InexactUzawa(Stokes), 3* MinRes
 }
 
 NavStokes {
   Nonlinear	=	1
-  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
+  Scheme	=	1       # time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
   Tol           =       5e-10
   Iter          =       20
-  Reduction     =       0.1
+  Reduction     =       0.05
 }
 
 # levelset solver
@@ -42,7 +44,7 @@ Coupling {
   Tol		=	1e-10	# not used a.t.m.
   Iter		=	8	# -1 = till convergence
   Stab		=	1.0     # Laplace-Beltrami-Stabilization
-  Projection	=	0	# 1 = Perform a projection step before FP
+  Projection	=	1       # 1= Perform a projection step before FP-Iteration
 }
 
 # re-initialization of levelset function
@@ -60,28 +62,27 @@ AdaptRef {
 
 # material data, all units are SI
 Mat {
-  DensDrop	=	845.442			# n-Butanol / Wasser
-  ViscDrop	=	3.281e-3
-  DensFluid	=	986.506
-  ViscFluid	=	1.388e-3
+  DensDrop	=	867.493			# toluene / water
+  ViscDrop	=	5.96e-4
+  DensFluid	=	998.781
+  ViscFluid	=	1.029e-3
   SmoothZone	=	1e-4
-
-  SurfTension	=	1.63e-3
+  SurfTension	=	34.31e-3
 }
 
 # experimental conditions
 Exp {
   RadDrop	=	1.0e-3 1.0e-3 1.0e-3
-  PosDrop	=	0 -6.2e-3 0
+  PosDrop	=	0 -10.0e-3 0
 
   Gravity	=	0 -9.81 0
 
   FlowDir	=	1	# flow in y-direction
 
-  InflowVel	=	-35e-3
-  InflowFreq	=	0	# inflow frequence
-  InflowAmpl	=	0	# inflow amplitude
-  BoundaryType	=	0	# boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+  InflowVel	=	-40e-3
+  InflowFreq    =       0       # inflow frequence
+  InflowAmpl    =       0       # inflow amplitude
+  BoundaryType  =       0       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
   RadInlet	=	3.6e-3	# 3.5e-3 for old meas. cell
 }
 
@@ -89,11 +90,10 @@ Exp {
 
 XFEMStab        =       1e-1
 InitialCond	=	-1	# 0=zero, 1/2=flow with/without drop, -1=read from file
-GeomType	=	0	# 0=ReadMeshBuilder, 1=BrickBuilder
+GeomType        =       0       # 0=ReadMeshBuilder, 1=BrickBuilder
 InitialFile	=	ensight/stat_butanol0
-MeshFile	=	gambit/NMR_05.msh #old cell: gambit/NMR_klein_grob.msh
-EnsightCase	=	stat_butanol
+MeshFile	=	gambit/NMR_05.msh        # old cell: gambit/NMR_klein_grob.msh
+EnsightCase	=	stat_toluol
 EnsightDir	=	ensight
-SerializationFile =	stat_butanol_ser
+SerializationFile =	stat_toluol_ser
 DeserializationFile =	none
-
