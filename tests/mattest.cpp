@@ -6,8 +6,7 @@ const double dat2[]= { 1., 0. };
 
 using namespace DROPS;
 
-
-int main()
+int Test1()
 {
     SMatrixCL<2,2> M(dat+0);
     SVectorCL<2> v(dat2+0);
@@ -22,4 +21,18 @@ int main()
     gauss_pivot(M, v);
     std::cout << v << std::endl;
     return 1;
+}
+
+int Test2()
+{
+    QRDecompCL<2> qr ( dat + 0);
+    SVectorCL<2> r( dat2 + 0);
+    qr.Solve( r);
+    std::cout << r << std::endl;
+    return 0;
+}
+
+int main()
+{
+    return Test1() + Test2();
 }

@@ -18,6 +18,7 @@
 #include <list>
 #include <cmath>
 #include <iostream>
+#include <valarray>
 #include "misc/utils.h"
 
 namespace DROPS
@@ -662,9 +663,90 @@ std::ostream& operator << (std::ostream& os, const SMatrixCL<_Rows, _Cols>& m)
     return os;
 }
 
+/// \brief A QR-factored, quadratic matrix, A=QR.
+///
+/// This allows for fast application of A^{-1} and A.
+template <Uint Rows_>
+class QRDecompCL
+{
+  private:
+    SMatrixCL<Rows_,Rows_> a_;
+    double d_[Rows_]; ///< The diagonal of R
+    double beta_[Rows_]; ///< The reflections are R_j= I + beta_j*a_[j:Rows_-1][j]
+
+  public:
+    QRDecompCL () : a_( Uninitialized) {}
+    template <class MatT>
+      QRDecompCL (MatT m)
+        : a_( m) { prepare_solve (); }
+
+    SMatrixCL<Rows_,Rows_>&       GetMatrix ()       { return a_; }
+    const SMatrixCL<Rows_,Rows_>& GetMatrix () const { return a_; }
+
+    void prepare_solve (); ///< Computes the factorization.
+
+    ///@{ Call only after prepare_solve; solves are inplace.
+    void Solve (SVectorCL<Rows_>& b) const;
+    void Solve (const std::valarray<SVectorCL<Rows_> >& b) const;
+    ///@}
+};
+
+template <Uint Rows_>
+  void
+  QRDecompCL<Rows_>::prepare_solve ()
+{
+    // inplace Householder
+    double sigma, sp;
+    for (Uint j= 0; j < Rows_; ++j) {
+        sigma = 0.;
+        for(Uint i= j; i < Rows_; ++i)
+            sigma+= std::pow( a_(i, j), 2);
+        if(sigma == 0.)
+            throw DROPSErrCL( "QRDecompCL::prepare_solve: singular matrix\n");
+        d_[j]= (a_(j, j) < 0 ? 1. : -1.) * std::sqrt( sigma);
+        beta_[j]= 1./(d_[j]*a_(j, j) - sigma);
+        a_(j, j)-= d_[j];
+        for(Uint k= j + 1; k < Rows_; ++k) { // Apply reflection in column j
+            sp= 0.;
+            for(Uint i= j; i < Rows_; ++i)
+                sp+= a_(i, j) * a_(i, k);
+            sp*= beta_[j];
+            for(Uint i= j; i < Rows_; ++i)
+                a_(i, k)+= a_(i, j)*sp;
+        }
+    }
+}
+
+template <Uint Rows_>
+  void
+  QRDecompCL<Rows_>::Solve (SVectorCL<Rows_>& b) const
+{
+    double sp;
+    for(Uint j= 0; j < Rows_; ++j) { // Apply reflection in column j
+        sp= 0.;
+        for(Uint i= j; i < Rows_; ++i)
+            sp+= a_(i, j) * b[i];
+        sp*= beta_[j];
+        for(Uint i= j; i < Rows_; ++i)
+            b[i]+= a_(i, j)*sp;
+    }
+    for (Uint i= Rows_ - 1; i < Rows_; --i) { // backsolve
+        for (Uint j= i + 1; j < Rows_; ++j)
+            b[i]-= a_(i, j)*b[j];
+        b[i]/= d_[i];
+    }
+}
+
+template <Uint Rows_>
+  void
+  QRDecompCL<Rows_>::Solve (const std::valarray<SVectorCL<Rows_> >& b) const
+{
+    for (Uint i= 0; i < b.size(); ++i)
+        Solve( b[i]);
+}
 
 //**************************************************************************
-// Class:   NewGlobalListCL                                                *
+// Class:   GlobalListCL                                                   *
 // Purpose: A list that is subdivided in levels. For modifications, it can *
 //          efficiently be split into std::lists per level and then merged *
 //          after modifications.                                           *
