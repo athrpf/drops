@@ -257,6 +257,15 @@ void MarkInterface (scalar_fun_ptr DistFct, double width, MultiGridCL&);
 /// marks all tetrahedra in the band |\p lset(x)| < \p width for refinement
 void MarkInterface ( const LevelsetP2CL::const_DiscSolCL& lset, double width, MultiGridCL& mg);
 
+/// \brief Returns the length of the longest and shortest edge, which is cut by the interface.
+///
+/// \param ls VecDescCL that describes the levelset-function.
+/// \param begin begin-iterator of triangulation-edges
+/// \param end end-iterator of triangulation-edges
+template <class It>
+  std::pair<double, double>
+  h_interface (It begin, It end, const VecDescCL& ls);
+
 } // end of namespace DROPS
 
 #include "levelset/levelset.tpp"

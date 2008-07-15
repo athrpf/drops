@@ -78,11 +78,12 @@ class InterfaceInfoCL
 {
   public:
     DROPS::Point3DCL bary, min, max;
-    double maxGrad, Vol;
-    
-    void Update( const DROPS::LevelsetP2CL& ls)
-    {
+    double maxGrad, Vol, h_min, h_max;
+
+    void Update (const DROPS::LevelsetP2CL& ls) {
         ls.GetInfo( maxGrad, Vol, bary, min, max);
+        std::pair<double, double> h= h_interface( ls.GetMG().GetTriangEdgeBegin( ls.Phi.RowIdx->TriangLevel), ls.GetMG().GetTriangEdgeEnd( ls.Phi.RowIdx->TriangLevel), ls.Phi);
+        h_min= h.first; h_max= h.second;
     }
 } IFInfo; 
 

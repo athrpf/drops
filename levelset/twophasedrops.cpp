@@ -47,34 +47,6 @@ DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
-template <class It>
-  std::pair<double, double>
-  h_interface (It begin, It end, const VecDescCL& ls)
-{
-    double hmin= 1e99, hmax= -1.0; //, hmean= 0.;
-    // size_t num= 0;
-    // EdgeCL* emax= 0;
-
-    for (; begin != end; ++begin)
-        if (   (ls.Data[begin->GetVertex( 0)->Unknowns( ls.RowIdx->GetIdx())]
-                *ls.Data[begin->Unknowns( ls.RowIdx->GetIdx())] <= 0.)
-            || (ls.Data[begin->GetVertex( 1)->Unknowns( ls.RowIdx->GetIdx())]
-                *ls.Data[begin->Unknowns( ls.RowIdx->GetIdx())] <= 0.)) {
-            const double h= (begin->GetVertex( 0)->GetCoord() - begin->GetVertex( 1)->GetCoord()).norm();
-            hmin= std::min( hmin, h);
-            // if (h > hmax) emax= &*begin;
-            hmax= std::max( hmax, h);
-            // hmean+= h;
-            // ++num;
-        }
-    // std::cerr << "mean : " << hmean/num << '\n';
-    // emax->DebugInfo( std::cerr);
-    // emax->GetVertex( 0)->DebugInfo( std::cerr);
-    // emax->GetVertex( 1)->DebugInfo( std::cerr);
-
-    return std::make_pair( hmin, hmax);
-}
-
 template<class Coeff>
 void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 {
