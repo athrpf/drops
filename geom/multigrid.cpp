@@ -201,6 +201,26 @@ SVectorCL<3> FaceToTetraCoord(__UNUSED__ const TetraCL& t, Uint f, SVectorCL<2> 
 }
 
 
+World2BaryCoordCL::World2BaryCoordCL (const TetraCL& t)
+{
+    SMatrixCL<4,4>& m= qr_.GetMatrix();
+    for (Uint v= 0; v < 4; ++v) {
+        const Point3DCL& p= t.GetVertex( v)->GetCoord();
+        for (Uint i= 0; i < 3; ++i) m( i, v)= p[i];
+    }
+    for (Uint j= 0; j < 4; ++j) m( 3, j)= 1.;
+    qr_.prepare_solve();
+}
+
+BaryCoordCL
+World2BaryCoordCL::operator() (const Point3DCL& p) const
+{
+    BaryCoordCL r( MakeBaryCoord( p[0], p[1], p[2], 1.));
+    qr_.Solve( r);
+    return r;
+}
+
+
 double TetraCL::GetVolume () const
 {
     Point3DCL v[3];

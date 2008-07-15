@@ -504,6 +504,17 @@ Point3DCL GetWorldCoord(const TetraCL&, const SVectorCL<4>&);
 
 SVectorCL<3> FaceToTetraCoord(const TetraCL& t, Uint f, SVectorCL<2> c);
 
+/// \brief Maps world-coordinates p to barycentric coordinates of the tetra t.
+class World2BaryCoordCL
+{
+  private:
+    QRDecompCL<4> qr_;
+
+  public:
+    World2BaryCoordCL (const TetraCL& t);
+    BaryCoordCL operator() (const Point3DCL& p) const;
+};
+
 //**************************************************************************
 // Classes that constitute a multigrid and helpers                         *
 //**************************************************************************
@@ -570,7 +581,7 @@ class BoundaryCL
 /// \brief stores boundary segments and information on periodic boundaries (if some exist)
 {
   friend class MGBuilderCL;
-  
+
   public:
     enum BndType {
         Per1Bnd= 1,    ///< periodic boundary 1
@@ -590,7 +601,7 @@ class BoundaryCL
     BoundaryCL() : BndType_(0), match_(0) {}
     /// deletes the objects pointed to in Bnd_ and BndType_
     ~BoundaryCL();
-    
+
     const BndSegCL* GetBndSeg(BndIdxT idx)  const { return Bnd_[idx]; }
     BndIdxT         GetNumBndSeg()          const { return Bnd_.size(); }
     BndType         GetBndType(BndIdxT idx) const { return BndType_? (*BndType_)[idx] : OtherBnd; }
@@ -745,8 +756,8 @@ class PeriodicEdgesCL
 ///
 /// This class is used by the refinement algorithm in MultiGridCL to accumulate the MFR counters on linked periodic edges.
 /// This assures that periodic boundaries are matching after refinement.
-{    
-  public:  
+{
+  public:
     typedef std::pair<EdgeCL*,EdgeCL*>  IdentifiedEdgesT;
     typedef std::list<IdentifiedEdgesT> PerEdgeContT;
     typedef PerEdgeContT::iterator      iterator;
@@ -755,22 +766,22 @@ class PeriodicEdgesCL
   private:
     PerEdgeContT      list_;
     const BoundaryCL& bnd_;
-    
+
     /// recompute data structure
     void Recompute( EdgeIterator begin, EdgeIterator end);
     /// accumulate local MFR counters of periodic edges and store the sum in the MFR counter
     void Accumulate();
     /// delete all data
     void Shrink();
-    
+
   public:
     PeriodicEdgesCL( const BoundaryCL& bnd) : bnd_(bnd) {}
     // standard dtor
-        
+
     BoundaryCL::BndType GetBndType( const EdgeCL& e) const;
-    void AccumulateMFR( EdgeIterator begin, EdgeIterator end);    
+    void AccumulateMFR( EdgeIterator begin, EdgeIterator end);
 };
-    
+
 
 template <class SimplexT>
 struct TriangFillCL
