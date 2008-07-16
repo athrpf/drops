@@ -81,6 +81,8 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
     ~AdaptFixedPtDefectCorrCL() {}
 
     void SetReduction( double red) { red_= red; }
+    double   GetResid ()         const { return _res; }
+    int      GetIter  ()         const { return _iter; }
 
     MatrixCL& GetAN()          { return AN_; }
 
