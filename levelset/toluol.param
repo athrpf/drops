@@ -67,7 +67,6 @@ Mat {
   DensFluid	=	998.781
   ViscFluid	=	1.029e-3
   SmoothZone	=	1e-4
-  SurfTension	=	34.31e-3
 }
 
 # experimental conditions
@@ -84,6 +83,15 @@ Exp {
   InflowAmpl    =       0       # inflow amplitude
   BoundaryType  =       0       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
   RadInlet	=	3.6e-3	# 3.5e-3 for old meas. cell
+}
+
+# surface tension
+SurfTens {
+  VarTension	=	0	# 0=off, 1=on
+  SurfTension	=	34.31e-3
+  JumpWidth	=	5e-4
+  RelPos	=	1.5	# position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+  DirtFactor	=	0.8	# red. factor for surface tension (due to contamination) in lower droplet)
 }
 
 # miscellaneous

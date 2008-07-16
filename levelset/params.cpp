@@ -55,7 +55,6 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( rhoF,      "DensFluid");
     rp_.RegDouble( muF,       "ViscFluid");
     rp_.RegDouble( sm_eps,    "SmoothZone");
-    rp_.RegDouble( sigma,     "SurfTension");
     rp_.EndGroup();
 
     rp_.BeginGroup("Exp");
@@ -70,6 +69,14 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegInt( bnd_type,     "BoundaryType");
     rp_.EndGroup();
 
+    rp_.BeginGroup("SurfTens");
+    rp_.RegInt( st_var,       "VarTension");
+    rp_.RegDouble( sigma,     "SurfTension");
+    rp_.RegDouble( st_jumpWidth, "JumpWidth");
+    rp_.RegDouble( st_relPos, "RelPos");
+    rp_.RegDouble( st_red,    "DirtFactor");
+    rp_.EndGroup();
+
     rp_.RegDouble(XFEMStab,   "XFEMStab");
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( GeomType,     "GeomType");
@@ -77,7 +84,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegString( EnsDir,    "EnsightDir");
     rp_.RegString( IniData,   "InitialFile");
     rp_.RegString( meshfile,  "MeshFile");
-    rp_.RegString( serialization_file,  "SerializationFile");
+    rp_.RegString( serialization_file,    "SerializationFile");
     rp_.RegString( deserialization_file,  "DeserializationFile");
 }
 

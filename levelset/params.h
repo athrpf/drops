@@ -51,8 +51,7 @@ class ParamMesszelleCL: public ParamBaseCL
     ///
     /// D = drop,    F =  surrounding fluid
     //@{
-    double sigma,                               ///< surface tension coefficient
-           rhoD,                                ///< density
+    double rhoD,                                ///< density
            rhoF,
            muD,                                 ///< dynamic viscosity
            muF,
@@ -69,6 +68,14 @@ class ParamMesszelleCL: public ParamBaseCL
     double inflow_freq,                         ///< inflow frequence
            inflow_ampl;                         ///< inflow amplitude
     int    bnd_type;                            ///< boundary type: 1= hom. Dirichlet, 2= inhom. Dirichlet bnd-data for in-/outflow, 3= tube/canal
+    //@}
+    ///\name Surface Force
+    //@{
+    int st_var;                                 ///< variable surface tension: 0= off, 1=on
+    double sigma,                               ///< surface tension coefficient
+           st_jumpWidth,                        ///< jump width
+           st_relPos,                           ///< position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+           st_red;                              ///< red. factor for surface tension (due to contamination) in lower droplet)
     //@}
     ///\name Adaptive refinement
     //@{

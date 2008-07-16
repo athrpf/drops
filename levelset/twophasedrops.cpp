@@ -324,6 +324,16 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
     }
 }
 
+class FunAsP2EvalCL
+{
+  private:
+    instat_scalar_fun_ptr f_;
+  public:
+    FunAsP2EvalCL( instat_scalar_fun_ptr f): f_(f)
+    {}
+    double val(const VertexCL& v) const {return f_(v.GetCoord(), 0.0);}
+    double val(const EdgeCL& e, double) const {return f_(GetBaryCenter(e), 0.0);}
+};
 
 template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
@@ -333,7 +343,20 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= Stokes.GetCoeff().SurfTens;
-    LevelsetP2CL lset( MG, &sigmaf, &gsigma, C.lset_theta, C.lset_SD,
+    eps= C.st_jumpWidth;    lambda= C.st_relPos;    sigma_dirt_fac= C.st_red;
+    instat_scalar_fun_ptr sigmap  = 0;
+    instat_vector_fun_ptr gsigmap = 0;
+    if (C.st_var)
+    {
+        sigmap  = &sigma_step;
+        gsigmap = &gsigma_step;
+    }
+    else
+    {
+        sigmap  = &sigmaf;
+        gsigmap = &gsigma;
+    }
+    LevelsetP2CL lset( MG, sigmap, gsigmap, C.lset_theta, C.lset_SD,
         -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     DROPS::LevelsetRepairCL lsetrepair( lset);
@@ -350,9 +373,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
-    lset.SetSurfaceForce( SF_ImprovedLB);
-//    lset.SetSurfaceForce( SF_ImprovedLBVar);
-//    IFInfo.Update( lset);
+    if (C.st_var)
+        lset.SetSurfaceForce( SF_ImprovedLBVar);
+    else
+        lset.SetSurfaceForce( SF_ImprovedLB);
+
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
 
@@ -362,12 +387,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
                  datpr = filename+".pr" ,
                  datvec= filename+".vel",
                  datscl= filename+".scl",
-                 datprx= filename+".prx";
+                 datprx= filename+".prx",
+                 datsf = filename+".sf";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo, true);
     ensight.DescribeScalar( "Levelset", datscl, true);
     ensight.DescribeScalar( "Pressure", datpr,  true);
     ensight.DescribeVector( "Velocity", datvec, true);
+    ensight.DescribeScalar( "Surfaceforce", datsf, true);
+    FunAsP2EvalCL sf(sigmap);
 
     MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
@@ -425,6 +453,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
+    ensight.putScalar( datsf,  sf, 0);
     ensight.Commit();
     if (Stokes.UsesXFEM()) {
         std::string datprxnow( datprx);
@@ -458,7 +487,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     {
         std::cerr << "======================================================== step " << step << ":\n";
 
-//        IFInfo.Update( lset);
+        IFInfo.Update( lset);
         timedisc->DoStep( C.cpl_iter);
 
 //        WriteMatrices( Stokes, step);
@@ -503,6 +532,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
         ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
+        ensight.putScalar( datsf,  sf, step*C.dt);
         ensight.Commit();
         if (Stokes.UsesXFEM()) {
             std::string datprxnow( datprx);
