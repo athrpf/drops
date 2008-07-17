@@ -94,7 +94,7 @@ SurfTens {
 
 # mass transport
 Transp {
-  DoTransp	=	1	# 0=off, 1=on
+  DoTransp	=	0	# 0=off, 1=on
   Theta		=	0.5	# time integration theta scheme
   Iter		=	200
   Tol		=	1e-10
