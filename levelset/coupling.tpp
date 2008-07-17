@@ -197,7 +197,6 @@ template <class StokesT, class SolverT>
 void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
 {
     IdxDescCL* const vidx= &Stokes_.vel_idx;
-    IdxDescCL* const pidx= &Stokes_.pr_idx;
     TimerCL time;
     time.Reset();
     time.Start();
@@ -223,18 +222,12 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
     // IndexDesc setzen
     cplA_->SetIdx( vidx);    cplM_->SetIdx( vidx);
-    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
+    old_b_->SetIdx( vidx);
     cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
     curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
     rhs_.resize( vidx->NumUnknowns);
     ls_rhs_.resize( LvlSet_.idx.NumUnknowns);
-    Stokes_.c.SetIdx( pidx);
-    Stokes_.A.SetIdx( vidx, vidx);
-    Stokes_.B.SetIdx( pidx, vidx);
-    Stokes_.M.SetIdx( vidx, vidx);
-    Stokes_.N.SetIdx( vidx, vidx);
-    Stokes_.prA.SetIdx( pidx, pidx);
-    Stokes_.prM.SetIdx( pidx, pidx);
+    Stokes_.SetIdx();
 
     // Diskretisierung
     LvlSet_.AccumulateBndIntegral( *old_curv_);
@@ -500,7 +493,6 @@ template <class StokesT, class SolverT>
 void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
 {
     IdxDescCL* const vidx= &Stokes_.vel_idx;
-    IdxDescCL* const pidx= &Stokes_.pr_idx;
     TimerCL time;
     time.Reset();
     time.Start();
@@ -515,19 +507,13 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
     // IndexDesc setzen
-    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
+    old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
     cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
     curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
     rhs_.resize( vidx->NumUnknowns);
     ls_rhs_.resize( LvlSet_.idx.NumUnknowns);
-    Stokes_.c.SetIdx( pidx);
-    Stokes_.A.SetIdx( vidx, vidx);
-    Stokes_.B.SetIdx( pidx, vidx);
-    Stokes_.M.SetIdx( vidx, vidx);
-    Stokes_.N.SetIdx( vidx, vidx);
-    Stokes_.prA.SetIdx( pidx, pidx);
-    Stokes_.prM.SetIdx( pidx, pidx);
+    Stokes_.SetIdx();
 
     cplLB_.SetIdx( vidx);
     LB_.Data.clear();
@@ -784,7 +770,6 @@ template <class StokesT, class SolverT>
 void OperatorSplitting2PhaseCL<StokesT,SolverT>::Update()
 {
     IdxDescCL* const vidx= &Stokes_.vel_idx;
-    IdxDescCL* const pidx= &Stokes_.pr_idx;
     TimerCL time;
     time.Reset();
     time.Start();
@@ -795,20 +780,13 @@ void OperatorSplitting2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
     // IndexDesc setzen
-    b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
     cplA_->SetIdx( vidx);    old_cplA_->SetIdx( vidx);
     cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
     curv_->SetIdx( vidx);
     rhs_.resize( vidx->NumUnknowns);
     ls_rhs_.resize( LvlSet_.idx.NumUnknowns);
-    Stokes_.c.SetIdx( pidx);
-    Stokes_.A.SetIdx( vidx, vidx);
-    Stokes_.B.SetIdx( pidx, vidx);
-    Stokes_.M.SetIdx( vidx, vidx);
-    Stokes_.N.SetIdx( vidx, vidx);
-    Stokes_.prA.SetIdx( pidx, pidx);
-    Stokes_.prM.SetIdx( pidx, pidx);
+    Stokes_.SetIdx();
 
     // Diskretisierung
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
@@ -1008,7 +986,6 @@ template <class StokesT, class SolverT>
 void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
 {
     IdxDescCL* const vidx= &Stokes_.vel_idx;
-    IdxDescCL* const pidx= &Stokes_.pr_idx;
     TimerCL time;
     time.Reset();
     time.Start();
@@ -1023,7 +1000,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
     // IndexDesc setzen
-    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
+    old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
     cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
     curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
@@ -1032,13 +1009,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     vdot_.resize( vidx->NumUnknowns);
     oldv_.resize( vidx->NumUnknowns);
     oldv_= Stokes_.v.Data;
-    Stokes_.c.SetIdx( pidx);
-    Stokes_.A.SetIdx( vidx, vidx);
-    Stokes_.B.SetIdx( pidx, vidx);
-    Stokes_.M.SetIdx( vidx, vidx);
-    Stokes_.N.SetIdx( vidx, vidx);
-    Stokes_.prA.SetIdx( pidx, pidx);
-    Stokes_.prM.SetIdx( pidx, pidx);
+    Stokes_.SetIdx();
 
     cplLB_.SetIdx( vidx);
     LB_.Data.clear();

@@ -473,7 +473,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    VecDescCL cplN;
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
@@ -487,20 +486,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     EnsightWriterCL writer( MG, lidx, C);
 
-    Stokes.b.SetIdx( vidx);
-    Stokes.v.SetIdx( vidx);
-    cplN.SetIdx( vidx);
-    Stokes.c.SetIdx( pidx);
-    Stokes.p.SetIdx( pidx);
-    Stokes.A.SetIdx(vidx, vidx);
-    Stokes.B.SetIdx(pidx, vidx);
-    Stokes.prM.SetIdx( pidx, pidx);
-    Stokes.prA.SetIdx( pidx, pidx);
-    Stokes.M.SetIdx(vidx, vidx);
-    Stokes.N.SetIdx(vidx, vidx);
-
+    Stokes.SetIdx();
     Stokes.InitVel( &Stokes.v, ZeroVel);
-
     switch (C.IniCond)
     {
       case  1: //flow without droplet

@@ -1526,6 +1526,22 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupBdotv (VecDescCL* Bdotv, const VelVec
 }
 
 template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetIdx()
+{
+    IdxDescCL* vidx= &vel_idx;
+    IdxDescCL* pidx= &pr_idx;
+    b.SetIdx  ( vidx);
+    v.SetIdx  ( vidx);
+    c.SetIdx  ( pidx);
+    p.SetIdx  ( pidx);
+    A.SetIdx  ( vidx, vidx);
+    B.SetIdx  ( pidx, vidx);
+    prM.SetIdx( pidx, pidx);
+    prA.SetIdx( pidx, pidx);
+    M.SetIdx  ( vidx, vidx);
+}
+
+template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart)
 {
     const Uint lvl= p.RowIdx->TriangLevel,

@@ -31,6 +31,7 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     using _base::A;
     using _base::B;
     using _base::t;
+    using _base::vel_idx;
 
     typedef Coeff                              CoeffCL;
     typedef typename _base::BndDataCL          BndDataCL;
@@ -60,6 +61,7 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     void SetLevelSet(const LevelsetP2CL& ls) { ls_= &ls; }
     /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
     void ClearMat() { _base::ClearMat(); N.Data.clear(); }
+    void SetIdx()   { _base::SetIdx(); N.SetIdx(&vel_idx, &vel_idx); }
 };
 
 } // end of namespace DROPS
