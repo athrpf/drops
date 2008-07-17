@@ -482,22 +482,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
 
-    lset.Init( EllipsoidCL::DistanceFct);
-
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
 
     EnsightWriterCL writer( MG, lidx, C);
 
-    MG.SizeInfo( std::cerr);
     Stokes.b.SetIdx( vidx);
     Stokes.v.SetIdx( vidx);
     cplN.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
@@ -506,22 +500,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     Stokes.N.SetIdx(vidx, vidx);
 
     Stokes.InitVel( &Stokes.v, ZeroVel);
-
-    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
-    double D[2] = {C.transp_cPos, C.transp_cNeg};
-    TransportP1CL c( MG, Bnd_c, Stokes.GetBndData().Vel, C.transp_theta, D, C.transp_H, &Stokes.v, lset,
-        /*t*/ 0., C.dt, C.transp_iter, C.transp_tol);
-    TransportRepairCL transprepair(c, MG);
-    if (C.transp_do)
-    {
-        adap.push_back(&transprepair);
-        IdxDescCL* cidx= &c.idx;
-        c.CreateNumbering( MG.GetLastLevel(), cidx);
-        c.ct.SetIdx( cidx);
-        c.Init( &Initialcneg, &Initialcpos);
-        c.Update();
-        std::cerr << c.c.Data.size() << " concentration unknowns,\n";
-    }
 
     switch (C.IniCond)
     {
@@ -534,7 +512,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
         Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
-        Stokes.p.SetIdx( pidx); // Zero-vector for now.
+        Stokes.p.SetIdx( pidx);
         // reads the P1-part of the pressure
         reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
         // reads the P1X-part of the pressure
@@ -552,6 +530,32 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
       } break;
       default:
         lset.Init( EllipsoidCL::DistanceFct);
+    }
+    MG.SizeInfo( std::cerr);
+    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+
+    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
+    double D[2] = {C.transp_cPos, C.transp_cNeg};
+    TransportP1CL c( MG, Bnd_c, Stokes.GetBndData().Vel, C.transp_theta, D, C.transp_H, &Stokes.v, lset,
+        /*t*/ 0., C.dt, C.transp_iter, C.transp_tol);
+    TransportRepairCL transprepair(c, MG);
+    if (C.transp_do)
+    {
+        adap.push_back(&transprepair);
+        IdxDescCL* cidx= &c.idx;
+        c.CreateNumbering( MG.GetLastLevel(), cidx);
+        c.ct.SetIdx( cidx);
+        if (C.IniCond != -1)
+            c.Init( &Initialcneg, &Initialcpos);
+        else
+        {
+            ReadEnsightP2SolCL reader( MG);
+            reader.ReadScalar( C.IniData+".ct", c.ct, c.GetBndData());
+        }
+        c.Update();
+        std::cerr << c.c.Data.size() << " concentration unknowns,\n";
     }
 
     const double Vol= EllipsoidCL::GetVolume();
