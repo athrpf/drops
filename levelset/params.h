@@ -88,6 +88,19 @@ class ParamMesszelleCL: public ParamBaseCL
     int    RepFreq,                             ///< frequency (after how many time steps grid should be reparametrized)
            RepMethod;                           ///< 0/1 = fast marching without/with modification of zero level set
     //@}
+    ///\name Mass Transport
+    //@{
+    int    transp_do;                           ///< mass transport on (1) or off (0)
+    double transp_theta;                        ///< time integration theta scheme
+    int    transp_iter;
+    double transp_tol,
+           transp_diffPos,                      ///< diffusion coefficient (pos. part)
+           transp_diffNeg,                      ///< diffusion coefficient (neg. part)
+           transp_H,                            ///< Henry number cneg(\infty) = H*cpos(\infty)
+           transp_cPos,                         ///< initial concentration (pos. part)
+           transp_cNeg;                         ///< initial concentration (neg. part)
+    //@}
+
 
 
     double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
@@ -96,7 +109,7 @@ class ParamMesszelleCL: public ParamBaseCL
            GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
 
     string IniData,                             ///< file prefix when reading data for initial condition
-           EnsCase,                             ///< name of Ensight Case
+           EnsCase,                             ///< name of Ensight Case, "none"= no output
            EnsDir,                              ///< local directory for Ensight files
            meshfile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4@5x6x7)
            serialization_file,                  ///< writes multigrid to serialisation files, special value "none" to ignore

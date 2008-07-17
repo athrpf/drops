@@ -70,7 +70,7 @@ twophasedrops: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
-    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o
+    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:

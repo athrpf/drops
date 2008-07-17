@@ -13,6 +13,7 @@
 #include "levelset/params.h"
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
+#include "poisson/transport2phase.h"
 #include <fstream>
 #include <sstream>
 
@@ -42,6 +43,24 @@ DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
                  r2= p.norm_sq() - p[C.flow_dir]*p[C.flow_dir];
     ret[C.flow_dir]= -(r2-s2)/s2*C.Anstroem;
     return ret;
+}
+
+typedef DROPS::BndDataCL<> cBndDataCL;
+typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
+const DROPS::BndCondT c_bc[6]= {
+    DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
+    DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
+};
+const c_bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
+
+double Initialcneg (const DROPS::Point3DCL& , double)
+{
+    return C.transp_cNeg;
+}
+
+double Initialcpos (const DROPS::Point3DCL& , double)
+{
+    return C.transp_cNeg;
 }
 
 namespace DROPS // for Strategy
@@ -346,7 +365,9 @@ class EnsightWriterCL
                 datvec_,
                 datscl_,
                 datprx_,
-                datsf_;
+                datsf_,
+                datc_,
+                datct_;
   public:
     EnsightWriterCL (MultiGridCL& MG, const IdxDescCL* idx, const ParamMesszelleNsCL& C);
     ~EnsightWriterCL();
@@ -355,12 +376,13 @@ class EnsightWriterCL
     template<class InstatNSCL>
     void
     WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset,
-        instat_scalar_fun_ptr sigmap, const double t);
+        instat_scalar_fun_ptr sigmap, const TransportP1CL& c, const double t);
 };
 
 EnsightWriterCL::EnsightWriterCL (MultiGridCL& MG, const IdxDescCL* idx, const ParamMesszelleNsCL& C)
     : MG_( MG), ensight_( MG, idx)
 {
+    if (C.EnsCase == "none") return; // no ensight output
     const std::string filename= C.EnsDir + "/" + C.EnsCase;
     datgeo_= filename+".geo";
     datpr_ = filename+".pr" ;
@@ -368,30 +390,44 @@ EnsightWriterCL::EnsightWriterCL (MultiGridCL& MG, const IdxDescCL* idx, const P
     datscl_= filename+".scl";
     datprx_= filename+".prx";
     datsf_ = filename+".sf";
+    datc_  = filename+".c";
+    datct_ = filename+".ct";
     ensight_.CaseBegin( std::string( C.EnsCase+".case").c_str(), C.num_steps + 1);
-    ensight_.DescribeGeom  ( "Messzelle",    datgeo_, true);
-    ensight_.DescribeScalar( "Levelset",     datscl_, true);
-    ensight_.DescribeScalar( "Pressure",     datpr_,  true);
-    ensight_.DescribeVector( "Velocity",     datvec_, true);
-    ensight_.DescribeScalar( "Surfaceforce", datsf_,  true);
+    ensight_.DescribeGeom  ( "Messzelle",     datgeo_, true);
+    ensight_.DescribeScalar( "Levelset",      datscl_, true);
+    ensight_.DescribeScalar( "Pressure",      datpr_,  true);
+    ensight_.DescribeVector( "Velocity",      datvec_, true);
+    ensight_.DescribeScalar( "Surfaceforce",  datsf_,  true);
+    if (C.transp_do)
+    {
+        ensight_.DescribeScalar( "Concentration", datc_,   true);
+        ensight_.DescribeScalar( "TransConc",     datct_, true);
+    }
 }
 
 EnsightWriterCL::~EnsightWriterCL()
 {
+    if (C.EnsCase == "none") return;
     ensight_.CaseEnd();
 }
 
 template<class InstatNSCL>
 void
 EnsightWriterCL::WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset,
-    instat_scalar_fun_ptr sigmap, const double t)
+    instat_scalar_fun_ptr sigmap, const TransportP1CL& c, const double t)
 {
+    if (C.EnsCase == "none") return;
     ensight_.putGeom( datgeo_, t);
     ensight_.putVector( datvec_, Stokes.GetVelSolution(), t);
     ensight_.putScalar( datpr_,  Stokes.GetPrSolution(), t);
     ensight_.putScalar( datscl_, lset.GetSolution(), t);
     FunAsP2EvalCL sf( sigmap);
     ensight_.putScalar( datsf_,  sf, t);
+    if (C.transp_do)
+    {
+        ensight_.putScalar( datc_,  c.GetSolution(), t);
+        ensight_.putScalar( datct_, c.GetSolution( c.ct), t);
+    }
     ensight_.Commit();
     if (Stokes.UsesXFEM()) {
         std::string datprxnow( datprx_);
@@ -401,7 +437,7 @@ EnsightWriterCL::WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset
         size_t num_prx= Stokes.pr_idx.NumUnknowns - Stokes.GetXidx().GetNumUnknownsP1();
         out( fff, VectorCL( Stokes.p.Data[std::slice( Stokes.GetXidx().GetNumUnknownsP1(), num_prx, 1)]));
     }
- }
+}
 
 template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
@@ -427,11 +463,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     LevelsetP2CL lset( MG, sigmap, gsigmap, C.lset_theta, C.lset_SD,
         -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
-    DROPS::LevelsetRepairCL lsetrepair( lset);
+    LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
-    DROPS::VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
     adap.push_back( &velrepair);
-    DROPS::PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
     adap.push_back( &prrepair);
 
     IdxDescCL* lidx= &lset.idx;
@@ -445,6 +481,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         lset.SetSurfaceForce( SF_ImprovedLBVar);
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
+
+    lset.Init( EllipsoidCL::DistanceFct);
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
@@ -468,6 +506,22 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     Stokes.N.SetIdx(vidx, vidx);
 
     Stokes.InitVel( &Stokes.v, ZeroVel);
+
+    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
+    double D[2] = {C.transp_cPos, C.transp_cNeg};
+    TransportP1CL c( MG, Bnd_c, Stokes.GetBndData().Vel, C.transp_theta, D, C.transp_H, &Stokes.v, lset,
+        /*t*/ 0., C.dt, C.transp_iter, C.transp_tol);
+    TransportRepairCL transprepair(c, MG);
+    if (C.transp_do)
+    {
+        adap.push_back(&transprepair);
+        IdxDescCL* cidx= &c.idx;
+        c.CreateNumbering( MG.GetLastLevel(), cidx);
+        c.ct.SetIdx( cidx);
+        c.Init( &Initialcneg, &Initialcpos);
+        c.Update();
+        std::cerr << c.c.Data.size() << " concentration unknowns,\n";
+    }
 
     switch (C.IniCond)
     {
@@ -503,7 +557,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     const double Vol= EllipsoidCL::GetVolume();
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    writer.WriteAtTime( Stokes, lset, sigmap, 0.);
+    writer.WriteAtTime( Stokes, lset, sigmap, c, 0.);
 
     // Stokes-Solver
     StokesSolverFactory<StokesProblemT> stokessolverfactory(Stokes, C.outer_iter, C.outer_tol, 1.0/C.dt, C.theta);
@@ -530,30 +584,26 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         IFInfo.Update( lset);
         timedisc->DoStep( C.cpl_iter);
+        if (C.transp_do) c.DoStep( step*C.dt);
 
 //        WriteMatrices( Stokes, step);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        if (C.VolCorr)
-        {
+        if (C.VolCorr) {
             double dphi= lset.AdjustVolume( Vol, 1e-9);
             std::cerr << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
             std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         }
-
-        if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
-        {
+        if (C.RepFreq && step%C.RepFreq==0) { // reparam levelset function
             lset.ReparamFastMarching( C.RepMethod);
-
             if (C.ref_freq != 0)
                 adap.UpdateTriang( lset);
-            if (adap.WasModified())
+            if (adap.WasModified()) {
                 timedisc->Update();
-
+                if (C.transp_do) c.Update();
+            }
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-
-            if (C.VolCorr)
-            {
+            if (C.VolCorr) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
@@ -564,12 +614,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
                 filename << C.serialization_file;
                 if (second) filename << "0";
                 second = !second;
-
                 MGSerializationCL ser( MG, filename.str().c_str());
                 ser.WriteMG();
             }
         }
-        writer.WriteAtTime( Stokes, lset, sigmap, step*C.dt);
+        writer.WriteAtTime( Stokes, lset, sigmap, c, step*C.dt);
     }
     std::cerr << std::endl;
     delete timedisc;

@@ -92,14 +92,26 @@ SurfTens {
   DirtFactor	=	0.8	# red. factor for surface tension (due to contamination) in lower droplet)
 }
 
-# miscellaneous
+# mass transport
+Transp {
+  DoTransp	=	1	# 0=off, 1=on
+  Theta		=	0.5	# time integration theta scheme
+  Iter		=	200
+  Tol		=	1e-10
+  DiffPos	=	5e-3	# diffusion coefficient (pos. part)
+  DiffNeg	=	1e-2	# diffusion coefficient (neg. part)
+  H		=	0.5	# Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos	=	0.1	# initial concentration (pos. part)
+  IniCNeg	=	5	# initial concentration (neg. part)
+}
 
+# miscellaneous
 XFEMStab        =       1e-1
 InitialCond	=	0	# 0=zero, 1/2=flow with/without drop, -1=read from file
 GeomType	=	1	# 0=ReadMeshBuilder, 1=BrickBuilder
 InitialFile	=	none
 MeshFile	=	1x1x2@3x3x6
-EnsightCase	=	risingdroplet
+EnsightCase	=	risingdroplet # none= no ensight data
 EnsightDir	=	ensight
 SerializationFile =	none
 DeserializationFile =	none

@@ -77,6 +77,18 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( st_red,    "DirtFactor");
     rp_.EndGroup();
 
+    rp_.BeginGroup("Transp");
+    rp_.RegInt    ( transp_do,      "DoTransp");
+    rp_.RegDouble ( transp_theta,   "Theta");
+    rp_.RegInt    ( transp_iter,    "Iter");
+    rp_.RegDouble ( transp_tol,     "Tol");
+    rp_.RegDouble ( transp_diffPos, "DiffPos");
+    rp_.RegDouble ( transp_diffNeg, "DiffNeg");
+    rp_.RegDouble ( transp_H,       "H");
+    rp_.RegDouble ( transp_cPos,    "IniCPos");
+    rp_.RegDouble ( transp_cNeg,    "IniCNeg");
+    rp_.EndGroup();
+
     rp_.RegDouble(XFEMStab,   "XFEMStab");
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegInt( GeomType,     "GeomType");

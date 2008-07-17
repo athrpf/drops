@@ -52,15 +52,15 @@ class TransportP1CL
                  theta_, dt_, t_; ///< time scheme parameter, time step and time
     BndDataT&    Bnd_;            ///< Boundary condition for the concentration
 
-    VelBndDataT   Bnd_v_;  ///< Boundary condition for the velocity
-    VecDescCL*    v_;      ///< velocity at current time step
-    LevelsetP2CL& lset_;   ///< levelset at current time step
+    const VelBndDataT&  Bnd_v_;  ///< Boundary condition for the velocity
+    VecDescCL*          v_;      ///< velocity at current time step
+    LevelsetP2CL&       lset_;   ///< levelset at current time step
 
     GSPcCL                  pc_;
     GMResSolverCL<GSPcCL>   gm_;
 
   public:
-    TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, VelBndDataT& Bnd_v, 
+    TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, const VelBndDataT& Bnd_v, 
         double theta, double D[2], double H, VecDescCL* v, LevelsetP2CL& lset,
         double t, double dt, int iter= 1000, double tol= 1e-7)
     : idx( P1_FE), MG_( mg), H_( H), theta_( theta), dt_( dt), t_( t), Bnd_( Bnd),
