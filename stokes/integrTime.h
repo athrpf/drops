@@ -249,6 +249,9 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
         solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
 //        std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
 //                  << "\tresidual: " <<  solver_.GetResid();
+        if (solver_.GetIter() == solver_.GetMaxIter())
+            std::cerr << "ISBBTPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
+                    << '\t' << solver_.GetResid() << '\n';
         p= kA_*(Dprsqrtinv_*p);
     }
     if (kM_ != 0.0) {
@@ -257,6 +260,10 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //        std::cerr << "\t p2: iterations: " << solver2_.GetIter()
 //                  << "\tresidual: " <<  solver2_.GetResid()
 //                  << '\n';
+        if (solver2_.GetIter() == solver2_.GetMaxIter())
+            std::cerr << "ISBBTPreCL::Apply: 2nd BBT-solve: " << solver2_.GetIter()
+                    << '\t' << solver2_.GetResid() << '\n';
+
         p+= kM_*p2_;
     }
 }
