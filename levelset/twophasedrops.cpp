@@ -487,6 +487,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     EnsightWriterCL writer( MG, lidx, C);
 
     Stokes.SetIdx();
+    Stokes.v.SetIdx  ( vidx);
+    Stokes.p.SetIdx  ( pidx);
     Stokes.InitVel( &Stokes.v, ZeroVel);
     switch (C.IniCond)
     {

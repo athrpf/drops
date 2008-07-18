@@ -1531,9 +1531,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetIdx()
     IdxDescCL* vidx= &vel_idx;
     IdxDescCL* pidx= &pr_idx;
     b.SetIdx  ( vidx);
-    v.SetIdx  ( vidx);
     c.SetIdx  ( pidx);
-    p.SetIdx  ( pidx);
     A.SetIdx  ( vidx, vidx);
     B.SetIdx  ( pidx, vidx);
     prM.SetIdx( pidx, pidx);
