@@ -571,11 +571,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     stokessolverfactory.SetMatrixA( timedisc->GetUpperLeftBlock());
     bool second = false;
+    std::ofstream infofile((C.EnsCase+".info").c_str());
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== step " << step << ":\n";
 
         IFInfo.Update( lset);
+        IFInfo.Write(infofile);
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
 
