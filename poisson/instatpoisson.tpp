@@ -18,17 +18,9 @@ void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 // used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
 // sets up the description of the index idxnum in IdxDesc[idxnum],
 // allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-// Remark: expects, that IdxDesc[idxnr].NumUnknownsVertex etc. are set.
 {
-    // set up the index description
-    idx->TriangLevel = level;
-    idx->NumUnknowns = 0;
-
-    const Uint idxnum = idx->GetIdx();    // idx is the index in UnknownIdxCL
-
     // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumbOnVertex( idxnum, idx->NumUnknowns, idx->NumUnknownsVertex,
-                        _MG.GetTriangVertexBegin(level), _MG.GetTriangVertexEnd(level), GetBndData() );
+    CreateNumb( level, *idx, _MG, GetBndData() );
 }
 
 
@@ -39,7 +31,7 @@ void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
 //========================================================
 
 inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDataCL::bnd_val_fun bfun, double time)
-// Integrate neu_val() * phi_vert over face
+// Integrate nat_val() * phi_vert over face
 {
     Point3DCL vc[3];
     const VertexCL* v[3];
@@ -95,7 +87,7 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
       {
         src.Data[UnknownIdx[i]]-= int_a*inner_prod( gradT, G[i]);
-        if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
+        if ( _BndData.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
             {
@@ -129,6 +121,9 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   Quad2CL<> rhs, quad_a;
 
 //  StripTimeCL strip( &Coeff::f, tf);
+
+//  if (_Coeff.SpecialRhs)
+//      _Coeff.ComputeRhs( vf, tf, _MG);
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -173,8 +168,9 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
       {
 //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
+//        if (!_Coeff.SpecialRhs)
         vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
-        if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
+        if ( _BndData.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
               vA.Data[UnknownIdx[i]]+=

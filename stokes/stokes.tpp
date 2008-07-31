@@ -236,8 +236,8 @@ template <class Coeff>
                 b.Data[Numb[i]+stride]+=   tmp[1];
                 b.Data[Numb[i]+2*stride]+= tmp[2];
 
-                if ( i<4 ? _BndData.Vel.IsOnNeuBnd(*sit->GetVertex(i))
-                         : _BndData.Vel.IsOnNeuBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on Neumann boundary
+                if ( i<4 ? _BndData.Vel.IsOnNatBnd(*sit->GetVertex(i))
+                         : _BndData.Vel.IsOnNatBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on natural boundary
                 {
                     Uint face;
                     for (int f=0; f < (i<4?3:2); ++f)
@@ -584,8 +584,8 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
                 f[Numb[i]+stride]+=   tmp[1];
                 f[Numb[i]+2*stride]+= tmp[2];
 
-                if ( i<4 ? _BndData.Vel.IsOnNeuBnd(*sit->GetVertex(i))
-                         : _BndData.Vel.IsOnNeuBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on Neumann boundary
+                if ( i<4 ? _BndData.Vel.IsOnNatBnd(*sit->GetVertex(i))
+                         : _BndData.Vel.IsOnNatBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on natural boundary
                 {
                     Uint face;
                     for (int f=0; f < (i<4?3:2); ++f)
@@ -1324,7 +1324,7 @@ void StokesP1BubbleP1CL<Coeff>::SetupSystem(MatDescCL* matA, VelVecDescCL* vecA,
                 b.Data[Numb[i]+stride]+=   tmp[1];
                 b.Data[Numb[i]+2*stride]+= tmp[2];
 
-                if ( i<4 && _BndData.Vel.IsOnNeuBnd(*sit->GetVertex(i)) ) // vert i is on Neumann boundary
+                if ( i<4 && _BndData.Vel.IsOnNatBnd(*sit->GetVertex(i)) ) // vert i is on natural boundary
                 // i==4 is the bubble-function, which is never on any boundary.
                 {
                     Uint face;
@@ -1435,7 +1435,7 @@ template <class Coeff>
                           +pr.val(t.GetVertex(3)->GetCoord())*M*FE_P1CL::DH3Ref();
     err_sq+= (P0f - gp).norm_sq()*vol*vol;
 
-// TODO: non-null dirichlet-boundary values, neumann boundary
+// TODO: non-null dirichlet-boundary values, natural boundary
     // .5*sum_{E \in \partial T \cap \Omega} |E|*|| Sprung von u_h,l ||_L2,E^2
     SMatrixCL<3,4> vertval;
     for (Uint i=0; i<NumVertsC; ++i)

@@ -19,7 +19,7 @@ namespace DROPS
 
 
 inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::bnd_val_fun bfun)
-// Integrate neu_val() * phi_vert over face
+// Integrate nat_val() * phi_vert over face
 {
     Point3DCL vc3D[3];
     const VertexCL* v[3];
@@ -89,7 +89,7 @@ void PoissonP1CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                     }
                 }
                 b.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &Coeff::f, i, 0.0)*absdet;
-                if ( _BndData.IsOnNeuBnd(*sit->GetVertex(i)) )
+                if ( _BndData.IsOnNatBnd(*sit->GetVertex(i)) )
                     for (int f=0; f < 3; ++f)
                         if ( sit->IsBndSeg(FaceOfVert(i, f)) )
                             b.Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun() );
@@ -312,7 +312,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
             t.GetOuterNormal(face, normal);
             const BndIdxT bidx= t.GetBndIdx(face);
             const typename BndDataCL::BndSegT bdat= Bnd.GetBndSeg( bidx);
-            if ( bdat.IsNeumann() )
+            if ( bdat.IsNatural() )
             {
                 Point3DCL vc3D[3];
                 const VertexCL* v[4];
@@ -401,7 +401,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
             t.GetOuterNormal(face, normal);
             const BndIdxT bidx= t.GetBndIdx(face);
             const typename BndDataCL::BndSegT bdat= Bnd.GetBndSeg( bidx);
-            if ( bdat.IsNeumann() )
+            if ( bdat.IsNatural() )
             {
                 Point3DCL vc3D[3];
                 const VertexCL* v[4];
@@ -678,8 +678,8 @@ void PoissonP2CL<Coeff>::SetupSystem(MatDescCL& Amat, VecDescCL& b) const
                 tmp= Quad(*sit, &Coeff::f, i, 0.0)*absdet;
                 b.Data[Numb[i]]+=          tmp;
 
-                if ( i<4 ? _BndData.IsOnNeuBnd(*sit->GetVertex(i))
-                         : _BndData.IsOnNeuBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on Neumann boundary
+                if ( i<4 ? _BndData.IsOnNatBnd(*sit->GetVertex(i))
+                         : _BndData.IsOnNatBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on natural boundary
                 {
                     Uint face;
                     for (int f=0; f < 3; ++f)

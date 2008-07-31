@@ -7,9 +7,6 @@
 /// \file
 /// \brief Classes for storing and handling boundary data.
 
-/// \todo Replace the term 'Neumann' by 'Natural' and 'NeuBnd' by 'NatBnd',
-/// as Neumann makes no sense for (Navier-)Stokes problems.
-
 /// \todo All BndVal-functions should have the signature BndValT func( const Point3DCL&, double).
 /// Up to now this is not the case for the Poisson problems.
 
@@ -74,7 +71,7 @@ class BndSegDataCL
 
     bool        WithUnknowns() const { return bc_ & 1; }
     bool        IsDirichlet()  const { return bc_==Dir0BC || bc_==DirBC; }
-    bool        IsNeumann()    const { return bc_==Nat0BC || bc_==NatBC; }
+    bool        IsNatural()    const { return bc_==Nat0BC || bc_==NatBC; }
     bool        IsPeriodic()   const { return bc_==Per1BC || bc_==Per2BC ; }
     BndCondT    GetBC()        const { return bc_; }
     bnd_val_fun GetBndFun()    const { return bnd_val_; }
@@ -121,9 +118,9 @@ class BndDataCL
     inline bool IsOnDirBnd( const VertexCL&) const;
     inline bool IsOnDirBnd( const EdgeCL&)   const;
     inline bool IsOnDirBnd( const FaceCL&)   const;
-    inline bool IsOnNeuBnd( const VertexCL&) const;
-    inline bool IsOnNeuBnd( const EdgeCL&)   const;
-    inline bool IsOnNeuBnd( const FaceCL&)   const;
+    inline bool IsOnNatBnd( const VertexCL&) const;
+    inline bool IsOnNatBnd( const EdgeCL&)   const;
+    inline bool IsOnNatBnd( const FaceCL&)   const;
     inline bool IsOnPerBnd( const VertexCL&) const;
     inline bool IsOnPerBnd( const EdgeCL&)   const;
     inline bool IsOnPerBnd( const FaceCL&)   const;
@@ -134,7 +131,7 @@ class BndDataCL
     inline BndValT GetDirBndValue( const VertexCL&, double) const;
     inline BndValT GetDirBndValue( const EdgeCL&, double)   const;
     inline BndValT GetDirBndValue( const FaceCL&, double)   const;
-    inline BndValT GetNeuBndValue( const FaceCL&, double)   const;
+    inline BndValT GetNatBndValue( const FaceCL&, double)   const;
 
     inline BndValT GetDirBndValue( const VertexCL& v) const { return GetDirBndValue( v, 0); }
     inline BndValT GetDirBndValue( const EdgeCL& e)   const { return GetDirBndValue( e, 0); }
@@ -168,7 +165,7 @@ class NoBndDataCL
     template<class SimplexT>
     static inline bool IsOnDirBnd (const SimplexT&) { return false; }
     template<class SimplexT>
-    static inline bool IsOnNeuBnd (const SimplexT&) { return false; }
+    static inline bool IsOnNatBnd (const SimplexT&) { return false; }
     template<class SimplexT>
     static inline bool IsOnPerBnd (const SimplexT&) { return false; }
 
@@ -229,11 +226,11 @@ inline bool BndDataCL<BndValT>::IsOnDirBnd( const VertexCL& v) const
 }
 
 template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnNeuBnd( const VertexCL& v) const
+inline bool BndDataCL<BndValT>::IsOnNatBnd( const VertexCL& v) const
 { // v is on neu bnd, iff it is only on neu bnd segments
     if ( !v.IsOnBoundary() ) return false;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !BndData_[it->GetBndIdx()].IsNeumann() )
+        if ( !BndData_[it->GetBndIdx()].IsNatural() )
             return false;
     return true;
 }
@@ -306,11 +303,11 @@ inline bool BndDataCL<BndValT>::IsOnDirBnd( const EdgeCL& e) const
 }
 
 template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnNeuBnd( const EdgeCL& e) const
+inline bool BndDataCL<BndValT>::IsOnNatBnd( const EdgeCL& e) const
 {
     if ( !e.IsOnBoundary() ) return false;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !BndData_[*it].IsNeumann() )
+        if ( !BndData_[*it].IsNatural() )
             return false;
     return true;
 }
@@ -379,9 +376,9 @@ inline bool BndDataCL<BndValT>::IsOnDirBnd( const FaceCL& f) const
 }
 
 template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnNeuBnd(const FaceCL& f) const
+inline bool BndDataCL<BndValT>::IsOnNatBnd(const FaceCL& f) const
 {
-    return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsNeumann();
+    return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsNatural();
 }
 
 template<class BndValT>
@@ -447,11 +444,11 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const FaceCL& f, double t) co
 }
 
 template<class BndValT>
-inline BndValT BndDataCL<BndValT>::GetNeuBndValue( const FaceCL& f, double t) const
+inline BndValT BndDataCL<BndValT>::GetNatBndValue( const FaceCL& f, double t) const
 /// Returns value of the Neumann boundary value.
 /// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
-    Assert( BndData_[f.GetBndIdx()].IsNeumann(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
+    Assert( BndData_[f.GetBndIdx()].IsNatural(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
     return BndData_[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
 }
 
