@@ -69,10 +69,10 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     // wave length = 100 x film width
-    const double wave= C.PumpAmpl*std::sin(2*M_PI*p[0]/C.mesh_size[0]); //,
-        // z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
-    return p[1] - C.Filmdicke * (1 + wave);
-//    return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI));
+    const double wave= C.PumpAmpl*std::sin(2*M_PI*p[0]/C.mesh_size[0]),
+        z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
+//    return p[1] - C.Filmdicke * (1 + wave);
+    return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI));
 }
 
 bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
@@ -122,12 +122,10 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
          {}
 };
 
-template<class Coeff>
-void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
+template<class StokesProblemT>
+void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset)
 // flow control
 {
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
-
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL* lidx= &lset.idx;
@@ -221,6 +219,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 //    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
+//    typedef MinCommPreCL SPcT;
+//    SPcT ispc( 0, Stokes.B.Data, Stokes.M.Data, Stokes.prM.Data);
     typedef ISBBTPreCL SPcT;
     SPcT ispc( Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data,
             /*kA*/ 1./C.dt, /*kM*/ C.theta);
@@ -240,26 +240,17 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset
 
 //    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
 //        cpl( Stokes, lset, ISPschurSolver, C.theta);
-
     LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, navstokessolver, C.theta, 0.);
-//    ProjThetaSchemeStokes2PhaseCL<StokesProblemT, OseenSolverT>
-//        cpl( Stokes, lset, oseenSolver, C.theta);
+        cpl( Stokes, lset, navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.dt);
+//    ispc.SetMatrixA( cpl.GetUpperLeftBlock());
 
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_iter);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        if (C.VolCorr)
-        {
-            double dphi= lset.AdjustVolume( Vol, 1e-9);
-            std::cerr << "volume correction is " << dphi << std::endl;
-            lset.Phi.Data+= dphi;
-            std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        }
 
         if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
         {
@@ -267,7 +258,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {
-                double dphi= lset.AdjustVolume( Vol, 1e-9);
+                double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
