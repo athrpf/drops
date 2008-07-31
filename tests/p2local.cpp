@@ -295,28 +295,10 @@ int main ()
                                 DROPS::std_basis<3>(3),
                                 10, 20, 30);
     DROPS::MultiGridCL mg( brick);
-    DROPS::IdxDescCL idx( 1,1,0,0);
-    idx.TriangLevel= 0;
-    idx.NumUnknowns= 0;
-    DROPS::CreateNumbOnVertex( idx.GetIdx(), idx.NumUnknowns, 1,
-        mg.GetTriangVertexBegin( idx.TriangLevel),
-        mg.GetTriangVertexEnd( idx.TriangLevel),
-        theBnd);
-    DROPS::CreateNumbOnEdge( idx.GetIdx(), idx.NumUnknowns, 1,
-        mg.GetTriangEdgeBegin( idx.TriangLevel),
-        mg.GetTriangEdgeEnd( idx.TriangLevel),
-        theBnd);
-    DROPS::IdxDescCL vidx( 3,3,0,0);
-    vidx.TriangLevel= 0;
-    vidx.NumUnknowns= 0;
-    DROPS::CreateNumbOnVertex( vidx.GetIdx(), vidx.NumUnknowns, 3,
-        mg.GetTriangVertexBegin( vidx.TriangLevel),
-        mg.GetTriangVertexEnd( vidx.TriangLevel),
-        theVBnd);
-    DROPS::CreateNumbOnEdge( vidx.GetIdx(), vidx.NumUnknowns, 3,
-        mg.GetTriangEdgeBegin( vidx.TriangLevel),
-        mg.GetTriangEdgeEnd( vidx.TriangLevel),
-        theVBnd);
+    DROPS::IdxDescCL idx( P2_FE);
+    DROPS::CreateNumb( 0, idx, mg, theBnd);
+    DROPS::IdxDescCL vidx( vecP2_FE);
+    DROPS::CreateNumb( 0, vidx, mg, theVBnd);
     DROPS::VecDescCL vd0( &idx);
     SetFun( vd0, mg, f);
     DROPS::VecDescCL vd1( &idx);
@@ -349,17 +331,8 @@ int main ()
 
     MarkAll( mg);
     mg.Refine();
-    DROPS::IdxDescCL idx1( 1,1,0,0);
-    idx1.TriangLevel= 1;
-    idx1.NumUnknowns= 0;
-    DROPS::CreateNumbOnVertex( idx1.GetIdx(), idx1.NumUnknowns, 1,
-        mg.GetTriangVertexBegin( idx1.TriangLevel),
-        mg.GetTriangVertexEnd( idx1.TriangLevel),
-        theBnd);
-    DROPS::CreateNumbOnEdge( idx1.GetIdx(), idx1.NumUnknowns, 1,
-        mg.GetTriangEdgeBegin( idx1.TriangLevel),
-        mg.GetTriangEdgeEnd( idx1.TriangLevel),
-        theBnd);
+    DROPS::IdxDescCL idx1( P2_FE);
+    DROPS::CreateNumb( 1, idx1, mg, theBnd);
     DROPS::VecDescCL vd5( &idx1);
     SetFun( vd5, mg, f);
     LocalP2CL<> restr1( *mg.GetTriangTetraBegin( 0), vd5, theBnd, 0.3);

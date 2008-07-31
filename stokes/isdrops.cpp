@@ -508,15 +508,7 @@ EnsightWriterCL::CreateNumbering( int level)
     if (have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::CreateIndex: Already done.");
     DROPS::NoBndDataCL<> ensightbnd;
-    ensightidx_.TriangLevel= level < 0 ? MG_.GetLastLevel(): level;
-    DROPS::CreateNumbOnVertex( ensightidx_.GetIdx(), ensightidx_.NumUnknowns, 1,
-                               MG_.GetTriangVertexBegin( ensightidx_.TriangLevel),
-                               MG_.GetTriangVertexEnd( ensightidx_.TriangLevel),
-                               ensightbnd);
-    DROPS::CreateNumbOnEdge( ensightidx_.GetIdx(), ensightidx_.NumUnknowns, 1,
-                             MG_.GetTriangEdgeBegin( ensightidx_.TriangLevel),
-                             MG_.GetTriangEdgeEnd( ensightidx_.TriangLevel),
-                             ensightbnd);
+    DROPS::CreateNumb( level < 0 ? MG_.GetLastLevel(): level, ensightidx_, MG_, ensightbnd);
     have_idx_= true;
 }
 

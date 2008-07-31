@@ -46,40 +46,41 @@ class IdxDescCL
   private:
     static const Uint        InvalidIdx; ///< Constant representing an invalid index.
     static std::vector<bool> IdxFree;    ///< Cache for unused indices; reduces memory-usage.
-    Uint                     Idx;        ///< The unique index.
+    Uint                     Idx_;        ///< The unique index.
 
     /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
+    //@{
+    /// \brief Number of unknowns on the simplex-type.
+    Uint NumUnknownsVertex_;
+    Uint NumUnknownsEdge_;
+    Uint NumUnknownsFace_;
+    Uint NumUnknownsTetra_;
+    //@}
 
   public:
     Uint TriangLevel;        ///< Triangulation of the index.
 
-    //@{
-    /// \brief Number of unknowns on the simplex-type.
-    Uint NumUnknownsVertex;
-    Uint NumUnknownsEdge;
-    Uint NumUnknownsFace;
-    Uint NumUnknownsTetra;
-    //@}
     IdxT NumUnknowns;       ///< total number of unknowns on the triangulation
 
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
     IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0)
-      : Idx( GetFreeIdx()), NumUnknownsVertex( unkVertex), NumUnknownsEdge( unkEdge),
-        NumUnknownsFace( unkFace), NumUnknownsTetra( unkTetra), NumUnknowns( 0) {}
+      : Idx_( GetFreeIdx()), NumUnknownsVertex_( unkVertex), NumUnknownsEdge_( unkEdge),
+        NumUnknownsFace_( unkFace), NumUnknownsTetra_( unkTetra), NumUnknowns( 0) {}
     explicit IdxDescCL( FiniteElementT fe)
-      : Idx( GetFreeIdx()), NumUnknownsVertex( 0), NumUnknownsEdge( 0),
-        NumUnknownsFace( 0), NumUnknownsTetra( 0), NumUnknowns( 0)
+      : Idx_( GetFreeIdx()), NumUnknownsVertex_( 0), NumUnknownsEdge_( 0),
+        NumUnknownsFace_( 0), NumUnknownsTetra_( 0), NumUnknowns( 0)
     {
         switch(fe) {
-            case P0_FE:       NumUnknownsTetra= 1; break;
+            case P0_FE:       NumUnknownsTetra_= 1; break;
             case P1_FE:
-            case P1X_FE:      NumUnknownsVertex= 1; break;
-            case P1Bubble_FE: NumUnknownsVertex= NumUnknownsTetra= 1; break;
-            case P1D_FE:      NumUnknownsFace= 1; break;
-            case P2_FE:       NumUnknownsVertex= NumUnknownsEdge= 1; break;
-            case vecP2_FE:    NumUnknownsVertex= NumUnknownsEdge= 3; break;
+            case P1X_FE:      NumUnknownsVertex_= 1; break;
+            case P1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
+            case P1D_FE:      NumUnknownsFace_= 1; break;
+            case P2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
+            case vecP2_FE:    NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
+            default:          throw DROPSErrCL("IdxDescCL: unknown FE type");
         }
     }
     /// \brief The copy will inherit the index number, whereas the index
@@ -87,7 +88,7 @@ class IdxDescCL
     IdxDescCL( const IdxDescCL& orig);
     /// \brief Frees the index, but does not invalidate the numbering on
     ///     the simplices. Call DeleteNumbering to do this.
-    ~IdxDescCL() { if (Idx!=InvalidIdx) IdxFree[Idx]= true; }
+    ~IdxDescCL() { if (Idx_!=InvalidIdx) IdxFree[Idx_]= true; }
 
     /// \brief Not implemented, as the private "Idx" should not be the
     ///     same for two different objects.
@@ -95,15 +96,26 @@ class IdxDescCL
     /// \brief Swaps the contents of obj and *this.
     void swap( IdxDescCL&);
 
+    /// \brief Number of unknowns on the simplex-type
+    //@{
+    Uint NumUnknownsVertex() const { return NumUnknownsVertex_; }
+    Uint NumUnknownsEdge()   const { return NumUnknownsEdge_; }
+    Uint NumUnknownsFace()   const { return NumUnknownsFace_; }
+    Uint NumUnknownsTetra()  const { return NumUnknownsTetra_; }
+    //@}
     /// \brief Set the number of unknowns per simplex-type for this index.
     void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
     /// \brief Returns the number of the index. This can be used to access
     ///     the numbering on the simplices.
     Uint GetIdx() const {
-        if (Idx==InvalidIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index."
+        if (Idx_==InvalidIdx) throw DROPSErrCL("IdxDescCL::GetIdx: invalid index."
             " Probably using copy instead of original IdxDescCL-object.");
-        return Idx;
+        return Idx_;
     }
+
+    template<class BndDataT>
+    void CreateNumbering(Uint level, MultiGridCL& mg, const BndDataT& Bnd, match_fun match= 0)
+    { CreateNumb( level, *this, mg, Bnd, match); }
 
     /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
     ///     unknown-numbers on it are compared, too.
@@ -428,52 +440,16 @@ void VecDescBaseCL<T>::Reset()
 /// that is #Unknowns+stride.
 /// Simplices on Dirichlet boundaries are skipped.
 /// \{
-template<class BndDataT>
-void CreateNumbOnVertex( const Uint idx, IdxT& counter, Uint stride,
-                         const MultiGridCL::TriangVertexIteratorCL& begin,
-                         const MultiGridCL::TriangVertexIteratorCL& end,
+template<class SimplexT, class BndDataT>
+void CreateNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride,
+                         const ptr_iter<SimplexT>& begin, 
+                         const ptr_iter<SimplexT>& end,
                          const BndDataT& Bnd)
 {
     if (stride == 0) return;
-    for (MultiGridCL::TriangVertexIteratorCL it= begin; it != end; ++it)
+    for (ptr_iter<SimplexT> it= begin; it != end; ++it)
     {
         if ( !Bnd.IsOnDirBnd( *it) )
-        {
-            it->Unknowns.Prepare( idx);
-            it->Unknowns( idx)= counter;
-            counter+= stride;
-        }
-    }
-}
-
-template<class BndDataT>
-void CreateNumbOnEdge( const Uint idx, IdxT& counter, Uint stride,
-                       const MultiGridCL::TriangEdgeIteratorCL& begin,
-                       const MultiGridCL::TriangEdgeIteratorCL& end,
-                       const BndDataT& Bnd)
-{
-    if (stride == 0) return;
-    for (MultiGridCL::TriangEdgeIteratorCL it=begin; it!=end; ++it)
-    {
-        if ( !Bnd.IsOnDirBnd(*it) )
-        {
-            it->Unknowns.Prepare( idx);
-            it->Unknowns( idx)= counter;
-            counter+= stride;
-        }
-    }
-}
-
-template<class BndDataT>
-void CreateNumbOnFace( const Uint idx, IdxT& counter, Uint stride,
-                       const MultiGridCL::TriangFaceIteratorCL& begin,
-                       const MultiGridCL::TriangFaceIteratorCL& end,
-                       const BndDataT& Bnd)
-{
-    if (stride == 0) return;
-    for (MultiGridCL::TriangFaceIteratorCL it=begin; it!=end; ++it)
-    {
-        if ( !Bnd.IsOnDirBnd(*it) )
         {
             it->Unknowns.Prepare( idx);
             it->Unknowns( idx)= counter;
@@ -517,8 +493,8 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 }
 
 
-/// \name Routines to number unknowns on periodic boundaries.
-/// These functions should not be used directly. CreateNumb is much more
+/// \name Routine to number unknowns on vertices, edges, faces on periodic boundaries.
+/// This function should not be used directly. CreateNumb is much more
 /// comfortable and as efficient.
 ///
 /// For interior simplices and boundary-conditions other than Per1BC and Per2BC,
@@ -535,20 +511,20 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 ///     identified for the boundary condition. However, enforcing such
 ///     a symmetry requires a modification of the refinement algorithm
 ///     which is probably not a trivial exercise.
-/// \{
-template<class BndDataT>
-void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun match,
-                        const MultiGridCL::TriangVertexIteratorCL& begin,
-                        const MultiGridCL::TriangVertexIteratorCL& end,
+template<class SimplexT, class BndDataT>
+void CreatePeriodicNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride, match_fun match,
+                        const ptr_iter<SimplexT>& begin,
+                        const ptr_iter<SimplexT>& end,
                         const BndDataT& Bnd)
 {
     if (stride == 0) return;
 
-    typedef std::list<VertexCL*> psetT;
+    typedef std::list<SimplexT*> psetT;
+    typedef typename std::list<SimplexT*>::iterator psetIterT;
     psetT s1, s2;
     // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
     // collect all objects on Per1/Per2 bnds in s1, s2 resp.
-    for (MultiGridCL::TriangVertexIteratorCL it= begin; it!=end; ++it)
+    for (ptr_iter<SimplexT> it= begin; it!=end; ++it)
     {
         if ( Bnd.IsOnDirBnd( *it) ) continue;
         it->Unknowns.Prepare( idx);
@@ -571,11 +547,11 @@ void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun
     }
     // now we have s1.size() <= s2.size()
     // match objects in s1 and s2
-    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
+    for (psetIterT it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
     {
         // search corresponding object in s2
-        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2;)
-            if (match( (*it1)->GetCoord(), (*it2)->GetCoord()))
+        for (psetIterT it2= s2.begin(), end2= s2.end(); it2!=end2;)
+            if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
             {
                 // it2 gets same number as it1
                 (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
@@ -585,114 +561,8 @@ void CreatePeriodicNumbOnVertex( Uint idx, IdxT& counter, Uint stride, match_fun
             else it2++;            
     }
     if (!s2.empty())
-        throw DROPSErrCL( "CreatePeriodicNumbOnVertex: Periodic boundaries do not match!");
+        throw DROPSErrCL( "CreatePeriodicNumbOnSimplex: Periodic boundaries do not match!");
 }
-
-template<class BndDataT>
-void CreatePeriodicNumbOnEdge( Uint idx, IdxT& counter, Uint stride, match_fun match,
-                        const MultiGridCL::TriangEdgeIteratorCL& begin,
-                        const MultiGridCL::TriangEdgeIteratorCL& end,
-                        const BndDataT& Bnd)
-{
-    if (stride == 0) return;
-
-    typedef std::list<EdgeCL*> psetT;
-    psetT s1, s2;
-    // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
-    // collect all objects on Per1/Per2 bnds in s1, s2 resp.
-    for (MultiGridCL::TriangEdgeIteratorCL it= begin; it!=end; ++it)
-    {
-        if ( Bnd.IsOnDirBnd( *it) ) continue;
-        it->Unknowns.Prepare( idx);
-        if (Bnd.IsOnPerBnd( *it))
-        {
-            if (Bnd.GetBC( *it)==Per1BC)
-            {
-                s1.push_back( &*it);
-                it->Unknowns( idx)= counter;
-                counter+= stride;
-            }
-            else
-                s2.push_back( &*it);
-        }
-        else
-        {
-            it->Unknowns( idx)= counter;
-            counter+= stride;
-        }
-    }
-    // now we have s1.size() <= s2.size()
-    // match objects in s1 and s2
-    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
-    {
-        // search corresponding object in s2
-        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; )
-            if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
-            {
-                // it2 gets same number as it1
-                (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
-                // remove it2 from s2
-                s2.erase( it2++);
-            }
-            else it2++;
-    }
-    if (!s2.empty())
-        throw DROPSErrCL( "CreatePeriodicNumbOnEdge: Periodic boundaries do not match!");
-}
-
-template<class BndDataT>
-void CreatePeriodicNumbOnFace( Uint idx, IdxT& counter, Uint stride, match_fun match,
-                        const MultiGridCL::TriangFaceIteratorCL& begin,
-                        const MultiGridCL::TriangFaceIteratorCL& end,
-                        const BndDataT& Bnd)
-{
-    if (stride == 0) return;
-
-    typedef std::list<FaceCL*> psetT;
-    psetT s1, s2;
-    // create numbering for all objects (skipping Dir bnds) except those on Per2 bnds.
-    // collect all objects on Per1/Per2 bnds in s1, s2 resp.
-    for (MultiGridCL::TriangFaceIteratorCL it= begin; it!=end; ++it)
-    {
-        if ( Bnd.IsOnDirBnd( *it) ) continue;
-        it->Unknowns.Prepare( idx);
-        if (Bnd.IsOnPerBnd( *it))
-        {
-            if (Bnd.GetBC( *it)==Per1BC)
-            {
-                s1.push_back( &*it);
-                it->Unknowns( idx)= counter;
-                counter+= stride;
-            }
-            else
-                s2.push_back( &*it);
-        }
-        else
-        {
-            it->Unknowns( idx)= counter;
-            counter+= stride;
-        }
-    }
-    // now we have s1.size() <= s2.size()
-    // match objects in s1 and s2
-    for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
-    {
-        // search corresponding object in s2
-        for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; )
-            if (match( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
-            {
-                // it2 gets same number as it1
-                (*it2)->Unknowns( idx)= (*it1)->Unknowns( idx);
-                // remove it2 from s2
-                s2.erase( it2++);
-            }
-            else it2++;
-    }
-    if (!s2.empty())
-        throw DROPSErrCL( "CreatePeriodicNumbOnFace: Periodic boundaries do not match!");
-}
-/// \}
-
 
 /// \brief Used to number unknowns depending on the index idx.
 ///
@@ -719,32 +589,32 @@ void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndDataT& Bnd
     // allocate space for indices; number unknowns in TriangLevel level
     if (match)
     {
-        if (idx.NumUnknownsVertex)
-            CreatePeriodicNumbOnVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex, match,
+        if (idx.NumUnknownsVertex())
+            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(), match,
                 mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
-        if (idx.NumUnknownsEdge)
-            CreatePeriodicNumbOnEdge( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge, match,
+        if (idx.NumUnknownsEdge())
+            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(), match,
                 mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
-        if (idx.NumUnknownsFace)
-            CreatePeriodicNumbOnFace( idxnum, idx.NumUnknowns, idx.NumUnknownsFace, match,
+        if (idx.NumUnknownsFace())
+            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(), match,
                 mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
-        if (idx.NumUnknownsTetra)
-            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra,
+        if (idx.NumUnknownsTetra())
+            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
     else
     {
-        if (idx.NumUnknownsVertex)
-            CreateNumbOnVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex,
+        if (idx.NumUnknownsVertex())
+            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
                 mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
-        if (idx.NumUnknownsEdge)
-            CreateNumbOnEdge( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge,
+        if (idx.NumUnknownsEdge())
+            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(),
                 mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
-        if (idx.NumUnknownsFace)
-            CreateNumbOnFace( idxnum, idx.NumUnknowns, idx.NumUnknownsFace,
+        if (idx.NumUnknownsFace())
+            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(),
                 mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
-        if (idx.NumUnknownsTetra)
-            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra,
+        if (idx.NumUnknownsTetra())
+            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
 }

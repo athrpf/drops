@@ -309,17 +309,8 @@ int main ()
                                 DROPS::std_basis<3>(3),
                                 40, 40, 40);
     DROPS::MultiGridCL mg( brick);
-    DROPS::IdxDescCL idx( 1,1,0,0);
-    idx.TriangLevel= 0;
-    idx.NumUnknowns= 0;
-    DROPS::CreateNumbOnVertex( idx.GetIdx(), idx.NumUnknowns, 1,
-        mg.GetTriangVertexBegin( idx.TriangLevel),
-        mg.GetTriangVertexEnd( idx.TriangLevel),
-        Bnd);
-    DROPS::CreateNumbOnEdge( idx.GetIdx(), idx.NumUnknowns, 1,
-        mg.GetTriangEdgeBegin( idx.TriangLevel),
-        mg.GetTriangEdgeEnd( idx.TriangLevel),
-        Bnd);
+    DROPS::IdxDescCL idx( P2_FE);
+    DROPS::CreateNumb( 0, idx, mg, Bnd);
     DROPS::VecDescCL vd0( &idx);
     SetFun( vd0, mg, f);
     DROPS::VecDescCL vd1( &idx);
@@ -339,17 +330,8 @@ int main ()
     std::cout << "integral: " << q1 << "\ttime: " << time.GetTime() << " seconds"
         << std::endl;
     time.Reset();
-    DROPS::IdxDescCL vidx( 3,3,0,0);
-    vidx.TriangLevel= 0;
-    vidx.NumUnknowns= 0;
-    DROPS::CreateNumbOnVertex( vidx.GetIdx(), vidx.NumUnknowns, 3,
-        mg.GetTriangVertexBegin( idx.TriangLevel),
-        mg.GetTriangVertexEnd( idx.TriangLevel),
-        Bnd);
-    DROPS::CreateNumbOnEdge( vidx.GetIdx(), vidx.NumUnknowns, 3,
-        mg.GetTriangEdgeBegin( vidx.TriangLevel),
-        mg.GetTriangEdgeEnd( vidx.TriangLevel),
-        Bnd);
+    DROPS::IdxDescCL vidx( vecP2_FE);
+    DROPS::CreateNumb( 0, vidx, mg, Bnd);
     DROPS::VecDescCL vd3( &vidx);
     SetFun( vd3, mg, fv);
     NewVQuadT vq1, vq2;

@@ -10,21 +10,8 @@ using namespace DROPS;
 
 namespace DROPS {
 
-class BndCL
-{
-  public:
-    typedef double bnd_type;
-
-    inline bool IsOnDirBnd (const VertexCL&) const { return false; }
-    inline bool IsOnNeuBnd (const VertexCL&) const { return false; }
-    inline bool IsOnDirBnd (const EdgeCL&) const { return false; }
-    inline bool IsOnNeuBnd (const EdgeCL&) const { return false; }
-
-    static inline bnd_type GetDirBndValue (const VertexCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
-    static inline bnd_type GetDirBndValue (const EdgeCL&)
-        { throw DROPSErrCL("BndCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on edge."); }
-} Bnd;
+typedef NoBndDataCL<double> BndCL;
+BndCL Bnd;
 
 } // end of namespace DROPS
 
@@ -56,33 +43,17 @@ void UnMarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 int TestProlongation()
 {
     int ret= 0;
-    DROPS::IdxDescCL i0, i1;
+    DROPS::IdxDescCL i0( P2_FE), i1( P2_FE);
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTesting prolongation for P2-elements:\n";
     for (DROPS::Uint i=0; i<63; ++i) {
         DROPS::TetraBuilderCL brick( i);
         DROPS::IdCL<DROPS::VertexCL>::ResetCounter();
         DROPS::MultiGridCL mg( brick);
-        i0.Set( 1,1,0,0); i0.TriangLevel= 0; i0.NumUnknowns= 0;
-        DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,
-                                   mg.GetTriangVertexBegin( i0.TriangLevel),
-                                   mg.GetTriangVertexEnd( i0.TriangLevel),
-                                   Bnd);
-        DROPS::CreateNumbOnEdge( i0.GetIdx(), i0.NumUnknowns, 1,
-                                 mg.GetTriangEdgeBegin( i0.TriangLevel),
-                                 mg.GetTriangEdgeEnd( i0.TriangLevel),
-                                 Bnd);
+        DROPS::CreateNumb( 0, i0, mg, Bnd);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx( &i0);
-        i1.Set( 1,1,0,0); i1.TriangLevel= mg.GetLastLevel() ; i1.NumUnknowns= 0;
-        DROPS::CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1,
-                                   mg.GetTriangVertexBegin( i1.TriangLevel),
-                                   mg.GetTriangVertexEnd( i1.TriangLevel),
-                                   Bnd);
-        DROPS::CreateNumbOnEdge( i1.GetIdx(), i1.NumUnknowns, 1,
-                                 mg.GetTriangEdgeBegin( i1.TriangLevel),
-                                 mg.GetTriangEdgeEnd( i1.TriangLevel),
-                                 Bnd);
+        DROPS::CreateNumb( mg.GetLastLevel(), i1, mg, Bnd);
         v1.SetIdx( &i1);
         DROPS::MatDescCL P;
         SetupP2ProlongationMatrix( mg, P, &i0, &i1);

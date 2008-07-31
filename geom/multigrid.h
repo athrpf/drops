@@ -492,6 +492,8 @@ class TetraCL
     void DebugInfo (std::ostream&) const;                                                  ///< get debug-information
 };
 
+inline
+Point3DCL GetBaryCenter(const VertexCL& v) { return v.GetCoord(); }
 Point3DCL GetBaryCenter(const EdgeCL&);
 Point3DCL GetBaryCenter(const FaceCL&);
 Point3DCL GetBaryCenter(const TetraCL&);

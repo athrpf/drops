@@ -81,25 +81,16 @@ int TestReMark()
 //            std::cout << Rule( i) << "\t-->\t" << Rule( j) << " ";
             DROPS::TetraBuilderCL tet( Rule( i));
             DROPS::MultiGridCL mg( tet);
-            DROPS::IdxDescCL i0, i1;
-            i0.Set( 1,0,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
-            DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,
-                                       mg.GetTriangVertexBegin( i0.TriangLevel),
-                                       mg.GetTriangVertexEnd( i0.TriangLevel),
-                                       Bnd);
+            DROPS::IdxDescCL i0( P1_FE), i1( P1_FE);
+            DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
             DROPS::VecDescCL v0, v1;
             v0.SetIdx(&i0);
             SetFun(v0, mg);
             tet.BogoReMark( mg, Rule( j));
 
-            i1.Set( 1,0,0,0);
             i1.TriangLevel= i0.TriangLevel <= mg.GetLastLevel() ? i0.TriangLevel
                                                                 : mg.GetLastLevel();
-            i1.NumUnknowns= 0;
-            DROPS::CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1,
-                                       mg.GetTriangVertexBegin( i1.TriangLevel),
-                                       mg.GetTriangVertexEnd( i1.TriangLevel),
-                                       Bnd);
+            DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
             v1.SetIdx( &i1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             DROPS::RepairAfterRefineP1( fun0, v1);
@@ -121,23 +112,15 @@ int TestRepair()
                                  DROPS::std_basis<3>( 2), DROPS::std_basis<3>( 3),
                                  1, 1, 1);
     DROPS::MultiGridCL mg(brick);
-    DROPS::IdxDescCL i0, i1;
+    DROPS::IdxDescCL i0( P1_FE), i1( P1_FE);
     for (DROPS::Uint i=0; i<8; ++i) {
-        i0.Set( 1,0,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
-        DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,
-                                   mg.GetTriangVertexBegin( i0.TriangLevel),
-                                   mg.GetTriangVertexEnd( i0.TriangLevel),
-                                   Bnd);
+        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx(&i0);
         SetFun(v0, mg);
         MarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        i1.Set( 1,0,0,0); i1.TriangLevel= i0.TriangLevel ; i1.NumUnknowns= 0;
-        DROPS::CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1,
-                                   mg.GetTriangVertexBegin( i1.TriangLevel),
-                                   mg.GetTriangVertexEnd( i1.TriangLevel),
-                                   Bnd);
+        DROPS::CreateNumb( i0.TriangLevel, i1, mg, Bnd);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
@@ -145,17 +128,12 @@ int TestRepair()
         ret+= CheckResult( fun1);
     }
     for (DROPS::Uint i=0; i<8; ++i) {
-        i0.Set( 1,0,0,0); i0.TriangLevel= mg.GetLastLevel(); i0.NumUnknowns= 0;
-        DROPS::CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1,
-                                   mg.GetTriangVertexBegin( i0.TriangLevel),
-                                   mg.GetTriangVertexEnd( i0.TriangLevel),
-                                   Bnd);
+        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx(&i0);
         SetFun(v0, mg);
         UnMarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        i1.Set( 1,0,0,0); i1.NumUnknowns= 0;
         if (mg.GetLastLevel() < i0.TriangLevel) {
             std::cout << "Letztes Level entfernt!" << std::endl;
             i1.TriangLevel= i0.TriangLevel-1;
@@ -164,10 +142,7 @@ int TestRepair()
             std::cout << "Letztes Level behalten!" << std::endl;
             i1.TriangLevel= i0.TriangLevel;
         }
-        DROPS::CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1,
-                                   mg.GetTriangVertexBegin( i1.TriangLevel),
-                                   mg.GetTriangVertexEnd( i1.TriangLevel),
-                                   Bnd);
+        DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
@@ -189,13 +164,9 @@ int TestInterpolateOld()
 //    MarkAll( mg);
     mg.Refine();
 
-    IdxDescCL i0, i1;
-    i0.Set( 1,0,0,0); i0.TriangLevel= 0; i0.NumUnknowns= 0;
-    i1.Set( 1,0,0,0); i1.TriangLevel= 1; i1.NumUnknowns= 0;
-    CreateNumbOnVertex( i0.GetIdx(), i0.NumUnknowns, 1, mg.GetTriangVertexBegin(i0.TriangLevel),
-                        mg.GetTriangVertexEnd(i0.TriangLevel), Bnd );
-    CreateNumbOnVertex( i1.GetIdx(), i1.NumUnknowns, 1, mg.GetTriangVertexBegin(i1.TriangLevel),
-                        mg.GetTriangVertexEnd(i1.TriangLevel), Bnd );
+    IdxDescCL i0( P1_FE), i1( P1_FE);
+    CreateNumb( 0, i0, mg, Bnd );
+    CreateNumb( 1, i1, mg, Bnd );
     VecDescBaseCL<VectorCL> v0, v1;
     v0.SetIdx(&i0);
     v1.SetIdx(&i1);

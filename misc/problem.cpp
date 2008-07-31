@@ -40,36 +40,36 @@ Uint IdxDescCL::GetFreeIdx()
 
 IdxDescCL::IdxDescCL( const IdxDescCL& orig)
 {
-    Idx= orig.Idx;
+    Idx_= orig.Idx_;
     TriangLevel= orig.TriangLevel;
-    NumUnknownsVertex= orig.NumUnknownsVertex;
-    NumUnknownsEdge= orig.NumUnknownsEdge;
-    NumUnknownsFace= orig.NumUnknownsFace;
-    NumUnknownsTetra= orig.NumUnknownsTetra;
+    NumUnknownsVertex_= orig.NumUnknownsVertex_;
+    NumUnknownsEdge_= orig.NumUnknownsEdge_;
+    NumUnknownsFace_= orig.NumUnknownsFace_;
+    NumUnknownsTetra_= orig.NumUnknownsTetra_;
     NumUnknowns= orig.NumUnknowns;
     // invalidate orig
-    const_cast<IdxDescCL&>(orig).Idx= InvalidIdx;
+    const_cast<IdxDescCL&>(orig).Idx_= InvalidIdx;
 }
 
 void IdxDescCL::swap( IdxDescCL& obj)
 /// Note, that std::swap cannot be used for IdxDescCL-objects as the
 /// assignment operator is not implemented.
 {
-    std::swap( Idx, obj.Idx);
-    std::swap( TriangLevel,       obj.TriangLevel);
-    std::swap( NumUnknownsVertex, obj.NumUnknownsVertex);
-    std::swap( NumUnknownsEdge,   obj.NumUnknownsEdge);
-    std::swap( NumUnknownsFace,   obj.NumUnknownsFace);
-    std::swap( NumUnknownsTetra,  obj.NumUnknownsTetra);
-    std::swap( NumUnknowns,       obj.NumUnknowns);
+    std::swap( Idx_, obj.Idx_);
+    std::swap( TriangLevel,        obj.TriangLevel);
+    std::swap( NumUnknownsVertex_, obj.NumUnknownsVertex_);
+    std::swap( NumUnknownsEdge_,   obj.NumUnknownsEdge_);
+    std::swap( NumUnknownsFace_,   obj.NumUnknownsFace_);
+    std::swap( NumUnknownsTetra_,  obj.NumUnknownsTetra_);
+    std::swap( NumUnknowns,        obj.NumUnknowns);
 }
 
 void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
 {
-    NumUnknownsVertex = unkVertex;
-    NumUnknownsEdge   = unkEdge;
-    NumUnknownsFace   = unkFace;
-    NumUnknownsTetra  = unkTetra;
+    NumUnknownsVertex_ = unkVertex;
+    NumUnknownsEdge_   = unkEdge;
+    NumUnknownsFace_   = unkFace;
+    NumUnknownsTetra_  = unkTetra;
 }
 
 bool
@@ -88,19 +88,19 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
         std::cerr << "Compare_Indices: Indices on different levels.\n";
         return false;
     }
-    if (i.NumUnknownsVertex != j.NumUnknownsVertex) {
+    if (i.NumUnknownsVertex_ != j.NumUnknownsVertex_) {
         std::cerr << "Compare_Indices: NumUnknownsVertex different.\n";
         return false;
     }
-    if (i.NumUnknownsEdge != j.NumUnknownsEdge) {
+    if (i.NumUnknownsEdge_ != j.NumUnknownsEdge_) {
         std::cerr << "Compare_Indices: NumUnknownsEdge different.\n";
         return false;
     }
-    if (i.NumUnknownsFace != j.NumUnknownsFace) {
+    if (i.NumUnknownsFace_ != j.NumUnknownsFace_) {
         std::cerr << "Compare_Indices: NumUnknownsFace different.\n";
         return false;
     }
-    if (i.NumUnknownsTetra != j.NumUnknownsTetra) {
+    if (i.NumUnknownsTetra_ != j.NumUnknownsTetra_) {
         std::cerr << "Compare_Indices: NumUnknownsTetra different.\n";
         return false;
     }
@@ -115,7 +115,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
                jidx= j.GetIdx();
     if (iidx == jidx)
         return true;
-    if ( i.NumUnknownsVertex != 0)
+    if ( i.NumUnknownsVertex_ != 0)
         for (MultiGridCL::const_TriangVertexIteratorCL it= mg->GetTriangVertexBegin( lvl),
              theend= mg->GetTriangVertexEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
@@ -123,7 +123,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
                     std::cerr << "Compare_Indices: Vertex difference.\n";
                     return false;
                 }
-    if (i.NumUnknownsEdge != 0)
+    if (i.NumUnknownsEdge_ != 0)
         for (MultiGridCL::const_TriangEdgeIteratorCL it= mg->GetTriangEdgeBegin( lvl),
              theend= mg->GetTriangEdgeEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
@@ -131,7 +131,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
                     std::cerr << "Compare_Indices: Edge difference.\n";
                     return false;
                 }
-    if (i.NumUnknownsFace != 0)
+    if (i.NumUnknownsFace_ != 0)
         for (MultiGridCL::const_TriangFaceIteratorCL it= mg->GetTriangFaceBegin( lvl),
              theend= mg->GetTriangFaceEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
@@ -139,7 +139,7 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
                     std::cerr << "Compare_Indices: Face difference.\n";
                     return false;
                 }
-    if ( i.NumUnknownsTetra != 0)
+    if ( i.NumUnknownsTetra_ != 0)
         for (MultiGridCL::const_TriangTetraIteratorCL it= mg->GetTriangTetraBegin( lvl),
              theend= mg->GetTriangTetraEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
@@ -188,13 +188,13 @@ void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG)
     idx.NumUnknowns = 0;
 
     // delete memory allocated for indices
-    if (idx.NumUnknownsVertex)
+    if (idx.NumUnknownsVertex())
         DeleteNumbOnSimplex( idxnum, MG.GetAllVertexBegin(level), MG.GetAllVertexEnd(level) );
-    if (idx.NumUnknownsEdge)
+    if (idx.NumUnknownsEdge())
         DeleteNumbOnSimplex( idxnum, MG.GetAllEdgeBegin(level), MG.GetAllEdgeEnd(level) );
-    if (idx.NumUnknownsFace)
+    if (idx.NumUnknownsFace())
         DeleteNumbOnSimplex( idxnum, MG.GetAllFaceBegin(level), MG.GetAllFaceEnd(level) );
-    if (idx.NumUnknownsTetra)
+    if (idx.NumUnknownsTetra())
         DeleteNumbOnSimplex( idxnum, MG.GetAllTetraBegin(level), MG.GetAllTetraEnd(level) );
 }
 

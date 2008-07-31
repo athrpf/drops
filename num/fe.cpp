@@ -250,25 +250,25 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     const Uint c_idx= cIdx->GetIdx();
     const Uint f_idx= fIdx->GetIdx();
 // It is only a copy of the 1D case 'ndofs' times
-    const Uint ndofs= fIdx->NumUnknownsVertex;
+    const Uint ndofs= fIdx->NumUnknownsVertex();
 
     MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
     P.RowIdx= fIdx;
     P.ColIdx= cIdx;
 /*    std::cout << "    alt                    cIdx "
-              << cIdx->TriangLevel       << ", "
-              << cIdx->NumUnknownsVertex << ", "
-              << cIdx->NumUnknownsEdge   << ", "
-              << cIdx->NumUnknownsFace   << ", "
-              << cIdx->NumUnknownsTetra  << ", "
+              << cIdx->TriangLevel        << ", "
+              << cIdx->NumUnknownsVertex_ << ", "
+              << cIdx->NumUnknownsEdge_   << ", "
+              << cIdx->NumUnknownsFace_   << ", "
+              << cIdx->NumUnknownsTetra_  << ", "
               << cIdx->NumUnknowns
               << std::endl;
     std::cout << "    neu                    fIdx "
-              << fIdx->TriangLevel       << ", "
-              << fIdx->NumUnknownsVertex << ", "
-              << fIdx->NumUnknownsEdge   << ", "
-              << fIdx->NumUnknownsFace   << ", "
-              << fIdx->NumUnknownsTetra  << ", "
+              << fIdx->TriangLevel        << ", "
+              << fIdx->NumUnknownsVertex_ << ", "
+              << fIdx->NumUnknownsEdge_   << ", "
+              << fIdx->NumUnknownsFace_   << ", "
+              << fIdx->NumUnknownsTetra_  << ", "
               << fIdx->NumUnknowns
               << std::endl;
 */

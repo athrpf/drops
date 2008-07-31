@@ -288,7 +288,7 @@ void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
         idxnum= p.RowIdx->GetIdx(),
         idxnum2= new_p.RowIdx->GetIdx();
 
-    if (p.RowIdx->NumUnknownsTetra)
+    if (p.RowIdx->NumUnknownsTetra())
         for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl),
             end= mg.GetTriangTetraEnd(lvl); it != end; ++it)
         {
@@ -307,8 +307,8 @@ void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
         const IdxT nr= it->Unknowns(idxnum),
             nr2= it->Unknowns(idxnum2);
         double val= p.Data[nr];
-        new_p.Data[nr2]= p.RowIdx->NumUnknownsTetra ? val + sum[nr2]/num[nr2]
-                                                    : val;
+        new_p.Data[nr2]= p.RowIdx->NumUnknownsTetra() ? val + sum[nr2]/num[nr2]
+                                                      : val;
     }
 }
 
