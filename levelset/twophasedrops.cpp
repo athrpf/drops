@@ -576,7 +576,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     {
         std::cerr << "======================================================== step " << step << ":\n";
 
-        IFInfo.Update( lset);
+        IFInfo.Update( lset, Stokes.GetVelSolution());
         IFInfo.Write(infofile);
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
