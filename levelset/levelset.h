@@ -104,7 +104,8 @@ class LevelsetP2CL
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
     /// returns information about level set function and interface.
-    void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& minCoord, Point3DCL& maxCoord) const;
+    template<class DiscVelSolT>
+    void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& vel_sol, Point3DCL& minCoord, Point3DCL& maxCoord) const;
     /// returns approximate volume of domain where level set function is negative.
     double GetVolume( double translation= 0) const;
     /// volume correction to ensure no loss or gain of mass.
