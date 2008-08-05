@@ -365,6 +365,7 @@ class EnsightWriterCL
                 datvec_,
                 datscl_,
                 datprx_,
+                datxidx_,
                 datsf_,
                 datc_,
                 datct_;
@@ -384,14 +385,15 @@ EnsightWriterCL::EnsightWriterCL (MultiGridCL& MG, const IdxDescCL* idx, const P
 {
     if (C.EnsCase == "none") return; // no ensight output
     const std::string filename= C.EnsDir + "/" + C.EnsCase;
-    datgeo_= filename+".geo";
-    datpr_ = filename+".pr" ;
-    datvec_= filename+".vel";
-    datscl_= filename+".scl";
-    datprx_= filename+".prx";
-    datsf_ = filename+".sf";
-    datc_  = filename+".c";
-    datct_ = filename+".ct";
+    datgeo_  = filename+".geo";
+    datpr_   = filename+".pr" ;
+    datvec_  = filename+".vel";
+    datscl_  = filename+".scl";
+    datprx_  = filename+".prx";
+    datxidx_ = filename+".xidx";
+    datsf_   = filename+".sf";
+    datc_    = filename+".c";
+    datct_   = filename+".ct";
     ensight_.CaseBegin( std::string( C.EnsCase+".case").c_str(), C.num_steps + 1);
     ensight_.DescribeGeom  ( "Messzelle",     datgeo_, true);
     ensight_.DescribeScalar( "Levelset",      datscl_, true);
@@ -436,6 +438,12 @@ EnsightWriterCL::WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset
         fff.precision( 16);
         size_t num_prx= Stokes.pr_idx.NumUnknowns - Stokes.GetXidx().GetNumUnknownsP1();
         out( fff, VectorCL( Stokes.p.Data[std::slice( Stokes.GetXidx().GetNumUnknownsP1(), num_prx, 1)]));
+
+        std::string datxidxnow( datxidx_);
+        ensight_.AppendTimecode( datxidxnow);
+        std::ofstream fxidx( datxidxnow.c_str());
+        for (Uint i=0; i< Stokes.GetXidx().Xidx.size(); ++i)
+            fxidx << Stokes.GetXidx().Xidx[i] << '\n';
     }
 }
 
@@ -506,14 +514,17 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
         // reads the P1X-part of the pressure
         if (Stokes.UsesXFEM()) {
-            std::ifstream fff( (C.IniData+".prx").c_str());
-            if (fff) {
+            std::ifstream fff  ( (C.IniData+".prx").c_str());
+            std::ifstream fxidx( (C.IniData+".xidx").c_str());
+            if (fff && fxidx) {
                 size_t NumP1XUnknowns;
                 fff >> NumP1XUnknowns;
                 if (NumP1XUnknowns != (pidx->NumUnknowns - Stokes.GetXidx().GetNumUnknownsP1()))
                     throw (DROPSErrCL("error while reading P1X unknowns"));
                 for (Uint i=Stokes.GetXidx().GetNumUnknownsP1(); i < pidx->NumUnknowns; ++i)
                     fff >> Stokes.p.Data[i];
+                for (Uint k=0; k<Stokes.GetXidx().GetNumUnknownsP1(); ++k)
+                    fxidx >> Stokes.GetXidx().Xidx[k];
             }
         }
       } break;
