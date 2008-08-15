@@ -767,7 +767,7 @@ class PeriodicEdgesCL
 
   private:
     PerEdgeContT      list_;
-    const BoundaryCL& bnd_;
+    MultiGridCL&      mg_;
 
     /// recompute data structure
     void Recompute( EdgeIterator begin, EdgeIterator end);
@@ -777,11 +777,13 @@ class PeriodicEdgesCL
     void Shrink();
 
   public:
-    PeriodicEdgesCL( const BoundaryCL& bnd) : bnd_(bnd) {}
+    PeriodicEdgesCL( MultiGridCL& mg) : mg_(mg) {}
     // standard dtor
 
     BoundaryCL::BndType GetBndType( const EdgeCL& e) const;
-    void AccumulateMFR( EdgeIterator begin, EdgeIterator end);
+    void AccumulateMFR( int lvl);
+    /// print out list of identified edges for debugging
+    void DebugInfo(std::ostream&);
 };
 
 
@@ -935,7 +937,7 @@ inline void VertexCL::BndSort ()
 // ********** EdgeCL **********
 
 inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, BndIdxT bnd1, short int MFR)
-    : _MidVertex(0), _MFR(MFR), _Level(Level), _RemoveMark(false)
+    : _MidVertex(0), _MFR(MFR), _localMFR(MFR), _Level(Level), _RemoveMark(false)
 {
     _Vertices[0]= vp0; _Vertices[1]= vp1;
     _Bnd[0]= bnd0; _Bnd[1]= bnd1;
@@ -944,7 +946,7 @@ inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, B
 
 inline EdgeCL::EdgeCL (const EdgeCL& e)
     : _Vertices(e._Vertices), _MidVertex(e._MidVertex), _Bnd(e._Bnd),
-      _MFR(e._MFR), _Level(e._Level), _RemoveMark(e._RemoveMark),
+      _MFR(e._MFR), _localMFR(e._localMFR), _Level(e._Level), _RemoveMark(e._RemoveMark),
       Unknowns(e.Unknowns) {}
 
 

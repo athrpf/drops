@@ -741,7 +741,7 @@ void EdgeCL::DebugInfo (std::ostream& os) const
     os << "EdgeCL: Level " << GetLevel()
        << "  Vertices " <<GetVertex(0)->GetId().GetIdent()
        << " " << GetVertex(1)->GetId().GetIdent() << "    "
-       << " MarkForRef " << _MFR
+       << " MarkForRef " << _MFR // << "(" << _localMFR << ")"
        << " RemoveMark " << _RemoveMark;
     os << std::endl << "  ";
     os << "Midvertex ";
@@ -980,7 +980,7 @@ BoundaryCL::BndType PeriodicEdgesCL::GetBndType( const EdgeCL& e) const
 {
     BoundaryCL::BndType type= BoundaryCL::OtherBnd;
     for (const BndIdxT *bndIt= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); bndIt!=end; ++bndIt)
-        type= std::max( type, bnd_.GetBndType(*bndIt));
+        type= std::max( type, mg_.GetBnd().GetBndType(*bndIt));
     return type;
 }   
 
@@ -999,7 +999,6 @@ void PeriodicEdgesCL::Accumulate()
 
 void PeriodicEdgesCL::Recompute( EdgeIterator begin, EdgeIterator end)
 {
-    Shrink();
     typedef std::list<EdgeCL*> psetT;
     psetT s1, s2;
     // collect all objects on Per1/Per2 bnds in s1, s2 resp.
@@ -1014,11 +1013,12 @@ void PeriodicEdgesCL::Recompute( EdgeIterator begin, EdgeIterator end)
         }
     // now we have s1.size() <= s2.size()
     // match objects in s1 and s2
+    const BoundaryCL& bnd= mg_.GetBnd();
     for (psetT::iterator it1= s1.begin(), end1= s1.end(); it1!=end1; ++it1)
     {
         // search corresponding object in s2
         for (psetT::iterator it2= s2.begin(), end2= s2.end(); it2!=end2; )
-            if (bnd_.Matching( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
+            if (bnd.Matching( GetBaryCenter( **it1), GetBaryCenter( **it2)) )
             {
                 // store pair in list_
                 list_.push_back( IdentifiedEdgesT( *it1, *it2));
@@ -1028,19 +1028,37 @@ void PeriodicEdgesCL::Recompute( EdgeIterator begin, EdgeIterator end)
             else it2++;
     }
     if (!s2.empty())
-        throw DROPSErrCL( "PeriodicEdgesCL::Update: Periodic boundaries do not match!");
+        throw DROPSErrCL( "PeriodicEdgesCL::Recompute: Periodic boundaries do not match!");
 }
+
+void PeriodicEdgesCL::DebugInfo( std::ostream& os)
+{
+    int num= 0;
+    for (PerEdgeContT::iterator it= list_.begin(), end=  list_.end(); it!=end; ++it, ++num)
+    {
+    	it->first->DebugInfo( os);
+    	os << "\t\t<-- " << num << " -->\n";
+    	it->second->DebugInfo( os);
+    	os << "===================================================================\n";
+    }
+    os << num << " identified edges found.\n\n";	
+}
+
 
 void PeriodicEdgesCL::Shrink()
 {
     list_.clear();
 }
 
-void PeriodicEdgesCL::AccumulateMFR( EdgeIterator begin, EdgeIterator end)
+void PeriodicEdgesCL::AccumulateMFR( int lvl)
 {
-    if (!bnd_.HasPeriodicBnd()) return;
-    Recompute( begin, end);
+    if (!mg_.GetBnd().HasPeriodicBnd()) return;
+    Shrink();
+    for (int i=0; i<=lvl; ++i)
+        Recompute( mg_.GetEdgesBegin(i), mg_.GetEdgesEnd(i));
+//std::cerr << " \n>>> After Recompute:\n"; DebugInfo( std::cerr);
     Accumulate();
+//std::cerr << " \n>>> After Accumulate:\n"; DebugInfo( std::cerr);
     Shrink();
 }
 
@@ -1157,13 +1175,13 @@ void MultiGridCL::Refine()
 {
     const int tmpLastLevel( GetLastLevel() );
 
-    PeriodicEdgesCL perEdges( _Bnd);
+    PeriodicEdgesCL perEdges( *this);
     ClearTriangCache();
     PrepareModify();
     for (int Level=tmpLastLevel; Level>=0; --Level)
     {
         RestrictMarks(Level);
-        perEdges.AccumulateMFR( _Edges[Level].begin(), _Edges[Level].end());
+        perEdges.AccumulateMFR( Level);
         CloseGrid(Level);
     }
 
