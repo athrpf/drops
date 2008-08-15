@@ -11,8 +11,10 @@
 #include "num/stokessolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
+#include "levelset/adaptriang.h"
 #include "levelset/coupling.h"
 #include "levelset/params.h"
+#include "levelset/mgobserve.h"
 #include <fstream>
 
 
@@ -69,10 +71,10 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     // wave length = 100 x film width
-    const double wave= C.PumpAmpl*std::sin(2*M_PI*p[0]/C.mesh_size[0]),
+    const double wave= std::sin(2*M_PI*p[0]/C.mesh_size[0]),
         z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
-//    return p[1] - C.Filmdicke * (1 + wave);
-    return p[1] - C.Filmdicke * (1 + wave*std::cos(z*M_PI));
+//    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*wave);
+    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*(wave + 0.2*std::cos(z*M_PI)));
 }
 
 bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
@@ -122,8 +124,29 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
          {}
 };
 
+/// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Ensight index.
+///
+/// The actual work is done in post_refine().
+class EnsightIdxRepairCL: public MGObserverCL
+{
+  private:
+	MultiGridCL& mg_;
+	IdxDescCL&   idx_;
+	
+  public:
+	 EnsightIdxRepairCL( MultiGridCL& mg, IdxDescCL& idx) 
+	    : mg_(mg), idx_(idx) {}
+	
+    void pre_refine  () {}
+    void post_refine () { DeleteNumb( idx_, mg_); CreateNumb( mg_.GetLastLevel(), idx_, mg_, NoBndDataCL<>()); } 
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
+};
+
+
 template<class StokesProblemT>
-void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset)
+void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
@@ -131,7 +154,16 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset)
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    IdxDescCL ens_idx( 1, 1);
+    IdxDescCL ens_idx( P2_FE);
+
+    LevelsetRepairCL lsetrepair( lset);
+    adap.push_back( &lsetrepair);
+    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    adap.push_back( &velrepair);
+    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    adap.push_back( &prrepair);
+    EnsightIdxRepairCL ensrepair( MG, ens_idx);
+    adap.push_back( &ensrepair);
 
     lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_xz);
     lset.Phi.SetIdx( lidx);
@@ -195,7 +227,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset)
         Stokes.InitVel( &Stokes.v, ZeroVel);
     }
 
-    const double Vol= C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
+    const double Vol= lset.GetVolume(); // approx. C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     EnsightP2SolOutCL ensight( MG, &ens_idx);
@@ -205,12 +237,12 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset)
                  datvec= filename+".vel",
                  datscl= filename+".scl";
     ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "falling film", datgeo);
+    ensight.DescribeGeom( "falling film", datgeo, true);
     ensight.DescribeScalar( "Levelset", datscl, true);
     ensight.DescribeScalar( "Pressure", datpr,  true);
     ensight.DescribeVector( "Velocity", datvec, true);
 
-    ensight.putGeom( datgeo);
+    ensight.putGeom( datgeo, 0);
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
     ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
     ensight.putScalar( datscl, lset.GetSolution(), 0);
@@ -263,7 +295,11 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset)
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
+            if (C.ref_freq != 0)
+                adap.UpdateTriang( lset);
+            cpl.Update();
         }
+        ensight.putGeom( datgeo, step*C.dt);
         ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
         ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
@@ -396,11 +432,8 @@ int main (int argc, char** argv)
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
 
-    for (int i=0; i<C.ref_flevel; ++i)
-    {
-        MarkLower( mg, C.ref_width);
-        mg.Refine();
-    }
+    DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
+    adap.MakeInitialTriang( DistanceFct);
 
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
     mg.SizeInfo( std::cerr);
@@ -408,7 +441,7 @@ int main (int argc, char** argv)
               << C.rhoF*C.rhoF*C.g[0]*std::pow(C.Filmdicke,3)/C.muF/C.muF/3 << std::endl;
     std::cerr << "max. inflow velocity at film surface = "
               << C.rhoF*C.g[0]*C.Filmdicke*C.Filmdicke/C.muF/2 << std::endl;
-    Strategy( prob, lset);  // do all the stuff
+    Strategy( prob, lset, adap);  // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
