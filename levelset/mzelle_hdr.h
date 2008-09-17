@@ -73,6 +73,45 @@ class EllipsoidCL
 DROPS::Point3DCL EllipsoidCL::Mitte_;
 DROPS::Point3DCL EllipsoidCL::Radius_;
 
+// collision setting (rising butanol droplet in water)
+//  RadDrop1 =  1.50e-3  1.500e-3  1.50e-3
+//  PosDrop1 =  6.00e-3  3.000e-3  6.00e-3
+//  RadDrop2 =  0.75e-3  0.750e-3  0.75e-3
+//  PosDrop2 =  6.00e-3  5.625e-3  6.00e-3
+//  MeshFile =  12e-3x30e-3x12e-3@4x10x4
+
+class TwoEllipsoidCL
+{
+  private:
+    static DROPS::Point3DCL Mitte1_,  Mitte2_;
+    static DROPS::Point3DCL Radius1_, Radius2_;
+
+  public:
+    TwoEllipsoidCL( const DROPS::Point3DCL& Mitte1, const DROPS::Point3DCL& Radius1,
+                    const DROPS::Point3DCL& Mitte2, const DROPS::Point3DCL& Radius2)
+    { Init( Mitte1, Radius1, Mitte2, Radius2); }
+    static void Init( const DROPS::Point3DCL& Mitte1, const DROPS::Point3DCL& Radius1,
+                      const DROPS::Point3DCL& Mitte2, const DROPS::Point3DCL& Radius2)
+    { Mitte1_= Mitte1;    Radius1_= Radius1;
+      Mitte2_= Mitte2;    Radius2_= Radius2;}
+    static double DistanceFct( const DROPS::Point3DCL& p)
+    {
+        DROPS::Point3DCL d1= p - Mitte1_;
+        const double avgRad1= cbrt(Radius1_[0]*Radius1_[1]*Radius1_[2]);
+        d1/= Radius1_;
+        DROPS::Point3DCL d2= p - Mitte2_;
+        const double avgRad2= cbrt(Radius2_[0]*Radius2_[1]*Radius2_[2]);
+        d2/= Radius2_;
+        return std::min(std::abs( avgRad1)*d1.norm() - avgRad1, std::abs( avgRad2)*d2.norm() - avgRad2);
+    }
+    static double GetVolume() { return 4./3.*M_PI*Radius1_[0]*Radius1_[1]*Radius1_[2]
+        + 4./3.*M_PI*Radius2_[0]*Radius2_[1]*Radius2_[2]; }
+};
+
+DROPS::Point3DCL TwoEllipsoidCL::Mitte1_;
+DROPS::Point3DCL TwoEllipsoidCL::Radius1_;
+DROPS::Point3DCL TwoEllipsoidCL::Mitte2_;
+DROPS::Point3DCL TwoEllipsoidCL::Radius2_;
 
 class InterfaceInfoCL
 {
