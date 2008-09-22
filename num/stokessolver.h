@@ -294,6 +294,31 @@ class BlockPreCL
     }
 };
 
+// StokesSolverBaseCL can be used as a preconditioner for the methods in solver.h
+class StokesSolverAsPreCL
+{
+  private:
+    mutable StokesSolverBaseCL& solver_;
+    mutable std::ostream* output_;
+
+  public:
+    StokesSolverAsPreCL( StokesSolverBaseCL& solver, int max_iter, std::ostream* output= 0)
+        : solver_( solver), output_( output) {solver.SetMaxIter(max_iter);}
+
+    void
+    Apply(const BlockMatrixCL& M, VectorCL& x, const VectorCL& rhs) const {
+        VectorCL v(M.num_cols( 0)), p(M.num_cols( 1)),
+                 b(rhs[std::slice( 0, M.num_rows( 0), 1)]),
+                 c(rhs[std::slice( M.num_rows( 0), M.num_rows( 1), 1)]);
+        solver_.Solve(*M.GetBlock(0), *M.GetBlock(1), v, p, b, c);
+        x[std::slice( 0, M.num_cols( 0), 1)]= v;
+        x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)]= p;
+        if (output_ != 0)
+            *output_<< "StokesSolverAsPreCL: iterations: " << solver_.GetIter()
+                    << "\trelative residual: " << solver_.GetResid() << std::endl;
+    }
+};
+
 //=============================================================================
 //  SchurComplMatrixCL
 //=============================================================================
