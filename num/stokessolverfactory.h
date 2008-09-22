@@ -314,22 +314,22 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
             stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResBiCGStabMinComm_);
         break;
         case 51 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockMGBBTOseenPcT> >       ( GMResMGBBT_);
+            stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockMGBBTOseenPcT> >       ( GMResRMGBBT_);
         break;
         case 52 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockMGMinCommOseenPcT> >   ( GMResMGMinComm_);
+            stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockMGMinCommOseenPcT> >   ( GMResRMGMinComm_);
         break;
         case 53 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockGMResBBTOseenPcT> >    ( GMResGMResBBT_);
+            stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockGMResBBTOseenPcT> >    ( GMResRGMResBBT_);
         break;
         case 54 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockGMResMinCommOseenPcT> >( GMResGMResMinComm_);
+            stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockGMResMinCommOseenPcT> >( GMResRGMResMinComm_);
         break;
         case 55 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGBBTOseenPcT> >     ( GMResBiCGStabBBT_);
+            stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockBiCGBBTOseenPcT> >     ( GMResRBiCGStabBBT_);
         break;
         case 56 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResBiCGStabMinComm_);
+            stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResRBiCGStabMinComm_);
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
