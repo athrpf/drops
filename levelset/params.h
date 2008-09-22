@@ -24,6 +24,9 @@ class ParamMesszelleCL: public ParamBaseCL
            outer_tol;
     int    inner_iter,                          ///< max. number of iterations for Stokes solver
            outer_iter;
+    int    pcA_iter;                            ///< max. number of iterations for the preconditionier
+    double pcA_tol,                             ///< tolerance for the preconditioner
+           pcS_tol;
     //@}
     /// \name Level Set
     //@{

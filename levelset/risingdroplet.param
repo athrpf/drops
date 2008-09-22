@@ -16,9 +16,12 @@ Time {
 Stokes {
   InnerIter	=	1000
   OuterIter	=	200
-  InnerTol	=	1e-10
+  InnerTol	=	0.6
   OuterTol	=	1e-6
-  StokesMethod	=	211	# 1*= GCR, 2*= InexactUzawa(Stokes), 3* MinRes
+  StokesMethod	=	211	# 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
+  PcAIter	=       2	# V-cycles multigrid, iter pc for A block
+  PcATol	=	1e-2
+  PcSTol	=	1e-4
 }
 
 NavStokes {

@@ -19,6 +19,9 @@ Stokes {
   InnerTol	=	1e-15
   OuterTol	=	1e-11
   StokesMethod	= 1
+  PcAIter	=       2	# no effect
+  PcATol	=	1e-2    # no effect
+  PcSTol	=	1e-4    # no effect
 }
 
 # levelset solver

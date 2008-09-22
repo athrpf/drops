@@ -14,6 +14,7 @@
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
 #include "poisson/transport2phase.h"
+#include "num/stokessolverfactory.h"
 #include <fstream>
 #include <sstream>
 
@@ -107,211 +108,6 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
     s << Stokes.N.Data;
     s.close();
 }
-
-/* Available stokes solver
- *   no | Solver         | APc       | SPc     | PC structure
- ------------------------------------------------------------
- *   11 | GCR            | MG        | BBT     | lower block
- *   12 | GCR            | MG        | MinComm | lower block
- *   13 | GCR            | GMRes     | BBT     | lower block
- *   14 | GCR            | GMRes     | MinComm | lower block
- ------------------------------------------------------------
- *   21 | Inexact Uzawa  | asymm. MG | BBT     |
- *   22 | Inexact Uzawa  | asymm. MG | MinComm |
- *  221 | Inexact Uzawa  | symm. MG  | BBT     |
- *  222 | Inexact Uzawa  | symm. MG  | MinComm |
- *   23 | Inexact Uzawa  | GMRes     | BBT     |
- *   24 | Inexact Uzawa  | GMRes     | MinComm |
- *   25 | Inexact Uzawa  | SSORPCG   | BBT     |
- *   26 | Inexact Uzawa  | SSORPCG   | MinComm |
- ------------------------------------------------------------
- *   31 | PMinRes        | MG        | BBT     | diag
- *   32 | PMinRes        | MG        | MinComm | diag
- *   33 | PMinRes        | SSORPCG   | BBT     | diag
- *   34 | PMinRes        | SSORPCG   | MinComm | diag*/
-
-template <class StokesT>
-class StokesSolverFactory
-{
-  private:
-    StokesT& Stokes_;
-    int    outer_iter_;
-    double outer_tol_;
-    double kA_, kM_;
-    bool   mgused_;
-
-// PC for instat. Schur complement
-    ISBBTPreCL bbtispc_;
-
-    MinCommPreCL mincommispc_;
-
-// PC for A-block
-    // MultiGrid
-    MGDataCL velMG_;
-    SSORsmoothCL smoother_;
-    PCG_SsorCL   coarsesolver_;
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGSolver_;
-    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPcT;
-    MGPcT MGPc_;
-
-    //JAC-GMRes
-    JACPcCL  JACPc_;
-    typedef GMResSolverCL<JACPcCL> GMResSolverT;        // GMRes-based APcT
-    GMResSolverT GMResSolver_;
-    typedef SolverAsPreCL<GMResSolverT> GMResPcT;
-    GMResPcT GMResPc_;
-
-    //PCG
-    SSORPcCL SSORPc_;
-    typedef PCGSolverCL<SSORPcCL> PCGSolverT;           // CG-based APcT
-    PCGSolverT PCGSolver_;
-    typedef SolverAsPreCL<PCGSolverT> PCGPcT;
-    PCGPcT PCGPc_;
-
-// PC for Oseen problem
-    typedef BlockPreCL<MGPcT,    ISBBTPreCL>   DiagMGBBTOseenPcT;
-    typedef BlockPreCL<MGPcT,    MinCommPreCL> DiagMGMinCommOseenPcT;
-    typedef BlockPreCL<PCGPcT,   ISBBTPreCL>   DiagPCGBBTOseenPcT;
-    typedef BlockPreCL<PCGPcT,   MinCommPreCL> DiagPCGMinCommOseenPcT;
-
-    typedef BlockPreCL<MGPcT,    ISBBTPreCL,   LowerBlockPreCL> LBlockMGBBTOseenPcT;
-    typedef BlockPreCL<MGPcT,    MinCommPreCL, LowerBlockPreCL> LBlockMGMinCommOseenPcT;
-    typedef BlockPreCL<GMResPcT, ISBBTPreCL,   LowerBlockPreCL> LBlockGMResBBTOseenPcT;
-    typedef BlockPreCL<GMResPcT, MinCommPreCL, LowerBlockPreCL> LBlockGMResMinCommOseenPcT;
-
-    DiagMGBBTOseenPcT         DiagMGBBTOseenPc_;
-    DiagMGMinCommOseenPcT     DiagMGMinCommOseenPc_;
-    DiagPCGBBTOseenPcT        DiagPCGBBTOseenPc_;
-    DiagPCGMinCommOseenPcT    DiagPCGMinCommOseenPc_;
-
-    LBlockMGBBTOseenPcT        LBlockMGBBTOseenPc_;
-    LBlockMGMinCommOseenPcT    LBlockMGMinCommOseenPc_;
-    LBlockGMResBBTOseenPcT     LBlockGMResBBTOseenPc_;
-    LBlockGMResMinCommOseenPcT LBlockGMResMinCommOseenPc_;
-
-// GCR solver
-    GCRSolverCL<LBlockMGBBTOseenPcT>        GCRMGBBT_;
-    GCRSolverCL<LBlockMGMinCommOseenPcT>    GCRMGMinComm_;
-    GCRSolverCL<LBlockGMResBBTOseenPcT>     GCRGMResBBT_;
-    GCRSolverCL<LBlockGMResMinCommOseenPcT> GCRGMResMinComm_;
-
-// Lanczos
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagMGBBTOseenPcT>      Lanczos1T;
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagMGMinCommOseenPcT>  Lanczos2T;
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagPCGBBTOseenPcT>     Lanczos3T;
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagPCGMinCommOseenPcT> Lanczos4T;
-
-    Lanczos1T lanczos1_;
-    Lanczos2T lanczos2_;
-    Lanczos3T lanczos3_;
-    Lanczos4T lanczos4_;
-
-// MinRes solver
-    PMResSolverCL<Lanczos1T> PMinResMGBBT_;
-    PMResSolverCL<Lanczos2T> PMinResMGMinComm_;
-    PMResSolverCL<Lanczos3T> PMinResPCGBBT_;
-    PMResSolverCL<Lanczos4T> PMinResPCGMinComm_;
-
-  public:
-    StokesSolverFactory(StokesT& Stokes, int outer_iter, double outer_tol, /*1/dt*/ double kA=1, /*theta*/ double kM=1)
-        : Stokes_(Stokes), outer_iter_(outer_iter), outer_tol_(outer_tol), kA_(kA), kM_(kM), mgused_(false),
-            bbtispc_( Stokes_.B.Data, Stokes_.prM.Data, Stokes_.M.Data, kA_, kM_, 1e-4, 1e-4),
-            mincommispc_( 0, Stokes_.B.Data, Stokes_.M.Data, Stokes_.prM.Data, 1e-4),
-            smoother_( 1.0), coarsesolver_( SSORPcCL(1.0), 500, 1e-16),
-            MGSolver_ ( velMG_, smoother_, coarsesolver_, 2, -1.0, false), MGPc_( MGSolver_),
-            GMResSolver_( JACPc_, 500, /*restart*/ 100, 1e-2, /*relative=*/ true), GMResPc_( GMResSolver_),
-            PCGSolver_( SSORPc_, 500, 0.02, true), PCGPc_( PCGSolver_),
-            DiagMGBBTOseenPc_        ( MGPc_,    bbtispc_), DiagMGMinCommOseenPc_    ( MGPc_,    mincommispc_),
-            DiagPCGBBTOseenPc_       ( PCGPc_,   bbtispc_), DiagPCGMinCommOseenPc_   ( PCGPc_,   mincommispc_),
-            LBlockMGBBTOseenPc_      ( MGPc_,    bbtispc_), LBlockMGMinCommOseenPc_   ( MGPc_,    mincommispc_),
-            LBlockGMResBBTOseenPc_   ( GMResPc_, bbtispc_), LBlockGMResMinCommOseenPc_( GMResPc_, mincommispc_),
-            GCRMGBBT_        ( LBlockMGBBTOseenPc_,        /*trunc*/ outer_iter, outer_iter, outer_tol, /*rel*/ false),
-            GCRMGMinComm_    ( LBlockMGMinCommOseenPc_,    /*trunc*/ outer_iter, outer_iter, outer_tol, /*rel*/ false),
-            GCRGMResBBT_     ( LBlockGMResBBTOseenPc_,     /*trunc*/ outer_iter, outer_iter, outer_tol, /*rel*/ false),
-            GCRGMResMinComm_ ( LBlockGMResMinCommOseenPc_, /*trunc*/ outer_iter, outer_iter, outer_tol, /*rel*/ false),
-            lanczos1_ (DiagMGBBTOseenPc_),  lanczos2_ (DiagMGMinCommOseenPc_),
-            lanczos3_ (DiagPCGBBTOseenPc_), lanczos4_ (DiagPCGMinCommOseenPc_),
-            PMinResMGBBT_     ( lanczos1_, outer_iter, outer_tol, /*relative*/ false),
-            PMinResMGMinComm_ ( lanczos2_, outer_iter, outer_tol, /*relative*/ false),
-            PMinResPCGBBT_    ( lanczos3_, outer_iter, outer_tol, /*relative*/ false),
-            PMinResPCGMinComm_( lanczos4_, outer_iter, outer_tol, /*relative*/ false)
-            {}
-
-    ~StokesSolverFactory() {}
-
-    MGDataCL&  GetVelMG() {return velMG_;}
-    void       SetMatrixA (const MatrixCL* A) {mincommispc_.SetMatrixA(A);}
-    bool       MGUsed()   {return mgused_;}
-
-    StokesSolverBaseCL* CreateStokesSolver(int StokesMethod)
-    {
-        StokesSolverBaseCL* stokessolver = 0;
-        switch (StokesMethod)
-        {
-            case 11 :
-                stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGBBTOseenPcT> >       ( GCRMGBBT_);
-            break;
-            case 12 :
-                stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGMinCommOseenPcT> >   ( GCRMGMinComm_);
-            break;
-            case 13 :
-                stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockGMResBBTOseenPcT> >    ( GCRGMResBBT_);
-            break;
-            case 14 :
-                stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockGMResMinCommOseenPcT> >( GCRGMResMinComm_);
-            break;
-            case 211 :
-                stokessolver = new InexactUzawaCL<MGPcT, ISBBTPreCL,      APC_SYM>
-                            ( MGPc_, bbtispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 222 :
-                stokessolver = new InexactUzawaCL<MGPcT, MinCommPreCL,    APC_SYM>
-                            ( MGPc_, mincommispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 21 :
-                stokessolver = new InexactUzawaCL<MGPcT, ISBBTPreCL,      APC_OTHER>
-                            ( MGPc_, bbtispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 22 :
-                stokessolver = new InexactUzawaCL<MGPcT, MinCommPreCL,    APC_OTHER>
-                            ( MGPc_, mincommispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 23 :
-                stokessolver = new InexactUzawaCL<GMResPcT, ISBBTPreCL,   APC_OTHER>
-                            ( GMResPc_, bbtispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 24 :
-                stokessolver = new InexactUzawaCL<GMResPcT, MinCommPreCL, APC_OTHER>
-                            ( GMResPc_, mincommispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 25 :
-                stokessolver = new InexactUzawaCL<PCGPcT, ISBBTPreCL,     APC_SYM>
-                            ( PCGPc_, bbtispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 26 :
-                stokessolver = new InexactUzawaCL<PCGPcT, MinCommPreCL,   APC_SYM>
-                            ( PCGPc_, mincommispc_, outer_iter_, outer_tol_, 0.6);
-            break;
-            case 31 :
-                stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos1T> >( PMinResMGBBT_);
-            break;
-            case 32 :
-                stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos2T> >( PMinResMGMinComm_);
-            break;
-            case 33 :
-                stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos3T> >( PMinResPCGBBT_);
-            break;
-            case 34 :
-                stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos4T> >( PMinResPCGMinComm_);
-            break;
-            default: throw DROPSErrCL("Unknown StokesMethod");
-        }
-        mgused_ = (C.StokesMethod == 11 || C.StokesMethod == 12 || C.StokesMethod == 21 ||
-                   C.StokesMethod == 22 || C.StokesMethod == 31 || C.StokesMethod == 32 ||
-                   C.StokesMethod == 211 || C.StokesMethod == 222);
-        return stokessolver;
-    }
-};
 
 template< class StokesProblemT>
 TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
@@ -564,8 +360,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     writer.WriteAtTime( Stokes, lset, sigmap, c, 0.);
 
     // Stokes-Solver
-    StokesSolverFactory<StokesProblemT> stokessolverfactory(Stokes, C.outer_iter, C.outer_tol, 1.0/C.dt, C.theta);
-    StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver(C.StokesMethod);
+    StokesSolverFactoryCL<StokesProblemT, ParamMesszelleCL> stokessolverfactory(Stokes, C);
+    StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
 
     // Navier-Stokes-Solver
     NSSolverBaseCL<StokesProblemT>* navstokessolver = 0;
@@ -739,8 +535,7 @@ int main (int argc, char** argv)
     DROPS::StokesBndDataCL* bnddata= 0;
 
     CreateGeom(mg, bnddata);
-
-    EllipsoidCL::Init( C.Mitte, C.Radius );
+    EllipsoidCL::Init( C.Mitte, C.Radius);
 
     DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel);
 
