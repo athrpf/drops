@@ -4,7 +4,7 @@
 
 # variables:
 
-PACKAGES = geom num out misc poisson stokes navstokes tests levelset
+PACKAGES = geom num out misc poisson stokes navstokes tests levelset surfactant
 
 DROPS_ROOT = .
 
