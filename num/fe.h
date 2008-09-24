@@ -442,7 +442,7 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
-    double t_;
+    mutable double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const VertexCL& s) const {
@@ -477,7 +477,7 @@ public:
     GetLevel() const // Triangulation level of this function
         { return _sol->GetLevel(); }
     void // set / get the time
-    SetTime(double t)
+    SetTime(double t) const
         { t_= t; }
     double
     GetTime() const
@@ -567,7 +567,7 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
-    double t_;
+    mutable double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const FaceCL& s) const {
@@ -602,7 +602,7 @@ public:
     GetLevel() const // Triangulation level of this function
         { return _sol->GetLevel(); }
     void // set / get the time
-    SetTime(double t)
+    SetTime(double t) const
         { t_= t; }
     double
     GetTime() const
