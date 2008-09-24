@@ -48,9 +48,9 @@ template<class T>
     const Uint tlvl= s.GetLevel();
     const Uint flvl= f.GetLevel();
     const double tmp= f.GetTime();
-    const_cast<P1FunT&>( f).SetTime( t);
+    f.SetTime( t);
     f.GetDoF( s, *this);
-    const_cast<P1FunT&>( f).SetTime( tmp);
+    f.SetTime( tmp);
     return *this;
 }
 
@@ -138,13 +138,13 @@ template<class T>
     const Uint tlvl= s.GetLevel();
     const Uint flvl= f.GetLevel();
     const double tmp= f.GetTime();
-    const_cast<P2FunT&>( f).SetTime( t);
+    f.SetTime( t);
     if (tlvl == flvl)
         f.GetDoF( s, *this);
     else
         if (tlvl < flvl) RestrictP2( s, f, *this);
         else throw DROPSErrCL( "LocalP2CL::Assign: Prolongation not implemented.\n");
-    const_cast<P2FunT&>( f).SetTime( tmp);
+    f.SetTime( tmp);
     return *this;
 }
 
@@ -246,11 +246,11 @@ template<class T>
     Quad2CL<T>::assign(const TetraCL& s, const P2FunT& f, double t)
 {
     const double oldt= f.GetTime();
-    const_cast<P2FunT&>( f).SetTime( t);
+    f.SetTime( t);
     for (Uint i= 0; i<NumNodesC-1; ++i)
         (*this)[i]= f.val( *s.GetVertex( i));
     (*this)[NumNodesC-1]= f.val( s, 0.25, 0.25, 0.25);
-    const_cast<P2FunT&>( f).SetTime( oldt);
+    f.SetTime( oldt);
     return *this;
 }
 
