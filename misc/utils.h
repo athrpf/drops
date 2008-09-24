@@ -8,7 +8,8 @@
 // #include <limits> ///< \todo Do we have limits with gcc-snapshots or SGI-CC?
 #include <functional>
 #include <algorithm>
-#include <iosfwd>
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <sys/time.h>
@@ -357,6 +358,25 @@ void
 seq_out (Iterator begin, Iterator end, std::ostream& out)
 {
     for (; begin != end; ++begin) out << *begin << '\n';
+}
+
+/// \brief Output obj via operator<<  to a file filename.
+///
+/// The filename and an optional name are reported on std::cerr.
+template <class StreamableT>
+void
+WriteToFile (const StreamableT& obj, std::string filename , std::string name= std::string())
+{
+    std::ofstream mystream( filename.c_str());
+    mystream.precision( 18);
+    if (!mystream) {
+        std::cerr << filename << std::endl;
+        throw DROPSErrCL( "WriteToFile: error while opening file\n");
+    }
+    std::cerr << "Writing to file \"" << filename << "\".    Description: " << name << '\n';
+    mystream << obj << std::flush;
+    if (!mystream)
+        throw DROPSErrCL( "WriteToFile: write failed\n");
 }
 
 /// \brief Functor to select the second component of a std::pair-like type.
