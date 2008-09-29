@@ -1235,6 +1235,7 @@ class SolverBaseCL
     SolverBaseCL (int maxiter, double tol, bool rel= false, std::ostream* output= 0)
         : _maxiter( maxiter), _iter( -1), _tol( tol), _res( -1.),
           rel_( rel), output_( output)  {}
+    virtual ~SolverBaseCL() {}
 
   public:
     virtual void   SetTol     (double tol) { _tol= tol; }
