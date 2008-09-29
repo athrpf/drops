@@ -1158,6 +1158,39 @@ void InterfacePatchCL::ComputeSubTets()
         } //intersec_==4 Ende
     } //Ende der Schleife ueber die Kinder
 }
+void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) const
+{
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    InterfacePatchCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    maxGradPhi= -1.;
+    minGradPhi= 1e99;
+
+    DROPS_FOR_TRIANG_TETRA( MG_, MG_.GetLastLevel(), it)
+    {
+        GetTrafoTr( T, det, *it);
+        absdet= std::abs( det);
+        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
+        patch.Init( *it, Phi);
+
+        // compute maximal norm of grad Phi
+        Quad2CL<Point3DCL> gradPhi;
+        for (int v=0; v<10; ++v) // init gradPhi, Coord
+        {
+            gradPhi+= patch.GetPhi(v)*Grad[v];
+        }
+        VectorCL normGrad( 5); 
+        for (int v=0; v<5; ++v) // init normGrad
+            normGrad[v]= norm( gradPhi[v]);
+        const double maxNorm= normGrad.max();
+        const double minNorm= normGrad.min();
+        if (maxNorm > maxGradPhi) maxGradPhi= maxNorm;
+        if (minNorm < minGradPhi) minGradPhi= minNorm;
+    }
+}
 
 } // end of namespace DROPS
 

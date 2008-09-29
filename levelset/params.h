@@ -90,6 +90,8 @@ class ParamMesszelleCL: public ParamBaseCL
     //@{
     int    RepFreq,                             ///< frequency (after how many time steps grid should be reparametrized)
            RepMethod;                           ///< 0/1 = fast marching without/with modification of zero level set
+    double MinGrad,                             ///< minimal allowed norm of the gradient of phi
+           MaxGrad;                             ///< maximal allowed norm of the gradient of phi
     //@}
     ///\name Mass Transport
     //@{

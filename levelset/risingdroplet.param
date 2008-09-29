@@ -52,6 +52,8 @@ Coupling {
 Reparam {
   Freq		=	10	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero
+  MinGrad	=	0.1	# minimal allowed norm of the gradient of phi
+  MaxGrad	=	10	# maximal allowed norm of the gradient of phi
 }
 
 # adaptive refinement

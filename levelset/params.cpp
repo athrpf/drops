@@ -44,6 +44,8 @@ void ParamMesszelleCL::RegisterParams()
     rp_.BeginGroup("Reparam");
     rp_.RegInt( RepFreq,      "Freq");
     rp_.RegInt( RepMethod,    "Method");
+    rp_.RegDouble( MinGrad,   "MinGrad");
+    rp_.RegDouble( MaxGrad,   "MaxGrad");
     rp_.EndGroup();
 
     rp_.BeginGroup("AdaptRef");

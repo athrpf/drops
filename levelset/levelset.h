@@ -106,6 +106,8 @@ class LevelsetP2CL
     /// returns information about level set function and interface.
     template<class DiscVelSolT>
     void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& vel_sol, Point3DCL& minCoord, Point3DCL& maxCoord) const;
+    /// returns the maximum and minimum of the gradient of phi
+    void   GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) const;
     /// returns approximate volume of domain where level set function is negative.
     double GetVolume( double translation= 0) const;
     /// volume correction to ensure no loss or gain of mass.

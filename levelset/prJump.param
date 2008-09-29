@@ -44,6 +44,8 @@ Coupling {
 Reparam {
   Method	=	1
   Freq		=	0	# 0 = no reparametrization
+  MinGrad	=	0.1     # no effect
+  MaxGrad	=	10	# no effect
 }
 
 # material data, all units are SI
