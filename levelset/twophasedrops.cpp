@@ -107,6 +107,18 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
     s.open( n.str().c_str());
     s << Stokes.N.Data;
     s.close();
+
+    n.str( "");
+    n << pfad << "v" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.v.Data;
+    s.close();
+
+    n.str( "");
+    n << pfad << "p" << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    s.open( n.str().c_str());
+    s << Stokes.p.Data;
+    s.close();
 }
 
 template< class StokesProblemT>
@@ -380,48 +392,48 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
-    std::ofstream out("lset.info");
+    bool forceVolCorr(false), forceUpdate(false);
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== step " << step << ":\n";
 
         IFInfo.Update( lset, Stokes.GetVelSolution());
-        IFInfo.Write(infofile);
+        if (step == 1)
+            IFInfo.WriteHeader(infofile);
+        IFInfo.Write(Stokes.t, infofile);
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
 
-//        WriteMatrices( Stokes, step);
+        //WriteMatrices( Stokes, step);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-        out << lsetmaxGradPhi << '\t' << lsetminGradPhi << std::endl;
 
-        if (C.RepFreq && step%C.RepFreq==0) { // reparam levelset function
-            if (C.VolCorr) {
+        // volume correction before reparam/grid modification
+        if (C.VolCorr && ((C.RepFreq && step%C.RepFreq==0) || (step%C.ref_freq == 0))) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            }
+                forceUpdate = true; // volume correction modifies the level set
+        }
+
+        // reparam levelset function
+        if (C.RepFreq && step%C.RepFreq==0) {
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             if (lsetmaxGradPhi > C.MaxGrad || lsetminGradPhi < C.MinGrad) {
                 std::cerr << "before reparametrisation: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n'; 
                 lset.ReparamFastMarching( C.RepMethod);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-                std::cerr << "after  reparametrisation: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n'; 
+                std::cerr << "after  reparametrisation: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+                forceVolCorr = forceUpdate = true; // volume correction and update after reparam
             }
         }
-        if (step%C.ref_freq == 0) { // grid modification
-            if (C.VolCorr) {
-                double dphi= lset.AdjustVolume( Vol, 1e-9);
-                std::cerr << "volume correction is " << dphi << std::endl;
-                lset.Phi.Data+= dphi;
-                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            }
+
+        // grid modification
+        if (step%C.ref_freq == 0) {
             adap.UpdateTriang( lset);
-            if (adap.WasModified()) {
-                timedisc->Update();
-                if (C.transp_do) c.Update();
-            }
+            forceUpdate  |= adap.WasModified();
+            forceVolCorr |= adap.WasModified();
             if (C.serialization_file != "none" && C.ref_freq != 0) {
                 std::stringstream filename;
                 filename << C.serialization_file;
@@ -431,12 +443,24 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
                 ser.WriteMG();
             }
         }
-        if (C.VolCorr) {
+
+        // volume correction
+        if (C.VolCorr && (step%C.VolCorr==0 || forceVolCorr)) {
             double dphi= lset.AdjustVolume( Vol, 1e-9);
             std::cerr << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
             std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            forceVolCorr = false;
+            forceUpdate  = true;
         }
+
+        // update
+        if (forceUpdate) {
+            timedisc->Update();
+            if (C.transp_do) c.Update();
+            forceUpdate = false;
+        }
+
         writer.WriteAtTime( Stokes, lset, sigmap, c, step*C.dt);
     }
     std::cerr << std::endl;

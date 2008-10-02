@@ -118,15 +118,18 @@ class InterfaceInfoCL
   public:
     DROPS::Point3DCL bary, vel, min, max;
     double maxGrad, Vol, h_min, h_max;
-    
+
     template<class DiscVelSolT>
     void Update (const DROPS::LevelsetP2CL& ls, const DiscVelSolT& u) {
         ls.GetInfo( maxGrad, Vol, bary, vel, u, min, max);
         std::pair<double, double> h= h_interface( ls.GetMG().GetTriangEdgeBegin( ls.Phi.RowIdx->TriangLevel), ls.GetMG().GetTriangEdgeEnd( ls.Phi.RowIdx->TriangLevel), ls.Phi);
         h_min= h.first; h_max= h.second;
     }
-    void Write (std::ofstream& file) {
-        file << bary << " " << min << " " << max << " " << vel << " " << maxGrad << " " << Vol << " " << h_min << " " << h_max << std::endl;
+    void WriteHeader(std::ofstream& file) {
+        file << "# time maxGradPhi volume bary_drop min_drop max_drop vel_drop h_min h_max" << std::endl;
+    }
+    void Write (double time, std::ofstream& file) {
+        file << time << " " << maxGrad << " " << Vol << " " << bary << " " << min << " " << max << " " << vel << " " << h_min << " " << h_max << std::endl;
     }
 } IFInfo;
 
