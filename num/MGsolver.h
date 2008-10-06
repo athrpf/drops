@@ -77,7 +77,7 @@ class MGSolverCL : public SolverBaseCL
     DirectSolverT&       directSolver_;
     const bool residerr_;
     Uint smoothSteps_;
-    Uint usedLevels_;
+    int usedLevels_;
 
   public:
     MGSolverCL( const MGDataCL& mgdata, const SmootherT& sm, DirectSolverT& ds, int maxiter, double tol,
