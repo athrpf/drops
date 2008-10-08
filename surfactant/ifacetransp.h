@@ -25,7 +25,7 @@ namespace DROPS {
 /// The first number used is the initial value of counter, the next
 /// numbers are counter+stride, counter+2*stride, and so on.
 /// Upon return, counter contains the first number, that was not used,
-/// that is #Unknowns+stride.
+/// that is \# Unknowns+stride.
 /// A more user friendly interface is provided by CreateNumbOnInterface.
 void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
     const MultiGridCL::TriangTetraIteratorCL& begin,

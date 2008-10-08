@@ -58,7 +58,7 @@ class ParamSurfactantCL: public ParamBaseCL
     //@}
 
     int    TestCase,                            ///< 0: Laplace-Beltrami on sphere, v=0
-           cdiv;                                ///< #divisions of initial cube
+           cdiv;                                ///< \# divisions of initial cube
 
     string EnsCase,                             ///< name of Ensight Case, "none"= no output
            EnsDir;                              ///< local directory for Ensight files

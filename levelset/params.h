@@ -101,7 +101,7 @@ class ParamMesszelleCL: public ParamBaseCL
     double transp_tol,
            transp_diffPos,                      ///< diffusion coefficient (pos. part)
            transp_diffNeg,                      ///< diffusion coefficient (neg. part)
-           transp_H,                            ///< Henry number cneg(\infty) = H*cpos(\infty)
+           transp_H,                            ///< Henry number cneg(\f$\infty\f$) = H*cpos(\f$\infty\f$)
            transp_cPos,                         ///< initial concentration (pos. part)
            transp_cNeg;                         ///< initial concentration (neg. part)
     //@}
@@ -116,7 +116,7 @@ class ParamMesszelleCL: public ParamBaseCL
     string IniData,                             ///< file prefix when reading data for initial condition
            EnsCase,                             ///< name of Ensight Case, "none"= no output
            EnsDir,                              ///< local directory for Ensight files
-           meshfile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4@5x6x7)
+           meshfile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
            serialization_file,                  ///< writes multigrid to serialisation files, special value "none" to ignore
            deserialization_file;                ///< reads multigrid from deserialization files, special value "none" to ignore
 
