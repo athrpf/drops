@@ -181,6 +181,47 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
     }
 }
 
+void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match)
+{
+    // set up the index description
+    idx.TriangLevel = level;
+    idx.NumUnknowns = 0;
+
+    const Uint idxnum= idx.GetIdx();
+
+    // allocate space for indices; number unknowns in TriangLevel level
+    if (match)
+    {
+        if (idx.NumUnknownsVertex())
+            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(), match,
+                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
+        if (idx.NumUnknownsEdge())
+            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(), match,
+                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
+        if (idx.NumUnknownsFace())
+            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(), match,
+                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
+        if (idx.NumUnknownsTetra())
+            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
+                mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
+    }
+    else
+    {
+        if (idx.NumUnknownsVertex())
+            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
+                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
+        if (idx.NumUnknownsEdge())
+            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(),
+                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
+        if (idx.NumUnknownsFace())
+            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(),
+                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
+        if (idx.NumUnknownsTetra())
+            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
+                mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
+    }
+}
+
 void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG)
 {
     const Uint idxnum = idx.GetIdx();    // idx is the index in UnknownIdxCL

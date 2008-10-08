@@ -28,6 +28,34 @@ enum FiniteElementT
                       vecP2_FE= 130            // for vectors
 };
 
+// fwd decl
+class IdxDescCL;
+
+/// \name Creation and deletion of numberings
+/// \{
+/// \brief Used to number unknowns depending on the index idx.
+///
+/// If a matching function is given, numbering on periodic boundaries
+/// is performed, too.
+/// Memory for the Unknown-Indices on TriangLevel level is allocated
+/// and the unknowns are numbered.
+/// \param level Level of the triangulation to use.
+/// \param idx The index-description to be used.
+/// \param mg The multigrid to be operated on.
+/// \param Bnd A BndDataCL -like object used to determine the boundary-condition of boundary simplices.
+/// \param match An optional matching function. It is only neccessary, if periodic boundaries are used.
+/// \pre idx.NumUnknownsVertex etc. must be set.
+/// \post The function sets idx.TriangLevel to level and sets idx.NumUnknowns.
+void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0);
+
+/// \brief Mark unknown-indices as invalid for given index-description.
+///
+/// This routine writes NoIdx as unknown-index for all indices of the
+/// given index-description. idx.NumUnknowns will be set to zero.
+/// \param idx The index-description to be used.
+/// \param MG The multigrid to be operated on.
+void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG);
+/// \}
 
 /// \brief Mapping from the simplices in a triangulation to the components
 ///     of algebraic data-structures.
@@ -113,8 +141,7 @@ class IdxDescCL
         return Idx_;
     }
 
-    template<class BndDataT>
-    void CreateNumbering(Uint level, MultiGridCL& mg, const BndDataT& Bnd, match_fun match= 0)
+    void CreateNumbering(Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0)
     { CreateNumb( level, *this, mg, Bnd, match); }
 
     /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
@@ -428,7 +455,7 @@ void VecDescBaseCL<T>::Reset()
 }
 
 
-/// \name Routines to number unknowns.
+/// \name Helper routines to number unknowns.
 /// These functions should not be used directly. CreateNumb is much more
 /// comfortable and as efficient.
 ///
@@ -437,14 +464,14 @@ void VecDescBaseCL<T>::Reset()
 /// The first number used is the initial value of counter, the next
 /// numbers are counter+stride, counter+2*stride, and so on.
 /// Upon return, counter contains the first number, that was not used,
-/// that is #Unknowns+stride.
+/// that is \# Unknowns+stride.
 /// Simplices on Dirichlet boundaries are skipped.
 /// \{
-template<class SimplexT, class BndDataT>
+template<class SimplexT>
 void CreateNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride,
                          const ptr_iter<SimplexT>& begin, 
                          const ptr_iter<SimplexT>& end,
-                         const BndDataT& Bnd)
+                         const BndCondCL& Bnd)
 {
     if (stride == 0) return;
     for (ptr_iter<SimplexT> it= begin; it != end; ++it)
@@ -493,7 +520,7 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 }
 
 
-/// \name Routine to number unknowns on vertices, edges, faces on periodic boundaries.
+/// \name Helper routine to number unknowns on vertices, edges, faces on periodic boundaries.
 /// This function should not be used directly. CreateNumb is much more
 /// comfortable and as efficient.
 ///
@@ -504,18 +531,12 @@ DeleteNumbOnSimplex( Uint idx, const Iter& begin, const Iter& end)
 ///     - The unknowns in l1 are numbered.
 ///     - Each element of l2 is matched in l1 via the matching function and inherits the
 ///       indices from its l1-counterpart.
-///     .
-/// \todo In the presence of adaptive refinement the multigrid may be
-///     such, that there is
-///     no correspondence between the simplices on boundary-parts that are
-///     identified for the boundary condition. However, enforcing such
-///     a symmetry requires a modification of the refinement algorithm
-///     which is probably not a trivial exercise.
-template<class SimplexT, class BndDataT>
+/// \{
+template<class SimplexT>
 void CreatePeriodicNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride, match_fun match,
                         const ptr_iter<SimplexT>& begin,
                         const ptr_iter<SimplexT>& end,
-                        const BndDataT& Bnd)
+                        const BndCondCL& Bnd)
 {
     if (stride == 0) return;
 
@@ -563,69 +584,7 @@ void CreatePeriodicNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride, ma
     if (!s2.empty())
         throw DROPSErrCL( "CreatePeriodicNumbOnSimplex: Periodic boundaries do not match!");
 }
-
-/// \brief Used to number unknowns depending on the index idx.
-///
-/// If a matching function is given, numbering on periodic boundaries
-/// is performed, too.
-/// Memory for the Unknown-Indices on TriangLevel level is allocated
-/// and the unknowns are numbered.
-/// \param level Level of the triangulation to use.
-/// \param idx The index-description to be used.
-/// \param mg The multigrid to be operated on.
-/// \param Bnd A BndDataCL -like object used to determine the boundary-condition of boundary simplices.
-/// \param match An optional matching function. It is only neccessary, if periodic boundaries are used.
-/// \pre idx.NumUnknownsVertex etc. must be set.
-/// \post The function sets idx.TriangLevel to level and sets idx.NumUnknowns.
-template<class BndDataT>
-void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndDataT& Bnd, match_fun match= 0)
-{
-    // set up the index description
-    idx.TriangLevel = level;
-    idx.NumUnknowns = 0;
-
-    const Uint idxnum= idx.GetIdx();
-
-    // allocate space for indices; number unknowns in TriangLevel level
-    if (match)
-    {
-        if (idx.NumUnknownsVertex())
-            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(), match,
-                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
-        if (idx.NumUnknownsEdge())
-            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(), match,
-                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
-        if (idx.NumUnknownsFace())
-            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(), match,
-                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
-        if (idx.NumUnknownsTetra())
-            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
-                mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
-    }
-    else
-    {
-        if (idx.NumUnknownsVertex())
-            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
-                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
-        if (idx.NumUnknownsEdge())
-            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(),
-                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
-        if (idx.NumUnknownsFace())
-            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(),
-                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
-        if (idx.NumUnknownsTetra())
-            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
-                mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
-    }
-}
-
-/// \brief Mark unknown-indices as invalid for given index-description.
-///
-/// This routine writes NoIdx as unknown-index for all indices of the
-/// given index-description. idx.NumUnknowns will be set to zero.
-/// \param idx The index-description to be used.
-/// \param MG The multigrid to be operated on.
-void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG);
+/// \}
 
 } // end of namespace DROPS
 

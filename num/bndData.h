@@ -7,9 +7,6 @@
 /// \file
 /// \brief Classes for storing and handling boundary data.
 
-/// \todo All BndVal-functions should have the signature BndValT func( const Point3DCL&, double).
-/// Up to now this is not the case for the Poisson problems.
-
 #ifndef DROPS_BNDDATA_H
 #define DROPS_BNDDATA_H
 
@@ -45,64 +42,76 @@ enum BndCondT
 };
 
 
+/// \brief Stores the boundary condition of a single boundary segment for a certain variable.
+class BndCondInfoCL
+{
+  protected:
+    BndCondT bc_;
+  
+  public:
+    BndCondInfoCL( BndCondT bc= Nat0BC)
+    /// \param bc boundary condition for one segment
+      : bc_(bc) {}
+
+    bool     WithUnknowns() const { return bc_ & 1; }
+    bool     IsDirichlet()  const { return bc_==Dir0BC || bc_==DirBC; }
+    bool     IsNatural()    const { return bc_==Nat0BC || bc_==NatBC; }
+    bool     IsPeriodic()   const { return bc_==Per1BC || bc_==Per2BC ; }
+    BndCondT GetBC()        const { return bc_; }
+};
+
+
 /// \brief Represents the boundary data of a single boundary segment for a certain variable.
 ///
 /// This class stores the boundary condition and a function representing
 /// the corresponding boundary values. It is only used as a part of the BndDataCL.
 template<class BndValT = double>
-class BndSegDataCL
+class BndSegDataCL: public BndCondInfoCL
 {
   public:
     typedef BndValT (*bnd_val_fun)( const Point3DCL&, double);
 
   private:
-    BndCondT     bc_;
     bnd_val_fun  bnd_val_;
 
   public:
     BndSegDataCL( BndCondT bc= Nat0BC, bnd_val_fun f= 0)
-      : bc_(bc), bnd_val_(f)
+      : BndCondInfoCL(bc), bnd_val_(f)
     /// \param bc boundary condition for one segment
     /// \param f  boundary value function on this segment. f has to be specified if bc is non-homogeneous
+    { CheckValid( bc, f); }
+    
+    static void CheckValid( BndCondT bc, bnd_val_fun f)
+    /// check compatibility of boundary condition \a bc and boundary value function \a f.
     {
         if ( bc!=Nat0BC && bc!=Dir0BC && bc!=Per1BC && bc!=Per2BC && f==0)
-            throw DROPSErrCL("BndSegDataCL: no boundary function for non-homogeneous condition specified!");
+           throw DROPSErrCL("BndSegDataCL: no boundary function for non-homogeneous condition specified!");
     }
 
-    bool        WithUnknowns() const { return bc_ & 1; }
-    bool        IsDirichlet()  const { return bc_==Dir0BC || bc_==DirBC; }
-    bool        IsNatural()    const { return bc_==Nat0BC || bc_==NatBC; }
-    bool        IsPeriodic()   const { return bc_==Per1BC || bc_==Per2BC ; }
-    BndCondT    GetBC()        const { return bc_; }
     bnd_val_fun GetBndFun()    const { return bnd_val_; }
     BndValT     GetBndVal( const Point3DCL& p, double t= 0.0) const { return bnd_val_( p, t); }
 };
 
 
-/// \brief Contains the boundary data of all boundary segments for a certain variable.
+/// \brief Contains the boundary conditions of all boundary segments for a certain variable.
 ///
-/// For each sub-simplex on the boundary, the boundary condition and corresponding boundary values
-/// can be accessed.
-template<class BndValT = double>
-class BndDataCL
+/// For each sub-simplex on the boundary, the boundary condition can be accessed.
+class BndCondCL
 {
-  public:
-    typedef BndSegDataCL<BndValT>             BndSegT;
-    typedef BndValT                           bnd_type;
-    typedef typename BndSegT::bnd_val_fun     bnd_val_fun;
-
-  private:
-    std::vector<BndSegT> BndData_;
+  protected:
+    std::vector<BndCondInfoCL> BndCond_;
 
   public:
-    /// If \a bc and \a fun are given, they are assumed to be arrays of length \a numbndseg
-    /// containing the boundary conditions and boundary data resp. of the boundary segments.
+    /// If \a bc is given, it is assumed to be an array of length \a numbndseg
+    /// containing the boundary conditions of the boundary segments.
     /// If \a bc is omitted, hom. natural boundary conditions are imposed (Nat0BC) for all boundary segments.
-    /// \a fun should only be omitted, if all boundary conditions given are homogenious
-    /// and thus no boundary values have to be specified.
-    BndDataCL( BndIdxT numbndseg, const BndCondT* bc= 0, const bnd_val_fun* fun= 0);
-    /// Deprecated ctor, just for compatibility with older code
-    BndDataCL( BndIdxT numbndseg, const bool* isneumann, const bnd_val_fun* fun); // deprecated ctor!
+	/// For the special case \a numbndseg=0 we always have GetBC() = NoBC and IsOnXXXBnd(...) = false (aka NoBndCondCL)  
+    BndCondCL( BndIdxT numbndseg, const BndCondT* bc= 0)
+    {
+    	BndCond_.resize( numbndseg);
+        for (Uint i=0; i<numbndseg; ++i)
+      	    BndCond_[i]= bc ? bc[i] : Nat0BC;
+    }
 
     /// \name boundary condition
     /// Returns superior boundary condition of sub-simplex
@@ -124,6 +133,33 @@ class BndDataCL
     inline bool IsOnPerBnd( const VertexCL&) const;
     inline bool IsOnPerBnd( const EdgeCL&)   const;
     inline bool IsOnPerBnd( const FaceCL&)   const;
+};
+
+
+/// \brief Contains the boundary data of all boundary segments for a certain variable.
+///
+/// For each sub-simplex on the boundary, the boundary condition and corresponding boundary values
+/// can be accessed.
+template<class BndValT = double>
+class BndDataCL: public BndCondCL
+{
+  public:
+    typedef BndSegDataCL<BndValT>             BndSegT;
+    typedef BndValT                           bnd_type;
+    typedef typename BndSegT::bnd_val_fun     bnd_val_fun;
+
+  private:
+    std::vector<bnd_val_fun> BndFun_;
+
+  public:
+    /// If \a bc and \a fun are given, they are assumed to be arrays of length \a numbndseg
+    /// containing the boundary conditions and boundary data resp. of the boundary segments.
+    /// If \a bc is omitted, hom. natural boundary conditions are imposed (Nat0BC) for all boundary segments.
+    /// \a fun should only be omitted, if all boundary conditions given are homogenious
+    /// and thus no boundary values have to be specified.
+    BndDataCL( BndIdxT numbndseg, const BndCondT* bc= 0, const bnd_val_fun* fun= 0);
+    /// Deprecated ctor, just for compatibility with older code
+    BndDataCL( BndIdxT numbndseg, const bool* isneumann, const bnd_val_fun* fun); // deprecated ctor!
 
     /// \name boundary value
     /// Returns boundary value of sub-simplex
@@ -144,21 +180,17 @@ class BndDataCL
     inline BndSegT GetBndSeg( const VertexCL&) const;
     inline BndSegT GetBndSeg( const EdgeCL&)   const;
     inline BndSegT GetBndSeg( const FaceCL&)   const;
-           BndSegT GetBndSeg( BndIdxT idx)     const { return BndData_[idx]; }
-    bnd_val_fun    GetBndFun( BndIdxT idx)     const { return BndData_[idx].GetBndFun(); }
+           BndSegT GetBndSeg( BndIdxT idx)     const { return BndSegT( BndCond_[idx].GetBC(), BndFun_[idx]); }
+    bnd_val_fun    GetBndFun( BndIdxT idx)     const { return BndFun_[idx]; }
     /// \}
 };
 
 
-template<class BndValT= double>
-class NoBndDataCL
+class NoBndCondCL: public BndCondCL
 {
   public:
-    typedef BndSegDataCL<BndValT>             BndSegT;
-    typedef BndValT                           bnd_type;
-    typedef typename BndSegT::bnd_val_fun     bnd_val_fun;
-
-    // default ctor, dtor, whatever
+	 NoBndCondCL() : BndCondCL(0) {} // no bnd segments stored 
+     // default copyctor, dtor, whatever
 
     template<class SimplexT>
     static inline BndCondT GetBC  (const SimplexT&) { return NoBC; }
@@ -168,6 +200,18 @@ class NoBndDataCL
     static inline bool IsOnNatBnd (const SimplexT&) { return false; }
     template<class SimplexT>
     static inline bool IsOnPerBnd (const SimplexT&) { return false; }
+};
+
+
+template<class BndValT= double>
+class NoBndDataCL: public NoBndCondCL
+{
+  public:
+    typedef BndSegDataCL<BndValT>             BndSegT;
+    typedef BndValT                           bnd_type;
+    typedef typename BndSegT::bnd_val_fun     bnd_val_fun;
+
+   // default ctor, dtor, whatever
 
     static inline BndValT GetDirBndValue (const VertexCL&, double= 0.0)
         { throw DROPSErrCL("NoBndDataCL::GetDirBndValue: Attempt to use Dirichlet-boundary-conditions on vertex."); }
@@ -197,52 +241,56 @@ inline Point3DCL ZeroVel( const Point3DCL&, double) { return Point3DCL(0.); }
 
 template<class BndValT>
 inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const BndCondT* bc, const bnd_val_fun* fun)
+  : BndCondCL( numbndseg, bc)
 {
-    BndData_.reserve( numbndseg);
-    for (Uint i=0; i<numbndseg; ++i)
-        BndData_.push_back( BndSegT( bc ? bc[i] : Nat0BC, fun ? fun[i] : 0) );
+    BndFun_.resize( numbndseg);
+    for (Uint i=0; i<numbndseg; ++i) {
+  	    BndSegDataCL<BndValT>::CheckValid( bc ? bc[i] : Nat0BC, fun ? fun[i] : 0);
+        BndFun_[i]= fun ? fun[i] : 0;
+    }
 }
 
 template<class BndValT>
 inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const bool* isneumann, const bnd_val_fun* fun) // deprecated ctor!
+  : BndCondCL( numbndseg)
 {
-    BndData_.reserve( numbndseg);
-    for (Uint i=0; i<numbndseg; ++i)
-        BndData_.push_back( BndSegT( isneumann[i] ? NatBC : DirBC, fun[i]) );
+    BndFun_.resize( numbndseg);
+    for (Uint i=0; i<numbndseg; ++i) {
+    	BndCond_[i]= isneumann[i] ? NatBC : DirBC;
+        BndFun_[i]= fun ? fun[i] : 0;
+  	    BndSegDataCL<BndValT>::CheckValid( BndCond_[i].GetBC(), BndFun_[i]);
+    }
 }
 
 
 //---------------------------------------
 // functions for vertices
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnDirBnd( const VertexCL& v) const
+inline bool BndCondCL::IsOnDirBnd( const VertexCL& v) const
 { // v is on dir bnd, iff it is on one or more dir bnd segments
-    if ( !v.IsOnBoundary() ) return false;
+    if ( !v.IsOnBoundary() || !BndCond_.size()) return false;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( BndData_[it->GetBndIdx()].IsDirichlet() )
+        if ( BndCond_[it->GetBndIdx()].IsDirichlet() )
             return true;
     return false;
 }
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnNatBnd( const VertexCL& v) const
+inline bool BndCondCL::IsOnNatBnd( const VertexCL& v) const
 { // v is on neu bnd, iff it is only on neu bnd segments
-    if ( !v.IsOnBoundary() ) return false;
+    if ( !v.IsOnBoundary() || !BndCond_.size()) return false;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( !BndData_[it->GetBndIdx()].IsNatural() )
+        if ( !BndCond_[it->GetBndIdx()].IsNatural() )
             return false;
     return true;
 }
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnPerBnd( const VertexCL& v) const
+inline bool BndCondCL::IsOnPerBnd( const VertexCL& v) const
 { // v is on per bnd, iff it is on one or more per bnd segments and not on a dir bnd segment
-    if ( !v.IsOnBoundary() ) return false;
+    if ( !v.IsOnBoundary() || !BndCond_.size()) return false;
     bool HasPer= false;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
     {
-        const BndCondT bc= BndData_[it->GetBndIdx()].GetBC();
+        const BndCondT bc= BndCond_[it->GetBndIdx()].GetBC();
         if (bc==DirBC || bc==Dir0BC)
             return false;
         if (bc==Per1BC || bc==Per2BC)
@@ -251,24 +299,24 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const VertexCL& v) const
     return HasPer;
 }
 
-template<class BndValT>
-inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v) const
-{ /// Returns BC on v with lowest number (i.e. the superior BC on v)
-    if ( !v.IsOnBoundary() ) return NoBC;
+inline BndCondT BndCondCL::GetBC( const VertexCL& v) const
+/// Returns BC on vertex \a v with lowest number (i.e. the superior BC on \a v)
+{
+    if ( !v.IsOnBoundary() || !BndCond_.size()) return NoBC;
     BndCondT bc= MaxBC_;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        bc= std::min( bc, BndData_[it->GetBndIdx()].GetBC());
+        bc= std::min( bc, BndCond_[it->GetBndIdx()].GetBC());
     return bc;
 }
 
-template<class BndValT>
-inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v, BndIdxT& bidx) const
-{ /// Returns BC on v with lowest number (i.e. the superior BC on v) and the number of the corresponding boundary segment
-    if ( !v.IsOnBoundary() ) return NoBC;
+inline BndCondT BndCondCL::GetBC( const VertexCL& v, BndIdxT& bidx) const
+/// Returns BC on vertex \a v with lowest number (i.e. the superior BC on \a v) and the number of the corresponding boundary segment
+{
+    if ( !v.IsOnBoundary() || !BndCond_.size()) return NoBC;
     BndCondT bc= MaxBC_, tmp;
     BndIdxT tmp2= NoBndC;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ((tmp= BndData_[tmp2= it->GetBndIdx()].GetBC()) < bc) {
+        if ((tmp= BndCond_[tmp2= it->GetBndIdx()].GetBC()) < bc) {
             bc= tmp;
             bidx= tmp2;
         }
@@ -277,49 +325,47 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const VertexCL& v, BndIdxT& bidx) con
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const VertexCL& v) const
-{ /// Returns bnd segment data on v with superior BC
-    Assert( v.IsOnBoundary(), DROPSErrCL("BndDataCL::GetBndSeg(VertexCL): Not on boundary!"), ~0);
+/// Returns bnd segment data on vertex \a v with superior BC
+{
+    Assert( v.IsOnBoundary() && BndCond_.size(), DROPSErrCL("BndDataCL::GetBndSeg(VertexCL): Not on boundary!"), ~0);
     BndCondT bc_min= MaxBC_;
     BndIdxT  idx= -1;
     for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
     {
-        const BndCondT bc= BndData_[it->GetBndIdx()].GetBC();
+        const BndCondT bc= BndCond_[it->GetBndIdx()];
         if (bc<bc_min) { bc_min= bc;    idx= it->GetBndIdx(); }
     }
-    return BndData_[idx];
+    return BndSegDataCL<BndValT>( BndCond_[idx], BndFun_[idx]);
 }
 
 //---------------------------------------
 // functions for edges
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnDirBnd( const EdgeCL& e) const
+inline bool BndCondCL::IsOnDirBnd( const EdgeCL& e) const
 {
-    if ( !e.IsOnBoundary() ) return false;
+    if ( !e.IsOnBoundary() || !BndCond_.size()) return false;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( BndData_[*it].IsDirichlet() )
+        if ( BndCond_[*it].IsDirichlet() )
             return true;
     return false;
 }
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnNatBnd( const EdgeCL& e) const
+inline bool BndCondCL::IsOnNatBnd( const EdgeCL& e) const
 {
-    if ( !e.IsOnBoundary() ) return false;
+    if ( !e.IsOnBoundary() || !BndCond_.size()) return false;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( !BndData_[*it].IsNatural() )
+        if ( !BndCond_[*it].IsNatural() )
             return false;
     return true;
 }
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnPerBnd( const EdgeCL& e) const
+inline bool BndCondCL::IsOnPerBnd( const EdgeCL& e) const
 { // e is on per bnd, iff it is on one or more per bnd segments and not on a dir bnd segment
-    if ( !e.IsOnBoundary() ) return false;
+    if ( !e.IsOnBoundary() || !BndCond_.size()) return false;
     bool HasPer= false;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
     {
-        const BndCondT bc= BndData_[*it].GetBC();
+        const BndCondT bc= BndCond_[*it].GetBC();
         if (bc==DirBC || bc==Dir0BC)
             return false;
         if (bc==Per1BC || bc==Per2BC)
@@ -328,24 +374,24 @@ inline bool BndDataCL<BndValT>::IsOnPerBnd( const EdgeCL& e) const
     return HasPer;
 }
 
-template<class BndValT>
-inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e) const
-{ /// Returns BC on e with lowest number (i.e. the superior BC on e)
-    if ( !e.IsOnBoundary() ) return NoBC;
+inline BndCondT BndCondCL::GetBC( const EdgeCL& e) const
+/// Returns BC on edge \a e with lowest number (i.e. the superior BC on \a e)
+{
+    if ( !e.IsOnBoundary() || !BndCond_.size()) return NoBC;
     BndCondT bc= MaxBC_;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        bc= std::min( bc, BndData_[*it].GetBC());
+        bc= std::min( bc, BndCond_[*it].GetBC());
     return bc;
 }
 
-template<class BndValT>
-inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e, BndIdxT& bidx) const
-{ /// Returns BC on e with lowest number (i.e. the superior BC on e) and the number of the corresponding boundary segment
-    if ( !e.IsOnBoundary() ) return NoBC;
+inline BndCondT BndCondCL::GetBC( const EdgeCL& e, BndIdxT& bidx) const
+/// Returns BC on edge \a e with lowest number (i.e. the superior BC on \a e) and the number of the corresponding boundary segment
+{
+    if ( !e.IsOnBoundary() || !BndCond_.size()) return NoBC;
     BndCondT bc= MaxBC_, tmp;
     BndIdxT tmp2= NoBndC;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ((tmp= BndData_[tmp2= *it].GetBC()) < bc) {
+        if ((tmp= BndCond_[tmp2= *it].GetBC()) < bc) {
             bc= tmp;
             bidx= tmp2;
         }
@@ -354,58 +400,58 @@ inline BndCondT BndDataCL<BndValT>::GetBC( const EdgeCL& e, BndIdxT& bidx) const
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const EdgeCL& e) const
-{ /// Returns bnd segment data on e with superior BC
-    Assert( e.IsOnBoundary(), DROPSErrCL("BndDataCL::GetBndSeg(EdgeCL): Not on boundary!"), ~0);
+/// Returns bnd segment data on edge \a e with superior BC
+{
+    Assert( e.IsOnBoundary() && BndCond_.size(), DROPSErrCL("BndDataCL::GetBndSeg(EdgeCL): Not on boundary!"), ~0);
     BndCondT bc_min= MaxBC_;
     BndIdxT  idx= -1;
     for (const BndIdxT *it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
     {
-        const BndCondT bc= BndData_[*it].GetBC();
+        const BndCondT bc= BndCond_[*it].GetBC();
         if (bc<bc_min) { bc_min= bc;    idx= *it; }
     }
-    return BndData_[idx];
+    return BndSegDataCL<BndValT>( BndCond_[idx], BndFun_[idx]);
 }
 
 //---------------------------------------
 // functions for faces
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnDirBnd( const FaceCL& f) const
+inline bool BndCondCL::IsOnDirBnd( const FaceCL& f) const
 {
-    return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsDirichlet();
+    return f.IsOnBoundary() && BndCond_.size() && BndCond_[f.GetBndIdx()].IsDirichlet();
 }
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnNatBnd(const FaceCL& f) const
+inline bool BndCondCL::IsOnNatBnd(const FaceCL& f) const
 {
-    return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsNatural();
+    return f.IsOnBoundary() && BndCond_.size() && BndCond_[f.GetBndIdx()].IsNatural();
 }
 
-template<class BndValT>
-inline bool BndDataCL<BndValT>::IsOnPerBnd( const FaceCL& f) const
+inline bool BndCondCL::IsOnPerBnd( const FaceCL& f) const
 {
-    return f.IsOnBoundary() && BndData_[f.GetBndIdx()].IsPeriodic();
+    return f.IsOnBoundary() && BndCond_.size() && BndCond_[f.GetBndIdx()].IsPeriodic();
 }
 
-template<class BndValT>
-inline BndCondT BndDataCL<BndValT>::GetBC( const FaceCL& f) const
-{ // Returns BC on f
-    if ( !f.IsOnBoundary() ) return NoBC;
-    return BndData_[f.GetBndIdx()].GetBC();
+inline BndCondT BndCondCL::GetBC( const FaceCL& f) const
+/// Returns BC on face \a f
+{
+    if ( !f.IsOnBoundary() || !BndCond_.size()) return NoBC;
+    return BndCond_[f.GetBndIdx()].GetBC();
 }
 
-template<class BndValT>
-inline BndCondT BndDataCL<BndValT>::GetBC( const FaceCL& f, BndIdxT& bidx) const
-{ // Returns BC and number of boundary segment on f
-    if ( !f.IsOnBoundary() ) { bidx= NoBndC; return NoBC; }
-    return BndData_[bidx= f.GetBndIdx()].GetBC();
+inline BndCondT BndCondCL::GetBC( const FaceCL& f, BndIdxT& bidx) const
+/// Returns BC and number of boundary segment on face \a f
+{ 
+    if ( !f.IsOnBoundary() || !BndCond_.size()) { bidx= NoBndC; return NoBC; }
+    return BndCond_[bidx= f.GetBndIdx()].GetBC();
 }
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const FaceCL& f) const
+/// Returns bnd segment data on face \a f
 {
-    Assert( f.IsOnBoundary(), DROPSErrCL("BndDataCL::GetBndSeg(FaceCL): Not on boundary!"), ~0);
-    return BndData_[f.GetBndIdx()];
+    Assert( f.IsOnBoundary() && BndCond_.size(), DROPSErrCL("BndDataCL::GetBndSeg(FaceCL): Not on boundary!"), ~0);
+    const BndIdxT idx= f.GetBndIdx();
+    return BndSegDataCL<BndValT>( BndCond_[idx], BndFun_[idx]);
 }
 
 
@@ -417,9 +463,9 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const VertexCL& v, double t) 
 /// Returns value of the Dirichlet boundary value.
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
-    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end; ++it)
-        if ( BndData_[it->GetBndIdx()].IsDirichlet() )
-            return BndData_[it->GetBndIdx()].GetBndFun() ? BndData_[it->GetBndIdx()].GetBndVal( v.GetCoord(), t) : BndValT();
+    for (VertexCL::const_BndVertIt it= v.GetBndVertBegin(), end= v.GetBndVertEnd(); it!=end && BndCond_.size(); ++it)
+        if ( BndCond_[it->GetBndIdx()].IsDirichlet() )
+            return BndFun_[it->GetBndIdx()] ? BndFun_[it->GetBndIdx()]( v.GetCoord(), t) : BndValT();
     throw DROPSErrCL("GetDirBndValue(VertexCL): No Dirichlet Boundary Segment!");
 }
 
@@ -428,9 +474,9 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const EdgeCL& e, double t) co
 /// Returns value of the Dirichlet boundary value.
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
-    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end; ++it)
-        if ( BndData_[*it].IsDirichlet() )
-            return BndData_[*it].GetBndFun() ? BndData_[*it].GetBndVal( GetBaryCenter(e), t) : BndValT();
+    for (const BndIdxT* it= e.GetBndIdxBegin(), *end= e.GetBndIdxEnd(); it!=end && BndCond_.size(); ++it)
+        if ( BndCond_[*it].IsDirichlet() )
+            return BndFun_[*it] ? BndFun_[*it]( GetBaryCenter(e), t) : BndValT();
     throw DROPSErrCL("GetDirBndValue(EdgeCL): No Dirichlet Boundary Segment!");
 }
 
@@ -439,8 +485,8 @@ inline BndValT BndDataCL<BndValT>::GetDirBndValue( const FaceCL& f, double t) co
 /// Returns value of the Dirichlet boundary value.
 /// Expects, that there is any Dirichlet boundary ( IsOnDirBnd(...) == true )
 {
-    Assert( BndData_[f.GetBndIdx()].IsDirichlet(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
-    return BndData_[f.GetBndIdx()].GetBndFun() ? BndData_[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t) : BndValT();
+    Assert( BndCond_.size() && BndCond_[f.GetBndIdx()].IsDirichlet(), DROPSErrCL("GetDirBndValue(FaceCL): No Dirichlet Boundary Segment!"), ~0);
+    return BndFun_[f.GetBndIdx()] ? BndFun_[f.GetBndIdx()]( GetBaryCenter(f), t) : BndValT();
 }
 
 template<class BndValT>
@@ -448,8 +494,8 @@ inline BndValT BndDataCL<BndValT>::GetNatBndValue( const FaceCL& f, double t) co
 /// Returns value of the Neumann boundary value.
 /// Expects, that there is any Neumann boundary ( IsOnNeuBnd(...) == true )
 {
-    Assert( BndData_[f.GetBndIdx()].IsNatural(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
-    return BndData_[f.GetBndIdx()].GetBndVal( GetBaryCenter(f), t);
+    Assert( BndCond_.size() && BndCond_[f.GetBndIdx()].IsNatural(), DROPSErrCL("GetNeuBndValue(FaceCL): No Neumann Boundary Segment!"), ~0);
+    return BndFun_[f.GetBndIdx()]( GetBaryCenter(f), t);
 }
 
 
