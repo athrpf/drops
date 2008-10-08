@@ -1567,14 +1567,15 @@ class SolverAsPreCL
 //
 //*****************************************************************************
 
-template<Uint _Dim>
+template<typename Mat, typename Vec>
 void
-gauss_pivot(SMatrixCL<_Dim, _Dim>& A, SVectorCL<_Dim>& b)
+gauss_pivot(Mat& A, Vec& b)
 {
+    const size_t _Dim = b.size();
     double max;
     size_t ind_max;
-    size_t p[_Dim];
-    SVectorCL<_Dim> b2= b;
+    size_t* p = new size_t[_Dim];
+    Vec b2(b);
     for (size_t i=0; i<_Dim; ++i) p[i]= i;
 
     for (size_t i=0; i<_Dim-1; ++i)
@@ -1606,6 +1607,7 @@ gauss_pivot(SMatrixCL<_Dim, _Dim>& A, SVectorCL<_Dim>& b)
         b2[p[i]]/= A(p[i], i);
         b[i]= b2[p[i]];
     }
+    delete[] p;
 }
 
 } // end of namespace DROPS
