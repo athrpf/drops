@@ -1046,6 +1046,61 @@ ScaledMGPreCL::Apply( const Mat&, Vec& x, const Vec& r) const
     std::cerr << "ScaledMGPreCL: it: " << iter_ << "\treduction: " << (oldres==0.0 ? res : res/oldres) << '\n';
 }
 
+template<class SmootherT>
+class StokesMGSolverCL: public StokesSolverBaseCL
+{
+  private:
+    const MGDataCL& A_;
+    const SmootherT&    smoother_;
+    StokesSolverBaseCL& directSolver_;
+    Uint  smoothSteps_;
+    int   usedLevels_;
+
+  public:
+    StokesMGSolverCL( const MGDataCL& A, const SmootherT& smoother, StokesSolverBaseCL& ds, Uint iter_vel, double tol, bool rel= false, Uint sm = 2, int lvl = -1)
+      : StokesSolverBaseCL(iter_vel, tol, rel), A_( A), smoother_(smoother), directSolver_(ds),
+                                           smoothSteps_(sm), usedLevels_(lvl){}
+    ~StokesMGSolverCL() {}
+
+    void
+    Solve(const MatrixCL& /*A*/, const MatrixCL& /*B*/, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c) {
+// define MG parameters	for the first diagonal blockS
+        int nit=_maxiter;
+        double actualtol = 1;
+        Uint   wc   = 1;   // how many W-cycle steps? (1=V-cycle)
+
+// define initial approximation
+        const_MGDataIterCL A_end (--A_.end());
+
+        const double runorm0= norm_sq(A_end->A.Data * v + transp_mul(A_end->B.Data, p ) - b);
+        const double rpnorm0= norm_sq(A_end->B.Data * v - c);
+        const double resid0= std::sqrt(runorm0*runorm0+rpnorm0*rpnorm0);
+        double resid;
+        for (int j=0; j<_maxiter; ++j)
+        {
+            StokesMGM( A_.begin(),A_end, v, p, b, c, smoother_, smoothSteps_, wc, directSolver_, usedLevels_, -1);
+            const double runorm= norm_sq(A_end->A.Data * v + transp_mul(A_end->B.Data, p ) - b);
+            const double rpnorm= norm_sq(A_end->B.Data * v - c);
+            resid= std::sqrt(runorm*runorm+rpnorm*rpnorm);
+            if (rel_)
+                actualtol= resid/resid0;
+            else
+                actualtol= resid;
+            std::cout << "P2P1:StokesMGSolverCL: residual = " << actualtol << std::endl;
+            if (actualtol<=_tol) 
+            {
+                nit= j+1;
+                break;
+            }
+        }
+        std::cerr << "StokesMGM: actual residual = " << actualtol
+                  << "  after " << nit << " iterations " << std::endl;
+        _res = actualtol;
+        _iter= nit;
+   }
+};
+
+
 } // end of namespace DROPS
 
 #endif

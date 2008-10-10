@@ -11,6 +11,40 @@ namespace DROPS
 //                        Routines for SetupSystem2
 // -----------------------------------------------------------------------------
 
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( const MultiGridCL& MG, MatDescCL* B) const
+{
+    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
+    const Uint lvl= B->GetRowLevel();
+    IdxT prNumb[4];
+    LocalNumbP2CL n;
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    Point3DCL tmp;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
+         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        absdet= std::fabs( det);
+        n.assign( *sit, *B->ColIdx, _BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *B->RowIdx);
+// Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
+        for(int vel=0; vel<10; ++vel) {
+            if (n.WithUnknowns( vel))
+                for(int pr=0; pr<4; ++pr) {
+                tmp= Grad[vel].quadP1( pr, absdet);
+                mB( prNumb[pr], n.num[vel])  -=  tmp[0];
+                mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
+                mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                }
+        }
+    }
+    mB.Build();
+}
+
 template <class CoeffT>
 void SetupSystem2_P2P0( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, double t)
 // P2 / P0 FEs for vel/pr
@@ -1307,7 +1341,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1MG (MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const
 // Set up the MG-hierarchy
 {
     for(MGDataCL::iterator it= matMG->begin(); it!=matMG->end(); ++it) {
@@ -1321,6 +1355,15 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1MG (MGDataCL* matMG, const L
         if(&tmp != &matMG->back()) {
             SetupMatrices1( &A, &M, lset, t);
             tmp.A.Data.LinComb( 1./dt, M.Data, theta, A.Data);
+        }
+        if (matMG->StokesMG()) {
+            tmp.B.SetIdx( &tmp.IdxPr , &tmp.Idx );
+            tmp.BT.SetIdx( &tmp.Idx, &tmp.IdxPr );
+            tmp.Mpr.SetIdx( &tmp.IdxPr, &tmp.IdxPr);
+            std::cerr << "Create StokesMatrices2     " << (&tmp.IdxPr)->NumUnknowns <<std::endl;
+            SetupMatrix2( _MG, &tmp.B);
+            transpose(tmp.B.Data, tmp.BT.Data);
+            SetupPrMass(&tmp.Mpr, lset);
         }
     }
 }

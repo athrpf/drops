@@ -135,11 +135,13 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     /// Set up matrices A, M on an arbitrary level; needed for MG-preconditioner
     void SetupMatrices1( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;
     /// Set up MG-hierarchy
-    void SetupMatrices1MG( MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const;
+    void SetupMatricesMG( MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const;
     /// Set up the Laplace-Beltrami-Operator
     void SetupLB( MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const;
     /// Set up matrix B and rhs c
     void SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const;
+    /// Set up matrix B
+    void SetupMatrix2( const MultiGridCL& MG, MatDescCL* B) const;
     /// Set up rhs c
     void SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up the time-derivative of B times velocity

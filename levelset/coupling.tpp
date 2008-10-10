@@ -46,6 +46,7 @@ void TimeDisc2PhaseCL<StokesT>::SetupProlongations()
 {
     MultiGridCL& mg= Stokes_.GetMG();
     IdxDescCL* c_idx= 0;
+    IdxDescCL* c_idxpr=0;
     MGDataIterCL fl=matMG_->begin();
     MGDataIterCL it;
     for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
@@ -55,14 +56,19 @@ void TimeDisc2PhaseCL<StokesT>::SetupProlongations()
             ++it; // it points now to the finest level
         MGLevelDataCL& tmp= *it;
         std::cerr << "    Create indices on Level " << lvl << std::endl;
-        tmp.Idx.Set( 3, 3);
+        tmp.Idx.Set  ( 3, 3);
+        tmp.IdxPr.Set( 1, 0);
         Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
+        Stokes_.CreateNumberingPr (lvl, &tmp.IdxPr);
         if(lvl!=0) {
             std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
             SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
 //            std::cout << "    Matrix P " << tmp.P.Data << std::endl;
+            if (matMG_->StokesMG())
+                SetupP1ProlongationMatrix( mg, tmp.PPr , c_idxpr , &tmp.IdxPr );
         }
-        c_idx= &tmp.Idx;
+        c_idx   = &tmp.Idx;
+        c_idxpr = &tmp.IdxPr;
     }
 }
 
@@ -113,7 +119,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
     }
     //TODO implicite curvature on coarser levels
     if (usematMG_)
-        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
+        Stokes_.SetupMatricesMG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes for old level set took "<<time.GetTime()<<" sec.\n";
     time.Reset();
@@ -357,7 +363,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::DoProjectionStep( const VectorCL& rhs
         theta_*b_->Data + dt_*cplLB_.Data);
 
     if (usematMG_)
-        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
+        Stokes_.SetupMatricesMG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
 
@@ -432,7 +438,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
     VectorCL b2( Stokes_.M.Data*rhs_ /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data*/ + theta_*(curv_->Data + b_->Data));
     MaybeStabilize( b2);
     if (usematMG_)
-        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
+        Stokes_.SetupMatricesMG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
 
@@ -909,7 +915,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
     VectorCL b2( Stokes_.M.Data*rhs_ /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data + coupling of M with vdot_new*/ + theta_*(curv_->Data + b_->Data));
     MaybeStabilize( b2);
     if (usematMG_)
-        Stokes_.SetupMatrices1MG(matMG_, LvlSet_, dt_, theta_);
+        Stokes_.SetupMatricesMG(matMG_, LvlSet_, dt_, theta_);
     time.Stop();
     std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
 

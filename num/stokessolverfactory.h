@@ -42,7 +42,11 @@
  *   53 | GMResR         | GMRes     | BBT     | lower block
  *   54 | GMResR         | GMRes     | MinComm | lower block
  *   55 | GMResR         | BiCGStab  | BBT     | lower block
- *   56 | GMResR         | BiCGStab  | MinComm | lower block*/
+ *   56 | GMResR         | BiCGStab  | MinComm | lower block
+ ------------------------------------------------------------
+ *   81 | StokesMGM      | PVanka-Smoother
+ *   82 | StokesMGM      | Braess/Sarazin-Smoother
+*/
 
 namespace DROPS {
 
@@ -155,6 +159,14 @@ class StokesSolverFactoryCL
     PMResSolverCL<Lanczos3T> PMinResPCGBBT_;
     PMResSolverCL<Lanczos4T> PMinResPCGMinComm_;
 
+    //MinRes solver
+    LanczosONBCL<BlockMatrixCL, VectorCL> q;
+    PMResSolverCL<LanczosONBCL<BlockMatrixCL, VectorCL> > minressolver;
+    BlockMatrixSolverCL<PMResSolverCL<LanczosONBCL<BlockMatrixCL, VectorCL> > > blockminressolver;
+
+    PVankaSmootherCL vankasmoother;
+    BSSmootherCL bssmoother;
+
   public:
     StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C);
     ~StokesSolverFactoryCL() {}
@@ -216,7 +228,8 @@ StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, 
         PMinResMGBBT_     ( lanczos1_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
         PMinResMGMinComm_ ( lanczos2_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
         PMinResPCGBBT_    ( lanczos3_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
-        PMinResPCGMinComm_( lanczos4_, C_.outer_iter, C_.outer_tol, /*relative*/ false)
+        PMinResPCGMinComm_( lanczos4_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
+        minressolver( q, C_.inner_iter, C_.inner_tol), blockminressolver(minressolver)
         {}
 
 template <class StokesT, class ParamsT>
@@ -331,12 +344,27 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
         case 56 :
             stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResRBiCGStabMinComm_);
         break;
+        case 81 : {
+            if (C_.XFEMStab >= 0) // P1X
+                throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
+            velMG_.SetStokesMG(true);
+            vankasmoother.SetVankaMethod(2);
+            stokessolver = new StokesMGSolverCL<PVankaSmootherCL>( velMG_, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 1);
+        }
+        break;
+        case 82 : {
+            if (C_.XFEMStab >= 0) // P1X
+                throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
+            velMG_.SetStokesMG(true);
+            stokessolver = new StokesMGSolverCL<BSSmootherCL>( velMG_, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 4);
+        }
+        break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
     mgused_ = (C_.StokesMethod == 11 || C_.StokesMethod == 12 || C_.StokesMethod == 21 ||
                C_.StokesMethod == 22 || C_.StokesMethod == 31 || C_.StokesMethod == 32 ||
                C_.StokesMethod == 41 || C_.StokesMethod == 42 || C_.StokesMethod == 51 ||
-               C_.StokesMethod == 52 || C_.StokesMethod == 211 || C_.StokesMethod == 222);
+               C_.StokesMethod == 52 || C_.StokesMethod == 211 || C_.StokesMethod == 222 || C_.StokesMethod == 81  || C_.StokesMethod == 82);
     return stokessolver;
 }
 
