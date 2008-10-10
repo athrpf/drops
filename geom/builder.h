@@ -369,17 +369,14 @@ class FileBuilderCL : public MGBuilderCL
     mutable std::map<size_t, TetraCL*>   tetraAddressMap;
 
     void BuildVerts   (MultiGridCL*) const;
-
     void BuildEdges   (MultiGridCL*) const;
-
     void BuildFacesI  (MultiGridCL*) const;
-
     void BuildTetras  (MultiGridCL*) const;
-
     void AddChildren  ()             const;
-
     void BuildFacesII (MultiGridCL*) const;
-    
+
+    void CheckFile( const std::ifstream& is) const;
+
   protected:
     void buildBoundary (MultiGridCL* mgp) const {bndbuilder_->buildBoundary(mgp);};
 
@@ -417,6 +414,8 @@ class MGSerializationCL
     void WriteFaces    ();
     void WriteVertices ();
     void WriteTetras   ();
+
+    void CheckFile( const std::ofstream& os) const;
 
   public:
     MGSerializationCL (MultiGridCL& mg, std::string path) : mg_(mg), path_(path) {}
