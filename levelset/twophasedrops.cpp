@@ -388,7 +388,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C, mgused, &velMG);
     timedisc->SetTimeStep( C.dt);
 
-    stokessolverfactory.SetMatrixA( timedisc->GetUpperLeftBlock());
+    stokessolverfactory.SetMatrixA( &navstokessolver->GetAN());
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
