@@ -1074,14 +1074,14 @@ class StokesMGSolverCL: public StokesSolverBaseCL
 
         const double runorm0= norm_sq(A_end->A.Data * v + transp_mul(A_end->B.Data, p ) - b);
         const double rpnorm0= norm_sq(A_end->B.Data * v - c);
-        const double resid0= std::sqrt(runorm0*runorm0+rpnorm0*rpnorm0);
+        const double resid0= std::sqrt(runorm0+rpnorm0);
         double resid;
         for (int j=0; j<_maxiter; ++j)
         {
             StokesMGM( A_.begin(),A_end, v, p, b, c, smoother_, smoothSteps_, wc, directSolver_, usedLevels_, -1);
             const double runorm= norm_sq(A_end->A.Data * v + transp_mul(A_end->B.Data, p ) - b);
             const double rpnorm= norm_sq(A_end->B.Data * v - c);
-            resid= std::sqrt(runorm*runorm+rpnorm*rpnorm);
+            resid= std::sqrt(runorm+rpnorm);
             if (rel_)
                 actualtol= resid/resid0;
             else
