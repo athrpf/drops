@@ -85,10 +85,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, Uint maxStep)
 //    bool new_marks;
 //    double akt_glob_err;
 
-    vidx1->Set( 3, 3, 0, 0);
-    vidx2->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    vidx2->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
+    pidx2->SetFE( P1_FE);
 
     TimerCL time;
 //    err_idx->Set( 0, 0, 0, 1);
@@ -312,7 +312,7 @@ int main (int argc, char** argv)
     fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
 
     DROPS::IdxDescCL tecIdx;
-    tecIdx.Set( 1, 0, 0, 0);
+    tecIdx.SetFE( DROPS::P1_FE);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
 std::cerr <<"TecIdx = "<< tecIdx.GetIdx()<<std::endl;
     std::ofstream v2d("data2D.dat");

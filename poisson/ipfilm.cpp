@@ -76,7 +76,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
   MatDescCL& M= Poisson.M;
   MatDescCL& U= Poisson.U;
 
-  idx.Set(1);
+  idx.SetFE( P1_FE);
   Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
 
   x.SetIdx(&idx);
@@ -97,8 +97,8 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
 
   ThetaScheme.SetTimeStep(dt, nu);
 
-  IdxDescCL ens_idx( 1, 1);
-  CreateNumb( MG.GetLastLevel(), ens_idx, MG, NoBndDataCL<>());
+  IdxDescCL ens_idx( P2_FE);
+  ens_idx.CreateNumbering( MG.GetLastLevel(), MG, NoBndDataCL<>());
   EnsightP2SolOutCL ens( MG, &ens_idx);
   const std::string filename= C.EnsDir + "/" + C.EnsCase;
   const std::string datgeo= filename+".geo",

@@ -222,10 +222,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         Estimator(rel_red, markratio, 1., true, &MyStokesCL::ResidualErrEstimator, Stokes );
     bool new_marks= false;
 
-    vidx1->Set( 3, 3, 0, 0);
-    vidx2->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    vidx2->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
+    pidx2->SetFE( P1_FE);
 
 //    MarkLower(MG,0.25);
     TimerCL time;
@@ -371,10 +371,10 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     MatDescCL* N= &NS.N;
     int step= 0;
 
-    vidx1->Set( 3, 3, 0, 0);
-    vidx2->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    vidx2->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
+    pidx2->SetFE( P1_FE);
 
     TimerCL time;
     do
@@ -564,8 +564,7 @@ int main (int argc, char** argv)
         std::ofstream fil2("stokespr_cut.off");
         fil2 << DROPS::GeomSolOutReport1CL<MyStokesCL::const_DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
 
-        DROPS::IdxDescCL tecIdx;
-        tecIdx.Set( 1, 0, 0, 0);
+        DROPS::IdxDescCL tecIdx( DROPS::P1_FE);
         stokesprob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
 
         std::ofstream v2d("stokestec2D.dat");
@@ -625,7 +624,7 @@ int main (int argc, char** argv)
         fil2 << DROPS::GeomSolOutReport1CL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, 1., 2.) << std::endl;
 
         DROPS::IdxDescCL tecIdx;
-        tecIdx.Set( 1, 0, 0, 0);
+        tecIdx.SetFE( DROPS::P1_FE);
         prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
 
         std::ofstream v2d("navstokestec2D.dat");

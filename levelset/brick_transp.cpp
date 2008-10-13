@@ -79,8 +79,8 @@ void Strategy (MultiGridCL& MG)
     lset.Init( EllipsoidCL::DistanceFct);
 
     VelBndDataCL Bnd_v( 6, v_bc, v_bfun);
-    IdxDescCL  vidx( vecP2_FE);
-    CreateNumb( MG.GetLastLevel(), vidx, MG, Bnd_v);
+    IdxDescCL  vidx( vecP2_FE, Bnd_v);
+    vidx.CreateNumbering( MG.GetLastLevel(), MG);
     VecDescCL v( &vidx);
     InitVel( MG, v, &Inflow);
 

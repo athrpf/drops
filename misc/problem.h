@@ -23,61 +23,18 @@ enum FiniteElementT
 /// - values >= 128 are used for vector-valued FE,
 ///   the difference to the scalar FE counterpart should be 128
 {
-    P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,  // for scalars
+    P0_FE=0,    P1_FE=1,    P2_FE=2,      P1Bubble_FE=3,   // for scalars
     P1D_FE=4, P1X_FE=5,
-                      vecP2_FE= 130            // for vectors
+                         vecP2_FE=130, vecP1Bubble_FE=131, // for vectors
+    UnknownFE_=-1
 };
 
-// fwd decl
-class IdxDescCL;
-
-/// \name Creation and deletion of numberings
-/// \{
-/// \brief Used to number unknowns depending on the index idx.
-///
-/// If a matching function is given, numbering on periodic boundaries
-/// is performed, too.
-/// Memory for the Unknown-Indices on TriangLevel level is allocated
-/// and the unknowns are numbered.
-/// \param level Level of the triangulation to use.
-/// \param idx The index-description to be used.
-/// \param mg The multigrid to be operated on.
-/// \param Bnd A BndDataCL -like object used to determine the boundary-condition of boundary simplices.
-/// \param match An optional matching function. It is only neccessary, if periodic boundaries are used.
-/// \pre idx.NumUnknownsVertex etc. must be set.
-/// \post The function sets idx.TriangLevel to level and sets idx.NumUnknowns.
-void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0);
-
-/// \brief Mark unknown-indices as invalid for given index-description.
-///
-/// This routine writes NoIdx as unknown-index for all indices of the
-/// given index-description. idx.NumUnknowns will be set to zero.
-/// \param idx The index-description to be used.
-/// \param MG The multigrid to be operated on.
-void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG);
-/// \}
-
-/// \brief Mapping from the simplices in a triangulation to the components
-///     of algebraic data-structures.
-///
-/// This class describes how many unknowns are reserved for each
-/// simplex in a given triangulation. The number of unknowns can be
-/// given separately for each simplex-type.  Note, that no memory for the
-/// numbers or unknowns is allocated. This must be done in another step,
-/// e.g. by calling CreateNumb.
-
-/// Internally, each object of type IdxDescCL has a unique index that is
-/// used to access the unknown-indices that are stored in a helper class
-/// (UnknownIdxCL and UnknownHandleCL) for each simplex.
-class IdxDescCL
+/// \brief For a given finite element type, this class describes how many degrees of freedom 
+/// are stored for each simplex-type on a single tetrahedron. 
+class FE_InfoCL
 {
-  private:
-    static const Uint        InvalidIdx; ///< Constant representing an invalid index.
-    static std::vector<bool> IdxFree;    ///< Cache for unused indices; reduces memory-usage.
-    Uint                     Idx_;        ///< The unique index.
-
-    /// \brief Returns the lowest index that was not used and reserves it.
-    Uint GetFreeIdx();
+  protected:
+	FiniteElementT fe_;    ///< FE type
     //@{
     /// \brief Number of unknowns on the simplex-type.
     Uint NumUnknownsVertex_;
@@ -85,6 +42,57 @@ class IdxDescCL
     Uint NumUnknownsFace_;
     Uint NumUnknownsTetra_;
     //@}
+  
+  public:
+	FE_InfoCL( FiniteElementT fe) : fe_(fe) { SetFE(fe); }
+	
+	/// \brief Initialize with given FE-type \a fe
+	void SetFE( FiniteElementT fe)
+	{
+        switch(fe_= fe) {
+            case P0_FE:          NumUnknownsTetra_= 1; break;
+            case P1_FE:
+            case P1X_FE:         NumUnknownsVertex_= 1; break;
+            case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
+            case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
+            case P1D_FE:         NumUnknownsFace_= 1; break;
+            case P2_FE:          NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
+            case vecP2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
+            default:             throw DROPSErrCL("FE_InfoCL: unknown FE type");
+        }
+	}
+    /// \brief Return enum code corresponding to FE-type
+    FiniteElementT GetFE() const { return fe_; }
+    /// \brief Returns true for XFEM
+    bool IsExtended() const { return fe_==P1X_FE; }
+
+    /// \brief Number of unknowns on the simplex-type
+    //@{
+    Uint NumUnknownsVertex() const { return NumUnknownsVertex_; }
+    Uint NumUnknownsEdge()   const { return NumUnknownsEdge_; }
+    Uint NumUnknownsFace()   const { return NumUnknownsFace_; }
+    Uint NumUnknownsTetra()  const { return NumUnknownsTetra_; }
+    //@}
+};
+
+/// \brief Mapping from the simplices in a triangulation to the components
+///     of algebraic data-structures.
+///
+/// Internally, each object of type IdxDescCL has a unique index that is
+/// used to access the unknown-indices that are stored in a helper class
+/// (UnknownIdxCL and UnknownHandleCL) for each simplex. The unknown-indices 
+/// are allocated and numbered by using CreateNumbering.
+class IdxDescCL: public FE_InfoCL
+{
+  private:
+    static const Uint        InvalidIdx; ///< Constant representing an invalid index.
+    static std::vector<bool> IdxFree;    ///< Cache for unused indices; reduces memory-usage.
+    Uint                     Idx_;       ///< The unique index.
+    BndCondCL                Bnd_;       ///< boundary conditions
+    match_fun                match_;     ///< matching function for periodic boundaries
+
+    /// \brief Returns the lowest index that was not used and reserves it.
+    Uint GetFreeIdx();
 
   public:
     Uint TriangLevel;        ///< Triangulation of the index.
@@ -93,24 +101,11 @@ class IdxDescCL
 
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
-    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0)
-      : Idx_( GetFreeIdx()), NumUnknownsVertex_( unkVertex), NumUnknownsEdge_( unkEdge),
-        NumUnknownsFace_( unkFace), NumUnknownsTetra_( unkTetra), NumUnknowns( 0) {}
-    explicit IdxDescCL( FiniteElementT fe)
-      : Idx_( GetFreeIdx()), NumUnknownsVertex_( 0), NumUnknownsEdge_( 0),
-        NumUnknownsFace_( 0), NumUnknownsTetra_( 0), NumUnknowns( 0)
-    {
-        switch(fe) {
-            case P0_FE:       NumUnknownsTetra_= 1; break;
-            case P1_FE:
-            case P1X_FE:      NumUnknownsVertex_= 1; break;
-            case P1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
-            case P1D_FE:      NumUnknownsFace_= 1; break;
-            case P2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
-            case vecP2_FE:    NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
-            default:          throw DROPSErrCL("IdxDescCL: unknown FE type");
-        }
-    }
+//    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0)
+//      : FE_InfoCL( UnknownFE_), Idx_( GetFreeIdx()), NumUnknowns( 0) 
+//    { /*Set( unkVertex, unkEdge, unkFace, unkTetra );*/ }
+    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
+      : FE_InfoCL( fe), Idx_( GetFreeIdx()), Bnd_(bnd), match_(match), NumUnknowns( 0) {}
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);
@@ -124,15 +119,6 @@ class IdxDescCL
     /// \brief Swaps the contents of obj and *this.
     void swap( IdxDescCL&);
 
-    /// \brief Number of unknowns on the simplex-type
-    //@{
-    Uint NumUnknownsVertex() const { return NumUnknownsVertex_; }
-    Uint NumUnknownsEdge()   const { return NumUnknownsEdge_; }
-    Uint NumUnknownsFace()   const { return NumUnknownsFace_; }
-    Uint NumUnknownsTetra()  const { return NumUnknownsTetra_; }
-    //@}
-    /// \brief Set the number of unknowns per simplex-type for this index.
-    void Set( Uint unkVertex, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0);
     /// \brief Returns the number of the index. This can be used to access
     ///     the numbering on the simplices.
     Uint GetIdx() const {
@@ -140,14 +126,22 @@ class IdxDescCL
             " Probably using copy instead of original IdxDescCL-object.");
         return Idx_;
     }
-
-    void CreateNumbering(Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0)
-    { CreateNumb( level, *this, mg, Bnd, match); }
-
     /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
     ///     unknown-numbers on it are compared, too.
     static bool
     Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg= 0);
+
+    /// \name Numbering
+    /// \{
+    /// \brief Used to number unknowns.
+    void CreateNumbering( Uint level, MultiGridCL& mg);
+    /// \brief Used to number unknowns and store boundary condition and matching function.
+    void CreateNumbering( Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0)
+    { Bnd_= Bnd; match_= match; CreateNumbering( level, mg); }
+    /// \brief Mark unknown-indices as invalid.
+    void DeleteNumbering( MultiGridCL& mg);
+    /// \}
+
 };
 
 

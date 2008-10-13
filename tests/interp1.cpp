@@ -81,8 +81,8 @@ int TestReMark()
 //            std::cout << Rule( i) << "\t-->\t" << Rule( j) << " ";
             DROPS::TetraBuilderCL tet( Rule( i));
             DROPS::MultiGridCL mg( tet);
-            DROPS::IdxDescCL i0( P1_FE), i1( P1_FE);
-            DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+            DROPS::IdxDescCL i0( DROPS::P1_FE, Bnd), i1( DROPS::P1_FE, Bnd);
+            i0.CreateNumbering( mg.GetLastLevel(), mg);
             DROPS::VecDescCL v0, v1;
             v0.SetIdx(&i0);
             SetFun(v0, mg);
@@ -90,7 +90,7 @@ int TestReMark()
 
             i1.TriangLevel= i0.TriangLevel <= mg.GetLastLevel() ? i0.TriangLevel
                                                                 : mg.GetLastLevel();
-            DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
+            i1.CreateNumbering( i1.TriangLevel, mg);
             v1.SetIdx( &i1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             DROPS::RepairAfterRefineP1( fun0, v1);
@@ -112,15 +112,15 @@ int TestRepair()
                                  DROPS::std_basis<3>( 2), DROPS::std_basis<3>( 3),
                                  1, 1, 1);
     DROPS::MultiGridCL mg(brick);
-    DROPS::IdxDescCL i0( P1_FE), i1( P1_FE);
+    DROPS::IdxDescCL i0( DROPS::P1_FE, Bnd), i1( DROPS::P1_FE, Bnd);
     for (DROPS::Uint i=0; i<8; ++i) {
-        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+        i0.CreateNumbering( mg.GetLastLevel(), mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx(&i0);
         SetFun(v0, mg);
         MarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        DROPS::CreateNumb( i0.TriangLevel, i1, mg, Bnd);
+        i1.CreateNumbering( i0.TriangLevel, mg);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
@@ -128,7 +128,7 @@ int TestRepair()
         ret+= CheckResult( fun1);
     }
     for (DROPS::Uint i=0; i<8; ++i) {
-        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+        i0.CreateNumbering( mg.GetLastLevel(), mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx(&i0);
         SetFun(v0, mg);
@@ -142,7 +142,7 @@ int TestRepair()
             std::cout << "Letztes Level behalten!" << std::endl;
             i1.TriangLevel= i0.TriangLevel;
         }
-        DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
+        i1.CreateNumbering( i1.TriangLevel, mg);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
@@ -164,9 +164,9 @@ int TestInterpolateOld()
 //    MarkAll( mg);
     mg.Refine();
 
-    IdxDescCL i0( P1_FE), i1( P1_FE);
-    CreateNumb( 0, i0, mg, Bnd );
-    CreateNumb( 1, i1, mg, Bnd );
+    DROPS::IdxDescCL i0( DROPS::P1_FE, Bnd), i1( DROPS::P1_FE, Bnd);
+    i0.CreateNumbering( 0, mg);
+    i1.CreateNumbering( 1, mg);
     VecDescBaseCL<VectorCL> v0, v1;
     v0.SetIdx(&i0);
     v1.SetIdx(&i1);

@@ -121,14 +121,14 @@ int Test()
             DROPS::MultiGridCL mg( tet);
             DROPS::TetraCL& t0= *mg.GetTriangTetraBegin( 0);
 
-            DROPS::IdxDescCL i0( P2_FE), i1( P2_FE);
-            DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+            DROPS::IdxDescCL i0( P2_FE, Bnd), i1( P2_FE, Bnd);
+            i0.CreateNumbering( mg.GetLastLevel(), mg);
             DROPS::VecDescCL v0, v1;
             v0.SetIdx( &i0);
             SetFun( v0, mg, f);
 //            SetFun( v0, mg, g2);
 
-            DROPS::CreateNumb( 0, i1, mg, Bnd);
+            i1.CreateNumbering( 0, mg);
             v1.SetIdx( &i1);
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             double dof[10];

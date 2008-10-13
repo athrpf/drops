@@ -316,10 +316,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //    bool new_marks;
 //    double akt_glob_err;
 
-    vidx1->Set( 3, 3, 0, 0);
-    vidx2->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    vidx2->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
+    pidx2->SetFE( P1_FE);
 
     TimerCL time;
 //    err_idx->Set( 0, 0, 0, 1);

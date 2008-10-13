@@ -104,9 +104,8 @@ EnsightWriterCL::EnsightWriterCL(DROPS::MultiGridCL& MG, DROPS::Uint num_timeste
                                  std::string casefile, std::string geomfile,
                                  std::string prfile, std::string velfile)
     :casefile_( casefile), geomfile_( geomfile), prfile_( prfile), velfile_( velfile),
-     MG_( MG), ensight_( MG, &ensightidx_), have_idx_( false)
+     MG_( MG), ensightidx_( DROPS::P2_FE), ensight_( MG, &ensightidx_), have_idx_( false)
 {
-    ensightidx_.Set( 1,1,0,0);
     this->CreateNumbering();
     have_idx_= true;
     ensight_.CaseBegin( casefile_.c_str(), num_timestep);
@@ -142,7 +141,7 @@ EnsightWriterCL::CreateNumbering( int level)
     if (have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::CreateIndex: Already done.");
     DROPS::NoBndDataCL<> ensightbnd;
-    DROPS::CreateNumb( level < 0 ? MG_.GetLastLevel(): level, ensightidx_, MG_, ensightbnd);
+    ensightidx_.CreateNumbering( level < 0 ? MG_.GetLastLevel(): level, MG_, ensightbnd);
     have_idx_= true;
 }
 
@@ -254,8 +253,8 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
     VecDescCL     loc_p;
     VelVecDescCL* v2= &loc_v;
     VecDescCL*    p2= &loc_p;
-    vidx2->Set( 3, 3, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx2->SetFE( vecP2_FE);
+    pidx2->SetFE( P1_FE);
     bool shell_not_ready= true;
     const Uint min_ref_num= f_level - c_level;
     const StokesBndDataCL& BndData= NS.GetBndData();
@@ -276,7 +275,7 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
                   const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
-        NS.DeleteNumberingVel( vidx2);
+        NS.DeleteNumbering( vidx2);
         // Repair pressure
         std::swap( p2, p1);
         std::swap( pidx2, pidx1);
@@ -285,7 +284,7 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
         typename NavStokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( oldfunpr, *p1);
         p2->Clear();
-        NS.DeleteNumberingPr( pidx2);
+        NS.DeleteNumbering( pidx2);
     }
     // We want the solution to be where v1, p1 point to.
     if (v1 == &loc_v) {
@@ -403,8 +402,8 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
     VelVecDescCL* v1= &NS.v;
     VecDescCL*    p1= &NS.p;
     MatDescCL  M_pr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
     double t= 0.;
     const double dt= 1./num_timestep;
@@ -557,8 +556,7 @@ int main (int argc, char** argv)
     fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
     fil.close();
 
-    DROPS::IdxDescCL tecIdx;
-    tecIdx.Set( 1, 0, 0, 0);
+    DROPS::IdxDescCL tecIdx( DROPS::P1_FE);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
     std::ofstream v2d("navstokestec2D.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>

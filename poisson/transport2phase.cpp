@@ -252,7 +252,7 @@ inline void
 TransportRepairCL::post_refine ()
 {
     VecDescCL loc_ct;
-    IdxDescCL loc_cidx( 1);
+    IdxDescCL loc_cidx( P1_FE);
     VecDescCL& ct= c_.ct;
     match_fun match= mg_.GetBnd().GetMatchFun();
 

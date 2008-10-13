@@ -110,7 +110,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
     MGData.push_back(MGLevelDataCL());
     MGLevelDataCL& tmp= MGData.back();
     std::cerr << "Create MGData on Level " << lvl << std::endl;
-    tmp.Idx.Set(1);
+    tmp.Idx.SetFE( P1_FE);
     Poisson.CreateNumbering(lvl, &tmp.Idx);
     MatDescCL& A= Poisson.A;
     MatDescCL& M= Poisson.M;
@@ -232,7 +232,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   MatDescCL& A= Poisson.A;
   MatDescCL& M= Poisson.M;
 
-  idx.Set(1);
+  idx.SetFE( P1_FE);
   Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
 
   x.SetIdx(&idx);

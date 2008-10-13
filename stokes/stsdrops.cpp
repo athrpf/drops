@@ -362,7 +362,7 @@ SetupPoissonVelocityMG(
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 3, 3);
+        tmp.Idx.SetFE( DROPS::vecP2_FE);
         stokes.CreateNumberingVel( lvl, &tmp.Idx);
 //        DROPS::MatDescCL A, M;
 //        A.SetIdx( &tmp.Idx, &tmp.Idx);
@@ -429,7 +429,7 @@ SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGDa
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "Pressure-MG:            Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 1);
+        tmp.Idx.SetFE( DROPS::P1_FE);
         stokes.CreateNumberingPr( lvl, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
@@ -457,7 +457,7 @@ SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "Mass-Pressure-MG:       Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 1);
+        tmp.Idx.SetFE( DROPS::P1_FE);
         stokes.CreateNumberingPr( lvl, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
@@ -677,8 +677,8 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_Mpr;
     MGDataCL MG_pr;
     MGDataCL MG_vel;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
 
     typedef MyPMinresSP_DiagMG_CL StatsolverCL;
@@ -741,8 +741,8 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
 //    typedef UzawaCGSolverEffCL<ScaledMGPreCL, DiagMatrixPCCL> StatsolverCL;
     typedef UzawaCGSolverEffCL<ScaledMGPreCL, ISMGPreCL> StatsolverCL;
@@ -821,8 +821,8 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
     typedef UzawaCGSolverCL<ScaledMGPreCL, ISMGPreCL> StatsolverCL;
     StatsolverCL* statsolver= 0;
@@ -896,8 +896,8 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
     SSORsmoothCL smoother(1.0);
     PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, 1e-14);
@@ -987,8 +987,8 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
 
     typedef PSchur_AR_CL StatsolverCL;
@@ -1054,8 +1054,8 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
 
 //    typedef PSchur_PCG_CL StatsolverCL;

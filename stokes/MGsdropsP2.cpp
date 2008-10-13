@@ -128,10 +128,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         Estimator(rel_red, markratio, .484473073129685, true, &MyStokesCL::ResidualErrEstimator, Stokes);
     bool new_marks= false;
 
-    vidx1->Set(3, 3, 0, 0);
-    vidx2->Set(3, 3, 0, 0);
-    pidx1->Set(1, 0, 0, 0);
-    pidx2->Set(1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    vidx2->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
+    pidx2->SetFE( P1_FE);
     TimerCL time;
 
     do
@@ -222,7 +222,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
            MGLevelDataCL& tmp= MGData.back();
 
            std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-           tmp.Idx.Set( 3, 3);
+           tmp.Idx.SetFE( vecP2_FE);
            Stokes.CreateNumberingVel(lvl, &tmp.Idx);
            tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
            std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;

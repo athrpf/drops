@@ -60,7 +60,7 @@ class LevelsetP2CL
     LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
         double theta= 0.5, double SD= 0., double diff= 0., int iter= 1000, double tol= 1e-7,
         double curvDiff= -1.)
-    : idx( 1, 1), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
         theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())),
         gm_( pc_, 100, iter, tol), SF_( SF_ImprovedLB)
     {}
@@ -68,7 +68,7 @@ class LevelsetP2CL
     LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, instat_scalar_fun_ptr sig= 0,
         instat_vector_fun_ptr gsig= 0, double theta= 0.5, double SD= 0, double diff= 0,
         Uint iter= 1000, double tol= 1e-7, double curvDiff= -1)
-    : idx( 1, 1), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
         theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
     {}
 
@@ -81,9 +81,9 @@ class LevelsetP2CL
     /// \name Numbering
     ///@{
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, MG_, Bnd_, match); }
+        { idx->CreateNumbering( level, MG_, Bnd_, match); }
     void DeleteNumbering( IdxDescCL* idx)
-        { DeleteNumb( *idx, MG_); }
+        { idx->DeleteNumbering( MG_); }
     ///@}
 
     /// initialize level set function

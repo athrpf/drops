@@ -309,8 +309,8 @@ int main ()
                                 DROPS::std_basis<3>(3),
                                 40, 40, 40);
     DROPS::MultiGridCL mg( brick);
-    DROPS::IdxDescCL idx( P2_FE);
-    DROPS::CreateNumb( 0, idx, mg, Bnd);
+    DROPS::IdxDescCL idx( P2_FE, Bnd);
+    idx.CreateNumbering( 0, mg);
     DROPS::VecDescCL vd0( &idx);
     SetFun( vd0, mg, f);
     DROPS::VecDescCL vd1( &idx);
@@ -330,8 +330,8 @@ int main ()
     std::cout << "integral: " << q1 << "\ttime: " << time.GetTime() << " seconds"
         << std::endl;
     time.Reset();
-    DROPS::IdxDescCL vidx( vecP2_FE);
-    DROPS::CreateNumb( 0, vidx, mg, Bnd);
+    DROPS::IdxDescCL vidx( vecP2_FE, VBnd);
+    vidx.CreateNumbering( 0, mg);
     DROPS::VecDescCL vd3( &vidx);
     SetFun( vd3, mg, fv);
     NewVQuadT vq1, vq2;

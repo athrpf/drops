@@ -320,7 +320,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
   VecDescCL cplA;
   VecDescCL cplM;
 
-  idx.Set(1, 0, 0, 0);
+  idx.SetFE( P1_FE);
 
   MultiGridCL& MG= Poisson.GetMG();
 

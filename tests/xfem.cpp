@@ -171,12 +171,12 @@ int main (int argc, char** argv)
 
 
     LevelsetP2CL lset( mg);
-    CreateNumb( lset.idx.GetIdx(), lset.idx, mg, NoBndDataCL<>());
+    lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( &phasebnd);
 
     IdxDescCL idx( P1X_FE);
-    CreateNumb( /*Level*/ mg.GetLastLevel(), idx, mg, NoBndDataCL<>());
+    idx.CreateNumbering( mg.GetLastLevel(), mg);
     ExtIdxDescCL extidx( &idx, /*omit_bound=*/ xfemstab);
     extidx.UpdateXNumbering( &idx, lset, true);
     std::cerr << "P1-Unbekannte: " << extidx.GetNumUnknownsP1()
@@ -186,7 +186,7 @@ int main (int argc, char** argv)
 
     // For the ensight visualisation of the piecewise quadratic function f1-f2
     IdxDescCL p2idx( P2_FE);
-    CreateNumb( /*Level*/ mg.GetLastLevel(), p2idx, mg, NoBndDataCL<>());
+    p2idx.CreateNumbering( mg.GetLastLevel(), mg);
     VecDescCL uneg( &p2idx), upos( &p2idx);
     InitPiecewiseP2( f1, uneg, f2, upos, mg, lset.Phi);
 

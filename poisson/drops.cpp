@@ -51,8 +51,8 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
     Uint step= 0;
     bool new_marks;
 
-    new_idx->Set( 1); // 1 unknown on vertex
-    old_idx->Set( 1);
+    new_idx->SetFE( P1_FE);
+    old_idx->SetFE( P1_FE);
 //    err_idx->Set( 2, 0, 0, 0, 1);
     do
     {

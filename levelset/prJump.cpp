@@ -105,7 +105,7 @@ SetupPoissonVelocityMG(
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 3, 3);
+        tmp.Idx.SetFE( DROPS::vecP2_FE);
         stokes.CreateNumberingVel( lvl, &tmp.Idx);
         DROPS::MatDescCL M;
         M.SetIdx( &tmp.Idx, &tmp.Idx);

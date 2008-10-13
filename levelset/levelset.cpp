@@ -777,7 +777,7 @@ inline void
 LevelsetRepairCL::post_refine ()
 {
     VecDescCL loc_phi;
-    IdxDescCL loc_lidx( 1, 1);
+    IdxDescCL loc_lidx( P2_FE);
     VecDescCL& phi= ls_.Phi;
     match_fun match= ls_.GetMG().GetBnd().GetMatchFun();
 

@@ -13,17 +13,6 @@ namespace DROPS
 {
 
 
-template<class Coeff>
-void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, IdxDescCL* idx)
-// used for numbering of the Unknowns depending on the index IdxDesc[idxnum].
-// sets up the description of the index idxnum in IdxDesc[idxnum],
-// allocates memory for the Unknown-Indices on TriangLevel level und numbers them.
-{
-    // allocate space for indices; number unknowns in TriangLevel level
-    CreateNumb( level, *idx, _MG, GetBndData() );
-}
-
-
 //========================================================
 //
 //                Set up matrices and rhs

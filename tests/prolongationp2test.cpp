@@ -43,17 +43,17 @@ void UnMarkDrop(DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
 int TestProlongation()
 {
     int ret= 0;
-    DROPS::IdxDescCL i0( P2_FE), i1( P2_FE);
+    DROPS::IdxDescCL i0( P2_FE, Bnd), i1( P2_FE, Bnd);
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTesting prolongation for P2-elements:\n";
     for (DROPS::Uint i=0; i<63; ++i) {
         DROPS::TetraBuilderCL brick( i);
         DROPS::IdCL<DROPS::VertexCL>::ResetCounter();
         DROPS::MultiGridCL mg( brick);
-        DROPS::CreateNumb( 0, i0, mg, Bnd);
+        i0.CreateNumbering( 0, mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx( &i0);
-        DROPS::CreateNumb( mg.GetLastLevel(), i1, mg, Bnd);
+        i1.CreateNumbering( mg.GetLastLevel(), mg);
         v1.SetIdx( &i1);
         DROPS::MatDescCL P;
         SetupP2ProlongationMatrix( mg, P, &i0, &i1);

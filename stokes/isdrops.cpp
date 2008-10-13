@@ -259,7 +259,7 @@ SetupPoissonVelocityMG(
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 3, 3);
+        tmp.Idx.SetFE( DROPS::vecP2_FE);
         stokes.CreateNumberingVel( lvl, &tmp.Idx);
         DROPS::MatDescCL A, M;
         A.SetIdx( &tmp.Idx, &tmp.Idx);
@@ -325,7 +325,7 @@ SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGDa
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "Pressure-MG:            Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 1);
+        tmp.Idx.SetFE( DROPS::P1_FE);
         stokes.CreateNumberingPr( lvl, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
@@ -353,7 +353,7 @@ SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
         MGData.push_back( DROPS::MGLevelDataCL());
         DROPS::MGLevelDataCL& tmp= MGData.back();
         std::cerr << "Mass-Pressure-MG:       Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.Set( 1);
+        tmp.Idx.SetFE( DROPS::P1_FE);
         stokes.CreateNumberingPr( lvl, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
@@ -472,7 +472,7 @@ EnsightWriterCL::EnsightWriterCL(DROPS::MultiGridCL& MG, DROPS::Uint num_timeste
     :casefile_( casefile), geomfile_( geomfile), prfile_( prfile), velfile_( velfile),
      MG_( MG), ensight_( MG, &ensightidx_), have_idx_( false)
 {
-    ensightidx_.Set( 1,1,0,0);
+    ensightidx_.SetFE( DROPS::P2_FE);
     this->CreateNumbering();
     have_idx_= true;
     ensight_.CaseBegin( casefile_.c_str(), num_timestep);
@@ -508,7 +508,7 @@ EnsightWriterCL::CreateNumbering( int level)
     if (have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::CreateIndex: Already done.");
     DROPS::NoBndDataCL<> ensightbnd;
-    DROPS::CreateNumb( level < 0 ? MG_.GetLastLevel(): level, ensightidx_, MG_, ensightbnd);
+    ensightidx_.CreateNumbering( level < 0 ? MG_.GetLastLevel(): level, MG_, ensightbnd);
     have_idx_= true;
 }
 
@@ -654,8 +654,8 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
     VecDescCL     loc_p;
     VelVecDescCL* v2= &loc_v;
     VecDescCL*    p2= &loc_p;
-    vidx2->Set( 3, 3, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx2->SetFE( vecP2_FE);
+    pidx2->SetFE( P1_FE);
     bool shell_not_ready= true;
     const Uint min_ref_num= f_level - c_level;
     const StokesBndDataCL& BndData= NS.GetBndData();
@@ -676,7 +676,7 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
                   const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
-        NS.DeleteNumberingVel( vidx2);
+        NS.DeleteNumbering( vidx2);
 //P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
 //          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
 //CheckVel( funv1, &MyPdeCL::LsgVel);
@@ -688,7 +688,7 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
         typename StokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( oldfunpr, *p1);
         p2->Clear();
-        NS.DeleteNumberingPr( pidx2);
+        NS.DeleteNumbering( pidx2);
     }
     // We want the solution to be where v1, p1 point to.
     if (v1 == &loc_v) {
@@ -778,8 +778,8 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
     double t= 0.;
     const double dt= 1./num_timestep;
@@ -878,8 +878,8 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
     double t= 0.;
     const double dt= 1./num_timestep;
@@ -1010,8 +1010,8 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     MGDataCL MG_pr;
     MGDataCL MG_vel;
     MGDataCL MG_Mpr;
-    vidx1->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
     TimerCL time;
     double t= 0.;
     const double dt= 1./num_timestep;

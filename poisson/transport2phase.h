@@ -74,9 +74,9 @@ class TransportP1CL
     /// \name Numbering
     ///@{
     void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, MG_, Bnd_, match); }
+        { idx->CreateNumbering( level, MG_, Bnd_, match); }
     void DeleteNumbering( IdxDescCL* idx)
-        { DeleteNumb( *idx, MG_); }
+        { idx->DeleteNumbering( MG_); }
     ///@}
     /// initialize transformed concentration function
     void Init( instat_scalar_fun_ptr, instat_scalar_fun_ptr cpos);

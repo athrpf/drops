@@ -85,8 +85,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
   private:
-    FiniteElementT prFE_;       ///< controls FE type for pressure space
-    ExtIdxDescCL   Xidx_;       ///< extended index for P1X_FE
+    FiniteElementT prFE_;        ///< controls FE type for pressure space
+    ExtIdxDescCL   Xidx_;        ///< extended index for P1X_FE
 
   public:
     IdxDescCL    vel_idx;  ///< for velocity unknowns
@@ -111,18 +111,16 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     //@{
     /// Create/delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+        { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); if (lsetp && UsesXFEM()) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
+        { idx->CreateNumbering( level, _MG, _BndData.Pr, match); if (lsetp && UsesXFEM()) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
     /// \brief Only used for XFEM
     void UpdateXNumbering( IdxDescCL* idx, const LevelsetP2CL& lset, bool NumberingChanged= false)
         { if (UsesXFEM()) Xidx_.UpdateXNumbering( idx, lset, NumberingChanged); }
     void UpdatePressure( VecDescCL* p)
         { if (UsesXFEM()) Xidx_.Old2New( p); }
-    void DeleteNumberingVel( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
-    void DeleteNumberingPr ( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
+    void DeleteNumbering( IdxDescCL* idx)
+        { idx->DeleteNumbering( _MG); }
     //@}
     /// \name Discretization
     //@{

@@ -26,6 +26,14 @@ void BndCondInfo( BndCondT bc, std::ostream& os)
 }
 
 
+//void FE_InfoCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
+//{
+//    NumUnknownsVertex_ = unkVertex;
+//    NumUnknownsEdge_   = unkEdge;
+//    NumUnknownsFace_   = unkFace;
+//    NumUnknownsTetra_  = unkTetra;
+//}
+
 Uint IdxDescCL::GetFreeIdx()
 {
     size_t sysnum= 0;
@@ -39,14 +47,9 @@ Uint IdxDescCL::GetFreeIdx()
 }
 
 IdxDescCL::IdxDescCL( const IdxDescCL& orig)
+ : FE_InfoCL(*this), Idx_(orig.Idx_), Bnd_(orig.Bnd_), match_(orig.match_),
+   TriangLevel(orig.TriangLevel), NumUnknowns(orig.NumUnknowns)
 {
-    Idx_= orig.Idx_;
-    TriangLevel= orig.TriangLevel;
-    NumUnknownsVertex_= orig.NumUnknownsVertex_;
-    NumUnknownsEdge_= orig.NumUnknownsEdge_;
-    NumUnknownsFace_= orig.NumUnknownsFace_;
-    NumUnknownsTetra_= orig.NumUnknownsTetra_;
-    NumUnknowns= orig.NumUnknowns;
     // invalidate orig
     const_cast<IdxDescCL&>(orig).Idx_= InvalidIdx;
 }
@@ -55,25 +58,13 @@ void IdxDescCL::swap( IdxDescCL& obj)
 /// Note, that std::swap cannot be used for IdxDescCL-objects as the
 /// assignment operator is not implemented.
 {
-    std::swap( Idx_, obj.Idx_);
+    Assert( GetFE()==obj.GetFE(), DROPSErrCL("IdxDescCL::swap: FE-types differ"), ~0);
+	std::swap( Idx_, obj.Idx_);
     std::swap( TriangLevel,        obj.TriangLevel);
-    std::swap( NumUnknownsVertex_, obj.NumUnknownsVertex_);
-    std::swap( NumUnknownsEdge_,   obj.NumUnknownsEdge_);
-    std::swap( NumUnknownsFace_,   obj.NumUnknownsFace_);
-    std::swap( NumUnknownsTetra_,  obj.NumUnknownsTetra_);
     std::swap( NumUnknowns,        obj.NumUnknowns);
 }
 
-void IdxDescCL::Set( Uint unkVertex, Uint unkEdge, Uint unkFace, Uint unkTetra)
-{
-    NumUnknownsVertex_ = unkVertex;
-    NumUnknownsEdge_   = unkEdge;
-    NumUnknownsFace_   = unkFace;
-    NumUnknownsTetra_  = unkTetra;
-}
-
-bool
-IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
+bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
 /// \param i The left IdxDescCL.
 /// \param j The left IdxDescCL.
 /// \param mg Optional pointer to a multigrid. If it is given the numbers
@@ -86,6 +77,14 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
     const Uint lvl= i.TriangLevel;
     if (lvl != j.TriangLevel) {
         std::cerr << "Compare_Indices: Indices on different levels.\n";
+        return false;
+    }
+    if (i.NumUnknowns != j.NumUnknowns) {
+        std::cerr << "Compare_Indices: NumUnknowns different.\n";
+        return false;
+    }
+    if (i.GetFE() !=  j.GetFE()) {
+        std::cerr << "Compare_Indices: FE types different.\n";
         return false;
     }
     if (i.NumUnknownsVertex_ != j.NumUnknownsVertex_) {
@@ -102,10 +101,6 @@ IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
     }
     if (i.NumUnknownsTetra_ != j.NumUnknownsTetra_) {
         std::cerr << "Compare_Indices: NumUnknownsTetra different.\n";
-        return false;
-    }
-    if (i.NumUnknowns != j.NumUnknowns) {
-        std::cerr << "Compare_Indices: NumUnknowns different.\n";
         return false;
     }
     if (!mg)
@@ -181,61 +176,65 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
     }
 }
 
-void CreateNumb(Uint level, IdxDescCL& idx, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match)
+void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg)
+/// Memory for the Unknown-Indices on TriangLevel level is allocated
+/// and the unknowns are numbered.
+/// If a matching function is specified, numbering on periodic boundaries
+/// is performed, too.
 {
-    // set up the index description
-    idx.TriangLevel = level;
-    idx.NumUnknowns = 0;
-
-    const Uint idxnum= idx.GetIdx();
+    const Uint idxnum= GetIdx();
+    TriangLevel= level; 
+    NumUnknowns = 0;
 
     // allocate space for indices; number unknowns in TriangLevel level
-    if (match)
+    if (match_)
     {
-        if (idx.NumUnknownsVertex())
-            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(), match,
-                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
-        if (idx.NumUnknownsEdge())
-            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(), match,
-                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
-        if (idx.NumUnknownsFace())
-            CreatePeriodicNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(), match,
-                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
-        if (idx.NumUnknownsTetra())
-            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
+        if (NumUnknownsVertex())
+            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsVertex(), match_,
+                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd_);
+        if (NumUnknownsEdge())
+            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsEdge(), match_,
+                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd_);
+        if (NumUnknownsFace())
+            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsFace(), match_,
+                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd_);
+        if (NumUnknownsTetra())
+            CreateNumbOnTetra( idxnum, NumUnknowns, NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
     else
     {
-        if (idx.NumUnknownsVertex())
-            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
-                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd);
-        if (idx.NumUnknownsEdge())
-            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsEdge(),
-                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd);
-        if (idx.NumUnknownsFace())
-            CreateNumbOnSimplex( idxnum, idx.NumUnknowns, idx.NumUnknownsFace(),
-                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd);
-        if (idx.NumUnknownsTetra())
-            CreateNumbOnTetra( idxnum, idx.NumUnknowns, idx.NumUnknownsTetra(),
+        if (NumUnknownsVertex())
+            CreateNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsVertex(),
+                mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd_);
+        if (NumUnknownsEdge())
+            CreateNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsEdge(),
+                mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd_);
+        if (NumUnknownsFace())
+            CreateNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsFace(),
+                mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd_);
+        if (NumUnknownsTetra())
+            CreateNumbOnTetra( idxnum, NumUnknowns, NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
 }
 
-void DeleteNumb(IdxDescCL& idx, MultiGridCL& MG)
+void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
+/// This routine writes NoIdx as unknown-index for all indices of the
+/// given index-description. NumUnknowns will be set to zero.
 {
-    const Uint idxnum = idx.GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = idx.TriangLevel;
-    idx.NumUnknowns = 0;
+    const Uint idxnum = GetIdx();    // idx is the index in UnknownIdxCL
+    const Uint level  = TriangLevel;
+    NumUnknowns = 0;
 
     // delete memory allocated for indices
-    if (idx.NumUnknownsVertex())
+    if (NumUnknownsVertex())
         DeleteNumbOnSimplex( idxnum, MG.GetAllVertexBegin(level), MG.GetAllVertexEnd(level) );
-    if (idx.NumUnknownsEdge())
+    if (NumUnknownsEdge())
         DeleteNumbOnSimplex( idxnum, MG.GetAllEdgeBegin(level), MG.GetAllEdgeEnd(level) );
-    if (idx.NumUnknownsFace())
+    if (NumUnknownsFace())
         DeleteNumbOnSimplex( idxnum, MG.GetAllFaceBegin(level), MG.GetAllFaceEnd(level) );
-    if (idx.NumUnknownsTetra())
+    if (NumUnknownsTetra())
         DeleteNumbOnSimplex( idxnum, MG.GetAllTetraBegin(level), MG.GetAllTetraEnd(level) );
 }
 

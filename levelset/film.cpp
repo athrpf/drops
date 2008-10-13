@@ -138,7 +138,7 @@ class EnsightIdxRepairCL: public MGObserverCL
 	    : mg_(mg), idx_(idx) {}
 	
     void pre_refine  () {}
-    void post_refine () { DeleteNumb( idx_, mg_); CreateNumb( mg_.GetLastLevel(), idx_, mg_, NoBndDataCL<>()); } 
+    void post_refine () { idx_.DeleteNumbering( mg_); idx_.CreateNumbering( mg_.GetLastLevel(), mg_); } 
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
@@ -154,7 +154,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     IdxDescCL* lidx= &lset.idx;
     IdxDescCL* vidx= &Stokes.vel_idx;
     IdxDescCL* pidx= &Stokes.pr_idx;
-    IdxDescCL ens_idx( P2_FE);
+    IdxDescCL ens_idx( P2_FE, NoBndDataCL<>());
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -170,7 +170,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     lset.Init( DistanceFct);
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_xz);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_xz, &lset);
-    CreateNumb( MG.GetLastLevel(), ens_idx, MG, NoBndDataCL<>());
+    ens_idx.CreateNumbering( MG.GetLastLevel(), MG);
 
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);

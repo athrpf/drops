@@ -63,8 +63,8 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red, double 
     Uint step= 0;
     bool new_marks;
 
-    new_idx->Set( 1, 0, 0, 0);
-    old_idx->Set( 1, 0, 0, 0);
+    new_idx->SetFE( P1_FE);
+    old_idx->SetFE( P1_FE);
 //    err_idx->Set( 0, 0, 0, 1);
     do
     {

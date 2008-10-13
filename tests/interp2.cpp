@@ -128,8 +128,8 @@ int TestReMark()
                                                  DROPS::std_basis<3>( 3),
                                                  DROPS::Point3DCL( 1.0));
             DROPS::MultiGridCL mg( tet);
-            DROPS::IdxDescCL i0(P2_FE), i1(P2_FE);
-            DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+            DROPS::IdxDescCL i0(P2_FE, Bnd), i1(P2_FE, Bnd);
+            i0.CreateNumbering( mg.GetLastLevel(), mg);
             DROPS::VecDescCL v0, v1;
             v0.SetIdx( &i0);
             SetFun( v0, mg, f);
@@ -138,7 +138,7 @@ int TestReMark()
 
             i1.TriangLevel= i0.TriangLevel <= mg.GetLastLevel() ? i0.TriangLevel
                                                                 : mg.GetLastLevel();
-            DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
+            i1.CreateNumbering( i1.TriangLevel, mg);
             v1.SetIdx( &i1);
             DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             DROPS::RepairAfterRefineP2( fun0, v1);
@@ -161,17 +161,17 @@ int TestRepairUniform()
                                  DROPS::std_basis<3>( 2), DROPS::std_basis<3>( 3),
                                  1, 1, 1);
     DROPS::MultiGridCL mg(brick);
-    DROPS::IdxDescCL i0( P2_FE), i1( P2_FE);
+    DROPS::IdxDescCL i0( P2_FE, Bnd), i1( P2_FE, Bnd);
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTesting repair for uniform refinement with quadratic function:\n";
     for (DROPS::Uint i=0; i<5; ++i) {
-        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+        i0.CreateNumbering( mg.GetLastLevel(), mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx( &i0);
         SetFun( v0, mg, f);
         MarkAll( mg);
         mg.Refine();
-        DROPS::CreateNumb( i0.TriangLevel, i1, mg, Bnd);
+        i1.CreateNumbering( i0.TriangLevel, mg);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP2( fun0, v1);
@@ -190,13 +190,12 @@ int TestRepairUniform()
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTesting repair for uniform coarsening with linear function:\n";
     for (DROPS::Uint i=0; i<5; ++i) {
-        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+        i0.CreateNumbering( mg.GetLastLevel(), mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx(&i0);
         SetFun(v0, mg, g);
         UnMarkAll( mg);
         mg.Refine();
-        i1.Set( 1,1,0,0); i1.NumUnknowns= 0;
         if (mg.GetLastLevel() < i0.TriangLevel) {
             std::cout << "Letztes Level entfernt!" << std::endl;
             i1.TriangLevel= i0.TriangLevel-1;
@@ -205,7 +204,7 @@ int TestRepairUniform()
             std::cout << "Letztes Level behalten!" << std::endl;
             i1.TriangLevel= i0.TriangLevel;
         }
-        DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
+        i1.CreateNumbering( i1.TriangLevel, mg);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP2( fun0, v1);
@@ -234,17 +233,17 @@ int TestRepair()
                                  1, 1, 1);
     DROPS::IdCL<DROPS::VertexCL>::ResetCounter();
     DROPS::MultiGridCL mg(brick);
-    DROPS::IdxDescCL i0( P2_FE), i1( P2_FE);
+    DROPS::IdxDescCL i0( P2_FE, Bnd), i1( P2_FE, Bnd);
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTesting repair for drop refinement with linear function:\n";
     for (DROPS::Uint i=0; i<8; ++i) {
-        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+        i0.CreateNumbering( mg.GetLastLevel(), mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx( &i0);
         SetFun( v0, mg, g);
         MarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        DROPS::CreateNumb( i0.TriangLevel, i1, mg, Bnd);
+        i1.CreateNumbering( i0.TriangLevel, mg);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP2( fun0, v1);
@@ -263,7 +262,7 @@ int TestRepair()
     std::cout << "\n-----------------------------------------------------------------"
                  "\nTesting repair for drop coarsening with linear function:\n";
     for (DROPS::Uint i=0; i<8; ++i) {
-        DROPS::CreateNumb( mg.GetLastLevel(), i0, mg, Bnd);
+        i0.CreateNumbering( mg.GetLastLevel(), mg);
         DROPS::VecDescCL v0, v1;
         v0.SetIdx(&i0);
         SetFun(v0, mg, g);
@@ -277,7 +276,7 @@ int TestRepair()
             std::cout << "Letztes Level behalten!" << std::endl;
             i1.TriangLevel= i0.TriangLevel;
         }
-        DROPS::CreateNumb( i1.TriangLevel, i1, mg, Bnd);
+        i1.CreateNumbering( i1.TriangLevel, mg);
         v1.SetIdx( &i1);
         DROPS::P2EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP2( fun0, v1);
@@ -315,9 +314,9 @@ int TestInterpolateOld()
     MarkDrop(mg, 1);
     mg.Refine();
 
-    IdxDescCL i0, i1;
-    DROPS::CreateNumb( 0, i0, mg, Bnd);
-    DROPS::CreateNumb( 1, i1, mg, Bnd);
+    DROPS::IdxDescCL i0( DROPS::P2_FE, Bnd), i1( DROPS::P2_FE, Bnd);
+    i0.CreateNumbering( 0, mg);
+    i1.CreateNumbering( 1, mg);
 
     VecDescBaseCL<VectorCL> v0, v1;
     v0.SetIdx( &i0);

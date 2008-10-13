@@ -68,7 +68,7 @@ TestSingleTetra()
 
     LevelsetP2CL lset( mg);
 
-    CreateNumb( lset.idx.GetIdx(), lset.idx, mg, NoBndDataCL<>());
+    lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Phi.Data= 1.0;
 
@@ -80,7 +80,7 @@ TestSingleTetra()
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
-    DeleteNumb( ifaceidx, mg);
+    ifaceidx.DeleteNumbering( mg);
 
     std::cout << "Testing vertex numbering interface in 1 tetra:\n" << std::endl;
     lset.Phi.Data[0]= -1.0;
@@ -88,7 +88,7 @@ TestSingleTetra()
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
-    DeleteNumb( ifaceidx, mg);
+    ifaceidx.DeleteNumbering( mg);
 }
 
 
@@ -138,7 +138,7 @@ TestPlaneInCube()
 
     LevelsetP2CL lset( mg);
 
-    CreateNumb( lset.idx.GetIdx(), lset.idx, mg, NoBndDataCL<>());
+    lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Phi.Data= 1.0;
 
@@ -151,7 +151,7 @@ TestPlaneInCube()
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
-    DeleteNumb( ifaceidx, mg);
+    ifaceidx.DeleteNumbering( mg);
 
     std::cout << "Testing vertex numbering around planar interface containing vertices:" << std::endl;
     lset.Init( plane2);
@@ -159,7 +159,7 @@ TestPlaneInCube()
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
-    DeleteNumb( ifaceidx, mg);
+    ifaceidx.DeleteNumbering( mg);
 }
 
 
@@ -234,7 +234,7 @@ int main ()
 
     LevelsetP2CL lset( mg);
 
-    CreateNumb( lset.idx.GetIdx(), lset.idx, mg, NoBndDataCL<>());
+    lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( &sphere_2);
 

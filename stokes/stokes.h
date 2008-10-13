@@ -74,19 +74,17 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  M;
 
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}
+        : _base( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg, coeff, bdata), vel_idx( 3, 3), pr_idx( 1), t( 0.0) {}
+        : _base( mg,  coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+        { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
-    void DeleteNumberingVel( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
-    void DeleteNumberingPr ( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
+        { idx->CreateNumbering( level, _MG, _BndData.Pr,  match); }
+    void DeleteNumbering( IdxDescCL* idx)
+        { idx->DeleteNumbering( _MG); }
 
     // Set up matrices and complete rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*, double= 0.0) const;
@@ -161,17 +159,15 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  B;
 
     StokesP1BubbleP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( 3, 0, 0, 3), pr_idx( 1) {}
+        : _base( mgb, coeff, bdata), vel_idx( vecP1Bubble_FE), pr_idx( P1_FE) {}
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Vel, match); }
+        { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { CreateNumb( level, *idx, _MG, _BndData.Pr, match); }
-    void DeleteNumberingVel( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
-    void DeleteNumberingPr ( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
+        { idx->CreateNumbering( level, _MG, _BndData.Pr, match); }
+    void DeleteNumbering( IdxDescCL* idx)
+        { idx->DeleteNumbering( _MG); }
 
     // Set up matrices and rhs
     void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;

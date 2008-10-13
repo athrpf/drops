@@ -73,12 +73,13 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 
 
     InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( 1) {}
+        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
 
     // numbering of unknowns
-    void CreateNumbering( Uint level, IdxDescCL* idx);
+    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match=0) 
+    { idx->CreateNumbering( level, _MG, _BndData, match); }
     void DeleteNumbering( IdxDescCL* idx)
-        { DeleteNumb( *idx, _MG); }
+    { idx->DeleteNumbering( _MG); }
 
     // set up matrices (M is time independent)
     void SetupInstatSystem( MatDescCL& A, MatDescCL& M, double tA) const;

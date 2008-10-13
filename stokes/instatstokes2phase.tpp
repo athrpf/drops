@@ -1618,7 +1618,7 @@ template<class StokesT>
   VelocityRepairCL<StokesT>::post_refine ()
 {
     VelVecDescCL loc_v;
-    IdxDescCL    loc_vidx( 3, 3);
+    IdxDescCL    loc_vidx( vecP2_FE);
     VelVecDescCL& v= stokes_.v;
     Uint LastLevel= stokes_.GetMG().GetLastLevel();
     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
@@ -1632,7 +1632,7 @@ template<class StokesT>
     loc_v.SetIdx( &loc_vidx);
     RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
     v.Clear();
-    stokes_.DeleteNumberingVel( v.RowIdx);
+    stokes_.DeleteNumbering( v.RowIdx);
 
     stokes_.vel_idx.swap( loc_vidx);
     v.SetIdx( &stokes_.vel_idx);
@@ -1647,7 +1647,7 @@ template<class StokesT>
   PressureRepairCL<StokesT>::post_refine ()
 {
     VecDescCL loc_p;
-    IdxDescCL loc_pidx( 1);
+    IdxDescCL loc_pidx( P1_FE);
     VecDescCL& p= stokes_.p;
     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
 
@@ -1655,7 +1655,7 @@ template<class StokesT>
     loc_p.SetIdx( &loc_pidx);
     RepairAfterRefineP1( stokes_.GetPrSolution( p), loc_p);
     p.Clear();
-    stokes_.DeleteNumberingPr( p.RowIdx);
+    stokes_.DeleteNumbering( p.RowIdx);
     stokes_.pr_idx.swap( loc_pidx);
     p.SetIdx( &stokes_.pr_idx);
     p.Data= loc_p.Data;

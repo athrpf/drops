@@ -215,7 +215,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson,
   MatDescCL& M= Poisson.M;
   MatDescCL& U= Poisson.U;
 
-  idx.Set(1);
+  idx.SetFE( P1_FE);
   // erzeuge Nummerierung zu diesem Index
   Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
 

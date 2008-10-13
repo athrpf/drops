@@ -377,8 +377,8 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
     const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
-    IdxDescCL  augmIdx( 1, 1);
-    CreateNumb( lvl, augmIdx, MG_, bnd);
+    IdxDescCL  augmIdx( P2_FE, bnd);
+    augmIdx.CreateNumbering( lvl, MG_);
     const Uint augm_idx= augmIdx.GetIdx();
 
     // init Coord_, map_ and augmIdx

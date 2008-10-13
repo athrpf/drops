@@ -104,7 +104,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   double tol= 1.0e-7;
   int max_iter= 500;
 
-  idx.Set( 1, 0, 0, 0);
+  idx.SetFE( P1_FE);
 
   MultiGridCL& MG= Poisson.GetMG();
 

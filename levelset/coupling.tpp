@@ -56,8 +56,8 @@ void TimeDisc2PhaseCL<StokesT>::SetupProlongations()
             ++it; // it points now to the finest level
         MGLevelDataCL& tmp= *it;
         std::cerr << "    Create indices on Level " << lvl << std::endl;
-        tmp.Idx.Set  ( 3, 3);
-        tmp.IdxPr.Set( 1, 0);
+        tmp.Idx.SetFE( vecP2_FE );
+        tmp.IdxPr.SetFE( P1_FE);
         Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
         Stokes_.CreateNumberingPr (lvl, &tmp.IdxPr);
         if(lvl!=0) {

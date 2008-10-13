@@ -102,10 +102,10 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     MatDescCL* N= &NS.N;
     int step= 0;
 
-    vidx1->Set( 3, 3, 0, 0);
-    vidx2->Set( 3, 3, 0, 0);
-    pidx1->Set( 1, 0, 0, 0);
-    pidx2->Set( 1, 0, 0, 0);
+    vidx1->SetFE( vecP2_FE);
+    vidx2->SetFE( vecP2_FE);
+    pidx1->SetFE( P1_FE);
+    pidx2->SetFE( P1_FE);
 
     TimerCL time;
     do
@@ -317,8 +317,7 @@ int main (int argc, char** argv)
         fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
         fil.close();
 
-        DROPS::IdxDescCL tecIdx;
-        tecIdx.Set( 1, 0, 0, 0);
+        DROPS::IdxDescCL tecIdx( DROPS::P1_FE);
         prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
 
         std::ofstream v2d("navstokestec2D.dat");

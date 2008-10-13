@@ -41,7 +41,7 @@ int main ()
     TetraCL& t= *mg.GetAllTetraBegin();
 
     IdxDescCL idx( P2_FE);
-    CreateNumb( 0, idx, mg, NoBndDataCL<>());
+    idx.CreateNumbering( 0, mg);
     VecDescCL ones( &idx), ls( &idx);
     for (int i=0; i<10; ++i)
         ones.Data[i]= 1;

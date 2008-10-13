@@ -105,16 +105,16 @@ int main (int argc, char* argv[])
     adap.MakeInitialTriang( sphere_2);
 
     DROPS::LevelsetP2CL lset( mg);
-    DROPS::CreateNumb( mg.GetLastLevel(), lset.idx, mg, DROPS::NoBndDataCL<>());
+    lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
     lset.Phi.SetIdx( &lset.idx);
     LinearLSInit( mg, lset.Phi, &sphere_2);
 
-    DROPS::IdxDescCL ifaceidx( 1);
+    DROPS::IdxDescCL ifaceidx( DROPS::P1_FE);
     DROPS::CreateNumbOnInterface( mg.GetLastLevel(), ifaceidx, mg, lset.Phi);
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
 
-    DROPS::IdxDescCL ifacefullidx( DROPS::P1_FE);
-    DROPS::CreateNumb( mg.GetLastLevel(), ifacefullidx, mg, DROPS::NoBndDataCL<>());
+    DROPS::IdxDescCL ifacefullidx( DROPS::P1_FE, DROPS::NoBndDataCL<>());
+    ifacefullidx.CreateNumbering( mg.GetLastLevel(), mg);
 
     DROPS::EnsightP2SolOutCL ensight( mg, &lset.idx);
     const std::string filename( C.EnsDir + "/" + C.EnsCase);
