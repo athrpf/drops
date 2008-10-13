@@ -49,6 +49,7 @@ class FE_InfoCL
 	/// \brief Initialize with given FE-type \a fe
 	void SetFE( FiniteElementT fe)
 	{
+		NumUnknownsVertex_= NumUnknownsEdge_= NumUnknownsFace_= NumUnknownsTetra_= 0;
         switch(fe_= fe) {
             case P0_FE:          NumUnknownsTetra_= 1; break;
             case P1_FE:
