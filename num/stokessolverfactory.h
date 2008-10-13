@@ -66,7 +66,6 @@ class StokesSolverFactoryCL
 
 // PC for A-block
     // MultiGrid
-    MGDataCL velMG_;
     SSORsmoothCL smoother_;
     PCG_SsorCL   coarsesolver_;
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGSolver_;
@@ -171,7 +170,6 @@ class StokesSolverFactoryCL
     StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C);
     ~StokesSolverFactoryCL() {}
 
-    MGDataCL&  GetVelMG() {return velMG_;}
     void       SetMatrixA (const MatrixCL* A) {mincommispc_.SetMatrixA(A);}
     bool       MGUsed()   {return mgused_;}
 
@@ -184,7 +182,7 @@ StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, 
         bbtispc_( Stokes_.B.Data, Stokes_.prM.Data, Stokes_.M.Data, kA_, kM_, C_.pcS_tol, C_.pcS_tol),
         mincommispc_( 0, Stokes_.B.Data, Stokes_.M.Data, Stokes_.prM.Data, C_.pcS_tol),
         smoother_( 1.0), coarsesolver_( SSORPcCL(1.0), 500, 1e-16),
-        MGSolver_ ( velMG_, smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
+        MGSolver_ ( Stokes.GetMGData(), smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
         GMResSolver_( JACPc_, C_.pcA_iter, /*restart*/ 100, C_.pcA_tol, /*rel*/ true), GMResPc_( GMResSolver_),
         BiCGStabSolver_( JACPc_, C_.pcA_iter, C_.pcA_tol, /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),
         PCGSolver_( SSORPc_, C_.pcA_iter, C_.pcA_tol, true), PCGPc_( PCGSolver_),
@@ -347,16 +345,16 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
         case 81 : {
             if (C_.XFEMStab >= 0) // P1X
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            velMG_.SetStokesMG(true);
+            Stokes_.GetMGData().SetStokesMG(true);
             vankasmoother.SetVankaMethod(2);
-            stokessolver = new StokesMGSolverCL<PVankaSmootherCL>( velMG_, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 1);
+            stokessolver = new StokesMGSolverCL<PVankaSmootherCL>( Stokes_.GetMGData(), vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 1);
         }
         break;
         case 82 : {
             if (C_.XFEMStab >= 0) // P1X
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            velMG_.SetStokesMG(true);
-            stokessolver = new StokesMGSolverCL<BSSmootherCL>( velMG_, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 4);
+            Stokes_.GetMGData().SetStokesMG(true);
+            stokessolver = new StokesMGSolverCL<BSSmootherCL>( Stokes_.GetMGData(), bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 4);
         }
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");

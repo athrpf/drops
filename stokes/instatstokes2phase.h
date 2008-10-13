@@ -88,6 +88,9 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     FiniteElementT prFE_;        ///< controls FE type for pressure space
     ExtIdxDescCL   Xidx_;        ///< extended index for P1X_FE
 
+  protected:
+    MGDataCL       matMG_;       ///< multi grid hierarchy
+
   public:
     IdxDescCL    vel_idx;  ///< for velocity unknowns
     IdxDescCL    pr_idx;   ///< for pressure unknowns
@@ -96,16 +99,15 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     VecDescCL    p;        ///< pressure
     VelVecDescCL b;
     VecDescCL    c;
-    MatDescCL    A,
-                 B,
-                 M,
-                 prA,
+    MatDescCL&   B,
                  prM;
+    MatDescCL    A, M,
+                 prA;
 
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
-        : _base(mgb, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx, XFEMstab), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}
+        : _base(mgb, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx, XFEMstab), matMG_(1), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.), B(matMG_.begin()->B), prM(matMG_.begin()->Mpr) {}
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
-        : _base(mg, coeff, bdata), prFE_(prFE), Xidx_( &pr_idx, XFEMstab), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.) {}
+        : _base(mg, coeff, bdata),  prFE_(prFE), Xidx_( &pr_idx, XFEMstab), matMG_(1), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.), B(matMG_.begin()->B), prM(matMG_.begin()->Mpr) {}
 
     /// \name Numbering
     //@{
@@ -139,7 +141,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     /// Set up matrix B and rhs c
     void SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up matrix B
-    void SetupMatrix2( const MultiGridCL& MG, MatDescCL* B) const;
+    void SetupMatrix2( MatDescCL* B) const;
     /// Set up rhs c
     void SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up the time-derivative of B times velocity
@@ -167,6 +169,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     const ExtIdxDescCL& GetXidx() const { return Xidx_; }
     ExtIdxDescCL&       GetXidx()       { return Xidx_; }
     //@}
+    /// Get MG-data structure
+    MGDataCL& GetMGData() {return matMG_;}
     /// Get pressure solution on inner/outer part (especially for P1X_FE)
     void GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart= true); // false = inner = Phi<0, true = outer = Phi>0
 

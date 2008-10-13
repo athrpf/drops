@@ -27,7 +27,7 @@ class MGDataCL : public std::list<MGLevelDataCL>
     bool StokesMG_;
 
   public:
-    MGDataCL(bool StokesMG= false) : StokesMG_(StokesMG) {};
+    MGDataCL(int n=0) : std::list<MGLevelDataCL>(n), StokesMG_(false) {}
     void RemoveCoarseResetFinest() {
         if (this->empty()) return;
         //RemoveCoarse
@@ -38,9 +38,9 @@ class MGDataCL : public std::list<MGLevelDataCL>
         this->begin()->A.Data.clear();
         this->begin()->P.Data.clear();
         this->begin()->B.Data.clear();
-        this->begin()->PPr.Data.clear();
         this->begin()->BT.Data.clear();
         this->begin()->Mpr.Data.clear();
+        this->begin()->PPr.Data.clear();
     }
     bool StokesMG() {return StokesMG_;}
     void SetStokesMG(bool full) {StokesMG_=full;}

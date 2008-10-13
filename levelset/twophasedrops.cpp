@@ -123,21 +123,21 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 
 template< class StokesProblemT>
 TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
-    NSSolverBaseCL<StokesProblemT>* solver, ParamMesszelleNsCL& C, bool usematMG, MGDataCL* matMG)
+    NSSolverBaseCL<StokesProblemT>* solver, ParamMesszelleNsCL& C, bool usematMG)
 {
     switch (C.scheme)
     {
         case 1 : 
             return (new LinThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_stab, usematMG, matMG));
+                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_stab, usematMG));
         break;
         case 2 :
             return (new RecThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG, matMG));
+                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG));
         break;
         case 3 :
             return (new ThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG, matMG));
+                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG));
         break;
         case 4 :
             return (new OperatorSplitting2PhaseCL<StokesProblemT, StokesSolverBaseCL>
@@ -145,7 +145,7 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 5 :
             return (new CrankNicolsonScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG, matMG));
+                        (Stokes, lset, *solver, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
@@ -383,9 +383,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
 
     // Time discretisation + coupling
-    MGDataCL& velMG = stokessolverfactory.GetVelMG();
     bool mgused = stokessolverfactory.MGUsed();
-    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C, mgused, &velMG);
+    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C, mgused);
     timedisc->SetTimeStep( C.dt);
 
     if (C.nonlinear==0.0) // only Stokes

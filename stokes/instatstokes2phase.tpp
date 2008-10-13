@@ -12,7 +12,7 @@ namespace DROPS
 // -----------------------------------------------------------------------------
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( const MultiGridCL& MG, MatDescCL* B) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( MatDescCL* B) const
 {
     MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
     const Uint lvl= B->GetRowLevel();
@@ -24,8 +24,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( const MultiGridCL& MG, MatDe
     Point3DCL tmp;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
-    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
-         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
+    for (MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin( lvl),
+         send= _MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
@@ -1360,10 +1360,12 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const Le
             tmp.B.SetIdx( &tmp.IdxPr , &tmp.Idx );
             tmp.BT.SetIdx( &tmp.Idx, &tmp.IdxPr );
             tmp.Mpr.SetIdx( &tmp.IdxPr, &tmp.IdxPr);
-            std::cerr << "Create StokesMatrices2     " << (&tmp.IdxPr)->NumUnknowns <<std::endl;
-            SetupMatrix2( _MG, &tmp.B);
+            std::cerr << "Create StokesMatrices2 for " << (&tmp.IdxPr)->NumUnknowns << " unknown" << std::endl;
+            if (&tmp != &matMG->back()) {
+                SetupMatrix2( &tmp.B);
+                SetupPrMass(&tmp.Mpr, lset);
+            }
             transpose(tmp.B.Data, tmp.BT.Data);
-            SetupPrMass(&tmp.Mpr, lset);
         }
     }
 }

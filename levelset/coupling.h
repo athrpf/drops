@@ -31,7 +31,6 @@ class TimeDisc2PhaseCL
     double theta_, dt_;
     const double nonlinear_;
     bool         usematMG_;           // MG-hierachy for _mat
-    MGDataCL*    matMG_;
 
     VecDescCL    cplLB_;
     MatDescCL    LB_;
@@ -40,7 +39,7 @@ class TimeDisc2PhaseCL
 
 
   public:
-    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1., bool usematMG= false, MGDataCL* matMG= 0);
+    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1., bool usematMG= false);
     virtual ~TimeDisc2PhaseCL();
 
     double GetTheta()    const { return theta_; }
@@ -74,7 +73,6 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::nonlinear_;
     using base_::dt_;
     using base_::usematMG_;
-    using base_::matMG_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -86,7 +84,7 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                             SolverT& solver, double theta= 0.5,
                             double nonlinear= 1., bool implicitCurv= false,
-                            bool usematMG= false, MGDataCL* matMG= 0);
+                            bool usematMG= false);
     ~LinThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites base-class-method
@@ -125,7 +123,6 @@ class ThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::nonlinear_;
     using base_::dt_;
     using base_::usematMG_;
-    using base_::matMG_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -140,7 +137,7 @@ class ThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     ThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double theta= 0.5, double nonlinear= 1.,
                          bool withProjection= false, double stab= 0.0,
-                         bool usematMG= false, MGDataCL* matMG= 0);
+                         bool usematMG= false);
     ~ThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites base-class-method
@@ -178,8 +175,8 @@ class FracStepScheme2PhaseCL : public ThetaScheme2PhaseCL<StokesT,SolverT>
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                SolverT& solver, double nonlinear= 1, bool withProjection= false,
-                               double stab= 0.0, int step = -1, bool usematMG= false, MGDataCL* matMG= 0)
-        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab, usematMG, matMG), step_((step >= 0) ? step%3 : 0) {}
+                               double stab= 0.0, int step = -1, bool usematMG= false)
+        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab, usematMG), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -285,7 +282,6 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::nonlinear_;
     using base_::dt_;
     using base_::usematMG_;
-    using base_::matMG_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -306,7 +302,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double theta= 0.5, double nonlinear= 1.,
                          bool withProjection= false, double stab= 0.0,
-                         bool usematMG= false, MGDataCL* matMG= 0);
+                         bool usematMG= false);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
@@ -343,7 +339,7 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double nonlinear= 1.,
                          bool withProjection= false, double stab= 0.0,
-                         bool usematMG= false, MGDataCL* matMG= 0);
+                         bool usematMG= false);
     ~CrankNicolsonScheme2PhaseCL();
 
     void DoStep( int maxFPiter= -1);
