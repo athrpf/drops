@@ -9,7 +9,7 @@
 #include "num/solver.h"
 
 #include <list>
-
+#include <cstring>
 
 namespace DROPS
 {
@@ -143,8 +143,8 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
         // correctness depend on the scaling of the matrix and geometry.
         // This has bitten us in e.g. levelset/mzelle_instat.cpp.
         Solver.Solve( *fine->ABlock, x, b);
-        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
-                  << "\tresiduum: " << Solver.GetResid() << '\n';
+/*        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
+                  << "\tresiduum: " << Solver.GetResid() << '\n';*/
         return;
     }
     VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
@@ -218,7 +218,7 @@ void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine,
         // use direct solver
         std::cout << "P2P1:StokesMGM: use direct solver " << std::endl;
         Solver.Solve( *fine->ABlock, fine->B.Data, u, p, b, c);
-        std::cerr << "P2P1:StokesMGM: direct solver: iter: " << Solver.GetIter() << "\tresid: " << Solver.GetResid() << std::endl;
+        //std::cerr << "P2P1:StokesMGM: direct solver: iter: " << Solver.GetIter() << "\tresid: " << Solver.GetResid() << std::endl;
         return;
     }
 
