@@ -16,9 +16,12 @@ namespace DROPS
 
 struct MGLevelDataCL  // data for one triang level
 {
-    IdxDescCL Idx, IdxPr; // index description for velocity and pressuer
-    MatDescCL   A,     B,     BT,     Mpr; // saddle-point matrix + pressure mass matrix
-    MatDescCL   P,   PPr; // prolongation matrices for velocity and pressure
+    IdxDescCL Idx, IdxPr;          // index description for velocity and pressure
+    MatDescCL   A,     B,     BT;  // saddle-point matrix
+    MatDescCL   Mpr, Mvel;         // mass matrices
+    MatDescCL   P,   PPr;          // prolongation matrices for velocity and pressure
+    MatDescCL   AN;                // A + alpha*N
+    MatrixCL*   ABlock;
 };
 
 class MGDataCL : public std::list<MGLevelDataCL>
@@ -40,7 +43,10 @@ class MGDataCL : public std::list<MGLevelDataCL>
         this->begin()->B.Data.clear();
         this->begin()->BT.Data.clear();
         this->begin()->Mpr.Data.clear();
+        this->begin()->Mvel.Data.clear();
         this->begin()->PPr.Data.clear();
+        this->begin()->AN.Data.clear();
+        this->begin()->ABlock = &this->begin()->A.Data;
     }
     bool StokesMG() {return StokesMG_;}
     void SetStokesMG(bool full) {StokesMG_=full;}
@@ -48,7 +54,6 @@ class MGDataCL : public std::list<MGLevelDataCL>
 
 typedef MGDataCL::iterator       MGDataIterCL;
 typedef MGDataCL::const_iterator const_MGDataIterCL;
-
 
 // Multigrid method, V-cycle, beginning from level 'fine'
 // numLevel and numUnknDirect specify, when the direct solver 'Solver' is used:
@@ -134,28 +139,25 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
        ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) )
        || fine==begin)
     { // use direct solver
-        // We use relative residual-measurement, as otherwise the accuracy and
+        // NOTE: Use relative residual-measurement, as otherwise the accuracy and
         // correctness depend on the scaling of the matrix and geometry.
         // This has bitten us in e.g. levelset/mzelle_instat.cpp.
-        const double r0= norm( b - fine->A.Data*x);
-        Solver.SetTol( 1e-5*r0);
-        Solver.Solve( fine->A.Data, x, b);
-//        const double r1= norm( b - fine->A.Data*x);
-//        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
-//                  << "\treduction: " << r1/r0 << '\n';
+        Solver.Solve( *fine->ABlock, x, b);
+        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
+                  << "\tresiduum: " << Solver.GetResid() << '\n';
         return;
     }
     VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
     // presmoothing
-    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine->ABlock, x, b);
     // restriction of defect
-    d= transp_mul( fine->P.Data, VectorCL( b - fine->A.Data*x));
+    d= transp_mul( fine->P.Data, VectorCL( b - *fine->ABlock*x));
     // calculate coarse grid correction
     MGM( begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
     // add coarse grid correction
     x+= fine->P.Data * e;
     // postsmoothing
-    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine->ABlock, x, b);
 }
 
 
@@ -169,7 +171,7 @@ void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solv
     double old_resid;
     VectorCL tmp;
     if (residerr == true) {
-        resid= norm( b - finest->A.Data * x);
+        resid= norm( b - *finest->ABlock * x);
         //std::cerr << "initial residual: " << resid << '\n';
     }
     else
@@ -184,7 +186,7 @@ void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solv
         MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
         if (residerr == true) {
             old_resid= resid;
-            resid= norm( b - finest->A.Data * x);
+            resid= norm( b - *finest->ABlock * x);
 //            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
 //            std::cerr << "\treduction: " << resid/old_resid;
 //            std::cerr << '\n';
@@ -215,7 +217,8 @@ void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine,
     {
         // use direct solver
         std::cout << "P2P1:StokesMGM: use direct solver " << std::endl;
-        Solver.Solve( fine->A.Data, fine->B.Data, u, p, b, c);
+        Solver.Solve( *fine->ABlock, fine->B.Data, u, p, b, c);
+        std::cerr << "P2P1:StokesMGM: direct solver: iter: " << Solver.GetIter() << "\tresid: " << Solver.GetResid() << std::endl;
         return;
     }
 
@@ -224,11 +227,11 @@ void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine,
     // presmoothing
 //    std::cout << "P2P1:StokesMGM: presmoothing " << smoothSteps << " steps " << std::endl;
     for (Uint i=0; i<smoothSteps; ++i) {
-        Smoother.Apply( fine->A.Data, fine->B.Data, fine->BT.Data, fine->Mpr.Data, u, p, b, c );
+        Smoother.Apply( *fine->ABlock, fine->B.Data, fine->BT.Data, fine->Mpr.Data, u, p, b, c );
     }
     // restriction of defect
 //    std::cout << "P2P1:StokesMGM: restriction of defect " << std::endl;
-    du = transp_mul( fine->P.Data, VectorCL(b - ( fine->A.Data*u + transp_mul( fine->B.Data, p ) )) );
+    du = transp_mul( fine->P.Data, VectorCL(b - (*fine->ABlock*u + transp_mul( fine->B.Data, p ) )) );
     dp = transp_mul( fine->PPr.Data,  VectorCL(c - fine->B.Data*u ));
 
     // calculate coarse grid correction
@@ -245,7 +248,7 @@ void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine,
     // postsmoothing
 //    std::cout << "P2P1:StokesMGM: postsmoothing " << smoothSteps << " steps " << std::endl;
     for (Uint i=0; i<smoothSteps; ++i) {
-        Smoother.Apply( fine->A.Data, fine->B.Data, fine->BT.Data, fine->Mpr.Data, u, p, b, c );
+        Smoother.Apply( *fine->ABlock, fine->B.Data, fine->BT.Data, fine->Mpr.Data, u, p, b, c );
     }
 }
 
@@ -261,13 +264,13 @@ class PVankaSmootherCL
 //                            4 - SSOR (symmetrical Gauss-Seidel)
 
     template <typename Mat>
-    DMatrixCL<double>  SetupLocalProblem (Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B) const;
+    DMatrixCL<double>  SetupLocalProblem (Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B) const;
     template <typename Mat, typename Vec>
-    void DiagSmoother(Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
+    void DiagSmoother(Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
     template <typename Mat, typename Vec>
-    void GSSmoother(Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
+    void GSSmoother(Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
     template <typename Mat, typename Vec>
-    void LRSmoother(Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
+    void LRSmoother(Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
 
   public:
     PVankaSmootherCL(int vanka_method=0, double tau=1.0) : vanka_method_(vanka_method), tau_(tau) {}
@@ -282,7 +285,7 @@ class PVankaSmootherCL
 // constructs local saddle point matrix
 // TODO effizenter implementieren (CRS-Struktur ausnutzen)
 template <typename Mat>
-DMatrixCL<double> PVankaSmootherCL::SetupLocalProblem (Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B) const
+DMatrixCL<double> PVankaSmootherCL::SetupLocalProblem (Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B) const
 {
     const size_t dim = NodeListVel.size();
     DMatrixCL<double> M(dim+1, dim+1);
@@ -301,35 +304,31 @@ DMatrixCL<double> PVankaSmootherCL::SetupLocalProblem (Uint id, std::vector<int>
 }
 
 template <typename Mat, typename Vec>
-void PVankaSmootherCL::DiagSmoother(Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
+void PVankaSmootherCL::DiagSmoother(Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
 {
-    const int dim = v.size()-1;
+    const size_t dim = v.size()-1;
     Vec DiagA(dim);
     Vec Block(dim);
-    Vec tmpv (dim+1);
     // Direct solver: constructing the local problem Mx=v
-    for ( int i=0; i<dim; ++i )
+    for ( size_t i=0; i<dim; ++i )
     {
         const int irow = NodeListVel[i];
         DiagA[i] = A(irow,irow);
     }
-    for ( int j=0; j<dim; ++j )
-    {
-        const int jcol = NodeListVel[j];
-        Block[j] = B(id,jcol);
-    }
+
+    const size_t n= B.row_beg( id + 1) - B.row_beg( id);
+    std::memcpy( Addr(Block), B.raw_val() + B.row_beg( id), n*sizeof(typename Vec::value_type));
     // Solve Mx=v
-    tmpv = v/DiagA;
-    tmpv[dim] = v[dim];
-    for ( int i=0; i<dim; ++i )
-        tmpv[dim] -= Block[i]*tmpv[i];
+
     double S=0.0;
-    for ( int i=0; i<dim; ++i )
+    for ( size_t i=0; i<dim; ++i ){
+        v[i] /= DiagA[i];
+        v[dim] -= Block[i]*v[i];
         S += Block[i]*Block[i]/DiagA[i];
-    tmpv[dim] = -tmpv[dim]/S;
-    for ( int i=0; i<dim; ++i )
-        tmpv[i]-=tmpv[dim]*Block[i]/DiagA[i];
-    v = tmpv;
+    }
+    v[dim] /= -S;
+    for ( size_t i=0; i<dim; ++i )
+        v[i]-=v[dim]*Block[i]/DiagA[i];
 }
 
 template <typename Mat, typename Vec>
@@ -379,7 +378,7 @@ void Jacobi(const Mat& M, Vec& x, const Vec& rhs)
 
 // exact schur method with A^{-1} = one step (symmetric) Gauss Seidel
 template <typename Mat, typename Vec>
-void PVankaSmootherCL::GSSmoother(Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
+void PVankaSmootherCL::GSSmoother(Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
 {
     const int dim = v.size() - 1;
     DMatrixCL<double> M(SetupLocalProblem(id, NodeListVel, A, B));
@@ -422,7 +421,7 @@ void PVankaSmootherCL::GSSmoother(Uint id, std::vector<int>& NodeListVel, const 
 }
 
 template <typename Mat, typename Vec>
-void PVankaSmootherCL::LRSmoother(Uint id, std::vector<int>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
+void PVankaSmootherCL::LRSmoother(Uint id, std::vector<size_t>& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
 {
     DMatrixCL<double> M(SetupLocalProblem(id, NodeListVel, A, B));
     gauss_pivot (M, v);
@@ -432,23 +431,22 @@ template <typename Mat, typename Vec>
 void
 PVankaSmootherCL::Apply(const Mat& A, const Mat& B, const Mat& BT, const Mat&, Vec& x, Vec& y, const Vec& f, const Vec& g) const
 {
-    std::vector<int> NodeListVel;
+    std::vector<size_t> NodeListVel;
     NodeListVel.reserve(200);
-    int dim;
+    size_t dim;
     // Cycle by pressure variables
-    for ( Uint id=0; id<g.size(); ++id )
+    for ( size_t id=0; id<g.size(); ++id )
     {
         dim = B.row_beg(id+1) - B.row_beg(id);
         Vec v(dim+1);
 
         NodeListVel.resize(dim);
 
+        // copy column indices of nonzeros from row id of B to NodeListVel
+        std::memcpy( &NodeListVel[0], B.raw_col() + B.row_beg( id), dim*sizeof(size_t));
 
-        int l=0;
-        for ( Uint k=B.row_beg(id); k<B.row_beg(id+1); ++k )
-              NodeListVel[l++]=B.col_ind(k);
-
-        for ( int i=0; i<dim; ++i )
+        // v = resid of (A & B^T \\ B & 0) * (x \\ y) - (f \\ g) for the rows NodeListVel, id
+        for ( size_t i=0; i<dim; ++i )
         {
             const int irow = NodeListVel[i];
             double sum=0;
@@ -462,10 +460,12 @@ PVankaSmootherCL::Apply(const Mat& A, const Mat& B, const Mat& BT, const Mat&, V
         }
 
         double sump=0;
-        for ( Uint k=B.row_beg( id ); k<B.row_beg( id+1 ); ++k )
+        for ( size_t k=B.row_beg( id ); k<B.row_beg( id+1 ); ++k )
             sump+= B.val(k)*x[B.col_ind(k)];
         sump-=g[id];
         v[dim]=sump;
+
+        // smoothing
         switch (vanka_method_) {
             case 0 : {
                 DiagSmoother(id, NodeListVel, A, B, v);
@@ -479,9 +479,9 @@ PVankaSmootherCL::Apply(const Mat& A, const Mat& B, const Mat& BT, const Mat&, V
         }
 
         // Cycle by local unknowns: correction of the approximation x
-        for ( int i=0; i<dim; ++i )
+        for ( size_t i=0; i<dim; ++i )
         {
-            const int indvel = NodeListVel[i];
+            const size_t indvel = NodeListVel[i];
             x[indvel] -= tau_ * v[i];
         }
         y[id] -= tau_ * v[dim];

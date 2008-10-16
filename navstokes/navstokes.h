@@ -20,6 +20,7 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 {
   private:
     typedef StokesP2P1CL<Coeff> _base;
+    MGDataCL       matMG_;       // grid level data
 
   public:
     using                            _base::_MG;
@@ -42,9 +43,9 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     VelVecDescCL cplM;
 
     NavierStokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : StokesP2P1CL<Coeff>( mgb, coeff, bdata) {}
+        : StokesP2P1CL<Coeff>( mgb, coeff, bdata), matMG_(1) {}
     NavierStokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : StokesP2P1CL<Coeff>( mg, coeff, bdata) {}
+        : StokesP2P1CL<Coeff>( mg, coeff, bdata), matMG_(1) {}
 
     // Set up matrix and rhs for nonlinearity: use time t1 for the velocity in N,
     // t2 for the boundary-data in the velocity unknowns
@@ -52,7 +53,10 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     // Set up matrix for nonlinearity, use time _t
     void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
     { this->SetupNonlinear(matN, velvec, vecb, t, t); }
-
+    // Dummy function for compatibility with InstatNavierStokes2PhaseP2P1CL
+    void SetupNMatricesMG( MGDataCL*, const VelVecDescCL&, double) const {}
+    // Get MG-data structure
+    MGDataCL& GetMGData() {return matMG_;}
     // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
     void SetTime (double tt) { t= tt; }
 

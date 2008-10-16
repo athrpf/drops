@@ -33,7 +33,7 @@ class NSSolverBaseCL : public SolverBaseCL
     virtual double   GetResid ()         const { return solver_.GetResid(); }
     virtual int      GetIter  ()         const { return solver_.GetIter(); }
     StokesSolverBaseCL& GetStokesSolver () const { return solver_; }
-    virtual MatrixCL& GetAN()                  { return NS_.A.Data; }
+    virtual const MatrixCL* GetAN()                  { return &NS_.A.Data; }
 
     /// solves the system   A v + BT p = b
     ///                     B v        = c
@@ -68,7 +68,7 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
     using base_::_tol;
     using base_::_res;
 
-    MatrixCL AN_;
+    MatrixCL* AN_;
 
     double      red_;
     bool        adap_;
@@ -76,7 +76,7 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
   public:
     AdaptFixedPtDefectCorrCL( NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter,
                               double tol, double reduction= 0.1, bool adap=true)
-        : base_( NS, solver, maxiter, tol), red_( reduction), adap_( adap) {}
+        : base_( NS, solver, maxiter, tol), AN_(0), red_( reduction), adap_( adap) { AN_ = &NS_.GetMGData().back().AN.Data; }
 
     ~AdaptFixedPtDefectCorrCL() {}
 
@@ -84,7 +84,7 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
     double   GetResid ()         const { return _res; }
     int      GetIter  ()         const { return _iter; }
 
-    MatrixCL& GetAN()          { return AN_; }
+    const MatrixCL* GetAN()          { return AN_; }
 
     /// solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
     ///                                 B v        = c
@@ -211,10 +211,11 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     for(;;++_iter) { // ever
         NS_.SetupNonlinear(&NS_.N, &v, &cplN);
         //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
-        AN_.LinComb( 1., A, alpha, NS_.N.Data);
+        AN_->LinComb( 1., A, alpha, NS_.N.Data);
+        NS_.SetupNMatricesMG( &NS_.GetMGData(), v, alpha);
 
         // calculate defect:
-        d= AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
+        d= *AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
         e= B*v.Data - c;
         std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
         //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
@@ -226,7 +227,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
         w= 0.0; q= 0.0;
         solver_.SetTol( outer_tol);
-        solver_.Solve( AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
+        solver_.Solve( *AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
 
         // calculate step length omega:
         relax.Update( NS_, A,  B, v, p, b, cplN, c, w,  q, alpha);

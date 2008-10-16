@@ -1072,14 +1072,14 @@ class StokesMGSolverCL: public StokesSolverBaseCL
 // define initial approximation
         const_MGDataIterCL A_end (--A_.end());
 
-        const double runorm0= norm_sq(A_end->A.Data * v + transp_mul(A_end->B.Data, p ) - b);
+        const double runorm0= norm_sq(*A_end->ABlock * v + transp_mul(A_end->B.Data, p ) - b);
         const double rpnorm0= norm_sq(A_end->B.Data * v - c);
         const double resid0= std::sqrt(runorm0+rpnorm0);
         double resid;
         for (int j=0; j<_maxiter; ++j)
         {
             StokesMGM( A_.begin(),A_end, v, p, b, c, smoother_, smoothSteps_, wc, directSolver_, usedLevels_, -1);
-            const double runorm= norm_sq(A_end->A.Data * v + transp_mul(A_end->B.Data, p ) - b);
+            const double runorm= norm_sq(*A_end->ABlock * v + transp_mul(A_end->B.Data, p ) - b);
             const double rpnorm= norm_sq(A_end->B.Data * v - c);
             resid= std::sqrt(runorm+rpnorm);
             if (rel_)

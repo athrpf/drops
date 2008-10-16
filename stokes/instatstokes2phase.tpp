@@ -12,9 +12,10 @@ namespace DROPS
 // -----------------------------------------------------------------------------
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( MatDescCL* B) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( MatDescCL* B, MatDescCL* BT) const
 {
     MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
+    MatrixBuilderCL mBT( &BT->Data, BT->RowIdx->NumUnknowns, BT->ColIdx->NumUnknowns);
     const Uint lvl= B->GetRowLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
@@ -39,10 +40,13 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( MatDescCL* B) const
                 mB( prNumb[pr], n.num[vel])  -=  tmp[0];
                 mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
                 mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
-                }
+                mBT( n.num[vel], prNumb[pr])  -=  tmp[0];
+                mBT( n.num[vel]+1, prNumb[pr])-=  tmp[1];
+                mBT( n.num[vel]+2, prNumb[pr])-=  tmp[2];                }
         }
     }
     mB.Build();
+    mBT.Build();
 }
 
 template <class CoeffT>
@@ -1346,26 +1350,30 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const Le
 {
     for(MGDataCL::iterator it= matMG->begin(); it!=matMG->end(); ++it) {
         MGLevelDataCL& tmp= *it;
-        MatDescCL A, M;
+        MatDescCL A;
         A.SetIdx( &tmp.Idx, &tmp.Idx);
-        M.SetIdx( &tmp.Idx, &tmp.Idx);
         tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
+        tmp.Mvel.SetIdx( &tmp.Idx, &tmp.Idx);
         std::cerr << "Create StiffMatrix for "
                   << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
         if(&tmp != &matMG->back()) {
-            SetupMatrices1( &A, &M, lset, t);
-            tmp.A.Data.LinComb( 1./dt, M.Data, theta, A.Data);
+            SetupMatrices1( &A, &tmp.Mvel, lset, t);
+            tmp.A.Data.LinComb( 1./dt, tmp.Mvel.Data, theta, A.Data);
+            if (it != matMG->begin())
+                tmp.Mvel.Data.clear();
         }
+        tmp.ABlock = &tmp.A.Data;
         if (matMG->StokesMG()) {
             tmp.B.SetIdx( &tmp.IdxPr , &tmp.Idx );
             tmp.BT.SetIdx( &tmp.Idx, &tmp.IdxPr );
             tmp.Mpr.SetIdx( &tmp.IdxPr, &tmp.IdxPr);
             std::cerr << "Create StokesMatrices2 for " << (&tmp.IdxPr)->NumUnknowns << " unknown" << std::endl;
             if (&tmp != &matMG->back()) {
-                SetupMatrix2( &tmp.B);
+                SetupMatrix2( &tmp.B, &tmp.BT);
                 SetupPrMass(&tmp.Mpr, lset);
             }
-            transpose(tmp.B.Data, tmp.BT.Data);
+            else
+                transpose (tmp.B.Data, tmp.BT.Data);
         }
     }
 }
