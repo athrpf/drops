@@ -254,7 +254,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
 //    typedef MinCommPreCL SPcT;
 //    SPcT ispc( 0, Stokes.B.Data, Stokes.M.Data, Stokes.prM.Data);
     typedef ISBBTPreCL SPcT;
-    SPcT ispc( Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data,
+    SPcT ispc( &Stokes.B.Data, &Stokes.prM.Data, &Stokes.M.Data,
             /*kA*/ 1./C.dt, /*kM*/ C.theta);
 //    typedef PCG_SsorCL SPcSolverT;
 //    SPcSolverT spcsolver( SSORPcCL( 1.0), 100, 0.02, /*relative*/ true);

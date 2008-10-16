@@ -465,7 +465,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // Preconditioner for instat. Schur complement
         typedef ISBBTPreCL ISBBT;
-        ISBBT isbbt (Stokes.B.Data, Stokes.prM.Data, Stokes.M.Data, kA, kM);
+        ISBBT isbbt (&Stokes.B.Data, &Stokes.prM.Data, &Stokes.M.Data, kA, kM);
         ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, kA, kM);
         DiagMatrixPCCL lumped( prMLDiag);
 

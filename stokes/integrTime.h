@@ -190,12 +190,11 @@ class ISMGPreCL
 class ISBBTPreCL
 {
   private:
-    MatrixCL&  B_;
+    const MatrixCL*  B_;
     mutable MatrixCL*  Bs_;
     mutable size_t Bversion_;
     mutable CompositeMatrixCL BBT_;
-    MatrixCL&  M_;
-    MatrixCL&  Mvel_;
+    const MatrixCL*  M_, *Mvel_;
 
     double     kA_, kM_;
     double     tolA_, tolM_;
@@ -211,7 +210,7 @@ class ISBBTPreCL
     void Update () const;
 
   public:
-    ISBBTPreCL (MatrixCL& B, MatrixCL& M_pr, MatrixCL& Mvel,
+    ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
         double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
         : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
@@ -236,12 +235,19 @@ class ISBBTPreCL
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
+
+    void SetMatrices (const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+        B_= B;
+        Mvel_= Mvel;
+        M_= M;
+        Bversion_ = 0;
+    }
 };
 
 template <typename Mat, typename Vec>
 void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 {
-    if (B_.Version() != Bversion_)
+    if (B_->Version() != Bversion_)
         Update();
 
     p= 0.0;
@@ -256,7 +262,7 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     }
     if (kM_ != 0.0) {
         Vec p2_( c.size());
-        solver2_.Solve( M_, p2_, c);
+        solver2_.Solve( *M_, p2_, c);
 //        std::cerr << "\t p2: iterations: " << solver2_.GetIter()
 //                  << "\tresidual: " <<  solver2_.GetResid()
 //                  << '\n';
@@ -276,8 +282,7 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 class MinCommPreCL
 {
   private:
-    const MatrixCL* A_;
-    MatrixCL  &B_, &Mvel_, &M_;
+    const MatrixCL** A_, *B_, *Mvel_, *M_;
     mutable MatrixCL* Bs_;
     mutable size_t Aversion_, Bversion_, Mvelversion_, Mversion_;
     mutable CompositeMatrixCL BBT_;
@@ -291,7 +296,7 @@ class MinCommPreCL
     void Update () const;
 
   public:
-    MinCommPreCL (MatrixCL* A, MatrixCL& B, MatrixCL& Mvel, MatrixCL& M_pr, double tol=1e-2)
+    MinCommPreCL (const MatrixCL** A, MatrixCL* B, MatrixCL* Mvel, MatrixCL* M_pr, double tol=1e-2)
         : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
           BBT_( 0, TRANSP_MUL, 0, MUL), tol_(tol),
@@ -314,14 +319,21 @@ class MinCommPreCL
     template <typename Mat, typename Vec>
     void Apply (const Mat&, Vec& x, const Vec& b) const;
 
-    void SetMatrixA (const MatrixCL* A) { A_= A; }
+    void SetMatrixA  (const MatrixCL** A) { A_= A; }
+    void SetMatrices (const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+        A_= A;
+        B_= B;
+        Mvel_= Mvel;
+        M_= M;
+        Aversion_ = Bversion_ = Mvelversion_ = Mversion_ = 0;
+    }
 };
 
 template <typename Mat, typename Vec>
   void
   MinCommPreCL::Apply (const Mat&, Vec& x, const Vec& b) const
 {
-    if ((A_->Version() != Aversion_) || (Mvel_.Version() != Mvelversion_) || (B_.Version() != Bversion_))
+    if (((*A_)->Version() != Aversion_) || (Mvel_->Version() != Mvelversion_) || (B_->Version() != Bversion_))
         Update();
 
     VectorCL y( b.size());
@@ -329,7 +341,7 @@ template <typename Mat, typename Vec>
     if (solver_.GetIter() == solver_.GetMaxIter())
         std::cerr << "MinCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
-    VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((*A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
+    VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((**A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
     VectorCL t( b.size());
     solver_.Solve( BBT_, t, z);
     if (solver_.GetIter() == solver_.GetMaxIter())

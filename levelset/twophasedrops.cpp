@@ -372,8 +372,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     writer.WriteAtTime( Stokes, lset, sigmap, c, 0.);
 
     // Stokes-Solver
-    StokesSolverFactoryCL<StokesProblemT, ParamMesszelleCL> stokessolverfactory(Stokes, C);
+    StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
+//     StokesSolverAsPreCL pc (*stokessolver1, 1);
+//     GCRSolverCL<StokesSolverAsPreCL> gcr(pc, C.outer_iter, C.outer_iter, C.outer_tol, /*rel*/ false);
+//     BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> >* stokessolver =
+//             new BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> > (gcr);
 
     // Navier-Stokes-Solver
     NSSolverBaseCL<StokesProblemT>* navstokessolver = 0;
@@ -387,11 +391,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C, mgused);
     timedisc->SetTimeStep( C.dt);
 
-    if (C.nonlinear==0.0) // only Stokes
-        stokessolverfactory.SetMatrixA( timedisc->GetUpperLeftBlock ());
-    else
-        stokessolverfactory.SetMatrixA( &navstokessolver->GetAN());
+    stokessolverfactory.SetMatrixA( const_cast<const MatrixCL**>(&Stokes.GetMGData().back().ABlock));
 
+    //for Stokes-MG
+    const_MGDataIterCL it = Stokes.GetMGData().begin();
+    stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
@@ -434,6 +438,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         // grid modification
         if (step%C.ref_freq == 0) {
+            const_MGDataIterCL it = Stokes.GetMGData().begin();
+            stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
@@ -470,6 +476,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     delete timedisc;
     delete navstokessolver;
     delete stokessolver;
+    //delete stokessolver1;
 }
 
 } // end of namespace DROPS
