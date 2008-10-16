@@ -392,9 +392,9 @@ template<class T>
   inline Quad5CL<T>&
   Quad5CL<T>::assign(const LocalP2CL<value_type>& f)
 {
-    (*this)= f[0]*P2_Val[0];
+    (*this)= f[0]*static_cast<GridFunctionCL<double> >( P2_Val[0]);
     for (size_t i= 1; i < 10; ++i)
-        (*this)+= f[i]*P2_Val[i];
+        (*this)+= f[i]*static_cast<GridFunctionCL<double> >( P2_Val[i]);
     return *this;
 }
 
