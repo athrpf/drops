@@ -389,12 +389,12 @@ template <typename T>
 
     IncrementVersion();
     _rows= m._rows;
-    _cols= m.cols_;
+    _cols= m._cols;
     _rowbeg= m._rowbeg;
     _colind= m._colind;
     _val= m._val;
     return *this;
-}    
+}
 
 template <typename T>
   SparseMatBaseCL<T>::SparseMatBaseCL(const std::valarray<T>& v)
