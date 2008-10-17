@@ -390,8 +390,11 @@ template <typename T>
     IncrementVersion();
     _rows= m._rows;
     _cols= m._cols;
+    _rowbeg.resize(m._rowbeg.size());
     _rowbeg= m._rowbeg;
+    _colind.resize(m._colind.size());
     _colind= m._colind;
+    _val.resize(m._val.size());
     _val= m._val;
     return *this;
 }
