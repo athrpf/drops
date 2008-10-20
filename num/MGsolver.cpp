@@ -1,15 +1,30 @@
-//**************************************************************************
-// File:    MGpoisson.cpp                                                  *
-// Content: classes that constitute the poisson-problem with MG-solver     *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - April, 16 2001                                         *
-//**************************************************************************
+/// \file
+/// \brief classes that constitute the poisson/stokes-problem with MG-solver
+/// \author Sven Gross, Joerg Grande, Volker Reichelt, Maxim Larin, Patrick Esser, IGPM
 
 #include "num/MGsolver.h"
 
 namespace DROPS
 {
+
+void MGDataCL::RemoveCoarseResetFinest()
+{
+    if (this->empty()) return;
+    //RemoveCoarse
+    MGDataCL::iterator it=this->end();
+    --it;
+    this->erase(this->begin(), it);
+    //ResetFinest
+    this->begin()->A.Data.clear();
+    this->begin()->P.Data.clear();
+    this->begin()->B.Data.clear();
+    this->begin()->BT.Data.clear();
+    this->begin()->Mpr.Data.clear();
+    this->begin()->Mvel.Data.clear();
+    this->begin()->PPr.Data.clear();
+    this->begin()->AN.Data.clear();
+    this->begin()->ABlock = &this->begin()->A.Data;
+}
 
 void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end)
 {

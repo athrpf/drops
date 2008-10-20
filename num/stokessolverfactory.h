@@ -4,52 +4,54 @@
 
 #include "num/stokessolver.h"
 
-/* Available stokes solver
- *   no | Solver         | APc       | SPc     | PC structure
- ------------------------------------------------------------
- *   11 | GCR            | MG        | BBT     | lower block
- *   12 | GCR            | MG        | MinComm | lower block
- *   13 | GCR            | GMRes     | BBT     | lower block
- *   14 | GCR            | GMRes     | MinComm | lower block
- *   15 | GCR            | BiCGStab  | BBT     | lower block
- *   16 | GCR            | BiCGStab  | MinComm | lower block
-------------------------------------------------------------
- *   21 | Inexact Uzawa  | asymm. MG | BBT     |
- *   22 | Inexact Uzawa  | asymm. MG | MinComm |
- *  221 | Inexact Uzawa  | symm. MG  | BBT     |
- *  222 | Inexact Uzawa  | symm. MG  | MinComm |
- *   23 | Inexact Uzawa  | GMRes     | BBT     |
- *   24 | Inexact Uzawa  | GMRes     | MinComm |
- *   25 | Inexact Uzawa  | BiCGStab  | BBT     |
- *   26 | Inexact Uzawa  | BiCGStab  | MinComm |
- *  225 | Inexact Uzawa  | SSORPCG   | BBT     |
- *  226 | Inexact Uzawa  | SSORPCG   | MinComm |
- ------------------------------------------------------------
- *   31 | PMinRes        | MG        | BBT     | diag
- *   32 | PMinRes        | MG        | MinComm | diag
- *   33 | PMinRes        | SSORPCG   | BBT     | diag
- *   34 | PMinRes        | SSORPCG   | MinComm | diag
- ------------------------------------------------------------
- *   41 | GMRes          | MG        | BBT     | lower block
- *   42 | GMRes          | MG        | MinComm | lower block
- *   43 | GMRes          | GMRes     | BBT     | lower block
- *   44 | GMRes          | GMRes     | MinComm | lower block
- *   45 | GMRes          | BiCGStab  | BBT     | lower block
- *   46 | GMRes          | BiCGStab  | MinComm | lower block
- ------------------------------------------------------------
- *   51 | GMResR         | MG        | BBT     | lower block
- *   52 | GMResR         | MG        | MinComm | lower block
- *   53 | GMResR         | GMRes     | BBT     | lower block
- *   54 | GMResR         | GMRes     | MinComm | lower block
- *   55 | GMResR         | BiCGStab  | BBT     | lower block
- *   56 | GMResR         | BiCGStab  | MinComm | lower block
- ------------------------------------------------------------
- *   81 | StokesMGM      | PVanka-Smoother
- *   82 | StokesMGM      | Braess/Sarazin-Smoother
-*/
-
 namespace DROPS {
 
+/*******************************************************************
+*   S t o k e s S o l v e r F a c t o r y  C L                     *
+*******************************************************************/
+/// \brief Creates a StokesSolverCL* and manages the preconditioner
+/**
+<table border="1">
+    <tr> <th>no</th><th>Solver       </th><th>APc      </th><th>SPc     </th><th>PC structure</th></td><td>
+         <th>no</th><th>Solver       </th><th>APc      </th><th>SPc     </th><th>PC structure</th></tr>
+    <tr><td> 11</td><td>GCR          </td><td>MG       </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 12</td><td>GCR          </td><td>MG       </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 13</td><td>GCR          </td><td>GMRes    </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 14</td><td>GCR          </td><td>GMRes    </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 15</td><td>GCR          </td><td>BiCGStab </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 16</td><td>GCR          </td><td>BiCGStab </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 21</td><td>Inexact Uzawa</td><td>MG       </td><td>BBT     </td><td> -  </td></td><td>
+        <td> 22</td><td>Inexact Uzawa</td><td>MG       </td><td>MinComm </td><td> -  </td></tr>
+    <tr><td> 23</td><td>Inexact Uzawa</td><td>GMRes    </td><td>BBT     </td><td> -  </td></td><td>
+        <td> 24</td><td>Inexact Uzawa</td><td>GMRes    </td><td>MinComm </td><td> -  </td></tr>
+    <tr><td> 25</td><td>Inexact Uzawa</td><td>BiCGStab </td><td>BBT     </td><td> -  </td></td><td>
+        <td> 26</td><td>Inexact Uzawa</td><td>BiCGStab </td><td>MinComm </td><td> -  </td></tr>
+    <tr><td>221</td><td>Inexact Uzawa</td><td>symm. MG </td><td>BBT     </td><td> -  </td></td><td>
+        <td>222</td><td>Inexact Uzawa</td><td>symm. MG </td><td>MinComm </td><td> -  </td></tr>
+    <tr><td>225</td><td>Inexact Uzawa</td><td>SSORPCG  </td><td>BBT     </td><td> -  </td></td><td>
+        <td>226</td><td>Inexact Uzawa</td><td>SSORPCG  </td><td>MinComm </td><td> -  </td></tr>
+    <tr><td> 31</td><td>PMinRes      </td><td>MG       </td><td>BBT     </td><td>diag</td></td><td>
+        <td> 32</td><td>PMinRes      </td><td>MG       </td><td>MinComm </td><td>diag</td></tr>
+    <tr><td> 33</td><td>PMinRes      </td><td>SSORPCG  </td><td>BBT     </td><td>diag</td></td><td>
+        <td> 34</td><td>PMinRes      </td><td>SSORPCG  </td><td>MinComm </td><td>diag</td></tr>
+    <tr><td> 41</td><td>GMRes        </td><td>MG       </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 42</td><td>GMRes        </td><td>MG       </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 43</td><td>GMRes        </td><td>GMRes    </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 44</td><td>GMRes        </td><td>GMRes    </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 45</td><td>GMRes        </td><td>BiCGStab </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 46</td><td>GMRes        </td><td>BiCGStab </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 51</td><td>GMResR       </td><td>MG       </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 52</td><td>GMResR       </td><td>MG       </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 53</td><td>GMResR       </td><td>GMRes    </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 54</td><td>GMResR       </td><td>GMRes    </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 55</td><td>GMResR       </td><td>BiCGStab </td><td>BBT     </td><td>lower block</td></td><td>
+        <td> 56</td><td>GMResR       </td><td>BiCGStab </td><td>MinComm </td><td>lower block</td></tr>
+    <tr><td> 81</td><td>StokesMGM    </td><td>PVanka   </td><td> </td><td> </td></td><td>
+        <td> 82</td><td>StokesMGM    </td><td>BraessSarazin</td><td> </td><td> </td></tr>
+</table>*/
+/*******************************************************************
+*   S t o k e s S o l v e r F a c t o r y  C L                     *
+********************************************************************/
 template <class StokesT, class ParamsT>
 class StokesSolverFactoryCL
 {
@@ -79,20 +81,20 @@ class StokesSolverFactoryCL
 
     //JAC-GMRes
     JACPcCL  JACPc_;
-    typedef GMResSolverCL<JACPcCL> GMResSolverT;        // GMRes-based APcT
+    typedef GMResSolverCL<JACPcCL> GMResSolverT;
     GMResSolverT GMResSolver_;
     typedef SolverAsPreCL<GMResSolverT> GMResPcT;
     GMResPcT GMResPc_;
 
     //JAC-BiCGStab
-    typedef BiCGStabSolverCL<JACPcCL> BiCGStabSolverT;        // BiCGStab-based APcT
+    typedef BiCGStabSolverCL<JACPcCL> BiCGStabSolverT;
     BiCGStabSolverT BiCGStabSolver_;
     typedef SolverAsPreCL<BiCGStabSolverT> BiCGStabPcT;
     BiCGStabPcT BiCGStabPc_;
 
     //PCG
     SSORPcCL SSORPc_;
-    typedef PCGSolverCL<SSORPcCL> PCGSolverT;           // CG-based APcT
+    typedef PCGSolverCL<SSORPcCL> PCGSolverT;
     PCGSolverT PCGSolver_;
     typedef SolverAsPreCL<PCGSolverT> PCGPcT;
     PCGPcT PCGPc_;
@@ -104,10 +106,10 @@ class StokesSolverFactoryCL
     typedef BlockPreCL<PCGPcT,    ISBBTPreCL>   DiagPCGBBTOseenPcT;
     typedef BlockPreCL<PCGPcT,    MinCommPreCL> DiagPCGMinCommOseenPcT;
 
-    typedef BlockPreCL<MGPcT,    ISBBTPreCL,   LowerBlockPreCL> LBlockMGBBTOseenPcT;
-    typedef BlockPreCL<MGPcT,    MinCommPreCL, LowerBlockPreCL> LBlockMGMinCommOseenPcT;
-    typedef BlockPreCL<GMResPcT, ISBBTPreCL,   LowerBlockPreCL> LBlockGMResBBTOseenPcT;
-    typedef BlockPreCL<GMResPcT, MinCommPreCL, LowerBlockPreCL> LBlockGMResMinCommOseenPcT;
+    typedef BlockPreCL<MGPcT,       ISBBTPreCL,   LowerBlockPreCL> LBlockMGBBTOseenPcT;
+    typedef BlockPreCL<MGPcT,       MinCommPreCL, LowerBlockPreCL> LBlockMGMinCommOseenPcT;
+    typedef BlockPreCL<GMResPcT,    ISBBTPreCL,   LowerBlockPreCL> LBlockGMResBBTOseenPcT;
+    typedef BlockPreCL<GMResPcT,    MinCommPreCL, LowerBlockPreCL> LBlockGMResMinCommOseenPcT;
     typedef BlockPreCL<BiCGStabPcT, ISBBTPreCL,   LowerBlockPreCL> LBlockBiCGBBTOseenPcT;
     typedef BlockPreCL<BiCGStabPcT, MinCommPreCL, LowerBlockPreCL> LBlockBiCGMinCommOseenPcT;
 
@@ -181,23 +183,24 @@ class StokesSolverFactoryCL
     StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C);
     ~StokesSolverFactoryCL() {}
 
+    /// Set the A-block in the minimal commutator
     void       SetMatrixA (const MatrixCL** A) { mincommispc_.SetMatrixA(A); }
+    /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
+    void       SetMatrices(const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M);
+    /// Returns true if a multigrid solver/preconditioner is used
     bool       MGUsed()   {return mgused_;}
-    void       SetMatrices(const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
-        if (C_.StokesMethod == 81 || C_.StokesMethod == 82) {
-            mincommispc_.SetMatrices(A, B, Mvel, M);
-            bbtispc_.SetMatrices(B, Mvel, M);
-        }
-    }
 
+    /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
 };
 
 template <class StokesT, class ParamsT>
 StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
     : Stokes_(Stokes), C_(C), kA_(1.0/C_.dt), kM_(C_.theta), mgused_(false),
-        bbtispc_( &Stokes_.B.Data, &Stokes_.prM.Data, &Stokes_.M.Data, kA_, kM_, C_.pcS_tol, C_.pcS_tol),
+        // schur complement preconditioner
+        bbtispc_    ( &Stokes_.B.Data, &Stokes_.prM.Data, &Stokes_.M.Data, kA_, kM_, C_.pcS_tol, C_.pcS_tol),
         mincommispc_( 0, &Stokes_.B.Data, &Stokes_.M.Data, &Stokes_.prM.Data, C_.pcS_tol),
+        // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPcCL(1.0), 500, 1e-6, true),
         MGSolversymm_ ( Stokes.GetMGData(), smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
         MGPcsymm_( MGSolversymm_),
@@ -206,18 +209,21 @@ StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, 
         GMResSolver_( JACPc_, C_.pcA_iter, /*restart*/ 100, C_.pcA_tol, /*rel*/ true), GMResPc_( GMResSolver_),
         BiCGStabSolver_( JACPc_, C_.pcA_iter, C_.pcA_tol, /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),
         PCGSolver_( SSORPc_, C_.pcA_iter, C_.pcA_tol, true), PCGPc_( PCGSolver_),
+        // block precondtioner
         DiagMGBBTOseenPc_        ( MGPcsymm_,    bbtispc_), DiagMGMinCommOseenPc_     ( MGPcsymm_,    mincommispc_),
         DiagGMResMinCommPc_      ( GMResPc_, mincommispc_),
         DiagPCGBBTOseenPc_       ( PCGPc_,   bbtispc_), DiagPCGMinCommOseenPc_    ( PCGPc_,   mincommispc_),
         LBlockMGBBTOseenPc_      ( MGPc_,    bbtispc_), LBlockMGMinCommOseenPc_   ( MGPc_,    mincommispc_),
         LBlockGMResBBTOseenPc_   ( GMResPc_, bbtispc_), LBlockGMResMinCommOseenPc_( GMResPc_, mincommispc_),
         LBlockBiCGBBTOseenPc_    ( BiCGStabPc_, bbtispc_), LBlockBiCGMinCommOseenPc_( BiCGStabPc_, mincommispc_),
+        // GCR solver
         GCRMGBBT_           ( LBlockMGBBTOseenPc_,        C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRMGMinComm_       ( LBlockMGMinCommOseenPc_,    C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRGMResBBT_        ( LBlockGMResBBTOseenPc_,     C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRGMResMinComm_    ( LBlockGMResMinCommOseenPc_, C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRBiCGStabBBT_     ( LBlockBiCGBBTOseenPc_,      C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRBiCGStabMinComm_ ( LBlockBiCGMinCommOseenPc_,  C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
+        // GMRes solver
         GMResMGBBT_           ( LBlockMGBBTOseenPc_,        C_.outer_iter, C_.outer_iter, C_.outer_tol,
                                 /*rel*/ false, false, RightPreconditioning),
         GMResMGMinComm_       ( LBlockMGMinCommOseenPc_,    C_.outer_iter, C_.outer_iter, C_.outer_tol,
@@ -230,24 +236,27 @@ StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, 
                                 /*rel*/ false, false, RightPreconditioning),
         GMResBiCGStabMinComm_ ( LBlockBiCGMinCommOseenPc_,  C_.outer_iter, C_.outer_iter, C_.outer_tol,
                                 /*rel*/ false, false, RightPreconditioning),
-        GMResRMGBBT_           ( LBlockMGBBTOseenPc_,        C_.outer_iter, C_.outer_iter, C_.inner_iter,
+        GMResRMGBBT_          ( LBlockMGBBTOseenPc_,        C_.outer_iter, C_.outer_iter, C_.inner_iter,
                                     C_.outer_tol, C_.inner_tol, /*rel*/ false),
-        GMResRMGMinComm_       ( LBlockMGMinCommOseenPc_,    C_.outer_iter, C_.outer_iter, C_.inner_iter,
+        GMResRMGMinComm_      ( LBlockMGMinCommOseenPc_,    C_.outer_iter, C_.outer_iter, C_.inner_iter,
                                     C_.outer_tol, C_.inner_tol, /*rel*/ false),
-        GMResRGMResBBT_        ( LBlockGMResBBTOseenPc_,     C_.outer_iter, C_.outer_iter, C_.inner_iter,
+        GMResRGMResBBT_       ( LBlockGMResBBTOseenPc_,     C_.outer_iter, C_.outer_iter, C_.inner_iter,
                                     C_.outer_tol, C_.inner_tol, /*rel*/ false),
-        GMResRGMResMinComm_    ( LBlockGMResMinCommOseenPc_, C_.outer_iter, C_.outer_iter, C_.inner_iter,
+        GMResRGMResMinComm_   ( LBlockGMResMinCommOseenPc_, C_.outer_iter, C_.outer_iter, C_.inner_iter,
                                     C_.outer_tol, C_.inner_tol, /*rel*/ false),
-        GMResRBiCGStabBBT_     ( LBlockBiCGBBTOseenPc_,      C_.outer_iter, C_.outer_iter, C_.inner_iter,
+        GMResRBiCGStabBBT_    ( LBlockBiCGBBTOseenPc_,      C_.outer_iter, C_.outer_iter, C_.inner_iter,
                                     C_.outer_tol, C_.inner_tol, /*rel*/ false),
-        GMResRBiCGStabMinComm_ ( LBlockBiCGMinCommOseenPc_,  C_.outer_iter, C_.outer_iter, C_.inner_iter,
+        GMResRBiCGStabMinComm_( LBlockBiCGMinCommOseenPc_,  C_.outer_iter, C_.outer_iter, C_.inner_iter,
                                     C_.outer_tol, C_.inner_tol, /*rel*/ false),
+        // lanczos objects
         lanczos1_ (DiagMGBBTOseenPc_),  lanczos2_ (DiagMGMinCommOseenPc_),
         lanczos3_ (DiagPCGBBTOseenPc_), lanczos4_ (DiagPCGMinCommOseenPc_),
+        // PMinRes solver
         PMinResMGBBT_     ( lanczos1_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
         PMinResMGMinComm_ ( lanczos2_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
         PMinResPCGBBT_    ( lanczos3_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
         PMinResPCGMinComm_( lanczos4_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
+        // coarse grid/direct solver for StokesMGM
         minressolver( lanczos3_, 500, 1e-6, true), blockminressolver(minressolver),
         gcrsolver( DiagGMResMinCommPc_, 500, 500, 1e-6, true), blockgcrsolver(gcrsolver)
         {}
@@ -277,23 +286,23 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GCRBiCGStabMinComm_);
         break;
         case 211 :
-            stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL,      APC_SYM>
+            stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL, APC_SYM>
                         ( MGPcsymm_, bbtispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 222 :
-            stokessolver = new InexactUzawaCL<MGsymmPcT, MinCommPreCL,    APC_SYM>
+            stokessolver = new InexactUzawaCL<MGsymmPcT, MinCommPreCL, APC_SYM>
                         ( MGPcsymm_, mincommispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 21 :
-            stokessolver = new InexactUzawaCL<MGPcT, ISBBTPreCL,      APC_OTHER>
+            stokessolver = new InexactUzawaCL<MGPcT, ISBBTPreCL, APC_OTHER>
                         ( MGPc_, bbtispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 22 :
-            stokessolver = new InexactUzawaCL<MGPcT, MinCommPreCL,    APC_OTHER>
+            stokessolver = new InexactUzawaCL<MGPcT, MinCommPreCL, APC_OTHER>
                         ( MGPc_, mincommispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 23 :
-            stokessolver = new InexactUzawaCL<GMResPcT, ISBBTPreCL,   APC_OTHER>
+            stokessolver = new InexactUzawaCL<GMResPcT, ISBBTPreCL, APC_OTHER>
                         ( GMResPc_, bbtispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 24 :
@@ -301,15 +310,15 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
                         ( GMResPc_, mincommispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 225 :
-            stokessolver = new InexactUzawaCL<PCGPcT, ISBBTPreCL,     APC_SYM>
+            stokessolver = new InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM>
                         ( PCGPc_, bbtispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 226 :
-            stokessolver = new InexactUzawaCL<PCGPcT, MinCommPreCL,   APC_SYM>
+            stokessolver = new InexactUzawaCL<PCGPcT, MinCommPreCL, APC_SYM>
                         ( PCGPc_, mincommispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 25 :
-            stokessolver = new InexactUzawaCL<BiCGStabPcT, ISBBTPreCL,   APC_OTHER>
+            stokessolver = new InexactUzawaCL<BiCGStabPcT, ISBBTPreCL, APC_OTHER>
                         ( BiCGStabPc_, bbtispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
         case 26 :
@@ -329,22 +338,22 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos4T> >( PMinResPCGMinComm_);
         break;
         case 41 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockMGBBTOseenPcT> >       ( GMResMGBBT_);
+            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockMGBBTOseenPcT> >        ( GMResMGBBT_);
         break;
         case 42 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockMGMinCommOseenPcT> >   ( GMResMGMinComm_);
+            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockMGMinCommOseenPcT> >    ( GMResMGMinComm_);
         break;
         case 43 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockGMResBBTOseenPcT> >    ( GMResGMResBBT_);
+            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockGMResBBTOseenPcT> >     ( GMResGMResBBT_);
         break;
         case 44 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockGMResMinCommOseenPcT> >( GMResGMResMinComm_);
+            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockGMResMinCommOseenPcT> > ( GMResGMResMinComm_);
         break;
         case 45 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGBBTOseenPcT> >     ( GMResBiCGStabBBT_);
+            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGBBTOseenPcT> >      ( GMResBiCGStabBBT_);
         break;
         case 46 :
-            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResBiCGStabMinComm_);
+            stokessolver = new BlockMatrixSolverCL<GMResSolverCL<LBlockBiCGMinCommOseenPcT> >  ( GMResBiCGStabMinComm_);
         break;
         case 51 :
             stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockMGBBTOseenPcT> >       ( GMResRMGBBT_);
@@ -374,7 +383,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
                         ( Stokes_.GetMGData(), vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
             else
                 stokessolver = new StokesMGSolverCL<PVankaSmootherCL>
-                        ( Stokes_.GetMGData(), vankasmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2);
+                        ( Stokes_.GetMGData(), vankasmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
         }
         break;
         case 82 : {
@@ -387,16 +396,26 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
                         ( Stokes_.GetMGData(), bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
             else
                 stokessolver = new StokesMGSolverCL<BSSmootherCL>
-                        ( Stokes_.GetMGData(), bssmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2);
+                        ( Stokes_.GetMGData(), bssmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
         }
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
-    mgused_ = (C_.StokesMethod == 11 || C_.StokesMethod == 12 || C_.StokesMethod == 21 ||
-               C_.StokesMethod == 22 || C_.StokesMethod == 31 || C_.StokesMethod == 32 ||
-               C_.StokesMethod == 41 || C_.StokesMethod == 42 || C_.StokesMethod == 51 ||
-               C_.StokesMethod == 52 || C_.StokesMethod == 211 || C_.StokesMethod == 222 || C_.StokesMethod == 81  || C_.StokesMethod == 82);
+    mgused_ = (C_.StokesMethod ==  11 || C_.StokesMethod ==  12 || C_.StokesMethod ==  21 ||
+               C_.StokesMethod ==  22 || C_.StokesMethod ==  31 || C_.StokesMethod ==  32 ||
+               C_.StokesMethod ==  41 || C_.StokesMethod ==  42 || C_.StokesMethod ==  51 ||
+               C_.StokesMethod ==  52 || C_.StokesMethod == 211 || C_.StokesMethod == 222 ||
+               C_.StokesMethod ==  81 || C_.StokesMethod ==  82);
     return stokessolver;
 }
+
+template <class StokesT, class ParamsT>
+void StokesSolverFactoryCL<StokesT, ParamsT>::SetMatrices(const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+    if (C_.StokesMethod == 81 || C_.StokesMethod == 82) {
+        mincommispc_.SetMatrices(A, B, Mvel, M);
+        bbtispc_.SetMatrices(B, Mvel, M);
+    }
+}
+
 
 } // end of namespace DROPS
