@@ -519,6 +519,13 @@ public:
     SetDoF(const VertexCL&, const DataT&);
 };
 
+// Create a P1EvalCL without the agonizing template-pain.
+template<class BndData_, class VD_>
+  P1EvalCL<typename BndData_::bnd_type, BndData_, VD_>
+    make_P1Eval (const MultiGridCL& mg, BndData_& bnd, VD_& vd, double t= 0.)
+{
+    return P1EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg, t);
+}
 
 //**************************************************************************
 // Class:   P1DEvalCL                                                      *
@@ -770,6 +777,14 @@ public:
     val(const TetraCL& s, const BaryCoordCL&) const;
 };
 
+
+// Create a P2EvalCL without the agonizing template-pain.
+template<class BndData_, class VD_>
+  P2EvalCL<typename BndData_::bnd_type, BndData_, VD_>
+    make_P2Eval (const MultiGridCL& mg, BndData_& bnd, VD_& vd, double t= 0.)
+{
+    return P2EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg, t);
+}
 
 //**************************************************************************
 // Class:   P1BubbleEvalCL                                                 *
