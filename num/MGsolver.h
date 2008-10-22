@@ -45,7 +45,7 @@ struct MGLevelDataCL  // data for one triang level
 *******************************************************************/
 /// \brief Represents the data for all levels of the triangulation
 /** Contains a list of MGLevelDataCL
-    NOTE: Assumes, that the levels are stored in an ascending order 
+    NOTE: Assumes, that the levels are stored in an ascending order
     (first=coarsest, last=finest) */
 /*******************************************************************
 *   M G D a t a  C L                                               *
@@ -150,7 +150,7 @@ class MGSolverCL : public SolverBaseCL
 
  numLevel and numUnknDirect specify, when the direct solver 'Solver' is used:
  after 'numLevel' visited levels or if number of unknowns <= 'numUnknDirect'
- If one of the parameters is -1, it will be neglected. 
+ If one of the parameters is -1, it will be neglected.
  If the coarsest level 'begin' has been reached, the direct solver is used too.
  NOTE: Assumes, that the levels are stored in an ascending order (first=coarsest, last=finest)
  \param begin         coarsest level
@@ -188,7 +188,7 @@ class DummySmootherCL
 *******************************************************************/
 /// \brief Vanka smoother for StokesMGM
 /** Iterates over the pressure unknowns and construct local saddle point
-    problems. These local problems are solved via an schur method with 
+    problems. These local problems are solved via an schur method with
     different approximations of A^{-1} or via a LR decomposition
     Method from "A comparative study for efficient terative solvers for
     generalized Stokes equations", Larin, Reusken. */

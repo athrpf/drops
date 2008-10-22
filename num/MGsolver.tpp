@@ -35,7 +35,7 @@ MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x
 }
 
 template<class SmootherCL, class DirectSolverCL>
-void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solver, 
+void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solver,
         VectorCL& x, const VectorCL& b,
         int& maxiter, double& tol, const bool residerr, Uint sm, int lvl)
 {
@@ -79,7 +79,7 @@ void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine,
     --coarse;
 
     if(  ( numLevel==-1      ? false : numLevel==0 )
-       ||( numUnknDirect==-1 ? false : u.size() <= static_cast<Uint>(numUnknDirect) ) 
+       ||( numUnknDirect==-1 ? false : u.size() <= static_cast<Uint>(numUnknDirect) )
        || fine==begin)
     {
         // use direct solver
