@@ -1369,11 +1369,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const Le
             tmp.Mpr.SetIdx( &tmp.IdxPr, &tmp.IdxPr);
             std::cerr << "Create StokesMatrices2 for " << (&tmp.IdxPr)->NumUnknowns << " unknown" << std::endl;
             if (&tmp != &matMG->back()) {
-                SetupMatrix2( &tmp.B, &tmp.BT);
-                SetupPrMass(&tmp.Mpr, lset);
+                SetupMatrix2( &tmp.B, &tmp.BT );
+                SetupPrMass ( &tmp.Mpr, lset );
             }
             else
-                transpose (tmp.B.Data, tmp.BT.Data);
+                transpose ( tmp.B.Data, tmp.BT.Data );
         }
     }
 }
