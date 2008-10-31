@@ -1357,8 +1357,12 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const Le
         std::cerr << "Create StiffMatrix for "
                   << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
         if(&tmp != &matMG->back()) {
-            SetupMatrices1( &A, &tmp.Mvel, lset, t);
-            tmp.A.Data.LinComb( 1./dt, tmp.Mvel.Data, theta, A.Data);
+            if (dt != 0) {
+                SetupMatrices1( &A, &tmp.Mvel, lset, t);
+                tmp.A.Data.LinComb( 1./dt, tmp.Mvel.Data, theta, A.Data);
+            }
+            else
+                SetupMatrices1 (&tmp.A, &tmp.Mvel, lset, t);
             if (it != matMG->begin())
                 tmp.Mvel.Data.clear();
         }
@@ -1375,6 +1379,36 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const Le
             else
                 transpose ( tmp.B.Data, tmp.BT.Data );
         }
+    }
+}
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupProlongations(MGDataCL* matMG)
+{
+    IdxDescCL* c_idx= 0;
+    IdxDescCL* c_idxpr=0;
+    MGDataIterCL fl=matMG->begin();
+    MGDataIterCL it;
+    for(Uint lvl= 0; lvl<=_MG.GetLastLevel(); ++lvl) {
+        if (lvl != _MG.GetLastLevel())
+            it = matMG->insert( fl, MGLevelDataCL());
+        else
+            ++it; // it points now to the finest level
+        MGLevelDataCL& tmp= *it;
+        std::cerr << "    Create indices on Level " << lvl << std::endl;
+        tmp.Idx.SetFE( vecP2_FE );
+        tmp.IdxPr.SetFE( P1_FE);
+        CreateNumberingVel( lvl, &tmp.Idx);
+        CreateNumberingPr (lvl, &tmp.IdxPr);
+        if(lvl!=0) {
+            std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
+            SetupP2ProlongationMatrix( _MG, tmp.P, c_idx, &tmp.Idx);
+//            std::cout << "    Matrix P " << tmp.P.Data << std::endl;
+            if (matMG->StokesMG())
+                SetupP1ProlongationMatrix( _MG, tmp.PPr , c_idxpr , &tmp.IdxPr );
+        }
+        c_idx   = &tmp.Idx;
+        c_idxpr = &tmp.IdxPr;
     }
 }
 

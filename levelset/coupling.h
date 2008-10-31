@@ -35,9 +35,6 @@ class TimeDisc2PhaseCL
     VecDescCL    cplLB_;
     MatDescCL    LB_;
 
-    void SetupProlongations();
-
-
   public:
     TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1., bool usematMG= false);
     virtual ~TimeDisc2PhaseCL();

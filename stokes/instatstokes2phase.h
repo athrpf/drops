@@ -110,6 +110,8 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupMatrices1( MatDescCL* A, MatDescCL* M, const LevelsetP2CL& lset, double t) const;
     /// Set up MG-hierarchy
     void SetupMatricesMG( MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const;
+    /// Set up prolongations
+    void SetupProlongations( MGDataCL* matMG);
     /// Set up the Laplace-Beltrami-Operator
     void SetupLB( MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const;
     /// Set up matrix B and rhs c

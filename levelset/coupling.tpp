@@ -39,37 +39,6 @@ TimeDisc2PhaseCL<StokesT>::~TimeDisc2PhaseCL()
     delete curv_; delete old_curv_;
 }
 
-template <class StokesT>
-void TimeDisc2PhaseCL<StokesT>::SetupProlongations()
-{
-    MultiGridCL& mg= Stokes_.GetMG();
-    IdxDescCL* c_idx= 0;
-    IdxDescCL* c_idxpr=0;
-    MGDataIterCL fl=Stokes_.GetMGData().begin();
-    MGDataIterCL it;
-    for(Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-        if (lvl != mg.GetLastLevel())
-            it = Stokes_.GetMGData().insert( fl, MGLevelDataCL());
-        else
-            ++it; // it points now to the finest level
-        MGLevelDataCL& tmp= *it;
-        std::cerr << "    Create indices on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( vecP2_FE );
-        tmp.IdxPr.SetFE( P1_FE);
-        Stokes_.CreateNumberingVel( lvl, &tmp.Idx);
-        Stokes_.CreateNumberingPr (lvl, &tmp.IdxPr);
-        if(lvl!=0) {
-            std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
-            SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-//            std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-            if (Stokes_.GetMGData().StokesMG())
-                SetupP1ProlongationMatrix( mg, tmp.PPr , c_idxpr , &tmp.IdxPr );
-        }
-        c_idx   = &tmp.Idx;
-        c_idxpr = &tmp.IdxPr;
-    }
-}
-
 // ==============================================
 //           LinThetaScheme2PhaseCL
 // ==============================================
@@ -237,7 +206,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
     Stokes_.GetMGData().RemoveCoarseResetFinest();
     if (usematMG_)
-        base_::SetupProlongations();
+        Stokes_.SetupProlongations(&Stokes_.GetMGData());
 
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
@@ -529,7 +498,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
     Stokes_.GetMGData().RemoveCoarseResetFinest();
     if (usematMG_) 
-        base_::SetupProlongations();
+        Stokes_.SetupProlongations(&Stokes_.GetMGData());
 
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
@@ -1026,7 +995,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
     Stokes_.GetMGData().RemoveCoarseResetFinest();
     if (usematMG_) 
-        base_::SetupProlongations();
+        Stokes_.SetupProlongations(&Stokes_.GetMGData());
 
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
