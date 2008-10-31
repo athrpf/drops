@@ -55,8 +55,6 @@ Mat {
   DensFluid	=	1
   ViscFluid	=	1
   SmoothZone	=	1e-5
-
-  SurfTension	=	1
 }
 
 # experimental conditions
