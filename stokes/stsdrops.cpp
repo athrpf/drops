@@ -378,6 +378,7 @@ SetupPoissonVelocityMG(
 //           std::cout << "    Matrix P " << tmp.P.Data << std::endl;
         }
         c_idx= &tmp.Idx;
+        tmp.ABlock = &tmp.A.Data;
     }
     CheckMGData( MGData.begin(), MGData.end());
 }
@@ -439,6 +440,7 @@ SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGDa
             DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
         }
         c_idx= &tmp.Idx;
+        tmp.ABlock = &tmp.A.Data;
     }
     std::cerr << "Check MG-Data..." << std::endl;
     std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
@@ -470,6 +472,7 @@ SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
             DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
         }
         c_idx= &tmp.Idx;
+        tmp.ABlock = &tmp.A.Data;
     }
     std::cerr << "Check MG-Data..." << std::endl;
     std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
