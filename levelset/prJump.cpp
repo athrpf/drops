@@ -93,37 +93,6 @@ double DistanceFct( const DROPS::Point3DCL& p)
 }
 */
 
-template<class Coeff>
-void
-SetupPoissonVelocityMG(
-    DROPS::InstatStokes2PhaseP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData,
-    DROPS::LevelsetP2CL& lset, double t)
-{
-    DROPS::MultiGridCL& mg= stokes.GetMG();
-    DROPS::IdxDescCL* c_idx= 0;
-    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-        MGData.push_back( DROPS::MGLevelDataCL());
-        DROPS::MGLevelDataCL& tmp= MGData.back();
-        std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( DROPS::vecP2_FE);
-        stokes.CreateNumberingVel( lvl, &tmp.Idx);
-        DROPS::MatDescCL M;
-        M.SetIdx( &tmp.Idx, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns << std::endl;
-        //if (lvl!=mg.GetLastLevel())
-            stokes.SetupMatrices1( &tmp.A, &M, lset, t);
-        if(lvl!=0) {
-            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
-            SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-            // std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-        }
-        c_idx= &tmp.Idx;
-    }
-    CheckMGData( MGData.begin(), MGData.end());
-}
-
-
 namespace DROPS // for Strategy
 {
 
@@ -442,18 +411,19 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         const double kM=1;
         // Preconditioner for A
             //Multigrid
-        MGDataCL velMG;
-        SetupPoissonVelocityMG( Stokes, velMG, lset, Stokes.t);
+        Stokes.SetupProlongations( &Stokes.GetMGData());
+        Stokes.SetupMatricesMG   ( &Stokes.GetMGData(), lset, 0.0, 1.0);
+        Stokes.GetMGData().back().ABlock = &Stokes.A.Data;
         SSORsmoothCL smoother(1.0);
-        PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, C.inner_tol);
-        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (velMG, smoother, coarsesolver, 1, -1.0, false);
+        PCG_SsorCL   coarsesolver( SSORPcCL(1.0), 500, C.inner_tol);
+        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( Stokes.GetMGData(), smoother, coarsesolver, 1, -1.0, false);
         typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
         MGPCT MGPC (mgc);
         VectorCL xx( 1.0, vidx->NumUnknowns);
-        double rhoinv = 0.99*(1.0-1.1*0.363294);
-        if (C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
-            rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( velMG, xx, 1000, 1e-4));
-        ScaledMGPreCL velprep( velMG, 1, 1.0/rhoinv);
+        double rhoinv = 0.99*( 1.0-1.1*0.363294);
+        if ( C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
+            rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( Stokes.GetMGData(), xx, 1000, 1e-4));
+        ScaledMGPreCL velprep( Stokes.GetMGData(), 1, 1.0/rhoinv);
 
             //PCG
         typedef SSORPcCL APcPcT;
@@ -580,14 +550,13 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
             default: throw DROPSErrCL( "unknown method\n");
         }
-        time.Stop();
         if (solver != 0) {
             solver->Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data,
                            curv.Data, Stokes.c.Data);
             std::cerr << "iter: " << solver->GetIter()
                       << "\tresid: " << solver->GetResid() << std::endl;
         }
-
+        time.Stop();
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
       }
     }
