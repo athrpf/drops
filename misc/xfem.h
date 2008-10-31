@@ -9,8 +9,6 @@
 
 namespace DROPS
 {
-
-
 /// \brief Extended index for P1X_FE-elements.
 ///
 /// Depending on the position of the zero-level of the levelset-function
@@ -30,17 +28,24 @@ class ExtIdxDescCL
     ExtendedIdxT   Xidx;
     ExtendedIdxT   Xidx_old;
 
-    ExtIdxDescCL(IdxDescCL* idx, double omit_bound= 1./32.) : omit_bound_(omit_bound), Idx( idx) {}
-    ExtIdxDescCL() : omit_bound_(1./32.), Idx(0){}
-    void SetIdx(IdxDescCL* idx) {Idx = idx;}
-    void SetBound(double omit_bound) {omit_bound_= omit_bound;}
+    ExtIdxDescCL( IdxDescCL* idx, double omit_bound= 1./32. ) : omit_bound_( omit_bound ), Idx( idx ) {}
+    ExtIdxDescCL() : omit_bound_( 1./32. ), Idx( 0 ){}
+    void   SetIdx( IdxDescCL* idx ) { Idx = idx; }
+    void   SetBound( double omit_bound ) { omit_bound_= omit_bound; }
+    double GetBound() { return omit_bound_; }
 
-    IdxT operator[](const IdxT i) const { return Xidx[i]; }
+    IdxT operator[]( const IdxT i ) const { return Xidx[i]; }
     IdxT GetNumUnknownsP1() const { return Xidx.size(); }
 
-    void UpdateXNumbering(IdxDescCL*, const LevelsetP2CL&, bool NumberingChanged= false);
-    void Old2New(VecDescCL*);
+    void UpdateXNumbering( IdxDescCL*, const LevelsetP2CL&, bool NumberingChanged= false );
+    void Old2New( VecDescCL* );
 };
+
+/// merges two p1-VectorCL into a p1x-VectorCL
+void P1toP1X ( const ExtIdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const VectorCL& posPart, const VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg );
+
+/// splits a p1x-VectorCL into two p1-VectorCL
+void P1XtoP1 ( const ExtIdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg );
 
 } // end of namespace DROPS
 
