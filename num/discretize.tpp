@@ -564,9 +564,9 @@ template<class T>
     SetInterface( p, NodeInTetra);
     std::valarray<double> P2_Val[10];
     FE_P2CL::ApplyAll( NumNodesC, NodeInTetra, P2_Val);
-    (*this)= f[0]*static_cast<GridFunctionCL<> >( P2_Val[0]); // XXX: So, oder mit Kopierkonstruktor?
+    (*this)= f[0]*(*static_cast<GridFunctionCL<>* >( &P2_Val[0])); // XXX: So, oder mit Kopierkonstruktor?
     for (size_t i= 1; i < 10; ++i)
-        (*this)+= f[i]*static_cast<GridFunctionCL<> >( P2_Val[i]);
+        (*this)+= f[i]*(*static_cast<GridFunctionCL<>* >( &P2_Val[i]));
     return *this;
 }
 
