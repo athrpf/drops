@@ -4,12 +4,12 @@
 #    droplet in brick
 #=============================================================
 
-# time stepping                   not used
+# time stepping
 Time {
-  NumSteps	=	10000
-  StepSize	=	2e-4
-  ThetaLevelset	=	1
-  ThetaSurf	=	1
+  NumSteps	=	128 #1024 512 256 128 64 32 16 8 4 2 1 # Use 0 for stationary testcase 0
+  StepSize	=	0.0078125 # 0.0009765625 0.001953125 0.00390625 0.0078125 0.015625 0.03125 0.0625 0.125 0.25 0.5 1.0
+  ThetaLevelset	=	1.0
+  ThetaSurf	=	1.0
 }
 
 # levelset solver                 not used
@@ -18,36 +18,40 @@ Levelset {
   Iter		=	500
   SD		=	0.1
   CurvDiff	=	-1
-  VolCorrection	=	1
+  VolCorrection	=	0
 }
 
 # re-initialization of levelset function
 Reparam {
-  Freq		=	10	# 0 = no reparametrization
+  Freq		=	0	# 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	10
+  Freq		=	0  # 10
   FinestLevel	=	3
-  Width		=	-1     # < 0: only tetras with sign change are marked
+  Width		=	10 #0.2     # < 0: only tetras with sign change are marked
 }
 
 # material data, all units are SI
 Mat {
-  ViscIface	=	0.
+  ViscIface	=	1e-2
 }
 
 # experimental conditions
 Exp {
   RadDrop	=	1 1 1  # only the first component is used
   PosDrop	=	0 0 0
-  Velocity	=	0 0 0
+  Velocity	=	0 0 0.5
 }
 
 # miscellaneous
-TestCase	=	0
+TestCase	=	1
 InitialDivisions=       2
+SurfIter        =       1000
+SurfTol         =       1e-12
+SurfOmitBound   =       -1.                      # keeps all dof
+SurfSD          =       1.
 EnsightCase	=	surfactant		 # none= no ensight data
 EnsightDir	=	ensight

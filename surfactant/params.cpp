@@ -46,6 +46,10 @@ void ParamSurfactantCL::RegisterParams()
 
     rp_.RegInt( TestCase,     "TestCase");
     rp_.RegInt( cdiv,         "InitialDivisions");
+    rp_.RegInt( surf_iter,    "SurfIter");
+    rp_.RegDouble( surf_tol,  "SurfTol");
+    rp_.RegDouble( surf_omit_bound,  "SurfOmitBound");
+    rp_.RegDouble( surf_SD,   "SurfSD");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
 }

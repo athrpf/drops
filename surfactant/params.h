@@ -60,6 +60,11 @@ class ParamSurfactantCL: public ParamBaseCL
     int    TestCase,                            ///< 0: Laplace-Beltrami on sphere, v=0
            cdiv;                                ///< \# divisions of initial cube
 
+    int    surf_iter;                           ///< iterations of solver for surfactant equation
+    double surf_tol;                            ///< tolerance of solver for surfactant equation
+    double surf_omit_bound,                     ///< omit dof with small mass on the interface
+           surf_SD;                             ///< streamline diffusion in the transport class on the interface
+
     string EnsCase,                             ///< name of Ensight Case, "none"= no output
            EnsDir;                              ///< local directory for Ensight files
 

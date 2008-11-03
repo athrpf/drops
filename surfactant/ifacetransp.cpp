@@ -5,6 +5,7 @@
 #include "levelset/levelset.h"
 #include "num/spmat.h"
 #include <cstring>
+#include <cmath>
 
 
 namespace DROPS {
@@ -12,14 +13,34 @@ namespace DROPS {
 void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
     const MultiGridCL::TriangTetraIteratorCL& begin,
     const MultiGridCL::TriangTetraIteratorCL& end,
-    const VecDescCL& ls)
+    const VecDescCL& ls, double omit_bound)
 {
     if (stride == 0) return;
+
+    LocalP2CL<> hat_sq[4]; // values of phi_i*phi_i
+    Quad5_2DCL<> q;
+    for (int i= 0; i < 4; ++i)  {
+        hat_sq[i][i]=1.;
+        for (int j = 0; j < 4; ++j)
+            if (i != j) hat_sq[i][EdgeByVert(i,j)+4]= 0.25;
+    }
 
     InterfacePatchCL p;
     for (MultiGridCL::TriangTetraIteratorCL it= begin; it != end; ++it) {
         p.Init( *it, ls);
         if (!p.Intersects()) continue;
+
+        const double h3= it->GetVolume()*6, h= cbrt( h3), h4= h*h3, limit= h4*omit_bound;
+        SVectorCL<4> loc_int; // stores integrals \int_{\Gamma_T} p^2 dx, with p1-dof p.
+        for (int ch= 0; ch < 8; ++ch) {
+            if (!p.ComputeForChild( ch)) continue;// no patch for this child
+            for (int tri= 0; tri < p.GetNumTriangles(); ++tri) {
+                for (int i= 0; i < 4; ++i) {
+                    q.assign( hat_sq[i], &p.GetBary( tri));
+                    loc_int[i]+= q.quad( p.GetFuncDet( tri));
+                }
+            }
+        }
 
         const bool innercut( p.IntersectsInterior());
         for (Uint i= 0; i < NumVertsC; ++i) {
@@ -27,6 +48,7 @@ void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
             if (innercut || p.GetSign( i) == 0) {
                 u.Prepare( idx);
                 if ( u( idx) == NoIdx) {
+                    if (loc_int[i] < limit) continue; // omit DoFs of minor importance
                     u( idx)= counter;
                     counter+= stride;
                 }
@@ -41,7 +63,7 @@ void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
 }
 
 void CreateNumbOnInterface(Uint level, IdxDescCL& idx, MultiGridCL& mg,
-    const VecDescCL& ls)
+    const VecDescCL& ls, double omit_bound)
 {
     // set up the index description
     idx.TriangLevel = level;
@@ -51,7 +73,7 @@ void CreateNumbOnInterface(Uint level, IdxDescCL& idx, MultiGridCL& mg,
     // allocate space for indices; number unknowns in TriangLevel level
     if (idx.NumUnknownsVertex() != 0)
         CreateNumbOnInterfaceVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
-            mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls);
+            mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls, omit_bound);
 
     if (idx.NumUnknownsEdge() != 0 || idx.NumUnknownsFace() != 0 || idx.NumUnknownsTetra() != 0)
         throw DROPSErrCL( "CreateNumbOnInterface: Only vertex unknowns are implemented\n" );
@@ -67,6 +89,18 @@ void Extend (const MultiGridCL& mg, const VecDescCL& x, VecDescCL& xext)
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
         if (it->Unknowns.Exist( xidx) && it->Unknowns.Exist( xextidx))
             xext.Data[it->Unknowns( xextidx)]= x.Data[it->Unknowns( xidx)];
+    }
+}
+
+void Restrict (const MultiGridCL& mg, const VecDescCL& xext, VecDescCL& x)
+{
+    const Uint xidx( x.RowIdx->GetIdx()),
+        xextidx( xext.RowIdx->GetIdx()),
+        lvl( x.RowIdx->TriangLevel);
+
+    DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+        if (it->Unknowns.Exist( xidx) && it->Unknowns.Exist( xextidx))
+            x.Data[it->Unknowns( xidx)]= xext.Data[it->Unknowns( xextidx)];
     }
 }
 
@@ -128,7 +162,6 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
 
 void SetupLBP1OnTriangle (InterfacePatchCL& patch, int tri, Point3DCL grad[4], double coup[4][4])
 {
-
     Point3DCL surfgrad[4];
     for (int i= 0; i < 4; ++i)
         surfgrad[i]= patch.ApplyProj( grad[i]);
@@ -141,7 +174,7 @@ void SetupLBP1OnTriangle (InterfacePatchCL& patch, int tri, Point3DCL grad[4], d
         }
 }
 
-void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls)
+void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, double D)
 {
     const IdxT num_unks= mat->RowIdx->NumUnknowns;
     MatrixBuilderCL M( &mat->Data, num_unks, num_unks);
@@ -152,10 +185,9 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls)
     std::cerr << "entering SetupLBP1: " << num_unks << " dof.\n";
 
     Point3DCL grad[4];
-    SMatrixCL<3,3> T;
 
     double coup[4][4];
-    double det, dummy;
+    double dummy;
 
     InterfacePatchCL patch;
 
@@ -163,7 +195,6 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls)
         patch.Init( *it, ls);
         if (patch.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( num, *it, *mat->RowIdx);
-            GetTrafoTr( T, det, *it);
             P1DiscCL::GetGradients( grad, dummy, *it);
             std::memset( coup, 0, 4*4*sizeof( double));
 
@@ -183,7 +214,42 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls)
         }
     }
     M.Build();
+    mat->Data*= D; // diffusion coefficient
     std::cerr << mat->Data.num_nonzeros() << " nonzeros in A_LB" << std::endl;
+}
+
+void SetupConvectionP1OnTriangle ( const BaryCoordCL triangle[3], double det,
+    const LocalP1CL<> p1[4], Quad5_2DCL<> qp1[4],
+    const LocalP2CL<Point3DCL>& u, Point3DCL grad[4], double coup[4][4])
+{
+    for (int i= 0; i < 4; ++i)
+        qp1[i].assign( p1[i], triangle);
+    Quad5_2DCL<Point3DCL> qu( u, triangle);
+
+    for (int i= 0; i < 4; ++i)
+        for (int j= 0; j < 4; ++j) {
+            const double c= Quad5_2DCL<>( dot( grad[j], qu)*qp1[i]).quad( det);
+            coup[i][j]+= c;
+        }
+}
+
+void SetupMassDivP1OnTriangle (const BaryCoordCL triangle[3], double det,
+    const LocalP1CL<> p1[4], Quad5_2DCL<> qp1[4],
+    const LocalP2CL<Point3DCL>& u, LocalP1CL<Point3DCL> gradp2[10], const Point3DCL& n, double coup[4][4])
+{
+    for (int i= 0; i < 4; ++i)
+        qp1[i].assign( p1[i], triangle);
+
+    Quad5_2DCL<Point3DCL> qgradp2i;
+    Quad5_2DCL<> qdivgamma_u;
+    for (int i= 0; i < 10; ++i) {
+        qgradp2i.assign( gradp2[i], triangle);
+        qdivgamma_u+= dot(u[i], qgradp2i) - inner_prod( n, u[i])*dot( n, qgradp2i);
+    } // Now qdivgamma_u contains the surface-divergence of u.
+
+    for (int i= 0; i < 4; ++i)
+        for (int j= 0; j < 4; ++j)
+            coup[i][j]+= Quad5_2DCL<>( qdivgamma_u*qp1[i]*qp1[j]).quad( det);
 }
 
 void SetupInterfaceRhsP1OnTriangle (const LocalP1CL<> p1[4],
@@ -232,6 +298,45 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
         }
     }
     std::cerr << " Rhs set up." << std::endl;
+}
+
+
+void
+InterfaceP1RepairCL::post_refine ()
+{
+    VecDescCL loc_u;
+    IdxDescCL loc_idx( P1_FE);
+
+    loc_idx.CreateNumbering( fullp1idx_.TriangLevel, mg_);
+    loc_u.SetIdx( &loc_idx);
+    DROPS::NoBndDataCL<> dummy;
+    RepairAfterRefineP1( make_P1Eval( mg_, dummy, fullu_), loc_u);
+    fullu_.Clear();
+    fullp1idx_.swap( loc_idx);
+    loc_idx.DeleteNumbering( mg_);
+    fullu_.SetIdx( &fullp1idx_);
+    fullu_.Data= loc_u.Data;
+}
+
+void
+InterfaceP1RepairCL::pre_refine_sequence ()
+{
+    fullp1idx_.CreateNumbering( u_.RowIdx->TriangLevel, mg_);
+    fullu_.SetIdx( &fullp1idx_);
+    Extend( mg_, u_, fullu_);
+}
+
+void
+InterfaceP1RepairCL::post_refine_sequence ()
+{
+    u_.RowIdx->DeleteNumbering( mg_);
+    CreateNumbOnInterface( fullp1idx_.TriangLevel, *u_.RowIdx, mg_, lset_vd_);
+    u_.SetIdx( u_.RowIdx);
+
+    Restrict( mg_, fullu_, u_);
+
+    fullp1idx_.DeleteNumbering( mg_);
+    fullu_.Clear();
 }
 
 } // end of namespace DROPS
