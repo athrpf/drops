@@ -461,12 +461,7 @@ void SurfactantP1CL::DoStep (const VectorCL& rhsext)
     ic.SetIdx( &idx);
     Update();
     // transp_rhs.Data/= std::sqrt( M.Data.GetDiag()); // scaling
-    {
-        MatrixCL tmp;
-        tmp.LinComb( 1.0, A.Data, 1.0, Md.Data);
-        L_.clear();
-        L_.LinComb( 1./dt_, M.Data, theta_, tmp);
-    }
+    L_.LinComb( 1./dt_, M.Data, theta_, A.Data, theta_, Md.Data);
     const VectorCL therhs( M.Data*transp_rhs.Data);
     std::cerr << "Before solve: res = " << norm( L_*ic.Data - therhs) << std::endl;
     gm_.Solve( L_, ic.Data, therhs);

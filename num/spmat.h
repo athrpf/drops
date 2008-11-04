@@ -369,6 +369,9 @@ public:
 
     SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&);
+    SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&);
 
     void resize (size_t rows, size_t cols, size_t nz)
         { IncrementVersion(); _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
@@ -960,6 +963,7 @@ template <typename T>
         val[nz]*= v[col[nz]];
 }
 
+/// \brief Compute the linear combination of two sparse matrices efficiently.
 template <typename T>
 SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
                                                  double coeffB, const SparseMatBaseCL<T>& B)
@@ -1056,6 +1060,17 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     }
 
     return *this;
+}
+
+/// \brief Compute the linear combination of three sparse matrices.
+template <typename T>
+SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
+                                                 double coeffB, const SparseMatBaseCL<T>& B,
+                                                 double coeffC, const SparseMatBaseCL<T>& C)
+{
+    SparseMatBaseCL<T> tmp;
+    tmp.LinComb( coeffA, A, coeffB, B);
+    return this->LinComb( 1.0, tmp, coeffC, C);
 }
 
 /// \brief Compute the transpose matrix of M explicitly.
