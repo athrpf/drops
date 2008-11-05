@@ -294,7 +294,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         Grad[v].assign( Grad_f[v], p);
         n+= patch.GetPhi(v)*Grad[v];
     }
-    for (int i =0; i<Quad5_2DCL<>::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
+    for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
     Quad5_2DCL<> qsigma( t, p, sigma),  // surface tension
                  q1;                    // Term 1
@@ -334,7 +334,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         Grad[v].assign( Grad_f[v], p);
         n+= patch.GetPhi(v)*Grad[v];
     }
-    for (int i =0; i<Quad5_2DCL<>::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
+    for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
     Quad5_2DCL<> qsigma( t, p, sigma), // surface tension
                  q1,                   // Term 1

@@ -23,33 +23,33 @@ default: ClrScr dropsrep
 drops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/drops.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../poisson/poisson.o \
-    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 dropsrep: \
     ../geom/boundary.o ../geom/builder.o ../poisson/dropsrep.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../poisson/poisson.o \
-    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 drops_neumann: \
     ../geom/boundary.o ../geom/builder.o ../poisson/drops_neumann.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../poisson/poisson.o \
-    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/problem.o ../misc/utils.o ../out/output.o ../num/discretize.o ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 MGdrops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/MGdrops.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o \
     ../num/MGsolver.o ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
-    ../num/fe.o
+    ../num/fe.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 MGdropsP2: \
     ../geom/boundary.o ../geom/builder.o ../poisson/MGdropsP2.o ../geom/multigrid.o \
     ../out/output.o ../num/unknowns.o ../geom/topo.o \
     ../num/MGsolver.o ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
-    ../num/fe.o
+    ../num/fe.o  ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 testdrops: \
@@ -63,7 +63,7 @@ ipdrops: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdrops.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../num/MGsolver.o ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o \
-    ../num/fe.o
+    ../num/fe.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ipdropsAD: \
@@ -76,13 +76,14 @@ ipdropsAD: \
 ipdropsrep: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdropsrep.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o ../num/fe.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ipfilm: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipfilm.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o ../out/ensightOut.o
+    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o ../out/ensightOut.o \
+    ../num/fe.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \

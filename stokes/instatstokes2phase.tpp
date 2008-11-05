@@ -1596,7 +1596,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupBdotv (VecDescCL* Bdotv, const VelVec
                     qGrad.assign( Grad[v], p);
                     n+= cut.GetPhi( v)*qGrad;
                 }
-                for (int i= 0; i < Quad5_2DCL<>::NumNodesC; ++i)
+                for (int i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
                     if (n[i].norm()>1e-8) n[i]/= n[i].norm();
                 q1= dot( n, qu)*qdivu;
                 for(int pr= 0; pr < 4; ++pr) {

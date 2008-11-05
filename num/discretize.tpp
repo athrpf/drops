@@ -309,72 +309,10 @@ template<class T>
 //**************************************************************************
 
 template<class T>
-bool Quad5CL<T>::HaveNodes= false;
-
-template <class T>
-BaryCoordCL Quad5CL<T>::Node[NumNodesC];
-
-template<class T>
-const double Quad5CL<T>::Wght[4]= {
-    8./405.,                                   /*Node[0]*/
-    (2665.0 + 14.0*std::sqrt( 15.0))/226800.0, /*Node[1] bis Node[4]*/
-    (2665.0 - 14.0*std::sqrt( 15.0))/226800.0, /*Node[5] bis Node[8]*/
-    5./567.                                    /*Node[9] bis Node[14]*/
-};
-
-template<class T>
-std::valarray<double> Quad5CL<T>::P2_Val[10]; // P2_Val[i] contains FE_P2CL::H_i( Node).
-
-template<class T>
-  void
-  Quad5CL<T>::MaybeInitNodes() const
-{
-    if (HaveNodes) return;
-
-    Node[0]= BaryCoordCL( 0.25);
-    const double A1= (7.0 - std::sqrt( 15.0))/34.0,
-                 B1= (13.0 + 3.0*std::sqrt( 15.0))/34.0;
-    Node[1]= MakeBaryCoord( A1,A1,A1,B1);
-    Node[2]= MakeBaryCoord( A1,A1,B1,A1);
-    Node[3]= MakeBaryCoord( A1,B1,A1,A1);
-    Node[4]= MakeBaryCoord( B1,A1,A1,A1);
-    const double A2= (7.0 + std::sqrt( 15.0))/34.0,
-                 B2= (13.0 - 3.0*std::sqrt( 15.0))/34.0;
-    Node[5]= MakeBaryCoord( A2,A2,A2,B2);
-    Node[6]= MakeBaryCoord( A2,A2,B2,A2);
-    Node[7]= MakeBaryCoord( A2,B2,A2,A2);
-    Node[8]= MakeBaryCoord( B2,A2,A2,A2);
-    const double A3= (10.0 - 2.0*std::sqrt( 15.0))/40.0,
-                 B3= (10.0 + 2.0*std::sqrt( 15.0))/40.0;
-    Node[9] = MakeBaryCoord( A3,A3,B3,B3);
-    Node[10]= MakeBaryCoord( A3,B3,A3,B3);
-    Node[11]= MakeBaryCoord( A3,B3,B3,A3);
-    Node[12]= MakeBaryCoord( B3,A3,A3,B3);
-    Node[13]= MakeBaryCoord( B3,A3,B3,A3);
-    Node[14]= MakeBaryCoord( B3,B3,A3,A3);
-
-    FE_P2CL::ApplyAll( NumNodesC, Node, P2_Val);
-
-    HaveNodes= true;
-}
-
-template<class T>
-  BaryCoordCL* Quad5CL<T>::TransformNodes (const SArrayCL<BaryCoordCL,4>& M)
-{
-    BaryCoordCL* tN = new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i< NumNodesC; ++i)
-        //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k=0; k<4; ++k)
-            tN[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                    + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return tN;
-}
-
-template<class T>
   inline Quad5CL<T>&
   Quad5CL<T>::assign(const TetraCL& s, instat_fun_ptr f , double t, const BaryCoordCL* const node)
 {
-    for (Uint i= 0; i < NumNodesC; ++i)
+    for (Uint i= 0; i < Quad5DataCL::NumNodesC; ++i)
         (*this)[i]= f( GetWorldCoord( s, node[i]), t);
     return *this;
 }
@@ -383,7 +321,7 @@ template<class T>
   inline Quad5CL<T>&
   Quad5CL<T>::assign(const LocalP1CL<value_type>& f, const BaryCoordCL* const node)
 {
-    for (size_t i= 0; i < NumNodesC; ++i)
+    for (size_t i= 0; i < Quad5DataCL::NumNodesC; ++i)
         (*this)[i]= f( node[i]);
     return *this;
 }
@@ -392,9 +330,9 @@ template<class T>
   inline Quad5CL<T>&
   Quad5CL<T>::assign(const LocalP2CL<value_type>& f)
 {
-    (*this)= f[0]*static_cast<GridFunctionCL<double> >( P2_Val[0]);
+    (*this)= f[0]*static_cast<GridFunctionCL<double> >( Quad5DataCL::P2_Val[0]);
     for (size_t i= 1; i < 10; ++i)
-        (*this)+= f[i]*static_cast<GridFunctionCL<double> >( P2_Val[i]);
+        (*this)+= f[i]*static_cast<GridFunctionCL<double> >( Quad5DataCL::P2_Val[i]);
     return *this;
 }
 
@@ -402,7 +340,7 @@ template<class T>
   inline Quad5CL<T>&
   Quad5CL<T>::assign(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
 {
-    for (size_t i= 0; i < NumNodesC; ++i)
+    for (size_t i= 0; i < Quad5DataCL::NumNodesC; ++i)
         (*this)[i]= f( node[i]);
     return *this;
 }
@@ -417,9 +355,9 @@ template<class T>
     value_type dof[10];
     f.GetDoF( s, dof);
     (*this)= T();
-    for (size_t i= 0; i < NumNodesC; ++i)
+    for (size_t i= 0; i < Quad5DataCL::NumNodesC; ++i)
         for (size_t j= 0; j < 10; ++j)
-            (*this)[i]+= dof[j]*P2_Val[j][i];
+            (*this)[i]+= dof[j]*Quad5DataCL::P2_Val[j][i];
     f.SetTime( oldt);
     return *this;
 }
@@ -431,8 +369,8 @@ template<class T>
 {
     const double oldt= f.GetTime();
     f.SetTime( t);
-    for (size_t i= 0; i < NumNodesC; ++i)
-        (*this)[i]= f.val( s, Node[i]);
+    for (size_t i= 0; i < Quad5DataCL::NumNodesC; ++i)
+        (*this)[i]= f.val( s, Quad5DataCL::Node[i]);
     f.SetTime( oldt);
     return *this;
 }
@@ -440,52 +378,78 @@ template<class T>
 template<class T>
   Quad5CL<T>::Quad5CL(const TetraCL& s,
                       instat_fun_ptr f, double t, const BaryCoordCL* const node)
-  : base_type( value_type(), NumNodesC)
+  : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( s, f, t, node);
 }
 
 template<class T>
   Quad5CL<T>::Quad5CL(const LocalP1CL<value_type>& f, const BaryCoordCL* const node)
-    : base_type( value_type(), NumNodesC)
+    : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( f, node);
 }
 
 template<class T>
   Quad5CL<T>::Quad5CL(const LocalP2CL<value_type>& f)
-  : base_type( value_type(), NumNodesC)
+  : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( f);
 }
 
 template<class T>
   Quad5CL<T>::Quad5CL(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
-    : base_type( value_type(), NumNodesC)
+    : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( f, node);
 }
 
 template<class T>
   template <class _BndData, class _VD>
     Quad5CL<T>::Quad5CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
-    : base_type( value_type(), NumNodesC)
+    : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( s, f, t);
 }
 
 template<class T>
   template <class PFunT>
     Quad5CL<T>::Quad5CL(const TetraCL& s, const PFunT& f, double t)
-    : base_type( value_type(), NumNodesC)
+    : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( s, f, t);
+}
+
+template<class T>
+  inline T Quad5CL<T>::quad (double absdet) const
+// {
+//     return absdet*(
+//           0.01975308641975308641975308641975308641975 *  (*this)[0]
+//         + 0.01198951396316977000173064248499538621936 * ((*this)[1]+(*this)[2]+(*this)[3]+(*this)[4])
+//         + 0.01151136787104539754677023934921978132914 * ((*this)[5]+(*this)[6]+(*this)[7]+(*this)[8])
+//         + 0.008818342151675485008818342151675485008818* ((*this)[9]+(*this)[10]+(*this)[11]+(*this)[12]+(*this)[13]+(*this)[14])
+//     );
+// }
+{
+    return absdet*(
+          8./405. *  (*this)[0]
+        + (2665.0 + 14.0*std::sqrt( 15.0))/226800.0 * ((*this)[1]+(*this)[2]+(*this)[3]+(*this)[4])
+        + (2665.0 - 14.0*std::sqrt( 15.0))/226800.0 * ((*this)[5]+(*this)[6]+(*this)[7]+(*this)[8])
+        + 5./567.* ((*this)[9]+(*this)[10]+(*this)[11]+(*this)[12]+(*this)[13]+(*this)[14])
+    );
+}
+
+    // Quadraturformel zur Annaeherung von \int f*phi, phi = P2-Hutfunktion
+template<class T>
+  inline T Quad5CL<T>::quadP2 (int i, double absdet) const
+{
+    typedef Quad5DataCL Q;
+    return absdet*(
+          8./405.*Q::P2_Val[i][0]*(*this)[0]
+        + (2665.0 + 14.0*std::sqrt( 15.0))/226800.0*(Q::P2_Val[i][1]*(*this)[1]+Q::P2_Val[i][2]*(*this)[2]+Q::P2_Val[i][3]*(*this)[3]+Q::P2_Val[i][4]*(*this)[4])
+        + (2665.0 - 14.0*std::sqrt( 15.0))/226800.0*(Q::P2_Val[i][5]*(*this)[5]+Q::P2_Val[i][6]*(*this)[6]+Q::P2_Val[i][7]*(*this)[7]+Q::P2_Val[i][8]*(*this)[8])
+        + 5./567.*(Q::P2_Val[i][9]*(*this)[9]+Q::P2_Val[i][10]*(*this)[10]+Q::P2_Val[i][11]*(*this)[11]+Q::P2_Val[i][12]*(*this)[12]+Q::P2_Val[i][13]*(*this)[13]+Q::P2_Val[i][14]*(*this)[14])
+    );
 }
 
 
@@ -493,55 +457,14 @@ template<class T>
 // Class: Quad5_2DCL                                                       *
 //**************************************************************************
 template<class T>
-  bool Quad5_2DCL<T>::HaveNodes= false;
-
-template <class T>
-  Point3DCL Quad5_2DCL<T>::Node[NumNodesC];  // Barycentric coord for 2D
-
-template<class T>
-  const double Quad5_2DCL<T>::Wght[3]= {
-      9./80.,                                   /*Node[0]*/
-      (155. - std::sqrt( 15.0))/2400., /*Node[1] to Node[3]*/
-      (155. + std::sqrt( 15.0))/2400., /*Node[4] to Node[6]*/
-};
-
-template<class T>
-  void
-  Quad5_2DCL<T>::MaybeInitNodes() const
-{
-    if (HaveNodes) return;
-
-    Node[0]= Point3DCL( 1./3.);
-    const double A1= (6.0 - std::sqrt( 15.0))/21.0,
-    B1= (9.0 + 2.0*std::sqrt( 15.0))/21.0;
-    Node[1]= MakePoint3D( A1,A1,B1);
-    Node[2]= MakePoint3D( A1,B1,A1);
-    Node[3]= MakePoint3D( B1,A1,A1);
-    const double A2= (6.0 + std::sqrt( 15.0))/21.0,
-    B2= (9.0 - 2.0*std::sqrt( 15.0))/21.0;
-    Node[4]= MakePoint3D( A2,A2,B2);
-    Node[5]= MakePoint3D( A2,B2,A2);
-    Node[6]= MakePoint3D( B2,A2,A2);
-    HaveNodes= true;
-}
-
-template<class T>
-  void
-  Quad5_2DCL<T>::SetInterface(const BaryCoordCL*const p, BaryCoordCL* NodeInTetra)
-{
-    for (Uint i= 0; i < NumNodesC; ++i)
-        NodeInTetra[i]= Node[i][0]*p[0] + Node[i][1]*p[1] + Node[i][2]*p[2];
-}
-
-template<class T>
   inline Quad5_2DCL<T>&
   Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p, instat_fun_ptr f , double t)
 {
     Point3DCL v[3];
     for (Uint k= 0; k < 3; ++k)
         v[k]= GetWorldCoord(s, p[k]);
-    for (Uint i= 0; i < NumNodesC; ++i)
-        (*this)[i]= f( Node[i][0]*v[0]+Node[i][1]*v[1]+Node[i][2]*v[2], t) ;
+    for (Uint i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
+        (*this)[i]= f( Quad5_2DDataCL::Node[i][0]*v[0]+Quad5_2DDataCL::Node[i][1]*v[1]+Quad5_2DDataCL::Node[i][2]*v[2], t) ;
     return *this;
 }
 
@@ -549,9 +472,9 @@ template<class T>
   inline Quad5_2DCL<T>&
   Quad5_2DCL<T>::assign(const LocalP1CL<value_type>& f, const BaryCoordCL* const p)
 {
-    BaryCoordCL NodeInTetra[NumNodesC];
+    BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
     SetInterface( p, NodeInTetra);
-    for (size_t i= 0; i < NumNodesC; ++i)
+    for (size_t i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
         (*this)[i]= f( NodeInTetra[i]);
     return *this;
 }
@@ -560,10 +483,10 @@ template<class T>
   inline Quad5_2DCL<T>&
   Quad5_2DCL<T>::assign(const LocalP2CL<value_type>& f, const BaryCoordCL* const p)
 {
-    BaryCoordCL NodeInTetra[NumNodesC];
+    BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
     SetInterface( p, NodeInTetra);
     std::valarray<double> P2_Val[10];
-    FE_P2CL::ApplyAll( NumNodesC, NodeInTetra, P2_Val);
+    FE_P2CL::ApplyAll( Quad5_2DDataCL::NumNodesC, NodeInTetra, P2_Val);
     (*this)= f[0]*(*static_cast<GridFunctionCL<>* >( &P2_Val[0])); // XXX: So, oder mit Kopierkonstruktor?
     for (size_t i= 1; i < 10; ++i)
         (*this)+= f[i]*(*static_cast<GridFunctionCL<>* >( &P2_Val[i]));
@@ -576,16 +499,16 @@ template<class T>
     Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p,
         const P2EvalCL<T, _BndData, _VD>& f, double t)
 {
-    BaryCoordCL NodeInTetra[NumNodesC];
+    BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
     SetInterface( p, NodeInTetra);
     std::valarray<double> P2_Val[10];
-    FE_P2CL::ApplyAll( NumNodesC, NodeInTetra, P2_Val);
+    FE_P2CL::ApplyAll( Quad5_2DDataCL::NumNodesC, NodeInTetra, P2_Val);
     const double oldt= f.GetTime();
     f.SetTime( t);
     value_type dof[10];
     f.GetDoF( s, dof);
     (*this)= T();
-    for (size_t i= 0; i < NumNodesC; ++i)
+    for (size_t i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
         for (size_t j= 0; j < 10; ++j)
             (*this)[i]+= dof[j]*P2_Val[j][i];
     f.SetTime( oldt);
@@ -597,11 +520,11 @@ template<class T>
     inline Quad5_2DCL<T>&
     Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f, double t)
 {
-    BaryCoordCL NodeInTetra[NumNodesC];
+    BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
     SetInterface( p, NodeInTetra);
     const double oldt= f.GetTime();
     f.SetTime( t);
-    for (size_t i= 0; i < NumNodesC; ++i)
+    for (size_t i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
         (*this)[i]= f.val( s, NodeInTetra[i]);
     f.SetTime( oldt);
     return *this;
@@ -609,17 +532,15 @@ template<class T>
 
 template<class T>
   Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL*const p, instat_fun_ptr f, double t)
-  : base_type( value_type(), NumNodesC)
+  : base_type( value_type(), Quad5_2DDataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( s, p, f, t);
 }
 
 template<class T>
   Quad5_2DCL<T>::Quad5_2DCL(const LocalP2CL<value_type>& f, const BaryCoordCL* const p)
-  : base_type( value_type(), NumNodesC)
+  : base_type( value_type(), Quad5_2DDataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( f, p);
 }
 
@@ -627,18 +548,16 @@ template<class T>
   template <class _BndData, class _VD>
     Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p,
         const P2EvalCL<T, _BndData, _VD>& f, double t)
-    : base_type( value_type(), NumNodesC)
+    : base_type( value_type(), Quad5_2DDataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( s, p, f, t);
 }
 
 template<class T>
   template <class PFunT>
     Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f, double t)
-    : base_type( value_type(), NumNodesC)
+    : base_type( value_type(), Quad5_2DDataCL::NumNodesC)
 {
-    MaybeInitNodes();
     this->assign( s, p, f, t);
 }
 

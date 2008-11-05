@@ -385,6 +385,30 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
 };
 
 
+/// \brief Contains the nodes and weights of a positive quadrature rule on the reference tetrahedron. It uses 15 nodes an is exact up to degree 5.
+///
+/// The data is initialized exactly once on program-startup by the global object in num/discretize.cpp.
+class Quad5DataCL
+{
+  public:
+    Quad5DataCL ();
+
+    enum { NumNodesC= 15 };
+
+    static BaryCoordCL           Node[NumNodesC]; ///< quadrature nodes
+    static const double          Wght[4];         ///< quadrature weights
+    static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
+ 
+    /// M contains the barycentric coordinates of a tetrahedron; the
+    /// return-value is a new[]-allocated array of the quadrature-points
+    /// for this tetrahedron.
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M);
+};
+
+
+/// \brief Positive quadrature rule on a tetrahedron of degree 5 with 15 nodes.
+///
+/// The numerical data for the actual quadrature is contained in Quad5DataCL -- it does not depend on the template parameter.
 template<class T=double>
 class Quad5CL: public GridFunctionCL<T>
 {
@@ -393,25 +417,15 @@ class Quad5CL: public GridFunctionCL<T>
     typedef typename base_type::value_type value_type;
     typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
-    enum { NumNodesC= 15 };
-
-    static bool         HaveNodes;       // Sind die Stuetzstellen berechnet?
-    static BaryCoordCL  Node[NumNodesC]; // Stuetzstellen
-    static const double Wght[4];         // Gewichte
-
-    static std::valarray<double> P2_Val[10]; // P2_Val[i] contains FE_P2CL::H_i( Node).
-
   protected:
     typedef Quad5CL<T> self_;
-    void MaybeInitNodes() const;
-
 
   public:
-    Quad5CL(): base_type( value_type(), NumNodesC) { MaybeInitNodes(); }
-    Quad5CL(const value_type& t): base_type( t, NumNodesC) { MaybeInitNodes(); }
+    Quad5CL(): base_type( value_type(), Quad5DataCL::NumNodesC) {}
+    Quad5CL(const value_type& t): base_type( t, Quad5DataCL::NumNodesC) {}
 
-    Quad5CL(const TetraCL&, instat_fun_ptr, double= 0.0, const BaryCoordCL* const= Quad5CL::Node);
-    Quad5CL(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad5CL::Node);
+    Quad5CL(const TetraCL&, instat_fun_ptr, double= 0.0, const BaryCoordCL* const= Quad5DataCL::Node);
+    Quad5CL(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad5DataCL::Node);
     Quad5CL(const LocalP2CL<value_type>&);
     Quad5CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
@@ -419,16 +433,12 @@ class Quad5CL: public GridFunctionCL<T>
     template <class PFunT>
       Quad5CL(const TetraCL&, const PFunT&, double= 0.0);
 
-    // Every constructor must be prepared to setup the Nodes-array, thus we cannot
-    // use DROPS_DEFINE_VALARRAY_DERIVATIVE directly.
-    template <class X__>
-      explicit Quad5CL(const X__& x__): base_type( x__) { MaybeInitNodes(); }
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
+DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
 
     inline self_&
-    assign(const TetraCL&, instat_fun_ptr , double= 0.0, const BaryCoordCL* const= Quad5CL::Node);
+    assign(const TetraCL&, instat_fun_ptr , double= 0.0, const BaryCoordCL* const= Quad5DataCL::Node);
     inline self_&
-    assign(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad5CL::Node);
+    assign(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad5DataCL::Node);
     inline self_&
     assign(const LocalP2CL<value_type>&);
     inline self_&
@@ -443,28 +453,37 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
     /// M contains the barycentric coordinates of a tetrahedron; the
     /// return-value is a new[]-allocated array of the quadrature-points
     /// for this tetrahedron.
-    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M);
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M) {
+        return Quad5DataCL::TransformNodes( M);
+    }
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
     // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
-    T quad (double absdet) const {
-        return absdet*(Wght[0]*(*this)[0]
-            + Wght[1]*((*this)[1]+(*this)[2]+(*this)[3]+(*this)[4])
-            + Wght[2]*((*this)[5]+(*this)[6]+(*this)[7]+(*this)[8])
-            + Wght[3]*((*this)[9]+(*this)[10]+(*this)[11]+(*this)[12]+(*this)[13]+(*this)[14]));
-    }
+    inline T quad (double absdet) const;
 
     // Quadraturformel zur Annaeherung von \int f*phi, phi = P2-Hutfunktion
-    T quadP2 (int i, double absdet) const {
-        return absdet*(Wght[0]*P2_Val[i][0]*(*this)[0]
-            + Wght[1]*(P2_Val[i][1]*(*this)[1]+P2_Val[i][2]*(*this)[2]+P2_Val[i][3]*(*this)[3]+P2_Val[i][4]*(*this)[4])
-            + Wght[2]*(P2_Val[i][5]*(*this)[5]+P2_Val[i][6]*(*this)[6]+P2_Val[i][7]*(*this)[7]+P2_Val[i][8]*(*this)[8])
-            + Wght[3]*(P2_Val[i][9]*(*this)[9]+P2_Val[i][10]*(*this)[10]+P2_Val[i][11]*(*this)[11]
-                      +P2_Val[i][12]*(*this)[12]+P2_Val[i][13]*(*this)[13]+P2_Val[i][14]*(*this)[14]));
-    }
+    inline T quadP2 (int i, double absdet) const;
 };
 
+/// \brief Contains the nodes and weights of a positive quadrature rule on the reference triangle. It uses 7 nodes an is exact up to degree 5.
+///
+/// The data is initialized exactly once on program-startup by the global object in num/discretize.cpp.
+class Quad5_2DDataCL
+{
+  public:
+    Quad5_2DDataCL ();
+
+    enum { NumNodesC= 7 };
+
+    static Point3DCL           Node[NumNodesC]; ///< quadrature nodes
+    static const double        Wght[3];         ///< quadrature weights
+ 
+    /// Calculates the barycentric coordinates of the quadrature points
+    /// of the triangle given by the 1st argument with respect to the
+    /// tetrahedron and stores them in the 2nd argument.
+    static void SetInterface (const BaryCoordCL* const, BaryCoordCL*);
+};
 
 template<class T=double>
 class Quad5_2DCL: public GridFunctionCL<T>
@@ -474,18 +493,12 @@ class Quad5_2DCL: public GridFunctionCL<T>
     typedef typename base_type::value_type value_type;
     typedef typename base_type::instat_fun_ptr instat_fun_ptr;
 
-    enum { NumNodesC= 7 };
-    static bool         HaveNodes;       // Sind die Stuetzstellen berechnet?
-    static Point3DCL    Node[NumNodesC]; // Stuetzstellen mit baryzentrischen Koordinaten bezueglich eines Dreiecks.
-    static const double Wght[3];         // Gewichte
-
   protected:
     typedef Quad5_2DCL<T> self_;
-    void MaybeInitNodes() const;
 
   public:
-    Quad5_2DCL(): base_type( value_type(), NumNodesC) { MaybeInitNodes(); }
-    Quad5_2DCL(const value_type& t): base_type( t, NumNodesC) { MaybeInitNodes(); }
+    Quad5_2DCL(): base_type( value_type(), Quad5_2DDataCL::NumNodesC) {}
+    Quad5_2DCL(const value_type& t): base_type( t, Quad5_2DDataCL::NumNodesC) {}
     Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, instat_fun_ptr, double= 0.0);
     Quad5_2DCL(const LocalP2CL<value_type>&, const BaryCoordCL*const );
     template <class _BndData, class _VD>
@@ -493,11 +506,7 @@ class Quad5_2DCL: public GridFunctionCL<T>
     template <class PFunT>
       Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const PFunT&, double= 0.0);
 
-    // Every constructor must be prepared to setup the Nodes-array, thus we cannot
-    // use DROPS_DEFINE_VALARRAY_DERIVATIVE directly.
-    template <class X__>
-      explicit Quad5_2DCL(const X__& x__): base_type( x__) { MaybeInitNodes(); }
-DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
+DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
 
     inline self_&
     assign(const TetraCL&, const BaryCoordCL* const, instat_fun_ptr , double= 0.0);
@@ -515,13 +524,15 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
     // Calculates the barycentric coordinates of the quadrature points
     // of the triangle given by the 1st argument with respect to the
     // tetrahedron and stores them in the 2nd argument.
-    static void SetInterface(const BaryCoordCL* const, BaryCoordCL*);
+    static void SetInterface (const BaryCoordCL* const p, BaryCoordCL* NodeInTetra) {
+        Quad5_2DDataCL::SetInterface ( p, NodeInTetra);
+    }
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
     // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
     T quad (double absdet) const {
-      return absdet*(Wght[0]*(*this)[0] + Wght[1]*((*this)[1]+(*this)[2]+(*this)[3]) + Wght[2]*((*this)[4]+(*this)[5]+(*this)[6]));
+      return absdet*(9./80.*(*this)[0] + (155. - std::sqrt( 15.0))/2400.*((*this)[1]+(*this)[2]+(*this)[3]) + (155. + std::sqrt( 15.0))/2400.*((*this)[4]+(*this)[5]+(*this)[6]));
     }
 };
 
@@ -733,13 +744,13 @@ class P2DiscCL
     static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradients( Quad5CL<Point3DCL> G[10], Quad5CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
-    { for (int i=0; i<10; ++i) for (int j=0; j<Quad5CL<Point3DCL>::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
+    { for (int i=0; i<10; ++i) for (int j=0; j<Quad5DataCL::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradients( Quad5_2DCL<Point3DCL> G[10], Quad5_2DCL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
-    { for (int i=0; i<10; ++i) for (int j=0; j<Quad5_2DCL<Point3DCL>::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
+    { for (int i=0; i<10; ++i) for (int j=0; j<Quad5_2DDataCL::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
     static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
     static void GetGradient( Quad5CL<Point3DCL> &G, Quad5CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
-    { for (int j=0; j<Quad5CL<Point3DCL>::NumNodesC; ++j) G[j]= T*GRef[j]; }
+    { for (int j=0; j<Quad5DataCL::NumNodesC; ++j) G[j]= T*GRef[j]; }
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr, Uint, double= 0.0);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 2
