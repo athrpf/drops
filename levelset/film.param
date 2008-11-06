@@ -15,23 +15,28 @@ Time {
 
 # flow solver
 Stokes {
+  StokesMethod = 16
   InnerIter	=	1000
   OuterIter	=	200
-  InnerTol	=	1e-12
-  OuterTol	=	1e-10
+  InnerTol	=	1e-10
+  OuterTol	=	1e-8
+  PcAIter	=	200
+  PcATol	=	1e-4
+  PcSTol	=	1e-4
+  XFEMStab	=	1
 }
 
 NavStokes {
   Nonlinear	=	1
   Scheme	=	1	# time integration: 0=FS op.splitting, 1=theta-scheme
   Tol           =       5e-10
-  Iter          =       20
+  Iter          =       10
   Reduction     =       0.1
 }
 
 # levelset solver
 Levelset {
-  Tol		=	1e-10
+  Tol		=	1e-16
   Iter		=	1000
   SD		=	1
   CurvDiff	=	-1
@@ -40,48 +45,63 @@ Levelset {
 
 Coupling {
   Tol		=	1e-10	# not used a.t.m.
-  Iter		=	2	# -1 = till convergence
+  Iter		=	0	# -1 = till convergence
 }
 
 # re-initialization of levelset function
 Reparam {
-  Freq		=	10	# 0 = no reparametrization
+  Freq		=	100 # 0 = no reparametrization
   Method	=	1	# 0/1 = fast marching without/with modification of zero
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	1
-  FinestLevel	=	1
-  Width		=	0.75e-3
+  Freq		=	10
+  FinestLevel	=	2
+  Width		=	5e-4
 }
 
+# material data, all units are SI, scaled by rho
+#Mat {
+#  DensGas	=	1			# "Luft"/Silikonoel
+#  ViscGas	=	1.425e-5	# mu/rho
+#  DensFluid	=	1
+#  ViscFluid	=	5.7e-6	# mu/rho
+#  SmoothZone	=	1e-4
+#  SurfTension	=	0 #5.5e-6 	# 2e-3 # sigma/(0.4 rho_F + 0.6 rho_G)
+#}
 # material data, all units are SI
 Mat {
-  DensGas	=	9 # 1.2			# "Luft"/Silikonoel
-  ViscGas	=	5e-5 # 17.1e-6
+  DensGas	=	1.2			# "Luft"/Silikonoel
+  ViscGas	=	1.71e-5
   DensFluid	=	909.3
   ViscFluid	=	5.183e-3
   SmoothZone	=	1e-4
-  SurfTension	=	1e-3
+  SurfTension	=	11e-3 # 22e-3
 }
 
 # experimental conditions
 Exp {
-  Gravity     =       2.539  -9.476 0 # Neigungswinkel 15 Grad
+#  Gravity     =       2.539  -9.476 0 # Neigungswinkel 15 Grad #former
 #  Gravity     =       5.627  -8.036 0 # Neigungswinkel 35 Grad
+  Gravity     =        8.036  -5.627 0 # Neigungswinkel 55 Grad
+#  Gravity     =       9.81 0 0 # Neigungswinkel 90 Grad
   PumpAmpl    =       0.2
   PumpFreq    =       10
+  Ampl_zDir   =       0.5
   Thickness   =       6.35e-4
 }
 
 # miscellaneous
 
-MeshResolution  =       20 6 5
-MeshSize        =       20e-3 3e-3 5e-3
+MeshResolution  =       20 6 2
+MeshSize        =       20.9e-3 4e-3 4e-3
 InitialCond	=	1      # 1=Stokes, 2=Nusselt, -1=read from file
-InitialFile	=	initial/film1000
-BndCond 	=	12ww12
-EnsightCase	=	film
+InitialFile	=	initial/filmNs40
+BndCond 	=	12wo12
+EnsightCase	=	filmNsTau5e-3
 EnsightDir	=	/Work/gross/ensight
+SerializationFile =	filmNs.mg
+DeserializationFile =	none # filmNs40.mg
+
 

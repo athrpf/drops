@@ -155,12 +155,17 @@ class ParamFilmCL: public ParamBaseCL
     void RegisterParams();
 
   public:
+    int    StokesMethod;                        // solver for the Stokes problems
     double inner_tol, outer_tol,                // Parameter der Loeser
            ns_tol, ns_red, nonlinear,           // fuer Flow & Levelset
            lset_tol, lset_SD, cpl_tol;
     int    inner_iter, outer_iter, 
            ns_iter, lset_iter;
+    int    pcA_iter;                            // max. number of iterations for the preconditionier
+    double pcA_tol,                             // tolerance for the preconditioner
+           pcS_tol;
     int    cpl_iter;                            // Kopplung Levelset/Flow: Anzahl Fixpunkt-Iterationen
+    double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
 
     double dt;                                  // Zeitschrittweite
     int    num_steps;                           // Anzahl Zeitschritte
@@ -170,7 +175,8 @@ class ParamFilmCL: public ParamBaseCL
            CurvDiff,                            // num. Glaettung Kruemmungstermberechnung
            rhoF, rhoG, muF, muG,                // Stoffdaten: Dichte/Viskositaet
            sm_eps,                              // Glaettungszone fuer Dichte-/Viskositaetssprung
-           PumpAmpl, PumpFreq;                  // Frequenz und Amplitude der Anregung
+           PumpAmpl, PumpFreq,                  // Frequenz und Amplitude der Anregung
+           AmplZ;                               // Amplitude in z-Richtung der initialen Phasengrenze
 
     Point3DCL g;                                // Schwerkraft
     double    Filmdicke;                        // Filmdicke
@@ -187,7 +193,9 @@ class ParamFilmCL: public ParamBaseCL
     string EnsCase,                             // Ensight Case,
            EnsDir,                              // lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
            IniData,
-           BndCond;
+           BndCond,
+           serialization_file,                  ///< writes multigrid to serialisation files, special value "none" to ignore
+           deserialization_file;                ///< reads multigrid from deserialization files, special value "none" to ignore
 
     ParamFilmCL()                        { RegisterParams(); }
     ParamFilmCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }

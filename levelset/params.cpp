@@ -130,6 +130,11 @@ void ParamFilmCL::RegisterParams()
     rp_.RegInt( outer_iter,   "OuterIter");
     rp_.RegDouble( inner_tol, "InnerTol");
     rp_.RegDouble( outer_tol, "OuterTol");
+    rp_.RegInt( StokesMethod, "StokesMethod");
+    rp_.RegInt( pcA_iter,     "PcAIter");
+    rp_.RegDouble( pcA_tol,   "PcATol");
+    rp_.RegDouble( pcS_tol,   "PcSTol");
+    rp_.RegDouble(XFEMStab,   "XFEMStab");
     rp_.EndGroup();
 
     rp_.BeginGroup( "NavStokes");
@@ -177,6 +182,7 @@ void ParamFilmCL::RegisterParams()
     rp_.RegCoord( g,          "Gravity");
     rp_.RegDouble( PumpFreq,  "PumpFreq");
     rp_.RegDouble( PumpAmpl,  "PumpAmpl");
+    rp_.RegDouble( AmplZ,     "Ampl_zDir");
     rp_.EndGroup();
 
     rp_.RegInt( IniCond,      "InitialCond");
@@ -186,6 +192,8 @@ void ParamFilmCL::RegisterParams()
     rp_.RegString( BndCond,   "BndCond");
     rp_.RegCoord( mesh_size,  "MeshSize");
     rp_.RegCoord( mesh_res,   "MeshResolution");
+    rp_.RegString( serialization_file,    "SerializationFile");
+    rp_.RegString( deserialization_file,  "DeserializationFile");
 }
 
 } // end of namespace DROPS

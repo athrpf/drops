@@ -1,13 +1,14 @@
 //**************************************************************************
-// File:    mzelle_instat.cpp                                              *
-// Content: flow in drop cell                                              *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+// File:    film.cpp                                                       *
+// Content: flow of falling film                                           *
+// Author:  Sven Gross, Joerg Grande, Patrick Esser, IGPM RWTH Aachen      *
 //**************************************************************************
 
 #include "geom/multigrid.h"
 #include "geom/builder.h"
 #include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
+#include "num/stokessolverfactory.h"
 #include "num/stokessolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
@@ -74,7 +75,9 @@ double DistanceFct( const DROPS::Point3DCL& p)
     const double wave= std::sin(2*M_PI*p[0]/C.mesh_size[0]),
         z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
 //    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*wave);
-    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*(wave + 0.2*std::cos(z*M_PI)));
+//    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*(wave + C.AmplZ*std::cos(z*M_PI)));
+    const double z_fac=  (1 + C.AmplZ/2*std::cos(z*M_PI));  // (z=+-1) 1-C.AmplZ <= z_fac <= 1+C.AmplZ (z=0)
+    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*wave) * z_fac;
 }
 
 bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
@@ -87,42 +90,10 @@ bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
 }
 
 double sigma;
-double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
 
 namespace DROPS // for Strategy
 {
-
-class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
-{
-  private:
-    PCG_SsorCL _PCGsolver;
-  public:
-    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
-        : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
-        {}
-};
-
-class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL<ISPreCL> >
-{
-  public:
-    typedef PCGSolverCL<SSORPcCL> innerSolverT;
-    typedef PCGSolverCL<ISPreCL>  outerSolverT;
-
-  private:
-    innerSolverT innerSolver_;
-    outerSolverT outerSolver_;
-
-  public:
-    ISPSchur_PCG_CL(ISPreCL& Spc, int outer_iter, double outer_tol,
-                                  int inner_iter, double inner_tol)
-        : PSchurSolver2CL<innerSolverT, outerSolverT>(
-              innerSolver_, outerSolver_, outer_iter, outer_tol
-          ),
-          innerSolver_( SSORPcCL( 1.), inner_iter, inner_tol),
-          outerSolver_( Spc, outer_iter, outer_tol)
-         {}
-};
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Ensight index.
 ///
@@ -132,13 +103,13 @@ class EnsightIdxRepairCL: public MGObserverCL
   private:
 	MultiGridCL& mg_;
 	IdxDescCL&   idx_;
-	
+
   public:
-	 EnsightIdxRepairCL( MultiGridCL& mg, IdxDescCL& idx) 
-	    : mg_(mg), idx_(idx) {}
-	
+    EnsightIdxRepairCL( MultiGridCL& mg, IdxDescCL& idx)
+      : mg_(mg), idx_(idx) {}
+
     void pre_refine  () {}
-    void post_refine () { idx_.DeleteNumbering( mg_); idx_.CreateNumbering( mg_.GetLastLevel(), mg_); } 
+    void post_refine () { idx_.DeleteNumbering( mg_); idx_.CreateNumbering( mg_.GetLastLevel(), mg_); }
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
@@ -201,7 +172,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         time.Reset();
-        PSchur_PCG_CL   schurSolver( Stokes.prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+        PCG_SsorCL PCGsolver( SSORPcCL(), C.inner_iter, C.inner_tol);
+        PSchurSolverCL<PCG_SsorCL> schurSolver( PCGsolver, Stokes.prM.Data, C.outer_iter, C.outer_tol);
+
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
         time.Stop();
@@ -250,64 +223,111 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
 
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
-//    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
-//    typedef MinCommPreCL SPcT;
-//    SPcT ispc( 0, Stokes.B.Data, Stokes.M.Data, Stokes.prM.Data);
-    typedef ISBBTPreCL SPcT;
-    SPcT ispc( &Stokes.B.Data, &Stokes.prM.Data, &Stokes.M.Data,
-            /*kA*/ 1./C.dt, /*kM*/ C.theta);
-//    typedef PCG_SsorCL SPcSolverT;
-//    SPcSolverT spcsolver( SSORPcCL( 1.0), 100, 0.02, /*relative*/ true);
-//    ISNonlinearPreCL<SPcSolverT> isnonlinpc( spcsolver, Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta); // May be used for inexact Uzawa.
-    typedef PCG_SsorCL ASolverT;
-    ASolverT Asolver( SSORPcCL( 1.0), 500, 0.02, /*relative*/true);
-    typedef SolverAsPreCL<ASolverT> APcT;
-    APcT velpc( Asolver);
 
-//    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-    typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
-    OseenSolverT oseenSolver( velpc, ispc, C.outer_iter, C.outer_tol);
+    // Stokes-Solver
+    StokesSolverFactoryCL<StokesProblemT, ParamFilmCL> stokessolverfactory(Stokes, C);
+    StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
+
+    // Navier-Stokes-Solver
     typedef NSSolverBaseCL<StokesProblemT> SolverT;
-    SolverT navstokessolver(Stokes, oseenSolver);
+    SolverT * navstokessolver = 0;
+    if (C.nonlinear==0.0)
+        navstokessolver = new NSSolverBaseCL<StokesProblemT>(Stokes, *stokessolver);
+    else
+        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
 
-//    CouplLevelsetStokes2PhaseCL<StokesProblemT, ISPSchur_PCG_CL>
-//        cpl( Stokes, lset, ISPschurSolver, C.theta);
     LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true);
+        cpl( Stokes, lset, *navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true,
+             stokessolverfactory.MGUsed());
 
     cpl.SetTimeStep( C.dt);
-//    ispc.SetMatrixA( cpl.GetUpperLeftBlock());
+    stokessolverfactory.SetMatrixA( const_cast<const MatrixCL**>(&Stokes.GetMGData().back().ABlock));
 
+    //for Stokes-MG
+    MGDataIterCL it = Stokes.GetMGData().begin();
+    stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
+
+    bool secondSerial= false;
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_iter);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-        if (C.RepFreq && step%C.RepFreq==0) // reparam levelset function
-        {
-            lset.ReparamFastMarching( C.RepMethod, true);
-            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            if (C.VolCorr)
-            {
+        bool forceVolCorr= false, forceUpdate= false,
+             doReparam= C.RepFreq && step%C.RepFreq == 0,
+             doGridMod= C.ref_freq && step%C.ref_freq == 0;
+
+        // volume correction before reparam/grid modification
+        if (C.VolCorr && (doReparam || doGridMod)) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            }
-            if (C.ref_freq != 0)
-                adap.UpdateTriang( lset);
-            cpl.Update();
+                forceUpdate= true; // volume correction modifies the level set
         }
+
+        // reparam levelset function
+        if (doReparam) {
+        	double lsetmaxGradPhi, lsetminGradPhi;
+            lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
+            std::cerr << "checking level set func: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+            if (lsetmaxGradPhi > 10 || lsetminGradPhi < 0.1) {
+                lset.ReparamFastMarching( C.RepMethod, /*periodic*/ true);
+                lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
+                std::cerr << "after reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+                forceVolCorr= forceUpdate= true; // volume correction and update after reparam
+            }
+            else
+            	std::cerr << "Gradient does not exceed bounds, reparametrization skipped.\n";
+        }
+
+        // grid modification
+        if (doGridMod) {
+            adap.UpdateTriang( lset);
+            forceUpdate  |= adap.WasModified();
+            forceVolCorr |= adap.WasModified();
+            if (C.serialization_file != "none") {
+                std::stringstream filename;
+                filename << C.serialization_file;
+                if (secondSerial) filename << "0";
+                secondSerial = !secondSerial;
+                MGSerializationCL ser( MG, filename.str().c_str());
+                ser.WriteMG();
+                filename << ".time";
+                std::ofstream serTime( filename.str().c_str());
+                serTime << "Serialization info:\ntime step = " << step << "\t\tt = " << step*C.dt << "\n";
+                serTime.close();
+            }
+        }
+
+        // volume correction
+        if (C.VolCorr && (step%C.VolCorr==0 || forceVolCorr)) {
+            double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
+            std::cerr << "volume correction is " << dphi << std::endl;
+            lset.Phi.Data+= dphi;
+            std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            forceUpdate= true;
+        }
+
+        // update
+        if (forceUpdate)
+            cpl.Update();
+
+if (step%10==0)
+{
         ensight.putGeom( datgeo, step*C.dt);
         ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
         ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
         ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
         ensight.Commit();
+}
     }
 
     ensight.CaseEnd();
     std::cerr << std::endl;
+    delete stokessolver;
+    delete navstokessolver;
 }
 
 } // end of namespace DROPS
@@ -368,7 +388,7 @@ int main (int argc, char** argv)
     param.close();
     std::cerr << C << std::endl;
 
-    typedef ZeroFlowCL                              CoeffT;
+    typedef ZeroFlowCL                                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;
@@ -377,6 +397,13 @@ int main (int argc, char** argv)
     e2[1]= C.mesh_size[1];
     e3[2]= C.mesh_size[2];
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, int( C.mesh_res[0]), int( C.mesh_res[1]), int( C.mesh_res[2]) );
+    DROPS::MultiGridCL* mgp;
+    if (C.deserialization_file == "none")
+        mgp= new DROPS::MultiGridCL( builder);
+    else {
+        DROPS::FileBuilderCL filebuilder( C.deserialization_file, &builder);
+        mgp= new DROPS::MultiGridCL( filebuilder);
+    }
 
     if (C.BndCond.size()!=6)
     {
@@ -407,24 +434,13 @@ int main (int argc, char** argv)
         }
     }
 
-/*
-    const DROPS::BndCondT bc[6]=
-//        { DROPS::WallBC, DROPS::DirBC, DROPS::OutflowBC, DROPS::OutflowBC, DROPS::DirBC, DROPS::OutflowBC};
-        { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
-    //    foil, air_infty, side, side, top, bottom
-    const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-//        { &DROPS::ZeroVel, &Inflow, &DROPS::ZeroVel, &DROPS::ZeroVel, &Inflow, &DROPS::ZeroVel};
-        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
-    */
+    MyStokesCL prob( *mgp, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, C.XFEMStab);
 
-    MyStokesCL prob(builder, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, 0.1);
-
-    DROPS::MultiGridCL& mg = prob.GetMG();
-    const DROPS::BoundaryCL& bnd= mg.GetBnd();
+    const DROPS::BoundaryCL& bnd= mgp->GetBnd();
     bnd.SetPeriodicBnd( bndType, periodic_xz);
 
     sigma= prob.GetCoeff().SurfTens;
-    DROPS::LevelsetP2CL lset( mg, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
+    DROPS::LevelsetP2CL lset( *mgp, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
         &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
@@ -432,11 +448,14 @@ int main (int argc, char** argv)
         std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
     }
 
-    DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
-    adap.MakeInitialTriang( DistanceFct);
+    DROPS::AdapTriangCL adap( *mgp, C.ref_width, 0, C.ref_flevel);
+    // If we read the Multigrid, it shouldn't be modified;
+    // otherwise the pde-solutions from the ensight files might not fit.
+    if (C.deserialization_file == "none")
+        adap.MakeInitialTriang( DistanceFct);
 
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-    mg.SizeInfo( std::cerr);
+    std::cerr << DROPS::SanityMGOutCL(*mgp) << std::endl;
+    mgp->SizeInfo( std::cerr);
     std::cerr << "Film Reynolds number Re_f = "
               << C.rhoF*C.rhoF*C.g[0]*std::pow(C.Filmdicke,3)/C.muF/C.muF/3 << std::endl;
     std::cerr << "max. inflow velocity at film surface = "
