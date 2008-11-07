@@ -993,7 +993,7 @@ EigenValueMaxMG(const MGDataCL& A, VectorCL& x, int iter, double  tol= 1e-3)
     std::cerr << "EigenValueMaxMG:\n";
     for (int i= 0; i<iter; ++i) {
         tmp= 0.0;
-        MGM( A.begin(), finest, tmp, A.back().A.Data*x, smoother, sm, solver, lvl, -1);
+        MGM( A.begin(), finest, tmp, (*A.back().ABlock)*x, smoother, sm, solver, lvl, -1);
         z= x - tmp;
         l= dot( x, z);
         std::cerr << "iteration: " << i  << "\tlambda: " << l << "\trelative_change= : " << (i==0 ? -1 : std::fabs( (l-l_old)/l_old)) << '\n';
@@ -1035,14 +1035,14 @@ inline void
 ScaledMGPreCL::Apply( const Mat&, Vec& x, const Vec& r) const
 {
     x= 0.0;
-    const double oldres= norm(r - A_.back().A.Data*x);
+    const double oldres= norm(r - (*A_.back().ABlock)*x);
     for (Uint i= 0; i < iter_; ++i) {
-        VectorCL r2( r - A_.back().A.Data*x);
+        VectorCL r2( r - (*A_.back().ABlock)*x);
         VectorCL dx( x.size());
         MGM( A_.begin(), --A_.end(), dx, r2, smoother_, sm_, solver_, lvl_, -1);
         x+= dx*s_;
     }
-    const double res= norm(r - A_.back().A.Data*x);
+    const double res= norm(r - (*A_.back().ABlock)*x);
     std::cerr << "ScaledMGPreCL: it: " << iter_ << "\treduction: " << (oldres==0.0 ? res : res/oldres) << '\n';
 }
 
