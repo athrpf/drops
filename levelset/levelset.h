@@ -180,7 +180,7 @@ class InterfacePatchCL
     static const bool   LinearEdgeIntersection= true;
     const RefRuleCL RegRef_;
     int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
-    int             intersec_, ch_, Edge_[4];
+    int             intersec_, ch_, Edge_[4], innersec_; // intersec_: # of all intersections, innersec_ = # of edge intersections
     int             numchildtriangles_; // The number of triangles in the intersection of a child with the interface.
     double          sqrtDetATA_;
     LocalP2CL<>     PhiLoc_;
@@ -192,6 +192,7 @@ class InterfacePatchCL
 
     inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
         { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
+    void InsertSubTetra(SubTetraT& BaryCoords, bool pos);
 
   public:
     InterfacePatchCL();
