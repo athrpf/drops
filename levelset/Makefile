@@ -46,7 +46,7 @@ prJump: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o \
-    ../num/fe.o ../num/MGsolver.o  ../out/ensightOut.o ../stokes/integrTime.o ../misc/xfem.o
+    ../num/fe.o  ../out/ensightOut.o ../stokes/integrTime.o ../misc/xfem.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \
