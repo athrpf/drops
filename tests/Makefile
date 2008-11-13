@@ -9,7 +9,8 @@ DIR = tests
 EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
-        mass quad5 downwind quad5_2D interfaceP1FE serialization xfem directsolver
+        mass quad5 downwind quad5_2D interfaceP1FE serialization xfem \
+        directsolver f_Gamma
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -173,6 +174,13 @@ xfem: \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
     ../num/fe.o ../num/discretize.o ../levelset/levelset.o ../levelset/fastmarch.o \
     ../stokes/instatstokes2phase.o ../out/ensightOut.o ../misc/xfem.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+f_Gamma: \
+    ../levelset/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o \
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:
