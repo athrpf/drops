@@ -399,24 +399,27 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
-    bool forceVolCorr(false), forceUpdate(false);
+    IFInfo.WriteHeader(infofile);
+
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "======================================================== step " << step << ":\n";
 
         IFInfo.Update( lset, Stokes.GetVelSolution());
-        if (step == 1)
-            IFInfo.WriteHeader(infofile);
         IFInfo.Write(Stokes.t, infofile);
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
 
         //WriteMatrices( Stokes, step);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
+        lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi); // ???
 
+        bool forceVolCorr= false, forceUpdate= false,
+             doReparam= C.RepFreq && step%C.RepFreq == 0,
+             doGridMod= C.ref_freq && step%C.ref_freq == 0;
+        
         // volume correction before reparam/grid modification
-        if (C.VolCorr && ((C.RepFreq && step%C.RepFreq==0) || (step%C.ref_freq == 0))) {
+        if (C.VolCorr && (doReparam || doGridMod)) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
@@ -425,25 +428,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         }
 
         // reparam levelset function
-        if (C.RepFreq && step%C.RepFreq==0) {
+        if (doReparam) {
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             if (lsetmaxGradPhi > C.MaxGrad || lsetminGradPhi < C.MinGrad) {
-                std::cerr << "before reparametrisation: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n'; 
+                std::cerr << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n'; 
                 lset.ReparamFastMarching( C.RepMethod);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-                std::cerr << "after  reparametrisation: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+                std::cerr << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 forceVolCorr = forceUpdate = true; // volume correction and update after reparam
             }
         }
 
         // grid modification
-        if (step%C.ref_freq == 0) {
+        if (doGridMod) {
             const_MGDataIterCL it = Stokes.GetMGData().begin();
             stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
-            if (C.serialization_file != "none" && C.ref_freq != 0) {
+            if (C.serialization_file != "none") {
                 std::stringstream filename;
                 filename << C.serialization_file;
                 if (second) filename << "0";
@@ -459,7 +462,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             std::cerr << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
             std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            forceVolCorr = false;
             forceUpdate  = true;
         }
 
@@ -467,7 +469,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         if (forceUpdate) {
             timedisc->Update();
             if (C.transp_do) c.Update();
-            forceUpdate = false;
         }
 
         writer.WriteAtTime( Stokes, lset, sigmap, c, step*C.dt);
@@ -499,7 +500,7 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata)
         const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
 
         DROPS::BndCondT* bc = new DROPS::BndCondT[num_bnd];
-        DROPS::StokesVelBndDataCL::bnd_val_fun* bnd_fun = new  DROPS::StokesVelBndDataCL::bnd_val_fun[num_bnd];
+        DROPS::StokesVelBndDataCL::bnd_val_fun* bnd_fun = new DROPS::StokesVelBndDataCL::bnd_val_fun[num_bnd];
         for (DROPS::BndIdxT i=0; i<num_bnd; ++i)
         {
             bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &InflowCell : &DROPS::ZeroVel;
