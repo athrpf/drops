@@ -64,6 +64,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
             std::cerr << "Create Prolongation on Level " << lvl << std::endl;
             Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
         }
+        tmp.ABlock = &tmp.A.Data;
         c_idx= &tmp.Idx;
     }
     std::cerr << "Check Data...\n";
