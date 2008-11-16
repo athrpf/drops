@@ -73,6 +73,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
 //            Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
             SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
        }
+       tmp.ABlock = &tmp.A.Data;
        c_idx= &tmp.Idx;
     }
     time.Stop();

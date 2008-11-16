@@ -137,6 +137,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
       std::cerr << "Create Prolongation on Level " << lvl << std::endl;
       Poisson.SetupProlongation(tmp.P, c_idx, &tmp.Idx);
     }
+    tmp.ABlock = &tmp.A.Data;
     c_idx= &tmp.Idx;
   }
   std::cerr << "Check Data...\n";
