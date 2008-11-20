@@ -56,7 +56,8 @@ int TestProlongation()
         i1.CreateNumbering( mg.GetLastLevel(), mg);
         v1.SetIdx( &i1);
         DROPS::MatDescCL P;
-        SetupP2ProlongationMatrix( mg, P, &i0, &i1);
+        P.SetIdx( &i0, &i1);
+        SetupP2ProlongationMatrix( mg, P.Data, i0, i1);
 //        TetraCL* t= &*mg.GetTetrasBegin( 0);
         for (int k= 0; k<10; ++k) {
             VectorCL v( 10u);
@@ -92,14 +93,14 @@ int TestProlongation()
         }
 //        std::cout << "Rule: " << i << std::endl;
 //        std::cout << P.Data << std::endl;
-        DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( i0.TriangLevel),
-                                    mg.GetAllVertexEnd( i0.TriangLevel));
-        DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllEdgeBegin( i0.TriangLevel),
-                                    mg.GetAllEdgeEnd( i0.TriangLevel));
-        DROPS::DeleteNumbOnSimplex( i1.GetIdx(), mg.GetAllVertexBegin( i1.TriangLevel),
-                                    mg.GetAllVertexEnd( i1.TriangLevel));
-        DROPS::DeleteNumbOnSimplex( i1.GetIdx(), mg.GetAllEdgeBegin( i1.TriangLevel),
-                                    mg.GetAllEdgeEnd( i1.TriangLevel));
+        DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllVertexBegin( i0.TriangLevel()),
+                                    mg.GetAllVertexEnd( i0.TriangLevel()));
+        DROPS::DeleteNumbOnSimplex( i0.GetIdx(), mg.GetAllEdgeBegin( i0.TriangLevel()),
+                                    mg.GetAllEdgeEnd( i0.TriangLevel()));
+        DROPS::DeleteNumbOnSimplex( i1.GetIdx(), mg.GetAllVertexBegin( i1.TriangLevel()),
+                                    mg.GetAllVertexEnd( i1.TriangLevel()));
+        DROPS::DeleteNumbOnSimplex( i1.GetIdx(), mg.GetAllEdgeBegin( i1.TriangLevel()),
+                                    mg.GetAllEdgeEnd( i1.TriangLevel()));
     }
 
     std::cout << "\n-----------------------------------------------------------------"

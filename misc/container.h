@@ -894,6 +894,23 @@ template <class T>
     LevelViews_.pop_back();
 }
 
+//**************************************************************************
+// Class:   MLDataCL                                                       *
+//**************************************************************************
+template <class T>
+class MLDataCL : public std::list<T>
+{
+  public:
+    T&       GetFinest()      { return this->back();  }
+    T&       GetCoarsest()    { return this->front(); }
+    T*       GetFinestPtr()   { return &this->back(); }
+    T*       GetCoarsestPtr() { return &this->front(); }
+    const T& GetFinest()      const { return this->back();  }
+    const T& GetCoarsest()    const { return this->front(); }
+    const T* GetFinestPtr()   const { return &this->back(); }
+    const T* GetCoarsestPtr() const { return &this->front(); }
+};
+
 
 } // end of namespace DROPS
 

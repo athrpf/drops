@@ -47,8 +47,8 @@ Uint IdxDescCL::GetFreeIdx()
 }
 
 IdxDescCL::IdxDescCL( const IdxDescCL& orig)
- : FE_InfoCL(*this), Idx_(orig.Idx_), Bnd_(orig.Bnd_), match_(orig.match_),
-   TriangLevel(orig.TriangLevel), NumUnknowns(orig.NumUnknowns)
+ : FE_InfoCL(orig), Idx_(orig.Idx_), Bnd_(orig.Bnd_), match_(orig.match_),
+   TriangLevel_(orig.TriangLevel_), NumUnknowns_(orig.NumUnknowns_)
 {
     // invalidate orig
     const_cast<IdxDescCL&>(orig).Idx_= InvalidIdx;
@@ -60,8 +60,8 @@ void IdxDescCL::swap( IdxDescCL& obj)
 {
     Assert( GetFE()==obj.GetFE(), DROPSErrCL("IdxDescCL::swap: FE-types differ"), ~0);
 	std::swap( Idx_, obj.Idx_);
-    std::swap( TriangLevel,        obj.TriangLevel);
-    std::swap( NumUnknowns,        obj.NumUnknowns);
+    std::swap( TriangLevel_,        obj.TriangLevel_);
+    std::swap( NumUnknowns_,        obj.NumUnknowns_);
 }
 
 bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
@@ -74,12 +74,12 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
 ///     If mg!=0: True, iff all members of i and j have the same value and
 ///     all numbers on the simplices of the given trianbgulation are equal.
 {
-    const Uint lvl= i.TriangLevel;
-    if (lvl != j.TriangLevel) {
+    const Uint lvl= i.TriangLevel();
+    if (lvl != j.TriangLevel()) {
         std::cerr << "Compare_Indices: Indices on different levels.\n";
         return false;
     }
-    if (i.NumUnknowns != j.NumUnknowns) {
+    if (i.NumUnknowns() != j.NumUnknowns()) {
         std::cerr << "Compare_Indices: NumUnknowns different.\n";
         return false;
     }
@@ -145,24 +145,6 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
     return true;
 }
 
-void MatDescCL::SetIdx(IdxDescCL* row, IdxDescCL* col)
-/// Prepares the matrix for usage with new index-objects for
-/// its components. As constructing sparse matrices is fairly involved,
-/// this routine does not modify Data. SparseMatBuilderCL should be used
-/// to do this.
-{
-    RowIdx= row;
-    ColIdx= col;
-}
-
-void MatDescCL::Reset()
-/// Sets the index-pointers to 0 and clears the matrix.
-{
-    RowIdx = 0;
-    ColIdx = 0;
-    Data.clear();
-}
-
 void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
                         const MultiGridCL::TriangTetraIteratorCL& end)
@@ -183,38 +165,38 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg)
 /// is performed, too.
 {
     const Uint idxnum= GetIdx();
-    TriangLevel= level; 
-    NumUnknowns = 0;
+    TriangLevel_= level; 
+    NumUnknowns_ = 0;
 
     // allocate space for indices; number unknowns in TriangLevel level
     if (match_)
     {
         if (NumUnknownsVertex())
-            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsVertex(), match_,
+            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns_, NumUnknownsVertex(), match_,
                 mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd_);
         if (NumUnknownsEdge())
-            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsEdge(), match_,
+            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns_, NumUnknownsEdge(), match_,
                 mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd_);
         if (NumUnknownsFace())
-            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsFace(), match_,
+            CreatePeriodicNumbOnSimplex( idxnum, NumUnknowns_, NumUnknownsFace(), match_,
                 mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd_);
         if (NumUnknownsTetra())
-            CreateNumbOnTetra( idxnum, NumUnknowns, NumUnknownsTetra(),
+            CreateNumbOnTetra( idxnum, NumUnknowns_, NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
     else
     {
         if (NumUnknownsVertex())
-            CreateNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsVertex(),
+            CreateNumbOnSimplex( idxnum, NumUnknowns_, NumUnknownsVertex(),
                 mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level), Bnd_);
         if (NumUnknownsEdge())
-            CreateNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsEdge(),
+            CreateNumbOnSimplex( idxnum, NumUnknowns_, NumUnknownsEdge(),
                 mg.GetTriangEdgeBegin(level), mg.GetTriangEdgeEnd(level), Bnd_);
         if (NumUnknownsFace())
-            CreateNumbOnSimplex( idxnum, NumUnknowns, NumUnknownsFace(),
+            CreateNumbOnSimplex( idxnum, NumUnknowns_, NumUnknownsFace(),
                 mg.GetTriangFaceBegin(level), mg.GetTriangFaceEnd(level), Bnd_);
         if (NumUnknownsTetra())
-            CreateNumbOnTetra( idxnum, NumUnknowns, NumUnknownsTetra(),
+            CreateNumbOnTetra( idxnum, NumUnknowns_, NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
     }
 }
@@ -224,8 +206,8 @@ void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
 /// given index-description. NumUnknowns will be set to zero.
 {
     const Uint idxnum = GetIdx();    // idx is the index in UnknownIdxCL
-    const Uint level  = TriangLevel;
-    NumUnknowns = 0;
+    const Uint level  = TriangLevel_;
+    NumUnknowns_ = 0;
 
     // delete memory allocated for indices
     if (NumUnknownsVertex())

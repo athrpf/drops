@@ -12,7 +12,7 @@ namespace DROPS
 template <class Coeff>
   void
   NavierStokesP2P1CL<Coeff>::CheckSolution(
-    const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
+    const VelVecDescCL* lsgvel, MLIdxDescCL* idx, const VecDescCL* lsgpr,
     instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr,
     double t)
 {
@@ -21,7 +21,7 @@ template <class Coeff>
          vidx=lsgvel->RowIdx->GetIdx();
 
     VecDescCL rhsN( lsgvel->RowIdx);
-    MatDescCL myN( lsgvel->RowIdx, lsgvel->RowIdx);
+    MLMatDescCL myN( idx, idx);
     SetupNonlinear( &myN, lsgvel, &rhsN, t, t);
     VectorCL res1( A.Data*lsgvel->Data + myN.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
                  - b.Data - rhsN.Data);
@@ -198,18 +198,18 @@ template <class Coeff>
 
 template <class Coeff>
   void
-  NavierStokesP2P1CL<Coeff>::SetupNonlinear(MatDescCL* matN, const VelVecDescCL* velvec,
-      VelVecDescCL* vecb, double t, double t2) const
+  NavierStokesP2P1CL<Coeff>::SetupNonlinear_P2( MatrixCL& matN, const VelVecDescCL* velvec,
+                                                VelVecDescCL* vecb, IdxDescCL& RowIdx, double t, double t2) const
 // Sets up the approximation of the nonlinear term and the corresponding right hand side.
 {
-    vecb->Clear();
+    if (vecb != 0) vecb->Clear();
 
-    const IdxT num_unks_vel= matN->RowIdx->NumUnknowns;
-    MatrixBuilderCL N( &matN->Data, num_unks_vel, num_unks_vel);
+    const IdxT num_unks_vel= RowIdx.NumUnknowns();
+    MatrixBuilderCL N( &matN, num_unks_vel, num_unks_vel);
 
     typename _base::const_DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
     VectorCL& b= vecb->Data;
-    const Uint lvl    = matN->GetRowLevel();
+    const Uint lvl    = RowIdx.TriangLevel();
     LocalNumbP2CL n;
 
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
@@ -223,8 +223,8 @@ template <class Coeff>
 
     P2DiscCL::GetGradientsOnRef( GradRef);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-                                                 send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin(lvl),
+                                                 send=const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -234,7 +234,7 @@ template <class Coeff>
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        n.assign( *sit, *matN->RowIdx, _BndData.Vel);
+        n.assign( *sit, RowIdx, _BndData.Vel);
 
         for (int i= 0; i < 10; ++i) // assemble row n.num[i]
             if (n.WithUnknowns( i)) // vert/edge i is not on a Dirichlet boundary
@@ -248,16 +248,33 @@ template <class Coeff>
                         N(n.num[i]+2*stride, n.num[j]+2*stride)+= N_ij;
                     }
                     else // coupling with vert/edge j on right-hand-side
-                    {
-                        tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
-                                 : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
-                        b[n.num[i]]-=          N_ij * tmp[0];
-                        b[n.num[i]+stride]-=   N_ij * tmp[1];
-                        b[n.num[i]+2*stride]-= N_ij * tmp[2];
-                    }
+                        if (vecb != 0)
+                        {
+                            tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
+                                    : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
+                            b[n.num[i]]-=          N_ij * tmp[0];
+                            b[n.num[i]+stride]-=   N_ij * tmp[1];
+                            b[n.num[i]+2*stride]-= N_ij * tmp[2];
+                        }
                 }
     }
     N.Build();
+}
+
+template <class Coeff>
+  void
+  NavierStokesP2P1CL<Coeff>::SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* velvec,
+      VelVecDescCL* vecb, double t, double t2) const
+{
+    MLIdxDescCL::iterator itRow= matN->RowIdx->begin();
+    MLMatrixCL::iterator itN= matN->Data.begin();
+    for (size_t lvl=0; lvl < matN->Data.size(); ++lvl, ++itN, ++itRow)
+    {
+        if (lvl != matN->Data.size()-1)
+            SetupNonlinear_P2( *itN, 0, 0, *itRow, t, t2);
+        else
+            SetupNonlinear_P2( *itN, velvec, vecb, *itRow, t, t2);
+    }
 }
 
 } // end of namespace DROPS

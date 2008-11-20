@@ -13,61 +13,6 @@
 
 namespace DROPS
 {
-/*******************************************************************
-*   M G L e v e l D a t a  C L                                     *
-*******************************************************************/
-/// \brief Represents the data for one level of the triangulation
-/** Contains the IdxDescCL for velocity and pressure
-    It also stores the matrices of the generalized Stokes problem
-    including mass matrices, saddle-point matrices (Stokes/NavStokes)
-    and a matrix pointer to the actual A-block*/
-/*******************************************************************
-*   M G L e v e l D a t a  C L                                     *
-*******************************************************************/
-struct MGLevelDataCL  // data for one triang level
-{
-    IdxDescCL Idx,        ///< index description for velocity
-              IdxPr;      ///< index description for pressure
-    MatDescCL A,          ///< Stokes A matrix
-              B,          ///< Stokes B matrix
-              BT;         ///< Stokes B^T matrix
-    MatDescCL Mpr,        ///< pressure mass matrix
-              Mvel;       ///< velocity mass matrix
-    MatDescCL P,          ///< prolongation matrix for velocity
-              PPr;        ///< prolongation matrix pressure
-    MatDescCL AN;         ///< Navier Stokes A-Block matrix (A + alpha*N)
-    MatrixCL* ABlock;     ///< pointer to the matrix which is used by MultiGrid methods
-};
-
-
-/*******************************************************************
-*   M G D a t a  C L                                               *
-*******************************************************************/
-/// \brief Represents the data for all levels of the triangulation
-/** Contains a list of MGLevelDataCL
-    NOTE: Assumes, that the levels are stored in an ascending order
-    (first=coarsest, last=finest) */
-/*******************************************************************
-*   M G D a t a  C L                                               *
-********************************************************************/
-class MGDataCL : public std::list<MGLevelDataCL>
-{
-  private:
-    bool StokesMG_;                                                      ///< internal variable which allows the using of B/B^T etc
-
-  public:
-    MGDataCL(int n=0) : std::list<MGLevelDataCL>(n), StokesMG_(false) {} ///< creates a new MGDataCL with n entrys
-    void RemoveCoarseResetFinest();                                      ///< removes all entrys exept the last
-    bool StokesMG() {return StokesMG_;}                                  ///< returns an internal variable which allows the using of B/B^T etc
-    void SetStokesMG(bool full) {StokesMG_=full;}                        ///< sets an internal variable which allows the using of B/B^T etc
-};
-
-typedef MGDataCL::iterator       MGDataIterCL;                           ///< iterator for the MGDataCL
-typedef MGDataCL::const_iterator const_MGDataIterCL;                     ///< constant iterator for the MGDataCL
-
-/// checks a part of the MGDataCL: A_coarse= PT * A_fine * P on each level
-void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
-
 /**
 \brief  Multigrid method, V-cycle, beginning from level 'fine'
 
@@ -79,6 +24,7 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
 
  \param begin         coarsest level
  \param fine          actual level
+ \param P             prolongation
  \param x             approximation of the solution
  \param b             right hand side
  \param Smoother      multigrid smoother
@@ -87,7 +33,8 @@ void CheckMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
  \param numLevel      number of vidited levels
  \param numUnknDirect minimal number of unknowns for the direct solver */
 template<class SmootherCL, class DirectSolverCL>
-void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b,
+void MGM( const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine, 
+          const MLMatrixCL::const_iterator& P, VectorCL& x, const VectorCL& b,
           const SmootherCL& Smoother, Uint smoothSteps,
           DirectSolverCL& Solver, int numLevel, int numUnknDirect);
 
@@ -97,8 +44,9 @@ void MGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, Vecto
  The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
  sm controls the number of smoothing steps, lvl the number of used levels */
 template<class SmootherCL, class DirectSolverCL>
-void MG(const MGDataCL& MGData, const SmootherCL&, DirectSolverCL&, VectorCL& x, const VectorCL& b,
-        int& maxiter, double& tol, const bool residerr= true, Uint sm=1, int lvl=-1);
+void MG(const MLMatrixCL& MGData, const MLMatrixCL& Prolong, const SmootherCL&, 
+        DirectSolverCL&, VectorCL& x, const VectorCL& b, int& maxiter, double& tol,
+        const bool residerr= true, Uint sm=1, int lvl=-1);
 
 
 /*******************************************************************
@@ -114,7 +62,7 @@ template<class SmootherT, class DirectSolverT>
 class MGSolverCL : public SolverBaseCL
 {
   private:
-    const MGDataCL&   mgdata_;           ///< multigrid hierarchy
+    MLMatrixCL&       P;
     const SmootherT&  smoother_;         ///< multigrid smoother
     DirectSolverT&    directSolver_;     ///< coarse grid solver with relative residual measurement
     const bool        residerr_;         ///< controls the error measuring: false : two-norm of dx, true: two-norm of residual
@@ -123,27 +71,34 @@ class MGSolverCL : public SolverBaseCL
 
   public:
     /// constructor for MGSolverCL
-    /** \param mgdata     multigrid hierarchy in ascending order (first=coarsest, last=finest)
-        \param sm         multigrid smoother
+    /** \param sm         multigrid smoother
         \param ds         coarse grid solver with relative residual measurement
         \param maxiter    maximal iteration number
         \param tol        stopping criterion
         \param residerr   controls the error measuring: false : two-norm of dx, true: two-norm of residual
         \param smsteps    number of smoothing steps
         \param lvl        number of used levels (-1 = all) */
-    MGSolverCL( const MGDataCL& mgdata, const SmootherT& sm, DirectSolverT& ds, int maxiter,
+    MGSolverCL( MLMatrixCL& PP, const SmootherT& sm, DirectSolverT& ds, int maxiter,
                 double tol, const bool residerr= true, Uint smsteps= 1, int lvl= -1 )
-        : SolverBaseCL(maxiter,tol), mgdata_(mgdata), smoother_(sm), directSolver_(ds),
+        : SolverBaseCL(maxiter,tol), P(PP), smoother_(sm), directSolver_(ds),
           residerr_(residerr), smoothSteps_(smsteps), usedLevels_(lvl) {}
 
     /// solve function: calls the MultiGrid-routine
-    void Solve(const MatrixCL& /*A*/, VectorCL& x, const VectorCL& b)
+    void Solve(const MLMatrixCL& A, VectorCL& x, const VectorCL& b)
     {
         _res=  _tol;
         _iter= _maxiter;
-        MG( mgdata_, smoother_, directSolver_, x, b, _iter, _res, residerr_, smoothSteps_, usedLevels_);
+        MG( A, P, smoother_, directSolver_, x, b, _iter, _res, residerr_, smoothSteps_, usedLevels_);
     }
+    void Solve(const MatrixCL&, VectorCL&, const VectorCL&)
+    {
+        throw DROPSErrCL( "MGSolverCL::Solve: need multilevel data structure\n");
+    }
+
 };
+
+/// checks multigrid structure
+void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P);
 
 /**
 \brief Multigrid method for saddle point problems, V-cycle, beginning from level 'fine'
@@ -153,8 +108,11 @@ class MGSolverCL : public SolverBaseCL
  If one of the parameters is -1, it will be neglected.
  If the coarsest level 'begin' has been reached, the direct solver is used too.
  NOTE: Assumes, that the levels are stored in an ascending order (first=coarsest, last=finest)
- \param begin         coarsest level
- \param fine          actual level
+ \param beginA        coarsest level
+ \param fineA         actual level
+ \param fineB         actual level
+ \param PVel          prolongation for P2
+ \param PPr           prolongation for P1
  \param u             velocity
  \param p             pressure
  \param b             rhs for velocity
@@ -166,12 +124,12 @@ class MGSolverCL : public SolverBaseCL
  \param numLevel      number of vidited levels
  \param numUnknDirect minimal number of unknowns for the direct solver */
 template<class StokesSmootherCL, class StokesDirectSolverCL>
-void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& u, VectorCL& p,
-                const VectorCL& b, const VectorCL& c,  const StokesSmootherCL& Smoother, Uint smoothSteps,
-                Uint cycleSteps, StokesDirectSolverCL& Solver, int numLevel, int numUnknDirect);
-
-/// checks Stokes-MG-Data
-void CheckStokesMGData( const_MGDataIterCL begin, const_MGDataIterCL end);
+void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::const_iterator& fineA,
+                const MLMatrixCL::const_iterator& fineB,   const MLMatrixCL::const_iterator& fineBT, 
+                const MLMatrixCL::const_iterator& fineprM, const MLMatrixCL::const_iterator& PVel,
+                const MLMatrixCL::const_iterator& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
+                const VectorCL& c, const StokesSmootherCL& Smoother, Uint smoothSteps, Uint cycleSteps,
+                StokesDirectSolverCL& Solver, int numLevel, int numUnknDirect);
 
 ///< dummy SmootherCL for StokesMGM
 class DummySmootherCL

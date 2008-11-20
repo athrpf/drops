@@ -170,12 +170,12 @@ namespace DROPS
 class FracStepMatrixCL
 {
   private:
-    const MatrixCL& _matA;
-    const MatrixCL& _matI;
+    const MLMatrixCL& _matA;
+    const MLMatrixCL& _matI;
     double          _coeff;
 
   public:
-    FracStepMatrixCL( const MatrixCL& I, const MatrixCL& A, double coeff)
+    FracStepMatrixCL( const MLMatrixCL& I, const MLMatrixCL& A, double coeff)
         : _matA( A), _matI( I), _coeff( coeff) {}
 
     Uint num_cols() const { return _matA.num_cols(); }
@@ -190,11 +190,11 @@ class SchurComplNoPcMatrixCL
 {
   private:
     const FracStepMatrixCL& _matA;
-    const MatrixCL&         _matB;
+    const MLMatrixCL&       _matB;
     double    _tol;
 
   public:
-    SchurComplNoPcMatrixCL( const FracStepMatrixCL& A, const MatrixCL& B, double tol)
+    SchurComplNoPcMatrixCL( const FracStepMatrixCL& A, const MLMatrixCL& B, double tol)
         : _matA(A), _matB(B), _tol(tol) {}
     friend VectorCL operator*( const SchurComplNoPcMatrixCL& M, const VectorCL& v);
 };
@@ -218,7 +218,7 @@ VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v)
 }
 
 
-void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B,
+void SchurNoPc( const FracStepMatrixCL& M, const MLMatrixCL& B,
                 VectorCL& u, VectorCL& p, const VectorCL& b, const VectorCL& c,
                 const double inner_tol, const double outer_tol, const Uint max_iter, double dt)
 // solve:       S*q = B*(M^-1)*b - c
@@ -252,7 +252,7 @@ void SchurNoPc( const FracStepMatrixCL& M, const MatrixCL& B,
 }
 
 template<class PreCondT>
-void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
+void Schur( const MLMatrixCL& M, const PreCondT& pc, const MLMatrixCL& B,
             VectorCL& u, VectorCL& p, const VectorCL& b, const VectorCL& c,
             const double inner_tol, const double outer_tol, const Uint max_iter, const double omega, double dt)
 // solve:       S*q = B*(M^-1)*b - c
@@ -275,7 +275,7 @@ void Schur( const MatrixCL& M, const PreCondT& pc, const MatrixCL& B,
     //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
     SSORPcCL poissonpc(omega);
     PCG_SsorCL poissonsolver( poissonpc, 500, inner_tol);
-    SchurComplMatrixCL<PCG_SsorCL> BABT( poissonsolver, M, B);
+    SchurComplMatrixCL<PCG_SsorCL, MLMatrixCL> BABT( poissonsolver, M, B);
     CG( BABT, p, rhs, iter, tol);
     std::cerr << "Iterationen: " << iter << "    Norm des Residuums: " << tol << std::endl;
 
@@ -294,11 +294,11 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 {
     MultiGridCL& MG= Stokes.GetMG();
 
-    IdxDescCL  loc_vidx, loc_pidx;
-    IdxDescCL* vidx1= &Stokes.vel_idx;
-    IdxDescCL* pidx1= &Stokes.pr_idx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx2= &loc_pidx;
+    MLIdxDescCL  loc_vidx, loc_pidx;
+    MLIdxDescCL* vidx1= &Stokes.vel_idx;
+    MLIdxDescCL* pidx1= &Stokes.pr_idx;
+    MLIdxDescCL* vidx2= &loc_vidx;
+    MLIdxDescCL* pidx2= &loc_pidx;
 //    IdxDescCL* err_idx= &_err_idx;
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
@@ -309,9 +309,9 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
     VelVecDescCL* b= &Stokes.b;
     VelVecDescCL* c= &Stokes.c;
 //    VecDescCL* err= &_err;
-    MatDescCL* A= &Stokes.A;
-    MatDescCL* B= &Stokes.B;
-    MatDescCL* I= &Stokes.M;
+    MLMatDescCL* A= &Stokes.A;
+    MLMatDescCL* B= &Stokes.B;
+    MLMatDescCL* I= &Stokes.M;
     Uint step= 0;
 //    bool new_marks;
 //    double akt_glob_err;
@@ -328,8 +328,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //        akt_glob_err= glob_err;
         MarkAll( MG);
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
+        Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
@@ -461,7 +461,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             SSORPcCL pc(omega);
             VectorCL rhs( v1->Data.size());
 
-            MatrixCL M;
+            MLMatrixCL M;
             M.LinComb( 1., I->Data, eta, A->Data);
 
             double outer_tol, old_time= 0;
@@ -536,7 +536,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             std::cerr << "theta = "; std::cin >> theta;
             std::cerr << "tol = "; std::cin >> outer_tol;
 
-            MatrixCL M;
+            MLMatrixCL M;
             M.LinComb( 1., I->Data, theta*dt, A->Data);
 
             VelVecDescCL* old_b= new VelVecDescCL;

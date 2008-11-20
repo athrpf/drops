@@ -91,11 +91,11 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
 {
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
 
-  IdxDescCL& idx= Poisson.idx;
-  VecDescCL& x= Poisson.x;
-  VecDescCL& b= Poisson.b;
-  MatDescCL& A= Poisson.A;
-  MatDescCL& M= Poisson.M;
+  MLIdxDescCL& idx= Poisson.idx;
+  VecDescCL&   x= Poisson.x;
+  VecDescCL&   b= Poisson.b;
+  MLMatDescCL& A= Poisson.A;
+  MLMatDescCL& M= Poisson.M;
 
   VecDescCL cplA;
   VecDescCL cplM;
@@ -109,7 +109,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   MultiGridCL& MG= Poisson.GetMG();
 
   // erzeuge Nummerierung zu diesem Index
-  Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
+  Poisson.CreateNumbering( MG.GetLastLevel(), &idx);
 
   // Vektoren mit Index idx
   b.SetIdx( &idx);
@@ -148,7 +148,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   typedef node_map::const_iterator ci;
 
   Point3DCL pt;
-  Uint lvl= x.RowIdx->TriangLevel;
+  Uint lvl= x.RowIdx->TriangLevel();
   Uint indx= x.RowIdx->GetIdx();
 
   d_pair help;

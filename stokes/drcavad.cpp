@@ -86,11 +86,11 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
     const typename MyStokesCL::BndDataCL::PrBndDataCL& PrBndData= Stokes.GetBndData().Pr;
     const typename MyStokesCL::BndDataCL::VelBndDataCL& VelBndData= Stokes.GetBndData().Vel;
 
-    IdxDescCL  loc_vidx, loc_pidx, corr_vidx;
-    IdxDescCL* vidx1= &Stokes.vel_idx;
-    IdxDescCL* pidx1= &Stokes.pr_idx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx2= &loc_pidx;
+    MLIdxDescCL  loc_vidx, loc_pidx, corr_vidx;
+    MLIdxDescCL* vidx1= &Stokes.vel_idx;
+    MLIdxDescCL* pidx1= &Stokes.pr_idx;
+    MLIdxDescCL* vidx2= &loc_vidx;
+    MLIdxDescCL* pidx2= &loc_pidx;
 
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
@@ -101,8 +101,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
     VelVecDescCL* b= &Stokes.b;
     VelVecDescCL* c= &Stokes.c;
 
-    MatDescCL* A= &Stokes.A;
-    MatDescCL* B= &Stokes.B;
+    MLMatDescCL* A= &Stokes.A;
+    MLMatDescCL* B= &Stokes.B;
     Uint step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
         Estimator(rel_red, markratio, 1., true, &MyStokesCL::ResidualErrEstimator, Stokes);
@@ -120,10 +120,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
     do
     {
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
-                  << vidx1->TriangLevel << std::endl;
+        Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
+        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+                  << vidx1->TriangLevel() << std::endl;
         MG.SizeInfo(std::cerr);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
@@ -192,7 +192,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 //        std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
         time.Reset();
 
-        MatDescCL M;
+        MLMatDescCL M;
         M.SetIdx( pidx1, pidx1);
         Stokes.SetupPrMass( &M);
 
@@ -202,7 +202,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         if (meth)
         {
 //            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
-            PSchur_GSPCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
+            PSchur_GSPCG_CL schurSolver( M.Data.GetFinest(), 200, outer_tol, 200, inner_iter_tol);
             time.Start();
             schurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -213,7 +213,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 //            Uint inner_iter;
 //            std::cerr << "tau = "; std::cin >> tau;
 //            std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-            Uzawa_PCG_CL uzawaSolver( M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
+            Uzawa_PCG_CL uzawaSolver( M.Data.GetFinest(), 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -308,13 +308,13 @@ int main (int argc, char** argv)
     std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
     fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
 
-    DROPS::IdxDescCL tecIdx;
+    DROPS::MLIdxDescCL tecIdx;
     tecIdx.SetFE( DROPS::P1_FE);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
 
     std::ofstream v2d("data2D.dat");
     DROPS::TecPlot2DSolOutCL< MyStokesCL::const_DiscVelSolCL, MyStokesCL::const_DiscPrSolCL>
-        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
+        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx.GetFinest(), -1, 1, 0.5); // cutplane is y=0.5
     v2d << tecplot2d;
     v2d.close();
 

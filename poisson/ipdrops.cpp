@@ -101,56 +101,33 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
 {
 
   MultiGridCL& MG= Poisson.GetMG();
-  IdxDescCL* c_idx;
-  MGDataCL MGData;
+  MLIdxDescCL* idx = &Poisson.idx;
+  idx->SetFE( P1_FE);
+  Poisson.SetNumLvl( MG.GetNumLevel());
+  Poisson.CreateNumbering( MG.GetLastLevel(), &Poisson.idx);
+  Poisson.A.SetIdx( idx, idx);
+  Poisson.M.SetIdx( idx, idx);
+  Poisson.b.SetIdx( idx);
+  Poisson.x.SetIdx( idx);
+  std::cerr << "Create System\n";
+  Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.t);
 
-  // Initialize the MGData: Idx, A, P, R
-  for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl)
-  {
-    MGData.push_back(MGLevelDataCL());
-    MGLevelDataCL& tmp= MGData.back();
-    std::cerr << "Create MGData on Level " << lvl << std::endl;
-    tmp.Idx.SetFE( P1_FE);
-    Poisson.CreateNumbering(lvl, &tmp.Idx);
-    MatDescCL& A= Poisson.A;
-    MatDescCL& M= Poisson.M;
-    A.SetIdx(&tmp.Idx, &tmp.Idx);
-    M.SetIdx(&tmp.Idx, &tmp.Idx);
-    tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
+  MLMatDescCL P;
+  P.SetIdx( idx, idx);
+  P.Data.resize( MG.GetNumLevel());
+  Poisson.SetupProlongation( P);
 
-    if(lvl==MG.GetLastLevel())
-    {
-      Poisson.x.SetIdx(&tmp.Idx);
-      Poisson.b.SetIdx(&tmp.Idx);
-      std::cerr << "Create System " << std::endl;
-      Poisson.SetupInstatSystem(A, M, Poisson.t);
-      tmp.A.Data.LinComb(1., M.Data, theta*dt*nu, A.Data);
-    }
-    else
-    {
-      std::cerr << "Create System" << std::endl;
-      Poisson.SetupInstatSystem(A, M, Poisson.t);
-      tmp.A.Data.LinComb(1., M.Data, theta*dt*nu, A.Data);
-    }
-    if(lvl!=0)
-    {
-      std::cerr << "Create Prolongation on Level " << lvl << std::endl;
-      Poisson.SetupProlongation(tmp.P, c_idx, &tmp.Idx);
-    }
-    tmp.ABlock = &tmp.A.Data;
-    c_idx= &tmp.Idx;
-  }
   std::cerr << "Check Data...\n";
-  CheckMGData(MGData.begin(), MGData.end());
+  //CheckMGData(MGData.begin(), MGData.end());
 
   SSORsmoothCL smoother(1.0);
   SSORPcCL     directpc(1.0);
   PCG_SsorCL   solver(SSORPcCL(1.0), 500, tol);
-  MGSolverCL<SSORsmoothCL, PCG_SsorCL> mg_solver(MGData, smoother, solver, maxiter, tol);
+  MGSolverCL<SSORsmoothCL, PCG_SsorCL> mg_solver( P.Data, smoother, solver, maxiter, tol);
   InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
     ThetaScheme(Poisson, mg_solver, theta);
 
-  ThetaScheme.SetTimeStep(dt);
+  ThetaScheme.SetTimeStep(dt, nu);
 
   scalar_instat_fun_ptr exact_sol = &Lsg;
 
@@ -227,14 +204,14 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
 {
 
   MultiGridCL& MG= Poisson.GetMG();
-  IdxDescCL& idx= Poisson.idx;
+  MLIdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
   VecDescCL& b= Poisson.b;
-  MatDescCL& A= Poisson.A;
-  MatDescCL& M= Poisson.M;
+  MLMatDescCL& A= Poisson.A;
+  MLMatDescCL& M= Poisson.M;
 
   idx.SetFE( P1_FE);
-  Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
+  Poisson.CreateNumbering( MG.GetLastLevel(), &idx);
 
   x.SetIdx(&idx);
   b.SetIdx(&idx);

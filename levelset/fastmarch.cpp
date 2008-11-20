@@ -384,8 +384,8 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
     // init Coord_, map_ and augmIdx
     std::vector<bool> ini( size_, false);
     IdxT k= 0;
-    Coord_.resize( augmIdx.NumUnknowns);
-    map_.resize( augmIdx.NumUnknowns - size_);
+    Coord_.resize( augmIdx.NumUnknowns());
+    map_.resize( augmIdx.NumUnknowns() - size_);
     for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl), end=MG_.GetTriangVertexEnd(lvl);
         it!=end; ++it)
     {

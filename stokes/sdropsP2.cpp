@@ -89,9 +89,9 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
     PCG_SsorCL   solver_;
   public:
     PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
-                  MGDataCL& MGData, int inner_iter, double inner_tol )
+                  MLMatrixCL& PVel, int inner_iter, double inner_tol )
         : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
-          _MGsolver( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          _MGsolver( PVel, smoother_, solver_, inner_iter, inner_tol ),
           smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
 };
@@ -117,21 +117,21 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, P
 
   public:
     Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
-                MGDataCL& MGData, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
+                MLMatrixCL& PVel, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
         : UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, M,
                                                   outer_iter, outer_tol, tau),
           PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
-          MGsolver_( MGData, smoother_, solver_, inner_iter, inner_tol ),
+          MGsolver_( PVel, smoother_, solver_, inner_iter, inner_tol ),
           smoother_(1.), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
 };
 
-typedef PMResSolverCL<LanczosONBCL<BlockMatrixCL, VectorCL> > MinresSPT;
+typedef PMResSolverCL<LanczosONBCL<VectorCL> > MinresSPT;
 class MinresSPCL : public BlockMatrixSolverCL<MinresSPT>
 {
   private:
     MinresSPT solver_;
-    LanczosONBCL<BlockMatrixCL, VectorCL> q_;
+    LanczosONBCL<VectorCL> q_;
 
   public:
     MinresSPCL(int maxiter, double tol)
@@ -142,7 +142,7 @@ class MinresSPCL : public BlockMatrixSolverCL<MinresSPT>
 
 typedef SolverAsPreCL<PCG_SsorCL> PPcT;
 typedef BlockPreCL<PPcT, ISPreCL> BlockDiagPCGPreCL;
-typedef PMResSolverCL<PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagPCGPreCL> > PMinresSP_DiagPCGT;
+typedef PMResSolverCL<PLanczosONBCL<VectorCL, BlockDiagPCGPreCL> > PMinresSP_DiagPCGT;
 class PMinresSP_DiagPCG_CL : public BlockMatrixSolverCL<PMinresSP_DiagPCGT>
 {
   private:
@@ -152,7 +152,7 @@ class PMinresSP_DiagPCG_CL : public BlockMatrixSolverCL<PMinresSP_DiagPCGT>
     PPcT PA_;
     ISPreCL PS_;
     BlockDiagPCGPreCL pre_;
-    PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagPCGPreCL> q_;
+    PLanczosONBCL<VectorCL, BlockDiagPCGPreCL> q_;
 
   public:
     PMinresSP_DiagPCG_CL(MatrixCL& M, int maxiter, double tol, double omega= 1.)
@@ -160,32 +160,6 @@ class PMinresSP_DiagPCG_CL : public BlockMatrixSolverCL<PMinresSP_DiagPCGT>
          PPA_(SSORPcCL(omega), 8, 1e-20), M_(M),
          PA_(PPA_), PS_(M_, M_, 0.0, 1.0, omega),
          pre_( PA_, PS_), q_( pre_)
-    {}
-};
-
-
-typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
-typedef BlockPreCL<APcT, ISPreCL> BlockDiagMGPreCL;
-typedef PMResSolverCL<PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagMGPreCL> > PMinresSP_DiagMGT;
-class PMinresSP_DiagMG_CL : public BlockMatrixSolverCL<PMinresSP_DiagMGT>
-{
-  private:
-    PMinresSP_DiagMGT solver_;
-    SSORsmoothCL smoother_;
-    PCG_SsorCL   coarsesolver_;
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> PPA_;
-    APcT PA_;
-    ISPreCL PS_;
-    BlockDiagMGPreCL pre_;
-    PLanczosONBCL<BlockMatrixCL, VectorCL, BlockDiagMGPreCL> q_;
-    MatrixCL& M_;
-
-  public:
-    PMinresSP_DiagMG_CL(const MGDataCL& A, MatrixCL& M, int iter_vel, int maxiter, double tol)
-        :BlockMatrixSolverCL<PMinresSP_DiagMGT> (solver_), solver_( q_, maxiter, tol),
-         smoother_(1.0), coarsesolver_(SSORPcCL(1.0), 200, 1e-12),
-         PPA_( A, smoother_, coarsesolver_, iter_vel, tol), PA_(PPA_), PS_(M_, M_, 0.0, 1.0),
-         pre_( PA_, PS_), q_( pre_), M_(M)
     {}
 };
 
@@ -199,11 +173,11 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
     const typename MyStokesCL::BndDataCL::PrBndDataCL& PrBndData= Stokes.GetBndData().Pr;
     const typename MyStokesCL::BndDataCL::VelBndDataCL& VelBndData= Stokes.GetBndData().Vel;
 
-    IdxDescCL  loc_vidx, loc_pidx;
-    IdxDescCL* vidx1= &Stokes.vel_idx;
-    IdxDescCL* pidx1= &Stokes.pr_idx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx2= &loc_pidx;
+    MLIdxDescCL  loc_vidx, loc_pidx;
+    MLIdxDescCL* vidx1= &Stokes.vel_idx;
+    MLIdxDescCL* pidx1= &Stokes.pr_idx;
+    MLIdxDescCL* vidx2= &loc_vidx;
+    MLIdxDescCL* pidx2= &loc_pidx;
 
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
@@ -214,8 +188,9 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
     VelVecDescCL* b= &Stokes.b;
     VelVecDescCL* c= &Stokes.c;
 
-    MatDescCL* A= &Stokes.A;
-    MatDescCL* B= &Stokes.B;
+    MLMatDescCL* A= &Stokes.A;
+    MLMatDescCL* B= &Stokes.B;
+    MLMatDescCL PVel;
 
     Uint step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
@@ -231,10 +206,20 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
     do
     {
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
-                  << vidx1->TriangLevel << std::endl;
+        if (meth >=4) // mgused
+        {
+            match_fun match= MG.GetBnd().GetMatchFun();
+            vidx1->resize( MG.GetNumLevel(), vecP2_FE, Stokes.GetBndData().Vel, match);
+            pidx1->resize( MG.GetNumLevel(), P1_FE, Stokes.GetBndData().Pr, match);
+            PVel.Data.resize   ( MG.GetNumLevel());
+            A->Data.resize( MG.GetNumLevel());
+            B->Data.resize( MG.GetNumLevel());
+        }
+            
+        Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
+        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+                  << vidx1->TriangLevel() << std::endl;
         MG.SizeInfo(std::cerr);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
@@ -260,6 +245,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         }
         A->SetIdx(vidx1, vidx1);
         B->SetIdx(pidx1, vidx1);
+        PVel.SetIdx( vidx1, vidx1);
         time.Reset();
         time.Start();
         Stokes.SetupSystem(A, b, B, c);
@@ -286,7 +272,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //          << v1->Data << std::endl << p1->Data << std::endl;
         time.Reset();
 
-        MatDescCL M;
+        MLMatDescCL M;
+        if ( meth>=4 ) M.Data.resize(pidx1->size());
         M.SetIdx( pidx1, pidx1);
         Stokes.SetupPrMass( &M);
         double err0= norm_sq( A->Data*v1->Data + transp_mul( B->Data, p1->Data) - b->Data)
@@ -296,7 +283,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         double outer_tol= tol;
         switch (meth) {
           case 1: { // Schur
-            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol*std::sqrt( err0), 200, inner_iter_tol, omega);
+            PSchur_PCG_CL schurSolver( M.Data.GetFinest(), 200, outer_tol*std::sqrt( err0), 200, inner_iter_tol, omega);
             time.Start();
 //std::cout << M.Data << std::endl;
 //std::cout << A->Data << std::endl << b->Data << std::endl
@@ -314,7 +301,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 //            Uint inner_iter;
 //            std::cerr << "tau = "; std::cin >> tau;
 //            std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-            Uzawa_PCG_CL uzawaSolver( M.Data, 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau, omega);
+            Uzawa_PCG_CL uzawaSolver( M.Data.GetFinest(), 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau, omega);
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -334,7 +321,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           }
           case 3: { // Stokes-PMinres
             std::cerr << "Stokes-PMinres!\n";
-            PMinresSP_DiagPCG_CL solver( M.Data, uzawa_inner_iter, outer_tol/**std::sqrt( err0)*/);
+            PMinresSP_DiagPCG_CL solver( M.Data.GetFinest(), uzawa_inner_iter, outer_tol/**std::sqrt( err0)*/);
             time.Start();
             solver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -344,34 +331,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           }
           case 4: {
             std::cerr << "MG_Schur!\n";
-            MGDataCL MGData;
-            IdxDescCL* c_idx=0;
-            time.Reset();
-            time.Start();
-            for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
-                MGData.push_back( MGLevelDataCL());
-                MGLevelDataCL& tmp= MGData.back();
-                std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-                tmp.Idx.SetFE( vecP2_FE);
-                Stokes.CreateNumberingVel(lvl, &tmp.Idx);
-                tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-                std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
-                Stokes.SetupStiffnessMatrix( &tmp.A );
-                if(lvl!=0) {
-                    std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
-                    SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
-//                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-                }
-                c_idx= &tmp.Idx;
-            }
-            time.Stop();
-            std::cerr <<"MG-Setup: " << time.GetTime() << " seconds." << std::endl;
-            MGDataCL& MGD = MGData;
+            SetupP2ProlongationMatrix( MG, PVel);
             std::cerr << "Check MG-Data..." << std::endl;
-            std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
-            std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
+            std::cerr << "                begin     " << vidx1->GetCoarsest().NumUnknowns() << std::endl;
+            std::cerr << "                end       " << vidx1->GetFinest().NumUnknowns() << std::endl;
 //            CheckMGData( MGData.begin(), MGData.end());
-            PSchur_MG_CL MGschurSolver( M.Data, 200, outer_tol*std::sqrt( err0), MGD, 200, inner_iter_tol);
+            PSchur_MG_CL MGschurSolver( M.Data.GetFinest(), 200, outer_tol*std::sqrt( err0), PVel.Data, 200, inner_iter_tol);
             time.Start();
             MGschurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -380,72 +345,14 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             std::cerr << "000 residual: " << std::sqrt( err)/std::sqrt( err0) << std::endl;
             break;
           }
-          case 5: { // Stokes-MG-PMinres
-            std::cerr << "Stokes-MG-PMINRES!\n";
-            MGDataCL MGData;
-            IdxDescCL* c_idx=0;
-            time.Reset();
-            time.Start();
-            for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
-                MGData.push_back( MGLevelDataCL());
-                MGLevelDataCL& tmp= MGData.back();
-                std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-                tmp.Idx.SetFE( vecP2_FE);
-                Stokes.CreateNumberingVel(lvl, &tmp.Idx);
-                tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-                std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
-                Stokes.SetupStiffnessMatrix( &tmp.A );
-                if(lvl!=0) {
-                    std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
-                    SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
-//                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-                }
-                c_idx= &tmp.Idx;
-            }
-            time.Stop();
-            std::cerr <<"MG-Setup: " << time.GetTime() << " seconds." << std::endl;
-            std::cerr << "Check MG-Data..." << std::endl;
-            std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
-            std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
-//            CheckMGData( MGData.begin(), MGData.end());
-            PMinresSP_DiagMG_CL pmr( MGData, M.Data, 2, uzawa_inner_iter, outer_tol*std::sqrt( err0));
-            time.Start();
-            pmr.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
-            time.Stop();
-            std::cerr << "iterations: " << pmr.GetIter()
-                      << "\terror: " << pmr.GetResid()/std::sqrt( err0) << std::endl;
-            break;
-          }
           case 6: { // MG-Uzawa
             std::cerr << "MG_Uzawa!\n";
-            MGDataCL MGData;
-            IdxDescCL* c_idx=0;
-            time.Reset();
-            time.Start();
-            for(Uint lvl= 0; lvl<=MG.GetLastLevel(); ++lvl) {
-                MGData.push_back( MGLevelDataCL());
-                MGLevelDataCL& tmp= MGData.back();
-                std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-                tmp.Idx.SetFE( vecP2_FE);
-                Stokes.CreateNumberingVel(lvl, &tmp.Idx);
-                tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-                std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
-                Stokes.SetupStiffnessMatrix( &tmp.A );
-                if(lvl!=0) {
-                    std::cerr << "                       Create Prolongation on Level " << lvl << std::endl;
-                    SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
-//                   std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-                }
-                c_idx= &tmp.Idx;
-            }
-            time.Stop();
-            std::cerr <<"MG-Setup: " << time.GetTime() << " seconds." << std::endl;
-            MGDataCL& MGD = MGData;
+            SetupP2ProlongationMatrix( MG, PVel);
             std::cerr << "Check MG-Data..." << std::endl;
-            std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
-            std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
+            std::cerr << "                begin     " << vidx1->GetCoarsest().NumUnknowns() << std::endl;
+            std::cerr << "                end       " << vidx1->GetFinest().NumUnknowns() << std::endl;
 //            CheckMGData( MGData.begin(), MGData.end());
-            Uzawa_MG_CL uzawaMG( M.Data, 5000, outer_tol*std::sqrt( err0), MGD, 1, inner_iter_tol, tau, omega);
+            Uzawa_MG_CL uzawaMG( M.Data.GetFinest(), 5000, outer_tol*std::sqrt( err0), PVel.Data, 1, inner_iter_tol, tau, omega);
             time.Start();
             uzawaMG.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -470,6 +377,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         B->Reset();
         b->Reset();
         c->Reset();
+        PVel.Reset();
 //        std::cerr << "Loesung Druck: " << p1->Data << std::endl;
         std::swap(v2, v1);
         std::swap(p2, p1);

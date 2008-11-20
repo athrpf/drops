@@ -73,7 +73,7 @@ class MyInstatStokesThetaSchemeCL
     VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VectorCL      _rhs;
-    MatrixCL      _mat;               // (1./dt)*M + theta*A
+    MLMatrixCL    _mat;               // (1./dt)*M + theta*A
 
     double _theta, _dt;
 
@@ -145,13 +145,13 @@ class MyUzawaSolver2CL : public SolverBaseCL
     double GetTau()            const { return tau_; }
     void   SetTau( double tau)       { tau_= tau; }
 
-    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+    void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c);
 };
 
 template <class PoissonSolverT, class PoissonSolver2T>
 void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
-    const MatrixCL& A, const MatrixCL& B,
+    const MLMatrixCL& A, const MLMatrixCL& B,
     VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
 {
     VectorCL v_corr( v.size()),
@@ -219,7 +219,7 @@ ZeroMean(DROPS::P1EvalCL< double,
 
 typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > APcT;
 typedef BlockPreCL<APcT, ISMGPreCL> PcT;
-typedef PMResSolverCL<PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL,PcT> > SolverT;
+typedef PMResSolverCL<PLanczosONBCL<DROPS::VectorCL,PcT> > SolverT;
 class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
 {
   private:
@@ -230,16 +230,16 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
     APcT Apc_;
     ISMGPreCL Spc_;
-    PLanczosONBCL<DROPS::BlockMatrixCL, DROPS::VectorCL, PcT> q_;
+    PLanczosONBCL<DROPS::VectorCL, PcT> q_;
 
   public:
-    PMinresSP_FullMG_CL( DROPS::MGDataCL& MGAvel, DROPS::MGDataCL& MGApr,
-                         DROPS::MGDataCL& Mpr, double kA, double kM,
+    PMinresSP_FullMG_CL( DROPS::MLMatrixCL& PVel, DROPS::MLMatrixCL& MGApr,
+                         DROPS::MLMatrixCL& Mpr, DROPS::MLMatrixCL& PPr, double kA, double kM,
                          int iter_vel, int iter_prA, int iter_prM, int maxiter, double tol)
         :BlockMatrixSolverCL<SolverT> (solver_), solver_(q_, maxiter, tol),
          pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
-         mgc(MGAvel, smoother_, coarsesolver_, iter_vel, -1., false), Apc_( mgc),
-         Spc_(MGApr, Mpr, kA, kM, iter_prA, iter_prM), q_( pre_)
+         mgc( PVel, smoother_, coarsesolver_, iter_vel, 1e-14, false), Apc_( mgc),
+         Spc_( MGApr, Mpr, PPr, kA, kM, iter_prA, iter_prM), q_( pre_)
     {}
 };
 
@@ -247,47 +247,14 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
 } // end of namespace DROPS
 
 
-template<class Coeff>
-void
-SetupPoissonVelocityMG(
-    DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData,
-    const double theta, const double dt)
-{
-    DROPS::MultiGridCL& mg= stokes.GetMG();
-    DROPS::IdxDescCL* c_idx= 0;
-    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-        MGData.push_back( DROPS::MGLevelDataCL());
-        DROPS::MGLevelDataCL& tmp= MGData.back();
-        std::cerr << "                        Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( DROPS::vecP2_FE);
-        stokes.CreateNumberingVel( lvl, &tmp.Idx);
-        DROPS::MatDescCL A, M;
-        A.SetIdx( &tmp.Idx, &tmp.Idx);
-        M.SetIdx( &tmp.Idx, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns << std::endl;
-        stokes.SetupStiffnessMatrix( &A);
-        stokes.SetupMassMatrix( &M);
-        tmp.A.Data.LinComb( 1./dt, M.Data, theta, A.Data);
-        if(lvl!=0) {
-            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
-            SetupP2ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-//           std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-        }
-        c_idx= &tmp.Idx;
-        tmp.ABlock = &tmp.A.Data;
-    }
-}
-
-
 // Assumes, that indices for A_pr are set up. We know, there are only natural
 // boundary conditions.
 void
-SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
+SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatrixCL& A_pr, DROPS::IdxDescCL& RowIdx, DROPS::IdxDescCL& ColIdx)
 {
-    DROPS::MatrixBuilderCL A( &A_pr.Data, A_pr.RowIdx->NumUnknowns, A_pr.ColIdx->NumUnknowns);
-    const DROPS::Uint lvl= A_pr.GetRowLevel();
-    const DROPS::Uint idx= A_pr.RowIdx->GetIdx();
+    DROPS::MatrixBuilderCL A( &A_pr, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    const DROPS::Uint lvl= RowIdx.TriangLevel();
+    const DROPS::Uint idx= RowIdx.GetIdx();
     DROPS::SMatrixCL<3,4> G;
     double coup[4][4];
     double det;
@@ -312,68 +279,27 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatDescCL& A_pr)
                 A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
     }
     A.Build();
-    std::cerr << A_pr.Data.num_nonzeros() << " nonzeros in A_pr.\n";
+    std::cerr << A_pr.num_nonzeros() << " nonzeros in A_pr.\n";
 }
 
 // We know, there are only natural boundary conditions.
 template<class Coeff>
 void
-SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
+SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MLMatDescCL& MGData)
 {
     DROPS::MultiGridCL& mg= stokes.GetMG();
-    DROPS::IdxDescCL* c_idx= 0;
-    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-        MGData.push_back( DROPS::MGLevelDataCL());
-        DROPS::MGLevelDataCL& tmp= MGData.back();
-        std::cerr << "Pressure-MG:            Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( DROPS::P1_FE);
-        stokes.CreateNumberingPr( lvl, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
-        SetupPoissonPressure( mg, tmp.A);
-        if(lvl!=0) {
-            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
-            DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-        }
-        c_idx= &tmp.Idx;
-        tmp.ABlock = &tmp.A.Data;
+    DROPS::MLIdxDescCL::iterator itRow= MGData.RowIdx->begin();
+    DROPS::MLIdxDescCL::iterator itCol= MGData.ColIdx->begin();
+    for (DROPS::MLMatrixCL::iterator itA = MGData.Data.begin(); itA != MGData.Data.end(); ++itA)
+    {
+        SetupPoissonPressure( mg, *itA, *itRow, *itCol);
+        ++itRow; ++itCol;
     }
     std::cerr << "Check MG-Data..." << std::endl;
-    std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
-    std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
-    DROPS::CheckMGData( MGData.begin(), MGData.end());
+    std::cerr << "                begin     " << MGData.RowIdx->GetCoarsest().NumUnknowns() << std::endl;
+    std::cerr << "                end       " << MGData.RowIdx->GetFinest().NumUnknowns() << std::endl;
+    //CheckMGData( MGData.begin(), MGData.end());
 }
-
-
-template<class Coeff>
-void
-SetupPressureMassMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MGDataCL& MGData)
-{
-    DROPS::MultiGridCL& mg= stokes.GetMG();
-    DROPS::IdxDescCL* c_idx= 0;
-    for(DROPS::Uint lvl= 0; lvl<=mg.GetLastLevel(); ++lvl) {
-        MGData.push_back( DROPS::MGLevelDataCL());
-        DROPS::MGLevelDataCL& tmp= MGData.back();
-        std::cerr << "Mass-Pressure-MG:       Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( DROPS::P1_FE);
-        stokes.CreateNumberingPr( lvl, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        std::cerr << "                        Create StiffMatrix     " << (&tmp.Idx)->NumUnknowns <<std::endl;
-        stokes.SetupPrMass( &tmp.A);
-        std::cerr << tmp.A.Data.num_nonzeros() << " nonzeros in M_pr.\n";
-        if(lvl!=0) {
-            std::cerr << "                        Create Prolongation on Level " << lvl << std::endl;
-            DROPS::SetupP1ProlongationMatrix( mg, tmp.P, c_idx, &tmp.Idx);
-        }
-        c_idx= &tmp.Idx;
-        tmp.ABlock = &tmp.A.Data;
-    }
-    std::cerr << "Check MG-Data..." << std::endl;
-    std::cerr << "                begin     " << MGData.begin()->Idx.NumUnknowns << std::endl;
-    std::cerr << "                end       " << (--MGData.end())->Idx.NumUnknowns << std::endl;
-    DROPS::CheckMGData( MGData.begin(), MGData.end());
-}
-
 
 namespace DROPS
 {
@@ -424,13 +350,13 @@ class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_Ss
     PCGSolverCL<ISMGPreCL> solver2_;
 
   public:
-    PSchur2_Full_MG_CL(MGDataCL& A_MG, ISMGPreCL& Spc,
+    PSchur2_Full_MG_CL(MLMatrixCL& PVel, ISMGPreCL& Spc,
                        int outer_iter, double outer_tol,
                        int inner_iter, double inner_tol)
         : PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>, PCGSolverCL<ISMGPreCL> >(
               solver_, solver2_, outer_iter, outer_tol),
           smoother_(1.0), coarsesolver_(SSORPcCL(1.0), 500, inner_tol),
-          solver_( A_MG, smoother_, coarsesolver_, inner_iter, inner_tol),
+          solver_( PVel, smoother_, coarsesolver_, inner_iter, inner_tol),
           solver2_( Spc, outer_iter, outer_tol)
         {}
 };
@@ -521,12 +447,12 @@ EnsightWriterCL::DeleteNumbering()
     if (!have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
     DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
-                                MG_.GetAllVertexBegin( ensightidx_.TriangLevel),
-                                MG_.GetAllVertexEnd( ensightidx_.TriangLevel));
+                                MG_.GetAllVertexBegin( ensightidx_.TriangLevel()),
+                                MG_.GetAllVertexEnd( ensightidx_.TriangLevel()));
     DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
-                                MG_.GetAllEdgeBegin( ensightidx_.TriangLevel),
-                                MG_.GetAllEdgeEnd( ensightidx_.TriangLevel));
-    ensightidx_.NumUnknowns= 0;
+                                MG_.GetAllEdgeBegin( ensightidx_.TriangLevel()),
+                                MG_.GetAllEdgeEnd( ensightidx_.TriangLevel()));
+    ensightidx_.SetNumUnknowns(0);
     have_idx_= false;
 }
 
@@ -668,10 +594,11 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
         // Repair velocity
         std::swap( v2, v1);
         std::swap( vidx2, vidx1);
-        NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
-        if ( mg.GetLastLevel() != vidx2->TriangLevel) {
+        match_fun match= mg.GetBnd().GetMatchFun();
+        vidx1->CreateNumbering( mg.GetLastLevel(), mg, NS.GetBndData().Vel, match);
+        if ( mg.GetLastLevel() != vidx2->TriangLevel()) {
             std::cout << "LastLevel: " << mg.GetLastLevel()
-                      << " vidx2->TriangLevel: " << vidx2->TriangLevel << std::endl;
+                      << " vidx2->TriangLevel: " << vidx2->TriangLevel() << std::endl;
             throw DROPSErrCL( "Strategy: Sorry, not yet implemented.");
         }
         v1->SetIdx( vidx1);
@@ -679,24 +606,24 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
                   const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
-        NS.DeleteNumbering( vidx2);
+        vidx2->DeleteNumbering( mg);
 //P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
 //          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
 //CheckVel( funv1, &MyPdeCL::LsgVel);
         // Repair pressure
         std::swap( p2, p1);
         std::swap( pidx2, pidx1);
-        NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
+        pidx1->CreateNumbering( mg.GetLastLevel(), mg, NS.GetBndData().Pr, match);
         p1->SetIdx( pidx1);
         typename StokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( oldfunpr, *p1);
         p2->Clear();
-        NS.DeleteNumbering( pidx2);
+        pidx2->DeleteNumbering( mg);
     }
     // We want the solution to be where v1, p1 point to.
     if (v1 == &loc_v) {
-        NS.vel_idx.swap( loc_vidx);
-        NS.pr_idx.swap( loc_pidx);
+        NS.vel_idx.GetFinest().swap( loc_vidx);
+        NS.pr_idx.GetFinest().swap( loc_pidx);
         NS.v.SetIdx( &NS.vel_idx);
         NS.p.SetIdx( &NS.pr_idx);
 
@@ -738,11 +665,11 @@ MakeInitialTriangulation(DROPS::MultiGridCL& mg,
 template<class Coeff>
 void
 SetMatVecIndices(DROPS::StokesP2P1CL<Coeff>& NS,
-                 DROPS::IdxDescCL* const vidx,
-                 DROPS::IdxDescCL* const pidx)
+                 DROPS::MLIdxDescCL* const vidx,
+                 DROPS::MLIdxDescCL* const pidx)
 {
-    std::cout << "#Druck-Unbekannte: " << pidx->NumUnknowns << std::endl;
-    std::cout << "#Geschwindigkeitsunbekannte: " << vidx->NumUnknowns << std::endl;
+    std::cout << "#Druck-Unbekannte: " << pidx->NumUnknowns() << std::endl;
+    std::cout << "#Geschwindigkeitsunbekannte: " << vidx->NumUnknowns ()<< std::endl;
     NS.b.SetIdx( vidx);
     NS.c.SetIdx( pidx);
     NS.A.SetIdx( vidx, vidx);
@@ -773,14 +700,13 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     typedef StokesP2P1CL<Coeff> StokesCL;
 
     MultiGridCL& mg= NS.GetMG();
-    IdxDescCL* vidx1= &NS.vel_idx;
-    IdxDescCL* pidx1= &NS.pr_idx;
+    MLIdxDescCL* vidx1= &NS.vel_idx;
+    MLIdxDescCL* pidx1= &NS.pr_idx;
     VelVecDescCL* v1= &NS.v;
     VecDescCL*    p1= &NS.p;
-//    MatDescCL  M_pr;
-    MGDataCL MG_pr;
-    MGDataCL MG_vel;
-    MGDataCL MG_Mpr;
+    MLMatDescCL  M_pr;
+    MLMatDescCL  ML_pr, MG_pr;
+    MLMatDescCL  PVel, PPr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -797,6 +723,12 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     InstatsolverCL* instatsolver= 0;
 
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
+    NS.SetNumVelLvl( mg.GetNumLevel());
+    NS.SetNumPrLvl ( mg.GetNumLevel());
+    M_pr.Data.resize( mg.GetNumLevel());
+    MG_pr.Data.resize( mg.GetNumLevel());
+    PVel.Data.resize( mg.GetNumLevel());
+    PPr.Data.resize( mg.GetNumLevel());
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
@@ -812,9 +744,6 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
             if (timestep>0) { // perform cleanup, which is not neccessary for t==0.
                 delete statsolver; statsolver= 0;
                 delete instatsolver; instatsolver= 0;
-                MG_pr.clear();
-                MG_vel.clear();
-                MG_Mpr.clear();
 //                M_pr.Reset();
                 ResetSystem( NS);
                 ensightout.DeleteNumbering();
@@ -823,18 +752,23 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
                 ensightout.CreateNumbering();
             }
             SetMatVecIndices( NS, vidx1, pidx1);
+            PPr.SetIdx( pidx1, pidx1);
+            PVel.SetIdx( vidx1, vidx1);
+            MG_pr.SetIdx( pidx1, pidx1);
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
             std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
-//            M_pr.SetIdx( pidx1, pidx1);
-//            NS.SetupPrMass( &M_pr);
-            SetupPoissonVelocityMG( NS, MG_vel, theta, dt);
+            SetupP1ProlongationMatrix( mg, PPr);
+            SetupP2ProlongationMatrix( mg, PVel);
+            M_pr.SetIdx( pidx1, pidx1);
+            NS.SetupPrMass( &M_pr);
+
             SetupPoissonPressureMG( NS, MG_pr);
-            SetupPressureMassMG( NS, MG_Mpr);
+
 //            statsolver= new StatsolverCL( stokes_maxiter, stokes_tol);
-            statsolver= new PMinresSP_FullMG_CL( MG_vel, MG_pr, MG_Mpr, kA, kM,
+            statsolver= new PMinresSP_FullMG_CL( PVel.Data, MG_pr.Data, M_pr.Data, PPr.Data, kA, kM,
                                                  1, 1, 1, stokes_maxiter, stokes_tol);
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
@@ -853,9 +787,6 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     delete instatsolver; instatsolver= 0;
     delete statsolver; statsolver= 0;
     ResetSystem( NS);
-    MG_pr.clear();
-    MG_vel.clear();
-    MG_Mpr.clear();
 //    M_pr.Reset();
 }
 
@@ -872,15 +803,14 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     typedef StokesP2P1CL<Coeff> StokesCL;
 
     MultiGridCL& mg= NS.GetMG();
-    IdxDescCL* vidx1= &NS.vel_idx;
-    IdxDescCL* pidx1= &NS.pr_idx;
+    MLIdxDescCL* vidx1= &NS.vel_idx;
+    MLIdxDescCL* pidx1= &NS.pr_idx;
     VelVecDescCL* v1= &NS.v;
     VecDescCL*    p1= &NS.p;
-    MatDescCL  M_pr;
-//    MatDescCL  A_pr;
-    MGDataCL MG_pr;
-    MGDataCL MG_vel;
-    MGDataCL MG_Mpr;
+    MLMatDescCL  M_pr;
+    MLMatDescCL  MG_pr;
+    MLMatDescCL  PVel, PPr;
+
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -890,7 +820,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     Uint timestep= 0;
     SSORsmoothCL smoother(1.0);
     PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, 1e-14);
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (MG_vel, smoother, coarsesolver, 1, -1., false);
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( PVel.Data, smoother, coarsesolver, 1, -1., false);
     typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
     MGPCT MGPC (mgc);
 //    typedef MyUzawaSolver2CL<ISPreCL, PCG_SsorCL> StatsolverCL;
@@ -903,6 +833,12 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     ISMGPreCL* ispcp= 0;
 //    ISPreCL* ispcp= 0;
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
+    NS.SetNumVelLvl  ( mg.GetNumLevel());
+    NS.SetNumPrLvl   ( mg.GetNumLevel());
+    M_pr.Data.resize ( mg.GetNumLevel());
+    MG_pr.Data.resize( mg.GetNumLevel());
+    PVel.Data.resize ( mg.GetNumLevel());
+    PPr.Data.resize  ( mg.GetNumLevel());
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
@@ -921,11 +857,6 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
                 delete statsolver; statsolver= 0;
                 delete instatsolver; instatsolver= 0;
                 delete ispcp; ispcp= 0;
-                MG_pr.clear();
-                MG_vel.clear();
-                MG_Mpr.clear();
-                M_pr.Reset();
-//                A_pr.Reset();
                 ResetSystem( NS);
                 ensightout.DeleteNumbering();
                 UpdateTriangulation( NS, &SignedDistToInterface, t,
@@ -933,6 +864,12 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
                 ensightout.CreateNumbering();
             }
             SetMatVecIndices( NS, vidx1, pidx1);
+            PPr.SetIdx( pidx1, pidx1);
+            PVel.SetIdx( vidx1, vidx1);
+            SetupP1ProlongationMatrix( mg, PPr);
+            SetupP2ProlongationMatrix( mg, PVel);
+            M_pr.SetIdx( pidx1, pidx1);
+            MG_pr.SetIdx( pidx1, pidx1);
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
@@ -943,10 +880,8 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
 //            A_pr.SetIdx( pidx1, pidx1);
 //            SetupPoissonPressure( mg, A_pr);
 //            ispcp= new ISPreCL( A_pr.Data, M_pr.Data, kA, kM, 1.0);
-            SetupPoissonVelocityMG( NS, MG_vel, theta, dt);
             SetupPoissonPressureMG( NS, MG_pr);
-            SetupPressureMassMG( NS, MG_Mpr);
-            ispcp= new ISMGPreCL( MG_pr, MG_Mpr, kA, kM, 1);
+            ispcp= new ISMGPreCL( MG_pr.Data, M_pr.Data, PPr.Data, kA, kM, 1);
 //            PCGSolverCL<ISPreCL> sol1( ispc, stokes_maxiter, stokes_tol);
 //            PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
 //            PCGSolverCL<MGPCT> sol2( MGPC, stokes_maxiter, stokes_tol);
@@ -965,7 +900,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
             statsolver= new MyUzawaSolver2CL<ISMGPreCL, MGPCT>(
                                 *ispcp,
                                 MGPC,
-                                M_pr.Data, stokes_maxiter, stokes_tol, 1.0);
+                                M_pr.Data.GetFinest(), stokes_maxiter, stokes_tol, 1.0);
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
         instatsolver->SetTimeStep( dt);
@@ -983,11 +918,6 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     delete statsolver;
     delete ispcp;
     ResetSystem( NS);
-    MG_pr.clear();
-    MG_vel.clear();
-    MG_Mpr.clear();
-    M_pr.Reset();
-//    A_pr.Reset();
 }
 
 template<class Coeff>
@@ -1004,15 +934,13 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     typedef StokesP2P1CL<Coeff> StokesCL;
 
     MultiGridCL& mg= NS.GetMG();
-    IdxDescCL* vidx1= &NS.vel_idx;
-    IdxDescCL* pidx1= &NS.pr_idx;
+    MLIdxDescCL* vidx1= &NS.vel_idx;
+    MLIdxDescCL* pidx1= &NS.pr_idx;
     VelVecDescCL* v1= &NS.v;
     VecDescCL*    p1= &NS.p;
-    MatDescCL  M_pr;
-//    MatDescCL  A_pr;
-    MGDataCL MG_pr;
-    MGDataCL MG_vel;
-    MGDataCL MG_Mpr;
+    MLMatDescCL  M_pr;
+    MLMatDescCL  MG_pr;
+    MLMatDescCL  PVel, PPr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -1031,6 +959,12 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 //    typedef MyInstatStokesThetaSchemeCL<StokesCL, StatsolverCL> InstatsolverCL;
     InstatsolverCL* instatsolver= 0;
     MakeInitialTriangulation( mg, &SignedDistToInterface, shell_width, c_level, f_level);
+    NS.SetNumVelLvl  ( mg.GetNumLevel());
+    NS.SetNumPrLvl   ( mg.GetNumLevel());
+    M_pr.Data.resize ( mg.GetNumLevel());
+    MG_pr.Data.resize( mg.GetNumLevel());
+    PVel.Data.resize ( mg.GetNumLevel());
+    PPr.Data.resize  ( mg.GetNumLevel());
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.InitVel( v1, &MyPdeCL::LsgVel);
@@ -1048,11 +982,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
             if (timestep>0) { // perform cleanup, which is not neccessary for t==0.
                 delete statsolver; statsolver= 0;
                 delete instatsolver; instatsolver= 0;
-                MG_pr.clear();
-                MG_vel.clear();
-                MG_Mpr.clear();
-                M_pr.Reset();
-//                A_pr.Reset();
+
                 ResetSystem( NS);
                 ensightout.DeleteNumbering();
                 UpdateTriangulation( NS, &SignedDistToInterface, t,
@@ -1060,6 +990,12 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
                 ensightout.CreateNumbering();
             }
             SetMatVecIndices( NS, vidx1, pidx1);
+            PPr.SetIdx( pidx1, pidx1);
+            PVel.SetIdx( vidx1, vidx1);
+            SetupP1ProlongationMatrix( mg, PPr);
+            SetupP2ProlongationMatrix( mg, PVel);
+            M_pr.SetIdx( pidx1, pidx1);
+            MG_pr.SetIdx( pidx1, pidx1);
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
@@ -1070,10 +1006,8 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 //            A_pr.SetIdx( pidx1, pidx1);
 //            SetupPoissonPressure( mg, A_pr);
 //            ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 1.0);
-            SetupPoissonVelocityMG( NS, MG_vel, theta, dt);
             SetupPoissonPressureMG( NS, MG_pr);
-            SetupPressureMassMG( NS, MG_Mpr);
-            ISMGPreCL ispc( MG_pr, MG_Mpr, kA, kM, 1);
+            ISMGPreCL ispc( MG_pr.Data, M_pr.Data, PPr.Data, kA, kM, 1);
 //            statsolver= new PSchur_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
 //                                           poi_maxiter, poi_tol);
 //            statsolver= new PSchur2_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
@@ -1082,7 +1016,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 //                                               poi_maxiter, poi_tol);
 //            statsolver= new PSchur2_PCG_Pr_MG_CL( ispc, stokes_maxiter, stokes_tol,
 //                                                  poi_maxiter, poi_tol);
-            statsolver= new PSchur2_Full_MG_CL( MG_vel, ispc, stokes_maxiter, stokes_tol,
+            statsolver= new PSchur2_Full_MG_CL( PVel.Data, ispc, stokes_maxiter, stokes_tol,
                                                 poi_maxiter, poi_tol);
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
@@ -1100,11 +1034,6 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     delete instatsolver; instatsolver= 0;
     delete statsolver; statsolver= 0;
     ResetSystem( NS);
-    MG_pr.clear();
-    MG_vel.clear();
-    MG_Mpr.clear();
-    M_pr.Reset();
-//    A_pr.Reset();
 }
 
 

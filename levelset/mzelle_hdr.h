@@ -122,7 +122,7 @@ class InterfaceInfoCL
     template<class DiscVelSolT>
     void Update (const DROPS::LevelsetP2CL& ls, const DiscVelSolT& u) {
         ls.GetInfo( maxGrad, Vol, bary, vel, u, min, max);
-        std::pair<double, double> h= h_interface( ls.GetMG().GetTriangEdgeBegin( ls.Phi.RowIdx->TriangLevel), ls.GetMG().GetTriangEdgeEnd( ls.Phi.RowIdx->TriangLevel), ls.Phi);
+        std::pair<double, double> h= h_interface( ls.GetMG().GetTriangEdgeBegin( ls.Phi.RowIdx->TriangLevel()), ls.GetMG().GetTriangEdgeEnd( ls.Phi.RowIdx->TriangLevel()), ls.Phi);
         h_min= h.first; h_max= h.second;
     }
     void WriteHeader(std::ofstream& file) {

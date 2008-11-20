@@ -50,7 +50,7 @@ class FastMarchCL
 
   public:
     FastMarchCL( MultiGridCL& mg, VecDescCL& v)
-      : MG_(mg), v_(v), size_(v.RowIdx->NumUnknowns), Typ_(Far, size_) {}
+      : MG_(mg), v_(v), size_(v.RowIdx->NumUnknowns()), Typ_(Far, size_) {}
 
     /// \brief Finds the zero level of the levelset function and handle verts around it.
     void InitZero( bool ModifyZero= true);

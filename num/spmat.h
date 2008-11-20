@@ -21,6 +21,7 @@
 #    include <map>
 #endif
 #include <misc/utils.h>
+#include <misc/container.h>
 
 namespace DROPS
 {
@@ -1139,8 +1140,7 @@ VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const V
     Assert( A.num_cols()==x.size(), "SparseMatBaseCL * VectorBaseCL: incompatible dimensions", DebugNumericC);
     y_Ax( &ret[0],
           A.num_rows(),
-          A.raw_val(),
-          A.raw_row(),
+          A.raw_val(),A.raw_row(),
           A.raw_col(),
           Addr( x));
     return ret;
@@ -1184,16 +1184,14 @@ VectorBaseCL<_VecEntry> transp_mul (const SparseMatBaseCL<_MatEntry>& A, const V
 }
 
 
-template <typename _MatEntry, typename _VecEntry>
-VectorBaseCL<_VecEntry>
-operator*(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
-    const VectorBaseCL<_VecEntry>& x)
+template <typename Mat, typename Vec>
+Vec operator* (const BlockMatrixBaseCL<Mat>& A, const Vec& x)
 {
-    VectorBaseCL<_VecEntry> x0( x[std::slice( 0, A.num_cols( 0), 1)]),
-                            x1( x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]);
-    VectorBaseCL<_VecEntry> r0( A.num_rows( 0)),
-                            r1( A.num_rows( 1));
-    const SparseMatBaseCL<_MatEntry>* mat;
+    Vec x0( x[std::slice( 0, A.num_cols( 0), 1)]),
+        x1( x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]);
+    Vec r0( A.num_rows( 0)),
+        r1( A.num_rows( 1));
+    const Mat* mat;
 
     if ( (mat= A.GetBlock( 0)) != 0) {
         switch( A.GetOperation( 0)) {
@@ -1227,16 +1225,14 @@ operator*(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
             r1+= transp_mul( *mat, x1); break;
         }
     }
-    VectorBaseCL<_VecEntry> ret( A.num_rows());
+    Vec ret( A.num_rows());
     ret[std::slice( 0, A.num_rows( 0), 1)]= r0;
     ret[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]= r1;
     return ret;
 }
 
-template <typename _MatEntry, typename _VecEntry>
-VectorBaseCL<_VecEntry>
-transp_mul(const BlockMatrixBaseCL<SparseMatBaseCL<_MatEntry> >& A,
-    const VectorBaseCL<_VecEntry>& x)
+template <typename Mat, typename Vec>
+Vec transp_mul(const BlockMatrixBaseCL<Mat>& A, const Vec& x)
 {
     return A.GetTranspose()*x;
 }
@@ -1495,17 +1491,101 @@ reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
         throw DROPSErrCL( "reverse_cuthill_mckee: Could not number all unkowns.\n");
 }
 
+//*****************************************************************************
+//
+//  MLSparseMatBaseCL
+//
+//*****************************************************************************
+
+template <typename T>
+class MLSparseMatBaseCL : public MLDataCL<SparseMatBaseCL<T> >
+{
+  private:
+    typedef typename MLSparseMatBaseCL<T>::const_iterator ML_const_iterator;
+    typedef typename MLSparseMatBaseCL<T>::iterator       ML_iterator;
+  public:
+    MLSparseMatBaseCL (size_t lvl= 1)
+    { 
+        this->resize(lvl);
+    }
+    size_t Version      () const { return this->GetFinest().Version();}
+    size_t num_nonzeros () const { return this->GetFinest().num_nonzeros(); }
+    size_t num_rows     () const { return this->GetFinest().num_rows(); }
+    size_t num_cols     () const { return this->GetFinest().num_cols(); }
+    MLSparseMatBaseCL<T>& LinComb (double ma, const MLSparseMatBaseCL<T>& A,
+                                   double mb, const MLSparseMatBaseCL<T>& B);
+    MLSparseMatBaseCL<T>& LinComb (double ma, const MLSparseMatBaseCL<T>& A,
+                                   double mb, const MLSparseMatBaseCL<T>& B,
+                                   double mc, const MLSparseMatBaseCL<T>& C);
+
+    VectorBaseCL<T> GetDiag() const { return this->GetFinest().GetDiag(); }
+    void clear() { for (ML_iterator it = this->begin(); it != this->end(); ++it) it->clear();}
+};
+
+template <typename T>
+MLSparseMatBaseCL<T>& MLSparseMatBaseCL<T>::LinComb (double ma, const MLSparseMatBaseCL<T>& A, double mb, const MLSparseMatBaseCL<T>& B)
+{
+    Assert( A.size()==B.size(), "MLMatrixCL::LinComb: different number of levels", DebugNumericC);
+    ML_const_iterator itA = A.begin();
+    ML_const_iterator itB = B.begin();
+    SparseMatBaseCL<T> mat;
+    this->resize( A.size());
+    for (ML_iterator it = this->begin(); it != this->end(); ++it)
+    {
+        mat.LinComb( ma, *itA, mb, *itB);
+        *it = mat;
+        ++itA;
+        ++itB;
+    }
+    return *this;
+}
+
+template <typename T>
+MLSparseMatBaseCL<T>& MLSparseMatBaseCL<T>::LinComb (double ma, const MLSparseMatBaseCL<T>& A, double mb, const MLSparseMatBaseCL<T>& B, double mc, const MLSparseMatBaseCL<T>& C)
+{
+    Assert( A.size()==B.size(), "MLMatrixCL::LinComb: different number of levels", DebugNumericC);
+    Assert( A.size()==C.size(), "MLMatrixCL::LinComb: different number of levels", DebugNumericC);
+    ML_const_iterator itA = A.begin();
+    ML_const_iterator itB = B.begin();
+    ML_const_iterator itC = C.begin();
+    SparseMatBaseCL<T> mat;
+    this->resize( A.size());
+    for (ML_iterator it = this->begin(); it != this->end(); ++it)
+    {
+        mat.LinComb( ma, *itA, mb, *itB, mc, *itC);
+        *it = mat;
+        ++itA;
+        ++itB;
+        ++itC;
+    }
+    return *this;
+}
+
+template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry> transp_mul (const MLSparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
+{
+    return transp_mul(A.GetFinest(), x);
+}
+
+template <typename _MatEntry, typename _VecEntry>
+VectorBaseCL<_VecEntry> operator* (const MLSparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
+{
+    return A.GetFinest()*x;
+}
+
 //=============================================================================
 //  Typedefs
 //=============================================================================
 
-typedef VectorBaseCL<double>            VectorCL;
-typedef SparseMatBaseCL<double>         MatrixCL;
-typedef SparseMatBuilderCL<double>      MatrixBuilderCL;
-typedef BlockMatrixBaseCL<MatrixCL>     BlockMatrixCL;
+typedef VectorBaseCL<double>                      VectorCL;
+typedef SparseMatBaseCL<double>                   MatrixCL;
+typedef SparseMatBuilderCL<double>                MatrixBuilderCL;
+typedef BlockMatrixBaseCL<MatrixCL>               BlockMatrixCL;
 typedef CompositeMatrixBaseCL<MatrixCL, MatrixCL> CompositeMatrixCL;
-typedef VectorAsDiagMatrixBaseCL<double>VectorAsDiagMatrixCL;
+typedef VectorAsDiagMatrixBaseCL<double>          VectorAsDiagMatrixCL;
 
+typedef MLSparseMatBaseCL<double>                 MLMatrixCL;
+typedef BlockMatrixBaseCL<MLMatrixCL>             MLBlockMatrixCL;
 } // end of namespace DROPS
 
 #endif

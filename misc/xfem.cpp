@@ -15,8 +15,8 @@ void ExtIdxDescCL::UpdateXNumbering(IdxDescCL* idx, const LevelsetP2CL& lset, bo
     if (idx != this->Idx) throw DROPSErrCL("ExtIdxDescCL::UpdateXNumbering: Wrong Index.\n");
 
     const Uint sysnum= idx->GetIdx(),
-        level= idx->TriangLevel;
-    IdxT extIdx= NumberingChanged ? idx->NumUnknowns : Xidx.size();
+        level= idx->TriangLevel();
+    IdxT extIdx= NumberingChanged ? idx->NumUnknowns() : Xidx.size();
     Xidx_old.assign( extIdx, NoIdx);
     Xidx.swap( Xidx_old);
     InterfacePatchCL cut;
@@ -69,7 +69,7 @@ void ExtIdxDescCL::UpdateXNumbering(IdxDescCL* idx, const LevelsetP2CL& lset, bo
                 }
         }
     }
-    idx->NumUnknowns= extIdx;
+    idx->SetNumUnknowns( extIdx);
 }
 
 void ExtIdxDescCL::Old2New(VecDescCL* v)
@@ -109,7 +109,7 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
 
 void P1XtoP1 (const ExtIdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg)
 {
-    const Uint lvl= idx.TriangLevel,
+    const Uint lvl= idx.TriangLevel(),
                 idxnum= xidx.Idx->GetIdx(),
                 lsidxnum= lset.RowIdx->GetIdx();
     const size_t p1unknowns = xidx.GetNumUnknownsP1();
@@ -134,12 +134,12 @@ void P1XtoP1 (const ExtIdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& id
 
 void P1toP1X (const ExtIdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const VectorCL& posPart, const VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg)
 {
-    const Uint lvl= idx.TriangLevel,
+    const Uint lvl= idx.TriangLevel(),
                 idxnum= xidx.Idx->GetIdx(),
                 p1idxnum= idx.GetIdx(),
                 lsidxnum= lset.RowIdx->GetIdx();
 
-    p1x.resize(xidx.Idx->NumUnknowns);
+    p1x.resize(xidx.Idx->NumUnknowns());
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it)
     {
         const IdxT nr= it->Unknowns(idxnum);

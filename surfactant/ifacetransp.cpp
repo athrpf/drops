@@ -66,24 +66,26 @@ void CreateNumbOnInterface(Uint level, IdxDescCL& idx, MultiGridCL& mg,
     const VecDescCL& ls, double omit_bound)
 {
     // set up the index description
-    idx.TriangLevel = level;
-    idx.NumUnknowns = 0;
+    idx.SetTriangLevel( level);
+    idx.SetNumUnknowns( 0);
 
     const Uint idxnum= idx.GetIdx();
+    IdxT num_unknowns = idx.NumUnknowns();
     // allocate space for indices; number unknowns in TriangLevel level
     if (idx.NumUnknownsVertex() != 0)
-        CreateNumbOnInterfaceVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
+        CreateNumbOnInterfaceVertex( idxnum, num_unknowns, idx.NumUnknownsVertex(),
             mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls, omit_bound);
 
     if (idx.NumUnknownsEdge() != 0 || idx.NumUnknownsFace() != 0 || idx.NumUnknownsTetra() != 0)
         throw DROPSErrCL( "CreateNumbOnInterface: Only vertex unknowns are implemented\n" );
+    idx.SetNumUnknowns( num_unknowns);
 }
 
 void Extend (const MultiGridCL& mg, const VecDescCL& x, VecDescCL& xext)
 {
     const Uint xidx( x.RowIdx->GetIdx()),
         xextidx( xext.RowIdx->GetIdx()),
-        lvl( x.RowIdx->TriangLevel);
+        lvl( x.RowIdx->TriangLevel());
     xext.Data= 0.;
 
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
@@ -96,7 +98,7 @@ void Restrict (const MultiGridCL& mg, const VecDescCL& xext, VecDescCL& x)
 {
     const Uint xidx( x.RowIdx->GetIdx()),
         xextidx( xext.RowIdx->GetIdx()),
-        lvl( x.RowIdx->TriangLevel);
+        lvl( x.RowIdx->TriangLevel());
 
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
         if (it->Unknowns.Exist( xidx) && it->Unknowns.Exist( xextidx))
@@ -129,7 +131,7 @@ void SetupInterfaceMassP1OnTriangle (const LocalP1CL<> p1[4],
 
 void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls)
 {
-    const IdxT num_unks=  matM->RowIdx->NumUnknowns;
+    const IdxT num_unks=  matM->RowIdx->NumUnknowns();
     MatrixBuilderCL M( &matM->Data, num_unks,  num_unks);
 
     const Uint lvl= matM->GetRowLevel();
@@ -176,7 +178,7 @@ void SetupLBP1OnTriangle (InterfacePatchCL& patch, int tri, Point3DCL grad[4], d
 
 void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, double D)
 {
-    const IdxT num_unks= mat->RowIdx->NumUnknowns;
+    const IdxT num_unks= mat->RowIdx->NumUnknowns();
     MatrixBuilderCL M( &mat->Data, num_unks, num_unks);
     const Uint lvl = mat->GetRowLevel();
 
@@ -271,7 +273,7 @@ void SetupInterfaceRhsP1OnTriangle (const LocalP1CL<> p1[4],
 void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
     const VecDescCL& ls,instat_scalar_fun_ptr f)
 {
-    const IdxT num_unks= v->RowIdx->NumUnknowns;
+    const IdxT num_unks= v->RowIdx->NumUnknowns();
     const Uint lvl = v->GetLevel();
 
     IdxT num[4];
@@ -307,7 +309,7 @@ InterfaceP1RepairCL::post_refine ()
     VecDescCL loc_u;
     IdxDescCL loc_idx( P1_FE);
 
-    loc_idx.CreateNumbering( fullp1idx_.TriangLevel, mg_);
+    loc_idx.CreateNumbering( fullp1idx_.TriangLevel(), mg_);
     loc_u.SetIdx( &loc_idx);
     DROPS::NoBndDataCL<> dummy;
     RepairAfterRefineP1( make_P1Eval( mg_, dummy, fullu_), loc_u);
@@ -321,7 +323,7 @@ InterfaceP1RepairCL::post_refine ()
 void
 InterfaceP1RepairCL::pre_refine_sequence ()
 {
-    fullp1idx_.CreateNumbering( u_.RowIdx->TriangLevel, mg_);
+    fullp1idx_.CreateNumbering( u_.RowIdx->TriangLevel(), mg_);
     fullu_.SetIdx( &fullp1idx_);
     Extend( mg_, u_, fullu_);
 }
@@ -330,7 +332,7 @@ void
 InterfaceP1RepairCL::post_refine_sequence ()
 {
     u_.RowIdx->DeleteNumbering( mg_);
-    CreateNumbOnInterface( fullp1idx_.TriangLevel, *u_.RowIdx, mg_, lset_vd_);
+    CreateNumbOnInterface( fullp1idx_.TriangLevel(), *u_.RowIdx, mg_, lset_vd_);
     u_.SetIdx( u_.RowIdx);
 
     Restrict( mg_, fullu_, u_);

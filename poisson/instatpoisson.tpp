@@ -170,14 +170,14 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
 
 
 template<class Coeff>
-void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mmat, double tA) const
+void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& _Coeff, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double tA) 
 // Sets up the stiffness matrix and the mass matrix
 {
-  MatrixBuilderCL A( &Amat.Data, Amat.RowIdx->NumUnknowns, Amat.ColIdx->NumUnknowns);
-  MatrixBuilderCL M( &Mmat.Data, Mmat.RowIdx->NumUnknowns, Mmat.ColIdx->NumUnknowns);
+  MatrixBuilderCL A( &Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+  MatrixBuilderCL M( &Mmat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
 
-  const Uint lvl = Amat.GetRowLevel();
-  const Uint idx = Amat.RowIdx->GetIdx();
+  const Uint lvl = RowIdx.TriangLevel();
+  const Uint idx = RowIdx.GetIdx();
 
   Point3DCL G[4];
 
@@ -187,9 +187,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
   IdxT UnknownIdx[4];
   Quad2CL<> quad_a;
 
-  for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+  for (MultiGridCL::const_TriangTetraIteratorCL sit=MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
@@ -229,14 +227,25 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MatDescCL& Amat, MatDescCL& Mm
 }
 
 template<class Coeff>
-void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, double t) const
+void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM, double tA) const
+{
+    MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
+    MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
+    MLMatrixCL::iterator  itM    = matM.Data.begin();
+    for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
+        SetupInstatSystem_P1( _MG, _Coeff, *itA, *itM, *itRow, *itCol, tA);
+}
+
+template<class Coeff>
+void SetupConvection_P1( const MultiGridCL& MG, const Coeff& _Coeff, const BndDataCL<> _BndData,
+                         MatrixCL& Umat, VecDescCL* vU, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool adjoint_)
 // Sets up matrix and couplings with bnd unknowns for convection term
 {
-  vU.Clear();
-  MatrixBuilderCL U( &Umat.Data, Umat.RowIdx->NumUnknowns, Umat.ColIdx->NumUnknowns);
+  if (vU != 0) vU->Clear();
+  MatrixBuilderCL U( &Umat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
 
-  const Uint lvl = Umat.GetRowLevel();
-  const Uint idx = Umat.RowIdx->GetIdx();
+  const Uint lvl = RowIdx.TriangLevel();
+  const Uint idx = RowIdx.GetIdx();
 
   Point3DCL G[4];
 
@@ -244,10 +253,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
   double absdet;
   IdxT UnknownIdx[4];
   Quad2CL<Point3DCL> u;
-  for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
-    sit != send; ++sit)
+  for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl); sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
@@ -274,12 +280,13 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
               }
           }
           else // coupling with vertex j on right-hand-side
-          {
-            const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
-            for(int i=0; i<4; ++i)    // assemble row i
-              if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
-                vU.Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval;
-          }
+              if (vU != 0)
+              {
+                  const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+                  for(int i=0; i<4; ++i)    // assemble row i
+                  if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
+                      vU->Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval;
+              }
         }
     }
     else // adjoint problem: discretization of u grad phi_i phi_j
@@ -296,7 +303,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
             if (UnknownIdx[j] != NoIdx)  // vertex j is not on a Dirichlet boundary
               U( UnknownIdx[i], UnknownIdx[j])+= coupl;
             else // coupling with vertex j on right-hand-side
-              vU.Data[ UnknownIdx[i]]-= coupl* _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+              if (vU != 0) vU->Data[ UnknownIdx[i]]-= coupl* _BndData.GetDirBndValue(*sit->GetVertex(j), t);
           }
         }
     }
@@ -304,12 +311,21 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MatDescCL& Umat, VecDescCL& vU, 
   U.Build();
 }
 
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, double t) const
+{
+    MLMatrixCL::iterator  itU    = matU.Data.begin();
+    MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
+    MLIdxDescCL::iterator itCol  = matU.ColIdx->begin();
+    for ( size_t lvl=0; lvl < matU.Data.size(); ++lvl, ++itRow, ++itCol, ++itU)
+        SetupConvection_P1( _MG, _Coeff, _BndData, *itU, (lvl == matU.Data.size()-1) ? &vU : 0, *itRow, *itCol, t, adjoint_);
+}
 
 template<class Coeff>
-void InstatPoissonP1CL<Coeff>::SetupProlongation(MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const
+void InstatPoissonP1CL<Coeff>::SetupProlongation( MLMatDescCL& P) const
 // This only works, if Interpolate is called after every refinement of the multigrid.
 {
-    SetupP1ProlongationMatrix( _MG, P, cIdx, fIdx);
+    SetupP1ProlongationMatrix( _MG, P);
 }
 
 
@@ -329,6 +345,15 @@ void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func,
         }
     }
 
+}
+
+template<class Coeff>
+void InstatPoissonP1CL<Coeff>::SetNumLvl( size_t n)
+{
+    match_fun match= _MG.GetBnd().GetMatchFun();
+    idx.resize( n, P1_FE, _BndData, match);
+    A.Data.resize( idx.size());
+    M.Data.resize( idx.size());
 }
 
 //========================================================

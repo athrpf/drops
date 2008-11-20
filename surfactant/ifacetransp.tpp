@@ -9,7 +9,7 @@ namespace DROPS {
 template <class DiscVelSolT>
 void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const DiscVelSolT& u)
 {
-    const IdxT num_unks= mat->RowIdx->NumUnknowns;
+    const IdxT num_unks= mat->RowIdx->NumUnknowns();
     MatrixBuilderCL m( &mat->Data, num_unks, num_unks);
     const Uint lvl= mat->GetRowLevel();
     IdxT num[4];
@@ -60,7 +60,7 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
 template <class DiscVelSolT>
 void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const DiscVelSolT& u)
 {
-    const IdxT num_unks= mat->RowIdx->NumUnknowns;
+    const IdxT num_unks= mat->RowIdx->NumUnknowns();
     MatrixBuilderCL m( &mat->Data, num_unks, num_unks);
     const Uint lvl= mat->GetRowLevel();
     IdxT num[4];

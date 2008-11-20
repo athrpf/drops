@@ -50,19 +50,15 @@ FE_P2CL::ApplyAll(Uint numpt, const BaryCoordCL* const pt, std::valarray<double>
 //**************************************************************************
 // P1-Prolongation                                                         *
 //**************************************************************************
-void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
-                               IdxDescCL* cIdx, IdxDescCL* fIdx)
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
+                               IdxDescCL& cIdx, IdxDescCL& fIdx)
 {
-    const Uint c_level= cIdx->TriangLevel;
-    const Uint c_idx= cIdx->GetIdx();
-    const Uint f_idx= fIdx->GetIdx();
-    MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
+    const Uint c_level= cIdx.TriangLevel();
+    const Uint c_idx= cIdx.GetIdx();
+    const Uint f_idx= fIdx.GetIdx();
+    MatrixBuilderCL mat( &P, fIdx.NumUnknowns(), cIdx.NumUnknowns());
     IdxT i;
 
-
-    // do matrix description
-    P.RowIdx= fIdx;
-    P.ColIdx= cIdx;
     // setup index part of matrix
     // Iterate over all edges, interpolate values on new mid vertices
     for (MultiGridCL::const_EdgeIterator sit= mg.GetAllEdgeBegin( c_level),
@@ -87,6 +83,14 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
     mat.Build();
 }
 
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P)
+{
+    MLMatrixCL::iterator itProlong = ++P.Data.begin();
+    MLIdxDescCL::iterator itcIdx = P.ColIdx->begin();
+    MLIdxDescCL::iterator itfIdx = ++P.RowIdx->begin();
+    for (size_t lvl=1; lvl < P.Data.size(); ++lvl, ++itProlong, ++itcIdx, ++itfIdx)
+        SetupP1ProlongationMatrix( mg, *itProlong, *itcIdx, *itfIdx);
+}
 
 /// \name Coefficient-tables for P2-prolongation.
 /// For each refinement rule the local P2 prolongation matrix is stored
@@ -242,19 +246,17 @@ std::vector<IdxT> CollectChildUnknownsP2(const TetraCL& t, const Uint f_idx)
 }
 
 
-void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
-                               IdxDescCL* cIdx, IdxDescCL* fIdx)
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
+                               IdxDescCL& cIdx, IdxDescCL& fIdx)
 {
-    const Uint c_level= cIdx->TriangLevel;
-    const Uint f_level= fIdx->TriangLevel;
-    const Uint c_idx= cIdx->GetIdx();
-    const Uint f_idx= fIdx->GetIdx();
+    const Uint c_level= cIdx.TriangLevel();
+    const Uint f_level= fIdx.TriangLevel();
+    const Uint c_idx= cIdx.GetIdx();
+    const Uint f_idx= fIdx.GetIdx();
 // It is only a copy of the 1D case 'ndofs' times
-    const Uint ndofs= fIdx->NumUnknownsVertex();
+    const Uint ndofs= fIdx.NumUnknownsVertex();
 
-    MatrixBuilderCL mat( &P.Data, fIdx->NumUnknowns, cIdx->NumUnknowns);
-    P.RowIdx= fIdx;
-    P.ColIdx= cIdx;
+    MatrixBuilderCL mat( &P, fIdx.NumUnknowns(), cIdx.NumUnknowns());
 /*    std::cout << "    alt                    cIdx "
               << cIdx->TriangLevel        << ", "
               << cIdx->NumUnknownsVertex_ << ", "
@@ -325,6 +327,15 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
         }
     }
     mat.Build();
+}
+
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P)
+{
+    MLMatrixCL::iterator itProlong = ++P.Data.begin();
+    MLIdxDescCL::iterator itcIdx = P.ColIdx->begin();
+    MLIdxDescCL::iterator itfIdx = ++P.RowIdx->begin();
+    for (size_t lvl=1; lvl < P.Data.size(); ++lvl, ++itProlong, ++itcIdx, ++itfIdx)
+        SetupP2ProlongationMatrix( mg, *itProlong, *itcIdx, *itfIdx);
 }
 
 } // end of namespace DROPS

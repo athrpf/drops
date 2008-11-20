@@ -41,7 +41,7 @@ BndCL Bnd;
 
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg)
 {
-    vd.Data.resize(vd.RowIdx->NumUnknowns);
+    vd.Data.resize(vd.RowIdx->NumUnknowns());
     P1EvalCL<double, BndCL,VecDescBaseCL<VectorCL> > fun(&vd, &Bnd, &mg);
     const Uint lvl= vd.GetLevel();
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl), theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit)
@@ -88,9 +88,9 @@ int TestReMark()
             SetFun(v0, mg);
             tet.BogoReMark( mg, Rule( j));
 
-            i1.TriangLevel= i0.TriangLevel <= mg.GetLastLevel() ? i0.TriangLevel
-                                                                : mg.GetLastLevel();
-            i1.CreateNumbering( i1.TriangLevel, mg);
+            i1.SetTriangLevel (i0.TriangLevel() <= mg.GetLastLevel() ? i0.TriangLevel()
+                                                                : mg.GetLastLevel());
+            i1.CreateNumbering( i1.TriangLevel(), mg);
             v1.SetIdx( &i1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             DROPS::RepairAfterRefineP1( fun0, v1);
@@ -120,7 +120,7 @@ int TestRepair()
         SetFun(v0, mg);
         MarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        i1.CreateNumbering( i0.TriangLevel, mg);
+        i1.CreateNumbering( i0.TriangLevel(), mg);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);
@@ -134,15 +134,15 @@ int TestRepair()
         SetFun(v0, mg);
         UnMarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        if (mg.GetLastLevel() < i0.TriangLevel) {
+        if (mg.GetLastLevel() < i0.TriangLevel()) {
             std::cout << "Letztes Level entfernt!" << std::endl;
-            i1.TriangLevel= i0.TriangLevel-1;
+            i1.SetTriangLevel( i0.TriangLevel()-1);
         }
         else {
             std::cout << "Letztes Level behalten!" << std::endl;
-            i1.TriangLevel= i0.TriangLevel;
+            i1.SetTriangLevel( i0.TriangLevel());
         }
-        i1.CreateNumbering( i1.TriangLevel, mg);
+        i1.CreateNumbering( i1.TriangLevel(), mg);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);

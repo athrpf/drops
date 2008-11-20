@@ -110,11 +110,11 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
 
     MultiGridCL& MG= NS.GetMG();
 
-    IdxDescCL  loc_vidx, loc_pidx;
-    IdxDescCL* vidx1= &NS.vel_idx;
-    IdxDescCL* pidx1= &NS.pr_idx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx2= &loc_pidx;
+    MLIdxDescCL  loc_vidx, loc_pidx;
+    MLIdxDescCL* vidx1= &NS.vel_idx;
+    MLIdxDescCL* pidx1= &NS.pr_idx;
+    MLIdxDescCL* vidx2= &loc_vidx;
+    MLIdxDescCL* pidx2= &loc_pidx;
 
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
@@ -127,10 +127,10 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
     VelVecDescCL* cplM= &NS.cplM;
     VelVecDescCL* c= &NS.c;
 
-    MatDescCL* A= &NS.A;
-    MatDescCL* B= &NS.B;
-    MatDescCL* N= &NS.N;
-    MatDescCL* M= &NS.M;
+    MLMatDescCL* A= &NS.A;
+    MLMatDescCL* B= &NS.B;
+    MLMatDescCL* N= &NS.N;
+    MLMatDescCL* M= &NS.M;
     int refstep= 0;
 
     vidx1->SetFE( vecP2_FE);
@@ -142,10 +142,10 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
     do
     {
         MG.Refine();
-        NS.CreateNumberingVel(MG.GetLastLevel(), vidx1);
-        NS.CreateNumberingPr(MG.GetLastLevel(), pidx1);
+        NS.CreateNumberingVel( MG.GetLastLevel(), vidx1);
+        NS.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
         std::cerr << "altes und neues TriangLevel: " << (refstep!=0 ?
-        int(vidx2->TriangLevel) : -1) << ", " << vidx1->TriangLevel << std::endl;
+        int(vidx2->TriangLevel()) : -1) << ", " << vidx1->TriangLevel() << std::endl;
         MG.SizeInfo(std::cerr);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
@@ -182,12 +182,12 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         std::cerr << " A*x: " << time.GetTime() << " seconds" << std::endl;
         time.Reset();
 
-        MatDescCL M_pr;
+        MLMatDescCL M_pr;
         M_pr.SetIdx( pidx1, pidx1);
         NS.SetupPrMass( &M_pr);
 //        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
 //                                                     stokes_maxiter, poi_maxiter, poi_tol, deco_red);
-        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
+        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M_pr.Data.GetFinest(), fp_maxiter, fp_tol,
                                                     stokes_maxiter, poi_maxiter, poi_tol, deco_red);
 //        FPDeCo_Uzawa_CG_CL<NavStokesCL> statsolver(NS, M_pr.Data, fp_maxiter, fp_tol,
 //                                                   stokes_maxiter, poi_maxiter, poi_tol, deco_red);
@@ -221,12 +221,12 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
                       << std::endl << "t: " << t << std::endl;
             NS.SetTime(t+dt); // We have to set the new time!
             if (timestep==0) // Check the initial solution, at least velocities.
-                NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
+                NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
             instatsolver.SetTimeStep(dt);
             std::cerr << "Before timestep." << std::endl;
             instatsolver.DoStep(*v1, p1->Data);
             std::cerr << "After timestep." << std::endl;
-            NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
+            NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
         }
         MarkAll(MG);
 
@@ -321,16 +321,16 @@ int main (int argc, char** argv)
     fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
     fil.close();
 
-    DROPS::IdxDescCL tecIdx( DROPS::P1_FE);
+    DROPS::MLIdxDescCL tecIdx( DROPS::P1_FE);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
     std::ofstream v2d("navstokestec2D.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 2, 0.5); // cutplane is z=0.5
+        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx.GetFinest(), -1, 2, 0.5); // cutplane is z=0.5
     v2d << tecplot2d;
     v2d.close();
     v2d.open("navstokestec2D2.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-        tecplot2d2( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is z=0.5
+        tecplot2d2( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx.GetFinest(), -1, 1, 0.5); // cutplane is z=0.5
     v2d << tecplot2d2;
     v2d.close();
     return 0;

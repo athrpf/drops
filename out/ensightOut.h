@@ -116,7 +116,7 @@ class ReadEnsightP2SolCL
 template<class DiscScalT>
 void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, double t)
 {
-    const Uint lvl= _idx->TriangLevel;
+    const Uint lvl= _idx->TriangLevel();
     char buffer[80];
     std::memset(buffer,0,80);
     showFloat sFlo;
@@ -185,7 +185,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
 template<class DiscVecT>
 void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, double t)
 {
-    const Uint lvl= _idx->TriangLevel;
+    const Uint lvl= _idx->TriangLevel();
     char buffer[80];
     std::memset(buffer,0,80);
     showFloat sFlo;

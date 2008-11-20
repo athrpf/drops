@@ -49,6 +49,28 @@ namespace DROPS {
     <tr><td> 81</td><td>StokesMGM    </td><td>PVanka   </td><td> </td><td> </td></td><td>
         <td> 82</td><td>StokesMGM    </td><td>BraessSarazin</td><td> </td><td> </td></tr>
 </table>*/
+
+/*******************************************************************
+*   S t o k e s S o l v e r F a c t o r y H e l p e r  C L         *
+********************************************************************/
+template <class ParamsT>
+class StokesSolverFactoryHelperCL
+{
+  public:
+    bool VelMGUsed ( const ParamsT& C) const
+    {
+        return ( C.StokesMethod ==  11 || C.StokesMethod ==  12 || C.StokesMethod ==  21 ||
+                 C.StokesMethod ==  22 || C.StokesMethod ==  31 || C.StokesMethod ==  32 ||
+                 C.StokesMethod ==  41 || C.StokesMethod ==  42 || C.StokesMethod ==  51 ||
+                 C.StokesMethod ==  52 || C.StokesMethod == 211 || C.StokesMethod == 222 ||
+                 C.StokesMethod ==  81 || C.StokesMethod ==  82);
+    }
+    bool PrMGUsed  ( const ParamsT& C) const
+    {
+        return ( C.StokesMethod ==  81 || C.StokesMethod ==  82);
+    }
+};
+
 /*******************************************************************
 *   S t o k e s S o l v e r F a c t o r y  C L                     *
 ********************************************************************/
@@ -59,7 +81,6 @@ class StokesSolverFactoryCL
     StokesT& Stokes_;
     ParamsT& C_;
     double kA_, kM_;
-    bool   mgused_;
 
 // PC for instat. Schur complement
     ISBBTPreCL bbtispc_;
@@ -151,10 +172,10 @@ class StokesSolverFactoryCL
     GMResRSolverCL<LBlockBiCGMinCommOseenPcT>  GMResRBiCGStabMinComm_;
 
 // Lanczos
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagMGBBTOseenPcT>      Lanczos1T;
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagMGMinCommOseenPcT>  Lanczos2T;
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagPCGBBTOseenPcT>     Lanczos3T;
-    typedef PLanczosONBCL<BlockMatrixCL, VectorCL, DiagPCGMinCommOseenPcT> Lanczos4T;
+    typedef PLanczosONBCL<VectorCL, DiagMGBBTOseenPcT>      Lanczos1T;
+    typedef PLanczosONBCL<VectorCL, DiagMGMinCommOseenPcT>  Lanczos2T;
+    typedef PLanczosONBCL<VectorCL, DiagPCGBBTOseenPcT>     Lanczos3T;
+    typedef PLanczosONBCL<VectorCL, DiagPCGMinCommOseenPcT> Lanczos4T;
 
     Lanczos1T lanczos1_;
     Lanczos2T lanczos2_;
@@ -184,11 +205,9 @@ class StokesSolverFactoryCL
     ~StokesSolverFactoryCL() {}
 
     /// Set the A-block in the minimal commutator
-    void       SetMatrixA (const MatrixCL** A) { mincommispc_.SetMatrixA(A); }
+    void       SetMatrixA ( const MatrixCL* A) { mincommispc_.SetMatrixA(A); }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
-    void       SetMatrices(const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M);
-    /// Returns true if a multigrid solver/preconditioner is used
-    bool       MGUsed()   {return mgused_;}
+    void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M);
 
     /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
@@ -196,16 +215,16 @@ class StokesSolverFactoryCL
 
 template <class StokesT, class ParamsT>
 StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
-    : Stokes_(Stokes), C_(C), kA_(1.0/C_.dt), kM_(C_.theta), mgused_(false),
+    : Stokes_(Stokes), C_(C), kA_(1.0/C_.dt), kM_(C_.theta),
         // schur complement preconditioner
-        bbtispc_    ( &Stokes_.B.Data, &Stokes_.prM.Data, &Stokes_.M.Data, kA_, kM_, C_.pcS_tol, C_.pcS_tol),
-        mincommispc_( 0, &Stokes_.B.Data, &Stokes_.M.Data, &Stokes_.prM.Data, C_.pcS_tol),
+        bbtispc_    ( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), kA_, kM_, C_.pcS_tol, C_.pcS_tol),
+        mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), C_.pcS_tol),
         // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPcCL(1.0), 500, 1e-6, true),
-        MGSolversymm_ ( Stokes.GetMGData(), smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
+        MGSolversymm_ ( Stokes.PVel.Data, smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
         MGPcsymm_( MGSolversymm_),
         coarsesolver_( JACPcCL(1.0), 500, 500, 1e-6, true),
-        MGSolver_ ( Stokes.GetMGData(), smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
+        MGSolver_ ( Stokes.PVel.Data, smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
         GMResSolver_( JACPc_, C_.pcA_iter, /*restart*/ 100, C_.pcA_tol, /*rel*/ true), GMResPc_( GMResSolver_),
         BiCGStabSolver_( JACPc_, C_.pcA_iter, C_.pcA_tol, /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),
         PCGSolver_( SSORPc_, C_.pcA_iter, C_.pcA_tol, true), PCGPc_( PCGSolver_),
@@ -376,46 +395,38 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
         case 81 : {
             if (C_.XFEMStab >= 0) // P1X
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            Stokes_.GetMGData().SetStokesMG(true);
             vankasmoother.SetVankaMethod(0);
             if (C_.nonlinear==0.0) // stokes
                 stokessolver = new StokesMGSolverCL<PVankaSmootherCL>
-                        ( Stokes_.GetMGData(), vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
+                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
             else
                 stokessolver = new StokesMGSolverCL<PVankaSmootherCL>
-                        ( Stokes_.GetMGData(), vankasmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
+                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, vankasmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
         }
         break;
         case 82 : {
             if (C_.XFEMStab >= 0) // P1X
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            Stokes_.GetMGData().SetStokesMG(true);
             vankasmoother.SetVankaMethod(0);
             if (C_.nonlinear==0.0) // stokes
                 stokessolver = new StokesMGSolverCL<BSSmootherCL>
-                        ( Stokes_.GetMGData(), bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
+                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
             else
                 stokessolver = new StokesMGSolverCL<BSSmootherCL>
-                        ( Stokes_.GetMGData(), bssmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
+                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, bssmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
         }
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
-    mgused_ = (C_.StokesMethod ==  11 || C_.StokesMethod ==  12 || C_.StokesMethod ==  21 ||
-               C_.StokesMethod ==  22 || C_.StokesMethod ==  31 || C_.StokesMethod ==  32 ||
-               C_.StokesMethod ==  41 || C_.StokesMethod ==  42 || C_.StokesMethod ==  51 ||
-               C_.StokesMethod ==  52 || C_.StokesMethod == 211 || C_.StokesMethod == 222 ||
-               C_.StokesMethod ==  81 || C_.StokesMethod ==  82);
     return stokessolver;
 }
 
 template <class StokesT, class ParamsT>
-void StokesSolverFactoryCL<StokesT, ParamsT>::SetMatrices(const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+void StokesSolverFactoryCL<StokesT, ParamsT>::SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
     if (C_.StokesMethod == 81 || C_.StokesMethod == 82) {
         mincommispc_.SetMatrices(A, B, Mvel, M);
         bbtispc_.SetMatrices(B, Mvel, M);
     }
 }
-
 
 } // end of namespace DROPS

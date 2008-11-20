@@ -117,7 +117,7 @@ void InitPiecewiseP2 (instat_scalar_fun_ptr fneg, VecDescCL& un,
 void P1XOnPart (const VecDescCL& p1x, const ExtIdxDescCL& Xidx, VecDescCL& p_part,
     const LevelsetP2CL& lset, bool posPart)
 {
-    const Uint lvl= p1x.RowIdx->TriangLevel,
+    const Uint lvl= p1x.RowIdx->TriangLevel(),
         idxnum= p1x.RowIdx->GetIdx();
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const MultiGridCL& mg= lset.GetMG();
@@ -180,7 +180,7 @@ int main (int argc, char** argv)
     ExtIdxDescCL extidx( &idx, /*omit_bound=*/ xfemstab);
     extidx.UpdateXNumbering( &idx, lset, true);
     std::cerr << "P1-Unbekannte: " << extidx.GetNumUnknownsP1()
-              << " P1X-Unbekannte: " << idx.NumUnknowns << '\n';
+              << " P1X-Unbekannte: " << idx.NumUnknowns() << '\n';
 
     VecDescCL beta( &idx), b( &idx);
 
@@ -192,7 +192,7 @@ int main (int argc, char** argv)
 
     // Setup the mass matrix
     MatDescCL M( &idx, &idx);
-    SetupPrMass_P1X( mg, CoeffCL(), &M, lset, extidx);
+    SetupPrMass_P1X( mg, CoeffCL(), M.Data, idx, lset, extidx);
 
     // Setup the right hand side
     IdxT Numb[4];

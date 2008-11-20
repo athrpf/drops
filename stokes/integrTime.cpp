@@ -37,12 +37,12 @@ void ISBBTPreCL::Update() const
 
 void MinCommPreCL::Update() const
 {
-    std::cerr << "MinCommPreCL::Update: old/new versions: " << Aversion_  << '/' << (*A_)->Version()
+    std::cerr << "MinCommPreCL::Update: old/new versions: " << Aversion_  << '/' << A_->Version()
         << '\t' << Bversion_ << '/' << B_->Version() << '\t' << Mversion_ << '/' << M_->Version()
         << '\t' << Mvelversion_ << '/' << Mvel_->Version() << '\n';
     delete Bs_;
     Bs_= new MatrixCL( *B_);
-    Aversion_= (*A_)->Version();
+    Aversion_= A_->Version();
     Bversion_= B_->Version();
     Mversion_= M_->Version();
     Mvelversion_= Mvel_->Version();

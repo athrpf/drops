@@ -42,25 +42,25 @@ class FE_InfoCL
     Uint NumUnknownsFace_;
     Uint NumUnknownsTetra_;
     //@}
-  
+
   public:
-	FE_InfoCL( FiniteElementT fe) : fe_(fe) { SetFE(fe); }
-	
+	FE_InfoCL( FiniteElementT fe) { SetFE(fe); }
+
 	/// \brief Initialize with given FE-type \a fe
 	void SetFE( FiniteElementT fe)
 	{
-		NumUnknownsVertex_= NumUnknownsEdge_= NumUnknownsFace_= NumUnknownsTetra_= 0;
-        switch(fe_= fe) {
-            case P0_FE:          NumUnknownsTetra_= 1; break;
-            case P1_FE:
-            case P1X_FE:         NumUnknownsVertex_= 1; break;
-            case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
-            case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
-            case P1D_FE:         NumUnknownsFace_= 1; break;
-            case P2_FE:          NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
-            case vecP2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
-            default:             throw DROPSErrCL("FE_InfoCL: unknown FE type");
-        }
+            NumUnknownsVertex_= NumUnknownsEdge_= NumUnknownsFace_= NumUnknownsTetra_= 0;
+            switch(fe_= fe) {
+                case P0_FE:          NumUnknownsTetra_= 1; break;
+                case P1_FE:
+                case P1X_FE:         NumUnknownsVertex_= 1; break;
+                case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
+                case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
+                case P1D_FE:         NumUnknownsFace_= 1; break;
+                case P2_FE:          NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
+                case vecP2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
+                default:             throw DROPSErrCL("FE_InfoCL: unknown FE type");
+            }
 	}
     /// \brief Return enum code corresponding to FE-type
     FiniteElementT GetFE() const { return fe_; }
@@ -94,19 +94,17 @@ class IdxDescCL: public FE_InfoCL
 
     /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
-
+    Uint TriangLevel_;        ///< Triangulation of the index.
+    IdxT NumUnknowns_;        ///< total number of unknowns on the triangulation
+    
   public:
-    Uint TriangLevel;        ///< Triangulation of the index.
-
-    IdxT NumUnknowns;       ///< total number of unknowns on the triangulation
-
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
 //    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0)
 //      : FE_InfoCL( UnknownFE_), Idx_( GetFreeIdx()), NumUnknowns( 0) 
 //    { /*Set( unkVertex, unkEdge, unkFace, unkTetra );*/ }
     IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
-      : FE_InfoCL( fe), Idx_( GetFreeIdx()), Bnd_(bnd), match_(match), NumUnknowns( 0) {}
+      : FE_InfoCL( fe), Idx_( GetFreeIdx()), Bnd_(bnd), match_(match), NumUnknowns_( 0) {}
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);
@@ -127,6 +125,12 @@ class IdxDescCL: public FE_InfoCL
             " Probably using copy instead of original IdxDescCL-object.");
         return Idx_;
     }
+    /// \brief Triangulation of the index.
+    Uint TriangLevel() const { return TriangLevel_; }
+    void SetTriangLevel( Uint l) { TriangLevel_ = l;}
+    /// \brief total number of unknowns on the triangulation
+    IdxT NumUnknowns() const { return NumUnknowns_; }
+    void SetNumUnknowns( IdxT n) { NumUnknowns_ = n;}
     /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
     ///     unknown-numbers on it are compared, too.
     static bool
@@ -142,9 +146,72 @@ class IdxDescCL: public FE_InfoCL
     /// \brief Mark unknown-indices as invalid.
     void DeleteNumbering( MultiGridCL& mg);
     /// \}
-
 };
 
+/// \brief multilevel IdxDescCL
+class MLIdxDescCL : public MLDataCL<IdxDescCL>
+{
+  public:
+    MLIdxDescCL( FiniteElementT fe= P1_FE, size_t numLvl=1, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
+    {
+        for (size_t i=0; i< numLvl; ++i)
+            this->push_back(IdxDescCL( fe, bnd, match));
+    }
+
+    void resize( size_t numLvl=1, FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
+    {
+        if (numLvl <= this->size())
+            static_cast<MLDataCL<IdxDescCL>*>( this)->resize( numLvl);
+        else
+            while (this->size() < numLvl)
+                this->push_back(IdxDescCL( fe, bnd, match));
+    }
+
+    /// \brief Returns the number of the index on the finest level.
+    Uint GetIdx() const { return this->GetFinest().GetIdx();}
+
+    /// \brief Triangulation of the index.
+    Uint TriangLevel() const { return this->GetFinest().TriangLevel(); }
+    
+    /// \brief total number of unknowns on the triangulation
+    IdxT NumUnknowns() const { return this->GetFinest().NumUnknowns(); }
+    
+    /// \brief Initialize with given FE-type \a fe
+    void SetFE( FiniteElementT fe )
+    {
+        for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
+            it->SetFE(fe);
+    }
+    /// \name Numbering
+    /// \{
+    /// \brief Used to number unknowns on all levels.
+    void CreateNumbering( size_t f_level, MultiGridCL& mg)
+    {
+        size_t lvl = ( this->size() <= f_level+1) ? f_level+1 - this->size(): 0;
+        for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
+        {
+            it->CreateNumbering( lvl, mg);
+            if (lvl < f_level) ++lvl;
+        }
+    }
+    /// \brief Used to number unknowns and store boundary condition and matching function on all levels.
+    void CreateNumbering( size_t f_level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0)
+    {
+        size_t lvl = ( this->size() <= f_level+1) ? f_level+1 - this->size(): 0;
+        for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
+        {
+            it->CreateNumbering( lvl, mg, Bnd, match);
+            if (lvl < f_level) ++lvl;
+        }
+    }
+    /// \brief Mark unknown-indices as invalid on all levels.
+    void DeleteNumbering( MultiGridCL& mg)
+    {
+        for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
+            it->DeleteNumbering( mg);
+    }
+    /// \}
+};
 
 inline void
 GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
@@ -261,15 +328,18 @@ class VecDescBaseCL
     VecDescBaseCL()
         :RowIdx(0) {}
     /// \brief Initialize RowIdx with idx and contruct Data with the given size.
-    VecDescBaseCL( IdxDescCL* idx) { SetIdx( idx); }
+    VecDescBaseCL( IdxDescCL* idx)   { SetIdx( idx); }
+    VecDescBaseCL( MLIdxDescCL* idx) { SetIdx( &(idx->GetFinest()) ); }
+
 
     IdxDescCL* RowIdx; ///< Pointer to the index-description used for Data.
     DataType  Data;    ///< The numerical data.
 
     /// \brief The triangulation-level of the index.
-    Uint GetLevel() const { return RowIdx->TriangLevel; }
+    Uint GetLevel() const { return RowIdx->TriangLevel(); }
     /// \brief Use a new index for accessing the components.
     void SetIdx(IdxDescCL*);
+    void SetIdx(MLIdxDescCL* idx) {SetIdx( &( idx->GetFinest()) );}
     /// \brief Resize a vector according to RowIdx.
     void Clear();
     /// \brief Empty Data and set RowIdx to 0.
@@ -285,33 +355,38 @@ typedef VecDescBaseCL<VectorCL> VecDescCL;
 /// \brief A sparse matrix together with two IdxDescCL -objects,
 ///     that couple the row- and column- indices to simplices in a
 ///     multigrid.
-class MatDescCL
+template<typename MatT, typename IdxT>
+class MatDescBaseCL
 {
   public:
     /// \brief The type of the matrix.
-    typedef MatrixCL DataType;
+    typedef MatT DataType;
 
     /// \brief The default-constructor creates an empty matrix and sets
     /// the index-pointers to 0.
-    MatDescCL()
-        :RowIdx(0), ColIdx(0) {}
+    MatDescBaseCL()
+        : RowIdx( 0), ColIdx( 0) {}
     /// \brief Initialize RowIdx an ColIdx; Data is still default-constructed.
-    MatDescCL(IdxDescCL* r, IdxDescCL* c) { SetIdx( r, c); }
+    MatDescBaseCL( IdxT* r, IdxT* c) { SetIdx( r, c); }
 
-    IdxDescCL* RowIdx; ///< Pointer to the index-description used for row-indices.
-    IdxDescCL* ColIdx; ///< Pointer to the index-description used for column-indices.
+    IdxT* RowIdx; ///< Pointer to the index-description used for row-indices.
+    IdxT* ColIdx; ///< Pointer to the index-description used for column-indices.
     DataType  Data; ///< The numerical data.
 
     /// \brief The triangulation-level of the row-index.
-    Uint GetRowLevel() const { return RowIdx->TriangLevel; }
+    Uint GetRowLevel() const { return RowIdx->TriangLevel(); }
     /// \brief The triangulation-level of the column-index.
-    Uint GetColLevel() const { return ColIdx->TriangLevel; }
+    Uint GetColLevel() const { return ColIdx->TriangLevel(); }
 
     /// \brief Use a new index for accessing the components.
-    void SetIdx(IdxDescCL*, IdxDescCL*);
+    void SetIdx( IdxT*, IdxT*);
     /// \brief Empty Data and set the index-pointers to 0.
     void Reset();
 };
+
+typedef MatDescBaseCL<MatrixCL,IdxDescCL>     MatDescCL;
+typedef MatDescBaseCL<MLMatrixCL,MLIdxDescCL> MLMatDescCL;
+
 
 
 /// \brief This class contains the main constituents of a forward problem
@@ -429,7 +504,7 @@ void VecDescBaseCL<T>::SetIdx(IdxDescCL* idx)
 {
     RowIdx = idx;
     Data.resize(0);
-    Data.resize(idx->NumUnknowns);
+    Data.resize(idx->NumUnknowns());
 }
 
 template<class T>
@@ -438,7 +513,7 @@ void VecDescBaseCL<T>::Clear()
 /// by RowIdx.
 {
     Data.resize(0);
-    Data.resize(RowIdx->NumUnknowns);
+    Data.resize(RowIdx->NumUnknowns());
 }
 
 template<class T>
@@ -449,6 +524,25 @@ void VecDescBaseCL<T>::Reset()
     Data.resize(0);
 }
 
+template<typename MatT, typename IdxT>
+void MatDescBaseCL<MatT, IdxT>::SetIdx( IdxT* row, IdxT* col)
+/// Prepares the matrix for usage with new index-objects for
+/// its components. As constructing sparse matrices is fairly involved,
+/// this routine does not modify Data. SparseMatBuilderCL should be used
+/// to do this.
+{
+    RowIdx= row;
+    ColIdx= col;
+}
+
+template<typename MatT, typename IdxT>
+void MatDescBaseCL<MatT, IdxT>::Reset()
+/// Sets the index-pointers to 0 and clears the matrix.
+{
+    RowIdx = 0;
+    ColIdx = 0;
+    Data.clear();
+}
 
 /// \name Helper routines to number unknowns.
 /// These functions should not be used directly. CreateNumb is much more

@@ -35,53 +35,31 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     typedef PoissonP2CL<Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
-    IdxDescCL* c_idx= 0;
     TimerCL time;
-    MGDataCL MGData;
 
     MG.SizeInfo(std::cerr);
 
-    // Initialize the MGData: Idx, A, P, R
+    // Initialize the idx, A, P
     time.Reset();
-    for(Uint i=0, lvl= 0; lvl<=MG.GetLastLevel(); ++lvl, ++i)
-    {
-        MGData.push_back(MGLevelDataCL());
-        MGLevelDataCL& tmp= MGData.back();
+    Poisson.SetNumLvl( MG.GetNumLevel());
+    Poisson.CreateNumbering( MG.GetLastLevel(), &Poisson.idx);
+    MLIdxDescCL* idx = &Poisson.idx;
+    Poisson.A.SetIdx( idx, idx);
+    Poisson.b.SetIdx( idx);
+    Poisson.x.SetIdx( idx);
+    Poisson.SetupSystem( Poisson.A, Poisson.b);
+    MLMatDescCL P;
+    P.SetIdx( idx, idx);
+    P.Data.resize( MG.GetNumLevel());
+    Poisson.SetupProlongation( P);
 
-        std::cerr << "Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( P2_FE);
-        Poisson.CreateNumbering(lvl, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        if(lvl==MG.GetLastLevel())
-        {
-            Poisson.x.SetIdx( &tmp.Idx);
-            Poisson.b.SetIdx( &tmp.Idx);
-            std::cerr << "Create System --->>> " << std::endl;
-            Poisson.SetupSystem( tmp.A, Poisson.b);
-//            std::cout << "P2: SetupSystem: A.Data =" << tmp.A.Data << std::endl;
-            std::cerr << "Create System <<<--- " << std::endl;
-        }
-        else
-        {
-            std::cerr << "Create StiffMatrix" << std::endl;
-            Poisson.SetupStiffnessMatrix( tmp.A);
-        }
-
-        if(i!=0)
-        {
-            std::cerr << "Create Prolongation on Level " << lvl << std::endl;
-//            Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
-            SetupP2ProlongationMatrix( MG, tmp.P, c_idx, &tmp.Idx);
-       }
-       tmp.ABlock = &tmp.A.Data;
-       c_idx= &tmp.Idx;
-    }
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime()
               << " seconds. " << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
-    const_MGDataIterCL finest= --MGData.end();
+    MLMatrixCL::const_iterator finest = --Poisson.A.Data.end();
+    MLMatrixCL::const_iterator finestP= --P.Data.end();
 
     Uint sm= 0;
     int lvl= 0;
@@ -103,19 +81,19 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
         if (sm<=0) return;
         // delete former solution
         Poisson.x.Data.resize(0);
-        Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
+        Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
         std::cerr << "initial error:" << std::endl;
         Poisson.CheckSolution(&::Lsg);
-        resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
+        resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
         std::cerr << "initial residuum: " << resid <<std::endl;
         nit = 0;
         time.Reset();
         do
         {
-            MGM( MGData.begin(), finest, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, lvl, -1);
+            MGM( Poisson.A.Data.begin(), finest, finestP, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, lvl, -1);
             Poisson.CheckSolution(&::Lsg);
             old_resid= resid;
-            resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
+            resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
             nit = nit+1;
             std::cerr << "iteration: " << nit
                       << "\tresiduum: " << resid

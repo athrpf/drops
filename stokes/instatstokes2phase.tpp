@@ -11,58 +11,21 @@ namespace DROPS
 //                        Routines for SetupSystem2
 // -----------------------------------------------------------------------------
 
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrix2( MatDescCL* B, MatDescCL* BT) const
-{
-    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
-    MatrixBuilderCL mBT( &BT->Data, BT->RowIdx->NumUnknowns, BT->ColIdx->NumUnknowns);
-    const Uint lvl= B->GetRowLevel();
-    IdxT prNumb[4];
-    LocalNumbP2CL n;
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];
-    SMatrixCL<3,3> T;
-    double det, absdet;
-    Point3DCL tmp;
-
-    P2DiscCL::GetGradientsOnRef( GradRef);
-    for (MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin( lvl),
-         send= _MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
-        GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= std::fabs( det);
-        n.assign( *sit, *B->ColIdx, _BndData.Vel);
-        GetLocalNumbP1NoBnd( prNumb, *sit, *B->RowIdx);
-// Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
-        for(int vel=0; vel<10; ++vel) {
-            if (n.WithUnknowns( vel))
-                for(int pr=0; pr<4; ++pr) {
-                tmp= Grad[vel].quadP1( pr, absdet);
-                mB( prNumb[pr], n.num[vel])  -=  tmp[0];
-                mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
-                mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
-                mBT( n.num[vel], prNumb[pr])  -=  tmp[0];
-                mBT( n.num[vel]+1, prNumb[pr])-=  tmp[1];
-                mBT( n.num[vel]+2, prNumb[pr])-=  tmp[2];                }
-        }
-    }
-    mB.Build();
-    mBT.Build();
-}
-
 template <class CoeffT>
-void SetupSystem2_P2P0( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, double t)
+void SetupSystem2_P2P0( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, 
+                        MatrixCL* B, VecDescCL* c, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P0 FEs for vel/pr
 {
-    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
-    c->Clear();
-    const Uint lvl= B->GetRowLevel();
+    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    if (c != 0) c->Clear();
+    const Uint lvl= RowIdx->TriangLevel();
     LocalNumbP2CL n;
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
     double det, absdet;
     Point3DCL tmp;
 
-    const Uint pidx= B->RowIdx->GetIdx();
+    const Uint pidx= RowIdx->GetIdx();
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
@@ -70,37 +33,40 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-        n.assign( *sit, *B->ColIdx, BndData.Vel);
+        n.assign( *sit, *ColIdx, BndData.Vel);
         const IdxT prNumbTetra= sit->Unknowns(pidx);
 
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
             if (n.WithUnknowns( vel))
-        {
-            tmp= Grad[vel].quad( absdet);
-            mB( prNumbTetra, n.num[vel])  -=  tmp[0];
-            mB( prNumbTetra, n.num[vel]+1)-=  tmp[1];
-            mB( prNumbTetra, n.num[vel]+2)-=  tmp[2];
-        }
-        else { // put coupling on rhs
-                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                           : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                c->Data[ prNumbTetra]+= inner_prod( Grad[vel].quad( absdet), tmp);
+            {
+                tmp= Grad[vel].quad( absdet);
+                mB( prNumbTetra, n.num[vel])  -=  tmp[0];
+                mB( prNumbTetra, n.num[vel]+1)-=  tmp[1];
+                mB( prNumbTetra, n.num[vel]+2)-=  tmp[2];
             }
+            else 
+                if (c != 0) // put coupling on rhs
+                {
+                    typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                            : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                    c->Data[ prNumbTetra]+= inner_prod( Grad[vel].quad( absdet), tmp);
+                }
         }
     }
     mB.Build();
 }
 
 template <class CoeffT>
-void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, double t)
+void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c,                  
+                        IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1 FEs (Taylor-Hood) for vel/pr
 {
-    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
-    c->Clear();
-    const Uint lvl= B->GetRowLevel();
+    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    if (c != 0) c->Clear();
+    const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
@@ -114,8 +80,8 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-        n.assign( *sit, *B->ColIdx, BndData.Vel);
-        GetLocalNumbP1NoBnd( prNumb, *sit, *B->RowIdx);
+        n.assign( *sit, *ColIdx, BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
             if (n.WithUnknowns( vel))
@@ -125,26 +91,28 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
                     mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
                     mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
                 }
-            else { // put coupling on rhs
-                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                           : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
-            }
+            else 
+                if (c != 0)
+                { // put coupling on rhs
+                    typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                            : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                    for(int pr=0; pr<4; ++pr)
+                        c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
+                }
         }
     }
     mB.Build();
 }
 
 template <class CoeffT>
-void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx, double t)
+void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1X FEs (X=extended) for vel/pr
 {
-    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
-    c->Clear();
-    const Uint lvl= B->GetRowLevel();
+    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    if (c != 0) c->Clear();
+    const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
@@ -152,6 +120,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
     double det, absdet;
     Point3DCL tmp;
     InterfacePatchCL cut;
+    LocalP2CL<> loc_phi;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
@@ -159,8 +128,8 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-        n.assign( *sit, *B->ColIdx, BndData.Vel);
-        GetLocalNumbP1NoBnd( prNumb, *sit, *B->RowIdx);
+        n.assign( *sit, *ColIdx, BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
             if (n.WithUnknowns( vel))
@@ -170,17 +139,19 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
                     mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
                     mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
                 }
-            else { // put coupling on rhs
-                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                           : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
-            }
+            else 
+                if (c != 0) { // put coupling on rhs
+                    typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                            : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                    for(int pr=0; pr<4; ++pr)
+                        c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
+                }
         }
 
-        cut.Init( *sit, lset.Phi);
+        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<>());
+        cut.Init( *sit, loc_phi);
         if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
         for(int pr=0; pr<4; ++pr) {
             // compute the integrals
@@ -215,13 +186,15 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
                     mB( xidx, n.num[vel]+1)-=  integral[1];
                     mB( xidx, n.num[vel]+2)-=  integral[2];
                 }
-                else { // put coupling on rhs
-                    typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                               : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                    c->Data[ xidx]+= inner_prod( integral, tmp);
-                }
+                else 
+                    if (c != 0)
+                    { // put coupling on rhs
+                        typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                        bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                        tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                                : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                        c->Data[ xidx]+= inner_prod( integral, tmp);
+                    }
             }
         }
     }
@@ -229,12 +202,13 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
 }
 
 template <class CoeffT>
-void SetupSystem2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatDescCL* B, VecDescCL* c, double t)
+void SetupSystem2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c,
+                         IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1D FEs for vel/pr
 {
-    MatrixBuilderCL mB( &B->Data, B->RowIdx->NumUnknowns, B->ColIdx->NumUnknowns);
-    c->Clear();
-    const Uint lvl= B->GetRowLevel();
+    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    if (c != 0) c->Clear();
+    const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
@@ -248,8 +222,8 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
         absdet= std::fabs( det);
-        n.assign( *sit, *B->ColIdx, BndData.Vel);
-        GetLocalNumbP1DNoBnd( prNumb, *sit, *B->RowIdx);
+        n.assign( *sit, *ColIdx, BndData.Vel);
+        GetLocalNumbP1DNoBnd( prNumb, *sit, *RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
         for(int vel=0; vel<10; ++vel) {
             if (n.WithUnknowns( vel))
@@ -259,14 +233,16 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
                     mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
                     mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
                 }
-            else { // put coupling on rhs
-                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
-                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
-                           : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
-                for(int pr=0; pr<4; ++pr)
-                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1D( pr, absdet), tmp);
-            }
+            else 
+                if (c != 0)
+                { // put coupling on rhs
+                    typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                            : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                    for(int pr=0; pr<4; ++pr)
+                        c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1D( pr, absdet), tmp);
+                }
         }
     }
     mB.Build();
@@ -485,19 +461,19 @@ void SetupRhs2_P2P1D( const MultiGridCL& MG, const CoeffT&, const StokesBndDataC
 // -----------------------------------------------------------------------------
 
 template<class CoeffT>
-void SetupPrMass_P0(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM, const LevelsetP2CL& lset)
+void SetupPrMass_P0(const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& matM, IdxDescCL& RowIdx, const LevelsetP2CL& lset)
 {
-    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
-    MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
+    const IdxT num_unks_pr=  RowIdx.NumUnknowns();
+    MatrixBuilderCL M_pr(&matM, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl= matM->GetRowLevel();
+    const Uint lvl= RowIdx.TriangLevel();
 
     SmoothedJumpCL nu_invers( 1./Coeff.mu(0), 1./Coeff.mu(1), Coeff.mu);
     Quad2CL<double> nu_inv;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const Uint ls_lvl = ls.GetLevel();
     LocalP2CL<> locallset;
-    const Uint pidx= matM->RowIdx->GetIdx();
+    const Uint pidx= RowIdx.GetIdx();
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin(lvl),
          send= MG.GetTriangTetraEnd(lvl); sit != send; ++sit) {
@@ -518,12 +494,12 @@ void SetupPrMass_P0(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM,
 }
 
 template<class CoeffT>
-void SetupPrMass_P1(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM, const LevelsetP2CL& lset)
+void SetupPrMass_P1(const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& matM, IdxDescCL& RowIdx, const LevelsetP2CL& lset)
 {
-    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
-    MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
+    const IdxT num_unks_pr=  RowIdx.NumUnknowns();
+    MatrixBuilderCL M_pr(&matM, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl= matM->GetRowLevel();
+    const Uint lvl= RowIdx.TriangLevel();
     IdxT prNumb[4];
 
     SmoothedJumpCL nu_invers( 1./Coeff.mu(0), 1./Coeff.mu(1), Coeff.mu);
@@ -543,7 +519,7 @@ void SetupPrMass_P1(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM,
             nu_inv.assign( *sit, ls);
         nu_inv.apply( nu_invers);
 
-        GetLocalNumbP1NoBnd( prNumb, *sit, *matM->RowIdx);
+        GetLocalNumbP1NoBnd( prNumb, *sit, RowIdx);
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
                 M_pr( prNumb[i], prNumb[j])+= nu_inv.quadP1(i,j, absdet);
@@ -552,12 +528,12 @@ void SetupPrMass_P1(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM,
 }
 
 template<class CoeffT>
-void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
+void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& matM, IdxDescCL& RowIdx, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
 {
-    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
-    MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
+    const IdxT num_unks_pr=  RowIdx.NumUnknowns();
+    MatrixBuilderCL M_pr(&matM, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl= matM->GetRowLevel();
+    const Uint lvl= RowIdx.TriangLevel();
     IdxT prNumb[4];
     double coup[4][4], coupT2[4][4];
 
@@ -579,11 +555,13 @@ void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM
                 pipj[i][i][EdgeByVert( i, VertOfFace( i, vert)) + 4]= 0.25;
     }
 
+    LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        cut.Init( *sit, lset.Phi);
+        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
+        cut.Init( *sit, loc_phi);
         const bool nocut= !cut.Intersects();
-        GetLocalNumbP1NoBnd( prNumb, *sit, *matM->RowIdx);
+        GetLocalNumbP1NoBnd( prNumb, *sit, RowIdx);
         if (nocut) {
             const double nu_inv= cut.GetSign( 0) == 1 ? nu_inv_p : nu_inv_n;
             for(int i= 0; i < 4; ++i) {
@@ -641,12 +619,12 @@ void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM
 }
 
 template<class CoeffT>
-void SetupPrMass_P1D(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM, const LevelsetP2CL& lset)
+void SetupPrMass_P1D(const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& matM, IdxDescCL& RowIdx, const LevelsetP2CL& lset)
 {
-    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
-    MatrixBuilderCL M_pr(&matM->Data, num_unks_pr,  num_unks_pr);
+    const IdxT num_unks_pr=  RowIdx.NumUnknowns();
+    MatrixBuilderCL M_pr(&matM, num_unks_pr,  num_unks_pr);
 
-    const Uint lvl= matM->GetRowLevel();
+    const Uint lvl= RowIdx.TriangLevel();
     IdxT prNumb[4];
 
     SmoothedJumpCL nu_invers( 1./Coeff.mu(0), 1./Coeff.mu(1), Coeff.mu);
@@ -666,7 +644,7 @@ void SetupPrMass_P1D(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM
             nu_inv.assign( *sit, ls);
         nu_inv.apply( nu_invers);
 
-        GetLocalNumbP1DNoBnd( prNumb, *sit, *matM->RowIdx);
+        GetLocalNumbP1DNoBnd( prNumb, *sit, RowIdx);
 
         for(int i=0; i<4; ++i)    // assemble row prNumb[i]
             for(int j=0; j<4; ++j)
@@ -681,11 +659,11 @@ void SetupPrMass_P1D(const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* matM
 // -----------------------------------------------------------------------------
 
 template <class CoeffT>
-void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_pr, const LevelsetP2CL& lset)
+void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_pr, IdxDescCL& RowIdx, IdxDescCL& ColIdx, const LevelsetP2CL& lset)
 {
-    MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
-    const Uint lvl= A_pr->GetRowLevel();
-    const Uint idx= A_pr->RowIdx->GetIdx();
+    MatrixBuilderCL A( &A_pr, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    const Uint lvl= RowIdx.TriangLevel();
+    const Uint idx= RowIdx.GetIdx();
     SMatrixCL<3,4> G;
     double coup[4][4];
     double det;
@@ -732,11 +710,11 @@ void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_p
 // TODO: As in SetupPrMass_P1X, replace the smoothed density-function with integration
 //       over the inner and outer part.
 template <class CoeffT>
-void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_pr, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
+void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_pr, IdxDescCL& RowIdx, IdxDescCL& ColIdx, const LevelsetP2CL& lset, const ExtIdxDescCL& Xidx)
 {
-    MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
-    const Uint lvl= A_pr->GetRowLevel();
-    const Uint idx= A_pr->RowIdx->GetIdx();
+    MatrixBuilderCL A( &A_pr, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    const Uint lvl= RowIdx.TriangLevel();
+    const Uint idx= RowIdx.GetIdx();
     SMatrixCL<3,4> G;
     double coup[4][4], coupT2[4][4];
     double det;
@@ -754,14 +732,13 @@ void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_
     for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
          send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit)
     {
-        if (ls_lvl != lvl) {
-            locallset.assign( *sit, ls);
+        locallset.assign( *sit, ls);
+        if (ls_lvl != lvl)
             rho_inv.assign( locallset);
-        }
         else
             rho_inv.assign( *sit, ls);
         rho_inv.apply( rho_invers);
-        cut.Init( *sit, lset.Phi);
+        cut.Init( *sit, locallset);
         const bool nocut= !cut.Intersects();
 
         P1DiscCL::GetGradients( G,det,*sit);
@@ -820,11 +797,11 @@ void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_
 }
 
 template <class CoeffT>
-void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_pr, const LevelsetP2CL& lset)
+void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_pr, IdxDescCL& RowIdx, IdxDescCL& ColIdx, const LevelsetP2CL& lset)
 {
-    MatrixBuilderCL A( &A_pr->Data, A_pr->RowIdx->NumUnknowns, A_pr->ColIdx->NumUnknowns);
-    const Uint lvl= A_pr->GetRowLevel();
-    const Uint idx= A_pr->RowIdx->GetIdx();
+    MatrixBuilderCL A( &A_pr,RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    const Uint lvl= RowIdx.TriangLevel();
+    const Uint idx= RowIdx.GetIdx();
     SMatrixCL<3,4> G;
     double coup[4][4];
     double det;
@@ -876,48 +853,61 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatDescCL* A_
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SmoothVel( VelVecDescCL* v, int num, double tau)
 {
-    const VectorCL diag= A.Data.GetDiag();
+    const VectorCL diag= A.Data.GetFinest().GetDiag();
 
     for (int i=0; i<num; ++i)
-        v->Data-= tau*((A.Data*v->Data)/diag);
+        v->Data-= tau*((A.Data.GetFinest()*v->Data)/diag);
 }
 
 template <class Coeff>
 /// Needed for preconditioning of the Schur complement. Uses natural
 /// boundary conditions for the pressure unknowns.
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass(MatDescCL* matM, const LevelsetP2CL& lset) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass( MLMatDescCL* matM, const LevelsetP2CL& lset) const
 {
-    switch (prFE_)
+    MLMatrixCL::iterator itM = matM->Data.begin();
+    MLIdxDescCL::iterator itIdx = matM->RowIdx->begin();
+    MLExtIdxDescCL::const_iterator itExtIdx = Xidx_.begin();
+    for (size_t lvl=0; lvl < matM->Data.size(); ++lvl, ++itM, ++itIdx, ++itExtIdx)
     {
-      case P0_FE:
-        SetupPrMass_P0( _MG, _Coeff, matM, lset); break;
-      case P1_FE:
-        SetupPrMass_P1( _MG, _Coeff, matM, lset); break;
-      case P1X_FE:
-        SetupPrMass_P1X( _MG, _Coeff, matM, lset, Xidx_); break;
-      case P1D_FE:
-        SetupPrMass_P1D( _MG, _Coeff, matM, lset); break;
-      default:
-        throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass not implemented for this FE type");
+        switch (prFE_)
+        {
+        case P0_FE:
+            SetupPrMass_P0( _MG, _Coeff, *itM, *itIdx, lset); break;
+        case P1_FE:
+            SetupPrMass_P1( _MG, _Coeff, *itM, *itIdx, lset); break;
+        case P1X_FE:
+            SetupPrMass_P1X( _MG, _Coeff, *itM, *itIdx, lset, *itExtIdx); break;
+        case P1D_FE:
+            SetupPrMass_P1D( _MG, _Coeff, *itM, *itIdx, lset); break;
+        default:
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass not implemented for this FE type");
+        }
     }
 }
 
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MatDescCL* A_pr, const LevelsetP2CL& lset) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff( MLMatDescCL* A_pr, const LevelsetP2CL& lset) const
 /// Needed for preconditioning of the Schur complement. Uses natural
 /// boundary conditions for the pressure unknowns.
 {
-    switch (prFE_)
+    MLMatrixCL::iterator itM = A_pr->Data.begin();
+    MLIdxDescCL::iterator itRowIdx = A_pr->RowIdx->begin();
+    MLIdxDescCL::iterator itColIdx = A_pr->ColIdx->begin();
+    MLExtIdxDescCL::const_iterator itExtIdx = Xidx_.begin();
+    for (size_t lvl=0; lvl < A_pr->Data.size(); ++lvl, ++itM, ++itRowIdx, ++itColIdx, ++itExtIdx)
     {
-      case P1_FE:
-        SetupPrStiff_P1( _MG, _Coeff, A_pr, lset); break;
-      case P1X_FE:
-        SetupPrStiff_P1X( _MG, _Coeff, A_pr, lset, Xidx_); break;
-      case P1D_FE:
-        SetupPrStiff_P1D( _MG, _Coeff, A_pr, lset); break;
-      default:
-        throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff not implemented for this FE type");
+        switch (prFE_)
+        {
+        case P1_FE:
+            SetupPrStiff_P1( _MG, _Coeff, *itM, *itRowIdx, *itColIdx, lset); break;
+        case P1X_FE:
+            SetupPrStiff_P1X( _MG, _Coeff, *itM, *itRowIdx, *itColIdx, lset, *itExtIdx); break;
+        case P1D_FE:
+            SetupPrStiff_P1D( _MG, _Coeff, *itM, *itRowIdx, *itColIdx, lset); break;
+        default:
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff not implemented for this FE type");
+        }
     }
 }
 
@@ -944,19 +934,23 @@ void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_f
     }
 }
 
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
+template <class CoeffT>
+void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, MatrixCL& M,
+                      VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 // Set up matrices A, M and rhs b (depending on phase bnd)
 {
-    const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
+    const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
-    MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel),
-                    mM( &M->Data, num_unks_vel, num_unks_vel);
-    b->Clear();
-    cplM->Clear();
-    cplA->Clear();
+    MatrixBuilderCL mA( &A, num_unks_vel, num_unks_vel),
+                    mM( &M, num_unks_vel, num_unks_vel);
+    if (b != 0)
+    {
+        b->Clear();
+        cplM->Clear();
+        cplA->Clear();
+    }
 
-    const Uint lvl = A->GetRowLevel();
+    const Uint lvl = RowIdx.TriangLevel();
 
     LocalNumbP2CL n;
 
@@ -990,8 +984,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
     for (int k=0; k<10; ++k)
         p2[k][k]=1.;
     Quad5CL<> q[10][48]; //there exists maximally 8*6=48 SubTetras
+    LocalP2CL<> loc_phi;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = _MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
@@ -1001,8 +996,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
-        n.assign( *sit, *A->RowIdx, _BndData.Vel);
-        patch.Init( *sit, lset.Phi);
+        n.assign( *sit, RowIdx, _BndData.Vel);
+        loc_phi.assign( *sit, ls, t);
+        patch.Init( *sit, loc_phi);
         const bool nocut= !patch.Intersects();
         if (nocut) {
             const double mu_const= patch.GetSign( 0) == 1 ? mu_p : mu_n;
@@ -1127,37 +1123,50 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MatDescCL* A, MatDescCL* M, 
                         mM( n.num[i]+2, n.num[j]+2)+= coupM[j][i];
                     }
                     else // put coupling on rhs
-                    {
-                        typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                        bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
-                        tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
-                                 : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
-                        const double cA= coupA[j][i],
-                                     cM= coupM[j][i];
-                        for (int k=0; k<3; ++k)
+                        if (b != 0)
                         {
-                            cplA->Data[n.num[i]+k]-= cA*tmp[k];
-                            for (int l=0; l<3; ++l)
-                                cplA->Data[n.num[i]+k]-= coupAk[i][j][k][l]*tmp[l];
+                            typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                            bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                            tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
+                                    : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
+                            const double cA= coupA[j][i],
+                                        cM= coupM[j][i];
+                            for (int k=0; k<3; ++k)
+                            {
+                                cplA->Data[n.num[i]+k]-= cA*tmp[k];
+                                for (int l=0; l<3; ++l)
+                                    cplA->Data[n.num[i]+k]-= coupAk[i][j][k][l]*tmp[l];
+                            }
+                            cplM->Data[n.num[i]  ]-= cM*tmp[0];
+                            cplM->Data[n.num[i]+1]-= cM*tmp[1];
+                            cplM->Data[n.num[i]+2]-= cM*tmp[2];
                         }
-                        cplM->Data[n.num[i]  ]-= cM*tmp[0];
-                        cplM->Data[n.num[i]+1]-= cM*tmp[1];
-                        cplM->Data[n.num[i]+2]-= cM*tmp[2];
-                    }
                 }
-                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
-                b->Data[n.num[i]  ]+= tmp[0];
-                b->Data[n.num[i]+1]+= tmp[1];
-                b->Data[n.num[i]+2]+= tmp[2];
+                if (b != 0)
+                {
+                    tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
+                    b->Data[n.num[i]  ]+= tmp[0];
+                    b->Data[n.num[i]+1]+= tmp[1];
+                    b->Data[n.num[i]+2]+= tmp[2];
+                }
             }
     }
 
     mA.Build();
     mM.Build();
-    std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
-              << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
+    std::cerr << A.num_nonzeros() << " nonzeros in A, "
+              << M.num_nonzeros() << " nonzeros in M! " << std::endl;
 }
 
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
+{
+    MLMatrixCL::iterator itA = A->Data.begin();
+    MLMatrixCL::iterator itM = M->Data.begin();
+    MLIdxDescCL::iterator it = A->RowIdx->begin();
+    for (size_t lvl=0; lvl < A->Data.size(); ++lvl, ++itA, ++itM, ++it)
+        SetupSystem1_P2( _MG, _Coeff, _BndData, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
+}
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const
@@ -1230,198 +1239,23 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
     }
 }
 
-
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatrices1( MatDescCL* A,
-    MatDescCL* M, const LevelsetP2CL& lset, double t) const
-// Set up matrices A, M (depending on phase bnd)
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupProlongations()
 {
-    const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
-    MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel),
-                    mM( &M->Data, num_unks_vel, num_unks_vel);
-    const Uint lvl= A->GetRowLevel();
-    LocalNumbP2CL locn;
-
-    std::cerr << "entering SetupMatrices1: " << num_unks_vel << " vels. ";
-
-    Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
-    Quad2CL<double> rho, mu, Phi, kreuzterm;
-    LocalP2CL<> ls_loc;
-
-    SMatrixCL<3,3> T;
-
-    double coupA[10][10], coupM[10][10];
-    double det, absdet;
-    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    P2DiscCL::GetGradientsOnRef( GradRef);
-
-    InterfacePatchCL patch;
-    BaryCoordCL* nodes;
-    LocalP2CL<>p2[10];
-    double intpos, intneg;
-    for (int k=0; k<10; ++k)
-        p2[k][k]=1.;
-    Quad5CL<> q[10][48]; //there exist maximally 48 SubTetras
-    const double rho_p= _Coeff.rho( 1.0),
-                 rho_n= _Coeff.rho( -1.0);
-
-    for (MultiGridCL::const_TriangTetraIteratorCL
-            sit= const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin( lvl),
-            send= const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd( lvl);
-            sit != send; ++sit) {
-        GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= std::fabs( det);
-        // Collect information about Numbering of unknowns and boundary conditions.
-        locn.assign( *sit, *A->RowIdx, _BndData.Vel);
-        ls_loc.assign( *sit, ls, t); // needed for restrictions
-        Phi.assign( ls_loc);
-        // rho = rho( Phi),    mu= mu( Phi)
-        rho=   Phi;
-        rho.apply( _Coeff.rho);
-        mu= Phi;
-        mu.apply( _Coeff.mu);
-
-        // rhs = f + rho*g
-        rhs.assign( *sit, _Coeff.f, t);
-        rhs+= Quad2CL<Point3DCL>( _Coeff.g)*rho;
-
-        patch.Init(*sit, ls_loc);
-        patch.ComputeSubTets();
-        for (Uint k=0; k<patch.GetNumTetra(); ++k)
-        {
-            nodes = Quad5CL<>::TransformNodes(patch.GetTetra(k));
-            for (Uint j=0; j<10; ++j)
-                q[j][k].assign(p2[j], nodes);
-            delete[] nodes;
-        }
-
-        // compute all couplings between HatFunctions on edges and verts
-        for (int i=0; i<10; ++i)
-            for (int j=0; j<=i; ++j)
-            {
-                // dot-product of the gradients
-                const double cA= Quad2CL<>(dot( Grad[i], Grad[j]) * mu).quad( absdet);
-                coupA[i][j]= cA;
-                coupA[j][i]= cA;
-
-                intpos = 0.;
-                intneg = 0.;
-                for (Uint k=0; k<patch.GetNumTetra(); k++)
-                    if (patch.GetNumNegTetra()>k)
-                        intneg += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
-                    else
-                        intpos += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
-                coupM[i][j]= rho_p*intpos + rho_n*intneg;
-                coupM[j][i]= rho_p*intpos + rho_n*intneg;
-            }
-
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
-            if (locn.WithUnknowns( i)) { // vert/edge i is not on a Dirichlet boundary
-                for(int j=0; j<10; ++j) {
-                    if (locn.WithUnknowns( j)) { // vert/edge j is not on a Dirichlet boundary
-                        mA( locn.num[i],   locn.num[j]  )+= coupA[j][i];
-                        mA( locn.num[i]+1, locn.num[j]+1)+= coupA[j][i];
-                        mA( locn.num[i]+2, locn.num[j]+2)+= coupA[j][i];
-                        for (int k=0; k<3; ++k)
-                            for (int l=0; l<3; ++l) {
-                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
-                                for (size_t m=0; m<kreuzterm.size();  ++m)
-                                    kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k] * mu[m];
-                                mA( locn.num[i]+k, locn.num[j]+l)+= kreuzterm.quad( absdet);
-                            }
-                        mM( locn.num[i],   locn.num[j]  )+= coupM[j][i];
-                        mM( locn.num[i]+1, locn.num[j]+1)+= coupM[j][i];
-                        mM( locn.num[i]+2, locn.num[j]+2)+= coupM[j][i];
-                    }
-                }
-            }
-    }
-
-    mA.Build();
-    mM.Build();
-    std::cerr << A->Data.num_nonzeros() << " nonzeros in A, "
-              << M->Data.num_nonzeros() << " nonzeros in M! " << std::endl;
+    SetupP1ProlongationMatrix( _MG, PPr);
+    SetupP2ProlongationMatrix( _MG, PVel);
 }
 
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupMatricesMG (MGDataCL* matMG, const LevelsetP2CL& lset, double dt, double theta) const
-// Set up the MG-hierarchy
-{
-    for(MGDataCL::iterator it= matMG->begin(); it!=matMG->end(); ++it) {
-        MGLevelDataCL& tmp= *it;
-        MatDescCL A;
-        A.SetIdx( &tmp.Idx, &tmp.Idx);
-        tmp.A.SetIdx( &tmp.Idx, &tmp.Idx);
-        tmp.Mvel.SetIdx( &tmp.Idx, &tmp.Idx);
-        std::cerr << "Create StiffMatrix for "
-                  << (&tmp.Idx)->NumUnknowns << " unknowns." << std::endl;
-        if(&tmp != &matMG->back()) {
-            if (dt != 0) {
-                SetupMatrices1( &A, &tmp.Mvel, lset, t);
-                tmp.A.Data.LinComb( 1./dt, tmp.Mvel.Data, theta, A.Data);
-            }
-            else
-                SetupMatrices1 (&tmp.A, &tmp.Mvel, lset, t);
-            if (it != matMG->begin())
-                tmp.Mvel.Data.clear();
-        }
-        tmp.ABlock = &tmp.A.Data;
-        if (matMG->StokesMG()) {
-            tmp.B.SetIdx( &tmp.IdxPr , &tmp.Idx );
-            tmp.BT.SetIdx( &tmp.Idx, &tmp.IdxPr );
-            tmp.Mpr.SetIdx( &tmp.IdxPr, &tmp.IdxPr);
-            std::cerr << "Create StokesMatrices2 for " << (&tmp.IdxPr)->NumUnknowns << " unknown" << std::endl;
-            if (&tmp != &matMG->back()) {
-                SetupMatrix2( &tmp.B, &tmp.BT );
-                SetupPrMass ( &tmp.Mpr, lset );
-            }
-            else
-                transpose ( tmp.B.Data, tmp.BT.Data );
-        }
-    }
-}
-
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupProlongations(MGDataCL* matMG)
-{
-    IdxDescCL* c_idx= 0;
-    IdxDescCL* c_idxpr=0;
-    MGDataIterCL fl=matMG->begin();
-    MGDataIterCL it;
-    for(Uint lvl= 0; lvl<=_MG.GetLastLevel(); ++lvl) {
-        if (lvl != _MG.GetLastLevel())
-            it = matMG->insert( fl, MGLevelDataCL());
-        else
-            ++it; // it points now to the finest level
-        MGLevelDataCL& tmp= *it;
-        std::cerr << "    Create indices on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( vecP2_FE );
-        tmp.IdxPr.SetFE( P1_FE);
-        CreateNumberingVel( lvl, &tmp.Idx);
-        CreateNumberingPr (lvl, &tmp.IdxPr);
-        if(lvl!=0) {
-            std::cerr << "    Create Prolongation on Level " << lvl << std::endl;
-            SetupP2ProlongationMatrix( _MG, tmp.P, c_idx, &tmp.Idx);
-//            std::cout << "    Matrix P " << tmp.P.Data << std::endl;
-            if (matMG->StokesMG())
-                SetupP1ProlongationMatrix( _MG, tmp.PPr , c_idxpr , &tmp.IdxPr );
-        }
-        c_idx   = &tmp.Idx;
-        c_idxpr = &tmp.IdxPr;
-    }
-}
-
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const
+template <class CoeffT>
+void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 // Set up the Laplace-Beltrami-matrix
 {
-    const IdxT num_unks_vel= A->RowIdx->NumUnknowns;
+    const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
-    MatrixBuilderCL mA( &A->Data, num_unks_vel, num_unks_vel);
-    cplA->Clear();
+    MatrixBuilderCL mA( &A, num_unks_vel, num_unks_vel);
+    if (cplA != 0) cplA->Clear();
 
-    const Uint lvl = A->GetRowLevel();
+    const Uint lvl = RowIdx.TriangLevel();
 
     LocalNumbP2CL n;
 
@@ -1444,13 +1278,15 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MatDescCL* A, VecDescCL* cplA, co
     P2DiscCL::GetGradientsOnRef( GradRefLP1);
 
     InterfacePatchCL patch;
+    LocalP2CL<> loc_phi;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
-        patch.Init( *sit, lset.Phi);
+        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
+        patch.Init( *sit, loc_phi);
         if (patch.Intersects()) { // We are at the phase boundary.
-            n.assign( *sit, *A->RowIdx, _BndData.Vel);
+            n.assign( *sit, RowIdx, _BndData.Vel);
             GetTrafoTr( T, det, *sit);
             absdet= std::fabs( det);
             P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
@@ -1489,43 +1325,62 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MatDescCL* A, VecDescCL* cplA, co
                             mA( n.num[i]+2, n.num[j]+2)+= coupA[j][i];
                         }
                         else // put coupling on rhs
-                        {
-                            typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                            bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
-                            tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
-                                     : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
-                            const double cA= coupA[j][i];
-                            for (int k=0; k<3; ++k)
-                                cplA->Data[n.num[i]+k]-= cA*tmp[k];
-                        }
+                            if (cplA != 0)
+                            {
+                                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                                bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                                tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
+                                        : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
+                                const double cA= coupA[j][i];
+                                for (int k=0; k<3; ++k)
+                                    cplA->Data[n.num[i]+k]-= cA*tmp[k];
+                            }
                     }
                 }
         }
     }
 
     mA.Build();
-    std::cerr << A->Data.num_nonzeros() << " nonzeros in A_LB" << std::endl;
+    std::cerr << A.num_nonzeros() << " nonzeros in A_LB" << std::endl;
 }
 
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupLB (MLMatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const
+{
+    MLMatrixCL::iterator  itA = A->Data.begin();
+    MLIdxDescCL::iterator it  = A->RowIdx->begin();
+    for (size_t lvl=0; lvl < A->RowIdx->size(); ++lvl, ++itA, ++it)
+        SetupLB_P2( _MG,  _Coeff, _BndData, *itA, lvl == A->Data.size()-1 ? cplA : 0, lset, *it, t);
+}
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c, const LevelsetP2CL& lset, double t) const
 // Set up matrix B and rhs c
 {
-    std::cerr << "entering SetupSystem2: " << B->RowIdx->NumUnknowns << " prs. ";
-    switch (prFE_)
+    MLMatrixCL::iterator     itB   = B->Data.begin();
+    MLIdxDescCL::iterator    itRow = B->RowIdx->begin();
+    MLIdxDescCL::iterator    itCol = B->ColIdx->begin();
+    MLExtIdxDescCL::const_iterator itExt = Xidx_.begin();
+    if ( B->RowIdx->size() == 1)
+        itCol = --B->ColIdx->end();
+    for (size_t lvl=0; lvl < B->Data.size(); ++lvl, ++itB, ++itRow, ++itCol, ++itExt)
     {
-      case P0_FE:
-        SetupSystem2_P2P0( _MG, _Coeff, _BndData, B, c, t); break;
-      case P1_FE:
-        SetupSystem2_P2P1( _MG, _Coeff, _BndData, B, c, t); break;
-      case P1X_FE:
-        SetupSystem2_P2P1X( _MG, _Coeff, _BndData, B, c, lset, Xidx_, t); break;
-      case P1D_FE:
-        SetupSystem2_P2P1D( _MG, _Coeff, _BndData, B, c, t); break;
-      default:
-        throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
+        std::cerr << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs. ";
+        switch (prFE_)
+        {
+            case P0_FE:
+                SetupSystem2_P2P0 ( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, &(*itRow), &(*itCol), t); break;
+            case P1_FE:
+                SetupSystem2_P2P1 ( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, &(*itRow), &(*itCol), t); break;
+            case P1X_FE:
+                SetupSystem2_P2P1X( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, lset, *itExt, &(*itRow), &(*itCol), t); break;
+            case P1D_FE:
+                SetupSystem2_P2P1D( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, &(*itRow), &(*itCol), t); break;
+            default:
+                throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
+        }
+        std::cerr << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
     }
-    std::cerr << B->Data.num_nonzeros() << " nonzeros in B!" << std::endl;
 }
 
 template <class Coeff>
@@ -1539,7 +1394,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, const LevelsetP2C
       case P1_FE:
         SetupRhs2_P2P1( _MG, _Coeff, _BndData, c, t); break;
       case P1X_FE:
-        SetupRhs2_P2P1X( _MG, _Coeff, _BndData, c, lset, Xidx_, t); break;
+        SetupRhs2_P2P1X( _MG, _Coeff, _BndData, c, lset, Xidx_.GetFinest(), t); break;
       case P1D_FE:
         SetupRhs2_P2P1D( _MG, _Coeff, _BndData, c, t); break;
       default:
@@ -1615,21 +1470,49 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupBdotv (VecDescCL* Bdotv, const VelVec
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetIdx()
 {
-    IdxDescCL* vidx= &vel_idx;
-    IdxDescCL* pidx= &pr_idx;
-    b.SetIdx  ( vidx);
-    c.SetIdx  ( pidx);
-    A.SetIdx  ( vidx, vidx);
-    B.SetIdx  ( pidx, vidx);
-    prM.SetIdx( pidx, pidx);
-    prA.SetIdx( pidx, pidx);
-    M.SetIdx  ( vidx, vidx);
+    MLIdxDescCL* vidx= &vel_idx;
+    MLIdxDescCL* pidx= &pr_idx;
+
+    b.SetIdx   ( vidx);
+    c.SetIdx   ( pidx);
+
+    A.SetIdx   ( vidx, vidx);
+    B.SetIdx   ( pidx, vidx);
+    prM.SetIdx ( pidx, pidx);
+    prA.SetIdx ( pidx, pidx);
+    M.SetIdx   ( vidx, vidx);
+    PVel.SetIdx( vidx, vidx);
+    PPr.SetIdx ( pidx, pidx);
+}
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetNumVelLvl( size_t n)
+{
+    match_fun match= _MG.GetBnd().GetMatchFun();
+    vel_idx.resize( n, vecP2_FE, _BndData.Vel, match);
+    A.Data.resize   (vel_idx.size());
+    M.Data.resize   (vel_idx.size());
+    PVel.Data.resize(vel_idx.size());
+}
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetNumPrLvl( size_t n)
+{
+    match_fun match= _MG.GetBnd().GetMatchFun();
+    pr_idx.resize( n, GetPrFE(),  _BndData.Pr, match);
+    double bound = Xidx_.GetFinest().GetBound();
+    if (UsesXFEM())
+        Xidx_.resize( &pr_idx, bound);
+    B.Data.resize   (pr_idx.size());
+    prM.Data.resize (pr_idx.size());
+    prA.Data.resize (pr_idx.size());
+    PPr.Data.resize (pr_idx.size());
 }
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart)
 {
-    const Uint lvl= p.RowIdx->TriangLevel,
+    const Uint lvl= p.RowIdx->TriangLevel(),
         idxnum= p.RowIdx->GetIdx();
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     const MultiGridCL& mg= this->GetMG();
@@ -1662,25 +1545,33 @@ template<class StokesT>
   VelocityRepairCL<StokesT>::post_refine ()
 {
     VelVecDescCL loc_v;
-    IdxDescCL    loc_vidx( vecP2_FE);
     VelVecDescCL& v= stokes_.v;
     Uint LastLevel= stokes_.GetMG().GetLastLevel();
     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
+    IdxDescCL loc_vidx( vecP2_FE);
 
-    stokes_.CreateNumberingVel( LastLevel, &loc_vidx, match);
-    if (LastLevel != v.RowIdx->TriangLevel) {
+    loc_vidx.CreateNumbering( LastLevel, stokes_.GetMG(), stokes_.GetBndData().Pr, match);
+    if (LastLevel != v.RowIdx->TriangLevel()) {
         std::cout << "LastLevel: " << LastLevel
-                  << " old v->TriangLevel: " << v.RowIdx->TriangLevel << std::endl;
+                  << " old v->TriangLevel(): " << v.RowIdx->TriangLevel() << std::endl;
         throw DROPSErrCL( "VelocityRepairCL::post_refine: Sorry, not yet implemented.");
     }
     loc_v.SetIdx( &loc_vidx);
     RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
     v.Clear();
-    stokes_.DeleteNumbering( v.RowIdx);
+    v.RowIdx->DeleteNumbering( stokes_.GetMG());
 
-    stokes_.vel_idx.swap( loc_vidx);
+    stokes_.vel_idx.GetFinest().swap( loc_vidx);
     v.SetIdx( &stokes_.vel_idx);
     v.Data= loc_v.Data;
+}
+
+template<class StokesT>
+  inline void
+  VelocityRepairCL<StokesT>::post_refine_sequence ()
+{
+    match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
+    stokes_.CreateNumberingVel( stokes_.GetMG().GetLastLevel(), &stokes_.vel_idx, *match);
 }
 
 //*****************************************************************************
@@ -1695,12 +1586,12 @@ template<class StokesT>
     VecDescCL& p= stokes_.p;
     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
 
-    stokes_.CreateNumberingPr( stokes_.GetMG().GetLastLevel(), &loc_pidx, match);
+    loc_pidx.CreateNumbering( stokes_.GetMG().GetLastLevel(), stokes_.GetMG(), stokes_.GetBndData().Pr, match);
     loc_p.SetIdx( &loc_pidx);
     RepairAfterRefineP1( stokes_.GetPrSolution( p), loc_p);
     p.Clear();
-    stokes_.DeleteNumbering( p.RowIdx);
-    stokes_.pr_idx.swap( loc_pidx);
+    p.RowIdx->DeleteNumbering( stokes_.GetMG());
+    stokes_.pr_idx.GetFinest().swap( loc_pidx);
     p.SetIdx( &stokes_.pr_idx);
     p.Data= loc_p.Data;
 }
@@ -1709,13 +1600,15 @@ template<class StokesT>
   inline void
   PressureRepairCL<StokesT>::pre_refine_sequence ()
 {
-    p1xrepair_= std::auto_ptr<P1XRepairCL>( new P1XRepairCL( stokes_.UsesXFEM(), stokes_.GetMG(), stokes_.p, stokes_.GetXidx()));
+    p1xrepair_= std::auto_ptr<P1XRepairCL>( new P1XRepairCL( stokes_.UsesXFEM(), stokes_.GetMG(), stokes_.p, stokes_.GetXidx().GetFinest()));
 }
 
 template<class StokesT>
   inline void
   PressureRepairCL<StokesT>::post_refine_sequence ()
 {
+    match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
+    stokes_.CreateNumberingPr( stokes_.GetMG().GetLastLevel(), &stokes_.pr_idx, *match);
     (*p1xrepair_)( ls_);
     p1xrepair_.reset();
 }

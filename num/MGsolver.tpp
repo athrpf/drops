@@ -3,48 +3,51 @@
 /// \author Sven Gross, Joerg Grande, Volker Reichelt, Maxim Larin, Patrick Esser, IGPM
 
 namespace DROPS {
-template<class SmootherCL, class DirectSolverCL>
+
+template <class SmootherCL, class DirectSolverCL>
 void
-MGM(const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b,
-    const SmootherCL& Smoother, Uint smoothSteps,
-    DirectSolverCL& Solver, int numLevel, int numUnknDirect)
+MGM(const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine, const MLMatrixCL::const_iterator& P,
+     VectorCL& x, const VectorCL& b, const SmootherCL& Smoother, Uint smoothSteps,
+     DirectSolverCL& Solver, int numLevel, int numUnknDirect)
 {
-    const_MGDataIterCL coarse= fine;
-    --coarse;
+    MLMatrixCL::const_iterator coarse= fine;
+    MLMatrixCL::const_iterator coarseP= P;
 
     if(  ( numLevel==-1      ? false : numLevel==0 )
        ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) )
        || fine==begin)
     { // use direct solver
-        Solver.Solve( *fine->ABlock, x, b);
+        Solver.Solve( *fine, x, b);
 /*        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
                   << "\tresiduum: " << Solver.GetResid() << '\n';*/
         return;
     }
-    VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
+    --coarse;
+    --coarseP;
+    VectorCL d( coarse->num_cols()), e( coarse->num_cols());
     // presmoothing
-    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine->ABlock, x, b);
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine, x, b);
     // restriction of defect
-    d= transp_mul( fine->P.Data, VectorCL( b - *fine->ABlock*x));
+    d= transp_mul( *P, VectorCL( b - *fine*x));
     // calculate coarse grid correction
-    MGM( begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
+    MGM( begin, coarse, coarseP, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
     // add coarse grid correction
-    x+= fine->P.Data * e;
+    x+= (*P) * e;
     // postsmoothing
-    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine->ABlock, x, b);
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine, x, b);
 }
 
 template<class SmootherCL, class DirectSolverCL>
-void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solver,
-        VectorCL& x, const VectorCL& b,
-        int& maxiter, double& tol, const bool residerr, Uint sm, int lvl)
+void MG(const MLMatrixCL& MGData, const MLMatrixCL& Prolong, const SmootherCL& smoother, DirectSolverCL& solver,
+        VectorCL& x, const VectorCL& b, int& maxiter, double& tol, const bool residerr, Uint sm, int lvl)
 {
-    const_MGDataIterCL finest= --MGData.end();
+    MLMatrixCL::const_iterator finest= --MGData.end();
+    MLMatrixCL::const_iterator finestProlong= --Prolong.end();
     double resid= -1;
     double old_resid;
     VectorCL tmp;
     if (residerr == true) {
-        resid= norm( b - *finest->ABlock * x);
+        resid= norm( b - *finest * x);
         //std::cerr << "initial residual: " << resid << '\n';
     }
     else
@@ -56,10 +59,10 @@ void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solv
             if (resid <= tol) break;
         }
         else tmp= x;
-        MGM( MGData.begin(), finest, x, b, smoother, sm, solver, lvl, -1);
+        MGM( MGData.begin(), finest, finestProlong, x, b, smoother, sm, solver, lvl, -1);
         if (residerr == true) {
             old_resid= resid;
-            resid= norm( b - *finest->ABlock * x);
+            resid= norm( b - *finest * x);
 //            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
 //            std::cerr << "\treduction: " << resid/old_resid;
 //            std::cerr << '\n';
@@ -71,52 +74,64 @@ void MG(const MGDataCL& MGData, const SmootherCL& smoother, DirectSolverCL& solv
 }
 
 template<class StokesSmootherCL, class StokesDirectSolverCL>
-void StokesMGM( const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& u, VectorCL& p,
-                const VectorCL& b, const VectorCL& c,  const StokesSmootherCL& Smoother, Uint smoothSteps,
-                Uint cycleSteps, StokesDirectSolverCL& Solver, int numLevel, int numUnknDirect)
+void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::const_iterator& fineA,
+                const MLMatrixCL::const_iterator& fineB,   const MLMatrixCL::const_iterator& fineBT, 
+                const MLMatrixCL::const_iterator& fineprM, const MLMatrixCL::const_iterator& PVel,
+                const MLMatrixCL::const_iterator& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
+                const VectorCL& c, const StokesSmootherCL& Smoother, Uint smoothSteps, Uint cycleSteps,
+                StokesDirectSolverCL& Solver, int numLevel, int numUnknDirect)
 {
-    const_MGDataIterCL coarse= fine;
-    --coarse;
+    MLMatrixCL::const_iterator coarseA   = fineA;
+    MLMatrixCL::const_iterator coarseB   = fineB;
+    MLMatrixCL::const_iterator coarseBT  = fineBT;
+    MLMatrixCL::const_iterator coarseprM = fineprM;
+    MLMatrixCL::const_iterator coarsePVel= PVel;
+    MLMatrixCL::const_iterator coarsePPr = PPr;
 
     if(  ( numLevel==-1      ? false : numLevel==0 )
        ||( numUnknDirect==-1 ? false : u.size() <= static_cast<Uint>(numUnknDirect) )
-       || fine==begin)
+       || fineA==beginA)
     {
         // use direct solver
         std::cout << "P2P1:StokesMGM: use direct solver " << std::endl;
-        Solver.Solve( *fine->ABlock, fine->B.Data, u, p, b, c);
+        Solver.Solve( *fineA, *fineB, u, p, b, c);
         //std::cerr << "P2P1:StokesMGM: direct solver: iter: " << Solver.GetIter() << "\tresid: " << Solver.GetResid() << std::endl;
         return;
     }
+    --coarseA;
+    --coarseB;
+    --coarseBT;
+    --coarseprM;
+    --coarsePVel;
+    --coarsePPr;
 
-    VectorCL du(coarse->Idx.NumUnknowns), dp(coarse->IdxPr.NumUnknowns);
-    VectorCL eu(coarse->Idx.NumUnknowns), ep(coarse->IdxPr.NumUnknowns);
     // presmoothing
 //    std::cout << "P2P1:StokesMGM: presmoothing " << smoothSteps << " steps " << std::endl;
     for (Uint i=0; i<smoothSteps; ++i) {
-        Smoother.Apply( *fine->ABlock, fine->B.Data, fine->BT.Data, fine->Mpr.Data, u, p, b, c );
+        Smoother.Apply( *fineA, *fineB, *fineBT, *fineprM, u, p, b, c );
     }
     // restriction of defect
     //std::cout << "P2P1:StokesMGM: restriction of defect " << std::endl;
 
-    du = transp_mul( fine->P.Data, VectorCL(b - (*fine->ABlock*u + transp_mul( fine->B.Data, p ) )) );
-    dp = transp_mul( fine->PPr.Data,  VectorCL(c - fine->B.Data*u ));
+    VectorCL du (transp_mul( *PVel, VectorCL(b - (*fineA * u + transp_mul( *fineB, p ) )) ));
+    VectorCL dp (transp_mul( *PPr,  VectorCL(c - *fineB * u )));
 
     // calculate coarse grid correction
 //    std::cout << "P2P1:StokesMGM: calculate coarse grid correction    " << cycleSteps << " times " << std::endl;
-    eu=0;
-    ep=0;
+    VectorCL eu ( du.size());
+    VectorCL ep ( dp.size());
     for (Uint i=0; i<cycleSteps; ++i) {
-      StokesMGM( begin, coarse, eu, ep, du, dp, Smoother, smoothSteps, cycleSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
+      StokesMGM( beginA, coarseA, coarseB, coarseBT, coarseprM, coarsePVel, coarsePPr, eu, ep, du, dp, Smoother,
+                 smoothSteps, cycleSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
     }
     // add coarse grid correction
 //    std::cout << "P2P1:StokesMGM: add coarse grid correction " << std::endl;
-    u+= fine->P.Data * eu;
-    p+= fine->PPr.Data  * ep;
+    u+= *PVel * eu;
+    p+= *PPr * ep;
     // postsmoothing
 //    std::cout << "P2P1:StokesMGM: postsmoothing " << smoothSteps << " steps " << std::endl;
     for (Uint i=0; i<smoothSteps; ++i) {
-        Smoother.Apply( *fine->ABlock, fine->B.Data, fine->BT.Data, fine->Mpr.Data, u, p, b, c );
+        Smoother.Apply( *fineA, *fineB, *fineBT, *fineprM, u, p, b, c );
     }
 }
 

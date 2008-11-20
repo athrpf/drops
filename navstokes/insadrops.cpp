@@ -151,12 +151,12 @@ EnsightWriterCL::DeleteNumbering()
     if (!have_idx_)
         throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
     DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
-                                MG_.GetAllVertexBegin( ensightidx_.TriangLevel),
-                                MG_.GetAllVertexEnd( ensightidx_.TriangLevel));
+                                MG_.GetAllVertexBegin( ensightidx_.TriangLevel()),
+                                MG_.GetAllVertexEnd( ensightidx_.TriangLevel()));
     DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
-                                MG_.GetAllEdgeBegin( ensightidx_.TriangLevel),
-                                MG_.GetAllEdgeEnd( ensightidx_.TriangLevel));
-    ensightidx_.NumUnknowns= 0;
+                                MG_.GetAllEdgeBegin( ensightidx_.TriangLevel()),
+                                MG_.GetAllEdgeEnd( ensightidx_.TriangLevel()));
+    ensightidx_.SetNumUnknowns( 0);
     have_idx_= false;
 }
 
@@ -264,10 +264,11 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
         // Repair velocity
         std::swap( v2, v1);
         std::swap( vidx2, vidx1);
-        NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
-        if ( mg.GetLastLevel() != vidx2->TriangLevel) {
+        match_fun match= NS.GetMG().GetBnd().GetMatchFun();
+        vidx1->CreateNumbering( mg.GetLastLevel(), mg, NS.GetBndData().Vel, match);
+        if ( mg.GetLastLevel() != vidx2->TriangLevel()) {
             std::cout << "LastLevel: " << mg.GetLastLevel()
-                      << " vidx2->TriangLevel: " << vidx2->TriangLevel << std::endl;
+                      << " vidx2->TriangLevel: " << vidx2->TriangLevel() << std::endl;
             throw DROPSErrCL( "Strategy: Sorry, not yet implemented.");
         }
         v1->SetIdx( vidx1);
@@ -275,21 +276,21 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
                   const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
         RepairAfterRefineP2( funv2, *v1);
         v2->Clear();
-        NS.DeleteNumbering( vidx2);
+        vidx2->DeleteNumbering( mg);
         // Repair pressure
         std::swap( p2, p1);
         std::swap( pidx2, pidx1);
-        NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
+        pidx1->CreateNumbering( mg.GetLastLevel(), mg, NS.GetBndData().Pr, match);
         p1->SetIdx( pidx1);
         typename NavStokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( oldfunpr, *p1);
         p2->Clear();
-        NS.DeleteNumbering( pidx2);
+        pidx2->DeleteNumbering( mg);
     }
     // We want the solution to be where v1, p1 point to.
     if (v1 == &loc_v) {
-        NS.vel_idx.swap( loc_vidx);
-        NS.pr_idx.swap( loc_pidx);
+        NS.vel_idx.GetFinest().swap( loc_vidx);
+        NS.pr_idx.GetFinest().swap( loc_pidx);
         NS.v.SetIdx( &NS.vel_idx);
         NS.p.SetIdx( &NS.pr_idx);
 
@@ -331,11 +332,11 @@ MakeInitialTriangulation(DROPS::MultiGridCL& mg,
 template<class Coeff>
 void
 SetMatVecIndices(DROPS::NavierStokesP2P1CL<Coeff>& NS,
-                 DROPS::IdxDescCL* const vidx,
-                 DROPS::IdxDescCL* const pidx)
+                 DROPS::MLIdxDescCL* const vidx,
+                 DROPS::MLIdxDescCL* const pidx)
 {
-    std::cout << "#Druck-Unbekannte: " << pidx->NumUnknowns << std::endl;
-    std::cout << "#Geschwindigkeitsunbekannte: " << vidx->NumUnknowns << std::endl;
+    std::cout << "#Druck-Unbekannte: " << pidx->NumUnknowns() << std::endl;
+    std::cout << "#Geschwindigkeitsunbekannte: " << vidx->NumUnknowns() << std::endl;
     NS.b.SetIdx( vidx);
     NS.c.SetIdx( pidx);
     NS.cplM.SetIdx( vidx);
@@ -397,11 +398,11 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
     typedef NavierStokesP2P1CL<Coeff> NavStokesCL;
 
     MultiGridCL& MG= NS.GetMG();
-    IdxDescCL* vidx1= &NS.vel_idx;
-    IdxDescCL* pidx1= &NS.pr_idx;
+    MLIdxDescCL* vidx1= &NS.vel_idx;
+    MLIdxDescCL* pidx1= &NS.pr_idx;
     VelVecDescCL* v1= &NS.v;
     VecDescCL*    p1= &NS.p;
-    MatDescCL  M_pr;
+    MLMatDescCL  M_pr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -452,7 +453,7 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
             NS.SetupPrMass( &M_pr);
 //            AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver( NS, M_pr.Data, fp_maxiter, fp_tol,
 //                                                          stokes_maxiter, poi_maxiter, poi_tol, deco_red);
-            statsolver= new FPDeCo_Uzawa_PCG_CL<NavStokesCL> ( NS, M_pr.Data, fp_maxiter, fp_tol,
+            statsolver= new FPDeCo_Uzawa_PCG_CL<NavStokesCL> ( NS, M_pr.Data.GetFinest(), fp_maxiter, fp_tol,
                            stokes_maxiter, poi_maxiter, poi_tol, deco_red);
 //            statsolver= new FPDeCo_Uzawa_CG_CL<NavStokesCL>( NS, M_pr.Data, fp_maxiter, fp_tol,
 //                           stokes_maxiter, poi_maxiter, poi_tol, deco_red);
@@ -476,14 +477,14 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatNavStokesThetaSchemeCL<NavStokesCL,
                              FPDeCo_Uzawa_PCG_CL<NavStokesCL> >( NS, *statsolver, theta, t);
             if (timestep == 0) // check initial velocities
-                NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
+                NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
         }
         NS.SetTime( t+dt); // We have to set the new time!
         instatsolver->SetTimeStep( dt);
         std::cerr << "Before timestep." << std::endl;
         instatsolver->DoStep( *v1, p1->Data);
         std::cerr << "After timestep." << std::endl;
-        NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
+        NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
         ensightout.WriteAtTime( NS, t+dt);
     }
     delete statsolver; statsolver= 0;
@@ -556,16 +557,16 @@ int main (int argc, char** argv)
     fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
     fil.close();
 
-    DROPS::IdxDescCL tecIdx( DROPS::P1_FE);
+    DROPS::MLIdxDescCL tecIdx( DROPS::P1_FE);
     prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
     std::ofstream v2d("navstokestec2D.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 2, 0.5); // cutplane is z=0.5
+        tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx.GetFinest(), -1, 2, 0.5); // cutplane is z=0.5
     v2d << tecplot2d;
     v2d.close();
     v2d.open("navstokestec2D2.dat");
     DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-        tecplot2d2( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is z=0.5
+        tecplot2d2( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx.GetFinest(), -1, 1, 0.5); // cutplane is z=0.5
     v2d << tecplot2d2;
     v2d.close();
     return 0;

@@ -124,7 +124,7 @@ init testcase
 
 void InitPr( VecDescCL& p, double delta_p, const MultiGridCL& mg, const FiniteElementT prFE, const ExtIdxDescCL& Xidx)
 {
-    const Uint lvl= p.RowIdx->TriangLevel,
+    const Uint lvl= p.RowIdx->TriangLevel(),
         idxnum= p.RowIdx->GetIdx();
 
     delta_p/= 2;
@@ -195,7 +195,7 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
     IdxT prNumb[4];
     InterfacePatchCL cut;
     double L2= 0, L1= 0;
-    const Uint lvl= p.RowIdx->TriangLevel;
+    const Uint lvl= p.RowIdx->TriangLevel();
     for (MultiGridCL::const_TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(lvl),
          send= mg.GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
@@ -253,7 +253,7 @@ void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
 {
     VectorCL num( new_p.Data.size()), sum( new_p.Data.size());
 
-    const Uint lvl= p.RowIdx->TriangLevel,
+    const Uint lvl= p.RowIdx->TriangLevel(),
         idxnum= p.RowIdx->GetIdx(),
         idxnum2= new_p.RowIdx->GetIdx();
 
@@ -308,31 +308,26 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 //        avg_ex= 0; // for planar interface
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
+    Stokes.SetNumVelLvl( MG.GetNumLevel());
+    //Stokes.SetNumPrLvl ( MG.GetNumLevel());
+
     VecDescCL new_pr;  // for pressure output in Ensight
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
-
     lset.Phi.SetIdx( lidx);
     lset.Init( EllipsoidCL::DistanceFct);
-
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, NULL, &lset);
-
+    Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx, NULL, &lset);
     MG.SizeInfo( std::cerr);
-    Stokes.b.SetIdx( vidx);
-    Stokes.c.SetIdx( pidx);
-    Stokes.p.SetIdx( pidx);
-    Stokes.v.SetIdx( vidx);
+    Stokes.SetIdx();
+    Stokes.v.SetIdx(vidx);
+    Stokes.p.SetIdx(pidx);
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
-    Stokes.A.SetIdx(vidx, vidx);
-    Stokes.B.SetIdx(pidx, vidx);
-    Stokes.M.SetIdx(vidx, vidx);
-    Stokes.prM.SetIdx( pidx, pidx);
-    Stokes.prA.SetIdx( pidx, pidx);
+
     new_pr.SetIdx( lidx);
     Stokes.InitVel( &Stokes.v, ZeroVel);
     Stokes.SetupPrMass(  &Stokes.prM, lset);
@@ -383,7 +378,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         time.Stop();
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-        InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx());
+        InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest());
         VectorCL surf( Stokes.b.Data + curv.Data), BTp( transp_mul( Stokes.B.Data, Stokes.p.Data));
         PrintNorm( "surf. force", curv.Data);
         PrintNorm( "BT p", BTp);
@@ -404,26 +399,25 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         time.Stop();
         std::cerr << "Discretizing Stokes/Surf.Force for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-//         InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx());
+        //InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest());
         time.Reset();
 
         const double kA=0;
         const double kM=1;
         // Preconditioner for A
             //Multigrid
-        Stokes.SetupProlongations( &Stokes.GetMGData());
-        Stokes.SetupMatricesMG   ( &Stokes.GetMGData(), lset, 0.0, 1.0);
-        Stokes.GetMGData().back().ABlock = &Stokes.A.Data;
+        Stokes.SetupProlongations();
+        CheckMGData( Stokes.A.Data, Stokes.PPr.Data);
         SSORsmoothCL smoother(1.0);
         PCG_SsorCL   coarsesolver( SSORPcCL(1.0), 500, C.inner_tol);
-        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( Stokes.GetMGData(), smoother, coarsesolver, 1, -1.0, false);
+        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( Stokes.PVel.Data, smoother, coarsesolver, 1, -1.0, false);
         typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
         MGPCT MGPC (mgc);
-        VectorCL xx( 1.0, vidx->NumUnknowns);
+        VectorCL xx( 1.0, vidx->NumUnknowns());
         double rhoinv = 0.99*( 1.0-1.1*0.363294);
-        if ( C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
-            rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( Stokes.GetMGData(), xx, 1000, 1e-4));
-        ScaledMGPreCL velprep( Stokes.GetMGData(), 1, 1.0/rhoinv);
+/*        if ( C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
+            rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( Stokes.A.Data, Stokes.PVel.Data, xx, 1000, 1e-4));*/
+        ScaledMGPreCL velprep( Stokes.PVel.Data, 1, 1.0/rhoinv);
 
             //PCG
         typedef SSORPcCL APcPcT;
@@ -435,7 +429,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // Preconditioner for instat. Schur complement
         typedef ISBBTPreCL ISBBT;
-        ISBBT isbbt (&Stokes.B.Data, &Stokes.prM.Data, &Stokes.M.Data, kA, kM);
+        ISBBT isbbt (&Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), kA, kM);
         ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, kA, kM);
         DiagMatrixPCCL lumped( prMLDiag);
 
@@ -443,17 +437,17 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         // Preconditioner for PMINRES
         typedef BlockPreCL<MGPCT, ISPreCL> Lanczos2PCT;
-        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos2PCT> Lanczos2T;
+        typedef PLanczosONBCL<VectorCL, Lanczos2PCT> Lanczos2T;
         typedef BlockPreCL<MGPCT, ISBBT> Lanczos3PCT;
-        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos3PCT> Lanczos3T;
+        typedef PLanczosONBCL<VectorCL, Lanczos3PCT> Lanczos3T;
         typedef BlockPreCL<APcT, ISPreCL> Lanczos5PCT;
-        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos5PCT> Lanczos5T;
+        typedef PLanczosONBCL< VectorCL, Lanczos5PCT> Lanczos5T;
         typedef BlockPreCL<APcT, ISBBT> Lanczos6PCT;
-        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos6PCT> Lanczos6T;
+        typedef PLanczosONBCL<VectorCL, Lanczos6PCT> Lanczos6T;
         typedef BlockPreCL<MGPCT,DiagMatrixPCCL> Lanczos8PCT;
-        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos8PCT> Lanczos8T;
+        typedef PLanczosONBCL<VectorCL, Lanczos8PCT> Lanczos8T;
         typedef BlockPreCL<APcT,DiagMatrixPCCL> Lanczos9PCT;
-        typedef PLanczosONBCL<BlockMatrixCL, VectorCL, Lanczos9PCT> Lanczos9T;
+        typedef PLanczosONBCL<VectorCL, Lanczos9PCT> Lanczos9T;
 
         Lanczos2PCT lanczos2pc (MGPC, ispc);
         Lanczos2T lanczos2 (lanczos2pc);
@@ -568,7 +562,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
               << "\n----------------\n";
     if (Stokes.GetPrFE()==P1X_FE)
     {
-        const ExtIdxDescCL& Xidx= Stokes.GetXidx();
+        const MLExtIdxDescCL& Xidx= Stokes.GetXidx();
         const size_t n= Stokes.p.Data.size();
 
         const double limtol= 10,
@@ -599,7 +593,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         opr.Data= Stokes.p.Data;
     }
 
-    L2ErrorPr( Stokes.p, lset, Stokes.prM.Data, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx(), avg_ex);
+    L2ErrorPr( Stokes.p, lset, Stokes.prM.Data.GetFinest(), prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest(), avg_ex);
 
     PostProcessPr( Stokes.p, new_pr, MG);
 

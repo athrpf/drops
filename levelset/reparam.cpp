@@ -56,7 +56,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
     LevelsetP2CL lset( mg, &sigma, /*grad sigma*/ 0, 0.5, 0, diff);
 
     IdxDescCL& lidx= lset.idx;
-    IdxDescCL& vidx= prob.vel_idx;
+    MLIdxDescCL& vidx= prob.vel_idx;
     VecDescCL& vel=  prob.v;
 
     prob.CreateNumberingVel( mg.GetLastLevel(), &vidx);

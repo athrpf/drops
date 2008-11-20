@@ -36,14 +36,14 @@ class InstatStokesThetaSchemeCL
     VelVecDescCL *_b, *_old_b;        // rhs + couplings with poisson matrix A
     VelVecDescCL *_cplM, *_old_cplM;  // couplings with mass matrix M
     VectorCL      _rhs;
-    MatrixCL      _mat;               // M + theta*dt*A
+    MLMatrixCL    _mat;               // M + theta*dt*A
 
     double _theta, _dt;
 
   public:
     InstatStokesThetaSchemeCL( StokesT& Stokes, SolverT& solver, double theta= 0.5)
         : _Stokes( Stokes), _solver( solver), _b( &Stokes.b), _old_b( new VelVecDescCL),
-          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _rhs( Stokes.b.RowIdx->NumUnknowns),
+          _cplM( new VelVecDescCL), _old_cplM( new VelVecDescCL), _rhs( Stokes.b.RowIdx->NumUnknowns()),
           _theta( theta)
     {
         _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
@@ -100,6 +100,9 @@ class ISPreCL
     ISPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
         double kA= 0., double kM= 1., double om= 1.)
         : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM), ssor_( om)  {}
+    ISPreCL( MLMatrixCL& A_pr, MLMatrixCL& M_pr,
+             double kA= 0., double kM= 1., double om= 1.)
+    : A_( A_pr.GetFinest()), M_( M_pr.GetFinest()), kA_( kA), kM_( kM), ssor_( om)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -151,25 +154,26 @@ class ISMGPreCL
     SSORPcCL directpc;
     mutable PCG_SsorCL solver;
 
-    DROPS::MGDataCL& Apr_;
-    DROPS::MGDataCL& Mpr_;
+    DROPS::MLMatrixCL& Apr_;
+    DROPS::MLMatrixCL& Mpr_;
+    DROPS::MLMatrixCL& P_;
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
     double kA_, kM_;
     std::vector<DROPS::VectorCL> ones_;
 
   public:
-    ISMGPreCL(DROPS::MGDataCL& A_pr, DROPS::MGDataCL& M_pr,
+    ISMGPreCL(DROPS::MLMatrixCL& A_pr, DROPS::MLMatrixCL& M_pr, DROPS::MLMatrixCL& P,
                     double kA, double kM, DROPS::Uint iter_prA=1,
                     DROPS::Uint iter_prM = 1)
         : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
-          Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM),
+          Apr_( A_pr), Mpr_( M_pr), P_(P), iter_prA_( iter_prA), iter_prM_( iter_prM),
           kA_( kA), kM_( kM), ones_( Mpr_.size())
     {
         // Compute projection on constant pressure function only once.
         Uint i= 0;
-        for (const_MGDataIterCL it= Mpr_.begin(); it != Mpr_.end(); ++it, ++i) {
-            ones_[i].resize( it->Idx.NumUnknowns, 1.0/it->Idx.NumUnknowns);
+        for (MLMatrixCL::const_iterator it= Mpr_.begin(); it != Mpr_.end(); ++it, ++i) {
+            ones_[i].resize( it->num_cols(), 1.0/it->num_cols());
         }
     }
 
@@ -282,7 +286,7 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 class MinCommPreCL
 {
   private:
-    const MatrixCL** A_, *B_, *Mvel_, *M_;
+    const MatrixCL* A_, *B_, *Mvel_, *M_;
     mutable MatrixCL* Bs_;
     mutable size_t Aversion_, Bversion_, Mvelversion_, Mversion_;
     mutable CompositeMatrixCL BBT_;
@@ -296,7 +300,7 @@ class MinCommPreCL
     void Update () const;
 
   public:
-    MinCommPreCL (const MatrixCL** A, MatrixCL* B, MatrixCL* Mvel, MatrixCL* M_pr, double tol=1e-2)
+    MinCommPreCL (const MatrixCL* A, MatrixCL* B, MatrixCL* Mvel, MatrixCL* M_pr, double tol=1e-2)
         : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
           BBT_( 0, TRANSP_MUL, 0, MUL), tol_(tol),
@@ -319,8 +323,8 @@ class MinCommPreCL
     template <typename Mat, typename Vec>
     void Apply (const Mat&, Vec& x, const Vec& b) const;
 
-    void SetMatrixA  (const MatrixCL** A) { A_= A; }
-    void SetMatrices (const MatrixCL** A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+    void SetMatrixA  (const MatrixCL* A) { A_= A; }
+    void SetMatrices (const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
         A_= A;
         B_= B;
         Mvel_= Mvel;
@@ -333,7 +337,7 @@ template <typename Mat, typename Vec>
   void
   MinCommPreCL::Apply (const Mat&, Vec& x, const Vec& b) const
 {
-    if (((*A_)->Version() != Aversion_) || (Mvel_->Version() != Mvelversion_) || (B_->Version() != Bversion_))
+    if ((A_->Version() != Aversion_) || (Mvel_->Version() != Mvelversion_) || (B_->Version() != Bversion_))
         Update();
 
     VectorCL y( b.size());
@@ -341,7 +345,7 @@ template <typename Mat, typename Vec>
     if (solver_.GetIter() == solver_.GetMaxIter())
         std::cerr << "MinCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
-    VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((**A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
+    VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((*A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
     VectorCL t( b.size());
     solver_.Solve( BBT_, t, z);
     if (solver_.GetIter() == solver_.GetMaxIter())
@@ -443,39 +447,42 @@ std::cerr << "norm( p2): " << norm( p2_);
 template<class SmootherCL, class DirectSolverCL>
 void
 MGMPr(const std::vector<VectorCL>::const_iterator& ones,
-      const const_MGDataIterCL& begin, const const_MGDataIterCL& fine, VectorCL& x, const VectorCL& b,
+      const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine,
+      MLMatrixCL::const_iterator P, VectorCL& x, const VectorCL& b,
       const SmootherCL& Smoother, const Uint smoothSteps,
-    DirectSolverCL& Solver, const int numLevel, const int numUnknDirect)
+      DirectSolverCL& Solver, const int numLevel, const int numUnknDirect)
 // Multigrid method, V-cycle. If numLevel==0 or #Unknowns <= numUnknDirect,
 // the direct solver Solver is used.
 // If one of the parameters is -1, it will be neglected.
-// If MGData.begin() has been reached, the direct solver is used too.
+// If MLMatrixCL.begin() has been reached, the direct solver is used too.
 // Concerning the stabilization see Hackbusch Multigrid-Methods and Applications;
 // Basically we project on the orthogonal complement of the kernel of A before
 // the coarse-grid correction.
 {
-    const_MGDataIterCL coarse= fine;
-    --coarse;
+    MLMatrixCL::const_iterator coarse = fine;
+    MLMatrixCL::const_iterator coarseP= P;
     if(  ( numLevel==-1      ? false : numLevel==0 )
        ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) )
        || fine==begin)
     { // use direct solver
-        Solver.Solve( fine->A.Data, x, b);
+        Solver.Solve( *fine, x, b);
         x-= dot( *ones, x);
         return;
     }
-    VectorCL d(coarse->Idx.NumUnknowns), e(coarse->Idx.NumUnknowns);
+    --coarse;
+    --coarseP;
     // presmoothing
-    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine, x, b);
     // restriction of defect
-    d= transp_mul( fine->P.Data, VectorCL( b - fine->A.Data*x));
+    VectorCL d( transp_mul( *P, VectorCL( b - (*fine)*x)));
     d-= dot( *(ones-1), d);
+    VectorCL e( d.size());
     // calculate coarse grid correction
-    MGMPr( ones-1, begin, coarse, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
+    MGMPr( ones-1, begin, coarse, coarseP, e, d, Smoother, smoothSteps, Solver, (numLevel==-1 ? -1 : numLevel-1), numUnknDirect);
     // add coarse grid correction
-    x+= fine->P.Data * e;
+    x+= (*P) * e;
     // postsmoothing
-    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( fine->A.Data, x, b);
+    for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine, x, b);
     // This projection could probably be avoided, but it is cheap and with it,
     // we are on the safe side.
     x-= dot( *ones, x);
@@ -488,11 +495,12 @@ ISMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
 {
     p= 0.0;
     const Vec c2_( c - dot( ones_.back(), c));
+    MLMatrixCL::const_iterator finestP = --P_.end();
 //    double new_res= (Apr_.back().A.Data*p - c).norm();
 //    double old_res;
 //    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';
     for (DROPS::Uint i=0; i<iter_prA_; ++i) {
-        DROPS::MGMPr( ones_.end()-1, Apr_.begin(), --Apr_.end(), p, c2_, smoother, sm, solver, lvl, -1);
+        DROPS::MGMPr( ones_.end()-1, Apr_.begin(), --Apr_.end(), finestP, p, c2_, smoother, sm, solver, lvl, -1);
 //        old_res= new_res;
 //        std::cerr << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
 //        std::cerr << " reduction: " << new_res/old_res << '\n';
@@ -502,7 +510,7 @@ ISMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
 
     Vec p2( p.size());
     for (DROPS::Uint i=0; i<iter_prM_; ++i)
-        DROPS::MGM( Mpr_.begin(), --Mpr_.end(), p2, c, smoother, sm, solver, lvl, -1);
+        DROPS::MGM( Mpr_.begin(), --Mpr_.end(), finestP, p2, c, smoother, sm, solver, lvl, -1);
 //    std::cerr << "Mass: iterations: " << iter_prM_ << '\t'
 //              << " residual: " <<  (Mpr_.back().A.Data*p2 - c).norm() << '\n';
 

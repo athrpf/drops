@@ -26,23 +26,22 @@ class TimeDisc2PhaseCL
     VelVecDescCL *cplN_, *old_cplN_;  // couplings with convection matrix N
     VecDescCL    *curv_, *old_curv_;  // curvature term
     VectorCL      rhs_, ls_rhs_;
-    MatrixCL*     mat_;               // 1./dt*M + theta*A
+    MLMatrixCL*   mat_;               // 1./dt*M + theta*A
 
     double theta_, dt_;
     const double nonlinear_;
-    bool         usematMG_;           // MG-hierachy for _mat
 
     VecDescCL    cplLB_;
-    MatDescCL    LB_;
+    MLMatDescCL  LB_;
 
   public:
-    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1., bool usematMG= false);
+    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1.);
     virtual ~TimeDisc2PhaseCL();
 
     double GetTheta()    const { return theta_; }
     double GetTime()     const { return Stokes_.t; }
     double GetTimeStep() const { return dt_; }
-    const MatrixCL* GetUpperLeftBlock () const { return mat_; }
+    const MatrixCL* GetUpperLeftBlock () const { return mat_->GetFinest(); }
 
     virtual void SetTimeStep (double dt) {dt_= dt;}
 
@@ -69,7 +68,6 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::theta_;
     using base_::nonlinear_;
     using base_::dt_;
-    using base_::usematMG_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -80,8 +78,7 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
   public:
     LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                             SolverT& solver, double theta= 0.5,
-                            double nonlinear= 1., bool implicitCurv= false,
-                            bool usematMG= false);
+                            double nonlinear= 1., bool implicitCurv= false);
     ~LinThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites base-class-method
@@ -119,7 +116,6 @@ class ThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::theta_;
     using base_::nonlinear_;
     using base_::dt_;
-    using base_::usematMG_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -133,8 +129,7 @@ class ThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
   public:
     ThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double theta= 0.5, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0,
-                         bool usematMG= false);
+                         bool withProjection= false, double stab= 0.0);
     ~ThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites base-class-method
@@ -172,8 +167,8 @@ class FracStepScheme2PhaseCL : public ThetaScheme2PhaseCL<StokesT,SolverT>
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                SolverT& solver, double nonlinear= 1, bool withProjection= false,
-                               double stab= 0.0, int step = -1, bool usematMG= false)
-        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab, usematMG), step_((step >= 0) ? step%3 : 0) {}
+                               double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -235,7 +230,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
     SSORPcCL                pc_;
     GMResSolverCL<SSORPcCL> gm_;
 
-    MatrixCL      AN_;                // A + N
+    MLMatrixCL    AN_;                // A + N
     VelVecDescCL *cplA_, *old_cplA_;  // couplings with stiff matrix A
 
     double       alpha_;
@@ -278,7 +273,6 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::theta_;
     using base_::nonlinear_;
     using base_::dt_;
-    using base_::usematMG_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -298,8 +292,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double theta= 0.5, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0,
-                         bool usematMG= false);
+                         bool withProjection= false, double stab= 0.0);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
@@ -335,8 +328,7 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0,
-                         bool usematMG= false);
+                         bool withProjection= false, double stab= 0.0);
     ~CrankNicolsonScheme2PhaseCL();
 
     void DoStep( int maxFPiter= -1);

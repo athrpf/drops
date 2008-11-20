@@ -311,7 +311,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
 {
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
 
-  IdxDescCL& idx= Poisson.idx;
+  MLIdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
   VecDescCL& b= Poisson.b;
   MatDescCL& A= Poisson.A;
@@ -325,7 +325,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
   MultiGridCL& MG= Poisson.GetMG();
 
   // erzeuge Nummerierung zu diesem Index
-  Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
+  Poisson.CreateNumbering( MG.GetLastLevel(), &idx);
 
   // Vektoren mit Index idx
   b.SetIdx(&idx);

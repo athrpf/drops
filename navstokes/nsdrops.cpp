@@ -82,11 +82,11 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     typedef NavierStokesP2P1CL<Coeff> NavStokesCL;
     MultiGridCL& MG= NS.GetMG();
 
-    IdxDescCL  loc_vidx, loc_pidx;
-    IdxDescCL* vidx1= &NS.vel_idx;
-    IdxDescCL* pidx1= &NS.pr_idx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx2= &loc_pidx;
+    MLIdxDescCL  loc_vidx, loc_pidx;
+    MLIdxDescCL* vidx1= &NS.vel_idx;
+    MLIdxDescCL* pidx1= &NS.pr_idx;
+    MLIdxDescCL* vidx2= &loc_vidx;
+    MLIdxDescCL* pidx2= &loc_pidx;
 
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
@@ -97,9 +97,9 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     VelVecDescCL* b= &NS.b;
     VelVecDescCL* c= &NS.c;
 
-    MatDescCL* A= &NS.A;
-    MatDescCL* B= &NS.B;
-    MatDescCL* N= &NS.N;
+    MLMatDescCL* A= &NS.A;
+    MLMatDescCL* B= &NS.B;
+    MLMatDescCL* N= &NS.N;
     int step= 0;
 
     vidx1->SetFE( vecP2_FE);
@@ -111,10 +111,10 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
     do
     {
         MG.Refine();
-        NS.CreateNumberingVel(MG.GetLastLevel(), vidx1);
-        NS.CreateNumberingPr(MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
-                  << vidx1->TriangLevel << std::endl;
+        NS.CreateNumberingVel( MG.GetLastLevel(), vidx1);
+        NS.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
+        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+                  << vidx1->TriangLevel() << std::endl;
         MG.SizeInfo(std::cerr);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
@@ -161,10 +161,10 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         //---------------------------------------
         time.Reset();
 
-        MatDescCL M;
+        MLMatDescCL M;
         M.SetIdx( pidx1, pidx1);
         NS.SetupPrMass( &M);
-        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
+        AFPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data.GetFinest(), fp_maxiter, fp_tol,
                                                      2000, poi_maxiter, poi_tol, uzawa_red);
 //        FPDeCo_Uzawa_PCG_CL<NavStokesCL> statsolver(NS, M.Data, fp_maxiter, fp_tol,
 //                                                  2000, poi_maxiter, poi_tol, uzawa_red);
@@ -182,7 +182,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         VectorCL d( vidx1->NumUnknowns), e( pidx1->NumUnknowns),
                  w( vidx1->NumUnknowns), q( pidx1->NumUnknowns);
         VelVecDescCL rhsN( vidx1), v_omw( vidx1);
-        MatDescCL M;
+        MLMatDescCL M;
         M.SetIdx( pidx1, pidx1);
         NS.SetupMass( &M);
         double omega= 1, res; // initial value (no damping)
@@ -235,7 +235,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 
         time.Stop();
         std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
-        NS.CheckSolution(v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
+        NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
         MarkAll(MG);
 
         A->Reset();
@@ -317,12 +317,12 @@ int main (int argc, char** argv)
         fil << DROPS::GeomSolOutCL<MyNavierStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, min, max) << std::endl;
         fil.close();
 
-        DROPS::IdxDescCL tecIdx( DROPS::P1_FE);
+        DROPS::MLIdxDescCL tecIdx( DROPS::P1_FE);
         prob.CreateNumberingPr( mg.GetLastLevel(), &tecIdx);
 
         std::ofstream v2d("navstokestec2D.dat");
         DROPS::TecPlot2DSolOutCL< MyNavierStokesCL::const_DiscVelSolCL, MyNavierStokesCL::const_DiscPrSolCL>
-            tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx, -1, 1, 0.5); // cutplane is y=0.5
+            tecplot2d( mg, prob.GetVelSolution(), prob.GetPrSolution(), tecIdx.GetFinest(), -1, 1, 0.5); // cutplane is y=0.5
         v2d << tecplot2d;
         v2d.close();
     return 0;

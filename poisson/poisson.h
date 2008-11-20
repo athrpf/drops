@@ -42,31 +42,32 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
-    IdxDescCL idx;
-    VecDescCL x;
-    VecDescCL b;
-    MatDescCL A;
+    MLIdxDescCL idx;
+    VecDescCL   x;
+    VecDescCL   b;
+    MLMatDescCL A;
 
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base( mgb, coeff, bdata), idx( P1_FE) {}
     // numbering of unknowns
-    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
+    void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData, match); }
-    void DeleteNumbering( IdxDescCL* idx)
+    void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
-    // set up matrices and rhs
-    void SetupSystem         (MatDescCL&, VecDescCL&) const;
-    void SetupStiffnessMatrix(MatDescCL&) const;
-    void SetupProlongation   (MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const;
-    // check computed solution etc.
-    double CheckSolution(const VecDescCL&, instat_scalar_fun_ptr) const;
-    double CheckSolution(instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
-    void GetDiscError (const MatDescCL&, instat_scalar_fun_ptr) const;
-    void GetDiscError (scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
+    void SetNumLvl( size_t n);
 
-    bool          EstimateError         (const VecDescCL&, const double, double&, est_fun);
-    static double ResidualErrEstimator  (const TetraCL&, const VecDescCL&, const BndDataCL&);
-    static double ResidualErrEstimatorL2(const TetraCL&, const VecDescCL&, const BndDataCL&);
+    // set up matrices and rhs
+    void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
+    void SetupProlongation   ( MLMatDescCL& P) const;
+    // check computed solution etc.
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+    void GetDiscError   ( const MLMatDescCL&, instat_scalar_fun_ptr) const;
+    void GetDiscError   ( scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
+
+    bool          EstimateError         ( const VecDescCL&, const double, double&, est_fun);
+    static double ResidualErrEstimator  ( const TetraCL&, const VecDescCL&, const BndDataCL&);
+    static double ResidualErrEstimatorL2( const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
@@ -92,32 +93,33 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
     // new fields for the matrix A, the rhs b and the solution x
-    IdxDescCL idx;
-    VecDescCL x;
-    VecDescCL b;
-    MatDescCL A;
+    MLIdxDescCL idx;
+    VecDescCL   x;
+    VecDescCL   b;
+    MLMatDescCL A;
 
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
                 const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE) {}
 
     // numbering of unknowns
-    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
+    void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData, match); }
-    void DeleteNumbering( IdxDescCL* idx)
+    void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
+    void SetNumLvl( size_t n);
 
     // set up matrices and rhs
-    void SetupSystem         (MatDescCL&, VecDescCL&) const;
-    void SetupStiffnessMatrix(MatDescCL&) const;
+    void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
+    void SetupProlongation   ( MLMatDescCL& P) const;
 
     // check computed solution, etc.
-    double CheckSolution(const VecDescCL&, instat_scalar_fun_ptr) const;
-    double CheckSolution(instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
 };
 
 
-double SimpleGradEstimator (const TetraCL& t, const VecDescCL& lsg, const PoissonBndDataCL&);
+double SimpleGradEstimator ( const TetraCL& t, const VecDescCL& lsg, const PoissonBndDataCL&);
 
 //==============================================================
 //                  Marker classes

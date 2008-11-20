@@ -158,8 +158,8 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 //    lset.SetSurfaceForce( SF_Const);
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
 
@@ -249,8 +249,8 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     LevelsetP2CL lset( MG, &sigmaf, NULL, C.theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, /*CurvDiff*/ -1.);
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
 
@@ -299,7 +299,7 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     std::cerr << "\n\nsup |f1(v)-f2(v)|/|v|_1 = \t\t" << sup
               << "\n|A^-1 d| = \t\t" << norm( A_inv_d) << std::endl;
-    MatrixCL MA;
+    MLMatrixCL MA;
     MA.LinComb( 1, Stokes.M.Data, 1, Stokes.A.Data);
     VectorCL MA_inv_d( A_inv_d);
     std::cerr << "Solving system with MA matrix:\t";

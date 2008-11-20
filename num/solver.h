@@ -259,14 +259,33 @@ SolveGSstep(const PreDummyCL<PB_SGS0>&, const MatrixCL& A, Vec& x, const Vec& b,
     }
 }
 
-
-template <bool HasOmega, typename Vec, typename Mat>
+template <bool HasOmega, typename  Vec, PreBaseGS PBT>
 void
-SolveGSstep(const PreDummyCL<PB_DUMMY>&, const Mat&, Vec& x, const Vec& b, double)
+SolveGSstep(const PreDummyCL<PBT>& pd, const MLMatrixCL& M, Vec& x, const Vec& b, double omega)
 {
-    x= b;
+    SolveGSstep<HasOmega, Vec>( pd, M.GetFinest(), x, b, omega);
 }
 
+template <bool HasOmega, typename  Vec, PreBaseGS PBT>
+void
+SolveGSstep(const PreDummyCL<PBT>& pd, const MLMatrixCL& M, Vec& x, const Vec& b)
+{
+    SolveGSstep<HasOmega, Vec>( pd, M.GetFinest(), x, b);
+}
+
+template <bool HasOmega, typename  Vec, PreBaseGS PBT>
+void
+SolveGSstep(const PreDummyCL<PBT>& pd, const MLMatrixCL& A, Vec& x, const Vec& b, const SparseMatDiagCL& diag, double omega)
+{
+    SolveGSstep<HasOmega, Vec>( pd, A.GetFinest(), x, b, diag, omega);
+}
+
+template <bool HasOmega, typename  Vec, PreBaseGS PBT>
+void
+SolveGSstep(const PreDummyCL<PBT>& pd, const MLMatrixCL& A, Vec& x, const Vec& b, const SparseMatDiagCL& diag)
+{
+    SolveGSstep<HasOmega, Vec>( pd, A.GetFinest(), x, b, diag);
+}
 //=============================================================================
 //  Preconditioner classes
 //=============================================================================
@@ -316,6 +335,11 @@ class PreGSCL<PM,true>
     void Apply(const MatrixCL& A, Vec& x, const Vec& b) const
     {
         SolveGSstep<PreTraitsCL<PM>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<PM>::BaseMeth>(), A, x, b, *_diag, _omega);
+    }
+    template <typename Vec>
+    void Apply(const MLMatrixCL& A, Vec& x, const Vec& b) const
+    {
+        SolveGSstep<PreTraitsCL<PM>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<PM>::BaseMeth>(), A.GetFinest(), x, b, *_diag, _omega);
     }
 };
 
@@ -387,6 +411,16 @@ class MultiSSORPcCL
         // _num-1 SSOR-steps
         for (int i=1; i<_num; ++i)
             SolveGSstep<PreTraitsCL<P_SSOR>::HasOmega,Vec>(PreDummyCL<PreTraitsCL<P_SSOR>::BaseMeth>(), A, x, b, _omega);
+    }
+};
+
+class DummyPcCL
+{
+  public:
+    template <typename Mat, typename Vec>
+    void Apply(const Mat&, Vec& x, const Vec& b) const
+    {
+        x = b;
     }
 };
 
@@ -742,7 +776,7 @@ LanczosStep(const Mat& A,
     return true;
 }
 
-template <typename Mat, typename Vec>
+template <typename Vec>
 class LanczosONBCL
 {
   private:
@@ -750,23 +784,19 @@ class LanczosONBCL
     double norm_r0_;
 
   public:
-    const Mat* A;
     SBufferCL<Vec, 3> q;
     double a0;
     SBufferCL<double, 2> b;
 
-    LanczosONBCL()
-      :A( 0) {}
-
+    template <typename Mat>
     void // Sets up initial values and computes q0.
-    new_basis(const Mat& A_, const Vec& r0) {
-        A= &A_;
+    new_basis(const Mat& A, const Vec& r0) {
         q[-1].resize( r0.size(), 0.);
         norm_r0_= norm( r0);
         q[0].resize( r0.size(), 0.); q[0]= r0/norm_r0_;
         q[1].resize( r0.size(), 0.);
         b[-1]= 0.;
-        nobreakdown_= LanczosStep( *A, q[-1], q[0], q[1], a0, b[-1], b[0]);
+        nobreakdown_= LanczosStep( A, q[-1], q[0], q[1], a0, b[-1], b[0]);
     }
 
     double norm_r0() const {
@@ -776,10 +806,11 @@ class LanczosONBCL
         return !nobreakdown_; }
     // Computes new q_i, a_i, b_1, q_{i+1} in q0, a0, b0, q1 and moves old
     // values to qm1, bm1.
+    template <typename Mat>
     bool
-    next() {
+    next( const Mat& A) {
         q.rotate(); b.rotate();
-        return (nobreakdown_= LanczosStep( *A, q[-1], q[0], q[1], a0, b[-1], b[0]));
+        return (nobreakdown_= LanczosStep( A, q[-1], q[0], q[1], a0, b[-1], b[0]));
     }
 };
 
@@ -812,7 +843,7 @@ PLanczosStep(const Mat& A,
     return true;
 }
 
-template <typename Mat, typename Vec, typename PreCon>
+template <typename Vec, typename PreCon>
 class PLanczosONBCL
 {
   private:
@@ -820,7 +851,6 @@ class PLanczosONBCL
     double norm_r0_;
 
   public:
-    const Mat* A;
     const PreCon& M;
     SBufferCL<Vec, 2> q;
     SBufferCL<Vec, 3> t;
@@ -829,19 +859,19 @@ class PLanczosONBCL
 
     // Sets up initial values and computes q0.
     PLanczosONBCL(const PreCon& M_)
-      :A( 0), M( M_) {}
+      : M( M_) {}
 
+    template <typename Mat>
     void // Sets up initial values and computes q0.
-    new_basis(const Mat& A_, const Vec& r0) {
-        A= &A_;
+    new_basis(const Mat& A, const Vec& r0) {
         t[-1].resize( r0.size(), 0.);
-        q[-1].resize( r0.size(), 0.); M.Apply( *A, q[-1], r0);
+        q[-1].resize( r0.size(), 0.); M.Apply( A, q[-1], r0);
         norm_r0_= std::sqrt( dot( q[-1], r0));
         t[0].resize( r0.size(), 0.); t[0]= r0/norm_r0_;
         q[0].resize( r0.size(), 0.); q[0]= q[-1]/norm_r0_;
         t[1].resize( r0.size(), 0.);
         b[-1]= 0.;
-        nobreakdown_= PLanczosStep( *A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]);
+        nobreakdown_= PLanczosStep( A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]);
     }
 
     double norm_r0() const {
@@ -851,10 +881,11 @@ class PLanczosONBCL
         return !nobreakdown_; }
     // Computes new q_i, t_i, a_i, b_1, q_{i+1} in q0, t_0, a0, b0, q1 and moves old
     // values to qm1, tm1, bm1.
+    template <typename Mat>
     bool
-    next() {
+    next(const Mat& A) {
         q.rotate(); t.rotate(); b.rotate();
-        return (nobreakdown_= PLanczosStep( *A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]));
+        return (nobreakdown_= PLanczosStep( A, M, q[0], q[1], t[-1], t[0], t[1], a0, b[-1], b[0]));
     }
 };
 
@@ -875,7 +906,7 @@ class PLanczosONBCL
 //-----------------------------------------------------------------------------
 template <typename Mat, typename Vec, typename Lanczos>
 bool
-PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol,
+PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol,
     bool measure_relative_tol= false)
 {
     Vec dx( x.size());
@@ -946,7 +977,7 @@ PMINRES(const Mat&, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol,
             max_iter= k;
             return true;
         }
-        q.next();
+        q.next( A);
         if (q.breakdown()) {
             lucky= true;
             std::cerr << "PMINRES: lucky breakdown\n";
@@ -963,7 +994,7 @@ bool
 MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol,
     bool measure_relative_tol= false)
 {
-    LanczosONBCL<Mat, Vec> q;
+    LanczosONBCL<Vec> q;
     q.new_basis( A, Vec( rhs - A*x));
     return PMINRES( A,  x, rhs, q, max_iter, tol, measure_relative_tol);
 }
@@ -1103,7 +1134,6 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
     double normb= norm( b);
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
     double resid= norm( r)/normb;
-
     for (int k= 0; k < max_iter; ++k) {
         if (k%10==0) std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
         if (resid < tol) {
@@ -1266,7 +1296,7 @@ class CGSolverCL : public SolverBaseCL
         CG(A, x, b, _iter, _res, rel_);
     }
     template <typename Mat, typename Vec>
-    void Solve(const MatrixCL& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
     {
         resid=   _tol;
         numIter= _maxiter;
@@ -1526,7 +1556,6 @@ typedef PreGSCL<P_JAC0>    JACPcCL;
 typedef PreGSCL<P_SGS0>    SGSPcCL;
 typedef PreGSCL<P_SSOR0>   SSORPcCL;
 typedef PreGSCL<P_SSOR0_D> SSORDiagPcCL;
-typedef PreGSCL<P_DUMMY>   DummyPcCL;
 typedef PreGSCL<P_GS0>     GSPcCL;
 
 typedef PCGSolverCL<SGSPcCL>      PCG_SgsCL;

@@ -498,7 +498,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
 // where v_i, v_j denote the ansatz functions
 // and w(Psi) = sign(Phi0) * grad Psi / |grad Psi| the scaled gradient of Psi
 {
-    const IdxT num_unks= Phi.RowIdx->NumUnknowns;
+    const IdxT num_unks= Phi.RowIdx->NumUnknowns();
     const Uint lvl= Phi.GetLevel();
 
     SparseMatBuilderCL<double> R(&R_, num_unks, num_unks);
@@ -734,7 +734,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 // M = mass matrix for P2 elements
 // A = stiffness matrix for P2 elements
 {
-    const IdxT num_unks= Phi.RowIdx->NumUnknowns;
+    const IdxT num_unks= Phi.RowIdx->NumUnknowns();
     const Uint lvl= Phi.GetLevel();
 
     SparseMatBuilderCL<double> Mb(&M, num_unks, num_unks);

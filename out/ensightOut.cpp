@@ -106,7 +106,7 @@ void EnsightP2SolOutCL::CaseEnd()
 void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 {
     const IdxDescCL* idxDesc= _idx;
-    const Uint lvl= _idx->TriangLevel,
+    const Uint lvl= _idx->TriangLevel(),
                idx= _idx->GetIdx();
     if ( t!=-1)
     {
@@ -136,7 +136,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 
         showInt sInt;                  //unions for converting ASCII int to binary
         showFloat sFlo;
-        sInt.i= (int)idxDesc->NumUnknowns;            //write number of nodes
+        sInt.i= (int)idxDesc->NumUnknowns();            //write number of nodes
         os.write( sInt.s, sizeof(int));
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),     //write node ids
                  end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)
@@ -218,7 +218,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 
          os << "DROPS geometry file: " << "\nformat: Ensight6 Case format\n";
          os << "node id given\nelement id off\n";
-         os << "coordinates\n" << std::setw(8) << idxDesc->NumUnknowns << '\n';
+         os << "coordinates\n" << std::setw(8) << idxDesc->NumUnknowns() << '\n';
 
          for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
              end= _MG->GetTriangVertexEnd(lvl); it!=end; ++it)

@@ -40,7 +40,7 @@ class InstatNavStokesThetaSchemeCL
     VelVecDescCL *cplM_, *old_cplM_;  // couplings with mass matrix M
     VelVecDescCL *cplN_;              // couplings with nonlinearity N
     VectorCL      rhs_;
-    MatrixCL      L_;                 // 1./dt*M + theta*A  = linear part
+    MLMatrixCL    L_;                 // 1./dt*M + theta*A  = linear part
 
     double theta_, dt_;
 
@@ -49,7 +49,7 @@ class InstatNavStokesThetaSchemeCL
                                  double theta= 0.5, double t= 0.0)
         : NS_( NS), solver_( solver), b_( &NS.b), old_b_( new VelVecDescCL),
           cplM_( &NS.cplM), old_cplM_( new VelVecDescCL),
-          cplN_( &NS.cplN), rhs_( NS.b.RowIdx->NumUnknowns), theta_( theta)
+          cplN_( &NS.cplN), rhs_( NS.b.RowIdx->NumUnknowns()), theta_( theta)
     {
         old_b_->SetIdx( b_->RowIdx);
         old_cplM_->SetIdx( b_->RowIdx);

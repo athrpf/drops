@@ -38,7 +38,7 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     typedef typename _base::DiscVelSolCL       DiscVelSolCL;
     typedef typename _base::const_DiscVelSolCL const_DiscVelSolCL;
 
-    MatDescCL    N;
+    MLMatDescCL    N;
     const LevelsetP2CL* ls_;
 
     InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1)
@@ -49,18 +49,11 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     /// \name Discretization
     //@{
     /// \brief Set up matrix for nonlinearity
-    void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
+    void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
     /// \brief Set up matrix for nonlinearity at the time in the base-class using the registered Levelset-object.
-    void SetupNonlinear(MatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN) const {
+    void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN) const {
         this->SetupNonlinear( matN, vel, cplN, *ls_, t);
     }
-    void SetupN(MatDescCL* matN, const VelVecDescCL* vel, const LevelsetP2CL& lset, double t) const;
-    /// \brief Set up matrix for nonlinearity at the time in the base-class using the registered Levelset-object.
-
-    /// Set up MG-hierarchy
-    void SetupNMatricesMG( MGDataCL* matMG, const VelVecDescCL& vel, double alpha) const;
-
-
     //@}
 
     /// \brief Register a Levelset-object for use in SetupNonlinear; this is needed for Navier-Stokes-solvers.
@@ -68,6 +61,7 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
     void ClearMat() { _base::ClearMat(); N.Data.clear(); }
     void SetIdx()   { _base::SetIdx(); N.SetIdx(&vel_idx, &vel_idx); }
+    void SetNumVelLvl( size_t n) { _base::SetNumVelLvl( n); N.Data.resize (vel_idx.size()); }
 };
 
 } // end of namespace DROPS

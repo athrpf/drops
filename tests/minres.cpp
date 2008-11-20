@@ -23,14 +23,14 @@ int TestLanczos()
     r0[0]= 1.; r0[1]= 2.;
 
     std::cout << "A\n" << A << "r0\n" << r0 << std::endl;
-    DROPS::LanczosONBCL<DROPS::MatrixCL, DROPS::VectorCL> onb;
+    DROPS::LanczosONBCL<DROPS::VectorCL> onb;
     onb.new_basis(A, r0);
     std::vector<DROPS::VectorCL> basis;
     do {
         basis.push_back( onb.q[0]);
         std::cout << onb.q[0] << std::endl;
         std::cout << "a " << onb.a0 << " b " << onb.b[0] << std::endl;
-    } while (onb.next());
+    } while (onb.next( A));
     basis.push_back( onb.q[0]);
     std::cout << onb.q[0] << std::endl;
     std::cout << "a " << onb.a0 << " b " << onb.b[0] << std::endl;
@@ -139,9 +139,9 @@ int TestPMinres()
     std::cout << "A\n" << A << "b\n" << b << std::endl;
     int mi= 10;
     double tol= 1e-10;
-    DROPS::LanczosONBCL<DROPS::MatrixCL, DROPS::VectorCL> q;
+    DROPS::LanczosONBCL<DROPS::VectorCL> q;
     q.new_basis( A, b);
-    DROPS::PMResSolverCL<DROPS::LanczosONBCL<DROPS::MatrixCL, DROPS::VectorCL> > pmr( q, mi, tol);
+    DROPS::PMResSolverCL<DROPS::LanczosONBCL<DROPS::VectorCL> > pmr( q, mi, tol);
     pmr.Solve( A, x, b);
     std::cout << x << DROPS::VectorCL( A*x - b) << '\n' << pmr.GetIter() << '\n' << pmr.GetResid() << std::endl;
     return 0;
@@ -183,8 +183,8 @@ int TestPMinres2()
     int mi= 10;
     double tol= 1e-10;
     DROPS::DummyPcCL pc;
-    DROPS::PLanczosONBCL<DROPS::MatrixCL, DROPS::VectorCL, DROPS::DummyPcCL> q( pc);
-    DROPS::PMResSolverCL<DROPS::PLanczosONBCL<DROPS::MatrixCL, DROPS::VectorCL, DROPS::DummyPcCL> > pmr( q, mi, tol);
+    DROPS::PLanczosONBCL<DROPS::VectorCL, DROPS::DummyPcCL> q( pc);
+    DROPS::PMResSolverCL<DROPS::PLanczosONBCL<DROPS::VectorCL, DROPS::DummyPcCL> > pmr( q, mi, tol);
     pmr.Solve( A, x, b);
     std::cout << x << DROPS::VectorCL( A*x - b) << '\n' << pmr.GetIter() << '\n' << pmr.GetResid() << std::endl;
     return 0;

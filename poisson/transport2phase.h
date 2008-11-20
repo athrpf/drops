@@ -35,17 +35,17 @@ class TransportP1CL
     typedef P1EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
     typedef P1EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
 
-    IdxDescCL idx;
-    VecDescCL c,  ///< concentration
-              ct; ///< transformed concentration
-    MatDescCL A,  ///< diffusion matrix
-              M,  ///< mass matrix
-              C;  ///< convection matrix
-    VecDescCL cplA,    cplM,    cplC,
-              oldcplA, oldcplM, oldcplC;
+    MLIdxDescCL idx;
+    VecDescCL   c,  ///< concentration
+                ct; ///< transformed concentration
+    MLMatDescCL A,  ///< diffusion matrix
+                M,  ///< mass matrix
+                C;  ///< convection matrix
+    VecDescCL   cplA,    cplM,    cplC,
+                oldcplA, oldcplM, oldcplC;
 
   private:
-    MatrixCL     L_;              ///< sum of matrices
+    MLMatrixCL   L_;              ///< sum of matrices
     MultiGridCL& MG_;
     double       D_[2],           ///< diffusion constants
                  H_,              ///< jump of concentration at the interface
@@ -58,6 +58,10 @@ class TransportP1CL
 
     GSPcCL                  pc_;
     GMResSolverCL<GSPcCL>   gm_;
+    
+    void SetupInstatSystem (MatrixCL& matA, VecDescCL* cplA,
+                        MatrixCL& matM, VecDescCL* cplM, MatrixCL& matC, VecDescCL* cplC,
+                        IdxDescCL& RowIdx, const double time) const;
 
   public:
     TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, const VelBndDataT& Bnd_v, 
@@ -73,9 +77,9 @@ class TransportP1CL
 
     /// \name Numbering
     ///@{
-    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
+    void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, MG_, Bnd_, match); }
-    void DeleteNumbering( IdxDescCL* idx)
+    void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( MG_); }
     ///@}
     /// initialize transformed concentration function
@@ -86,7 +90,7 @@ class TransportP1CL
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     void SetupLocalSystem (const TetraCL&, double[4][4], double[4][4], double[4][4], const double,
         const LocalP2CL<>[4], const LocalP2CL<>[4][4], const Quad5CL<>[4]) const;
-    void SetupInstatSystem (MatDescCL&, VecDescCL&, MatDescCL&, VecDescCL&, MatDescCL&, VecDescCL&, const double) const;
+    void SetupInstatSystem ( MLMatDescCL&, VecDescCL&, MLMatDescCL&, VecDescCL&, MLMatDescCL&, VecDescCL&, const double) const;
     
     /// perform one time step
     void DoStep( double new_t);
@@ -123,10 +127,10 @@ class TransportRepairCL : public MGObserverCL
 {
   private:
     TransportP1CL& c_;
-    const MultiGridCL& mg_;
+    MultiGridCL& mg_;
 
   public:
-    TransportRepairCL (TransportP1CL& c, const MultiGridCL& mg)
+    TransportRepairCL (TransportP1CL& c, MultiGridCL& mg)
         : c_( c), mg_( mg) {}
 
     void pre_refine  () {}

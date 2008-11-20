@@ -69,15 +69,15 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
 
   MultiGridCL& MG= Poisson.GetMG();
-  IdxDescCL& idx= Poisson.idx;
-  VecDescCL& x= Poisson.x;
-  VecDescCL& b= Poisson.b;
-  MatDescCL& A= Poisson.A;
-  MatDescCL& M= Poisson.M;
-  MatDescCL& U= Poisson.U;
+  MLIdxDescCL& idx= Poisson.idx;
+  VecDescCL&   x= Poisson.x;
+  VecDescCL&   b= Poisson.b;
+  MLMatDescCL& A= Poisson.A;
+  MLMatDescCL& M= Poisson.M;
+  MLMatDescCL& U= Poisson.U;
 
   idx.SetFE( P1_FE);
-  Poisson.CreateNumbering(MG.GetLastLevel(), &idx);
+  Poisson.CreateNumbering( MG.GetLastLevel(), &idx);
 
   x.SetIdx(&idx);
   b.SetIdx(&idx);

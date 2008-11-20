@@ -338,11 +338,11 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConn
 {
   typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
 
-  IdxDescCL& idx= Poisson.idx;
+  MLIdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
   VecDescCL& b= Poisson.b;
-  MatDescCL& A= Poisson.A;
-  MatDescCL& M= Poisson.M;
+  MLMatDescCL& A= Poisson.A;
+  MLMatDescCL& M= Poisson.M;
 
   VecDescCL cplA;
   VecDescCL cplM;

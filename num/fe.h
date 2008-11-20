@@ -979,12 +979,13 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc);
 //     and such). The prolongation is only correct for homogeneous         *
 //     Dirichlet boundary values. (Otherwise, one needs a full affine      *
 //     trafo.)                                                             *
-//     P is an uninitialized MatDescCL-object.                             *
+//     P is an uninitialized MLMatDescCL-object.                             *
 // Postcondition: P contains the row-index fIdx, the column-index cIdx and *
 //     the corresponding standard prolongation matrix for P2-elements.     *
 //**************************************************************************
-void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
-                               IdxDescCL* cIdx, IdxDescCL* fIdx);
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
+                               IdxDescCL& cIdx, IdxDescCL& fIdx);
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P);
 
 //**************************************************************************
 // SetupP2ProlongationMatrix: Standard prolongation for P2-elements.       *
@@ -995,12 +996,13 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
 //     and such). The prolongation is only correct for homogeneous         *
 //     Dirichlet boundary values. (Otherwise, one needs a full affine      *
 //     trafo.)                                                             *
-//     P is an uninitialized MatDescCL-object.                             *
+//     P is an uninitialized MLMatDescCL-object.                             *
 // Postcondition: P contains the row-index fIdx, the column-index cIdx and *
 //     the corresponding standard prolongation matrix for P2-elements.     *
 //**************************************************************************
-void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatDescCL& P,
-                               IdxDescCL* cIdx, IdxDescCL* fIdx);
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
+                               IdxDescCL& cIdx, IdxDescCL& fIdx);
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P);
 
 //**************************************************************************
 // RestrictP2: Stores the DoF-values of a P2-function corresponding to vd  *

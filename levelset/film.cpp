@@ -123,8 +123,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     MultiGridCL& MG= Stokes.GetMG();
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
     IdxDescCL ens_idx( P2_FE, NoBndDataCL<>());
 
     LevelsetRepairCL lsetrepair( lset);
@@ -139,6 +139,10 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     lset.CreateNumbering(      MG.GetLastLevel(), lidx, periodic_xz);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
+    if ( StokesSolverFactoryHelperCL<ParamFilmCL>().VelMGUsed(C))
+        Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
+    if ( StokesSolverFactoryHelperCL<ParamFilmCL>().PrMGUsed(C))
+        Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx, periodic_xz);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, periodic_xz, &lset);
     ens_idx.CreateNumbering( MG.GetLastLevel(), MG);
@@ -237,15 +241,14 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
 
     LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, *navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true,
-             stokessolverfactory.MGUsed());
+        cpl( Stokes, lset, *navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.dt);
-    stokessolverfactory.SetMatrixA( const_cast<const MatrixCL**>(&Stokes.GetMGData().back().ABlock));
+    stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
 
-    //for Stokes-MG
-    MGDataIterCL it = Stokes.GetMGData().begin();
-    stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
+    //for Stokes-MGM
+    stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
+                                     &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
 
     bool secondSerial= false;
     for (int step= 1; step<=C.num_steps; ++step)

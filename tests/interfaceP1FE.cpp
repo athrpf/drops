@@ -46,15 +46,16 @@ void CreateNumbOnInterface(Uint level, IdxDescCL& idx, MultiGridCL& mg,
     const VecDescCL& ls)
 {
     // set up the index description
-    idx.TriangLevel = level;
-    idx.NumUnknowns = 0;
+    idx.SetTriangLevel( level);
+    idx.SetNumUnknowns( 0);
 
     const Uint idxnum= idx.GetIdx();
+    IdxT num_unknowns = idx.NumUnknowns();
     // allocate space for indices; number unknowns in TriangLevel level
     if (idx.NumUnknownsVertex)
-        CreateNumbOnInterfaceVertex( idxnum, idx.NumUnknowns, idx.NumUnknownsVertex(),
+        CreateNumbOnInterfaceVertex( idxnum, num_unknowns, idx.NumUnknownsVertex(),
             mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls);
-
+    idx.SetNumUnknowns( num_unknowns);
     if (idx.NumUnknownsEdge() != 0 || idx.NumUnknownsFace() != 0 || idx.NumUnknownsTetra() != 0)
         throw DROPSErrCL( "CreateNumbOnInterface: Only vertex unknowns are implemented\n" );
 }
@@ -73,21 +74,24 @@ TestSingleTetra()
     lset.Phi.Data= 1.0;
 
     IdxDescCL ifaceidx( P1_FE);
-    ifaceidx.TriangLevel = 0;
-
+    ifaceidx.SetTriangLevel( 0);
+    IdxT num_unknowns = ifaceidx.NumUnknowns();
     std::cout << "Testing vertex numbering around no interface:" << std::endl;
-    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), ifaceidx.NumUnknowns,
+    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), num_unknowns,
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
-    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
+    ifaceidx.SetNumUnknowns( num_unknowns);
+    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 
     std::cout << "Testing vertex numbering interface in 1 tetra:\n" << std::endl;
     lset.Phi.Data[0]= -1.0;
-    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), ifaceidx.NumUnknowns,
+    num_unknowns = ifaceidx.NumUnknowns();
+    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), num_unknowns,
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
-    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
+    ifaceidx.SetNumUnknowns( num_unknowns),
+    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 }
 
@@ -143,22 +147,25 @@ TestPlaneInCube()
     lset.Phi.Data= 1.0;
 
     IdxDescCL ifaceidx( P1_FE);
-    ifaceidx.TriangLevel = 0;
-
+    ifaceidx.SetTriangLevel( 0);
+    IdxT num_unknowns = ifaceidx.NumUnknowns();
     std::cout << "Testing vertex numbering around planar interface:" << std::endl;
     lset.Init( plane);
-    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), ifaceidx.NumUnknowns,
+    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), num_unknowns,
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
-    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
+    ifaceidx.SetNumUnknowns( num_unknowns);
+    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 
+    num_unknowns = ifaceidx.NumUnknowns();
     std::cout << "Testing vertex numbering around planar interface containing vertices:" << std::endl;
     lset.Init( plane2);
-    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), ifaceidx.NumUnknowns,
+    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), num_unknowns,
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
-    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
+    ifaceidx.SetNumUnknowns( num_unknowns);
+    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 }
 
@@ -186,7 +193,7 @@ void SetupInterfaceMassP1OnTriangle (const LocalP1CL<> p1[4],
 
 void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls)
 {
-    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns;
+    const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns();
     MatrixBuilderCL M( &matM->Data, num_unks_pr,  num_unks_pr);
 
     const Uint lvl= matM->GetRowLevel();
@@ -239,12 +246,13 @@ int main ()
     lset.Init( &sphere_2);
 
     IdxDescCL ifaceidx( P1_FE);
-    ifaceidx.TriangLevel = 0;
-
-    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), ifaceidx.NumUnknowns,
+    ifaceidx.SetTriangLevel( 0);
+    IdxT num_unknowns = ifaceidx.NumUnknowns();
+    CreateNumbOnInterfaceVertex( ifaceidx.GetIdx(), num_unknowns,
         ifaceidx.NumUnknownsVertex(), mg.GetTriangTetraBegin( 0), mg.GetTriangTetraEnd( 0),
         lset.Phi);
-    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
+    ifaceidx.SetNumUnknowns( num_unknowns);
+    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
     MatDescCL M( &ifaceidx, &ifaceidx);
     SetupInterfaceMassP1( mg, &M, lset.Phi);

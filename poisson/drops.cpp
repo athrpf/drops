@@ -34,17 +34,17 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
     MultiGridCL& MG= Poisson.GetMG();
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
 
-    IdxDescCL  loc_idx;
+    MLIdxDescCL  loc_idx;
     VecDescCL  loc_x;
 
-    IdxDescCL* new_idx= &Poisson.idx;
-    IdxDescCL* old_idx= &loc_idx;
+    MLIdxDescCL* new_idx= &Poisson.idx;
+    MLIdxDescCL* old_idx= &loc_idx;
 //    IdxDescCL* err_idx= &_err_idx;
     VecDescCL* new_x= &Poisson.x;
     VecDescCL* old_x= &loc_x;
     VecDescCL* b= &Poisson.b;
 //    VecDescCL* err= &_err;
-    MatDescCL* A= &Poisson.A;
+    MLMatDescCL* A= &Poisson.A;
     SSORPcCL   pc(omega);
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
         Estimator(rel_red, 0.0, 0.6, 0.875, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
@@ -58,9 +58,9 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
     {
         std::cerr << DROPS::SanityMGOutCL(MG) << std::endl;
         MG.Refine();
-        Poisson.CreateNumbering(MG.GetLastLevel(), new_idx);    // erzeuge Nummerierung zu diesem Index
-        std::cerr << "altes und neues TriangLevel: " << old_idx->TriangLevel << ", "
-                  << new_idx->TriangLevel << std::endl;
+        Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // erzeuge Nummerierung zu diesem Index
+        std::cerr << "altes und neues TriangLevel: " << old_idx->TriangLevel() << ", "
+                  << new_idx->TriangLevel() << std::endl;
         b->SetIdx( new_idx);                        // Erster Vektor aus new_idx
         new_x->SetIdx( new_idx);                    // Zweiter Vektor ebenfalls aus new_idx
         std::cerr << "Anzahl der Unbekannten: " << old_x->Data.size() << ", "

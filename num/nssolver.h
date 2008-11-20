@@ -30,14 +30,20 @@ class NSSolverBaseCL : public SolverBaseCL
 
     virtual ~NSSolverBaseCL() {}
 
-    virtual double   GetResid ()         const { return solver_.GetResid(); }
-    virtual int      GetIter  ()         const { return solver_.GetIter(); }
+    virtual double   GetResid ()           const { return solver_.GetResid(); }
+    virtual int      GetIter  ()           const { return solver_.GetIter(); }
     StokesSolverBaseCL& GetStokesSolver () const { return solver_; }
-    virtual const MatrixCL* GetAN()                  { return &NS_.A.Data; }
+    virtual const MLMatrixCL* GetAN()            { return &NS_.A.Data; }
 
     /// solves the system   A v + BT p = b
     ///                     B v        = c
     virtual void Solve (const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+        VectorCL& b, VecDescCL& cplN, VectorCL& c, double)
+    {
+        solver_.Solve( A, B, v.Data, p, b, c);
+        cplN.Data= 0.;
+    }
+    virtual void Solve (const MLMatrixCL& A, const MLMatrixCL& B, VecDescCL& v, VectorCL& p,
         VectorCL& b, VecDescCL& cplN, VectorCL& c, double)
     {
         solver_.Solve( A, B, v.Data, p, b, c);
@@ -68,7 +74,7 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
     using base_::_tol;
     using base_::_res;
 
-    MatrixCL* AN_;
+    MLMatrixCL* AN_;
 
     double      red_;
     bool        adap_;
@@ -76,7 +82,7 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
   public:
     AdaptFixedPtDefectCorrCL( NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter,
                               double tol, double reduction= 0.1, bool adap=true)
-        : base_( NS, solver, maxiter, tol), AN_(0), red_( reduction), adap_( adap) { AN_ = &NS_.GetMGData().back().AN.Data; }
+        : base_( NS, solver, maxiter, tol), AN_( new MLMatrixCL( NS.vel_idx.size()) ), red_( reduction), adap_( adap) { }
 
     ~AdaptFixedPtDefectCorrCL() {}
 
@@ -84,12 +90,14 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
     double   GetResid ()         const { return _res; }
     int      GetIter  ()         const { return _iter; }
 
-    const MatrixCL* GetAN()          { return AN_; }
+    const MLMatrixCL* GetAN()          { return AN_; }
 
     /// solves the system   [A + alpha*N] v + BT p = b + alpha*cplN
     ///                                 B v        = c
     /// (param. alpha is used for time integr. schemes)
     void Solve( const MatrixCL& A, const MatrixCL& B, VecDescCL& v, VectorCL& p,
+                VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
+    void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VecDescCL& v, VectorCL& p,
                 VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha= 1.);
 };
 
@@ -169,11 +177,16 @@ template<class NavStokesT>
 {
     VecDescCL v_omw( v.RowIdx);
     v_omw.Data= v.Data - omega_*w;
-    ns.SetupNonlinear( &ns.N, &v_omw, &cplN);
+    MLMatDescCL N;
+    MLIdxDescCL vidx( vecP2_FE);
+    match_fun match= ns.GetMG().GetBnd().GetMatchFun();
+    ns.CreateNumberingVel( ns.GetMG().GetLastLevel(), &vidx, *match);
+    N.SetIdx( &vidx, &vidx);
+    ns.SetupNonlinear( &N, &v_omw, &cplN);
 
-    d_= A*w + alpha*(ns.N.Data*w) + transp_mul( B, q);
+    d_= A*w + alpha*(N.Data*w) + transp_mul( B, q);
     e_= B*w;
-    omega_= dot( d_, VectorCL( A*v.Data + alpha*(ns.N.Data*v.Data)
+    omega_= dot( d_, VectorCL( A*v.Data + alpha*(N.Data*v.Data)
     + transp_mul( B, p) - b - alpha*cplN.Data))
     + dot( e_, VectorCL( B*v.Data - c));
     omega_/= norm_sq( d_) + norm_sq( e_);
@@ -211,9 +224,49 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     for(;;++_iter) { // ever
         NS_.SetupNonlinear(&NS_.N, &v, &cplN);
         //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
-        AN_->LinComb( 1., A, alpha, NS_.N.Data);
-        NS_.SetupNMatricesMG( &NS_.GetMGData(), v, alpha);
+        AN_->GetFinest().LinComb( 1., A, alpha, NS_.N.Data.GetFinest());
 
+        // calculate defect:
+        d= *AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
+        e= B*v.Data - c;
+        std::cerr << _iter << ": res = " << (_res= std::sqrt( norm_sq( d) + norm_sq( e) ) ) << std::endl;
+        //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
+        if (_res < _tol || _iter>=_maxiter)
+            break;
+
+        // solve correction:
+        double outer_tol= _res*red_;
+        if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
+        w= 0.0; q= 0.0;
+        solver_.SetTol( outer_tol);
+        solver_.Solve( AN_->GetFinest(), B, w, q, d, e); // solver_ should use a relative termination criterion.
+
+        // calculate step length omega:
+        relax.Update( NS_, A,  B, v, p, b, cplN, c, w,  q, alpha);
+
+        // update solution:
+        const double omega( relax.RelaxFactor());
+        std::cerr << "omega = " << omega << std::endl;
+        v.Data-= omega*w;
+        p     -= omega*q;
+    }
+}
+
+template<class NavStokesT, class RelaxationPolicyT>
+void
+AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
+    const MLMatrixCL& A, const MLMatrixCL& B, VecDescCL& v, VectorCL& p,
+    VectorCL& b, VecDescCL& cplN, VectorCL& c, double alpha)
+{
+    VectorCL d( v.Data.size()), e( p.size()),
+             w( v.Data.size()), q( p.size());
+    RelaxationPolicyT relax( v.Data.size(), p.size());
+
+    _iter= 0;
+    for(;;++_iter) { // ever
+        NS_.SetupNonlinear(&NS_.N, &v, &cplN);
+        //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
+        AN_->LinComb( 1., A, alpha, NS_.N.Data);
         // calculate defect:
         d= *AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
         e= B*v.Data - c;
@@ -230,7 +283,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         solver_.Solve( *AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
 
         // calculate step length omega:
-        relax.Update( NS_, A,  B, v, p, b, cplN, c, w,  q, alpha);
+        relax.Update( NS_, A.GetFinest(),  B.GetFinest(), v, p, b, cplN, c, w,  q, alpha);
 
         // update solution:
         const double omega( relax.RelaxFactor());

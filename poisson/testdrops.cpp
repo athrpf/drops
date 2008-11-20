@@ -127,9 +127,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     typedef PoissonP1CL<Coeff> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
-    IdxDescCL* c_idx=0;
     TimerCL time, Ltime;
-    MGDataCL MGData;
 
     for(MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(MG.GetLastLevel()), send=MG.GetTriangVertexEnd(MG.GetLastLevel());
         sit != send; ++sit)
@@ -139,49 +137,30 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
 
     // Initialize the MGData: Idx, A, P, R
     time.Reset();
-    for(Uint i=0, lvl= 1; lvl<=MG.GetLastLevel(); ++lvl, ++i)
-    {
-        MGData.push_back(MGLevelDataCL());
-        MGLevelDataCL& tmp= MGData.back();
+    Poisson.SetNumLvl( MG.GetNumLevel());
+    Poisson.CreateNumbering( MG.GetLastLevel(), &Poisson.idx);
+    MLIdxDescCL* idx = &Poisson.idx;
+    Poisson.A.SetIdx( idx, idx);
+    Poisson.b.SetIdx( idx);
+    Poisson.x.SetIdx( idx);
+    Poisson.SetupSystem( Poisson.A, Poisson.b);
+    MLMatDescCL P;
+    P.SetIdx( idx, idx);
+    P.Data.resize( MG.GetNumLevel());
+    Poisson.SetupProlongation( P);
 
-        std::cerr << "Create MGData on Level " << lvl << std::endl;
-        tmp.Idx.SetFE( P1_FE);
-        Poisson.CreateNumbering(lvl, &tmp.Idx);
-        tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
-        if(lvl==MG.GetLastLevel())
-        {
-            Ltime.Reset();
-            Poisson.x.SetIdx(&tmp.Idx);
-            Poisson.b.SetIdx(&tmp.Idx);
-            std::cerr << "Create System " << std::endl;
-            Poisson.SetupSystem( tmp.A, Poisson.b);
-//            std::cerr << "A(0,0)= " << tmp.A.Data(unk,unk) << std::endl;
-            Ltime.Stop();
-        }
-        else
-        {
-            std::cerr << "Create StiffMatrix" << std::endl;
-            Poisson.SetupStiffnessMatrix( tmp.A);
-        }
-
-        if(i!=0)
-        {
-            std::cerr << "Create Prolongation on Level " << lvl << std::endl;
-            Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
-        }
-        tmp.ABlock = &tmp.A.Data;
-        c_idx= &tmp.Idx;
-    }
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime()
               << " seconds including " << Ltime.GetTime() << " seconds for the largest system." << std::endl;
 //    std::cerr << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
-    const_MGDataIterCL finest= --MGData.end();
-    std::cerr << finest->Idx.NumUnknowns << " unknowns on finest grid!" << std::endl;
+    MLMatrixCL::const_iterator finest = --Poisson.A.Data.end();
+    MLMatrixCL::const_iterator finestP= --P.Data.end();
+
+    std::cerr << idx->NumUnknowns() << " unknowns on finest grid!" << std::endl;
     MG.SizeInfo(std::cerr);
     std::cerr << "Checking the discretization error: ";
-    Poisson.GetDiscError(finest->A, &::Lsg);
+    Poisson.GetDiscError( Poisson.A, &::Lsg);
 
     for(Uint level=1; level<=MG.GetLastLevel(); ++level)
     {
@@ -203,13 +182,13 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
 
             // delete former solution
             Poisson.x.Data.resize(0);
-            Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
+            Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
 //            std::cerr << "initial error:" << std::endl;
 //            Poisson.CheckSolution(&::Lsg);
-            double resid= norm( Poisson.b.Data - finest->A.Data*Poisson.x.Data);
+            double resid= norm( Poisson.b.Data - Poisson.A.Data*Poisson.x.Data);
             std::cerr << "initial residuum = " << resid << std::endl;
             time.Start();
-            PCG(finest->A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, tol);
+            PCG(Poisson.A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, tol);
             time.Stop();
 //            std::cerr << "residuum = "<<tol<<" (av.red. "<<root(tol/resid,max_iter)
 //                      <<"), #iterations = "<<max_iter<< ", time = "<<time.GetTime()<<std::endl;
@@ -229,8 +208,8 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
 //                if (sm<=0) continue;
                 // delete former solution
                 Poisson.x.Data.resize(0);
-                Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-                old_resid= resid= norm( Poisson.b.Data - finest->A.Data*Poisson.x.Data);
+                Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
+                old_resid= resid= norm( Poisson.b.Data - Poisson.A.Data*Poisson.x.Data);
 //                std::cerr << "initial error:" << std::endl;
 //                Poisson.CheckSolution(&::Lsg);
                 std::cerr << "initial residuum = " << old_resid << std::endl;
@@ -240,11 +219,11 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
                 do
                 {
 //                    time.Start();
-                    MGM( MGData.begin(), finest, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, -1, -1);
+                    MGM( Poisson.A.Data.begin(), finest, finestP, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, -1, -1);
 //                    time.Stop();
 //                    Poisson.CheckSolution(&::Lsg);
 //                    old_resid= resid;
-                    resid= norm( Poisson.b.Data - finest->A.Data*Poisson.x.Data);
+                    resid= norm( Poisson.b.Data - Poisson.A.Data*Poisson.x.Data);
                     ++step;
 //                    std::cerr << "Step "<< step <<": residuum = " << resid << ", red. " << resid/old_resid << ", time = "<<time.GetTime()<<std::endl;
                 } while ( resid > tol);
@@ -254,7 +233,6 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
 //            } while (sm>0);
         }
     }
-    MGData.resize(0);
 }
 
 
@@ -270,11 +248,13 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();
     Uint step= 0;
     double true_err= 0.0;
-    IdxDescCL *c_idx=0;
     TimerCL time, time2;
-    MGDataCL MGData;
 
-    const_MGDataIterCL finest;
+    MLIdxDescCL* idx = &Poisson.idx;
+    MLMatDescCL P;
+    MLMatrixCL::const_iterator finest;
+    MLMatrixCL::const_iterator finestP;
+
     bool new_marks;
     DoerflerMarkCL<typename MyPoissonCL::est_fun, typename MyPoissonCL::_base>
         Estimator(1e-10, minratio, markratio, 8, true, &MyPoissonCL::ResidualErrEstimator, *static_cast<typename MyPoissonCL::_base*>(&Poisson) );
@@ -297,20 +277,7 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
         time.Reset();
         time2.Start();
         time.Start();
-        if (meth) // PCG
-        {
-            MGData.push_back(MGLevelDataCL());
-            MGLevelDataCL& tmp= MGData.back();
-            tmp.Idx.SetFE( P1_FE);
-            Poisson.CreateNumbering(MG.GetLastLevel(), &tmp.Idx);
-            tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
-            Poisson.b.SetIdx(&tmp.Idx);
-            Poisson.x.SetIdx(&tmp.Idx);
-            std::cerr << "Create System " << std::endl;
-            Poisson.SetupSystem( tmp.A, Poisson.b);
-            finest= --MGData.end();
-        }
-        else
+        if (!meth) // !PCG
         {
             for(MultiGridCL::TriangVertexIteratorCL sit=MG.GetTriangVertexBegin(MG.GetLastLevel()), send=MG.GetTriangVertexEnd(MG.GetLastLevel());
                 sit != send; ++sit)
@@ -318,42 +285,26 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
                 // kill all numberings
                 if (sit->Unknowns.Exist()) sit->Unknowns.Destroy();
             }
-            // Initialize the MGData: Idx, A, P, R
-            for(Uint lvl= 1; lvl<=MG.GetLastLevel(); ++lvl)
-            {
-                MGData.push_back(MGLevelDataCL());
-                MGLevelDataCL& tmp= MGData.back();
-
-                std::cerr << "Create MGData on Level " << lvl << std::endl;
-                tmp.Idx.SetFE( P1_FE);
-                Poisson.CreateNumbering(lvl, &tmp.Idx);
-                tmp.A.SetIdx(&tmp.Idx, &tmp.Idx);
-                if(lvl!=1)
-                {
-                    std::cerr << "Create Prolongation on Level " << lvl << std::endl;
-                    Poisson.SetupProlongation( tmp.P, c_idx, &tmp.Idx);
-                }
-                if(lvl==MG.GetLastLevel())
-                {
-                    Poisson.b.SetIdx(&tmp.Idx);
-                    Poisson.x.SetIdx(&tmp.Idx);
-                    std::cerr << "Create System " << std::endl;
-                    Poisson.SetupSystem( tmp.A, Poisson.b);
-                }
-                else
-                {
-                    std::cerr << "Create StiffMatrix" << std::endl;
-                    Poisson.SetupStiffnessMatrix( tmp.A);
-                }
-                tmp.ABlock = &tmp.A.Data;
-                c_idx= &tmp.Idx;
-            }
-            finest= --MGData.end();
+            std::cerr << "Create System " << std::endl;
+            Poisson.SetNumLvl( MG.GetNumLevel());
         }
+        Poisson.DeleteNumbering( &Poisson.idx);
+        Poisson.CreateNumbering( MG.GetLastLevel(), &Poisson.idx);
+        Poisson.A.SetIdx( idx, idx);
+        Poisson.b.SetIdx( idx);
+        Poisson.x.SetIdx( idx);
+        Poisson.SetupSystem( Poisson.A, Poisson.b);
+        MLMatDescCL P;
+        P.SetIdx( idx, idx);
+        P.Data.resize( MG.GetNumLevel());
+        if (!meth) Poisson.SetupProlongation( P);
+        finest = --Poisson.A.Data.end();
+        finestP= --P.Data.end();
+
         time.Stop();
         time2.Stop();
         std::cerr << "Setting up all stuff took " << time.GetTime() << " seconds!" << std::endl;
-        std::cerr << finest->Idx.NumUnknowns << " unknowns on finest grid!" << std::endl;
+        std::cerr << idx->NumUnknowns() << " unknowns on finest grid!" << std::endl;
         MG.SizeInfo(std::cerr);
 
         time.Reset();
@@ -364,14 +315,14 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
             SSORPcCL pc(omega);
             // delete former solution
             Poisson.x.Data.resize(0);
-            Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-            double resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
+            Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
+            double resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
 //            std::cerr << "initial error:" << std::endl;
 //            Poisson.CheckSolution(&::Lsg);
             std::cerr << "initial residuum = " << resid << std::endl;
             time2.Start();
             time.Start();
-            PCG(finest->A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, mytol);
+            PCG(Poisson.A.Data, Poisson.x.Data, Poisson.b.Data, pc, max_iter, mytol);
             time.Stop();
             time2.Stop();
             std::cerr << "residuum = "<<mytol<<", av.red. "<<root(tol/resid,max_iter)
@@ -389,8 +340,8 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
 //                if (sm<=0) continue;
                 // delete former solution
                 Poisson.x.Data.resize(0);
-                Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns);
-                old_resid= resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
+                Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
+                old_resid= resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
 //                std::cerr << "initial error:" << std::endl;
 //                Poisson.CheckSolution(&::Lsg);
                 std::cerr << "initial residuum = " << resid << std::endl;
@@ -401,11 +352,11 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
                 do
                 {
 //                        time.Start();
-                    MGM( MGData.begin(), finest, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, -1, -1);
+                    MGM( Poisson.A.Data.begin(), finest, finestP, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, -1, -1);
 //                        time.Stop();
 //                        Poisson.CheckSolution(&::Lsg);
 //                        old_resid= resid;
-                    resid= norm( Poisson.b.Data - finest->A.Data * Poisson.x.Data);
+                    resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
                     ++step2;
 //                        std::cerr << "Step "<< step2 <<": residuum = " << resid << " (red. " << resid/old_resid << "), time = "<<time.GetTime()<<std::endl;
                 } while ( resid > tol);
@@ -434,14 +385,10 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
 
 //        std::cerr << "Checking the discretization error: ";
 //        Poisson.GetDiscError(finest->A, &::Lsg);
-        MGData.resize(0);
 
         ++step;
     } while ( true_err > stoperr /*&& step<14*/ );
     std::cout << "cumulative solving time: " << time2.GetTime() << std::endl;
-    Poisson.idx.SetFE( P1_FE);
-    Poisson.CreateNumbering( Poisson.x.GetLevel(), &Poisson.idx);
-    Poisson.x.RowIdx= &Poisson.idx;
 }
 
 

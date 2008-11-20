@@ -43,7 +43,7 @@ class InstatPoissonThetaSchemeCL
     VecDescCL *_cplM, *_old_cplM;       // couplings with mass matrix M
     VecDescCL *_cplU;                   // couplings with convection matrix U
     VectorCL  _rhs;
-    MatrixCL  _Lmat;                    // M + theta*dt*nu*A  = linear part
+    MLMatrixCL  _Lmat;                  // M + theta*dt*nu*A  = linear part
 
     double _theta, _dt, _nu;
     bool   _Convection;
@@ -55,7 +55,7 @@ class InstatPoissonThetaSchemeCL
       _cplA( new VecDescCL), _old_cplA( new VecDescCL),
       _cplM( new VecDescCL), _old_cplM( new VecDescCL),
       _cplU( new VecDescCL),
-      _rhs( Poisson.b.RowIdx->NumUnknowns), _theta( theta), _Convection( Convection)
+      _rhs( Poisson.b.RowIdx->NumUnknowns()), _theta( theta), _Convection( Convection)
     {
       _old_b->SetIdx( _b->RowIdx);
       _cplA->SetIdx( _b->RowIdx); _old_cplA->SetIdx( _b->RowIdx);
@@ -120,7 +120,7 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
       _rhs+= (_dt*(1.0-_theta)) * ( _cplU->Data - _Poisson.U.Data * v.Data );
       _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.t);
       _rhs+= (_dt*_theta) * _cplU->Data;
-      MatrixCL AU;
+      MLMatrixCL AU;
       AU.LinComb( _nu, _Poisson.A.Data, 1, _Poisson.U.Data);
       _Lmat.LinComb( 1, _Poisson.M.Data, _dt*_theta, AU);
   }

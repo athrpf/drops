@@ -6,6 +6,7 @@
 #define DROPS_XFEM_H_
 
 #include "levelset/levelset.h"
+#include "misc/container.h"
 
 namespace DROPS
 {
@@ -39,6 +40,42 @@ class ExtIdxDescCL
 
     void UpdateXNumbering( IdxDescCL*, const LevelsetP2CL&, bool NumberingChanged= false );
     void Old2New( VecDescCL* );
+};
+
+class MLExtIdxDescCL : public MLDataCL<ExtIdxDescCL>
+{
+  public:
+    MLExtIdxDescCL( MLIdxDescCL* idx, double omit_bound= 1./32. )
+    {
+        for (MLIdxDescCL::iterator it = idx->begin(); it != idx->end(); ++it)
+            this->push_back(ExtIdxDescCL(&(*it), omit_bound));
+    }
+    
+    void UpdateXNumbering( IdxDescCL* idx,   const LevelsetP2CL& lset, bool NumberingChanged= false )
+    {
+        this->GetFinest().UpdateXNumbering( idx, lset, NumberingChanged);
+    }
+    
+    void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset, bool NumberingChanged= false )
+    {
+        MLIdxDescCL::iterator itIdx = idx->begin();
+        for (MLExtIdxDescCL::iterator it= this->begin(); it != this->end(); ++it)
+        {
+            it->UpdateXNumbering( &(*itIdx), lset, NumberingChanged);
+            itIdx++;
+        }            
+    }
+    
+    void resize( MLIdxDescCL* idx, double omit_bound= 1./32.)
+    {
+        this->clear();
+        for (MLIdxDescCL::iterator it = idx->begin(); it != idx->end(); ++it)
+            this->push_back(ExtIdxDescCL(&(*it), omit_bound));
+    }
+    
+    void Old2New( VecDescCL* v) { this->GetFinest().Old2New(v); }
+    IdxT operator[]( const IdxT i ) const { return this->GetFinest().Xidx[i]; }
+    IdxT GetNumUnknownsP1() const { return this->GetFinest().GetNumUnknownsP1(); }
 };
 
 /// merges two p1-VectorCL into a p1x-VectorCL

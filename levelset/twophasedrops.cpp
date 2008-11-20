@@ -123,21 +123,21 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 
 template< class StokesProblemT>
 TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
-    NSSolverBaseCL<StokesProblemT>* solver, ParamMesszelleNsCL& C, bool usematMG)
+    NSSolverBaseCL<StokesProblemT>* solver, ParamMesszelleNsCL& C)
 {
     switch (C.scheme)
     {
         case 1 : 
             return (new LinThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_stab, usematMG));
+                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_stab));
         break;
         case 2 :
             return (new RecThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG));
+                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab));
         break;
         case 3 :
             return (new ThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG));
+                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab));
         break;
         case 4 :
             return (new OperatorSplitting2PhaseCL<StokesProblemT, StokesSolverBaseCL>
@@ -145,7 +145,7 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 5 :
             return (new CrankNicolsonScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.nonlinear, C.cpl_proj, C.cpl_stab, usematMG));
+                        (Stokes, lset, *solver, C.nonlinear, C.cpl_proj, C.cpl_stab));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
@@ -244,14 +244,14 @@ EnsightWriterCL::WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset
         ensight_.AppendTimecode( datprxnow);
         std::ofstream fff( datprxnow.c_str());
         fff.precision( 16);
-        size_t num_prx= Stokes.pr_idx.NumUnknowns - Stokes.GetXidx().GetNumUnknownsP1();
+        size_t num_prx= Stokes.pr_idx.NumUnknowns() - Stokes.GetXidx().GetNumUnknownsP1();
         out( fff, VectorCL( Stokes.p.Data[std::slice( Stokes.GetXidx().GetNumUnknownsP1(), num_prx, 1)]));
 
         std::string datxidxnow( datxidx_);
         ensight_.AppendTimecode( datxidxnow);
         std::ofstream fxidx( datxidxnow.c_str());
-        for (Uint i=0; i< Stokes.GetXidx().Xidx.size(); ++i)
-            fxidx << Stokes.GetXidx().Xidx[i] << '\n';
+        for (Uint i=0; i< Stokes.GetXidx().GetFinest().Xidx.size(); ++i)
+            fxidx << Stokes.GetXidx().GetFinest().Xidx[i] << '\n';
     }
 }
 
@@ -287,8 +287,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     adap.push_back( &prrepair);
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
 
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
@@ -297,9 +297,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
 
+   if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
+        Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
+   if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
+        Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
-
+    Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx, 0, &lset);
     EnsightWriterCL writer( MG, lidx, C);
 
     Stokes.SetIdx();
@@ -327,12 +330,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (fff && fxidx) {
                 size_t NumP1XUnknowns;
                 fff >> NumP1XUnknowns;
-                if (NumP1XUnknowns != (pidx->NumUnknowns - Stokes.GetXidx().GetNumUnknownsP1()))
+                if (NumP1XUnknowns != (pidx->NumUnknowns() - Stokes.GetXidx().GetNumUnknownsP1()))
                     throw (DROPSErrCL("error while reading P1X unknowns"));
-                for (Uint i=Stokes.GetXidx().GetNumUnknownsP1(); i < pidx->NumUnknowns; ++i)
+                for (Uint i=Stokes.GetXidx().GetNumUnknownsP1(); i < pidx->NumUnknowns(); ++i)
                     fff >> Stokes.p.Data[i];
                 for (Uint k=0; k<Stokes.GetXidx().GetNumUnknownsP1(); ++k)
-                    fxidx >> Stokes.GetXidx().Xidx[k];
+                    fxidx >> Stokes.GetXidx().GetFinest().Xidx[k];
             }
         }
       } break;
@@ -352,7 +355,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     if (C.transp_do)
     {
         adap.push_back(&transprepair);
-        IdxDescCL* cidx= &c.idx;
+        MLIdxDescCL* cidx= &c.idx;
         c.CreateNumbering( MG.GetLastLevel(), cidx);
         c.ct.SetIdx( cidx);
         if (C.IniCond != -1)
@@ -387,15 +390,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
 
     // Time discretisation + coupling
-    bool mgused = stokessolverfactory.MGUsed();
-    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C, mgused);
+    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C);
     timedisc->SetTimeStep( C.dt);
 
-    stokessolverfactory.SetMatrixA( const_cast<const MatrixCL**>(&Stokes.GetMGData().back().ABlock));
+    stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
 
-    //for Stokes-MG
-    const_MGDataIterCL it = Stokes.GetMGData().begin();
-    stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
+    //for Stokes-MGM
+    stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
+                                     &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
@@ -412,7 +414,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         //WriteMatrices( Stokes, step);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi); // ???
 
         bool forceVolCorr= false, forceUpdate= false,
              doReparam= C.RepFreq && step%C.RepFreq == 0,
@@ -440,9 +441,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         }
 
         // grid modification
+
         if (doGridMod) {
-            const_MGDataIterCL it = Stokes.GetMGData().begin();
-            stokessolverfactory.SetMatrices( const_cast<const MatrixCL**>(&it->ABlock), &it->B.Data, &it->Mvel.Data, &it->Mpr.Data);
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
@@ -477,7 +477,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     delete timedisc;
     delete navstokessolver;
     delete stokessolver;
-    //delete stokessolver1;
+//     delete stokessolver1;
 }
 
 } // end of namespace DROPS

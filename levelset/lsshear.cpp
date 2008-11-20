@@ -77,7 +77,7 @@ class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
   private:
     PCG_SsorCL _PCGsolver;
   public:
-    Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
+    Uzawa_PCG_CL( MLMatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
         : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
           _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
         {}
@@ -88,7 +88,7 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
   private:
     PCG_SgsCL _PCGsolver;
   public:
-    PSchur_GSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
+    PSchur_GSPCG_CL( MLMatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
         : PSchurSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_iter, outer_tol),
           _PCGsolver(SGSPcCL(), inner_iter, inner_tol)
         {}
@@ -103,22 +103,22 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, 0.5, 0.1);
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
     VelVecDescCL* v= &Stokes.v;
     VecDescCL*    p= &Stokes.p;
     VelVecDescCL* b= &Stokes.b;
     VecDescCL* c= &Stokes.c;
     VelVecDescCL cpl_M;
-    MatDescCL* A= &Stokes.A;
-    MatDescCL* B= &Stokes.B;
-    MatDescCL* M= &Stokes.M;
-    MatDescCL prM;
+    MLMatDescCL* A= &Stokes.A;
+    MLMatDescCL* B= &Stokes.B;
+    MLMatDescCL* M= &Stokes.M;
+    MLMatDescCL prM;
 
     TimerCL time;
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr( MG.GetLastLevel(), pidx);
-    lset.CreateNumbering(     MG.GetLastLevel(), lidx);
+    Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx);
+    lset.CreateNumbering(      MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
 

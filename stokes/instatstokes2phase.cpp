@@ -17,12 +17,12 @@ P1XRepairCL::P1XRepairCL (bool UsesXFEM, MultiGridCL& mg, VecDescCL& p,
     Uint repairidx( idx_.GetIdx()),
          pidx( p.RowIdx->GetIdx());
     // Save the extended unknown-values.
-    extData_.resize( p.RowIdx->NumUnknowns - extbegin);
+    extData_.resize( p.RowIdx->NumUnknowns() - extbegin);
     extData_= p.Data[std::slice( extbegin, extData_.size(), 1)];
 
     // Attach the extended index to the vertex, so that it survives grid modifications.
     // We assume that all vertices have p-unknowns (like e. g. the pressure).
-    DROPS_FOR_TRIANG_VERTEX( mg, p.RowIdx->TriangLevel, it) {
+    DROPS_FOR_TRIANG_VERTEX( mg, p.RowIdx->TriangLevel(), it) {
         if ( (extunknown= extidx.Xidx[it->Unknowns( pidx)]) != NoIdx ) {
             it->Unknowns.Prepare( repairidx);
             it->Unknowns( repairidx)= extunknown - extbegin;
@@ -47,7 +47,7 @@ void P1XRepairCL::operator() (const LevelsetP2CL& lset)
          pidx( p_.RowIdx->GetIdx());
     // We assume that all vertices in p's level hold a p1-value. Thus, it->Unknowns.Exist()
     // can be spared.
-    DROPS_FOR_TRIANG_VERTEX( mg_, p_.RowIdx->TriangLevel, it) {
+    DROPS_FOR_TRIANG_VERTEX( mg_, p_.RowIdx->TriangLevel(), it) {
         if ( ((extunknown= extidx_.Xidx[it->Unknowns( pidx)]) != NoIdx)
             && it->Unknowns.Exist( repairidx) ) {
             p_.Data[extunknown]= extData_[it->Unknowns( repairidx)];

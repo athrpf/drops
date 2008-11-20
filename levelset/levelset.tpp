@@ -94,7 +94,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
 // where v_i, v_j denote the ansatz functions.
 {
-    const IdxT num_unks= Phi.RowIdx->NumUnknowns;
+    const IdxT num_unks= Phi.RowIdx->NumUnknowns();
     const Uint lvl= Phi.GetLevel();
 
     SparseMatBuilderCL<double> bE(&E, num_unks, num_unks),

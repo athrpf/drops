@@ -72,9 +72,9 @@ VBndCL theVBnd;
 
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 {
-    vd.Data.resize( vd.RowIdx->NumUnknowns);
+    vd.Data.resize( vd.RowIdx->NumUnknowns());
     P2EvalCL<double, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &theBnd, &mg);
-    const Uint lvl= vd.RowIdx->TriangLevel;
+    const Uint lvl= vd.RowIdx->TriangLevel();
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
         fun.SetDoF( *sit, f( sit->GetCoord()));
@@ -87,9 +87,9 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, v_inst_fun_ptr f, double t)
 {
-    vd.Data.resize( vd.RowIdx->NumUnknowns);
+    vd.Data.resize( vd.RowIdx->NumUnknowns());
     P2EvalCL<Point3DCL, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &theBnd, &mg, t);
-    const Uint lvl= vd.RowIdx->TriangLevel;
+    const Uint lvl= vd.RowIdx->TriangLevel();
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
         fun.SetDoF( *sit, f( sit->GetCoord(), t));

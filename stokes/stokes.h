@@ -62,14 +62,14 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     typedef double (*est_fun)(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double);
 
-    IdxDescCL    vel_idx;  // for velocity unknowns
-    IdxDescCL    pr_idx;   // for pressure unknowns
+    MLIdxDescCL  vel_idx;  // for velocity unknowns
+    MLIdxDescCL  pr_idx;   // for pressure unknowns
     double       t;        // time, 0.0 in the stationary case
     VelVecDescCL v;
     VecDescCL    p;
     VelVecDescCL b;
     VecDescCL    c;
-    MatDescCL    A,
+    MLMatDescCL    A,
                  B,
                  M;
 
@@ -79,25 +79,27 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
         : _base( mg,  coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
 
     // Create and delete numbering of unknowns
-    void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
+    void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
-    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Pr,  match); }
-    void DeleteNumbering( IdxDescCL* idx)
+    void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0)
+        { idx->CreateNumbering( level, _MG, _BndData.Pr, match); }
+    void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
+    void SetNumVelLvl( size_t n);
+    void SetNumPrLvl ( size_t n);
 
     // Set up matrices and complete rhs
-    void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*, double= 0.0) const;
+    void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double= 0.0) const;
     // Set up only A.
-    void SetupStiffnessMatrix(MatDescCL*) const;
+    void SetupStiffnessMatrix(MLMatDescCL*) const;
     // Set up mass-matrix for pressure-unknowns (P1)
-    void SetupPrMass(MatDescCL*) const;
+    void SetupPrMass(MLMatDescCL*) const;
     // Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme
     // Time-independent
-    void SetupMassMatrix(MatDescCL* matI) const;
+    void SetupMassMatrix(MLMatDescCL* matI) const;
 
     // Setup time independent part of system
-    void SetupInstatSystem( MatDescCL* A, MatDescCL* B, MatDescCL* M) const;
+    void SetupInstatSystem( MLMatDescCL* A, MLMatDescCL* B, MLMatDescCL* M) const;
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
     // If the function is called with the same vector for some arguments (out of 1, 2, 4),
     // the vector will contain the sum of the results after the call
@@ -149,29 +151,31 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     typedef double (*est_fun)(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double);
 
-    IdxDescCL    vel_idx;  // for velocity unknowns
-    IdxDescCL    pr_idx;   // for pressure unknowns
+    MLIdxDescCL  vel_idx;  // for velocity unknowns
+    MLIdxDescCL  pr_idx;   // for pressure unknowns
     VelVecDescCL v;
     VecDescCL    p;
     VelVecDescCL b;
     VecDescCL    c;
-    MatDescCL    A,        // Bad, bad comma.
+    MLMatDescCL    A,        // Bad, bad comma.
                  B;
 
     StokesP1BubbleP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base( mgb, coeff, bdata), vel_idx( vecP1Bubble_FE), pr_idx( P1_FE) {}
 
     // Create and delete numbering of unknowns
-    void CreateNumberingVel( Uint level, IdxDescCL* idx, match_fun match= 0)
+    void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
-    void CreateNumberingPr ( Uint level, IdxDescCL* idx, match_fun match= 0)
+    void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData.Pr, match); }
-    void DeleteNumbering( IdxDescCL* idx)
+    void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
+    void SetNumVelLvl( size_t n);
+    void SetNumPrLvl ( size_t n);
 
     // Set up matrices and rhs
-    void SetupSystem(MatDescCL*, VelVecDescCL*, MatDescCL*, VelVecDescCL*) const;
-    void SetupPrMass(MatDescCL*) const;
+    void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*) const;
+    void SetupPrMass(MLMatDescCL*) const;
 
     // Check system and computed solution
     void GetDiscError (instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const;

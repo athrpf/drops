@@ -88,22 +88,25 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
     }
 }
 
-
-void TransportP1CL::SetupInstatSystem (MatDescCL& matA, VecDescCL& cplA,
-    MatDescCL& matM, VecDescCL& cplM, MatDescCL& matC, VecDescCL& cplC, const double time) const
+void TransportP1CL::SetupInstatSystem (MatrixCL& matA, VecDescCL* cplA,
+                        MatrixCL& matM, VecDescCL* cplM, MatrixCL& matC, VecDescCL* cplC,
+                        IdxDescCL& RowIdx, const double time) const
 {
-    cplM.Data= 0.;
-    cplA.Data= 0.;
-    cplC.Data= 0.;
-    matM.Data.clear();
-    matA.Data.clear();
-    matC.Data.clear();
-    const IdxT num_unks=  matA.RowIdx->NumUnknowns;
-    MatrixBuilderCL A(&matA.Data, num_unks,  num_unks),//diffusion
-                    M(&matM.Data, num_unks,  num_unks),//mass matrix
-                    C(&matC.Data, num_unks,  num_unks);// convection
+    if (cplM != 0)
+    {
+        cplM->Data= 0.;
+        cplA->Data= 0.;
+        cplC->Data= 0.;
+    }
+    matM.clear();
+    matA.clear();
+    matC.clear();
+    const IdxT num_unks=  RowIdx.NumUnknowns();
+    MatrixBuilderCL A(&matA, num_unks,  num_unks),//diffusion
+                    M(&matM, num_unks,  num_unks),//mass matrix
+                    C(&matC, num_unks,  num_unks);// convection
 
-    const Uint lvl= matA.GetRowLevel();
+    const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP1CL n;
     double coupA[4][4], coupM[4][4], coupC[4][4];
 
@@ -129,7 +132,7 @@ void TransportP1CL::SetupInstatSystem (MatDescCL& matA, VecDescCL& cplA,
 
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
         SetupLocalSystem ( *sit, coupM, coupA, coupC, time, p2, pipj, p);
-        n.assign( *sit, *matM.RowIdx, Bnd_);
+        n.assign( *sit, RowIdx, Bnd_);
         // write values into matrix
         for(int i= 0; i < 4; ++i)
             if (n.WithUnknowns( i))
@@ -139,11 +142,11 @@ void TransportP1CL::SetupInstatSystem (MatDescCL& matA, VecDescCL& cplA,
                         A( n.num[i], n.num[j])+= coupA[j][i];
                         C( n.num[i], n.num[j])+= coupC[j][i];
                     }
-                    else {
+                    else if (cplM != 0) {
                         const double val= Bnd_.GetBndFun( n.bndnum[j])( sit->GetVertex( j)->GetCoord(), time);
-                        cplM.Data[n.num[i]]-= coupM[j][i]*val;
-                        cplA.Data[n.num[i]]-= coupA[j][i]*val;
-                        cplC.Data[n.num[i]]-= coupC[j][i]*val;
+                        cplM->Data[n.num[i]]-= coupM[j][i]*val;
+                        cplA->Data[n.num[i]]-= coupA[j][i]*val;
+                        cplC->Data[n.num[i]]-= coupC[j][i]*val;
                     }
     }
     A.Build();
@@ -151,9 +154,23 @@ void TransportP1CL::SetupInstatSystem (MatDescCL& matA, VecDescCL& cplA,
     C.Build();
 }
 
+void TransportP1CL::SetupInstatSystem (MLMatDescCL& matA, VecDescCL& cplA,
+    MLMatDescCL& matM, VecDescCL& cplM, MLMatDescCL& matC, VecDescCL& cplC, const double time) const
+{
+    MLMatrixCL::iterator itA = matA.Data.begin();
+    MLMatrixCL::iterator itM = matM.Data.begin();
+    MLMatrixCL::iterator itC = matC.Data.begin();
+    MLIdxDescCL::iterator it = matA.RowIdx->begin();
+    for (size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itA, ++itM, ++itC, ++it)
+        if (lvl != 0)
+            SetupInstatSystem (*itA, &cplA, *itM, &cplM, *itC, &cplC, *it, time);
+        else
+            SetupInstatSystem (*itA, 0, *itM, 0, *itC, 0, *it, time);
+}
+
 void TransportP1CL::Update()
 {
-    IdxDescCL* cidx= ct.RowIdx;
+    MLIdxDescCL* cidx= &idx;
 
     c.SetIdx( cidx);
     ct2c();
@@ -190,7 +207,7 @@ void TransportP1CL::InitStep (VectorCL& rhs)
     // Todo: Add 1/dt_*M_new(c_{dirichlet,old}), if there are time-dependant Dirichlet-BC.
     rhs= M.Data*rhs1 + /*Todo: add together with the above (1./dt_)*cplM.Data + */ theta_*(cplA.Data + cplC.Data);
 
-    MatrixCL L;
+    MLMatrixCL L;
     L.LinComb( theta_, A.Data, theta_, C.Data);
     L_.clear();
     L_.LinComb( 1./dt_, M.Data, 1., L);
@@ -229,7 +246,7 @@ void TransportP1CL::c2ct()
     Uint cidx= c.RowIdx->GetIdx(),
          phiidx= lset_.Phi.RowIdx->GetIdx();
     ct.Data= c.Data;
-    DROPS_FOR_TRIANG_VERTEX( MG_, c.RowIdx->TriangLevel, sit)
+    DROPS_FOR_TRIANG_VERTEX( MG_, c.RowIdx->TriangLevel(), sit)
         if (lset_.Phi.Data[sit->Unknowns( phiidx)] <= 0. && sit->Unknowns.Exist( cidx))
             ct.Data[sit->Unknowns( cidx)]*= H_;
 }
@@ -240,7 +257,7 @@ void TransportP1CL::ct2c()
     Uint ctidx= ct.RowIdx->GetIdx(),
          phiidx= lset_.Phi.RowIdx->GetIdx();
     c.Data= ct.Data;
-    DROPS_FOR_TRIANG_VERTEX( MG_, ct.RowIdx->TriangLevel, sit)
+    DROPS_FOR_TRIANG_VERTEX( MG_, ct.RowIdx->TriangLevel(), sit)
         if (lset_.Phi.Data[sit->Unknowns( phiidx)] <= 0. && sit->Unknowns.Exist( ctidx))
             c.Data[sit->Unknowns( ctidx)]/= H_;
 }
@@ -256,13 +273,13 @@ TransportRepairCL::post_refine ()
     VecDescCL& ct= c_.ct;
     match_fun match= mg_.GetBnd().GetMatchFun();
 
-    c_.CreateNumbering( mg_.GetLastLevel(), &loc_cidx, match);
+    loc_cidx.CreateNumbering( mg_.GetLastLevel(), mg_, c_.GetBndData(), match);
     loc_ct.SetIdx( &loc_cidx);
     RepairAfterRefineP1( c_.GetSolution( ct), loc_ct);
 
     ct.Clear();
-    c_.DeleteNumbering( ct.RowIdx);
-    c_.idx.swap( loc_cidx);
+    ct.RowIdx->DeleteNumbering( mg_);
+    c_.idx.GetFinest().swap( loc_cidx);
     ct.SetIdx( &c_.idx);
     ct.Data= loc_ct.Data;
 }

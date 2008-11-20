@@ -64,27 +64,28 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
 
     double    t;        // time
 
-    IdxDescCL idx;
-    VecDescCL x;
-    VecDescCL b;
-    MatDescCL A;
-    MatDescCL M;
-    MatDescCL U;
+    MLIdxDescCL idx;
+    VecDescCL   x;
+    VecDescCL   b;
+    MLMatDescCL A;
+    MLMatDescCL M;
+    MLMatDescCL U;
 
 
     InstatPoissonP1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
         : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
 
     // numbering of unknowns
-    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match=0) 
+    void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
     { idx->CreateNumbering( level, _MG, _BndData, match); }
-    void DeleteNumbering( IdxDescCL* idx)
+    void DeleteNumbering( MLIdxDescCL* idx)
     { idx->DeleteNumbering( _MG); }
+    void SetNumLvl( size_t n);
 
     // set up matrices (M is time independent)
-    void SetupInstatSystem( MatDescCL& A, MatDescCL& M, double tA) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double tA) const;
     // set up matrix and couplings with bnd unknowns for convection term
-    void SetupConvection( MatDescCL& U, VecDescCL& vU, double t) const;
+    void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
 
     // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
     // If the function is called with the same vector for some arguments,
@@ -94,7 +95,7 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     void SetupGradSrc( VecDescCL& src, scalar_instat_fun_ptr T, scalar_instat_fun_ptr dalpha, double t= 0.) const;
 
     // create prolongation
-    void SetupProlongation( MatDescCL& P, IdxDescCL* cIdx, IdxDescCL* fIdx) const;
+    void SetupProlongation( MLMatDescCL& P) const;
 
     // Set initial value
     void Init( VecDescCL&, scalar_instat_fun_ptr, double t0= 0.) const;

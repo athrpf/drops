@@ -33,7 +33,7 @@ class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
   private:
     PCG_SsorCL _PCGsolver;
   public:
-    PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
+    PSchur_PCG_CL( MLMatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
         : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
           _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
         {}
@@ -72,8 +72,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
-    IdxDescCL* vidx= &Stokes.vel_idx;
-    IdxDescCL* pidx= &Stokes.pr_idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
 
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);

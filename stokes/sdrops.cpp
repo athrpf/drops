@@ -78,11 +78,11 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
     const typename MyStokesCL::BndDataCL::PrBndDataCL& PrBndData= Stokes.GetBndData().Pr;
     const typename MyStokesCL::BndDataCL::VelBndDataCL& VelBndData= Stokes.GetBndData().Vel;
 
-    IdxDescCL  loc_vidx, loc_pidx;
-    IdxDescCL* vidx1= &Stokes.vel_idx;
-    IdxDescCL* pidx1= &Stokes.pr_idx;
-    IdxDescCL* vidx2= &loc_vidx;
-    IdxDescCL* pidx2= &loc_pidx;
+    MLIdxDescCL  loc_vidx, loc_pidx;
+    MLIdxDescCL* vidx1= &Stokes.vel_idx;
+    MLIdxDescCL* pidx1= &Stokes.pr_idx;
+    MLIdxDescCL* vidx2= &loc_vidx;
+    MLIdxDescCL* pidx2= &loc_pidx;
     VecDescCL     loc_p;
     VelVecDescCL  loc_v;
     VelVecDescCL* v1= &Stokes.v;
@@ -91,8 +91,8 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
     VecDescCL*    p2= &loc_p;
     VelVecDescCL* b= &Stokes.b;
     VelVecDescCL* c= &Stokes.c;
-    MatDescCL* A= &Stokes.A;
-    MatDescCL* B= &Stokes.B;
+    MLMatDescCL* A= &Stokes.A;
+    MLMatDescCL* B= &Stokes.B;
     Uint step= 0;
     // measure of cube: (Pi/4)^3==0.484...
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
@@ -112,10 +112,10 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
 //        akt_glob_err= glob_err;
 //        MarkAll(MG);
         MG.Refine();
-        Stokes.CreateNumberingVel(MG.GetLastLevel(), vidx1);
-        Stokes.CreateNumberingPr(MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel << ", "
-                  << vidx1->TriangLevel << std::endl;
+        Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
+        Stokes.CreateNumberingPr( MG.GetLastLevel(), pidx1);
+        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+                  << vidx1->TriangLevel() << std::endl;
         MG.SizeInfo(std::cerr);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
@@ -179,13 +179,13 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         if (meth)
         {
             SSORPcCL  pc(omega);
-            MatDescCL prM;
+            MLMatDescCL prM;
             prM.SetIdx( pidx1, pidx1);
             Stokes.SetupPrMass( &prM);
-            PreGSOwnMatCL<P_SSOR0> schur_pc(prM.Data);
+            PreGSOwnMatCL<P_SSOR0> schur_pc(prM.Data.GetFinest());
             SSORPcCL poissonpc;
             PCG_SsorCL poissonsolver( poissonpc, 500, inner_iter_tol);
-            SchurComplMatrixCL<PCG_SsorCL> BABT( poissonsolver, A->Data, B->Data);
+            SchurComplMatrixCL<PCG_SsorCL, MLMatrixCL> BABT( poissonsolver, A->Data, B->Data);
             double outer_tol;
             std::cerr << "tol = "; std::cin >> outer_tol;
             time.Start();
@@ -193,7 +193,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             {
                 double tol= inner_iter_tol;
                 int max_iter= 200;
-                VectorCL tmp(vidx1->NumUnknowns);
+                VectorCL tmp(vidx1->NumUnknowns());
                 PCG(A->Data, tmp, b->Data, pc, max_iter, tol);
                 std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
                 rhs+= B->Data*tmp;
@@ -219,11 +219,11 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             std::cerr << "tol = "; std::cin >> tol;
             std::cerr << "tau = "; std::cin >> tau;
             std::cerr << "#PCG steps = "; std::cin >> inner_iter;
-            MatDescCL prM;
+            MLMatDescCL prM;
             prM.SetIdx( pidx1, pidx1);
             Stokes.SetupPrMass( &prM);
             time.Start();
-            Uzawa_PCG_CL uzawaSolver( prM.Data, max_iter, tol, inner_iter, inner_iter_tol, tau);
+            Uzawa_PCG_CL uzawaSolver( prM.Data.GetFinest(), max_iter, tol, inner_iter, inner_iter_tol, tau);
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
 //            Uzawa( A->Data, B->Data, M.Data, v1->Data, p1->Data, b->Data, c->Data, tau, max_iter, tol, inner_iter, inner_iter_tol);
             time.Stop();

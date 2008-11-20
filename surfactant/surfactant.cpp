@@ -215,8 +215,8 @@ void TransportP1FunctionCL::SetupSystem( const DiscVelSolT& vel, MatrixCL& E, Ma
 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
 // where v_i, v_j denote the ansatz functions.
 {
-    const IdxT num_unks= p1idx.NumUnknowns;
-    const Uint lvl= p1idx.TriangLevel;
+    const IdxT num_unks= p1idx.NumUnknowns();
+    const Uint lvl= p1idx.TriangLevel();
 
     SparseMatBuilderCL<double> bE(&E, num_unks, num_unks),
                                bH(&H, num_unks, num_unks);
@@ -426,8 +426,8 @@ void SurfactantP1CL::Update()
 
 VectorCL SurfactantP1CL::InitStep ()
 {
-    full_idx.CreateNumbering( idx.TriangLevel, MG_);
-    std::cout << "full NumUnknowns: " << full_idx.NumUnknowns << std::endl;
+    full_idx.CreateNumbering( idx.TriangLevel(), MG_);
+    std::cout << "full NumUnknowns: " << full_idx.NumUnknowns() << std::endl;
 
     fulltransport_= new TransportP1FunctionCL( MG_, make_P2Eval( MG_, Bnd_v_, *v_, t_), full_idx, dt_,  /*theta=*/theta_, /*SD=*/ ::C.surf_SD, /*iter=*/ 2000, /*tol=*/ 0.1*gm_.GetTol());
 
@@ -449,8 +449,8 @@ VectorCL SurfactantP1CL::InitStep ()
 void SurfactantP1CL::DoStep (const VectorCL& rhsext)
 {
     idx.DeleteNumbering( MG_);
-    CreateNumbOnInterface( idx.TriangLevel, idx, MG_, lset_.Phi, omit_bound_);
-    std::cout << "new NumUnknowns: " << idx.NumUnknowns << std::endl;
+    CreateNumbOnInterface( idx.TriangLevel(), idx, MG_, lset_.Phi, omit_bound_);
+    std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
 
     VecDescCL transp_rhs( &idx),
               transp_rhsext( &full_idx);
@@ -523,7 +523,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 
     // Init Interface-Sol
     DROPS::CreateNumbOnInterface( mg.GetLastLevel(), timedisc.idx, mg, lset.Phi, C.surf_omit_bound);
-    std::cout << "NumUnknowns: " << timedisc.idx.NumUnknowns << std::endl;
+    std::cout << "NumUnknowns: " << timedisc.idx.NumUnknowns() << std::endl;
     timedisc.ic.SetIdx( &timedisc.idx);
     timedisc.Init( &sol0);
     timedisc.Update();
@@ -665,7 +665,7 @@ int main (int argc, char* argv[])
 
     DROPS::IdxDescCL ifaceidx( P1_FE);
     DROPS::CreateNumbOnInterface( mg.GetLastLevel(), ifaceidx, mg, lset.Phi, C.surf_omit_bound);
-    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns << std::endl;
+    std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
     DROPS::MatDescCL M( &ifaceidx, &ifaceidx);
     DROPS::SetupInterfaceMassP1( mg, &M, lset.Phi);
