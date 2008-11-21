@@ -125,6 +125,7 @@ template< class StokesProblemT>
 TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
     NSSolverBaseCL<StokesProblemT>* solver, ParamMesszelleNsCL& C)
 {
+    if (C.num_steps == 0) return 0;
     switch (C.scheme)
     {
         case 1 : 
@@ -255,6 +256,35 @@ EnsightWriterCL::WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset
     }
 }
 
+template <class Coeff>
+void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
+                       NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL<Coeff> >& solver)
+{
+    TimerCL time;
+    time.Reset();
+    VelVecDescCL cplM, cplN;
+    VecDescCL curv;
+    cplM.SetIdx( &Stokes.vel_idx);
+    cplN.SetIdx( &Stokes.vel_idx);
+    curv.SetIdx( &Stokes.vel_idx);
+    Stokes.SetIdx();
+    Stokes.SetLevelSet( lset);
+    lset.AccumulateBndIntegral( curv);
+    Stokes.SetupProlongations();
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.t);
+    Stokes.SetupPrStiff( &Stokes.prA, lset);
+    Stokes.SetupPrMass ( &Stokes.prM, lset);
+    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
+    time.Stop();
+    std::cerr << "Discretizing took "<< time.GetTime() << " sec.\n";
+    time.Reset();
+    Stokes.b.Data += curv.Data;
+    solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v, Stokes.p.Data, Stokes.b.Data, cplN, Stokes.c.Data, 1.0);
+    time.Stop();
+    std::cerr << "Solving (Navier-)Stokes took "<< time.GetTime() << " sec.\n";
+    std::cerr << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
+}
+
 template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 // flow control
@@ -372,8 +402,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     const double Vol= EllipsoidCL::GetVolume();
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    writer.WriteAtTime( Stokes, lset, sigmap, c, 0.);
-
     // Stokes-Solver
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
@@ -391,7 +419,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     // Time discretisation + coupling
     TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C);
-    timedisc->SetTimeStep( C.dt);
+    if (C.num_steps != 0) timedisc->SetTimeStep( C.dt);
 
     stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
 
@@ -402,6 +430,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
     IFInfo.WriteHeader(infofile);
+    if (C.num_steps == 0)
+        SolveStatProblem( Stokes, lset, *navstokessolver);
+    writer.WriteAtTime( Stokes, lset, sigmap, c, 0.);
 
     for (int step= 1; step<=C.num_steps; ++step)
     {
