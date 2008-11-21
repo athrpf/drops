@@ -977,86 +977,56 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     // Zur Zeit (2.2008) mit der Matrix im NS-Loeser nach Gitteraenderungen, die
     // die Anzahl der Unbekannten nicht aendert. Daher schalten wir die
     // Wiederverwendung vorerst global aus.
-    if (false && (!(DROPSDebugC & DebugNoReuseSparseC) && _val.size()!=0
-        && _rows==A.num_rows() && _cols==A.num_cols()))
+    Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
+    _rows=A.num_rows();
+    _cols=A.num_cols();
+
+    // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
+
+    // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
+    _rowbeg.resize(A.num_rows()+1);
+    size_t i=0, iA=0, iB=0;
+
+    for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
     {
-        Comment("LinComb: Reusing OLD matrix" << std::endl, DebugNumericC);
-        std::cerr << "LinComb: Reusing OLD matrix" << std::endl;
-
-        size_t i=0, iA=0, iB=0;
-
-        // same algorithm as below without writing _colind
-        for (size_t row=1; row<=A.num_rows(); ++row)
+        while ( iA < A.row_beg(row) )                                      // process every entry in A
         {
-            while ( iA < A.row_beg(row) )
-            {
-                while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
-                    _val[i++]=coeffB*B._val[iB++];
-                if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
-                    _val[i++]=coeffA*A._val[iA++]+coeffB*B._val[iB++];
-                else
-                    _val[i++]=coeffA*A._val[iA++];
-            }
-            while ( iB < B.row_beg(row) )
-                _val[i++]=coeffB*B._val[iB++];
+            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) ) // process entries in B with smaller col_ind
+                { ++i; ++iB; }
+            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )   // process entries in B with equal col_ind
+                ++iB;
+            ++i; ++iA;
         }
-        Assert( i==_val.size() && iA==A._val.size() && iB==B._val.size(), "LinComb: reuse of matrix pattern failed", DebugNumericC);
+        while ( iB < B.row_beg(row) )                                      // process, what is left in B
+            { ++iB; ++i; }
+        _rowbeg[row]=i;                                                    // store result
     }
-    else
+
+    // Calculate the entries of _colind, _val (really perform the merging of the matrices)
+    _colind.resize(row_beg(num_rows()));
+    _val.resize(row_beg(num_rows()));
+
+    i=0, iA=0, iB=0;
+
+    for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
     {
-        Comment("LinComb: Creating NEW matrix" << std::endl, DebugNumericC);
-        std::cerr << "LinComb: Creating NEW matrix" << std::endl;
-
-        _rows=A.num_rows();
-        _cols=A.num_cols();
-
-        // The new sparsity pattern is computed by merging the lists of _colind (removing the duplicates) row by row.
-
-        // Calculate the entries of _rowbeg (we need the number of nonzeros and get the rest for free)
-        _rowbeg.resize(A.num_rows()+1);
-        size_t i=0, iA=0, iB=0;
-
-        for (size_t row=1; row<=A.num_rows(); ++row)                           // for each row
+        while ( iA < A.row_beg(row) )
         {
-            while ( iA < A.row_beg(row) )                                      // process every entry in A
-            {
-                while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) ) // process entries in B with smaller col_ind
-                    { ++i; ++iB; }
-                if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )   // process entries in B with equal col_ind
-                    ++iB;
-                ++i; ++iA;
-            }
-            while ( iB < B.row_beg(row) )                                      // process, what is left in B
-                { ++iB; ++i; }
-            _rowbeg[row]=i;                                                    // store result
-        }
-
-        // Calculate the entries of _colind, _val (really perform the merging of the matrices)
-        _colind.resize(row_beg(num_rows()));
-        _val.resize(row_beg(num_rows()));
-
-        i=0, iA=0, iB=0;
-
-        for (size_t row=1; row<=A.num_rows(); ++row) // same algorithm as above
-        {
-            while ( iA < A.row_beg(row) )
-            {
-                while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
-                {
-                    _val[i]=coeffB*B._val[iB];
-                    _colind[i++]=B._colind[iB++];
-                }
-                if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
-                    _val[i]=coeffA*A._val[iA]+coeffB*B._val[iB++];
-                else
-                    _val[i]=coeffA*A._val[iA];
-                _colind[i++]=A._colind[iA++];
-            }
-            while ( iB < B.row_beg(row) )
+            while ( iB < B.row_beg(row) && B.col_ind(iB) < A.col_ind(iA) )
             {
                 _val[i]=coeffB*B._val[iB];
                 _colind[i++]=B._colind[iB++];
             }
+            if ( iB < B.row_beg(row) && B.col_ind(iB) == A.col_ind(iA) )
+                _val[i]=coeffA*A._val[iA]+coeffB*B._val[iB++];
+            else
+                _val[i]=coeffA*A._val[iA];
+            _colind[i++]=A._colind[iA++];
+        }
+        while ( iB < B.row_beg(row) )
+        {
+            _val[i]=coeffB*B._val[iB];
+            _colind[i++]=B._colind[iB++];
         }
     }
 
