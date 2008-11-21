@@ -110,25 +110,35 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
 void P1XtoP1 (const ExtIdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg)
 {
     const Uint lvl= idx.TriangLevel(),
-                idxnum= xidx.Idx->GetIdx(),
-                lsidxnum= lset.RowIdx->GetIdx();
+               p1idxnum= idx.GetIdx(), 
+                 idxnum= xidx.Idx->GetIdx(),
+               lsidxnum= lset.RowIdx->GetIdx();
     const size_t p1unknowns = xidx.GetNumUnknownsP1();
+    if (p1unknowns != idx.NumUnknowns())
+        throw DROPSErrCL( "P1XtoP1: inconsistent indices\n");
+
     negPart.resize(p1unknowns);
     posPart.resize(p1unknowns);
 
-    posPart = negPart = p1x[std::slice(0, p1unknowns, 1)];
+    DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+        const IdxT nr=   it->Unknowns( idxnum);
+        const IdxT p1nr= it->Unknowns( p1idxnum);
+        if (InterfacePatchCL::Sign( lset.Data[it->Unknowns(lsidxnum)]) == 1)
+            posPart[p1nr]= p1x[nr];
+        else
+            negPart[p1nr]= p1x[nr];
+    }
 
     // add extended pressure
-    DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it)
-    {
-        const IdxT nr= it->Unknowns(idxnum);
+    DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+        const IdxT   nr= it->Unknowns( idxnum);
+        const IdxT p1nr= it->Unknowns( p1idxnum);
         if (xidx[nr]==NoIdx) continue;
 
-        const bool is_pos= InterfacePatchCL::Sign( lset.Data[it->Unknowns(lsidxnum)])==1;
-        if (is_pos)
-            negPart[nr]-= p1x[xidx[nr]];
+        if (InterfacePatchCL::Sign( lset.Data[it->Unknowns(lsidxnum)]) == 1)
+            negPart[p1nr]-= p1x[xidx[nr]];
         else
-            posPart[nr]+= p1x[xidx[nr]];
+            posPart[p1nr]+= p1x[xidx[nr]];
     }
 }
 

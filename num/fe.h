@@ -786,6 +786,113 @@ template<class BndData_, class VD_>
     return P2EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg, t);
 }
 
+
+/// \brief Use a function-pointer with the P2EvalCL public interface
+///
+/// All public members of P2EvalCL are implemented here, but use the provided function
+/// pointer instead of real boundary data or VecDescCL data. Some of the rarely used val
+/// functions will throw a DROPSErrCL unconditionally.
+///
+/// To avoid the templates, use the two typedef provided for scalar and vector functions.
+template <typename FunT, typename result_type>
+class FunAsP2EvalCL
+{
+  public:
+    typedef result_type        DataT;
+    typedef NoBndDataCL<DataT> BndDataCL;
+    typedef void               VecDescT;
+
+    typedef FunAsP2EvalCL<FunT, result_type> self_;
+    typedef self_                            modifiable_type;
+    typedef const self_                      const_type;
+
+  private:
+    FunT f_;
+    Uint lvl_;
+
+  protected:
+    BndDataCL          bnd_;
+    const MultiGridCL* mg_; // the multigrid, maybe 0
+   
+    mutable double     t_;
+
+  public:
+    FunAsP2EvalCL( FunT f, double t= 0.0, const MultiGridCL* mg= 0, Uint lvl= -1u)
+        : f_( f), lvl_( lvl== -1u ? mg->GetLastLevel() : lvl), mg_( mg),  t_( t) {}
+
+    void       SetSolution(VecDescT*)       {}
+    VecDescT*  GetSolution()          const { return 0; }
+    void       SetBndData(BndDataCL*)       {}
+    BndDataCL* GetBndData()           const { return bnd_; }
+    const MultiGridCL&
+               GetMG()                const { return *mg_; }
+    Uint       GetLevel()             const { return lvl_; }
+    // The time at which boundary data is evaluated.
+    double     GetTime()              const { return t_; }
+    void       SetTime(double t)      const { t_= t; }
+
+    bool UnknownsMissing(const TetraCL&)   const { return false; }
+    // True, iff the function can be evaluated on the given simplex... if the functions were implemented :-)
+    bool IsDefinedOn(const VertexCL&)      const { return true; }
+    bool IsDefinedOn(const EdgeCL&)        const { return true; };
+    bool IsDefinedOn(const TetraCL&, Uint) const { return true; }
+    bool IsDefinedOn(const TetraCL&)       const { return true; }
+
+    // evaluation on vertices
+    void SetDoF(const VertexCL&, const DataT&)
+        { throw DROPSErrCL( "FunAsP2EvalCL::SetDoF is not allowd.\n"); }
+    template<class _Cont>
+    void GetDoF(const VertexCL& s, _Cont& c) const { c[0]= f_( s.GetCoord(), t_); }
+    template<class _Cont>
+    DataT val(const _Cont& c)    const { return c[0]; }
+    DataT val(const VertexCL& s) const { return f_( s.GetCoord(), t_); }
+
+    // evaluation on edges
+    void SetDoF(const EdgeCL&, const DataT&)
+        { throw DROPSErrCL( "FunAsP2EvalCL::SetDoF is not allowd.\n"); }
+    template<class _Cont>
+    void GetDoF(const EdgeCL& s, _Cont& c) const {
+          c[0]= f_( s.GetVertex( 0)->GetCoord(), t_);
+          c[1]= f_( s.GetVertex( 1)->GetCoord(), t_);
+          c[2]= f_( BaryCenter( s.GetVertex( 0)->GetCoord(), s.GetVertex( 1)->GetCoord()), t_);
+    }
+    template<class _Cont>
+    DataT val(const _Cont& c, double v1)  const
+        { return c[0] * FE_P2CL::H0( v1) + c[1] * FE_P2CL::H1( v1) + c[2] * FE_P2CL::H2( v1); }
+    DataT val(const EdgeCL& s, double v1) const {
+        return   f_( s.GetVertex( 0)->GetCoord(), t_) * FE_P2CL::H0( v1)
+               + f_( s.GetVertex( 1)->GetCoord(), t_) * FE_P2CL::H1( v1)
+               + f_( BaryCenter( s.GetVertex( 0)->GetCoord(), s.GetVertex( 1)->GetCoord()), t_) * FE_P2CL::H2( v1);
+    }
+    DataT val(const EdgeCL& s) const { return f_( GetBaryCenter( s), t_); }
+
+    // evaluation on faces
+    template<class _Cont>
+    void GetDoF(const TetraCL&, Uint, _Cont&) const
+        { throw DROPSErrCL( "FunAsP2EvalCL::GetDoF(const TetraCL&, Uint, _Cont&): Sorry, not implemented.\n"); }
+    template<class _Cont>
+    DataT val(const _Cont&, double, double) const
+       { throw DROPSErrCL( "FunAsP2EvalCL::val(const _Cont&, double, double): Sorry, not implemented.\n"); }
+    DataT val(const TetraCL&, Uint, double, double) const
+       { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL& s, Uint i, double v1, double v2): Sorry, not implemented.\n"); }
+
+    // evaluation on a tetrahedron
+    template<class _Cont>
+    void GetDoF(const TetraCL&, _Cont&) const
+        { throw DROPSErrCL( "FunAsP2EvalCL::GetDoF(const TetraCL&,  _Cont&): Sorry, not implemented.\n"); }
+    template<class _Cont>
+    DataT val(const _Cont&, double, double, double) const
+        { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, Uint, _Cont&): Sorry, not implemented.\n"); }
+    DataT val(const TetraCL&, double, double, double) const
+        { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, double, double, double): Sorry, not implemented.\n"); }
+    DataT val(const TetraCL&, const BaryCoordCL&) const
+        { throw DROPSErrCL( "FunAsP2EvalCL::val(const TetraCL&, const BaryCoordCL&): Sorry, not implemented.\n"); }
+};
+
+typedef FunAsP2EvalCL<double (*) (const Point3DCL&, double), double>       ScalarFunAsP2EvalCL;
+typedef FunAsP2EvalCL<Point3DCL (*) (const Point3DCL&, double), Point3DCL> VectorFunAsP2EvalCL;
+
+
 //**************************************************************************
 // Class:   P1BubbleEvalCL                                                 *
 // Template Parameter:                                                     *

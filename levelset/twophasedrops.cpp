@@ -70,55 +70,18 @@ namespace DROPS // for Strategy
 template<class Coeff>
 void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 {
-    std::string pfad( "matrices/");
-    std::ostringstream n;
-    n << pfad << "A" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    std::ofstream s( n.str().c_str());
-    s << std::setprecision( 15);
-    s << Stokes.A.Data;
-    s.close();
+    std::string path( "matrices/");
+    std::ostringstream suffix;
+    suffix << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    WriteToFile( Stokes.A.Data.GetFinest(),   path + "A"   + suffix.str(), "A");
+    WriteToFile( Stokes.B.Data.GetFinest(),   path + "B"   + suffix.str(), "B");
+    WriteToFile( Stokes.M.Data.GetFinest(),   path + "M"   + suffix.str(), "M");
+    WriteToFile( Stokes.prA.Data.GetFinest(), path + "prA" + suffix.str(), "prA");
+    WriteToFile( Stokes.prM.Data.GetFinest(), path + "prM" + suffix.str(), "prM");
+    WriteToFile( Stokes.N.Data.GetFinest(),   path + "N"   + suffix.str(), "N");
 
-    n.str( "");
-    n << pfad << "B" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.B.Data;
-    s.close();
-
-    n.str( "");
-    n << pfad << "M" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.M.Data;
-    s.close();
-
-    n.str( "");
-    n << pfad << "prA" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.prA.Data;
-    s.close();
-
-    n.str( "");
-    n << pfad << "prM" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.prM.Data;
-    s.close();
-
-    n.str( "");
-    n << pfad << "N" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.N.Data;
-    s.close();
-
-    n.str( "");
-    n << pfad << "v" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.v.Data;
-    s.close();
-
-    n.str( "");
-    n << pfad << "p" << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    s.open( n.str().c_str());
-    s << Stokes.p.Data;
-    s.close();
+    WriteToFile( Stokes.v.Data, path + "v" + suffix.str(), "v");
+    WriteToFile( Stokes.p.Data, path + "p" + suffix.str(), "p");
 }
 
 template< class StokesProblemT>
@@ -152,109 +115,6 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
     }
 }
 
-class FunAsP2EvalCL
-{
-  private:
-    instat_scalar_fun_ptr f_;
-  public:
-    FunAsP2EvalCL( instat_scalar_fun_ptr f): f_(f)
-    {}
-    double val(const VertexCL& v) const {return f_(v.GetCoord(), 0.0);}
-    double val(const EdgeCL& e, double) const {return f_(GetBaryCenter(e), 0.0);}
-};
-
-
-class EnsightWriterCL
-{
-  private:
-    MultiGridCL& MG_;
-    EnsightP2SolOutCL ensight_;
-    std::string datgeo_,
-                datpr_,
-                datvec_,
-                datscl_,
-                datprx_,
-                datxidx_,
-                datsf_,
-                datc_,
-                datct_;
-  public:
-    EnsightWriterCL (MultiGridCL& MG, const IdxDescCL* idx, const ParamMesszelleNsCL& C);
-    ~EnsightWriterCL();
-
-    // To write at time t.
-    template<class InstatNSCL>
-    void
-    WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset,
-        instat_scalar_fun_ptr sigmap, const TransportP1CL& c, const double t);
-};
-
-EnsightWriterCL::EnsightWriterCL (MultiGridCL& MG, const IdxDescCL* idx, const ParamMesszelleNsCL& C)
-    : MG_( MG), ensight_( MG, idx)
-{
-    if (C.EnsCase == "none") return; // no ensight output
-    const std::string filename= C.EnsDir + "/" + C.EnsCase;
-    datgeo_  = filename+".geo";
-    datpr_   = filename+".pr" ;
-    datvec_  = filename+".vel";
-    datscl_  = filename+".scl";
-    datprx_  = filename+".prx";
-    datxidx_ = filename+".xidx";
-    datsf_   = filename+".sf";
-    datc_    = filename+".c";
-    datct_   = filename+".ct";
-    ensight_.CaseBegin( std::string( C.EnsCase+".case").c_str(), C.num_steps + 1);
-    ensight_.DescribeGeom  ( "Messzelle",     datgeo_, true);
-    ensight_.DescribeScalar( "Levelset",      datscl_, true);
-    ensight_.DescribeScalar( "Pressure",      datpr_,  true);
-    ensight_.DescribeVector( "Velocity",      datvec_, true);
-    ensight_.DescribeScalar( "Surfaceforce",  datsf_,  true);
-    if (C.transp_do)
-    {
-        ensight_.DescribeScalar( "Concentration", datc_,   true);
-        ensight_.DescribeScalar( "TransConc",     datct_, true);
-    }
-}
-
-EnsightWriterCL::~EnsightWriterCL()
-{
-    if (C.EnsCase == "none") return;
-    ensight_.CaseEnd();
-}
-
-template<class InstatNSCL>
-void
-EnsightWriterCL::WriteAtTime (const InstatNSCL& Stokes, const LevelsetP2CL& lset,
-    instat_scalar_fun_ptr sigmap, const TransportP1CL& c, const double t)
-{
-    if (C.EnsCase == "none") return;
-    ensight_.putGeom( datgeo_, t);
-    ensight_.putVector( datvec_, Stokes.GetVelSolution(), t);
-    ensight_.putScalar( datpr_,  Stokes.GetPrSolution(), t);
-    ensight_.putScalar( datscl_, lset.GetSolution(), t);
-    FunAsP2EvalCL sf( sigmap);
-    ensight_.putScalar( datsf_,  sf, t);
-    if (C.transp_do)
-    {
-        ensight_.putScalar( datc_,  c.GetSolution(), t);
-        ensight_.putScalar( datct_, c.GetSolution( c.ct), t);
-    }
-    ensight_.Commit();
-    if (Stokes.UsesXFEM()) {
-        std::string datprxnow( datprx_);
-        ensight_.AppendTimecode( datprxnow);
-        std::ofstream fff( datprxnow.c_str());
-        fff.precision( 16);
-        size_t num_prx= Stokes.pr_idx.NumUnknowns() - Stokes.GetXidx().GetNumUnknownsP1();
-        out( fff, VectorCL( Stokes.p.Data[std::slice( Stokes.GetXidx().GetNumUnknownsP1(), num_prx, 1)]));
-
-        std::string datxidxnow( datxidx_);
-        ensight_.AppendTimecode( datxidxnow);
-        std::ofstream fxidx( datxidxnow.c_str());
-        for (Uint i=0; i< Stokes.GetXidx().GetFinest().Xidx.size(); ++i)
-            fxidx << Stokes.GetXidx().GetFinest().Xidx[i] << '\n';
-    }
-}
 
 template <class Coeff>
 void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
@@ -332,8 +192,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx, 0, &lset);
-    EnsightWriterCL writer( MG, lidx, C);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
 
     Stokes.SetIdx();
     Stokes.v.SetIdx  ( vidx);
@@ -432,7 +291,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     IFInfo.WriteHeader(infofile);
     if (C.num_steps == 0)
         SolveStatProblem( Stokes, lset, *navstokessolver);
-    writer.WriteAtTime( Stokes, lset, sigmap, c, 0.);
+
+    // Initialize Ensight6 output
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
+    ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
+    ensight.Register( make_Ensight6Scalar    ( ScalarFunAsP2EvalCL( sigmap, 0., &MG, MG.GetLastLevel()),
+                                                                        "Surfaceforce",  ensf + ".sf",  true));
+    if (C.transp_do) {
+        ensight.Register( make_Ensight6Scalar( c.GetSolution(),         "Concentration", ensf + ".c",   true));
+        ensight.Register( make_Ensight6Scalar( c.GetSolution( c.ct),    "TransConc",     ensf + ".ct",  true));
+    }
+    if (Stokes.UsesXFEM())
+        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.GetXidx().GetFinest(), Stokes.p.Data,
+                                                                        "XPressure",     ensf + ".pr", true));
+
+    if (C.EnsCase != "none") ensight.Write( 0.);
 
     for (int step= 1; step<=C.num_steps; ++step)
     {
@@ -443,7 +320,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
 
-        //WriteMatrices( Stokes, step);
+        // WriteMatrices( Stokes, step);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
         bool forceVolCorr= false, forceUpdate= false,
@@ -502,7 +379,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (C.transp_do) c.Update();
         }
 
-        writer.WriteAtTime( Stokes, lset, sigmap, c, step*C.dt);
+        if (C.EnsCase != "none") ensight.Write( step*C.dt);
     }
     std::cerr << std::endl;
     delete timedisc;

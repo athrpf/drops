@@ -254,45 +254,22 @@ int main (int argc, char** argv)
     std::cerr <<  "iter: " << max_iter << "\ttol: " << tol << '\n';
 
     //Ensight output
-    typedef NoBndDataCL<> BndDataT;
-    BndDataT ubnd;
-    typedef P2EvalCL<double, BndDataT, VecDescCL> DiscP2CL;
-    DiscP2CL upd( &upos, &ubnd, &mg);
-    DiscP2CL und( &uneg, &ubnd, &mg);
-    EnsightP2SolOutCL ensight( mg, &lset.idx);
+    NoBndDataCL<> ubnd;
+    Ensight6OutCL ensight( "xfem.case", 0);
     const std::string filename= "ensight/xfem";
-    const std::string datgeo= filename+".geo",
-    datup = filename+".up" ,
-    datun = filename+".un" ,
-    datulp = filename+".ulp" ,
-    datuln = filename+".uln" ,
-    datscl= filename+".scl";
-
-    ensight.CaseBegin( std::string("xfem.case").c_str());
-    ensight.DescribeGeom( "Cube", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl);
-    ensight.DescribeScalar( "up", datup);
-    ensight.DescribeScalar( "un", datun);
-    ensight.DescribeScalar( "ulp", datulp);
-    ensight.DescribeScalar( "uln", datuln);
-    ensight.putGeom( datgeo);
-    ensight.putScalar( datscl, lset.GetSolution());
-    ensight.putScalar( datup, upd);
-    ensight.putScalar( datun, und);
-
+    ensight.Register( make_Ensight6Geom     ( mg, mg.GetLastLevel(),           "Cube",     filename + ".geo"));
+    ensight.Register( make_Ensight6Scalar   ( lset.GetSolution(),              "Levelset", filename + ".scl"));
+    ensight.Register( make_Ensight6Scalar   ( make_P2Eval( mg, ubnd, upos),    "up",       filename + ".up"));
+    ensight.Register( make_Ensight6Scalar   ( make_P2Eval( mg, ubnd, uneg),    "un",       filename + ".un"));
     // Output the L_2-projection
+    ensight.Register( make_Ensight6P1XScalar( mg, lset.Phi, extidx, beta.Data, "ul",       filename + ".ul"));
+
+    ensight.Write();
+
+    //1D-Plots
     VecDescCL ulneg, ulpos;
     P1XOnPart( beta, extidx, ulpos, lset, true);
     P1XOnPart( beta, extidx, ulneg, lset, false);
-    typedef P1EvalCL<double, BndDataT, VecDescCL> DiscP1CL;
-    DiscP1CL ulpd( &ulpos, &ubnd, &mg);
-    DiscP1CL ulnd( &ulneg, &ubnd, &mg);
-    ensight.putScalar( datulp, ulpd);
-    ensight.putScalar( datuln, ulnd);
-    ensight.Commit();
-    ensight.CaseEnd();
-
-    //1D-Plots
     std::ofstream out ("u.txt");
     std::ofstream outpr ("up.txt");
     Point3DCL p;

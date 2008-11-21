@@ -13,6 +13,7 @@
 #include <sstream>
 #include <fstream>
 #include <cstring>
+#include <map>
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 
@@ -87,6 +88,166 @@ class EnsightP2SolOutCL
 
 };
 
+
+class Ensight6VariableCL; //forward declaration
+
+/// \brief Class for writing out results of a simulation in Ensight6 Case format.
+///
+/// Register subclasses of Ensight6VariableCL to output the geometry and scalar/vector-valued functions
+/// in Ensight6-Case format.
+class Ensight6OutCL
+{
+  private:
+    char               decDigits_;
+    int                timestep_;
+    int                numsteps_;
+    double             time_;
+    std::ostringstream geomdesc_,  ///< Geometry-section of the Case-file
+                       vardesc_,   ///< Variable-section of the Case-file
+                       timestr_;   ///< Time-section of the Case-file
+    std::string        casefile_;  ///< Name of the Case-file
+    const bool         binary_;    ///< type of output
+    bool               timedep_;   ///< true, if there are time-dependent variables
+    std::map<std::string, Ensight6VariableCL*> vars_; ///< The variables and geometry stored by varName.
+
+  public:
+    void OpenFile  (std::ofstream& of, std::string varName);
+    bool putTime   (double t);
+    void CheckFile ( const std::ofstream&) const;
+
+  public:
+    Ensight6OutCL  (std::string casefileName, Uint numsteps= 0, bool binary= true);
+    ~Ensight6OutCL ();
+
+    /// \brief (Re)write case file
+    void CommitCaseFile ();
+
+    void AppendTimecode(std::string& str) const;
+
+    /// \brief Describe a geometry model
+    void DescribeGeom (std::string geoName);
+    /// \brief Describe a finite element function
+    void DescribeVariable (std::string varName, bool isscalar);
+
+    /// \brief Write the geometry into a file
+    void putGeom   (MultiGridCL& mg, int lvl, std::string geoName);
+    /// \brief Write a scalar value finite element function into a file
+    template<class DiscScalT>
+    void putScalar (const DiscScalT& v, std::string varName);
+    /// \brief Write a vector value finite element function into a file
+    template<class DiscVecT>
+    void putVector (const DiscVecT& v, std::string varName);
+
+    /// \brief Register a variable or the geometry for output with Write().
+    ///
+    /// The class takes ownership of the objects, i. e. it destroys them with delete in its destructor.
+    void Register (Ensight6VariableCL& var);
+    /// \brief For t==0, write all registered objects to their files; if t>0 and t has increased with regard to the last call, write all time-dependent objects.
+    void Write (double t= 0.);
+};
+
+/// \brief Base-class for the output of a single function in Ensight6 Case format.
+///
+/// We employ the command pattern: 'Describe' is the interface for registration in Ensight6OutCL.
+/// 'put' is called for the output of the function at time t. The command objects are stored in Ensight6OutCL.
+class Ensight6VariableCL
+{
+  private:
+    std::string varName_,
+                fileName_;
+    bool        timedep_;
+
+  public:
+    Ensight6VariableCL (std::string varName, std::string fileName, bool timedep)
+        : varName_( varName), fileName_( fileName), timedep_( timedep) {}
+    virtual ~Ensight6VariableCL () {}
+
+    std::string varName  () const { return varName_; }  ///< Name of the variable in einsight; also used as identifier in Ensight6OutCL.
+    std::string fileName () const { return fileName_; } ///< Name of the file; for time-dependent objects, the timecode is attached by Ensight6OutCL.
+    bool        Timedep  () const { return timedep_; }  ///< Is the object time-dependent?
+
+    /// \brief Called by Ensight6OutCL::Register().
+    virtual void Describe (Ensight6OutCL&) const= 0;
+    /// \brief Called by Ensight6OutCL::Write().
+    virtual void put      (Ensight6OutCL&) const= 0;
+};
+
+///\brief Output a geometry.
+///
+/// This outputs a triangulation of a multigrid.
+class Ensight6GeomCL : public Ensight6VariableCL
+{
+  private:
+    MultiGridCL* mg_;  ///< The multigrid
+    int          lvl_; ///< Level of the triangulation
+
+  public:
+    Ensight6GeomCL (MultiGridCL& mg, int lvl, std::string varName, std::string fileName, bool timedep= false)
+        : Ensight6VariableCL( varName, fileName, timedep), mg_( &mg), lvl_( lvl) {}
+
+    void Describe (Ensight6OutCL& cf) const { cf.DescribeGeom( this->varName());  }
+    void put      (Ensight6OutCL& cf) const { cf.putGeom( *mg_, lvl_, varName()); }
+};
+
+///\brief Create an Ensight6GeomCL with operator new.
+///
+/// This is just for uniform code; the analoguous functions for scalars and vectors are more useful because
+/// they help to avoid template parameters in user code.
+inline Ensight6GeomCL&
+make_Ensight6Geom (MultiGridCL& mg, int lvl, std::string varName, std::string fileName, bool timedep= false)
+{
+    return *new Ensight6GeomCL( mg, lvl, varName, fileName, timedep);
+}
+
+///\brief Represents a scalar Drops-function (P1 or P2, given as PXEvalCL) as Ensight6 variable.
+template <class DiscScalarT>
+class Ensight6ScalarCL : public Ensight6VariableCL
+{
+  private:
+    const DiscScalarT f_;
+
+  public:
+    Ensight6ScalarCL (const DiscScalarT& f, std::string varName, std::string fileName, bool timedep= false)
+        : Ensight6VariableCL( varName, fileName, timedep), f_( f) {}
+
+    void Describe (Ensight6OutCL& cf) const { cf.DescribeVariable( this->varName(), true); }
+    void put      (Ensight6OutCL& cf) const { cf.putScalar( f_, varName()); }
+};
+
+///\brief Create an Ensight6ScalarCL<> with operator new.
+///
+/// This function does the template parameter deduction for user code.
+template <class DiscScalarT>
+  Ensight6ScalarCL<DiscScalarT>&
+    make_Ensight6Scalar (const DiscScalarT& f, std::string varName, std::string fileName, bool timedep= false)
+{
+    return *new Ensight6ScalarCL<DiscScalarT>( f, varName, fileName, timedep);
+}
+
+///\brief Represents a vector Drops-function (P1 or P2, given as PXEvalCL) as Ensight6 variable.
+template <class DiscVectorT>
+class Ensight6VectorCL : public Ensight6VariableCL
+{
+  private:
+    const DiscVectorT f_;
+
+  public:
+    Ensight6VectorCL (const DiscVectorT& f, std::string varName, std::string fileName, bool timedep= false)
+        : Ensight6VariableCL( varName, fileName, timedep), f_( f) {}
+
+    void Describe (Ensight6OutCL& cf) const { cf.DescribeVariable( this->varName(), false); }
+    void put      (Ensight6OutCL& cf) const { cf.putVector( f_, varName()); }
+};
+
+///\brief Create an Ensight6VectorCL<> with operator new.
+///
+/// This function does the template parameter deduction for user code.
+template <class DiscVectorT>
+  Ensight6VectorCL<DiscVectorT>&
+    make_Ensight6Vector (const DiscVectorT& f, std::string varName, std::string fileName, bool timedep= false)
+{
+    return *new Ensight6VectorCL<DiscVectorT>( f, varName, fileName, timedep);
+}
 
 class ReadEnsightP2SolCL
 // read solution from Ensight6 Case format
@@ -257,6 +418,130 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
         os << '\n';
     }
 }
+
+template<class DiscScalT>
+void Ensight6OutCL::putScalar (const DiscScalT& v, std::string varName)
+{
+    const MultiGridCL& mg= v.GetMG();
+    const Uint lvl= v.GetLevel();
+    char buffer[80];
+    std::memset(buffer,0,80);
+    showFloat sFlo;
+
+    std::ofstream os;
+    OpenFile( os, varName);
+
+    v.SetTime( time_);
+
+    if(binary_)
+    {
+        std::strcpy(buffer,"DROPS data file, scalar variable:");
+        os.write(buffer,80);
+
+        DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+            sFlo.f=v.val(*it);
+            os.write(sFlo.s,sizeof(float));
+        }
+
+        DROPS_FOR_TRIANG_CONST_EDGE( mg, lvl, it) {
+            sFlo.f=v.val(*it,0.5);
+            os.write(sFlo.s,sizeof(float));
+        }
+    }
+    else //ASCII-Ausgabe
+    {
+        int cnt=0;
+        os.flags(std::ios_base::scientific);
+        os.precision(5);
+        os.width(12);
+
+        os << "DROPS data file, scalar variable:\n";
+        DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+            os << std::setw(12) << v.val( *it);
+            if ( (++cnt)==6)
+            { // Ensight expects six real numbers per line
+                cnt= 0;
+                os << '\n';
+            }
+        }
+
+        DROPS_FOR_TRIANG_CONST_EDGE( mg, lvl, it) {
+            os << std::setw(12) << v.val( *it, 0.5);
+            if ( (++cnt)==6)
+            { // Ensight expects six real numbers per line
+                cnt= 0;
+                os << '\n';
+            }
+        }
+        os << '\n';
+    }
+}
+
+template<class DiscVecT>
+void Ensight6OutCL::putVector (const DiscVecT& v, std::string varName)
+{
+    const MultiGridCL& mg= v.GetMG();
+    const Uint lvl= v.GetLevel();
+    char buffer[80];
+    std::memset(buffer,0,80);
+    showFloat sFlo;
+
+    std::ofstream os;
+    OpenFile( os, varName);
+
+    v.SetTime( time_);
+
+    if(binary_)
+    {
+        std::strcpy(buffer,"DROPS data file, vector variable:");
+        os.write( buffer, 80);
+
+        DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+            for (int i=0; i<3; ++i)
+            {
+                sFlo.f=v.val( *it)[i];
+                os.write(sFlo.s,sizeof(float));
+            }
+        }
+        DROPS_FOR_TRIANG_CONST_EDGE( mg, lvl, it) {
+            for (int i=0; i<3; ++i)
+            {
+                 sFlo.f=v.val( *it)[i];
+                 os.write(sFlo.s,sizeof(float));
+            }
+        }
+    }
+    else
+    { // ASCII
+        int cnt=0;
+        os.flags(std::ios_base::scientific);
+        os.precision(5);
+        os.width(12);
+
+        os << "DROPS data file, vector variable:\n";
+
+        DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
+            for (int i=0; i<3; ++i)
+                os << std::setw(12) << v.val( *it)[i];
+            if ( (cnt+=3)==6)
+            { // Ensight expects six real numbers per line
+                 cnt= 0;
+                 os << '\n';
+            }
+        }
+        DROPS_FOR_TRIANG_CONST_EDGE( mg, lvl, it) {
+            for (int i=0; i<3; ++i)
+                os << std::setw(12) << v.val( *it)[i];
+            if ( (cnt+=3)==6)
+            { // Ensight expects six real numbers per line
+                 cnt= 0;
+                 os << '\n';
+            }
+        }
+        os << '\n';
+    }
+}
+
 
 // ========== ReadEnsightP2SolCL ==========
 
