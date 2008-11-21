@@ -93,21 +93,16 @@ void Strategy (MultiGridCL& MG)
     c.Init( &Initialcneg, &Initialcpos);
     c.Update();
 
-    EnsightP2SolOutCL ensight( MG, lidx);
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-                 datc = filename+".c" ,
-                 datct = filename+".ct" ,
-                 datvec= filename+".vel",
-                 datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-    ensight.DescribeScalar( "Concentration", datc, true);
-    ensight.DescribeScalar( "TransConc", datct, true);
-    ensight.DescribeVector( "Velocity", datvec, true);
-    ensight.putGeom( datgeo);
-
+    // Initialize Ensight6 output
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo"));
+    ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
+    ensight.Register( make_Ensight6Vector( const_DiscVelSolCL( &v, &Bnd_v, &MG),
+                                                                    "Velocity",      ensf + ".vel", true));
+    ensight.Register( make_Ensight6Scalar( c.GetSolution(),         "Concentration", ensf + ".c",   true));
+    ensight.Register( make_Ensight6Scalar( c.GetSolution( c.ct),    "TransConc",     ensf + ".ct",  true));
+ 
     MG.SizeInfo( std::cerr);
     std::cerr << c.c.Data.size() << " concentration unknowns,\n";
     std::cerr << v.Data.size() << " velocity unknowns,\n";
@@ -116,23 +111,14 @@ void Strategy (MultiGridCL& MG)
     const double Vol= EllipsoidCL::GetVolume();
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    ensight.putVector( datvec, const_DiscVelSolCL( &v, &Bnd_v, &MG, 0.), 0);
-    ensight.putScalar( datc,  c.GetSolution(), 0);
-    ensight.putScalar( datct,  c.GetSolution( c.ct), 0);
-    ensight.putScalar( datscl, lset.GetSolution(), 0);
-    ensight.Commit();
+    if (C.EnsCase != "none") ensight.Write();
 
     c.SetTimeStep( C.dt);
     for (int step= 1; step <= C.num_steps; ++step) {
         std::cerr << "======================================================== Schritt " << step << ":\n";
         c.DoStep( step*C.dt);
-        ensight.putScalar( datc, c.GetSolution(), step*C.dt);
-        ensight.putScalar( datct, c.GetSolution( c.ct), step*C.dt);
-        ensight.putVector( datvec, const_DiscVelSolCL( &v, &Bnd_v, &MG, step*C.dt), step*C.dt);
-        ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
-        ensight.Commit();
+        if (C.EnsCase != "none") ensight.Write( step*C.dt);
     }
-    ensight.CaseEnd();
     std::cerr << std::endl;
 }
 

@@ -10,13 +10,7 @@
 using namespace DROPS;
 
 DROPS::ParamSurfactantCL C;
-std::string filename,
-            datgeo,
-            datscl,
-            datvel,
-            datsurf,
-            datsol,
-            datlset;
+std::string ensf; // basename of the ensight files
 
 DROPS::Point3DCL u_func (const DROPS::Point3DCL&, double)
 {
@@ -72,8 +66,6 @@ double sol0t (const DROPS::Point3DCL& p, double t)
 
     return q.norm_sq()/(12. + q.norm_sq())*val;
 }
-
-typedef DROPS::P1EvalCL<double, const DROPS::NoBndDataCL<>, DROPS::VecDescCL> DiscP1FunT;
 
 template<class DiscP1FunType>
 double L2_error (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
@@ -484,21 +476,17 @@ void SurfactantP1CL::DoStep (double new_t) // XXX inkonsistenz bei velocity
 
 
 void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset,
-    DROPS::EnsightP2SolOutCL& ensight)
+    DROPS::Ensight6OutCL& ensight)
 {
     using namespace DROPS;
 
     LSInit( mg, lset.Phi, &sphere_2move, 0.);
-
-    ensight.DescribeVector( "Velocity", datvel, true);
-    ensight.DescribeScalar( "TrueSol", datsol, true);
 
     BndDataCL<> lsetbnd2( 6);
     DROPS::LevelsetP2CL lset2( mg, lsetbnd2, 0, 0, C.lset_theta, C.lset_SD); // Only for output
     lset2.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset2.Phi.SetIdx( &lset2.idx);
     LSInit( mg, lset2.Phi, &sphere_2move, 0.);
-    ensight.DescribeScalar( "Lset", datlset, true);
 
     const double Vol= lset.GetVolume();
     std::cerr << "droplet volume: " << Vol << std::endl;
@@ -528,18 +516,19 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     timedisc.Init( &sol0);
     timedisc.Update();
 
-    ensight.putGeom( datgeo, 0);
-    ensight.putScalar( datscl,  lset.GetSolution(), 0);
-    ensight.putVector( datvel, make_P2Eval( mg, Bnd_v, v, 0.), 0);
+    // only for the ensight output
     DROPS::IdxDescCL ifacefullidx( P1_FE);
     ifacefullidx.CreateNumbering( mg.GetLastLevel(), mg);
     DROPS::VecDescCL icext( &ifacefullidx);
     DROPS::Extend( mg, timedisc.ic, icext);
     DROPS::NoBndDataCL<> nobnd;
-    ensight.putScalar( datsurf, make_P1Eval( mg, nobnd, icext, 0.), 0);
-    P1Init ( sol0, icext, mg, 0.);
-    ensight.putScalar( datsol, make_P1Eval( mg, nobnd, icext, 0.), 0);
-    ensight.putScalar( datlset,  lset2.GetSolution(), 0);
+
+    // Additional Ensight6-variables
+    ensight.Register( make_Ensight6Scalar( make_P1Eval( mg, nobnd, icext), "InterfaceSol", ensf + ".sur"));
+    ensight.Register( make_Ensight6Vector( make_P2Eval( mg, Bnd_v, v), "Velocity",      ensf + ".vel", true));
+    ensight.Register( make_Ensight6Scalar( lset2.GetSolution(), "Levelset2",  ensf + ".scl2", true));
+    ensight.Register( make_Ensight6Scalar( ScalarFunAsP2EvalCL( sol0t, 0., &mg), "TrueSol",      ensf + ".sol", true));
+    ensight.Write( 0.);
 
     // timedisc.SetTimeStep( C.dt, C.theta_surf);
 //    std::cerr << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, 0.)
@@ -592,14 +581,8 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
-        ensight.putGeom( datgeo, step*C.dt);
-        ensight.putScalar( datscl,  lset.GetSolution(), step*C.dt);
         Extend( mg, timedisc.ic, icext);
-        ensight.putScalar( datsurf, timedisc.GetSolution( icext), step*C.dt);
-        P1Init ( sol0t, icext, mg, step*C.dt);
-        ensight.putScalar( datsol, timedisc.GetSolution( icext), step*C.dt);
-        ensight.putVector( datvel, make_P2Eval( mg, Bnd_v, v, step*C.dt), step*C.dt);
-        ensight.putScalar( datlset,  lset2.GetSolution(), step*C.dt);
+        ensight.Write( step*C.dt);
 //        std::cerr << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, step*C.dt)
 //                  << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, step*C.dt)
 //                  << std::endl;
@@ -625,15 +608,7 @@ int main (int argc, char* argv[])
     param >> C;
     param.close();
     std::cerr << C << std::endl;
-
-    // ensight files
-    filename= C.EnsDir + "/" + C.EnsCase;
-    datgeo=   filename+".geo";
-    datscl=   filename+".scl";
-    datvel=   filename+".vel";
-    datsurf=  filename+".sur";
-    datsol =  filename+".sol";
-    datlset=  filename+".lset";
+    ensf= C.EnsDir + "/" + C.EnsCase; // basename of the ensight files
 
     std::cerr << "Setting up interface-PDE:\n";
     DROPS::BrickBuilderCL brick( DROPS::MakePoint3D( -2., -2., -2.),
@@ -651,12 +626,11 @@ int main (int argc, char* argv[])
     LinearLSInit( mg, lset.Phi, &sphere_2);
 //    lset.Init( &sphere_2);
 
-    DROPS::EnsightP2SolOutCL ensight( mg, &lset.idx);
-    ensight.CaseBegin( std::string( C.EnsCase+".case").c_str(), C.num_steps + 1);
-    ensight.DescribeGeom( "Geometrie", datgeo, true);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-//    ensight.DescribeVector( "Velocity",      datvel, true);
-    ensight.DescribeScalar( "InterfaceSol", datsurf,  true);
+    // Initialize Ensight6 output
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "Geometrie",     ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
 
     if (C.TestCase > 0) { // Time dependent tests in Strategy
         Strategy( mg, adap, lset, ensight);
@@ -697,13 +671,10 @@ int main (int argc, char* argv[])
     DROPS::VecDescCL xext( &ifacefullidx);
     DROPS::Extend( mg, x, xext);
     DROPS::NoBndDataCL<> nobnd;
-    DiscP1FunT surfsol( &xext, &nobnd, &mg, 0.);
-    ensight.putGeom( datgeo, 0);
-    ensight.putScalar( datscl,  lset.GetSolution(), 0);
-    ensight.putScalar( datsurf, surfsol, 0);
-    ensight.Commit();
+    ensight.Register( make_Ensight6Scalar( make_P1Eval( mg, nobnd, xext), "InterfaceSol", ensf + ".sur"));
+    ensight.Write();
 
-    double L2_err( L2_error( mg, lset.Phi, surfsol, &sol0));
+    double L2_err( L2_error( mg, lset.Phi, make_P1Eval( mg, nobnd, xext), &sol0));
     std::cerr << "L_2-error: " << L2_err << std::endl;
 
     return 0;

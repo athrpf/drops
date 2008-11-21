@@ -100,7 +100,7 @@ InitialCond	=	1      # 1=Stokes, 2=Nusselt, -1=read from file
 InitialFile	=	initial/filmNs40
 BndCond 	=	12wo12
 EnsightCase	=	filmNsTau5e-3
-EnsightDir	=	/Work/gross/ensight
+EnsightDir	=	ensight
 SerializationFile =	filmNs.mg
 DeserializationFile =	none # filmNs40.mg
 

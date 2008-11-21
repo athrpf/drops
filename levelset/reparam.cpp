@@ -72,30 +72,25 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
     }
     lset.SetupSystem( prob.GetVelSolution() );
 
-    EnsightP2SolOutCL sol( mg, &lidx);
-
-    const char datgeo[]= "ensight/rep.geo",
-               datscl[]= "ensight/rep.scl";
-    sol.CaseBegin( "rep.case", num_steps+1);
-    sol.DescribeGeom( "Cube", datgeo);
-    sol.DescribeScalar( "Levelset", datscl, true);
-    sol.putGeom( datgeo);
-    sol.putScalar( datscl, lset.GetSolution(), 0.);
+    // Initialize Ensight6 output
+    std::string ensf( "ensight/rep");
+    Ensight6OutCL ensight( "rep.case", num_steps + 1);
+    ensight.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), "Cube",     ensf + ".geo"));
+    ensight.Register( make_Ensight6Scalar( lset.GetSolution(),    "Levelset", ensf + ".scl", true));
+    ensight.Write();
 
     TimerCL time;
     time.Start();
     lset.ReparamFastMarching();
     time.Stop();
     std::cerr << time.GetTime() << " sec for Fast Marching\n";
-    sol.putScalar( datscl, lset.GetSolution(), dt/2);
+    ensight.Write( dt/2);
 
     for (int i=1; i<=num_steps; ++i)
     {
         lset.Reparam( 1, dt);
-        sol.putScalar( datscl, lset.GetSolution(), i*dt);
+        ensight.Write( i*dt);
     }
-
-    sol.CaseEnd();
 }
 
 class DummyStokesCoeffCL {};

@@ -207,23 +207,15 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     const double Vol= lset.GetVolume(); // approx. C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    EnsightP2SolOutCL ensight( MG, &ens_idx);
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-                 datpr = filename+".pr" ,
-                 datvec= filename+".vel",
-                 datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "falling film", datgeo, true);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-    ensight.DescribeScalar( "Pressure", datpr,  true);
-    ensight.DescribeVector( "Velocity", datvec, true);
+    // Initialize Ensight6 output
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),   "falling film", ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "Levelset",     ensf + ".scl", true));
+    ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure",     ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector( Stokes.GetVelSolution(), "Velocity",     ensf + ".vel", true));
 
-    ensight.putGeom( datgeo, 0);
-    ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
-    ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
-    ensight.putScalar( datscl, lset.GetSolution(), 0);
-    ensight.Commit();
+    ensight.Write();
 
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
@@ -318,16 +310,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
             cpl.Update();
 
 if (step%10==0)
-{
-        ensight.putGeom( datgeo, step*C.dt);
-        ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
-        ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
-        ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
-        ensight.Commit();
-}
+        ensight.Write( step*C.dt);
     }
 
-    ensight.CaseEnd();
     std::cerr << std::endl;
     delete stokessolver;
     delete navstokessolver;

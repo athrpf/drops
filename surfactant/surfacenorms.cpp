@@ -13,13 +13,6 @@
 #include <fstream>
 
 DROPS::ParamSurfactantCL C;
-std::string filename,
-            datgeo,
-            datscl,
-            datvel,
-            datsurf,
-            datsol,
-            datlset;
 
 DROPS::Point3DCL u_func (const DROPS::Point3DCL&, double)
 {

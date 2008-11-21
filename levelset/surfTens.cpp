@@ -79,21 +79,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx);
     lset.CreateNumbering(      MG.GetLastLevel(), lidx);
 
-    EnsightP2SolOutCL ensight( MG, lidx);
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-                 datpr = filename+".pr" ,
-                 datvec= filename+".vel",
-                 datcrv= filename+".crv",
-                 datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-    ensight.DescribeScalar( "Pressure", datpr,  true);
-    ensight.DescribeVector( "Velocity", datvec, true);
-    ensight.DescribeVector( "Curvature", datcrv, true);
-    ensight.putGeom( datgeo);
-
     lset.Phi.SetIdx( lidx);
     lset.Init( EllipsoidCL::DistanceFct);
     const double Vol= EllipsoidCL::GetVolume();
@@ -142,11 +127,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     curv.Clear();
     lset.AccumulateBndIntegral( curv);
 
-    ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
-    ensight.putVector( datcrv, Stokes.GetVelSolution( curv), 0);
-    ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
-    ensight.putScalar( datscl, lset.GetSolution(), 0);
-    ensight.Commit();
+    // Initialize Ensight6 output
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),        "Maesszelle", ensf + ".geo"));
+    ensight.Register( make_Ensight6Scalar( lset.GetSolution(),           "Levelset",   ensf + ".scl", true));
+    ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),       "Pressure",   ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector( Stokes.GetVelSolution(),      "Velocity",   ensf + ".vel", true));
+    ensight.Register( make_Ensight6Vector( Stokes.GetVelSolution( curv), "Curvature",  ensf + ".crv", true));
+
+    ensight.Write();
 
     ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
     ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
@@ -166,11 +156,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
 
-        ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
-        ensight.putVector( datcrv, Stokes.GetVelSolution( curv), step*C.dt);
-        ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
-        ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
-        ensight.Commit();
+        ensight.Write( step*C.dt);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)
         {
@@ -186,11 +172,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             curv.Clear();
             lset.AccumulateBndIntegral( curv);
 
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
-            ensight.putVector( datcrv, Stokes.GetVelSolution( curv), (step+0.1)*C.dt);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
-            ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
-            ensight.Commit();
+            ensight.Write( (step+0.1)*C.dt);
             std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {
@@ -201,8 +183,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             }
         }
     }
-
-    ensight.CaseEnd();
     std::cerr << std::endl;
 }
 

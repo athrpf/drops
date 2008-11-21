@@ -97,18 +97,11 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
 
   ThetaScheme.SetTimeStep(dt, nu);
 
-  IdxDescCL ens_idx( P2_FE);
-  ens_idx.CreateNumbering( MG.GetLastLevel(), MG, NoBndDataCL<>());
-  EnsightP2SolOutCL ens( MG, &ens_idx);
+  Ensight6OutCL  ens(C.EnsCase+".case", time_steps+1);
   const std::string filename= C.EnsDir + "/" + C.EnsCase;
-  const std::string datgeo= filename+".geo",
-                    datT=   filename+".tp";
-  ens.CaseBegin( std::string(C.EnsCase+".case").c_str(), time_steps+1);
-  ens.DescribeGeom( "Film", datgeo);
-  ens.DescribeScalar( "Temperatur", datT, true);
-  ens.putGeom( datgeo);
-  ens.putScalar( datT,  Poisson.GetSolution(), 0);
-  ens.Commit();
+  ens.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), "Film",       filename + ".geo"));
+  ens.Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
+  ens.Write();
 
   double average= 0.0;
   for (int step=1;step<=time_steps;step++)
@@ -118,8 +111,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
     std::cerr << "Iterationen: " << solver.GetIter()
       << "\tNorm des Residuums: " << solver.GetResid() << std::endl;
     average+= solver.GetIter();
-    ens.putScalar( datT,  Poisson.GetSolution(), step*dt);
-    ens.Commit();
+    ens.Write( step*dt);
   }
   average/= time_steps;
   std::cerr << "Anzahl der Iterationen im Durchschnitt: " << average

@@ -6,7 +6,7 @@
 
 # time stepping
 Time {
-  NumSteps	=	100
+  NumSteps	=	20
   StepSize	=	5e-2
   ThetaLevelset	=	1	# IE
   ThetaStokes	=	1	# IE
@@ -89,6 +89,28 @@ AdaptRef {
   Freq		=	0	# no effect
   FinestLevel	=	2
   Width		=	1e-8
+}
+
+# surface tension
+SurfTens {
+  VarTension	=	0	# 0=off, 1=on
+  SurfTension	=	1	# surface tension coefficient
+  JumpWidth	=	5e-4
+  RelPos	=	1.5	# position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+  DirtFactor	=	0.8	# red. factor for surface tension (due to contamination) in lower droplet)
+}
+
+# mass transport
+Transp {
+  DoTransp	=	1	# 0=off, 1=on
+  Theta		=	0.5	# time integration theta scheme
+  Iter		=	200
+  Tol		=	1e-10
+  DiffPos	=	5e-3	# diffusion coefficient (pos. part)
+  DiffNeg	=	1e-2	# diffusion coefficient (neg. part)
+  H		=	0.5	# Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos	=	0.1	# initial concentration (pos. part)
+  IniCNeg	=	5	# initial concentration (neg. part)
 }
 
 # miscellaneous

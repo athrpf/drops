@@ -364,99 +364,6 @@ class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_Ss
 } // end of namespace DROPS
 
 
-// Interface to EnsightP2SolOutCL for time-dependent geometry,
-// velocity and pressure
-class EnsightWriterCL
-{
-  private:
-    std::string casefile_;
-    std::string geomfile_;
-    std::string prfile_;
-    std::string velfile_;
-    DROPS::MultiGridCL& MG_;
-    DROPS::IdxDescCL ensightidx_;
-    DROPS::EnsightP2SolOutCL ensight_;
-    bool have_idx_;
-
-  public:
-    EnsightWriterCL(DROPS::MultiGridCL& MG, DROPS::Uint num_timestep,
-                    std::string casefile, std::string geomfile,
-                    std::string prfile, std::string velfile);
-    ~EnsightWriterCL();
-
-    // Call after a grid-change before writing data. The constructor calls this, too.
-    void CreateNumbering(int level= -1);
-    // Destroy the index before modifying the grid.
-    void DeleteNumbering();
-
-    // To write geometry, pressure and velocity at time t.
-    template<class InstatNSCL>
-    void
-    WriteAtTime(const InstatNSCL& NS, const double t);
-};
-
-EnsightWriterCL::EnsightWriterCL(DROPS::MultiGridCL& MG, DROPS::Uint num_timestep,
-                                 std::string casefile, std::string geomfile,
-                                 std::string prfile, std::string velfile)
-    :casefile_( casefile), geomfile_( geomfile), prfile_( prfile), velfile_( velfile),
-     MG_( MG), ensight_( MG, &ensightidx_), have_idx_( false)
-{
-    ensightidx_.SetFE( DROPS::P2_FE);
-    this->CreateNumbering();
-    have_idx_= true;
-    ensight_.CaseBegin( casefile_.c_str(), num_timestep);
-    ensight_.DescribeGeom( "insa_geometry", geomfile_, true);
-    ensight_.DescribeScalar( "p", prfile_, true);
-    ensight_.DescribeVector( "v", velfile_, true);
-}
-
-EnsightWriterCL::~EnsightWriterCL()
-{
-    if (!have_idx_)
-        std::cerr << "EnsightWriter::~EnsightWriterCL: Error; no index found.\n";
-    ensight_.CaseEnd();
-    this->DeleteNumbering();
-}
-
-template<class InstatNSCL>
-void
-EnsightWriterCL::WriteAtTime(const InstatNSCL& NS, const double t)
-{
-    if (!have_idx_)
-        throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
-    ensight_.putGeom( geomfile_, t);
-    typename InstatNSCL::const_DiscPrSolCL ensightp( &NS.p, &NS.GetBndData().Pr, &MG_);
-    ensight_.putScalar( prfile_, ensightp, t);
-    typename InstatNSCL::const_DiscVelSolCL ensightv( &NS.v, &NS.GetBndData().Vel, &MG_, t);
-    ensight_.putVector( velfile_, ensightv, t);
-}
-
-void
-EnsightWriterCL::CreateNumbering( int level)
-{
-    if (have_idx_)
-        throw DROPS::DROPSErrCL( "EnsightWriter::CreateIndex: Already done.");
-    DROPS::NoBndDataCL<> ensightbnd;
-    ensightidx_.CreateNumbering( level < 0 ? MG_.GetLastLevel(): level, MG_, ensightbnd);
-    have_idx_= true;
-}
-
-void
-EnsightWriterCL::DeleteNumbering()
-{
-    if (!have_idx_)
-        throw DROPS::DROPSErrCL( "EnsightWriter::WriteAtTime: Call CreateNumbering first.");
-    DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
-                                MG_.GetAllVertexBegin( ensightidx_.TriangLevel()),
-                                MG_.GetAllVertexEnd( ensightidx_.TriangLevel()));
-    DROPS::DeleteNumbOnSimplex( ensightidx_.GetIdx(),
-                                MG_.GetAllEdgeBegin( ensightidx_.TriangLevel()),
-                                MG_.GetAllEdgeEnd( ensightidx_.TriangLevel()));
-    ensightidx_.SetNumUnknowns(0);
-    have_idx_= false;
-}
-
-
 typedef InstatStokesCL MyPdeCL;
 
 typedef DROPS::SVectorCL<3> (*fun_ptr)(const DROPS::SVectorCL<3>&, double);
@@ -734,8 +641,15 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.InitVel( v1, &MyPdeCL::LsgVel);
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
-    EnsightWriterCL ensightout( mg, num_timestep, "insa.case", "insa_geo", "insa_pr", "insa_vel");
-    ensightout.WriteAtTime( NS, 0.);
+
+    // Initialize Ensight6 output
+    std::string ensf( "insa");
+    Ensight6OutCL ensight( ensf + ".case", num_timestep + 1);
+    ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "insa geometry", ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( NS.GetPrSolution(),  "p",      ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( NS.GetVelSolution(), "v",      ensf + ".vel", true));
+    ensight.Write( 0.);
+
     for (; timestep<num_timestep; ++timestep, t+= dt) {
         std::cerr << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
@@ -746,10 +660,8 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
                 delete instatsolver; instatsolver= 0;
 //                M_pr.Reset();
                 ResetSystem( NS);
-                ensightout.DeleteNumbering();
                 UpdateTriangulation( NS, &SignedDistToInterface, t,
                                      shell_width, c_level, f_level, v1, p1);
-                ensightout.CreateNumbering();
             }
             SetMatVecIndices( NS, vidx1, pidx1);
             PPr.SetIdx( pidx1, pidx1);
@@ -782,7 +694,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
         std::cerr << "After timestep." << std::endl;
         std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
-        ensightout.WriteAtTime( NS, t+dt);
+        ensight.Write( t+dt);
     }
     delete instatsolver; instatsolver= 0;
     delete statsolver; statsolver= 0;
@@ -845,8 +757,13 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
 
-    EnsightWriterCL ensightout( mg, num_timestep, "insa.case", "insa_geo", "insa_pr", "insa_vel");
-    ensightout.WriteAtTime( NS, 0.);
+    // Initialize Ensight6 output
+    std::string ensf( "insa");
+    Ensight6OutCL ensight( ensf + ".case", num_timestep + 1);
+    ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "insa geometry", ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( NS.GetPrSolution(),  "p",      ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( NS.GetVelSolution(), "v",      ensf + ".vel", true));
+    ensight.Write( 0.);
 
     for (; timestep<num_timestep; ++timestep, t+= dt) {
         std::cerr << "----------------------------------------------------------------------------"
@@ -858,10 +775,8 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
                 delete instatsolver; instatsolver= 0;
                 delete ispcp; ispcp= 0;
                 ResetSystem( NS);
-                ensightout.DeleteNumbering();
                 UpdateTriangulation( NS, &SignedDistToInterface, t,
                                      shell_width, c_level, f_level, v1, p1);
-                ensightout.CreateNumbering();
             }
             SetMatVecIndices( NS, vidx1, pidx1);
             PPr.SetIdx( pidx1, pidx1);
@@ -912,7 +827,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
-        ensightout.WriteAtTime( NS, t+dt);
+        ensight.Write( t+dt);
     }
     delete instatsolver;
     delete statsolver;
@@ -971,8 +886,13 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.CreateNumberingPr( mg.GetLastLevel(), pidx1);
     p1->SetIdx( pidx1);
 
-    EnsightWriterCL ensightout( mg, num_timestep, "insa.case", "insa_geo", "insa_pr", "insa_vel");
-    ensightout.WriteAtTime( NS, 0.);
+    // Initialize Ensight6 output
+    std::string ensf( "insa");
+    Ensight6OutCL ensight( ensf + ".case", num_timestep + 1);
+    ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "insa geometry", ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( NS.GetPrSolution(),  "p",      ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( NS.GetVelSolution(), "v",      ensf + ".vel", true));
+    ensight.Write( 0.);
 
     for (; timestep<num_timestep; ++timestep, t+= dt) {
         std::cerr << "----------------------------------------------------------------------------"
@@ -984,10 +904,8 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
                 delete instatsolver; instatsolver= 0;
 
                 ResetSystem( NS);
-                ensightout.DeleteNumbering();
                 UpdateTriangulation( NS, &SignedDistToInterface, t,
                                      shell_width, c_level, f_level, v1, p1);
-                ensightout.CreateNumbering();
             }
             SetMatVecIndices( NS, vidx1, pidx1);
             PPr.SetIdx( pidx1, pidx1);
@@ -1029,7 +947,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
-        ensightout.WriteAtTime( NS, t+dt);
+        ensight.Write( t+dt);
     }
     delete instatsolver; instatsolver= 0;
     delete statsolver; statsolver= 0;

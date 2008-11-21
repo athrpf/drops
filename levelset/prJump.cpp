@@ -362,7 +362,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     VelVecDescCL curv( vidx);
     VelVecDescCL curvForce( vidx);
-    VecDescCL ipr(pidx), opr(pidx); // inner/outer pressure
 
     switch (C.IniCond)
     {
@@ -583,52 +582,27 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         }
         std::cerr << "extended pr: min/max/avg = " << xmin << ", " << xmax << ", " << sum/num << std::endl;
         std::cerr << "limited pr:  min/max/avg = " << lim_min << ", " << lim_max << ", " << sum_lim/num << std::endl;
-
-        Stokes.GetPrOnPart( ipr, lset, false);
-        Stokes.GetPrOnPart( opr, lset, true);
-    }
-    else
-    {
-        ipr.Data= Stokes.p.Data;
-        opr.Data= Stokes.p.Data;
     }
 
     L2ErrorPr( Stokes.p, lset, Stokes.prM.Data.GetFinest(), prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest(), avg_ex);
 
     PostProcessPr( Stokes.p, new_pr, MG);
 
-    EnsightP2SolOutCL ensight( MG, lidx);
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-    datpr = filename+".pr" ,
-    datipr = filename+".ipr" ,
-    datopr = filename+".opr" ,
-    datvec= filename+".vel",
-    datcrv= filename+".crv",
-    datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "Cube", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-    ensight.DescribeScalar( "Pressure", datpr, true);
+    // Initialize Ensight6 output
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),          "Cube",      ensf + ".geo"));
+    ensight.Register( make_Ensight6Scalar( lset.GetSolution(),             "Levelset",  ensf + ".scl"));
+    ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution( new_pr),  "Pressure",  ensf + ".pr"));
+    ensight.Register( make_Ensight6Vector( Stokes.GetVelSolution(),        "Velocity",  ensf + ".vel"));
+    ensight.Register( make_Ensight6Vector(  Stokes.GetVelSolution( curvForce),
+                                                                           "Curvature", ensf + ".crv"));
+    if (Stokes.UsesXFEM())
+        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.GetXidx().GetFinest(), Stokes.p.Data,
+                                                                           "XPressure", ensf + ".pr"));
 
-    ensight.DescribeScalar( "InnerPressure", datipr, true);
-    ensight.DescribeScalar( "OuterPressure", datopr, true);
+    if (C.EnsCase != "none") ensight.Write();
 
-    ensight.DescribeVector( "Velocity", datvec, true);
-    ensight.DescribeVector( "Curvature", datcrv, true);
-    ensight.putGeom( datgeo);
-
-    ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
-    ensight.putVector( datcrv, Stokes.GetVelSolution( curvForce), 0);
-    ensight.putScalar( datpr,  Stokes.GetPrSolution( new_pr), 0);
-    ensight.putScalar( datscl, lset.GetSolution(), 0);
-
-    ensight.putScalar( datipr,  Stokes.GetPrSolution( ipr), 0);
-    ensight.putScalar( datopr,  Stokes.GetPrSolution( opr), 0);
-
-    ensight.Commit();
-
-    ensight.CaseEnd();
     std::cerr << std::endl;
 }
 

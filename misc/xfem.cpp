@@ -119,15 +119,7 @@ void P1XtoP1 (const ExtIdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& id
 
     negPart.resize(p1unknowns);
     posPart.resize(p1unknowns);
-
-    DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
-        const IdxT nr=   it->Unknowns( idxnum);
-        const IdxT p1nr= it->Unknowns( p1idxnum);
-        if (InterfacePatchCL::Sign( lset.Data[it->Unknowns(lsidxnum)]) == 1)
-            posPart[p1nr]= p1x[nr];
-        else
-            negPart[p1nr]= p1x[nr];
-    }
+    posPart = negPart = p1x[std::slice(0, p1unknowns, 1)];
 
     // add extended pressure
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {

@@ -162,21 +162,14 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         schurSolver.Solve( A->Data, B->Data, v->Data, p->Data, b->Data, c->Data);
     }
 
-    EnsightP2SolOutCL ensight( MG, lidx);
-
-    const char datgeo[]= "ensight/shear.geo",
-               datpr[] = "ensight/shear.pr",
-               datvec[]= "ensight/shear.vec",
-               datscl[]= "ensight/shear.scl";
-    ensight.CaseBegin( "shear.case", num_steps+1);
-    ensight.DescribeGeom( "shear flow field", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-    ensight.DescribeScalar( "Pressure", datpr,  true);
-    ensight.DescribeVector( "Velocity", datvec, true);
-    ensight.putGeom( datgeo);
-    ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
-    ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
-    ensight.putScalar( datscl, lset.GetSolution(), 0);
+    // Initialize Ensight6 output
+    std::string ensf( "ensight/shear");
+    Ensight6OutCL ensight( "shear.case", num_steps + 1);
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   "shear flow field", ensf + ".geo"));
+    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",         ensf + ".scl", true));
+    ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",         ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",         ensf + ".vel", true));
+    ensight.Write();
 
     if (meth)
     {
@@ -193,9 +186,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         {
             std::cerr << "======================================================== Schritt " << step << ":\n";
             cpl.DoStep( FPsteps);
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
-            ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+            ensight.Write( step*delta_t);
         }
     }
     else // Uzawa
@@ -216,15 +207,11 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         {
             std::cerr << "============= Schritt " << step << ":\n";
             cpl.DoStep( FPsteps);
-            ensight.putScalar( datpr, Stokes.GetPrSolution(), step*delta_t);
-            ensight.putVector( datvec, Stokes.GetVelSolution(), step*delta_t);
-            ensight.putScalar( datscl, lset.GetSolution(), step*delta_t);
+            ensight.Write( step*delta_t);
         }
         std::cerr << "Iterationen: " << uzawaSolver.GetIter()
                   << "\tNorm des Res.: " << uzawaSolver.GetResid() << std::endl;
     }
-
-    ensight.CaseEnd();
 
     std::cerr << std::endl;
 }
@@ -262,7 +249,7 @@ int main (int argc, char** argv)
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel,  &Parabol, &Parabol };
     // parabol. Einstroembedingungen bei z=0 und z=1
 
-    MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(24, IsNeumann, bnd_fun));
+    MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     Strategy(prob, inner_iter_tol);
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
