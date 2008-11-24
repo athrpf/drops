@@ -1149,11 +1149,12 @@ class UzawaCGSolverCL : public StokesSolverBaseCL
 };
 
 //important for ScaledMGPreCL
+template <class ProlongationT>
 double
-EigenValueMaxMG(const MLMatrixCL& A, const MLMatrixCL& P, VectorCL& x, int iter, double  tol= 1e-3)
+EigenValueMaxMG(const MLMatrixCL& A, const ProlongationT& P, VectorCL& x, int iter, double  tol= 1e-3)
 {
     MLMatrixCL::const_iterator finest= --A.end();
-    MLMatrixCL::const_iterator finestP= --P.end();
+    typename ProlongationT::const_iterator finestP= --P.end();
     Uint   sm   =  1; // how many smoothing steps?
     int    lvl  = -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
@@ -1185,10 +1186,11 @@ EigenValueMaxMG(const MLMatrixCL& A, const MLMatrixCL& P, VectorCL& x, int iter,
 }
 
 //scaled MG as preconditioner
+template <class ProlongationT= MLMatrixCL>
 class ScaledMGPreCL
 {
   private:
-    const MLMatrixCL& P_;
+    const ProlongationT& P_;
     Uint iter_;
     double s_;
     mutable SSORPcCL directpc_;
@@ -1199,7 +1201,7 @@ class ScaledMGPreCL
     mutable SSORsmoothCL smoother_;  // Symmetric-Gauss-Seidel with over-relaxation
 
   public:
-    ScaledMGPreCL( const MLMatrixCL& P, Uint iter, double s= 1.0)
+    ScaledMGPreCL( const ProlongationT& P, Uint iter, double s= 1.0)
         : P_(P), iter_( iter), s_( s), solver_( directpc_, 200, 1e-12), sm_( 1),
          lvl_( -1), omega_( 1.0), smoother_( omega_)
     {}
@@ -1213,12 +1215,13 @@ class ScaledMGPreCL
     }
 };
 
+template <class ProlongationT>
 inline void
-ScaledMGPreCL::Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& r) const
+ScaledMGPreCL<ProlongationT>::Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& r) const
 {
     x= 0.0;
     MLMatrixCL::const_iterator finest = --A.end();
-    MLMatrixCL::const_iterator finestP= --P_.end();
+    typename ProlongationT::const_iterator finestP= --P_.end();
     const double oldres= norm(r - A*x);
     for (Uint i= 0; i < iter_; ++i) {
         VectorCL r2( r - A*x);
@@ -1230,11 +1233,13 @@ ScaledMGPreCL::Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& r) const
     std::cerr << "ScaledMGPreCL: it: " << iter_ << "\treduction: " << (oldres==0.0 ? res : res/oldres) << '\n';
 }
 
-template<class SmootherT>
+template<class SmootherT, class PVelT= MLMatrixCL, class PPrT= MLMatrixCL>
 class StokesMGSolverCL: public StokesSolverBaseCL
 {
   private:
-    const MLMatrixCL &PVel_, &PPr_, &prM_;
+    const PVelT &PVel_;
+    const PPrT  &PPr_;
+    const MLMatrixCL    &prM_;
     const SmootherT&    smoother_;
     StokesSolverBaseCL& directSolver_;
     Uint  smoothSteps_;
@@ -1255,7 +1260,8 @@ class StokesMGSolverCL: public StokesSolverBaseCL
     }
 
   public:
-    StokesMGSolverCL( const MLMatrixCL& PVel, const MLMatrixCL& PPr, const MLMatrixCL& prM, const SmootherT& smoother, StokesSolverBaseCL& ds,
+    StokesMGSolverCL( const PVelT& PVel, const PPrT& PPr, const MLMatrixCL& prM,
+                      const SmootherT& smoother, StokesSolverBaseCL& ds,
                       Uint iter_vel, double tol, bool rel= false, Uint sm = 2, int lvl = -1)
       : StokesSolverBaseCL(iter_vel, tol, rel), PVel_(PVel), PPr_(PPr), prM_(prM), smoother_(smoother), directSolver_(ds),
         smoothSteps_(sm), usedLevels_(lvl), BVersion_( -1) {}
@@ -1280,8 +1286,8 @@ class StokesMGSolverCL: public StokesSolverBaseCL
         MLMatrixCL::const_iterator B_end   (--B.end());
         MLMatrixCL::const_iterator BT_end  (--BT_.end());
         MLMatrixCL::const_iterator prM_end (--prM_.end());
-        MLMatrixCL::const_iterator PVel    (--PVel_.end());
-        MLMatrixCL::const_iterator PPr     (--PPr_.end());
+        typename PVelT::const_iterator PVel(--PVel_.end());
+        typename PPrT::const_iterator  PPr (--PPr_.end());
 
         const double runorm0= norm_sq( A * v + transp_mul( B, p) - b);
         const double rpnorm0= norm_sq( B * v - c);

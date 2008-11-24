@@ -4,14 +4,15 @@
 
 namespace DROPS {
 
-template <class SmootherCL, class DirectSolverCL>
+template <class SmootherCL, class DirectSolverCL, class ProlongationIteratorT>
 void
-MGM(const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine, const MLMatrixCL::const_iterator& P,
-     VectorCL& x, const VectorCL& b, const SmootherCL& Smoother, Uint smoothSteps,
+MGM(const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine,
+     const ProlongationIteratorT& P, VectorCL& x, const VectorCL& b,
+     const SmootherCL& Smoother, Uint smoothSteps,
      DirectSolverCL& Solver, int numLevel, int numUnknDirect)
 {
     MLMatrixCL::const_iterator coarse= fine;
-    MLMatrixCL::const_iterator coarseP= P;
+    ProlongationIteratorT      coarseP= P;
 
     if(  ( numLevel==-1      ? false : numLevel==0 )
        ||( numUnknDirect==-1 ? false : x.size() <= static_cast<Uint>(numUnknDirect) )
@@ -37,12 +38,13 @@ MGM(const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& f
     for (Uint i=0; i<smoothSteps; ++i) Smoother.Apply( *fine, x, b);
 }
 
-template<class SmootherCL, class DirectSolverCL>
-void MG(const MLMatrixCL& MGData, const MLMatrixCL& Prolong, const SmootherCL& smoother, DirectSolverCL& solver,
-        VectorCL& x, const VectorCL& b, int& maxiter, double& tol, const bool residerr, Uint sm, int lvl)
+template<class SmootherCL, class DirectSolverCL, class ProlongationT>
+void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL& smoother,
+        DirectSolverCL& solver, VectorCL& x, const VectorCL& b, int& maxiter, double& tol,
+        const bool residerr, Uint sm, int lvl)
 {
     MLMatrixCL::const_iterator finest= --MGData.end();
-    MLMatrixCL::const_iterator finestProlong= --Prolong.end();
+    typename ProlongationT::const_iterator finestProlong= --Prolong.end();
     double resid= -1;
     double old_resid;
     VectorCL tmp;
@@ -73,11 +75,11 @@ void MG(const MLMatrixCL& MGData, const MLMatrixCL& Prolong, const SmootherCL& s
     tol= resid;
 }
 
-template<class StokesSmootherCL, class StokesDirectSolverCL>
+template<class StokesSmootherCL, class StokesDirectSolverCL, class ProlongItT1, class ProlongItT2>
 void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::const_iterator& fineA,
                 const MLMatrixCL::const_iterator& fineB,   const MLMatrixCL::const_iterator& fineBT, 
-                const MLMatrixCL::const_iterator& fineprM, const MLMatrixCL::const_iterator& PVel,
-                const MLMatrixCL::const_iterator& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
+                const MLMatrixCL::const_iterator& fineprM, const ProlongItT1& PVel,
+                const ProlongItT2& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
                 const VectorCL& c, const StokesSmootherCL& Smoother, Uint smoothSteps, Uint cycleSteps,
                 StokesDirectSolverCL& Solver, int numLevel, int numUnknDirect)
 {
@@ -85,8 +87,8 @@ void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::con
     MLMatrixCL::const_iterator coarseB   = fineB;
     MLMatrixCL::const_iterator coarseBT  = fineBT;
     MLMatrixCL::const_iterator coarseprM = fineprM;
-    MLMatrixCL::const_iterator coarsePVel= PVel;
-    MLMatrixCL::const_iterator coarsePPr = PPr;
+    ProlongItT1 coarsePVel= PVel;
+    ProlongItT2 coarsePPr = PPr;
 
     if(  ( numLevel==-1      ? false : numLevel==0 )
        ||( numUnknDirect==-1 ? false : u.size() <= static_cast<Uint>(numUnknDirect) )

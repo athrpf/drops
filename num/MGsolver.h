@@ -32,9 +32,9 @@ namespace DROPS
  \param Solver        coarse grid/direct solver with relative residual measurement
  \param numLevel      number of vidited levels
  \param numUnknDirect minimal number of unknowns for the direct solver */
-template<class SmootherCL, class DirectSolverCL>
+template<class SmootherCL, class DirectSolverCL, class ProlongationIteratorT>
 void MGM( const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine, 
-          const MLMatrixCL::const_iterator& P, VectorCL& x, const VectorCL& b,
+          const ProlongationIteratorT& P, VectorCL& x, const VectorCL& b,
           const SmootherCL& Smoother, Uint smoothSteps,
           DirectSolverCL& Solver, int numLevel, int numUnknDirect);
 
@@ -43,8 +43,8 @@ void MGM( const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_itera
 
  The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
  sm controls the number of smoothing steps, lvl the number of used levels */
-template<class SmootherCL, class DirectSolverCL>
-void MG(const MLMatrixCL& MGData, const MLMatrixCL& Prolong, const SmootherCL&, 
+template<class SmootherCL, class DirectSolverCL, class ProlongationT>
+void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL&, 
         DirectSolverCL&, VectorCL& x, const VectorCL& b, int& maxiter, double& tol,
         const bool residerr= true, Uint sm=1, int lvl=-1);
 
@@ -58,11 +58,11 @@ void MG(const MLMatrixCL& MGData, const MLMatrixCL& Prolong, const SmootherCL&,
 /*******************************************************************
 *   M G S o l v e r  C L                                           *
 ********************************************************************/
-template<class SmootherT, class DirectSolverT>
+template<class SmootherT, class DirectSolverT, class ProlongationT= MLMatrixCL>
 class MGSolverCL : public SolverBaseCL
 {
   private:
-    MLMatrixCL&       P;
+    ProlongationT&    P;                 ///< prolongation
     const SmootherT&  smoother_;         ///< multigrid smoother
     DirectSolverT&    directSolver_;     ///< coarse grid solver with relative residual measurement
     const bool        residerr_;         ///< controls the error measuring: false : two-norm of dx, true: two-norm of residual
@@ -78,7 +78,7 @@ class MGSolverCL : public SolverBaseCL
         \param residerr   controls the error measuring: false : two-norm of dx, true: two-norm of residual
         \param smsteps    number of smoothing steps
         \param lvl        number of used levels (-1 = all) */
-    MGSolverCL( MLMatrixCL& PP, const SmootherT& sm, DirectSolverT& ds, int maxiter,
+    MGSolverCL( ProlongationT& PP, const SmootherT& sm, DirectSolverT& ds, int maxiter,
                 double tol, const bool residerr= true, Uint smsteps= 1, int lvl= -1 )
         : SolverBaseCL(maxiter,tol), P(PP), smoother_(sm), directSolver_(ds),
           residerr_(residerr), smoothSteps_(smsteps), usedLevels_(lvl) {}
@@ -123,11 +123,11 @@ void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P);
  \param Solver        coarse grid/direct solver with relative residual measurement
  \param numLevel      number of vidited levels
  \param numUnknDirect minimal number of unknowns for the direct solver */
-template<class StokesSmootherCL, class StokesDirectSolverCL>
+template<class StokesSmootherCL, class StokesDirectSolverCL, class ProlongItT1, class ProlongItT2>
 void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::const_iterator& fineA,
                 const MLMatrixCL::const_iterator& fineB,   const MLMatrixCL::const_iterator& fineBT, 
-                const MLMatrixCL::const_iterator& fineprM, const MLMatrixCL::const_iterator& PVel,
-                const MLMatrixCL::const_iterator& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
+                const MLMatrixCL::const_iterator& fineprM, const ProlongItT1& PVel,
+                const ProlongItT2& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
                 const VectorCL& c, const StokesSmootherCL& Smoother, Uint smoothSteps, Uint cycleSteps,
                 StokesDirectSolverCL& Solver, int numLevel, int numUnknDirect);
 

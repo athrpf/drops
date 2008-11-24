@@ -416,7 +416,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         double rhoinv = 0.99*( 1.0-1.1*0.363294);
 /*        if ( C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
             rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( Stokes.A.Data, Stokes.PVel.Data, xx, 1000, 1e-4));*/
-        ScaledMGPreCL velprep( Stokes.PVel.Data, 1, 1.0/rhoinv);
+        ScaledMGPreCL<> velprep( Stokes.PVel.Data, 1, 1.0/rhoinv);
 
             //PCG
         typedef SSORPcCL APcPcT;
@@ -513,13 +513,13 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         typedef InexactUzawaCL<APcT, DiagMatrixPCCL, APC_SYM> InexactUzawa15T;
         InexactUzawa15T inexactuzawapcgdiagsolver( Apc, lumped, C.outer_iter, C.outer_tol, 0.5);
 
-        typedef UzawaCGSolverEffCL<ScaledMGPreCL, ISPreCL> UzawaCGEff16T;
+        typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, ISPreCL> UzawaCGEff16T;
         UzawaCGEff16T pcgmgssorsolver (velprep, ispc, C.outer_iter, C.outer_tol);
 
-        typedef UzawaCGSolverEffCL<ScaledMGPreCL, ISBBT> UzawaCGEff17T;
+        typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, ISBBT> UzawaCGEff17T;
         UzawaCGEff17T pcgmgpcgsolver (velprep, isbbt, C.outer_iter, C.outer_tol);
 
-        typedef UzawaCGSolverEffCL<ScaledMGPreCL, DiagMatrixPCCL> UzawaCGEff18T;
+        typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, DiagMatrixPCCL> UzawaCGEff18T;
         UzawaCGEff18T pcgmgdiagsolver (velprep, lumped, C.outer_iter, C.outer_tol);
 
         StokesSolverBaseCL* solver=0;

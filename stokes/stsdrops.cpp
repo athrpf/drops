@@ -679,12 +679,12 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
-//    typedef UzawaCGSolverEffCL<ScaledMGPreCL, DiagMatrixPCCL> StatsolverCL;
-    typedef UzawaCGSolverEffCL<ScaledMGPreCL, ISMGPreCL> StatsolverCL;
+//    typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, DiagMatrixPCCL> StatsolverCL;
+    typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, ISMGPreCL> StatsolverCL;
     StatsolverCL* statsolver= 0;
     ISMGPreCL* ispcp= 0;
 //    DiagMatrixPCCL* ispcp= 0;
-    ScaledMGPreCL* velprep= 0;
+    ScaledMGPreCL<>* velprep= 0;
     NS.SetNumVelLvl  ( mg.GetNumLevel());
     NS.SetNumPrLvl   ( mg.GetNumLevel());
     M_pr.Data.resize ( mg.GetNumLevel());
@@ -719,12 +719,12 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     VectorCL xx( 1.0, vidx1->NumUnknowns());
 //    const double rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( NS.A.Data, PVel.Data, xx, 1000, 1e-6));
     const double rhoinv= 0.99*( 1.0 - 1.1*0.242869);
-    velprep= new ScaledMGPreCL( PVel.Data, 1, 1.0/rhoinv);
-//    statsolver= new UzawaCGSolverEffCL<ScaledMGPreCL, DiagMatrixPCCL>(
+    velprep= new ScaledMGPreCL<>( PVel.Data, 1, 1.0/rhoinv);
+//    statsolver= new UzawaCGSolverEffCL<ScaledMGPreCL<>, DiagMatrixPCCL>(
 //                        *velprep,
 //                        *ispcp,
 //                        stokes_maxiter, stokes_tol);
-    statsolver= new UzawaCGSolverEffCL<ScaledMGPreCL, ISMGPreCL>(
+    statsolver= new UzawaCGSolverEffCL<ScaledMGPreCL<>, ISMGPreCL>(
                         *velprep,
                         *ispcp,
                         stokes_maxiter, stokes_tol);
@@ -765,10 +765,10 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
-    typedef UzawaCGSolverCL<ScaledMGPreCL, ISMGPreCL> StatsolverCL;
+    typedef UzawaCGSolverCL<ScaledMGPreCL<>, ISMGPreCL> StatsolverCL;
     StatsolverCL* statsolver= 0;
     ISMGPreCL* ispcp= 0;
-    ScaledMGPreCL* velprep= 0;
+    ScaledMGPreCL<>* velprep= 0;
     NS.SetNumVelLvl  ( mg.GetNumLevel());
     NS.SetNumPrLvl   ( mg.GetNumLevel());
     M_pr.Data.resize ( mg.GetNumLevel());
@@ -803,8 +803,8 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
 //    PCG_SsorCL sol2( SSORPcCL( 1.0), stokes_maxiter, stokes_tol);
     VectorCL xx( 1.0, vidx1->NumUnknowns());
     const double rhoinv= 0.95*( 1.0 - 1.1*EigenValueMaxMG( NS.A.Data, PVel.Data, xx, 50, 2e-2));
-    velprep= new ScaledMGPreCL( PVel.Data, 1, 1.0/rhoinv);
-    statsolver= new UzawaCGSolverCL<ScaledMGPreCL, ISMGPreCL>(
+    velprep= new ScaledMGPreCL<>( PVel.Data, 1, 1.0/rhoinv);
+    statsolver= new UzawaCGSolverCL<ScaledMGPreCL<>, ISMGPreCL>(
                         *velprep,
                         *ispcp,
                         stokes_maxiter, stokes_tol);
