@@ -62,7 +62,7 @@ class StokesSolverFactoryHelperCL
         return ( C.StokesMethod ==  11 || C.StokesMethod ==  12 || C.StokesMethod ==  21 ||
                  C.StokesMethod ==  22 || C.StokesMethod ==  31 || C.StokesMethod ==  32 ||
                  C.StokesMethod ==  41 || C.StokesMethod ==  42 || C.StokesMethod ==  51 ||
-                 C.StokesMethod ==  52 || C.StokesMethod == 211 || C.StokesMethod == 222 ||
+                 C.StokesMethod ==  52 || C.StokesMethod == 221 || C.StokesMethod == 222 ||
                  C.StokesMethod ==  81 || C.StokesMethod ==  82);
     }
     bool PrMGUsed  ( const ParamsT& C) const
@@ -304,7 +304,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
         case 16 :
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GCRBiCGStabMinComm_);
         break;
-        case 211 :
+        case 221 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL, APC_SYM>
                         ( MGPcsymm_, bbtispc_, C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
