@@ -1239,13 +1239,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
     }
 }
 
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupProlongations()
-{
-    SetupP1ProlongationMatrix( _MG, PPr);
-    SetupP2ProlongationMatrix( _MG, PVel);
-}
-
 template <class CoeffT>
 void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 // Set up the Laplace-Beltrami-matrix
@@ -1481,8 +1474,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetIdx()
     prM.SetIdx ( pidx, pidx);
     prA.SetIdx ( pidx, pidx);
     M.SetIdx   ( vidx, vidx);
-    PVel.SetIdx( vidx, vidx);
-    PPr.SetIdx ( pidx, pidx);
 }
 
 template <class Coeff>
@@ -1492,7 +1483,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetNumVelLvl( size_t n)
     vel_idx.resize( n, vecP2_FE, _BndData.Vel, match);
     A.Data.resize   (vel_idx.size());
     M.Data.resize   (vel_idx.size());
-    PVel.Data.resize(vel_idx.size());
 }
 
 template <class Coeff>
@@ -1506,7 +1496,6 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetNumPrLvl( size_t n)
     B.Data.resize   (pr_idx.size());
     prM.Data.resize (pr_idx.size());
     prA.Data.resize (pr_idx.size());
-    PPr.Data.resize (pr_idx.size());
 }
 
 template <class Coeff>

@@ -74,7 +74,7 @@ class StokesSolverFactoryHelperCL
 /*******************************************************************
 *   S t o k e s S o l v e r F a c t o r y  C L                     *
 ********************************************************************/
-template <class StokesT, class ParamsT>
+template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
 class StokesSolverFactoryCL
 {
   private:
@@ -90,14 +90,14 @@ class StokesSolverFactoryCL
     // MultiGrid symm.
     SSORsmoothCL smoother_;
     PCG_SsorCL   coarsesolversymm_;
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGSolversymm_;
-    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGsymmPcT;
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL, ProlongationVelT> MGSolversymm_;
+    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL, ProlongationVelT> > MGsymmPcT;
     MGsymmPcT MGPcsymm_;
 
     // Multigrid nonsymm.
     GMResSolverCL<JACPcCL> coarsesolver_;
-    MGSolverCL<SSORsmoothCL, GMResSolverCL<JACPcCL> > MGSolver_;
-    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, GMResSolverCL<JACPcCL> > > MGPcT;
+    MGSolverCL<SSORsmoothCL, GMResSolverCL<JACPcCL>, ProlongationVelT > MGSolver_;
+    typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, GMResSolverCL<JACPcCL>, ProlongationVelT> > MGPcT;
     MGPcT MGPc_;
 
     //JAC-GMRes
@@ -199,6 +199,13 @@ class StokesSolverFactoryCL
 
     PVankaSmootherCL vankasmoother;
     BSSmootherCL bssmoother;
+    
+    //StokesMGSolver
+    StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT> mgvankasolversymm_;
+    StokesMGSolverCL<BSSmootherCL,     ProlongationVelT, ProlongationPT> mgbssolversymm_;
+    StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT> mgvankasolver_;
+    StokesMGSolverCL<BSSmootherCL,     ProlongationVelT, ProlongationPT> mgbssolver_;
+    
 
   public:
     StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C);
@@ -208,23 +215,27 @@ class StokesSolverFactoryCL
     void       SetMatrixA ( const MatrixCL* A) { mincommispc_.SetMatrixA(A); }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
     void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M);
-
+    /// Returns pointer to prolongation for velocity
+    ProlongationVelT* GetPVel();
+    /// Returns pointer to prolongation for pressure
+    ProlongationPT*   GetPPr();
     /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
 };
 
-template <class StokesT, class ParamsT>
-StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
+    StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
     : Stokes_(Stokes), C_(C), kA_(1.0/C_.dt), kM_(C_.theta),
         // schur complement preconditioner
         bbtispc_    ( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), kA_, kM_, C_.pcS_tol, C_.pcS_tol),
         mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), C_.pcS_tol),
         // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPcCL(1.0), 500, 1e-6, true),
-        MGSolversymm_ ( Stokes.PVel.Data, smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
+        MGSolversymm_ ( smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
         MGPcsymm_( MGSolversymm_),
         coarsesolver_( JACPcCL(1.0), 500, 500, 1e-6, true),
-        MGSolver_ ( Stokes.PVel.Data, smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
+        MGSolver_ ( smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
         GMResSolver_( JACPc_, C_.pcA_iter, /*restart*/ 100, C_.pcA_tol, /*rel*/ true), GMResPc_( GMResSolver_),
         BiCGStabSolver_( JACPc_, C_.pcA_iter, C_.pcA_tol, /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),
         PCGSolver_( SSORPc_, C_.pcA_iter, C_.pcA_tol, true), PCGPc_( PCGSolver_),
@@ -277,11 +288,15 @@ StokesSolverFactoryCL<StokesT, ParamsT>::StokesSolverFactoryCL(StokesT& Stokes, 
         PMinResPCGMinComm_( lanczos4_, C_.outer_iter, C_.outer_tol, /*relative*/ false),
         // coarse grid/direct solver for StokesMGM
         minressolver( lanczos3_, 500, 1e-6, true), blockminressolver(minressolver),
-        gcrsolver( DiagGMResMinCommPc_, 500, 500, 1e-6, true), blockgcrsolver(gcrsolver)
+        gcrsolver( DiagGMResMinCommPc_, 500, 500, 1e-6, true), blockgcrsolver(gcrsolver),
+        mgvankasolversymm_( Stokes_.prM.Data, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
+        mgbssolversymm_   ( Stokes_.prM.Data, bssmoother,    blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
+        mgvankasolver_    ( Stokes_.prM.Data, vankasmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2),
+        mgbssolver_       ( Stokes_.prM.Data, bssmoother,    blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2)
         {}
 
-template <class StokesT, class ParamsT>
-StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver()
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::CreateStokesSolver()
 {
     StokesSolverBaseCL* stokessolver = 0;
     switch (C_.StokesMethod)
@@ -397,23 +412,18 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
             vankasmoother.SetVankaMethod(0);
             if (C_.nonlinear==0.0) // stokes
-                stokessolver = new StokesMGSolverCL<PVankaSmootherCL>
-                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
+                stokessolver = &mgvankasolversymm_;
             else
-                stokessolver = new StokesMGSolverCL<PVankaSmootherCL>
-                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, vankasmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
+                stokessolver = &mgvankasolver_;;
         }
         break;
         case 82 : {
             if (C_.XFEMStab >= 0) // P1X
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            vankasmoother.SetVankaMethod(0);
             if (C_.nonlinear==0.0) // stokes
-                stokessolver = new StokesMGSolverCL<BSSmootherCL>
-                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2);
+                stokessolver = &mgbssolversymm_;
             else
-                stokessolver = new StokesMGSolverCL<BSSmootherCL>
-                        ( Stokes_.PVel.Data, Stokes_.PPr.Data, Stokes_.prM.Data, bssmoother, blockgcrsolver,    C_.outer_iter, C_.outer_tol, false, 2);
+                stokessolver = &mgbssolver_;
         }
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");
@@ -421,12 +431,53 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT>::CreateStokesSolver(
     return stokessolver;
 }
 
-template <class StokesT, class ParamsT>
-void StokesSolverFactoryCL<StokesT, ParamsT>::SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+void StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
+    SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
     if (C_.StokesMethod == 81 || C_.StokesMethod == 82) {
         mincommispc_.SetMatrices(A, B, Mvel, M);
         bbtispc_.SetMatrices(B, Mvel, M);
     }
+}
+
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+ProlongationVelT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetPVel()
+{
+    if (C_.StokesMethod == 81) {
+        if (C_.nonlinear == 0)
+            return mgvankasolversymm_.GetPVel();
+        else
+            return mgvankasolver_.GetPVel();
+    }
+    if (C_.StokesMethod == 82) {
+        if (C_.nonlinear == 0)
+            return mgbssolversymm_.GetPVel();
+        else
+            return mgbssolver_.GetPVel();
+    }
+
+    if (C_.StokesMethod == 221 || C_.StokesMethod == 222)
+        return MGSolversymm_.GetProlongation();
+    else
+        return MGSolver_.GetProlongation();
+}
+
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+ProlongationPT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetPPr()
+{
+    if (C_.StokesMethod == 81) {
+        if (C_.nonlinear == 0)
+            return mgvankasolversymm_.GetPPr();
+        else
+            return mgvankasolver_.GetPPr();
+    }
+    if (C_.StokesMethod == 82) {
+        if (C_.nonlinear == 0)
+            return mgbssolversymm_.GetPPr();
+        else
+            return mgbssolver_.GetPPr();
+    }
+    return 0;
 }
 
 } // end of namespace DROPS

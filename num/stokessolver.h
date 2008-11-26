@@ -1237,8 +1237,8 @@ template<class SmootherT, class PVelT= MLMatrixCL, class PPrT= MLMatrixCL>
 class StokesMGSolverCL: public StokesSolverBaseCL
 {
   private:
-    const PVelT &PVel_;
-    const PPrT  &PPr_;
+    PVelT PVel_;
+    PPrT  PPr_;
     const MLMatrixCL    &prM_;
     const SmootherT&    smoother_;
     StokesSolverBaseCL& directSolver_;
@@ -1260,13 +1260,14 @@ class StokesMGSolverCL: public StokesSolverBaseCL
     }
 
   public:
-    StokesMGSolverCL( const PVelT& PVel, const PPrT& PPr, const MLMatrixCL& prM,
-                      const SmootherT& smoother, StokesSolverBaseCL& ds,
+    StokesMGSolverCL( const MLMatrixCL& prM, const SmootherT& smoother, StokesSolverBaseCL& ds,
                       Uint iter_vel, double tol, bool rel= false, Uint sm = 2, int lvl = -1)
-      : StokesSolverBaseCL(iter_vel, tol, rel), PVel_(PVel), PPr_(PPr), prM_(prM), smoother_(smoother), directSolver_(ds),
+      : StokesSolverBaseCL(iter_vel, tol, rel), prM_(prM), smoother_(smoother), directSolver_(ds),
         smoothSteps_(sm), usedLevels_(lvl), BVersion_( -1) {}
     ~StokesMGSolverCL() {}
 
+    PVelT* GetPVel() { return &PVel_;}
+    PPrT*  GetPPr()  { return &PPr_; }
     void
     Solve(const MatrixCL& /*A*/, const MatrixCL& /*B*/, VectorCL&, VectorCL&, const VectorCL&, const VectorCL&)
     {

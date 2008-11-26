@@ -39,13 +39,11 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
     Poisson.b.SetIdx( idx);
     Poisson.x.SetIdx( idx);
     Poisson.SetupSystem( Poisson.A, Poisson.b);
-    MLMatDescCL P;
-    P.SetIdx( idx, idx);
-    P.Data.resize( MG.GetNumLevel());
-    Poisson.SetupProlongation( P);
+    MLMatrixCL P;
+    SetupP1ProlongationMatrix( MG, P, idx, idx);
 
     MLMatrixCL::const_iterator finest = --Poisson.A.Data.end();
-    MLMatrixCL::const_iterator finestP= --P.Data.end();
+    MLMatrixCL::const_iterator finestP= --P.end();
     Uint sm= 0;
     int lvl= 0;
     double tol= 0.0;

@@ -113,13 +113,6 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
 }
 
 template<class Coeff>
-void PoissonP1CL<Coeff>::SetupProlongation(MLMatDescCL& P) const
-// This only works, if Interpolate is called after every refinement of the multigrid.
-{
-    SetupP1ProlongationMatrix( _MG, P);
-}
-
-template<class Coeff>
 void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
 {
     match_fun match= _MG.GetBnd().GetMatchFun();
@@ -738,13 +731,6 @@ void PoissonP2CL<Coeff>::SetNumLvl( size_t n)
     match_fun match= _MG.GetBnd().GetMatchFun();
     idx.resize( n, P2_FE, _BndData, match);
     A.Data.resize( idx.size());
-}
-
-template<class Coeff>
-void PoissonP2CL<Coeff>::SetupProlongation(MLMatDescCL& P) const
-// This only works, if Interpolate is called after every refinement of the multigrid.
-{
-    SetupP2ProlongationMatrix( _MG, P);
 }
 
 //============================================================================

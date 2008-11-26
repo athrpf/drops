@@ -147,7 +147,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double tol, int meth, i
     MLMatDescCL P;
     P.SetIdx( idx, idx);
     P.Data.resize( MG.GetNumLevel());
-    Poisson.SetupProlongation( P);
+    SetupP1ProlongationMatrix( MG, P);
 
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime()
@@ -294,12 +294,10 @@ void StrategyAdaptive(PoissonP1CL<Coeff>& Poisson, double omega,
         Poisson.b.SetIdx( idx);
         Poisson.x.SetIdx( idx);
         Poisson.SetupSystem( Poisson.A, Poisson.b);
-        MLMatDescCL P;
-        P.SetIdx( idx, idx);
-        P.Data.resize( MG.GetNumLevel());
-        if (!meth) Poisson.SetupProlongation( P);
+        MLMatrixCL P;
+        if (!meth) SetupP1ProlongationMatrix( MG, P, idx, idx);
         finest = --Poisson.A.Data.end();
-        finestP= --P.Data.end();
+        finestP= --P.end();
 
         time.Stop();
         time2.Stop();

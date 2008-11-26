@@ -58,7 +58,6 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     // set up matrices and rhs
     void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
-    void SetupProlongation   ( MLMatDescCL& P) const;
     // check computed solution etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
     double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
@@ -111,7 +110,6 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     // set up matrices and rhs
     void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
-    void SetupProlongation   ( MLMatDescCL& P) const;
 
     // check computed solution, etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;

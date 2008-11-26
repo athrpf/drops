@@ -89,11 +89,12 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
     PCG_SsorCL   solver_;
   public:
     PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
-                  MLMatrixCL& PVel, int inner_iter, double inner_tol )
+                  int inner_iter, double inner_tol )
         : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
-          _MGsolver( PVel, smoother_, solver_, inner_iter, inner_tol ),
+          _MGsolver( smoother_, solver_, inner_iter, inner_tol ),
           smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
+     MLMatrixCL* GetPVel() { return _MGsolver.GetProlongation(); }
 };
 
 class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
@@ -117,13 +118,14 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, P
 
   public:
     Uzawa_MG_CL(MatrixCL& M,      int outer_iter, double outer_tol,
-                MLMatrixCL& PVel, int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
+                int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
         : UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, M,
                                                   outer_iter, outer_tol, tau),
           PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
-          MGsolver_( PVel, smoother_, solver_, inner_iter, inner_tol ),
+          MGsolver_( smoother_, solver_, inner_iter, inner_tol ),
           smoother_(1.), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
+    MLMatrixCL* GetPVel() { return MGsolver_.GetProlongation(); }
 };
 
 typedef PMResSolverCL<LanczosONBCL<VectorCL> > MinresSPT;
@@ -190,7 +192,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
 
     MLMatDescCL* A= &Stokes.A;
     MLMatDescCL* B= &Stokes.B;
-    MLMatDescCL PVel;
 
     Uint step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
@@ -211,7 +212,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
             match_fun match= MG.GetBnd().GetMatchFun();
             vidx1->resize( MG.GetNumLevel(), vecP2_FE, Stokes.GetBndData().Vel, match);
             pidx1->resize( MG.GetNumLevel(), P1_FE, Stokes.GetBndData().Pr, match);
-            PVel.Data.resize   ( MG.GetNumLevel());
             A->Data.resize( MG.GetNumLevel());
             B->Data.resize( MG.GetNumLevel());
         }
@@ -245,7 +245,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         }
         A->SetIdx(vidx1, vidx1);
         B->SetIdx(pidx1, vidx1);
-        PVel.SetIdx( vidx1, vidx1);
         time.Reset();
         time.Start();
         Stokes.SetupSystem(A, b, B, c);
@@ -331,12 +330,14 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           }
           case 4: {
             std::cerr << "MG_Schur!\n";
-            SetupP2ProlongationMatrix( MG, PVel);
+            PSchur_MG_CL MGschurSolver( M.Data.GetFinest(), 200, outer_tol*std::sqrt( err0), 200, inner_iter_tol);
+            MLMatrixCL* PVel = MGschurSolver.GetPVel();
+            SetupP2ProlongationMatrix( MG, *PVel, vidx1, vidx1);
             std::cerr << "Check MG-Data..." << std::endl;
             std::cerr << "                begin     " << vidx1->GetCoarsest().NumUnknowns() << std::endl;
             std::cerr << "                end       " << vidx1->GetFinest().NumUnknowns() << std::endl;
-//            CheckMGData( MGData.begin(), MGData.end());
-            PSchur_MG_CL MGschurSolver( M.Data.GetFinest(), 200, outer_tol*std::sqrt( err0), PVel.Data, 200, inner_iter_tol);
+            CheckMGData( Stokes.A.Data, *PVel);
+
             time.Start();
             MGschurSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -347,12 +348,14 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
           }
           case 6: { // MG-Uzawa
             std::cerr << "MG_Uzawa!\n";
-            SetupP2ProlongationMatrix( MG, PVel);
+            Uzawa_MG_CL uzawaMG( M.Data.GetFinest(), 5000, outer_tol*std::sqrt( err0), 1, inner_iter_tol, tau, omega);
+            MLMatrixCL* PVel = uzawaMG.GetPVel();
+            SetupP2ProlongationMatrix( MG, *PVel, vidx1, vidx1);
             std::cerr << "Check MG-Data..." << std::endl;
             std::cerr << "                begin     " << vidx1->GetCoarsest().NumUnknowns() << std::endl;
             std::cerr << "                end       " << vidx1->GetFinest().NumUnknowns() << std::endl;
-//            CheckMGData( MGData.begin(), MGData.end());
-            Uzawa_MG_CL uzawaMG( M.Data.GetFinest(), 5000, outer_tol*std::sqrt( err0), PVel.Data, 1, inner_iter_tol, tau, omega);
+            CheckMGData( Stokes.A.Data, *PVel);
+
             time.Start();
             uzawaMG.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
@@ -377,7 +380,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double omega, double inner_iter_tol, 
         B->Reset();
         b->Reset();
         c->Reset();
-        PVel.Reset();
 //        std::cerr << "Loesung Druck: " << p1->Data << std::endl;
         std::swap(v2, v1);
         std::swap(p2, p1);

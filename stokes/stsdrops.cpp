@@ -156,9 +156,9 @@ class PSchur_AR_CL: public SolverBaseCL
     ISMGPreCL& Spc_;
 
   public:
-    PSchur_AR_CL(MLMatrixCL& PVel, ISMGPreCL& Spc, int outer_iter, double outer_tol)
+    PSchur_AR_CL( ISMGPreCL& Spc, int outer_iter, double outer_tol)
         :SolverBaseCL( outer_iter, outer_tol), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
-         mgc(PVel, smoother_, coarsesolver_, 1, -1., false), Apc_( mgc), Spc_( Spc)
+         mgc( smoother_, coarsesolver_, 1, -1., false), Apc_( mgc), Spc_( Spc)
         {}
     void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c) {
@@ -166,6 +166,7 @@ class PSchur_AR_CL: public SolverBaseCL
         _iter= _maxiter;
         SchurAR( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
     }
+    MLMatrixCL* GetPVel() { return mgc.GetProlongation(); }
 };
 
 class PSchur_Diag_AR_CL: public SolverBaseCL
@@ -178,9 +179,9 @@ class PSchur_Diag_AR_CL: public SolverBaseCL
       DiagMatrixPCCL& Spc_;
 
   public:
-    PSchur_Diag_AR_CL(MLMatrixCL& PVel, DiagMatrixPCCL& Spc, int outer_iter, double outer_tol)
+    PSchur_Diag_AR_CL( DiagMatrixPCCL& Spc, int outer_iter, double outer_tol)
         :SolverBaseCL( outer_iter, outer_tol), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
-         mgc_(PVel, smoother_, coarsesolver_, 1, -1., false), Apc_( mgc_), Spc_( Spc)
+         mgc_( smoother_, coarsesolver_, 1, -1., false), Apc_( mgc_), Spc_( Spc)
         {}
     void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c) {
@@ -188,6 +189,7 @@ class PSchur_Diag_AR_CL: public SolverBaseCL
         _iter= _maxiter;
         SchurAR( A, B, v, p, b, c, Apc_, Spc_, _iter, _res);
     }
+    MLMatrixCL* GetPVel() { return mgc_.GetProlongation(); }
 };
 
 template <typename PressurePreT, typename PoissonSolver2T>
@@ -297,14 +299,15 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
     PLanczosONBCL<DROPS::VectorCL, PcT> q_;
 
   public:
-    PMinresSP_FullMG_CL( MLMatrixCL& PVel, MLMatrixCL& MGApr,
+    PMinresSP_FullMG_CL( MLMatrixCL& MGApr,
                          MLMatrixCL& Mpr, MLMatrixCL& PPr, double kA, double kM,
                          int iter_vel, int iter_prA, int iter_prM, int maxiter, double tol)
-        :BlockMatrixSolverCL<SolverT> (solver_), solver_(q_, maxiter, tol),
-         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
-         mgc(PVel, smoother_, coarsesolver_, iter_vel, 1e-14, false), Apc_( mgc),
-         Spc_(MGApr, Mpr, PPr, kA, kM, iter_prA, iter_prM), q_( pre_)
+        :BlockMatrixSolverCL<SolverT> ( solver_), solver_( q_, maxiter, tol),
+         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ ( SSORPcCL(1.0), 500, 1e-14),
+         mgc( smoother_, coarsesolver_, iter_vel, 1e-14, false), Apc_( mgc),
+         Spc_( MGApr, Mpr, PPr, kA, kM, iter_prA, iter_prM), q_( pre_)
     {}
+    MLMatrixCL* GetPVel() { return mgc.GetProlongation(); }
 };
 
 
@@ -341,12 +344,13 @@ class MyPMinresSP_DiagMG_CL : public BlockMatrixSolverCL<MGDiagSolverT>
     PLanczosONBCL<DROPS::VectorCL, BlockMGDiagT> q_;
 
   public:
-    MyPMinresSP_DiagMG_CL( MLMatrixCL& PVel, const MatrixCL& M, int iter_vel, int maxiter, double tol)
+    MyPMinresSP_DiagMG_CL( const MatrixCL& M, int iter_vel, int maxiter, double tol)
         :BlockMatrixSolverCL<MGDiagSolverT> (solver_), solver_(q_, maxiter, tol),
          pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
-         mgc(PVel, smoother_, coarsesolver_, iter_vel, 1e-14, false), Apc_( mgc),
+         mgc( smoother_, coarsesolver_, iter_vel, 1e-14, false), Apc_( mgc),
          Spc_(M), q_( pre_)
     {}
+    MLMatrixCL* GetPVel() { return mgc.GetProlongation(); }
 };
 
 } // end of namespace DROPS
@@ -487,15 +491,16 @@ class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_Ss
     PCGSolverCL<ISMGPreCL> solver2_;
 
   public:
-    PSchur2_Full_MG_CL(MLMatrixCL& PVel, ISMGPreCL& Spc,
+    PSchur2_Full_MG_CL( ISMGPreCL& Spc,
                        int outer_iter, double outer_tol,
                        int inner_iter, double inner_tol)
         : PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>, PCGSolverCL<ISMGPreCL> >(
           solver_, solver2_, outer_iter, outer_tol),
           smoother_(1.0), coarsesolver_(SSORPcCL(1.0), 500, inner_tol),
-          solver_( PVel, smoother_, coarsesolver_, inner_iter, inner_tol),
+          solver_( smoother_, coarsesolver_, inner_iter, inner_tol),
           solver2_( Spc, outer_iter, outer_tol)
         {}
+    MLMatrixCL* GetPVel() { return solver_.GetProlongation(); }
 };
 
 } // end of namespace DROPS
@@ -602,7 +607,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     VecDescCL*    p1= &NS.p;
     MLMatDescCL  M_pr;
     MLMatDescCL  ML_pr, MG_pr;
-    MLMatDescCL  PVel, PPr;
+    MLMatDescCL  PPr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -615,7 +620,6 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     M_pr.Data.resize( mg.GetNumLevel());
     ML_pr.Data.resize( mg.GetNumLevel());
     MG_pr.Data.resize( mg.GetNumLevel());
-    PVel.Data.resize( mg.GetNumLevel());
     PPr.Data.resize( mg.GetNumLevel());
 
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
@@ -629,10 +633,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
-    PVel.SetIdx( vidx1, vidx1);
     MG_pr.SetIdx( pidx1, pidx1);
-    SetupP1ProlongationMatrix( mg, PPr);
-    SetupP2ProlongationMatrix( mg, PVel);
 
     SetupPoissonPressureMG( NS, MG_pr);
     ML_pr.SetIdx( pidx1, pidx1);
@@ -641,7 +642,10 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetupPrMass( &M_pr);
 //    SetupPressureMassMG( NS, MG_Mpr);
     PrepareStart( v1, p1, &M_pr);
-    statsolver= new StatsolverCL( PVel.Data, ML_pr.Data.GetFinest(), 1, stokes_maxiter, stokes_tol);
+    statsolver= new StatsolverCL( ML_pr.Data.GetFinest(), 1, stokes_maxiter, stokes_tol);
+    SetupP2ProlongationMatrix( mg, *(statsolver->GetPVel()), vidx1, vidx1);
+    SetupP1ProlongationMatrix( mg, PPr);
+
 //    VectorCL xx( 1.0, vidx1->NumUnknowns);
 //    const double rhoinv=  1.0 - EigenValueMaxMG( MG_vel, xx, 10);
 //    statsolver= new PMinresSP_FullMG_CL( MG_vel, MG_pr, MG_Mpr, a,
@@ -840,14 +844,14 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     MLMatDescCL  ML_pr;
     MLMatDescCL  M_pr;
     MLMatDescCL  MG_pr;
-    MLMatDescCL  PVel, PPr;
+    MLMatDescCL  PPr;
 //    MLMatDescCL  A_pr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
     SSORsmoothCL smoother(1.0);
     PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, 1e-14);
-    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (PVel.Data, smoother, coarsesolver, 1, -1.0, false);
+    MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc (smoother, coarsesolver, 1, -1.0, false);
     typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
     MGPCT MGPC (mgc);
 //    typedef MyUzawaSolver2CL<ISPreCL, PCG_SsorCL> StatsolverCL;
@@ -861,7 +865,6 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetNumPrLvl   ( mg.GetNumLevel());
     M_pr.Data.resize ( mg.GetNumLevel());
     MG_pr.Data.resize( mg.GetNumLevel());
-    PVel.Data.resize ( mg.GetNumLevel());
     PPr.Data.resize  ( mg.GetNumLevel());
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
@@ -874,9 +877,8 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
-    PVel.SetIdx( vidx1, vidx1);
     SetupP1ProlongationMatrix( mg, PPr);
-    SetupP2ProlongationMatrix( mg, PVel);
+    SetupP2ProlongationMatrix( mg, *mgc.GetProlongation(), vidx1, vidx1);
     M_pr.SetIdx( pidx1, pidx1);
     MG_pr.SetIdx( pidx1, pidx1);
     ML_pr.SetIdx( pidx1, pidx1);
@@ -939,7 +941,7 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     MLMatDescCL  ML_pr;
     MLMatDescCL  M_pr;
     MLMatDescCL MG_pr;
-    MLMatDescCL PVel, PPr;
+    MLMatDescCL PPr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -951,7 +953,6 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetNumPrLvl   ( mg.GetNumLevel());
     M_pr.Data.resize ( mg.GetNumLevel());
     MG_pr.Data.resize( mg.GetNumLevel());
-    PVel.Data.resize ( mg.GetNumLevel());
     PPr.Data.resize  ( mg.GetNumLevel());
 
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
@@ -965,9 +966,6 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
-    PVel.SetIdx( vidx1, vidx1);
-    SetupP1ProlongationMatrix( mg, PPr);
-    SetupP2ProlongationMatrix( mg, PVel);
     M_pr.SetIdx( pidx1, pidx1);
     MG_pr.SetIdx( pidx1, pidx1);
     ML_pr.SetIdx( pidx1, pidx1);
@@ -978,7 +976,10 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     PrepareStart( v1, p1, &M_pr);
     ISMGPreCL ispc( MG_pr.Data, M_pr.Data, PPr.Data, kA, kM, 1);
 //    DiagMatrixPCCL ispc( ML_pr.Data);
-    statsolver= new PSchur_AR_CL( PVel.Data, ispc, stokes_maxiter, stokes_tol);
+    statsolver= new PSchur_AR_CL( ispc, stokes_maxiter, stokes_tol);
+    SetupP2ProlongationMatrix( mg, *(statsolver->GetPVel()), vidx1, vidx1);
+    SetupP1ProlongationMatrix( mg, PPr);
+
 //    statsolver= new PSchur_Diag_AR_CL( MG_vel, ispc, stokes_maxiter, stokes_tol);
     std::cerr << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
@@ -1011,7 +1012,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     MLMatDescCL  M_pr;
 //    MLMatDescCL  A_pr;
     MLMatDescCL MG_pr;
-    MLMatDescCL PVel, PPr;
+    MLMatDescCL PPr;
     vidx1->SetFE( vecP2_FE);
     pidx1->SetFE( P1_FE);
     TimerCL time;
@@ -1026,7 +1027,6 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetNumPrLvl   ( mg.GetNumLevel());
     M_pr.Data.resize ( mg.GetNumLevel());
     MG_pr.Data.resize( mg.GetNumLevel());
-    PVel.Data.resize ( mg.GetNumLevel());
     PPr.Data.resize  ( mg.GetNumLevel());
     
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
@@ -1040,9 +1040,6 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
-    PVel.SetIdx( vidx1, vidx1);
-    SetupP1ProlongationMatrix( mg, PPr);
-    SetupP2ProlongationMatrix( mg, PVel);
     M_pr.SetIdx( pidx1, pidx1);
     MG_pr.SetIdx( pidx1, pidx1);
     NS.SetupPrMass( &M_pr);
@@ -1060,8 +1057,11 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 //                                       poi_maxiter, poi_tol);
 //    statsolver= new PSchur2_PCG_Pr_MG_CL( ispc, stokes_maxiter, stokes_tol,
 //                                          poi_maxiter, poi_tol);
-    statsolver= new PSchur2_Full_MG_CL( PVel.Data, ispc, stokes_maxiter, stokes_tol,
+    statsolver= new PSchur2_Full_MG_CL( ispc, stokes_maxiter, stokes_tol,
                                         poi_maxiter, poi_tol);
+    SetupP2ProlongationMatrix( mg, *(statsolver->GetPVel()), vidx1, vidx1);
+    SetupP1ProlongationMatrix( mg, PPr);
+
     std::cerr << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
     std::cerr << "After solve." << std::endl;

@@ -72,9 +72,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  B,
                  M,
                  prA,
-                 prM,
-                 PVel,
-                 PPr;
+                 prM;
 
   private:
     MLExtIdxDescCL Xidx_;        ///< extended index for P1X_FE
@@ -108,8 +106,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
     /// Set up rhs b (depending on phase bnd)
     void SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const;
-    /// Set up prolongations
-    void SetupProlongations();
     /// Set up the Laplace-Beltrami-Operator
     void SetupLB( MLMatDescCL* A, VecDescCL* cplA, const LevelsetP2CL& lset, double t) const;
     /// Set up matrix B and rhs c

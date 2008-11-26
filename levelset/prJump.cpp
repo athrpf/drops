@@ -405,18 +405,19 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         const double kM=1;
         // Preconditioner for A
             //Multigrid
-        Stokes.SetupProlongations();
-        CheckMGData( Stokes.A.Data, Stokes.PPr.Data);
         SSORsmoothCL smoother(1.0);
         PCG_SsorCL   coarsesolver( SSORPcCL(1.0), 500, C.inner_tol);
-        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( Stokes.PVel.Data, smoother, coarsesolver, 1, -1.0, false);
+        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( smoother, coarsesolver, 1, -1.0, false);
+        MLMatrixCL* PVel = mgc.GetProlongation();
+        SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
+        CheckMGData( Stokes.A.Data, *PVel);
         typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
         MGPCT MGPC (mgc);
         VectorCL xx( 1.0, vidx->NumUnknowns());
         double rhoinv = 0.99*( 1.0-1.1*0.363294);
 /*        if ( C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
             rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( Stokes.A.Data, Stokes.PVel.Data, xx, 1000, 1e-4));*/
-        ScaledMGPreCL<> velprep( Stokes.PVel.Data, 1, 1.0/rhoinv);
+        ScaledMGPreCL<> velprep( *PVel, 1, 1.0/rhoinv);
 
             //PCG
         typedef SSORPcCL APcPcT;

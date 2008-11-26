@@ -77,11 +77,12 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
     PCG_SsorCL   solver_;
   public:
     PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
-                  MLMatrixCL& PVel, int inner_iter, double inner_tol )
+                  int inner_iter, double inner_tol )
         : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
-          _MGsolver( PVel, smoother_, solver_, inner_iter, inner_tol ),
+          _MGsolver( smoother_, solver_, inner_iter, inner_tol ),
           smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
         {}
+    MLMatrixCL* GetPVel() { return _MGsolver.GetProlongation(); }
 };
 
 class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
@@ -122,7 +123,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
 
     MLMatDescCL* A= &Stokes.A;
     MLMatDescCL* B= &Stokes.B;
-    MLMatDescCL  PVel;
 
     Uint step= 0;
     StokesDoerflerMarkCL<typename MyStokesCL::est_fun, MyStokesCL>
@@ -141,7 +141,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         match_fun match= MG.GetBnd().GetMatchFun();
         vidx1->resize( MG.GetNumLevel(), vecP2_FE, Stokes.GetBndData().Vel, match);
         pidx1->resize( MG.GetNumLevel(), P1_FE, Stokes.GetBndData().Pr, match);
-        PVel.Data.resize   ( MG.GetNumLevel());
         A->Data.resize( MG.GetNumLevel());
         B->Data.resize( MG.GetNumLevel());
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
@@ -190,7 +189,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         }
         A->SetIdx(vidx1, vidx1);
         B->SetIdx(pidx1, vidx1);
-        PVel.SetIdx(vidx1, vidx1);
         time.Reset();
         time.Start();
         Stokes.SetupSystem(A, b, B, c);
@@ -231,18 +229,18 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol, in
         std::cerr << "Setting up all preconditioners took " << time.GetTime()
                   << " seconds. " << std::endl;
 
-        std::cerr << "Check MG-Data..." << std::endl;
-        std::cerr << "                begin     " << vidx1->GetCoarsest().NumUnknowns() << std::endl;
-        std::cerr << "                end       " << vidx1->GetFinest().NumUnknowns() << std::endl;
-        //CheckMGData( MGData.begin(), MGData.end() );
-
 // Solve
         double outer_tol= tol;
         if (meth)
         {
             std::cerr << "Schur complement method..." << std::endl;
-            SetupP2ProlongationMatrix( MG, PVel);
-            PSchur_MG_CL MGschurSolver( M.Data.GetFinest(), 200, outer_tol, PVel.Data, 200, inner_iter_tol);
+            PSchur_MG_CL MGschurSolver( M.Data.GetFinest(), 200, outer_tol, 200, inner_iter_tol);
+            MLMatrixCL* PVel = MGschurSolver.GetPVel();
+            SetupP2ProlongationMatrix( MG, *PVel, vidx1, vidx1);
+            std::cerr << "Check MG-Data..." << std::endl;
+            std::cerr << "                begin     " << vidx1->GetCoarsest().NumUnknowns() << std::endl;
+            std::cerr << "                end       " << vidx1->GetFinest().NumUnknowns() << std::endl;
+            CheckMGData( Stokes.A.Data, *PVel);
 //            PSchur_PCG_CL schurSolver( M.Data, 200, outer_tol, 200, inner_iter_tol);
             time.Start();
 //std::cout << M.Data << std::endl;

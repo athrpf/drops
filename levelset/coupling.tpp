@@ -201,9 +201,6 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.SetIdx();
 
     // Diskretisierung
-    // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
-    Stokes_.SetupProlongations();
-
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
@@ -487,9 +484,6 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.SetupLB( &LB_, &cplLB_, LvlSet_, Stokes_.t);
 
     // Diskretisierung
-    // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
-    Stokes_.SetupProlongations();
-
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, old_b_, old_cplM_, LvlSet_, Stokes_.t);
@@ -980,9 +974,6 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.SetupLB( &LB_, &cplLB_, LvlSet_, Stokes_.t);
 
     // Diskretisierung
-    // MG-Vorkonditionierer fuer Geschwindigkeiten; Indizes und Prolongationsmatrizen
-    Stokes_.SetupProlongations();
-
     LvlSet_.AccumulateBndIntegral( *old_curv_);
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, old_b_, old_cplM_, LvlSet_, Stokes_.t);

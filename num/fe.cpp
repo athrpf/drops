@@ -83,13 +83,19 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
     mat.Build();
 }
 
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatrixCL& P, MLIdxDescCL* ColIdx, MLIdxDescCL* RowIdx)
+{
+    P.resize( ColIdx->size());
+    MLMatrixCL::iterator itProlong = ++P.begin();
+    MLIdxDescCL::iterator itcIdx = ColIdx->begin();
+    MLIdxDescCL::iterator itfIdx = ++RowIdx->begin();
+    for (size_t lvl=1; lvl < P.size(); ++lvl, ++itProlong, ++itcIdx, ++itfIdx)
+        SetupP1ProlongationMatrix( mg, *itProlong, *itcIdx, *itfIdx);
+}
+
 void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P)
 {
-    MLMatrixCL::iterator itProlong = ++P.Data.begin();
-    MLIdxDescCL::iterator itcIdx = P.ColIdx->begin();
-    MLIdxDescCL::iterator itfIdx = ++P.RowIdx->begin();
-    for (size_t lvl=1; lvl < P.Data.size(); ++lvl, ++itProlong, ++itcIdx, ++itfIdx)
-        SetupP1ProlongationMatrix( mg, *itProlong, *itcIdx, *itfIdx);
+    SetupP1ProlongationMatrix( mg, P.Data, P.ColIdx, P.RowIdx);
 }
 
 /// \name Coefficient-tables for P2-prolongation.
@@ -331,10 +337,16 @@ void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
 
 void SetupP2ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P)
 {
-    MLMatrixCL::iterator itProlong = ++P.Data.begin();
-    MLIdxDescCL::iterator itcIdx = P.ColIdx->begin();
-    MLIdxDescCL::iterator itfIdx = ++P.RowIdx->begin();
-    for (size_t lvl=1; lvl < P.Data.size(); ++lvl, ++itProlong, ++itcIdx, ++itfIdx)
+    SetupP2ProlongationMatrix( mg, P.Data, P.ColIdx, P.RowIdx);
+}
+
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MLMatrixCL& P, MLIdxDescCL* ColIdx, MLIdxDescCL* RowIdx)
+{
+    P.resize( ColIdx->size());
+    MLMatrixCL::iterator itProlong = ++P.begin();
+    MLIdxDescCL::iterator itcIdx = ColIdx->begin();
+    MLIdxDescCL::iterator itfIdx = ++RowIdx->begin();
+    for (size_t lvl=1; lvl < P.size(); ++lvl, ++itProlong, ++itcIdx, ++itfIdx)
         SetupP2ProlongationMatrix( mg, *itProlong, *itcIdx, *itfIdx);
 }
 

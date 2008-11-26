@@ -94,9 +94,6 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
     // Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, scalar_instat_fun_ptr T, scalar_instat_fun_ptr dalpha, double t= 0.) const;
 
-    // create prolongation
-    void SetupProlongation( MLMatDescCL& P) const;
-
     // Set initial value
     void Init( VecDescCL&, scalar_instat_fun_ptr, double t0= 0.) const;
 

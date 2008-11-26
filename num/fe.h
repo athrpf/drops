@@ -11,7 +11,7 @@
 #include "geom/topo.h"
 #include "geom/multigrid.h"
 #include "misc/problem.h"
-
+#include "levelset/mgobserve.h"
 
 namespace DROPS
 {
@@ -1093,6 +1093,8 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc);
 void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
                                IdxDescCL& cIdx, IdxDescCL& fIdx);
 void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P);
+void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatrixCL& P,
+                               MLIdxDescCL* ColIdx, MLIdxDescCL* RowIdx);
 
 //**************************************************************************
 // SetupP2ProlongationMatrix: Standard prolongation for P2-elements.       *
@@ -1110,6 +1112,33 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P);
 void SetupP2ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
                                IdxDescCL& cIdx, IdxDescCL& fIdx);
 void SetupP2ProlongationMatrix(const MultiGridCL& mg, MLMatDescCL& P);
+void SetupP2ProlongationMatrix(const MultiGridCL& mg, MLMatrixCL& P,
+                               MLIdxDescCL* ColIdx, MLIdxDescCL* RowIdx);
+
+
+/// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the prolongation for velocity.
+class UpdateProlongationCL : public MGObserverCL
+{
+  private:
+    const MultiGridCL& MG_;
+    MLMatrixCL  *P_;
+    MLIdxDescCL *ColIdx_, *RowIdx_;
+
+  public:
+    UpdateProlongationCL( const MultiGridCL& MG, MLMatrixCL* P, MLIdxDescCL* ColIdx, MLIdxDescCL* RowIdx)
+        : MG_( MG), P_( P), ColIdx_( ColIdx), RowIdx_( RowIdx) { post_refine_sequence (); }
+
+    void pre_refine  () {}
+    void post_refine () {}
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {
+        if (P_ != 0) {
+            if (ColIdx_->GetCoarsest().GetFE() == P1_FE)    SetupP1ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
+            if (ColIdx_->GetCoarsest().GetFE() == vecP2_FE) SetupP2ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
+        }
+    }
+};
 
 //**************************************************************************
 // RestrictP2: Stores the DoF-values of a P2-function corresponding to vd  *

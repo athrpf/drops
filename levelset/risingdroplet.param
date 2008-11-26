@@ -6,7 +6,7 @@
 
 # time stepping
 Time {
-  NumSteps	=	20
+  NumSteps	=	10
   StepSize	=	0.05
   ThetaLevelset	=	1	# backward Euler
   ThetaStokes	=	1	# backward Euler
@@ -16,11 +16,11 @@ Time {
 Stokes {
   InnerIter	=	1000
   OuterIter	=	200
-  InnerTol	=	0.6
+  InnerTol	=	1e-10
   OuterTol	=	1e-6
-  StokesMethod	=	211	# 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
+  StokesMethod	=	81	# 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
   PcAIter	=       2	# V-cycles multigrid, iter pc for A block
-  PcATol	=	1e-2
+  PcATol	=	1e-99
   PcSTol	=	1e-4
 }
 
@@ -58,7 +58,7 @@ Reparam {
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	10
+  Freq		=	1
   FinestLevel	=	2
   Width		=	0.1
 }
@@ -111,7 +111,7 @@ Transp {
 }
 
 # miscellaneous
-XFEMStab        =       1e-1
+XFEMStab        =       -1e-1
 InitialCond	=	0	# 0=zero, 1/2=flow with/without drop, -1=read from file
 GeomType	=	1	# 0=ReadMeshBuilder, 1=BrickBuilder
 InitialFile	=	none

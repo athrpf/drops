@@ -51,7 +51,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     MLMatDescCL P;
     P.SetIdx( idx, idx);
     P.Data.resize( MG.GetNumLevel());
-    Poisson.SetupProlongation( P);
+    SetupP2ProlongationMatrix( MG, P);
 
     time.Stop();
     std::cerr << "Setting up all stuff took " << time.GetTime()

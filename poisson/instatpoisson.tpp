@@ -322,14 +322,6 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU
 }
 
 template<class Coeff>
-void InstatPoissonP1CL<Coeff>::SetupProlongation( MLMatDescCL& P) const
-// This only works, if Interpolate is called after every refinement of the multigrid.
-{
-    SetupP1ProlongationMatrix( _MG, P);
-}
-
-
-template<class Coeff>
 void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
     Uint lvl= vec.GetLevel(),

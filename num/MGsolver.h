@@ -62,7 +62,7 @@ template<class SmootherT, class DirectSolverT, class ProlongationT= MLMatrixCL>
 class MGSolverCL : public SolverBaseCL
 {
   private:
-    ProlongationT&    P;                 ///< prolongation
+    ProlongationT     P;                 ///< prolongation
     const SmootherT&  smoother_;         ///< multigrid smoother
     DirectSolverT&    directSolver_;     ///< coarse grid solver with relative residual measurement
     const bool        residerr_;         ///< controls the error measuring: false : two-norm of dx, true: two-norm of residual
@@ -78,11 +78,12 @@ class MGSolverCL : public SolverBaseCL
         \param residerr   controls the error measuring: false : two-norm of dx, true: two-norm of residual
         \param smsteps    number of smoothing steps
         \param lvl        number of used levels (-1 = all) */
-    MGSolverCL( ProlongationT& PP, const SmootherT& sm, DirectSolverT& ds, int maxiter,
+    MGSolverCL( const SmootherT& sm, DirectSolverT& ds, int maxiter,
                 double tol, const bool residerr= true, Uint smsteps= 1, int lvl= -1 )
-        : SolverBaseCL(maxiter,tol), P(PP), smoother_(sm), directSolver_(ds),
+        : SolverBaseCL(maxiter,tol), smoother_(sm), directSolver_(ds),
           residerr_(residerr), smoothSteps_(smsteps), usedLevels_(lvl) {}
 
+    ProlongationT* GetProlongation() { return &P; }
     /// solve function: calls the MultiGrid-routine
     void Solve(const MLMatrixCL& A, VectorCL& x, const VectorCL& b)
     {

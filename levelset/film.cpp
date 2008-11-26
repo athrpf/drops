@@ -242,6 +242,11 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
                                      &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
 
+    UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
+    adap.push_back( &PVel);
+    UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
+    adap.push_back( &PPr);
+
     bool secondSerial= false;
     for (int step= 1; step<=C.num_steps; ++step)
     {

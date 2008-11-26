@@ -130,7 +130,6 @@ void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2
     Stokes.SetIdx();
     Stokes.SetLevelSet( lset);
     lset.AccumulateBndIntegral( curv);
-    Stokes.SetupProlongations();
     Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.t);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
     Stokes.SetupPrMass ( &Stokes.prM, lset);
@@ -285,6 +284,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     //for Stokes-MGM
     stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
                                      &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
+    UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
+    adap.push_back( &PVel);
+    UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
+    adap.push_back( &PPr);
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
