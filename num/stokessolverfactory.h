@@ -456,7 +456,7 @@ ProlongationVelT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prol
             return mgbssolver_.GetPVel();
     }
 
-    if (C_.StokesMethod == 221 || C_.StokesMethod == 222)
+    if (C_.StokesMethod == 221 || C_.StokesMethod == 222 || C_.StokesMethod == 31 || C_.StokesMethod == 32)
         return MGSolversymm_.GetProlongation();
     else
         return MGSolver_.GetProlongation();
