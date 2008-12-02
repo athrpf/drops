@@ -91,7 +91,7 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
     if (C.num_steps == 0) return 0;
     switch (C.scheme)
     {
-        case 1 : 
+        case 1 :
             return (new LinThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
                         (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_stab));
         break;
@@ -186,9 +186,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
 
-   if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
-   if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
@@ -207,7 +207,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         ReadEnsightP2SolCL reader( MG);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
+        Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
         // reads the P1-part of the pressure
         reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
@@ -218,12 +218,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (fff && fxidx) {
                 size_t NumP1XUnknowns;
                 fff >> NumP1XUnknowns;
-                if (NumP1XUnknowns != (pidx->NumUnknowns() - Stokes.GetXidx().GetNumUnknownsP1()))
+                if (NumP1XUnknowns != (pidx->NumUnknowns() - Stokes.GetXidx().GetNumUnknownsStdFE()))
                     throw (DROPSErrCL("error while reading P1X unknowns"));
-                for (Uint i=Stokes.GetXidx().GetNumUnknownsP1(); i < pidx->NumUnknowns(); ++i)
+                for (Uint i=Stokes.GetXidx().GetNumUnknownsStdFE(); i < pidx->NumUnknowns(); ++i)
                     fff >> Stokes.p.Data[i];
-                for (Uint k=0; k<Stokes.GetXidx().GetNumUnknownsP1(); ++k)
-                    fxidx >> Stokes.GetXidx().GetFinest().Xidx[k];
+                for (Uint k=0; k<Stokes.GetXidx().GetNumUnknownsStdFE(); ++k)
+                    fxidx >> Stokes.GetXidx()[k];
             }
         }
       } break;
@@ -309,8 +309,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         ensight.Register( make_Ensight6Scalar( c.GetSolution( c.ct),    "TransConc",     ensf + ".ct",  true));
     }
     if (Stokes.UsesXFEM())
-        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.GetXidx().GetFinest(), Stokes.p.Data,
-                                                                        "XPressure",     ensf + ".pr", true));
+        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
 
     if (C.EnsCase != "none") ensight.Write( 0.);
 
@@ -329,7 +328,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         bool forceVolCorr= false, forceUpdate= false,
              doReparam= C.RepFreq && step%C.RepFreq == 0,
              doGridMod= C.ref_freq && step%C.ref_freq == 0;
-        
+
         // volume correction before reparam/grid modification
         if (C.VolCorr && (doReparam || doGridMod)) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
@@ -343,7 +342,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         if (doReparam) {
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             if (lsetmaxGradPhi > C.MaxGrad || lsetminGradPhi < C.MinGrad) {
-                std::cerr << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n'; 
+                std::cerr << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 lset.ReparamFastMarching( C.RepMethod);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
                 std::cerr << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
@@ -461,7 +460,7 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata)
                 //bc[2]= bc[4]= bc[5]= DROPS::NatBC;          //Kanal
                 bfun[2]= &DROPS::ZeroVel;
                 //bfun[2]=bfun[4]=bfun[5]= &DROPS::ZeroVel;   //Kanal
-                bfun[2]= 
+                bfun[2]=
                 bfun[3]= &InflowBrick;
             } break;
             default: throw DROPS::DROPSErrCL("Unknown boundary data type");

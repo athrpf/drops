@@ -10,7 +10,7 @@
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 #include "num/spmat.h"
-#include "levelset/levelset.h"
+#include "num/interfacePatch.h"
 #include <set>
 
 namespace DROPS

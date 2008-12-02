@@ -24,7 +24,7 @@
 
 DROPS::ParamMesszelleCL C;
 
-enum StokesMethod { 
+enum StokesMethod {
 	minres                   =  1, // Minres without PC
 
         pminresmgssor            =  2, // MG-PC for A, SSOR for S
@@ -168,7 +168,7 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
 
     VectorCL ones( 1.0, p.Data.size());
     if (prFE==P1X_FE)
-        for (int i=Xidx.GetNumUnknownsP1(), n=ones.size(); i<n; ++i)
+        for (int i=Xidx.GetNumUnknownsStdFE(), n=ones.size(); i<n; ++i)
             ones[i]= 0;
     const double Vol= dot( prM*ones, ones)*C.muD; // note that prM is scaled by 1/mu !!
 // std::cerr << "Vol = " << Vol << '\n';
@@ -377,7 +377,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         time.Stop();
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
-        InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest());
+        InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx());
         VectorCL surf( Stokes.b.Data + curv.Data), BTp( transp_mul( Stokes.B.Data, Stokes.p.Data));
         PrintNorm( "surf. force", curv.Data);
         PrintNorm( "BT p", BTp);
@@ -488,11 +488,11 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         PMinres6T pminrespcgpcgsolver (lanczos6, C.outer_iter, C.outer_tol);
         BlockMatrixSolverCL<PMinres6T> blockpminrespcgpcgsolver(pminrespcgpcgsolver);
 
-        typedef PMResSolverCL<Lanczos8T> PMinres8T; 
+        typedef PMResSolverCL<Lanczos8T> PMinres8T;
         PMinres8T pminresmgdiagsolver (lanczos8, C.outer_iter, C.outer_tol);
         BlockMatrixSolverCL<PMinres8T> blockpminresmgdiagsolver(pminresmgdiagsolver);
 
-        typedef PMResSolverCL<Lanczos9T> PMinres9T; 
+        typedef PMResSolverCL<Lanczos9T> PMinres9T;
         PMinres9T pminrespcgdiagsolver (lanczos9, C.outer_iter, C.outer_tol);
         BlockMatrixSolverCL<PMinres9T> blockpminrespcgdiagsolver(pminrespcgdiagsolver);
 
@@ -560,17 +560,17 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
               << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))
               << "\n || u ||_A  = " << std::sqrt( dot( Stokes.A.Data*u, u))
               << "\n----------------\n";
-    if (Stokes.GetPrFE()==P1X_FE)
+    if (Stokes.UsesXFEM())
     {
-        const MLExtIdxDescCL& Xidx= Stokes.GetXidx();
+        const ExtIdxDescCL& Xidx= Stokes.GetXidx();
         const size_t n= Stokes.p.Data.size();
 
         const double limtol= 10,
             lim_min= -prJump - limtol*prJump,
-            lim_max= -prJump + limtol*prJump; 
+            lim_max= -prJump + limtol*prJump;
         double xmin= 1e99, xmax= -1e99, sum= 0, sum_lim= 0;
         IdxT num= 0;
-        for (size_t i=Xidx.GetNumUnknownsP1(); i<n; ++i)
+        for (size_t i=Xidx.GetNumUnknownsStdFE(); i<n; ++i)
         {
             const double pr= Stokes.p.Data[i];
             sum+= pr;
@@ -585,7 +585,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         std::cerr << "limited pr:  min/max/avg = " << lim_min << ", " << lim_max << ", " << sum_lim/num << std::endl;
     }
 
-    L2ErrorPr( Stokes.p, lset, Stokes.prM.Data.GetFinest(), prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest(), avg_ex);
+    L2ErrorPr( Stokes.p, lset, Stokes.prM.Data.GetFinest(), prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx(), avg_ex);
 
     PostProcessPr( Stokes.p, new_pr, MG);
 
@@ -599,8 +599,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     ensight.Register( make_Ensight6Vector(  Stokes.GetVelSolution( curvForce),
                                                                            "Curvature", ensf + ".crv"));
     if (Stokes.UsesXFEM())
-        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.GetXidx().GetFinest(), Stokes.p.Data,
-                                                                           "XPressure", ensf + ".pr"));
+        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p,  "XPressure", ensf + ".pr"));
 
     if (C.EnsCase != "none") ensight.Write();
 

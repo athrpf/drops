@@ -29,8 +29,8 @@ enum FiniteElementT
     UnknownFE_=-1
 };
 
-/// \brief For a given finite element type, this class describes how many degrees of freedom 
-/// are stored for each simplex-type on a single tetrahedron. 
+/// \brief For a given finite element type, this class describes how many degrees of freedom
+/// are stored for each simplex-type on a single tetrahedron.
 class FE_InfoCL
 {
   protected:
@@ -76,35 +76,89 @@ class FE_InfoCL
     //@}
 };
 
+class IdxDescCL;     // fwd decl
+template<class T>
+class VecDescBaseCL; // fwd decl
+
+/// \brief The most widely used vector-description type; it uses a VectorCL
+///     -object as Data.
+typedef VecDescBaseCL<VectorCL> VecDescCL;
+
+
+/// \brief Extended index for extended finite elements (XFEM).
+///
+/// Depending on the position of the zero-level of the levelset-function
+/// additional DoFs are needed in the FE nodes. Internally, a std::vector
+/// with a component for each FE node is kept. If the FE node has an
+/// extended DoF, the index is stored in this component; otherwise,
+/// NoIdx is stored.
+class ExtIdxDescCL
+{
+	friend class IdxDescCL;
+    typedef std::vector<IdxT> ExtendedIdxT;
+
+  private:
+    double       omit_bound_; ///< constant for stabilization of XFEM, controls omission of extended DoFs
+    ExtendedIdxT Xidx_;       ///< vector entries store index of extended DoF (or NoIdx if FE node is not extended)
+    ExtendedIdxT Xidx_old_;   ///< old extended index, used by member function Old2New(...)
+
+    ExtIdxDescCL( double omit_bound= 1./32. ) : omit_bound_( omit_bound ) {}
+
+    /// \brief Update numbering of extended DoFs and return dimension of XFEM space (= # DoF + # extended DoF)
+    ///
+    /// Has to be called in two situations:
+    /// - whenever level set function has changed to account for the moving interface (set \p NumberingChanged=false)
+    /// - when numbering of index has changed, i.e. \p CreateNumbering was called before (set \p NumberingChanged=true)
+    IdxT UpdateXNumbering( const IdxDescCL*, const MultiGridCL&, const VecDescCL&, bool NumberingChanged= false );
+    /// \brief Delete extended numbering
+    void DeleteXNumbering() { Xidx_.resize(0); Xidx_old_.resize(0); }
+
+  public:
+	/// Get XFEM stabilization bound
+    double GetBound() const { return omit_bound_; }
+	/// Set XFEM stabilization bound
+    void   SetBound( double omit_bound ) { omit_bound_= omit_bound; }
+    /// Get extended index for DoF \p i
+    IdxT  operator[]( const IdxT i ) const { return Xidx_[i]; }
+    /// Set extended index for DoF \p i
+    IdxT& operator[]( const IdxT i )       { return Xidx_[i]; }
+    /// Returns number of DoFs for standard FE space
+    IdxT  GetNumUnknownsStdFE()      const { return Xidx_.size(); }
+
+    /// \brief Replace vector entries to account for different numbering of extended DoFs after call of UpdateXNumbering(...)
+    void Old2New( VecDescCL* );
+};
+
 /// \brief Mapping from the simplices in a triangulation to the components
 ///     of algebraic data-structures.
 ///
 /// Internally, each object of type IdxDescCL has a unique index that is
 /// used to access the unknown-indices that are stored in a helper class
-/// (UnknownIdxCL and UnknownHandleCL) for each simplex. The unknown-indices 
+/// (UnknownIdxCL and UnknownHandleCL) for each simplex. The unknown-indices
 /// are allocated and numbered by using CreateNumbering.
 class IdxDescCL: public FE_InfoCL
 {
   private:
-    static const Uint        InvalidIdx; ///< Constant representing an invalid index.
-    static std::vector<bool> IdxFree;    ///< Cache for unused indices; reduces memory-usage.
-    Uint                     Idx_;       ///< The unique index.
-    BndCondCL                Bnd_;       ///< boundary conditions
-    match_fun                match_;     ///< matching function for periodic boundaries
+    static const Uint        InvalidIdx;   ///< Constant representing an invalid index.
+    static std::vector<bool> IdxFree;      ///< Cache for unused indices; reduces memory-usage.
+
+    Uint                     Idx_;         ///< The unique index.
+    Uint                     TriangLevel_; ///< Triangulation of the index.
+    IdxT                     NumUnknowns_; ///< total number of unknowns on the triangulation
+    BndCondCL                Bnd_;         ///< boundary conditions
+    match_fun                match_;       ///< matching function for periodic boundaries
+    ExtIdxDescCL             extIdx_;      ///< extended index for XFEM
 
     /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
-    Uint TriangLevel_;        ///< Triangulation of the index.
-    IdxT NumUnknowns_;        ///< total number of unknowns on the triangulation
-    
+    /// \brief Number unknowns for standard FE.
+    void CreateNumbStdFE( Uint level, MultiGridCL& mg);
+
   public:
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
-//    IdxDescCL( Uint unkVertex= 0, Uint unkEdge= 0, Uint unkFace= 0, Uint unkTetra= 0)
-//      : FE_InfoCL( UnknownFE_), Idx_( GetFreeIdx()), NumUnknowns( 0) 
-//    { /*Set( unkVertex, unkEdge, unkFace, unkTetra );*/ }
-    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
-      : FE_InfoCL( fe), Idx_( GetFreeIdx()), Bnd_(bnd), match_(match), NumUnknowns_( 0) {}
+    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=1./32.)
+      : FE_InfoCL( fe), Idx_( GetFreeIdx()), NumUnknowns_( 0), Bnd_(bnd), match_(match), extIdx_(omit_bound) {}
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);
@@ -125,12 +179,17 @@ class IdxDescCL: public FE_InfoCL
             " Probably using copy instead of original IdxDescCL-object.");
         return Idx_;
     }
+    /// \brief Returns extended index. Only makes sense for XFEM.
+    const ExtIdxDescCL& GetXidx() const { return extIdx_; }
+    /// \brief Returns extended index. Only makes sense for XFEM.
+    ExtIdxDescCL&       GetXidx()       { return extIdx_; }
     /// \brief Triangulation of the index.
     Uint TriangLevel() const { return TriangLevel_; }
     void SetTriangLevel( Uint l) { TriangLevel_ = l;}
     /// \brief total number of unknowns on the triangulation
     IdxT NumUnknowns() const { return NumUnknowns_; }
-    void SetNumUnknowns( IdxT n) { NumUnknowns_ = n;}
+    /// \todo Remove SetNumUnknowns, only used by interfaceP1FE
+    void SetNumUnknowns( IdxT n) { NumUnknowns_= n; }
     /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
     ///     unknown-numbers on it are compared, too.
     static bool
@@ -139,10 +198,14 @@ class IdxDescCL: public FE_InfoCL
     /// \name Numbering
     /// \{
     /// \brief Used to number unknowns.
-    void CreateNumbering( Uint level, MultiGridCL& mg);
+    void CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp= 0);
     /// \brief Used to number unknowns and store boundary condition and matching function.
-    void CreateNumbering( Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0)
-    { Bnd_= Bnd; match_= match; CreateNumbering( level, mg); }
+    void CreateNumbering( Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0)
+    { Bnd_= Bnd; match_= match; CreateNumbering( level, mg, lsetp); }
+    /// \brief Update numbering of extended DoFs.
+    /// Has to be called whenever level set function has changed to account for the moving interface.
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
+    { if (IsExtended()) NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false); }
     /// \brief Mark unknown-indices as invalid.
     void DeleteNumbering( MultiGridCL& mg);
     /// \}
@@ -152,19 +215,19 @@ class IdxDescCL: public FE_InfoCL
 class MLIdxDescCL : public MLDataCL<IdxDescCL>
 {
   public:
-    MLIdxDescCL( FiniteElementT fe= P1_FE, size_t numLvl=1, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
+    MLIdxDescCL( FiniteElementT fe= P1_FE, size_t numLvl=1, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=1./32.)
     {
         for (size_t i=0; i< numLvl; ++i)
-            this->push_back(IdxDescCL( fe, bnd, match));
+            this->push_back(IdxDescCL( fe, bnd, match, omit_bound));
     }
 
-    void resize( size_t numLvl=1, FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0)
+    void resize( size_t numLvl=1, FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=1./32.)
     {
         if (numLvl <= this->size())
             static_cast<MLDataCL<IdxDescCL>*>( this)->resize( numLvl);
         else
             while (this->size() < numLvl)
-                this->push_back(IdxDescCL( fe, bnd, match));
+                this->push_back(IdxDescCL( fe, bnd, match, omit_bound=1./32.));
     }
 
     /// \brief Returns the number of the index on the finest level.
@@ -172,10 +235,10 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
 
     /// \brief Triangulation of the index.
     Uint TriangLevel() const { return this->GetFinest().TriangLevel(); }
-    
+
     /// \brief total number of unknowns on the triangulation
     IdxT NumUnknowns() const { return this->GetFinest().NumUnknowns(); }
-    
+
     /// \brief Initialize with given FE-type \a fe
     void SetFE( FiniteElementT fe )
     {
@@ -185,24 +248,31 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
     /// \name Numbering
     /// \{
     /// \brief Used to number unknowns on all levels.
-    void CreateNumbering( size_t f_level, MultiGridCL& mg)
+    void CreateNumbering( size_t f_level, MultiGridCL& mg, const VecDescCL* lsetp= 0)
     {
         size_t lvl = ( this->size() <= f_level+1) ? f_level+1 - this->size(): 0;
         for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
         {
-            it->CreateNumbering( lvl, mg);
+            it->CreateNumbering( lvl, mg, lsetp);
             if (lvl < f_level) ++lvl;
         }
     }
     /// \brief Used to number unknowns and store boundary condition and matching function on all levels.
-    void CreateNumbering( size_t f_level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0)
+    void CreateNumbering( size_t f_level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0)
     {
         size_t lvl = ( this->size() <= f_level+1) ? f_level+1 - this->size(): 0;
         for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
         {
-            it->CreateNumbering( lvl, mg, Bnd, match);
+            it->CreateNumbering( lvl, mg, Bnd, match, lsetp);
             if (lvl < f_level) ++lvl;
         }
+    }
+    /// \brief Update numbering of extended DoFs on all levels.
+    /// Has to be called whenever level set function has changed to account for the moving interface.
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
+    {
+        for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
+            it->UpdateXNumbering( mg, lset);
     }
     /// \brief Mark unknown-indices as invalid on all levels.
     void DeleteNumbering( MultiGridCL& mg)
@@ -345,11 +415,6 @@ class VecDescBaseCL
     /// \brief Empty Data and set RowIdx to 0.
     void Reset();
 };
-
-
-/// \brief The most widely used vector-description type; it uses a VectorCL
-///     -object as Data.
-typedef VecDescBaseCL<VectorCL> VecDescCL;
 
 
 /// \brief A sparse matrix together with two IdxDescCL -objects,
@@ -558,7 +623,7 @@ void MatDescBaseCL<MatT, IdxT>::Reset()
 /// \{
 template<class SimplexT>
 void CreateNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride,
-                         const ptr_iter<SimplexT>& begin, 
+                         const ptr_iter<SimplexT>& begin,
                          const ptr_iter<SimplexT>& end,
                          const BndCondCL& Bnd)
 {
@@ -668,7 +733,7 @@ void CreatePeriodicNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride, ma
                 // remove it2 from s2
                 s2.erase( it2++);
             }
-            else it2++;            
+            else it2++;
     }
     if (!s2.empty())
         throw DROPSErrCL( "CreatePeriodicNumbOnSimplex: Periodic boundaries do not match!");

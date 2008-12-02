@@ -24,49 +24,49 @@ run: ClrScr drcavad
 
 sdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/sdrops.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o \
     ../misc/utils.o ../num/discretize.o ../out/output.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 sdropsP2: \
     ../geom/boundary.o ../geom/builder.o ../stokes/sdropsP2.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../num/MGsolver.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 MGsdropsP2: \
     ../geom/boundary.o ../geom/builder.o ../stokes/MGsdropsP2.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/MGsolver.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 drivcav: \
     ../geom/boundary.o ../geom/builder.o ../stokes/drivcav.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 drcavad: \
     ../geom/boundary.o ../geom/builder.o ../stokes/drcavad.o ../geom/multigrid.o \
-    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 FSdrops: \
     ../geom/boundary.o ../geom/builder.o ../stokes/FSdrops.o ../geom/multigrid.o \
-    ../out/output.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
+    ../out/output.o ../num/unknowns.o ../geom/topo.o ../num/fe.o ../num/interfacePatch.o \
     ../misc/problem.o ../misc/utils.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 isdrops: \
-    ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o \
+    ../geom/boundary.o ../geom/builder.o ../stokes/isdrops.o ../num/interfacePatch.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../out/ensightOut.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 stsdrops: \
-    ../geom/boundary.o ../geom/builder.o ../stokes/stsdrops.o \
+    ../geom/boundary.o ../geom/builder.o ../stokes/stsdrops.o ../num/interfacePatch.o \
     ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/fe.o \
     ../misc/problem.o ../misc/utils.o ../out/ensightOut.o \
     ../out/output.o ../num/discretize.o ../num/MGsolver.o ../stokes/integrTime.o

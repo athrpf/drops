@@ -76,7 +76,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
     else // semi-implicit treatment of curvature term, cf. Baensch
     {
         MLMatrixCL mat0;
-        mat0.LinComb( 1./dt_, Stokes_.M.Data, theta_, Stokes_.A.Data);        
+        mat0.LinComb( 1./dt_, Stokes_.M.Data, theta_, Stokes_.A.Data);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
         // is not save for matrix LB_
         LB_.Data.clear();
@@ -116,7 +116,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
         + (1.-theta_)*(old_b_->Data - Stokes_.A.Data*Stokes_.v.Data - nonlinear_*(Stokes_.N.Data*Stokes_.v.Data - old_cplN_->Data));
 
     if (!implCurv_)
-        rhs_+= theta_*curv_->Data + (1.-theta_)*old_curv_->Data; 
+        rhs_+= theta_*curv_->Data + (1.-theta_)*old_curv_->Data;
     else // semi-implicit treatment of curvature term, cf. Baensch
         rhs_+= old_curv_->Data + dt_*cplLB_.Data;
 
@@ -137,7 +137,7 @@ template <class StokesT, class SolverT>
 void LinThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
 {
     if (Stokes_.UsesXFEM()) { // update XFEM
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_, /*NumberingChanged*/ false);
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         Stokes_.c.SetIdx  ( &Stokes_.pr_idx);
         Stokes_.B.SetIdx  ( &Stokes_.pr_idx, &Stokes_.vel_idx);
@@ -173,17 +173,25 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
+std::cerr << Stokes_.p.Data.size() << " pressure unks\n";
+std::cerr << Stokes_.v.Data.size() << " velocity unks\n";
+std::cerr << LvlSet_.Phi.Data.size() << " levelset unks\n";
+
     if (implCurv_)
     {
         LB_.Data.clear();
         LB_.SetIdx( vidx, vidx);
         cplLB_.SetIdx( vidx);
+std::cerr << "nach LB\n";
     }
+std::cerr << "vor      Stokes_.ClearMat()\n";
     Stokes_.ClearMat();
+std::cerr << "nach     Stokes_.ClearMat()\n";
     LvlSet_.ClearMat();
-
+std::cerr << "vor UsesXFEM\n";
     if (Stokes_.UsesXFEM()) { // update XFEM
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_, /*NumberingChanged*/ false);
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
+std::cerr << "nach UpdateXNumbering\n";
         Stokes_.UpdatePressure( &Stokes_.p);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
         // is not save for P1X-elements.
@@ -242,7 +250,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& b)
     mat_->clear();
     const double s= stab_*theta_*dt_;
     std::cerr << "Stabilizing with: " << s << '\n';
-    mat_->LinComb( 1., mat0, s, LB_.Data); 
+    mat_->LinComb( 1., mat0, s, LB_.Data);
     b+= s*(LB_.Data*Stokes_.v.Data);
 }
 
@@ -296,7 +304,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::DoProjectionStep( const VectorCL& rhs
 
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
     if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_, /*NumberingChanged*/ false);
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         Stokes_.c.SetIdx( &Stokes_.pr_idx);
         Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
@@ -378,7 +386,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
     if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_, /*NumberingChanged*/ false);
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         Stokes_.c.SetIdx( &Stokes_.pr_idx);
         Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
@@ -604,7 +612,7 @@ void OperatorSplitting2PhaseCL<StokesT,SolverT>::DoStokesFPIter()
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, cplA_, cplM_, LvlSet_, Stokes_.t);
     mat_->LinComb( 1./fracdt_, Stokes_.M.Data, alpha_, Stokes_.A.Data);
     if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_, /*NumberingChanged*/ false);
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         Stokes_.c.SetIdx( &Stokes_.pr_idx);
         Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
@@ -793,7 +801,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& b)
     mat_->clear();
     const double s= stab_*theta_*dt_;
     std::cerr << "Stabilizing with: " << s << '\n';
-    mat_->LinComb( 1., mat0, s, LB_.Data); 
+    mat_->LinComb( 1., mat0, s, LB_.Data);
     b+= s*(LB_.Data*Stokes_.v.Data);
 }
 
@@ -849,7 +857,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
 
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
     if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_, /*NumberingChanged*/ false);
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         Stokes_.c.SetIdx( &Stokes_.pr_idx);
         Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
@@ -1021,7 +1029,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     VectorCL b4( Stokes_.B.Data*b3);
     if (Stokes_.UsesXFEM()) {
         VecDescCL Bdotv( &Stokes_.pr_idx);
-        Stokes_.SetupBdotv( &Bdotv, &Stokes_.v, Stokes_.GetXidx().GetFinest(), LvlSet_, Stokes_.t);
+        Stokes_.SetupBdotv( &Bdotv, &Stokes_.v, LvlSet_, Stokes_.t);
         b4+= Bdotv.Data;
     }
     Ssolver.Solve( S, Stokes_.p.Data, b4);

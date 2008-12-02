@@ -42,7 +42,7 @@ double f2 (const Point3DCL& p, double)
 // {
 //     return p[0] + 0.5*p[1]  - 1.0;
 // }
-// 
+//
 // double f2 (const Point3DCL& p, double)
 // {
 //     return 0.7*p[0] + p[1] + 0.3*p[2];
@@ -175,11 +175,10 @@ int main (int argc, char** argv)
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( &phasebnd);
 
-    IdxDescCL idx( P1X_FE);
-    idx.CreateNumbering( mg.GetLastLevel(), mg);
-    ExtIdxDescCL extidx( &idx, /*omit_bound=*/ xfemstab);
-    extidx.UpdateXNumbering( &idx, lset, true);
-    std::cerr << "P1-Unbekannte: " << extidx.GetNumUnknownsP1()
+    IdxDescCL idx( P1X_FE, BndCondCL(0), 0, /*omit_bound=*/ xfemstab);
+    idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
+    ExtIdxDescCL& extidx= idx.GetXidx();
+    std::cerr << "P1-Unbekannte: " << extidx.GetNumUnknownsStdFE()
               << " P1X-Unbekannte: " << idx.NumUnknowns() << '\n';
 
     VecDescCL beta( &idx), b( &idx);
@@ -192,7 +191,7 @@ int main (int argc, char** argv)
 
     // Setup the mass matrix
     MatDescCL M( &idx, &idx);
-    SetupPrMass_P1X( mg, CoeffCL(), M.Data, idx, lset, extidx);
+    SetupPrMass_P1X( mg, CoeffCL(), M.Data, idx, lset);
 
     // Setup the right hand side
     IdxT Numb[4];
@@ -262,7 +261,7 @@ int main (int argc, char** argv)
     ensight.Register( make_Ensight6Scalar   ( make_P2Eval( mg, ubnd, upos),    "up",       filename + ".up"));
     ensight.Register( make_Ensight6Scalar   ( make_P2Eval( mg, ubnd, uneg),    "un",       filename + ".un"));
     // Output the L_2-projection
-    ensight.Register( make_Ensight6P1XScalar( mg, lset.Phi, extidx, beta.Data, "ul",       filename + ".ul"));
+    ensight.Register( make_Ensight6P1XScalar( mg, lset.Phi, beta,              "ul",       filename + ".ul"));
 
     ensight.Write();
 

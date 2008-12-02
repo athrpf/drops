@@ -22,18 +22,16 @@ namespace DROPS
 class P1XRepairCL
 {
   private:
-    bool UsesXFEM_;
+    bool         UsesXFEM_;
     MultiGridCL& mg_;
-    IdxDescCL idx_;
-    ExtIdxDescCL& extidx_;
-    VectorCL extData_;
-    VecDescCL& p_;
+    IdxDescCL    idx_;
+    VectorCL     extData_;
+    VecDescCL&   p_;
 
   public:
-    P1XRepairCL( bool UsesXFEM, MultiGridCL& mg, VecDescCL& p,
-        ExtIdxDescCL& extidx);
+    P1XRepairCL( MultiGridCL& mg, VecDescCL& p);
 
-    void operator() (const LevelsetP2CL& lset);
+    void operator() ();
 };
 
 /// problem class for instationary two-pase Stokes flow
@@ -57,9 +55,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     typedef P1EvalCL<double, const StokesPrBndDataCL, const VecDescCL>   const_DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, const VelVecDescCL> const_DiscVelSolCL;
 
-  private:
-    FiniteElementT prFE_;        ///< controls FE type for pressure space
-
   public:
     MLIdxDescCL  vel_idx;  ///< for velocity unknowns
     MLIdxDescCL  pr_idx;   ///< for pressure unknowns
@@ -74,14 +69,11 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  prA,
                  prM;
 
-  private:
-    MLExtIdxDescCL Xidx_;        ///< extended index for P1X_FE
-
   public:
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
-        : _base(mgb, coeff, bdata), prFE_(prFE), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.), Xidx_( &pr_idx, XFEMstab) {}
+        : _base(mgb, coeff, bdata), vel_idx(vecP2_FE, 1, bdata.Vel), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
-        : _base(mg, coeff, bdata),  prFE_(prFE), vel_idx(vecP2_FE), pr_idx(prFE), t( 0.), Xidx_( &pr_idx, XFEMstab) {}
+        : _base(mg, coeff, bdata),  vel_idx(vecP2_FE, 1, bdata.Vel), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
 
     /// \name Numbering
     //@{
@@ -89,19 +81,19 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
     void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Pr, match); if (lsetp && UsesXFEM()) { Xidx_.UpdateXNumbering( idx, *lsetp, true); } }
+        { idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0); }
     /// \brief Only used for XFEM
-    void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset, bool NumberingChanged= false)
-        { if (UsesXFEM()) Xidx_.UpdateXNumbering( idx, lset, NumberingChanged); }
+    void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset)
+        { if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi); }
     void UpdatePressure( VecDescCL* p)
-        { if (UsesXFEM()) Xidx_.Old2New( p); }
+        { if (UsesXFEM()) p->RowIdx->GetXidx().Old2New( p); }
     void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
     //@}
     /// \name Discretization
     //@{
     /// Returns whether extended FEM are used
-    bool UsesXFEM() const { return prFE_==P1X_FE; }
+    bool UsesXFEM() const { return pr_idx.GetFinest().IsExtended(); }
     /// Set up matrices A, M and rhs b (depending on phase bnd)
     void SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const;
     /// Set up rhs b (depending on phase bnd)
@@ -113,8 +105,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     /// Set up rhs c
     void SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const;
     /// Set up the time-derivative of B times velocity
-    void SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL* vel,
-        const ExtIdxDescCL& v_idx, const LevelsetP2CL& lset, double t) const;
+    void SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL* vel, const LevelsetP2CL& lset, double t) const;
     /// Set up the mass matrix for the pressure, scaled by \f$\mu^{-1}\f$.
     void SetupPrMass( MLMatDescCL* prM, const LevelsetP2CL& lset) const;
     /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
@@ -133,11 +124,11 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
     /// Get FE type for pressure space
-    FiniteElementT GetPrFE() const { return prFE_; }
+    FiniteElementT GetPrFE() const { return pr_idx.GetFinest().GetFE(); }
     /// \name Get extended index (only makes sense for P1X_FE)
     //@{
-    const MLExtIdxDescCL& GetXidx() const { return Xidx_; }
-    MLExtIdxDescCL&       GetXidx()       { return Xidx_; }
+    const ExtIdxDescCL& GetXidx() const { return pr_idx.GetFinest().GetXidx(); }
+    ExtIdxDescCL&       GetXidx()       { return pr_idx.GetFinest().GetXidx(); }
     //@}
     /// Get pressure solution on inner/outer part (especially for P1X_FE)
     void GetPrOnPart( VecDescCL& p_part, const LevelsetP2CL& lset, bool posPart= true); // false = inner = Phi<0, true = outer = Phi>0

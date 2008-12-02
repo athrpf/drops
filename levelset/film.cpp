@@ -195,7 +195,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         ReadEnsightP2SolCL reader( MG);
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
-        Stokes.UpdateXNumbering( pidx, lset, /*NumberingChanged*/ false);
+        Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx); // Zero-vector for now.
         reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
       } break;
