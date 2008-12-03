@@ -336,10 +336,10 @@ class SurfactantP1CL
     SurfactantP1CL (MultiGridCL& mg, const VelBndDataT& Bnd_v,
         double theta, double D, VecDescCL* v, LevelsetP2CL& lset,
         double t, double dt, int iter= 1000, double tol= 1e-7, double omit_bound= -1.)
-    : idx( P1_FE), full_idx( P1_FE), MG_( mg), D_( D), theta_( theta), dt_( dt), t_( t),
+    : idx( P1IF_FE), full_idx( P1_FE), MG_( mg), D_( D), theta_( theta), dt_( dt), t_( t),
         Bnd_v_( Bnd_v), v_( v), lset_( lset), fulltransport_( 0), gm_( pc_, 100, iter, tol, true),
         omit_bound_( omit_bound)
-    {}
+    { idx.GetXidx().SetBound( omit_bound); }
 
     const MultiGridCL& GetMG() const { return MG_; }
     GMResSolverCL<GSPcCL>& GetSolver() { return gm_; }
@@ -441,7 +441,7 @@ VectorCL SurfactantP1CL::InitStep ()
 void SurfactantP1CL::DoStep (const VectorCL& rhsext)
 {
     idx.DeleteNumbering( MG_);
-    CreateNumbOnInterface( idx.TriangLevel(), idx, MG_, lset_.Phi, omit_bound_);
+    idx.CreateNumbering( idx.TriangLevel(), MG_, &lset_.Phi);
     std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
 
     VecDescCL transp_rhs( &idx),
@@ -500,7 +500,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, 0.));
     lset2.SetTimeStep( C.dt);
 
-    SurfactantP1CL timedisc( mg, Bnd_v, C.theta_surf, C.muI, &v, lset, /* t */ 0., C.dt, C.surf_iter, C.surf_tol);
+    SurfactantP1CL timedisc( mg, Bnd_v, C.theta_surf, C.muI, &v, lset, /* t */ 0., C.dt, C.surf_iter, C.surf_tol, C.surf_omit_bound);
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -510,7 +510,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     adap.push_back( &lset2repair);
 
     // Init Interface-Sol
-    DROPS::CreateNumbOnInterface( mg.GetLastLevel(), timedisc.idx, mg, lset.Phi, C.surf_omit_bound);
+    timedisc.idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
     std::cout << "NumUnknowns: " << timedisc.idx.NumUnknowns() << std::endl;
     timedisc.ic.SetIdx( &timedisc.idx);
     timedisc.Init( &sol0);
@@ -637,8 +637,9 @@ int main (int argc, char* argv[])
         return 0;
     }
 
-    DROPS::IdxDescCL ifaceidx( P1_FE);
-    DROPS::CreateNumbOnInterface( mg.GetLastLevel(), ifaceidx, mg, lset.Phi, C.surf_omit_bound);
+    DROPS::IdxDescCL ifaceidx( P1IF_FE);
+    ifaceidx.GetXidx().SetBound( C.surf_omit_bound);
+    ifaceidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
     DROPS::MatDescCL M( &ifaceidx, &ifaceidx);

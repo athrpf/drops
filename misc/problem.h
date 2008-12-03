@@ -24,7 +24,7 @@ enum FiniteElementT
 ///   the difference to the scalar FE counterpart should be 128
 {
     P0_FE=0,    P1_FE=1,    P2_FE=2,      P1Bubble_FE=3,   // for scalars
-    P1D_FE=4, P1X_FE=5,
+    P1D_FE=4, P1X_FE=5, P1IF_FE=6,
                          vecP2_FE=130, vecP1Bubble_FE=131, // for vectors
     UnknownFE_=-1
 };
@@ -53,6 +53,7 @@ class FE_InfoCL
             switch(fe_= fe) {
                 case P0_FE:          NumUnknownsTetra_= 1; break;
                 case P1_FE:
+                case P1IF_FE:
                 case P1X_FE:         NumUnknownsVertex_= 1; break;
                 case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
                 case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
@@ -66,6 +67,8 @@ class FE_InfoCL
     FiniteElementT GetFE() const { return fe_; }
     /// \brief Returns true for XFEM
     bool IsExtended() const { return fe_==P1X_FE; }
+    /// \brief Returns true for interface FE
+    bool IsOnInterface() const { return fe_==P1IF_FE; }
 
     /// \brief Number of unknowns on the simplex-type
     //@{
@@ -153,12 +156,16 @@ class IdxDescCL: public FE_InfoCL
     Uint GetFreeIdx();
     /// \brief Number unknowns for standard FE.
     void CreateNumbStdFE( Uint level, MultiGridCL& mg);
+    /// \brief Number unknowns on the vertices surrounding an interface.
+    void CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls, double omit_bound= -1./*default to using all dof*/);
 
   public:
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
-    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=1./32.)
-      : FE_InfoCL( fe), Idx_( GetFreeIdx()), NumUnknowns_( 0), Bnd_(bnd), match_(match), extIdx_(omit_bound) {}
+    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=-99)
+      : FE_InfoCL( fe), Idx_( GetFreeIdx()), NumUnknowns_( 0), Bnd_(bnd), match_(match),
+        extIdx_( omit_bound != -99 ? omit_bound : IsExtended() ? 1./32. : -1.) // default value is 1./32. for XFEM and -1 otherwise
+        {}
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);
@@ -185,11 +192,8 @@ class IdxDescCL: public FE_InfoCL
     ExtIdxDescCL&       GetXidx()       { return extIdx_; }
     /// \brief Triangulation of the index.
     Uint TriangLevel() const { return TriangLevel_; }
-    void SetTriangLevel( Uint l) { TriangLevel_ = l;}
     /// \brief total number of unknowns on the triangulation
     IdxT NumUnknowns() const { return NumUnknowns_; }
-    /// \todo Remove SetNumUnknowns, only used by interfaceP1FE
-    void SetNumUnknowns( IdxT n) { NumUnknowns_= n; }
     /// \brief Compare two IdxDescCL-objects. If a multigrid is given via mg, the
     ///     unknown-numbers on it are compared, too.
     static bool

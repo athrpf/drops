@@ -155,18 +155,89 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
     }
 }
 
-void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp)
-/// Memory for the Unknown-Indices on TriangLevel level is allocated
-/// and the unknowns are numbered.
-/// If a matching function is specified, numbering on periodic boundaries
-/// is performed, too.
-/// After that the extended DoFs are numbered for extended FE.
+/// \brief Routine to number unknowns on the vertices surrounding an
+/// interface.
+///
+/// This function allocates memory for the Unknown-indices in system
+/// idx on all vertices belonging to tetras between begin and end which
+/// are cut by the zero level of lset. If InterfacePatchCL::IntersectsInterior() ist true,
+/// all vertices are numbered, if only InterfacePatchCL::Intersects() is true, only the
+/// vertices with InterfacePatchCL::GetSign(vertex) == 0 are numbered. The other vertices in
+/// such tetrahedra obtain NoIdx as number, but they are not counted as unknowns.
+///
+/// The first number used is the initial value of counter, the next
+/// numbers are counter+stride, counter+2*stride, and so on.
+/// Upon return, counter contains the first number, that was not used,
+/// that is \# Unknowns+stride.
+/// A more user friendly interface is provided by IdxDescCL::CreateNumbOnInterface.
+void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
+        const MultiGridCL::TriangVertexIteratorCL& vbegin,
+        const MultiGridCL::TriangVertexIteratorCL& vend,
+        const MultiGridCL::TriangTetraIteratorCL& begin,
+        const MultiGridCL::TriangTetraIteratorCL& end,
+    const VecDescCL& ls, double omit_bound= -1./*default to using all dof*/)
 {
-	CreateNumbStdFE( level, mg);
-	if (IsExtended()) {
-		if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for XFEM numbering given");
-		NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, true);
-	}
+    if (stride == 0) return;
+
+    LocalP2CL<> hat_sq[4]; // values of phi_i*phi_i
+    for (int i= 0; i < 4; ++i)  {
+        hat_sq[i][i]=1.;
+        for (int j = 0; j < 4; ++j)
+            if (i != j) hat_sq[i][EdgeByVert(i,j)+4]= 0.25;
+    }
+    // first set NoIdx in all vertices
+    for (MultiGridCL::TriangVertexIteratorCL vit= vbegin; vit != vend; ++vit) {
+        vit->Unknowns.Prepare(idx);
+        vit->Unknowns.Invalidate(idx);
+    }
+    // then create numbering of vertices at the interface
+    InterfacePatchCL p;
+    for (MultiGridCL::TriangTetraIteratorCL it= begin; it != end; ++it) {
+        p.Init( *it, ls);
+        if (!p.Intersects()) continue;
+
+        const double h3= it->GetVolume()*6, h= cbrt( h3), h4= h*h3, limit= h4*omit_bound;
+        SVectorCL<4> loc_int; // stores integrals \int_{\Gamma_T} p^2 dx, with p1-dof p.
+        for (int ch= 0; ch < 8; ++ch) {
+            if (!p.ComputeForChild( ch)) continue;// no patch for this child
+            for (int tri= 0; tri < p.GetNumTriangles(); ++tri) {
+                for (int i= 0; i < 4; ++i) {
+                    loc_int[i]+= p.quad2D( hat_sq[i], tri);
+                }
+            }
+        }
+
+        const bool innercut( p.IntersectsInterior());
+        for (Uint i= 0; i < NumVertsC; ++i) {
+            UnknownHandleCL& u= const_cast<VertexCL*>( it->GetVertex( i))->Unknowns;
+            if (innercut || p.GetSign( i) == 0) {
+                if ( u( idx) == NoIdx) {
+                    if (loc_int[i] < limit) continue; // omit DoFs of minor importance
+                    u( idx)= counter;
+                    counter+= stride;
+                }
+            }
+        }
+    }
+}
+
+void IdxDescCL::CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls, double omit_bound)
+/// Uses CreateNumbOnInterfaceVertex on the triangulation with level \p level on the multigrid \p mg.
+/// One can only create P1-elements.
+{
+    // set up the index description
+    const Uint idxnum= GetIdx();
+    TriangLevel_= level;
+    NumUnknowns_= 0;
+
+    // allocate space for indices; number unknowns in TriangLevel level
+    if (NumUnknownsVertex() != 0)
+        CreateNumbOnInterfaceVertex( idxnum, NumUnknowns_, NumUnknownsVertex(),
+            mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level),
+            mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls, omit_bound);
+
+    if (NumUnknownsEdge() != 0 || NumUnknownsFace() != 0 || NumUnknownsTetra() != 0)
+        throw DROPSErrCL( "CreateNumbOnInterface: Only vertex unknowns are implemented\n" );
 }
 
 void IdxDescCL::CreateNumbStdFE( Uint level, MultiGridCL& mg)
@@ -206,6 +277,27 @@ void IdxDescCL::CreateNumbStdFE( Uint level, MultiGridCL& mg)
         if (NumUnknownsTetra())
             CreateNumbOnTetra( idxnum, NumUnknowns_, NumUnknownsTetra(),
                 mg.GetTriangTetraBegin(level), mg.GetTriangTetraEnd(level));
+    }
+}
+
+void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp)
+/// Memory for the Unknown-Indices on TriangLevel level is allocated
+/// and the unknowns are numbered.
+/// If a matching function is specified, numbering on periodic boundaries
+/// is performed, too.
+/// After that the extended DoFs are numbered for extended FE.
+{
+    if (IsOnInterface())
+    {
+        if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for interface numbering given");
+        CreateNumbOnInterface( level, mg, *lsetp, GetXidx().GetBound());
+    }
+    else {
+        CreateNumbStdFE( level, mg);
+        if (IsExtended()) {
+            if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for XFEM numbering given");
+            NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, true);
+        }
     }
 }
 

@@ -83,8 +83,10 @@ class InterfacePatchCL
     const Point3DCL&   GetPoint( Uint i)     const { return PQRS_[i]; }
     const BaryCoordCL& GetBary ( Uint i)     const { return Bary_[i]; } ///< The first three points are the vertices of the triangular patch; if the patch is quadrilateral, the last three points are the vertices of the second triangle.
     int                GetNumSign ( int sign)const { return num_sign_[sign+1]; } ///< returns number of child points with given sign, where sign is in {-1, 0, 1}
-    double             GetFuncDet( int i= 0) const { return sqrtDetATA_*(i==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration for triangle i.
+    double             GetFuncDet( Uint tri= 0) const { return sqrtDetATA_*(tri==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration for triangle \p tri.
     double             GetAreaFrac()         const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }
+    template<class ValueT>
+    ValueT quad2D( const LocalP2CL<ValueT>&, Uint tri= 0) const;  ///< integrate on triangle \p tri, quadrature exact up to degree 2
     const Point3DCL&   GetGradId( Uint i)    const { return B_[i]; }
           Point3DCL    GetNormal ()          const; ///< Returns the unit normal to the linear approximation of \f$\Gamma\f$, that points from \f$\{\varphi<0\}\f$ to \f$\{\varphi<0\}\f$.
           Point3DCL    ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }

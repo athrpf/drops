@@ -88,9 +88,9 @@ int TestReMark()
             SetFun(v0, mg);
             tet.BogoReMark( mg, Rule( j));
 
-            i1.SetTriangLevel (i0.TriangLevel() <= mg.GetLastLevel() ? i0.TriangLevel()
-                                                                : mg.GetLastLevel());
-            i1.CreateNumbering( i1.TriangLevel(), mg);
+            const Uint i1_Level= i0.TriangLevel() <= mg.GetLastLevel() ? i0.TriangLevel()
+                                                                       : mg.GetLastLevel();
+            i1.CreateNumbering( i1_Level, mg);
             v1.SetIdx( &i1);
             DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
             DROPS::RepairAfterRefineP1( fun0, v1);
@@ -134,15 +134,15 @@ int TestRepair()
         SetFun(v0, mg);
         UnMarkDrop( mg, mg.GetLastLevel());
         mg.Refine();
-        if (mg.GetLastLevel() < i0.TriangLevel()) {
+        Uint i1_Level= i0.TriangLevel();
+        if (mg.GetLastLevel() < i1_Level) {
             std::cout << "Letztes Level entfernt!" << std::endl;
-            i1.SetTriangLevel( i0.TriangLevel()-1);
+            --i1_Level;
         }
         else {
             std::cout << "Letztes Level behalten!" << std::endl;
-            i1.SetTriangLevel( i0.TriangLevel());
         }
-        i1.CreateNumbering( i1.TriangLevel(), mg);
+        i1.CreateNumbering( i1_Level, mg);
         v1.SetIdx( &i1);
         DROPS::P1EvalCL<double, BndCL, const VecDescCL > fun0( &v0, &Bnd, &mg);
         DROPS::RepairAfterRefineP1( fun0, v1);

@@ -27,6 +27,23 @@ InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, LocalP2CL<> & philoc)
 }
 
 template<class ValueT>
+ValueT InterfacePatchCL::quad2D( const LocalP2CL<ValueT>& f, Uint tri) const
+{
+    const BaryCoordCL* const Vert= &GetBary(tri); // array of the 3 vertices of triangle i in barycentric coords
+    BaryCoordCL Bary;                             // barycenter in barycentric coords
+    double sum= 0;
+
+    for (int i=0; i<3; ++i)
+    {
+        Bary+= Vert[i];
+        sum+= f(Vert[i]);
+    }
+    Bary/= 3.;
+
+    return (0.375*f(Bary) + sum/24.)*GetFuncDet( tri);
+}
+
+template<class ValueT>
 ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool part /*, bool debug*/)
 {
     const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);

@@ -10,77 +10,6 @@
 
 namespace DROPS {
 
-void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
-    const MultiGridCL::TriangTetraIteratorCL& begin,
-    const MultiGridCL::TriangTetraIteratorCL& end,
-    const VecDescCL& ls, double omit_bound)
-{
-    if (stride == 0) return;
-
-    LocalP2CL<> hat_sq[4]; // values of phi_i*phi_i
-    Quad5_2DCL<> q;
-    for (int i= 0; i < 4; ++i)  {
-        hat_sq[i][i]=1.;
-        for (int j = 0; j < 4; ++j)
-            if (i != j) hat_sq[i][EdgeByVert(i,j)+4]= 0.25;
-    }
-
-    InterfacePatchCL p;
-    for (MultiGridCL::TriangTetraIteratorCL it= begin; it != end; ++it) {
-        p.Init( *it, ls);
-        if (!p.Intersects()) continue;
-
-        const double h3= it->GetVolume()*6, h= cbrt( h3), h4= h*h3, limit= h4*omit_bound;
-        SVectorCL<4> loc_int; // stores integrals \int_{\Gamma_T} p^2 dx, with p1-dof p.
-        for (int ch= 0; ch < 8; ++ch) {
-            if (!p.ComputeForChild( ch)) continue;// no patch for this child
-            for (int tri= 0; tri < p.GetNumTriangles(); ++tri) {
-                for (int i= 0; i < 4; ++i) {
-                    q.assign( hat_sq[i], &p.GetBary( tri));
-                    loc_int[i]+= q.quad( p.GetFuncDet( tri));
-                }
-            }
-        }
-
-        const bool innercut( p.IntersectsInterior());
-        for (Uint i= 0; i < NumVertsC; ++i) {
-            UnknownHandleCL& u= const_cast<VertexCL*>( it->GetVertex( i))->Unknowns;
-            if (innercut || p.GetSign( i) == 0) {
-                u.Prepare( idx);
-                if ( u( idx) == NoIdx) {
-                    if (loc_int[i] < limit) continue; // omit DoFs of minor importance
-                    u( idx)= counter;
-                    counter+= stride;
-                }
-            }
-            else
-                if (!u.Exist( idx)) {
-                    u.Prepare( idx);
-                    u( idx)= NoIdx;
-                }
-        }
-    }
-}
-
-void CreateNumbOnInterface(Uint level, IdxDescCL& idx, MultiGridCL& mg,
-    const VecDescCL& ls, double omit_bound)
-{
-    // set up the index description
-    idx.SetTriangLevel( level);
-    idx.SetNumUnknowns( 0);
-
-    const Uint idxnum= idx.GetIdx();
-    IdxT num_unknowns = idx.NumUnknowns();
-    // allocate space for indices; number unknowns in TriangLevel level
-    if (idx.NumUnknownsVertex() != 0)
-        CreateNumbOnInterfaceVertex( idxnum, num_unknowns, idx.NumUnknownsVertex(),
-            mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls, omit_bound);
-
-    if (idx.NumUnknownsEdge() != 0 || idx.NumUnknownsFace() != 0 || idx.NumUnknownsTetra() != 0)
-        throw DROPSErrCL( "CreateNumbOnInterface: Only vertex unknowns are implemented\n" );
-    idx.SetNumUnknowns( num_unknowns);
-}
-
 void Extend (const MultiGridCL& mg, const VecDescCL& x, VecDescCL& xext)
 {
     const Uint xidx( x.RowIdx->GetIdx()),
@@ -332,7 +261,7 @@ void
 InterfaceP1RepairCL::post_refine_sequence ()
 {
     u_.RowIdx->DeleteNumbering( mg_);
-    CreateNumbOnInterface( fullp1idx_.TriangLevel(), *u_.RowIdx, mg_, lset_vd_);
+    u_.RowIdx->CreateNumbering( fullp1idx_.TriangLevel(), mg_, &lset_vd_);
     u_.SetIdx( u_.RowIdx);
 
     Restrict( mg_, fullu_, u_);
