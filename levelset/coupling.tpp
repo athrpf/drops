@@ -173,25 +173,17 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     time.Start();
 
     std::cerr << "Updating discretization...\n";
-std::cerr << Stokes_.p.Data.size() << " pressure unks\n";
-std::cerr << Stokes_.v.Data.size() << " velocity unks\n";
-std::cerr << LvlSet_.Phi.Data.size() << " levelset unks\n";
 
     if (implCurv_)
     {
         LB_.Data.clear();
         LB_.SetIdx( vidx, vidx);
         cplLB_.SetIdx( vidx);
-std::cerr << "nach LB\n";
     }
-std::cerr << "vor      Stokes_.ClearMat()\n";
     Stokes_.ClearMat();
-std::cerr << "nach     Stokes_.ClearMat()\n";
     LvlSet_.ClearMat();
-std::cerr << "vor UsesXFEM\n";
     if (Stokes_.UsesXFEM()) { // update XFEM
         Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
-std::cerr << "nach UpdateXNumbering\n";
         Stokes_.UpdatePressure( &Stokes_.p);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
         // is not save for P1X-elements.
