@@ -385,8 +385,7 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
 {
     VectorCL tmp( v->Data);
     v->SetIdx( v->RowIdx);
-    std::slice p1_part( 0, Xidx_.size(), 1);
-    v->Data[p1_part]= tmp[p1_part];
+    v->Data[std::slice( 0, Xidx_.size(), 1)]= tmp[std::slice( 0, Xidx_.size(), 1)];
 
     if (Xidx_.size() != Xidx_old_.size()) {
         std::cerr << "ExtIdxDescCL::Old2New: Xidx: " << Xidx_.size()
