@@ -773,7 +773,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 //*****************************************************************************
 //                               LevelsetRepairCL
 //*****************************************************************************
-inline void
+void
 LevelsetRepairCL::post_refine ()
 {
     VecDescCL loc_phi;

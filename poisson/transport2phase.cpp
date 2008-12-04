@@ -265,7 +265,7 @@ void TransportP1CL::ct2c()
 //*****************************************************************************
 //                               TransportRepairCL
 //*****************************************************************************
-inline void
+void
 TransportRepairCL::post_refine ()
 {
     VecDescCL loc_ct;
