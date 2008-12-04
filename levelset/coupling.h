@@ -272,7 +272,6 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::mat_; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
     using base_::theta_;
     using base_::nonlinear_;
-    using base_::dt_;
     using base_::cplLB_;
     using base_::LB_;
 
@@ -287,6 +286,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void ComputePressure ();
 
   protected:
+    using base_::dt_;
     void ComputeVelocityDot ();
 
   public:
