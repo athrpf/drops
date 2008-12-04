@@ -928,7 +928,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         max_iter= 0;
         return true;
     }
-
+    std::cerr << "PMINRES: k: 0\tresidual: " << res/normb << '\n';
     for (int k= 1; k <= max_iter; ++k) {
         switch (k) {
           case 1:
@@ -971,7 +971,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         x+= dx;
 
         res= std::fabs( norm_r0*b[0][1])/normb;
-//        std::cerr << "PMINRES: residual: " << res << '\n';
+        if (k%10==0) std::cerr << "PMINRES: k: " << k << "\tresidual: " << res << '\n';
         if (res<= tol || lucky==true) {
             tol= res;
             max_iter= k;
