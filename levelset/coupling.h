@@ -259,7 +259,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 template <class StokesT, class SolverT>
 class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 {
-  private:
+  protected:
     typedef TimeDisc2PhaseCL<StokesT> base_;
     using base_::Stokes_;
     using base_::LvlSet_;
@@ -271,6 +271,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::ls_rhs_;
     using base_::mat_; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
     using base_::theta_;
+    using base_::dt_;
     using base_::nonlinear_;
     using base_::cplLB_;
     using base_::LB_;
@@ -285,8 +286,6 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void MaybeStabilize (VectorCL&);
     void ComputePressure ();
 
-  protected:
-    using base_::dt_;
     void ComputeVelocityDot ();
 
   public:
@@ -320,7 +319,8 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
 {
   private:
     typedef RecThetaScheme2PhaseCL<StokesT, SolverT> base_;
-
+    using base_::Stokes_;
+    using base_::mat_;
     using base_::dt_;
     double tmpdt_;
     int step_;
