@@ -383,6 +383,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         if (C.EnsCase != "none") ensight.Write( step*C.dt);
     }
+    IFInfo.Update( lset, Stokes.GetVelSolution());
+    IFInfo.Write(Stokes.t, infofile);
     std::cerr << std::endl;
     delete timedisc;
     delete navstokessolver;
