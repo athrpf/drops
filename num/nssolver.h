@@ -84,7 +84,7 @@ class AdaptFixedPtDefectCorrCL : public NSSolverBaseCL<NavStokesT>
                               double tol, double reduction= 0.1, bool adap=true)
         : base_( NS, solver, maxiter, tol), AN_( new MLMatrixCL( NS.vel_idx.size()) ), red_( reduction), adap_( adap) { }
 
-    ~AdaptFixedPtDefectCorrCL() {}
+    ~AdaptFixedPtDefectCorrCL() { delete AN_; }
 
     void SetReduction( double red) { red_= red; }
     double   GetResid ()         const { return _res; }
