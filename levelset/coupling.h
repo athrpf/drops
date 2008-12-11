@@ -320,6 +320,7 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
   private:
     typedef RecThetaScheme2PhaseCL<StokesT, SolverT> base_;
     using base_::Stokes_;
+    using base_::LvlSet_;
     using base_::mat_;
     using base_::dt_;
     double tmpdt_;

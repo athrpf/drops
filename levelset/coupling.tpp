@@ -1067,8 +1067,12 @@ void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::DoStep(int maxFPIter)
             tmpdt_=dt_;
             base_::SetTimeStep(0.2*tmpdt_*tmpdt_, 1.0);
             base_::DoStep(maxFPIter);
-            // mat_ = diffusion matrix
-            mat_->LinComb( -1./dt_, Stokes_.M.Data, 1.0 /* =  1.0/theta */, Stokes_.A.Data);
+            //ComputeVelocityDot uses diffusion-matrix Stokes_.A
+            //now: Stokes_.A = diffusion + mass + lb
+            VelVecDescCL* tmp = new VelVecDescCL;
+            tmp->SetIdx( &Stokes_.vel_idx);
+            Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, tmp, tmp, tmp, LvlSet_, Stokes_.t);
+            delete tmp;
             base_::ComputeVelocityDot();
             base_::SetTimeStep((1.0-0.2*tmpdt_)*tmpdt_, 0.5);
             step_++;
