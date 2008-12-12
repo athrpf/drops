@@ -23,13 +23,14 @@ TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, 
     mat_( 0), theta_( theta), nonlinear_( nonlinear)
 {
     Stokes_.SetLevelSet( ls);
-    mat_= &Stokes_.A.Data;
+    mat_= new MLMatrixCL( Stokes.vel_idx.size());
     LB_.Data.resize( Stokes.vel_idx.size());
 }
 
 template <class StokesT>
 TimeDisc2PhaseCL<StokesT>::~TimeDisc2PhaseCL()
 {
+    delete mat_;
     if (old_b_ == &Stokes_.b)
         delete b_;
     else
@@ -182,6 +183,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
+    mat_->clear();
     if (Stokes_.UsesXFEM()) { // update XFEM
         Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
@@ -469,6 +471,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
+    mat_->clear();
     // IndexDesc setzen
     old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
@@ -738,6 +741,7 @@ void OperatorSplitting2PhaseCL<StokesT,SolverT>::Update()
     AN_.clear();
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
+    mat_->clear();
     // IndexDesc setzen
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
     cplA_->SetIdx( vidx);    old_cplA_->SetIdx( vidx);
@@ -956,6 +960,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
+    mat_->clear();
     // IndexDesc setzen
     old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
@@ -1067,12 +1072,6 @@ void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::DoStep(int maxFPIter)
             tmpdt_=dt_;
             base_::SetTimeStep(0.2*tmpdt_*tmpdt_, 1.0);
             base_::DoStep(maxFPIter);
-            //ComputeVelocityDot uses diffusion-matrix Stokes_.A
-            //now: Stokes_.A = diffusion + mass + lb
-            VelVecDescCL* tmp = new VelVecDescCL;
-            tmp->SetIdx( &Stokes_.vel_idx);
-            Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, tmp, tmp, tmp, LvlSet_, Stokes_.t);
-            delete tmp;
             base_::ComputeVelocityDot();
             base_::SetTimeStep((1.0-0.2*tmpdt_)*tmpdt_, 0.5);
             step_++;

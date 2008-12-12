@@ -41,7 +41,7 @@ class TimeDisc2PhaseCL
     double GetTheta()    const { return theta_; }
     double GetTime()     const { return Stokes_.t; }
     double GetTimeStep() const { return dt_; }
-    const MatrixCL* GetUpperLeftBlock () const { return mat_->GetFinest(); }
+    MatrixCL* GetUpperLeftBlock () const { return &mat_->GetFinest(); }
 
     virtual void SetTimeStep (double dt) {dt_= dt;}
 

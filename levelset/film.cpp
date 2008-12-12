@@ -236,11 +236,18 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         cpl( Stokes, lset, *navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.dt);
-    stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
-
-    //for Stokes-MGM
-    stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                     &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
+    if (C.nonlinear!=0.0 || C.num_steps == 0) {
+        stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
+            //for Stokes-MGM
+        stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
+                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
+    }
+    else {
+        stokessolverfactory.SetMatrixA( cpl.GetUpperLeftBlock());
+            //for Stokes-MGM
+        stokessolverfactory.SetMatrices( cpl.GetUpperLeftBlock(), &Stokes.B.Data.GetCoarsest(),
+                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
+    }  
 
     UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
     adap.push_back( &PVel);
