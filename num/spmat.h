@@ -539,7 +539,8 @@ class BlockMatrixBaseCL
     size_t num_rows() const { return this->num_rows( 0) + this->num_rows( 1); }
     size_t num_cols() const { return this->num_cols( 0) + this->num_cols( 1); }
 
-    const MatT* GetBlock( size_t b) const { return block_[b]; }
+    const MatT* GetBlock( size_t b) const          { return block_[b]; }
+    void        SetBlock( size_t b, const MatT* m) { block_[b]= m; }
 
     OperationT GetOperation( size_t b) const { return operation_[b]; }
     OperationT GetTransposeOperation( size_t b) const {
