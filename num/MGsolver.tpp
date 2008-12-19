@@ -157,32 +157,74 @@ DMatrixCL<double> PVankaSmootherCL::SetupLocalProblem (Uint id, NodeListVelT& No
     return M;
 }
 
-template <typename Mat, typename Vec>
-void PVankaSmootherCL::DiagSmoother(Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B, Vec& v) const
+inline void
+Solve2x2 (const SMatrixCL<2,2>& A, double& x0, double& x1)
 {
-    const size_t dim = v.size()-1;
-    Vec DiagA(dim);
-    Vec Block(dim);
-    // Direct solver: constructing the local problem Mx=v
-    for ( size_t i=0; i<dim; ++i )
-    {
+    const double det( A(0,0)*A(1,1) - A(1,0)*A(0,1));
+    const double b0( x0);
+    x0= (A(1,1)*x0-A(0,1)*x1)/det;
+    x1= (A(0,0)*x1-A(1,0)*b0)/det;
+}
+
+template <typename Mat, typename Vec>
+void PVankaSmootherCL::DiagSmoother(Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B, Vec& v, size_t id2) const
+{
+    const size_t dim = v.size() - (id2 == NoIdx ? 1 : 2);
+    Vec DiagA( dim);
+    Vec Block( dim);
+    Vec Block2( dim);
+
+   // Direct solver: constructing the local problem Mx=v
+    for (size_t i= 0; i < dim; ++i) {
         const int irow = NodeListVel[i];
-        DiagA[i] = A(irow,irow);
+        DiagA[i] = A( irow, irow);
     }
 
     const size_t n= B.row_beg( id + 1) - B.row_beg( id);
     std::memcpy( Addr(Block), B.raw_val() + B.row_beg( id), n*sizeof(typename Vec::value_type));
-    // Solve Mx=v
-
-    double S=0.0;
-    for ( size_t i=0; i<dim; ++i ){
-        v[i] /= DiagA[i];
-        v[dim] -= Block[i]*v[i];
-        S += Block[i]*Block[i]/DiagA[i];
+    if (id2 != NoIdx) { // copy the row for id2
+        const size_t* idbeg=  B.GetFirstCol( id);
+        const size_t* id2beg= B.GetFirstCol( id2);
+        const double* idvalbeg=  B.GetFirstVal( id);
+        const double* id2valbeg= B.GetFirstVal( id2);
+        for (size_t pos= 0; idbeg < B.GetFirstCol( id + 1); ++pos, ++idbeg, ++idvalbeg) {
+            if (*idbeg < *id2beg)
+                Block2[pos]= 0.;
+            else {
+                Block2[pos]= *id2valbeg++;
+                ++id2beg;
+            }
+        }
     }
-    v[dim] /= -S;
-    for ( size_t i=0; i<dim; ++i )
-        v[i]-=v[dim]*Block[i]/DiagA[i];
+    
+    // Solve Mx=v
+    if (id2 == NoIdx) {
+        double S=0.0;
+        for ( size_t i=0; i<dim; ++i ){
+            v[i] /= DiagA[i];
+            v[dim] -= Block[i]*v[i];
+            S += Block[i]*Block[i]/DiagA[i];
+        }
+        v[dim] /= -S;
+        for ( size_t i=0; i<dim; ++i )
+            v[i]-=v[dim]*Block[i]/DiagA[i];
+    }
+    else {
+        SMatrixCL<2,2> S;
+        for ( size_t i=0; i<dim; ++i ){
+            S( 0, 0) += Block[i]*Block[i]/DiagA[i];
+            S( 1, 0) += Block[i]*Block2[i]/DiagA[i];
+            S( 1, 1) += Block2[i]*Block2[i]/DiagA[i];
+        }
+        S( 0, 1)= S( 1, 0);
+        S*= -1.;
+        v[std::slice( 0, dim, 1)]/= DiagA;
+        v[dim]    -= dot( Block,  Vec( v[std::slice( 0, dim, 1)]));
+        v[dim + 1]-= dot( Block2, Vec( v[std::slice( 0, dim, 1)]));
+        Solve2x2( S, v[dim], v[dim + 1]);
+        for (size_t i= 0; i < dim; ++i)
+            v[i]-= (Block[i]*v[dim] + Block2[i]*v[dim + 1])/DiagA[i];
+    }
 }
 
 template <typename Mat, typename Vec>
@@ -288,41 +330,37 @@ PVankaSmootherCL::Apply(const Mat& A, const Mat& B, const Mat& BT, const Mat&, V
     NodeListVelT NodeListVel;
     NodeListVel.reserve(200);
     size_t dim;
-    // Cycle by pressure variables
-    for ( size_t id=0; id<g.size(); ++id )
-    {
-        dim = B.row_beg(id+1) - B.row_beg(id);
-        Vec v(dim+1);
+    const IdxDescCL* p1x= 0;
+    if (idx_)
+        for (MLIdxDescCL::const_iterator it= idx_->begin(); it != idx_->end(); ++it)
+            if (it->IsExtended() && it->NumUnknowns() == g.size())
+                p1x= &*it;
 
-        NodeListVel.resize(dim);
+    // Cycle by pressure variables
+    for (size_t id= 0; (!p1x && id < g.size()) || (p1x && id < p1x->GetXidx().GetNumUnknownsStdFE()); ++id ) {
+        size_t id2( p1x ? p1x->GetXidx()[id] : NoIdx); // possible extended pressure unknown
+
+        dim = B.row_beg(id+1) - B.row_beg(id);
+        Vec v(dim + (id2 == NoIdx ? 1 : 2));
+
+        NodeListVel.resize( dim);
 
         // copy column indices of nonzeros from row id of B to NodeListVel
         std::memcpy( &NodeListVel[0], B.raw_col() + B.row_beg( id), dim*sizeof(size_t));
 
         // v = resid of (A & B^T \\ B & 0) * (x \\ y) - (f \\ g) for the rows NodeListVel, id
-        for ( size_t i=0; i<dim; ++i )
-        {
+        for ( size_t i=0; i<dim; ++i ) {
             const int irow = NodeListVel[i];
-            double sum=0;
-            for ( Uint k=A.row_beg( irow ); k<A.row_beg( irow+1 ); ++k )
-                sum+= A.val(k)*x[A.col_ind(k)];
-
-            for ( Uint k=BT.row_beg( irow ); k<BT.row_beg( irow+1 ); ++k )
-                sum+= BT.val(k)*y[BT.col_ind(k)];
-            sum-=f[irow];
-            v[i]=sum;
+            v[i]= mul_row( A, x, irow) + mul_row( BT, y, irow) - f[irow];
         }
-
-        double sump=0;
-        for ( size_t k=B.row_beg( id ); k<B.row_beg( id+1 ); ++k )
-            sump+= B.val(k)*x[B.col_ind(k)];
-        sump-=g[id];
-        v[dim]=sump;
-
+        v[dim]= mul_row( B, x, id) - g[id];
+        if (id2!=NoIdx)
+            v[dim +  1]= mul_row( B, x, id2) - g[id2];
+            
         // smoothing
         switch (vanka_method_) {
             case 0 : {
-                DiagSmoother(id, NodeListVel, A, B, v);
+                DiagSmoother(id, NodeListVel, A, B, v, id2);
             } break;
             case 2: {
                 LRSmoother  (id, NodeListVel, A, B, v);
@@ -333,12 +371,12 @@ PVankaSmootherCL::Apply(const Mat& A, const Mat& B, const Mat& BT, const Mat&, V
         }
 
         // Cycle by local unknowns: correction of the approximation x
-        for ( size_t i=0; i<dim; ++i )
-        {
-            const size_t indvel = NodeListVel[i];
-            x[indvel] -= tau_ * v[i];
+        for (size_t i= 0; i < dim; ++i) {
+            x[NodeListVel[i]]-= tau_ * v[i];
         }
-        y[id] -= tau_ * v[dim];
+        y[id]-= tau_ * v[dim];
+        if (id2 != NoIdx)
+            y[id2]-= tau_ * v[dim + 1];
     }
 }
 

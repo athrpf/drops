@@ -1318,6 +1318,82 @@ class StokesMGSolverCL: public StokesSolverBaseCL
    }
 };
 
+///\brief Preconditioner for the (Navier-) Stokes operator
+///
+/// Vertex-based multiplikative Schwartz-method. The implementation is based on the Vanka-smoother class for
+/// Stokes-multigrid in Drops. The effect of Apply is one smoother-iteration with 0 as starting value.
+class VankaPreCL
+{
+  private:
+    PVankaSmootherCL smoother_;
+    mutable MatrixCL BT_;
+    mutable size_t BVersion_;
+    
+    void UpdateBT (const MatrixCL& B) const {
+        transpose (B, BT_);
+        BVersion_ = B.Version();
+    }
+
+  public:
+    VankaPreCL (const MLIdxDescCL* idx= 0) : smoother_( 0, 1., idx), BVersion_( -1) {}
+
+    void Setidx (const MLIdxDescCL* idx) { smoother_.Setidx( idx); }
+
+    void
+    Apply (const BlockMatrixCL& M, VectorCL& x, const VectorCL& rhs) const {
+        VectorCL v(M.num_cols( 0)), p(M.num_cols( 1)),
+                 b(rhs[std::slice( 0, M.num_rows( 0), 1)]),
+                 c(rhs[std::slice( M.num_rows( 0), M.num_rows( 1), 1)]);
+        if (M.GetBlock( 1)->Version() != BVersion_) UpdateBT( *M.GetBlock( 1));
+        smoother_.Apply( *M.GetBlock( 0), *M.GetBlock( 1), BT_, /*dummy*/ *M.GetBlock( 0), v, p, b, c);
+        x[std::slice( 0, M.num_cols( 0), 1)]= v;
+        x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)]= p;
+    }
+    void
+    Apply (const MLBlockMatrixCL& M, VectorCL& x, const VectorCL& rhs) const {
+        BlockMatrixCL MM( &M.GetBlock( 0)->GetFinest(), MUL, &M.GetBlock( 1)->GetFinest(), TRANSP_MUL,
+                          &M.GetBlock( 1)->GetFinest(), MUL);
+        this->Apply( MM, x, rhs);
+    }
+};
+
+///\brief Preconditioner for the Schur-complement of the (Navier-) Stokes operator
+///
+/// Vertex-based multiplikative Schwartz-method. The implementation is based on the Vanka-smoother class for
+/// Stokes-multigrid in Drops. The effect of Apply is one smoother-iteration with 0 as starting value. The
+/// right-hand side for the momentum equations is set to 0. Thus, the action of the Schur-complement is approximated.
+class VankaSchurPreCL
+{
+  private:
+    PVankaSmootherCL smoother_;
+    mutable MatrixCL BT_;
+    mutable size_t BVersion_;
+    mutable BlockMatrixCL M;
+
+    void UpdateBT (const MatrixCL& B) const {
+        transpose (B, BT_);
+        BVersion_ = B.Version();
+    }
+
+  public:
+    VankaSchurPreCL (const MLIdxDescCL* idx= 0)
+        : smoother_( 0, 1., idx), BVersion_( -1), M( 0, MUL, 0, TRANSP_MUL, 0, MUL) {}
+
+    void Setidx (const MLIdxDescCL* idx)   { smoother_.Setidx( idx); }
+    void SetAB   (const MatrixCL* A, const MatrixCL* B) { M.SetBlock( 0, A); M.SetBlock( 1, B); M.SetBlock( 2, B); }
+
+    void
+    Apply (const MatrixCL& /*S*/, VectorCL& x, const VectorCL& rhs) const {
+        VectorCL v(M.num_cols( 0)), p(M.num_cols( 1)), b( M.num_rows( 0));
+        if (M.GetBlock( 1)->Version() != BVersion_) UpdateBT( *M.GetBlock( 1));
+        smoother_.Apply( *M.GetBlock( 0), *M.GetBlock( 1), BT_, /*dummy*/ *M.GetBlock( 0), v, p, b, rhs);
+        x= p;
+    }
+    void
+    Apply (const MLMatrixCL& /*S*/, VectorCL& x, const VectorCL& rhs) const {
+        this->Apply( MatrixCL(), x, rhs);
+    }
+};
 
 } // end of namespace DROPS
 

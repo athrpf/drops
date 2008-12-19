@@ -6,6 +6,7 @@
 #define DROPS_MGSOLVER_H
 
 #include "misc/problem.h"
+#include "misc/xfem.h"
 #include "num/solver.h"
 
 #include <list>
@@ -164,23 +165,30 @@ class PVankaSmootherCL
     template <typename Mat>                 ///< constructs local saddle point matrix
     DMatrixCL<double>  SetupLocalProblem (Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B) const;
     template <typename Mat, typename Vec>
-    void DiagSmoother(Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
+    void DiagSmoother(Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B, Vec& v, size_t id2) const;
     template <typename Mat, typename Vec>
     void GSSmoother(Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
     template <typename Mat, typename Vec>
     void LRSmoother(Uint id, NodeListVelT& NodeListVel, const Mat& A, const Mat& B, Vec& v) const;
 
+    const MLIdxDescCL* idx_;   ///< If not zero, the standard- and the extended- pressure-dof in a vertex are treated as a block system (only for the DiagSmoother.
+
   public:
 /**
 \brief constructor of the PVankaSmootherCL
  \param vanka_method solving methods for local problems: 0, 3, 4 schur method with diagonal/Gauss-Seidel/symmetrical Gauss-Seidel approximation of A^{-1}, 2: LR decomposition of the local problems
- \param tau          relaxation parameter */
-    PVankaSmootherCL(int vanka_method=0, double tau=1.0) : vanka_method_(vanka_method), tau_(tau) {}
+ \param tau          relaxation parameter
+ \param xidx optional extended index for 2x2-systems with pressure & extended pressure */
+    PVankaSmootherCL(int vanka_method=0, double tau=1.0, const MLIdxDescCL* idx= 0)
+        : vanka_method_(vanka_method), tau_(tau), idx_( idx) {}
     template <typename Mat, typename Vec>
     void Apply( const Mat& A, const Mat& B, const Mat& BT, const Mat&,
                 Vec& u, Vec& p, const Vec& f, const Vec& g ) const;
+    void SetRelaxation (double tau) { tau_= tau; }
     void SetVankaMethod( int method) {vanka_method_ = method;}  ///< change the method for solving the local problems
     int  GetVankaMethod()            {return vanka_method_;}    ///< get the number of the method for solving the local problems
+
+    void Setidx (const MLIdxDescCL* idx) { idx_= idx; }
 };
 
 /*******************************************************************
