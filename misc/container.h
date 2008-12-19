@@ -909,6 +909,10 @@ class MLDataCL : public std::list<T>
     const T& GetCoarsest()    const { return this->front(); }
     const T* GetFinestPtr()   const { return &this->back(); }
     const T* GetCoarsestPtr() const { return &this->front(); }
+    typename MLDataCL::iterator       GetFinestIter()         { return --this->end(); }
+    typename MLDataCL::const_iterator GetFinestIter()   const { return --this->end(); }
+    typename MLDataCL::iterator       GetCoarsestIter()       { return this->begin(); }
+    typename MLDataCL::const_iterator GetCoarsestIter() const { return this->begin(); }
 };
 
 

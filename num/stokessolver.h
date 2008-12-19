@@ -1153,8 +1153,8 @@ template <class ProlongationT>
 double
 EigenValueMaxMG(const MLMatrixCL& A, const ProlongationT& P, VectorCL& x, int iter, double  tol= 1e-3)
 {
-    MLMatrixCL::const_iterator finest= --A.end();
-    typename ProlongationT::const_iterator finestP= --P.end();
+    MLMatrixCL::const_iterator finest= A.GetFinestIter();
+    typename ProlongationT::const_iterator finestP= P.GetFinestIter();
     Uint   sm   =  1; // how many smoothing steps?
     int    lvl  = -1; // how many levels? (-1=all)
     double omega= 1.; // relaxation parameter for smoother
@@ -1220,8 +1220,8 @@ inline void
 ScaledMGPreCL<ProlongationT>::Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& r) const
 {
     x= 0.0;
-    MLMatrixCL::const_iterator finest = --A.end();
-    typename ProlongationT::const_iterator finestP= --P_.end();
+    MLMatrixCL::const_iterator finest = A.GetFinestIter();
+    typename ProlongationT::const_iterator finestP= P_.GetFinestIter();
     const double oldres= norm(r - A*x);
     for (Uint i= 0; i < iter_; ++i) {
         VectorCL r2( r - A*x);
@@ -1283,12 +1283,12 @@ class StokesMGSolverCL: public StokesSolverBaseCL
         Uint   wc   = 1;   // how many W-cycle steps? (1=V-cycle)
 
 // define initial approximation
-        MLMatrixCL::const_iterator A_end   (--A.end());
-        MLMatrixCL::const_iterator B_end   (--B.end());
-        MLMatrixCL::const_iterator BT_end  (--BT_.end());
-        MLMatrixCL::const_iterator prM_end (--prM_.end());
-        typename PVelT::const_iterator PVel(--PVel_.end());
-        typename PPrT::const_iterator  PPr (--PPr_.end());
+        MLMatrixCL::const_iterator A_end   ( A.GetFinestIter());
+        MLMatrixCL::const_iterator B_end   ( B.GetFinestIter());
+        MLMatrixCL::const_iterator BT_end  ( BT_.GetFinestIter());
+        MLMatrixCL::const_iterator prM_end ( prM_.GetFinestIter());
+        typename PVelT::const_iterator PVel( PVel_.GetFinestIter());
+        typename PPrT::const_iterator  PPr ( PPr_.GetFinestIter());
 
         const double runorm0= norm_sq( A * v + transp_mul( B, p) - b);
         const double rpnorm0= norm_sq( B * v - c);

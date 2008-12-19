@@ -43,8 +43,8 @@ void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL
         DirectSolverCL& solver, VectorCL& x, const VectorCL& b, int& maxiter, double& tol,
         const bool residerr, Uint sm, int lvl)
 {
-    MLMatrixCL::const_iterator finest= --MGData.end();
-    typename ProlongationT::const_iterator finestProlong= --Prolong.end();
+    MLMatrixCL::const_iterator finest= MGData.GetFinestIter();
+    typename ProlongationT::const_iterator finestProlong= Prolong.GetFinestIter();
     double resid= -1;
     double old_resid;
     VectorCL tmp;

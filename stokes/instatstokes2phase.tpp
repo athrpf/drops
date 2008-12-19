@@ -1349,7 +1349,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
     MLIdxDescCL::iterator    itRow = B->RowIdx->begin();
     MLIdxDescCL::iterator    itCol = B->ColIdx->begin();
     if ( B->RowIdx->size() == 1)
-        itCol = --B->ColIdx->end();
+        itCol = B->ColIdx->GetFinestIter();
     for (size_t lvl=0; lvl < B->Data.size(); ++lvl, ++itB, ++itRow, ++itCol)
     {
         std::cerr << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs. ";
