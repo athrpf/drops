@@ -1310,7 +1310,7 @@ template <typename PC>
 class PCGSolverCL : public SolverBaseCL
 {
   private:
-    PC _pc;
+    const PC& _pc;
 
   public:
     PCGSolverCL(const PC& pc, int maxiter, double tol, bool rel= false)
@@ -1395,9 +1395,9 @@ template <typename PC>
 class GMResSolverCL : public SolverBaseCL
 {
   private:
-    PC  pc_;
-    int restart_;
-    bool calculate2norm_;
+    const PC&    pc_;
+    int          restart_;
+    bool         calculate2norm_;
     PreMethGMRES method_;
 
   public:
@@ -1431,13 +1431,13 @@ template <typename PC>
 class BiCGStabSolverCL : public SolverBaseCL
 {
   private:
-    PC pc_;
+    const PC& pc_;
 
   public:
     BiCGStabSolverCL(const PC& pc, int maxiter, double tol, bool relative= true)
         : SolverBaseCL( maxiter, tol, relative), pc_( pc){}
 
-    PC&       GetPc ()       { return pc_; }
+          PC& GetPc ()       { return pc_; }
     const PC& GetPc () const { return pc_; }
 
     template <typename Mat, typename Vec>
@@ -1461,8 +1461,8 @@ template <typename PC>
 class GCRSolverCL : public SolverBaseCL
 {
   private:
-    PC  pc_;
-    int truncate_; // no effect atm.
+    const PC& pc_;
+    int       truncate_; // no effect atm.
 
   public:
     GCRSolverCL(const PC& pc, int truncate, int maxiter, double tol,
@@ -1500,10 +1500,10 @@ template <typename PC>
 class GMResRSolverCL : public SolverBaseCL
 {
   private:
-    PC  pc_;
-    int restart_;
-    int inner_maxiter_;
-    double inner_tol_;
+    const PC&    pc_;
+    int          restart_;
+    int          inner_maxiter_;
+    double       inner_tol_;
     PreMethGMRES method_;
   public:
     GMResRSolverCL(const PC& pc, int restart, int maxiter, int  inner_maxiter,
