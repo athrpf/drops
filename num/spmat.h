@@ -1257,6 +1257,16 @@ transp_mul (const VectorAsDiagMatrixBaseCL<_VecEntry>& A,
     return VectorBaseCL<_VecEntry>( A.GetDiag()*x);
 }
 
+template <typename Mat, typename Vec>
+inline typename Vec::value_type
+mul_row (const Mat& A, const Vec& x, size_t row)
+{
+    typename Vec::value_type sum= typename Vec::value_type();
+    for (size_t k= A.row_beg( row); k < A.row_beg( row + 1 ); ++k)
+        sum+= A.val( k)*x[A.col_ind( k)];
+    return sum;
+}
+
 //=============================================================================
 //  Reverse Cuthill-McKee ordering 
 //=============================================================================
