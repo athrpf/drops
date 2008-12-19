@@ -53,6 +53,9 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     // Set up matrix for nonlinearity, use time _t
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
     { this->SetupNonlinear(matN, velvec, vecb, t, t); }
+    void SetupNonlinear(MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, IdxDescCL& RowIdx) const
+    { this->SetupNonlinear_P2( N, vel, cplN, RowIdx, t, t); }
+
     // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
     void SetTime (double tt) { t= tt; }
     void SetNumVelLvl( size_t n) { _base::SetNumVelLvl(n); N.Data.resize( n);}
