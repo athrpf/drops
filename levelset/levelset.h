@@ -46,7 +46,7 @@ class LevelsetP2CL
                         theta_, dt_;
     MatrixCL            L_;
     BndDataT            Bnd_;
-    SSORPcCL            pc_;
+    mutable SSORPcCL    pc_;
     GMResSolverCL<SSORPcCL>  gm_;
     SurfaceForceT       SF_;
 

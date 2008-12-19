@@ -226,6 +226,7 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
     SolverT solver_;
     PcT pre_;
     SSORsmoothCL smoother_;
+    SSORPcCL ssor_;
     PCG_SsorCL   coarsesolver_;
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc;
     APcT Apc_;
@@ -237,7 +238,7 @@ class PMinresSP_FullMG_CL : public BlockMatrixSolverCL<SolverT>
                          DROPS::MLMatrixCL& Mpr, DROPS::MLMatrixCL& PPr, double kA, double kM,
                          int iter_vel, int iter_prA, int iter_prM, int maxiter, double tol)
         :BlockMatrixSolverCL<SolverT> (solver_), solver_(q_, maxiter, tol),
-         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ (SSORPcCL(1.0), 500, 1e-14),
+         pre_( Apc_, Spc_), smoother_(1.0), coarsesolver_ ( ssor_, 500, 1e-14),
          mgc( smoother_, coarsesolver_, iter_vel, 1e-14, false), Apc_( mgc),
          Spc_( MGApr, Mpr, PPr, kA, kM, iter_prA, iter_prM), q_( pre_)
     {}
@@ -309,6 +310,7 @@ class PSchur2_PCG_Pr_CL: public PSchurSolver2CL<PCG_SsorCL,
                                                 PCGSolverCL<ISPreCL> >
 {
   private:
+    SSORPcCL             ssor_;
     PCG_SsorCL           PCGsolver_;
     PCGSolverCL<ISPreCL> PCGsolver2_;
 
@@ -318,7 +320,7 @@ class PSchur2_PCG_Pr_CL: public PSchurSolver2CL<PCG_SsorCL,
         : PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISPreCL> >(
               PCGsolver_, PCGsolver2_, outer_iter, outer_tol
           ),
-          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          PCGsolver_( ssor_, inner_iter, inner_tol),
           PCGsolver2_( Spc, outer_iter, outer_tol)
         {}
 };
@@ -327,6 +329,7 @@ class PSchur2_PCG_Pr_MG_CL: public PSchurSolver2CL<PCG_SsorCL,
                                                    PCGSolverCL<ISMGPreCL> >
 {
   private:
+    SSORPcCL               ssor_;
     PCG_SsorCL             PCGsolver_;
     PCGSolverCL<ISMGPreCL> PCGsolver2_;
 
@@ -336,7 +339,7 @@ class PSchur2_PCG_Pr_MG_CL: public PSchurSolver2CL<PCG_SsorCL,
         : PSchurSolver2CL<PCG_SsorCL, PCGSolverCL<ISMGPreCL> >(
               PCGsolver_, PCGsolver2_, outer_iter, outer_tol
           ),
-          PCGsolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          PCGsolver_( ssor_, inner_iter, inner_tol),
           PCGsolver2_( Spc, outer_iter, outer_tol)
         {}
 };
@@ -346,6 +349,7 @@ class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_Ss
 {
   private:
     SSORsmoothCL smoother_;
+    SSORPcCL     ssor_;
     PCG_SsorCL   coarsesolver_;
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> solver_;
     PCGSolverCL<ISMGPreCL> solver2_;
@@ -356,7 +360,7 @@ class PSchur2_Full_MG_CL: public PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_Ss
                         int inner_iter, double inner_tol)
         : PSchurSolver2CL<MGSolverCL<SSORsmoothCL, PCG_SsorCL>, PCGSolverCL<ISMGPreCL> >(
               solver_, solver2_, outer_iter, outer_tol),
-          smoother_(1.0), coarsesolver_(SSORPcCL(1.0), 500, inner_tol),
+          smoother_(1.0), coarsesolver_(ssor_, 500, inner_tol),
           solver_( smoother_, coarsesolver_, inner_iter, inner_tol),
           solver2_( Spc, outer_iter, outer_tol)
         {}
@@ -731,7 +735,8 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.t= 0;
     Uint timestep= 0;
     SSORsmoothCL smoother(1.0);
-    PCG_SsorCL   coarsesolver(SSORPcCL(1.0), 500, 1e-14);
+    SSORPcCL ssor;
+    PCG_SsorCL   coarsesolver(ssor, 500, 1e-14);
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( smoother, coarsesolver, 1, -1., false);
     typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
     MGPCT MGPC (mgc);

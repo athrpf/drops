@@ -156,6 +156,7 @@ class UzawaSolver2CL : public StokesSolverBaseCL
 class Uzawa_IPCG_CL : public StokesSolverBaseCL
 {
   private:
+    SSORDiagPcCL   _ssordiagpc;
     PCG_SsorDiagCL _M_IPCGsolver;
     PCG_SsorDiagCL _A_IPCGsolver;
     MatrixCL&      _M;
@@ -167,8 +168,8 @@ class Uzawa_IPCG_CL : public StokesSolverBaseCL
   public:
     Uzawa_IPCG_CL(MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1.)
         : StokesSolverBaseCL(outer_iter,outer_tol),
-          _M_IPCGsolver( SSORDiagPcCL(1.), inner_iter, inner_tol ),
-          _A_IPCGsolver( SSORDiagPcCL(1.), inner_iter, inner_tol ),
+          _M_IPCGsolver( _ssordiagpc, inner_iter, inner_tol ),
+          _A_IPCGsolver( _ssordiagpc, inner_iter, inner_tol ),
           _M(M), _tau(tau)
         { _M_IPCGsolver.GetPc().Init(_M); }
 

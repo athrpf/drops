@@ -73,11 +73,12 @@ using ::MyStokesCL;
 class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
 {
   private:
+    SSORPcCL   _ssor;
     PCG_SsorCL _PCGsolver;
   public:
     PSchur_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
         : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+          _ssor( omega), _PCGsolver(_ssor, inner_iter, inner_tol)
         {}
 };
 
@@ -86,13 +87,14 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
   private:
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> _MGsolver;
     SSORsmoothCL smoother_;
+    SSORPcCL     ssor_;
     PCG_SsorCL   solver_;
   public:
     PSchur_MG_CL( MatrixCL& M,      int outer_iter, double outer_tol,
                   int inner_iter, double inner_tol )
         : PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( _MGsolver, M, outer_iter, outer_tol ),
           _MGsolver( smoother_, solver_, inner_iter, inner_tol ),
-          smoother_(1.0), solver_(SSORPcCL(1.0), 500, inner_tol)
+          smoother_(1.0), solver_(ssor_, 500, inner_tol)
         {}
      MLMatrixCL* GetPVel() { return _MGsolver.GetProlongation(); }
 };
@@ -100,20 +102,23 @@ class PSchur_MG_CL: public PSchurSolverCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
 class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
 {
   private:
+    SSORPcCL   _ssor;
     PCG_SsorCL _PCGsolver;
   public:
     Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
         : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+          _ssor( omega), _PCGsolver( _ssor, inner_iter, inner_tol)
         {}
 };
 
 class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
 {
   private:
+    SSORPcCL   ssorom_;
     PCG_SsorCL PCGsolver_;
     MGSolverCL<SSORsmoothCL, PCG_SsorCL> MGsolver_;
     SSORsmoothCL smoother_;
+    SSORPcCL   ssor_;
     PCG_SsorCL   solver_;
 
   public:
@@ -121,9 +126,9 @@ class Uzawa_MG_CL : public UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, P
                 int inner_iter, double inner_tol, double tau= 1., double omega= 1.)
         : UzawaSolver2CL<PCG_SsorCL, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >( PCGsolver_, MGsolver_, M,
                                                   outer_iter, outer_tol, tau),
-          PCGsolver_( SSORPcCL(omega), inner_iter, inner_tol),
+          ssorom_( omega), PCGsolver_( ssorom_, inner_iter, inner_tol),
           MGsolver_( smoother_, solver_, inner_iter, inner_tol ),
-          smoother_(1.), solver_(SSORPcCL(1.0), 500, inner_tol)
+          smoother_(1.), solver_(ssor_, 500, inner_tol)
         {}
     MLMatrixCL* GetPVel() { return MGsolver_.GetProlongation(); }
 };
@@ -149,6 +154,7 @@ class PMinresSP_DiagPCG_CL : public BlockMatrixSolverCL<PMinresSP_DiagPCGT>
 {
   private:
     PMinresSP_DiagPCGT solver_;
+    SSORPcCL   ssor_;
     PCG_SsorCL PPA_;
     MatrixCL& M_;
     PPcT PA_;
@@ -159,7 +165,7 @@ class PMinresSP_DiagPCG_CL : public BlockMatrixSolverCL<PMinresSP_DiagPCGT>
   public:
     PMinresSP_DiagPCG_CL(MatrixCL& M, int maxiter, double tol, double omega= 1.)
         :BlockMatrixSolverCL<PMinresSP_DiagPCGT>( solver_), solver_( q_, maxiter, tol),
-         PPA_(SSORPcCL(omega), 8, 1e-20), M_(M),
+         ssor_( omega), PPA_(ssor_, 8, 1e-20), M_(M),
          PA_(PPA_), PS_(M_, M_, 0.0, 1.0, omega),
          pre_( PA_, PS_), q_( pre_)
     {}

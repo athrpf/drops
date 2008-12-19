@@ -31,11 +31,12 @@ namespace DROPS // for Strategy
 class PSchur_PCG_CL: public PSchurSolverCL<PCG_SsorCL>
 {
   private:
+    SSORPcCL   _ssor;
     PCG_SsorCL _PCGsolver;
   public:
     PSchur_PCG_CL( MLMatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double omega= 1.)
         : PSchurSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+          _ssor( omega), _PCGsolver(_ssor, inner_iter, inner_tol)
         {}
 };
 
@@ -46,6 +47,7 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
     typedef PCGSolverCL<ISPreCL>  outerSolverT;
 
   private:
+    SSORPcCL     ssor_;
     innerSolverT innerSolver_;
     outerSolverT outerSolver_;
 
@@ -55,7 +57,7 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
         : PSchurSolver2CL<innerSolverT, outerSolverT>(
               innerSolver_, outerSolver_, outer_iter, outer_tol
           ),
-          innerSolver_( SSORPcCL( 1.), inner_iter, inner_tol),
+          innerSolver_( ssor_, inner_iter, inner_tol),
           outerSolver_( Spc, outer_iter, outer_tol)
          {}
 };

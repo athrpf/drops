@@ -256,7 +256,8 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::InitStep()
     LvlSet_.ComputeRhs( ls_rhs_);
 
     VectorCL rhscurv( rhs_.size());
-    PCG_SsorCL Msolver( SSORPcCL( 1.0), 200, 1e-10, true);
+    SSORPcCL ssorpc;
+    PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
 
     rhs_= 0.;
     if (theta_ != 1.) {
@@ -512,7 +513,8 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data));
-    PCG_SsorCL Msolver( SSORPcCL( 1.0), 200, 1e-10, true);
+    SSORPcCL ssorpc;
+    PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
     VectorCL b3( b2.size());
 
     Msolver.Solve( Stokes_.M.Data, b3, b2);
@@ -527,7 +529,8 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     ScaleCols( *Bs, VectorCL( std::sqrt( Dvelinv)));
     VectorCL D( 1.0/BBTDiag( *Bs));
     delete Bs;
-    GCRSolverCL<DiagPcCL> Ssolver( DiagPcCL( D), 200, 200, 1e-10, true);
+    DiagPcCL diagpc( D);
+    GCRSolverCL<DiagPcCL> Ssolver( diagpc, 200, 200, 1e-10, true);
 
     Ssolver.Solve( S, Stokes_.p.Data, Stokes_.B.Data*b3);
     std::cerr << "ComputePressure: pressure: iter= " << Ssolver.GetIter() << "\tres= " << Ssolver.GetResid() << '\n';
@@ -1006,7 +1009,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data));
-    PCG_SsorCL Msolver( SSORPcCL( 1.0), 200, 1e-10, true);
+    SSORPcCL ssorpc;
+    PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
     VectorCL b3( b2.size());
 
     Msolver.Solve( Stokes_.M.Data, b3, b2);
@@ -1021,7 +1025,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     ScaleCols( *Bs, VectorCL( std::sqrt( Dvelinv)));
     VectorCL D( 1.0/BBTDiag( *Bs));
     delete Bs;
-    GCRSolverCL<DiagPcCL> Ssolver( DiagPcCL( D), 200, 200, 1e-10, true);
+    DiagPcCL diagpc( D);
+    GCRSolverCL<DiagPcCL> Ssolver( diagpc, 200, 200, 1e-10, true);
 
     VectorCL b4( Stokes_.B.Data*b3);
     if (Stokes_.UsesXFEM()) {
@@ -1040,7 +1045,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputeVelocityDot ()
         - Stokes_.A.Data*Stokes_.v.Data
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data)
         - transp_mul( Stokes_.B.Data, Stokes_.p.Data));
-    PCG_SsorCL Msolver( SSORPcCL( 1.0), 200, 1e-10, true);
+    SSORPcCL ssorpc;
+    PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
 
     Msolver.Solve( Stokes_.M.Data, vdot_, b2);
     std::cerr << "ComputeVelocityDot: vdot: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';

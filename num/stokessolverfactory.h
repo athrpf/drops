@@ -84,6 +84,10 @@ class StokesSolverFactoryCL
     ParamsT& C_;
     double kA_, kM_;
 
+// generic preconditioners
+    JACPcCL  JACPc_;
+    SSORPcCL SSORPc_;
+
 // PC for instat. Schur complement
     ISBBTPreCL bbtispc_;
     MinCommPreCL mincommispc_;
@@ -104,7 +108,6 @@ class StokesSolverFactoryCL
     MGPcT MGPc_;
 
     //JAC-GMRes
-    JACPcCL  JACPc_;
     typedef GMResSolverCL<JACPcCL> GMResSolverT;
     GMResSolverT GMResSolver_;
     typedef SolverAsPreCL<GMResSolverT> GMResPcT;
@@ -117,7 +120,6 @@ class StokesSolverFactoryCL
     BiCGStabPcT BiCGStabPc_;
 
     //PCG
-    SSORPcCL SSORPc_;
     typedef PCGSolverCL<SSORPcCL> PCGSolverT;
     PCGSolverT PCGSolver_;
     typedef SolverAsPreCL<PCGSolverT> PCGPcT;
@@ -244,10 +246,10 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), C_.pcS_tol),
         vankaschurpc_( &Stokes.pr_idx),
         // preconditioner for A
-        smoother_( 1.0), coarsesolversymm_( SSORPcCL(1.0), 500, 1e-6, true),
+        smoother_( 1.0), coarsesolversymm_( SSORPc_, 500, 1e-6, true),
         MGSolversymm_ ( smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
         MGPcsymm_( MGSolversymm_),
-        coarsesolver_( JACPcCL(1.0), 500, 500, 1e-6, true),
+        coarsesolver_( JACPc_, 500, 500, 1e-6, true),
         MGSolver_ ( smoother_, coarsesolver_, C_.pcA_iter, C_.pcA_tol, false), MGPc_( MGSolver_),
         GMResSolver_( JACPc_, C_.pcA_iter, /*restart*/ 100, C_.pcA_tol, /*rel*/ true), GMResPc_( GMResSolver_),
         BiCGStabSolver_( JACPc_, C_.pcA_iter, C_.pcA_tol, /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),

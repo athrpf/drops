@@ -31,8 +31,10 @@ main()
     N.LinComb(1e-2*M.val().apply( std::abs).max(), I, 1.0, M);
 //    MatrixCL N( M1);
 
-    // GMResSolverCL<SSORPcCL> ExactAsolver( SSORPcCL( 1.0), 500, 1000, 1e-6, /*relative=*/ true);
-    PCGSolverCL<DummyPcCL> ExactAsolver( DummyPcCL(), 1000, 1e-6, /*relative=*/ true);
+    // SSORPcCL ssorpc;
+    // GMResSolverCL<SSORPcCL> ExactAsolver( ssorpc, 500, 1000, 1e-6, /*relative=*/ true);
+    DummyPcCL dummypc;
+    PCGSolverCL<DummyPcCL> ExactAsolver( dummypc, 1000, 1e-6, /*relative=*/ true);
 
     VectorCL v( M.num_cols());
     VectorCL r( 1.0, M.num_rows());

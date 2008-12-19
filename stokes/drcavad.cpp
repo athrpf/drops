@@ -54,11 +54,12 @@ using ::MyStokesCL;
 class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 {
   private:
+    SGSPcCL   _sgs;
     PCG_SgsCL _PCGsolver;
   public:
     PSchur_GSPCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol)
         : PSchurSolverCL<PCG_SgsCL>( _PCGsolver, M, outer_iter, outer_tol),
-          _PCGsolver(SGSPcCL(), inner_iter, inner_tol)
+          _PCGsolver(_sgs, inner_iter, inner_tol)
         {}
     PCG_SgsCL& GetPoissonSolver() { return _PCGsolver; }
 };
@@ -66,11 +67,12 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
 {
   private:
+    SSORPcCL _ssor;
     PCG_SsorCL _PCGsolver;
   public:
     Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
         : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+          _ssor( omega), _PCGsolver( _ssor, inner_iter, inner_tol)
         {}
 };
 

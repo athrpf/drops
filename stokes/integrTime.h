@@ -208,6 +208,7 @@ class ISBBTPreCL
 
     typedef DiagPcCL SPcT_;
     SPcT_ spc_;
+    JACPcCL jacpc_;
     mutable PCGSolverCL<SPcT_>   solver_;
     mutable PCGSolverCL<JACPcCL> solver2_;
 
@@ -220,7 +221,7 @@ class ISBBTPreCL
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
           spc_( D_),
           solver_( spc_, 500, tolA_, /*relative*/ true),
-          solver2_( JACPcCL( 1.0), 50, tolM_, /*relative*/ true) {}
+          solver2_( jacpc_, 50, tolM_, /*relative*/ true) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
@@ -229,7 +230,7 @@ class ISBBTPreCL
           kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
           D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
           spc_( D_), solver_( spc_, 500, tolA_, /*relative*/ true),
-          solver2_( JACPcCL( 1.0), 50, tolM_, /*relative*/ true) {}
+          solver2_( jacpc_, 50, tolM_, /*relative*/ true) {}
 
     ISBBTPreCL& operator= (const ISBBTPreCL&) {
         throw DROPSErrCL( "ISBBTPreCL::operator= is not permitted.\n");

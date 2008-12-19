@@ -290,7 +290,7 @@ SolveGSstep(const PreDummyCL<PBT>& pd, const MLMatrixCL& A, Vec& x, const Vec& b
 //  Preconditioner classes
 //=============================================================================
 
-// TODO: Referenzen benutzen statt Daten kopieren. Init ueberdenken.
+// TODO: Init ueberdenken.
 
 // Preconditioners without own matrix
 template <PreMethGS PM, bool HasDiag= PreTraitsCL<PM>::HasDiag> class PreGSCL;
@@ -1310,10 +1310,10 @@ template <typename PC>
 class PCGSolverCL : public SolverBaseCL
 {
   private:
-    const PC& _pc;
+    PC& _pc;
 
   public:
-    PCGSolverCL(const PC& pc, int maxiter, double tol, bool rel= false)
+    PCGSolverCL(PC& pc, int maxiter, double tol, bool rel= false)
         : SolverBaseCL(maxiter, tol, rel), _pc(pc) {}
 
     PC&       GetPc ()       { return _pc; }
@@ -1395,13 +1395,13 @@ template <typename PC>
 class GMResSolverCL : public SolverBaseCL
 {
   private:
-    const PC&    pc_;
+    PC&          pc_;
     int          restart_;
     bool         calculate2norm_;
     PreMethGMRES method_;
 
   public:
-    GMResSolverCL(const PC& pc, int restart, int maxiter, double tol,
+    GMResSolverCL( PC& pc, int restart, int maxiter, double tol,
         bool relative= true, bool calculate2norm= false, PreMethGMRES method= LeftPreconditioning)
         : SolverBaseCL( maxiter, tol, relative), pc_(pc), restart_(restart),
           calculate2norm_(calculate2norm), method_(method){}
@@ -1431,10 +1431,10 @@ template <typename PC>
 class BiCGStabSolverCL : public SolverBaseCL
 {
   private:
-    const PC& pc_;
+    PC& pc_;
 
   public:
-    BiCGStabSolverCL(const PC& pc, int maxiter, double tol, bool relative= true)
+    BiCGStabSolverCL( PC& pc, int maxiter, double tol, bool relative= true)
         : SolverBaseCL( maxiter, tol, relative), pc_( pc){}
 
           PC& GetPc ()       { return pc_; }
@@ -1461,11 +1461,11 @@ template <typename PC>
 class GCRSolverCL : public SolverBaseCL
 {
   private:
-    const PC& pc_;
-    int       truncate_; // no effect atm.
+    PC& pc_;
+    int truncate_; // no effect atm.
 
   public:
-    GCRSolverCL(const PC& pc, int truncate, int maxiter, double tol,
+    GCRSolverCL( PC& pc, int truncate, int maxiter, double tol,
         bool relative= true, std::ostream* output= 0)
         : SolverBaseCL( maxiter, tol, relative, output), pc_( pc),
           truncate_( truncate) {}
@@ -1500,13 +1500,13 @@ template <typename PC>
 class GMResRSolverCL : public SolverBaseCL
 {
   private:
-    const PC&    pc_;
+    PC&          pc_;
     int          restart_;
     int          inner_maxiter_;
     double       inner_tol_;
     PreMethGMRES method_;
   public:
-    GMResRSolverCL(const PC& pc, int restart, int maxiter, int  inner_maxiter,
+    GMResRSolverCL( PC& pc, int restart, int maxiter, int  inner_maxiter,
         double tol, double  inner_tol, bool relative= true, PreMethGMRES method = RightPreconditioning, std::ostream* output= 0)
         : SolverBaseCL( maxiter, tol, relative, output), pc_(pc), restart_(restart),
          inner_maxiter_( inner_maxiter), inner_tol_(inner_tol), method_(method){}

@@ -176,7 +176,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         time.Reset();
-        PCG_SsorCL PCGsolver( SSORPcCL(), C.inner_iter, C.inner_tol);
+	SSORPcCL ssorpc;
+        PCG_SsorCL PCGsolver( ssorpc, C.inner_iter, C.inner_tol);
         PSchurSolverCL<PCG_SsorCL> schurSolver( PCGsolver, Stokes.prM.Data, C.outer_iter, C.outer_tol);
 
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,

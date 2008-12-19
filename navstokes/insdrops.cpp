@@ -78,11 +78,12 @@ using ::MyPdeCL;
 class Uzawa_PCG_CL : public UzawaSolverCL<PCG_SsorCL>
 {
   private:
+    SSORPcCL   _ssor;
     PCG_SsorCL _PCGsolver;
   public:
     Uzawa_PCG_CL( MatrixCL& M, int outer_iter, double outer_tol, int inner_iter, double inner_tol, double tau= 1., double omega=1.)
         : UzawaSolverCL<PCG_SsorCL>( _PCGsolver, M, outer_iter, outer_tol, tau),
-          _PCGsolver(SSORPcCL(omega), inner_iter, inner_tol)
+          _ssor( omega), _PCGsolver( _ssor, inner_iter, inner_tol)
         {}
 };
 
