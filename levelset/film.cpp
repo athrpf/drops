@@ -243,9 +243,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
                                          &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
     }
     else {
-        stokessolverfactory.SetMatrixA( cpl.GetUpperLeftBlock());
+        stokessolverfactory.SetMatrixA( &cpl.GetUpperLeftBlock()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( cpl.GetUpperLeftBlock(), &Stokes.B.Data.GetCoarsest(),
+        stokessolverfactory.SetMatrices( &cpl.GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
                                          &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
     }  
 

@@ -286,9 +286,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
                                          &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
     }
     else {
-        stokessolverfactory.SetMatrixA( timedisc->GetUpperLeftBlock());
+        stokessolverfactory.SetMatrixA( &timedisc->GetUpperLeftBlock()->GetFinest());
             //for Stokes-MGM
-        stokessolverfactory.SetMatrices( timedisc->GetUpperLeftBlock(), &Stokes.B.Data.GetCoarsest(),
+        stokessolverfactory.SetMatrices( &timedisc->GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
                                          &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
     }        
 
