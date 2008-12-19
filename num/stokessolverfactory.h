@@ -20,6 +20,8 @@ namespace DROPS {
         <td> 14</td><td>GCR          </td><td>GMRes    </td><td>MinComm </td><td>lower block</td></tr>
     <tr><td> 15</td><td>GCR          </td><td>BiCGStab </td><td>BBT     </td><td>lower block</td></td><td>
         <td> 16</td><td>GCR          </td><td>BiCGStab </td><td>MinComm </td><td>lower block</td></tr>
+        <td> 17</td><td>GCR          </td><td>VankaPre </td><td>VankaPre</td><td> -  </td></tr>
+        <td> 18</td><td>GCR          </td><td>MG       </td><td>VankaSchur</td><td>lower block</td></tr>
     <tr><td> 21</td><td>Inexact Uzawa</td><td>MG       </td><td>BBT     </td><td> -  </td></td><td>
         <td> 22</td><td>Inexact Uzawa</td><td>MG       </td><td>MinComm </td><td> -  </td></tr>
     <tr><td> 23</td><td>Inexact Uzawa</td><td>GMRes    </td><td>BBT     </td><td> -  </td></td><td>
@@ -59,7 +61,7 @@ class StokesSolverFactoryHelperCL
   public:
     bool VelMGUsed ( const ParamsT& C) const
     {
-        return ( C.StokesMethod ==  11 || C.StokesMethod ==  12 || C.StokesMethod ==  21 ||
+        return ( C.StokesMethod ==  11 || C.StokesMethod ==  12 || C.StokesMethod ==  18 || C.StokesMethod ==  21 ||
                  C.StokesMethod ==  22 || C.StokesMethod ==  31 || C.StokesMethod ==  32 ||
                  C.StokesMethod ==  41 || C.StokesMethod ==  42 || C.StokesMethod ==  51 ||
                  C.StokesMethod ==  52 || C.StokesMethod == 221 || C.StokesMethod == 222 ||
@@ -85,6 +87,7 @@ class StokesSolverFactoryCL
 // PC for instat. Schur complement
     ISBBTPreCL bbtispc_;
     MinCommPreCL mincommispc_;
+    VankaSchurPreCL vankaschurpc_;
 
 // PC for A-block
     // MultiGrid symm.
@@ -129,6 +132,7 @@ class StokesSolverFactoryCL
 
     typedef BlockPreCL<MGPcT,       ISBBTPreCL,   LowerBlockPreCL> LBlockMGBBTOseenPcT;
     typedef BlockPreCL<MGPcT,       MinCommPreCL, LowerBlockPreCL> LBlockMGMinCommOseenPcT;
+    typedef BlockPreCL<MGPcT,       VankaSchurPreCL, LowerBlockPreCL> LBlockMGVankaOseenPcT;
     typedef BlockPreCL<GMResPcT,    ISBBTPreCL,   LowerBlockPreCL> LBlockGMResBBTOseenPcT;
     typedef BlockPreCL<GMResPcT,    MinCommPreCL, LowerBlockPreCL> LBlockGMResMinCommOseenPcT;
     typedef BlockPreCL<BiCGStabPcT, ISBBTPreCL,   LowerBlockPreCL> LBlockBiCGBBTOseenPcT;
@@ -142,18 +146,23 @@ class StokesSolverFactoryCL
 
     LBlockMGBBTOseenPcT        LBlockMGBBTOseenPc_;
     LBlockMGMinCommOseenPcT    LBlockMGMinCommOseenPc_;
+    LBlockMGVankaOseenPcT      LBlockMGVankaOseenPc_;
     LBlockGMResBBTOseenPcT     LBlockGMResBBTOseenPc_;
     LBlockGMResMinCommOseenPcT LBlockGMResMinCommOseenPc_;
     LBlockBiCGBBTOseenPcT      LBlockBiCGBBTOseenPc_;
     LBlockBiCGMinCommOseenPcT  LBlockBiCGMinCommOseenPc_;
 
+    VankaPreCL vankapc_;
+
 //GCR solver
     GCRSolverCL<LBlockMGBBTOseenPcT>        GCRMGBBT_;
     GCRSolverCL<LBlockMGMinCommOseenPcT>    GCRMGMinComm_;
+    GCRSolverCL<LBlockMGVankaOseenPcT>      GCRMGVanka_;
     GCRSolverCL<LBlockGMResBBTOseenPcT>     GCRGMResBBT_;
     GCRSolverCL<LBlockGMResMinCommOseenPcT> GCRGMResMinComm_;
     GCRSolverCL<LBlockBiCGBBTOseenPcT>      GCRBiCGStabBBT_;
     GCRSolverCL<LBlockBiCGMinCommOseenPcT>  GCRBiCGStabMinComm_;
+    GCRSolverCL<VankaPreCL>                 GCRVanka_;
 
 //GMRes solver
     GMResSolverCL<LBlockMGBBTOseenPcT>        GMResMGBBT_;
@@ -221,6 +230,9 @@ class StokesSolverFactoryCL
     ProlongationPT*   GetPPr();
     /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
+
+    PVankaSmootherCL&      GetVankaSmoother () { return vankasmoother; }
+    VankaSchurPreCL&       GetVankaSchurPc ()  { return vankaschurpc_; }
 };
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
@@ -230,6 +242,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         // schur complement preconditioner
         bbtispc_    ( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), kA_, kM_, C_.pcS_tol, C_.pcS_tol),
         mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), C_.pcS_tol),
+        vankaschurpc_( &Stokes.pr_idx),
         // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPcCL(1.0), 500, 1e-6, true),
         MGSolversymm_ ( smoother_, coarsesolversymm_, C_.pcA_iter, C_.pcA_tol, false),
@@ -244,15 +257,19 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         DiagGMResMinCommPc_      ( GMResPc_, mincommispc_),
         DiagPCGBBTOseenPc_       ( PCGPc_,   bbtispc_), DiagPCGMinCommOseenPc_    ( PCGPc_,   mincommispc_),
         LBlockMGBBTOseenPc_      ( MGPc_,    bbtispc_), LBlockMGMinCommOseenPc_   ( MGPc_,    mincommispc_),
+        LBlockMGVankaOseenPc_    ( MGPc_, vankaschurpc_),
         LBlockGMResBBTOseenPc_   ( GMResPc_, bbtispc_), LBlockGMResMinCommOseenPc_( GMResPc_, mincommispc_),
         LBlockBiCGBBTOseenPc_    ( BiCGStabPc_, bbtispc_), LBlockBiCGMinCommOseenPc_( BiCGStabPc_, mincommispc_),
+        vankapc_                 ( &Stokes.pr_idx),
         // GCR solver
         GCRMGBBT_           ( LBlockMGBBTOseenPc_,        C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRMGMinComm_       ( LBlockMGMinCommOseenPc_,    C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
+        GCRMGVanka_         ( LBlockMGVankaOseenPc_,      C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRGMResBBT_        ( LBlockGMResBBTOseenPc_,     C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRGMResMinComm_    ( LBlockGMResMinCommOseenPc_, C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRBiCGStabBBT_     ( LBlockBiCGBBTOseenPc_,      C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         GCRBiCGStabMinComm_ ( LBlockBiCGMinCommOseenPc_,  C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
+        GCRVanka_           ( vankapc_,                   C_.outer_iter, C_.outer_iter, C_.outer_tol, /*rel*/ false),
         // GMRes solver
         GMResMGBBT_           ( LBlockMGBBTOseenPc_,        C_.outer_iter, C_.outer_iter, C_.outer_tol,
                                 /*rel*/ false, false, RightPreconditioning),
@@ -289,6 +306,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         // coarse grid/direct solver for StokesMGM
         minressolver( lanczos3_, 500, 1e-6, true), blockminressolver(minressolver),
         gcrsolver( DiagGMResMinCommPc_, 500, 500, 1e-6, true), blockgcrsolver(gcrsolver),
+        vankasmoother( 0, 1., &Stokes.pr_idx),
         mgvankasolversymm_( Stokes_.prM.Data, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
         mgbssolversymm_   ( Stokes_.prM.Data, bssmoother,    blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
         mgvankasolver_    ( Stokes_.prM.Data, vankasmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2),
@@ -318,6 +336,12 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         break;
         case 16 :
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GCRBiCGStabMinComm_);
+        break;
+        case 17 :
+            stokessolver = new BlockMatrixSolverCL<GCRSolverCL<VankaPreCL> > ( GCRVanka_);
+        break;
+        case 18 :
+            stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGVankaOseenPcT> > ( GCRMGVanka_);
         break;
         case 221 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL, APC_SYM>
@@ -408,13 +432,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResRBiCGStabMinComm_);
         break;
         case 81 : {
-            if (C_.XFEMStab >= 0) // P1X
-                throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            vankasmoother.SetVankaMethod(0);
             if (C_.nonlinear==0.0) // stokes
                 stokessolver = &mgvankasolversymm_;
             else
-                stokessolver = &mgvankasolver_;;
+                stokessolver = &mgvankasolver_;
         }
         break;
         case 82 : {

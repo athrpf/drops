@@ -254,6 +254,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
     adap.push_back( &PPr);
 
+    stokessolverfactory.GetVankaSmoother().SetRelaxation( 0.8);
+
     bool secondSerial= false;
     for (int step= 1; step<=C.num_steps; ++step)
     {
