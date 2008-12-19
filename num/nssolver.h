@@ -154,7 +154,7 @@ class DeltaSquaredPolicyCL
 
   public:
     DeltaSquaredPolicyCL (size_t vsize, size_t psize)
-        : firststep_( true), omega_( 0.8),  w_old_( vsize), q_old_( psize),
+        : firststep_( true), omega_( 1.0),  w_old_( vsize), q_old_( psize),
           w_diff_( vsize), q_diff_( psize) {}
 
     template<class NavStokesT>
