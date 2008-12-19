@@ -6,8 +6,8 @@
 namespace DROPS
 {
 
-template <class CoeffT>
-void SetupNonlinear_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
+template<class Coeff>
+void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t) const
 /// Couplings with dirichlet BCs are accumulated in cplN,
 /// so call cplN->Clear() before if only couplings are needed.
 {
@@ -29,13 +29,13 @@ void SetupNonlinear_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stok
     double det, absdet;
     Point3DCL tmp;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    typename InstatNavierStokes2PhaseP2P1CL<CoeffT>::const_DiscVelSolCL u( vel, &_BndData.Vel, &_MG, t);
+    typename InstatNavierStokes2PhaseP2P1CL<Coeff>::const_DiscVelSolCL u( vel, &_BndData.Vel, &_MG, t);
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     LocalP2CL<> p2Phi;
     LocalP2CL<Point3DCL> p2u;
     
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
@@ -97,7 +97,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear
     MLMatrixCL::iterator  itN = N->Data.begin();
     MLIdxDescCL::iterator it  = N->RowIdx->begin();
     for (size_t lvl=0; lvl < N->Data.size(); ++lvl, ++itN, ++it)
-        SetupNonlinear_P2( _MG,  _Coeff, _BndData, *itN, vel, lvl == N->Data.size()-1 ? cplN : 0, lset,*it, t);
+        SetupNonlinear_P2( *itN, vel, lvl == N->Data.size()-1 ? cplN : 0, lset,*it, t);
 }
 
 } // end of namespace DROPS

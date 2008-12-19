@@ -177,16 +177,11 @@ template<class NavStokesT>
 {
     VecDescCL v_omw( v.RowIdx);
     v_omw.Data= v.Data - omega_*w;
-    MLMatDescCL N;
-    MLIdxDescCL vidx( vecP2_FE);
-    match_fun match= ns.GetMG().GetBnd().GetMatchFun();
-    ns.CreateNumberingVel( ns.GetMG().GetLastLevel(), &vidx, *match);
-    N.SetIdx( &vidx, &vidx);
-    ns.SetupNonlinear( &N, &v_omw, &cplN);
+    ns.SetupNonlinear( ns.N.Data.GetFinest(), &v_omw, &cplN, ns.N.RowIdx->GetFinest());
 
-    d_= A*w + alpha*(N.Data*w) + transp_mul( B, q);
+    d_= A*w + alpha*(ns.N.Data.GetFinest()*w) + transp_mul( B, q);
     e_= B*w;
-    omega_= dot( d_, VectorCL( A*v.Data + alpha*(N.Data*v.Data)
+    omega_= dot( d_, VectorCL( A*v.Data + alpha*(ns.N.Data.GetFinest()*v.Data)
     + transp_mul( B, p) - b - alpha*cplN.Data))
     + dot( e_, VectorCL( B*v.Data - c));
     omega_/= norm_sq( d_) + norm_sq( e_);
