@@ -457,8 +457,6 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
     { // ASCII
         char buf[256];
 
-        std::ifstream is( file.c_str());
-        CheckFile( is);
         is.getline( buf, 256); // ignore first line
 
         for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(lvl),
