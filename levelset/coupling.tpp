@@ -914,13 +914,17 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
 //     if ( mycount++ % 20 == 1) {
 //         VectorCL pp( Stokes_.p.Data);
 //         ComputePressure();
-//         std::cerr << "pressure difference: " << norm( Stokes_.p.Data - pp)/norm( pp) << '\n';
+//         std::cerr << "pressure difference: "
+//                   << dot( VectorCL(Stokes_.prM.Data*VectorCL(Stokes_.p.Data - pp)),
+//                           VectorCL(Stokes_.p.Data - pp))/ dot( VectorCL(Stokes_.prM.Data* pp), pp) << '\n';
 //         Stokes_.p.Data= pp;
 // 
 //         if (theta_ != 1.) { // Implicit Euler does not need and calculate vdot_.
 //             VectorCL vd( vdot_);
 //             ComputeVelocityDot();
-//             std::cerr << "vdot difference: " << norm( vdot_ - vd)/norm( vd) << '\n';
+//             std::cerr << "vdot difference: "
+//                       << dot( VectorCL(Stokes_.M.Data*VectorCL(vdot_ - vd)), VectorCL(vdot_ - vd))/
+//                          dot( VectorCL(Stokes_.M.Data* vd), vd) << '\n';
 //             vdot_= vd;
 //         }
 //     }
