@@ -687,7 +687,10 @@ class QRDecompCL
 
     ///@{ Call only after prepare_solve; solves are inplace.
     void Solve (SVectorCL<Rows_>& b) const;
-    void Solve (const std::valarray<SVectorCL<Rows_> >& b) const;
+    template <template<class> class SVecCont>
+    void Solve (SVecCont<SVectorCL<Rows_> >& b) const;
+    template <Uint Size>
+    void Solve (SArrayCL<SVectorCL<Rows_>, Size>& b) const;
     ///@}
 };
 
@@ -738,10 +741,20 @@ template <Uint Rows_>
 }
 
 template <Uint Rows_>
+  template <template<class> class SVecCont>
   void
-  QRDecompCL<Rows_>::Solve (const std::valarray<SVectorCL<Rows_> >& b) const
+  QRDecompCL<Rows_>::Solve (SVecCont<SVectorCL<Rows_> >& b) const
 {
     for (Uint i= 0; i < b.size(); ++i)
+        Solve( b[i]);
+}
+
+template <Uint Rows_>
+  template <Uint Size>
+    void
+    QRDecompCL<Rows_>::Solve (SArrayCL<SVectorCL<Rows_>, Size>& b) const
+{
+    for (Uint i= 0; i < Size; ++i)
         Solve( b[i]);
 }
 
