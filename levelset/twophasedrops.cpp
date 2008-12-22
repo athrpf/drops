@@ -199,20 +199,20 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
 
-   if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
-       Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
-   if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
-       Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
- //   Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
-//   Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
+         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
+        Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
     // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceeding CreateNumberings
-    Stokes.SetNumVelLvl ( 2);
-    Stokes.SetNumPrLvl  ( 2);
-    Stokes.vel_idx.GetCoarsest().CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
-    Stokes.vel_idx.GetFinest().  CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
-    Stokes.pr_idx.GetCoarsest(). GetXidx().SetBound( 1e99);
-    Stokes.pr_idx.GetCoarsest(). CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
-    Stokes.pr_idx.GetFinest().   CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
+//     Stokes.SetNumVelLvl ( 2);
+//     Stokes.SetNumPrLvl  ( 2);
+//     Stokes.vel_idx.GetCoarsest().CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
+//     Stokes.vel_idx.GetFinest().  CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
+//     Stokes.pr_idx.GetCoarsest(). GetXidx().SetBound( 1e99);
+//     Stokes.pr_idx.GetCoarsest(). CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
+//     Stokes.pr_idx.GetFinest().   CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
 
     Stokes.SetIdx();
     Stokes.v.SetIdx  ( vidx);
@@ -319,9 +319,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
     adap.push_back( &PPr);
     // For a two-level MG-solver: P2P1 -- P2P1X;
-    MakeP1P1XProlongation ( Stokes.vel_idx.NumUnknowns(), Stokes.pr_idx.NumUnknowns(),
-        Stokes.pr_idx.GetFinest().GetXidx().GetNumUnknownsStdFE(),
-        stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
+//     MakeP1P1XProlongation ( Stokes.vel_idx.NumUnknowns(), Stokes.pr_idx.NumUnknowns(),
+//         Stokes.pr_idx.GetFinest().GetXidx().GetNumUnknownsStdFE(),
+//         stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
     stokessolverfactory.GetVankaSchurPc().SetAB( (C.nonlinear!=0.0 || C.num_steps == 0)
         ? &navstokessolver->GetAN()->GetFinest() : &timedisc->GetUpperLeftBlock()->GetFinest(),
         &Stokes.B.Data.GetFinest()
