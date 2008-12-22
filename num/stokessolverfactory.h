@@ -212,10 +212,10 @@ class StokesSolverFactoryCL
     BSSmootherCL bssmoother;
     
     //StokesMGSolver
-    StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT> mgvankasolversymm_;
-    StokesMGSolverCL<BSSmootherCL,     ProlongationVelT, ProlongationPT> mgbssolversymm_;
-    StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT> mgvankasolver_;
-    StokesMGSolverCL<BSSmootherCL,     ProlongationVelT, ProlongationPT> mgbssolver_;
+    StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>* mgvankasolversymm_;
+    StokesMGSolverCL<BSSmootherCL,     ProlongationVelT, ProlongationPT>* mgbssolversymm_;
+    StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>* mgvankasolver_;
+    StokesMGSolverCL<BSSmootherCL,     ProlongationVelT, ProlongationPT>* mgbssolver_;
     
 
   public:
@@ -308,11 +308,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         // coarse grid/direct solver for StokesMGM
         minressolver( lanczos3_, 500, 1e-6, true), blockminressolver(minressolver),
         gcrsolver( DiagGMResMinCommPc_, 500, 500, 1e-6, true), blockgcrsolver(gcrsolver),
-        vankasmoother( 0, 1., &Stokes.pr_idx),
-        mgvankasolversymm_( Stokes_.prM.Data, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
-        mgbssolversymm_   ( Stokes_.prM.Data, bssmoother,    blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
-        mgvankasolver_    ( Stokes_.prM.Data, vankasmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2),
-        mgbssolver_       ( Stokes_.prM.Data, bssmoother,    blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2)
+        vankasmoother( 0, 1., &Stokes.pr_idx)
         {}
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
@@ -434,19 +430,31 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResRBiCGStabMinComm_);
         break;
         case 81 : {
-            if (C_.nonlinear==0.0) // stokes
-                stokessolver = &mgvankasolversymm_;
-            else
-                stokessolver = &mgvankasolver_;
+            if (C_.nonlinear==0.0){ // stokes
+                mgvankasolversymm_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
+                           ( Stokes_.prM.Data, vankasmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
+                stokessolver = mgvankasolversymm_;
+            }
+            else {
+                mgvankasolver_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
+                           ( Stokes_.prM.Data, vankasmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2),
+                stokessolver = mgvankasolver_;
+            }
         }
         break;
         case 82 : {
             if (C_.XFEMStab >= 0) // P1X
                 throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-            if (C_.nonlinear==0.0) // stokes
-                stokessolver = &mgbssolversymm_;
-            else
-                stokessolver = &mgbssolver_;
+            if (C_.nonlinear==0.0){ // stokes
+                mgbssolversymm_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
+                           ( Stokes_.prM.Data, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
+                stokessolver = mgbssolversymm_;
+            }
+            else {
+                mgbssolversymm_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
+                           ( Stokes_.prM.Data, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
+                stokessolver = mgbssolver_;
+            }
         }
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");
@@ -468,15 +476,15 @@ ProlongationVelT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prol
 {
     if (C_.StokesMethod == 81) {
         if (C_.nonlinear == 0)
-            return mgvankasolversymm_.GetPVel();
+            return mgvankasolversymm_->GetPVel();
         else
-            return mgvankasolver_.GetPVel();
+            return mgvankasolver_->GetPVel();
     }
     if (C_.StokesMethod == 82) {
         if (C_.nonlinear == 0)
-            return mgbssolversymm_.GetPVel();
+            return mgbssolversymm_->GetPVel();
         else
-            return mgbssolver_.GetPVel();
+            return mgbssolver_->GetPVel();
     }
 
     if (C_.StokesMethod == 221 || C_.StokesMethod == 222 || C_.StokesMethod == 31 || C_.StokesMethod == 32)
@@ -490,15 +498,15 @@ ProlongationPT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prolon
 {
     if (C_.StokesMethod == 81) {
         if (C_.nonlinear == 0)
-            return mgvankasolversymm_.GetPPr();
+            return mgvankasolversymm_->GetPPr();
         else
-            return mgvankasolver_.GetPPr();
+            return mgvankasolver_->GetPPr();
     }
     if (C_.StokesMethod == 82) {
         if (C_.nonlinear == 0)
-            return mgbssolversymm_.GetPPr();
+            return mgbssolversymm_->GetPPr();
         else
-            return mgbssolver_.GetPPr();
+            return mgbssolver_->GetPPr();
     }
     return 0;
 }
