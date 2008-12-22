@@ -9,6 +9,8 @@
 #ifndef DROPS_DISCRETIZE_H
 #define DROPS_DISCRETIZE_H
 
+#include <cstring>
+
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 #include "misc/container.h"
@@ -324,6 +326,12 @@ class Quad2CL: public GridFunctionCL<T>
     static inline BaryCoordCL // Das kopiert leider.
     GetNode( Uint i) { return Node[i]; }
 
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
+
   protected:
     typedef Quad2CL<T> self_;
 
@@ -333,7 +341,8 @@ class Quad2CL: public GridFunctionCL<T>
 
     Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad2CL(const LocalP2CL<value_type>&);
-    template <class PFunT>
+    Quad2CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
+   template <class PFunT>
       Quad2CL(const TetraCL&, const PFunT&, double= 0.0);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
@@ -344,6 +353,8 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     assign(const LocalP1CL<value_type>&);
     inline self_&
     assign(const LocalP2CL<value_type>&);
+    inline self_&
+    assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class P2FunT>
       inline self_&
       assign(const TetraCL&, const P2FunT&, double= 0.0);
@@ -398,7 +409,7 @@ class Quad5DataCL
     static BaryCoordCL           Node[NumNodesC]; ///< quadrature nodes
     static const double          Wght[4];         ///< quadrature weights
     static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
- 
+
     /// M contains the barycentric coordinates of a tetrahedron; the
     /// return-value is a new[]-allocated array of the quadrature-points
     /// for this tetrahedron.
@@ -796,6 +807,17 @@ inline double VolFrac(const SArrayCL<BaryCoordCL,4>& bp)
     return std::abs( M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
             - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
             + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]) );
+}
+
+inline double VolFrac (const SMatrixCL<4, 4>& A)
+{
+    double M[3][3];
+    for(int i=0; i<3; ++i)
+        for(int j=0; j<3; ++j)
+            M[i][j]= A(i+1, j+1) - A(i+1, 0);
+    return std::fabs( M[0][0] * (M[1][1]*M[2][2] - M[1][2]*M[2][1])
+           - M[0][1] * (M[1][0]*M[2][2] - M[1][2]*M[2][0])
+           + M[0][2] * (M[1][0]*M[2][1] - M[1][1]*M[2][0]));
 }
 
 inline double P1DiscCL::Quad(const TetraCL& s, instat_scalar_fun_ptr coeff, double t)
