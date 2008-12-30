@@ -928,7 +928,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         max_iter= 0;
         return true;
     }
-    std::cerr << "PMINRES: k: 0\tresidual: " << res/normb << '\n';
+    std::cerr << "PMINRES: k: 0\tresidual: " << res << '\n';
     for (int k= 1; k <= max_iter; ++k) {
         switch (k) {
           case 1:
