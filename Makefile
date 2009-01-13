@@ -25,7 +25,7 @@ distclean: $(PACKAGES:%=distclean_%) distclean_dox
 	rm -f $(DEPFILE)
 	@echo "--> Everything is cleaned up now!"
 
-dep: topo deldepend $(PACKAGES:%=depend_%)
+dep: deldepend $(PACKAGES:%=depend_%)
 	@echo "--> Actual dependencies generated in $(DEPFILE)!"
 
 check:

@@ -31,8 +31,6 @@ maketopo: maketopo.cpp topo.h topo.cpp.in ../misc/utils.o
 topo.cpp: maketopo topo.cpp.in
 	./maketopo
 
-distclean: topoclean
-
 topoclean:
 	rm -f topo.cpp
 
