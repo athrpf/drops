@@ -6,8 +6,7 @@
 
 DIR = geom
 
-EXEC = maketopo
-
+EXEC =
 DELETE = $(EXEC) maketopo_helper.cpp
 
 CPP = $(wildcard *.cpp)
@@ -18,9 +17,6 @@ OBJ = $(CPP:%.cpp=%.o)
 # rules:
 
 default: ClrScr
-
-topo.o: topo.cpp topo.h ../misc/utils.h
-	$(CXX) $(CXXFLAGS) -c topo.cpp
 
 maketopo: maketopo.cpp topo.h topo.cpp.in ../misc/utils.o
 	cp -f topo.cpp.in maketopo_helper.cpp
