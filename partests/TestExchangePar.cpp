@@ -26,6 +26,7 @@
 
  // include numeric computing!
 #include "num/spmat.h"
+#include "levelset/levelset.h"
 
 // Standard-Header-Files für Ausgaben
 #include <iostream>
@@ -138,8 +139,9 @@ namespace DROPS // für die Strategy und Hilfsfunktionen
 *   Wert GID+i und de zweiten Index den Wert 1/100(GID+i)+0.1, damit man    *
 *   nach dem Akkumulieren die Werte checken kann.                           *
 ****************************************************************************/
-void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
+void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
 {
+    const int nums3= 1;
     // Setze die GID als Werte auf die Vertices:
     for (MultiGridCL::TriangVertexIteratorCL sit(mg.GetTriangVertexBegin()), end(mg.GetTriangVertexEnd()) ; sit!=end; ++sit)
     {
@@ -149,6 +151,14 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
             for (int i=0; i<C.numsV2; ++i)
                 x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] = 1./100.*(sit->GetGID()+i)+0.1;
+        if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) ) {
+            const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
+            for (int i=0; i<nums3; ++i) {
+                x3.Data[ dof+i ] = (sit->GetGID()+i)+0.11;
+                if (x3.RowIdx->IsExtended(dof))
+                     x3.Data[ x3.RowIdx->GetXidx()[dof]+i ] = (sit->GetGID()+i)+0.55;
+            }
+        }
     }
 
     // Setze die GID als Werte auf die Edges:
@@ -160,6 +170,14 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
             for (int i=0; i<C.numsE2; ++i)
                 x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] = 1./100.*(sit->GetGID()+i)+0.1;
+        if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) ) {
+            const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
+            for (int i=0; i<nums3; ++i) {
+                x3.Data[ dof+i ] = (sit->GetGID()+i)+0.11;
+                if (x3.RowIdx->IsExtended(dof))
+                     x3.Data[ x3.RowIdx->GetXidx()[dof]+i ] = (sit->GetGID()+i)+0.55;
+            }
+        }
     }
 
     // Setze die GID als Werte auf die Tetras:
@@ -171,6 +189,14 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
             for (int i=0; i<C.numsT2; ++i)
                 x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] = 1./100.*(sit->GetGID()+i)+0.1;
+        if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) ) {
+            const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
+            for (int i=0; i<nums3; ++i) {
+                x3.Data[ dof+i ] = (sit->GetGID()+i)+0.11;
+                if (x3.RowIdx->IsExtended(dof))
+                     x3.Data[ x3.RowIdx->GetXidx()[dof]+i ] = (sit->GetGID()+i)+0.55;
+            }
+        }
     }
 }
 
@@ -180,9 +206,10 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
 *   Diese Funktion schaut nach dem Akkumulieren nach, ob alle Werte auf den *
 *   Simplices richtig ist.                                                  *
 ****************************************************************************/
-bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
+bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
 {
     bool check = true;
+    const int nums3= 1;
 //  const int me =ProcCL::MyRank();
     // Check vertices
     for (MultiGridCL::TriangVertexIteratorCL sit(mg.GetTriangVertexBegin()), end(mg.GetTriangVertexEnd()) ; sit!=end; ++sit)
@@ -217,13 +244,48 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2)
                     ++num_shared;
             for (int i=0; i<C.numsV2; ++i)
                 local_check = local_check
-                        && ( std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] - num_shared*(1./100.*(sit->GetGID()+i)+0.1 ))<DoubleEpsC);
+                        && ( std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] - num_shared*(1./100.*(sit->GetGID()+i)+0.1 ))<DoubleEpsC*std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ]));
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << "["<<ProcCL::MyRank()<<"] Index "<<x2.RowIdx->GetIdx()<<": Bei Knoten " << sit->GetGID() << " ist ein Fehler passiert!\n"
                         << "  Habe den Wert: " << (x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())])
                         << " sollte sein: " << (num_shared*(1./100.*(sit->GetGID())+0.1))
+                        << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
+            }
+        }
+        
+        if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) )
+        {
+            bool local_check = true, local_xcheck= true;
+            const DDD_HDR vert= sit->GetHdr();
+            int num_shared = 0;
+            const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
+            for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
+                if (procList[1]==PrioHasUnk)
+                    ++num_shared;
+            for (int i=0; i<nums3; ++i)
+                local_check = local_check
+                        && ( std::fabs(x3.Data[ dof+i ] - num_shared*((sit->GetGID()+i)+0.11 ))<DoubleEpsC*std::fabs(x3.Data[ dof+i ]));
+            if (x3.RowIdx->IsExtended(dof)) {
+                const IdxT xdof= x3.RowIdx->GetXidx()[dof];
+                for (int i=0; i<nums3; ++i)
+                    local_xcheck = local_xcheck
+                            && ( std::fabs(x3.Data[ xdof+i ] - num_shared*((sit->GetGID()+i)+0.55 ))<DoubleEpsC*std::fabs(x3.Data[ xdof+i ]));
+            }
+            check = check && local_check && local_xcheck;
+            if (!local_check)
+            {
+                std::cout << "["<<ProcCL::MyRank()<<"] Index "<<x3.RowIdx->GetIdx()<<": Bei Knoten " << sit->GetGID() << " ist ein Fehler passiert!\n"
+                        << "  Habe den Wert: " << (x3.Data[ sit->Unknowns(x3.RowIdx->GetIdx())])
+                        << " sollte sein: " << (num_shared*((sit->GetGID())+0.11))
+                        << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
+            }
+            if (!local_xcheck)
+            {
+                std::cout << "["<<ProcCL::MyRank()<<"] Index "<<x3.RowIdx->GetIdx()<<": Bei Knoten " << sit->GetGID() << " und extended DoF ist ein Fehler passiert!\n"
+                        << "  Habe den Wert: " << (x3.Data[ x3.RowIdx->GetXidx()[dof]])
+                        << " sollte sein: " << (num_shared*((sit->GetGID())+0.55))
                         << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
         }
@@ -465,8 +527,8 @@ bool CheckIdxMapping(const DROPS::MultiGridCL& mg, DROPS::MLIdxDescCL* idxDesc, 
 }
 
 /// \brief Create lists for ExchangeCL and do (if wished) time meassurements
-void CreateExchangeCL(const MultiGridCL& mg, ExchangeCL& ex1, ExchangeCL& ex2,
-                      MLIdxDescCL* idx1, MLIdxDescCL* idx2)
+void CreateExchangeCL(const MultiGridCL& mg, ExchangeCL& ex1, ExchangeCL& ex2, ExchangeCL& exXfem,
+                      MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
     if (C.tests){
         ParTimerCL time;
@@ -515,10 +577,14 @@ void CreateExchangeCL(const MultiGridCL& mg, ExchangeCL& ex1, ExchangeCL& ex2,
     if (ProcCL::IamMaster())
         std::cout <<  "     + 2. Exchange-Listen ... " << std::endl;
     ex2.CreateList(mg,idx2,true, true);
+    if (ProcCL::IamMaster())
+        std::cout <<  "     + 3. Exchange-Listen ... " << std::endl;
+    exXfem.CreateList(mg,xidx,true, true);
 
     if (C.printEx){
         PrintExchange(ex1);
         PrintExchange(ex2);
+        PrintExchange(exXfem);
     }
 
     if (C.printMsgSize)
@@ -527,12 +593,14 @@ void CreateExchangeCL(const MultiGridCL& mg, ExchangeCL& ex1, ExchangeCL& ex2,
         ex1.SizeInfo(std::cout);
         if (ProcCL::IamMaster()) std::cout << "  Für Index 2:\n";
         ex2.SizeInfo(std::cout);
+        if (ProcCL::IamMaster()) std::cout << "  Für XFEM-Index:\n";
+        exXfem.SizeInfo(std::cout);
     }
 }
 
 /// \brief Check if ExchangeCL send and accumulate correct
-bool TestCorrectnessExchangeCL(MultiGridCL& mg, const ExchangeCL& ex1, const ExchangeCL& ex2,
-                               MLIdxDescCL* idx1, MLIdxDescCL* idx2)
+bool TestCorrectnessExchangeCL(MultiGridCL& mg, const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeCL& exXfem,
+                               MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
     if (ProcCL::IamMaster())
         std::cout << "   - Checke auf Richtigkeit (2 Mal) ... " << '\n'
@@ -545,15 +613,18 @@ bool TestCorrectnessExchangeCL(MultiGridCL& mg, const ExchangeCL& ex1, const Exc
     {
         VecDescCL y_acc1; y_acc1.SetIdx(idx1);
         VecDescCL y_acc2; y_acc2.SetIdx(idx2);
+        VecDescCL y_acc3; y_acc3.SetIdx(xidx);
 
-        SetNum(mg,y_acc1,y_acc2);
+        SetNum(mg,y_acc1,y_acc2,y_acc3);
 
         ExchangeCL::RequestCT req1(2*ex1.GetNumNeighs());
         ExchangeCL::RequestCT req2(2*ex2.GetNumNeighs());
-        ex1.InitCommunication(y_acc1.Data, req1); ex1.AccFromAllProc(y_acc1.Data, req1);
-        ex2.InitCommunication(y_acc2.Data, req2); ex2.AccFromAllProc(y_acc2.Data, req2);
+        ExchangeCL::RequestCT req3(2*exXfem.GetNumNeighs());
+        ex1.InitCommunication(y_acc1.Data, req1);    ex1.AccFromAllProc(y_acc1.Data, req1);
+        ex2.InitCommunication(y_acc2.Data, req2);    ex2.AccFromAllProc(y_acc2.Data, req2);
+        exXfem.InitCommunication(y_acc3.Data, req3); exXfem.AccFromAllProc(y_acc3.Data, req3);
 
-        check = check && CheckNum(mg,y_acc1,y_acc2);
+        check = check && CheckNum(mg,y_acc1,y_acc2,y_acc3);
 
         if (!check)
             throw DROPSErrCL("ExchangeCL has not exchanged values correct");
@@ -566,8 +637,8 @@ bool TestCorrectnessExchangeCL(MultiGridCL& mg, const ExchangeCL& ex1, const Exc
 }
 
 /// \brief Test if Sysnums on other procs can be computed correct
-bool TestSysnumComputation(MultiGridCL& mg, const ExchangeCL& ex1, const ExchangeCL& ex2,
-                           MLIdxDescCL* idx1, MLIdxDescCL* idx2)
+bool TestSysnumComputation(MultiGridCL& mg, const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeCL& exXfem,
+                           MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
     if (ProcCL::IamMaster())
         std::cout << "   - Checke die Berechnung von Sysnums auf anderen Prozessoren:\n";
@@ -584,6 +655,12 @@ bool TestSysnumComputation(MultiGridCL& mg, const ExchangeCL& ex1, const Exchang
 
     if (!MappingCheck)
         throw DROPSErrCL("Sysnumcomputation for Index 2 is not correct!");
+
+    for (int p=0; p<ProcCL::Size(); ++p)
+        MappingCheck = MappingCheck &&  Check(CheckIdxMapping(mg, xidx, exXfem, p));
+
+    if (!MappingCheck)
+        throw DROPSErrCL("Sysnumcomputation for XFEM-Index is not correct!");
     else if (ProcCL::IamMaster())
         std::cout << "    --> OK !" << std::endl;
 
@@ -687,7 +764,8 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
         // Setzen der Werte
         VecDescCL y_acc1; y_acc1.SetIdx(idx1);
         VecDescCL y_acc2; y_acc2.SetIdx(idx2);
-        SetNum(mg,y_acc1,y_acc2);
+        VecDescCL y_acc3; y_acc2.SetIdx(idx1);
+        SetNum(mg,y_acc1,y_acc2,y_acc3);
 
         // Einen großen Vektor für die ExchangeBlockCL erzeugen
         VectorCL y_big(y_acc1.Data.size() + y_acc2.Data.size());
@@ -705,7 +783,7 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
         // Checken der Werte
         y_acc1.Data = y_big[std::slice(0,                  y_acc1.Data.size(), 1)];
         y_acc2.Data = y_big[std::slice(y_acc1.Data.size(), y_acc2.Data.size(), 1)];
-        check = check && CheckNum(mg,y_acc1,y_acc2);
+        check = check && CheckNum(mg,y_acc1,y_acc2,y_acc3);
 
         if (!check)
             throw DROPSErrCL("ExchangeCL has not exchanged values correct");
@@ -859,6 +937,10 @@ void MakeTimeMeassurments( const ExchangeCL& ex, MLIdxDescCL* idx)
 
 }
 
+double DistanceFct( const DROPS::Point3DCL& p)
+{
+    return p[0]-2.39;
+}
 
 /****************************************************************************
 * S T R A T E G Y                                                           *
@@ -879,32 +961,43 @@ void Strategy(ParMultiGridCL &pmg)
     // Teile dem Index mit, wieviele Unbekannte auf den Verts, Edges und Tetras liegen
     idx1.SetFE( P1_FE);
     idx2.SetFE( P2_FE);
-
+    
+    MLIdxDescCL xfemidx( P1X_FE, 1, BndCondCL(0), 0, 0.1);
+                
+    LevelsetP2CL lset( mg);
+    lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
+    /// \todo paralleles UpdateXNumbering()
+    lset.Phi.SetIdx( &lset.idx);
+    lset.Init( DistanceFct);
+   
     if (ProcCL::IamMaster())
         std::cout << " * Numeriere die Unbekannten, teile diese dem PMG mit, Schreibe Infos ... " << std::endl;
 
     // erzeuge Nummerierung zu diesen Indices
     idx1.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
     idx2.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
+    xfemidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
+std::cout << "[" << ProcCL::MyRank() << "] " << xfemidx.NumUnknowns() << " Unbekannte, davon " << xfemidx.NumUnknowns() - xfemidx.GetFinest().GetXidx().GetNumUnknownsStdFE() << " erweitert\n";    
 
     // Setzte Indices auf die Vector-Describer
     x1.SetIdx(&idx1);  pmg.AttachTo(0,&x1);
     x2.SetIdx(&idx2);  pmg.AttachTo(1,&x2);
+    VecDescCL xfem( &xfemidx);
 
-
-    Ulint sizeinfo[2], global_info[2];
-    sizeinfo[0] = idx1.NumUnknowns(); sizeinfo[1] = idx2.NumUnknowns();
-    GlobalSum(sizeinfo,global_info,2,0);
+    Ulint sizeinfo[3], global_info[3];
+    sizeinfo[0] = idx1.NumUnknowns(); sizeinfo[1] = idx2.NumUnknowns(), sizeinfo[2]= xfemidx.NumUnknowns();
+    GlobalSum(sizeinfo,global_info, 3, ProcCL::Master());
     if (ProcCL::IamMaster())
-        std::cout << "   - Index1: " <<global_info[0]<<", Index2: " <<global_info[1]<< " Unbekannte (akkumuliert)\n";
+        std::cout << "   - Index1: " <<global_info[0]<<", Index2: " <<global_info[1]<<", XfemIdx: " <<global_info[2]<< " Unbekannte (akkumuliert)\n";
 
     if (ProcCL::IamMaster())
         std::cout << line << std::endl << " * Teste ExchangeCL"<< std::endl;
 
-    ExchangeCL Ex1, Ex2;
-    CreateExchangeCL(mg, Ex1, Ex2, &idx1, &idx2);
-    TestCorrectnessExchangeCL(mg, Ex1, Ex2, &idx1, &idx2);
-    TestSysnumComputation(mg, Ex1, Ex2, &idx1, &idx2);
+    ExchangeCL Ex1, Ex2, ExXfem;
+    CreateExchangeCL(mg, Ex1, Ex2, ExXfem, &idx1, &idx2, &xfemidx);
+    TestCorrectnessExchangeCL(mg, Ex1, Ex2, ExXfem, &idx1, &idx2, &xfemidx);
+    TestSysnumComputation(mg, Ex1, Ex2, ExXfem, &idx1, &idx2, &xfemidx);
+return;
 
     if (ProcCL::IamMaster())
         std::cout << line << std::endl << " * Teste ExchangeBlockCL" << std::endl;

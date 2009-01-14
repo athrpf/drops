@@ -84,14 +84,22 @@ void ExchangeCL::CollectSendSysNums(const SimplexIterT& begin, const SimplexIter
 /// sysnums exits on the simplex) into the SendList_ and set flag in DistSysnum, that
 /// the sysnum is distributed.
 {
+    IdxT dof;
     Uint idx(RowIdx_->GetIdx());                                                    // index of the unknowns
     for (SimplexIterT sit(begin); sit!=end; ++sit){                                 // for all simplices
         if (!sit->IsLocal() && sit->Unknowns.Exist() && sit->Unknowns.Exist(idx)){  // check for distributed sysnum
+            dof= sit->Unknowns(idx);
             for (int *procList=sit->GetProcList(); *procList!=-1; procList+=2){     // for all processors, that owns the simplex too
                 if ( *procList!=ProcCL::MyRank() && *(procList+1)==PrioHasUnk ){    // if other processor stores unknowns
-                    SendList_[*procList].push_back(sit->Unknowns(idx));
+                    SendList_[*procList].push_back(dof);
                     for (Uint i=0; i<RowIdx_->NumUnknownsVertex(); ++i){             // remember, which sysnums are distributed
-                        DistSysnums[sit->Unknowns(idx)+i]= true;
+                        DistSysnums[dof+i]= true;
+                    }
+                    if ( RowIdx_->IsExtended() && RowIdx_->GetXidx()[dof]!=NoIdx ){  // if the index is extended and this dof is extended, send these extensions, too
+                        SendList_[*procList].push_back(RowIdx_->GetXidx()[dof]);
+                        for (Uint i=0; i<RowIdx_->NumUnknownsVertex(); ++i){
+                            DistSysnums[RowIdx_->GetXidx()[dof]+i]= true;
+                        }
                     }
                 }
             }
@@ -126,26 +134,32 @@ template <typename SimplexT>
     Uint idx=RowIdx_->GetIdx();
     int pos=0;
 
-    for (const_SendList2ProcIter it(SendList_.begin()), end(SendList_.end()); it!=end; ++it, ++pos){
-        *(buffer++)= (IdxT)ProcCL::MyRank();                        // from processor
-        *(buffer++)= (IdxT)it->first;                               // to processor
-        // unknown exist on simplex and processor
-        if (sp->Unknowns.Exist() && sp->Unknowns.Exist(idx)){
-            *(buffer++)= findPos(it->second, sp->Unknowns(idx));    // send position
-            *(buffer++)= sp->Unknowns(idx);                         // local sysnum
+    if (sp->Unknowns.Exist() && sp->Unknowns.Exist(idx)){
+        const IdxT dof= sp->Unknowns(idx);
+        for (const_SendList2ProcIter it(SendList_.begin()), end(SendList_.end()); it!=end; ++it, ++pos, buffer+= 6){
+            buffer[0]= (IdxT)ProcCL::MyRank();                        // from processor
+            buffer[1]= (IdxT)it->first;                               // to processor
+            buffer[2]= findPos(it->second, dof);    // send position
+            buffer[3]= dof;                         // local sysnum
+            if (RowIdx_->IsExtended(dof)){
+                buffer[4]= findPos(it->second, RowIdx_->GetXidx()[dof]);
+                buffer[5]= RowIdx_->GetXidx()[dof];
+            }
+            else {
+                buffer[4]= NoIdx;
+                buffer[5]= NoIdx;
+            }
         }
-        else{
-            *(buffer++)=NoIdx;
-            *(buffer++)=NoIdx;
-        }
-        Assert(pos<maxNeighs_, DROPSErrCL("ExchangeCL::HandlerGatherSysnums: To many neigh processors"), DebugParallelNumC);
+        Assert(pos<=maxNeighs_, DROPSErrCL("ExchangeCL::HandlerGatherSysnums: To many neigh processors"), DebugParallelNumC);
     }
     // Fill the rest of the buffer with dummy-values:
-    for (; pos<maxNeighs_; ++pos){
-        *(buffer++)= (IdxT)ProcCL::Size();
-        *(buffer++)= (IdxT)ProcCL::Size();
-        *(buffer++)= NoIdx;
-        *(buffer++)= NoIdx;
+    for (; pos<maxNeighs_; ++pos, buffer+= 6) {
+        buffer[0]= (IdxT)ProcCL::Size();
+        buffer[1]= (IdxT)ProcCL::Size();
+        buffer[2]= NoIdx;
+        buffer[3]= NoIdx;
+        buffer[4]= NoIdx;
+        buffer[5]= NoIdx;
     }
     return 0;
 }
@@ -169,13 +183,13 @@ template <typename SimplexT>
 
     // Check if there are unknowns on the simplex and processor
     if (sp->Unknowns.Exist() && sp->Unknowns.Exist(idx)){
-        for (int i=0; i<maxNeighs_; ++i){
+        for (int i=0; i<maxNeighs_; ++i, buffer+=6){
             // Check if this is the correct processor
-            if ( buffer[4*i+1]==myRank){
-                fromProc= buffer[4*i];                              // sending processor
-                if (buffer[4*i+2]!=NoIdx){
-                    sendPos = buffer[4*i+2]*RowIdx_->NumUnknownsVertex(); // position of DOF in messages
-                    remoteSysnum=buffer[4*i+3];                           // sysnum on sending processor
+            if ( buffer[1]==myRank){
+                fromProc= buffer[0];                              // sending processor
+                if (buffer[2]!=NoIdx){
+                    sendPos = buffer[2]*RowIdx_->NumUnknownsVertex(); // position of DOF in messages
+                    remoteSysnum=buffer[3];                           // sysnum on sending processor
                     localSysnum=sp->Unknowns(idx);                        // local sysnum
                     // put these information into the lists
                     for (Uint j=0; j<RowIdx_->NumUnknownsVertex(); ++j){
@@ -183,9 +197,21 @@ template <typename SimplexT>
                         tmpMappingIdx_[fromProc][localSysnum+j]= remoteSysnum +j;   // mapping (proc,localsysnum)->remote sysnum
                         tmpSysProc_[localSysnum+j].push_back(fromProc);             // mapping localsysnum->[processors, owning sysnum]
                     }
+                    // check if this is an extended dof
+                    if (RowIdx_->IsExtended() && buffer[4]!=NoIdx){
+                        Assert(RowIdx_->IsExtended(localSysnum), DROPSErrCL("ExchangeCL::HandlerScatterSysnums: Received extended dof to non-local extended dof"), DebugParallelNumC);
+                        sendPos = buffer[4]*RowIdx_->NumUnknownsVertex();
+                        remoteSysnum=buffer[5];
+                        localSysnum=RowIdx_->GetXidx()[localSysnum];
+                        for (Uint j=0; j<RowIdx_->NumUnknownsVertex(); ++j){
+                            RecvSysnums_[fromProc][sendPos+j]=localSysnum + j;
+                            tmpMappingIdx_[fromProc][localSysnum+j]= remoteSysnum +j;
+                            tmpSysProc_[localSysnum+j].push_back(fromProc);
+                        }
+                    }
                 }
                 else{
-                    throw DROPSErrCL("ExchangeCL::HandlerScatterSysnums: Recieved NoIdx as sendposition!");
+                    throw DROPSErrCL("ExchangeCL::HandlerScatterSysnums: Received NoIdx as sendposition!");
                 }
             }
         }

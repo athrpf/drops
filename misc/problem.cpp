@@ -3,6 +3,9 @@
 
 #include "misc/problem.h"
 #include "num/interfacePatch.h"
+#ifdef _PAR
+#  include "parallel/interface.h"
+#endif
 
 namespace DROPS
 {
@@ -359,7 +362,7 @@ void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
     extIdx_.DeleteXNumbering();
 }
 
-IdxT ExtIdxDescCL::UpdateXNumbering( const IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, bool NumberingChanged)
+IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, bool NumberingChanged)
 {
     const Uint sysnum= Idx->GetIdx(),
         level= Idx->TriangLevel();
@@ -416,8 +419,51 @@ IdxT ExtIdxDescCL::UpdateXNumbering( const IdxDescCL* Idx, const MultiGridCL& mg
                 }
         }
     }
+#ifdef _PAR
+    // communicate extended dofs on vertices
+    current_Idx_= Idx;
+    DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(),  // exchange datas over distributed vertices
+                   sizeof(bool),                    // number of datas to be exchanged
+                   HandlerGatherUpdateXNumbC,       // how to gather datas
+                   HandlerScatterUpdateXNumbC       // how to scatter datas
+                  );
+    current_Idx_= 0;
+    
+    // number all extended dofs from other procs (where extended dof is flagged by NoIdx-1)
+    for (size_t i=0; i<Xidx_.size(); ++i)
+        if (Xidx_[i] == NoIdx-1)
+            Xidx_[i]= extIdx++;
+#endif
     return extIdx;
 }
+
+#ifdef _PAR
+IdxDescCL* ExtIdxDescCL::current_Idx_= 0;
+
+int ExtIdxDescCL::HandlerGatherUpdateXNumb( DDD_OBJ objp, void* buf)
+{
+    VertexCL* const sp= ddd_cast<VertexCL*>(objp);
+    bool* buffer= static_cast<bool*>(buf);
+    if (sp->Unknowns.Exist(current_Idx_->GetIdx()))
+        *buffer= current_Idx_->IsExtended( sp->Unknowns(current_Idx_->GetIdx()));
+    else
+        *buffer= false;
+    return 0;
+}
+
+int ExtIdxDescCL::HandlerScatterUpdateXNumb( DDD_OBJ objp, void* buf)
+{
+    VertexCL* const sp= ddd_cast<VertexCL*>(objp);
+    bool RemoteExtended= *static_cast<bool*>(buf);
+    if (!sp->Unknowns.Exist(current_Idx_->GetIdx()))
+        return 0;
+    const IdxT dof= sp->Unknowns(current_Idx_->GetIdx());
+    
+    if (!current_Idx_->IsExtended( dof) && RemoteExtended)
+        current_Idx_->GetXidx()[dof]= NoIdx-1;
+    return 0;
+}
+#endif
 
 void ExtIdxDescCL::Old2New(VecDescCL* v)
 {

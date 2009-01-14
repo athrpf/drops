@@ -39,7 +39,7 @@ TestExchangePar: \
    ../partests/TestExchangePar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/fe.o ../num/interfacePatch.o \
-   ../partests/params.o
+   ../partests/params.o ../levelset/levelset.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestMGSerPar: \

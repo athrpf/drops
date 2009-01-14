@@ -54,10 +54,6 @@ class FE_InfoCL
     /// \brief Initialize with given FE-type \a fe
     void SetFE( FiniteElementT fe)
     {
-#ifdef _PAR
-        if ( fe==P1X_FE )
-            throw DROPSErrCL("FE_InfoCL:SetFE No XFEM implemented for parDROPS so far. Sorry");
-#endif
         NumUnknownsVertex_= NumUnknownsEdge_= NumUnknownsFace_= NumUnknownsTetra_= 0;
         switch(fe_= fe) {
             case P0_FE:          NumUnknownsTetra_= 1; break;
@@ -125,6 +121,9 @@ class ExtIdxDescCL
     double       omit_bound_; ///< constant for stabilization of XFEM, controls omission of extended DoFs
     ExtendedIdxT Xidx_;       ///< vector entries store index of extended DoF (or NoIdx if FE node is not extended)
     ExtendedIdxT Xidx_old_;   ///< old extended index, used by member function Old2New(...)
+#ifdef _PAR
+    static IdxDescCL* current_Idx_;  ///< for DDD handlers
+#endif
 
     ExtIdxDescCL( double omit_bound= 1./32. ) : omit_bound_( omit_bound ) {}
 
@@ -133,14 +132,14 @@ class ExtIdxDescCL
     /// Has to be called in two situations:
     /// - whenever level set function has changed to account for the moving interface (set \p NumberingChanged=false)
     /// - when numbering of index has changed, i.e. \p CreateNumbering was called before (set \p NumberingChanged=true)
-    IdxT UpdateXNumbering( const IdxDescCL*, const MultiGridCL&, const VecDescCL&, bool NumberingChanged= false );
+    IdxT UpdateXNumbering( IdxDescCL*, const MultiGridCL&, const VecDescCL&, bool NumberingChanged= false );
     /// \brief Delete extended numbering
     void DeleteXNumbering() { Xidx_.resize(0); Xidx_old_.resize(0); }
 
   public:
-        /// Get XFEM stabilization bound
+    /// Get XFEM stabilization bound
     double GetBound() const { return omit_bound_; }
-        /// Set XFEM stabilization bound
+    /// Set XFEM stabilization bound
     void   SetBound( double omit_bound ) { omit_bound_= omit_bound; }
     /// Get extended index for DoF \p i
     IdxT  operator[]( const IdxT i ) const { return Xidx_[i]; }
@@ -151,7 +150,21 @@ class ExtIdxDescCL
 
     /// \brief Replace vector entries to account for different numbering of extended DoFs after call of UpdateXNumbering(...)
     void Old2New( VecDescCL* );
+#ifdef _PAR
+    /// \brief Gather xdof information on a vertex (for DDD)
+    static int HandlerGatherUpdateXNumb ( DDD_OBJ objp, void* buf);
+    /// \brief Scatter xdof information on a vertex (for DDD)
+    static int HandlerScatterUpdateXNumb( DDD_OBJ objp, void* buf);
+#endif
 };
+
+#ifdef _PAR
+/// \name Wrapper for gathering and scattering data for ExtIdxDescCL::UpdateXNumbering
+//@{
+extern "C" inline int HandlerGatherUpdateXNumbC (DDD_OBJ objp, void* buf) { return ExtIdxDescCL::HandlerGatherUpdateXNumb ( objp, buf); }
+extern "C" inline int HandlerScatterUpdateXNumbC(DDD_OBJ objp, void* buf) { return ExtIdxDescCL::HandlerScatterUpdateXNumb( objp, buf); }
+//@}
+#endif
 
 /// \brief Mapping from the simplices in a triangulation to the components
 ///     of algebraic data-structures.
@@ -181,6 +194,8 @@ class IdxDescCL: public FE_InfoCL
     void CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls, double omit_bound= -1./*default to using all dof*/);
 
   public:
+    using FE_InfoCL::IsExtended;
+    
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
     IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=-99)
@@ -231,6 +246,9 @@ class IdxDescCL: public FE_InfoCL
     /// Has to be called whenever level set function has changed to account for the moving interface.
     void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
     { if (IsExtended()) NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false); }
+    /// \brief Returns true, if XFEM is used and standard DoF \p dof is extended.
+    bool IsExtended( IdxT dof) const
+    { return IsExtended() ? extIdx_[dof] != NoIdx : false; }
     /// \brief Mark unknown-indices as invalid.
     void DeleteNumbering( MultiGridCL& mg);
     /// \}
@@ -276,6 +294,9 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
     /// \brief Triangulation of the index.
     Uint TriangLevel() const { return this->GetFinest().TriangLevel(); }
 
+    /// \brief Returns true, if XFEM is used and standard DoF \p dof is extended.
+    bool IsExtended( IdxT dof) const { return this->GetFinest().IsExtended( dof); }
+    
     /// \brief total number of unknowns on the triangulation
     IdxT NumUnknowns() const { return this->GetFinest().NumUnknowns(); }
 

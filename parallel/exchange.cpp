@@ -164,25 +164,28 @@ void ExchangeCL::TransferSendOrder(bool CreateMap)
 /// are used. The messages consits of a list of four numbers:
 ///  (1) the number of the sending processor
 ///  (2) the number of the receiving processor
-///  (3) the position of the sysnum within the send process
-///  (4) and the local sysnum
+///  (3) the position of the sysnum on the send process
+///  (4) the local sysnum
+///  (5) the position of the extended sysnum on the send process
+///  (6) the local extended sysnum
 /// Unfortunately the DDD-Interface does not offer some information about the processor,
 /// which gather or scatters. So the massage has a size of maxNeighs (over all processors) *4.
 {
     numNeighs_= SendList_.size();
     maxNeighs_=GlobalMax((int)numNeighs_);
 
+    const int buffersize= 6 * maxNeighs_*sizeof(IdxT);
     // if there are unknowns on vertices
     if (RowIdx_->NumUnknownsVertex()>0){
         DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(),  // exchange datas over distributed vertices
-                       4*maxNeighs_*sizeof(IdxT),       // number of datas to be exchanged
+                       buffersize,                      // number of datas to be exchanged
                        HandlerGatherSysnumsVertexC,     // how to gather datas
                        HandlerScatterSysnumsVertexC     // how to scatter datas
                       );
     }
     if (RowIdx_->NumUnknownsEdge()>0){
         DDD_IFExchange(InterfaceCL<EdgeCL>::GetIF(),    // exchange datas over distributed edges
-                       4*maxNeighs_*sizeof(IdxT),       // number of datas to be exchanged
+                       buffersize,                      // number of datas to be exchanged
                        HandlerGatherSysnumsEdgeC,       // how to gather datas
                        HandlerScatterSysnumsEdgeC       // how to scatter datas
                       );
@@ -449,7 +452,7 @@ void ExchangeCL::DebugInfo(std::ostream &os) const
     os << "\n Indices of distributed sysnums ("<<DistrIndex.size()<<"):\n";
     for (size_t i=0; i<GetNumDistIdx(); ++i)
         os << DistrIndex[i] << " ";
-    os << "\n Exchnages between Procs:" <<std::endl;
+    os << "\n Exchanges between Procs:" <<std::endl;
     for (CommListCT::const_iterator it(ExList_.begin()), end(ExList_.end()); it!=end; ++it)
     {
         it->DebugInfo(os);
