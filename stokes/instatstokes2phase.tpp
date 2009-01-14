@@ -848,6 +848,26 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_p
 //                        InstatStokes2PhaseP2P1CL
 // =============================================================================
 
+// Create numbering
+// ----------------
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match)
+{
+    idx->CreateNumbering( level, _MG, _BndData.Vel, match);
+#ifdef _PAR
+    ex_.CreateList(_MG,static_cast<size_t>(velocity), idx);
+#endif
+}
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
+{
+    idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0);
+#ifdef _PAR
+    ex_.CreateList(_MG,static_cast<size_t>(pressure), idx);
+#endif
+}
+
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SmoothVel( VelVecDescCL* v, int num, double tau)
@@ -859,9 +879,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SmoothVel( VelVecDescCL* v, int num, doubl
 }
 
 template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass( MLMatDescCL* matM, const LevelsetP2CL& lset) const
 /// Needed for preconditioning of the Schur complement. Uses natural
 /// boundary conditions for the pressure unknowns.
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass( MLMatDescCL* matM, const LevelsetP2CL& lset) const
 {
     MLMatrixCL::iterator itM = matM->Data.begin();
     MLIdxDescCL::iterator itIdx = matM->RowIdx->begin();
@@ -934,7 +954,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::InitVel(VelVecDescCL* vec, instat_vector_f
 template <class CoeffT>
 void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, MatrixCL& M,
                       VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
-// Set up matrices A, M and rhs b (depending on phase bnd)
+/// Set up matrices A, M and rhs b (depending on phase bnd)
 {
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
@@ -950,8 +970,9 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
     const Uint lvl = RowIdx.TriangLevel();
 
     LocalNumbP2CL n;
-
+#ifndef _PAR
     std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
+#endif
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
@@ -1150,8 +1171,10 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
 
     mA.Build();
     mM.Build();
+#ifndef _PAR
     std::cerr << A.num_nonzeros() << " nonzeros in A, "
               << M.num_nonzeros() << " nonzeros in M! " << std::endl;
+#endif
 }
 
 template <class Coeff>
@@ -1166,7 +1189,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MLMatDescCL* A, MLMatDescCL*
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const
-// Set up rhs b (depending on phase bnd)
+/// Set up rhs b (depending on phase bnd)
 {
     const Uint lvl = b->GetLevel();
 
@@ -1237,7 +1260,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
 
 template <class CoeffT>
 void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
-// Set up the Laplace-Beltrami-matrix
+/// Set up the Laplace-Beltrami-matrix
 {
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
@@ -1247,9 +1270,9 @@ void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDa
     const Uint lvl = RowIdx.TriangLevel();
 
     LocalNumbP2CL n;
-
+#ifndef _PAR
     std::cerr << "entering SetupLB: " << num_unks_vel << " vels. ";
-
+#endif
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     LocalP2CL<Point3DCL> GradLP2[10];
 
@@ -1329,7 +1352,9 @@ void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDa
     }
 
     mA.Build();
+#ifndef _PAR
     std::cerr << A.num_nonzeros() << " nonzeros in A_LB" << std::endl;
+#endif
 }
 
 template <class Coeff>
@@ -1352,7 +1377,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
         itCol = B->ColIdx->GetFinestIter();
     for (size_t lvl=0; lvl < B->Data.size(); ++lvl, ++itB, ++itRow, ++itCol)
     {
+#ifndef _PAR
         std::cerr << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs. ";
+#endif
         switch (GetPrFE())
         {
             case P0_FE:
@@ -1366,7 +1393,9 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
             default:
                 throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
         }
+#ifndef _PAR
         std::cerr << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
+#endif
     }
 }
 
@@ -1472,6 +1501,10 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetIdx()
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetNumVelLvl( size_t n)
 {
+#ifdef _PAR
+    if (n>1)
+        throw DROPSErrCL("Multilevel not implemented in parallel DROPS yet, sorry");
+#endif
     match_fun match= _MG.GetBnd().GetMatchFun();
     vel_idx.resize( n, vecP2_FE, _BndData.Vel, match);
     A.Data.resize   (vel_idx.size());
@@ -1481,6 +1514,10 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetNumVelLvl( size_t n)
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetNumPrLvl( size_t n)
 {
+#ifdef _PAR
+    if (n>1)
+        throw DROPSErrCL("Multilevel not implemented in parallel DROPS yet, sorry");
+#endif
     match_fun match= _MG.GetBnd().GetMatchFun();
     const double bound = this->GetXidx().GetBound();
     pr_idx.resize( n, GetPrFE(),  _BndData.Pr, match, bound);
@@ -1521,6 +1558,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const Leve
 //*****************************************************************************
 //                               VelocityRepairCL
 //*****************************************************************************
+#ifndef _PAR
 template<class StokesT>
   inline void
   VelocityRepairCL<StokesT>::post_refine ()
@@ -1555,9 +1593,41 @@ template<class StokesT>
     stokes_.CreateNumberingVel( stokes_.GetMG().GetLastLevel(), &stokes_.vel_idx, *match);
 }
 
+#else
+
+template<class StokesT>
+  inline void VelocityRepairCL<StokesT>::pre_refine()
+{
+    pmg_.AttachTo(vecDescIdx_, &stokes_.v);
+}
+
+template<class StokesT>
+  inline void VelocityRepairCL<StokesT>::post_refine()
+{
+    VecDescCL loc_v;
+    MLIdxDescCL loc_vidx( vecP2_FE);
+    VecDescCL& v= stokes_.v;
+
+    stokes_.CreateNumberingVel( stokes_.GetMG().GetLastLevel(), &loc_vidx);
+    loc_v.SetIdx(&loc_vidx);
+
+    pmg_.HandleNewIdx(&stokes_.vel_idx, &loc_v);
+    RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
+    pmg_.CompleteRepair( &loc_v);
+
+    v.Clear();
+    v.RowIdx->DeleteNumbering( stokes_.GetMG());
+    stokes_.vel_idx.swap( loc_vidx);
+    v.SetIdx( &stokes_.vel_idx);
+    v.Data=loc_v.Data;
+}
+
+#endif          // end _PAR
+
 //*****************************************************************************
 //                               PressureRepairCL
 //*****************************************************************************
+#ifndef _PAR
 template<class StokesT>
   inline void
   PressureRepairCL<StokesT>::post_refine ()
@@ -1593,5 +1663,35 @@ template<class StokesT>
     (*p1xrepair_)();
     p1xrepair_.reset();
 }
+#else
+
+template<class StokesT>
+  inline void PressureRepairCL<StokesT>::pre_refine()
+{
+    pmg_.AttachTo(vecDescIdx_, &stokes_.p);
+}
+
+template<class StokesT>
+  inline void PressureRepairCL<StokesT>::post_refine()
+{
+    VecDescCL loc_p;
+    MLIdxDescCL loc_pidx( P1_FE);
+    VecDescCL& p= stokes_.p;
+
+    stokes_.CreateNumberingPr( stokes_.GetMG().GetLastLevel(), &loc_pidx);
+    loc_p.SetIdx(&loc_pidx);
+
+    pmg_.HandleNewIdx(&stokes_.pr_idx, &loc_p);
+    RepairAfterRefineP1( stokes_.GetPrSolution( p), loc_p);
+    pmg_.CompleteRepair( &loc_p);
+
+    p.Clear();
+    p.RowIdx->DeleteNumbering( stokes_.GetMG());
+    stokes_.pr_idx.swap( loc_pidx);
+    p.SetIdx( &stokes_.pr_idx);
+    p.Data=loc_p.Data;
+}
+
+#endif
 
 } // end of namespace DROPS

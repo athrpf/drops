@@ -11,8 +11,34 @@
 #include <vector>
 #include <numeric>
 
+#ifdef _PAR
+#  include "parallel/parallel.h"
+#endif
+
 namespace DROPS
 {
+/**************************************************************************************************
+* member functions to create and delete numbering
+**************************************************************************************************/
+template <class Coeff>
+void StokesP2P1CL<Coeff>::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match)
+{
+    idx->CreateNumbering( level, _MG, _BndData.Vel, match);
+#ifdef _PAR
+    ex_.CreateList(_MG, static_cast<size_t>(velocity), idx);
+#endif
+}
+
+
+template <class Coeff>
+void StokesP2P1CL<Coeff>::CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match)
+{
+    idx->CreateNumbering( level, _MG, _BndData.Pr, match);
+#ifdef _PAR
+    ex_.CreateList(_MG, static_cast<size_t>(pressure), idx);
+#endif
+}
+
 
 /**************************************************************************************************
 * member functions to handle with index descriptions
@@ -147,7 +173,8 @@ template <class CoeffT>
   void
   SetupSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const StokesBndDataCL& BndData, MatrixCL& matA,
                VelVecDescCL* vecA, MatrixCL& matB, VelVecDescCL* vecB, IdxDescCL& RowIdxA, IdxDescCL& RowIdxB, double t)
-// Sets up the stiffness matrices and right hand sides
+/// Sets up the stiffness matrices and right hand sides
+/// \todo (merge) No output "entering SetupSystem: ..." in parallel version. OK? Same question for all Setup procedures.
 {
     if ( vecA != 0)
     {
@@ -171,8 +198,9 @@ template <class CoeffT>
 
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-
+#ifndef _PAR
     std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
+#endif
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -287,12 +315,16 @@ template <class CoeffT>
                 }
         }
     }
+#ifndef _PAR
     std::cerr << "done: value part fill" << std::endl;
+#endif
 
     A.Build();
     B.Build();
+#ifndef _PAR
     std::cerr << matA.num_nonzeros() << " nonzeros in A, "
               << matB.num_nonzeros() << " nonzeros in B! " << std::endl;
+#endif
 }
 
 template <class Coeff>
@@ -314,9 +346,9 @@ template <class Coeff>
 }
 
 template <class CoeffT>
-void SetupStiffnessMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const StokesBndDataCL& BndData, 
+void SetupStiffnessMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const StokesBndDataCL& BndData,
                                 MatrixCL& matA, IdxDescCL& RowIdx)
-// Sets up the stiffness matrix.
+/// Sets up the stiffness matrix.
 {
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
     MatrixBuilderCL A(&matA, num_unks_vel, num_unks_vel);
@@ -326,7 +358,9 @@ void SetupStiffnessMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, cons
     bool IsOnDirBnd[10];
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
+#ifndef _PAR
     std::cerr << "entering SetupStiffnessMatrix: " <<num_unks_vel<<" vels, " << std::endl;
+#endif
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -369,9 +403,13 @@ void SetupStiffnessMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, cons
                 }
             }
     }
+#ifndef _PAR
     std::cerr << "done: value part fill" << std::endl;
+#endif
     A.Build();
+#ifndef _PAR
     std::cerr << matA.num_nonzeros() << " nonzeros in A. " << std::endl;
+#endif
 }
 
 template <class Coeff>
@@ -389,7 +427,7 @@ void StokesP2P1CL<Coeff>::SetupStiffnessMatrix(MLMatDescCL* matA) const
 template <class CoeffT>
   void
   SetupPrMass_P2P1( const MultiGridCL& MG, const CoeffT&, MatrixCL& matM, IdxDescCL& RowIdx)
-// Sets up the mass matrix for the pressure
+/// Sets up the mass matrix for the pressure
 {
     const IdxT num_unks_pr=  RowIdx.NumUnknowns();
 
@@ -430,7 +468,7 @@ void StokesP2P1CL<Coeff>::SetupPrMass(MLMatDescCL* matM) const
 template <class CoeffT>
 void SetupInstatSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const StokesBndDataCL& BndData,
                              MatrixCL& matA, MatrixCL& matB, MatrixCL& matI, IdxDescCL& RowIdxA, IdxDescCL& RowIdxB)
-// Sets up the stiffness matrices and right hand sides
+/// Sets up the stiffness matrices and right hand sides
 {
     const IdxT num_unks_vel= RowIdxA.NumUnknowns();
     const IdxT num_unks_pr=  RowIdxB.NumUnknowns();
@@ -448,8 +486,9 @@ void SetupInstatSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const S
 
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
-
+#ifndef _PAR
     std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
+#endif
 
     // fill value part of matrices
     Quad2CL<Point3DCL> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -527,14 +566,18 @@ void SetupInstatSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const S
                 } // else put coupling on rhs
         }
     }
+#ifndef _PAR
     std::cerr << "done: value part fill" << std::endl;
+#endif
 
     A.Build();
     B.Build();
     I.Build();
+#ifndef _PAR
     std::cerr << matA.num_nonzeros() << " nonzeros in A, "
               << matB.num_nonzeros() << " nonzeros in B, "
               << matI.num_nonzeros() << " nonzeros in I! " << std::endl;
+#endif
 }
 
 template<class Coeff>
@@ -552,12 +595,20 @@ template <class Coeff>
 void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB,
                                                 VelVecDescCL* vecI, double tA,
                                                 VelVecDescCL* vecf, double tf) const
-// Sets up the couplings with hat fcts on bnd (for matrices A, I) and discretizes the PDE coeff f(t)
+/// Sets up the couplings with hat fcts on bnd (for matrices A, I) and discretizes the PDE coeff f(t)
 {
     vecA->Clear();
     vecB->Clear();
     vecf->Clear();
     vecI->Clear();
+
+#ifndef _PAR
+    __UNUSED__ const IdxT allnum_unks_vel= vecA->RowIdx->NumUnknowns();
+#else
+    __UNUSED__ const IdxT allnum_unks_vel= GlobalSum(vecA->RowIdx->NumUnknowns());
+#endif
+    Comment("entering StokesP2P1CL::SetupInstatSystem: "<<allnum_unks_vel<< " velocity unknowns.\n", DebugDiscretizeC);
+
 
     VectorCL& a    = vecA->Data;
     VectorCL& c    = vecB->Data;
@@ -689,7 +740,9 @@ void SetupMassMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const Sto
     bool IsOnDirBnd[10];
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
+#ifndef _PAR
     std::cerr << "entering SetupMass: " << num_unks_vel << " vels, " << std::endl;
+#endif
 
     // fill value part of matrices
     double absdet, coupMass[10][10];
@@ -728,9 +781,13 @@ void SetupMassMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const Sto
             }
 
     }
+#ifndef _PAR
     std::cerr << "done: value part fill" << std::endl;
+#endif
     I.Build();
+#ifndef _PAR
     std::cerr << matI.num_nonzeros() << " nonzeros in M! " << std::endl;
+#endif
 }
 
 template <class Coeff>
@@ -781,16 +838,29 @@ template <class Coeff>
 void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDescCL* lsgpr,
     instat_vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
 {
+#ifdef _PAR
+    const ExchangeCL& exV = GetEx(velocity);
+    const ExchangeCL& exP = GetEx(pressure);
+#endif
     double mindiff=0, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel();
 
     VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
     VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
+#ifndef _PAR
     const double norm_res1      = norm(res1);
     const double norm_res2      = norm(res2);
     const double norm_sup_res_1 = supnorm(res1);
     const double norm_sup_res_2 = supnorm(res2);
+#else
+    VectorCL res1_acc(res1);
+    VectorCL res2_acc(res2);
+    const double norm_res1      = std::sqrt(exV.ParDotAcc(res1_acc,res1));
+    const double norm_res2      = std::sqrt(exP.ParDotAcc(res2_acc,res2));
+    const double norm_sup_res_1 = GlobalMax(supnorm(res1_acc));
+    const double norm_sup_res_2 = GlobalMax(supnorm(res2_acc));
+#endif
 
     IF_MASTER
         std::cerr << "\nChecken der Loesung..."
@@ -824,6 +894,10 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         L1_div+= ( (std::fabs(div[0])+std::fabs(div[1])+std::fabs(div[2])+std::fabs(div[3]))/120 + std::fabs(div[4])*2./15. ) * absdet;
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
+#ifdef _PAR
+    L2_div = GlobalSum(L2_div);
+    L1_div = GlobalSum(L1_div);
+#endif
     L2_div= std::sqrt(L2_div);
 
     IF_MASTER
@@ -847,6 +921,10 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         MW_pr+= Quad3CL::Quad(pvals)*volT*6.;
         vol+= volT;
     }
+#ifdef _PAR
+    vol   = GlobalSum(vol);
+    MW_pr = GlobalSum(MW_pr);
+#endif
     const double c_pr= MW_pr/vol;
     IF_MASTER
         std::cerr << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
@@ -894,6 +972,11 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         L2_vel+= Quad3CL::Quad(vals)*absdet;
         L2_Dvel+= Quad3CL::Quad(Dvals)*absdet;
     }
+#ifdef _PAR
+    L2_pr   = GlobalSum(L2_pr);
+    L2_vel  = GlobalSum(L2_pr);
+    L2_Dvel = GlobalSum(L2_pr);
+#endif
     const double X_norm= std::sqrt(L2_pr + L2_vel + L2_Dvel);
     L2_pr= std::sqrt(L2_pr);
     L2_vel= std::sqrt(L2_vel);
@@ -963,6 +1046,10 @@ template <class Coeff>
         L1_div+= ( (std::fabs(div[0])+std::fabs(div[1])+std::fabs(div[2])+std::fabs(div[3]))/120 + std::fabs(div[4])*2./15. ) * absdet;
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
+#ifdef _PAR
+    L2_div= GlobalSum(L2_div);
+    L1_div= GlobalSum(L1_div);
+#endif
     L2_div= std::sqrt(L2_div);
 
     IF_MASTER
@@ -1034,6 +1121,14 @@ template <class Coeff>
             L2_vel+= sum;
         }
     }
+#ifdef _PAR
+    double loc_vel[6], global_vel[6];
+    loc_vel[0]=L1_vel[0]; loc_vel[1]=L1_vel[1]; loc_vel[2]=L1_vel[2];
+    loc_vel[3]=L2_vel[0]; loc_vel[4]=L2_vel[1]; loc_vel[5]=L2_vel[2];
+    GlobalSum(loc_vel, global_vel, 6, Drops_MasterC);
+    L1_vel[0]=global_vel[0]; L1_vel[1]=global_vel[1]; L1_vel[2]=global_vel[2];
+    L2_vel[0]=global_vel[3]; L2_vel[1]=global_vel[4]; L2_vel[2]=global_vel[5];
+#endif
     L2_vel= sqrt(L2_vel);
     IF_MASTER
         std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:"
@@ -1059,6 +1154,10 @@ template <class Coeff>
         MW_pr+= sum * sit->GetVolume()*6.;
         vol+= sit->GetVolume();
     }
+#ifdef _PAR
+    MW_pr= GlobalSum(MW_pr);
+    vol  = GlobalSum(vol);
+#endif
     const double c_pr= MW_pr / vol;
     IF_MASTER
         std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
@@ -1077,14 +1176,20 @@ template <class Coeff>
             mindiff= diff;
     }
     size_t pr_size= lsgpr->Data.size();
+#ifdef _PAR
+    pr_size= GlobalSum(pr_size);
+    norm2  = GlobalSum(norm2);
+#endif
     norm2= std::sqrt( norm2 / pr_size);
 
+#ifndef _PAR
     if (maxvert)
     {
         std::cerr << "Maximaler Druckfehler: ";
         maxvert->DebugInfo( std::cerr);
         std::cerr << std::endl;
     }
+#endif
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -1101,6 +1206,12 @@ template <class Coeff>
         L2_pr+= sum * sit->GetVolume()*6.;
         L1_pr+= sum1 * sit->GetVolume()*6.;
     }
+#ifdef _PAR
+    L2_pr  = GlobalSum(L2_pr);
+    L1_pr  = GlobalSum(L1_pr);
+    mindiff= GlobalMin(mindiff);
+    maxdiff= GlobalMax(maxdiff);
+#endif
     L2_pr= std::sqrt( L2_pr);
 
     IF_MASTER
@@ -1111,6 +1222,7 @@ template <class Coeff>
                   << "\nDifferenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
 
+#ifndef _PAR
 template <class Coeff>
   double
   StokesP2P1CL<Coeff>::ResidualErrEstimator(const TetraCL& s, const const_DiscPrSolCL& pr,
@@ -1216,10 +1328,15 @@ template <class Coeff>
     delete[] vals;
     return err_sq;
 }
+#endif // end of ifndef _PAR
 
 template <class Coeff>
 void StokesP2P1CL<Coeff>::SetNumVelLvl( size_t n)
 {
+#ifdef _PAR
+    if (n>1)
+        throw DROPSErrCL("StokesP2P1CL::SetNumVelLvl: Multilevel not implemented in parallel DROPS, yet, sorry");
+#endif
     match_fun match= _MG.GetBnd().GetMatchFun();
     vel_idx.resize( n, vecP2_FE, _BndData.Vel, match);
     A.Data.resize ( vel_idx.size());
@@ -1229,6 +1346,10 @@ void StokesP2P1CL<Coeff>::SetNumVelLvl( size_t n)
 template <class Coeff>
 void StokesP2P1CL<Coeff>::SetNumPrLvl( size_t n)
 {
+#ifdef _PAR
+    if (n>1)
+        throw DROPSErrCL("StokesP2P1CL::SetNumVelLvl: Multilevel not implemented in parallel DROPS, yet, sorry");
+#endif
     match_fun match= _MG.GetBnd().GetMatchFun();
     pr_idx.resize( n, P1_FE,  _BndData.Pr, match);
     B.Data.resize( pr_idx.size());
@@ -1238,6 +1359,7 @@ void StokesP2P1CL<Coeff>::SetNumPrLvl( size_t n)
 //**************P1Bubble-P1 - discretisation***************************
 //*********************************************************************
 
+#ifndef _PAR
 //
 template <class Coeff>
 void StokesP1BubbleP1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scalar_fun_ptr LsgPr) const
@@ -1464,7 +1586,7 @@ void SetupSystem_P1BubbleP1( const MultiGridCL& MG, const CoeffT& Coeff, const S
               << matB.num_nonzeros() << " nonzeros in B! " << std::endl;
 }
 
-  
+
 template <class Coeff>
 void StokesP1BubbleP1CL<Coeff>::SetupSystem(MLMatDescCL* matA, VelVecDescCL* vecA, MLMatDescCL* matB, VelVecDescCL* vecB) const
 {
@@ -1850,5 +1972,5 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
               << " L1-Norm= " << L1_pr << std::endl
               << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
-
+#endif // end of ifndef _PAR
 } // end of namespace DROPS

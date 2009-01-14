@@ -1,0 +1,71 @@
+#=============================================================
+#    DROPS parameter file for TestIStokesPar
+#    Testroutines for solving the instationaeres Stokes Problem
+#=============================================================
+
+Stokes{
+  nu        = 1.0      # coeff of the difffusion
+}
+
+ExpData{
+  InflowVel = -0.05    # max vel of inflow
+  g         = 0 0 0    # gravity (a.t.m. not used)
+  Frequence = 30       # frequence of inflow
+  Amplitude = 0.1      # amplitude of inflow
+}
+
+Time{
+ TimeSteps  = 2
+ StepSize   = 5e-4
+ Theta      = 0.5
+}
+
+Refining {
+  BasicRefX   = 6       # number of basic refines in x direction
+  BasicRefY   = 32      # number of basic refines in y direction
+  BasicRefZ   = 6       # number of basic refines in z direction
+  dx          = 7e-3    # dimension of the brick in x direction
+  dy          = 0.03    # dimension of the brick in y direction
+  dz          = 7e-3    # dimension of the brick in z direction
+  RefAll      = 1       # regular refinement
+}
+
+LoadBalancing{
+ RefineStrategy =   1  # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
+}
+
+Solver{
+  Relax     = 1          # Relaxiation-Parameter for the preconditioner
+  PCIter    = 1          # for special PCs #not used a.t.m.
+  PCRelTol  = -1         # for special PCs #not used a.t.m.
+  Reduction = 0.1        # Reduction       #not used a.t.m.
+  InnerIter = 2000       # max iterations for the inner solver
+  InnerTol  = 1e-12      # toleration for the inner solver
+  OuterIter = 2000       # max iterations for the outer solver
+  OuterTol  = 1e-7       # toleration for the outer solver
+  Restart   = 75         # if solver==GMRES, dimension of Krylov subspace, solver==GCR , truncation
+  Relative  = 0          # meassure resid relative
+  Accur     = 1          # use accur variant for inner product and norm computations
+}
+
+# Ensight settings
+Ensight {
+    EnsightOut  = 0
+    EnsCase     = Stokes
+    EnsDir      = ensight
+    Binary      = 0
+    MasterOut   = 1
+    GeomName    = Brick
+}
+
+#VTK output
+VTK{
+    VTKOut      = 0
+    VTKDir      = vtk
+    VTKName     = Stokes
+    Binary      = 0
+}
+
+Misc{
+  PrintInfo = 0
+}

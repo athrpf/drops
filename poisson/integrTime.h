@@ -3,6 +3,7 @@
 // Content: classes that perform time-integration steps                    *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
 //          IGPM RWTH Aachen                                               *
+//          Oliver Fortmeier, SC RWTH Aachen                               *
 // Version: 0.1                                                            *
 // History: begin - Nov, 26 2002                                           *
 //**************************************************************************
@@ -12,7 +13,8 @@
 
 #include "misc/problem.h"
 
-// TODO: FracStepScheme fuer instat. Poisson
+/// \file
+/// \todo FracStepScheme fuer instat. Poisson
 
 
 namespace DROPS

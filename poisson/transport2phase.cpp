@@ -161,10 +161,11 @@ void TransportP1CL::SetupInstatSystem (MLMatDescCL& matA, VecDescCL& cplA,
     MLMatrixCL::iterator itM = matM.Data.begin();
     MLMatrixCL::iterator itC = matC.Data.begin();
     MLIdxDescCL::iterator it = matA.RowIdx->begin();
-    // We assume that there is at least one level.
-    for (size_t lvl= 0; lvl < matA.Data.size() - 1; ++lvl, ++itA, ++itM, ++itC, ++it)
-        SetupInstatSystem (*itA, 0, *itM, 0, *itC, 0, *it, time);
-    SetupInstatSystem( *itA, &cplA, *itM, &cplM, *itC, &cplC, *it, time);
+    for (size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itA, ++itM, ++itC, ++it)
+        if (lvl != 0)
+            SetupInstatSystem (*itA, &cplA, *itM, &cplM, *itC, &cplC, *it, time);
+        else
+            SetupInstatSystem (*itA, 0, *itM, 0, *itC, 0, *it, time);
 }
 
 void TransportP1CL::Update()

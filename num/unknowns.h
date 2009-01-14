@@ -30,6 +30,12 @@ class UnknownIdxCL
 {
   private:
     std::vector<IdxT> _Idx;
+#ifdef _PAR
+    // This flag array is used for remebering if an unknowns has just been recieved
+    // or if the unknown has been exist before the refinement and migration
+    // algorithm has been performed. (sorry for the missleading name giving)
+    mutable std::vector<bool> UnkRecieved_;
+#endif
 
   public:
     UnknownIdxCL( Uint numsys) : _Idx( numsys, NoIdx) {}
@@ -56,6 +62,45 @@ class UnknownIdxCL
     }
 
     void push_back(IdxT idx= NoIdx) { _Idx.push_back( idx); }
+
+#ifdef _PAR
+    void SetUnkRecv(IdxT i) const
+    {
+        if (UnkRecieved_.size()<=i)
+            UnkRecieved_.resize(i+1,false);
+        UnkRecieved_[i]=true;
+    }
+
+    bool GetUnkRecv(IdxT i) const
+    {
+        if (UnkRecieved_.size()<=i)
+            return false;
+        else
+            return UnkRecieved_[i];
+    }
+
+    void ResetUnkRecv()
+    {
+        for (Uint i=0; i<UnkRecieved_.size(); ++i)
+            ResetUnkRecv(i);
+        UnkRecieved_.resize(0);
+    }
+
+    void ResetUnkRecv( IdxT i )
+    {
+        if (UnkRecieved_.size()<=i)
+            return;
+        UnkRecieved_[i]=false;
+    }
+
+    bool HasUnkRecv() const
+    {
+        for (Uint i=0; i<UnkRecieved_.size(); ++i)
+            if (UnkRecieved_[i])
+                return true;
+        return false;
+    }
+#endif
 };
 
 
@@ -121,6 +166,40 @@ class UnknownHandleCL
         else if ( !(sysnum < _unk->GetNumSystems()) )
             _unk->resize( sysnum+1, NoIdx);
     }
+
+#ifdef _PAR
+    /// Remember if an unknown of an index is just recieved
+    void SetUnkRecieved( IdxT i ) const
+    {
+        Assert(_unk!=0, DROPSErrCL("UnknownHandleCL: Cannot set UnkRecieved before this class is init"), DebugUnknownsC | DebugParallelC);
+        _unk->SetUnkRecv(i);
+    }
+    /// Get information if the unknown of the index is recieved
+    bool UnkRecieved( IdxT i ) const
+    {
+        return _unk && _unk->GetUnkRecv(i);
+    }
+    /// Forget about the recieved information about all unknowns
+    void ResetUnkRecieved() const
+    {
+        if (_unk!=0)
+            _unk->ResetUnkRecv();
+    }
+    /// Forget about the recieved information about one index
+    void ResetUnkRecieved( IdxT i) const
+    {
+        if (_unk!=0)
+            _unk->ResetUnkRecv(i);
+    }
+    /// For Debugging Purpose: Check if there is an UnkRecv-Flag
+    bool HasUnkRecieved() const
+    {
+        if (_unk==0)
+            return false;
+        else
+            return _unk->HasUnkRecv();
+    }
+#endif
 };
 
 } // end of namespace DROPS

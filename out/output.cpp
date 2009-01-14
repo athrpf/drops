@@ -7,6 +7,9 @@
 //**************************************************************************
 
 #include "out/output.h"
+#ifdef _PAR
+#  include "parallel/parallel.h"
+#endif
 
 namespace DROPS
 {
@@ -19,10 +22,24 @@ std::ostream& GeomMGOutCL::put(std::ostream &os) const
          {" 1 1 0"}, {" 0.5 0 0"}, {" 0 0.5 0"}, {" 0 0 0.5"}, {" 0 0.5 0.5"}};
     Point3DCL GlobalOffset( 0.0);
 
+#ifdef _PAR
+    int me= ProcCL::MyRank(), numverts= 0;
+
+    for (MultiGridCL::const_TriangVertexIteratorCL it= _MG->GetTriangVertexBegin(), end= _MG->GetTriangVertexEnd();
+            it!=end; ++it, ++numverts)
+        GlobalOffset+= it->GetCoord();
+    GlobalOffset*= _procExplode/numverts;
+#endif
+
     os << "LIST {\n";
     for ( MultiGridCL::const_TriangTetraIteratorCL tit=_MG->GetTriangTetraBegin(_level); tit!=_MG->GetTriangTetraEnd(_level); ++tit )
     {
+#ifdef _PAR
+        if ( _onlyBnd && !(tit->IsBndSeg(0) || tit->IsBndSeg(1) || tit->IsBndSeg(2) || tit->IsBndSeg(3)
+                        || tit->IsProcBnd(0) || tit->IsProcBnd(1) || tit->IsProcBnd(2) || tit->IsProcBnd(3)) )
+#else
         if ( _onlyBnd && !(tit->IsBndSeg(0) || tit->IsBndSeg(1) || tit->IsBndSeg(2) || tit->IsBndSeg(3)) )
+#endif
             continue;
 //        if (GetBaryCenter(*tit)[0]>0.5) continue;
 
@@ -37,6 +54,15 @@ std::ostream& GeomMGOutCL::put(std::ostream &os) const
             for ( int j=0; j<3; j++ )
                 os << Offset[j]+tit->GetVertex(i)->GetCoord()[j] << (j<2?" ":"\n");
 
+#ifdef _PAR
+        if (_procExplode)
+            os <<   "3 1 2 3" << Color[me%10]
+               << "\n3 0 2 3" << Color[me%10]
+               << "\n3 0 1 3" << Color[me%10]
+               << "\n3 0 1 2" << Color[me%10]
+               << "\n}\n";
+        else
+#endif
         os <<   "3 1 2 3" << (tit->IsBndSeg(0)?Color[tit->GetBndIdx(0)%NumColors]:" 0.7 0.7 0.7")
            << "\n3 0 2 3" << (tit->IsBndSeg(1)?Color[tit->GetBndIdx(1)%NumColors]:" 0.7 0.7 0.7")
            << "\n3 0 1 3" << (tit->IsBndSeg(2)?Color[tit->GetBndIdx(2)%NumColors]:" 0.7 0.7 0.7")

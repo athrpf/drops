@@ -48,7 +48,12 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL A;
 
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), idx( P1_FE) {}
+        : _base( mgb, coeff, bdata), idx( P1_FE)
+    {
+#ifdef _PAR
+        throw DROPSErrCL("This class has not been parallelized yes, sorry");
+#endif
+    }
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData, match); }
@@ -99,7 +104,12 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
-                const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE) {}
+                const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE)
+    {
+#ifdef _PAR
+        throw DROPSErrCL("This class has not been parallelized yes, sorry");
+#endif
+    }
 
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
@@ -144,7 +154,11 @@ class PoissonErrEstCL
                       _ProblemCL& problem, std::ostream* osp= &std::cout)
         : _InitGlobErr(0), _RelReduction(RelReduction), _ConvExponent(ConvExp), _Meas(Meas), _ActGlobErr(-1), _Estimator(est),
           _Problem(problem), _NumLastMarkedForRef(0), _NumLastMarkedForDel(0), _DoMark(DoMark), _outp(osp)
-        {}
+        {
+#ifdef _PAR
+            throw DROPSErrCL("This class has not been parallelized yes, sorry");
+#endif
+        }
     // default assignment-op, copy-ctor, dtor
 
     template <class _BndData, class _VD>
@@ -186,7 +200,11 @@ class DoerflerMarkCL
                      _ProblemCL& problem, std::ostream* osp= &std::cout)
         : _InitGlobErr(0), _RelReduction(RelReduction), _min_tetra_ratio(min_ratio), _Threshold(Threshold), _Meas(Meas), _ActGlobErr(-1), _Estimator(est),
           _Problem(problem), _NumLastMarkedForRef(0), _NumLastMarkedForDel(0), _DoMark(DoMark), _outp(osp)
-        {}
+        {
+#ifdef _PAR
+            throw DROPSErrCL("This class has not been parallelized yes, sorry");
+#endif
+        }
     // default assignment-op, copy-ctor, dtor
 
     template <class _BndData, class _VD>

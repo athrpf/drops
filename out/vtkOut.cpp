@@ -133,10 +133,10 @@ void VTKOutCL::GatherCoord(VectorBaseCL<Uint>& gidList, VectorBaseCL<float>& coo
     Uint numExclusive=0;
 
     for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it)
-        if (it->IsExclusive())
+        if (AmIResponsible(*it))
             ++numExclusive;
     for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it)
-        if (it->IsExclusive())
+        if (AmIResponsible(*it))
             ++numExclusive;
     // allocate memory for gids and coords
     gidList.resize(numExclusive);
@@ -146,30 +146,29 @@ void VTKOutCL::GatherCoord(VectorBaseCL<Uint>& gidList, VectorBaseCL<float>& coo
     Uint pos=0;
 
     // Gather Coords of vertices
-    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it)
-        if (it->IsExclusive())
-        {
+    for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
+        if (AmIResponsible(*it)){
             gidList[pos]= it->GetGID();
             for (int i=0; i<3; ++i)
                 coordList[3*pos+i]= (float)it->GetCoord()[i];
             ++pos;
         }
+    }
 
     // Gather Coords of edges
     Point3DCL baryCenter;
-    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it)
-        if (it->IsExclusive())
-        {
+    for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
+        if (AmIResponsible(*it)){
             gidList[pos]= it->GetGID();
             baryCenter= GetBaryCenter(*it);
             for (int i=0; i<3; ++i)
                 coordList[3*pos+i]= (float)baryCenter[i];
             ++pos;
         }
+    }
 }
-#endif
 
-#ifdef _PAR
+
 void VTKOutCL::CommunicateCoords(const VectorBaseCL<Uint>& gidList, const VectorBaseCL<float>& coordList)
 /** <p> In sequential mode: Copy local list into global list and use the
     index-describer to map vertices/edges to an id.</p>
@@ -183,11 +182,11 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<Uint>& gidList, const Vector
 
     // Workers send gids and coords to master
     if (!ProcCL::IamMaster()){
-        MPI::Request req_gid  = MPI::COMM_WORLD.Isend(Addr(gidList),   gidList.size(),   MPI::UNSIGNED, ProcCL::Master(), tag_);
-        MPI::Request req_coord= MPI::COMM_WORLD.Isend(Addr(coordList), coordList.size(), MPI::FLOAT,    ProcCL::Master(), tag_+1);
+        std::valarray<ProcCL::RequestT> req(2);
+        req[0]= ProcCL::Isend(gidList,   ProcCL::Master(), tag_);
+        req[1]= ProcCL::Isend(coordList, ProcCL::Master(), tag_+1);
 
-        req_gid.Wait();
-        req_coord.Wait();
+        ProcCL::WaitAll(req);
     }
 
     // Master store all values
@@ -203,13 +202,13 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<Uint>& gidList, const Vector
 
             if (p!=ProcCL::MyRank()){   // if not master himself
                  // Get number of recieved gids and coord
-                MPI::Status stat;
-                MPI::COMM_WORLD.Probe(p, tag_, stat);
-                recieved = stat.Get_count(MPI::UNSIGNED);
+                ProcCL::StatusT stat;
+                ProcCL::Probe(p, tag_, stat);
+                recieved = ProcCL::GetCount<Uint>(stat);
 
                 // Recieve GIDs and Coords
-                MPI::COMM_WORLD.Recv(recvGID, recieved, MPI::UNSIGNED, p, tag_, stat);
-                MPI::COMM_WORLD.Recv(Addr(coords_)+recievePos, 3*recieved, MPI::FLOAT, p, tag_+1, stat);
+                ProcCL::Recv(recvGID, recieved, p, tag_);
+                ProcCL::Recv(Addr(coords_)+recievePos, 3*recieved, p, tag_+1);
                 recievePos+=3*recieved;
 
                 // Assign each GID a number
@@ -229,7 +228,7 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<Uint>& gidList, const Vector
         delete[] recvGID;
     }
 }
-#endif
+#endif          // end of _PAR
 
 void VTKOutCL::WriteCoords()
 /** The master writes out the coordinates. */
@@ -294,9 +293,10 @@ void VTKOutCL::GatherTetra()
     }
     Assert(counter==4*numTetras_, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetras"), ~0);
 }
-#endif
 
-#ifdef _PAR
+
+#else           // _PAR
+
 void VTKOutCL::GatherTetra(VectorBaseCL<Uint>& locConnectList) const
 /** Gather connectivities of local tetras in a field. This function is only
     present in the parallel version of DROPS.
@@ -330,10 +330,8 @@ void VTKOutCL::GatherTetra(VectorBaseCL<Uint>& locConnectList) const
     }
     Assert(pos==4*numTetra, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetras"), ~0);
 }
-#endif
 
 
-#ifdef _PAR
 void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
 /** Send all local connectivities to master or copy in sequiental mode.*/
 {
@@ -342,8 +340,8 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
 
     // Workers send tetra list to master
     if (!ProcCL::IamMaster()){
-        MPI::Request req_tetra  = MPI::COMM_WORLD.Isend(Addr(locConnectList), locConnectList.size(), MPI::UNSIGNED, ProcCL::Master(), tag_+2);
-        req_tetra.Wait();
+        ProcCL::RequestT req_tetra  = ProcCL::Isend(locConnectList, ProcCL::Master(), tag_+2);
+        ProcCL::Wait(req_tetra);
     }
 
     // Recieve lists
@@ -359,12 +357,12 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
             if (p!=ProcCL::MyRank()){               // if not master
 
                 // Get number of recieved tetras
-                MPI::Status stat;
-                MPI::COMM_WORLD.Probe(p, tag_+2, stat);
-                recieved = stat.Get_count(MPI::UNSIGNED);
+                ProcCL::StatusT stat;
+                ProcCL::Probe(p, tag_+2, stat);
+                recieved = ProcCL::GetCount<Uint>(stat);
 
                 // Recieve tetras
-                MPI::COMM_WORLD.Recv(Addr(tetras_)+recievePos, recieved, MPI::UNSIGNED, p, tag_+2, stat);
+                ProcCL::Recv(Addr(tetras_)+recievePos, recieved, p, tag_+2);
                 recievePos+= recieved;
             }
             else{                                   // master: store local array in recieve array
@@ -374,7 +372,7 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
         }
     }
 }
-#endif
+#endif          // of _PAR
 
 void VTKOutCL::WriteTetra()
 /** Write tetras into the vtk file*/
@@ -444,8 +442,8 @@ void VTKOutCL::CommunicateValues(const VectorBaseCL<float>& locData, VectorBaseC
 {
     // worker processes send data to master
     if (!ProcCL::IamMaster()){
-        MPI::Request req_values= MPI::COMM_WORLD.Isend(Addr(locData), locData.size(), MPI::FLOAT, ProcCL::Master(), tag_);
-        req_values.Wait();
+        ProcCL::RequestT req_values= ProcCL::Isend(locData, ProcCL::Master(), tag_);
+        ProcCL::Wait(req_values);
     }
 
     // master collect all data
@@ -460,12 +458,12 @@ void VTKOutCL::CommunicateValues(const VectorBaseCL<float>& locData, VectorBaseC
 
             if(p!=ProcCL::MyRank()){                // recieve from worker
                 // Get number of recieved values
-                MPI::Status stat;
-                MPI::COMM_WORLD.Probe(p, tag_, stat);
-                recieved = stat.Get_count(MPI::FLOAT);
+                ProcCL::StatusT stat;
+                ProcCL::Probe(p, tag_, stat);
+                recieved = ProcCL::GetCount<float>(stat);
 
                 // Recieve values
-                MPI::COMM_WORLD.Recv(Addr(allData)+recievePos, recieved, MPI::UNSIGNED, p, tag_, stat);
+                ProcCL::Recv(Addr(allData)+recievePos, recieved, p, tag_);
                 recievePos+= recieved;
             }
             else{                                   // copy local data

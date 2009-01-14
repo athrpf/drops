@@ -1,0 +1,41 @@
+#=============================================================
+#    DROPS parameter file for    TestFilmPar
+#    Solving of a convection-diffusion-problem
+#=============================================================
+
+# Describing the pde
+Material{
+  KineticViscosity  = 1.004e-6      # [m^2/s] kinetic viscosity
+#  HeatConductivity  = 0.1434e-6    # [m^2/s] heat conductivity
+  HeatConductivity  = 1             # [m^2/s] heat conductivity
+  InflowTemperature = 300.          # [°K] Inflow temperature (from left)
+  WallTemperature   = 350.          # [°K] Walltemperature (down)
+  g                 = 0 9.81 0      # [Nm] Gravity
+}
+
+# Geometry information
+Geometry{
+  Dim         = 100e-3 0.25e-3 30e-3# [m] Dimension of the brick
+  nx          = 100                 # Number of gridpoints in x (left-right) direction
+  ny          = 3                   # Number of gridpoints in y (up-down)    direction
+  nz          = 30                  # Number of gridpoints in z (front-back) direction
+  Refine      = 0                   # Number of Refinements
+}
+
+# choose one solver of the pool of solvers
+Solver {
+  Relax       = 1               # relaxiation parameter for the preconditioner
+  Iter        = 1000            # number of maximal iterations for solver
+  Tol         = 1e-12           # tolerace for the residuum
+  Restart     = 50              # dimension of Krylov subspace if solver is GMRES or truncation-parameter, if solver is GCR
+  UseMGS      = 1               # use modified Gramm-Schmidt for GMRES to compute Krylov subspace basis (slower, but more accurate)
+}
+
+#ensight
+Ensight{
+ Ensight   = 0              # create ensight files
+ EnsCase   = film           # Case name
+ EnsDir    = ensight        # directory of ensight files
+ GeomName  = brick          # description of geometry
+ VarName   = Temperatur     # description of variable name
+}

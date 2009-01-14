@@ -13,6 +13,21 @@ namespace DROPS
 {
 
 
+template <class Coeff>
+void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, MLIdxDescCL* idx, match_fun match)
+/** In parallel this function also creates the \a ExchangeCL
+    \param level    level of the triangulation that should be used to create the numbering
+    \param idx      index describer for the new index
+    \param match    matching function for periodic boundaries
+*/
+{
+    idx->CreateNumbering( level, _MG, _BndData, match);
+#ifdef _PAR
+    ex_.CreateList(_MG,idx);
+#endif
+}
+
+
 //========================================================
 //
 //                Set up matrices and rhs
@@ -20,7 +35,7 @@ namespace DROPS
 //========================================================
 
 inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDataCL::bnd_val_fun bfun, double time)
-// Integrate nat_val() * phi_vert over face
+/// Integrate nat_val() * phi_vert over face
 {
     Point3DCL vc[3];
     const VertexCL* v[3];
@@ -39,7 +54,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, InstatPoissonBndDat
     return (11./240.*f0 + 1./240.*f1 + 9./80.*f2) * absdet;
 }
 
-template<class Coeff>
+template <class Coeff>
 void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_ptr T, scalar_instat_fun_ptr dalpha, double t) const
 {
   src.Clear();
@@ -90,10 +105,10 @@ void InstatPoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, scalar_instat_fun_pt
   }
 }
 
-template<class Coeff>
+template <class Coeff>
 void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const
-// Sets up the time dependent right hand sides including couplings
-// resulting from inhomogeneous dirichlet bnd conditions
+/// Sets up the time dependent right hand sides including couplings
+/// resulting from inhomogeneous dirichlet bnd conditions
 {
   vA.Clear();
   vM.Clear();
@@ -102,6 +117,9 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
   const Uint lvl = vA.GetLevel(),
              idx = vA.RowIdx->GetIdx();
   Point3DCL G[4];
+
+  Comment("InstatPoissonP1CL::SetupInstatRhs with index "<<idx<<std::endl,
+          DebugNumericC);
 
   double coup[4][4];
   double det;
@@ -170,8 +188,8 @@ void InstatPoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, doub
 
 
 template<class Coeff>
-void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& _Coeff, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double tA) 
-// Sets up the stiffness matrix and the mass matrix
+void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& _Coeff, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double tA)
+/// Sets up the stiffness matrix and the mass matrix
 {
   MatrixBuilderCL A( &Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
   MatrixBuilderCL M( &Mmat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
@@ -239,7 +257,7 @@ void InstatPoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL
 template<class Coeff>
 void SetupConvection_P1( const MultiGridCL& MG, const Coeff& _Coeff, const BndDataCL<> _BndData,
                          MatrixCL& Umat, VecDescCL* vU, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool adjoint_)
-// Sets up matrix and couplings with bnd unknowns for convection term
+/// Sets up matrix and couplings with bnd unknowns for convection term
 {
   if (vU != 0) vU->Clear();
   MatrixBuilderCL U( &Umat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
@@ -321,7 +339,7 @@ void InstatPoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU
         SetupConvection_P1( _MG, _Coeff, _BndData, *itU, (lvl == matU.Data.size()-1) ? &vU : 0, *itRow, *itCol, t, adjoint_);
 }
 
-template<class Coeff>
+template <class Coeff>
 void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func, double t0) const
 {
     Uint lvl= vec.GetLevel(),
@@ -342,6 +360,10 @@ void InstatPoissonP1CL<Coeff>::Init( VecDescCL& vec, scalar_instat_fun_ptr func,
 template<class Coeff>
 void InstatPoissonP1CL<Coeff>::SetNumLvl( size_t n)
 {
+#ifdef _PAR
+    if (n>1)
+        throw DROPSErrCL("InstatPoissonP1CL::SetNumLvl: No multilevel implemented in parallel version yet, sorry");
+#endif
     match_fun match= _MG.GetBnd().GetMatchFun();
     idx.resize( n, P1_FE, _BndData, match);
     A.Data.resize( idx.size());
@@ -354,7 +376,7 @@ void InstatPoissonP1CL<Coeff>::SetNumLvl( size_t n)
 //
 //========================================================
 
-template<class Coeff>
+template <class Coeff>
 void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   scalar_instat_fun_ptr Lsg, double t) const
 {
@@ -393,17 +415,26 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
     sit != send; ++sit)
   {
     if (sit->Unknowns.Exist(idx.GetIdx()))
-    {
-      diff= std::fabs( Lsg(sit->GetCoord(),t) - lsg.Data[sit->Unknowns(Idx)] );
-      norm2+= diff*diff;
-      if (diff>maxdiff)
+#ifdef _PAR
+      if (sit->IsExclusive())
+#endif
       {
-        maxdiff= diff;
+        diff= std::fabs( Lsg(sit->GetCoord(),t) - lsg.Data[sit->Unknowns(Idx)] );
+        norm2+= diff*diff;
+        if (diff>maxdiff)
+        {
+          maxdiff= diff;
+        }
       }
-    }
   }
 
   int Lsize = lsg.Data.size();
+#ifdef _PAR
+  Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(_MG);
+  L2      = GlobalSum(L2, Drops_MasterC);
+  norm2   = GlobalSum(norm2, Drops_MasterC);
+  maxdiff = GlobalMax(maxdiff, Drops_MasterC);
+#endif
   IF_MASTER
     std::cout << "  2-Norm= " << std::sqrt(norm2)
               << "\nw-2-Norm= " << std::sqrt(norm2/Lsize)

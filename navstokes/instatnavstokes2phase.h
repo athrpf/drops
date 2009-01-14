@@ -35,6 +35,9 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
     using _base::B;
     using _base::t;
     using _base::vel_idx;
+#ifdef _PAR
+    using _base::GetEx;
+#endif
 
     typedef Coeff                              CoeffCL;
     typedef typename _base::BndDataCL          BndDataCL;

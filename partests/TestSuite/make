@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <title>Test-Results (DATUM)</title>
+	<style type="text/css">
+    
+    	body{
+    		font-family:courier;
+    	}
+    	
+    	.programHeader {
+    		font-weight:bold;
+			background-color: #0080FF ;    	
+    	}
+    	
+    	.programContent {
+
+    	}
+    	
+    	.testHeaderOk {    
+	    	font-weight:bold;  	
+    		background-color:green;
+    		color:white;
+    	}
+    	
+    	.testHeaderError {
+	    	font-weight:bold;
+    		background-color:red;
+    		color:white;
+    	}    	
+    	
+    	.testContent {
+
+    	}
+    	
+    	.settingsTable {
+    		padding-left:40px ; 
+    		
+    	}
+    	
+    	.checkValuesTable {
+    		padding-left:40px ;     	
+    	}
+    	
+    	.testPassed {
+    		width: 100%;
+    		background-color: #C0C0C0 ;
+			margin:2px;
+    	}
+    	
+    </style>
+  </head>
+  <body> 
+<table width="80%" cellpadding="3" cellspacing="0" border="0" align="center">
+<!-- the document toc --><tr>
+<td>
+<h2>Reports by tested programs:</h2>
+<ul>
+<li><a href="#/tmp/fileIPkLjv">/tmp/fileIPkLjv</a></li>
+</ul></td></tr>
+ <!-- every program gets on row --> 
+<tr><td><a id="/tmp/fileIPkLjv" />
+<table width="95%" align="right" cellspacing="0" cellpadding="3" border="0">
+<tr><td class="programHeader">/tmp/fileIPkLjv</td></tr>
+<tr><td class="programContent">
+<!-- Common program information -->
+<b>Executable:</b>../TestPoissonPar<br/>
+<b>Configuration Template:</b><br/>
+<!-- Test Toc -->
+<h4>Performed Tests</h4><ul>
+<li><a href="#/tmp/fileIPkLjv1">Test 1</a></li>
+<li><a href="#/tmp/fileIPkLjv2">Test 2</a></li>
+<li><a href="#/tmp/fileIPkLjv3">Test 3</a></li>
+</ul>
+<table width="95%" align="right" cellspacing="0" cellpadding="3" border="0"> 
+<a id="/tmp/fileIPkLjv1" />
+<tr><td class="testHeaderOk">Test 1</td></tr><tr>
+<tr><td class="testContent">
+<b>Used Processors:</b> 2 <br/>
+<b>Result-Code:</b> 1 <br>
+<b>Settings:</b>
+<table class="settingsTable"> 
+<tr><td>  __PRECOND__</td><td>: 1</td></tr>
+<tr><td>  __REFINE__</td><td>: 1</td></tr>
+<tr><td>  __SOLVER__</td><td>: 2</td></tr>
+</table>
+<b>Checked Values:</b>
+<table class="checkValuesTable">
+<tr><td>2-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+<tr><td>L2-Norm</td><td> blaTest failed: program-output (0.231308160492) doesn't equal expected output (0.275019758154)</td></tr>
+<tr><td>W-2-Norm</td><td> No value found in program-output</td></tr>
+<tr><td>max-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+</table>
+ Result-Messages 
+<table class="checkValuesTable">
+</table><!-- emptry row --><tr><td>&nbsp;</td></tr>
+<a id="/tmp/fileIPkLjv2" />
+<tr><td class="testHeaderOk">Test 2</td></tr><tr>
+<tr><td class="testContent">
+<b>Used Processors:</b> 3 <br/>
+<b>Result-Code:</b> 1 <br>
+<b>Settings:</b>
+<table class="settingsTable"> 
+<tr><td>  __PRECOND__</td><td>: 1</td></tr>
+<tr><td>  __REFINE__</td><td>: 1</td></tr>
+<tr><td>  __SOLVER__</td><td>: 2</td></tr>
+</table>
+<b>Checked Values:</b>
+<table class="checkValuesTable">
+<tr><td>2-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+<tr><td>L2-Norm</td><td> blaTest failed: program-output (0.255649114782) doesn't equal expected output (0.275019758154)</td></tr>
+<tr><td>W-2-Norm</td><td> No value found in program-output</td></tr>
+<tr><td>max-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+</table>
+ Result-Messages 
+<table class="checkValuesTable">
+</table><!-- emptry row --><tr><td>&nbsp;</td></tr>
+<a id="/tmp/fileIPkLjv3" />
+<tr><td class="testHeaderOk">Test 3</td></tr><tr>
+<tr><td class="testContent">
+<b>Used Processors:</b> 4 <br/>
+<b>Result-Code:</b> 1 <br>
+<b>Settings:</b>
+<table class="settingsTable"> 
+<tr><td>  __PRECOND__</td><td>: 1</td></tr>
+<tr><td>  __REFINE__</td><td>: 1</td></tr>
+<tr><td>  __SOLVER__</td><td>: 2</td></tr>
+</table>
+<b>Checked Values:</b>
+<table class="checkValuesTable">
+<tr><td>2-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+<tr><td>L2-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+<tr><td>W-2-Norm</td><td> No value found in program-output</td></tr>
+<tr><td>max-Norm</td><td> Test passed (program-output equals expected output)</td></tr>
+</table>
+ Result-Messages 
+<table class="checkValuesTable">
+</table><!-- emptry row --><tr><td>&nbsp;</td></tr>
+ </table>
+<!-- emptry row --><tr><td>&nbsp;</td></tr>
+</td></tr>
+</table>
+</td></tr></table>  </body>
+</html> 

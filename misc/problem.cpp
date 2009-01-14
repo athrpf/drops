@@ -42,7 +42,6 @@ Uint IdxDescCL::GetFreeIdx()
 IdxDescCL::IdxDescCL( const IdxDescCL& orig)
  : FE_InfoCL(orig), Idx_(orig.Idx_), TriangLevel_(orig.TriangLevel_), NumUnknowns_(orig.NumUnknowns_),
    Bnd_(orig.Bnd_), match_(orig.match_), extIdx_(orig.extIdx_)
-
 {
     // invalidate orig
     const_cast<IdxDescCL&>(orig).Idx_= InvalidIdx;
@@ -53,7 +52,7 @@ void IdxDescCL::swap( IdxDescCL& obj)
 /// assignment operator is not implemented.
 {
     Assert( GetFE()==obj.GetFE(), DROPSErrCL("IdxDescCL::swap: FE-types differ"), ~0);
-	std::swap( Idx_,         obj.Idx_);
+        std::swap( Idx_,         obj.Idx_);
     std::swap( TriangLevel_, obj.TriangLevel_);
     std::swap( NumUnknowns_, obj.NumUnknowns_);
     std::swap( Bnd_,         obj.Bnd_);
@@ -141,6 +140,42 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
                 }
     return true;
 }
+
+
+#ifdef _PAR
+/// \brief Count number of exclusive unknowns on this proc
+/** Get number of unknowns that are exclusive (master copy of simplex and proc with smalles proc-id)*/
+IdxT IdxDescCL::GetExclusiveNumUnknowns(const MultiGridCL &mg, int lvl) const
+{
+    IdxT ret=0;
+    // If there are unknowns on vertices, the proc with the smallest proc-id
+    // who owns a master copy of the vertex counts the unknowns of the chosen
+    // vertex.
+    if (NumUnknownsVertex())
+        for (MultiGridCL::const_TriangVertexIteratorCL it(mg.GetTriangVertexBegin(lvl)), end(mg.GetTriangVertexEnd(lvl)); it != end; ++it)
+            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()))
+                if (it->IsExclusive())
+                    ret += NumUnknownsVertex();
+    if (NumUnknownsEdge())
+        for (MultiGridCL::const_TriangEdgeIteratorCL it(mg.GetTriangEdgeBegin(lvl)), end(mg.GetTriangEdgeEnd(lvl)); it != end; ++it)
+            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()))
+                if (it->IsExclusive())
+                    ret += NumUnknownsEdge();
+    if (NumUnknownsTetra())
+        for (MultiGridCL::const_TriangTetraIteratorCL it(mg.GetTriangTetraBegin(lvl)), end(mg.GetTriangTetraEnd(lvl)); it != end; ++it)
+            if ( it->Unknowns.Exist() && it->Unknowns.Exist(GetIdx()))
+                if (it->IsExclusive())
+                    ret += NumUnknownsTetra();
+    return ret;
+}
+
+/// \brief Count global number of unknowns
+/** Get global number over all procs of unknowns. Each unknown is just count one time*/
+IdxT IdxDescCL::GetGlobalNumUnknowns(const MultiGridCL &mg, int lvl) const
+{
+    return GlobalSum(GetExclusiveNumUnknowns(mg,lvl));
+}
+#endif
 
 void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
@@ -289,6 +324,9 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
 {
     if (IsOnInterface())
     {
+#ifdef _PAR
+        throw DROPSErrCL("IdxDescCL::CreateNumbering: Check first, if numbering on interface works in parDROPS.");
+#endif
         if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for interface numbering given");
         CreateNumbOnInterface( level, mg, *lsetp, GetXidx().GetBound());
     }

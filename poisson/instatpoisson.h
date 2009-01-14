@@ -3,6 +3,7 @@
 // Content: classes that constitute the poisson-problem                    *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
 //          IGPM RWTH Aachen                                               *
+//          Oliver Fortmeier, SC RWTH Aachen                               *
 // Version: 0.1                                                            *
 // History: begin - November, 11 2002                                      *
 //**************************************************************************
@@ -14,6 +15,10 @@
 #include "misc/problem.h"
 #include "num/solver.h"
 #include "num/fe.h"
+#ifdef _PAR
+# include "parallel/exchange.h"
+# include "parallel/parallel.h"
+#endif
 
 
 namespace DROPS
@@ -43,21 +48,32 @@ class StripTimeCL
 
 
 template <class Coeff>
+#ifndef _PAR
 class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
-/// \todo Merge InstatPoissonP1CL with PoissonP1CL
+#else
+class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL, ExchangeCL>
+#endif
 {
   private:
     bool adjoint_;
 
   public:
-    typedef ProblemCL<Coeff, InstatPoissonBndDataCL> _base;
-    typedef typename _base::BndDataCL                BndDataCL;
-    typedef typename _base::CoeffCL                  CoeffCL;
+#ifndef _PAR
+    typedef ProblemCL<Coeff, InstatPoissonBndDataCL>       _base;
+#else
+    typedef ProblemCL<Coeff, InstatPoissonBndDataCL, ExchangeCL> _base;
+#endif
+    typedef typename _base::BndDataCL                       BndDataCL;
+    typedef typename _base::CoeffCL                         CoeffCL;
     using _base::GetBndData;
     using _base::GetMG;
     using _base::_BndData;
     using _base::_MG;
     using _base::_Coeff;
+#ifdef _PAR
+    using _base::ex_;
+    using _base::GetEx;
+#endif
 
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
@@ -76,28 +92,29 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
         : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
 
     // numbering of unknowns
-    void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-    { idx->CreateNumbering( level, _MG, _BndData, match); }
+    void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0);
     void DeleteNumbering( MLIdxDescCL* idx)
     { idx->DeleteNumbering( _MG); }
     void SetNumLvl( size_t n);
 
-    // set up matrices (M is time independent)
+    ///  \brief set up matrices (M is time independent)
     void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double tA) const;
-    // set up matrix and couplings with bnd unknowns for convection term
+    /// \brief set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
 
-    // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
-    // If the function is called with the same vector for some arguments,
-    // the vector will contain the sum of the results after the call
+    /// \brief Setup time dependent parts
+    ///
+    /// couplings with bnd unknowns, coefficient f(t)
+    /// If the function is called with the same vector for some arguments,
+    /// the vector will contain the sum of the results after the call
     void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
-    // Setup special source term including the gradient of a given P1 function
+    /// \brief Setup special source term including the gradient of a given P1 function
     void SetupGradSrc( VecDescCL& src, scalar_instat_fun_ptr T, scalar_instat_fun_ptr dalpha, double t= 0.) const;
 
-    // Set initial value
+    /// \brief Set initial value
     void Init( VecDescCL&, scalar_instat_fun_ptr, double t0= 0.) const;
 
-    // check computed solution etc.
+    /// \brief check computed solution etc.
     void CheckSolution( const VecDescCL&, scalar_instat_fun_ptr, double) const;
     void CheckSolution( scalar_instat_fun_ptr Lsg, double t) const { CheckSolution(x, Lsg, t); }
 

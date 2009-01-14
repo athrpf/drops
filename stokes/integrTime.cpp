@@ -2,6 +2,7 @@
 // File:    integrTime.cpp                                                 *
 // Content: Stokes-preconditioner an time integration                      *
 // Author:  Sven Gross, Joerg Grande, Hieu Nguyen, IGPM RWTH Aachen        *
+//          Oliver Fortmeiere, SC RWTH Aachen                              *
 // Version: 0.1                                                            *
 // History: begin - Jan, 24 2008                                           *
 //**************************************************************************
@@ -10,7 +11,7 @@
 
 namespace DROPS
 {
-
+#ifndef _PAR
 void ISBBTPreCL::Update() const
 {
     std::cerr << "ISBBTPreCL::Update: old version: " << Bversion_
@@ -60,10 +61,10 @@ void MinCommPreCL::Update() const
     VectorCL Dprsqrt( std::sqrt( M_->GetDiag()));
     Dprsqrtinv_.resize( M_->num_rows());
     Dprsqrtinv_= 1.0/Dprsqrt;
-    ScaleRows( *Bs_, Dprsqrtinv_); 
+    ScaleRows( *Bs_, Dprsqrtinv_);
 
     D_.resize( M_->num_rows());
     D_= 1.0/BBTDiag( *Bs_);
 }
-
+#endif
 }

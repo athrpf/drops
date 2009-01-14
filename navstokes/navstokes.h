@@ -38,7 +38,7 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     typedef typename _base::const_DiscVelSolCL const_DiscVelSolCL;
     typedef typename _base::const_DiscPrSolCL const_DiscPrSolCL;
 
-    MLMatDescCL    N;
+    MLMatDescCL  N;
     VelVecDescCL cplN;
     VelVecDescCL cplM;
 
@@ -58,8 +58,9 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 
     // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
     void SetTime (double tt) { t= tt; }
-    void SetNumVelLvl( size_t n) { _base::SetNumVelLvl(n); N.Data.resize( n);}
-    
+    // in parallel version the error is arisen in the super  class
+    void SetNumVelLvl( size_t n) {_base::SetNumVelLvl(n); N.Data.resize( n);}
+
     // Check computed solution
     void CheckSolution(const VelVecDescCL*, MLIdxDescCL* idx, const VecDescCL*,
         instat_vector_fun_ptr, instat_scalar_fun_ptr, double= 0.0);

@@ -2,6 +2,7 @@
 // File:    coupling.tpp                                                   *
 // Content: coupling of levelset and (Navier-)Stokes equations             *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+//          Oliver Fortmeier, SC RWTH Aachen                               *
 //**************************************************************************
 
 #include "num/nssolver.h"
@@ -49,7 +50,6 @@ LinThetaScheme2PhaseCL<StokesT,SolverT>::LinThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, bool implicitCurv)
   : base_( Stokes, ls, theta, nonlinear), solver_( solver),
     cplA_(new VelVecDescCL), implCurv_( implicitCurv)
-
 {
     Update();
 }
@@ -64,13 +64,18 @@ template <class StokesT, class SolverT>
 void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
 // solve decoupled level set / Navier-Stokes system
 {
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
     time.Reset();
 
     // operators are computed for old level set
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, cplA_, cplM_, LvlSet_, Stokes_.t);
     Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
-    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+    Stokes_.SetupPrMass( &Stokes_.prM, LvlSet_);
 
     if (!implCurv_)
         mat_->LinComb( 1./dt_, Stokes_.M.Data, theta_, Stokes_.A.Data);
@@ -87,7 +92,14 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
         mat_->LinComb( 1., mat0, dt_, LB_.Data);
     }
     time.Stop();
-    std::cerr << "Discretizing NavierStokes for old level set took "<<time.GetTime()<<" sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+        std::cerr << "Discretizing NavierStokes for old level set took "<< duration <<" sec.\n";
+#ifdef _PAR
+        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
+#endif
+    }
     time.Reset();
 
     // setup system for levelset eq.
@@ -96,13 +108,27 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
     ls_rhs_= (1./dt_)*(LvlSet_.E*LvlSet_.Phi.Data) - (1.-theta_)*(LvlSet_.H*LvlSet_.Phi.Data);
 
     time.Stop();
-    std::cerr << "Discretizing Levelset took " << time.GetTime() << " sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+        std::cerr << "Discretizing Levelset took " << duration << " sec.\n";
+#ifdef _PAR
+        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
+#endif
+    }
     time.Reset();
 
     LvlSet_.DoLinStep( ls_rhs_);
 
     time.Stop();
-    std::cerr << "Solving Levelset took " << time.GetTime() << " sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+        std::cerr << "Solving Levelset took " << duration << " sec.\n";
+#ifdef _PAR
+        DROPS_LOGGER_SETVALUE("SolveLevelset",duration);
+#endif
+    }
 
     time.Reset();
 
@@ -122,16 +148,25 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
         rhs_+= old_curv_->Data + dt_*cplLB_.Data;
 
     time.Stop();
-    std::cerr << "Discretizing Rhs/Curv took "<<time.GetTime()<<" sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+        std::cerr << "Discretizing Rhs/Curv took "<< duration <<" sec.\n";
+#ifdef _PAR
+        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
+#endif
+    }
 
     time.Reset();
     solver_.Solve( *mat_, Stokes_.B.Data,
         Stokes_.v, Stokes_.p.Data,
         rhs_, *cplN_, Stokes_.c.Data, /*alpha*/ theta_*nonlinear_);
     time.Stop();
-    std::cerr << "Solving NavierStokes: residual: " << solver_.GetResid()
-            << "\titerations: " << solver_.GetIter()
-            << "\ttime: " << time.GetTime() << "s\n";
+    duration=time.GetTime();
+    IF_MASTER
+      std::cerr << "Solving NavierStokes: residual: " << solver_.GetResid()
+                << "\titerations: " << solver_.GetIter()
+                << "\ttime: " << duration << "sec\n";
 }
 
 template <class StokesT, class SolverT>
@@ -140,8 +175,8 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
     if (Stokes_.UsesXFEM()) { // update XFEM
         Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
-        Stokes_.c.SetIdx  ( &Stokes_.pr_idx);
-        Stokes_.B.SetIdx  ( &Stokes_.pr_idx, &Stokes_.vel_idx);
+        Stokes_.c.SetIdx( &Stokes_.pr_idx);
+        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
         Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
         Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
@@ -169,11 +204,16 @@ template <class StokesT, class SolverT>
 void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
     time.Reset();
-    time.Start();
 
-    std::cerr << "Updating discretization...\n";
+    IF_MASTER
+      std::cerr << "Updating discretization...\n";
 
     if (implCurv_)
     {
@@ -183,8 +223,10 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
-    mat_->clear();
     if (Stokes_.UsesXFEM()) { // update XFEM
+#ifdef _PAR
+        throw DROPSErrCL("LinThetaScheme2PhaseCL::CommitStep: Sorry no XFEM implemented in parallel, yet");
+#endif
         Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
@@ -208,7 +250,14 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
     time.Stop();
-    std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+        std::cerr << "Discretizing took " << duration << " sec.\n";
+#ifdef _PAR
+        DROPS_LOGGER_SETVALUE("DiscretizeLevelset",duration);
+#endif
+    }
 }
 
 // ==============================================
@@ -221,6 +270,9 @@ ThetaScheme2PhaseCL<StokesT,SolverT>::ThetaScheme2PhaseCL
   : base_( Stokes, ls, theta, nonlinear), solver_( solver),
     withProj_( withProjection), stab_( stab)
 {
+#ifdef _PAR
+    throw DROPSErrCL("ThetaScheme2PhaseCL: Not parallelized, yet, sorry");
+#endif
     Update();
 }
 
@@ -266,7 +318,8 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::InitStep()
             + old_b_->Data - (Stokes_.A.Data * Stokes_.v.Data)
             - transp_mul( Stokes_.B.Data, Stokes_.p.Data)));
         Msolver.Solve( Stokes_.M.Data, rhs_, rhs0);
-        std::cerr << "InitStep: rhs_: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';
+        IF_MASTER
+          std::cerr << "InitStep: rhs_: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';
     }
     Msolver.Solve( Stokes_.M.Data, rhscurv, old_curv_->Data);
     std::cerr << "InitStep: rhscurv: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';
@@ -549,6 +602,9 @@ OperatorSplitting2PhaseCL<StokesT,SolverT>::OperatorSplitting2PhaseCL
     cplA_( new VelVecDescCL), old_cplA_( new VelVecDescCL),
     alpha_( (1.0 - 2.0*theta_)/(1.0 - theta_))
 {
+#ifdef _PAR
+    throw DROPSErrCL("OperatorSplitting2PhaseCL: Not parallelized, yet, sorry");
+#endif
     std::cerr << "theta = " << theta_ << "\talpha = " << alpha_ << std::endl;
     Update();
 }
@@ -776,6 +832,10 @@ RecThetaScheme2PhaseCL<StokesT,SolverT>::RecThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, theta, nonlinear),
     solver_( solver), withProj_( withProjection), stab_( stab)
+#ifdef _PAR
+    , MsolverPC_(Stokes.GetEx(Stokes.velocity)), Msolver_(200, 1e-10, Stokes.GetEx(Stokes.velocity), MsolverPC_, false, true),
+    SsolverPC_(Stokes.GetEx(Stokes.pressure)), Ssolver_(100, 200, 1e-10, Stokes.GetEx(Stokes.pressure), SsolverPC_, true)
+#endif
 {
     Update();
 }
@@ -810,7 +870,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::InitStep()
 {
     LvlSet_.ComputeRhs( ls_rhs_);
 
-std::cerr << "InitStep-dt_: " << dt_ << std::endl;
+    IF_MASTER
+      std::cerr << "InitStep-dt_: " << dt_ << std::endl;
     rhs_= (1./dt_)*Stokes_.v.Data;
     if (theta_ != 1.)
         rhs_+= (1. - theta_)*vdot_;
@@ -831,7 +892,12 @@ template <class StokesT, class SolverT>
 void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
 // perform fixed point iteration
 {
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
     time.Reset();
     time.Start();
 
@@ -840,13 +906,27 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
     LvlSet_.SetTimeStep( dt_);
 
     time.Stop();
-    std::cerr << "Discretizing Levelset took " << time.GetTime() << " sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+      std::cerr << "Discretizing Levelset took " << duration << " sec.\n";
+#ifdef _PAR
+      DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
+#endif
+    }
     time.Reset();
 
     LvlSet_.DoStep( ls_rhs_);
 
     time.Stop();
-    std::cerr << "Solving Levelset took " << time.GetTime() << " sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+    {
+      std::cerr << "Solving Levelset took " << duration << " sec.\n";
+#ifdef _PAR
+        DROPS_LOGGER_SETVALUE("SolveLevelset",duration);
+#endif
+    }
 
     time.Reset();
     time.Start();
@@ -875,16 +955,20 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
     VectorCL b2( Stokes_.M.Data*rhs_ /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data + coupling of M with vdot_new*/ + theta_*(curv_->Data + b_->Data));
     MaybeStabilize( b2);
     time.Stop();
-    std::cerr << "Discretizing NavierStokes/Curv took "<<time.GetTime()<<" sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+      std::cerr << "Discretizing NavierStokes/Curv took "<<duration<<" sec.\n";
 
     time.Reset();
     solver_.Solve( *mat_, Stokes_.B.Data,
         Stokes_.v, Stokes_.p.Data,
         b2, *cplN_, Stokes_.c.Data, /*alpha*/ theta_*nonlinear_);
     time.Stop();
-    std::cerr << "Solving NavierStokes: residual: " << solver_.GetResid()
-            << "\titerations: " << solver_.GetIter()
-            << "\ttime: " << time.GetTime() << "s\n";
+    duration=time.GetTime();
+    IF_MASTER
+      std::cerr << "Solving NavierStokes: residual: " << solver_.GetResid()
+                << "\titerations: " << solver_.GetIter()
+                << "\ttime: " << duration << "s\n";
 }
 
 template <class StokesT, class SolverT>
@@ -914,17 +998,17 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
 //     if ( mycount++ % 20 == 1) {
 //         VectorCL pp( Stokes_.p.Data);
 //         ComputePressure();
-//         std::cerr << "pressure difference: "
-//                   << dot( VectorCL(Stokes_.prM.Data*VectorCL(Stokes_.p.Data - pp)),
-//                           VectorCL(Stokes_.p.Data - pp))/ dot( VectorCL(Stokes_.prM.Data* pp), pp) << '\n';
+// #ifndef _PAR
+//         std::cerr << "pressure difference: " << norm( Stokes_.p.Data - pp)/norm( pp) << '\n';
+// #endif
 //         Stokes_.p.Data= pp;
-// 
+//
 //         if (theta_ != 1.) { // Implicit Euler does not need and calculate vdot_.
 //             VectorCL vd( vdot_);
 //             ComputeVelocityDot();
-//             std::cerr << "vdot difference: "
-//                       << dot( VectorCL(Stokes_.M.Data*VectorCL(vdot_ - vd)), VectorCL(vdot_ - vd))/
-//                          dot( VectorCL(Stokes_.M.Data* vd), vd) << '\n';
+// #ifndef _PAR
+//             std::cerr << "vdot difference: " << norm( vdot_ - vd)/norm( vd) << '\n';
+// #endif
 //             vdot_= vd;
 //         }
 //     }
@@ -939,11 +1023,13 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
     InitStep();
     for (int i=0; i<maxFPiter; ++i)
     {
-        std::cerr << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
+        IF_MASTER
+          std::cerr << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
         DoFPIter();
         if (solver_.GetIter()==0 && LvlSet_.GetSolver().GetResid()<LvlSet_.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
-            std::cerr << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
+            IF_MASTER
+              std::cerr << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
     }
@@ -954,11 +1040,17 @@ template <class StokesT, class SolverT>
 void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
     time.Reset();
     time.Start();
 
-    std::cerr << "Updating discretization...\n";
+    IF_MASTER
+      std::cerr << "Updating discretization...\n";
     if (withProj_ || stab_!=0.0)
     {
         LB_.Data.clear();
@@ -1003,7 +1095,9 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     }
 
     time.Stop();
-    std::cerr << "Discretizing took " << time.GetTime() << " sec.\n";
+    duration=time.GetTime();
+    IF_MASTER
+      std::cerr << "Discretizing took " << duration << " sec.\n";
 }
 
 
@@ -1013,17 +1107,28 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data));
-    SSORPcCL ssorpc;
-    PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
     VectorCL b3( b2.size());
 
+#ifndef _PAR
+    SSORPcCL ssorpc;
+    PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
     Msolver.Solve( Stokes_.M.Data, b3, b2);
     std::cerr << "ComputePressure: rhs: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';
+#else
+    Msolver_.Solve( Stokes_.M.Data, b3, b2);
+    IF_MASTER
+     std::cerr << "ComputePressure: rhs: iter= " << Msolver_.GetIter() << "\tres= " << Msolver_.GetResid() << '\n';
+#endif
 
+#ifndef _PAR
     Msolver.SetTol( 1e-13);
     SchurComplMatrixCL<PCG_SsorCL, MLMatrixCL> S( Msolver, Stokes_.M.Data, Stokes_.B.Data);
+#else
+    Msolver_.SetTol( 1e-13);
+    ParSchurComplMatrixCL<MsolverT, MLMatrixCL, ExchangeCL> S(Msolver_, Stokes_.M.Data, Stokes_.B.Data, Stokes_.GetEx(Stokes_.velocity));
+#endif
 
-
+#ifndef _PAR
     MatrixCL* Bs= new MatrixCL( Stokes_.B.Data.GetFinest());
     VectorCL Dvelinv( 1.0/ Stokes_.M.Data.GetFinest().GetDiag());
     ScaleCols( *Bs, VectorCL( std::sqrt( Dvelinv)));
@@ -1031,15 +1136,28 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     delete Bs;
     DiagPcCL diagpc( D);
     GCRSolverCL<DiagPcCL> Ssolver( diagpc, 200, 200, 1e-10, true);
+#else
+    // Diagonal of B*B^T is not easy to get in parallel version :-(
+#endif
 
     VectorCL b4( Stokes_.B.Data*b3);
     if (Stokes_.UsesXFEM()) {
+#ifdef _PAR
+        throw DROPSErrCL("No XFEM implemented in parallel, yet");
+#endif
         VecDescCL Bdotv( &Stokes_.pr_idx);
         Stokes_.SetupBdotv( &Bdotv, &Stokes_.v, LvlSet_, Stokes_.t);
         b4+= Bdotv.Data;
     }
+#ifndef _PAR
     Ssolver.Solve( S, Stokes_.p.Data, b4);
     std::cerr << "ComputePressure: pressure: iter= " << Ssolver.GetIter() << "\tres= " << Ssolver.GetResid() << '\n';
+#else
+    Ssolver_.Solve( S, Stokes_.p.Data, b4);
+    IF_MASTER
+      std::cerr << "ComputePressure: pressure: iter= " << Ssolver_.GetIter() << "\tres= " << Ssolver_.GetResid() << '\n';
+    Msolver_.SetTol( 1e-10);
+#endif
 }
 
 template <class StokesT, class SolverT>
@@ -1049,11 +1167,17 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputeVelocityDot ()
         - Stokes_.A.Data*Stokes_.v.Data
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data)
         - transp_mul( Stokes_.B.Data, Stokes_.p.Data));
+#ifndef _PAR
     SSORPcCL ssorpc;
     PCG_SsorCL Msolver( ssorpc, 200, 1e-10, true);
 
     Msolver.Solve( Stokes_.M.Data, vdot_, b2);
     std::cerr << "ComputeVelocityDot: vdot: iter= " << Msolver.GetIter() << "\tres= " << Msolver.GetResid() << '\n';
+#else
+    Msolver_.Solve( Stokes_.M.Data, vdot_, b2);
+    IF_MASTER
+      std::cerr << "ComputeVelocityDot: vdot: iter= " << Msolver_.GetIter() << "\tres= " << Msolver_.GetResid() << '\n';
+#endif
 }
 
 

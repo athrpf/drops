@@ -14,6 +14,27 @@ typedef std::vector<Uint>  FacCL;
 typedef std::vector<TetCL> TetSeqCL;
 typedef std::vector<FacCL> FacSeqCL;
 
+///\brief Error class for generating topo.cpp
+class TopoErrCL
+{
+  private:
+    std::string ErrMesg_;
+  public:
+    TopoErrCL() : ErrMesg_("") {}
+    TopoErrCL(const std::string& mesg) : ErrMesg_(mesg) {}
+    ~TopoErrCL() {}
+
+    std::ostream& what  (std::ostream& out) const{
+        out << ErrMesg_ << std::endl;
+        return out;
+    }
+
+    void handle() const{
+        what(std::cerr);
+        std::cerr.flush();
+        std::abort();
+    }
+};
 
 struct FaceRefRuleBaseCL
 {
@@ -71,7 +92,7 @@ Uint GetTetraNumByVert(const TetCL& t)
     for (Uint ret=0; ret<NumAllChildrenC; ++ret)
         if (TetCL(VertOfChildAr[ret]+0, VertOfChildAr[ret]+4) == t)
             return ret;
-    throw DROPSErrCL("GetTetraNumByVert: not found");
+    throw TopoErrCL("GetTetraNumByVert: not found");
 }
 
 Uint GetFaceNumByVert(const FacCL& f)
@@ -81,7 +102,7 @@ Uint GetFaceNumByVert(const FacCL& f)
         if (FacCL(VertOfFaceAr[ret]+0, VertOfFaceAr[ret]+3) == f)
             return ret;
     }
-    throw DROPSErrCL("GetFaceNumByVert: not found");
+    throw TopoErrCL("GetFaceNumByVert: not found");
 }
 
 Uint GetFaceByVert(Uint v0, Uint v1, Uint v2)
@@ -320,6 +341,7 @@ void WriteRules(const std::vector<RefRuleCL>& refrules, std::ostream& os)
 
 int main()
 {
+  try{
     std::vector<RawTriangCL> rawrules(64);
     std::vector<RefRuleCL> refrules(64);
     for(Uint i=0; i<64; ++i)
@@ -348,4 +370,6 @@ int main()
     FileIn.close();
     FileOut.close();
     return 0;
+  }
+  catch(TopoErrCL err){ err.handle(); }
 }

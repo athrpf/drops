@@ -1,7 +1,9 @@
 //**************************************************************************
 // File:    coupling.h                                                     *
 // Content: coupling of levelset and (Navier-)Stokes equations             *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+// Author:  Patrick Esser, Sven Gross, Joerg Grande,                       *
+//          Volker Reichelt, IGPM RWTH Aachen                              *
+//          Oliver Fortmeier, SC RWTH Aachen                               *
 //**************************************************************************
 
 #ifndef DROPS_COUPLING_H
@@ -43,6 +45,15 @@ class TimeDisc2PhaseCL
     double GetTimeStep() const { return dt_; }
     MLMatrixCL*       GetUpperLeftBlock ()       { return mat_; }
     const MLMatrixCL* GetUpperLeftBlock () const { return mat_; }
+
+    /// \name Get reference on Stokes and level set classes
+    //@{
+    const StokesT& GetStokes() const { return Stokes_;}
+    StokesT& GetStokes() { return Stokes_;}
+
+    const LevelsetP2CL& GetLset() const { return LvlSet_; }
+    LevelsetP2CL& GetLset() { return LvlSet_; }
+    //@}
 
     virtual void SetTimeStep (double dt) {dt_= dt;}
 
@@ -210,7 +221,7 @@ const double FracStepScheme2PhaseCL<NavStokesT,SolverT>::theta_[3]
 
 
 template <class StokesT, class SolverT>
-class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT> 
+class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 {
   private:
     typedef TimeDisc2PhaseCL<StokesT> base_;
@@ -283,6 +294,18 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     SolverT&     solver_;
     bool         withProj_;
     const double stab_;
+
+#ifdef _PAR
+    typedef ParJac0CL<ExchangeCL> MsolverPCT;
+    typedef ParPCGSolverCL<MsolverPCT, ExchangeCL> MsolverT;
+    MsolverPCT MsolverPC_;
+    MsolverT   Msolver_;
+
+    typedef ParDummyPcCL<ExchangeCL> SsolverPCT;
+    typedef ParPreGMResSolverCL<SsolverPCT, ExchangeCL> SsolverT;
+    SsolverPCT SsolverPC_;
+    SsolverT   Ssolver_;
+#endif
 
     void MaybeStabilize (VectorCL&);
     void ComputePressure ();

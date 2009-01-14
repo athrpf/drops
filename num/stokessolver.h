@@ -59,7 +59,7 @@ class PSchurSolverCL : public StokesSolverBaseCL
   private:
     PoissonSolverT&        _poissonSolver;
     PreGSOwnMatCL<P_SSOR0> _schurPc;
-    
+
     template <typename Mat, typename Vec>
     void doSolve( const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c);
 
@@ -81,7 +81,7 @@ class PSchurSolver2CL : public StokesSolverBaseCL
   private:
     InnerSolverT& innerSolver_;
     OuterSolverT& outerSolver_;
-    
+
     template <typename Mat, typename Vec>
     void doSolve( const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c);
 
@@ -106,7 +106,7 @@ class UzawaSolverCL : public StokesSolverBaseCL
     PoissonSolverT& _poissonSolver;
     MatrixCL&       _M;
     double          _tau;
-    
+
     template <typename Mat, typename Vec>
     void doSolve( const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c);
 
@@ -134,7 +134,7 @@ class UzawaSolver2CL : public StokesSolverBaseCL
     PoissonSolver2T& poissonSolver2_;
     MatrixCL& M_;
     double    tau_;
-    
+
     template <typename Mat, typename Vec>
     void doSolve( const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c);
 
@@ -161,7 +161,7 @@ class Uzawa_IPCG_CL : public StokesSolverBaseCL
     PCG_SsorDiagCL _A_IPCGsolver;
     MatrixCL&      _M;
     double         _tau;
-    
+
     template <typename Mat, typename Vec>
     void doSolve( const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c);
 
@@ -214,7 +214,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
     inline void
     Solve(const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
           const VectorCL& b, const VectorCL& c);
-    inline 
+    inline
     void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c);
 };
@@ -269,7 +269,7 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
         x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)]= p;
         solver_.Solve( M, x, rhs);
         v= x[std::slice( 0, M.num_cols( 0), 1)];
-        p= x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)];    
+        p= x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)];
     }
 };
 
@@ -341,6 +341,31 @@ class BlockPreCL
         x[std::slice( 0, A.num_cols( 0), 1)]= x0;
         x[std::slice( A.num_cols( 0), A.num_cols( 1), 1)]= x1;
     }
+
+#ifdef _PAR
+    /// \brief Check if the preconditioned vector is accumulated
+    bool RetAcc() const {
+        Assert( pc1_.RetAcc()==pc2_.RetAcc(), DROPSErrCL("BlockPreCL::RetAcc: Preconditioners do not match"),
+                DebugNumericC);
+        return pc1_.RetAcc();
+    }
+
+    /// \brief Check if the diagonal of the matrix needs to be computed
+    bool NeedDiag() const { return pc1_.NeedDiag() || pc2_.NeedDiag(); }
+
+    /// \brief Set accumulated diagonal of a matrix, that is needed by most of the preconditioners
+    template<typename Mat>
+    void SetDiag(const Mat& A)
+    {
+        pc1_.SetDiag(*A.GetBlock( 0));
+        pc2_.SetDiag(/*dummy*/ *(A.GetBlock( 3)!=0 ? A.GetBlock( 3) : A.GetBlock( 1)));
+    }
+    const PC1T& GetPC1() const { return pc1_; }
+          PC1T& GetPC1()       { return pc1_; }
+    const PC2T& GetPC2() const { return pc2_; }
+          PC2T& GetPC2()       { return pc2_; }
+
+#endif
 };
 
 // StokesSolverBaseCL can be used as a preconditioner for the methods in solver.h
@@ -956,7 +981,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
 //     See "Fast iterative solvers for Stokes equation", Peters, Reichelt,
 //     Reusken, Ch. 3.3 Remark 3.
 //-----------------------------------------------------------------------------
- 
+
 template <typename Mat, typename Vec, typename PC1, typename PC2>
 bool
 UzawaCGEff(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g,
@@ -1247,7 +1272,7 @@ class StokesMGSolverCL: public StokesSolverBaseCL
     int   usedLevels_;
     MLMatrixCL BT_;
     size_t BVersion_;
-    
+
     void UpdateBT( const MLMatrixCL& B)
     {
         BT_.resize( B.size());
@@ -1306,7 +1331,7 @@ class StokesMGSolverCL: public StokesSolverBaseCL
             else
                 actualtol= resid;
             std::cout << "P2P1:StokesMGSolverCL: residual = " << actualtol << std::endl;
-            if (actualtol<=_tol) 
+            if (actualtol<=_tol)
             {
                 nit= j+1;
                 break;
@@ -1329,7 +1354,7 @@ class VankaPreCL
     PVankaSmootherCL smoother_;
     mutable MatrixCL BT_;
     mutable size_t BVersion_;
-    
+
     void UpdateBT (const MatrixCL& B) const {
         transpose (B, BT_);
         BVersion_ = B.Version();

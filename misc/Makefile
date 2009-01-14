@@ -6,7 +6,7 @@
 
 DIR = misc
 
-EXEC =
+EXEC = compensight
 
 DELETE = $(EXEC)
 
@@ -17,7 +17,11 @@ OBJ = $(CPP:%.cpp=%.o)
 
 # rules
 
-default: ClrScr
+default: ClrScr all
+
+compensight: \
+    ../misc/compensight.o ../misc/utils.o
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 
 # include common rules:

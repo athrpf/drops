@@ -19,6 +19,10 @@ template <class Coeff>
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
+#ifdef _PAR
+    ExchangeCL ExVel= GetEx(_base::velocity);
+    ExchangeCL ExPr = GetEx(_base::pressure);
+#endif
 
     VecDescCL rhsN( lsgvel->RowIdx);
     MLMatDescCL myN( idx, idx);
@@ -31,9 +35,23 @@ template <class Coeff>
     // mass-matrix-parts from the time-discretization. Also, InstatNavStokesThetaSchemeCL
     // swaps some right-hand-sides (b) with local vectors, so that we use the wrong one
     // in every second timestep.
-    std::cerr << "\nChecken der Loesung des LGS:\n";
-    std::cerr << "|| Ax + Nx + BTy - f || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
-    std::cerr << "||      Bx       - g || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl<<std::endl;
+    double norm_res1, norm_res2,
+           sup_res1 = supnorm(res1),
+           sup_res2 = supnorm(res2);
+#ifndef _PAR
+    norm_res1 = norm(res1);
+    norm_res2 = norm(res2);
+#else
+    norm_res1 =  ExVel.Norm(res1, false);
+    norm_res2 =  ExPr.Norm(res2, false);
+    sup_res1  =  GlobalMax(sup_res1);
+    sup_res2  =  GlobalMax(sup_res2);
+#endif
+
+    IF_MASTER
+      std::cerr << "\nChecken der Loesung des LGS:\n"
+                << "|| Ax + Nx + BTy - f || = " << norm_res1 << ", max. " << sup_res1 << std::endl
+                << "||      Bx       - g || = " << norm_res2 << ", max. " << sup_res2 << std::endl<<std::endl;
 
     typename _base::const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
     double L1_div= 0, L2_div= 0;
@@ -60,9 +78,16 @@ template <class Coeff>
         L1_div+= ( (std::fabs(div[0])+std::fabs(div[1])+std::fabs(div[2])+std::fabs(div[3]))/120 + std::fabs(div[4])*2./15. ) * absdet;
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
+#ifdef _PAR
+    L1_div = GlobalSum(L1_div);
+    L2_div = GlobalSum(L2_div);
+#endif
+
     L2_div= std::sqrt(L2_div);
-    std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
-    std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
+
+    IF_MASTER
+      std::cerr << "|| div x ||_L1 = " << L1_div << '\n'
+                << "|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
@@ -96,7 +121,13 @@ template <class Coeff>
            }
         }
     }
-    norm2= std::sqrt(norm2 / lsgvel->Data.size());
+    IdxT vel_size = lsgvel->Data.size();
+#ifdef _PAR
+    vel_size = GlobalSum(vel_size);
+    norm2    = GlobalSum(norm2);
+#endif
+
+    norm2= std::sqrt(norm2 / vel_size);
 
     Point3DCL L1_vel(0.0), L2_vel(0.0);
     for(MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
@@ -125,12 +156,19 @@ template <class Coeff>
             L2_vel+= sum;
         }
     }
+#ifdef _PAR
+    for (size_t i=0; i<3; ++i)
+        L2_vel[i]= GlobalSum(L2_vel[i]);
+    maxdiff = GlobalMax(maxdiff);
+#endif
     L2_vel= sqrt(L2_vel);
-    std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
-              << "w-2-Norm= " << norm2 << std::endl
-              << " L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")" << std::endl
-              << " L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")" << std::endl
-              << "max-Norm= " << maxdiff << std::endl;
+
+    IF_MASTER
+      std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
+                << "w-2-Norm= " << norm2 << std::endl
+                << " L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")" << std::endl
+                << " L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")" << std::endl
+                << "max-Norm= " << maxdiff << std::endl;
 
     norm2= 0; maxdiff= 0; double mindiff= 1000;
 
@@ -149,8 +187,13 @@ template <class Coeff>
         MW_pr+= sum * sit->GetVolume()*6.;
         vol+= sit->GetVolume();
     }
+#ifdef _PAR
+    vol  = GlobalSum(vol);
+    MW_pr= GlobalSum(MW_pr);
+#endif
     const double c_pr= MW_pr / vol;
-    std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
+    IF_MASTER
+      std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
     VertexCL* maxvert= 0;
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
@@ -166,10 +209,20 @@ template <class Coeff>
         if (diff<mindiff)
             mindiff= diff;
     }
-    norm2= std::sqrt(norm2 / lsgpr->Data.size() );
+    IdxT pr_size = lsgpr->Data.size();
+#ifdef _PAR
+    pr_size= GlobalSum(pr_size);
+    norm2  = GlobalSum(norm2);
+    mindiff= GlobalMin(mindiff);
+    maxdiff= GlobalMax(maxdiff);
+#endif
+    norm2= std::sqrt(norm2 / pr_size );
+
+#ifndef _PAR
     std::cout << "Maximaler Druckfehler: ";
     maxvert->DebugInfo(std::cout);
     std::cout<<std::endl;
+#endif
 
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -186,13 +239,18 @@ template <class Coeff>
         L2_pr+= sum * sit->GetVolume()*6.;
         L1_pr+= sum1 * sit->GetVolume()*6.;
     }
+#ifdef _PAR
+    L1_pr = GlobalSum(L1_pr);
+    L2_pr = GlobalSum(L2_pr);
+#endif
     L2_pr= std::sqrt( L2_pr);
 
-    std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
-              << "w-2-Norm= " << norm2 << std::endl
-              << " L2-Norm= " << L2_pr << std::endl
-              << " L1-Norm= " << L1_pr << std::endl
-              << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
+    IF_MASTER
+      std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
+                << "w-2-Norm= " << norm2 << std::endl
+                << " L2-Norm= " << L2_pr << std::endl
+                << " L1-Norm= " << L1_pr << std::endl
+                << "Differenz liegt zwischen " << mindiff << " und " << maxdiff << std::endl;
 }
 
 

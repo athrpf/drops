@@ -4,7 +4,8 @@
 
 # variables:
 
-PACKAGES = geom num out misc poisson stokes navstokes tests levelset surfactant
+PARPACKAGES = #parallel partests
+PACKAGES = geom num out misc poisson stokes navstokes tests levelset surfactant $(PARPACKAGES)
 
 DROPS_ROOT = .
 
@@ -13,6 +14,7 @@ DROPS_ROOT = .
 
 default: dep all
 
+#all: $(PARPACKAGES:%=all_%)
 all: $(PACKAGES:%=all_%)
 	@echo "--> All executables generated successfully!"
 
@@ -55,6 +57,12 @@ distclean_%:
 distclean_dox:
 	cd ./doc && rm -rf dox
 
+clean_DDD:
+	cd $(DDD_HOME) && gmake clean && cd $(DROPS_ROOT)
+
+clean_ParMetis:
+	cd $(PARMETIS_HOME) && gmake clean && cd $(DROPS_ROOT)
+
 topo:
 	cd ./geom && $(MAKE) topo.cpp
 	@echo "--> topo.cpp generated!"
@@ -75,3 +83,12 @@ prog_%:
 
 # include settings from the config file drops.conf:
 include drops.conf
+
+DDD:
+	cd $(DDD_HOME) && ./install && gmake clean && \
+	gmake -j ARCH_CFLAGS="$(OPTFLAGS)" ARCH_TYPE="__PC__" ARCH_CC="$(ARCH_CC)" ARCH_LINK="$(ARCH_CC)" && \
+	cd $(DROPS_ROOT)
+
+ParMetis:
+	cd $(PARMETIS_HOME) && gmake clean && \
+	gmake COPTIONS="$(OPTFLAGS)" CC="$(ARCH_CC)" LD="$(ARCH_CC)" && cd $(DROPS_ROOT)

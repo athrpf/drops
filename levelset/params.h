@@ -11,7 +11,11 @@ namespace DROPS
 
 /// \brief Parameter class for the problem case
 /// 'Droplet in measurement device', Stokes flow
+#ifndef _PAR
 class ParamMesszelleCL: public ParamBaseCL
+#else
+class ParamMesszelleCL: public virtual ParamBaseCL
+#endif
 {
   private:
     void RegisterParams();
@@ -24,9 +28,11 @@ class ParamMesszelleCL: public ParamBaseCL
            outer_tol;
     int    inner_iter,                          ///< max. number of iterations for Stokes solver
            outer_iter;
+#ifndef _PAR
     int    pcA_iter;                            ///< max. number of iterations for the preconditionier
     double pcA_tol,                             ///< tolerance for the preconditioner
            pcS_tol;
+#endif
     //@}
     /// \name Level Set
     //@{
@@ -48,7 +54,7 @@ class ParamMesszelleCL: public ParamBaseCL
     int    cpl_iter;                            ///< max. number of iterations for the fixed-point iteration
     double cpl_stab;                            ///< Laplace-Beltrami-stabilization
     double cpl_proj;                            ///< 1 = perform a projection step before FP
-    //@}
+   //@}
 
     /// \name Material data
     ///
@@ -68,9 +74,11 @@ class ParamMesszelleCL: public ParamBaseCL
            r_inlet;                             ///< radius at inlet of measuring device
     int    flow_dir;                            ///< flow direction (x/y/z = 0/1/2)
     Point3DCL g;                                ///< gravity
+#ifndef _PAR
     double inflow_freq,                         ///< inflow frequence
            inflow_ampl;                         ///< inflow amplitude
     int    bnd_type;                            ///< boundary type: 1= hom. Dirichlet, 2= inhom. Dirichlet bnd-data for in-/outflow, 3= tube/canal
+#endif
     //@}
     ///\name Surface Force
     //@{
@@ -86,13 +94,18 @@ class ParamMesszelleCL: public ParamBaseCL
            ref_flevel;                          ///< finest level of refinement
     double ref_width;                           ///< width of refinement zone around zero-level
     //@}
+#ifndef _PAR
     ///\name Reparametrization
     //@{
+
     int    RepFreq,                             ///< frequency (after how many time steps grid should be reparametrized)
            RepMethod;                           ///< 0/1 = fast marching without/with modification of zero level set
     double MinGrad,                             ///< minimal allowed norm of the gradient of phi
            MaxGrad;                             ///< maximal allowed norm of the gradient of phi
     //@}
+#endif
+
+#ifndef _PAR
     ///\name Mass Transport
     //@{
     int    transp_do;                           ///< mass transport on (1) or off (0)
@@ -105,7 +118,7 @@ class ParamMesszelleCL: public ParamBaseCL
            transp_cPos,                         ///< initial concentration (pos. part)
            transp_cNeg;                         ///< initial concentration (neg. part)
     //@}
-
+#endif
 
 
     double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
@@ -114,12 +127,13 @@ class ParamMesszelleCL: public ParamBaseCL
            GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
 
     string IniData,                             ///< file prefix when reading data for initial condition
-           EnsCase,                             ///< name of Ensight Case, "none"= no output
+           meshfile;                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+#ifndef _PAR
+    string EnsCase,                             ///< name of Ensight Case, "none"= no output
            EnsDir,                              ///< local directory for Ensight files
-           meshfile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
            serialization_file,                  ///< writes multigrid to serialisation files, special value "none" to ignore
            deserialization_file;                ///< reads multigrid from deserialization files, special value "none" to ignore
-
+#endif
 
 
     ParamMesszelleCL()                        { RegisterParams(); }
@@ -159,7 +173,7 @@ class ParamFilmCL: public ParamBaseCL
     double inner_tol, outer_tol,                // Parameter der Loeser
            ns_tol, ns_red, nonlinear,           // fuer Flow & Levelset
            lset_tol, lset_SD, cpl_tol;
-    int    inner_iter, outer_iter, 
+    int    inner_iter, outer_iter,
            ns_iter, lset_iter;
     int    pcA_iter;                            // max. number of iterations for the preconditionier
     double pcA_tol,                             // tolerance for the preconditioner

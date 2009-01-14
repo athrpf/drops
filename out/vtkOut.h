@@ -80,6 +80,13 @@ class VTKOutCL
     /// Put describtion header into file
     void PutHeader( double time);
 
+#ifdef _PAR
+    template<typename SimplexT>
+    bool AmIResponsible(const SimplexT& s) const{
+        return s.IsExclusive(PrioHasUnk);
+    }
+#endif
+
 #ifndef _PAR
     /// Gather coordinates and (g)ids
     void GatherCoord();
@@ -241,7 +248,7 @@ template<class DiscScalT>
     Uint pos= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
 #ifdef _PAR
-        if (it->IsExclusive())
+        if (AmIResponsible(*it))
 #endif
             locData[pos++]= (float)f.val( *it);
     }
@@ -249,7 +256,7 @@ template<class DiscScalT>
     // Get values on edges
     for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
 #ifdef _PAR
-        if (it->IsExclusive())
+        if (AmIResponsible(*it))
 #endif
             locData[pos++]= (float)f.val( *it, 0.5);
     }
@@ -266,7 +273,7 @@ template<class DiscScalT>
     Uint pos= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
 #ifdef _PAR
-        if (it->IsExclusive())
+        if (AmIResponsible(*it))
 #endif
             for (int j=0; j<3; ++j)
                 locData[pos++]= (float)f.val( *it)[j];
@@ -275,7 +282,7 @@ template<class DiscScalT>
     // Get values on edges
     for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
 #ifdef _PAR
-        if (it->IsExclusive())
+        if (AmIResponsible(*it))
 #endif
             for (int j=0; j<3; ++j)
                 locData[pos++]= (float)f.val( *it, 0.5)[j];

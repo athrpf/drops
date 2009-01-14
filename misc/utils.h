@@ -12,8 +12,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <valarray>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <cmath>
 
 #ifndef M_PI
@@ -44,9 +47,11 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 /// Master process
 #ifdef _PAR
 #  define Drops_MasterC 0
-#  define MASTER (MPI::COMM_WORLD.Get_rank() == Drops_MasterC)
+#  define MASTER (DROPS::ProcCL::IamMaster())
 #  define IF_MASTER if (MASTER)
 #  define IF_NOT_MASTER if (!MASTER)
+/// Uncomment the following line to use C++-interface of MPI
+//#   define _MPICXX_INTERFACE
 #else
 #  define MASTER true
 #  define IF_MASTER
@@ -66,6 +71,9 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 #define DebugParallelHardC 128
 #define DebugParallelNumC  256
 #define DebugLoadBalC      512
+#define DebugDiscretizeC  1024
+#define DebugSubscribeC   2048
+#define DebugOutPutC      4096
 //@}
 
 /// The stream for dedug output.
@@ -73,7 +81,7 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 #ifndef _PAR
 #  define cdebug std::cerr
 #else
-#  define cdebug std::cerr << "["<<MPI::COMM_WORLD.Get_rank()<<"]: "
+#  define cdebug std::cerr << "["<<ProcCL::MyRank()<<"]: "
 #endif
 
 /// \brief This macro controls, for which portions of the code debugging and
@@ -119,6 +127,23 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 #  define __UNUSED__ __attribute__((__unused__))
 #else
 #  define __UNUSED__
+#endif
+
+/// \brief Select how to handle negative norms
+#define DROPS_ABORT_ON_NEG_SQ_NORM
+
+/// \brief Constant for zero squared norm
+const double ZeroNormC = 1.0e-32;
+
+/// \brief Makro to handle negative squared norm
+///
+/// It may happen, that a squared norm is negative due to rounding errors while
+/// computing the norm of a distributed vector. This makro set the norm to
+/// ZeroNormC or throws an exception.
+#ifdef DROPS_ABORT_ON_NEG_SQ_NORM
+#define DROPS_Check_Norm(a,b) if ((a)<0.) { cdebug << "Norm is "<<(a)<< std::endl; throw DROPSErrCL((b)); }
+#else
+#define DROPS_Check_Norm(a,b) if ((a)<0.) (a)= ZeroNormC
 #endif
 
 /// \name Macros for valarray-derivatives.
@@ -173,6 +198,40 @@ DROPS_ASSIGNMENT_OPS_FOR_VALARRAY_DERIVATIVE(theClass, theT, thebase_type)
 //@}
 
 
+/// \brief Get the address of the first element in a valarray
+///
+/// ("&x[0]" doesn't work, because "operator[] const" only returns a value)
+/// \todo (merge)  Addr() functions in 'misc/utils.h'?
+template <typename T>
+  inline const T*
+  Addr(const std::valarray<T>& x)
+{
+    return &(const_cast<std::valarray<T>&>(x)[0]);
+}
+
+/// \brief Get the address of the first element in a valarray
+template <typename T>
+  inline T*
+  Addr(std::valarray<T>& x)
+{
+    return &(x[0]);
+}
+
+template <typename T>
+  inline const T*
+  Addr(const std::vector<T>& x)
+{
+    return &(const_cast<std::vector<T>&>(x)[0]);
+}
+
+/// \brief Get the address of the first element in a vector
+template <typename T>
+  inline T*
+  Addr(std::vector<T>& x)
+{
+    return &(x[0]);
+}
+
 /// \brief Check, if a value is in a sequence.
 ///
 /// Returns true, iff value is in [beg, end).
@@ -195,7 +254,7 @@ inline bool is_in_if( In beg, In end, Pred p )
 
 /// \brief Iterate through a STL-container and do an operation if a condition holds
 template <class In, class Op, class Pred>
-void for_each_if( In beg, In end, Op f, Pred p )
+inline void for_each_if( In beg, In end, Op f, Pred p )
 {
     while (beg!=end) { if (p(*beg)) f(*beg); ++beg; }
 }
@@ -241,7 +300,8 @@ inline void
 _Assert(A assertion, E exc, Uint DebugLevel=~0)
 {
     if (DebugLevel&DROPSDebugC)
-        if (!assertion) throw exc;
+        if (!assertion)
+            throw exc;
 }
 
 
@@ -250,7 +310,8 @@ inline void
 _Assert(A assertion, const char* msg, Uint DebugLevel=~0)
 {
     if (DebugLevel&DROPSDebugC)
-        if (!assertion) throw DROPSErrCL(msg);
+        if (!assertion)
+            throw DROPSErrCL(msg);
 }
 //@}
 
@@ -325,6 +386,7 @@ invert_permutation (const PermutationT& p);
 
 /// \brief Return the first iterator i from [begin, end) where l(*j, *i) == false for all j in [begin, end) excluding i.
 /// For an empty sequence end is returned.
+/// \todo (merge) What is the difference to std::min_element?
 template <class Iterator, class Cmp>
   Iterator
   arg_min (Iterator begin, Iterator end, Cmp l= std::less<typename std::iterator_traits<Iterator>::value_type>())
@@ -344,6 +406,7 @@ template <class Iterator, class Cmp>
 
 /// \brief Return the first iterator i from [begin, end) where *i<=*j for all j in [begin, end).
 /// For an empty sequence end is returned.
+/// \todo (merge) What is the difference to std::min_element?
 template <class Iterator>
   Iterator
   arg_min (Iterator begin, Iterator end)
@@ -355,7 +418,7 @@ template <class Iterator>
 /// \brief Output [begin, end) to out, separated by newline.
 template <class Iterator>
 void
-seq_out (Iterator begin, Iterator end, std::ostream& out)
+inline seq_out (Iterator begin, Iterator end, std::ostream& out)
 {
     for (; begin != end; ++begin) out << *begin << '\n';
 }
@@ -399,9 +462,9 @@ struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
 template <class Pair>
 struct less1st: public std::binary_function<Pair, Pair, bool>
 {
-    bool operator() (const Pair& x, const Pair& y) const {
-        return x.first < y.first;
-    }
+  bool operator() (const Pair& x, const Pair& y) const {
+    return x.first < y.first;
+  }
 };
 
 /// \brief Iterator for a sequence of objects that is given as a sequence of pointers
@@ -488,9 +551,19 @@ template<class T, size_t S>
 };
 //@}
 
+/// \brief Create a directory
+int CreateDirectory(std::string path);
+
+/// \brief Remove a file
+int DeleteFile(std::string file);
+
+
 } // end of namespace DROPS
 
 #ifdef _PAR
+#  ifndef _MPICXX_INTERFACE
+#    define MPICH_SKIP_MPICXX
+#  endif
 #  pragma GCC system_header  // Suppress warnings from mpi.h
 #  include <mpi.h>
 #endif

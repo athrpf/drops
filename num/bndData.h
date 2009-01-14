@@ -2,9 +2,10 @@
 // File:    bndData.h                                                      *
 // Content: boundary data                                                  *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+//          Oliver Fortmeier, SC RWTH Aachen                               *
 //**************************************************************************
 
-/// \file
+/// \file bndData.h
 /// \brief Classes for storing and handling boundary data.
 
 #ifndef DROPS_BNDDATA_H
@@ -47,7 +48,7 @@ class BndCondInfoCL
 {
   protected:
     BndCondT bc_;
-  
+
   public:
     BndCondInfoCL( BndCondT bc= Nat0BC)
     /// \param bc boundary condition for one segment
@@ -76,16 +77,20 @@ class BndSegDataCL: public BndCondInfoCL
 
   public:
     BndSegDataCL( BndCondT bc= Nat0BC, bnd_val_fun f= 0)
-      : BndCondInfoCL(bc), bnd_val_(f)
+      :  BndCondInfoCL(bc), bnd_val_(f)
     /// \param bc boundary condition for one segment
     /// \param f  boundary value function on this segment. f has to be specified if bc is non-homogeneous
     { CheckValid( bc, f); }
-    
+
     static void CheckValid( BndCondT bc, bnd_val_fun f)
     /// check compatibility of boundary condition \a bc and boundary value function \a f.
     {
         if ( bc!=Nat0BC && bc!=Dir0BC && bc!=Per1BC && bc!=Per2BC && f==0)
            throw DROPSErrCL("BndSegDataCL: no boundary function for non-homogeneous condition specified!");
+#ifdef _PAR
+        if ( bc==Per1BC || bc==Per2BC )
+            throw DROPSErrCL("BndSegDataCL::CheckValid: No periodic boundary conditions in parDROPS implemented, yet, sorry");
+#endif
     }
 
     bnd_val_fun GetBndFun()    const { return bnd_val_; }
@@ -105,12 +110,12 @@ class BndCondCL
     /// If \a bc is given, it is assumed to be an array of length \a numbndseg
     /// containing the boundary conditions of the boundary segments.
     /// If \a bc is omitted, hom. natural boundary conditions are imposed (Nat0BC) for all boundary segments.
-	/// For the special case \a numbndseg=0 we always have GetBC() = NoBC and IsOnXXXBnd(...) = false (aka NoBndCondCL)  
+    /// For the special case \a numbndseg=0 we always have GetBC() = NoBC and IsOnXXXBnd(...) = false (aka NoBndCondCL)
     BndCondCL( BndIdxT numbndseg, const BndCondT* bc= 0)
     {
-    	BndCond_.resize( numbndseg);
+        BndCond_.resize( numbndseg);
         for (Uint i=0; i<numbndseg; ++i)
-      	    BndCond_[i]= bc ? bc[i] : Nat0BC;
+            BndCond_[i]= bc ? bc[i] : Nat0BC;
     }
 
     /// \name boundary condition
@@ -189,7 +194,7 @@ class BndDataCL: public BndCondCL
 class NoBndCondCL: public BndCondCL
 {
   public:
-	 NoBndCondCL() : BndCondCL(0) {} // no bnd segments stored 
+         NoBndCondCL() : BndCondCL(0) {} // no bnd segments stored
      // default copyctor, dtor, whatever
 
     template<class SimplexT>
@@ -235,7 +240,7 @@ inline double Zero( const Point3DCL&, double) { return 0.; }
 /// \brief returns zero vector (commonly used boundary data function)
 ///
 /// Commonly used boundary data function of type BndSegDataCL<Point3DCL>::bnd_val_fun
-/// returning zero velocities 
+/// returning zero velocities
 inline Point3DCL ZeroVel( const Point3DCL&, double) { return Point3DCL(0.); }
 
 
@@ -245,7 +250,7 @@ inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const BndCondT* bc, con
 {
     BndFun_.resize( numbndseg);
     for (Uint i=0; i<numbndseg; ++i) {
-  	    BndSegDataCL<BndValT>::CheckValid( bc ? bc[i] : Nat0BC, fun ? fun[i] : 0);
+            BndSegDataCL<BndValT>::CheckValid( bc ? bc[i] : Nat0BC, fun ? fun[i] : 0);
         BndFun_[i]= fun ? fun[i] : 0;
     }
 }
@@ -256,9 +261,9 @@ inline BndDataCL<BndValT>::BndDataCL( BndIdxT numbndseg, const bool* isneumann, 
 {
     BndFun_.resize( numbndseg);
     for (Uint i=0; i<numbndseg; ++i) {
-    	BndCond_[i]= isneumann[i] ? NatBC : DirBC;
+        BndCond_[i]= isneumann[i] ? NatBC : DirBC;
         BndFun_[i]= fun ? fun[i] : 0;
-  	    BndSegDataCL<BndValT>::CheckValid( BndCond_[i].GetBC(), BndFun_[i]);
+            BndSegDataCL<BndValT>::CheckValid( BndCond_[i].GetBC(), BndFun_[i]);
     }
 }
 
@@ -440,7 +445,7 @@ inline BndCondT BndCondCL::GetBC( const FaceCL& f) const
 
 inline BndCondT BndCondCL::GetBC( const FaceCL& f, BndIdxT& bidx) const
 /// Returns BC and number of boundary segment on face \a f
-{ 
+{
     if ( !f.IsOnBoundary() || !BndCond_.size()) { bidx= NoBndC; return NoBC; }
     return BndCond_[bidx= f.GetBndIdx()].GetBC();
 }

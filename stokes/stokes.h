@@ -15,6 +15,9 @@
 #include "num/fe.h"
 #include "num/discretize.h"
 
+#ifdef _PAR
+#  include "parallel/exchange.h"
+#endif
 
 namespace DROPS
 {
@@ -42,18 +45,33 @@ typedef SMatrixCL<3, 3> (*jacobi_fun_ptr)(const Point3DCL&);
 
 typedef VecDescBaseCL<VectorCL> VelVecDescCL;
 
+
 template <class Coeff>
+#ifndef _PAR
 class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
+#else
+class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
+#endif
 {
   public:
+#ifndef _PAR
     typedef ProblemCL<Coeff, StokesBndDataCL> _base;
-    typedef typename _base::CoeffCL           CoeffCL;
-    typedef typename _base::BndDataCL         BndDataCL;
-    using                                     _base::_MG;
-    using                                     _base::_Coeff;
-    using                                     _base::_BndData;
-    using                                     _base::GetBndData;
-    using                                     _base::GetMG;
+#else
+    typedef ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL> _base;
+#endif
+    typedef typename _base::CoeffCL                 CoeffCL;
+    typedef typename _base::BndDataCL               BndDataCL;
+    using _base::_MG;
+    using _base::_Coeff;
+    using _base::_BndData;
+    using _base::GetBndData;
+    using _base::GetMG;
+#ifdef _PAR
+    using _base::ex_;
+    using _base::GetEx;
+    /// \brief Numbering of blocks within ExchangeBlockCL
+    enum ExType { velocity=0, pressure=1 };
+#endif
 
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>           DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -69,52 +87,70 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     VecDescCL    p;
     VelVecDescCL b;
     VecDescCL    c;
-    MLMatDescCL    A,
+    MLMatDescCL  A,
                  B,
                  M;
 
+#ifndef _PAR
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
+        : _base( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg,  coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
+        : _base( mg, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
+#else
+    StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mgb, coeff, bdata, 2), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
+    StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mg, coeff, bdata, 2), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
+#endif
 
-    // Create and delete numbering of unknowns
-    void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
-    void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Pr, match); }
+    /// \name Create and delete numbering of unknowns
+    //@{
+    /// Within parallel these functions also create the Exchange classes.
+    void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0);
+    void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0);
     void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
+    //@}
 
-    // Set up matrices and complete rhs
+#ifdef _PAR
+    /// \brief Get a reference on Exchange class for pressure or for velocity
+    ExchangeCL& GetEx(Uint t)
+      { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
+
+    /// \brief Get a constant reference on Exchange class for pressure or for velocity
+    const ExchangeCL& GetEx(Uint t) const
+      { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
+#endif
+
+    /// \brief Set up matrices and complete rhs
     void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double= 0.0) const;
-    // Set up only A.
+    /// \brief  Set up only A.
     void SetupStiffnessMatrix(MLMatDescCL*) const;
-    // Set up mass-matrix for pressure-unknowns (P1)
+    /// \brief  Set up mass-matrix for pressure-unknowns (P1)
     void SetupPrMass(MLMatDescCL*) const;
-    // Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme
-    // Time-independent
+    /// \brief  Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme,
+    /// Time-independent
     void SetupMassMatrix(MLMatDescCL* matI) const;
 
-    // Setup time independent part of system
+    /// \brief  Setup time independent part of system
     void SetupInstatSystem( MLMatDescCL* A, MLMatDescCL* B, MLMatDescCL* M) const;
-    // Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
-    // If the function is called with the same vector for some arguments (out of 1, 2, 4),
-    // the vector will contain the sum of the results after the call
+    /// \brief  Setup time dependent parts: couplings with bnd unknowns, coefficient f(t)
+    /** If the function is called with the same vector for some arguments (out of 1, 2, 4),
+        the vector will contain the sum of the results after the call*/
     void SetupInstatRhs( VelVecDescCL* vA, VelVecDescCL* vB, VelVecDescCL* vI, double tA, VelVecDescCL* vf, double tf) const;
-    // Set initial value for velocities
+    /// \brief  Set initial value for velocities
     void InitVel( VelVecDescCL*, instat_vector_fun_ptr, double t0= 0.) const;
 
-    // Check system and computed solution
+    /// \brief  Check system and computed solution
     void GetDiscError (instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr, double t= 0.0) const;
     void CheckSolution(const VelVecDescCL*, const VecDescCL*, instat_vector_fun_ptr, jacobi_fun_ptr, scalar_fun_ptr) const;
     // XXX: merge stationary and instationary version
     void CheckSolution(const VelVecDescCL*, const VecDescCL*,
                        instat_vector_fun_ptr, instat_scalar_fun_ptr, double t) const;
 
-    // estimation a la Verfuerth
+    /// \brief  estimation a la Verfuerth
     static double ResidualErrEstimator(const TetraCL&, const const_DiscPrSolCL&, const const_DiscVelSolCL&, double t=0.0);
 
     //@{
@@ -131,6 +167,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     //@}
 };
 
+#ifndef _PAR
 template <class Coeff>
 class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
@@ -246,6 +283,7 @@ class StokesDoerflerMarkCL
     void   SwitchMark() { _DoMark= _DoMark ? false : true; }
     bool Estimate(const const_DiscPrSolCL&, const const_DiscVelSolCL&);
 };
+#endif // end of ifndef _PAR
 
 //======================================
 //        inline functions

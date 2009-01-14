@@ -9,6 +9,11 @@
 #include "geom/builder.h"
 #include "num/spmat.h"
 
+#ifdef _PAR
+#  include "parallel/parallel.h"   // for parallel reductions
+#  include "parallel/interface.h"  // for accumulation of vectors
+#endif
+
 namespace DROPS
 {
 
@@ -23,9 +28,9 @@ enum FiniteElementT
 /// - values >= 128 are used for vector-valued FE,
 ///   the difference to the scalar FE counterpart should be 128
 {
-    P0_FE=0,    P1_FE=1,    P2_FE=2,      P1Bubble_FE=3,   // for scalars
+    P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,  // for scalars
     P1D_FE=4, P1X_FE=5, P1IF_FE=6,
-                         vecP2_FE=130, vecP1Bubble_FE=131, // for vectors
+    vecP2_FE=130, vecP1Bubble_FE=131,          // for vectors
     UnknownFE_=-1
 };
 
@@ -34,7 +39,7 @@ enum FiniteElementT
 class FE_InfoCL
 {
   protected:
-	FiniteElementT fe_;    ///< FE type
+    FiniteElementT fe_;    ///< FE type
     //@{
     /// \brief Number of unknowns on the simplex-type.
     Uint NumUnknownsVertex_;
@@ -44,25 +49,30 @@ class FE_InfoCL
     //@}
 
   public:
-	FE_InfoCL( FiniteElementT fe) { SetFE(fe); }
+    FE_InfoCL( FiniteElementT fe) { SetFE(fe); }
 
-	/// \brief Initialize with given FE-type \a fe
-	void SetFE( FiniteElementT fe)
-	{
-            NumUnknownsVertex_= NumUnknownsEdge_= NumUnknownsFace_= NumUnknownsTetra_= 0;
-            switch(fe_= fe) {
-                case P0_FE:          NumUnknownsTetra_= 1; break;
-                case P1_FE:
-                case P1IF_FE:
-                case P1X_FE:         NumUnknownsVertex_= 1; break;
-                case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
-                case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
-                case P1D_FE:         NumUnknownsFace_= 1; break;
-                case P2_FE:          NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
-                case vecP2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
-                default:             throw DROPSErrCL("FE_InfoCL: unknown FE type");
-            }
-	}
+    /// \brief Initialize with given FE-type \a fe
+    void SetFE( FiniteElementT fe)
+    {
+#ifdef _PAR
+        if ( fe==P1X_FE )
+            throw DROPSErrCL("FE_InfoCL:SetFE No XFEM implemented for parDROPS so far. Sorry");
+#endif
+        NumUnknownsVertex_= NumUnknownsEdge_= NumUnknownsFace_= NumUnknownsTetra_= 0;
+        switch(fe_= fe) {
+            case P0_FE:          NumUnknownsTetra_= 1; break;
+            case P1_FE:
+            case P1IF_FE:
+            case P1X_FE:         NumUnknownsVertex_= 1; break;
+            case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
+            case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
+            case P1D_FE:         NumUnknownsFace_= 1; break;
+            case P2_FE:          NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
+            case vecP2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
+            default:             throw DROPSErrCL("FE_InfoCL: unknown FE type");
+        }
+    }
+
     /// \brief Return enum code corresponding to FE-type
     FiniteElementT GetFE() const { return fe_; }
     /// \brief Returns true for XFEM
@@ -76,8 +86,19 @@ class FE_InfoCL
     Uint NumUnknownsEdge()   const { return NumUnknownsEdge_; }
     Uint NumUnknownsFace()   const { return NumUnknownsFace_; }
     Uint NumUnknownsTetra()  const { return NumUnknownsTetra_; }
+    template<class SimplexT> Uint GetNumUnknownsOnSimplex() const
+    { throw DROPSErrCL("IdxDescCL::GetNumUnknowns: Unknown Simplex type"); }
     //@}
 };
+
+template<> 
+  inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<VertexCL>() const { return NumUnknownsVertex(); }
+template<> 
+  inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<EdgeCL>()   const { return NumUnknownsEdge(); }
+template<> 
+  inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<FaceCL>()   const { return NumUnknownsFace(); }
+template<> 
+  inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<TetraCL>()  const { return NumUnknownsTetra(); }
 
 class IdxDescCL;     // fwd decl
 template<class T>
@@ -97,7 +118,7 @@ typedef VecDescBaseCL<VectorCL> VecDescCL;
 /// NoIdx is stored.
 class ExtIdxDescCL
 {
-	friend class IdxDescCL;
+    friend class IdxDescCL;
     typedef std::vector<IdxT> ExtendedIdxT;
 
   private:
@@ -117,9 +138,9 @@ class ExtIdxDescCL
     void DeleteXNumbering() { Xidx_.resize(0); Xidx_old_.resize(0); }
 
   public:
-	/// Get XFEM stabilization bound
+        /// Get XFEM stabilization bound
     double GetBound() const { return omit_bound_; }
-	/// Set XFEM stabilization bound
+        /// Set XFEM stabilization bound
     void   SetBound( double omit_bound ) { omit_bound_= omit_bound; }
     /// Get extended index for DoF \p i
     IdxT  operator[]( const IdxT i ) const { return Xidx_[i]; }
@@ -213,6 +234,13 @@ class IdxDescCL: public FE_InfoCL
     /// \brief Mark unknown-indices as invalid.
     void DeleteNumbering( MultiGridCL& mg);
     /// \}
+
+#ifdef _PAR
+    /// \brief get number of unknowns exclusively stored on this proc
+    IdxT GetExclusiveNumUnknowns(const MultiGridCL&, int lvl=-1) const;
+    /// \brief get global number of exclusive unknowns
+    IdxT GetGlobalNumUnknowns(const MultiGridCL&, int lvl=-1) const;
+#endif
 };
 
 /// \brief multilevel IdxDescCL
@@ -221,12 +249,20 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
   public:
     MLIdxDescCL( FiniteElementT fe= P1_FE, size_t numLvl=1, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=1./32.)
     {
+#ifdef _PAR
+        if ( numLvl>1 )
+            throw DROPSErrCL("MLIdxDescCL::MLIdxDescCL: No multilevel implemented in parDROPS, yet, sorry");
+#endif
         for (size_t i=0; i< numLvl; ++i)
             this->push_back(IdxDescCL( fe, bnd, match, omit_bound));
     }
 
     void resize( size_t numLvl=1, FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=1./32.)
     {
+#ifdef _PAR
+        if ( numLvl>1 )
+            throw DROPSErrCL("MLIdxDescCL::resize: No multilevel implemented in parDROPS, yet, sorry");
+#endif
         if (numLvl <= this->size())
             static_cast<MLDataCL<IdxDescCL>*>( this)->resize( numLvl);
         else
@@ -242,6 +278,16 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
 
     /// \brief total number of unknowns on the triangulation
     IdxT NumUnknowns() const { return this->GetFinest().NumUnknowns(); }
+
+    /// \brief Number of unknowns on the simplex-type
+    //@{
+    Uint NumUnknownsVertex() const { return this->GetFinest().NumUnknownsVertex(); }
+    Uint NumUnknownsEdge()   const { return this->GetFinest().NumUnknownsEdge(); }
+    Uint NumUnknownsFace()   const { return this->GetFinest().NumUnknownsFace(); }
+    Uint NumUnknownsTetra()  const { return this->GetFinest().NumUnknownsTetra(); }
+    template<class SimplexT> Uint GetNumUnknownsOnSimplex() const
+    { return this->GetFinest().GetNumUnknownsOnSimplex<SimplexT>(); }
+    //@}
 
     /// \brief Initialize with given FE-type \a fe
     void SetFE( FiniteElementT fe )
@@ -285,6 +331,15 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
             it->DeleteNumbering( mg);
     }
     /// \}
+
+#ifdef _PAR
+    /// \brief get number of unknowns exclusively stored on this proc
+    IdxT GetExclusiveNumUnknowns(const MultiGridCL& mg, int lvl=-1) const
+    { return this->GetFinest().GetExclusiveNumUnknowns(mg, lvl); }
+    /// \brief get global number of exclusive unknowns
+    IdxT GetGlobalNumUnknowns(const MultiGridCL& mg, int lvl=-1) const
+    { return this->GetFinest().GetGlobalNumUnknowns(mg, lvl); }
+#endif
 };
 
 inline void
@@ -402,7 +457,7 @@ class VecDescBaseCL
     VecDescBaseCL()
         :RowIdx(0) {}
     /// \brief Initialize RowIdx with idx and contruct Data with the given size.
-    VecDescBaseCL( IdxDescCL* idx)   { SetIdx( idx); }
+    VecDescBaseCL( IdxDescCL* idx) { SetIdx( idx); }
     VecDescBaseCL( MLIdxDescCL* idx) { SetIdx( &(idx->GetFinest()) ); }
 
 
@@ -461,8 +516,16 @@ typedef MatDescBaseCL<MLMatrixCL,MLIdxDescCL> MLMatDescCL;
 /// \brief This class contains the main constituents of a forward problem
 ///     with a PDE.
 ///
+/// \param Coeff   coefficients of the underlying PDE
+/// \param BndData boundary conditions
+/// \param ExCL    class to manage exchange of numerical values over processors
+///
 /// \todo Probably we should not copy CoeffCL and BndDataCL.
+#ifndef _PAR
 template <class Coeff, class BndData>
+#else
+template <class Coeff, class BndData, class ExCL>
+#endif
 class ProblemCL
 {
   public:
@@ -474,6 +537,9 @@ class ProblemCL
     MultiGridCL& _MG;         ///< The multigrid.
     CoeffCL      _Coeff;      ///< Right-hand-side, coefficients of the PDE.
     BndDataCL    _BndData;    ///< boundary-conditions
+#ifdef _PAR
+    ExCL         ex_;         ///< Exchange of numerical data
+#endif
 
   public:
     /// \brief The multigrid constructed from mgbuilder will be destroyed if this variable leaves its scope.
@@ -481,13 +547,29 @@ class ProblemCL
         : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata) {}
     /// \brief The multigrid mg will be left alone if this variable leaves its scope.
     ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata)
-    : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata) {}
+        : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata) {}
+#ifdef _PAR
+    ProblemCL(const MGBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata, size_t blocks)
+        : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata), ex_(blocks)
+        /// \param blocks number of exchange blocks
+    {}
+    ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata, size_t blocks)
+        : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata), ex_(blocks)
+        /// \param blocks number of exchange blocks
+    {}
+#endif
     ~ProblemCL() { if (_myMG) delete &_MG; }
 
     MultiGridCL&       GetMG()            { return _MG; }
     const MultiGridCL& GetMG()      const { return _MG; }
     const CoeffCL&     GetCoeff()   const { return _Coeff; }
     const BndDataCL&   GetBndData() const { return _BndData; }
+#ifdef _PAR
+    /// \brief Get reference on exchange class
+    ExCL&              GetEx()            { return ex_; }
+    /// \brief Get constant reference on exchange class
+    const ExCL&        GetEx()      const { return ex_; }
+#endif
 };
 
 
@@ -636,6 +718,10 @@ void CreateNumbOnSimplex( const Uint idx, IdxT& counter, Uint stride,
     {
         if ( !Bnd.IsOnDirBnd( *it) )
         {
+#ifdef _PAR
+            if (it->IsMarkedForRemovement())
+                continue;
+#endif
             it->Unknowns.Prepare( idx);
             it->Unknowns( idx)= counter;
             counter+= stride;

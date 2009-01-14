@@ -2,6 +2,7 @@
 // File:     spmat.h                                                       *
 // Content:  sparse matrix in compressed row format                        *
 // Author:   Joerg Peters, Volker Reichelt, IGPM RWTH Aachen               *
+//           Oliver Fortmeier, SC RWTH Aachen                              *
 // Version:  0.2                                                           *
 //**************************************************************************
 
@@ -15,13 +16,16 @@
 #include <deque>
 #include <numeric>
 #include <limits>
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
 #    include <tr1/unordered_map>
 #else
 #    include <map>
 #endif
-#include <misc/utils.h>
-#include <misc/container.h>
+#include "misc/utils.h"
+#include "misc/container.h"
+#ifdef _PAR
+# include "parallel/parallel.h"
+#endif
 
 namespace DROPS
 {
@@ -68,7 +72,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
 template <typename T>
 T  VectorBaseCL<T>::operator[](size_t s) const
 {
-    Assert(s<base_type::size(), "VectorBaseCL []: index out of bounds", DebugNumericC);
+    Assert(s<base_type::size(), "VectorBaseCL [] const: index out of bounds", DebugNumericC);
     return (*static_cast<const base_type*>( this))[s];
 }
 
@@ -79,23 +83,6 @@ T& VectorBaseCL<T>::operator[](size_t s)
     return (*static_cast<base_type*>( this))[s];
 }
 #endif
-
-
-// Get the address of the first element in a valarray
-// ("&x[0]" doesn't work, because "operator[] const" only returns a value)
-template <typename T>
-  inline const T*
-  Addr(const std::valarray<T>& x)
-{
-    return &(const_cast<std::valarray<T>&>(x)[0]);
-}
-
-template <typename T>
-  inline T*
-  Addr(std::valarray<T>& x)
-{
-    return &(x[0]);
-}
 
 template <class T>
   inline T
@@ -186,7 +173,7 @@ template <typename T>
 template <typename T>
 class SparseMatBaseCL;
 
-
+/// \brief Building up sparse matrices
 template <typename T>
 class SparseMatBuilderCL
 {
@@ -194,7 +181,7 @@ public:
     typedef T                        valueT;
     typedef SparseMatBaseCL<T>       spmatT;
     typedef std::pair<size_t,valueT> entryT;
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
     typedef std::tr1::unordered_map<size_t,valueT> couplT;
 #else
     typedef std::map<size_t,valueT> couplT;
@@ -228,7 +215,7 @@ public:
         }
     }
 
-    ~SparseMatBuilderCL() { delete[] _coupl; }
+    ~SparseMatBuilderCL() { if (_coupl) delete[] _coupl; }
 
     T& operator() (size_t i, size_t j)
     {
@@ -259,13 +246,13 @@ void SparseMatBuilderCL<T>::Build()
     if (_reuse) return;
 
     size_t nz= 0;
-    for (size_t i= 0; i < _rows; ++i)
+    for (size_t i= 0; i<_rows; ++i)
         nz+= _coupl[i].size();
 
-    _mat->resize( _rows, _cols, nz);
+    _mat->resize(_rows, _cols, nz);
 
     nz= 0;
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER) 
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
     typedef std::pair<size_t, T> PT;
     std::vector<PT> pv;
     for (size_t i= 0; i < _rows; ++i) {
@@ -329,8 +316,8 @@ private:
 public:
     typedef T value_type;
 
-    SparseMatBaseCL () : version_( 1) {}
-    SparseMatBaseCL& operator= (const SparseMatBaseCL& m);    
+    SparseMatBaseCL () : version_(1) {}
+    SparseMatBaseCL& operator= (const SparseMatBaseCL& m);
     // default copy-ctor, dtor
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz)
         : _rows(rows), _cols(cols), version_( 1), _rowbeg(rows+1), _colind(nz), _val(nz) {}
@@ -352,13 +339,16 @@ public:
     size_t num_rows     () const { return _rows; }
     size_t num_cols     () const { return _cols; }
     size_t num_nonzeros () const { return _val.size(); }
+#ifdef _PAR
+    size_t num_acc_nonzeros() const { return GlobalSum(num_nonzeros()); }
+#endif
 
     size_t row_beg (size_t i) const { return _rowbeg[i]; }
     size_t col_ind (size_t i) const { return _colind[i]; }
     T      val     (size_t i) const { return _val[i]; }
 
-    void IncrementVersion() { ++version_; }
-    size_t Version() const {  return version_; }
+    void IncrementVersion() { ++version_; }         ///< Increment modification version number
+    size_t Version() const  {  return version_; }   ///< Get modification version number
 
     const size_t* GetFirstCol(size_t i) const { return Addr(_colind)+_rowbeg[i]; }
     const T*      GetFirstVal(size_t i) const { return Addr(_val)+_rowbeg[i]; }
@@ -477,7 +467,7 @@ template <typename T>
         for (size_t i= row_beg( r), j= 0; i < row_beg( r + 1); ++i, ++j) {
             _colind[i]= pv[j].first;
             _val[i]= pv[j].second;
-        }        
+        }
     }
 }
 
@@ -539,7 +529,7 @@ class BlockMatrixBaseCL
     size_t num_rows() const { return this->num_rows( 0) + this->num_rows( 1); }
     size_t num_cols() const { return this->num_cols( 0) + this->num_cols( 1); }
 
-    const MatT* GetBlock( size_t b) const          { return block_[b]; }
+    const MatT* GetBlock( size_t b) const { return block_[b]; }
     void        SetBlock( size_t b, const MatT* m) { block_[b]= m; }
 
     OperationT GetOperation( size_t b) const { return operation_[b]; }
@@ -666,10 +656,16 @@ VectorBaseCL<typename MatT::value_type> BlockMatrixBaseCL<MatT>::GetDiag() const
 
 //*****************************************************************************
 //
-//  Composition of 2 matrices
+///  \brief Composition of 2 matrices
 //
 //*****************************************************************************
+#ifndef _PAR
 template <class MatT0, class MatT1>
+#else
+/// \param Ex0T : ExchangeCL for handling resulting vectors of block[0]*v
+/// \param Ex1T : ExchangeCL for handling resulting vectors of block_[1]*block[0]*v
+template <typename MatT0, typename MatT1, typename ExT0, typename ExT1>
+#endif
 class CompositeMatrixBaseCL
 {
   public:
@@ -680,13 +676,25 @@ class CompositeMatrixBaseCL
     const MatT0* block0_;
     const MatT1* block1_;
     OperationT operation_[2];
+#ifdef _PAR
+    const ExT0& ex0_;      // ExchangeCL for handling resulting vectors of block[0]*v
+    const ExT1& ex1_;      // ExchangeCL for handling resulting vectors of block_[1]*block[0]*v
+#endif
 
   public:
+#ifndef _PAR
     CompositeMatrixBaseCL( const MatT0* A, OperationT Aop, const MatT1* B, OperationT Bop);
+#else
+    CompositeMatrixBaseCL( const MatT0* A, OperationT Aop, const MatT1* B, OperationT Bop,
+                           const ExT0& ex0, const ExT1& ex1);
+#endif
 
     size_t num_rows() const;
     size_t num_cols() const;
     size_t intermediate_dim() const;
+#ifdef _PAR
+    const ExT0& GetIntermediateEx() const { return ex0_; }
+#endif
 
     const MatT0* GetBlock0 () const { return block0_; }
     const MatT1* GetBlock1 () const { return block1_; }
@@ -698,20 +706,36 @@ class CompositeMatrixBaseCL
         return operation_[b] == MUL ? TRANSP_MUL : MUL;
     }
 
+#ifndef _PAR
     CompositeMatrixBaseCL<MatT1, MatT0> GetTranspose() const;
+#else
+    CompositeMatrixBaseCL<MatT1, MatT0, ExT1, ExT0> GetTranspose() const;
+#endif
 };
 
+#ifndef _PAR
 template <class MatT0, class MatT1>
 CompositeMatrixBaseCL<MatT0, MatT1>::CompositeMatrixBaseCL( const MatT0* A, OperationT Aop,
     const MatT1* B, OperationT Bop)
+#else
+template <typename MatT0, typename MatT1, typename ExT0, typename ExT1>
+CompositeMatrixBaseCL<MatT0, MatT1, ExT0, ExT1>::CompositeMatrixBaseCL( const MatT0* A, OperationT Aop,
+    const MatT1* B, OperationT Bop, const ExT0& ex0, const ExT1& ex1) : ex0_(ex0), ex1_(ex1)
+#endif
 {
     block0_= A; operation_[0]= Aop;
     block1_= B; operation_[1]= Bop;
 }
 
+#ifndef _PAR
 template <class MatT0, class MatT1>
 size_t
 CompositeMatrixBaseCL<MatT0, MatT1>::num_rows() const
+#else
+template <typename MatT0, typename MatT1, typename ExT0, typename ExT1>
+size_t
+CompositeMatrixBaseCL<MatT0, MatT1, ExT0, ExT1>::num_rows() const
+#endif
 {
     switch (operation_[1]) {
       case MUL:        return block1_->num_rows();
@@ -722,9 +746,15 @@ CompositeMatrixBaseCL<MatT0, MatT1>::num_rows() const
     }
 }
 
+#ifndef _PAR
 template <class MatT0, class MatT1>
 size_t
 CompositeMatrixBaseCL<MatT0, MatT1>::num_cols() const
+#else
+template <typename MatT0, typename MatT1, typename ExT0, typename ExT1>
+size_t
+CompositeMatrixBaseCL<MatT0, MatT1, ExT0, ExT1>::num_cols() const
+#endif
 {
     switch (operation_[0]) {
       case MUL:        return block0_->num_cols();
@@ -735,9 +765,15 @@ CompositeMatrixBaseCL<MatT0, MatT1>::num_cols() const
     }
 }
 
+#ifndef _PAR
 template <class MatT0, class MatT1>
 size_t
 CompositeMatrixBaseCL<MatT0, MatT1>::intermediate_dim() const
+#else
+template <typename MatT0, typename MatT1, typename ExT0, typename ExT1>
+size_t
+CompositeMatrixBaseCL<MatT0, MatT1, ExT0, ExT1>::intermediate_dim() const
+#endif
 {
     switch (operation_[0]) {
       case MUL:        return block0_->num_rows();
@@ -748,6 +784,7 @@ CompositeMatrixBaseCL<MatT0, MatT1>::intermediate_dim() const
     }
 }
 
+#ifndef _PAR
 template <class MatT0, class MatT1>
 CompositeMatrixBaseCL<MatT1, MatT0>
 CompositeMatrixBaseCL<MatT0, MatT1>::GetTranspose() const
@@ -755,6 +792,19 @@ CompositeMatrixBaseCL<MatT0, MatT1>::GetTranspose() const
     return CompositeMatrixBaseCL<MatT1,MatT0>( block1_, GetTransposeOperation( 1),
         block0_, GetTransposeOperation( 0));
 }
+#else
+template <typename MatT0, typename MatT1, typename ExT0, typename ExT1>
+CompositeMatrixBaseCL<MatT1, MatT0, ExT1, ExT0>
+CompositeMatrixBaseCL<MatT0, MatT1, ExT0, ExT1>::GetTranspose() const
+{
+    CompositeMatrixBaseCL<MatT1, MatT0, ExT1, ExT0> ret( block1_, GetTransposeOperation( 1),
+        block0_, GetTransposeOperation( 0), ex1_, ex0_);
+    if(ret.intermediate_dim()!=ex1_.GetNum() || ret.num_rows()!=ex0_.GetNum()){
+        throw DROPSErrCL("CompositeMatrixBaseCL:GetTranspose: Dimension of ExchangeCL does not match");
+    }
+    return ret;
+}
+#endif
 
 //*****************************************************************************
 //
@@ -903,6 +953,7 @@ std::istream& operator>> (std::istream& in, SparseMatBaseCL<T>& A)
 template <typename T>
   inline typename SparseMatBaseCL<T>::value_type
   supnorm(const SparseMatBaseCL<T>& M)
+/// In parallel, this function may not work as expected
 {
     typedef typename SparseMatBaseCL<T>::value_type valueT;
     const size_t nr= M.num_rows();
@@ -920,6 +971,7 @@ template <typename T>
 template <typename T>
   typename SparseMatBaseCL<T>::value_type
   frobeniusnorm (const SparseMatBaseCL<T>& M)
+/// In parallel, this function may not work as expected
 {
     typedef typename SparseMatBaseCL<T>::value_type valueT;
     const size_t nz= M.num_nonzeros();
@@ -932,6 +984,7 @@ template <typename T>
 template <typename T>
   std::valarray<typename SparseMatBaseCL<T>::value_type>
   LumpInRows(const SparseMatBaseCL<T>& M)
+/// In parallel, this function may not work as expected
 {
     std::valarray<typename SparseMatBaseCL<T>::value_type>
         v( M.num_rows());
@@ -966,6 +1019,10 @@ template <typename T>
 }
 
 /// \brief Compute the linear combination of two sparse matrices efficiently.
+/// \todo Das alte Pattern wiederzuverwenden, macht mal wieder Aerger:
+///   Zur Zeit (2.2008) mit der Matrix im NS-Loeser nach Gitteraenderungen, die
+///   die Anzahl der Unbekannten nicht aendert. Daher schalten wir die
+///   Wiederverwendung vorerst global aus.
 template <typename T>
 SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
                                                  double coeffB, const SparseMatBaseCL<T>& B)
@@ -1046,6 +1103,7 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
 }
 
 /// \brief Compute the transpose matrix of M explicitly.
+///
 /// This could be handled more memory-efficient by exploiting
 /// that the column-indices in the rows of M are ascending.
 template <typename T>
@@ -1057,18 +1115,20 @@ transpose (const SparseMatBaseCL<T>& M, SparseMatBaseCL<T>& Mt)
         for (size_t nz= M.row_beg( i); nz < M.row_beg( i + 1); ++nz)
             Tr( M.col_ind( nz), i)= M.val( nz);
     Tr.Build();
-}   
+}
 
 
 /// \brief Compute the diagonal of B*B^T.
 ///
 /// The commented out version computes B*M^(-1)*B^T
+///
+/// In parallel, this function may not work as expected
 template <typename T>
 VectorBaseCL<T>
 BBTDiag (const SparseMatBaseCL<T>& B /*, const VectorBaseCL<T>& Mdiaginv*/)
 {
     VectorBaseCL<T> ret( B.num_rows());
-    
+
     T Bik;
     for (size_t i= 0; i < B.num_rows(); ++i) {
         for (size_t l= B.row_beg( i); l < B.row_beg( i + 1); ++l) {
@@ -1111,7 +1171,8 @@ VectorBaseCL<_VecEntry> operator * (const SparseMatBaseCL<_MatEntry>& A, const V
     Assert( A.num_cols()==x.size(), "SparseMatBaseCL * VectorBaseCL: incompatible dimensions", DebugNumericC);
     y_Ax( &ret[0],
           A.num_rows(),
-          A.raw_val(),A.raw_row(),
+          A.raw_val(),
+          A.raw_row(),
           A.raw_col(),
           Addr( x));
     return ret;
@@ -1209,10 +1270,17 @@ Vec transp_mul(const BlockMatrixBaseCL<Mat>& A, const Vec& x)
 }
 
 
+#ifndef _PAR
 template <typename _MatT0, typename _MatT1, typename _VecEntry>
 VectorBaseCL<_VecEntry>
 operator*(const CompositeMatrixBaseCL<_MatT0, _MatT1>& A,
     const VectorBaseCL<_VecEntry>& x)
+#else
+template <typename _MatT0, typename _MatT1, typename _VecEntry, typename _ExT0, typename _ExT1>
+VectorBaseCL<_VecEntry>
+operator*(const CompositeMatrixBaseCL<_MatT0, _MatT1, _ExT0, _ExT1>& A,
+    const VectorBaseCL<_VecEntry>& x)
+#endif
 {
     VectorBaseCL<_VecEntry> tmp( A.intermediate_dim());
     switch( A.GetOperation( 0)) {
@@ -1221,7 +1289,10 @@ operator*(const CompositeMatrixBaseCL<_MatT0, _MatT1>& A,
       case TRANSP_MUL:
         tmp= transp_mul( *A.GetBlock0(), x); break;
     }
-    VectorBaseCL<_VecEntry> ret( A.num_rows());
+#ifdef _PAR
+    A.GetIntermediateEx().Accumulate(tmp);
+#endif
+    VectorBaseCL<_VecEntry> ret( A.num_cols());
     switch( A.GetOperation( 1)) {
       case MUL:
         ret= (*A.GetBlock1())*tmp; break;
@@ -1229,13 +1300,19 @@ operator*(const CompositeMatrixBaseCL<_MatT0, _MatT1>& A,
         ret= transp_mul( *A.GetBlock1(), tmp); break;
     }
     return ret;
-
 }
 
+#ifndef _PAR
 template <typename _MatT0, typename _MatT1, typename _VecEntry>
 VectorBaseCL<_VecEntry>
 transp_mul(const CompositeMatrixBaseCL<_MatT0, _MatT1>& A,
     const VectorBaseCL<_VecEntry>& x)
+#else
+template <typename _MatT0, typename _MatT1, typename _VecEntry, typename _ExT0, typename _ExT1>
+VectorBaseCL<_VecEntry>
+transp_mul(const CompositeMatrixBaseCL<_MatT0, _MatT1, _ExT0, _ExT1>& A,
+    const VectorBaseCL<_VecEntry>& x)
+#endif
 {
     return A.GetTranspose()*x;
 }
@@ -1268,7 +1345,7 @@ mul_row (const Mat& A, const Vec& x, size_t row)
 }
 
 //=============================================================================
-//  Reverse Cuthill-McKee ordering 
+//  Reverse Cuthill-McKee ordering
 //=============================================================================
 
 /// \brief The first component is the degree of the vertex, the second is its number.
@@ -1292,7 +1369,7 @@ template <typename T>
     std::vector<size_t>& degree)
 {
     typedef std::deque<size_t> QueueT;
-    QueueT Q;    
+    QueueT Q;
 
     // Insert v into queue and number v.
     Q.push_back( v);
@@ -1438,7 +1515,7 @@ reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
     size_t idx= 0;
     p.assign( N, NoVert);
 
-    std::vector<size_t> degree( N);    
+    std::vector<size_t> degree( N);
     for (size_t r= 0; r < N; ++r)
         degree[r]= M->row_beg( r + 1) - M->row_beg( r);
     std::vector<DegVertT> V;
@@ -1486,7 +1563,11 @@ class MLSparseMatBaseCL : public MLDataCL<SparseMatBaseCL<T> >
     typedef typename MLSparseMatBaseCL<T>::iterator       ML_iterator;
   public:
     MLSparseMatBaseCL (size_t lvl= 1)
-    { 
+    {
+#ifdef _PAR
+        if (lvl>1)
+            throw DROPSErrCL("MLSparseMatBaseCL::MLSparseMatBaseCL: No multilevel matrices in the parallel version, yet, sorry");
+#endif
         this->resize(lvl);
     }
     size_t Version      () const { return this->GetFinest().Version();}
@@ -1558,11 +1639,16 @@ VectorBaseCL<_VecEntry> operator* (const MLSparseMatBaseCL<_MatEntry>& A, const 
 //  Typedefs
 //=============================================================================
 
-typedef VectorBaseCL<double>                      VectorCL;
-typedef SparseMatBaseCL<double>                   MatrixCL;
-typedef SparseMatBuilderCL<double>                MatrixBuilderCL;
-typedef BlockMatrixBaseCL<MatrixCL>               BlockMatrixCL;
+typedef VectorBaseCL<double>            VectorCL;
+typedef SparseMatBaseCL<double>         MatrixCL;
+typedef SparseMatBuilderCL<double>      MatrixBuilderCL;
+typedef BlockMatrixBaseCL<MatrixCL>     BlockMatrixCL;
+#ifndef _PAR
 typedef CompositeMatrixBaseCL<MatrixCL, MatrixCL> CompositeMatrixCL;
+#else
+class ExchangeCL;
+typedef CompositeMatrixBaseCL<MatrixCL, MatrixCL, ExchangeCL, ExchangeCL> CompositeMatrixCL;
+#endif
 typedef VectorAsDiagMatrixBaseCL<double>          VectorAsDiagMatrixCL;
 
 typedef MLSparseMatBaseCL<double>                 MLMatrixCL;
@@ -1570,4 +1656,3 @@ typedef BlockMatrixBaseCL<MLMatrixCL>             MLBlockMatrixCL;
 } // end of namespace DROPS
 
 #endif
-

@@ -1,0 +1,142 @@
+#=============================================================
+#    DROPS parameter file for    TestBrickPar
+#    simulation of two-phase flow:
+#    sedimentation of a droplet
+#=============================================================
+# time stepping
+Time {
+  NumSteps      =   5
+  StepSize      =   1e-4
+  ThetaLevelset =   1   # backward Euler
+  ThetaStokes   =   1   # backward Euler
+}
+
+# flow solver
+Stokes {
+ InnerIter     =   1000
+ OuterIter     =   200
+ InnerTol      =   1e-12
+ OuterTol      =   1e-10
+ StokesMethod  =   -1  # no effect
+}
+
+# Navier-Stokes settings
+NavStokes {
+  Nonlinear = 1
+  Scheme    = 1     # time integration: 0=FS op.splitting, 1=theta-scheme
+  Tol       = 1e-7
+  Iter      = 20
+  Reduction = 0.1
+}
+
+# levelset solver
+Levelset {
+  Tol           =   1e-10
+  Iter          =   1000
+  SD            =   0.1
+  CurvDiff      =   -1
+  VolCorrection =   0
+}
+
+Coupling {
+  Tol       =   1e-10   # not used a.t.m.
+  Iter      =   10  # -1 = till convergence
+  Stab      =   0.
+}
+
+# re-initialization of levelset function
+Reparam {
+  Freq      =   0   # 0 = no reparametrization
+  Method    =   1   # 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
+  NarrowBand=  -1.0 # Narrow-Band method, if euclidian reparametrization is used
+}
+
+# adaptive refinement
+AdaptRef {
+  Freq          =   0
+  FinestLevel   =   3          # finest level of the grid
+  Width         =   0.0115      # refine the grid in this distance to the middle of the drop/NMR-Window(?)
+}
+
+# material data, all units are SI
+Mat {
+  DensDrop      =   845.442
+  ViscDrop      =   3.281e-3
+  DensFluid     =   986.506
+  ViscFluid     =   1.388e-3
+  SmoothZone    =   1e-4
+}
+# experimental conditions
+Exp {
+  RadDrop   =   -1.75e-3 -1.75e-3 -1.75e-3
+  PosDrop   =   0  -11e-3  0                    # used to define, where the grid should be refined
+  Gravity   =   0   -9.81   0
+  FlowDir   =   1   # flow in y-direction
+  InflowVel =   -0.0509969
+  RadInlet  =   3.6e-3  # 3.5e-3 for old meas. cell
+}
+
+# surface tension
+SurfTens {
+  VarTension  = 0       # 0=off, 1=on
+  SurfTension = 1.63e-3 # surface tension coefficient
+  JumpWidth   = 5e-4    # jump width
+  RelPos      = 0.5     # position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+  DirtFactor  = 0.8     # red. factor for surface tension (due to contamination) in lower droplet)
+}
+
+LoadBalancing {
+  RefineStrategy =   1    # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
+  Qualtity       =   1.00 # Quality of loadbalancing (1.0 is perfect, suggestion of ParMETIS: 1.05)
+}
+
+# Quadrilateral Grid
+QuadrilateralGrid {
+    Quad        = 1                     # Write out qudrilateral grid
+    GridX       = 128                    # Gridpoints in X dimension
+    GridY       = 100                    # Gridpoints in Y dimension
+    GridZ       = 37                    # Gridpoints in Z dimension
+    Stepsize    = 7.8e-5 23.5e-5 20e-5  # Stepsize in each direction
+    Barycenter  = -0.35e-3 -11e-3 0           # Barycenter of the grid
+    Rotation    = 0 0 0                 # Rotation
+    FileName    = ./wrapNMR             # result-file prefix
+}
+
+# Ensight settings
+Ensight {
+    EnsightOut  = 0
+    EnsCase     = nsmzi
+    EnsDir      = ensight
+    Binary      = 0
+    MasterOut   = 0
+    GeomName    = messzelle
+}
+
+#VTK output
+VTK{
+    VTKOut      = 0
+    VTKDir      = vtk
+    VTKName     = mzelle
+    Binary      = 0
+}
+
+# Info
+Info{
+    PrintSize   = 1
+    PrintNumUnk = 1
+    CheckMG     = 1
+}
+
+# Write out results
+MGSerialization {
+  Serialization = 0
+  Overwrite     = 1
+  SerDir        = ./geometry/
+}
+
+
+# miscellaneous
+XFEMStab    =   0.
+InitialCond =   2   # 0=zero, 1/2=flow with/without drop, 3=read from file
+InitialFile =   input/nsmzi
+MeshFile    =   ../levelset/gambit/NMR_05.msh

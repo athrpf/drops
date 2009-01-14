@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<testsuite mprunner="mpirun">
+	<program label="Poisson" exec="../TestPoissonPar" paramTpl="./param-file-tpl/Poisson.param.tpl" >	
+	 <testset processors="1,2,3,4">
+	  <config>
+	    <setting label="__REFINE__">1</setting>
+	    <setting label="__SOLVER__">2</setting>
+	    <setting label="__PRECOND__">1</setting>
+	  </config>
+	  <values>
+		  <!-- EQUALS (0.001) -->
+		  <value label="EQUAL(T) 2-Norm" regExp="\s*2-Norm\s*=\s*([0-9.]*)" mode="equals(0.0001)" >
+			  0.485864382752
+		  </value>
+		  <value label="EQUAL(T) w-2-Norm" regExp="\s*w-2-Norm\s*=\s*([0-9.]*)" mode="equals(0.01)" >	
+			  0.0262342107687
+		  </value>
+		  <value label="EQUAL(T) max-Norm" regExp="\s*max-Norm\s*=\s*([0-9.]*)" mode="equals(0.01)" >	
+			  0.0558221534937
+		  </value>
+		  <value label="EQUAL(T) L2-Norm" regExp="\s*L2-Norm\s*=\s*([0-9.]*)" mode="equals(0.01)" >		  
+			  0.275019758154
+		  </value>		  		  		  
+	  </values> 
+  	 </testset>
+ 	</program>
+	 <program label="RefPar" exec="../TestRefPar" paramTpl="./param-file-tpl/Ref.param.tpl">
+	<testset processors="4">
+		 <config>
+			 <setting label="__REFINE__">1</setting>			 
+			 <setting label="__COARSE__">1</setting>
+		 </config>
+		 <values>	  		  		  
+		 </values> 
+  	 </testset>	 
+	 <testset  processors="4">
+		 <config>
+			 <setting label="__REFINE__">1</setting>			 
+			 <setting label="__COARSE__">2</setting>
+		 </config>
+		 <values>	  		  		  
+		 </values> 
+  	 </testset>	 
+	 <testset  processors="4">
+		 <config>
+			 <setting label="__REFINE__">2</setting>			 
+			 <setting label="__COARSE__">1</setting>
+		 </config>
+		 <values>	  		  		  
+		 </values> 
+  	 </testset>	 
+	 <testset  processors="4">
+		 <config>
+			 <setting label="__REFINE__">2</setting>			 
+			 <setting label="__COARSE__">2</setting>
+		 </config>
+		 <values>	  		  		  
+		 </values> 
+  	 </testset>	 
+	</program>
+			
+</testsuite>

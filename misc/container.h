@@ -3,6 +3,7 @@
 // Content:  simple array in STL style                                     *
 //           level-based array                                             *
 // Author:   Joerg Peters, Volker Reichelt, IGPM RWTH Aachen               *
+//           Oliver Fortmeier, SC RWTH Aachen                              *
 // Version:  0.2                                                           *
 // History:                                                                *
 //                                                                         *
@@ -34,16 +35,25 @@ template <typename T>
 class DMatrixCL
 {
   private:
-    size_t Rows_;
+    size_t Rows_, Cols_;
     T* Array_;
 
   public:
-    DMatrixCL(size_t row, size_t col) : Rows_(row), Array_(new T[row*col]) {}
+    DMatrixCL(size_t row, size_t col) : Rows_(row), Cols_(col), Array_(new T[row*col]) {}
     ~DMatrixCL() { delete[] Array_; }
 
-    T& operator() (size_t row, size_t col)       { return Array_[col*Rows_+row]; }
-    T  operator() (size_t row, size_t col) const { return Array_[col*Rows_+row]; }
-    T* GetCol     (size_t col)                   { return Array_+col*Rows_; }
+    T& operator() (size_t row, size_t col)       {
+        Assert(row<Rows_ && col<Cols_, DROPSErrCL("DMatrixCL::operator(): Invalide index"), DebugNumericC);
+        return Array_[col*Rows_+row];
+    }
+    T  operator() (size_t row, size_t col) const {
+        Assert(row<Rows_ && col<Cols_, DROPSErrCL("DMatrixCL::operator() const: Invalide index"), DebugNumericC);
+        return Array_[col*Rows_+row];
+    }
+    T* GetCol     (size_t col)                   {
+        Assert(col<Cols_, DROPSErrCL("DMatrixCL::GetCol: Invalide index"), DebugNumericC);
+        return Array_+col*Rows_;
+    }
 };
 
 
@@ -135,6 +145,20 @@ template <class T, Uint _Size>
         if (a0[i] < a1[i]) return true;
         else if ( a0[i] > a1[i]) return false;
     return false;
+}
+
+template <class T, Uint _Size>
+  inline const T*
+  Addr(const SArrayCL<T, _Size>& a)
+{
+    return a.begin();
+}
+
+template <class T, Uint _Size>
+  inline T*
+  Addr(SArrayCL<T, _Size>& a)
+{
+    return a.begin();
 }
 
 //**************************************************************************

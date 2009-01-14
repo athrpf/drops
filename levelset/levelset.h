@@ -13,6 +13,13 @@
 #include "levelset/mgobserve.h"
 #include <vector>
 
+#ifdef _PAR
+# include "parallel/exchange.h"
+# include "num/parsolver.h"
+# include "num/parprecond.h"
+# include "misc/container.h"
+#endif
+
 namespace DROPS
 {
 
@@ -32,6 +39,14 @@ class LevelsetP2CL
     typedef BndDataCL<>    BndDataT;
     typedef P2EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
     typedef P2EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
+#ifndef _PAR
+    typedef SSORPcCL                                          PCT;
+    typedef GMResSolverCL<PCT>                                SolverT;
+#else
+    typedef ParJac0CL<ExchangeCL>                             PCT;
+    typedef ParPreGMResSolverCL<PCT, ExchangeCL>              SolverT;
+#endif
+
 
     IdxDescCL             idx;
     VecDescCL             Phi;        ///< level set function
@@ -46,8 +61,11 @@ class LevelsetP2CL
                         theta_, dt_;
     MatrixCL            L_;
     BndDataT            Bnd_;
-    mutable SSORPcCL    pc_;
-    GMResSolverCL<SSORPcCL>  gm_;
+#ifdef _PAR
+    ExchangeCL          ex_;
+#endif
+    mutable PCT         pc_;
+    SolverT             gm_;
     SurfaceForceT       SF_;
 
     void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
@@ -57,6 +75,7 @@ class LevelsetP2CL
   public:
     MatrixCL            E, H;
 
+#ifndef _PAR
     LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
         double theta= 0.5, double SD= 0., double diff= 0., int iter= 1000, double tol= 1e-7,
         double curvDiff= -1.)
@@ -71,17 +90,39 @@ class LevelsetP2CL
     : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
         theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
     {}
+#else
+    LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
+                  double theta= 0.5, double SD= 0, double diff= 0, Uint iter=1000, double tol=1e-7,
+                  double curvDiff= -1, double __UNUSED__ narrowBand=-1.)
+      : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ), pc_(ex_),
+        gm_(/*restart*/100, iter, tol, ex_, pc_, /*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true),
+        SF_(SF_ImprovedLB)
+    {}
 
-    const MultiGridCL& GetMG() const { return MG_; }
+    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, instat_scalar_fun_ptr sig= 0,
+                  instat_vector_fun_ptr gsig= 0, double theta= 0.5, double SD= 0,
+                  double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
+      : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
+        theta_( theta), dt_( 0.), Bnd_( bnd), pc_(ex_),
+        gm_(/*restart*/100, iter, tol, ex_, pc_, false), SF_(SF_ImprovedLB)
+    {}
+#endif
 
-    GMResSolverCL<SSORPcCL>& GetSolver() { return gm_; }
+    const MultiGridCL& GetMG() const { return MG_; }    ///< Get reference on the multigrid
+    MultiGridCL& GetMG() { return MG_; }                ///< Get reference on the multigrid
+    SolverT& GetSolver() { return gm_; }                ///< Get reference onto solver
+    const SolverT& GetSolver() const { return gm_; }    ///< Get constant reference onto solver
+#ifdef _PAR
+    ExchangeCL&       GetEx() { return ex_; }           ///< Get reference onto ExchangeCL
+    const ExchangeCL& GetEx() const { return ex_; }     ///< Get constant reference onto ExchangeCL
+#endif
 
     const BndDataT& GetBndData() const { return Bnd_; }
 
     /// \name Numbering
     ///@{
-    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, MG_, Bnd_, match); }
+    void CreateNumbering( Uint level, IdxDescCL* idx, match_fun match= 0);
     void DeleteNumbering( IdxDescCL* idx)
         { idx->DeleteNumbering( MG_); }
     ///@}
@@ -96,10 +137,20 @@ class LevelsetP2CL
     void SetupSystem( const DiscVelSolT&);
     /// perform one time step
     void DoStep();
+    /// Get last iterations
+    int GetIter() const { return gm_.GetIter(); }
+    /// Get last resid
+    double GetResid() const { return gm_.GetResid(); }
+#ifndef _PAR
     /// Reparametrization by solving evolution equation (not recommended).
     void Reparam( Uint steps, double dt);
     /// Reparametrization by Fast Marching method (recommended).
     void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false);
+#else
+    /// Reparametrization Euklidian method (recommended) for the parallel version.
+    template<typename ExCL>
+    void ReparamFastMarching(ExCL&, bool ModifyZero= true, bool euklid=true, bool Periodic= false, bool OnlyZeroLvl= false);
+#endif
 
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
@@ -145,13 +196,20 @@ class LevelsetP2CL
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function ls.Phi.
 ///
-/// The actual work is done in post_refine().
+/// Sequential: The actual work is done in post_refine().<br>
+/// Parallel:
+/// - In pre_refine_sequence the parallel multigrid is informed about
+///  the DOF of the level-set function in order to handle them during the
+///  refinement and the load-migration.
+/// - In post_refine_sequence the actual work is done.
 class LevelsetRepairCL : public MGObserverCL
 {
   private:
     LevelsetP2CL& ls_;
 
+#ifndef _PAR
   public:
+    // interface for the sequential version
     LevelsetRepairCL (LevelsetP2CL& ls)
         : ls_( ls) {}
 
@@ -160,6 +218,22 @@ class LevelsetRepairCL : public MGObserverCL
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
+
+#else
+    ParMultiGridCL& pmg_;
+    Uint            vecDescIdx_;  // index of the FE function for the parallel multigrid
+
+  public:
+    /// \brief Construct a levelset repair class
+    LevelsetRepairCL (LevelsetP2CL& ls, ParMultiGridCL& pmg, Uint i=2)
+        : ls_( ls), pmg_(pmg), vecDescIdx_(i) {}
+
+    void pre_refine  ();
+    void post_refine ();
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
+#endif
 };
 
 

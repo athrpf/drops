@@ -2,6 +2,7 @@
 // File:    levelset.cpp                                                   *
 // Content: levelset equation for two phase flow problems                  *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+//          Oliver Fortmeier, RZ RWTH Aachen                               *
 //**************************************************************************
 
 #include "levelset/levelset.h"
@@ -468,6 +469,16 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
     }
 }
 
+
+void LevelsetP2CL::CreateNumbering( Uint level, IdxDescCL* idx, match_fun match)
+{
+    idx->CreateNumbering( level, MG_, Bnd_, match);
+#ifdef _PAR
+    ex_.CreateList(MG_, idx, true, true);
+#endif
+}
+
+#ifndef _PAR
 void LevelsetP2CL::Reparam( Uint steps, double dt)
 // Reparametrization of the levelset function Phi
 {
@@ -564,8 +575,12 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
     std::cerr << M_.num_nonzeros() << " nonzeros in M, "
               << R_.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
+#endif
 
 void LevelsetP2CL::SetTimeStep( double dt, double theta)
+/** Assign new step size and combine the two matrices E and H.
+    \remarks call SetupSystem \em before calling SetTimeStep!
+*/
 {
     dt_= dt;
     if (theta >= 0) theta_= theta;
@@ -575,13 +590,15 @@ void LevelsetP2CL::SetTimeStep( double dt, double theta)
 
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
-std::cerr << "ComputeRhs-dt_: " << dt_ << std::endl;
+    IF_MASTER
+      std::cerr << "ComputeRhs-dt_: " << dt_ << std::endl;
     rhs= (1./dt_)*Phi.Data;
     if (theta_ != 1.) {
-        GMResSolverCL<SSORPcCL> gm( gm_);
         VectorCL tmp( rhs.size());
-        gm.Solve( E, tmp, VectorCL( H*Phi.Data));
-        std::cerr << "ComputeRhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
+        SolverT gm( gm_);
+        gm.Solve( E, tmp, (const VectorCL)( H*Phi.Data));
+        IF_MASTER
+          std::cerr << "ComputeRhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
         rhs-= (1. - theta_)*tmp;
     }
 }
@@ -589,13 +606,13 @@ std::cerr << "ComputeRhs-dt_: " << dt_ << std::endl;
 void LevelsetP2CL::DoLinStep( const VectorCL& rhs)
 {
     gm_.Solve( L_, Phi.Data, rhs);
-    std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
+    IF_MASTER
+      std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
-    gm_.Solve( L_, Phi.Data, VectorCL( E*rhs));
-    std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
+    gm_.Solve( L_, Phi.Data, rhs);
 }
 
 void LevelsetP2CL::DoStep()
@@ -619,6 +636,7 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 }
 
 
+#ifndef _PAR
 void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl)
 /** \param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
  *  \param OnlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
@@ -640,7 +658,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
     else
         fm.Reparam( ModifyZero);
 }
-
+#endif
 
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 {
@@ -680,6 +698,9 @@ double LevelsetP2CL::GetVolume( double translation) const
             Volume+= patch.quad( ones, absdet, false);
         }
     }
+#ifdef _PAR
+    Volume = GlobalSum(Volume);
+#endif
     return Volume;
 }
 
@@ -719,13 +740,20 @@ double LevelsetP2CL::AdjustVolume (double vol, double tol, double surface) const
 
 void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
 {
-    std::cerr << "Smoothing for curvature calculation... ";
+    Comment("Smoothing for curvature calculation\n", DebugDiscretizeC);
     MatrixCL M, A, C;
     SetupSmoothSystem( M, A);
     C.LinComb( 1, M, diff, A);
+#ifndef _PAR
     PCG_SsorCL pcg( pc_, gm_.GetMaxIter(), gm_.GetTol());
     pcg.Solve( C, SmPhi, M*Phi.Data);
-    std::cerr << "||SmPhi - Phi||_oo = " << supnorm( SmPhi-Phi.Data) << std::endl;
+    __UNUSED__ double inf_norm= supnorm( SmPhi-Phi.Data);
+#else
+    ParCGSolverCL<ExchangeCL> cg(gm_.GetMaxIter(), gm_.GetTol(), *const_cast<ExchangeCL*>(&ex_));
+    cg.Solve( C, SmPhi, M*Phi.Data);
+    __UNUSED__ const double inf_norm= GlobalMax(supnorm( SmPhi-Phi.Data));
+#endif
+    Comment("||SmPhi - Phi||_oo = " <<inf_norm<< std::endl, DebugDiscretizeC);
 }
 
 void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
@@ -736,6 +764,13 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns();
     const Uint lvl= Phi.GetLevel();
+
+#ifndef _PAR
+    __UNUSED__ const IdxT allnum_unks= num_unks;
+#else
+    __UNUSED__ const IdxT allnum_unks= GlobalSum(num_unks);
+#endif
+    Comment("entering Levelset::SetupSmoothSystem: " << allnum_unks << " levelset unknowns.\n", DebugDiscretizeC);
 
     SparseMatBuilderCL<double> Mb(&M, num_unks, num_unks);
     SparseMatBuilderCL<double> Ab(&A, num_unks, num_unks);
@@ -768,28 +803,6 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     }
     Mb.Build();
     Ab.Build();
-}
-
-//*****************************************************************************
-//                               LevelsetRepairCL
-//*****************************************************************************
-void
-LevelsetRepairCL::post_refine ()
-{
-    VecDescCL loc_phi;
-    IdxDescCL loc_lidx( P2_FE);
-    VecDescCL& phi= ls_.Phi;
-    match_fun match= ls_.GetMG().GetBnd().GetMatchFun();
-
-    ls_.CreateNumbering( ls_.GetMG().GetLastLevel(), &loc_lidx, match);
-    loc_phi.SetIdx( &loc_lidx);
-    RepairAfterRefineP2( ls_.GetSolution( phi), loc_phi);
-
-    phi.Clear();
-    ls_.DeleteNumbering( phi.RowIdx);
-    ls_.idx.swap( loc_lidx);
-    phi.SetIdx( &ls_.idx);
-    phi.Data= loc_phi.Data;
 }
 
 void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) const
@@ -825,6 +838,58 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
         if (minNorm < minGradPhi) minGradPhi= minNorm;
     }
 }
+
+//*****************************************************************************
+//                               LevelsetRepairCL
+//*****************************************************************************
+#ifndef _PAR
+void
+LevelsetRepairCL::post_refine ()
+{
+    VecDescCL loc_phi;
+    IdxDescCL loc_lidx( P2_FE);
+    VecDescCL& phi= ls_.Phi;
+    match_fun match= ls_.GetMG().GetBnd().GetMatchFun();
+
+    ls_.CreateNumbering( ls_.GetMG().GetLastLevel(), &loc_lidx, match);
+    loc_phi.SetIdx( &loc_lidx);
+    RepairAfterRefineP2( ls_.GetSolution( phi), loc_phi);
+
+    phi.Clear();
+    ls_.DeleteNumbering( phi.RowIdx);
+    ls_.idx.swap( loc_lidx);
+    phi.SetIdx( &ls_.idx);
+    phi.Data= loc_phi.Data;
+}
+
+#else
+/// Tell parallel multigrid about the location of the DOF
+void LevelsetRepairCL::pre_refine()
+{
+    pmg_.AttachTo(vecDescIdx_, &ls_.Phi);
+}
+
+/// Do all things to complete the repairment of the FE level-set function
+void LevelsetRepairCL::post_refine()
+{
+    VecDescCL loc_phi;
+    IdxDescCL loc_lidx( P2_FE);
+    VecDescCL& phi= ls_.Phi;
+
+    ls_.CreateNumbering( ls_.GetMG().GetLastLevel(), &loc_lidx);
+    loc_phi.SetIdx(&loc_lidx);
+
+    pmg_.HandleNewIdx(&ls_.idx, &loc_phi);
+    RepairAfterRefineP2( ls_.GetSolution( phi), loc_phi);
+    pmg_.CompleteRepair( &loc_phi);
+
+    phi.Clear();
+    ls_.DeleteNumbering( phi.RowIdx);
+    ls_.idx.swap( loc_lidx);
+    phi.SetIdx( &ls_.idx);
+    phi.Data=loc_phi.Data;
+}
+#endif
 
 } // end of namespace DROPS
 

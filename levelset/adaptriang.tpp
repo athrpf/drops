@@ -2,32 +2,52 @@
 // File:    adaptriang.tpp                                                 *
 // Content: adaptive triangulation based on position of the interface      *
 //          provided by the levelset function                              *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+// Author:  Sven Gross, Joerg Grande, Volker Reichelt, IGPM RWTH Aachen    *
+//          Oliver Fortmeier, SC RWTH Aachen                               *
 //**************************************************************************
 
 namespace DROPS
 {
 
 template <class DistFctT>
-void AdapTriangCL::MakeInitialTriang (DistFctT& Dist)
+void AdapTriangCL::MakeInitialTriang( DistFctT& Dist)
 {
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
 
+    time.Reset();
+    time.Start();
     const Uint min_ref_num= f_level_ - c_level_;
     Uint i;
     for (i=0; i<2*min_ref_num; ++i)
         ModifyGridStep( Dist);
+
     time.Stop();
-    std::cout << "MakeInitialTriang: " << i
-              << " refinements in " << time.GetTime() << " seconds\n"
-              << "last level: " << mg_.GetLastLevel() << '\n';
+    const double duration=time.GetTime();
+
+    IF_MASTER{
+        std::cout << "MakeInitialTriang: " << i
+                  << " refinements in " << duration << " seconds\n"
+                  << "last level: " << mg_.GetLastLevel() << '\n';
+#ifdef _PAR
+        DROPS_LOGGER_SETVALUE("MakeInitialTriang",duration);
+#endif
+    }
     mg_.SizeInfo( std::cout);
 }
 
+#ifndef _PAR
 template <class DistFctT>
-bool AdapTriangCL::ModifyGridStep (DistFctT& Dist)
-// One step of grid change; returns true if modifications were necessary,
-// false, if nothing changed.
+  bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
+#else
+template <class DistFctT>
+  bool AdapTriangCL::ModifyGridStep( DistFctT& Dist, bool lb)
+#endif
+/** One step of grid change; returns true if modifications were necessary,
+    false, if nothing changed. */
 {
     bool modified= false;
     for (MultiGridCL::TriangTetraIteratorCL it= mg_.GetTriangTetraBegin(),
@@ -64,37 +84,68 @@ bool AdapTriangCL::ModifyGridStep (DistFctT& Dist)
                 it->SetRemoveMark();
         }
     }
+#ifdef _PAR
+    modified=GlobalOr(modified);
+#endif
     if (modified) {
         notify_pre_refine();
         mg_.Refine();
+#ifdef _PAR
+        pmg_.HandleUnknownsAfterRefine();
+        if (lb)
+            lb_.DoMigration();
+#endif
         notify_post_refine();
+#ifdef _PAR
+        Assert(!DDD_ConsCheck(), DROPSErrCL("AdapTriangCL::ModifyGridStep: Failure in DDD_ConsCheck"),
+               DebugParallelC|DebugParallelNumC|DebugLoadBalC);
+#endif
     }
     return modified;
 }
 
 inline
 void AdapTriangCL::UpdateTriang (const LevelsetP2CL& lset)
+/** This function updates the triangulation according to the position of the
+    interface provided by the levelset function. Therefore this function marks
+    and refines tetras and balance the number of tetras over the processors.
+    Also the numerical datas are interpolated to the new triangulation. */
 {
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
+
     modified_= false;
     const int min_ref_num= f_level_ - c_level_;
     int i;
     LevelsetP2CL::const_DiscSolCL sol( lset.GetSolution());
 
-    for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
-        (*obs)->pre_refine_sequence();
+    notify_pre_refine_sequence();
     for (i= 0; i < 2*min_ref_num; ++i) {
+#ifndef _PAR
         if (!ModifyGridStep( sol))
             break;
+#else
+        if (!ModifyGridStep(sol, i==2*min_ref_num-1))
+            break;
+#endif
         modified_= true;
     }
-    for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
-        (*obs)->post_refine_sequence();
+    notify_post_refine_sequence();
 
     time.Stop();
-    std::cout << "UpdateTriang: " << i
-              << " refinements/interpolations in " << time.GetTime() << " seconds\n"
-              << "last level: " << mg_.GetLastLevel() << '\n';
+    duration= time.GetTime();
+    IF_MASTER{
+        std::cout << "UpdateTriang: " << i
+                  << " refinements/interpolations in " << duration << " seconds\n"
+                  << "last level: " << mg_.GetLastLevel() << '\n';
+#ifdef _PAR
+        DROPS_LOGGER_SETVALUE("UpdateTriang",duration);
+#endif
+    }
     mg_.SizeInfo( std::cout);
 }
 

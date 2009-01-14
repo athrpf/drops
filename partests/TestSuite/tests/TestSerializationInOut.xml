@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<testsuite mprunner="mpirun">
+    <program label="TestRefPar" exec="./TestMGSerPar" paramTpl="./TestSuite/param-file-tpl/SerOut.param.tpl"  verifier="./TestMGSerPar" verifierParamTpl="./TestSuite/param-file-tpl/SerIn.param.tpl"
+             errorKeywords="errno,exit,problem,fehler"
+             >
+        <testset processors="2,3,4,8">
+            <config>
+                <setting label="__REFINE__">0</setting>
+            </config>
+            <values>
+                    <value label="difference for pressure: " regExp="\s*difference for pressure: ([0-9.]*)" mode="equals" >
+                        0
+                    </value>			
+                    <value label="difference for levelset: " regExp="\s*difference for pressure: ([0-9.]*)" mode="equals" >
+                        0
+                    </value>	
+					<value label="difference for velocity: " regExp="\s*difference for pressure: ([0-9.]*)" mode="equals" >
+                        0
+                    </value>	
+            </values>
+        </testset>
+        <testset processors="2,3,4,8">
+            <config>
+                <setting label="__REFINE__">1</setting>
+            </config>
+            <values>
+                    <value label="difference for pressure: " regExp="\s*difference for pressure: ([0-9.]*)" mode="equals" >
+                        0
+                    </value>			
+                    <value label="difference for levelset: " regExp="\s*difference for pressure: ([0-9.]*)" mode="equals" >
+                        0
+                    </value>	
+					<value label="difference for velocity: " regExp="\s*difference for pressure: ([0-9.]*)" mode="equals" >
+                        0
+                    </value>	
+            </values>
+        </testset>	
+    </program>
+</testsuite>
+

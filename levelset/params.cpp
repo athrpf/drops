@@ -21,9 +21,11 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( inner_tol, "InnerTol");
     rp_.RegDouble( outer_tol, "OuterTol");
     rp_.RegInt( StokesMethod, "StokesMethod");
+#ifndef _PAR
     rp_.RegInt( pcA_iter,   "PcAIter");
     rp_.RegDouble( pcA_tol, "PcATol");
     rp_.RegDouble( pcS_tol, "PcSTol");
+#endif
     rp_.EndGroup();
 
     rp_.BeginGroup("Levelset");
@@ -41,12 +43,14 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( cpl_proj,  "Projection");
     rp_.EndGroup();
 
+#ifndef _PAR
     rp_.BeginGroup("Reparam");
     rp_.RegInt( RepFreq,      "Freq");
     rp_.RegInt( RepMethod,    "Method");
     rp_.RegDouble( MinGrad,   "MinGrad");
     rp_.RegDouble( MaxGrad,   "MaxGrad");
     rp_.EndGroup();
+#endif
 
     rp_.BeginGroup("AdaptRef");
     rp_.RegInt( ref_freq,     "Freq");
@@ -69,9 +73,11 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( Anstroem,  "InflowVel");
     rp_.RegDouble( r_inlet,   "RadInlet");
     rp_.RegInt( flow_dir,     "FlowDir");
+#ifndef _PAR
     rp_.RegDouble( inflow_freq, "InflowFreq");
     rp_.RegDouble( inflow_ampl, "InflowAmpl");
     rp_.RegInt( bnd_type,     "BoundaryType");
+#endif
     rp_.EndGroup();
 
     rp_.BeginGroup("SurfTens");
@@ -82,6 +88,7 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( st_red,    "DirtFactor");
     rp_.EndGroup();
 
+#ifndef _PAR
     rp_.BeginGroup("Transp");
     rp_.RegInt    ( transp_do,      "DoTransp");
     rp_.RegDouble ( transp_theta,   "Theta");
@@ -93,16 +100,19 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble ( transp_cPos,    "IniCPos");
     rp_.RegDouble ( transp_cNeg,    "IniCNeg");
     rp_.EndGroup();
+#endif
 
     rp_.RegDouble(XFEMStab,   "XFEMStab");
     rp_.RegInt( IniCond,      "InitialCond");
+    rp_.RegString( IniData,   "InitialFile");
+    rp_.RegString( meshfile,  "MeshFile");
+#ifndef _PAR
     rp_.RegInt( GeomType,     "GeomType");
     rp_.RegString( EnsCase,   "EnsightCase");
     rp_.RegString( EnsDir,    "EnsightDir");
-    rp_.RegString( IniData,   "InitialFile");
-    rp_.RegString( meshfile,  "MeshFile");
     rp_.RegString( serialization_file,    "SerializationFile");
     rp_.RegString( deserialization_file,  "DeserializationFile");
+#endif
 }
 
 void ParamMesszelleNsCL::RegisterParams()

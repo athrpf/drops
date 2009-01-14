@@ -1,6 +1,11 @@
 /// \file
 /// \brief Description of various finite-element functions
 
+#ifdef _PAR
+#  include "parallel/parallel.h"
+#  include "parallel/parmultigrid.h"
+#endif
+
 namespace DROPS
 {
 
@@ -712,6 +717,9 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
 // This only works, if Interpolate is called after every refinement of the multigrid.
 // Take care, that x and old_x are on successive triangulations.
 {
+#ifdef _PAR
+    throw DROPSErrCL("InterpolateP1: The functionality of interpolating is done in RepairP1 in parallel!");
+#endif
     typedef typename P1EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
 
@@ -747,6 +755,29 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
               << counter2 << " new Mid-vertex-DoF interpolated." << std::endl;
 }
 
+#ifdef _PAR
+/// \brief Get values on vertices of an egde
+template <class PT>
+  inline bool TryGetValuesOnEdge( Uint old_idx,  PT& new_f,
+                                  const EdgeCL& edge, typename PT::DataT& dof0, typename PT::DataT& dof1)
+/** Helper function for RepairAfterRefineP1 */
+{
+    typedef typename PT::BndDataCL BndCL;
+    const BndCL* const bnd= new_f.GetBndData();
+    const Uint new_idx= new_f.GetSolution()->RowIdx->GetIdx() ;
+
+    for (Uint i=0; i<2; ++i){
+        const VertexCL* vp=edge.GetVertex(i);
+        if (bnd->IsOnDirBnd( *vp) || (vp->Unknowns.Exist() && vp->Unknowns.Exist(new_idx) && vp->Unknowns.UnkRecieved(new_idx)) )
+            (i==0 ? dof0 : dof1 ) = new_f.val( *vp);
+        else if (vp->Unknowns.Exist() && vp->Unknowns.Exist( old_idx))
+            (i==0 ? dof0 : dof1 ) = ParMultiGridCL::GetDof<VertexCL, typename PT::DataT>()(*vp, old_idx);
+        else return false;
+    }
+
+    return true;
+}
+#endif
 
 //**************************************************************************
 // RepairAfterRefine: Repairs the P1-function old_f, which is possibly     *
@@ -761,6 +792,13 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
 //     represents a P1-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel() -1; else tl is the level of old_f.          *
+//                                                                         *
+// Parallel Repairment: old_idx does not exist in parallel any more. To    *
+//     distinguish, if a simplex has stored an unknowns before the         *
+//     refinement and migration has been performed, the UnknownRecieve flag*
+//     is used.                                                            *
+//     Copying unknowns from the "old" vector to the "new" one is not done *
+//     here, but within the function ParMultiGridCL::HandleNewIdx.         *
 //**************************************************************************
 template <class P1T, class VecDesc>
   Uint
@@ -780,17 +818,24 @@ template <class P1T, class VecDesc>
                 DebugNumericC);
         tl= maxlevel;
     }
+#ifdef _PAR
+    if (tl< vecdesc.GetLevel())
+        tl= vecdesc.GetLevel();
+    typedef typename P1T::DataT DataT;
+    DataT dof0=DataT(), dof1=DataT();
+#endif
     Assert( tl == vecdesc.GetLevel(),
             "RepairAfterRefine (P1): old and new function are "
             "defined on incompatible levels.",
             DebugNumericC);
-    const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
+    __UNUSED__ const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx();
     typedef typename P1T::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
     typename P1T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG);
     f.SetTime( old_f.GetTime());
-    Uint counter1= 0, counter2= 0;
+    __UNUSED__ Uint counter1= 0;
+    Uint counter2= 0;
 
     // Iterate over all edges on grids with smaller level than tl. If the
     // edge **is refined and its midvertex *does not have the old index,
@@ -804,20 +849,42 @@ template <class P1T, class VecDesc>
     if (tl > 0) {
         for (MultiGridCL::const_EdgeIterator sit= MG.GetAllEdgeBegin(tl-1),
              theend= MG.GetAllEdgeEnd(tl-1); sit!=theend; ++sit)
+        {
+#ifndef _PAR
             if ( sit->IsRefined()
                  && sit->GetMidVertex()->Unknowns.Exist()
                  && !sit->GetMidVertex()->Unknowns.Exist( old_idx)
                  && sit->GetMidVertex()->Unknowns.Exist( idx)
-                 && !bnd->IsOnDirBnd( *sit->GetMidVertex())) {
+                 && !bnd->IsOnDirBnd( *sit->GetMidVertex()))
+            {
                 f.SetDoF( *sit->GetMidVertex(),
-                          (old_f.val( *sit->GetVertex(0)) + old_f.val( *sit->GetVertex(1)))*0.5);
+                         (old_f.val( *sit->GetVertex(0)) + old_f.val( *sit->GetVertex(1)))*0.5);
                 ++counter2;
             }
+#else
+            if ( sit->IsRefined()
+                 && sit->GetMidVertex()->Unknowns.Exist()
+                 && sit->GetMidVertex()->Unknowns.Exist( idx)
+                 && !sit->GetMidVertex()->Unknowns.UnkRecieved(idx)
+                 && !bnd->IsOnDirBnd( *sit->GetMidVertex())
+                 && TryGetValuesOnEdge(old_idx, f, *sit, dof0, dof1)
+               )
+            {
+                f.SetDoF( *sit->GetMidVertex(), ( dof0 + dof1)*0.5);
+                sit->GetMidVertex()->Unknowns.SetUnkRecieved(idx);
+                ++counter2;
+            }
+#endif
+        }
     }
+#ifndef _PAR
     // All vertices in tl, that **have the old index and **are not on the Dirichlet-boundary
     // hold an old value, which is copied to the new vector.
     // As the check for the Dirichlet-boundary is the first, sit->Unknowns.Exist(),
     // can be spared, since idx is required to exist on tl.
+    //
+    // This copy operation has in parallel already been performed in the routine
+    // HandleNewIdx of the ParMultigridCL.
     for (MultiGridCL::const_TriangVertexIteratorCL sit= MG.GetTriangVertexBegin( tl),
          theend= MG.GetTriangVertexEnd( tl); sit!=theend; ++sit)
         if (!bnd->IsOnDirBnd( *sit) && sit->Unknowns.Exist( old_idx)) {
@@ -828,6 +895,7 @@ template <class P1T, class VecDesc>
              << old_f.GetSolution()->Data.size() << " copied, " << counter2
              << " new mid-vertex-doF interpolated." << std::endl,
              DebugNumericC);
+#endif
     return tl;
 }
 
@@ -966,6 +1034,9 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
 // This only works, if Interpolate is called after every refinement of the multigrid.
 // Take care, that x and old_x are on successive triangulations.
 {
+#ifdef _PAR
+    throw DROPSErrCL("Interpolate of P2-Elements not yet implemented for parallel use");
+#endif
     typedef typename P2EvalCL<Data, _BndData, _VD>::BndDataCL BndCL;
     const BndCL* const _bnd= old_sol.GetBndData();
     const Uint old_idx= old_sol.GetSolution()->RowIdx->GetIdx();
@@ -1022,71 +1093,187 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
 }
 
 // Helper function for RepairOnChildren.
+#ifndef _PAR
 template <class P2T>
   bool
-  TryGetValuesOnFace( const P2T& f,
+  TryGetValuesOnFace( const P2T& old_f,
       std::vector<typename P2T::DataT>& v, const TetraCL& t, Uint face)
+#else
+template <class P2T>
+  bool TryGetValuesOnFace( const P2T& old_f, typename P2T::modifiable_type& new_f,
+      std::vector<typename P2T::DataT>& v, const TetraCL& t, Uint face)
+#endif
 {
     typedef typename P2T::BndDataCL BndCL;
-    const BndCL* const bnd= f.GetBndData();
-    const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
+    const BndCL* const bnd= old_f.GetBndData();
+    const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx() ;
+#ifdef _PAR
+    const Uint new_idx= new_f.GetSolution()->RowIdx->GetIdx() ;
+#endif
 
+    // gather values on vertices
     for (Uint i=0; i<3; ++i) {
         const VertexCL* const vp= t.GetVertex( VertOfFace( face, i));
+#ifndef _PAR
         if (bnd->IsOnDirBnd( *vp)
-            || (vp->Unknowns.Exist() && vp->Unknowns.Exist( idx)))
-            v[i]= f.val( *vp);
+            || (vp->Unknowns.Exist() && vp->Unknowns.Exist( old_idx)))
+            v[i]= old_f.val( *vp);
         else return false;
+#else
+        if (bnd->IsOnDirBnd( *vp)
+           || (vp->Unknowns.Exist() && vp->Unknowns.Exist(new_idx) && vp->Unknowns.UnkRecieved(new_idx)) )
+            v[i]= new_f.val( *vp);
+        else if (vp->Unknowns.Exist() && vp->Unknowns.Exist( old_idx))
+            v[i]= ParMultiGridCL::GetDof<VertexCL, typename P2T::DataT>()(*vp, old_idx);
+        else return false;
+#endif
     }
+
+    // gather values on edges
     for (Uint i=0; i<3; ++i) {
         const EdgeCL* const ep= t.GetEdge( EdgeOfFace( face, i));
+#ifndef _PAR
         if (bnd->IsOnDirBnd( *ep)
-            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( idx)))
-            v[i+3]= f.val( *ep);
+            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( old_idx) ))
+            v[i+3]= old_f.val( *ep);
         else { // Never on dirichlet-boundary: this is handled by the preceeding if.
             if (ep->IsRefined()
                 && ep->GetMidVertex()->Unknowns.Exist()
-                && ep->GetMidVertex()->Unknowns.Exist( idx))
-                v[i+3]= f.val( *ep->GetMidVertex());
+                && ep->GetMidVertex()->Unknowns.Exist( old_idx) )
+                v[i+3]= old_f.val( *ep->GetMidVertex());
             else return false;
         }
+#else
+        if (bnd->IsOnDirBnd( *ep)
+            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( new_idx) && ep->Unknowns.UnkRecieved(new_idx) ) )
+            v[i+3]= new_f.val( *ep);
+        else if (ep->Unknowns.Exist() && ep->Unknowns.Exist( old_idx))        // unknowns are still known to the ParMultiGridCL
+            v[i+3]= ParMultiGridCL::GetDof<EdgeCL, typename P2T::DataT>() (*ep, old_idx);
+        else{
+            if (ep->IsRefined()
+                && ep->GetMidVertex()->Unknowns.Exist()
+                && ep->GetMidVertex()->Unknowns.Exist( new_idx)
+                && ep->GetMidVertex()->Unknowns.UnkRecieved(new_idx))
+                v[i+3]= new_f.val( *ep->GetMidVertex());
+            else if (ep->IsRefined()
+                     && ep->Unknowns.Exist()
+                     && ep->Unknowns.Exist( old_idx))
+                v[i+3]= ParMultiGridCL::GetDof<VertexCL, typename P2T::DataT>()(*ep->GetMidVertex(), old_idx);
+            else return false;
+        }
+#endif
     }
     return true;
 }
+
 
 // Helper function for RepairOnChildren.
+#ifndef _PAR
 template <class P2T>
-  bool
-  TryGetValuesOnTetra( const P2T& f,
-      std::vector<typename P2T::DataT>& v, const TetraCL& t)
+  bool TryGetValuesOnTetra( const P2T& old_f,
+        std::vector<typename P2T::DataT>& v, const TetraCL& t)
+#else
+template <class P2T>
+  bool TryGetValuesOnTetra( const P2T& old_f, typename P2T::modifiable_type& new_f,
+        std::vector<typename P2T::DataT>& v, const TetraCL& t)
+#endif
 {
     typedef typename P2T::BndDataCL BndCL;
-    const BndCL* const bnd= f.GetBndData();
-    const Uint idx= f.GetSolution()->RowIdx->GetIdx() ;
+    const BndCL* const bnd= old_f.GetBndData();
+    const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx() ;
+#ifdef _PAR
+    const Uint new_idx= new_f.GetSolution()->RowIdx->GetIdx() ;
+#endif
 
+    // gather values on vertices
     for (Uint i=0; i<4; ++i) {
         const VertexCL* const vp= t.GetVertex( i);
+#ifndef _PAR
         if (bnd->IsOnDirBnd( *vp)
-            || (vp->Unknowns.Exist() && vp->Unknowns.Exist( idx)))
-            v[i]= f.val( *vp);
+            || (vp->Unknowns.Exist() && vp->Unknowns.Exist( old_idx)) )
+            v[i]= old_f.val( *vp);
         else return false;
+#else
+        if (bnd->IsOnDirBnd( *vp)
+            || (vp->Unknowns.Exist() && vp->Unknowns.Exist(new_idx) && vp->Unknowns.UnkRecieved(new_idx)) )
+            v[i]= new_f.val( *vp);
+        else if (vp->Unknowns.Exist() && vp->Unknowns.Exist( old_idx))
+            v[i]= ParMultiGridCL::GetDof<VertexCL, typename P2T::DataT>()(*vp, old_idx);
+        else return false;
+#endif
     }
+
+    // gather values on egdes
     for (Uint i=0; i<6; ++i) {
         const EdgeCL* const ep= t.GetEdge( i);
+#ifndef _PAR
         if (bnd->IsOnDirBnd( *ep)
-            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( idx)))
-            v[i+4]= f.val( *ep);
+            || (ep->Unknowns.Exist() && ep->Unknowns.Exist( old_idx)) )
+            v[i+4]= old_f.val( *ep);
         else { // Never on dirichlet-boundary: this is handled by the preceeding if.
             if (ep->IsRefined()
                 && ep->GetMidVertex()->Unknowns.Exist()
-                && ep->GetMidVertex()->Unknowns.Exist( idx))
-                v[i+4]= f.val( *ep->GetMidVertex());
+                && ep->GetMidVertex()->Unknowns.Exist( old_idx) )
+                v[i+4]= old_f.val( *ep->GetMidVertex());
             else return false;
         }
+#else
+        if (bnd->IsOnDirBnd( *ep) || (ep->Unknowns.Exist() && ep->Unknowns.Exist( new_idx) && ep->Unknowns.UnkRecieved(new_idx)) )
+            v[i+4]= new_f.val( *ep);
+        else if (ep->Unknowns.Exist() && ep->Unknowns.Exist( old_idx))
+            v[i+4]= ParMultiGridCL::GetDof<EdgeCL, typename P2T::DataT>()(*ep, old_idx);
+        else{
+            if (ep->IsRefined()
+                && ep->GetMidVertex()->Unknowns.Exist()
+                && ep->GetMidVertex()->Unknowns.Exist( new_idx)
+                && ep->GetMidVertex()->Unknowns.UnkRecieved(new_idx))
+                v[i+4]= new_f.val( *ep->GetMidVertex());
+            else if (ep->IsRefined()
+                     && ep->GetMidVertex()->Unknowns.Exist()
+                     && ep->GetMidVertex()->Unknowns.Exist( old_idx))
+                v[i+4]= ParMultiGridCL::GetDof<VertexCL, typename P2T::DataT>()(*ep->GetMidVertex(), old_idx);
+            else return false;
+        }
+#endif
     }
     return true;
 }
 
+#ifdef _PAR
+/// \brief Get values of parentedge with values on its vertices of the old function
+template <class P2T>
+  bool TryGetValuesOnParEdge( const P2T& old_f, typename P2T::modifiable_type& new_f,
+                           const EdgeCL& paredge, std::vector<typename P2T::DataT>& v)
+/** If these values are accesible by the new_f get it from there, otherwise get them out
+    of the recieve buffer of the ParMultigridCL */
+{
+    typedef typename P2T::BndDataCL BndCL;
+    const BndCL* const bnd= old_f.GetBndData();
+    const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx() ;
+    const Uint new_idx= new_f.GetSolution()->RowIdx->GetIdx() ;
+
+    // Values on vertices
+    for (Uint i=0; i<2; ++i){
+        const VertexCL* vp=paredge.GetVertex(i);
+        if (bnd->IsOnDirBnd( *vp)
+            || (vp->Unknowns.Exist() && vp->Unknowns.Exist(new_idx) && vp->Unknowns.UnkRecieved(new_idx)) )
+            v[i]= new_f.val( *vp);
+        else if (vp->Unknowns.Exist() && vp->Unknowns.Exist( old_idx))
+            v[i]= ParMultiGridCL::GetDof<VertexCL, typename P2T::DataT>()(*vp, old_idx);
+        else return false;
+    }
+
+    // Values on edges
+    if ( bnd->IsOnDirBnd( paredge)
+         || (paredge.Unknowns.Exist() && paredge.Unknowns.Exist( new_idx) && paredge.Unknowns.UnkRecieved(new_idx)) )
+        v[2]= new_f.val( paredge);
+    else if (paredge.Unknowns.Exist() && paredge.Unknowns.Exist( old_idx))
+        v[2]= ParMultiGridCL::GetDof<EdgeCL, typename P2T::DataT>()(paredge, old_idx);
+    else return false;
+
+    return true;
+}
+#endif
 
 // Used in RepairAfterRefine for P2-elements. The all possible parent tetras of
 // the new function f are walked over, and scanned for available indices of the
@@ -1102,6 +1289,10 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx() ;
     typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &old_f.GetMG(), old_f.GetTime());
+#ifdef _PAR
+    typedef typename P2T::DataT DataT;
+    DataT dof0=DataT(), dof1=DataT();
+#endif
     f.SetTime( old_f.GetTime());
 
     const double edgebary[3][2]= {
@@ -1113,38 +1304,79 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
     const RefRuleCL& refrule= t.GetRefData();
     TetraCL::const_ChildPIterator child= t.GetChildBegin();
     const TetraCL::const_ChildPIterator childend= t.GetChildEnd();
-    for (Uint childnum=0; child!=childend; ++childnum, ++child) {
+    for (Uint childnum=0; child!=childend; ++childnum, ++child)                         // walk over all children
+    {
         const ChildDataCL& childdata= GetChildData( refrule.Children[childnum]);
-        for (Uint chedge=0; chedge<NumEdgesC; ++chedge) {
+        for (Uint chedge=0; chedge<NumEdgesC; ++chedge)                                 // walk over all edges of a child
+        {
             const EdgeCL* const edgep= (*child)->GetEdge( chedge);
+
+            // Check if edge is not just a copy
             if (!bnd->IsOnDirBnd( *edgep)
                 && edgep->Unknowns.Exist()
                 && edgep->Unknowns.Exist( idx)
-                && !edgep->Unknowns.Exist( old_idx)) { // not just a copy on the edge itself
+#ifndef _PAR
+                && !edgep->Unknowns.Exist( old_idx)
+#else
+                && !edgep->Unknowns.UnkRecieved(idx)
+#endif
+               )
+            {
                 const Uint chedgeinparent= childdata.Edges[chedge];
+                /// \todo(of) Warum kann man nicht im parallelen hier weitergehen?
+#ifndef _PAR
                 if (IsParentEdge( chedgeinparent)) continue; // These were sub-edges, sub-in-par-face-edges or space-diagonals on some coarser level and thus already handled.
-                if (IsSubEdge( chedgeinparent)) { // Sub-Edges of parent edges
+#endif
+                if (IsSubEdge( chedgeinparent))     // Sub-Edges of parent edges
+                {
                     const Uint paredge= ParentEdge( chedgeinparent);
                     const EdgeCL* const paredgep= t.GetEdge( paredge);
+
                     if (paredgep->Unknowns.Exist()
                         && paredgep->Unknowns.Exist( old_idx)) { // refinement took place,
                                                                  // interpolate edge-dof
                         const Uint num= NumOfSubEdge( chedgeinparent);
+#ifndef _PAR
                         f.SetDoF( *edgep, old_f.val( *paredgep, 0.25+0.5*num) );
+#else
+                        std::vector<typename P2T::DataT> v(3);          // vert0_dof, vert1_dof, edge_dof
+
+                        if (TryGetValuesOnParEdge(old_f, f, *paredgep, v)){
+                            f.SetDoF( *edgep, old_f.val( v, 0.25+0.5*num) );
+                            edgep->Unknowns.SetUnkRecieved( idx);
+                        }
+#endif
                     }
                     else {  // this edge has been unrefined;
                             // There is not enough information available for
                             // more than linear interpolation.
+#ifndef _PAR
                         f.SetDoF( *edgep, 0.5*(old_f.val( *edgep->GetVertex( 0))
                                                + old_f.val( *edgep->GetVertex( 1))));
+#else
+                        if (TryGetValuesOnEdge(old_idx,  f, *edgep, dof0, dof1) ){
+                            f.SetDoF( *edgep, 0.5*(dof0+dof1));
+                            edgep->Unknowns.SetUnkRecieved( idx);
+                        }
+#endif
                     }
                 }
-                else if (IsSubInParFace( chedgeinparent)) { // Sub-edges in parent faces
+                else if (IsSubInParFace( chedgeinparent)) // Sub-edges in parent faces
+                {
                     Uint parface, pos;
                     WhichEdgeInFace(chedgeinparent, parface, pos);
                     std::vector<typename P2T::DataT> v( 6);
-                    if (TryGetValuesOnFace( old_f, v, t, parface)) {
+
+#ifndef _PAR
+                    if (TryGetValuesOnFace( old_f, v, t, parface))
+#else
+                    if (TryGetValuesOnFace( old_f, f, v, t, parface))
+#endif
+                    {
                         f.SetDoF( *edgep, old_f.val( v, edgebary[pos][0], edgebary[pos][1]));
+#ifdef _PAR
+                        edgep->Unknowns.SetUnkRecieved( idx);
+#endif
                     }
                     else { // These are complicated; the parent-face was refined and
                            // is now refined (differently). Linear interpolation
@@ -1152,19 +1384,42 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
                            // The values of f in the vertices of face are used
                            // (not old_f), because the vertices itself might be new.
                            // These have already been set in RepairAfterRefine.
+#ifndef _PAR
                         f.SetDoF( *edgep, 0.5*(f.val( *edgep->GetVertex( 0))
                                                + f.val( *edgep->GetVertex( 1))));
+#else
+
+                        if (TryGetValuesOnEdge(old_idx,  f, *edgep, dof0, dof1) ){
+                            f.SetDoF( *edgep, 0.5*(dof0+dof1));
+                            edgep->Unknowns.SetUnkRecieved( idx);
+                        }
+#endif
                     }
                 }
                 // space diagonal
-                else {
+                else
+                {
                     std::vector<typename P2T::DataT> v( 10);
-                    if (TryGetValuesOnTetra( old_f, v, t)) {
+#ifndef _PAR
+                    if (TryGetValuesOnTetra( old_f, v, t))
                         f.SetDoF( *edgep, old_f.val( v, 0.25, 0.25, 0.25));
+#else
+                    if (TryGetValuesOnTetra( old_f, f, v, t))
+                    {
+                        f.SetDoF( *edgep, old_f.val( v, 0.25, 0.25, 0.25));
+                        edgep->Unknowns.SetUnkRecieved( idx);
                     }
+#endif
                     else {
+#ifndef _PAR
                         f.SetDoF( *edgep, 0.5*(f.val( *edgep->GetVertex( 0))
                                                + f.val( *edgep->GetVertex( 1))));
+#else
+                        if (TryGetValuesOnEdge(old_idx,  f, *edgep, dof0, dof1) ){
+                            f.SetDoF( *edgep, 0.5*(dof0+dof1));
+                            edgep->Unknowns.SetUnkRecieved( idx);
+                        }
+#endif
                     }
                 }
             }
@@ -1185,6 +1440,13 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
 //     represents a P2-function on the triangulation tl. If old_f was      *
 //     defined on the last level before refinement, which is then deleted, *
 //     tl ==  old_f.GetLevel -1; else tl is the level of old_f.            *
+//                                                                         *
+// Parallel Repairment: old_idx does not exist in parallel any more. To    *
+//     distinguish, if a simplex has stored an unknowns before the         *
+//     refinement and migration has been performed, the UnknownRecieve flag*
+//     is used.                                                            *
+//     Copying unknowns from the "old" vector to the "new" one is not done *
+//     here, but within the function ParMultiGridCL::HandleNewIdx.         *
 //**************************************************************************
 template <class P2T, class VecDesc>
 Uint
@@ -1197,6 +1459,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     typedef typename P2T::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
     typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG, old_f.GetTime());
+    typedef typename P2T::DataT DataT;
 
     // The first two loops interpolate the values of all vertices (new ones as
     // mid-vertices and old ones as copies). This works similar to the P1 case.
@@ -1213,6 +1476,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     // Also iterate over tl. This will not trigger the first if-statrement below as
     // sit->GetMidVertex()->Unknowns.Exist( idx) will always be false; this is used to
     // copy edge-dofs, that did not change.
+#ifndef _PAR
     Uint counter2= 0, counter3= 0;
     for (MultiGridCL::const_EdgeIterator sit= MG.GetAllEdgeBegin( tl),
          theend= MG.GetAllEdgeEnd( tl); sit!=theend; ++sit) {
@@ -1227,7 +1491,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
                  && sit->Unknowns.Exist( idx)) {
                 f.SetDoF( *sit, old_f.val( *sit));
                 ++counter3;
-            }
+        }
     }
     // All vertices in tl, that **have the old index and **are not on the Dirichlet-boundary
     // hold an old value, which is copied to the new vector.
@@ -1235,10 +1499,15 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     // can be spared, since idx is required to exist on tl.
     for (MultiGridCL::const_TriangVertexIteratorCL sit= MG.GetTriangVertexBegin( tl),
          theend= MG.GetTriangVertexEnd( tl); sit!=theend; ++sit)
-        if (!bnd->IsOnDirBnd( *sit) && sit->Unknowns.Exist( old_idx)) {
+    {
+        if (!bnd->IsOnDirBnd( *sit) && sit->Unknowns.Exist( old_idx))
+        {
             f.SetDoF( *sit, old_f.val( *sit));
             ++counter2;
         }
+    }
+#endif
+
     // Coarsened edges on level 0 cannot be handled on child-tetras,
     // as level-0-tetras are never children. Therefore they are handled
     // here instead of in RepairOnChildren (see below). This is possible
@@ -1246,13 +1515,35 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     // be checked for refinement.
     // Linear interpolation.
     for (MultiGridCL::const_EdgeIterator sit= MG.GetAllEdgeBegin( 0),
-         theend= MG.GetAllEdgeEnd( 0); sit!=theend; ++sit) {
+         theend= MG.GetAllEdgeEnd( 0); sit!=theend; ++sit)
+    {
         if (sit->Unknowns.Exist()
             && sit->Unknowns.Exist( idx)
+#ifndef _PAR
             && !sit->Unknowns.Exist( old_idx)
-            && !bnd->IsOnDirBnd( *sit)) {
+#else
+            && !sit->Unknowns.UnkRecieved(idx)
+#endif
+            && !bnd->IsOnDirBnd( *sit))
+        {
+#ifndef _PAR
             f.SetDoF( *sit, 0.5*(old_f.val( *sit->GetVertex( 0))
                                  + old_f.val( *sit->GetVertex( 1))));
+#else
+            DataT dof0, dof1;
+            if (bnd->IsOnDirBnd(*sit->GetVertex(0)))
+                dof0= old_f.val( *sit->GetVertex( 0));
+            else
+                dof0=ParMultiGridCL::GetDof<VertexCL, DataT>()(*sit->GetVertex(0), old_idx);
+
+            if (bnd->IsOnDirBnd(*sit->GetVertex(1)))
+                dof1= old_f.val( *sit->GetVertex( 1));
+            else
+                dof1=ParMultiGridCL::GetDof<VertexCL, DataT>()(*sit->GetVertex(1), old_idx);
+
+            f.SetDoF( *sit, 0.5*(dof0+dof1));
+            sit->Unknowns.SetUnkRecieved(idx);
+#endif
         }
     }
     // Handle edges e that were refined: The condition that identifies such
@@ -1267,10 +1558,14 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
             if ( !sit->IsUnrefined() )
                 RepairOnChildren( *sit, old_f, vecdesc);
         }
+#ifndef _PAR
+    // Sorry, this commentar does not work in parallel, because the copy-operation
+    // is done by another function (HandleNewIdx)
     Comment( "RepairAfterRefine (P2): " << " Vertex-dof copies: " << counter2
              << " Edge-dof copies: " << counter3
              << " I'm too dumb to count the rest accurately",
              DebugNumericC);
+#endif
     return tl;
 }
 

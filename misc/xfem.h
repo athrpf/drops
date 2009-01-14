@@ -18,6 +18,7 @@ void P1toP1X ( const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const
 void P1XtoP1 ( const IdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg );
 
 
+#ifndef _PAR
 ///\brief Represents a scalar P1X function as two Ensight6 variables.
 ///
 /// The class registers two P1-functions, neg and pos, which do the actual output. In order to prepare the data
@@ -69,6 +70,7 @@ make_Ensight6P1XScalar (MultiGridCL& mg, const VecDescCL& lset, const VecDescCL&
 {
     return *new Ensight6P1XScalarCL( mg, lset, v, varName, fileName, timedep);
 }
+#endif
 
 } // end of namespace DROPS
 

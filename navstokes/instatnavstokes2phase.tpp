@@ -18,8 +18,9 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, cons
 
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP2CL n;
-
+#ifndef _PAR
     std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
+#endif
 
     Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
     Quad5CL<double> rho, Phi;
@@ -34,7 +35,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, cons
     P2DiscCL::GetGradientsOnRef( GradRef);
     LocalP2CL<> p2Phi;
     LocalP2CL<Point3DCL> p2u;
-    
+
     for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
@@ -69,7 +70,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, cons
                         mN( n.num[i]+1, n.num[j]+1)+= N_ij;
                         mN( n.num[i]+2, n.num[j]+2)+= N_ij;
                     }
-                    else 
+                    else
                         if (cplN != 0) // put coupling on rhs
                         {
                             tmp= j < 4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex( j), t)
@@ -84,7 +85,9 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, cons
     }
 
     mN.Build();
+#ifndef _PAR
     std::cerr << N.num_nonzeros() << " nonzeros in N!" << std::endl;
+#endif
 }
 
 template<class Coeff>

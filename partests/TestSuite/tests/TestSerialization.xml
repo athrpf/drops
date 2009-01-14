@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<testsuite mprunner="mpirun">
+    <program label="TestRefPar" exec="./TestMGSerPar" paramTpl="./TestSuite/param-file-tpl/Ser.param.tpl"  verifier="./TestRefPar" verifierParamTpl="./TestSuite/param-file-tpl/Ref.param.tpl"
+             errorKeywords="errno,exit,problem,fehler"
+             >
+        <testset processors="2,3,4,8,16">
+            <config>
+                <setting label="__REFINE__">1</setting>
+            </config>
+            <values>
+            </values>
+        </testset>
+        <testset processors="2,3,4,8,16">
+            <config>
+                <setting label="__REFINE__">1</setting>
+            </config>
+            <values>
+            </values>
+        </testset>
+        <testset processors="2,3,4,8,16">
+            <config>
+                <setting label="__REFINE__">2</setting>
+            </config>
+            <values>
+            </values>
+        </testset>
+    </program>
+</testsuite>
+

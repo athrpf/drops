@@ -1,0 +1,38 @@
+#=============================================================
+#    DROPS parameter file for    TestExchange
+#    Testroutines for sending and recieving of numerical datas
+#=============================================================
+
+# properties of the index 1 and 2
+Unknowns {
+ NumsV1 = 1                 # unknowns on vertex for index 1
+ NumsE1 = 0                 # unknowns on edge for index 1
+ NumsT1 = 0                 # unknowns on tetra for index 1
+ NumsV2 = 1                 # unknowns on vertex for index 2
+ NumsE2 = 1                 # unknowns on edge for index 2
+ NumsT2 = 0                 # unknowns on tetra for index 2
+}
+
+# refine strategy
+Refining {
+  BasicRefX      = 3        # number of basic refines in x direction
+  BasicRefY      = 3        # number of basic refines in y direction
+  BasicRefZ      = 3        # number of basic refines in z direction
+  dx             = 5.0      # dimension of the brick in x direction
+  dy             = 1.0      # dimension of the brick in y direction
+  dz             = 1.0      # dimension of the brick in z direction
+  RefAll         = 2        # regular refinement
+  RefineStrategy = 1        # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
+  MigEveryTime   = 1        # migrate after each refinement step
+}
+
+# miscellaneous
+Misc {
+ PrintMG         = 1    # print the parallel multigrid in files
+ PrintEx         = 1    # print size of messages bewteen procs
+ CheckMG         = 1    # check pmg
+ TimeMeas        = 1    # benchmark for accumulate
+ Tests           = 100  # number of runs of accumulate
+ MultRuns        = 100  # number of multiple accumulations
+ PrintMsgSize    = 1    # display message size between all procs according to the index
+}

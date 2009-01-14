@@ -2,6 +2,7 @@
 // File:    integrTime.h                                                   *
 // Content: classes that perform time-integration steps                    *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+//          Oliver Fortmeiere, SC RWTH Aachen                              *
 // Version: 0.1                                                            *
 // History: begin - Nov, 19 2001                                           *
 //**************************************************************************
@@ -11,6 +12,10 @@
 
 #include "stokes/stokes.h"
 #include "num/MGsolver.h"
+#ifdef _PAR
+# include "num/parprecond.h"
+# include "num/parsolver.h"
+#endif
 
 namespace DROPS
 {
@@ -62,6 +67,11 @@ class InstatStokesThetaSchemeCL
     double GetTheta()    const { return _theta; }
     double GetTime()     const { return _Stokes.t; }
     double GetTimeStep() const { return _dt; }
+
+    /// \brief Get constant reference on solver
+    const SolverT& GetSolver() const { return _solver; }
+    /// \brief Get reference on solver
+          SolverT& GetSolver()       { return _solver; }
 
     void SetTimeStep( double dt)
     {
@@ -115,6 +125,7 @@ class ISPreCL
 // to solve the linear systems.
 // It is well suited for InexactUzawa-Solvers.
 //**************************************************************************
+#ifndef _PAR
 template <class SolverT>
 class ISNonlinearPreCL
 {
@@ -133,7 +144,50 @@ class ISNonlinearPreCL
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
 };
+#else
+template <typename ASolverT, typename MSolverT>
+class ISNonlinearPreCL
+{
+  private:
+    MatrixCL&  A_;
+    MatrixCL&  M_;
+    double     kA_, kM_;
+    mutable    ASolverT& Asolver_;
+    mutable    MSolverT& Msolver_;
+    mutable typename ASolverT::PrecondT PcA_;
+    mutable typename MSolverT::PrecondT PcM_;
 
+  public:
+    ISNonlinearPreCL(ASolverT& Asolver, MSolverT& Msolver, MatrixCL& A_pr, MatrixCL& M_pr,
+        double kA= 0., double kM= 1.)
+        : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM),
+          Asolver_(Asolver), Msolver_(Msolver), PcA_(Asolver_.GetPC()), PcM_(Msolver_.GetPC())  {}
+
+    /// \brief Apply preconditioner
+    template <typename Mat, typename Vec>
+    void Apply(const Mat&, Vec& p, const Vec& c) const;
+
+    /// \brief preconditionied vector is accumulated after "Apply"
+    inline bool RetAcc() const {
+        return true;
+    }
+
+    /// \brief Check if preconditioners needs diagonal of the matrices
+    inline bool NeedDiag() const {
+        return Asolver_.GetPC().NeedDiag() && Msolver_.GetPC().NeedDiag();
+    }
+
+    /// \brief Set diagonal of the preconditioner of the solvers (the matrices are known by this class)
+    template <typename Mat>
+    void SetDiag(const Mat&)
+    {
+        PcA_.SetDiag(A_);
+        PcM_.SetDiag(M_);
+    }
+
+
+};
+#endif
 
 //**************************************************************************
 // Preconditioner for the instationary Stokes-equations.
@@ -191,30 +245,46 @@ class ISMGPreCL
 // Problem with Application to Generalized Stokes Interface Equations",
 // Olshanskii, Peters, Reusken, 2005
 //**************************************************************************
+#ifdef _PAR
+template <typename ExPressureT, typename ExVelocityT>
+#endif
 class ISBBTPreCL
 {
   private:
     const MatrixCL*  B_;
-    mutable MatrixCL*  Bs_;
+    mutable MatrixCL*  Bs_;                                     ///< scaled Matrix B
     mutable size_t Bversion_;
     mutable CompositeMatrixCL BBT_;
     const MatrixCL*  M_, *Mvel_;
 
     double     kA_, kM_;
-    double     tolA_, tolM_;
-
-    mutable VectorCL D_;
-    mutable VectorCL Dprsqrtinv_;
-
+    double     tolA_, tolM_;                                    ///< tolerances of the solvers
+#ifndef _PAR
+    mutable VectorCL D_;                                        ///< diagonal of BB^T
+#endif
+    mutable VectorCL Dprsqrtinv_;                               ///< diag(M)^{-1/2}
+#ifndef _PAR
     typedef DiagPcCL SPcT_;
-    SPcT_ spc_;
     JACPcCL jacpc_;
+    SPcT_ spc_;
     mutable PCGSolverCL<SPcT_>   solver_;
     mutable PCGSolverCL<JACPcCL> solver2_;
+#else
+    typedef ParDummyPcCL<ExPressureT>    PCSolver1T;            ///< type of the preconditioner for solver 1
+    typedef ParJac0CL<ExPressureT>       PCSolver2T;            ///< type of the preconditioner for solver 2
+    PCSolver1T PCsolver1_;
+    PCSolver2T PCsolver2_;
 
-    void Update () const;
+    mutable ParPCGSolverCL<PCSolver1T, ExPressureT> solver_;    ///< solver for BB^T
+    mutable ParPCGSolverCL<PCSolver2T, ExPressureT> solver2_;   ///< solver for M
+
+    const ExPressureT& exP_;                                    ///< transfering pressure unknowns
+    const ExVelocityT& exV_;                                    ///< transfering velocity unknowns
+#endif
+    void Update () const;                                       ///< Updating the diagonal matrices D and Dprsqrtinv
 
   public:
+#ifndef _PAR
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
         double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
         : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL),
@@ -231,6 +301,36 @@ class ISBBTPreCL
           D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
           spc_( D_), solver_( spc_, 500, tolA_, /*relative*/ true),
           solver2_( jacpc_, 50, tolM_, /*relative*/ true) {}
+#else
+    ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
+        ExPressureT& exP, ExVelocityT& exV,
+        double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
+        : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL, exV, exP),
+          M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
+          PCsolver1_( exP), PCsolver2_(exP),
+          solver_( 800, tolA_, exP, PCsolver1_, /*relative*/ true, /*accure*/ true),
+          solver2_( 50, tolM_, exP, PCsolver2_, /*relative*/ true),
+          exP_(exP), exV_(exV) {}
+    ISBBTPreCL (const ISBBTPreCL& pc)
+        : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
+          Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.exV_, pc.exP_),
+          M_( pc.M_), Mvel_( pc.Mvel_),
+          kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
+          Dprsqrtinv_( pc.Dprsqrtinv_),
+          PCsolver1_( PCsolver1_.GetEx()), PCsolver2_(PCsolver2_.GetEx()),
+          solver_( 800, tolA_, PCsolver1_.GetEx(), PCsolver1_, /*relative*/ true, /*accure*/ true),
+          solver2_( 50, tolM_, PCsolver1_.GetEx(), PCsolver2_, /*relative*/ true),
+          exP_(pc.exP_), exV_(pc.exV_){}
+
+    /// \name Parallel preconditioner setup ...
+    //@{
+    bool NeedDiag() const { return false; }
+    void SetDiag(const VectorCL&) {}        // just for consistency
+    template<typename Mat>
+    void SetDiag(const Mat&) {}             // just for consistency
+    bool RetAcc()   const { return true; }
+    //@}
+#endif
 
     ISBBTPreCL& operator= (const ISBBTPreCL&) {
         throw DROPSErrCL( "ISBBTPreCL::operator= is not permitted.\n");
@@ -249,8 +349,14 @@ class ISBBTPreCL
     }
 };
 
+#ifndef _PAR
 template <typename Mat, typename Vec>
 void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
+#else
+template <typename ExPressureT, typename ExVelocityT>
+template <typename Mat, typename Vec>
+void ISBBTPreCL<ExPressureT, ExVelocityT>::Apply(const Mat&, Vec& p, const Vec& c) const
+#endif
 {
     if (B_->Version() != Bversion_)
         Update();
@@ -258,32 +364,62 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     p= 0.0;
     if (kA_ != 0.0) {
         solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
-//        std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
-//                  << "\tresidual: " <<  solver_.GetResid();
-        if (solver_.GetIter() == solver_.GetMaxIter())
+//         IF_MASTER
+//             std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
+//                       << "\tresidual: " <<  solver_.GetResid();
+        if (solver_.GetIter() == solver_.GetMaxIter()){
+          IF_MASTER
             std::cerr << "ISBBTPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                     << '\t' << solver_.GetResid() << '\n';
+        }
         p= kA_*(Dprsqrtinv_*p);
     }
     if (kM_ != 0.0) {
         Vec p2_( c.size());
         solver2_.Solve( *M_, p2_, c);
-//        std::cerr << "\t p2: iterations: " << solver2_.GetIter()
-//                  << "\tresidual: " <<  solver2_.GetResid()
-//                  << '\n';
-        if (solver2_.GetIter() == solver2_.GetMaxIter())
+//         IF_MASTER
+//             std::cerr << "\t p2: iterations: " << solver2_.GetIter()
+//                       << "\tresidual: " <<  solver2_.GetResid()
+//                       << '\n';
+        if (solver2_.GetIter() == solver2_.GetMaxIter()){
+          IF_MASTER
             std::cerr << "ISBBTPreCL::Apply: 2nd BBT-solve: " << solver2_.GetIter()
                     << '\t' << solver2_.GetResid() << '\n';
+        }
 
         p+= kM_*p2_;
     }
 }
+
+#ifdef _PAR
+template <typename ExPressureT, typename ExVelocityT>
+void ISBBTPreCL<ExPressureT, ExVelocityT>::Update() const
+{
+    delete Bs_;
+    Bs_= new MatrixCL( *B_);
+    Bversion_= B_->Version();
+
+    BBT_.SetBlock0( Bs_);
+    BBT_.SetBlock1( Bs_);
+
+    VectorCL Dvelinv( 1.0/ exV_.GetAccumulate(Mvel_->GetDiag()));
+    ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
+
+    VectorCL Dprsqrt( std::sqrt( exP_.GetAccumulate( M_->GetDiag())));
+    Dprsqrtinv_.resize( M_->num_rows());
+    Dprsqrtinv_= 1.0/Dprsqrt;
+
+    ScaleRows( *Bs_, Dprsqrtinv_);
+    // Skipp computing diag of BB^T
+}
+#endif
 
 //**************************************************************************
 // Preconditioner for the instationary (Navier-) Stokes-equations.
 // It is a scaled version of the Min-Commutator-PC of Elman and can be used
 // with P1X-elements.
 //**************************************************************************
+#ifndef _PAR
 class MinCommPreCL
 {
   private:
@@ -354,6 +490,7 @@ template <typename Mat, typename Vec>
                   << '\t' << solver_.GetResid() << '\n';
     x= Dprsqrtinv_*t;
 }
+#endif
 
 //=================================
 //     template definitions
@@ -395,6 +532,7 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     p+= kM_*p2_;
 }
 
+#ifndef _PAR
 template <class SolverT>
 template <typename Mat, typename Vec>
 void ISNonlinearPreCL<SolverT>::Apply(const Mat&, Vec& p, const Vec& c) const
@@ -416,6 +554,30 @@ void ISNonlinearPreCL<SolverT>::Apply(const Mat&, Vec& p, const Vec& c) const
         p+= kM_*p2_;
     }
 }
+#else
+template <typename ASolverT, typename MSolverT>
+template <typename Mat, typename Vec>
+void ISNonlinearPreCL<ASolverT, MSolverT>::Apply(const Mat&, Vec& p, const Vec& c) const
+{
+    p= 0.0;
+    if (kA_ != 0.0) {
+        Asolver_.Solve( A_, p, c);
+//     IF_MASTER
+//       std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
+//                 << "\tresidual: " <<  solver_.GetResid()<<std::endl;
+        p*= kA_;
+    }
+    if ( kM_ != 0.0) {
+        Vec p2_( c.size());
+        Msolver_.Solve( M_, p2_, c);
+//         IF_MASTER
+//           std::cerr << "\t p2: iterations: " << solver_.GetIter()
+//                     << "\tresidual: " <<  solver_.GetResid()
+//                     << '\n';
+        p+= kM_*p2_;
+    }
+}
+#endif
 
 /* with orthogonalization
 template <typename Mat, typename Vec>

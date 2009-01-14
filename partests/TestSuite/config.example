@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+	An example for an TestSuite configuration-file.
+-->
+<testsuite>
+	<!-- For every program that should be tested create a
+	     'program' section.
+			'label' is an arbitrary name and is used to format
+				the reports
+			'exec'  Is the absolute or relative path to the programs
+				main executable.
+			'paramTpl' is the location of a special prepared 				
+				   configuration-file for this application.
+					Values of settings that can be changed by a testset
+					have to be encoded (just like '__REFINE__').
+                                Just view Poisson.param.tpl .                                   
+	             'verifier' Is the absolute or relative path to an program that should be used to
+                               verify the tested programs output (e.g. the tested progam could write
+                               out something an the verifier performs its own tests on this data).
+                    'verifierParamTpl' just the same like 'paramTpl' for the verifier.
+                    
+            Notes:
+            - The use of a verifier program is optional
+            - Even your program doesn't use a parameter-file the attribute paramTpl is necessary.
+              (Just pass an empty-file).              
+    
+	-->
+	<program label="Poisson" exec="../TestPoissonPar" paramTpl="./param-file-tpl/Poisson.param.tpl">
+	 <!--
+ 	   Create a 'testset' for every special configuration you want to test.
+		'processors' are the numbers of processors used to perform this test.
+			     In this example , the testset is executed three times using 2,3 and 5 processors.
+	 -->
+	 <testset processors="2,3,5">
+
+	  <!--
+	    In the 'config' section is defined how the labels of the configurationfile-template (paramTpl) are replaced.
+ 	    Note: All posible labels should be replaced with an meaningful value in order to prevent unexpected behaviour.
+	  -->	
+	  <config>
+	    <setting label="__REFINE__">1</setting>
+	    <setting label="__SOLVER__">2</setting>
+	    <setting label="__PRECOND__">1</setting>
+	  </config>
+	  <!--
+	    In the 'values' section you can define special parts of the applications-output that have to satisfy 
+	    certain rules.
+	  -->
+	  <values>
+		  <!--
+		     Create one 'value'-section for each value you want to check.
+			'label' is an arbitrary name for the report.
+			'regExp' an regular expression, adressing an special area in the programs output.
+			
+				 Note: The expression  should wrap the value to check into brackets "(" ...")"
+			'mode' defines a relation between the value ,found in the programs output, and the value
+				defined insed <value>..</value>.
+				The following modes are possible
+					'equals'  => Both values have to be exact the same.
+					'equals(tolerance)' => Both values have to be equal in range of the given tolerance.
+							     tolerance may be an integer or double format number.
+					'more'		   => Programoutput has to be bigger than the given value.
+					'emore'		   => Programoutput has to be bigger or equal than the given value.
+					'less'		   => Programoutput has to be smaller than the given value.
+					'eless'		   => Programoutput has to be smaller or equal than the given value.
+		  -->
+		  <value label="2-Norm" regExp="\s*2-Norm\s*=\s*([0-9.]*)" mode="equals(0.3)" >
+			1.485864382752
+		  </value>
+		  <value label="2-Norm" regExp="\s*2-Norm\s*=\s*([0-9.]*)" mode="more" >
+			1.485864382752
+		  </value>
+	  </values>
+	 </testset>	 
+
+	</program>		
+</testsuite>
+ 

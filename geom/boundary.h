@@ -84,6 +84,11 @@ class BndPointCL
     BndIdxT GetBndIdx() const { return _BndIdx; }
     // Returns the 2D-coordinates of the vertex in BndSegCL *GetBndIdx()
     const Point2DCL& GetCoord2D () const { return _Coord2D; }
+
+#ifdef _PAR
+    /// \brief Boundary-Points have to be transferred, so ParMultiGridCL needs access
+    friend class ParMultiGridCL;
+#endif
 };
 
 

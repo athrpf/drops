@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<testsuite mprunner="mpirun">
+    <program label="TestRefPar" exec="./TestRefPar" paramTpl="./TestSuite/param-file-tpl/Ref.param.tpl"
+         errorKeywords="errno,exit,problem,fehler"
+    >
+        <testset processors="2,3,4,8,16">
+            <!-- Werte die im Template für die Konfigurationsdatei überschrieben werden sollen -->
+            <config>
+                <setting label="__REFINE__">1</setting>
+            </config>
+            <!-- Ggf. Werte die in der Program-Ausgabe überprüft werden sollen. -->
+            <values>
+                <!-- Z.B. : Suche nach dem Begriff L2-Norm und vergleiche den Wert hinter dem
+                     Gleicheitszeichen...
+                     -->
+                <!--
+                    <value label="EQUAL(T) L2-Norm" regExp="\s*L2-Norm\s*=\s*([0-9.]*)" mode="equals(0.01)" >
+                        0.275019758154
+                    </value>
+                    -->
+                </values>
+            </testset>
+        </program>
+</testsuite>

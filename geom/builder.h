@@ -19,12 +19,14 @@
 
 #include "geom/multigrid.h"
 #include "num/bndData.h"
+#include "misc/utils.h"
 #include <istream>
 #include <map>
 
 namespace DROPS
 {
 
+/// \brief Class for building a brick
 class BrickBuilderCL : public MGBuilderCL
 {
   private:
@@ -41,15 +43,43 @@ class BrickBuilderCL : public MGBuilderCL
     Uint t_idx(Uint i, Uint j, Uint k, Uint l) const { return i*_n2*_n1*6 + j*_n1*6 + k*6 + l; }
 
   protected:
+    /// \brief build boundary
     void buildBoundary(MultiGridCL* mgp) const;
-    
+
   public:
     BrickBuilderCL(const Point3DCL&, const Point3DCL&, const Point3DCL&, const Point3DCL&, Uint, Uint, Uint);
 
+    /// \brief Build a triangulation of a brick
     virtual void
     build(MultiGridCL*) const;
 };
 
+
+#ifdef _PAR
+/// \brief Class for setting up data structures of a multigrid of a brick shaped
+///        domain
+/** In order to create a brick on a parallel computer, the following strategy is
+    used. Only the master processor creates the multigrid and all other
+    processors have to create an "empty" multigrid, i.e. they only create the
+    level views and the boundary. Therefore this class is instanciated from the
+    non-master processors. The master process instaciate the base class of this
+    class.
+*/
+class EmptyBrickBuilderCL : public BrickBuilderCL
+{
+  private:
+    typedef BrickBuilderCL base_;
+    Uint _numLevel;
+
+  public:
+    EmptyBrickBuilderCL( const Point3DCL& orig, const Point3DCL& e1,
+                         const Point3DCL& e2, const Point3DCL& e3, Uint Level=1)
+      : base_( orig, e1, e2, e3, 0, 0, 0), _numLevel( Level) {}
+
+    /// \brief Build level views and boundary information
+    virtual void build( MultiGridCL*) const;
+};
+#endif
 
 class LBuilderCL : public MGBuilderCL
 {
@@ -94,7 +124,7 @@ class BBuilderCL : public MGBuilderCL
     Uint v_idx(Uint i, Uint j, Uint k)         const { return i*(_n2+1)*(_n1+1) + j*(_n1+1) + k; }
     Uint t_idx(Uint i, Uint j, Uint k, Uint l) const { return i*_n2*_n1*6 + j*_n1*6 + k*6 + l; }
 
- protected:
+  protected:
     void buildBoundary(MultiGridCL* mgp) const;
 
   public:
@@ -120,7 +150,6 @@ class TetraBuilderCL : public MGBuilderCL
     void buildBoundary(MultiGridCL* mgp) const;
 
   public:
-
     TetraBuilderCL(Ubyte rule);
     TetraBuilderCL(Ubyte rule, const Point3DCL& p0, const Point3DCL& p1,
                                const Point3DCL& p2, const Point3DCL& p3);
@@ -131,6 +160,21 @@ class TetraBuilderCL : public MGBuilderCL
     build(MultiGridCL*) const;
 };
 
+#ifdef _PAR
+/// \brief Create data structures for a tetrahedron-shaped multigrid
+/** For detailed information see describtion of EmptyBrickBuilderCL*/
+class EmptyTetraBuilderCL : public TetraBuilderCL
+{
+  private:
+    Uint _numLevel;
+    typedef TetraBuilderCL base_;
+
+  public:
+    EmptyTetraBuilderCL(Uint Level=1) : base_(0), _numLevel(Level) {}
+
+    virtual void build( MultiGridCL*) const;
+};
+#endif
 
 //--------------------------------------------------------------------
 // Mesh-file-parser
@@ -289,10 +333,6 @@ class ReadMeshBuilderCL : public MGBuilderCL
     mutable std::ostream* msg_;
     mutable std::vector<BndCondT> BC_;
 
-    mutable MeshNodeCL nodes_;
-    mutable MeshFaceCL mfaces_;
-    mutable MeshCellCL cells_;
-    
     mutable std::map<Uint, BndIdxT> zone_id2bndidx_;
 
 
@@ -312,8 +352,6 @@ class ReadMeshBuilderCL : public MGBuilderCL
     ReadFace();
     void //Read a cell section; mostly useless.
     ReadCell();
-    void // Read a mesh-file; Uses above Read*-functions.
-    ReadFile();
 
     void // If not existent, add the boundary section given as the second argument.
     AddVertexBndDescription(VertexCL*, Uint) const;
@@ -325,15 +363,21 @@ class ReadMeshBuilderCL : public MGBuilderCL
     void // Deallocate memory of data-members
     Clear() const;
 
-         // Actually creates the boundary-description into the MultiGrid; assumes that the data
-    void // file has been read.
-    buildBoundaryImp(MultiGridCL*) const;
-
     static BndCondT MapBC( Uint gambit_bc); // map gambit bc to DROPS bc
 
   protected:
-      void buildBoundary(MultiGridCL*) const;
-    
+    mutable MeshNodeCL nodes_;
+    mutable MeshFaceCL mfaces_;
+    mutable MeshCellCL cells_;
+
+    void buildBoundary(MultiGridCL*) const;
+    // Actually creates the boundary-description into the MultiGrid; assumes
+    // that the data file has been read.
+    void buildBoundaryImp(MultiGridCL*) const;
+
+    // Read a mesh-file; Uses above Read*-functions.
+    void ReadFile();
+
   public:
     // Input stream, from which the mesh is read. Pass a pointer to an output stream,
     // e. g. msg= &std::cerr, if you want to know, what happens during multigrid-construction.
@@ -349,6 +393,23 @@ class ReadMeshBuilderCL : public MGBuilderCL
     void     GetBC( std::vector<BndCondT>& BC) const { BC= BC_; }
 };
 
+#ifdef _PAR
+/// \brief This class creates an empty domain out of a mesh-file
+/** For detailed information see describtion of EmptyBrickBuilderCL*/
+class EmptyReadMeshBuilderCL : public ReadMeshBuilderCL
+{
+  private:
+    Uint numLevel_;
+    typedef ReadMeshBuilderCL base_;
+
+  public:
+    EmptyReadMeshBuilderCL (std::istream& f, std::ostream* msg=0, Uint Level=1)
+      : base_(f,msg) , numLevel_(Level) {}
+
+    /// Just create the level views boundary-information
+    virtual void build(MultiGridCL*) const;
+};
+#endif
 
 /*******************************************************************
 *   F I L E B U I L D E R  C L                                    *

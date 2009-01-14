@@ -22,11 +22,11 @@ namespace DROPS
 class P1XRepairCL
 {
   private:
-    bool         UsesXFEM_;
+    bool UsesXFEM_;
     MultiGridCL& mg_;
-    IdxDescCL    idx_;
-    VectorCL     extData_;
-    VecDescCL&   p_;
+    IdxDescCL idx_;
+    VectorCL extData_;
+    VecDescCL& p_;
 
   public:
     P1XRepairCL( MultiGridCL& mg, VecDescCL& p);
@@ -37,18 +37,34 @@ class P1XRepairCL
 /// problem class for instationary two-pase Stokes flow
 
 template <class Coeff>
+#ifndef _PAR
 class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
+#else
+class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
+#endif
 {
   public:
-    typedef ProblemCL<Coeff, StokesBndDataCL>      _base;
-    typedef InstatStokes2PhaseP2P1CL<Coeff>        _self;
-    typedef typename _base::CoeffCL                CoeffCL;
-    typedef typename _base::BndDataCL              BndDataCL;
-    using                                          _base::_MG;
-    using                                          _base::_Coeff;
-    using                                          _base::_BndData;
-    using                                          _base::GetBndData;
-    using                                          _base::GetMG;
+#ifndef _PAR
+    typedef ProblemCL<Coeff, StokesBndDataCL>       _base;
+    typedef InstatStokes2PhaseP2P1CL<Coeff>         _self;
+#else
+    typedef ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL> _base;
+    typedef InstatStokes2PhaseP2P1CL<Coeff>                    _self;
+#endif
+    typedef typename _base::CoeffCL                 CoeffCL;
+    typedef typename _base::BndDataCL               BndDataCL;
+    using                                           _base::_MG;
+    using                                           _base::_Coeff;
+    using                                           _base::_BndData;
+    using                                           _base::GetBndData;
+    using                                           _base::GetMG;
+#ifdef _PAR
+    using                                           _base::ex_;
+    using                                           _base::GetEx;
+
+    /// \brief Numbering of blocks within ExchangeBlockCL
+    enum ExType { velocity=0, pressure=1 };
+#endif
 
     typedef P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>   DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -70,26 +86,53 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  prM;
 
   public:
+#ifndef _PAR
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
         : _base(mgb, coeff, bdata), vel_idx(vecP2_FE, 1, bdata.Vel), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
         : _base(mg, coeff, bdata),  vel_idx(vecP2_FE, 1, bdata.Vel), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+#else
+    InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
+        : _base(mgb, coeff, bdata, 2), vel_idx(vecP2_FE), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+    InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
+        : _base(mg, coeff, bdata, 2), vel_idx(vecP2_FE), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+#endif
 
     /// \name Numbering
     //@{
     /// Create/delete numbering of unknowns
-    void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
-    void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0); }
+    void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0);
+    void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0, const LevelsetP2CL* lsetp= 0);
     /// \brief Only used for XFEM
     void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset)
-        { if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi); }
+        {
+#ifdef _PAR
+            throw DROPSErrCL("No XFEM implemented in parallel DROPS yes, sorry");
+#endif
+            if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi);
+        }
+    /// \brief Only used for XFEM
     void UpdatePressure( VecDescCL* p)
-        { if (UsesXFEM()) p->RowIdx->GetXidx().Old2New( p); }
+        {
+#ifdef _PAR
+            throw DROPSErrCL("No XFEM implemented in parallel DROPS yes, sorry");
+#endif
+            if (UsesXFEM()) p->RowIdx->GetXidx().Old2New( p);
+        }
     void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
     //@}
+
+#ifdef _PAR
+    /// \brief Get a reference on Exchange class for pressure or for velocity
+    ExchangeCL& GetEx(Uint t)
+        { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
+
+    /// \brief Get a constant reference on Exchange class for pressure or for velocity
+    const ExchangeCL& GetEx(Uint t) const
+        { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
+#endif
+
     /// \name Discretization
     //@{
     /// Returns whether extended FEM are used
@@ -157,6 +200,7 @@ class VelocityRepairCL : public MGObserverCL
   private:
     StokesT& stokes_;
 
+#ifndef _PAR
   public:
     VelocityRepairCL (StokesT& stokes)
         : stokes_( stokes) {}
@@ -166,6 +210,22 @@ class VelocityRepairCL : public MGObserverCL
 
     void pre_refine_sequence  () {}
     void post_refine_sequence ();
+#else
+    ParMultiGridCL& pmg_;
+    Uint            vecDescIdx_;  // index of the FE function for the parallel multigrid
+
+public:
+    // interface for the parallel DROPS version
+    VelocityRepairCL (StokesT& stokes, ParMultiGridCL& pmg, Uint i=0)
+        : stokes_(stokes), pmg_(pmg), vecDescIdx_(i) {}
+
+    void pre_refine  ();
+    void post_refine ();
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
+
+#endif
 };
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function stokes_.pr.
@@ -183,6 +243,7 @@ class PressureRepairCL : public MGObserverCL
     std::auto_ptr<P1XRepairCL> p1xrepair_;
     const LevelsetP2CL& ls_;
 
+#ifndef _PAR
   public:
     PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls)
         : stokes_( stokes), ls_( ls) {}
@@ -192,6 +253,21 @@ class PressureRepairCL : public MGObserverCL
 
     void pre_refine_sequence  ();
     void post_refine_sequence ();
+#else
+  private:
+    ParMultiGridCL& pmg_;
+    Uint            vecDescIdx_;  // index of the FE function for the parallel multigrid
+
+  public:
+    PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls, ParMultiGridCL& pmg, Uint i=1)
+        : stokes_(stokes), ls_(ls), pmg_(pmg), vecDescIdx_(i) {}
+
+    void pre_refine  ();
+    void post_refine ();
+
+    void pre_refine_sequence  () {}
+    void post_refine_sequence () {}
+#endif
 };
 
 } // end of namespace DROPS

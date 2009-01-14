@@ -554,7 +554,7 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 
         M.Apply(A, z, r);
         rho_1= rho;
-        rho= dot( r, z);      
+        rho= dot( r, z);
         z_xpay( p, z, rho/rho_1, p); // p= z + (rho/rho_1)*p;
     }
     tol= resid;
@@ -1578,12 +1578,29 @@ class SolverAsPreCL
     SolverAsPreCL( SolverT& solver, std::ostream* output= 0)
         : solver_( solver), output_( output) {}
 
+#ifdef _PAR
+    /// \brief Check if return preconditioned vectors are accumulated after calling Apply
+    bool RetAcc() const   { return true; }
+    /// \brief Check if the diagonal of the matrix is needed
+    bool NeedDiag() const { return solver_.GetPC().NeedDiag(); }
+    /// \brief Set diagonal to the preconditioner of the solver
+    template<typename Mat>
+    void SetDiag(const Mat& A)
+    {
+        solver_.GetPC().SetDiag(A);
+    }
+#endif
+
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& A, Vec& x, const Vec& b) const {
         x= 0.0;
         solver_.Solve( A, x, b);
+//         if (solver_.GetIter()==solver_.GetMaxIter())
+//           IF_MASTER
+//             std::cerr << "===> Warning: Cannot solve inner system!\n";
         if (output_ != 0)
+          IF_MASTER
             *output_ << "SolverAsPreCL: iterations: " << solver_.GetIter()
                      << "\trelative residual: " << solver_.GetResid() << std::endl;
     }

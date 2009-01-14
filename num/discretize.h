@@ -342,7 +342,7 @@ class Quad2CL: public GridFunctionCL<T>
     Quad2CL(const TetraCL&, instat_fun_ptr, double= 0.0);
     Quad2CL(const LocalP2CL<value_type>&);
     Quad2CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
-   template <class PFunT>
+    template <class PFunT>
       Quad2CL(const TetraCL&, const PFunT&, double= 0.0);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
@@ -489,7 +489,7 @@ class Quad5_2DDataCL
 
     static Point3DCL           Node[NumNodesC]; ///< quadrature nodes
     static const double        Wght[3];         ///< quadrature weights
- 
+
     /// Calculates the barycentric coordinates of the quadrature points
     /// of the triangle given by the 1st argument with respect to the
     /// tetrahedron and stores them in the 2nd argument.

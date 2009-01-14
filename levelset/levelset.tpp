@@ -2,6 +2,7 @@
 // File:    levelset.tpp                                                   *
 // Content: levelset equation for two phase flow problems                  *
 // Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
+//          Oliver Fortmeier, RZ RWTH Aachen                               *
 //**************************************************************************
 
 #include "num/discretize.h"
@@ -83,16 +84,63 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
             }
         }
     }
-    bary/= Volume;    vel/= Volume;
+#ifdef _PAR
+    // Globalization of  data
+    // -----
+    const Point3DCL local_bary(bary), local_vel(vel), local_minCoord(minCoord), local_maxCoord(maxCoord);
+    maxGradPhi= GlobalMax(maxGradPhi);
+    Volume    = GlobalSum(Volume);
+    GlobalSum(Addr(local_bary), Addr(bary), 3);
+    GlobalSum(Addr(local_vel), Addr(vel), 3);
+    GlobalMin(Addr(local_minCoord), Addr(minCoord), 3);
+    GlobalMax(Addr(local_maxCoord), Addr(maxCoord), 3);
+#endif
+
+    bary/= Volume;
+    vel/= Volume;
 }
+
+#ifdef _PAR
+template<typename ExCL>
+  void LevelsetP2CL::ReparamFastMarching(ExCL& ex, bool ModifyZero, bool euklid, bool Periodic, bool OnlyZeroLvl)
+/**
+\param ModifyZero   If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
+\param OnlyZeroLvl  If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
+\param Periodic     If true, a special variant of the algorithm for periodic boundaries is used.
+\param ex           \a ExchangeCL for handling parallel dofs
+\param euklid       Use euclidan method for reparametrization
+
+  \todo (of) Was muss aus der ParFastMarchCL aufgerufen werden, wenn man OnlyZeroLvl als Parameter angibt?
+  \todo (of) Periodische Randbedingungen für die Reparametrisierung der Levelset-Funktion
+*/
+{
+    if (Periodic)
+        throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No periodic boundary for parallel fast marching implemented");
+    FastMarchCL FastMarch( MG_, Phi, ex);
+    if (OnlyZeroLvl)
+    {
+        FastMarch.InitZero( ModifyZero);
+        FastMarch.RestoreSigns();
+    }
+    else
+    {
+        if (!euklid)
+            FastMarch.Reparam( ModifyZero);
+        else
+            FastMarch.ReparamEuklid( ModifyZero);
+    }
+}
+#endif
 
 
 template<class DiscVelSolT>
 void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
-// Sets up the stiffness matrices:
-// E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-// H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-// where v_i, v_j denote the ansatz functions.
+/**Sets up the stiffness matrices: <br>
+   E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i ) <br>
+   H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i ) <br>
+   where v_i, v_j denote the ansatz functions.
+   \remarks call SetupSystem \em before calling SetTimeStep!
+*/
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns();
     const Uint lvl= Phi.GetLevel();
@@ -101,7 +149,12 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
                                bH(&H, num_unks, num_unks);
     IdxT Numb[10];
 
-    std::cerr << "entering SetupSystem: " << num_unks << " levelset unknowns. ";
+#ifndef _PAR
+    __UNUSED__ const IdxT allnum_unks= num_unks;
+#else
+    __UNUSED__ const IdxT allnum_unks= GlobalSum(num_unks);
+#endif
+    Comment("entering Levelset::SetupSystem: " << allnum_unks << " levelset unknowns.\n", DebugDiscretizeC);
 
     // fill value part of matrices
     Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc;
@@ -140,18 +193,19 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
                 bE( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
-                                      + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
+                                     + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
 
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
                 bH( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
-                                      + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
+                                     + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
             }
     }
 
     bE.Build();
     bH.Build();
-    std::cerr << E.num_nonzeros() << " nonzeros in E, "
-              << H.num_nonzeros() << " nonzeros in H! " << std::endl;
+#ifndef _PAR
+    Comment(E.num_nonzeros() << " nonzeros in E, "<< H.num_nonzeros() << " nonzeros in H! " << std::endl, DebugDiscretizeC);
+#endif
 }
 
 } // end of namespace DROPS

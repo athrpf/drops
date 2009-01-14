@@ -813,7 +813,7 @@ class FunAsP2EvalCL
   protected:
     BndDataCL          bnd_;
     const MultiGridCL* mg_; // the multigrid, maybe 0
-   
+
     mutable double     t_;
 
   public:

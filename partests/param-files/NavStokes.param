@@ -1,0 +1,78 @@
+#=============================================================
+#    DROPS parameter file for    TestNavStokesPar
+#    Testroutines for solving the Stokes Equation
+#=============================================================
+
+Stokes{
+  nu = 1.0               # coeff of the difffusion
+}
+
+ExpData{
+  InflowVel = 0.005    # max vel of inflow
+  g         = 0 0 0    # gravity (a.t.m. not used)
+  Frequence = 30       # frequence of inflow
+  Amplitude = 0.01     # amplitude of inflow
+}
+
+Time{
+ TimeSteps  = 10
+ StepSize   = 0.1
+ Theta      = 1
+}
+
+Refining {
+  BasicRefX   = 2        # number of basic refines in x direction
+  BasicRefY   = 2        # number of basic refines in y direction
+  BasicRefZ   = 2        # number of basic refines in z direction
+  dx          = 1.0      # dimension of the brick in x direction
+  dy          = 1.0      # dimension of the brick in y direction
+  dz          = 1.0      # dimension of the brick in z direction
+  RefAll      = 0        # regular refinement
+}
+
+LoadBalancing{
+ RefineStrategy =   1    # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
+}
+
+Solver{
+  Relax     = 1          # Relaxiation-Parameter for the preconditioner
+  InnerIter = 2000       # max iterations for the inner solver
+  InnerTol  = 1e-12      # toleration for the inner solver
+  OuterIter = 1000        # max iterations for the outer solver
+  OuterTol  = 1e-2       # toleration for the outer solver
+  Restart   = 100        # if solver==GMRES, dimension of Krylov subspace, solver==GCR , truncation
+  Relative  = 0          # meassure resid relative
+  Accur     = 1          # use accur variant for inner product and norm computations
+  PCIter    = 100
+  PCRelTol  = 0.02
+  Reduction = 0.1
+}
+
+NavierStokes{
+  Reduction = 0.1
+  Iter      = 50         # maximal fixpoint steps
+  Tol       = 1e-7       # tolerance for fixpoint iteration
+  RefTop    = 0
+}
+
+# Ensight settings
+Ensight {
+    EnsightOut  = 1
+    EnsCase     = NavStokes
+    EnsDir      = ensight
+    Binary      = 0
+    MasterOut   = 1
+    GeomName    = Brick
+}
+
+#VTK output
+VTK{
+    VTKOut      = 0
+    VTKDir      = vtk
+    VTKName     = brick_adapt
+    Binary      = 0
+}
+
+Misc{
+  PrintInfo = 0          # display information
+}
