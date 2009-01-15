@@ -1,10 +1,6 @@
-//**************************************************************************
-// File:    coupling.h                                                     *
-// Content: coupling of levelset and (Navier-)Stokes equations             *
-// Author:  Patrick Esser, Sven Gross, Joerg Grande,                       *
-//          Volker Reichelt, IGPM RWTH Aachen                              *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-//**************************************************************************
+/// \file
+/// \brief coupling of levelset and (Navier-)Stokes equations
+/// \author Sven Gross, Joerg Grande, Patrick Esser, IGPM, Oliver Fortmeier, SC
 
 #ifndef DROPS_COUPLING_H
 #define DROPS_COUPLING_H
@@ -267,6 +263,48 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
     void Update();
 };
 
+/// \brief Compute the relaxation factor in RecThetaScheme2PhaseCL by Aitken's delta-squared method.
+///
+/// This vector version of classical delta-squared concergence-acceleration computes the
+/// relaxation factor in span{ (v, phi)^T}.
+class cplDeltaSquaredPolicyCL
+{
+  private:
+    VectorCL v_old_,  phi_old_,
+             v_diff_, phi_diff_;
+    double   omega_;
+    bool     firststep_;
+    
+  public:
+   cplDeltaSquaredPolicyCL( size_t vsize, size_t phisize)
+   {
+       resize( vsize, phisize);
+   }
+   void resize( size_t vsize, size_t phisize)
+   {
+       v_old_.resize ( vsize); phi_old_.resize ( phisize);
+       v_diff_.resize( vsize); phi_diff_.resize( phisize);
+       reset();
+   }
+   void reset()
+   {
+       omega_ = 1.0; firststep_ = true;
+   }
+   inline void Update( const VectorCL& v, const VectorCL& phi)
+   {
+        if (firststep_) {
+            v_old_= v; phi_old_= phi;
+            firststep_ = false;
+            return;
+        }
+        v_diff_=  v - v_old_; phi_diff_= phi - phi_old_;
+        omega_*= -(dot( v_diff_, v_old_) + dot( phi_diff_, phi_old_))
+                / (norm_sq( v_diff_) + norm_sq( phi_diff_));
+
+        v_old_= v; phi_old_= phi; 
+   }
+   double RelaxFactor () const { return omega_; }
+};
 
 template <class StokesT, class SolverT>
 class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
@@ -294,6 +332,8 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     SolverT&     solver_;
     bool         withProj_;
     const double stab_;
+    
+    cplDeltaSquaredPolicyCL dsp_;
 
 #ifdef _PAR
     typedef ParJac0CL<ExchangeCL> MsolverPCT;
@@ -311,6 +351,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void ComputePressure ();
 
     void ComputeVelocityDot ();
+    void DoFPIter2();
 
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,

@@ -1,9 +1,6 @@
-//**************************************************************************
-// File:    coupling.tpp                                                   *
-// Content: coupling of levelset and (Navier-)Stokes equations             *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-//**************************************************************************
+/// \file
+/// \brief coupling of levelset and (Navier-)Stokes equations
+/// \author Sven Gross, Joerg Grande, Patrick Esser, IGPM, Oliver Fortmeier, SC
 
 #include "num/nssolver.h"
 
@@ -831,7 +828,7 @@ template <class StokesT, class SolverT>
 RecThetaScheme2PhaseCL<StokesT,SolverT>::RecThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, theta, nonlinear),
-    solver_( solver), withProj_( withProjection), stab_( stab)
+    solver_( solver), withProj_( withProjection), stab_( stab), dsp_( 0, 0)
 #ifdef _PAR
     , MsolverPC_(Stokes.GetEx(Stokes.velocity)), Msolver_(200, 1e-10, Stokes.GetEx(Stokes.velocity), MsolverPC_, false, true),
     SsolverPC_(Stokes.GetEx(Stokes.pressure)), Ssolver_(100, 200, 1e-10, Stokes.GetEx(Stokes.pressure), SsolverPC_, true)
@@ -890,6 +887,21 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoProjectionStep( const VectorCL& 
 
 template <class StokesT, class SolverT>
 void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
+{
+    VectorCL v( Stokes_.v.Data), phi( LvlSet_.Phi.Data);
+    DoFPIter2();
+    Stokes_.v.Data   = v   - Stokes_.v.Data;
+    LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
+    dsp_.Update( Stokes_.v.Data, LvlSet_.Phi.Data);
+    const double omega = dsp_.RelaxFactor();
+    IF_MASTER
+        std::cerr << "omega: " << omega << std::endl;
+    Stokes_.v.Data   = v   - omega*Stokes_.v.Data;
+    LvlSet_.Phi.Data = phi - omega*LvlSet_.Phi.Data;
+}
+
+template <class StokesT, class SolverT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter2()
 // perform fixed point iteration
 {
 #ifndef _PAR
@@ -993,6 +1005,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
         ComputeVelocityDot();
     }
     oldv_= Stokes_.v.Data;
+    dsp_.reset();
 
 //     static int mycount( 1);
 //     if ( mycount++ % 20 == 1) {
@@ -1093,6 +1106,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
         ComputePressure();
         ComputeVelocityDot();
     }
+
+    dsp_.resize( Stokes_.v.Data.size(), LvlSet_.Phi.Data.size());
 
     time.Stop();
     duration=time.GetTime();
