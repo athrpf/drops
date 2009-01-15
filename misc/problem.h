@@ -285,7 +285,7 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
             static_cast<MLDataCL<IdxDescCL>*>( this)->resize( numLvl);
         else
             while (this->size() < numLvl)
-                this->push_back(IdxDescCL( fe, bnd, match, omit_bound=1./32.));
+                this->push_back(IdxDescCL( fe, bnd, match, omit_bound));
     }
 
     /// \brief Returns the number of the index on the finest level.
