@@ -612,7 +612,9 @@ void LevelsetP2CL::DoLinStep( const VectorCL& rhs)
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
-    gm_.Solve( L_, Phi.Data, rhs);
+    gm_.Solve( L_, Phi.Data, VectorCL( E*rhs));
+    IF_MASTER
+      std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep()
