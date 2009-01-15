@@ -1134,8 +1134,14 @@ class UpdateProlongationCL : public MGObserverCL
     void pre_refine_sequence  () {}
     void post_refine_sequence () {
         if (P_ != 0) {
-            if (ColIdx_->GetCoarsest().GetFE() == P1_FE)    SetupP1ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
-            if (ColIdx_->GetCoarsest().GetFE() == vecP2_FE) SetupP2ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
+            if (ColIdx_->GetCoarsest().GetFE() == P1_FE) {
+                P_->clear();
+                SetupP1ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
+            }
+            if (ColIdx_->GetCoarsest().GetFE() == vecP2_FE) {
+                P_->clear();
+                SetupP2ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
+            }
         }
     }
 };
