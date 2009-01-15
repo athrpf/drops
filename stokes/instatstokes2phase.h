@@ -212,12 +212,11 @@ class VelocityRepairCL : public MGObserverCL
     void post_refine_sequence ();
 #else
     ParMultiGridCL& pmg_;
-    Uint            vecDescIdx_;  // index of the FE function for the parallel multigrid
 
 public:
     // interface for the parallel DROPS version
-    VelocityRepairCL (StokesT& stokes, ParMultiGridCL& pmg, Uint i=0)
-        : stokes_(stokes), pmg_(pmg), vecDescIdx_(i) {}
+    VelocityRepairCL (StokesT& stokes, ParMultiGridCL& pmg)
+        : stokes_(stokes), pmg_(pmg) {}
 
     void pre_refine  ();
     void post_refine ();
@@ -256,11 +255,10 @@ class PressureRepairCL : public MGObserverCL
 #else
   private:
     ParMultiGridCL& pmg_;
-    Uint            vecDescIdx_;  // index of the FE function for the parallel multigrid
 
   public:
-    PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls, ParMultiGridCL& pmg, Uint i=1)
-        : stokes_(stokes), ls_(ls), pmg_(pmg), vecDescIdx_(i) {}
+    PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls, ParMultiGridCL& pmg)
+        : stokes_(stokes), ls_(ls), pmg_(pmg) {}
 
     void pre_refine  ();
     void post_refine ();

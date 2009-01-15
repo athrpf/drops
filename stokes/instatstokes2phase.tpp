@@ -1598,7 +1598,7 @@ template<class StokesT>
 template<class StokesT>
   inline void VelocityRepairCL<StokesT>::pre_refine()
 {
-    pmg_.AttachTo(vecDescIdx_, &stokes_.v);
+    pmg_.AttachTo( &stokes_.v, &stokes_.GetBndData().Vel);
 }
 
 template<class StokesT>
@@ -1668,7 +1668,7 @@ template<class StokesT>
 template<class StokesT>
   inline void PressureRepairCL<StokesT>::pre_refine()
 {
-    pmg_.AttachTo(vecDescIdx_, &stokes_.p);
+    pmg_.AttachTo( &stokes_.p, &stokes_.GetBndData().Pr);
 }
 
 template<class StokesT>

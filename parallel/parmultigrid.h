@@ -72,8 +72,6 @@ class ParMultiGridCL
     typedef std::vector< const BndDataCL<double>* >    ScalBndCT;
     /// \brief Vector of vectorial boundary conditions
     typedef std::vector< const BndDataCL<Point3DCL>* > VecBndCT;
-    /// \brief Select appropriate boundary condition to a VecDesc
-    typedef std::vector<size_t>                        SelectBndCT;
 
   private:    // variables
     static DDD_IF _EdgeIF;                  // Interface for accumulate the "Marked for Refinement"
@@ -102,12 +100,9 @@ class ParMultiGridCL
     static BufferCT       _RecvBuf;         // Buffer for the recieved numerical data (used for refinement and migration)!
     static ScalBndCT      _ScalBnd;         // Store scalar boundary conditions
     static VecBndCT       _VecBnd;          // Store vectorial boundary conditions
-    static SelectBndCT    _SelectBnd;       // Store mapping from VecDesc to boundary condition
 
     static bool TransferMode,               // If an active DDD-Xfer-Mode is activ
-                PrioChangeMode,             // if we are in a DDD-PrioChange enviroment
-                _VecDescRecv,               // if Vector-Describers are set
-                _IdxSet;                    // if Indices of the unknowns are set
+                PrioChangeMode;             // if we are in a DDD-PrioChange enviroment
     static IdxT _RecvBufPos;                // last postion in recieve buffer that is not used;
 
     static int _level;                      // all level to _level in XferStart() and XferEnd()
@@ -120,8 +115,8 @@ class ParMultiGridCL
   public:
     /// \name Constructor and Destructor
     // @{
-    ParMultiGridCL(Uint numVecDesc);
-    ParMultiGridCL(const MGBuilderCL&,Uint numVecDesc);
+    ParMultiGridCL();
+    ParMultiGridCL(const MGBuilderCL&);
     ParMultiGridCL(const ParMultiGridCL&);                                  // Copyconstructor is not implemented!
     ~ParMultiGridCL();
     // @}
@@ -148,9 +143,9 @@ class ParMultiGridCL
 
     /// \name Functions concerning the handling of unknowns
     // @{
-    void AttachTo(Uint i, VecDescCL*);                                      // attach VecDesc
     template<typename BndT>
-    void AttachTo(const VecDescCL*, const BndT*);                           // attach boundary conditions
+    void AttachTo(VecDescCL*, const BndT*);                                 // attach VecDescCL and boundary conditions
+    void DeleteVecDesc();
     static inline bool UnknownsOnSimplices();                               // are there unknowns on simplices
     void HandleUnknownsAfterRefine();                                       // Handle Unknowns after a refine operation
     void HandleNewIdx(IdxDescCL* old, VecDescCL* newVec);                   // Handle unknowns after migration and refinement
@@ -242,8 +237,7 @@ class ParMultiGridCL
 
     // checking and size-estimating functions
     //@{
-    static inline bool VecDescRecv();                               // All VecDesc revieved?
-    static inline bool IndexSet();                                  // All Indices are set?
+    static inline bool VecDescRecv();                               // VecDesc revieved?
     static Uint NumberOfUnknownsOnTetra();                          // Get overall number of unknowns on a tetrahedron
     static Uint NumberOfUnknownsOnVertex();                         // Get number of unknowns on a vertex
     static Uint NumberOfUnknownsOnEdge();                           // Get number of unknowns on an edge
@@ -252,6 +246,9 @@ class ParMultiGridCL
 
     // Copy values and doing linear interpolation after refine/migrate
     //@{
+    static inline Uint GetStorePos(const IdxDescCL*);                       // Get position where the IdxDesc is internally stored
+    template<typename BndT>
+    void AttachTo(const IdxDescCL*, const BndT*);                           // attach boundary conditions
     template<typename BndT>
     static inline bool LinearInterpolation(const EdgeCL&, Uint, const BndT*, const VectorCL&, typename BndT::bnd_type& new_dof);
     static void RescueUnknownsOnEdges();                                    // Rescue unknowns on edges, that are deleted
@@ -263,7 +260,7 @@ class ParMultiGridCL
                  const VectorCL* const, VectorCL*, const Uint,
                  const Uint, const IdxDescCL*, const BndT*);                // Copy unknowns on an edge into a new datafield
     template<typename BndT>
-    inline static const BndT* GetBndCond(size_t i);                         // Get boundary condition to store VecDesCL
+    inline static const BndT* GetBndCond(const IdxDescCL*);                 // Get boundary condition to store VecDesCL
     //@}
 
     // Send and recieve unknowns
@@ -361,6 +358,18 @@ class ParMultiGridCL
     static int ScatterInterpolValues(DDD_OBJ, void*);                       // Scatter unknowns of an interpolated simplex
     //@}
 };
+
+// Declaration of spezialized template functions
+//----------------------------------------------
+template<>
+void ParMultiGridCL::AttachTo<BndDataCL<double> >(const IdxDescCL*, const  BndDataCL<double>*);
+template<>
+void ParMultiGridCL::AttachTo<BndDataCL<Point3DCL> >(const IdxDescCL*, const  BndDataCL<Point3DCL>*);
+template<>
+  const BndDataCL<double>* ParMultiGridCL::GetBndCond<BndDataCL<double> >( const IdxDescCL*);
+template<>
+  const BndDataCL<Point3DCL>* ParMultiGridCL::GetBndCond<BndDataCL<Point3DCL> >( const IdxDescCL*);
+
 
 // Declaration of DDD-Handlers used within the template functions
 //---------------------------------------------------------------

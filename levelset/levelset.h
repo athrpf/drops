@@ -221,12 +221,11 @@ class LevelsetRepairCL : public MGObserverCL
 
 #else
     ParMultiGridCL& pmg_;
-    Uint            vecDescIdx_;  // index of the FE function for the parallel multigrid
 
   public:
     /// \brief Construct a levelset repair class
-    LevelsetRepairCL (LevelsetP2CL& ls, ParMultiGridCL& pmg, Uint i=2)
-        : ls_( ls), pmg_(pmg), vecDescIdx_(i) {}
+    LevelsetRepairCL (LevelsetP2CL& ls, ParMultiGridCL& pmg)
+        : ls_( ls), pmg_(pmg) {}
 
     void pre_refine  ();
     void post_refine ();

@@ -868,7 +868,7 @@ LevelsetRepairCL::post_refine ()
 /// Tell parallel multigrid about the location of the DOF
 void LevelsetRepairCL::pre_refine()
 {
-    pmg_.AttachTo(vecDescIdx_, &ls_.Phi);
+    pmg_.AttachTo( &ls_.Phi, &ls_.GetBndData());
 }
 
 /// Do all things to complete the repairment of the FE level-set function

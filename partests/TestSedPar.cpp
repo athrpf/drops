@@ -475,9 +475,9 @@ template<class Coeff>
     Stokes.prM.SetIdx( pidx, pidx); Stokes.prA.SetIdx( pidx, pidx);
 
 //     // Tell parmultigrid about unknowns
-    pmg.AttachTo(0, v); pmg.AttachTo(v, &Stokes.GetBndData().Vel);
-    pmg.AttachTo(1, p); pmg.AttachTo(p, &Stokes.GetBndData().Pr);
-    pmg.AttachTo(2, l); pmg.AttachTo(l, &lset.GetBndData());
+    pmg.AttachTo( v, &Stokes.GetBndData().Vel);
+    pmg.AttachTo( p, &Stokes.GetBndData().Pr);
+    pmg.AttachTo( l, &lset.GetBndData());
 
     //Setup initial problem
     if (ProcCL::IamMaster())
@@ -516,7 +516,7 @@ int main (int argc, char** argv)
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
-    DROPS::ParMultiGridCL pmg(3);
+    DROPS::ParMultiGridCL pmg;
 //     DDD_SetOption(OPT_INFO_XFER, XFER_SHOW_MSGSALL);
 
     typedef ZeroFlowCL                                    CoeffT;

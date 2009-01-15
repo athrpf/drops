@@ -51,12 +51,9 @@ ParMultiGridCL::VecDescPCT ParMultiGridCL::_VecDesc =   VecDescPCT();
 ParMultiGridCL::BufferCT   ParMultiGridCL::_RecvBuf =   BufferCT();
 ParMultiGridCL::ScalBndCT   ParMultiGridCL::_ScalBnd =  ScalBndCT();
 ParMultiGridCL::VecBndCT    ParMultiGridCL::_VecBnd    = VecBndCT();
-ParMultiGridCL::SelectBndCT ParMultiGridCL::_SelectBnd = SelectBndCT();
 
 bool ParMultiGridCL::TransferMode   = false;
 bool ParMultiGridCL::PrioChangeMode = false;
-bool ParMultiGridCL::_VecDescRecv   = false;
-bool ParMultiGridCL::_IdxSet        = false;
 IdxT ParMultiGridCL::_RecvBufPos    = 0;
 
 int ParMultiGridCL::_level           =-1;
@@ -140,8 +137,8 @@ extern "C" int ScatterInterpolValuesEC(DDD_OBJ o, void* b) { return ParMultiGrid
 ****************************************************************************/
 /// \brief Constructor with number of Vector-Describer-Classes
 ///
-/// Init the parallel stuff and allocate space for the Vector of Pointers to the VecDescCL
-ParMultiGridCL::ParMultiGridCL(Uint numVecDesc)
+/// Init the parallel stuff
+ParMultiGridCL::ParMultiGridCL()
 {
     Assert(EdgeCL::GetType()==0, DROPSErrCL("ParMultiGridCL: Constructor is called twice"),DebugParallelC);
 
@@ -152,8 +149,6 @@ ParMultiGridCL::ParMultiGridCL(Uint numVecDesc)
     SetAllHandler();    // Set the DDD-Handlers
 
     // Init the containers for the unknowns
-    _VecDesc.resize(numVecDesc,0);
-    _SelectBnd.resize(numVecDesc, std::numeric_limits<size_t>::max());
     _RecvBuf.resize(0);
 
     // There are no active transfers neither Prio-Change-enviroment while creating this class
@@ -165,7 +160,7 @@ ParMultiGridCL::ParMultiGridCL(Uint numVecDesc)
 /// \brief Constructor with a MGBuilderCL and the number of VecDescCL
 ///
 /// see constructor above and assign the Multigrid given by the MGBuilderCL to this parallel MultiGrid
-ParMultiGridCL::ParMultiGridCL(const MGBuilderCL& Builder, Uint numVecDesc)
+ParMultiGridCL::ParMultiGridCL(const MGBuilderCL& Builder)
 {
     Assert(EdgeCL::GetType()==0, DROPSErrCL("ParMultiGridCL: Constructor is called twice"),DebugParallelC);
 
@@ -185,8 +180,7 @@ ParMultiGridCL::ParMultiGridCL(const MGBuilderCL& Builder, Uint numVecDesc)
     _TetraCont= &_mg->_Tetras;
 
     // Init the containers for the unknowns
-    _VecDesc.resize(numVecDesc,0);
-    _SelectBnd.resize(numVecDesc, std::numeric_limits<size_t>::max());
+//     _SelectBnd.resize(numVecDesc, std::numeric_limits<size_t>::max());
     _RecvBuf.resize(0);
 
     // There are no active transfers neither Prio-Change-enviroment while creating this class
@@ -212,92 +206,74 @@ void ParMultiGridCL::AttachTo( MultiGridCL& mg)
     _TetraCont= &_mg->_Tetras;
 }
 
-/// \brief Assign the i'th VecDescCL to ParMultiGridCL
-void ParMultiGridCL::AttachTo(Uint i, VecDescCL *x)
-{
-    Assert(i<_VecDesc.size(), DROPSErrCL("ParMultiGridCL: AttachTo: Number of VecDescCL is to big"), DebugParallelC);
-    _VecDesc[i] = x; // store the pointer to the vector describer
-    if (x->RowIdx->NumUnknownsVertex()>0) _UnkOnSimplex[0]=true;
-    if (x->RowIdx->NumUnknownsEdge()>0)   _UnkOnSimplex[1]=true;
-    if (x->RowIdx->NumUnknownsTetra()>0)  _UnkOnSimplex[2]=true;
-}
-
 /// \brief Store a pointer to a scalar boundary condition, that belongs to an Index
 template<>
-  void ParMultiGridCL::AttachTo(const VecDescCL* vecdesc, const BndDataCL<double>* bndp)
-/** Scalar boundary conditions are given. Remeber pointer in _ScalBnd and
-    remember, where this bc can be found
-    \pre The VecDesc must have been set by AttachTo(Uint, VecDescCL*) before
-         calling this routine
-    \param vecdesc VecDesc with IdxDesc this boundary conditions matchs to
+  void ParMultiGridCL::AttachTo<BndDataCL<double> >(const IdxDescCL* idxDesc, const BndDataCL<double>* bndp)
+/** Scalar boundary conditions are given. Hence, a pointer to the boundary
+    consitions are stored _ScalBnd in at the same position where the VecDescCL
+    can be found.
+    \pre The VecDesc, corresponding to \a idxDesc,  must have been set by
+         AttachTo(VecDescCL*) before calling this routine
+    \param idxDesc IdxDescCL matching to \a bndp
     \param bndp    pointer to the correspondint BndDataCL  */
 {
-    const size_t bnd_position= _ScalBnd.size();
-    size_t idx_position= 0;
-    const Uint idx= vecdesc->RowIdx->GetIdx();
-
-    // find index
-    for (idx_position=0; idx_position<_VecDesc.size(); ++idx_position)
-        if (idx==_VecDesc[idx_position]->RowIdx->GetIdx())
-            break;
-    Assert(idx_position!=_VecDesc.size(),
-           DROPSErrCL("ParMultiGridCL::AttachTo<BndDataCL<double>>: VecDesc is not known so far, set it with AttachTo before calling this routine"),
-           DebugParallelNumC);
-
-    // remember boundary condition
-    _ScalBnd.push_back(bndp);
-
-    // remeber where it can be found
-    _SelectBnd[idx_position]=bnd_position;
+    size_t vecPos= GetStorePos( idxDesc);
+    Assert( vecPos!=_VecDesc.size() && vecPos<_ScalBnd.size(),
+            DROPSErrCL("ParMultiGridCL::AttachTo<BndDataCL<double>>: VecDesc is not known so far, set it with AttachTo before calling this routine"),
+            DebugParallelNumC);
+    _ScalBnd[vecPos]= bndp;
 }
 
 /// \brief Store a pointer to a vectorial boundary condition, that belongs to an Index
 template<>
-  void ParMultiGridCL::AttachTo(const VecDescCL* vecdesc, const BndDataCL<Point3DCL>* bndp)
-/** Vectorial boundary conditions are given. Remeber pointer in _VecBnd and
-    remember, where this bc can be found
-    \pre The VecDesc must have been set by AttachTo(Uint, VecDescCL*) before
-         calling this routine
-    \param vecdesc VecDesc with IdxDesc this boundary conditions matchs to
+  void ParMultiGridCL::AttachTo<BndDataCL<Point3DCL> >(const IdxDescCL* idxDesc, const BndDataCL<Point3DCL>* bndp)
+/** Vectorial boundary conditions are given. Hence, a pointer to the boundary
+    consitions are stored _VecBnd in at the same position where the VecDescCL
+    can be found.
+    \pre The VecDesc, corresponding to \a idxDesc,  must have been set by
+         AttachTo(VecDescCL*) before calling this routine
+    \param idxDesc IdxDescCL matching to \a bndp
     \param bndp    pointer to the correspondint BndDataCL  */
 {
-    const size_t bnd_position= _VecBnd.size();
-    size_t idx_position= 0;
-    const Uint idx= vecdesc->RowIdx->GetIdx();
-
-    // find index
-    for (idx_position=0; idx_position<_VecDesc.size(); ++idx_position)
-        if (idx==_VecDesc[idx_position]->RowIdx->GetIdx())
-            break;
-    Assert(idx_position!=_VecDesc.size(),
-           DROPSErrCL("ParMultiGridCL::AttachTo<BndDataCL<double>>: VecDesc is not known so far, set it with AttachTo before calling this routine"),
-           DebugParallelNumC);
-
-    // remember boundary condition
-    _VecBnd.push_back(bndp);
-
-    // remeber where it can be found
-    _SelectBnd[idx_position]=bnd_position;
+    size_t vecPos= GetStorePos( idxDesc);
+    Assert( vecPos!=_VecDesc.size() && vecPos<_VecBnd.size(),
+            DROPSErrCL("ParMultiGridCL::AttachTo<BndDataCL<double>>: VecDesc is not known so far, set it with AttachTo before calling this routine"),
+            DebugParallelNumC);
+    _VecBnd[vecPos]= bndp;
 }
 
-/// \brief Get scalar boundary condition to store VecDesCL
-template<>
-  const BndDataCL<double>* ParMultiGridCL::GetBndCond<BndDataCL<double> >(size_t i)
+/// \brief Delete all information about the VecDescCL
+void ParMultiGridCL::DeleteVecDesc()
 {
-    Assert(i<_SelectBnd.size() && _SelectBnd[i]<_ScalBnd.size(),
+    _VecDesc.resize( 0);
+    _VecBnd.resize( 0);
+    _ScalBnd.resize( 0);
+}
+
+/// \brief Get scalar boundary condition to a known VecDesCL
+template<>
+  const BndDataCL<double>* ParMultiGridCL::GetBndCond<BndDataCL<double> >( const IdxDescCL* idxDesc)
+/// First, find the position, where the VecDescCL is stored. Second, the pointer
+/// to the boundary conditions is returned
+{
+    size_t vecPos= GetStorePos( idxDesc);
+    Assert(vecPos<_VecDesc.size() && vecPos<_ScalBnd.size() && _ScalBnd[vecPos]!=0,
            DROPSErrCL("ParMultiGridCL::GetBndCond<BndDataCL<double>>: BC not set"),
            DebugParallelNumC);
-    return _ScalBnd[_SelectBnd[i]];
+    return _ScalBnd[vecPos];
 }
 
-/// \brief Get vectorial boundary condition to store VecDesCL
+/// \brief Get vectorial boundary condition to a known VecDesCL
 template<>
-  const BndDataCL<Point3DCL>* ParMultiGridCL::GetBndCond<BndDataCL<Point3DCL> >(size_t i)
+  const BndDataCL<Point3DCL>* ParMultiGridCL::GetBndCond<BndDataCL<Point3DCL> >( const IdxDescCL* idxDesc)
+/// First, find the position, where the VecDescCL is stored. Second, the pointer
+/// to the boundary conditions is returned
 {
-    Assert(i<_SelectBnd.size() && _SelectBnd[i]<_VecBnd.size(),
+    size_t vecPos= GetStorePos( idxDesc);
+    Assert(vecPos<_VecDesc.size() && vecPos<_VecBnd.size() && _VecBnd[vecPos]!=0,
            DROPSErrCL("ParMultiGridCL::GetBndCond<BndDataCL<Point3DCL>>: BC not set"),
            DebugParallelNumC);
-    return _VecBnd[_SelectBnd[i]];
+    return _VecBnd[vecPos];
 }
 
 /// \brief Handle Unknowns after a refine operation
@@ -397,10 +373,8 @@ void ParMultiGridCL::HandleNewIdx(IdxDescCL* oldIdxDesc, VecDescCL* newVecDesc)
                new_idx= newVecDesc->RowIdx->GetIdx();
 
     // find the right index within _VecDesc
-    size_t vec_idx= 0;
-    while (vec_idx<_VecDesc.size() && _VecDesc[vec_idx]->RowIdx->GetIdx()!=old_idx)
-        ++vec_idx;
-    Assert(vec_idx!=_VecDesc.size(),
+    size_t vecIdx= GetStorePos( oldIdxDesc);
+    Assert(vecIdx!=_VecDesc.size(),
            DROPSErrCL("ParMultiGridCL::HandleNewIdx: The appropriate VecDesc has not been set"),
            DebugParallelNumC);
 
@@ -409,7 +383,7 @@ void ParMultiGridCL::HandleNewIdx(IdxDescCL* oldIdxDesc, VecDescCL* newVecDesc)
 
     // abbrevations for accessing the data vectors
     VectorCL *new_data= &(newVecDesc->Data);
-    const VectorCL* const old_data= &(_VecDesc[vec_idx]->Data);
+    const VectorCL* const old_data= &(_VecDesc[vecIdx]->Data);
 
     // error checking
     Assert(newVecDesc->RowIdx->NumUnknownsVertex() == oldIdxDesc->NumUnknownsVertex(),
@@ -431,9 +405,9 @@ void ParMultiGridCL::HandleNewIdx(IdxDescCL* oldIdxDesc, VecDescCL* newVecDesc)
             sit!=_mg->GetAllEdgeEnd(); ++sit)
     {
         if (oldIdxDesc->NumUnknownsVertex()==1)
-            PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<double> >(vec_idx));
+            PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<double> >(oldIdxDesc));
         else
-            PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<Point3DCL> >(vec_idx));
+            PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<Point3DCL> >(oldIdxDesc));
     }
 }
 
@@ -549,7 +523,7 @@ void ParMultiGridCL::RescueUnknownsOnEdges()
 
                     if (numUnkOnEdge==0 && numUnkOnVert){                                 // Rescue unknowns for P1 Elements
                         if (numUnkOnVert==1){   // scalar unknowns
-                            const BndDataCL<double>* bnd = GetBndCond<BndDataCL<double> >(idx_type);
+                            const BndDataCL<double>* bnd = GetBndCond<BndDataCL<double> >(sol->RowIdx);
                             double new_dof;
                             if(!bnd->IsOnDirBnd(*sit->GetMidVertex()) ){
                                 if ( LinearInterpolation(*sit, idx, bnd, sol->Data, new_dof) ){
@@ -561,7 +535,7 @@ void ParMultiGridCL::RescueUnknownsOnEdges()
                             }
                         }
                         else{                   // vectorial unknowns
-                            const BndDataCL<Point3DCL>* bnd = GetBndCond<BndDataCL<Point3DCL> >(idx_type);;
+                            const BndDataCL<Point3DCL>* bnd = GetBndCond<BndDataCL<Point3DCL> >(sol->RowIdx);;
                             Point3DCL new_dof;
                             if(!bnd->IsOnDirBnd(*sit->GetMidVertex()) ){
                                 if ( LinearInterpolation(*sit, idx, bnd, sol->Data, new_dof) ){
@@ -902,6 +876,8 @@ int ParMultiGridCL::GatherUnknownsMigE (DDD_OBJ obj, void* buf)
     {
         const Uint idx          = _VecDesc[index_type]->RowIdx->GetIdx(),
                    numUnkOnEdge = _VecDesc[index_type]->RowIdx->NumUnknownsEdge();
+        if (!numUnkOnEdge)
+            continue;
         if (sp->Unknowns.Exist(idx))
         {
             buffer[bufferpos].mark=true;
@@ -1071,7 +1047,7 @@ void ParMultiGridCL::XferEnd()
     AccumulateMFR();
 
     // Rescue unknowns on edges, that are deleted and midvertex stays on processor
-    if (IndexSet()){
+    if (VecDescRecv()){
         Comment("  * Send unknowns "<<std::endl,DebugParallelC);
         DDD_IFExchange(AllSimplexIFCL<VertexCL>::GetIF(),               // exchange datas over distributed vertices
                        NumberOfUnknownsOnVertex()* sizeof(TransferUnkT),// number of datas to be exchanged

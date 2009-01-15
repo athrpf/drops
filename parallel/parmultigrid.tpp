@@ -56,29 +56,50 @@ template<class SimplexT>
 /// \brief Recieve Information, if all Vector-Describers are recieved
 bool ParMultiGridCL::VecDescRecv()
 {
-    if (_VecDescRecv)
-        return true;
-    if (_VecDesc.size()==0)
-        return false;
-    for (size_t i=0; i<_VecDesc.size(); ++i)
-        if (_VecDesc[i]==0)
-            return false;
-    _VecDescRecv=true;
-    return true;
+    return !_VecDesc.empty();
 }
 
-/// \brief Recieve Information, if all Indices are set
-bool ParMultiGridCL::IndexSet()
+/// \brief Assign a VecDescCL to ParMultiGridCL
+template<typename BndT>
+  void ParMultiGridCL::AttachTo(VecDescCL *x, const BndT* bndp)
+/// If \a x is already known (checked by sysnum), this function overwrite the
+/// old VecDescCL, else the pointer is "pushed_back" to the known VecDescCLs.
+/// If the pointer is already known, this routine assumes, that the boundary
+/// conditions did not changed, so there is no need to call
+/// AttachTo( const IdxDescCL*, const BndDataCL*) again.
 {
-    if (_IdxSet)
-        return true;
-    if (!VecDescRecv())
-        return false;
-    for (size_t i=0; i<_VecDesc.size(); ++i)
-        if (_VecDesc[i]->RowIdx==0)
-            return false;
-    _IdxSet=true;
-    return true;
+    // determine position, where to store the pointer, and store it
+    size_t pos= GetStorePos(x->RowIdx);
+    if ( pos==_VecDesc.size() ){
+        _VecDesc.push_back( x);
+        _ScalBnd.push_back( 0);
+        _VecBnd.push_back( 0);
+    }
+    else {
+        _VecDesc[pos]= x;
+    }
+    AttachTo( x->RowIdx, bndp);
+
+    // set flags if unknowns exits on vertices, edges or tetras
+    if (x->RowIdx->NumUnknownsVertex()>0) _UnkOnSimplex[0]=true;
+    if (x->RowIdx->NumUnknownsEdge()>0)   _UnkOnSimplex[1]=true;
+    if (x->RowIdx->NumUnknownsTetra()>0)  _UnkOnSimplex[2]=true;
+}
+
+
+
+/// \brief Get position where the IdxDesc is internally stored
+Uint ParMultiGridCL::GetStorePos(const IdxDescCL* idxDesc)
+/// Check (by comparing the sysnum), where the VecDescCL correspoding to
+/// \a idxDesc is internally stored.
+/// \return position within _VecDesc if \a idxDesc is known, else return the
+///         size of _VecDesc
+{
+    Uint idx= idxDesc->GetIdx();
+    Uint pos=0;
+    while ( pos<_VecDesc.size() && _VecDesc[pos]->RowIdx->GetIdx()!=idx )
+        ++pos;
+    return pos;
 }
 
 /// \brief Check if unknowns on simplices are available
