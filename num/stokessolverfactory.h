@@ -452,7 +452,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             }
             else {
                 mgbssolversymm_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
-                           ( Stokes_.prM.Data, bssmoother, blockminressolver, C_.outer_iter, C_.outer_tol, false, 2),
+                           ( Stokes_.prM.Data, bssmoother, blockgcrsolver, C_.outer_iter, C_.outer_tol, false, 2),
                 stokessolver = mgbssolver_;
             }
         }
