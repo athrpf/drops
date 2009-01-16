@@ -524,7 +524,7 @@ void ThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     LvlSet_.ClearMat();
     mat_->clear();
     // IndexDesc setzen
-    old_b_->SetIdx( vidx);
+    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
     cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
     curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
@@ -831,7 +831,9 @@ RecThetaScheme2PhaseCL<StokesT,SolverT>::RecThetaScheme2PhaseCL
     solver_( solver), withProj_( withProjection), stab_( stab), dsp_( 0, 0)
 #ifdef _PAR
     , MsolverPC_(Stokes.GetEx(Stokes.velocity)), Msolver_(200, 1e-10, Stokes.GetEx(Stokes.velocity), MsolverPC_, false, true),
-    SsolverPC_(Stokes.GetEx(Stokes.pressure)), Ssolver_(100, 200, 1e-10, Stokes.GetEx(Stokes.pressure), SsolverPC_, true)
+    SsolverPC_(Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
+               Stokes.GetEx(Stokes.pressure), Stokes.GetEx(Stokes.velocity), 1.0, 0.0, 1e-2, 1e-2),
+               Ssolver_(100, 200, 1e-10, Stokes.GetEx(Stokes.pressure), SsolverPC_, true)
 #endif
 {
     Update();
@@ -1074,7 +1076,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     LvlSet_.ClearMat();
     mat_->clear();
     // IndexDesc setzen
-    old_b_->SetIdx( vidx);
+    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
     cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
     curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
@@ -1144,13 +1146,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
 #endif
 
 #ifndef _PAR
-    MatrixCL* Bs= new MatrixCL( Stokes_.B.Data.GetFinest());
-    VectorCL Dvelinv( 1.0/ Stokes_.M.Data.GetFinest().GetDiag());
-    ScaleCols( *Bs, VectorCL( std::sqrt( Dvelinv)));
-    VectorCL D( 1.0/BBTDiag( *Bs));
-    delete Bs;
-    DiagPcCL diagpc( D);
-    GCRSolverCL<DiagPcCL> Ssolver( diagpc, 200, 200, 1e-10, true);
+    ISBBTPreCL ispc( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), 1.0, 0.0, 1e-4, 1e-4);
+    GCRSolverCL<ISBBTPreCL> Ssolver( ispc, 200, 200, 1e-10, true);
 #else
     // Diagonal of B*B^T is not easy to get in parallel version :-(
 #endif

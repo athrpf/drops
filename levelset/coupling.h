@@ -341,7 +341,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     MsolverPCT MsolverPC_;
     MsolverT   Msolver_;
 
-    typedef ParDummyPcCL<ExchangeCL> SsolverPCT;
+    typedef ISBBTPreCL<ExchangeCL, ExchangeCL> SsolverPCT;
     typedef ParPreGMResSolverCL<SsolverPCT, ExchangeCL> SsolverT;
     SsolverPCT SsolverPC_;
     SsolverT   Ssolver_;
