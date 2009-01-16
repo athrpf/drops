@@ -1605,11 +1605,15 @@ template<class StokesT>
   inline void VelocityRepairCL<StokesT>::post_refine()
 {
     VecDescCL loc_v;
-    MLIdxDescCL loc_vidx( vecP2_FE);
-    VecDescCL& v= stokes_.v;
+    VelVecDescCL& v= stokes_.v;
 
-    stokes_.CreateNumberingVel( stokes_.GetMG().GetLastLevel(), &loc_vidx);
-    loc_v.SetIdx(&loc_vidx);
+    Uint LastLevel= stokes_.GetMG().GetLastLevel();
+//     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
+    MLIdxDescCL loc_vidx( vecP2_FE);
+    stokes_.CreateNumberingVel( LastLevel, &loc_vidx);
+//     loc_vidx.CreateNumbering( LastLevel, stokes_.GetMG(), stokes_.GetBndData().Vel, match);
+
+    loc_v.SetIdx( loc_vidx.GetFinestPtr());
 
     pmg_.HandleNewIdx(&stokes_.vel_idx, &loc_v);
     RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
@@ -1617,7 +1621,7 @@ template<class StokesT>
 
     v.Clear();
     v.RowIdx->DeleteNumbering( stokes_.GetMG());
-    stokes_.vel_idx.swap( loc_vidx);
+    stokes_.vel_idx.GetFinest().swap( loc_vidx.GetFinest());
     v.SetIdx( &stokes_.vel_idx);
     v.Data=loc_v.Data;
 }
