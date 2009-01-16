@@ -433,11 +433,6 @@ template<class Coeff>
     Stokes.M.SetIdx(vidx, vidx);    Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx); Stokes.prA.SetIdx( pidx, pidx);
 
-//     // Tell parmultigrid about unknowns
-    pmg.AttachTo(0, v); pmg.AttachTo(v, &Stokes.GetBndData().Vel);
-    pmg.AttachTo(1, p); pmg.AttachTo(p, &Stokes.GetBndData().Pr);
-    pmg.AttachTo(2, l); pmg.AttachTo(l, &lset.GetBndData());
-
     if (C.printNumUnk)
         DisplayUnks(Stokes, lset, pmg.GetMG());
 

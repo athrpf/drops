@@ -474,11 +474,6 @@ template<class Coeff>
     Stokes.M.SetIdx(vidx, vidx);    Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx); Stokes.prA.SetIdx( pidx, pidx);
 
-//     // Tell parmultigrid about unknowns
-    pmg.AttachTo( v, &Stokes.GetBndData().Vel);
-    pmg.AttachTo( p, &Stokes.GetBndData().Pr);
-    pmg.AttachTo( l, &lset.GetBndData());
-
     //Setup initial problem
     if (ProcCL::IamMaster())
         std::cerr << "=================================================================================== Init:\n"

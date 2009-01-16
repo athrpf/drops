@@ -648,7 +648,7 @@ int main (int argc, char** argv)
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyNavStokesCL;
 
     // Create geometry on proc 0
-    DROPS::ParMultiGridCL pmg(3);
+    DROPS::ParMultiGridCL pmg;
     std::ifstream meshfile( C.meshfile.c_str());
     if (!meshfile)
     {

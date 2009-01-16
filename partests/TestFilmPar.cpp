@@ -310,7 +310,7 @@ int main (int argc, char** argv)
         typedef PoissonOnBCL                             MyPoissonCL;
 
         // Init of the parallel structurs. Tell the ParMultiGrid class how many indices should be handled.
-        DROPS::ParMultiGridCL pmg(0);
+        DROPS::ParMultiGridCL pmg;
 
         // origin and dimension of the brick
         DROPS::Point3DCL orig(0.);

@@ -556,8 +556,8 @@ bool ExchangeCL::IsAcc(const VectorCL& vec) const
             sendval_buf[proc_pos][i]=it->second[i].second;
         }
         // send
-        req[proc_pos+0]= ProcCL::Isend(senddof_buf[proc_pos], count, it->first, tag_);
-        req[proc_pos+1]= ProcCL::Isend(sendval_buf[proc_pos], count, it->first, tag_+1);
+        req[2*proc_pos+0]= ProcCL::Isend(senddof_buf[proc_pos], count, it->first, tag_);
+        req[2*proc_pos+1]= ProcCL::Isend(sendval_buf[proc_pos], count, it->first, tag_+1);
     }
 
     // recieve and check

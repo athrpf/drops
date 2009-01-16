@@ -331,6 +331,12 @@ void UpdateTriang(VecDescCL& P1_dir,
     IdxDescCL loc_z_idx( vecP2_FE), *old_z_idx=P2_mixed.RowIdx,*new_z_idx=&loc_z_idx;
     VecDescCL loc_z,                *old_z=&P2_mixed,          *new_z=&loc_z;
 
+    // And tell parallel multigrid about the unknowns
+    pmg.AttachTo( &P1_dir, &dirBnd);
+    pmg.AttachTo( &P1_neu, &neuBnd);
+    pmg.AttachTo( &P2_dir, &dirBnd);
+    pmg.AttachTo( &P2_neu, &neuBnd);
+    pmg.AttachTo( &P2_mixed, &mixedBnd);
 
     // Point 2: Refinement
     // -----------------------------------------------------------------
@@ -430,6 +436,7 @@ void UpdateTriang(VecDescCL& P1_dir,
     // -----------------------------------------------------------------
     pmg.DelAllUnkRecv();
     pmg.DeleteRecvBuffer();
+    pmg.DeleteVecDesc();
 
     timer.Stop(); Times.AddTime(T_repair_P1P2, timer.GetMaxTime());
     CheckParMultiGrid(pmg);
@@ -498,11 +505,11 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
     VecDescCL neup2; neup2.SetIdx(&neup2_idx);
     VecDescCL mixedp2; mixedp2.SetIdx(&mixedp2_idx);
 
-    pmg.AttachTo(0, &dirp1); pmg.AttachTo(&dirp1, &dirBnd);
-    pmg.AttachTo(1, &neup1); pmg.AttachTo(&neup1, &neuBnd);
-    pmg.AttachTo(2, &dirp2); pmg.AttachTo(&dirp2, &dirBnd);
-    pmg.AttachTo(3, &neup2); pmg.AttachTo(&neup2, &neuBnd);
-    pmg.AttachTo(4, &mixedp2); pmg.AttachTo(&mixedp2, &mixedBnd);
+    pmg.AttachTo(&dirp1, &dirBnd);
+    pmg.AttachTo(&neup1, &neuBnd);
+    pmg.AttachTo(&dirp2, &dirBnd);
+    pmg.AttachTo(&neup2, &neuBnd);
+    pmg.AttachTo(&mixedp2, &mixedBnd);
 
 
     // Erzeuge ensight case File und geom-File
@@ -649,7 +656,7 @@ int main (int argc, char** argv)
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
-    DROPS::ParMultiGridCL pmg(5);
+    DROPS::ParMultiGridCL pmg;
 
     DROPS::Point3DCL e1(0.), e2(0.), e3(0.), orig(0.);
     e1[0]=dx; e2[1]=dy; e3[2]=dz;

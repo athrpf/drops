@@ -374,9 +374,9 @@ void CheckSerialization(DROPS::LoadBalHandlerCL& lb, DROPS::ParMultiGridCL& pmg)
         lset_vec= new VecDescCL(lset_idx);
         vel_vec = new VecDescCL(vel_idx);
 
-        pmg.AttachTo(0, pr_vec);   pmg.AttachTo(pr_vec,   &pr_bnd);
-        pmg.AttachTo(1, lset_vec); pmg.AttachTo(lset_vec, &lset_bnd);
-        pmg.AttachTo(2, vel_vec);  pmg.AttachTo(vel_vec,  &vel_bnd);
+        pmg.AttachTo(pr_vec,   &pr_bnd);
+        pmg.AttachTo(lset_vec, &lset_bnd);
+        pmg.AttachTo(vel_vec,  &vel_bnd);
 
         if (ProcCL::IamMaster()){
             ReadDOF(mg, pr_vec,   std::string(C.ser_dir+"Pressure"));
@@ -478,7 +478,7 @@ int main (int argc, char** argv)
           std::cout << C << std::endl;
 
         // Init of the parallel structurs. Three indices should be handled
-        DROPS::ParMultiGridCL pmg(3);
+        DROPS::ParMultiGridCL pmg;
 
         if (DROPS::ProcCL::IamMaster() && C.mode==0)
             std::cout << line << " Create initial grid and distribution ... \n";

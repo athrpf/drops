@@ -248,6 +248,9 @@ void ParMultiGridCL::DeleteVecDesc()
     _VecDesc.resize( 0);
     _VecBnd.resize( 0);
     _ScalBnd.resize( 0);
+    _UnkOnSimplex[0]=false;
+    _UnkOnSimplex[1]= false;
+    _UnkOnSimplex[2]= false;
 }
 
 /// \brief Get scalar boundary condition to a known VecDesCL

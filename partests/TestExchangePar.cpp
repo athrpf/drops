@@ -254,7 +254,7 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
                         << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
         }
-        
+
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) )
         {
             bool local_check = true, local_xcheck= true;
@@ -961,15 +961,15 @@ void Strategy(ParMultiGridCL &pmg)
     // Teile dem Index mit, wieviele Unbekannte auf den Verts, Edges und Tetras liegen
     idx1.SetFE( P1_FE);
     idx2.SetFE( P2_FE);
-    
+
     MLIdxDescCL xfemidx( P1X_FE, 1, BndCondCL(0), 0, 0.1);
-                
+
     LevelsetP2CL lset( mg);
     lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
     /// \todo paralleles UpdateXNumbering()
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( DistanceFct);
-   
+
     if (ProcCL::IamMaster())
         std::cout << " * Numeriere die Unbekannten, teile diese dem PMG mit, Schreibe Infos ... " << std::endl;
 
@@ -977,11 +977,11 @@ void Strategy(ParMultiGridCL &pmg)
     idx1.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
     idx2.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
     xfemidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
-std::cout << "[" << ProcCL::MyRank() << "] " << xfemidx.NumUnknowns() << " Unbekannte, davon " << xfemidx.NumUnknowns() - xfemidx.GetFinest().GetXidx().GetNumUnknownsStdFE() << " erweitert\n";    
+std::cout << "[" << ProcCL::MyRank() << "] " << xfemidx.NumUnknowns() << " Unbekannte, davon " << xfemidx.NumUnknowns() - xfemidx.GetFinest().GetXidx().GetNumUnknownsStdFE() << " erweitert\n";
 
     // Setzte Indices auf die Vector-Describer
-    x1.SetIdx(&idx1);  pmg.AttachTo(0,&x1);
-    x2.SetIdx(&idx2);  pmg.AttachTo(1,&x2);
+//     x1.SetIdx(&idx1);  pmg.AttachTo( 0, &Bnd);
+//     x2.SetIdx(&idx2);  pmg.AttachTo( 1, &Bnd);
     VecDescCL xfem( &xfemidx);
 
     Ulint sizeinfo[3], global_info[3];
@@ -1044,7 +1044,7 @@ int main (int argc, char** argv)
         DROPS::ParTimerCL time, alltime;
 
         // Initialisierung der parallelen Strukturen und Mitteilung, dass es wir zwei Unbekannten-Index geben wird
-        DROPS::ParMultiGridCL pmg(2);
+        DROPS::ParMultiGridCL pmg;
         DROPS::MultiGridCL   *mg;
 
         DROPS::Point3DCL orig(0.);

@@ -66,7 +66,7 @@ class AdapTriangCL
         for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
             (*obs)->pre_refine();
 #else
-        if (pmg_.UnknownsOnSimplices()){
+        if (!observer_.empty()){
             pmg_.DeleteVecDesc();
             for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
               (*obs)->pre_refine();
@@ -76,13 +76,10 @@ class AdapTriangCL
 
     /// \brief Tell Observer, that MG has been refined (and migration was performed)
     void notify_post_refine () {
-#ifndef _PAR
         for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
             (*obs)->post_refine();
-#else
-        if (pmg_.UnknownsOnSimplices()){
-            for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
-                (*obs)->post_refine();
+#ifdef _PAR
+        if ( !observer_.empty() ){
             pmg_.DelAllUnkRecv();
             pmg_.DeleteRecvBuffer();
         }

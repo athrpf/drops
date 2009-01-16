@@ -421,11 +421,6 @@ template<class Coeff>
         CreateIdxAndAssignIdx(Stokes, lset, mg);
         DisplayUnks(Stokes, lset, mg);
 
-        // Tell parmultigrid about unknowns
-        pmg.AttachTo(0, &Stokes.v); pmg.AttachTo(&Stokes.v, &Stokes.GetBndData().Vel);
-        pmg.AttachTo(1, &Stokes.p); pmg.AttachTo(&Stokes.p, &Stokes.GetBndData().Pr);
-        pmg.AttachTo(2, &lset.Phi); pmg.AttachTo(&lset.Phi, &lset.GetBndData());
-
         // Initial velocity is zero
         Stokes.InitVel( &Stokes.v, Null);
         // Initial levelset function is distance to the drop
@@ -439,12 +434,6 @@ template<class Coeff>
       {
         // Create indices
         CreateIdxAndAssignIdx(Stokes, lset, mg);
-
-        // Tell parmultigrid about unknowns
-        pmg.AttachTo(0, &Stokes.v); pmg.AttachTo(&Stokes.v, &Stokes.GetBndData().Vel);
-        pmg.AttachTo(1, &Stokes.p); pmg.AttachTo(&Stokes.p, &Stokes.GetBndData().Pr);
-        pmg.AttachTo(2, &lset.Phi); pmg.AttachTo(&lset.Phi, &lset.GetBndData());
-
         // Initial velocity is zero
         Stokes.InitVel( &Stokes.v, Null);
         // Initial levelset function is distance to the drop
@@ -534,11 +523,6 @@ template<class Coeff>
         // Allocate memory for unknowns
         VecDescCL read_vel_vec(&read_vel_idx), read_pr_vec(&read_pr_idx), read_lset_vec(&read_lset_idx);
 
-        // Tell parmultigrid about unknowns
-        pmg.AttachTo(0, &read_vel_vec);  pmg.AttachTo(&read_vel_vec, &Stokes.GetBndData().Vel);
-        pmg.AttachTo(1, &read_pr_vec);   pmg.AttachTo(&read_pr_vec, &Stokes.GetBndData().Pr);
-        pmg.AttachTo(2, &read_lset_vec); pmg.AttachTo(&read_lset_vec, &lset.GetBndData());
-
         // Read DOF
         if (ProcCL::IamMaster()){
             ReadDOF(mg, &read_vel_vec,  std::string(C.ser_dir+"velocity"));
@@ -567,8 +551,6 @@ template<class Coeff>
         Stokes.DeleteNumbering(&read_vel_idx);
         Stokes.DeleteNumbering( &read_pr_idx);
         lset.DeleteNumbering(     &read_lset_idx);
-
-        pmg.AttachTo(0, &Stokes.v); pmg.AttachTo(1, &Stokes.p); pmg.AttachTo(2, &lset.Phi);
 
         if (ProcCL::IamMaster())
                 std::cerr << "- Initial Conditions successfull read\n";
@@ -650,10 +632,8 @@ template<typename Coeff>
 //     typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
     typedef LinThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
     CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, true);
-
-
-//     typedef RecThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-//     CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+//     typedef RecThetaScheme2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
+//     CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, false);
 
 
     time.Stop();
@@ -866,7 +846,7 @@ int main (int argc, char** argv)
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
-    DROPS::ParMultiGridCL pmg(3);
+    DROPS::ParMultiGridCL pmg;
 
     typedef ZeroFlowCL                                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
@@ -930,7 +910,7 @@ int main (int argc, char** argv)
     const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
 
 
-    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun));
+    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun), DROPS::P1_FE, 0);
 
     Strategy( prob, pmg, lb);    // do all the stuff
 

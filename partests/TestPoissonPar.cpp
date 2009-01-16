@@ -624,8 +624,6 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
     string            *datgeo=0;
 
     old_x->SetIdx(old_idx);
-    pmg.AttachTo(0, old_x);         // Tell multigrid about the unknowns, so refinement can handle these
-    pmg.AttachTo(old_x, &BndData);  // and boundary conditions
 
     do{                                     // start the adaptive cycle
         if (step==8)
@@ -645,7 +643,8 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         if (ProcCL::IamMaster())
             std::cout << " - Refine ... " << std::endl;
 
-        pmg.AttachTo(0, old_x);         // Tell multigrid about the unknowns, so refinement can handle these
+        pmg.AttachTo(old_x, &BndData);  // unknowns and boundary conditions
+
         time.Reset();
         pmg.Refine();
         time.Stop(); Times.AddTime(T_Refine, time.GetMaxTime());
@@ -737,6 +736,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
             pmg.CompleteRepair(new_x);
             pmg.DelAllUnkRecv();
             pmg.DeleteRecvBuffer();
+            pmg.DeleteVecDesc();
             time.Stop(); Times.AddTime(T_Interpolate, time.GetMaxTime());
 
             Poisson.DeleteNumbering( old_idx );
@@ -902,7 +902,6 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         time.Reset();
         Poisson.CheckSolution(*new_x, &::Lsg, 0);
         time.Stop(); Times.AddTime(T_SolCheck, time.GetMaxTime());
-        pmg.AttachTo(0,new_x);
 
         // swap old and new solution
         std::swap(old_x, new_x);
@@ -945,7 +944,7 @@ int main (int argc, char** argv)
         typedef PoissonOnBCL                             MyPoissonCL;
 
         // Init of the parallel structurs. Tell the ParMultiGrid class how many indices should be handled.
-        DROPS::ParMultiGridCL pmg(C.adaptiv && C.transferUnks ? 1 : 0);
+        DROPS::ParMultiGridCL pmg;
 
         DROPS::Point3DCL orig(0.);
         DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);

@@ -275,7 +275,6 @@ void Strategy(NavierStokesP2P1CL<Coeff> & NavStokes, ParMultiGridCL& pmg, LoadBa
 
     VelVecDescCL* v   = &NavStokes.v;
     VecDescCL*    p   = &NavStokes.p;
-    VecDescCL*    l   = &lset.Phi;
     VelVecDescCL* b   = &NavStokes.b;
     VecDescCL*    c   = &NavStokes.c;
     VelVecDescCL* cplN= &NavStokes.cplN;
@@ -343,11 +342,6 @@ void Strategy(NavierStokesP2P1CL<Coeff> & NavStokes, ParMultiGridCL& pmg, LoadBa
     A->SetIdx(vidx, vidx); B->SetIdx(pidx, vidx);
     N->SetIdx(vidx, vidx); M->SetIdx(vidx, vidx);
     lset.Phi.SetIdx(lidx);
-
-    pmg.AttachTo(0, v); pmg.AttachTo(v, &NavStokes.GetBndData().Vel);
-    pmg.AttachTo(1, p); pmg.AttachTo(p, &NavStokes.GetBndData().Pr);
-    pmg.AttachTo(2, l); pmg.AttachTo(l, &lset.GetBndData());
-
 
     Ulint GPsize_acc = GlobalSum(p->Data.size());
     Ulint GVsize_acc = GlobalSum(v->Data.size());
@@ -512,7 +506,7 @@ int main (int argc, char** argv)
     DROPS::ParTimerCL time, alltime;
 
     // Initialisierung der parallelen Strukturen und Mitteilung, dass es zwei Unbekannten-Index (pressure und velocity) geben wird
-    DROPS::ParMultiGridCL pmg(3);
+    DROPS::ParMultiGridCL pmg;
 
     DROPS::Point3DCL orig(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
