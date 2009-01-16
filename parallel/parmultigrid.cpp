@@ -404,13 +404,15 @@ void ParMultiGridCL::HandleNewIdx(IdxDescCL* oldIdxDesc, VecDescCL* newVecDesc)
     }
 
     // Put unknowns on edges into the new vector and interpolate very special midvertices
-    for (MultiGridCL::const_EdgeIterator sit=_mg->GetAllEdgeBegin();
-            sit!=_mg->GetAllEdgeEnd(); ++sit)
-    {
-        if (oldIdxDesc->NumUnknownsVertex()==1)
-            PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<double> >(oldIdxDesc));
-        else
-            PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<Point3DCL> >(oldIdxDesc));
+    if (oldIdxDesc->NumUnknownsEdge()){
+        for (MultiGridCL::const_EdgeIterator sit=_mg->GetAllEdgeBegin();
+                sit!=_mg->GetAllEdgeEnd(); ++sit)
+        {
+            if (oldIdxDesc->NumUnknownsVertex()==1)
+                PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<double> >(oldIdxDesc));
+            else
+                PutData(sit, old_data, new_data, old_idx, new_idx, oldIdxDesc, GetBndCond<BndDataCL<Point3DCL> >(oldIdxDesc));
+        }
     }
 }
 
@@ -913,6 +915,8 @@ int ParMultiGridCL::ScatterUnknownsMigE(DDD_OBJ obj, void* buf)
     {
         const Uint idx          = _VecDesc[index_type]->RowIdx->GetIdx(),
                    numUnkOnEdge = _VecDesc[index_type]->RowIdx->NumUnknownsEdge();
+        if (!numUnkOnEdge)
+            continue;
         if (sp->Unknowns.Exist(idx))        // do nothing, unknowns allready known
             bufferpos += numUnkOnEdge;
         else if (buffer[bufferpos].mark && buffer[bufferpos].idx==idx)    // new unknowns has been sent to right index
