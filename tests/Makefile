@@ -10,7 +10,7 @@ EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
         mass quad5 downwind quad5_2D interfaceP1FE serialization xfem \
-        directsolver f_Gamma
+        directsolver f_Gamma neq
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -182,6 +182,11 @@ f_Gamma: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o ../num/interfacePatch.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
+
+neq: \
+    ../tests/neq.o ../misc/utils.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
 
 # include common rules:
 include ../Make.common

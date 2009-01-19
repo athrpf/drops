@@ -422,6 +422,16 @@ class DummyPcCL
     {
         x = b;
     }
+    template <typename Mat, typename Vec>
+    void ApplyTranspose(const Mat&, Vec& x, const Vec& b) const
+    {
+        x = b;
+    }
+    template <typename Mat, typename Vec>
+    Vec transp_mul(const Mat&, const Vec& b) const
+    {
+        return b;
+    }
 };
 
 /// \brief Apply a diagonal-matrix given as a vector.
@@ -439,9 +449,170 @@ class DiagPcCL
 };
 
 
+/// \brief (Symmetric) Gauss-Seidel preconditioner (i.e. start-vector 0) for A*A^T (Normal Equations).
+class NEGSPcCL
+{
+  private:
+    bool symmetric_;             ///< If true, SGS is performed, else GS.
+    mutable const void*  Aaddr_; ///< only used to validate, that the diagonal is for the correct matrix.
+    mutable size_t Aversion_;
+    mutable VectorCL D_;         ///< diagonal of AA^T
+    mutable VectorCL y_;         ///< temp-variable: A^T*x.
+
+    template <typename Mat>
+    void Update (const Mat& A) const;
+
+    ///\brief Forward Gauss-Seidel-step with start-vector 0 for A*A^T
+    template <typename Mat, typename Vec>
+    void ForwardGS(const Mat& A, Vec& x, const Vec& b) const;
+    ///\brief Backward Gauss-Seidel-step with start-vector 0 for A*A^T
+    template <typename Mat, typename Vec>
+    void BackwardGS(const Mat& A, Vec& x, const Vec& b) const;
+
+    ///\brief Inverse of ForwardGS
+    template <typename Mat, typename Vec>
+    void ForwardMulGS(const Mat& A, Vec& x, const Vec& b) const;
+    ///\brief Inverse of BackwardGS
+    template <typename Mat, typename Vec>
+    void BackwardMulGS(const Mat& A, Vec& x, const Vec& b) const;
+
+  public:
+    NEGSPcCL (bool symmetric= true) : symmetric_( symmetric), Aaddr_( 0), Aversion_( 0) {}
+
+    ///@{ Note, that A and not A*A^T is the first argument.
+    ///\brief Execute a (symmetric) Gauss-Seidel preconditioning step.
+    template <typename Mat, typename Vec>
+    void Apply(const Mat& A, Vec& x, const Vec& b) const;
+    ///\brief If symmetric == false, this  performs a backward Gauss-Seidel step, else it is identical to Apply.
+    template <typename Mat, typename Vec>
+    void ApplyTranspose(const Mat& A, Vec& x, const Vec& b) const;
+ 
+    ///\brief Multiply with the preconditioning matrix -- needed for right preconditioning.
+    template <typename Mat, typename Vec>
+    Vec mul (const Mat& A, const Vec& b) const;
+    ///\brief Multiply with the transpose of the preconditioning matrix -- needed for right preconditioning.
+    template <typename Mat, typename Vec>
+    Vec transp_mul(const Mat& A, const Vec& b) const;
+    ///@}
+
+    ///\brief Apply if A*A^T is given as CompositeMatrixCL
+    void Apply(const CompositeMatrixCL& AAT, VectorCL& x, const VectorCL& b) const
+    { Apply( *AAT.GetBlock1(), x, b); }
+};
+
+template <typename Mat>
+void NEGSPcCL::Update (const Mat& A) const
+{
+    if (&A == Aaddr_ && Aversion_ == A.Version()) return;
+    Aaddr_= &A;
+    Aversion_= A.Version();
+
+    D_.resize( A.num_rows());
+    D_= BBTDiag( A);
+    y_.resize( A.num_cols());
+}
+
+template <typename Mat, typename Vec>
+void NEGSPcCL::ForwardGS(const Mat& A, Vec& x, const Vec& b) const
+{
+    // x= 0.; // implied, but superfluous, because we can assign the x-values below, not update.
+    y_= 0.;
+    double t;
+    for (size_t i= 0; i < A.num_rows(); ++i) {
+        t= (b[i] - mul_row( A, y_, i))/D_[i];
+        x[i]= t;
+        add_row_to_vec( A, t, y_, i); // y+= t* (i-th row of A)
+    }
+}
+
+template <typename Mat, typename Vec>
+void NEGSPcCL::BackwardGS(const Mat& A, Vec& x, const Vec& b) const
+{
+    // x= 0.; // implied, but superfluous, because we can assign the x-values below, not update.
+    y_= 0.;
+    for (size_t i= b.size() - 1; i < b.size(); --i) {
+        x[i]= (b[i] - mul_row( A, y_, i))/D_[i];
+        add_row_to_vec( A, x[i], y_, i); // y+= t* (i-th row of A)
+    }
+}
+
+template <typename Mat, typename Vec>
+void NEGSPcCL::Apply(const Mat& A, Vec& x, const Vec& b) const
+{
+    Update( A);
+
+    ForwardGS( A, x, b);
+    if (!symmetric_) return;
+    BackwardGS( A, x, VectorCL( D_*x));
+}
+
+template <typename Mat, typename Vec>
+void NEGSPcCL::ApplyTranspose(const Mat& A, Vec& x, const Vec& b) const
+{
+    Update( A);
+
+    BackwardGS( A, x, b);
+    if (!symmetric_) return;
+    ForwardGS( A, x, VectorCL( D_*x));
+}
+
+template <typename Mat, typename Vec>
+void NEGSPcCL::ForwardMulGS(const Mat& A, Vec& x, const Vec& b) const
+{
+    // x= 0.; // implied, but superfluous, because we can assign the x-values below, not update.
+    y_= 0.;
+    for (size_t i= 0 ; i < b.size(); ++i) {
+        add_row_to_vec( A, b[i], y_, i); // y+= b[i]* (i-th row of A)
+        x[i]= mul_row( A, y_, i);
+    }
+}
+
+template <typename Mat, typename Vec>
+void NEGSPcCL::BackwardMulGS(const Mat& A, Vec& x, const Vec& b) const
+{
+    // x= 0.; // implied, but superfluous, because we can assign the x-values below, not update.
+    y_= 0.;
+    for (size_t i= b.size() - 1 ; i < b.size(); --i) {
+        add_row_to_vec( A, b[i], y_, i); // y+= b[i]* (i-th row of A)
+        x[i]= mul_row( A, y_, i);
+    }
+}
+
+template <typename Mat, typename Vec>
+Vec NEGSPcCL::mul (const Mat& A, const Vec& b) const
+{
+    Update( A);
+
+    Vec x( A.num_rows());
+    VectorCL b2( b);
+    if (symmetric_) {
+        BackwardMulGS( A, x, b);
+        b2= x/D_;
+    }
+    ForwardMulGS( A, x, b2);
+    return x;
+}
+
+template <typename Mat, typename Vec>
+Vec NEGSPcCL::transp_mul(const Mat& A, const Vec& b) const
+{
+    Update( A);
+
+    Vec x( A.num_rows());
+    VectorCL b2( b);
+    if (symmetric_) {
+        ForwardMulGS( A, x, b);
+        b2= x/D_;
+    }
+    BackwardMulGS( A, x, b2);
+    return x;
+}
+
+
 //*****************************************************************************
 //
-//  Conjugate gradients (CG, PCG) and GMRES
+//  Iterative solvers: CG, PCG, PCGNE, GMRES, PMINRES, MINRES, BiCGStab, GCR,
+//                     GMRESR
 //
 //*****************************************************************************
 
@@ -561,6 +732,65 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
     return false;
 }
 
+/// \brief PCGNE: Preconditioned CG for the normal equations (error-minimization)
+///
+/// Solve A*A^T x = b with left preconditioner M. This is more stable than PCG with
+/// a CompositeMatrixCL.
+///
+/// The return value indicates convergence within max_iter (input)
+/// iterations (true), or no convergence within max_iter iterations (false).
+/// Upon successful return, output arguments have the following values:
+///
+/// \param x - approximate solution to Ax = b
+/// \param max_iter - number of iterations performed before tolerance was reached
+/// \param tol - 2-norm of the (relative, see below) residual after the final iteration
+/// \param measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
+///        if false, stop if |b - Ax| <= tol.
+template <typename Mat, typename Vec, typename PreCon>
+bool
+PCGNE(const Mat& A, Vec& u, const Vec& b, const PreCon& M,
+    int& max_iter, double& tol, bool measure_relative_tol= false)
+{
+    Vec r( b - A*transp_mul( A, u));
+    double normb= norm( b);
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
+    double resid= norm( r)/normb;
+    // std::cerr << "PCGNE: iter: 0 resid: " << resid <<'\n';
+    if (resid <= tol) {
+        tol= resid;
+        max_iter= 0;
+        return true;
+    }
+
+    const size_t n= A.num_rows();
+    const size_t num_cols= A.num_cols();
+
+    Vec z( n);
+    M.Apply( A, z, r);
+    Vec qt( z), pt( num_cols);
+    double rho= dot( z, r), rho_1;
+
+    for (int i= 1; i <= max_iter; ++i) {
+        pt= transp_mul( A, qt);
+        const double alpha= rho/norm_sq( pt);
+        u+= alpha*qt;
+        r-= alpha*(A*pt);
+        M.Apply( A, z, r);
+
+        resid= norm( r)/normb;
+        // if ( i%10 == 0) std::cerr << "PCGNE: iter: " << i << " resid: " << resid <<'\n';
+        if (resid <= tol) {
+            tol= resid;
+            max_iter= i;
+            return true;
+        }
+        rho_1= rho;
+        rho= dot( z, r);      
+        qt= z + (rho/rho_1)*qt;
+    }
+    tol= resid;
+    return false;
+}
 
 //-----------------------------------------------------------------------------
 // GMRES:
@@ -1332,6 +1562,39 @@ class PCGSolverCL : public SolverBaseCL
         resid=   _tol;
         numIter= _maxiter;
         PCG(A, x, b, _pc, numIter, resid, rel_);
+    }
+};
+
+///\brief Solver for A*A^Tx=b with Craig's method and left preconditioning.
+///
+/// A preconditioned CG version for matrices of the form A*A^T. Note that *A* must be
+/// supplied, not A*A^T, to the Solve-method.
+template <typename PC>
+class PCGNESolverCL : public SolverBaseCL
+{
+  private:
+    PC& pc_;
+
+  public:
+    PCGNESolverCL(PC& pc, int maxiter, double tol, bool rel= false)
+        : SolverBaseCL( maxiter, tol, rel), pc_( pc) {}
+
+    PC&       GetPc ()       { return pc_; }
+    const PC& GetPc () const { return pc_; }
+
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b)
+    {
+        _res=  _tol;
+        _iter= _maxiter;
+        PCGNE( A, x, b, pc_, _iter, _res, rel_);
+    }
+    template <typename Mat, typename Vec>
+    void Solve(const Mat& A, Vec& x, const Vec& b, int& numIter, double& resid) const
+    {
+        resid=   _tol;
+        numIter= _maxiter;
+        PCGNE(A, x, b, pc_, numIter, resid, rel_);
     }
 };
 

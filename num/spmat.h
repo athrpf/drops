@@ -364,6 +364,8 @@ public:
                               double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&);
 
+    void insert_col (size_t c, const VectorBaseCL<T>& v);
+
     void resize (size_t rows, size_t cols, size_t nz)
         { IncrementVersion(); _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
     void clear() { resize(0,0,0); }
@@ -1102,8 +1104,70 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     return this->LinComb( 1.0, tmp, coeffC, C);
 }
 
-/// \brief Compute the transpose matrix of M explicitly.
+/// \brief Inserts v as column c. The old columns [c, num_cols()) are shifted to the right.
 ///
+/// If c > num_cols(), implicit zero-columns will show up in the matrix.
+template <typename T>
+inline void
+SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
+{
+    if (c > num_cols())
+        throw DROPSErrCL( "SparseMatBaseCL<T>::insert_col: Only one column can be inserted.\n");
+
+    const size_t numzero= std::count( Addr( v), Addr( v) + v.size(), 0.), 
+                 nnz= v.size() - numzero;
+    size_t       zerocount= 0;
+    IncrementVersion();
+    _cols+= c <= _cols ? 1 : c - _cols + 1;
+    // These will become the new data-arrays of the matrix.
+    std::valarray<size_t> rowbeg( num_rows() + 1);
+    std::valarray<size_t> colind( num_nonzeros() + nnz);
+    std::valarray<T>      val( num_nonzeros() + nnz);
+    size_t* newcbeg= Addr( colind);
+    T*      newvbeg= Addr( val);
+
+    for (size_t row= 0; row < num_rows(); ++row) {
+        if (v[row] == 0.) { // Skip zero-rows of v.
+            ++zerocount;
+            continue;
+        }
+
+        // Column indices: Copy the entries up to column c.
+        rowbeg[row]= newcbeg - Addr( colind);
+        const size_t* cbeg= GetFirstCol( row);
+        const size_t* cend= GetFirstCol( row + 1);
+        const size_t *cpos= std::lower_bound( cbeg, cend, c);
+        for( ; cpos != cend && *cpos < c; ++cpos) ; // empty for-statement body
+        newcbeg= std::copy( cbeg, cpos, newcbeg);
+        // Insert c.
+        *newcbeg++= c;
+        // Copy the rest of the row and shift column indices by 1.
+        for( const size_t* p= cpos; p != cend; ++p, ++newcbeg)
+            *newcbeg= *p + 1;
+
+        // Same as above for the val-array; no index shifting here.
+        const T* vbeg= GetFirstVal( row);
+        const T* vend= GetFirstVal( row + 1);
+        const T* vpos= vbeg + (cpos - cbeg);
+        newvbeg= std::copy( vbeg, vpos, newvbeg);
+        *newvbeg++= v[row];
+        newvbeg= std::copy( vpos, vend, newvbeg);
+    }
+    if (zerocount != numzero)
+        throw DROPSErrCL( "SparseMatBaseCL<T>::insert_col: Inconsistent zero-counts in v.\n");
+
+    // Adjust the last rowbeg-entry.
+    rowbeg[num_rows()]= colind.size();
+    // Copy adapted arrays into the matrix.
+    _rowbeg.resize( rowbeg.size());
+    _rowbeg= rowbeg;
+    _colind.resize( colind.size());
+    _colind= colind;
+    _val.resize( val.size());
+    _val= val;
+}
+
+/// \brief Compute the transpose matrix of M explicitly.
 /// This could be handled more memory-efficient by exploiting
 /// that the column-indices in the rows of M are ascending.
 template <typename T>
@@ -1334,6 +1398,8 @@ transp_mul (const VectorAsDiagMatrixBaseCL<_VecEntry>& A,
     return VectorBaseCL<_VecEntry>( A.GetDiag()*x);
 }
 
+
+/// \brief returns the entry in row 'row' of A*x.
 template <typename Mat, typename Vec>
 inline typename Vec::value_type
 mul_row (const Mat& A, const Vec& x, size_t row)
@@ -1343,6 +1409,29 @@ mul_row (const Mat& A, const Vec& x, size_t row)
         sum+= A.val( k)*x[A.col_ind( k)];
     return sum;
 }
+
+
+/// \brief x+= w*A(row, .); the updated vector is returned.
+template <typename Mat, typename Vec>
+inline Vec&
+add_row_to_vec (const Mat& A, double w, Vec& x, size_t row)
+{
+    for (size_t k= A.row_beg( row); k < A.row_beg( row + 1 ); ++k)
+        x[A.col_ind( k)]+= w*A.val( k);
+    return x;
+}
+
+/// \brief x+= w*A(., col); the updated vector is returned.
+template <typename Mat, typename Vec>
+inline Vec&
+add_col_to_vec (const Mat& A, double w, Vec& x, size_t col)
+{
+    for (size_t row= 0; row < A.num_rows(); ++row) {
+        x[row]+= w*A( row, col);
+    }
+    return x;
+}
+
 
 //=============================================================================
 //  Reverse Cuthill-McKee ordering
