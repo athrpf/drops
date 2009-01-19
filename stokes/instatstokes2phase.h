@@ -106,17 +106,11 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, Exchan
     /// \brief Only used for XFEM
     void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset)
         {
-#ifdef _PAR
-            throw DROPSErrCL("No XFEM implemented in parallel DROPS yes, sorry");
-#endif
             if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi);
         }
     /// \brief Only used for XFEM
     void UpdatePressure( VecDescCL* p)
         {
-#ifdef _PAR
-            throw DROPSErrCL("No XFEM implemented in parallel DROPS yes, sorry");
-#endif
             if (UsesXFEM()) p->RowIdx->GetXidx().Old2New( p);
         }
     void DeleteNumbering( MLIdxDescCL* idx)

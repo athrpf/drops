@@ -221,9 +221,6 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
     if (Stokes_.UsesXFEM()) { // update XFEM
-#ifdef _PAR
-        throw DROPSErrCL("LinThetaScheme2PhaseCL::CommitStep: Sorry no XFEM implemented in parallel, yet");
-#endif
         Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
         Stokes_.UpdatePressure( &Stokes_.p);
         // The MatrixBuilderCL's method of determining when to reuse the pattern
@@ -1154,9 +1151,6 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
 
     VectorCL b4( Stokes_.B.Data*b3);
     if (Stokes_.UsesXFEM()) {
-#ifdef _PAR
-        throw DROPSErrCL("No XFEM implemented in parallel, yet");
-#endif
         VecDescCL Bdotv( &Stokes_.pr_idx);
         Stokes_.SetupBdotv( &Bdotv, &Stokes_.v, LvlSet_, Stokes_.t);
         b4+= Bdotv.Data;
