@@ -230,27 +230,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
-        // reads the P1-part of the pressure
-        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
-        // reads the P1X-part of the pressure
         if (Stokes.UsesXFEM()) {
-            std::ifstream fff  ( (C.IniData+".prx").c_str());
-            std::ifstream fxidx( (C.IniData+".xidx").c_str());
-            if (fff && fxidx) {
-                size_t NumP1XUnknowns;
-                fff >> NumP1XUnknowns;
-                if (NumP1XUnknowns != (pidx->NumUnknowns() - Stokes.GetXidx().GetNumUnknownsStdFE()))
-                    throw (DROPSErrCL("error while reading P1X unknowns"));
-                for (Uint i=Stokes.GetXidx().GetNumUnknownsStdFE(); i < pidx->NumUnknowns(); ++i)
-                    fff >> Stokes.p.Data[i];
-                for (Uint k=0; k<Stokes.GetXidx().GetNumUnknownsStdFE(); ++k)
-                    fxidx >> Stokes.GetXidx()[k];
-            }
+            VecDescCL pneg( pidx), ppos( pidx);
+            reader.ReadScalar( C.IniData+".prNeg", pneg, Stokes.GetBndData().Pr);
+            reader.ReadScalar( C.IniData+".prPos", ppos, Stokes.GetBndData().Pr);
+            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
         }
+        else
+            reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
       } break;
       default:
         lset.Init( EllipsoidCL::DistanceFct);
     }
+    const double Vol= EllipsoidCL::GetVolume();
+    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    double dphi= lset.AdjustVolume( Vol, 1e-9);
+    std::cerr << "volume correction is " << dphi << std::endl;
+    lset.Phi.Data+= dphi;
+    std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+
     MG.SizeInfo( std::cerr);
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
@@ -277,9 +275,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         c.Update();
         std::cerr << c.c.Data.size() << " concentration unknowns,\n";
     }
-
-    const double Vol= EllipsoidCL::GetVolume();
-    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     // Stokes-Solver
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
@@ -371,7 +366,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         // volume correction before reparam/grid modification
         if (C.VolCorr && (doReparam || doGridMod)) {
-                double dphi= lset.AdjustVolume( Vol, 1e-9);
+                dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
@@ -391,7 +386,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         }
 
         // grid modification
-
         if (doGridMod) {
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
@@ -408,7 +402,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
         // volume correction
         if (C.VolCorr && (step%C.VolCorr==0 || forceVolCorr)) {
-            double dphi= lset.AdjustVolume( Vol, 1e-9);
+            dphi= lset.AdjustVolume( Vol, 1e-9);
             std::cerr << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
             std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
