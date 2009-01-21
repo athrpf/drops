@@ -27,6 +27,7 @@ VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint nums
         vAddrMap_(), eAddrMap_(),
 #else
         mgVersion_(-1u), tag_(3001), GIDAddrMap_(),
+        procOffset_(ProcCL::Size()+1),
 #endif
         coords_(), tetras_(),
         numPoints_(0), numTetras_(0)
@@ -331,13 +332,11 @@ void VTKOutCL::GatherTetra(VectorBaseCL<Uint>& locConnectList) const
     Assert(pos==4*numTetra, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetras"), ~0);
 }
 
-
 void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
 /** Send all local connectivities to master or copy in sequiental mode.*/
 {
     // get number of tetras
     numTetras_= GlobalSum( locConnectList.size()/4, ProcCL::Master());
-
     // Workers send tetra list to master
     if (!ProcCL::IamMaster()){
         ProcCL::RequestT req_tetra  = ProcCL::Isend(locConnectList, ProcCL::Master(), tag_+2);
@@ -346,28 +345,31 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
 
     // Recieve lists
     if (ProcCL::IamMaster()){
-
         // Allocate mem for tetras
         tetras_.resize(4*numTetras_);
 
         int recievePos=0, recieved=0;
-
-        for (int p=0; p<ProcCL::Size(); ++p){       // Recieve from all processors
-
+        // if distribution should written out, remember, where proc p stores its tetras
+        procOffset_[0]= 0;
+        for (int p=0; p<ProcCL::Size(); ++p){       // Receive from all processors
             if (p!=ProcCL::MyRank()){               // if not master
 
                 // Get number of recieved tetras
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, tag_+2, stat);
                 recieved = ProcCL::GetCount<Uint>(stat);
-
                 // Recieve tetras
                 ProcCL::Recv(Addr(tetras_)+recievePos, recieved, p, tag_+2);
+                // increment next free position
                 recievePos+= recieved;
+                // remember, where proc p stores its tetras
+                procOffset_[p+1]= procOffset_[p] + recieved/4;
             }
             else{                                   // master: store local array in recieve array
                 std::copy(Addr(locConnectList), Addr(locConnectList)+locConnectList.size(), Addr(tetras_)+recievePos);
+                // increment next free position
                 recievePos+= locConnectList.size();
+                procOffset_[p+1]= procOffset_[p] + locConnectList.size()/4;
             }
         }
     }
@@ -434,6 +436,23 @@ void VTKOutCL::WriteTetra()
             file_ << '\n';
     }
 }
+
+#ifdef _PAR
+void VTKOutCL::WriteDistribution()
+{
+    Uint tmp_counter=0;
+    file_ << '\n' << "CELL_DATA " << numTetras_ << '\n'
+          << "SCALARS distribution int 1 \nLOOKUP_TABLE default\n";
+
+    for (int p=0; p<ProcCL::Size(); ++p){
+        for (Uint t=procOffset_[p]; t<procOffset_[p+1]; ++t){
+            file_ << p << '\n';
+            tmp_counter++;
+        }
+    }
+    Assert(tmp_counter==numTetras_, DROPSErrCL("VTKOutCL::WriteDistribution: Wrong number of tetrahedra"), DebugOutPutC);
+}
+#endif
 
 
 #ifdef _PAR
@@ -517,9 +536,12 @@ void VTKOutCL::WriteValues(const VectorBaseCL<float>& allData, const std::string
     }
 }
 
-void VTKOutCL::PutGeom(double time)
+void VTKOutCL::PutGeom(double time, __UNUSED__  bool writeDistribution)
 /** At first the geometry is put into the VTK file. Therefore this procedure
-   opens the file and write description into the file.*/
+    opens the file and write description into the file.
+    \param time simulation time
+    \param writeDistribution Distribution is written as CELL_DATA
+*/
 {
     NewFile(time);
 
@@ -550,6 +572,10 @@ void VTKOutCL::PutGeom(double time)
     // Write out coordinates and tetras
     WriteCoords();
     WriteTetra();
+#ifdef _PAR
+    if (writeDistribution)
+        WriteDistribution();
+#endif
 }
 
 void VTKOutCL::Clear()

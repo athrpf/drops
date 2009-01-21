@@ -45,6 +45,7 @@ class VTKOutCL
     typedef std::map<const EdgeCL*, Uint>     edgeAddressMapT;
 #else
     typedef std::map < Uint, Uint > GIDMapT;        // map GID to number
+    typedef std::vector< Uint >     ProcOffsetCT;   // position in tetras_ where all tetras of a processor are lying
 #endif
 
     const MultiGridCL& mg_;                         // reference to the multigrid
@@ -63,6 +64,7 @@ class VTKOutCL
     size_t              mgVersion_;                 // version number of last written out multigrid (sequential version of DROPS do not provide a version-number for the MG)
     const int           tag_;                       // tags used by this class (set to 3001)
     GIDMapT             GIDAddrMap_;                // Map GID to unique (consecutive) number (index to a number)
+    ProcOffsetCT        procOffset_;                // index in tetras_, where tetras of a processor are lying
 #endif
 
     VectorBaseCL<float> coords_;                    // Coordinates of the points
@@ -107,6 +109,8 @@ class VTKOutCL
     void GatherTetra( VectorBaseCL<Uint>&) const;
     /// Communicate tetras
     void CommunicateTetra(const VectorBaseCL<Uint>&);
+    /// Write out the distribution of tetrahedra as CELL_DATA
+    void WriteDistribution();
 #endif
     /// Write Tetras
     void WriteTetra();
@@ -130,7 +134,7 @@ class VTKOutCL
              const std::string& filename, bool binary);
 
     /// \brief Put geometry into the vtk file
-    void PutGeom( double time);
+    void PutGeom( double time, bool writeDistribution=false);
 
     /// \brief Write scalar variable into file
     template<class DiscScalT>
@@ -166,11 +170,12 @@ class TwoPhaseVTKCL : public VTKOutCL
   protected:
     const StokesCL&   stokes_;
     const LevelsetCL& levelset_;
+    const bool        writeDist_;
 
   public:
     /// \brief Constructor of this class
     TwoPhaseVTKCL (const MultiGridCL& mg, const StokesCL& st, const LevelsetCL& ls,
-                   Uint numsteps, const std::string& filename, bool binary);
+                   Uint numsteps, const std::string& filename, bool binary, bool writeDistribution=false);
 
     /// \brief Write alle information of a two phase problem
     void write();
@@ -291,7 +296,7 @@ template<class DiscScalT>
 
 template<typename StokesCL, typename LevelsetCL>
 TwoPhaseVTKCL<StokesCL, LevelsetCL>::TwoPhaseVTKCL (const MultiGridCL& mg, const StokesCL& st, const LevelsetCL& ls,
-  Uint numsteps, const std::string& filename, bool binary)
+  Uint numsteps, const std::string& filename, bool binary, bool writeDistribution)
 /** This constructor init the base class VTKOutCL, in order to write out
     twophase flows
 \param mg geometry of the given problem
@@ -300,10 +305,11 @@ TwoPhaseVTKCL<StokesCL, LevelsetCL>::TwoPhaseVTKCL (const MultiGridCL& mg, const
 \param numsteps number of timesteps, that should be written out
 \param filename prefix of all files
 \param binary    Write out files in binary format. (Does not work)
+\param writeDistribution Write out distribution
 \todo Support of binary output
 */
     : base_(mg, "DROPS data", numsteps, filename, binary),
-        stokes_(st), levelset_(ls) {}
+        stokes_(st), levelset_(ls), writeDist_(writeDistribution) {}
 
 
 template<typename StokesCL, typename LevelsetCL>
@@ -312,7 +318,7 @@ template<typename StokesCL, typename LevelsetCL>
     the stokes problem and the level-set function in a VTK legacy format.
 */
 {
-    base_::PutGeom(stokes_.t);
+    base_::PutGeom(stokes_.t, writeDist_);
     base_::PutVector( "velocity",  stokes_.GetVelSolution() );
     base_::PutScalar( "pressure",  stokes_.GetPrSolution() );
     base_::PutScalar( "level-set", levelset_.GetSolution() );
