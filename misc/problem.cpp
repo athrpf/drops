@@ -428,7 +428,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
                    HandlerScatterUpdateXNumbC       // how to scatter datas
                   );
     current_Idx_= 0;
-    
+
     // number all extended dofs from other procs (where extended dof is flagged by NoIdx-1)
     for (size_t i=0; i<Xidx_.size(); ++i)
         if (Xidx_[i] == NoIdx-1)
@@ -458,7 +458,7 @@ int ExtIdxDescCL::HandlerScatterUpdateXNumb( DDD_OBJ objp, void* buf)
     if (!sp->Unknowns.Exist(current_Idx_->GetIdx()))
         return 0;
     const IdxT dof= sp->Unknowns(current_Idx_->GetIdx());
-    
+
     if (!current_Idx_->IsExtended( dof) && RemoteExtended)
         current_Idx_->GetXidx()[dof]= NoIdx-1;
     return 0;
@@ -472,9 +472,11 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
     v->Data[std::slice( 0, Xidx_.size(), 1)]= tmp[std::slice( 0, Xidx_.size(), 1)];
 
     if (Xidx_.size() != Xidx_old_.size()) {
-        std::cerr << "ExtIdxDescCL::Old2New: Xidx: " << Xidx_.size()
-                  << "\tXidx_old: " << Xidx_old_.size()
-                  << "Extended Unknowns set to 0.\n";
+#ifndef _PAR
+          std::cerr << "ExtIdxDescCL::Old2New: Xidx: " << Xidx_.size()
+                    << "\tXidx_old: " << Xidx_old_.size()
+                    << "Extended Unknowns set to 0.\n";
+#endif
         return;
     }
 
@@ -489,12 +491,21 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
             ++ci;
         }
     }
-    std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " << Xidx_.size()
-              << "\t#new dof: " << ni
-              << "\t#deleted dof: " << di
-              << "\t#renumbered dof: " << ri
-              << "\t#copied extended-dof: " << ci
-              << '\n';
+
+    std::valarray<IdxT> information( 5);
+    information[0]= ni; information[1]= di; information[2]= ri;
+    information[3]= ci; information[4]= Xidx_.size();
+#ifdef _PAR
+    std::valarray<IdxT> local_information= information;
+    GlobalSum(Addr(local_information), Addr(information), 5, ProcCL::Master());
+#endif
+    IF_MASTER
+      std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " << information[4]
+                << "\t#new dof: " << information[0]
+                << "\t#deleted dof: " << information[1]
+                << "\t#renumbered dof: " << information[2]
+                << "\t#copied extended-dof: " << information[3]
+                << '\n';
 }
 
 } // end of namespace DROPS
