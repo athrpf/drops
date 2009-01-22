@@ -1043,8 +1043,8 @@ int main (int argc, char** argv)
 
         DROPS::ParTimerCL time, alltime;
 
-        // Initialisierung der parallelen Strukturen und Mitteilung, dass es wir zwei Unbekannten-Index geben wird
-        DROPS::ParMultiGridCL pmg;
+        // Initialisierung der parallelen Strukturen.
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
         DROPS::MultiGridCL   *mg;
 
         DROPS::Point3DCL orig(0.);

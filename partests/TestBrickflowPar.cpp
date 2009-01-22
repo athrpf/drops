@@ -846,7 +846,7 @@ int main (int argc, char** argv)
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
-    DROPS::ParMultiGridCL pmg;
+    DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
 
     typedef ZeroFlowCL                                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;

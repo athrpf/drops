@@ -111,15 +111,18 @@ class ParMultiGridCL
 
     static VecDescCL* _actualVec;           // actual index within HandleNewIdx (used within DDD-Gather and DDD-Scatter operation)
 
+    static ParMultiGridCL* instance_;       // only one instance of ParMultiGridCL may exist (Singleton-Pattern)
+
+  private:
+    /// \brief Create a ParMultiGridCL, due to the Singleton-Pattern, the constructor is private
+    ParMultiGridCL();
 
   public:
-    /// \name Constructor and Destructor
-    // @{
-    ParMultiGridCL();
-    ParMultiGridCL(const MGBuilderCL&);
-    ParMultiGridCL(const ParMultiGridCL&);                                  // Copyconstructor is not implemented!
+    /// \brief Get a pointer to the ParMultiGridCL (Singleton-Pattern)
+    static ParMultiGridCL* InstancePtr() { return instance_ ? instance_ : (instance_= new ParMultiGridCL); }
+    /// \brief Get a reference to the ParMultiGridCL (Singleton-Pattern)
+    static ParMultiGridCL& Instance()    { return *InstancePtr(); }
     ~ParMultiGridCL();
-    // @}
 
 
     /// \name Functions concerning the MultiGrid

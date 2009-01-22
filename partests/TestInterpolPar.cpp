@@ -656,7 +656,7 @@ int main (int argc, char** argv)
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
-    DROPS::ParMultiGridCL pmg;
+    DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
 
     DROPS::Point3DCL e1(0.), e2(0.), e3(0.), orig(0.);
     e1[0]=dx; e2[1]=dy; e3[2]=dz;

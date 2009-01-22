@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
         if (me==0){
             cout << dline << endl << " + Erstelle initiale Grid (Wuerfel der Laenge 1) auf Prozessor " << master <<": ...\n";
         }
-        DROPS::ParMultiGridCL pmg;
+        DROPS::ParMultiGridCL pmg = DROPS::ParMultiGridCL::Instance();
         pmg.ShowTypes();
         //pmg.ShowInterfaces();
         CreateInitGrid(pmg, master);

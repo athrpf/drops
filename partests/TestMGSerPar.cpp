@@ -477,8 +477,8 @@ int main (int argc, char** argv)
         if (DROPS::ProcCL::IamMaster())
           std::cout << C << std::endl;
 
-        // Init of the parallel structurs. Three indices should be handled
-        DROPS::ParMultiGridCL pmg;
+        // Init of the parallel structurs.
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
 
         if (DROPS::ProcCL::IamMaster() && C.mode==0)
             std::cout << line << " Create initial grid and distribution ... \n";

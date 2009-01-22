@@ -280,7 +280,7 @@ void CreateGeom( MultiGridCL* &mg, ParMultiGridCL* &pmg,
         std::cerr << "Creating initial geometry for "<<ProcCL::Size()<<" processors" << std::endl;
 
     // parallel multigrid, that is able to handle 3 dof
-    pmg = new ParMultiGridCL;
+    pmg = ParMultiGridCL::InstancePtr();;
 
     StokesVelBndDataCL::bnd_val_fun *bnd_fun = 0;       // boundary information for velocity
     BndCondT* bc= 0;

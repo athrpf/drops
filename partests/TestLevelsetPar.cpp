@@ -379,8 +379,8 @@ int main (int argc, char** argv)
         }
         const int num_ref = std::atoi(argv[1]);
 
-        // Init of the parallel structurs. One Index should be handled
-        DROPS::ParMultiGridCL pmg;
+        // Init of the parallel structurs.
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
 
         DROPS::Point3DCL orig(0.);
         DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);

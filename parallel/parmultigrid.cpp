@@ -63,6 +63,7 @@ VecDescCL* ParMultiGridCL::_actualVec=0;
 
 std::ostream *ParMultiGridCL::_os   = 0;
 bool          ParMultiGridCL::_sane = true;
+ParMultiGridCL* ParMultiGridCL::instance_ = 0;
 
 /****************************************************************************
 * W R A P P E R                                                             *
@@ -154,39 +155,7 @@ ParMultiGridCL::ParMultiGridCL()
     // There are no active transfers neither Prio-Change-enviroment while creating this class
     TransferMode=false;
     PrioChangeMode=false;
-    _UnkOnSimplex[0]=_UnkOnSimplex[1]=_UnkOnSimplex[2]=false;
-}
-
-/// \brief Constructor with a MGBuilderCL and the number of VecDescCL
-///
-/// see constructor above and assign the Multigrid given by the MGBuilderCL to this parallel MultiGrid
-ParMultiGridCL::ParMultiGridCL(const MGBuilderCL& Builder)
-{
-    Assert(EdgeCL::GetType()==0, DROPSErrCL("ParMultiGridCL: Constructor is called twice"),DebugParallelC);
-
-    // Init the DDD stuff
-    DeclareAll();
-    DefineAll();
-    InitIF();
-    SetAllHandler();
-
-    // Create the multigrid
-    _mg= new MultiGridCL( Builder);
-
-    // assign the references to the simplex containers
-    _VertCont=  &_mg->_Vertices;
-    _EdgeCont=  &_mg->_Edges;
-    _FaceCont=  &_mg->_Faces;
-    _TetraCont= &_mg->_Tetras;
-
-    // Init the containers for the unknowns
-//     _SelectBnd.resize(numVecDesc, std::numeric_limits<size_t>::max());
-    _RecvBuf.resize(0);
-
-    // There are no active transfers neither Prio-Change-enviroment while creating this class
-    TransferMode=false;
-    PrioChangeMode=false;
-    _UnkOnSimplex[0]=_UnkOnSimplex[1]=_UnkOnSimplex[2]=false;
+    _UnkOnSimplex[0]= _UnkOnSimplex[1]= _UnkOnSimplex[2]= false;
 }
 
 ParMultiGridCL::~ParMultiGridCL()
