@@ -14,14 +14,14 @@ Time {
 
 # flow solver
 Stokes {
-  StokesMethod	=	11
+  StokesMethod	=	20304
   InnerIter	=	1000
   OuterIter	=	100
-  InnerTol	=	1e-14
+  InnerTol	=	0.6
   OuterTol	=	1e-6
-  PcAIter	=       2	# no effect
-  PcATol	=	1e-2    # no effect
-  PcSTol	=	1e-4    # no effect
+  PcAIter	=       100
+  PcATol	=	1e-2
+  PcSTol	=	1e-2
 }
 
 # levelset solver
@@ -38,6 +38,14 @@ Coupling {
   Iter 		= 	-1 	# = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
   Projection	=	0	# 1 = Perform a projection step before FP
+}
+
+NavStokes {
+  Nonlinear	=	0
+  Scheme	=	2	# no effect
+  Tol           =       5e-10
+  Iter          =       20
+  Reduction     =       0.1
 }
 
 # re-initialization of levelset function

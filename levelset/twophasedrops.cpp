@@ -306,8 +306,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             //for Stokes-MGM
         stokessolverfactory.SetMatrices( &timedisc->GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
                                          &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
-    }        
-
+    }
 
     UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
     adap.push_back( &PVel);
@@ -317,11 +316,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //     MakeP1P1XProlongation ( Stokes.vel_idx.NumUnknowns(), Stokes.pr_idx.NumUnknowns(),
 //         Stokes.pr_idx.GetFinest().GetXidx().GetNumUnknownsStdFE(),
 //         stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
-    stokessolverfactory.GetVankaSchurPc().SetAB( (C.nonlinear!=0.0 || C.num_steps == 0)
-        ? &navstokessolver->GetAN()->GetFinest() : &timedisc->GetUpperLeftBlock()->GetFinest(),
-        &Stokes.B.Data.GetFinest()
-    );
-    stokessolverfactory.GetVankaSmoother().SetRelaxation( 0.8);
 
     bool second = false;
     std::ofstream infofile((C.EnsCase+".info").c_str());

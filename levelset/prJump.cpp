@@ -17,60 +17,13 @@
 #include "levelset/adaptriang.h"
 #include "levelset/params.h"
 #include "levelset/mzelle_hdr.h"
+#include "num/stokessolverfactory.h"
 #include <fstream>
 #include <iomanip>
 #include <vector>
 
 
-DROPS::ParamMesszelleCL C;
-
-enum StokesMethod {
-	minres                   =  1, // Minres without PC
-
-        pminresmgssor            =  2, // MG-PC for A, SSOR for S
-                                       // <SolverAsPreCL<MGSolverCL>, ISPreCL>
-
-        pminresmgpcg             =  3, // MG-PC for A, PCG for S
-                                       // <SolverAsPreCL<MGSolverCL>, ISBBT>
-
-        pminrespcgssor           =  5, // PCG for A, SSOR for S
-                                       // <SolverAsPreCL<PCGSolverCL<SSORPcCL>>, ISPreCL>
-
-        pminrespcgpcg            =  6, // PCG for A, PCG for S
-                                       // <SolverAsPreCL<PCGSolverCL<SSORPcCL>>, ISBBT>
-
-        pminresmglumped          =  8, // MG-PC for A,    DiagPrMassMatrix for S
-
-        pminrespcglumped         =  9, // PCG for A,      DiagPrMassMatrix for S
-
-      //---------------------------------------------------------------------------------------------------
-
-        inexactuzawamgssor       = 10, // MG-PC for A, SSOR for S
-                                       // <SolverAsPreCL<MGSolverCL>, ISPreCL>
-
-        inexactuzawamgpcg        = 11, // MG-PC for A, PCG for S
-                                       // <SolverAsPreCL<MGSolverCL>, ISBBT>
-
-        inexactuzawapcgssor      = 12, // PCG for A, SSOR for S
-                                       // <SolverAsPreCL<PCGSolverCL<SSORPcCL>>, ISPreCL>
-
-        inexactuzawapcgpcg       = 13, // PCG for A, PCG for S
-                                       // <SolverAsPreCL<PCGSolverCL<SSORPcCL>>, ISBBT>
-
-        inexactuzawamglumped     = 14, // MG-PC for A,    DiagPrMassMatrix for S
-
-        inexactuzawapcglumped    = 15, // PCG for A,      DiagPrMassMatrix for S
-
-      //---------------------------------------------------------------------------------------------------
-
-        pcgmgssor                = 16, // MG-PC for A, SSOR for S
-                                       // <SolverAsPreCL<MGSolverCL>, ISPreCL>
-
-        pcgmgpcg                 = 17, // MG-PC for A, PCG for S
-                                       // <SolverAsPreCL<MGSolverCL>, ISBBT>
-
-        pcgmglumped              = 18  // MG-PC for A,    DiagPrMassMatrix for B
-};
+DROPS::ParamMesszelleNsCL C;
 
 // program for testing various FE pressure spaces
 // using a special constant surface force:
@@ -95,27 +48,6 @@ double DistanceFct( const DROPS::Point3DCL& p)
 
 namespace DROPS // for Strategy
 {
-
-// Diagonal of a matrix as preconditioner
-class DiagMatrixPCCL
-{
-  private:
-    VectorCL& M_;
-    bool sq_;
-
-  public:
-    DiagMatrixPCCL( VectorCL& M, bool sq = false)
-        :M_( M), sq_(sq) {}
-
-    template <typename Mat, typename Vec>
-    void Apply(const Mat& , Vec& x, const Vec& b) const
-    {
-        for (Uint i= 0; i<M_.size(); ++i) {
-            if (sq_) x[i]= b[i]/std::sqrt(M_[i]);
-            else x[i]= b[i]/M_[i]; // M_ is a diagonal-matrix: exact inversion
-        }
-    }
-};
 
 /*=====================================================================================================
 init testcase
@@ -288,7 +220,7 @@ void PrintNorm( string name, const VectorCL& v)
 }
 
 template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
+void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 // flow control
 {
     typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
@@ -310,8 +242,10 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
     MLIdxDescCL* pidx= &Stokes.pr_idx;
-    Stokes.SetNumVelLvl( MG.GetNumLevel());
-    //Stokes.SetNumPrLvl ( MG.GetNumLevel());
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
+        Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
+        Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
 
     VecDescCL new_pr;  // for pressure output in Ensight
 
@@ -332,30 +266,6 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.InitVel( &Stokes.v, ZeroVel);
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset); // makes no sense for P0
-
-    //LumpedMassMatrix von abs(M)
-/*    VectorCL prMLDiag (0.0, Stokes.p.Data.size());
-    for (Uint i=0; i< prMLDiag.size(); i++) {
-        for (Uint j=0; j< prMLDiag.size(); j++) {
-            prMLDiag[i]+=my_abs(prM.Data(i,j));
-        }
-    }
-*/
-
-    //LumpedMassMatrix = diag(M)
-    VectorCL prMLDiag (0.0, Stokes.p.Data.size());
-    prMLDiag=Stokes.prM.Data.GetDiag();
-//    for (Uint i=0; i< prMLDiag.size(); i++) {
-//	prMLDiag[i]=Stokes.prM.Data(i,i);
-//    }
-
-    //LumpedMassMatrix
-/*    VectorCL prMLDiag(0.0, prM.Data.num_rows());
-    VectorCL e( 1.0, prM.Data.num_rows());
-    e[std::slice( Stokes.GetXidx().GetNumUnknownsP1(),
-            prM.Data.num_rows() - Stokes.GetXidx().GetNumUnknownsP1(), 1)]= 0.0;
-  //  prMLDiag = prM.Data * e;
-    }*/
 
     SSORPcCL ssor;
     PCG_SsorCL PCG( ssor, C.inner_iter, C.inner_tol); // for computing curvature force
@@ -401,158 +311,28 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         //InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest());
         time.Reset();
 
-        const double kA=0;
-        const double kM=1;
-        // Preconditioner for A
-            //Multigrid
-        SSORsmoothCL smoother(1.0);
-	SSORPcCL ssorpc;
-        PCG_SsorCL   coarsesolver( ssorpc, 500, C.inner_tol);
-        MGSolverCL<SSORsmoothCL, PCG_SsorCL> mgc ( smoother, coarsesolver, 1, -1.0, false);
-        MLMatrixCL* PVel = mgc.GetProlongation();
-        SetupP2ProlongationMatrix( MG, *PVel, &Stokes.vel_idx, &Stokes.vel_idx);
-        CheckMGData( Stokes.A.Data, *PVel);
-        typedef SolverAsPreCL<MGSolverCL<SSORsmoothCL, PCG_SsorCL> > MGPCT;
-        MGPCT MGPC (mgc);
-        VectorCL xx( 1.0, vidx->NumUnknowns());
-        double rhoinv = 0.99*( 1.0-1.1*0.363294);
-/*        if ( C.StokesMethod == 16 || C.StokesMethod == 17 || C.StokesMethod == 18)
-            rhoinv= 0.99*( 1.0 - 1.1*EigenValueMaxMG( Stokes.A.Data, Stokes.PVel.Data, xx, 1000, 1e-4));*/
-        ScaledMGPreCL<> velprep( *PVel, 1, 1.0/rhoinv);
+        StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
+        StokesSolverBaseCL* solver = stokessolverfactory.CreateStokesSolver();
 
-            //PCG
-        typedef SSORPcCL APcPcT;
-        APcPcT Apcpc;
-        typedef PCGSolverCL<APcPcT> ASolverT;        // CG-based APcT
-        ASolverT Asolver( Apcpc, 500, 0.02, true);
-        typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver);
+        // initializes prolongation matrices
+        UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
+        adap.push_back( &PVel);
+        UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
+        adap.push_back( &PPr);
 
-        // Preconditioner for instat. Schur complement
-        typedef ISBBTPreCL ISBBT;
-        ISBBT isbbt (&Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), kA, kM);
-        ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, kA, kM);
-        DiagMatrixPCCL lumped( prMLDiag);
+        // for MinComm
+        stokessolverfactory.SetMatrixA( &Stokes.A.Data.GetFinest());
+        //for Stokes-MGM
+        stokessolverfactory.SetMatrices( &Stokes.A.Data.GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
+                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
 
-        typedef BlockPreCL<APcT, DiagMatrixPCCL> LanczosPcT;
-
-        // Preconditioner for PMINRES
-        typedef BlockPreCL<MGPCT, ISPreCL> Lanczos2PCT;
-        typedef PLanczosONBCL<VectorCL, Lanczos2PCT> Lanczos2T;
-        typedef BlockPreCL<MGPCT, ISBBT> Lanczos3PCT;
-        typedef PLanczosONBCL<VectorCL, Lanczos3PCT> Lanczos3T;
-        typedef BlockPreCL<APcT, ISPreCL> Lanczos5PCT;
-        typedef PLanczosONBCL< VectorCL, Lanczos5PCT> Lanczos5T;
-        typedef BlockPreCL<APcT, ISBBT> Lanczos6PCT;
-        typedef PLanczosONBCL<VectorCL, Lanczos6PCT> Lanczos6T;
-        typedef BlockPreCL<MGPCT,DiagMatrixPCCL> Lanczos8PCT;
-        typedef PLanczosONBCL<VectorCL, Lanczos8PCT> Lanczos8T;
-        typedef BlockPreCL<APcT,DiagMatrixPCCL> Lanczos9PCT;
-        typedef PLanczosONBCL<VectorCL, Lanczos9PCT> Lanczos9T;
-
-        Lanczos2PCT lanczos2pc (MGPC, ispc);
-        Lanczos2T lanczos2 (lanczos2pc);
-
-        Lanczos3PCT lanczos3pc (MGPC, isbbt);
-        Lanczos3T lanczos3 (lanczos3pc);
-
-        Lanczos5PCT lanczos5pc (Apc, ispc);
-        Lanczos5T lanczos5 (lanczos5pc);
-
-        Lanczos6PCT lanczos6pc (Apc, isbbt);
-        Lanczos6T lanczos6 (lanczos6pc);
-
-        Lanczos8PCT lanczos8pc (MGPC, lumped);
-        Lanczos8T lanczos8 (lanczos8pc);
-
-        Lanczos9PCT lanczos9pc (Apc, lumped);
-        Lanczos9T lanczos9 (lanczos9pc);
-
-        // available Stokes Solver
-        typedef MResSolverCL PMinres1T; // Minres
-        PMinres1T minressolver        (C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres1T> blockminressolver(minressolver);
-
-        typedef PMResSolverCL<Lanczos2T> PMinres2T; // PMinRes - MG-ISPreCL
-        PMinres2T pminresmgssorsolver (lanczos2, C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres2T> blockpminresmgssorsolver(pminresmgssorsolver);
-
-        typedef PMResSolverCL<Lanczos3T> PMinres3T; // PMinRes - MG-ISBBTCL
-        PMinres3T pminresmgpcgsolver  (lanczos3, C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres3T> blockpminresmgpcgsolver(pminresmgpcgsolver);
-
-        typedef PMResSolverCL<Lanczos5T> PMinres5T; // PMinRes - PCG-ISPreCL
-        PMinres5T pminrespcgssorsolver (lanczos5, C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres5T> blockpminrespcgssorsolver(pminrespcgssorsolver);
-
-        typedef PMResSolverCL<Lanczos6T> PMinres6T; // PMinRes - PCG-ISBBT
-        PMinres6T pminrespcgpcgsolver (lanczos6, C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres6T> blockpminrespcgpcgsolver(pminrespcgpcgsolver);
-
-        typedef PMResSolverCL<Lanczos8T> PMinres8T;
-        PMinres8T pminresmgdiagsolver (lanczos8, C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres8T> blockpminresmgdiagsolver(pminresmgdiagsolver);
-
-        typedef PMResSolverCL<Lanczos9T> PMinres9T;
-        PMinres9T pminrespcgdiagsolver (lanczos9, C.outer_iter, C.outer_tol);
-        BlockMatrixSolverCL<PMinres9T> blockpminrespcgdiagsolver(pminrespcgdiagsolver);
-
-        typedef InexactUzawaCL<MGPCT, ISPreCL, APC_SYM> InexactUzawa10T;
-        InexactUzawa10T inexactuzawamgssorsolver( MGPC, ispc, C.outer_iter, C.outer_tol, 0.5);
-
-        typedef InexactUzawaCL<MGPCT, ISBBT, APC_SYM> InexactUzawa11T;
-        InexactUzawa11T inexactuzawamgpcgsolver( MGPC, isbbt, C.outer_iter, C.outer_tol, 0.5);
-
-        typedef InexactUzawaCL<APcT, ISPreCL, APC_SYM> InexactUzawa12T;
-        InexactUzawa12T inexactuzawapcgssorsolver( Apc, ispc, C.outer_iter, C.outer_tol, 0.5);
-
-        typedef InexactUzawaCL<APcT, ISBBT, APC_SYM> InexactUzawa13T;
-        InexactUzawa13T inexactuzawapcgpcgsolver( Apc, isbbt, C.outer_iter, C.outer_tol, 0.5);
-
-        typedef InexactUzawaCL<MGPCT, DiagMatrixPCCL, APC_SYM> InexactUzawa14T;
-        InexactUzawa14T inexactuzawamgdiagsolver( MGPC, lumped, C.outer_iter, C.outer_tol, 0.5);
-
-        typedef InexactUzawaCL<APcT, DiagMatrixPCCL, APC_SYM> InexactUzawa15T;
-        InexactUzawa15T inexactuzawapcgdiagsolver( Apc, lumped, C.outer_iter, C.outer_tol, 0.5);
-
-        typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, ISPreCL> UzawaCGEff16T;
-        UzawaCGEff16T pcgmgssorsolver (velprep, ispc, C.outer_iter, C.outer_tol);
-
-        typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, ISBBT> UzawaCGEff17T;
-        UzawaCGEff17T pcgmgpcgsolver (velprep, isbbt, C.outer_iter, C.outer_tol);
-
-        typedef UzawaCGSolverEffCL<ScaledMGPreCL<>, DiagMatrixPCCL> UzawaCGEff18T;
-        UzawaCGEff18T pcgmgdiagsolver (velprep, lumped, C.outer_iter, C.outer_tol);
-
-        StokesSolverBaseCL* solver=0;
-        switch (C.StokesMethod) {
-            case minres:                solver = &blockminressolver;         break;
-            case pminresmgssor:         solver = &blockpminresmgssorsolver;  break;
-            case pminresmgpcg:          solver = &blockpminresmgpcgsolver;   break;
-            case pminrespcgssor:        solver = &blockpminrespcgssorsolver; break;
-            case pminrespcgpcg:         solver = &blockpminrespcgpcgsolver;  break;
-            case pminresmglumped:       solver = &blockpminresmgdiagsolver;  break;
-            case pminrespcglumped:      solver = &blockpminrespcgdiagsolver; break;
-            case inexactuzawamgssor:    solver = &inexactuzawamgssorsolver;  break;
-            case inexactuzawamgpcg:     solver = &inexactuzawamgpcgsolver;   break;
-            case inexactuzawapcgssor:   solver = &inexactuzawapcgssorsolver; break;
-            case inexactuzawapcgpcg:    solver = &inexactuzawapcgpcgsolver;  break;
-            case inexactuzawamglumped:  solver = &inexactuzawamgdiagsolver;  break;
-            case inexactuzawapcglumped: solver = &inexactuzawapcgdiagsolver; break;
-            case pcgmgssor:             solver = &pcgmgssorsolver;           break;
-            case pcgmgpcg:              solver = &pcgmgpcgsolver;            break;
-            case pcgmglumped:           solver = &pcgmgdiagsolver;           break;
-
-            default: throw DROPSErrCL( "unknown method\n");
-        }
-        if (solver != 0) {
-            solver->Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data,
-                           curv.Data, Stokes.c.Data);
-            std::cerr << "iter: " << solver->GetIter()
-                      << "\tresid: " << solver->GetResid() << std::endl;
-        }
+        solver->Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data,
+                       curv.Data, Stokes.c.Data);
+        std::cerr << "iter: " << solver->GetIter()
+                  << "\tresid: " << solver->GetResid() << std::endl;
         time.Stop();
         std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+        delete solver;
       }
     }
 
@@ -648,11 +428,8 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
-    DROPS::FiniteElementT prFE=DROPS::P1_FE;
-    if (C.XFEMStab>=0) prFE=DROPS::P1X_FE;
-
     MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
-        prFE, C.XFEMStab);
+                    C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
 
     DROPS::MultiGridCL& mg = prob.GetMG();
     EllipsoidCL::Init( C.Mitte, C.Radius );
@@ -661,7 +438,7 @@ int main (int argc, char** argv)
 
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
-    Strategy( prob);  // do all the stuff
+    Strategy( prob, adap);  // do all the stuff
 
     return 0;
   }

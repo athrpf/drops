@@ -6,10 +6,10 @@
 
 # time stepping
 Time {
-  NumSteps	=	10
+  NumSteps	=	2
   StepSize	=	0.05
-  ThetaLevelset	=	1	# backward Euler
-  ThetaStokes	=	1	# backward Euler
+  ThetaLevelset	=	0.5	# backward Euler
+  ThetaStokes	=	0.5	# backward Euler
 }
 
 # flow solver
@@ -18,7 +18,7 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-10
   OuterTol	=	1e-6
-  StokesMethod	=	81	# 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
+  StokesMethod	=	10101	# 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
   PcAIter	=       2	# V-cycles multigrid, iter pc for A block
   PcATol	=	1e-99
   PcSTol	=	1e-4
@@ -26,7 +26,7 @@ Stokes {
 
 NavStokes {
   Nonlinear	=	0
-  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
+  Scheme	=	2	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1
@@ -59,7 +59,7 @@ Reparam {
 # adaptive refinement
 AdaptRef {
   Freq		=	1
-  FinestLevel	=	2
+  FinestLevel	=	1
   Width		=	0.1
 }
 
@@ -111,10 +111,10 @@ Transp {
 }
 
 # miscellaneous
-XFEMStab        =       -1e-1
+XFEMStab        =       1e-1
 InitialCond	=	0	# 0=zero, 1/2=flow with/without drop, -1=read from file
 GeomType	=	1	# 0=ReadMeshBuilder, 1=BrickBuilder
-InitialFile	=	none
+InitialFile	=	ensight/risingdroplet0
 MeshFile	=	1x1x2@3x3x6
 EnsightCase	=	risingdroplet # none= no ensight data
 EnsightDir	=	ensight

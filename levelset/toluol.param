@@ -20,7 +20,7 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-12
   OuterTol	=	1e-10
-  StokesMethod	=	12      # 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
+  StokesMethod	=	10102   # 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
   PcAIter	=       2	# V-cycles multigrid, iter pc for A block
   PcATol	=	1e-14   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol	=	1e-4

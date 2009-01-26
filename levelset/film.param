@@ -15,7 +15,7 @@ Time {
 
 # flow solver
 Stokes {
-  StokesMethod = 16
+  StokesMethod = 10502
   InnerIter	=	1000
   OuterIter	=	200
   InnerTol	=	1e-10
