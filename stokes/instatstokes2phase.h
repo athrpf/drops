@@ -34,6 +34,15 @@ class P1XRepairCL
     void operator() ();
 };
 
+/// \brief Compute the main diagonal of the unscaled L_2(\Omega)-mass-matrix.
+void SetupMassDiag_P1 (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx,
+                       const BndDataCL<>& bnd= BndDataCL<>( 0));
+
+/// \brief Compute the main diagonal of the unscaled L_2(\Omega)-mass-matrix.
+void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const LevelsetP2CL& lset,
+                        const BndDataCL<>& bnd= BndDataCL<>( 0));
+
+
 /// problem class for instationary two-pase Stokes flow
 
 template <class Coeff>
