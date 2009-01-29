@@ -212,7 +212,7 @@ template<typename Coeff>
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
-    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red, &std::cerr);
+    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
 
     // coupling levelset NavStokes
     time.Reset();
