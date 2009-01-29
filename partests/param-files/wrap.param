@@ -1,4 +1,4 @@
-#=============================================================
+##=============================================================
 #    DROPS parameter file for    TestBrickPar
 #    simulation of two-phase flow:
 #    sedimentation of a droplet
@@ -42,6 +42,7 @@ Coupling {
   Tol       =   1e-10   # not used a.t.m.
   Iter      =   10  # -1 = till convergence
   Stab      =   0.
+  Projection=   0       # 1 = Perform a projection step before FP, not implemented in parallel, yet
 }
 
 # re-initialization of levelset function
@@ -54,7 +55,7 @@ Reparam {
 # adaptive refinement
 AdaptRef {
   Freq          =   0
-  FinestLevel   =   1          # finest level of the grid
+  FinestLevel   =   2          # finest level of the grid
   Width         =   0.0115      # refine the grid in this distance to the middle of the drop/NMR-Window(?)
 }
 
@@ -72,7 +73,7 @@ Exp {
   PosDrop   =   0  -11e-3  0                    # used to define, where the grid should be refined
   Gravity   =   0   -9.81   0
   FlowDir   =   1   # flow in y-direction
-  InflowVel =   -0.0509969
+  InflowVel =   -0.0515
   RadInlet  =   3.6e-3  # 3.5e-3 for old meas. cell
 }
 
@@ -92,7 +93,7 @@ LoadBalancing {
 
 # Quadrilateral Grid
 QuadrilateralGrid {
-    Quad        = 1                     # Write out qudrilateral grid
+    Quad        = 0                     # Write out qudrilateral grid
     GridX       = 128                    # Gridpoints in X dimension
     GridY       = 100                    # Gridpoints in Y dimension
     GridZ       = 37                    # Gridpoints in Z dimension
@@ -136,7 +137,7 @@ MGSerialization {
 
 
 # miscellaneous
-XFEMStab    =   0.001
+XFEMStab    =   5e-6
 InitialCond =   2   # 0=zero, 1/2=flow with/without drop, 3=read from file
 InitialFile =   input/nsmzi
 MeshFile    =   ../levelset/gambit/NMR_05.msh

@@ -6,7 +6,7 @@
 
 # time stepping
 Time {
-  NumSteps      = 2
+  NumSteps      = 3
   StepSize      = 3e-4
   ThetaLevelset = 1       # backward Euler
   ThetaStokes   = 1       # backward Euler
@@ -14,11 +14,14 @@ Time {
 
 # flow solver
 Stokes {
+  StokesMethod  = 20401   # 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
   InnerIter     = 1000
   OuterIter     = 200
-  InnerTol      = 1e-12
+  InnerTol      = 0.1     # inner reduction for InexactUzawa
   OuterTol      = 1e-10
-  StokesMethod  = -1         # no effect
+  PcAIter       = 500    # V-cycles multigrid, iter pc for A block
+  PcATol        = 2e-5   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
+  PcSTol        = 1e-4
 }
 
 NavStokes {

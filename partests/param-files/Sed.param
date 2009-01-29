@@ -83,7 +83,7 @@ Exp {
   PosDrop   =   0.5 0.5 0.5
   Gravity   =   0   -9.81   0
   FlowDir   =   1   # flow in y-direction
-  InflowVel =   0.001
+  InflowVel =   0.01
   RadInlet  =   2
 }
 
