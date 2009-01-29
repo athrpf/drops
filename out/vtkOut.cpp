@@ -418,9 +418,6 @@ void VTKOutCL::WriteTetra()
 #endif
             }
         }
-        if (binary_)
-            file_ << '\n';
-
 
         file_ << '\n' << "CELL_TYPES " << numTetras_ << '\n';
 
@@ -441,16 +438,23 @@ void VTKOutCL::WriteTetra()
 void VTKOutCL::WriteDistribution()
 {
     Uint tmp_counter=0;
-    file_ << '\n' << "CELL_DATA " << numTetras_ << '\n'
-          << "SCALARS distribution int 1 \nLOOKUP_TABLE default\n";
+    showInt sInt;
 
-    for (int p=0; p<ProcCL::Size(); ++p){
-        for (Uint t=procOffset_[p]; t<procOffset_[p+1]; ++t){
-            file_ << p << '\n';
-            tmp_counter++;
+    IF_MASTER{
+        file_ << '\n' << "CELL_DATA " << numTetras_ << '\n'
+            << "SCALARS distribution int 1 \nLOOKUP_TABLE default\n";
+        for (int p=0; p<ProcCL::Size(); ++p){
+            for (Uint t=procOffset_[p]; t<procOffset_[p+1]; ++t){
+                sInt.i= p;
+                if (binary_)
+                    file_.write( sInt.s, sizeof(int));
+                else
+                    file_ << p << '\n';
+                tmp_counter++;
+            }
         }
+        Assert(tmp_counter==numTetras_, DROPSErrCL("VTKOutCL::WriteDistribution: Wrong number of tetrahedra"), DebugOutPutC);
     }
-    Assert(tmp_counter==numTetras_, DROPSErrCL("VTKOutCL::WriteDistribution: Wrong number of tetrahedra"), DebugOutPutC);
 }
 #endif
 
@@ -532,7 +536,7 @@ void VTKOutCL::WriteValues(const VectorBaseCL<float>& allData, const std::string
                 if (i%6==5) file_ << '\n';
             }
         }
-        file_ << "\n\n";
+        file_ << "\n";
     }
 }
 
@@ -586,6 +590,7 @@ void VTKOutCL::Clear()
         eAddrMap_.clear();
 #else
         GIDAddrMap_.clear();
+        procOffset_.clear();
 #endif
         coords_.resize(0);
         tetras_.resize(0);

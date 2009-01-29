@@ -288,23 +288,24 @@ namespace DROPS
 *   all solvers, that can be used, but uses only the wanted one             *
 ****************************************************************************/
 template <typename Mat, typename Vec>
-void Solve(const Mat &A, Vec &x, const Vec &b, ExchangeCL &ExX)
+void Solve(const Mat &A, Vec &x, const Vec &b, IdxDescCL &idx)
 {
     ParTimerCL time;
     double duration[3];
 
     // Create preconditioner class
-    typedef ParDummyPcCL<ExchangeCL> PreCondT;
-    PreCondT precond(ExX);
+    typedef ParDummyPcCL PreCondT;
+    PreCondT precond(idx);
 
     // Create solver class
     bool relative=false, accure=true, mod4par=false, modGS=true;
-    typedef ParPreGMResSolverCL<PreCondT, ExchangeCL> SolverT;
-    SolverT solver_v1(C.restart, C.iter, C.tol, ExX, precond, relative, accure, modGS, RightPreconditioning, mod4par);
+    std::ostream* output=0;
+    typedef ParPreGMResSolverCL<PreCondT> SolverT;
+    SolverT solver_v1(C.restart, C.iter, C.tol, idx, precond, relative, accure, modGS, RightPreconditioning, mod4par, output);
     mod4par=true, modGS=true;
-    SolverT solver_v2(C.restart, C.iter, C.tol, ExX, precond, relative, accure, modGS, RightPreconditioning, mod4par);
+    SolverT solver_v2(C.restart, C.iter, C.tol, idx, precond, relative, accure, modGS, RightPreconditioning, mod4par, output);
     mod4par=true, modGS=false;
-    SolverT solver_v3(C.restart, C.iter, C.tol, ExX, precond, relative, accure, modGS, RightPreconditioning, mod4par);
+    SolverT solver_v3(C.restart, C.iter, C.tol, idx, precond, relative, accure, modGS, RightPreconditioning, mod4par, output);
 
     x=0.;
     time.Reset();
@@ -360,7 +361,6 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     VecDescCL vU, vA, vM, vf;
     MLMatDescCL* A= &Poisson.A; MLMatDescCL* M= &Poisson.M;
     MLMatDescCL* U= &Poisson.U;
-    ExchangeCL &ExX = Poisson.GetEx();
     MLMatrixCL AU, AUM;
 
     // Point 1
@@ -412,7 +412,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     // Solve
     if (ProcCL::IamMaster())
         std::cerr << line << std::endl;
-    Solve(AUM, x->Data, b->Data, ExX);
+    Solve(AUM, x->Data, b->Data, idx->GetFinest());
 
     // Point 4
     //--------

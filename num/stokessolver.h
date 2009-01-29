@@ -1,10 +1,6 @@
-//**************************************************************************
-// File:    stokessolver.h                                                 *
-// Content: solvers for the Stokes problem                                 *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-// Version: 0.1                                                            *
-// History: begin - Nov, 20 2001                                           *
-//**************************************************************************
+/// \file stokessolver.h
+/// \brief Solvers for the Stokes problem
+/// \author Volker Reichelt, Sven Gross, Joerg Grande, Patrick Esser, IGPM
 
 #ifndef DROPS_STOKESSOLVER_H
 #define DROPS_STOKESSOLVER_H
@@ -1361,7 +1357,7 @@ class VankaPreCL
     }
 
   public:
-    VankaPreCL (const MLIdxDescCL* idx= 0) : smoother_( 0, 1., idx), BVersion_( -1) {}
+    VankaPreCL (const MLIdxDescCL* idx= 0) : smoother_( 0, 1., idx), BVersion_( 0) {}
 
     void Setidx (const MLIdxDescCL* idx) { smoother_.Setidx( idx); }
 
@@ -1403,7 +1399,7 @@ class VankaSchurPreCL
 
   public:
     VankaSchurPreCL (const MLIdxDescCL* idx= 0)
-        : smoother_( 0, 1., idx), BVersion_( -1), M( 0, MUL, 0, TRANSP_MUL, 0, MUL) {}
+        : smoother_( 0, 1., idx), BVersion_( 0), M( 0, MUL, 0, TRANSP_MUL, 0, MUL) {}
 
     void Setidx (const MLIdxDescCL* idx)   { smoother_.Setidx( idx); }
     void SetAB   (const MatrixCL* A, const MatrixCL* B) { M.SetBlock( 0, A); M.SetBlock( 1, B); M.SetBlock( 2, B); }

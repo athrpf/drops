@@ -48,21 +48,13 @@ class StripTimeCL
 
 
 template <class Coeff>
-#ifndef _PAR
 class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL>
-#else
-class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL, ExchangeCL>
-#endif
 {
   private:
     bool adjoint_;
 
   public:
-#ifndef _PAR
     typedef ProblemCL<Coeff, InstatPoissonBndDataCL>       _base;
-#else
-    typedef ProblemCL<Coeff, InstatPoissonBndDataCL, ExchangeCL> _base;
-#endif
     typedef typename _base::BndDataCL                       BndDataCL;
     typedef typename _base::CoeffCL                         CoeffCL;
     using _base::GetBndData;
@@ -70,10 +62,6 @@ class InstatPoissonP1CL : public ProblemCL<Coeff, InstatPoissonBndDataCL, Exchan
     using _base::_BndData;
     using _base::_MG;
     using _base::_Coeff;
-#ifdef _PAR
-    using _base::ex_;
-    using _base::GetEx;
-#endif
 
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);

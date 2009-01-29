@@ -12,9 +12,11 @@
 
 #include "stokes/stokes.h"
 #include "num/MGsolver.h"
+#include "num/spblockmat.h"
 #ifdef _PAR
 # include "num/parprecond.h"
 # include "num/parsolver.h"
+# include "misc/problem.h"
 #endif
 
 namespace DROPS
@@ -245,9 +247,6 @@ class ISMGPreCL
 // Problem with Application to Generalized Stokes Interface Equations",
 // Olshanskii, Peters, Reusken, 2005
 //**************************************************************************
-#ifdef _PAR
-template <typename ExPressureT, typename ExVelocityT>
-#endif
 class ISBBTPreCL
 {
   private:
@@ -270,16 +269,15 @@ class ISBBTPreCL
     mutable PCGSolverCL<SPcT_>   solver_;
     mutable PCGSolverCL<JACPcCL> solver2_;
 #else
-    typedef ParDummyPcCL<ExPressureT>    PCSolver1T;            ///< type of the preconditioner for solver 1
-    typedef ParJac0CL<ExPressureT>       PCSolver2T;            ///< type of the preconditioner for solver 2
+    typedef ParDummyPcCL    PCSolver1T;                         ///< type of the preconditioner for solver 1
+    typedef ParJac0CL       PCSolver2T;                         ///< type of the preconditioner for solver 2
     PCSolver1T PCsolver1_;
     PCSolver2T PCsolver2_;
+    mutable ParPCGSolverCL<PCSolver1T> solver_;                 ///< solver for BB^T
+    mutable ParPCGSolverCL<PCSolver2T> solver2_;                ///< solver for M
 
-    mutable ParPCGSolverCL<PCSolver1T, ExPressureT> solver_;    ///< solver for BB^T
-    mutable ParPCGSolverCL<PCSolver2T, ExPressureT> solver2_;   ///< solver for M
-
-    const ExPressureT& exP_;                                    ///< transfering pressure unknowns
-    const ExVelocityT& exV_;                                    ///< transfering velocity unknowns
+    const IdxDescCL& pr_idx_;                                   ///< Accessing ExchangeCL for pressure
+    const IdxDescCL& vel_idx_;                                  ///< Accessing ExchangeCL for velocity
 #endif
     void Update () const;                                       ///< Updating the diagonal matrices D and Dprsqrtinv
 
@@ -303,24 +301,24 @@ class ISBBTPreCL
           solver2_( jacpc_, 50, tolM_, /*relative*/ true) {}
 #else
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
-        ExPressureT& exP, ExVelocityT& exV,
+        const IdxDescCL& pr_idx, const IdxDescCL& vel_idx,
         double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
-        : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL, exV, exP),
+        : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL, vel_idx, pr_idx),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
-          PCsolver1_( exP), PCsolver2_(exP),
-          solver_( 800, tolA_, exP, PCsolver1_, /*relative*/ true, /*accure*/ true),
-          solver2_( 50, tolM_, exP, PCsolver2_, /*relative*/ true),
-          exP_(exP), exV_(exV) {}
+          PCsolver1_( pr_idx), PCsolver2_(pr_idx),
+          solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
+          solver2_( 50, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
+          pr_idx_(pr_idx), vel_idx_(vel_idx) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
-          Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.exV_, pc.exP_),
+          Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.vel_idx_, pc.pr_idx_),
           M_( pc.M_), Mvel_( pc.Mvel_),
           kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
           Dprsqrtinv_( pc.Dprsqrtinv_),
-          PCsolver1_( PCsolver1_.GetEx()), PCsolver2_(PCsolver2_.GetEx()),
-          solver_( 800, tolA_, PCsolver1_.GetEx(), PCsolver1_, /*relative*/ true, /*accure*/ true),
-          solver2_( 50, tolM_, PCsolver1_.GetEx(), PCsolver2_, /*relative*/ true),
-          exP_(pc.exP_), exV_(pc.exV_){}
+          PCsolver1_( pc.pr_idx_), PCsolver2_( pc.pr_idx_),
+          solver_( 800, tolA_, pc.pr_idx_, PCsolver1_, /*relative*/ true, /*accure*/ true),
+          solver2_( 50, tolM_, pc.pr_idx_, PCsolver2_, /*relative*/ true),
+          pr_idx_( pc.pr_idx_), vel_idx_( pc.vel_idx_) {}
 
     /// \name Parallel preconditioner setup ...
     //@{
@@ -349,14 +347,8 @@ class ISBBTPreCL
     }
 };
 
-#ifndef _PAR
 template <typename Mat, typename Vec>
 void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
-#else
-template <typename ExPressureT, typename ExVelocityT>
-template <typename Mat, typename Vec>
-void ISBBTPreCL<ExPressureT, ExVelocityT>::Apply(const Mat&, Vec& p, const Vec& c) const
-#endif
 {
     if (B_->Version() != Bversion_)
         Update();
@@ -390,29 +382,6 @@ void ISBBTPreCL<ExPressureT, ExVelocityT>::Apply(const Mat&, Vec& p, const Vec& 
         p+= kM_*p2_;
     }
 }
-
-#ifdef _PAR
-template <typename ExPressureT, typename ExVelocityT>
-void ISBBTPreCL<ExPressureT, ExVelocityT>::Update() const
-{
-    delete Bs_;
-    Bs_= new MatrixCL( *B_);
-    Bversion_= B_->Version();
-
-    BBT_.SetBlock0( Bs_);
-    BBT_.SetBlock1( Bs_);
-
-    VectorCL Dvelinv( 1.0/ exV_.GetAccumulate(Mvel_->GetDiag()));
-    ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
-
-    VectorCL Dprsqrt( std::sqrt( exP_.GetAccumulate( M_->GetDiag())));
-    Dprsqrtinv_.resize( M_->num_rows());
-    Dprsqrtinv_= 1.0/Dprsqrt;
-
-    ScaleRows( *Bs_, Dprsqrtinv_);
-    // Skipp computing diag of BB^T
-}
-#endif
 
 //**************************************************************************
 // Preconditioner for the instationary (Navier-) Stokes-equations.

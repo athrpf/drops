@@ -34,7 +34,7 @@ class StokesSolverFactoryBaseCL
   protected:
     StokesT& Stokes_;           ///< Stokes problem
     ParamsT& C_;                ///< Parameter for tolerances, iteration number, type of solver, ...
-    int      SPc_,              ///< type of preconditioner for S 
+    int      SPc_,              ///< type of preconditioner for S
              APc_,              ///< type of preconditioner for A-block
              OseenSolver_;      ///< type of Oseen solver
 
@@ -75,6 +75,7 @@ class StokesSolverFactoryHelperCL
     }
 };
 
+#ifndef _PAR
 /*******************************************************************
 *   S t o k e s S o l v e r F a c t o r y  C L                     *
 ********************************************************************/
@@ -535,5 +536,124 @@ ProlongationPT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prolon
     }
     return 0;
 }
+
+#else // parallel part
+
+/// \brief Structure that contains all neccessary parameter for the
+///     ParStokesSolverFactoryCL
+/** See documentation of parameter classes for detailed information*/
+struct StokesSolverParamST
+{
+    int StokesMethod;
+    int num_steps;
+    double dt;
+    int outer_iter;
+    double outer_tol;
+    int inner_iter;
+    double inner_tol;
+    int pcA_iter;
+    double pcA_tol;
+    double pcS_tol;
+    double theta;
+
+    /// \brief Constructor which copies all values out of a parameter class
+    ///   into this parameter class
+    template <typename ParamT>
+    StokesSolverParamST(const ParamT& C)
+      : StokesMethod(C.StokesMethod), num_steps(C.num_steps), dt(C.dt),
+        outer_iter(C.outer_iter), outer_tol(C.outer_tol),
+        inner_iter(C.inner_iter), inner_tol(C.inner_tol),
+        pcA_iter(C.pcA_iter), pcA_tol(C.pcA_tol), pcS_tol(C.pcS_tol),
+        theta(C.theta)
+    {}
+};
+
+
+/*******************************************************************
+*   P a r S t o k e s S o l v e r F a c t o r y  C L               *
+********************************************************************/
+/// \brief Factory for producing parallel stokes solver
+template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
+class ParStokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
+{
+  private:
+    typedef StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT> base_;
+    using base_::Stokes_;
+    using base_::C_;
+    using base_::OseenSolver_;
+    using base_::APc_;
+    using base_::SPc_;
+    double kA_, kM_;
+
+// generic preconditioners
+    ParDummyPcCL DummyPrPc_;
+    ParDummyPcCL DummyVelPc_;
+    ParJac0CL    JACPrPc_;
+    ParJac0CL    JACVelPc_;
+
+// PC for instat. Schur complement
+    ISBBTPreCL      bbtispc_;
+
+// PC for A-block
+    //JAC-GMRes
+    typedef ParPreGMResSolverCL<ParJac0CL> GMResSolverT; GMResSolverT GMResSolver_;
+    typedef SolverAsPreCL<GMResSolverT>    GMResPcT;     GMResPcT GMResPc_;
+
+    //JAC-PCG
+    typedef ParPCGSolverCL<ParJac0CL> PCGSolverT; PCGSolverT PCGSolver_;
+    typedef SolverAsPreCL<PCGSolverT> PCGPcT;     PCGPcT PCGPc_;
+
+  public:
+    ParStokesSolverFactoryCL( StokesT& Stokes, ParamsT& C);
+    ~ParStokesSolverFactoryCL() {}
+
+    /// Nothing is to be done in parallel, because special preconditioners does not exist
+    void       SetMatrixA ( const MatrixCL*)  {};
+    /// Nothing is to be done in parallel, because special preconditioners does not exist
+    void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*){}
+    /// Nothing is to be done in parallel, because special preconditioners does not exist
+    ProlongationVelT* GetPVel() { return 0; }
+    /// Nothing is to be done in parallel, because special preconditioners does not exist
+    ProlongationPT*   GetPPr()  { return 0; }
+    /// Returns a stokes solver with specifications from ParamsT C
+    StokesSolverBaseCL* CreateStokesSolver();
+};
+
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+  ParStokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::ParStokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
+    : base_(Stokes, C),
+      kA_(C_.num_steps != 0 ? 1.0/C_.dt : 0.0), // C_.num_steps == 0: stat. problem
+      kM_(C_.theta),
+      DummyPrPc_( Stokes.pr_idx.GetFinest()), DummyVelPc_( Stokes.vel_idx.GetFinest()),
+      JACPrPc_( Stokes.pr_idx.GetFinest()), JACVelPc_( Stokes.vel_idx.GetFinest()),
+      bbtispc_ ( Stokes_.B.Data.GetFinestPtr(), Stokes_.prM.Data.GetFinestPtr(), Stokes_.M.Data.GetFinestPtr(),
+                 Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), kA_, kM_, C_.pcS_tol, C_.pcS_tol),
+      GMResSolver_(/*restart*/ 100, C_.pcA_iter, C_.pcA_tol, Stokes.vel_idx.GetFinest(), JACVelPc_,
+                   /*rel*/ true, /*accure*/ true, /*ModGS*/ false), GMResPc_( GMResSolver_),
+      PCGSolver_(C_.pcA_iter, C_.pcA_tol, Stokes.vel_idx.GetFinest(), JACVelPc_,
+                 /*rel*/ true, /*acc*/ true), PCGPc_(PCGSolver_)
+    {}
+
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+  StokesSolverBaseCL* ParStokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::CreateStokesSolver()
+{
+    StokesSolverBaseCL* stokessolver = 0;
+    switch (C_.StokesMethod)
+    {
+        case 20301 :
+            stokessolver = new ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM>
+                        ( PCGPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
+                          C_.outer_iter, C_.outer_tol, C_.inner_tol);
+        break;
+        case 20401 :
+            stokessolver = new ParInexactUzawaCL<GMResPcT, ISBBTPreCL, APC_OTHER>
+                        ( GMResPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
+                          C_.outer_iter, C_.outer_tol, C_.inner_tol);
+        break;
+        default: throw DROPSErrCL("Unknown StokesMethod");
+    }
+    return stokessolver;
+}
+#endif
 
 } // end of namespace DROPS

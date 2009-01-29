@@ -39,33 +39,33 @@ bool ParInexactUzawa(const Mat& A, const Mat& B, Vec& xu_acc, Vec& xp_acc, const
 // ***************************************************************************
 /// \brief Parallel base solver class for Stokes problems
 // ***************************************************************************
-template <typename ApcT, typename SpcT, typename ExVCL, typename ExPCL>
+template <typename ApcT, typename SpcT>
 class ParStokesSolverBaseCL : public StokesSolverBaseCL
 {
   protected:
     typedef StokesSolverBaseCL base;// base class
 
-    ExVCL* exV_;                    // exchange velocity
-    ExPCL* exP_;                    // exchange pressure
+    const IdxDescCL& vel_idx_;      // accessing ExchangeCL for velocity
+    const IdxDescCL& pr_idx_;       // accessing ExchangeCL for pressure
     ApcT*  Apc_;                    // preconditioner for A
     SpcT*  Spc_;                    // preconditioner for Schurcomplement
 
   public:
-    ParStokesSolverBaseCL(int maxiter, double tol, ExVCL& exv, ExPCL& exp, ApcT& apc, SpcT& spc)
-      : base(maxiter, tol), exV_(&exv), exP_(&exp), Apc_(&apc), Spc_(&spc)
+    ParStokesSolverBaseCL(int maxiter, double tol, const IdxDescCL& vel_idx,
+                          const IdxDescCL& pr_idx, ApcT& apc, SpcT& spc,
+                          std::ostream* output= 0)
+      : base(maxiter, tol, /*rel*/false, output), vel_idx_(vel_idx), pr_idx_(pr_idx), Apc_(&apc), Spc_(&spc)
         /// \param maxiter maximal iterations
         /// \param tol     tolerance for residual
-        /// \param exv     exchange class for velocity
-        /// \param exp     exchange class for pressure
+        /// \param vel_idx index describtion for accessing the ExchangeCL for velocity
+        /// \param pr_idx  index describtion for accessing the ExchangeCL for pressure
         /// \param apc     preconditioner for A-block
         /// \param spc     preconditioner for Schur complement matrix
+        /// \param output  give output
     {}
 
-    ExVCL& GetExV()                { return *exV_; }    ///< return reference on exchange class for velocities
-    const ExVCL& GetExV() const    { return *exV_; }    ///< return constant reference on exchange class for velocities
-
-    ExPCL& GetExP()                { return *exP_; }    ///< return reference on exchange class for pressures
-    const ExPCL& GetExP() const    { return *exP_; }    ///< return constant reference on exchange class for pressures
+    const ExchangeCL& GetExV() const    { return vel_idx_.GetEx(); }    ///< return constant reference on exchange class for velocities
+    const ExchangeCL& GetExP() const    { return pr_idx_.GetEx(); }     ///< return constant reference on exchange class for pressures
 
     ApcT& GetInnerPC()             { return *Apc_; }    ///< return reference on inner preconditioner
     const ApcT& GetInnerPC() const { return *Apc_; }    ///< return constant reference on inner preconditioner
@@ -78,23 +78,22 @@ class ParStokesSolverBaseCL : public StokesSolverBaseCL
 // ***************************************************************************
 /// \brief Parallel preconditioned inexact Uzawa class
 // ***************************************************************************
-template <typename ApcT, typename SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER,
-          typename ExVCL=ExchangeCL, typename ExPCL=ExchangeCL>
-class ParInexactUzawaCL : public ParStokesSolverBaseCL<ApcT, SpcT, ExVCL, ExPCL>
+template <typename ApcT, typename SpcT, InexactUzawaApcMethodT ApcMeth= APC_OTHER>
+class ParInexactUzawaCL : public ParStokesSolverBaseCL<ApcT, SpcT>
 {
   private:
-    typedef ParStokesSolverBaseCL<ApcT, SpcT, ExVCL, ExPCL> base;
+    typedef ParStokesSolverBaseCL<ApcT, SpcT> base;
 
     double innerreduction_;     // reduction
     int    innermaxiter_;       // maximal inner iterations
     int    inneriter_;          // number of inneritter (accumulated)
-    std::ostream* output_;      // for output
 
   public:
-      ParInexactUzawaCL(ApcT& Apc, SpcT& Spc, ExVCL& exv, ExPCL& exp, int outer_iter, double outer_tol,
+      ParInexactUzawaCL(ApcT& Apc, SpcT& Spc, const IdxDescCL& vel_idx, const IdxDescCL& pr_idx,
+                        int outer_iter, double outer_tol,
                         double innerreduction= 0.3, int innermaxiter= 500, std::ostream* output= 0)
-      : base( outer_iter, outer_tol, exv, exp, Apc, Spc),
-        innerreduction_( innerreduction), innermaxiter_( innermaxiter), inneriter_(0), output_(output)
+      : base( outer_iter, outer_tol, vel_idx, pr_idx, Apc, Spc, output),
+        innerreduction_( innerreduction), innermaxiter_( innermaxiter), inneriter_(0)
     {}
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
@@ -105,8 +104,10 @@ class ParInexactUzawaCL : public ParStokesSolverBaseCL<ApcT, SpcT, ExVCL, ExPCL>
         base::_res=  base::_tol;
         base::_iter= base::_maxiter;
         inneriter_ = 0;
-        ParInexactUzawa( A, B, v, p, b, c, *base::exV_, *base::exP_, *base::Apc_,
-                      *base::Spc_, base::_iter, base::_res, inneriter_, ApcMeth, innerreduction_, innermaxiter_, true, output_);
+        ParInexactUzawa( A, B, v, p, b, c, base::GetExV(), base::GetExP(), *base::Apc_,
+                         *base::Spc_, base::_iter, base::_res, inneriter_, ApcMeth, innerreduction_,
+                         innermaxiter_, true, base::output_
+                       );
     }
 
     void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
@@ -115,8 +116,10 @@ class ParInexactUzawaCL : public ParStokesSolverBaseCL<ApcT, SpcT, ExVCL, ExPCL>
         base::_res=  base::_tol;
         base::_iter= base::_maxiter;
         inneriter_ = 0;
-        ParInexactUzawa( A, B, v, p, b, c, *base::exV_, *base::exP_, *base::Apc_,
-                      *base::Spc_, base::_iter, base::_res, inneriter_, ApcMeth, innerreduction_, innermaxiter_, true, output_);
+        ParInexactUzawa( A, B, v, p, b, c, base::GetExV(), base::GetExP(), *base::Apc_,
+                         *base::Spc_, base::_iter, base::_res, inneriter_, ApcMeth,
+                         innerreduction_, innermaxiter_, true, base::output_
+                       );
     }
 
     int GetInnerIter()    const  { return inneriter_; }

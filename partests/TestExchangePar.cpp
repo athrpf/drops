@@ -527,45 +527,20 @@ bool CheckIdxMapping(const DROPS::MultiGridCL& mg, DROPS::MLIdxDescCL* idxDesc, 
 }
 
 /// \brief Create lists for ExchangeCL and do (if wished) time meassurements
-void CreateExchangeCL(const MultiGridCL& mg, ExchangeCL& ex1, ExchangeCL& ex2, ExchangeCL& exXfem,
-                      MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
+void CreateExchangeCL(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
     if (C.tests){
         ParTimerCL time;
         if (ProcCL::IamMaster())
-            std::cout << "   - Timemeasurement for creating Exchange lists for Index 1..."<<'\n'
-                      << "     + pure"<<'\n'
-                      << "     + with index mapping"<<'\n'
-                      << "     + with accumulated indices"<<std::endl;
+            std::cout << "   - Timemeasurement for creating Exchange lists (and create numbering) for Index 1..."<<'\n';
         // pure
         time.Reset();
         for (int i=0; i<C.tests; ++i){
             time.Start();
-            ex1.CreateList(mg, idx1, false, false);
+            idx1->GetFinest().CreateNumbering(mg.GetLastLevel(), mg);
             time.Stop();
-            ex1.clear();
         }
         ::Times.AddTime(Ex_Create, time.GetMaxTime()*100./(double)C.tests);
-
-        // with index mapping
-        time.Reset();
-        for (int i=0; i<C.tests; ++i){
-            time.Start();
-            ex1.CreateList(mg, idx1, true, false);
-            time.Stop();
-            ex1.clear();
-        }
-        ::Times.AddTime(Ex_Create_Map, time.GetMaxTime()*100./(double)C.tests);
-
-        // with accumulated indices
-        time.Reset();
-        for (int i=0; i<C.tests; ++i){
-            time.Start();
-            ex1.CreateList(mg, idx1, true, true);
-            time.Stop();
-            ex1.clear();
-        }
-        ::Times.AddTime(Ex_Create_Acc, time.GetMaxTime()*100./(double)C.tests);
     }
 
     if (ProcCL::IamMaster())
@@ -573,35 +548,34 @@ void CreateExchangeCL(const MultiGridCL& mg, ExchangeCL& ex1, ExchangeCL& ex2, E
 
     if (ProcCL::IamMaster())
         std::cout <<  "     + 1. Exchange-Listen ... " << std::endl;
-    ex1.CreateList(mg,idx1,true,true);
+    idx1->GetFinest().CreateNumbering(mg.GetLastLevel(), mg);
     if (ProcCL::IamMaster())
         std::cout <<  "     + 2. Exchange-Listen ... " << std::endl;
-    ex2.CreateList(mg,idx2,true, true);
-    if (ProcCL::IamMaster())
-        std::cout <<  "     + 3. Exchange-Listen ... " << std::endl;
-    exXfem.CreateList(mg,xidx,true, true);
+    idx1->GetFinest().CreateNumbering(mg.GetLastLevel(), mg);
 
     if (C.printEx){
-        PrintExchange(ex1);
-        PrintExchange(ex2);
-        PrintExchange(exXfem);
+        PrintExchange(idx1->GetEx());
+        PrintExchange(idx2->GetEx());
+        PrintExchange(xidx->GetEx());
     }
 
     if (C.printMsgSize)
     {
         if (ProcCL::IamMaster()) std::cout << "  Größe der Nachrichten zwischen den Prozessoren\n  Für Index 1:\n";
-        ex1.SizeInfo(std::cout);
+        idx1->GetEx().SizeInfo(std::cout);
         if (ProcCL::IamMaster()) std::cout << "  Für Index 2:\n";
-        ex2.SizeInfo(std::cout);
+        idx2->GetEx().SizeInfo(std::cout);
         if (ProcCL::IamMaster()) std::cout << "  Für XFEM-Index:\n";
-        exXfem.SizeInfo(std::cout);
+        xidx->GetEx().SizeInfo(std::cout);
     }
 }
 
 /// \brief Check if ExchangeCL send and accumulate correct
-bool TestCorrectnessExchangeCL(MultiGridCL& mg, const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeCL& exXfem,
-                               MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
+bool TestCorrectnessExchangeCL(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
+    const ExchangeCL& ex1= idx1->GetEx();
+    const ExchangeCL& ex2= idx2->GetEx();
+    const ExchangeCL& exXfem= xidx->GetEx();
     if (ProcCL::IamMaster())
         std::cout << "   - Checke auf Richtigkeit (2 Mal) ... " << '\n'
                   << "     + Setze die GID als Werte auf die Knoten, Edges und Tetras" << '\n'
@@ -637,9 +611,11 @@ bool TestCorrectnessExchangeCL(MultiGridCL& mg, const ExchangeCL& ex1, const Exc
 }
 
 /// \brief Test if Sysnums on other procs can be computed correct
-bool TestSysnumComputation(MultiGridCL& mg, const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeCL& exXfem,
-                           MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
+bool TestSysnumComputation(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLIdxDescCL* xidx)
 {
+    const ExchangeCL& ex1= idx1->GetEx();
+    const ExchangeCL& ex2= idx2->GetEx();
+    const ExchangeCL& exXfem= xidx->GetEx();
     if (ProcCL::IamMaster())
         std::cout << "   - Checke die Berechnung von Sysnums auf anderen Prozessoren:\n";
 
@@ -948,7 +924,8 @@ double DistanceFct( const DROPS::Point3DCL& p)
 /// \brief Test ExchangeCL and ExchangeBlockCL
 /** This function tests the creating and functionality of ExchangeCL and
     ExchangeBlockCL. If wished, also time measurements are made. We are using
-    P1- and P2-FEs to test the ExchangeCL.
+    P1-, P2- and P1X-FEs to test the ExchangeCL.
+    /// \todo BlockExchangeCL testen
 */
 void Strategy(ParMultiGridCL &pmg)
 {
@@ -977,7 +954,6 @@ void Strategy(ParMultiGridCL &pmg)
     idx1.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
     idx2.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
     xfemidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
-std::cout << "[" << ProcCL::MyRank() << "] " << xfemidx.NumUnknowns() << " Unbekannte, davon " << xfemidx.NumUnknowns() - xfemidx.GetFinest().GetXidx().GetNumUnknownsStdFE() << " erweitert\n";
 
     // Setzte Indices auf die Vector-Describer
 //     x1.SetIdx(&idx1);  pmg.AttachTo( 0, &Bnd);
@@ -994,11 +970,11 @@ std::cout << "[" << ProcCL::MyRank() << "] " << xfemidx.NumUnknowns() << " Unbek
         std::cout << line << std::endl << " * Teste ExchangeCL"<< std::endl;
 
     ExchangeCL Ex1, Ex2, ExXfem;
-    CreateExchangeCL(mg, Ex1, Ex2, ExXfem, &idx1, &idx2, &xfemidx);
-    TestCorrectnessExchangeCL(mg, Ex1, Ex2, ExXfem, &idx1, &idx2, &xfemidx);
-    TestSysnumComputation(mg, Ex1, Ex2, ExXfem, &idx1, &idx2, &xfemidx);
-return;
+    CreateExchangeCL(mg, &idx1, &idx2, &xfemidx);
+    TestCorrectnessExchangeCL(mg, &idx1, &idx2, &xfemidx);
+    TestSysnumComputation(mg, &idx1, &idx2, &xfemidx);
 
+return;
     if (ProcCL::IamMaster())
         std::cout << line << std::endl << " * Teste ExchangeBlockCL" << std::endl;
 

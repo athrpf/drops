@@ -13,8 +13,10 @@
 /// \author Oliver Fortmeier
 /// \file exchange.cpp
 
-#include "parallel/exchange.h"
-#include "parallel/parmultigrid.h"
+#ifdef _PAR
+#  include "parallel/exchange.h"
+#  include "parallel/parmultigrid.h"
+#endif
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -86,7 +88,7 @@ ExchangeCL::SendList2ProcT ExchangeCL::SendList_     = ExchangeCL::SendList2Proc
 ExchangeCL::RecvSysnumCT   ExchangeCL::RecvSysnums_  = ExchangeCL::RecvSysnumCT();
 ExchangeCL::MappingIdxCT   ExchangeCL::tmpMappingIdx_= ExchangeCL::MappingIdxCT();
 ExchangeCL::SysnumProcCT   ExchangeCL::tmpSysProc_   = ExchangeCL::SysnumProcCT();
-IdxDescCL*               ExchangeCL::RowIdx_         = 0;
+IdxDescCL*                 ExchangeCL::RowIdx_       = 0;
 int                        ExchangeCL::maxNeighs_    = 0;
 
 ExchangeCL::ExchangeCL()

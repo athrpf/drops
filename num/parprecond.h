@@ -22,6 +22,7 @@
 #include "parallel/exchange.h"
 #include "num/spmat.h"
 #include "num/solver.h"
+#include "misc/problem.h"
 
 namespace DROPS
 {
@@ -45,23 +46,25 @@ void SSOR0(const Mat& A, const Vec& Diag, Vec& x, const Vec& b, const double ome
 // ***************************************************************************
 /// \brief Base class for parallel preconditioning classes
 // ***************************************************************************
-template <typename ExCL>
 class ParPreconditioningBaseCL
 /** This class can be used as a base class for parallel preconditioners.
-    Therefore this class stores a pointer to an ExchangeCL. This is usefull,
-    so this class can create an accumulated diagonal out of a matrix by its
-    own. This diagonal is only created, if the corresponding matrix has been
+    Therefore this class stores a reference to an IdxDescCL to get a reference
+    to the ExchangeCL. Since, the index within the problem classes are lying all
+    the time at the same position in memory, we store a reference to the
+    IdxDescCL instead of storing a reference to the ExchanegCL.
+    This class can create an accumulated diagonal out of a matrix by its own.
+    This diagonal is only created, if the corresponding matrix has been
     changed.*/
 {
   protected:
-    ExCL*    ex_;                       ///< exchanging numerical values
-    VectorCL diag_;                     ///< accumulated diagonal of corresponding matrix
-    size_t   mat_version_;              ///< version of the corresponding matrix
-    bool     check_mat_version_;         ///< check matrix version before apply preconditioning (only if DebugNumericC is set)
+    const IdxDescCL& idx_;                ///< index for accessing the ExchangeCL
+    VectorCL   diag_;                     ///< accumulated diagonal of corresponding matrix
+    size_t     mat_version_;              ///< version of the corresponding matrix
+    bool       check_mat_version_;        ///< check matrix version before apply preconditioning (only if DebugNumericC is set)
 
   public:
-    ParPreconditioningBaseCL(ExCL& ex)
-      : ex_(&ex), diag_(0), mat_version_(0), check_mat_version_(true) {}
+    ParPreconditioningBaseCL(const IdxDescCL& idx)
+      : idx_(idx), diag_(0), mat_version_(0), check_mat_version_(true) {}
     // default c-tor and de-tor
 
     /// \brief Set accumulated diagonal of a matrix, that is needed by most of the preconditioners
@@ -76,7 +79,7 @@ class ParPreconditioningBaseCL
             diag_.resize(A.num_rows());
         // accumulate diagonal of the matrix
         diag_= A.GetDiag();
-        ex_->Accumulate(diag_);
+        GetEx().Accumulate(diag_);
         // remeber version of the matrix
         mat_version_= A.Version();
     }
@@ -90,7 +93,7 @@ class ParPreconditioningBaseCL
     /// \brief Get reference on accumulated diagonal of corresponding matrix
     VectorCL&       GetDiag()       { return diag_; }
     /// \brief Get constant reference on exchange class
-    const ExCL& GetEx() const { return *ex_; }
+    const ExchangeCL& GetEx() const { return idx_.GetEx(); }
     /// \brief Check matrix version before apply preconditioner in Debug-Mode (DebugNumericC) default
     void CheckMatVersion() { check_mat_version_=true; }
     /// \brief Don't check matrix version before apply preconditioner
@@ -100,14 +103,13 @@ class ParPreconditioningBaseCL
 // ***************************************************************************
 /// \brief Class for performing a preconditioning step with the identity matrix
 // ***************************************************************************
-template <typename ExCL>
-class ParDummyPcCL : public ParPreconditioningBaseCL<ExCL>
+class ParDummyPcCL : public ParPreconditioningBaseCL
 {
   private:
-    typedef ParPreconditioningBaseCL<ExCL> base_;
+    typedef ParPreconditioningBaseCL base_;
 
   public:
-    ParDummyPcCL(ExCL& ex) : base_(ex) {}
+    ParDummyPcCL(const IdxDescCL& idx) : base_(idx) {}
 
     /// \brief Check if return preconditioned vectors are accumulated after calling Apply
     bool RetAcc()   const { return false; }
@@ -138,11 +140,10 @@ class ParDummyPcCL : public ParPreconditioningBaseCL<ExCL>
 // ***************************************************************************
 /// \brief Class for performing one Step of the Jacobi-Iteration
 // ***************************************************************************
-template <typename ExCL>
-class ParJacCL : public ParPreconditioningBaseCL<ExCL>
+class ParJacCL : public ParPreconditioningBaseCL
 {
-  private:
-    typedef ParPreconditioningBaseCL<ExCL> base_;
+  protected:
+    typedef ParPreconditioningBaseCL base_;
     using base_::diag_;
     using base_::mat_version_;
     using base_::check_mat_version_;
@@ -151,7 +152,7 @@ class ParJacCL : public ParPreconditioningBaseCL<ExCL>
     double  omega_;                                 // overrelaxion-parameter
 
   public:
-    ParJacCL (ExCL& ex, double omega=1) : base_(ex), omega_(omega) {}
+    ParJacCL (const IdxDescCL& idx, double omega=1) : base_(idx), omega_(omega) {}
 
     /// \brief Check if return preconditioned vectors are accumulated after calling Apply
     bool RetAcc() const   { return false; }
@@ -174,11 +175,10 @@ class ParJacCL : public ParPreconditioningBaseCL<ExCL>
 // ********************************************************************************
 /// \brief Class for performing one Step of the Jacobi-Iteration with startvector 0
 // ********************************************************************************
-template <typename ExCL>
-class ParJac0CL : public ParJacCL<ExCL>
+class ParJac0CL : public ParJacCL
 {
-  private:
-    typedef ParJacCL<ExCL> base_;
+  protected:
+    typedef ParJacCL base_;
     using base_::mat_version_;
     using base_::diag_;
     using base_::omega_;
@@ -186,7 +186,7 @@ class ParJac0CL : public ParJacCL<ExCL>
 
   public:
 
-    ParJac0CL (ExCL &ex, double omega=1) : base_(ex, omega) {}
+    ParJac0CL (const IdxDescCL& idx, double omega=1) : base_(idx, omega) {}
 
     /// \brief Apply preconditioner: one step of the Jacobi-iteration with start vector 0
     template <typename Mat, typename Vec>
@@ -195,7 +195,7 @@ class ParJac0CL : public ParJacCL<ExCL>
         Assert(mat_version_==A.Version() || !check_mat_version_,
                DROPSErrCL("ParJac0CL::Apply: Diagonal of actual matrix has not been set"),
                DebugNumericC);
-        Jacobi0(A,diag_, x, b, omega_, std::fabs(omega_-1.)>DoubleEpsC);
+        Jacobi0(A, diag_, x, b, omega_, std::fabs(omega_-1.)>DoubleEpsC);
     }
 
     /// \brief Apply preconditioner of A^T: one step of the Jacobi-iteration with start vector 0
@@ -212,18 +212,17 @@ class ParJac0CL : public ParJacCL<ExCL>
 // ********************************************************************************
 /// \brief Class for performing one Step of the Jacobi-Iteration with startvector 0 and own matrix
 // ********************************************************************************
-template <typename ExCL>
-class ParJac0OwnMatCL : public ParJac0CL<ExCL>
+class ParJac0OwnMatCL : public ParJac0CL
 {
   private:
-    typedef ParJac0CL<ExCL> base_;
+    typedef ParJac0CL base_;
     using base_::mat_version_;
     using base_::diag_;
     using base_::omega_;
     using base_::check_mat_version_;
 
   public:
-    ParJac0OwnMatCL (ExCL &ex, double omega=1) : base_(ex, omega) {}
+    ParJac0OwnMatCL (const IdxDescCL& idx, double omega=1) : base_(idx, omega) {}
 
     /// \brief Apply preconditioner: one step of the Jacobi-iteration with start vector 0
     template <typename Mat, typename Vec>
@@ -257,15 +256,13 @@ class ParJac0OwnMatCL : public ParJac0CL<ExCL>
 // ********************************************************************************
 /// \brief Class for performing an accumulation as preconditioning
 // ********************************************************************************
-template <typename ExCL>
-class ParAccPcCL : public ParDummyPcCL<ExCL>
+class ParAccPcCL : public ParDummyPcCL
 {
   private:
-    typedef ParDummyPcCL<ExCL> base_;
-    using base_::ex_;
+    typedef ParDummyPcCL base_;
 
   public:
-    ParAccPcCL(ExCL& ex) : base_(ex) {}
+    ParAccPcCL(const IdxDescCL& idx) : base_(idx) {}
 
     /// \brief Check if the diagonal of the matrix is needed
     bool NeedDiag() const { return false; }
@@ -276,25 +273,24 @@ class ParAccPcCL : public ParDummyPcCL<ExCL>
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec &x, const Vec& b) const
     {
-        x=ex_->GetAccumulate(b);
+        x= base_::GetEx().GetAccumulate(b);
     }
 };
 
 // ********************************************************************************
 /// \brief Class for performing one Step of the blocked inexact SSOR0 step
 // ********************************************************************************
-template <typename ExCL>
-class ParSSOR0CL : public ParJacCL<ExCL>
+class ParSSOR0CL : public ParJacCL
 {
   private:
-    typedef ParJacCL<ExCL> base_;
+    typedef ParJacCL base_;
     using base_::diag_;
     using base_::mat_version_;
     using base_::omega_;
     using base_::check_mat_version_;
 
   public:
-    ParSSOR0CL (ExCL& ex, double omega=1) : base_(ex, omega) {}
+    ParSSOR0CL (const IdxDescCL& idx, double omega=1) : base_(idx, omega) {}
 
     /// \brief Check if return preconditioned vectors are accumulated after calling Apply
     bool RetAcc() const { return false; }

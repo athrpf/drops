@@ -28,6 +28,7 @@
 #include "num/parsolver.h"
 #include "num/parprecond.h"
 #include "num/stokessolver.h"
+#include "num/parstokessolver.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -156,7 +157,7 @@ namespace DROPS // for Strategy
 template<class Coeff>
 void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 {
-    typedef StokesP2P1CL<Coeff> StokesT;
+    typedef StokesP2P1CL<Coeff> StokesProblemT;
     ParTimerCL timer;
     double duration;
     double t= 0.;
@@ -177,9 +178,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     MLMatDescCL* B= &Stokes.B;
     MLMatDescCL* M= &Stokes.M;
 
-    ExchangeBlockCL& Ex = Stokes.GetEx();
-    ExchangeCL&      ExV= Stokes.GetEx(Stokes.velocity);
-    ExchangeCL&      ExP= Stokes.GetEx(Stokes.pressure);
+    ExchangeCL&      ExV= Stokes.vel_idx.GetEx();
+    ExchangeCL&      ExP= Stokes.pr_idx.GetEx();
 
     vidx->SetFE( vecP2_FE);
     pidx->SetFE( P1_FE);
@@ -250,23 +250,33 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     Stokes.InitVel(v,&Null,0);
 
       // Preconditioner
-    typedef ParJac0CL<ExchangeCL> APcT;      APcT APc(ExV, C.relax);
-    typedef ParDummyPcCL<ExchangeCL> BPcT;   BPcT BPc(ExP);
-    typedef BlockPreCL<APcT, BPcT> OseenPCT; OseenPCT OseenPC(APc, BPc);
+//     typedef ParJac0CL<ExchangeCL> APcT;      APcT APc(ExV, C.relax);
+//     typedef ParDummyPcCL<ExchangeCL> BPcT;   BPcT BPc(ExP);
+//     typedef BlockPreCL<APcT, BPcT> OseenPCT; OseenPCT OseenPC(APc, BPc);
 
       // Base Solver for the Oseen problem
 //     typedef ParPreGCRSolverCL<OseenPCT, ExchangeBlockCL> OseenBaseSolT;
 //     OseenBaseSolT OseenBaseSol(C.restart,C.iter,C.tol, &Ex, OseenPC, false);
 
-    typedef ParPCGSolverCL<OseenPCT,ExchangeBlockCL> OseenBaseSolT;
-    OseenBaseSolT OseenBaseSol(C.outer_iter,C.outer_tol, Ex, OseenPC, C.relative, C.accur);
+//     typedef ParPCGSolverCL<OseenPCT,ExchangeBlockCL> OseenBaseSolT;
+//     OseenBaseSolT OseenBaseSol(C.outer_iter,C.outer_tol, Ex, OseenPC, C.relative, C.accur);
 
      // Solver for the stat. Stokes problem
-    typedef BlockMatrixSolverCL<OseenBaseSolT> SolverT;
-    SolverT Solver(OseenBaseSol);
+//     typedef BlockMatrixSolverCL<OseenBaseSolT> SolverT;
+//     SolverT Solver(OseenBaseSol);
+    typedef ParDummyPcCL SPcT;
+    SPcT ispc( Stokes.pr_idx.GetFinest());
+    typedef ParJac0CL  APcPcT;
+    APcPcT Apcpc( Stokes.vel_idx.GetFinest());
+    typedef ParPCGSolverCL<APcPcT> ASolverT;
+    ASolverT Asolver( 500, 0.02, Stokes.vel_idx.GetFinest(), Apcpc, /*relative=*/ true, /*accur*/ true);
+    typedef SolverAsPreCL<ASolverT> APcT;
+    APcT Apc( Asolver/*, &std::cerr*/);
+    typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
+    OseenSolverT Solver( Apc, ispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.outer_iter, C.outer_tol, 0.1);
 
       // Solver for the time integration
-    typedef InstatStokesThetaSchemeCL<StokesP2P1CL<Coeff>, SolverT> InstatSolverT;
+    typedef InstatStokesThetaSchemeCL<StokesP2P1CL<Coeff>, OseenSolverT> InstatSolverT;
     InstatSolverT instatsolver(Stokes, Solver, C.theta);
 
     instatsolver.SetTimeStep(dt);

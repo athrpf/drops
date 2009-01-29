@@ -148,16 +148,16 @@ namespace DROPS
 *   all solvers, that can be used, but uses only the wanted one             *
 ****************************************************************************/
 template <typename Mat, typename Vec>
-void Solve(const Mat &A, Vec &x, const Vec &b, ExchangeCL &ExX)
+void Solve(const Mat &A, Vec &x, const Vec &b, IdxDescCL& idx)
 {
     // Measure the used time for solving the linear equation system
     ParTimerCL time;
 
     // Definition and initialisation of GMRES-Solver with preconditioning
-    typedef ParJac0CL<ExchangeCL> PrecT;
-    PrecT PCJac(ExX, C.Relax);
-    ParPreGMResSolverCL<PrecT,ExchangeCL>
-        P_J_GMRESSolver(C.Restart, C.Iter, C.Tol, ExX, PCJac, false, true, C.UseMGS);
+    typedef ParJac0CL PrecT;
+    PrecT PCJac(idx, C.Relax);
+    ParPreGMResSolverCL<PrecT>
+        P_J_GMRESSolver(C.Restart, C.Iter, C.Tol, idx, PCJac, false, true, C.UseMGS);
 
     if (ProcCL::IamMaster())
         std::cout <<" Solve the linear system with GMRES("<<C.Restart<<"),"
@@ -233,9 +233,6 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     MLMatDescCL* U= &Poisson.U;
     MLMatrixCL AU, AUM;
 
-    // Communication class
-    ExchangeCL &ExX = Poisson.GetEx();
-
     // Point 1
     //--------
     // Create numbering of the unknowns according to P1 finite elements. The
@@ -274,7 +271,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     // Solve the linear equation system
     if (ProcCL::IamMaster())
         std::cout << line << std::endl;
-    Solve(AUM, T->Data, b->Data, ExX);
+    Solve(AUM, T->Data, b->Data, Poisson.idx.GetFinest());
 
 
     if (C.Ensight){

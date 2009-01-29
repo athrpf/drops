@@ -24,9 +24,6 @@ template <class Coeff>
 void StokesP2P1CL<Coeff>::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match)
 {
     idx->CreateNumbering( level, _MG, _BndData.Vel, match);
-#ifdef _PAR
-    ex_.CreateList(_MG, static_cast<size_t>(velocity), idx);
-#endif
 }
 
 
@@ -34,9 +31,6 @@ template <class Coeff>
 void StokesP2P1CL<Coeff>::CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match)
 {
     idx->CreateNumbering( level, _MG, _BndData.Pr, match);
-#ifdef _PAR
-    ex_.CreateList(_MG, static_cast<size_t>(pressure), idx);
-#endif
 }
 
 
@@ -839,8 +833,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     instat_vector_fun_ptr LsgVel, jacobi_fun_ptr DLsgVel, scalar_fun_ptr LsgPr) const
 {
 #ifdef _PAR
-    const ExchangeCL& exV = GetEx(velocity);
-    const ExchangeCL& exP = GetEx(pressure);
+    const ExchangeCL& exV = vel_idx.GetEx();
+    const ExchangeCL& exP = pr_idx.GetEx();
 #endif
     double mindiff=0, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel();

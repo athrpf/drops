@@ -11,6 +11,7 @@
 #include <vector>
 #include "misc/container.h"
 #include "num/spmat.h"
+#include "num/spblockmat.h"
 
 namespace DROPS
 {
@@ -486,7 +487,7 @@ class NEGSPcCL
     ///\brief If symmetric == false, this  performs a backward Gauss-Seidel step, else it is identical to Apply.
     template <typename Mat, typename Vec>
     void ApplyTranspose(const Mat& A, Vec& x, const Vec& b) const;
- 
+
     ///\brief Multiply with the preconditioning matrix -- needed for right preconditioning.
     template <typename Mat, typename Vec>
     Vec mul (const Mat& A, const Vec& b) const;
@@ -785,7 +786,7 @@ PCGNE(const Mat& A, Vec& u, const Vec& b, const PreCon& M,
             return true;
         }
         rho_1= rho;
-        rho= dot( z, r);      
+        rho= dot( z, r);
         qt= z + (rho/rho_1)*qt;
     }
     tol= resid;

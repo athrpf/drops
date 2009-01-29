@@ -87,6 +87,7 @@ class ExchangeDataCL
     void DebugInfo(std::ostream&) const;
 };
 
+class ExchangeBlockCL; // fwd declaration
 
 /****************************************************************************
 * E X C H A N G E  C L A S S                                                *
@@ -109,6 +110,9 @@ class ExchangeDataCL
 ****************************************************************************/
 class ExchangeCL
 {
+    friend class IdxDescCL;
+    friend class ExchangeBlockCL;
+
   public:
     typedef VectorBaseCL<Ulint>            IndexT;              ///< Type for storage for local and distributed sysnums
     typedef VectorBaseCL<ProcCL::RequestT> RequestCT;           ///< Type for storage Request for all neighbor procs
@@ -178,11 +182,6 @@ class ExchangeCL
     inline double AccurLocDotOneAcc_(const VectorCL&, const VectorCL&, VectorCL*) const;              // Accure inner product with already one accumulated vector
     inline double AccurLocDotBothAcc_(const VectorCL&, const VectorCL&, VectorCL*, VectorCL*) const;  // Accure inner product with two unaccumulated vectors
 
-  public:
-    ExchangeCL();                                                                       // just set the created-flag to false;
-    ~ExchangeCL();                                                                      // delete ExList
-    void clear();                                                                       // remove all information
-
     void CreateList(const MultiGridCL& mg, IdxDescCL *RowIdx,
                     bool CreateMap=true, bool CreateAccDist=true);                      // create communication lists to an index
 
@@ -190,6 +189,11 @@ class ExchangeCL
     void CreateList(const MultiGridCL& mg, MLIdxDescCL *RowIdx, bool CreateMap=true, bool CreateAccDist=true){
         CreateList(mg, RowIdx->GetFinestPtr(), CreateMap, CreateAccDist);
     }
+
+  public:
+    ExchangeCL();                                                                       // just set the created-flag to false;
+    ~ExchangeCL();                                                                      // delete ExList
+    void clear();                                                                       // remove all information
 
     /// \name Helper function for DDD, should be private ...
     //@{
@@ -266,6 +270,8 @@ extern "C" int HandlerScatterSysnumsVertexC(DDD_OBJ, void*);
 extern "C" int HandlerGatherSysnumsEdgeC(DDD_OBJ, void*);
 extern "C" int HandlerScatterSysnumsEdgeC(DDD_OBJ, void*);
 //@}
+
+
 
 /****************************************************************************
 * E X C H A N G E  B L O C K  C L A S S                                     *

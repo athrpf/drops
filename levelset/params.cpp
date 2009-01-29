@@ -15,18 +15,18 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( lset_theta,"ThetaLevelset");
     rp_.EndGroup();
 
+#ifndef _PAR
     rp_.BeginGroup("Stokes");
     rp_.RegInt( inner_iter,   "InnerIter");
     rp_.RegInt( outer_iter,   "OuterIter");
     rp_.RegDouble( inner_tol, "InnerTol");
     rp_.RegDouble( outer_tol, "OuterTol");
     rp_.RegInt( StokesMethod, "StokesMethod");
-#ifndef _PAR
     rp_.RegInt( pcA_iter,   "PcAIter");
     rp_.RegDouble( pcA_tol, "PcATol");
     rp_.RegDouble( pcS_tol, "PcSTol");
-#endif
     rp_.EndGroup();
+#endif
 
     rp_.BeginGroup("Levelset");
     rp_.RegInt( lset_iter,    "Iter");

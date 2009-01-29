@@ -178,11 +178,6 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     MLMatDescCL* A= &Stokes.A;
     MLMatDescCL* B= &Stokes.B;
 
-//     ExchangeBlockCL& Ex=Stokes.GetEx();
-    const Uint pressure=Stokes.pressure, velocity=Stokes.velocity;
-    ExchangeCL& ExP= Stokes.GetEx(pressure);
-    ExchangeCL& ExV= Stokes.GetEx(velocity);
-
     vidx->SetFE( vecP2_FE);
     pidx->SetFE( P1_FE);
 
@@ -198,10 +193,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     if (C.printInfo){
         if (ProcCL::IamMaster())
             std::cerr << "   + ExchangeCL size for velocity:\n";
-        Stokes.GetEx(velocity).SizeInfo(std::cerr);
+        Stokes.vel_idx.GetEx().SizeInfo(std::cerr);
         if (ProcCL::IamMaster())
             std::cerr << "\n   + ExchangeCL size for pressure:\n";
-        Stokes.GetEx(pressure).SizeInfo(std::cerr);
+        Stokes.vel_idx.GetEx().SizeInfo(std::cerr);
     }
 
     // Teile den numerischen Daten diese Nummerierung mit
@@ -235,15 +230,15 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 
     // Solver for Oseen-Problem
     // Preconditioner for A (must be quite exact, so use PCG)
-    typedef ParJac0CL<ExchangeCL> APcT;
-    APcT APc(ExV, C.relax);
-    ParPCGSolverCL<APcT, ExchangeCL> cgsolver(C.pc_iter, C.pc_rel_tol, ExV, APc, true, true);
-    typedef SolverAsPreCL<ParPCGSolverCL<APcT, ExchangeCL> > APcSolverT;
+    typedef ParJac0CL APcT;
+    APcT APc(Stokes.vel_idx.GetFinest());
+    ParPCGSolverCL<APcT> cgsolver(C.pcA_iter, C.pcA_tol, Stokes.vel_idx.GetFinest(), APc, true, true);
+    typedef SolverAsPreCL<ParPCGSolverCL<APcT> > APcSolverT;
     APcSolverT APcSolver(cgsolver);
     // Preconditioner for Schur-Complement
-    typedef ParDummyPcCL<ExchangeCL> SPcT; SPcT Spc(ExP);
+    typedef ParDummyPcCL SPcT; SPcT Spc(Stokes.pr_idx.GetFinest());
     ParInexactUzawaCL<APcSolverT, SPcT, APC_SYM>
-            symmSchurSolver(APcSolver, Spc, ExV, ExP, C.outer_iter, C.outer_tol, C.reduction, C.inner_iter);
+            symmSchurSolver(APcSolver, Spc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.outer_iter, C.outer_tol, 0.3, C.inner_iter);
 
     if (ProcCL::IamMaster())
         std::cerr << line << std::endl<<" - Solve system with InexactUzawa (PCG for approximate Schur-Complement-Matrix) ..." <<std::endl;
@@ -254,7 +249,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 
     VectorCL diff_v(A->Data*v->Data +transp_mul(B->Data,p->Data) - b->Data);
     VectorCL diff_p(B->Data*v->Data - c->Data);
-    double real_resid = std::sqrt( ExV.Norm_sq(diff_v, false, true) + ExP.Norm_sq(diff_p, false, true) );
+    double real_resid = std::sqrt( Stokes.vel_idx.GetEx().Norm_sq(diff_v, false, true)
+                                  + Stokes.pr_idx.GetEx().Norm_sq(diff_p, false, true) );
 
     if (ProcCL::IamMaster())
         std::cerr << "   + Time:       " << duration << std::endl

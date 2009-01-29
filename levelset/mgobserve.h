@@ -7,6 +7,9 @@
 #define DROPS_MGOBSERVER_H
 
 #include "misc/utils.h"
+#ifdef _PAR
+#  include "parallel/parmultigrid.h"
+#endif
 
 namespace DROPS
 {
@@ -20,7 +23,19 @@ namespace DROPS
 /// \todo Number of index (velocity, pressure, levelset) for the ParMultiGridCL should be more comfortable.
 class MGObserverCL
 {
+#ifdef _PAR
+  protected:
+    ParMultiGridCL* pmg_;       ///< All parallel Observers need the ParMultiGridCL
+#endif
+
   public:
+#ifdef _PAR
+    MGObserverCL(ParMultiGridCL& pmg) : pmg_(&pmg) {}
+    MGObserverCL() : pmg_(0) {}
+
+    /// Get reference on the parallel multigrid
+    ParMultiGridCL& GetPMG() { return *pmg_; }
+#endif
     virtual ~MGObserverCL () {};
 
     /// Called immediately before MultiGridCL::Refine() in AdapTriangCL::ModifyGridStep.

@@ -21,6 +21,7 @@ class ParamMesszelleCL: public virtual ParamBaseCL
     void RegisterParams();
 
   public:
+#ifndef _PAR
     /// \name Stokes
     //@{
     int    StokesMethod;                        ///< solver for the Stokes problems
@@ -28,12 +29,11 @@ class ParamMesszelleCL: public virtual ParamBaseCL
            outer_tol;
     int    inner_iter,                          ///< max. number of iterations for Stokes solver
            outer_iter;
-#ifndef _PAR
     int    pcA_iter;                            ///< max. number of iterations for the preconditionier
     double pcA_tol,                             ///< tolerance for the preconditioner
            pcS_tol;
-#endif
     //@}
+#endif
     /// \name Level Set
     //@{
     double lset_tol;                            ///< tolerance for Level Set solver

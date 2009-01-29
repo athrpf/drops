@@ -25,11 +25,13 @@ class P1XRepairCL
     bool UsesXFEM_;
     MultiGridCL& mg_;
     IdxDescCL idx_;
-    VectorCL extData_;
+    VecDescCL ext_;
     VecDescCL& p_;
 
   public:
     P1XRepairCL( MultiGridCL& mg, VecDescCL& p);
+
+    VecDescCL* GetExt() { return &ext_; }
 
     void operator() ();
 };
@@ -46,20 +48,11 @@ void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, c
 /// problem class for instationary two-pase Stokes flow
 
 template <class Coeff>
-#ifndef _PAR
 class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
-#else
-class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
-#endif
 {
   public:
-#ifndef _PAR
     typedef ProblemCL<Coeff, StokesBndDataCL>       _base;
     typedef InstatStokes2PhaseP2P1CL<Coeff>         _self;
-#else
-    typedef ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL> _base;
-    typedef InstatStokes2PhaseP2P1CL<Coeff>                    _self;
-#endif
     typedef typename _base::CoeffCL                 CoeffCL;
     typedef typename _base::BndDataCL               BndDataCL;
     using                                           _base::_MG;
@@ -67,13 +60,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, Exchan
     using                                           _base::_BndData;
     using                                           _base::GetBndData;
     using                                           _base::GetMG;
-#ifdef _PAR
-    using                                           _base::ex_;
-    using                                           _base::GetEx;
-
-    /// \brief Numbering of blocks within ExchangeBlockCL
-    enum ExType { velocity=0, pressure=1 };
-#endif
 
     typedef P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>   DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -95,17 +81,10 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, Exchan
                  prM;
 
   public:
-#ifndef _PAR
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
         : _base(mgb, coeff, bdata), vel_idx(vecP2_FE, 1, bdata.Vel), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
         : _base(mg, coeff, bdata),  vel_idx(vecP2_FE, 1, bdata.Vel), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
-#else
-    InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
-        : _base(mgb, coeff, bdata, 2), vel_idx(vecP2_FE), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
-    InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1)
-        : _base(mg, coeff, bdata, 2), vel_idx(vecP2_FE), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
-#endif
 
     /// \name Numbering
     //@{
@@ -125,16 +104,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, Exchan
     void DeleteNumbering( MLIdxDescCL* idx)
         { idx->DeleteNumbering( _MG); }
     //@}
-
-#ifdef _PAR
-    /// \brief Get a reference on Exchange class for pressure or for velocity
-    ExchangeCL& GetEx(Uint t)
-        { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
-
-    /// \brief Get a constant reference on Exchange class for pressure or for velocity
-    const ExchangeCL& GetEx(Uint t) const
-        { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
-#endif
 
     /// \name Discretization
     //@{
@@ -203,31 +172,18 @@ class VelocityRepairCL : public MGObserverCL
   private:
     StokesT& stokes_;
 
-#ifndef _PAR
   public:
+#ifndef _PAR
     VelocityRepairCL (StokesT& stokes)
         : stokes_( stokes) {}
-
-    void pre_refine  () {}
-    void post_refine ();
-
-    void pre_refine_sequence  () {}
-    void post_refine_sequence ();
 #else
-    ParMultiGridCL& pmg_;
-
-public:
-    // interface for the parallel DROPS version
     VelocityRepairCL (StokesT& stokes, ParMultiGridCL& pmg)
-        : stokes_(stokes), pmg_(pmg) {}
-
+        : MGObserverCL(pmg), stokes_(stokes){}
+#endif
     void pre_refine  ();
     void post_refine ();
-
     void pre_refine_sequence  () {}
-    void post_refine_sequence () {}
-
-#endif
+    void post_refine_sequence ();
 };
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function stokes_.pr.
@@ -245,30 +201,18 @@ class PressureRepairCL : public MGObserverCL
     std::auto_ptr<P1XRepairCL> p1xrepair_;
     const LevelsetP2CL& ls_;
 
-#ifndef _PAR
   public:
+#ifndef _PAR
     PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls)
         : stokes_( stokes), ls_( ls) {}
-
-    void pre_refine  () {}
-    void post_refine ();
-
-    void pre_refine_sequence  ();
-    void post_refine_sequence ();
 #else
-  private:
-    ParMultiGridCL& pmg_;
-
-  public:
     PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls, ParMultiGridCL& pmg)
-        : stokes_(stokes), ls_(ls), pmg_(pmg) {}
-
+        : MGObserverCL(pmg), stokes_(stokes), ls_(ls) {}
+#endif
     void pre_refine  ();
     void post_refine ();
-
-    void pre_refine_sequence  () {}
-    void post_refine_sequence () {}
-#endif
+    void pre_refine_sequence  ();
+    void post_refine_sequence ();
 };
 
 } // end of namespace DROPS

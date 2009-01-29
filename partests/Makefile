@@ -6,10 +6,12 @@
 
 DIR = partests
 EXEC = TestRefPar TestExchangePar TestMGSerPar TestInterpolPar \
-       TestSedPar TestGMRESPar TestLevelsetPar \
-       TestPoissonPar TestStokesPar TestInstatStokesPar TestNavStokesPar \
+       TestGMRESPar TestLevelsetPar \
+       TestPoissonPar TestStokesPar TestInstatStokesPar \
        TestMzellePar TestMzelleAdaptPar MzelleNMRParamEst TestBrickflowPar \
-       TestFilmPar #TestRefSedPar TwoPhaseFlowPar
+       TestFilmPar
+       
+# out of date: TestSedPar TestNavStokesPar TestRefSedPar TwoPhaseFlowPar
 
 DELETE = $(EXEC)
 CPP = $(wildcard *.cpp)
@@ -65,7 +67,7 @@ TestSedPar: \
     ../geom/builder.o ../misc/utils.o ../levelset/levelset.o ../levelset/params.o \
     ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
     ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../out/vtkOut.o ../partests/params.o
+    ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestGMRESPar: \
@@ -125,7 +127,7 @@ TestMzellePar: \
    ../geom/builder.o ../levelset/levelset.o ../levelset/fastmarch.o ../levelset/params.o \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
-   ../out/ensightOut.o ../partests/params.o ../stokes/instatstokes2phase.o
+   ../out/ensightOut.o ../partests/params.o ../stokes/instatstokes2phase.o ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestMzelleAdaptPar: \
@@ -134,7 +136,8 @@ TestMzelleAdaptPar: \
    ../geom/builder.o ../levelset/levelset.o ../levelset/fastmarch.o ../levelset/params.o \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
-   ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o
+   ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
+   ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 MzelleNMRParamEst: \
@@ -143,7 +146,8 @@ MzelleNMRParamEst: \
    ../geom/builder.o ../levelset/levelset.o ../levelset/fastmarch.o ../levelset/params.o \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
-   ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o
+   ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
+   ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestBrickflowPar: \
@@ -152,7 +156,8 @@ TestBrickflowPar: \
    ../geom/builder.o ../levelset/levelset.o ../levelset/fastmarch.o ../levelset/params.o \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
-   ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o
+   ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
+   ../stokes/integrTime.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestFilmPar: \

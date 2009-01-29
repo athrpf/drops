@@ -87,13 +87,13 @@ class FE_InfoCL
     //@}
 };
 
-template<> 
+template<>
   inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<VertexCL>() const { return NumUnknownsVertex(); }
-template<> 
+template<>
   inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<EdgeCL>()   const { return NumUnknownsEdge(); }
-template<> 
+template<>
   inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<FaceCL>()   const { return NumUnknownsFace(); }
-template<> 
+template<>
   inline Uint FE_InfoCL::GetNumUnknownsOnSimplex<TetraCL>()  const { return NumUnknownsTetra(); }
 
 class IdxDescCL;     // fwd decl
@@ -164,6 +164,7 @@ class ExtIdxDescCL
 extern "C" inline int HandlerGatherUpdateXNumbC (DDD_OBJ objp, void* buf) { return ExtIdxDescCL::HandlerGatherUpdateXNumb ( objp, buf); }
 extern "C" inline int HandlerScatterUpdateXNumbC(DDD_OBJ objp, void* buf) { return ExtIdxDescCL::HandlerScatterUpdateXNumb( objp, buf); }
 //@}
+class ExchangeCL;
 #endif
 
 /// \brief Mapping from the simplices in a triangulation to the components
@@ -185,6 +186,9 @@ class IdxDescCL: public FE_InfoCL
     BndCondCL                Bnd_;         ///< boundary conditions
     match_fun                match_;       ///< matching function for periodic boundaries
     ExtIdxDescCL             extIdx_;      ///< extended index for XFEM
+#ifdef _PAR
+    ExchangeCL*              ex_;          ///< exchanging numerical data
+#endif
 
     /// \brief Returns the lowest index that was not used and reserves it.
     Uint GetFreeIdx();
@@ -195,19 +199,16 @@ class IdxDescCL: public FE_InfoCL
 
   public:
     using FE_InfoCL::IsExtended;
-    
+
     /// \brief The constructor uses the lowest available index for the
     ///     numbering. The triangulation level must be set separately.
-    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=-99)
-      : FE_InfoCL( fe), Idx_( GetFreeIdx()), NumUnknowns_( 0), Bnd_(bnd), match_(match),
-        extIdx_( omit_bound != -99 ? omit_bound : IsExtended() ? 1./32. : -1.) // default value is 1./32. for XFEM and -1 otherwise
-        {}
+    IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=-99);
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
     IdxDescCL( const IdxDescCL& orig);
     /// \brief Frees the index, but does not invalidate the numbering on
     ///     the simplices. Call DeleteNumbering to do this.
-    ~IdxDescCL() { if (Idx_!=InvalidIdx) IdxFree[Idx_]= true; }
+    ~IdxDescCL();
 
     /// \brief Not implemented, as the private "Idx" should not be the
     ///     same for two different objects.
@@ -254,6 +255,10 @@ class IdxDescCL: public FE_InfoCL
     /// \}
 
 #ifdef _PAR
+    /// \brief Get a reference on the ExchangeCL
+    ExchangeCL& GetEx() { return *ex_; }
+    /// \brief Get a constant reference on the ExchangeCL
+    const ExchangeCL& GetEx() const { return *ex_; }
     /// \brief get number of unknowns exclusively stored on this proc
     IdxT GetExclusiveNumUnknowns(const MultiGridCL&, int lvl=-1) const;
     /// \brief get global number of exclusive unknowns
@@ -296,7 +301,7 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
 
     /// \brief Returns true, if XFEM is used and standard DoF \p dof is extended.
     bool IsExtended( IdxT dof) const { return this->GetFinest().IsExtended( dof); }
-    
+
     /// \brief total number of unknowns on the triangulation
     IdxT NumUnknowns() const { return this->GetFinest().NumUnknowns(); }
 
@@ -354,6 +359,10 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
     /// \}
 
 #ifdef _PAR
+    /// \brief Get a reference on the ExchangeCL (of the finest level)
+    ExchangeCL& GetEx() { return this->GetFinest().GetEx(); }
+    /// \brief Get a constant reference on the ExchangeCL (of the finest level)
+    const ExchangeCL& GetEx() const { return this->GetFinest().GetEx(); }
     /// \brief get number of unknowns exclusively stored on this proc
     IdxT GetExclusiveNumUnknowns(const MultiGridCL& mg, int lvl=-1) const
     { return this->GetFinest().GetExclusiveNumUnknowns(mg, lvl); }
@@ -542,11 +551,7 @@ typedef MatDescBaseCL<MLMatrixCL,MLIdxDescCL> MLMatDescCL;
 /// \param ExCL    class to manage exchange of numerical values over processors
 ///
 /// \todo Probably we should not copy CoeffCL and BndDataCL.
-#ifndef _PAR
 template <class Coeff, class BndData>
-#else
-template <class Coeff, class BndData, class ExCL>
-#endif
 class ProblemCL
 {
   public:
@@ -558,9 +563,6 @@ class ProblemCL
     MultiGridCL& _MG;         ///< The multigrid.
     CoeffCL      _Coeff;      ///< Right-hand-side, coefficients of the PDE.
     BndDataCL    _BndData;    ///< boundary-conditions
-#ifdef _PAR
-    ExCL         ex_;         ///< Exchange of numerical data
-#endif
 
   public:
     /// \brief The multigrid constructed from mgbuilder will be destroyed if this variable leaves its scope.
@@ -569,28 +571,12 @@ class ProblemCL
     /// \brief The multigrid mg will be left alone if this variable leaves its scope.
     ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata)
         : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata) {}
-#ifdef _PAR
-    ProblemCL(const MGBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata, size_t blocks)
-        : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata), ex_(blocks)
-        /// \param blocks number of exchange blocks
-    {}
-    ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata, size_t blocks)
-        : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata), ex_(blocks)
-        /// \param blocks number of exchange blocks
-    {}
-#endif
     ~ProblemCL() { if (_myMG) delete &_MG; }
 
     MultiGridCL&       GetMG()            { return _MG; }
     const MultiGridCL& GetMG()      const { return _MG; }
     const CoeffCL&     GetCoeff()   const { return _Coeff; }
     const BndDataCL&   GetBndData() const { return _BndData; }
-#ifdef _PAR
-    /// \brief Get reference on exchange class
-    ExCL&              GetEx()            { return ex_; }
-    /// \brief Get constant reference on exchange class
-    const ExCL&        GetEx()      const { return ex_; }
-#endif
 };
 
 

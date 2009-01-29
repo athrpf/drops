@@ -1,4 +1,5 @@
 #include "num/spmat.h"
+#include "num/spblockmat.h"
 #include <iostream>
 
 
@@ -85,7 +86,7 @@ int TestComposite()
               << "\nop0: " << S2.GetOperation( 0) << '\t' << S2.GetBlock0() << '\n'
               << "op1: " << S2.GetOperation( 1) << '\t' << S2.GetBlock1() << '\n';
     std::cerr << "S2*b: " << S2*b << '\n';
-    
+
     typedef DROPS::CompositeMatrixBaseCL<DROPS::CompositeMatrixCL, DROPS::VectorAsDiagMatrixCL> CompositeMatrix4CL;
     DROPS::VectorCL v( 1);
     DROPS::VectorAsDiagMatrixCL Mv( &v);

@@ -74,8 +74,9 @@ class VTKOutCL
     Uint                numLocPoints_;              // number of local exclusive verts and edges
     bool                wrotePointDataLine_;        // flag if descibtionline for point data has been written
 
+    /// Put timecode as postfix to a filename
     void AppendTimecode( std::string&) const;
-    void putTime( double time);
+    /// Check if the file is open
     void CheckFile( const std::ofstream&) const;
     /// Create new file
     void NewFile( double time);
@@ -83,12 +84,15 @@ class VTKOutCL
     void PutHeader( double time);
 
 #ifdef _PAR
+    /// Check if the calling processor should gather information on the given simplex
     template<typename SimplexT>
     bool AmIResponsible(const SimplexT& s) const{
         return s.IsExclusive(PrioHasUnk);
     }
 #endif
 
+    /// \name Write out coordinates of vertices
+    //@{
 #ifndef _PAR
     /// Gather coordinates and (g)ids
     void GatherCoord();
@@ -100,7 +104,10 @@ class VTKOutCL
 #endif
     /// Write coordinates into a vtk legacy file
     void WriteCoords();
+    //@}
 
+    /// \name Write out connectivities
+    //@{
 #ifndef _PAR
     /// Gather tetras
     void GatherTetra();
@@ -114,7 +121,10 @@ class VTKOutCL
 #endif
     /// Write Tetras
     void WriteTetra();
+    //@}
 
+    /// \name Write out FE functions
+    //@{
     /// Gather scalar data
     template<class DiscScalT>
     void GatherScalar(const DiscScalT&, VectorBaseCL<float>&) const;
@@ -127,6 +137,7 @@ class VTKOutCL
     /// Communicar data
     void CommunicateValues(const VectorBaseCL<float>&, VectorBaseCL<float>&, int);
 #endif
+    //@}
 
   public:
     /// \brief Constructor of this class

@@ -274,7 +274,7 @@ class cplDeltaSquaredPolicyCL
              v_diff_, phi_diff_;
     double   omega_;
     bool     firststep_;
-    
+
   public:
    cplDeltaSquaredPolicyCL( size_t vsize, size_t phisize)
    {
@@ -301,7 +301,7 @@ class cplDeltaSquaredPolicyCL
         omega_*= -(dot( v_diff_, v_old_) + dot( phi_diff_, phi_old_))
                 / (norm_sq( v_diff_) + norm_sq( phi_diff_));
 
-        v_old_= v; phi_old_= phi; 
+        v_old_= v; phi_old_= phi;
    }
    double RelaxFactor () const { return omega_; }
 };
@@ -332,17 +332,17 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     SolverT&     solver_;
     bool         withProj_;
     const double stab_;
-    
+
     cplDeltaSquaredPolicyCL dsp_;
 
 #ifdef _PAR
-    typedef ParJac0CL<ExchangeCL> MsolverPCT;
-    typedef ParPCGSolverCL<MsolverPCT, ExchangeCL> MsolverT;
+    typedef ParJac0CL MsolverPCT;
+    typedef ParPCGSolverCL<MsolverPCT> MsolverT;
     MsolverPCT MsolverPC_;
     MsolverT   Msolver_;
 
-    typedef ISBBTPreCL<ExchangeCL, ExchangeCL> SsolverPCT;
-    typedef ParPreGMResSolverCL<SsolverPCT, ExchangeCL> SsolverT;
+    typedef ISBBTPreCL SsolverPCT;
+    typedef ParPreGMResSolverCL<SsolverPCT> SsolverT;
     SsolverPCT SsolverPC_;
     SsolverT   Ssolver_;
 #endif

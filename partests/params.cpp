@@ -105,6 +105,20 @@ void ParamApdaptRefCL::RegisterParams()
     rp_.EndGroup();
 }
 
+void ParamStokesCL::RegisterParams()
+{
+    rp_.BeginGroup("Stokes");
+    rp_.RegInt( StokesMethod, "StokesMethod");
+    rp_.RegDouble( inner_tol, "InnerTol");
+    rp_.RegDouble( outer_tol, "OuterTol");
+    rp_.RegInt( inner_iter,   "InnerIter");
+    rp_.RegInt( outer_iter,   "OuterIter");
+    rp_.RegInt( pcA_iter,     "PcAIter");
+    rp_.RegDouble( pcA_tol,   "PcATol");
+    rp_.RegDouble( pcS_tol,   "PcSTol");
+    rp_.EndGroup();
+}
+
 void ParamParRefCL::RegisterParams()
 {
     rp_.BeginGroup( "Refining");
@@ -161,20 +175,6 @@ void ParamParStokesCL::RegisterParams()
 
     rp_.BeginGroup( "LoadBalancing");
     rp_.RegInt( refineStrategy, "RefineStrategy");
-    rp_.EndGroup();
-
-    rp_.BeginGroup( "Solver");
-    rp_.RegDouble( relax, "Relax");
-    rp_.RegInt(    pc_iter,   "PCIter");
-    rp_.RegDouble( pc_rel_tol,"PCRelTol");
-    rp_.RegInt( inner_iter, "InnerIter");
-    rp_.RegInt( outer_iter, "OuterIter");
-    rp_.RegDouble( inner_tol, "InnerTol");
-    rp_.RegDouble( outer_tol, "OuterTol");
-    rp_.RegInt( restart, "Restart");
-    rp_.RegInt( relative, "Relative");
-    rp_.RegDouble( reduction, "Reduction");
-    rp_.RegInt( accur, "Accur");
     rp_.EndGroup();
 
     rp_.BeginGroup( "Misc");
@@ -350,62 +350,6 @@ void ParamParSerCL::RegisterParams()
     rp_.RegInt( mode,     "Mode");
     rp_.RegInt( unknowns, "Unknowns");
     rp_.EndGroup();
-}
-
-void ParamParFilmStokesCL::RegisterParams()
-{
-    rp_.BeginGroup("Time");
-    rp_.RegInt( num_steps,    "NumSteps");
-    rp_.RegDouble( dt,        "StepSize");
-    rp_.RegDouble( theta,     "ThetaStokes");
-    rp_.RegDouble( lset_theta,"ThetaLevelset");
-    rp_.EndGroup();
-
-    rp_.BeginGroup("Stokes");
-    rp_.RegInt( inner_iter,   "InnerIter");
-    rp_.RegInt( outer_iter,   "OuterIter");
-    rp_.RegDouble( inner_tol, "InnerTol");
-    rp_.RegDouble( outer_tol, "OuterTol");
-    rp_.EndGroup();
-
-    rp_.BeginGroup( "NavStokes");
-    rp_.RegDouble( nonlinear,  "Nonlinear");
-    rp_.RegDouble( ns_tol,     "Tol");
-    rp_.RegDouble( ns_red,     "Reduction");
-    rp_.RegInt( ns_iter,       "Iter");
-    rp_.EndGroup();
-
-    rp_.BeginGroup("Levelset");
-    rp_.RegInt( lset_iter,    "Iter");
-    rp_.RegDouble( lset_tol,  "Tol");
-    rp_.RegDouble( lset_SD,   "SD");
-    rp_.RegDouble( CurvDiff,  "CurvDiff");
-    rp_.RegInt( VolCorr,      "VolCorrection");
-    rp_.EndGroup();
-
-    rp_.BeginGroup("Coupling");
-    rp_.RegInt( cpl_iter,     "Iter");
-    rp_.RegDouble( cpl_tol,   "Tol");
-    rp_.EndGroup();
-
-    rp_.BeginGroup("Mat");
-    rp_.RegDouble( rhoF,      "DensFluid");
-    rp_.RegDouble( muF,       "ViscFluid");
-    rp_.RegDouble( rhoG,      "DensGas");
-    rp_.RegDouble( muG,       "ViscGas");
-    rp_.RegDouble( sm_eps,    "SmoothZone");
-    rp_.RegDouble( sigma,     "SurfTension");
-    rp_.EndGroup();
-
-    rp_.BeginGroup("Exp");
-    rp_.RegDouble( Filmdicke, "Thickness");
-    rp_.RegCoord( g,          "Gravity");
-    rp_.RegDouble( PumpFreq,  "PumpFreq");
-    rp_.RegDouble( PumpAmpl,  "PumpAmpl");
-    rp_.EndGroup();
-
-    rp_.RegInt( IniCond,      "InitialCond");
-    rp_.RegString( IniData,   "InitialFile");
 }
 
 } // end of namespace DROPS

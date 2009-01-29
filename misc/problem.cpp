@@ -5,6 +5,7 @@
 #include "num/interfacePatch.h"
 #ifdef _PAR
 #  include "parallel/interface.h"
+#  include "parallel/exchange.h"
 #endif
 
 namespace DROPS
@@ -29,6 +30,23 @@ void BndCondInfo( BndCondT bc, std::ostream& os)
     }
 }
 
+IdxDescCL::IdxDescCL( FiniteElementT fe, const BndCondCL& bnd, match_fun match, double omit_bound)
+    : FE_InfoCL( fe), Idx_( GetFreeIdx()), NumUnknowns_( 0), Bnd_(bnd), match_(match),
+      extIdx_( omit_bound != -99 ? omit_bound : IsExtended() ? 1./32. : -1.) // default value is 1./32. for XFEM and -1 otherwise
+{
+#ifdef _PAR
+    ex_= new ExchangeCL();
+#endif
+}
+
+IdxDescCL::~IdxDescCL()
+{
+    if (Idx_!=InvalidIdx)
+        IdxFree[Idx_]= true;
+#ifdef _PAR
+    delete ex_;
+#endif
+}
 
 Uint IdxDescCL::GetFreeIdx()
 {
@@ -48,6 +66,9 @@ IdxDescCL::IdxDescCL( const IdxDescCL& orig)
 {
     // invalidate orig
     const_cast<IdxDescCL&>(orig).Idx_= InvalidIdx;
+#ifdef _PAR
+    ex_= new ExchangeCL(*orig.ex_);
+#endif
 }
 
 void IdxDescCL::swap( IdxDescCL& obj)
@@ -61,6 +82,9 @@ void IdxDescCL::swap( IdxDescCL& obj)
     std::swap( Bnd_,         obj.Bnd_);
     std::swap( match_,       obj.match_);
     std::swap( extIdx_,      obj.extIdx_);
+#ifdef _PAR
+    std::swap( ex_,          obj.ex_);
+#endif
 }
 
 bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
@@ -340,6 +364,9 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
             NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, true);
         }
     }
+#ifdef _PAR
+    ex_->CreateList(mg, this, true, true);
+#endif
 }
 
 void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
@@ -360,6 +387,9 @@ void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
     if (NumUnknownsTetra())
         DeleteNumbOnSimplex( idxnum, MG.GetAllTetraBegin(level), MG.GetAllTetraEnd(level) );
     extIdx_.DeleteXNumbering();
+#ifdef _PAR
+    ex_->clear();
+#endif
 }
 
 IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, bool NumberingChanged)

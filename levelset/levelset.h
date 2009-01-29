@@ -1,6 +1,7 @@
 /// \file
 /// \brief levelset equation for two phase flow problems
 /// \author Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen
+///         Oliver Fortmeier, SC RWTH Aachen
 
 #ifndef DROPS_LEVELSET_H
 #define DROPS_LEVELSET_H
@@ -43,8 +44,8 @@ class LevelsetP2CL
     typedef SSORPcCL                                          PCT;
     typedef GMResSolverCL<PCT>                                SolverT;
 #else
-    typedef ParJac0CL<ExchangeCL>                             PCT;
-    typedef ParPreGMResSolverCL<PCT, ExchangeCL>              SolverT;
+    typedef ParJac0CL                                         PCT;
+    typedef ParPreGMResSolverCL<PCT>                          SolverT;
 #endif
 
 
@@ -61,9 +62,6 @@ class LevelsetP2CL
                         theta_, dt_;
     MatrixCL            L_;
     BndDataT            Bnd_;
-#ifdef _PAR
-    ExchangeCL          ex_;
-#endif
     mutable PCT         pc_;
     SolverT             gm_;
     SurfaceForceT       SF_;
@@ -95,8 +93,8 @@ class LevelsetP2CL
                   double theta= 0.5, double SD= 0, double diff= 0, Uint iter=1000, double tol=1e-7,
                   double curvDiff= -1, double __UNUSED__ narrowBand=-1.)
       : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ), pc_(ex_),
-        gm_(/*restart*/100, iter, tol, ex_, pc_, /*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true),
+        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ), pc_(idx),
+        gm_(/*restart*/100, iter, tol, idx, pc_, /*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true),
         SF_(SF_ImprovedLB)
     {}
 
@@ -104,8 +102,8 @@ class LevelsetP2CL
                   instat_vector_fun_ptr gsig= 0, double theta= 0.5, double SD= 0,
                   double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
       : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( bnd), pc_(ex_),
-        gm_(/*restart*/100, iter, tol, ex_, pc_, false), SF_(SF_ImprovedLB)
+        theta_( theta), dt_( 0.), Bnd_( bnd), pc_(idx),
+        gm_(/*restart*/100, iter, tol, idx, pc_, true, true, false, LeftPreconditioning, true), SF_(SF_ImprovedLB)
     {}
 #endif
 
@@ -113,10 +111,6 @@ class LevelsetP2CL
     MultiGridCL& GetMG() { return MG_; }                ///< Get reference on the multigrid
     SolverT& GetSolver() { return gm_; }                ///< Get reference onto solver
     const SolverT& GetSolver() const { return gm_; }    ///< Get constant reference onto solver
-#ifdef _PAR
-    ExchangeCL&       GetEx() { return ex_; }           ///< Get reference onto ExchangeCL
-    const ExchangeCL& GetEx() const { return ex_; }     ///< Get constant reference onto ExchangeCL
-#endif
 
     const BndDataT& GetBndData() const { return Bnd_; }
 
@@ -207,32 +201,21 @@ class LevelsetRepairCL : public MGObserverCL
   private:
     LevelsetP2CL& ls_;
 
-#ifndef _PAR
-  public:
-    // interface for the sequential version
-    LevelsetRepairCL (LevelsetP2CL& ls)
-        : ls_( ls) {}
-
-    void pre_refine  () {}
-    void post_refine ();
-
-    void pre_refine_sequence  () {}
-    void post_refine_sequence () {}
-
-#else
-    ParMultiGridCL& pmg_;
-
   public:
     /// \brief Construct a levelset repair class
+#ifndef _PAR
+    LevelsetRepairCL (LevelsetP2CL& ls)
+        : ls_( ls) {}
+#else
     LevelsetRepairCL (LevelsetP2CL& ls, ParMultiGridCL& pmg)
-        : ls_( ls), pmg_(pmg) {}
+        : MGObserverCL(pmg), ls_( ls) {}
+#endif
 
     void pre_refine  ();
     void post_refine ();
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
-#endif
 };
 
 

@@ -854,18 +854,12 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match)
 {
     idx->CreateNumbering( level, _MG, _BndData.Vel, match);
-#ifdef _PAR
-    ex_.CreateList(_MG,static_cast<size_t>(velocity), idx);
-#endif
 }
 
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
 {
     idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0);
-#ifdef _PAR
-    ex_.CreateList(_MG,static_cast<size_t>(pressure), idx);
-#endif
 }
 
 
@@ -1560,6 +1554,19 @@ void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const Leve
 //*****************************************************************************
 #ifndef _PAR
 template<class StokesT>
+  inline void VelocityRepairCL<StokesT>::pre_refine()
+  /// do nothing
+{ }
+#else
+template<class StokesT>
+  inline void VelocityRepairCL<StokesT>::pre_refine()
+  /// tell parallel multigrid about velocities
+{
+    GetPMG().AttachTo( &stokes_.v, &stokes_.GetBndData().Vel);
+}
+#endif
+
+template<class StokesT>
   inline void
   VelocityRepairCL<StokesT>::post_refine ()
 {
@@ -1576,7 +1583,13 @@ template<class StokesT>
         throw DROPSErrCL( "VelocityRepairCL::post_refine: Sorry, not yet implemented.");
     }
     loc_v.SetIdx( &loc_vidx);
+#ifdef _PAR
+    GetPMG().HandleNewIdx(&stokes_.vel_idx, &loc_v);
+#endif
     RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
+#ifdef _PAR
+    GetPMG().CompleteRepair( &loc_v);
+#endif
     v.Clear();
     v.RowIdx->DeleteNumbering( stokes_.GetMG());
 
@@ -1588,50 +1601,34 @@ template<class StokesT>
 template<class StokesT>
   inline void
   VelocityRepairCL<StokesT>::post_refine_sequence ()
+  /// Create numbering for all idx level
 {
     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
     stokes_.CreateNumberingVel( stokes_.GetMG().GetLastLevel(), &stokes_.vel_idx, *match);
 }
 
-#else
-
-template<class StokesT>
-  inline void VelocityRepairCL<StokesT>::pre_refine()
-{
-    pmg_.AttachTo( &stokes_.v, &stokes_.GetBndData().Vel);
-}
-
-template<class StokesT>
-  inline void VelocityRepairCL<StokesT>::post_refine()
-{
-    VecDescCL loc_v;
-    VelVecDescCL& v= stokes_.v;
-
-    Uint LastLevel= stokes_.GetMG().GetLastLevel();
-//     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
-    MLIdxDescCL loc_vidx( vecP2_FE);
-    stokes_.CreateNumberingVel( LastLevel, &loc_vidx);
-//     loc_vidx.CreateNumbering( LastLevel, stokes_.GetMG(), stokes_.GetBndData().Vel, match);
-
-    loc_v.SetIdx( loc_vidx.GetFinestPtr());
-
-    pmg_.HandleNewIdx(&stokes_.vel_idx, &loc_v);
-    RepairAfterRefineP2( stokes_.GetVelSolution( v), loc_v);
-    pmg_.CompleteRepair( &loc_v);
-
-    v.Clear();
-    v.RowIdx->DeleteNumbering( stokes_.GetMG());
-    stokes_.vel_idx.GetFinest().swap( loc_vidx.GetFinest());
-    v.SetIdx( &stokes_.vel_idx);
-    v.Data=loc_v.Data;
-}
-
-#endif          // end _PAR
 
 //*****************************************************************************
 //                               PressureRepairCL
 //*****************************************************************************
+
 #ifndef _PAR
+template<class StokesT>
+  inline void PressureRepairCL<StokesT>::pre_refine()
+  /// do nothing
+{ }
+#else
+template<class StokesT>
+  inline void PressureRepairCL<StokesT>::pre_refine()
+  /// tell parallel multigrid about (extended) finite element function
+{
+    GetPMG().AttachTo( &stokes_.p, &stokes_.GetBndData().Pr);
+    if ( stokes_.UsesXFEM()){
+        GetPMG().AttachTo( p1xrepair_->GetExt(), &stokes_.GetBndData().Pr);
+    }
+}
+#endif
+
 template<class StokesT>
   inline void
   PressureRepairCL<StokesT>::post_refine ()
@@ -1643,7 +1640,25 @@ template<class StokesT>
 
     loc_pidx.CreateNumbering( stokes_.GetMG().GetLastLevel(), stokes_.GetMG(), stokes_.GetBndData().Pr, match, &ls_.Phi);
     loc_p.SetIdx( &loc_pidx);
+#ifdef _PAR
+    GetPMG().HandleNewIdx(&stokes_.pr_idx, &loc_p);
+#endif
     RepairAfterRefineP1( stokes_.GetPrSolution( p), loc_p);
+#ifdef _PAR
+    GetPMG().CompleteRepair( &loc_p);
+    if ( stokes_.UsesXFEM()){
+        IdxDescCL loc_xpr_idx( P1_FE);
+        loc_xpr_idx.CreateNumbering( stokes_.GetMG().GetLastLevel(), stokes_.GetMG());
+        VecDescCL loc_xpr( &loc_xpr_idx);
+        GetPMG().HandleNewIdx( p1xrepair_->GetExt()->RowIdx, &loc_xpr);
+        // swap index and data
+        p1xrepair_->GetExt()->RowIdx->swap( loc_xpr_idx);
+        p1xrepair_->GetExt()->Data.resize( loc_xpr.Data.size());
+        p1xrepair_->GetExt()->Data= loc_xpr.Data.size();
+        // delete this numbering
+        loc_xpr_idx.DeleteNumbering( stokes_.GetMG());
+    }
+#endif
     p.Clear();
     p.RowIdx->DeleteNumbering( stokes_.GetMG());
     stokes_.pr_idx.GetFinest().swap( loc_pidx);
@@ -1661,41 +1676,11 @@ template<class StokesT>
 template<class StokesT>
   inline void
   PressureRepairCL<StokesT>::post_refine_sequence ()
+  /// Create numbering for all idx level
 {
     match_fun match= stokes_.GetMG().GetBnd().GetMatchFun();
     stokes_.CreateNumberingPr( stokes_.GetMG().GetLastLevel(), &stokes_.pr_idx, match, &ls_);
     (*p1xrepair_)();
     p1xrepair_.reset();
 }
-#else
-
-template<class StokesT>
-  inline void PressureRepairCL<StokesT>::pre_refine()
-{
-    pmg_.AttachTo( &stokes_.p, &stokes_.GetBndData().Pr);
-}
-
-template<class StokesT>
-  inline void PressureRepairCL<StokesT>::post_refine()
-{
-    VecDescCL loc_p;
-    MLIdxDescCL loc_pidx( P1_FE);
-    VecDescCL& p= stokes_.p;
-
-    stokes_.CreateNumberingPr( stokes_.GetMG().GetLastLevel(), &loc_pidx);
-    loc_p.SetIdx(&loc_pidx);
-
-    pmg_.HandleNewIdx(&stokes_.pr_idx, &loc_p);
-    RepairAfterRefineP1( stokes_.GetPrSolution( p), loc_p);
-    pmg_.CompleteRepair( &loc_p);
-
-    p.Clear();
-    p.RowIdx->DeleteNumbering( stokes_.GetMG());
-    stokes_.pr_idx.swap( loc_pidx);
-    p.SetIdx( &stokes_.pr_idx);
-    p.Data=loc_p.Data;
-}
-
-#endif
-
 } // end of namespace DROPS

@@ -11,11 +11,12 @@
 
 namespace DROPS
 {
-#ifndef _PAR
+
 void ISBBTPreCL::Update() const
 {
-    std::cerr << "ISBBTPreCL::Update: old version: " << Bversion_
-        << "\tnew version: " << B_->Version() << '\n';
+    IF_MASTER
+      std::cerr << "ISBBTPreCL::Update: old version: " << Bversion_
+                << "\tnew version: " << B_->Version() << '\n';
     delete Bs_;
     Bs_= new MatrixCL( *B_);
     Bversion_= B_->Version();
@@ -23,19 +24,30 @@ void ISBBTPreCL::Update() const
     BBT_.SetBlock0( Bs_);
     BBT_.SetBlock1( Bs_);
 
+#ifndef _PAR
     VectorCL Dvelinv( 1.0/ Mvel_->GetDiag());
+#else
+    VectorCL Dvelinv( 1.0/ vel_idx_.GetEx().GetAccumulate(Mvel_->GetDiag()));
+#endif
     ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
 
+#ifndef _PAR
     VectorCL Dprsqrt( std::sqrt( M_->GetDiag()));
+#else
+    VectorCL Dprsqrt( std::sqrt( pr_idx_.GetEx().GetAccumulate( M_->GetDiag())));
+#endif
     Dprsqrtinv_.resize( M_->num_rows());
     Dprsqrtinv_= 1.0/Dprsqrt;
 
     ScaleRows( *Bs_, Dprsqrtinv_);
 
+#ifndef _PAR    // Skipp computing diag of BB^T in parallel ...
     D_.resize( M_->num_rows());
     D_= 1.0/BBTDiag( *Bs_);
+#endif
 }
 
+#ifndef _PAR
 void MinCommPreCL::Update() const
 {
     std::cerr << "MinCommPreCL::Update: old/new versions: " << Aversion_  << '/' << A_->Version()

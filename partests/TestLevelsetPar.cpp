@@ -69,7 +69,7 @@ void SetDescriber()
 ****************************************************************************/
 class EmptyCoeffCL {} EmptyCoeff;
 typedef DROPS::BndDataCL<double>                                        BndDataT;
-typedef DROPS::ProblemCL<EmptyCoeffCL, BndDataT, DROPS::ExchangeCL>     TestP2LevelSetCL;
+typedef DROPS::ProblemCL<EmptyCoeffCL, BndDataT>                        TestP2LevelSetCL;
 typedef DROPS::P2EvalCL<double, const BndDataT, const DROPS::VecDescCL> const_DiscSol;
 
 using DROPS::ProcCL;
@@ -222,12 +222,11 @@ void Strategy(TestP2LevelSetCL &prob)
 
     // Erstellen einer Nummerierung und fuellen der ExchangeCL
     MultiGridCL& mg= prob.GetMG();
-    ExchangeCL&  ex= prob.GetEx();
     idx.CreateNumbering(mg.GetLastLevel(), mg, prob.GetBndData());
+    ExchangeCL&  ex= idx.GetEx();
 
     if (ProcCL::IamMaster())
         std::cout << " Create ExchangeCL mit Abbildung der Indices\n";
-    ex.CreateList(mg, &idx, true);
 
     ex.SizeInfo(std::cout);
 

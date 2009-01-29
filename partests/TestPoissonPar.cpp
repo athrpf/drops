@@ -289,68 +289,68 @@ namespace DROPS
 *   all solvers, that can be used, but uses only the wanted one             *
 ****************************************************************************/
 template <typename Mat, typename Vec>
-void Solve(const Mat &A, Vec &x, const Vec &b,ExchangeCL &ExX)
+void Solve(const Mat &A, Vec &x, const Vec &b, const IdxDescCL& idx)
 {
     ParTimerCL time; double duration;
 
     // Definition and initialisation of preconditioner
-    ParDummyPcCL<ExchangeCL> PCDummy(ExX);
-    ParJac0CL<ExchangeCL>    PCJac(ExX, C.relax);
-    ParSSOR0CL<ExchangeCL>   PCSSOR(ExX, C.relax);
+    ParDummyPcCL PCDummy(idx);
+    ParJac0CL    PCJac(idx, C.relax);
+    ParSSOR0CL   PCSSOR(idx, C.relax);
 
     // BiCGStab as preconditioner
-    typedef SolverAsPreCL< ParBiCGSTABSolverCL<ParDummyPcCL<ExchangeCL>, ExchangeCL> > PCBiCGStabT;
-    ParBiCGSTABSolverCL<ParDummyPcCL<ExchangeCL>, ExchangeCL> PC_BiCGStab(C.pciter, C.pctol, ExX, PCDummy, /*relative*/true);
+    typedef SolverAsPreCL< ParBiCGSTABSolverCL<ParDummyPcCL> > PCBiCGStabT;
+    ParBiCGSTABSolverCL<ParDummyPcCL> PC_BiCGStab(C.pciter, C.pctol, idx, PCDummy, /*relative*/true);
     PCBiCGStabT PCBiCGStab(PC_BiCGStab);
 
     // Definition of solvers
     // CG-Type Solvers
-    ParCGSolverCL<ExchangeCL>                                CGSolver(C.iter, C.tol, ExX);
-    ParPCGSolverCL<ParDummyPcCL<ExchangeCL>,ExchangeCL>      P_D_CGSolver(C.iter, C.tol, ExX, PCDummy, C.relative, C.accur);
-    ParPCGSolverCL<ParJac0CL<ExchangeCL>,ExchangeCL>         P_J_CGSolver(C.iter, C.tol, ExX, PCJac, C.relative, C.accur);
-    ParPCGSolverCL<ParSSOR0CL<ExchangeCL>,ExchangeCL>        P_S_CGSolver(C.iter, C.tol, ExX, PCSSOR, C.relative, C.accur);
-    ParPCGSolverCL<PCBiCGStabT,ExchangeCL>                   P_B_CGSolver(C.iter, C.tol, ExX, PCBiCGStab, C.relative, C.accur);
+    ParCGSolverCL                CGSolver(C.iter, C.tol, idx);
+    ParPCGSolverCL<ParDummyPcCL> P_D_CGSolver(C.iter, C.tol, idx, PCDummy, C.relative, C.accur);
+    ParPCGSolverCL<ParJac0CL>    P_J_CGSolver(C.iter, C.tol, idx, PCJac, C.relative, C.accur);
+    ParPCGSolverCL<ParSSOR0CL>   P_S_CGSolver(C.iter, C.tol, idx, PCSSOR, C.relative, C.accur);
+    ParPCGSolverCL<PCBiCGStabT>  P_B_CGSolver(C.iter, C.tol, idx, PCBiCGStab, C.relative, C.accur);
 
     // GMRES-Type Solvers
     PreMethGMRES method=(C.preCondMeth==0 ? LeftPreconditioning : RightPreconditioning);
-    ParPreGMResSolverCL<ParDummyPcCL<ExchangeCL>,ExchangeCL>
-            P_D_GMRESSolver(C.restart, C.iter, C.tol, ExX, PCDummy, C.relative, C.accur, C.useMGS, method, C.modified);
-    ParPreGMResSolverCL<ParJac0CL<ExchangeCL>,ExchangeCL>
-            P_J_GMRESSolver(C.restart, C.iter, C.tol, ExX, PCJac, C.relative, C.accur, C.useMGS, method, C.modified);
-    ParPreGMResSolverCL<ParSSOR0CL<ExchangeCL>,ExchangeCL>
-            P_S_GMRESSolver(C.restart, C.iter, C.tol, ExX, PCSSOR, C.relative, C.accur, C.useMGS, method, C.modified);
-    ParPreGMResSolverCL<PCBiCGStabT,ExchangeCL>
-            P_B_GMRESSolver(C.restart, C.iter, C.tol, ExX, PCBiCGStab, C.relative, C.accur, C.useMGS, method, C.modified);
+    ParPreGMResSolverCL<ParDummyPcCL>
+            P_D_GMRESSolver(C.restart, C.iter, C.tol, idx, PCDummy, C.relative, C.accur, C.useMGS, method, C.modified);
+    ParPreGMResSolverCL<ParJac0CL>
+            P_J_GMRESSolver(C.restart, C.iter, C.tol, idx, PCJac, C.relative, C.accur, C.useMGS, method, C.modified);
+    ParPreGMResSolverCL<ParSSOR0CL>
+            P_S_GMRESSolver(C.restart, C.iter, C.tol, idx, PCSSOR, C.relative, C.accur, C.useMGS, method, C.modified);
+    ParPreGMResSolverCL<PCBiCGStabT>
+            P_B_GMRESSolver(C.restart, C.iter, C.tol, idx, PCBiCGStab, C.relative, C.accur, C.useMGS, method, C.modified);
 
 
     // GCR-Type Solvers
-    ParPreGCRSolverCL<ParDummyPcCL<ExchangeCL>,ExchangeCL>
-            P_D_GCRSolver(C.restart,C.iter,C.tol, ExX, PCDummy, C.modified, C.relative, C.accur);
-    ParPreGCRSolverCL<ParJac0CL<ExchangeCL>,ExchangeCL>
-            P_J_GCRSolver(C.restart,C.iter,C.tol, ExX, PCJac, C.modified, C.relative, C.accur);
-    ParPreGCRSolverCL<ParSSOR0CL<ExchangeCL>,ExchangeCL>
-            P_S_GCRSolver(C.restart,C.iter,C.tol, ExX, PCSSOR, C.modified, C.relative, C.accur);
-    ParPreGCRSolverCL<PCBiCGStabT,ExchangeCL>
-            P_B_GCRSolver(C.restart,C.iter,C.tol, ExX, PCBiCGStab, C.modified, C.relative, C.accur);
+    ParPreGCRSolverCL<ParDummyPcCL>
+            P_D_GCRSolver(C.restart,C.iter,C.tol, idx, PCDummy, C.modified, C.relative, C.accur);
+    ParPreGCRSolverCL<ParJac0CL>
+            P_J_GCRSolver(C.restart,C.iter,C.tol, idx, PCJac, C.modified, C.relative, C.accur);
+    ParPreGCRSolverCL<ParSSOR0CL>
+            P_S_GCRSolver(C.restart,C.iter,C.tol, idx, PCSSOR, C.modified, C.relative, C.accur);
+    ParPreGCRSolverCL<PCBiCGStabT>
+            P_B_GCRSolver(C.restart,C.iter,C.tol, idx, PCBiCGStab, C.modified, C.relative, C.accur);
 
     // Lanczos-Algorithms
     typedef ParLanczos2CL<MatrixCL,VectorCL,ExchangeCL> LanczosT;
     LanczosT Lan(1e-32);
-    typedef ParPreLanczos2CL<MatrixCL,VectorCL,ParDummyPcCL<ExchangeCL>,ExchangeCL> P_D_LanczosT;
+    typedef ParPreLanczos2CL<MatrixCL,VectorCL,ParDummyPcCL,ExchangeCL> P_D_LanczosT;
     P_D_LanczosT LanDummy(PCDummy,1e-32);
-    typedef ParPreLanczos2CL<MatrixCL,VectorCL,ParJac0CL<ExchangeCL>,ExchangeCL> P_J_LanczosT;
+    typedef ParPreLanczos2CL<MatrixCL,VectorCL,ParJac0CL,ExchangeCL> P_J_LanczosT;
     P_J_LanczosT LanJacobi(PCJac,1e-32);
 
     // QMR-Method
-    ParQMRSolverCL<LanczosT,ExchangeCL>           ParQMR(C.iter,C.tol,&ExX,Lan);
-    ParQMRSolverCL<P_D_LanczosT,ExchangeCL>       P_D_QMR(C.iter,C.tol,&ExX,LanDummy);
-    ParQMRSolverCL<P_J_LanczosT,ExchangeCL>       P_J_QMR(C.iter,C.tol,&ExX,LanJacobi);
+    ParQMRSolverCL<LanczosT>           ParQMR(C.iter,  C.tol, idx, Lan);
+    ParQMRSolverCL<P_D_LanczosT>       P_D_QMR(C.iter, C.tol, idx, LanDummy);
+    ParQMRSolverCL<P_J_LanczosT>       P_J_QMR(C.iter, C.tol, idx, LanJacobi);
 
     // BiCGStab-Solver
-    ParBiCGSTABSolverCL<ParDummyPcCL<ExchangeCL>, ExchangeCL> P_D_BiCGStab(C.iter, C.tol, ExX, PCDummy, C.relative);
-    ParBiCGSTABSolverCL<ParJac0CL<ExchangeCL>, ExchangeCL>    P_J_BiCGStab(C.iter, C.tol, ExX, PCJac, C.relative);
-    ParBiCGSTABSolverCL<ParSSOR0CL<ExchangeCL>, ExchangeCL>   P_S_BiCGStab(C.iter, C.tol, ExX, PCSSOR, C.relative);
-    ParBiCGSTABSolverCL<PCBiCGStabT, ExchangeCL>              P_B_BiCGStab(C.iter, C.tol, ExX, PCBiCGStab, C.relative);
+    ParBiCGSTABSolverCL<ParDummyPcCL> P_D_BiCGStab(C.iter, C.tol, idx, PCDummy, C.relative);
+    ParBiCGSTABSolverCL<ParJac0CL>    P_J_BiCGStab(C.iter, C.tol, idx, PCJac, C.relative);
+    ParBiCGSTABSolverCL<ParSSOR0CL>   P_S_BiCGStab(C.iter, C.tol, idx, PCSSOR, C.relative);
+    ParBiCGSTABSolverCL<PCBiCGStabT>  P_B_BiCGStab(C.iter, C.tol, idx, PCBiCGStab, C.relative);
 
 
     if (ProcCL::IamMaster()){
@@ -430,8 +430,8 @@ void Solve(const Mat &A, Vec &x, const Vec &b,ExchangeCL &ExX)
         default: std::cerr << "No solver found\n"; return;
     }
     time.Stop(); duration = time.GetMaxTime(); Times.AddTime(T_Solve, duration);
-    double realresid = ExX.Norm(VectorCL(A*x-b),false);
-    double normb     = ExX.Norm(b,false);
+    double realresid = idx.GetEx().Norm(VectorCL(A*x-b),false);
+    double normb     = idx.GetEx().Norm(b,false);
     if (ProcCL::IamMaster()){
         std::cout << " - Iterations:  " << steps << std::endl;
         std::cout << " - Residuum:    " << res  << std::endl;
@@ -467,7 +467,6 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     VecDescCL vU, vA, vM, vf;
     MLMatDescCL* A= &Poisson.A; MLMatDescCL* M= &Poisson.M;
     MLMatDescCL* U= &Poisson.U;
-    ExchangeCL &ExX = Poisson.GetEx();
     MLMatrixCL AU, AUM;
 
     // Point 1
@@ -542,7 +541,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     // Solve
     if (ProcCL::IamMaster())
         std::cout << line << std::endl;
-    Solve(AUM.GetFinest(), x->Data, b->Data, ExX);
+    Solve(AUM.GetFinest(), x->Data, b->Data, idx->GetFinest());
 
     // Point 4
     //--------
@@ -593,7 +592,6 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
 
     MultiGridCL& MG= Poisson.GetMG();                                       // MultiGrid
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();   // Boundary-Values
-    ExchangeCL &ExX=Poisson.GetEx();                                        // Xfer of numerical datas
 
     MLIdxDescCL  loc_idx;
     VecDescCL  loc_x;
@@ -800,7 +798,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         if (ProcCL::IamMaster())
             std::cout << "   + Check if solution is still accumulated ... ";
 
-        const bool isacc=Check(ExX.IsAcc(new_x->Data));
+        const bool isacc=Check(Poisson.idx.GetEx().IsAcc(new_x->Data));
         if (isacc){
             if (ProcCL::IamMaster())
                 std::cout << "OK\n";
@@ -834,7 +832,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         // Point 9: Solve of the linear equation system
         // -----------------------------------------------------------------
         time.Reset();
-        Solve(A->Data.GetFinest(), new_x->Data, b->Data,ExX);
+        Solve(A->Data.GetFinest(), new_x->Data, b->Data, Poisson.idx.GetFinest());
         time.Stop(); ::Times.AddTime(T_Solve, time.GetMaxTime());
 
         A->Reset();

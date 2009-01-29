@@ -191,8 +191,8 @@ template<class NavStokesT>
 // v - acc, p - acc, b - non-acc, cplN - non-acc, c - non-acc, w - acc, q - acc
 {
 #ifdef _PAR
-    ExchangeCL& ExVel= ns.GetEx( ns.velocity);
-    ExchangeCL& ExPr = ns.GetEx( ns.pressure);
+    ExchangeCL& ExVel= ns.vel_idx.GetEx();
+    ExchangeCL& ExPr = ns.pr_idx.GetEx();
     const bool useAccur=true;
 #endif
     VecDescCL v_omw( v.RowIdx);
@@ -246,8 +246,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 #ifdef _PAR
     VectorCL d_acc( v.Data.size()), e_acc( p.size()),
              w_acc( v.Data.size()), q_acc( p.size());
-    ExchangeCL& ExVel= NS_.GetEx( NS_.velocity);
-    ExchangeCL& ExPr = NS_.GetEx( NS_.pressure);
+    ExchangeCL& ExVel= NS_.vel_idx.GetEx();
+    ExchangeCL& ExPr = NS_.pr_idx.GetEx();
     const bool useAccur=true;
 #endif
 
@@ -303,8 +303,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 #ifdef _PAR
     VectorCL d_acc( v.Data.size()), e_acc( p.size()),
              w_acc( v.Data.size()), q_acc( p.size());
-    ExchangeCL& ExVel= NS_.GetEx( NS_.velocity);
-    ExchangeCL& ExPr = NS_.GetEx( NS_.pressure);
+    ExchangeCL& ExVel= NS_.vel_idx.GetEx();
+    ExchangeCL& ExPr = NS_.pr_idx.GetEx();
     const bool useAccur=true;
 #endif
 

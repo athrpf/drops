@@ -827,10 +827,10 @@ RecThetaScheme2PhaseCL<StokesT,SolverT>::RecThetaScheme2PhaseCL
   : base_( Stokes, ls, theta, nonlinear),
     solver_( solver), withProj_( withProjection), stab_( stab), dsp_( 0, 0)
 #ifdef _PAR
-    , MsolverPC_(Stokes.GetEx(Stokes.velocity)), Msolver_(200, 1e-10, Stokes.GetEx(Stokes.velocity), MsolverPC_, false, true),
+    , MsolverPC_(Stokes.vel_idx.GetFinest()), Msolver_(200, 1e-10, Stokes.vel_idx.GetFinest(), MsolverPC_, false, true),
     SsolverPC_(Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
-               Stokes.GetEx(Stokes.pressure), Stokes.GetEx(Stokes.velocity), 1.0, 0.0, 1e-2, 1e-2),
-               Ssolver_(100, 200, 1e-10, Stokes.GetEx(Stokes.pressure), SsolverPC_, true)
+               Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 1.0, 0.0, 1e-2, 1e-2),
+               Ssolver_(100, 200, 1e-10, Stokes.pr_idx.GetFinest(), SsolverPC_, true)
 #endif
 {
     Update();
@@ -1139,7 +1139,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
     SchurComplMatrixCL<PCG_SsorCL, MLMatrixCL> S( Msolver, Stokes_.M.Data, Stokes_.B.Data);
 #else
     Msolver_.SetTol( 1e-13);
-    ParSchurComplMatrixCL<MsolverT, MLMatrixCL, ExchangeCL> S(Msolver_, Stokes_.M.Data, Stokes_.B.Data, Stokes_.GetEx(Stokes_.velocity));
+    ParSchurComplMatrixCL<MsolverT, MLMatrixCL, ExchangeCL> S(Msolver_, Stokes_.M.Data, Stokes_.B.Data, Stokes_.vel_idx.GetEx());
 #endif
 
 #ifndef _PAR

@@ -29,6 +29,7 @@
 #include "num/parprecond.h"
 #include "num/stokessolver.h"
 #include "num/parstokessolver.h"
+#include "num/stokessolverfactory.h"
 #include "stokes/integrTime.h"
 #include "levelset/adaptriang.h"
 
@@ -123,9 +124,9 @@ template <typename StokesT, typename LevelsetT>
     const MLIdxDescCL* vidx = &Stokes.vel_idx,
                      * pidx = &Stokes.pr_idx;
     const IdxDescCL*   lidx = &levelset.idx;
-    const ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity),
-                    & ExP = Stokes.GetEx(Stokes.pressure),
-                    & ExL = levelset.GetEx();
+    const ExchangeCL& ExV = Stokes.vel_idx.GetEx(),
+                    & ExP = Stokes.pr_idx.GetEx(),
+                    & ExL = levelset.idx.GetEx();
 
     // local number on unknowns
     Ulint Psize      = pidx->NumUnknowns();
@@ -403,13 +404,10 @@ void CreateIdxAndAssignIdx(StokesT& Stokes, LevelsetT& lset, const MultiGridCL& 
 template<class Coeff>
   void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset, ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 {
+    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
     ParTimerCL time;
     double duration;
-    // droplet-information
 
-    ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity);
-    ExchangeCL& ExP = Stokes.GetEx(Stokes.pressure);
-//     ExchangeCL& ExL = lset.GetEx();
     MultiGridCL& mg=pmg.GetMG();
 
     switch (C.IniCond)
@@ -442,20 +440,13 @@ template<class Coeff>
         IFInfo.Update(lset, Stokes.GetVelSolution());
         IFInfo.Write(Stokes.t);
 
-        // Setting up solvers
-//         typedef ParDummyPcCL<ExchangeCL> SPcT;
-//         SPcT ispc(ExP);
-        typedef ISBBTPreCL<ExchangeCL, ExchangeCL> SPcT;
-        SPcT ispc( Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
-                   ExP, ExV, /*kA*/1.0/C.dt, /*kM_*/C.theta, 1e-4, 1e-4);
-        typedef ParJac0CL<ExchangeCL>  APcPcT;
-        APcPcT Apcpc(ExV);
-        typedef ParPCGSolverCL<APcPcT,ExchangeCL> ASolverT;
-        ASolverT Asolver( 500, 0.02, ExV, Apcpc, /*relative=*/ true, /*accur*/ true);
-        typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver/*, &std::cerr*/);
-        typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM, ExchangeCL, ExchangeCL> OseenSolverT;
-        OseenSolverT schurSolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.1);
+        StokesSolverParamST statStokesParam(C);
+        statStokesParam.StokesMethod= 20301;
+        statStokesParam.num_steps   = 0;
+        statStokesParam.dt          = 0.;
+        statStokesParam.pcA_tol     = 0.02;
+        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
+        StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
         VelVecDescCL curv(&Stokes.vel_idx),
                      cplN(&Stokes.vel_idx);
@@ -484,21 +475,22 @@ template<class Coeff>
         {
             Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
             cplN.Data-= (1-theta) * (Stokes.N.Data * Stokes.v.Data);
-            schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
+            statStokesSolver->Solve( Stokes.A.Data, Stokes.B.Data,
                                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
             if (ProcCL::IamMaster())
-                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
-                            <<", resid "<<schurSolver.GetResid()<<std::endl;
-            ++step; iters+= schurSolver.GetIter();
-        } while (schurSolver.GetIter() > 0);
+                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<statStokesSolver->GetIter()
+                            <<", resid "<<statStokesSolver->GetResid()<<std::endl;
+            ++step; iters+= statStokesSolver->GetIter();
+        } while (statStokesSolver->GetIter() > 0);
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
         {
             std::cerr << "- Solving Stokes for initialization took "<<duration<<" sec, "
-                        << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<schurSolver.GetResid()<<'\n';
+                        << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<statStokesSolver->GetResid()<<'\n';
             DROPS_LOGGER_SETVALUE("SolStokesTime",duration);
             DROPS_LOGGER_SETVALUE("SolStokesIter",iters);
         }
+        delete statStokesSolver;
       }break;
 
       case 3:
@@ -587,44 +579,13 @@ template<typename Coeff>
     const double Vol= 4./3.*M_PI*C.Radius[0]*C.Radius[1]*C.Radius[2];
     double relVol = lset.GetVolume()/Vol;
 
-    ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity);
-    ExchangeCL& ExP = Stokes.GetEx(Stokes.pressure);
-    ExchangeCL& ExL = lset.GetEx();
-
-    // linear solvers
-    typedef ISBBTPreCL<ExchangeCL, ExchangeCL> SPcT;
-    SPcT ispc( Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
-               ExP, ExV, /*kA*/1.0/C.dt, /*kM_*/C.theta, 1e-4, 1e-4);
-//     typedef ParDummyPcCL<ExchangeCL> SPcT;
-//     SPcT ispc(ExP);
-
-//     typedef ParDummyPcCL<ExchangeCL> SPcPcT;
-//     SPcPcT SPcPcA(ExP), SPcPcM(ExP);
-//     typedef ParPCGSolverCL<SPcPcT,ExchangeCL> SsolverT;
-//     SsolverT PrASolver(50, 0.02, ExP, SPcPcA, true);
-//     SsolverT PrMSolver(50, 0.02, ExP, SPcPcM, true);
-//     typedef ISNonlinearPreCL<SsolverT, SsolverT>  SPcT;
-//     SPcT ispc(PrASolver, PrMSolver, Stokes.prA.Data, Stokes.prM.Data);
-
-    typedef ParJac0CL<ExchangeCL>  APcPcT;
-    APcPcT Apcpc(ExV);
-    typedef ParPreGMResSolverCL<APcPcT, ExchangeCL>    ASolverT;        // GMRes-based APcT
-    ASolverT Asolver( /*restart*/    100, /*iter*/ 500,  /*tol*/   2e-5, ExV, Apcpc,
-                       /*relative=*/ true, /*acc*/ true, /*modGS*/ false, RightPreconditioning, /*mod4par*/true);
-
-//     ASolverT Asolver( C.navstokes_pc_restart, C.navstokes_pc_iter, C.navstokes_pc_reltol, ExV, Apcpc,
-//                         /*relative=*/ true, /*acc*/ true, /*modGS*/false, RightPreconditioning, /*mod4par*/false);
-
-    typedef SolverAsPreCL<ASolverT> APcT;
-    APcT Apc( Asolver/*, &std::cerr*/);
-
-    // stokes solver
-    typedef ParInexactUzawaCL<APcT, SPcT, APC_OTHER, ExchangeCL, ExchangeCL> OseenSolverT;
-    OseenSolverT oseensolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.1, 500, &std::cerr);
+    StokesSolverParamST instatStokesParam(C);
+    ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
+    StokesSolverBaseCL* instatStokesSolver= instatStokesSolverFactory.CreateStokesSolver();
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
-    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
+    NSSolverT nssolver( Stokes, *instatStokesSolver, C.ns_iter, C.ns_tol, C.ns_red);
 
     // coupling levelset NavStokes
     time.Reset();
@@ -669,7 +630,7 @@ template<typename Coeff>
             {
                 cpl.Update();
                 // don't forget to update the pr mass/stiff matrix for the schur compl. preconditioner!!
-				// / \todo (of) Ueberfluessig!
+                // / \todo (of) Ueberfluessig!
                 Stokes.prM.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
                 Stokes.SetupPrMass( &Stokes.prM, lset);
                 Stokes.prA.SetIdx( &Stokes.pr_idx, &Stokes.pr_idx);
@@ -711,7 +672,7 @@ template<typename Coeff>
                           << "- rel. Volume: " << relVol << std::endl;
 
             time.Reset();
-            lset.ReparamFastMarching( ExL, C.RepMethod, C.RepMethod==3);
+            lset.ReparamFastMarching( lset.idx.GetEx(), C.RepMethod, C.RepMethod==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
@@ -758,6 +719,7 @@ template<typename Coeff>
             DROPS_LOGGER_NEXTSTEP();
         }
     }
+    delete instatStokesSolver;
 }
 
 

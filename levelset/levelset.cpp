@@ -473,9 +473,6 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 void LevelsetP2CL::CreateNumbering( Uint level, IdxDescCL* idx, match_fun match)
 {
     idx->CreateNumbering( level, MG_, Bnd_, match);
-#ifdef _PAR
-    ex_.CreateList(MG_, idx, true, true);
-#endif
 }
 
 #ifndef _PAR
@@ -751,7 +748,7 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
     pcg.Solve( C, SmPhi, M*Phi.Data);
     __UNUSED__ double inf_norm= supnorm( SmPhi-Phi.Data);
 #else
-    ParCGSolverCL<ExchangeCL> cg(gm_.GetMaxIter(), gm_.GetTol(), *const_cast<ExchangeCL*>(&ex_));
+    ParCGSolverCL cg(gm_.GetMaxIter(), gm_.GetTol(), idx);
     cg.Solve( C, SmPhi, M*Phi.Data);
     __UNUSED__ const double inf_norm= GlobalMax(supnorm( SmPhi-Phi.Data));
 #endif
@@ -844,9 +841,23 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
 //*****************************************************************************
 //                               LevelsetRepairCL
 //*****************************************************************************
+
 #ifndef _PAR
+void LevelsetRepairCL::pre_refine()
+/// do nothing
+{
+}
+#else
+void LevelsetRepairCL::pre_refine()
+/// Tell parallel multigrid about the location of the DOF
+{
+    GetPMG().AttachTo( &ls_.Phi, &ls_.GetBndData());
+}
+#endif
+
 void
 LevelsetRepairCL::post_refine ()
+/// Do all things to complete the repairment of the FE level-set function
 {
     VecDescCL loc_phi;
     IdxDescCL loc_lidx( P2_FE);
@@ -855,7 +866,13 @@ LevelsetRepairCL::post_refine ()
 
     ls_.CreateNumbering( ls_.GetMG().GetLastLevel(), &loc_lidx, match);
     loc_phi.SetIdx( &loc_lidx);
+#ifdef _PAR
+    GetPMG().HandleNewIdx(&ls_.idx, &loc_phi);
+#endif
     RepairAfterRefineP2( ls_.GetSolution( phi), loc_phi);
+#ifdef _PAR
+    GetPMG().CompleteRepair( &loc_phi);
+#endif
 
     phi.Clear();
     ls_.DeleteNumbering( phi.RowIdx);
@@ -863,35 +880,6 @@ LevelsetRepairCL::post_refine ()
     phi.SetIdx( &ls_.idx);
     phi.Data= loc_phi.Data;
 }
-
-#else
-/// Tell parallel multigrid about the location of the DOF
-void LevelsetRepairCL::pre_refine()
-{
-    pmg_.AttachTo( &ls_.Phi, &ls_.GetBndData());
-}
-
-/// Do all things to complete the repairment of the FE level-set function
-void LevelsetRepairCL::post_refine()
-{
-    VecDescCL loc_phi;
-    IdxDescCL loc_lidx( P2_FE);
-    VecDescCL& phi= ls_.Phi;
-
-    ls_.CreateNumbering( ls_.GetMG().GetLastLevel(), &loc_lidx);
-    loc_phi.SetIdx(&loc_lidx);
-
-    pmg_.HandleNewIdx(&ls_.idx, &loc_phi);
-    RepairAfterRefineP2( ls_.GetSolution( phi), loc_phi);
-    pmg_.CompleteRepair( &loc_phi);
-
-    phi.Clear();
-    ls_.DeleteNumbering( phi.RowIdx);
-    ls_.idx.swap( loc_lidx);
-    phi.SetIdx( &ls_.idx);
-    phi.Data=loc_phi.Data;
-}
-#endif
 
 } // end of namespace DROPS
 

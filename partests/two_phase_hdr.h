@@ -43,9 +43,9 @@ template <typename StokesT, typename LevelsetT>
     const MLIdxDescCL* vidx = &Stokes.vel_idx,
                      * pidx = &Stokes.pr_idx;
     const IdxDescCL*   lidx = &levelset.idx;
-    const ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity),
-                    & ExP = Stokes.GetEx(Stokes.pressure),
-                    & ExL = levelset.GetEx();
+    const ExchangeCL& ExV = Stokes.vel_idx.GetEx(),
+                    & ExP = Stokes.pr_idx.GetEx(),
+                    & ExL = levelset.idx.GetEx();
 
     // local number on unknowns
     Ulint Psize      = pidx->NumUnknowns();

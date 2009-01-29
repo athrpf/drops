@@ -168,9 +168,14 @@ double MovingDroplet(const Point3DCL& p)
     return d.norm()-avgRad;
 }
 
-double Pressure(const Point3DCL p, double=0.)
+double Pressure1(const Point3DCL& p, double=0.)
 {
     return p[1]/0.03;
+}
+
+double Pressure2(const Point3DCL& p, double=0.)
+{
+    return Pressure1( p) - 100;
 }
 
 Point3DCL Velocity(const Point3DCL& p, double=0.)
@@ -178,7 +183,7 @@ Point3DCL Velocity(const Point3DCL& p, double=0.)
     return Inflow(p,0);
 }
 
-void InitPr(VecDescCL& pr, const MultiGridCL& mg)
+void InitPr(VecDescCL& pr, const MultiGridCL& mg, double (*f)(const Point3DCL&, double))
 {
     VectorCL& lsg= pr.Data;
     Uint lvl     = pr.GetLevel(),
@@ -187,7 +192,7 @@ void InitPr(VecDescCL& pr, const MultiGridCL& mg)
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(mg).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(mg).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
         if (sit->Unknowns.Exist(idx))
-            lsg[sit->Unknowns(idx)]=Pressure(sit->GetCoord());
+            lsg[sit->Unknowns(idx)]=f(sit->GetCoord(),0);
 }
 
 /// \brief Check interolated values and give (more or less usefull) information about the interpolation
@@ -334,8 +339,14 @@ template<class Coeff>
     // Init velocity by a known function: Velocity
     Stokes.InitVel( &Stokes.v, Velocity);
     offset=0;
+    MultiGridCL& mg= Stokes.GetMG();
     lset.Init(MovingDroplet);
-    InitPr(Stokes.p, Stokes.GetMG());
+    IdxDescCL p1Idx( P1_FE);
+    p1Idx.CreateNumbering( mg.GetLastLevel(), mg, 0, &lset);
+    VecDescCL p1(p1Idx), p2(p1Idx);
+    InitPr( p1, mg, Pressure1);
+    InitPr( p2, mg, Pressure2);
+    P1toP1X( *Stokes.p.RowIdx, Stokes.p.Data, p1Idx, p1, p2, lset, mg);
 }
 
 template<typename Coeff>
@@ -353,7 +364,7 @@ template<typename Coeff>
     EnsightT ensight( mg, lset.Phi.RowIdx, Stokes, lset, C.ensDir, C.ensCase, C.geomName, adaptive,
                       (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
     VTKT     vtk    ( mg, Stokes, lset, (C.vtk ? C.num_steps/C.vtk+1 : 0),
-                      std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary);
+                      std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary, true);
 
     if (C.ensight)
         ensight.write();
@@ -383,6 +394,8 @@ template<typename Coeff>
 
         offset+=C.Anstroem;
         lset.Init(MovingDroplet);
+        Stokes.UpdateXNumbering( &Stokes.pr_idx, lset);
+        Stokes.UpdatePressure  ( &Stokes.p);
         double dummy1, dummy2;
         Point3DCL dummy3, dummy4, dummy5;
         Point3DCL bary;
@@ -458,9 +471,13 @@ template<class Coeff>
     PressureRepairCL<StokesProblemT> prrepair( Stokes, lset, pmg);
     adapt.push_back( &prrepair);
 
+    // Init levelset
+    lset.CreateNumbering( mg.GetLastLevel(), lidx);
+    l->SetIdx( lidx);
+    lset.Init(MovingDroplet);
+
     Stokes.CreateNumberingVel( mg.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr ( mg.GetLastLevel(), pidx);
-    lset.CreateNumbering     ( mg.GetLastLevel(), lidx);
+    Stokes.CreateNumberingPr ( mg.GetLastLevel(), pidx, 0, &lset);
 
     if (DROPS::ProcCL::IamMaster())
         std::cerr << " - Distribution of elements of the multigrid of level "<<mg.GetLastLevel()<<"\n";
@@ -468,7 +485,6 @@ template<class Coeff>
 
     // Tell matrices and vectors about the numbering
     v->SetIdx( vidx);               p->SetIdx( pidx);
-    l->SetIdx( lidx);
     Stokes.b.SetIdx( vidx);         Stokes.c.SetIdx( pidx);
     Stokes.A.SetIdx(vidx, vidx);    Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);    Stokes.N.SetIdx(vidx, vidx);
@@ -511,7 +527,7 @@ int main (int argc, char** argv)
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
-    DROPS::ParMultiGridCL pmg;
+    DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
 //     DDD_SetOption(OPT_INFO_XFER, XFER_SHOW_MSGSALL);
 
     typedef ZeroFlowCL                                    CoeffT;
@@ -562,7 +578,7 @@ int main (int argc, char** argv)
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
     const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
 
-    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun));
+    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun), DROPS::P1X_FE /*default omit_bound*/);
     Strategy( prob, pmg, lb);    // do all the stuff
 
     alltime.Stop();

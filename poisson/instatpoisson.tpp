@@ -22,9 +22,6 @@ void InstatPoissonP1CL<Coeff>::CreateNumbering(Uint level, MLIdxDescCL* idx, mat
 */
 {
     idx->CreateNumbering( level, _MG, _BndData, match);
-#ifdef _PAR
-    ex_.CreateList(_MG,idx);
-#endif
 }
 
 

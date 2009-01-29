@@ -30,6 +30,7 @@
 #include "num/stokessolver.h"
 #include "num/parstokessolver.h"
 #include "num/nssolver.h"
+#include "num/stokessolverfactory.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -284,10 +285,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     }
 
     // References of Exchange classes
-    ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity);
-    ExchangeCL& ExP = Stokes.GetEx(Stokes.pressure);
+    ExchangeCL& ExV = Stokes.vel_idx.GetEx();
+    ExchangeCL& ExP = Stokes.pr_idx.GetEx();
 //     ExchangeBlockCL& Ex = Stokes.GetEx();
-    ExchangeCL& ExL = lset.GetEx();
+    ExchangeCL& ExL = lset.idx.GetEx();
 
     // Get information about problem size and out them onto std::cerr
     DisplayUnks(vidx, pidx, lidx, ExV, ExP, ExL, MG);
@@ -332,32 +333,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
       // stationary flow with/without drop
       case 1: case 2:
       {
-//         typedef ParDummyPcCL SPcPcT;
-//         SPcPcT SPcPc;
-//
-//         typedef ParPCGSolverCL<SPcPcT, ExchangeCL> SPcSolverT;
-//         SPcSolverT CGsolver( 50, 0.02, ExP, SPcPc, /*relative*/ true, /*accur*/ true);
-//
-//         typedef ISNonlinearPreCL<SPcSolverT> SPcT;
-//         SPcT ispc( CGsolver, Stokes.prA.Data, Stokes.prM.Data, /*kA*/ 0., /*kM*/ 1.);
-
-        // PC for Schur-Complement
-        typedef ParDummyPcCL<ExchangeCL> SPcT;
-        SPcT ispc(Stokes.GetEx(Stokes.pressure));
-
-        // PC for A-Block-PC
-        typedef ParJac0CL<ExchangeCL>  APcPcT;
-        APcPcT Apcpc(Stokes.GetEx(Stokes.velocity));
-
-        // PC for A-block
-        typedef ParPCGSolverCL<APcPcT,ExchangeCL> ASolverT;        // CG-based APcT
-        ASolverT Asolver( 500, 0.02, ExV, Apcpc, /*relative=*/ true, /*accur*/ true);
-        typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver/*, &std::cerr*/);
-
-        // Oseen solver
-        typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM, ExchangeCL, ExchangeCL> OseenSolverT;
-        OseenSolverT schurSolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.1);
+        StokesSolverParamST statStokesParam(C);
+        statStokesParam.StokesMethod= 20301;
+        statStokesParam.num_steps   = 0;
+        statStokesParam.dt          = 0.;
+        statStokesParam.pcA_tol     = 0.02;
+        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
+        StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
         const Point3DCL old_Radius= C.Radius;
         if (C.IniCond==2) // stationary flow without drop
@@ -389,23 +371,24 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         {
             Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
             cplN.Data-= (1-theta) * (Stokes.N.Data * Stokes.v.Data);
-            schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
+            statStokesSolver->Solve( Stokes.A.Data, Stokes.B.Data,
                                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
             if (ProcCL::IamMaster())
-                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
-                          <<", resid "<<schurSolver.GetResid()<<std::endl;
-            ++step; iters+= schurSolver.GetIter();
-        } while (schurSolver.GetIter() > 0);
+                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<statStokesSolver->GetIter()
+                          <<", resid "<<statStokesSolver->GetResid()<<std::endl;
+            ++step; iters+= statStokesSolver->GetIter();
+        } while (statStokesSolver->GetIter() > 0);
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
             std::cerr << "- Solving Stokes for initialization took "<<duration<<" sec, "
-                      << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<schurSolver.GetResid()<<'\n';
+                      << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<statStokesSolver->GetResid()<<'\n';
 
         if (C.IniCond==2) // stationary flow without drop
         {
             C.Radius= old_Radius;
             lset.Init( DistanceFct);
         }
+        delete statStokesSolver;
       } break;
 
       // read from file
@@ -436,45 +419,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     // Use fractional step for solving coupled Navier-Stokes problem
     if (C.scheme)
     {
-        // Linear equation system solver
-        // Preconditioner
-        // PC for instat. Schur complement
-//         typedef ParAccPcCL SPcT;
-//         SPcT ispc(ExP);
-        typedef ParDummyPcCL<ExchangeCL>  SPcT;
-        SPcT ispc(Stokes.GetEx(Stokes.pressure));
 
-        // PC for A-Block-PC
-        typedef ParJac0CL<ExchangeCL>  APcPcT;
-        APcPcT Apcpc(Stokes.GetEx(Stokes.velocity));
+        StokesSolverParamST instatStokesParam(C);
+        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
+        StokesSolverBaseCL* instatStokesSolver= instatStokesSolverFactory.CreateStokesSolver();
 
-        // PC for A-block
-        typedef ParPreGMResSolverCL<APcPcT, ExchangeCL>    ASolverT;        // GMRes-based APcT
-        ASolverT Asolver( /*restart*/    100, /*iter*/ 500,  /*tol*/   2e-5, ExV, Apcpc,
-                          /*relative=*/ true, /*acc*/ true, /*modGS*/ false, RightPreconditioning, /*mod4par*/true);
-        typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver/*,&std::cerr*/);
-
-        // PC for Oseen solver
-//         typedef DiagBlockPreCL<APcT, SPcT> OseenPcT;
-//         OseenPcT oseenpc( Apc, ispc);
-
-        // Oseen Solver
-//         typedef ParPreGCRSolverCL<OseenPcT,ExchangeBlockCL> OseenBaseSolverT;
-//         OseenBaseSolverT oseensolver0( /*trunc*/C.outer_iter, C.outer_iter, C.outer_tol, Ex, oseenpc,
-//                                        /*mod*/false, /*rel*/ false, /*acc*/true);
-//         typedef ParPreGMResSolverCL<OseenPcT,ExchangeBlockCL> OseenBaseSolverT;
-//         OseenBaseSolverT oseensolver0( /*trunc*/C.outer_iter, C.outer_iter, C.outer_tol, Ex, oseenpc,
-//                                        /*rel*/ false, /*acc*/true, /*modGS*/false,  LeftPreconditioning, /*mod4par*/true);
-
-//         typedef BlockMatrixSolverCL<OseenBaseSolverT> OseenSolverT;
-//         OseenSolverT oseensolver( oseensolver0);
-
-        typedef ParInexactUzawaCL<APcT, SPcT, APC_OTHER, ExchangeCL, ExchangeCL> OseenSolverT;
-        OseenSolverT oseensolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.2, 500, &std::cerr);
 
         typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
-        NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
+        NSSolverT nssolver( Stokes, *instatStokesSolver, C.ns_iter, C.ns_tol, C.ns_red);
 
         time.Reset();
         // Coupling Navier-Stokes with Levelset
@@ -564,13 +516,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 step_time.Start();
             }
             step_time.Stop(); duration=step_time.GetMaxTime();
-            if (ProcCL::IamMaster())
-			{
+            if (ProcCL::IamMaster()){
                 std::cerr <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
-			}
+            }
         }
-        //ExP.CheckSends();
-        //ExV.CheckSends();
+        delete instatStokesSolver;
     }
     else {} // No other method yet implemented
     ensight.CaseEnd();

@@ -16,8 +16,10 @@
 
 #include "num/spmat.h"
 #include "num/parlanczos.h"
-#include "parallel/parallel.h"
 #include "num/solver.h"
+#include "parallel/parallel.h"
+#include "misc/problem.h"
+#include "parallel/exchange.h"
 #include <algorithm>
 
 // for file i/o
@@ -123,50 +125,51 @@ bool ParQMR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Lanczos lan
 // ***************************************************************************
 /// \brief Parallel base solver class
 // ***************************************************************************
-template <typename ExCL>
 class ParSolverBaseCL : public SolverBaseCL
-/** All parallel solvers needs additionaly to SolverBaseCL a class for exchanging numerical values*/
+/** All parallel solvers needs additionaly to SolverBaseCL a class for
+    exchanging numerical values. Since these information is stored as a part
+    of the IdxDescCL, the parallel solvers stores a reference to the IdxDescCL
+    as well.
+*/
 {
   protected:
-    ExCL *ex_;      // class for accumulation, inner dots and norms
+    const IdxDescCL& idx_;      // for getting the ExchangeCL
+    bool             acc_;      // use accur version for computing norms and inner products
 
   public:
-    /// Constructor
-    ParSolverBaseCL(int maxiter, double tol, ExCL& ex, std::ostream* output=0)
-      : SolverBaseCL(maxiter, tol, false, output), ex_(&ex) {}
+    /// \brief Constructor
+    ParSolverBaseCL(int maxiter, double tol, const IdxDescCL& idx, bool rel= false, bool acc= true, std::ostream* output=0)
+      : SolverBaseCL(maxiter, tol, rel, output), idx_(idx), acc_(acc) {}
 
-    ExCL& GetEx()             { return *ex_; }      ///< return reference on exchange class
-    const ExCL& GetEx() const { return *ex_; }      ///< return constant reference on exchange class
+    const ExchangeCL& GetEx()             const { return idx_.GetEx(); }      ///< return constant reference on exchange class
+    bool              Accurate()          const { return acc_; }              ///< Check if accurate version of inner products and norms are used
+    void              SetAccurate(bool a)       { acc_= a; }                  ///< Set to accurate version
 };
 
 // ***************************************************************************
 /// \brief Parallel preconditioned base solver class
 // ***************************************************************************
-template <typename PC, typename ExCL>
-class ParPreSolverBaseCL : public ParSolverBaseCL<ExCL>
+template <typename PC>
+class ParPreSolverBaseCL : public ParSolverBaseCL
 /** See ParSolverBaseCL with an preconditioner and a flag if the residual should be measured relative.*/
 {
   private:
-    typedef ParSolverBaseCL<ExCL> base;
+    typedef ParSolverBaseCL base;
 
   protected:
-    PC   *pc_;                                      // preconditioner
-    bool rel_;                                      // meassure residuum relative
+    PC   &pc_;                                      // preconditioner
 
   public:
     typedef PC PrecondT;                            ///< Preconditioner
 
     /// Constructor
-    ParPreSolverBaseCL(int maxiter, double tol, ExCL& ex, PC& pc, bool relative=true, std::ostream* output=0)
-      : ParSolverBaseCL<ExCL>(maxiter, tol, ex, output), pc_(&pc), rel_(relative) {}
+    ParPreSolverBaseCL(int maxiter, double tol, const IdxDescCL& idx, PC& pc, bool rel=true, bool acc= true, std::ostream* output=0)
+      : base(maxiter, tol, idx, rel, acc, output), pc_(pc) {}
 
-    PC& GetPC()             {return *pc_;}          ///< return reference on preconditioner
-    const PC& GetPC() const {return *pc_;}          ///< return constant reference on preconditioner
+    PC& GetPC()             {return pc_;}          ///< return reference on preconditioner
+    const PC& GetPC() const {return pc_;}          ///< return constant reference on preconditioner
 
-    void SetPC(PC& pc) { pc_=&pc; }                 ///< Set preconditioner
-
-    bool  GetRelative() const  { return rel_;}      ///< check if resid is meassured relative
-    void  SetRelative(bool r) { rel_=r; }           ///< set method of resid meassurement
+    void SetPC(PC& pc) { pc_= pc; }                ///< Set preconditioner
 };
 
 //***************************************************************************
@@ -176,18 +179,17 @@ class ParPreSolverBaseCL : public ParSolverBaseCL<ExCL>
 // ***************************************************************************
 /// \brief Parallel CG-Solver class
 // ***************************************************************************
-template <typename ExCL>
-class ParCGSolverCL : public ParSolverBaseCL<ExCL>
+class ParCGSolverCL : public ParSolverBaseCL
 {
   private:
-    typedef ParSolverBaseCL<ExCL> base;
+    typedef ParSolverBaseCL base;
 
   public:
     /// \brief Constructor for parallel CG-Solver
     /** Tries to solve a linear equation system within \a maxiter steps with
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products.*/
-    ParCGSolverCL(int maxiter, double tol, ExCL& ex)
-      : ParSolverBaseCL<ExCL>(maxiter,tol,ex){}
+    ParCGSolverCL(int maxiter, double tol, const IdxDescCL& idx, bool rel= false, bool acc=true, std::ostream* output=0)
+      : base(maxiter, tol, idx, rel, acc, output) {}
 
     /// \brief Solve a linear equation system with Conjugate-Gradients-Method
     template <typename Mat, typename Vec>
@@ -198,7 +200,7 @@ class ParCGSolverCL : public ParSolverBaseCL<ExCL>
     {
         base::_res=  base::_tol;
         base::_iter= base::_maxiter;
-        ParCG(A, x, b, *base::ex_, base::_iter, base::_res);
+        ParCG(A, x, b, base::GetEx(), base::_iter, base::_res);
     }
 };
 
@@ -206,12 +208,11 @@ class ParCGSolverCL : public ParSolverBaseCL<ExCL>
 // ***************************************************************************
 /// \brief Parallel preconditioned CG-Solver class
 // ***************************************************************************
-template <typename PC, typename ExCL>
-class ParPCGSolverCL : public ParPreSolverBaseCL<PC,ExCL>
+template <typename PC>
+class ParPCGSolverCL : public ParPreSolverBaseCL<PC>
 {
   private:
-    typedef ParPreSolverBaseCL<PC,ExCL> base;
-    bool   acc_;        // use accurate inner products (slower)
+    typedef ParPreSolverBaseCL<PC> base;
 
   public:
     /// \brief Constructor for the parallel preconditioned CG Solver
@@ -219,11 +220,8 @@ class ParPCGSolverCL : public ParPreSolverBaseCL<PC,ExCL>
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products. \a pc is
         the given precontioner. If \a rel is given, the residual is computed relative and
         with \a acc the inner products are determined with accure variant (see ExchnageCL). */
-    ParPCGSolverCL(int maxiter, double tol, ExCL &ex, PC& pc, bool rel=false, bool acc=true, std::ostream* output=0)
-      : ParPreSolverBaseCL<PC,ExCL>(maxiter, tol, ex, pc, rel, output), acc_(acc) {}
-
-    bool  Accurate() const { return acc_; }         ///< check if accurate version is used
-    void  SetAccurate(bool a) { acc_=a; }           ///< set if accurate version or normal version should be used
+    ParPCGSolverCL(int maxiter, double tol, const IdxDescCL &idx, PC& pc, bool rel=false, bool acc=true, std::ostream* output=0)
+      : base(maxiter, tol, idx, pc, rel, acc, output) {}
 
     /// \brief Solve a linear equation system with Conjugate Gradients-Method
     template <typename Mat, typename Vec>
@@ -234,23 +232,22 @@ class ParPCGSolverCL : public ParPreSolverBaseCL<PC,ExCL>
     {
         base::_res=  base::_tol;
         base::_iter= base::_maxiter;
-        if (acc_)
-            ParAccurPCG(A, x, b, *base::ex_, *base::pc_, base::_iter, base::_res, base::rel_, base::output_);
+        if (base::Accurate())
+            ParAccurPCG(A, x, b, base::GetEx(),  base::GetPC(), base::_iter, base::_res, base::rel_, base::output_);
         else
-            ParPCG(A, x, b, *base::ex_, *base::pc_, base::_iter, base::_res, base::rel_);
+            ParPCG(A, x, b, base::GetEx(),  base::GetPC(), base::_iter, base::_res, base::rel_);
     }
 };
 
 // ***************************************************************************
 /// \brief Parallel preconditioned GMRES-Solver class
 // ***************************************************************************
-template <typename PC, typename ExCL>
-class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC,ExCL>
+template <typename PC>
+class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC>
 {
   private:
-    typedef ParPreSolverBaseCL<PC,ExCL> base;
+    typedef ParPreSolverBaseCL<PC> base;
     int          restart_;                  // number of iterations before restart
-    bool         acc_;                      // use accurate inner product- and norm-computations
     bool         useModGS_;                 // which Gramm-Schmidt method should be used to compute Krylov basis
     PreMethGMRES method_;                   // left or right preconditioning
     bool         mod_;                      // use modificated variant for better scalability
@@ -265,17 +262,15 @@ class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC,ExCL>
         with \a acc the inner products are determined with accure variant (see ExchnageCL).
         (this configuration needs less memory!). By setting \a ModGS the modified Gramm-Schmidt
         algorithm is used for the Arnoldi method.*/
-    ParPreGMResSolverCL(int restart, int maxiter, double tol, ExCL& ex, PC &pc,
+    ParPreGMResSolverCL(int restart, int maxiter, double tol, const IdxDescCL& idx, PC &pc,
                         bool rel=true, bool acc=true, bool ModGS=false,
-                        PreMethGMRES method=LeftPreconditioning, bool mod=true)
-      : ParPreSolverBaseCL<PC,ExCL>(maxiter, tol, ex, pc, rel),
-        restart_(restart), acc_(acc), useModGS_(ModGS), method_(method), mod_(mod) {}
+                        PreMethGMRES method=LeftPreconditioning, bool mod=true,
+                        std::ostream* output=0)
+      : base(maxiter, tol, idx, pc, rel, acc, output),
+        restart_(restart), useModGS_(ModGS), method_(method), mod_(mod) {}
 
     int  GetRestart()           const { return restart_; }  ///< number of iterations before restart
     void SetRestart(int restart)      { restart_=restart; } ///< set number of iterations before restart
-
-    bool  Accurate() const { return acc_; }         ///< check if accurate version is used
-    void  SetAccurate(bool a) { acc_=a; }           ///< set if accurate version or normal version should be used
 
     /// \brief Solve a linear equation system with a preconditioned Generalized Minimal Residuals-Method
     template <typename Mat, typename Vec>
@@ -288,28 +283,33 @@ class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC,ExCL>
         base::_iter= base::_maxiter;
 
         if (mod_)
-            ParModGMRES(A, x, b, *base::ex_, *base::pc_, restart_, base::_iter, base::_res, base::rel_, acc_, useModGS_, method_);
+            ParModGMRES(A, x, b, base::GetEx(), base::GetPC(), restart_,
+                        base::_iter, base::_res, base::GetRelError(), base::Accurate(),
+                        useModGS_, method_);
         else
-            ParGMRES(A, x, b, *base::ex_, *base::pc_, restart_, base::_iter, base::_res, base::rel_, acc_, method_);
+            ParGMRES(A, x, b, base::GetEx(),  base::GetPC(), restart_,
+                     base::_iter, base::_res, base::GetRelError(), base::Accurate(),
+                     method_);
     }
 };
 
 // ***************************************************************************
 /// \brief Parallel BiCGSTAB-Solver class
 // ***************************************************************************
-template<typename PC, typename ExCL>
-class ParBiCGSTABSolverCL : public ParPreSolverBaseCL<PC,ExCL>
+template<typename PC>
+class ParBiCGSTABSolverCL : public ParPreSolverBaseCL<PC>
 {
   private:
-    typedef ParPreSolverBaseCL<PC,ExCL> base;
+    typedef ParPreSolverBaseCL<PC> base;
 
   public:
     /// \brief Constructor of the parallel preconditioned BiCGStab-Solver
     /** Tries to solve a linear equation system within \a maxiter steps with
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products. \a pc is
         the given precontioner. If \a rel is given, the residual is computed relative. */
-    ParBiCGSTABSolverCL(int maxiter, double tol, ExCL &ex, PC& pc, bool rel=true)
-      : ParPreSolverBaseCL<PC,ExCL>(maxiter, tol, ex, pc, rel) {}
+    ParBiCGSTABSolverCL(int maxiter, double tol, const IdxDescCL &idx, PC& pc, bool rel=true,
+                        bool acc=true, std::ostream* output=0)
+      : base(maxiter, tol, idx, pc, rel, acc, output) {}
 
     /// \brief Solve a linear equation system with preconditioned Bi-Conjugate Gradient Stabilized-Method
     template <typename Mat, typename Vec>
@@ -320,20 +320,19 @@ class ParBiCGSTABSolverCL : public ParPreSolverBaseCL<PC,ExCL>
     {
         base::_res=  base::_tol;
         base::_iter= base::_maxiter;
-        ParBiCGSTAB(A, x, b, *base::ex_, *base::pc_, base::_iter, base::_res, base::rel_);
+        ParBiCGSTAB(A, x, b, base::GetEx(), base::GetPC(), base::_iter, base::_res, base::GetRelError());
     }
 };
 
 // ***************************************************************************
 /// \brief Parallel GCR-Solver class with preconditioning
 // ***************************************************************************
-template <typename PC, typename ExCL>
-class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC,ExCL>
+template <typename PC>
+class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
 {
   private:
-    typedef ParPreSolverBaseCL<PC,ExCL> base;
+    typedef ParPreSolverBaseCL<PC> base;
     int  trunc_;
-    bool acc_;
     bool mod_;
 
   public:
@@ -347,8 +346,9 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC,ExCL>
         is used, to reduce sync-points.
         \todo (of) <b>truncation strategy with modified GCR do not work!</b>
     */
-    ParPreGCRSolverCL(int trunc, int maxiter, double tol, ExCL& ex, PC &pc, bool mod=false, bool rel=true, bool acc=true)
-      : ParPreSolverBaseCL<PC,ExCL>(maxiter, tol, ex, pc, rel), trunc_(trunc), acc_(acc), mod_(mod) {}
+    ParPreGCRSolverCL(int trunc, int maxiter, double tol, const IdxDescCL& idx, PC &pc, bool mod=false,
+                      bool rel=true, bool acc=true, std::ostream* output=0)
+      : base(maxiter, tol, idx, pc, rel, acc, output), trunc_(trunc), mod_(mod) {}
 
     /// \brief Solve a linear equation system with preconditioned Generalized Conjugate Residuals-Method
     template <typename Mat, typename Vec>
@@ -360,26 +360,25 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC,ExCL>
         base::_res  = base::_tol;
         base::_iter = base::_maxiter;
         if (mod_){
-            if (acc_)
-                ParModAccurPGCR(A, x, b, *base::ex_, *base::pc_, trunc_, base::_iter, base::_res,base::rel_);
+            if (base::Accurate())
+                ParModAccurPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError());
             else
-                ParModPGCR(A, x, b, *base::ex_, *base::pc_, trunc_, base::_iter, base::_res, base::rel_);
+                ParModPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError());
         }
         else
-            ParPGCR(A, x, b, *base::ex_, *base::pc_, trunc_, base::_iter, base::_res, base::rel_, acc_);
+            ParPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::Accurate());
     }
 };
 
 // ***************************************************************************
 /// \brief Parallel QMR-Solver class
 // ***************************************************************************
-template<typename Lanczos, typename ExCL>
-class ParQMRSolverCL : public SolverBaseCL
+template<typename Lanczos>
+class ParQMRSolverCL : public ParSolverBaseCL
 {
   private:
-    ExCL      *ex_;
-    Lanczos   *lan_;
-    bool measure_relative_tol_;
+    Lanczos *lan_;
+    typedef ParSolverBaseCL base;
 
   public:
     /// \brief Constructor of the parallel preconditioned QMR-Solver
@@ -387,8 +386,8 @@ class ParQMRSolverCL : public SolverBaseCL
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products. The
         Lanczos-Algorithm to compute the bi-orthoganal-basis is given by a Lanczos class \a lan.
         If \a measure_relative_tol is given, the residual is computed relative.*/
-    ParQMRSolverCL(int maxiter, double tol, ExCL *ex, Lanczos &lan, bool measure_relative_tol=true) :
-        SolverBaseCL(maxiter, tol), ex_(ex), lan_(&lan), measure_relative_tol_(measure_relative_tol) {}
+    ParQMRSolverCL(int maxiter, double tol, const IdxDescCL& idx, Lanczos &lan, bool rel=true, bool acc= true, std::ostream* output=0) :
+        base(maxiter, tol, idx, rel, acc, output), lan_(&lan) {}
 
     /// \brief Solve a linear equation system with Quasi Minimal Residuals-Method
     template <typename Mat, typename Vec>
@@ -397,9 +396,9 @@ class ParQMRSolverCL : public SolverBaseCL
     /// QMR algorithm, uses \a x as start-vector and result vector.
     /// \post x has accumulated form
     {
-        _res  = _tol;
-        _iter = _maxiter;
-        ParQMR(A,x,b,*ex_,*lan_,_iter,_res, measure_relative_tol_);
+        base::_res  = base::_tol;
+        base::_iter = base::_maxiter;
+        ParQMR(A, x, b, base::GetEx(), *lan_, base::_iter, base::_res, base::GetRelError());
     }
 };
 

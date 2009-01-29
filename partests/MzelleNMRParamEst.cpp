@@ -32,6 +32,7 @@
 #include "num/parprecond.h"
 #include "num/stokessolver.h"
 #include "num/parstokessolver.h"
+#include "num/stokessolverfactory.h"
 #include "stokes/integrTime.h"
 #include "levelset/adaptriang.h"
 
@@ -102,6 +103,7 @@ double DistanceYToBarycenterOfDrop( const DROPS::Point3DCL& p)
 template<class Coeff>
   void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
 {
+    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
     ParTimerCL time;
     ParTimerCL initTimer;
     double duration;
@@ -114,29 +116,23 @@ template<class Coeff>
     IFInfo.Update(lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t);
 
-    ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity);
-    ExchangeCL& ExP = Stokes.GetEx(Stokes.pressure);
-    ExchangeCL& ExL = lset.GetEx();
+    ExchangeCL& ExV = Stokes.vel_idx.GetEx();
+    ExchangeCL& ExP = Stokes.pr_idx.GetEx();
+    ExchangeCL& ExL = lset.idx.GetEx();
 
     switch (C.IniCond)
     {
       // stationary flow with/without drop
       case 1: case 2:
       {
-        // Setting up solver
-//         typedef ParDummyPcCL<ExchangeCL> SPcT;
-//         SPcT ispc(ExP);
-        typedef ISBBTPreCL<ExchangeCL, ExchangeCL> SPcT;
-        SPcT ispc( Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
-                   ExP, ExV, /*kA*/1.0/C.dt, /*kM_*/C.theta, 1e-4, 1e-4);
-        typedef ParJac0CL<ExchangeCL>  APcPcT;
-        APcPcT Apcpc(ExV);
-        typedef ParPCGSolverCL<APcPcT, ExchangeCL> ASolverT;
-        ASolverT Asolver( 500, 0.02, ExV, Apcpc, /*relative=*/ true, /*accur*/ true);
-        typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver/*, &std::cerr*/);
-        typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM, ExchangeCL, ExchangeCL> OseenSolverT;
-        OseenSolverT schurSolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.1, 500, &std::cerr);
+        StokesSolverParamST statStokesParam(C);
+        statStokesParam.StokesMethod= 20301;
+        statStokesParam.num_steps   = 0;
+        statStokesParam.dt          = 0.;
+        statStokesParam.pcA_tol     = 0.02;
+        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
+        StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
+        StokesSolverBaseCL& schurSolver=*statStokesSolver;
 
         VelVecDescCL curv(&Stokes.vel_idx),
                     cplN(&Stokes.vel_idx);
@@ -181,6 +177,7 @@ template<class Coeff>
             DROPS_LOGGER_SETVALUE("SolStokesTime",duration);
             DROPS_LOGGER_SETVALUE("SolStokesIter",iters);
         }
+        delete statStokesSolver;
       }break;
       case 3:
         {
@@ -221,31 +218,10 @@ template<typename Coeff>
     const double Vol= EllipsoidCL::GetVolume();
     double relVol = lset.GetVolume()/Vol;
 
-    ExchangeCL& ExV = Stokes.GetEx(Stokes.velocity);
-    ExchangeCL& ExP = Stokes.GetEx(Stokes.pressure);
-    ExchangeCL& ExL = lset.GetEx();
-
-    // linear solvers
-//     typedef ParDummyPcCL<ExchangeCL>  SPcT;
-//     SPcT ispc(ExP);
-    typedef ISBBTPreCL<ExchangeCL, ExchangeCL> SPcT;
-    SPcT ispc( Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
-               ExP, ExV, /*kA*/1.0/C.dt, /*kM_*/C.theta, 1e-3, 1e-3);
-    typedef ParJac0CL<ExchangeCL>  APcPcT;
-    APcPcT Apcpc(ExV);
-    typedef ParPreGMResSolverCL<APcPcT, ExchangeCL>    ASolverT;        // GMRes-based APcT
-    ASolverT Asolver( /*restart*/    100, /*iter*/ 500,  /*tol*/   2e-5, ExV, Apcpc,
-                       /*relative=*/ true, /*acc*/ true, /*modGS*/ false, RightPreconditioning, /*mod4par*/true);
-
-//     ASolverT Asolver( C.navstokes_pc_restart, C.navstokes_pc_iter, C.navstokes_pc_reltol, ExV, Apcpc,
-//                         /*relative=*/ true, /*acc*/ true, /*modGS*/false, RightPreconditioning, /*mod4par*/false);
-
-    typedef SolverAsPreCL<ASolverT> APcT;
-    APcT Apc( Asolver/*, &std::cerr*/);
-
-    // stokes solver
-    typedef ParInexactUzawaCL<APcT, SPcT, APC_OTHER, ExchangeCL, ExchangeCL> OseenSolverT;
-    OseenSolverT oseensolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.2, 500, &std::cerr);
+    StokesSolverParamST instatStokesParam(C);
+    ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
+    StokesSolverBaseCL* instatStokesSolver= instatStokesSolverFactory.CreateStokesSolver();
+    StokesSolverBaseCL& oseensolver= *instatStokesSolver;
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
@@ -310,12 +286,16 @@ template<typename Coeff>
 
         cpl.DoStep( C.cpl_iter);
 
-        double norm_diff= ExV.Norm( VectorCL(Stokes.v.Data-u_old), false);
+        double rel_norm_diff=  Stokes.vel_idx.GetEx().Norm( VectorCL(Stokes.v.Data-u_old), true)
+                             / Stokes.vel_idx.GetEx().Norm( Stokes.v.Data, true);
+        double norm_vel = Stokes.vel_idx.GetEx().Norm( Stokes.v.Data, true);
 
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster()){
             std::cerr << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec.\n"
-                      << "  => Difference of velocity to previous solution: " << norm_diff << std::endl;
+                      << "  => Relative Difference of velocity to previous solution: " << rel_norm_diff
+                      << ", norm of velocity-vector is "<< norm_vel
+                      << std::endl;
             // Store measured values
             DROPS_LOGGER_SETVALUE("NavStokesCoupledLevelset",duration);
         }
@@ -338,7 +318,7 @@ template<typename Coeff>
                 std::cerr << "\n==> Reparametrization\n"
                           << "- rel. Volume: " << relVol << std::endl;
             time.Reset();
-            lset.ReparamFastMarching( ExL, C.RepMethod, C.RepMethod==3);
+            lset.ReparamFastMarching( lset.idx.GetEx(), C.RepMethod, C.RepMethod==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
@@ -375,9 +355,9 @@ template<typename Coeff>
             DROPS_LOGGER_NEXTSTEP();
         }
 
-        if (norm_diff<=C.XFEMStab){     // use XFEMStab as criteria
+        if (rel_norm_diff<=C.XFEMStab){     // use XFEMStab as criteria
             IF_MASTER
-              std::cerr << " ==> norm velocity has just changed by "<< norm_diff
+              std::cerr << " ==> relative difference in velocity has just changed by "<< rel_norm_diff
                         << ", tolerance of "<<C.XFEMStab<<" has been reached!"
                         << std::endl;
             break;
@@ -385,6 +365,7 @@ template<typename Coeff>
     }
     timeIntegrationTimer.Stop();
     Times.AddTime(T_solve_NS, timeIntegrationTimer.GetTime());
+    delete instatStokesSolver;
 }
 
 

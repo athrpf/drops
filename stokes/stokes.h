@@ -47,18 +47,10 @@ typedef VecDescBaseCL<VectorCL> VelVecDescCL;
 
 
 template <class Coeff>
-#ifndef _PAR
 class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
-#else
-class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
-#endif
 {
   public:
-#ifndef _PAR
     typedef ProblemCL<Coeff, StokesBndDataCL> _base;
-#else
-    typedef ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL> _base;
-#endif
     typedef typename _base::CoeffCL                 CoeffCL;
     typedef typename _base::BndDataCL               BndDataCL;
     using _base::_MG;
@@ -66,12 +58,6 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
     using _base::_BndData;
     using _base::GetBndData;
     using _base::GetMG;
-#ifdef _PAR
-    using _base::ex_;
-    using _base::GetEx;
-    /// \brief Numbering of blocks within ExchangeBlockCL
-    enum ExType { velocity=0, pressure=1 };
-#endif
 
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>           DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -91,17 +77,10 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
                  B,
                  M;
 
-#ifndef _PAR
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base( mg, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
-#else
-    StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata, 2), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
-    StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg, coeff, bdata, 2), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
-#endif
 
     /// \name Create and delete numbering of unknowns
     //@{
@@ -113,16 +92,6 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL, ExchangeBlockCL>
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
     //@}
-
-#ifdef _PAR
-    /// \brief Get a reference on Exchange class for pressure or for velocity
-    ExchangeCL& GetEx(Uint t)
-      { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
-
-    /// \brief Get a constant reference on Exchange class for pressure or for velocity
-    const ExchangeCL& GetEx(Uint t) const
-      { return t==pressure ? ex_.Get(pressure) : ex_.Get(velocity); }
-#endif
 
     /// \brief Set up matrices and complete rhs
     void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double= 0.0) const;

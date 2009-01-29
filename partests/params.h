@@ -180,6 +180,29 @@ class ParamReparamCL : public virtual ParamBaseCL
     ParamReparamCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
+/// \brief Parameter class for Stokes-Solver
+class ParamStokesCL : public virtual ParamBaseCL
+{
+  protected:
+    void RegisterParams();
+
+  public:
+  /// \name parameter for the Stokes solver
+  //@{
+    int    StokesMethod;                        ///< solver for the Stokes problems
+    double inner_tol,                           ///< tolerance for Stokes solver
+           outer_tol;
+    int    inner_iter,                          ///< max. number of iterations for Stokes solver
+           outer_iter;
+    int    pcA_iter;                            ///< max. number of iterations for the preconditionier
+    double pcA_tol,                             ///< tolerance for the preconditioner of A-block
+           pcS_tol;                             ///< tolerance for the preconditioner of Schur complement
+  //@}
+  public:
+    ParamStokesCL()                        { RegisterParams(); }
+    ParamStokesCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+};
+
 /// \brief Parameter class for adaptive refinement (with level-set function)
 class ParamApdaptRefCL : public virtual ParamBaseCL
 {
@@ -255,7 +278,8 @@ class ParamParRefCL :
 class ParamParStokesCL :
         public virtual ParamBaseCL,
         public virtual ParamEnsightCL,
-        public virtual ParamVTKCL
+        public virtual ParamVTKCL,
+        public virtual ParamStokesCL
 {
   private:
     void RegisterParams();
@@ -275,20 +299,6 @@ class ParamParStokesCL :
   //@{
     int refineStrategy;                         ///< Algorithm of calculate the loabal-graph for refinement
   //@}
-  /// \name Solver
-  //@{
-    double relax;                               ///< Relax-Parameter for preconditioner
-    int    pc_iter;                             ///< max iterations for solver within the approximate schur complement matrix
-    double pc_rel_tol;                          ///< relative tolerance for solver within the approximate schur complement matrix
-    int    inner_iter;                          ///< max iterations for the inner solver
-    int    outer_iter;                          ///< max iterations for the outer solver
-    double inner_tol;                           ///< toleration for the inner solver
-    double outer_tol;                           ///< toleration for the outer solver
-    int    restart;                             ///< if inner solver==GMRES, dimension of Krylov subspace, solver==GCR , truncation
-    int    relative;                            ///< meassure resid relative
-    double reduction;                           ///< residual reduction for innexact Uzawa algorithm
-    int    accur;                               ///< use accurate solver
-  //@}
   /// \name Misc
   //@{
     int printInfo;                              ///< Display information
@@ -301,6 +311,7 @@ class ParamParStokesCL :
         rp_.ReadParams( file);
         ParamVTKCL::rp_.ReadParams( file);
         ParamEnsightCL::rp_.ReadParams( file);
+        ParamStokesCL::rp_.ReadParams( file);
     }
 };
 
@@ -470,7 +481,8 @@ class ParamParBrickFlowCL :
         public ParamInfoCL,
         public ParamQuadCL,
         public ParamMGSerCL,
-        public ParamReparamCL
+        public ParamReparamCL,
+        public ParamStokesCL
 {
   private:
     void RegisterParams();
@@ -493,6 +505,7 @@ class ParamParBrickFlowCL :
          ParamEnsightCL::rp_.ReadParams( file);
          ParamMGSerCL::rp_.ReadParams( file);
          ParamReparamCL::rp_.ReadParams( file);
+         ParamStokesCL::rp_.ReadParams( file);
        }
 };
 
@@ -504,7 +517,8 @@ class ParParamMesszelleNsCL :
         public ParamVTKCL,
         public ParamInfoCL,
         public ParamQuadCL,
-        public ParamReparamCL
+        public ParamReparamCL,
+        public ParamStokesCL
 {
   private:
     void RegisterParams();
@@ -526,6 +540,7 @@ class ParParamMesszelleNsCL :
          ParamQuadCL::rp_.ReadParams( file);
          ParamEnsightCL::rp_.ReadParams( file);
          ParamReparamCL::rp_.ReadParams( file);
+         ParamStokesCL::rp_.ReadParams( file);
        }
 };
 
@@ -605,58 +620,6 @@ class ParamParSerCL :
     }
 };
 
-/// \brief Parameter class for the problem cas TestFilmStokesPar.cpp
-class ParamParFilmStokesCL :
-        virtual public ParamLoadBalCL,
-        virtual public ParamEnsightCL,
-        virtual public ParamVTKCL,
-        virtual public ParamInfoCL,
-        virtual public ParamBrickCL,
-        virtual public ParamReparamCL,
-        virtual public ParamApdaptRefCL
-{ // y = Filmnormal, x = Ablaufrichtung
-  protected:
-    void RegisterParams();
-
-  public:
-    double inner_tol, outer_tol,                // Parameter der Loeser
-           ns_tol, ns_red, nonlinear,           // fuer Flow & Levelset
-           lset_tol, lset_SD, cpl_tol;
-    int    inner_iter, outer_iter,
-           ns_iter, lset_iter;
-    int    cpl_iter;                            // Kopplung Levelset/Flow: Anzahl Fixpunkt-Iterationen
-
-    double dt;                                  // Zeitschrittweite
-    int    num_steps;                           // Anzahl Zeitschritte
-    double theta, lset_theta;                   // 0=FwdEuler, 1=BwdEuler, 0.5=CN
-
-    double sigma,                               // Oberflaechenspannung
-           CurvDiff,                            // num. Glaettung Kruemmungstermberechnung
-           rhoF, rhoG, muF, muG,                // Stoffdaten: Dichte/Viskositaet
-           sm_eps,                              // Glaettungszone fuer Dichte-/Viskositaetssprung
-           PumpAmpl, PumpFreq;                  // Frequenz und Amplitude der Anregung
-
-    Point3DCL g;                                // Schwerkraft
-    double    Filmdicke;                        // Filmdicke
-    int       VolCorr,                          // Volumenkorrektur (0=false)
-              IniCond;                          // Anfangsbedingung (0=Null, 1= stat. flow, -1= read from file )
-
-    string IniData;
-
-    ParamParFilmStokesCL() { RegisterParams(); }
-    ParamParFilmStokesCL( const string& filename) {
-        RegisterParams();
-        std::ifstream file(filename.c_str());
-        rp_.ReadParams( file);
-        ParamLoadBalCL::rp_.ReadParams( file);
-        ParamEnsightCL::rp_.ReadParams( file);
-        ParamVTKCL::rp_.ReadParams( file);
-        ParamInfoCL::rp_.ReadParams( file);
-        ParamBrickCL::rp_.ReadParams( file);
-        ParamReparamCL::rp_.ReadParams( file);
-        ParamApdaptRefCL::rp_.ReadParams( file);
-    }
-};
 } // end of namespace DROPS
 
 #endif
