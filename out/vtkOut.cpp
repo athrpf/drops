@@ -13,10 +13,10 @@ namespace DROPS
 VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
             const std::string& filename, bool binary)
 /** Beside constructing the VTKOutCL, this function computes the number of
-    digits, that are used to decode the timesteps in the filename.
+    digits, that are used to decode the time steps in the filename.
 \param mg        MultiGridCL that contains the geometry
 \param dataname  name of the data
-\param numsteps  number of timesteps
+\param numsteps  number of time steps
 \param filename  prefix of all files (e.g. vtk/output)
 \param binary    Write out files in binary format. (Does not work)
 \todo Support of binary output

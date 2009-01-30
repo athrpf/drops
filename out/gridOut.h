@@ -91,7 +91,7 @@ void Integrate(Matrix3DCL<T>& output, const T& dx, Uint integration_axis=2, Uint
 /// \param output The values on the quadrilateral grid of velocities,
 ///               pressure, ... The result is contained in this matrix
 /// \param dx Scaling factor
-/// \param integration_axis sum up elemens along this axis
+/// \param integration_axis sum up elements along this axis
 /// \param result_plane plane in output, where to store the result
 {
     switch (integration_axis)
@@ -140,7 +140,7 @@ inline void WriteNormValsOnZPlane(std::ostream& os, T* vals, Uint nx, Uint ny, U
                                   Uint format=12, T scale_factor=1.)
 /// This function writes out values of an array, that has been created by the
 /// Matrix3DCL.
-/// \param os outputstream
+/// \param os output stream
 /// \param vals values in an array
 /// \param nx number of values in x direction
 /// \param ny number of values in y direction
@@ -173,7 +173,7 @@ inline void WriteValsOnZPlane(std::ostream& os, T* vals, Uint nx, Uint ny, __UNU
                               Uint format=12, Uint numperitem=1, int single_item=-1, T scale_factor=1)
 /// This function writes out values of an array, that has been created by the
 /// Matrix3DCL.
-/// \param os outputstream
+/// \param os output stream
 /// \param vals values in an array
 /// \param nx number of values in x direction
 /// \param ny number of values in y direction
@@ -210,7 +210,7 @@ inline void WriteVals(std::ostream& os, T* vals, Uint nx, Uint ny, Uint nz, Uint
                       Uint numperitem=1, int single_item=-1, T scale_factor=1)
 /// This function writes out values of an array, that has been created by the
 /// Matrix3DCL.
-/// \param os outputstream
+/// \param os output stream
 /// \param vals values in an array
 /// \param nx number of values in x direction
 /// \param ny number of values in y direction
@@ -260,8 +260,8 @@ class QuadOutCL
   private:
     const MultiGridCL& MG_;
     const IdxDescCL*   idx_;
-    int                gridpts_[3];  // gridpoints in x-, y-, z-direction
-    Point3DCL          h_;           // stepsize in each direction
+    int                gridpts_[3];  // grid points in x-, y-, z-direction
+    Point3DCL          h_;           // step size in each direction
     Point3DCL          bary_;        // barycenter of the grid
     Point3DCL          offset_;
     Point3DCL          rot_;         // rotation in each direction
@@ -278,7 +278,7 @@ class QuadOutCL
   public:
     QuadOutCL( const MultiGridCL& mg, const IdxDescCL* idx)
       : MG_( mg), idx_( idx), geom_info_(0), geom_version_(size_t(-1))
-    /** \Note: idx must refer to a numbering of the verts and edges of a certain
+    /** \note: idx must refer to a numbering of the verts and edges of a certain
         triangulation, i.e. use LevelsetP2CL::CreateNumbering before
         constructing an QuadOutCL-object. */
       { Init(1,1,1,Point3DCL(),Point3DCL(),Point3DCL()); }
@@ -289,7 +289,7 @@ class QuadOutCL
       { Init(nx, ny, nz, h, bary, rot);}
     ~QuadOutCL() { if (geom_info_) delete geom_info_; }
 
-    /// \brief Store gemetric information about the quadrilateral grid
+    /// \brief Store geometric information about the quadrilateral grid
     void Init(int nx, int ny, int nz, const Point3DCL& h,
               const Point3DCL& bary, const Point3DCL& rot);
 
@@ -364,7 +364,7 @@ inline void QuadOutCL::putLog( std::string fileName)
 
 
 inline void QuadOutCL::putGeom( std::string fileName)
-/** This function writes zeros and ones in the file given by tha parameter
+/** This function writes zeros and ones in the file given by the parameter
     fileName if the corresponding point in the quadrilateral grid is in- or
     outside the computational domain.<p>
     In difference to the sequential version of DROPS, these information are
@@ -374,7 +374,7 @@ inline void QuadOutCL::putGeom( std::string fileName)
     vectorial or scalar valued functions. It may happen, that a single point
     of the quadrilateral is written out by two processors. So the value of the
     function is divided by the number of processors, that writes out the value.
-\Note If DROPS is compiled with OpenMP support, this function is parallelized*/
+\note If DROPS is compiled with OpenMP support, this function is parallelized*/
 {
 #ifndef _PAR
     TimerCL timer;
@@ -463,7 +463,7 @@ void QuadOutCL::putScalar( std::string fileName, const DiscScalT& v)
     In difference to the sequential version of DROPS, these information are
     gathered by each processor but collected and written out by the master
     processor.
-\Note If DROPS is compiled with OpenMP support, this function is parallelized
+\note If DROPS is compiled with OpenMP support, this function is parallelized
 \pre The function putGeom has to be called for the same multigrid.*/
 {
     if (!geom_info_ || geom_version_!=MG_.GetVersion())
