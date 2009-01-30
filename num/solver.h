@@ -742,11 +742,14 @@ PCG(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
 /// iterations (true), or no convergence within max_iter iterations (false).
 /// Upon successful return, output arguments have the following values:
 ///
-/// \param x - approximate solution to Ax = b
+/// \param A - matrix (not necessarily quadratic)
+/// \param b - right hand side
+/// \param u - approximate solution to A*A^T u = b
+/// \param M - preconditioner
 /// \param max_iter - number of iterations performed before tolerance was reached
 /// \param tol - 2-norm of the (relative, see below) residual after the final iteration
-/// \param measure_relative_tol - If true, stop if |b - Ax|/|b| <= tol,
-///        if false, stop if |b - Ax| <= tol.
+/// \param measure_relative_tol - If true, stop if |b - A*A^T u|/|b| <= tol,
+///        if false, stop if |b - A*A^T u| <= tol.
 template <typename Mat, typename Vec, typename PreCon>
 bool
 PCGNE(const Mat& A, Vec& u, const Vec& b, const PreCon& M,

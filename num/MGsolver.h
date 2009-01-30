@@ -34,7 +34,7 @@ namespace DROPS
  \param numLevel      number of vidited levels
  \param numUnknDirect minimal number of unknowns for the direct solver */
 template<class SmootherCL, class DirectSolverCL, class ProlongationIteratorT>
-void MGM( const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine, 
+void MGM( const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& fine,
           const ProlongationIteratorT& P, VectorCL& x, const VectorCL& b,
           const SmootherCL& Smoother, Uint smoothSteps,
           DirectSolverCL& Solver, int numLevel, int numUnknDirect);
@@ -45,7 +45,7 @@ void MGM( const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_itera
  The error is measured as two-norm of dx for residerr=false, of Ax-b for residerr=true.
  sm controls the number of smoothing steps, lvl the number of used levels */
 template<class SmootherCL, class DirectSolverCL, class ProlongationT>
-void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL&, 
+void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL&,
         DirectSolverCL&, VectorCL& x, const VectorCL& b, int& maxiter, double& tol,
         const bool residerr= true, Uint sm=1, int lvl=-1);
 
@@ -110,9 +110,11 @@ void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P);
  If one of the parameters is -1, it will be neglected.
  If the coarsest level 'begin' has been reached, the direct solver is used too.
  NOTE: Assumes, that the levels are stored in an ascending order (first=coarsest, last=finest)
- \param beginA        coarsest level
- \param fineA         actual level
- \param fineB         actual level
+ \param beginA        A on coarsest level
+ \param fineA         A on actual level
+ \param fineB         B on actual level
+ \param fineBT        B^T on actual level
+ \param fineprM       pressure mass matrix on actual level
  \param PVel          prolongation for P2
  \param PPr           prolongation for P1
  \param u             velocity
@@ -127,7 +129,7 @@ void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P);
  \param numUnknDirect minimal number of unknowns for the direct solver */
 template<class StokesSmootherCL, class StokesDirectSolverCL, class ProlongItT1, class ProlongItT2>
 void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::const_iterator& fineA,
-                const MLMatrixCL::const_iterator& fineB,   const MLMatrixCL::const_iterator& fineBT, 
+                const MLMatrixCL::const_iterator& fineB,   const MLMatrixCL::const_iterator& fineBT,
                 const MLMatrixCL::const_iterator& fineprM, const ProlongItT1& PVel,
                 const ProlongItT2& PPr, VectorCL& u, VectorCL& p, const VectorCL& b,
                 const VectorCL& c, const StokesSmootherCL& Smoother, Uint smoothSteps, Uint cycleSteps,
@@ -178,7 +180,7 @@ class PVankaSmootherCL
 \brief constructor of the PVankaSmootherCL
  \param vanka_method solving methods for local problems: 0, 3, 4 schur method with diagonal/Gauss-Seidel/symmetrical Gauss-Seidel approximation of A^{-1}, 2: LR decomposition of the local problems
  \param tau          relaxation parameter
- \param xidx optional extended index for 2x2-systems with pressure & extended pressure */
+ \param idx          optional extended index for 2x2-systems with pressure & extended pressure */
     PVankaSmootherCL(int vanka_method=0, double tau=1.0, const MLIdxDescCL* idx= 0)
         : vanka_method_(vanka_method), tau_(tau), idx_( idx) {}
     template <typename Mat, typename Vec>

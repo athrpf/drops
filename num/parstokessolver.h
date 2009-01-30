@@ -9,7 +9,7 @@
 //**************************************************************************
 /// \author Oliver Fortmeier, SC RWTH Aachen
 /// \file parstokessolver.h
-/// \brief Parallel itertative solvers for stokes problems
+/// \brief Parallel iterative solvers for Stokes problems
 
 #ifndef DROPS_PARSTOKESSOLVER_H_
 #define DROPS_PARSTOKESSOLVER_H_
@@ -57,8 +57,8 @@ class ParStokesSolverBaseCL : public StokesSolverBaseCL
       : base(maxiter, tol, /*rel*/false, output), vel_idx_(vel_idx), pr_idx_(pr_idx), Apc_(&apc), Spc_(&spc)
         /// \param maxiter maximal iterations
         /// \param tol     tolerance for residual
-        /// \param vel_idx index describtion for accessing the ExchangeCL for velocity
-        /// \param pr_idx  index describtion for accessing the ExchangeCL for pressure
+        /// \param vel_idx index description for accessing the ExchangeCL for velocity
+        /// \param pr_idx  index description for accessing the ExchangeCL for pressure
         /// \param apc     preconditioner for A-block
         /// \param spc     preconditioner for Schur complement matrix
         /// \param output  give output
@@ -86,7 +86,7 @@ class ParInexactUzawaCL : public ParStokesSolverBaseCL<ApcT, SpcT>
 
     double innerreduction_;     // reduction
     int    innermaxiter_;       // maximal inner iterations
-    int    inneriter_;          // number of inneritter (accumulated)
+    int    inneriter_;          // number of inner iterations (accumulated)
 
   public:
       ParInexactUzawaCL(ApcT& Apc, SpcT& Spc, const IdxDescCL& vel_idx, const IdxDescCL& pr_idx,
@@ -218,8 +218,8 @@ template <typename Mat, typename Vec, typename PC1, typename PC2, typename ExVCL
                     double innerred, int innermaxiter, bool useAcc, std::ostream* output)
 /// \param[in]     A            Coefficient matrix for velocities
 /// \param[in]     B            Coefficient matrix for coupling velocity and pressure
-/// \param[in,out] xu_acc IN:   Startvector for velocity, OUT: velocity result
-/// \param[in,out] xp_acc IN:   Startvector for pressure, OUT: pressure result
+/// \param[in,out] xu_acc IN:   initial vector for velocity, OUT: velocity result
+/// \param[in,out] xp_acc IN:   initial vector for pressure, OUT: pressure result
 /// \param[in]     f            upper rhs
 /// \param[in]     g            lower rhs
 /// \param[in]     exV          Exchange class for velocities

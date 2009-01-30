@@ -9,7 +9,7 @@
 //**************************************************************************
 /// \author Oliver Fortmeier, SC RWTH Aachen
 /// \file parsolver.h
-/// \brief Parallel basic itertative solvers
+/// \brief Parallel basic iterative solvers
 
 #ifndef _DROPS_PARSOLVER_H_
 #define _DROPS_PARSOLVER_H_
@@ -86,7 +86,7 @@ bool ParGMRES(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M
               int m, int& max_iter, double& tol, bool measure_relative_tol=true, bool useAcc=true,
               PreMethGMRES method=RightPreconditioning);
 
-// Preconditioned GMRES with modifactions for better scalability.
+// Preconditioned GMRES with modifications for better scalability.
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParModGMRES(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
                  int m, int& max_iter, double& tol, bool measure_relative_tol=true, bool useAcc=true,
@@ -126,7 +126,7 @@ bool ParQMR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Lanczos lan
 /// \brief Parallel base solver class
 // ***************************************************************************
 class ParSolverBaseCL : public SolverBaseCL
-/** All parallel solvers needs additionaly to SolverBaseCL a class for
+/** All parallel solvers needs additionally to SolverBaseCL a class for
     exchanging numerical values. Since these information is stored as a part
     of the IdxDescCL, the parallel solvers stores a reference to the IdxDescCL
     as well.
@@ -218,8 +218,8 @@ class ParPCGSolverCL : public ParPreSolverBaseCL<PC>
     /// \brief Constructor for the parallel preconditioned CG Solver
     /** Tries to solve a linear equation system within \a maxiter steps with
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products. \a pc is
-        the given precontioner. If \a rel is given, the residual is computed relative and
-        with \a acc the inner products are determined with accure variant (see ExchnageCL). */
+        the given preconditioner. If \a rel is given, the residual is computed relative and
+        with \a acc the inner products are determined with accure variant (see ExchangeCL). */
     ParPCGSolverCL(int maxiter, double tol, const IdxDescCL &idx, PC& pc, bool rel=false, bool acc=true, std::ostream* output=0)
       : base(maxiter, tol, idx, pc, rel, acc, output) {}
 
@@ -227,7 +227,7 @@ class ParPCGSolverCL : public ParPreSolverBaseCL<PC>
     template <typename Mat, typename Vec>
       void Solve(const Mat& A, Vec& x, const Vec& b)
     /// Solve the linear equation system with coefficient matrix \a A and rhs \a b iterative with
-    /// predonditioned CG algorithm, uses \a x as start-vector and result vector.
+    /// preconditioned CG algorithm, uses \a x as start-vector and result vector.
     /// \post x has accumulated form
     {
         base::_res=  base::_tol;
@@ -250,7 +250,7 @@ class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC>
     int          restart_;                  // number of iterations before restart
     bool         useModGS_;                 // which Gramm-Schmidt method should be used to compute Krylov basis
     PreMethGMRES method_;                   // left or right preconditioning
-    bool         mod_;                      // use modificated variant for better scalability
+    bool         mod_;                      // use modified variant for better scalability
 
 
   public:
@@ -258,8 +258,8 @@ class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC>
     /** Tries to solve a linear equation system within \a maxiter steps with
         accuracy \a tol. After \a restart steps, a restart is performed. The ExCL
         \a ex is used to do parallel inner products. \a pc is
-        the given precontioner. If \a rel is given, the residual is computed relative and
-        with \a acc the inner products are determined with accure variant (see ExchnageCL).
+        the given preconditioner. If \a rel is given, the residual is computed relative and
+        with \a acc the inner products are determined with accure variant (see ExchangeCL).
         (this configuration needs less memory!). By setting \a ModGS the modified Gramm-Schmidt
         algorithm is used for the Arnoldi method.*/
     ParPreGMResSolverCL(int restart, int maxiter, double tol, const IdxDescCL& idx, PC &pc,
@@ -276,7 +276,7 @@ class ParPreGMResSolverCL : public ParPreSolverBaseCL<PC>
     template <typename Mat, typename Vec>
       void Solve(const Mat& A, Vec& x, const Vec& b)
     /// Solve the linear equation system with coefficient matrix \a A and rhs \a b iterative with
-    /// predonditioned GMRES algorithm, uses \a x as start-vector and result vector.
+    /// preconditioned GMRES algorithm, uses \a x as start-vector and result vector.
     /// \post x has accumulated form
     {
         base::_res=  base::_tol;
@@ -306,7 +306,7 @@ class ParBiCGSTABSolverCL : public ParPreSolverBaseCL<PC>
     /// \brief Constructor of the parallel preconditioned BiCGStab-Solver
     /** Tries to solve a linear equation system within \a maxiter steps with
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products. \a pc is
-        the given precontioner. If \a rel is given, the residual is computed relative. */
+        the given preconditioner. If \a rel is given, the residual is computed relative. */
     ParBiCGSTABSolverCL(int maxiter, double tol, const IdxDescCL &idx, PC& pc, bool rel=true,
                         bool acc=true, std::ostream* output=0)
       : base(maxiter, tol, idx, pc, rel, acc, output) {}
@@ -315,7 +315,7 @@ class ParBiCGSTABSolverCL : public ParPreSolverBaseCL<PC>
     template <typename Mat, typename Vec>
       void Solve(const Mat& A, Vec& x, const Vec& b)
     /// Solve the linear equation system with coefficient matrix \a A and rhs \a b iterative with
-    /// predonditioned BiCGStab algorithm, uses \a x as start-vector and result vector.
+    /// preconditioned BiCGStab algorithm, uses \a x as start-vector and result vector.
     /// \post x has accumulated form
     {
         base::_res=  base::_tol;
@@ -338,11 +338,11 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
   public:
     /// \brief Constructor of the parallel preconditioned GCR-Solver
     /** Tries to solve a linear equation system within \a maxiter steps with
-        accuracy \a tol. \a trunc vectors are used to spann the Krylov subspace. The ExCL
+        accuracy \a tol. \a trunc vectors are used to span the Krylov subspace. The ExCL
         \a ex is used to do parallel inner products. \a pc is
-        the given precontioner. If \a rel is given, the residual is computed relative and
+        the given preconditioner. If \a rel is given, the residual is computed relative and
         with \a acc the inner products are determined with accure variant (see ExchnageCL).
-        If \a mod is set than a modificated variant for computing the Krylov subspace
+        If \a mod is set than a modified variant for computing the Krylov subspace
         is used, to reduce sync-points.
         \todo (of) <b>truncation strategy with modified GCR do not work!</b>
     */
@@ -354,7 +354,7 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
     template <typename Mat, typename Vec>
       void Solve(const Mat& A, Vec& x, const Vec &b)
     /// Solve the linear equation system with coefficient matrix \a A and rhs \a b iterative with
-    /// precondtionied GCR algorithm, uses \a x as start-vector and result vector.
+    /// preconditioned GCR algorithm, uses \a x as start-vector and result vector.
     /// \post x has accumulated form
     {
         base::_res  = base::_tol;
@@ -384,7 +384,7 @@ class ParQMRSolverCL : public ParSolverBaseCL
     /// \brief Constructor of the parallel preconditioned QMR-Solver
     /** Tries to solve a linear equation system within \a maxiter steps with
         accuracy \a tol. The ExCL \a ex is used to do parallel inner products. The
-        Lanczos-Algorithm to compute the bi-orthoganal-basis is given by a Lanczos class \a lan.
+        Lanczos-Algorithm to compute the bi-orthogonal-basis is given by a Lanczos class \a lan.
         If \a measure_relative_tol is given, the residual is computed relative.*/
     ParQMRSolverCL(int maxiter, double tol, const IdxDescCL& idx, Lanczos &lan, bool rel=true, bool acc= true, std::ostream* output=0) :
         base(maxiter, tol, idx, rel, acc, output), lan_(&lan) {}
@@ -474,10 +474,10 @@ bool ParPCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX,
     /// \param[in,out] M                    Preconditioner
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol meassure resid relative
+    /// \param[in]     measure_relative_tol measure resid relative
     /// \return                             convergence within max_iter iterations
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -527,7 +527,7 @@ bool ParPCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX,
         if (resid<=tol){
             if (res<0){
                 std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in PCG because of accumulation!"
-                          << "\n   Please use accurater version."<<std::endl;
+                          << "\n   Please use accurate version."<<std::endl;
                 resid=0;
             }
 
@@ -552,11 +552,11 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
     /// \param[in,out] M                    Preconditioner
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol meassure resid relative
-    /// \param[in]     output               write information onto outputstream
+    /// \param[in]     measure_relative_tol measure resid relative
+    /// \param[in]     output               write information onto output stream
     /// \return                             convergence within max_iter iterations
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -629,7 +629,7 @@ template <typename Vec, typename ExCL>
 void StandardGrammSchmidt(DMatrixCL<double>& H,
                           Vec& w, bool acc_w, const std::vector<Vec>& v, bool acc_v,
                           int i, const ExCL& ex, Vec& tmpHCol)
-/// This routine uses only one syncronization point.
+/// This routine uses only one synchronization point.
 /// \param H       Hessenberg matrix
 /// \param w       orthogonal vector
 /// \param acc_w   is w accumulated
@@ -637,7 +637,7 @@ void StandardGrammSchmidt(DMatrixCL<double>& H,
 /// \param acc_v   is v accumulated
 /// \param i       number of vectors v
 /// \param ex      class to accumulate a vector
-/// \param tmpHCol temporar vector to store a column of H (as parameter so no mem is allocated in this routine)
+/// \param tmpHCol temporary vector to store a column of H (as parameter so no mem is allocated in this routine)
 {
     if (acc_v&&acc_w){                          // both vectors are accumulated
         for (int k=0; k<=i; ++k)
@@ -648,7 +648,7 @@ void StandardGrammSchmidt(DMatrixCL<double>& H,
             tmpHCol[k] = ex.LocDot(w,false,v[k],false,/*accur*/false);
     }
     else        // update of w do only works on same types
-        throw DROPSErrCL("StandardGrammSchmidt: Cannot do Gramm Shmidt on that kind of vectors!");
+        throw DROPSErrCL("StandardGrammSchmidt: Cannot do Gramm Schmidt on that kind of vectors!");
 
     // Syncpoint!
     GlobalSum(Addr(tmpHCol), H.GetCol(i), i+1);
@@ -681,12 +681,13 @@ void ModifiedGrammSchmidt(DMatrixCL<double>& H, Vec& w, bool acc_w, const std::v
         }
     }
     else
-        throw DROPSErrCL("StandardGrammSchmidt: Cannot do Gramm Shmidt on that kind of vectors!");
+        throw DROPSErrCL("StandardGrammSchmidt: Cannot do Gramm Schmidt on that kind of vectors!");
 }
 
 /// \brief Parallel GMRES-method.
-/** This method is the same algorithm as the serial algorithm. For performance issues take the ParModGMRES
-    procedure.*/
+///
+/// This method is the same algorithm as the serial algorithm. For performance issues take the ParModGMRES
+/// procedure.
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
   bool ParGMRES(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
                 int m, int& max_iter, double& tol,
@@ -699,13 +700,13 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
     /// \param[in]     m                    number of steps after a restart is performed
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
     /// \param[in]     useAcc               use accur variant for performing inner products and norms or do not use accure variant
     /// \param[in]     method               left or right preconditioning (see solver.h for definition and declaration)
     /// \return  convergence within max_iter iterations
-    /// \pre     the preconditioner should be able to handle a acuumulated b
+    /// \pre     the preconditioner should be able to handle a accumulated b
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -715,12 +716,12 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
     // The preconditioner can have one of the following properties by calling M.Apply(A,x,b) with b distributed:
     // 1. x has distributed form    (like Dummy, Jacobi, BlockSSOR)
     // 2. x has accumulated form    (like SolverAsPreCL)
-    // Unfortunally there are a lot of differences, so we have to implement two strategies
+    // Unfortunately there are a lot of differences, so we have to implement two strategies
 
     if (!M.RetAcc()){                                   // case 1
         if (method==LeftPreconditioning)
             throw DROPSErrCL("ParGMRES: Left preconditioning does not work!");
-        /// \todo (of) Left preconditioning funktiert nicht!
+        /// \todo (of) Left preconditioning funktioniert nicht!
         DMatrixCL<double> H( m, m);
         Vec               s( m), cs( m), sn( m),
                           w( b.size()), r( b.size());
@@ -939,7 +940,7 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 }
 
 
-/// \brief Parallel GMRES-method with modifactions for better scalability.
+/// \brief Parallel GMRES-method with modifications for better scalability.
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
   bool ParModGMRES(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
                    int m, int& max_iter, double& tol,
@@ -952,16 +953,16 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
     /// \param[in]     m                    number of steps after a restart is performed
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
     /// \param[in]     useAcc               use accur variant for performing inner products and norms or do not use accure variant
     /// \param[in]     useMGS               use modified Gramm-Schmidt ortogonalization (many more sync-points exists!)
     /// \param[in]     method               left or right preconditioning (see solver.h for definition and declaration)
     /// \return  convergence within max_iter iterations
-    /// \pre     the preconditioner should be able to handle a acuumulated b
+    /// \pre     the preconditioner should be able to handle a accumulated b
 {
     Assert(x_acc.size()==b.size() && x_acc.size()==ExX.GetNum(), DROPSErrCL("ParModGMRES: Incompatible dimension"), DebugParallelNumC);
 
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -1085,15 +1086,13 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
     /// \param[in]     b                    rhs of the linear equation system (distributed form)
     /// \param[in]     ExX                  ExchangeCL corresponding to the RowIdx of x and the ColIdx of A
     /// \param[in]     M                    Preconditioner
-    /// \param[in,out] max_iter             maximal number of iterations
-    /// \param[in,out] tol                  tolerance for the residuum and norm of the residuum
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
-    /// \pre                                the preconditioner must fullfil the following condition: M.Apply(A,x,b): b is accumulated => x is accumulated
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \pre                                the preconditioner must fulfill the following condition: M.Apply(A,x,b): b is accumulated => x is accumulated
     /// \return                             convergence within max_iter iterations
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -1198,12 +1197,12 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 
 
 /// \brief Parallel preconditioned general conjugate residual algorithm with truncation
-/** Only the last m (truncation parameter) residual vectors are keept. If m==max_iter,
+/** Only the last m (truncation parameter) residual vectors are kept. If m==max_iter,
     then all residual vectors are stored */
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
                 int m, int& max_iter, double& tol,bool measure_relative_tol /*=true*/)
-    /// \param[in]     A                    coeffizients of the linear equation system
+    /// \param[in]     A                    coefficients of the linear equation system
     /// \param[in,out] x_acc                IN: start vector, OUT: solution of the linear equation system
     /// \param[in]     b                    rhs of the linear equation system
     /// \param[in]     ExX                  class for exchanging values for accumulation
@@ -1211,10 +1210,10 @@ bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon&
     /// \param[in]     m                    truncation parameter
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
     /// \return                             convergence within max_iter iterations
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -1311,12 +1310,12 @@ bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon&
 }
 
 /// \brief Parallel preconditioned general conjugate residual algorithm with truncation and high accuracy
-/** Only the last m (truncation parameter) residual vectors are keept. If m==max_iter,
+/** Only the last m (truncation parameter) residual vectors are kept. If m==max_iter,
     then all residual vectors are stored */
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
                      int m, int& max_iter, double& tol,bool measure_relative_tol /*=true*/)
-    /// \param[in]     A                    coeffizients of the linear equation system
+    /// \param[in]     A                    coefficients of the linear equation system
     /// \param[in,out] x_acc                IN: start vector, OUT: solution of the linear equation system
     /// \param[in]     b                    rhs of the linear equation system
     /// \param[in]     ExX                  class for exchanging values for accumulation
@@ -1324,10 +1323,10 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
     /// \param[in]     m                    truncation parameter
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
     /// \return                             convergence within max_iter iterations
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -1437,7 +1436,7 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
              int m, int& max_iter, double& tol, bool measure_relative_tol, bool useAcc)
-    /// \param[in]     A                    coeffizients of the linear equation system
+    /// \param[in]     A                    coefficients of the linear equation system
     /// \param[in,out] x_acc                IN: start vector, OUT: solution of the linear equation system
     /// \param[in]     b                    rhs of the linear equation system
     /// \param[in]     ExX                  class for exchanging values for accumulation
@@ -1445,11 +1444,11 @@ bool ParPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
     /// \param[in]     m                    truncation parameter
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
     /// \param[in]     useAcc               use accurate or fast variant for inner products and norms
     /// \return                             convergence within max_iter iterations
 {
-    // Check if preconditioner needs diagonal of matrix. The preconditionier
+    // Check if preconditioner needs diagonal of matrix. The preconditioner
     // only computes the diagonal new, if the matrix has changed
     if (M.NeedDiag())
         M.SetDiag(A);
@@ -1461,13 +1460,13 @@ bool ParPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
     std::vector<Vec> s, v;
     std::vector<double> a( m);
 
-    // Norm Berechnung der rechten Seite detailiert:
+    // Norm Berechnung der rechten Seite detailliert:
 //         VectorCL b0( b[std::slice( 0, A.num_rows( 0), 1)]);
 //         VectorCL b1( b[std::slice( A.num_rows( 0), A.num_rows( 1), 1)]);
 //         double normb0= ExX.Get(0).Norm( b0, false, useAcc);
 //         double normb1= ExX.Get(1).Norm( b1, false, useAcc);
 //         double max_rhs=GlobalMax(supnorm(b));
-    // Norm Berechnung der rechten Seite detailiert:
+    // Norm Berechnung der rechten Seite detailliert:
 
     double normb= ExX.Norm( b, false, useAcc);
 //         const double mynorm=normb;
@@ -1552,7 +1551,7 @@ bool ParQMR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Lanczos lan
     /// \param[in]     lan                  Lanczos-Class for computing a bi-orthogonal basis of Krylov subspaces
     /// \param[in,out] max_iter             IN: maximal iterations, OUT: used iterations
     /// \param[in,out] tol                  IN: tolerance for the residual, OUT: residual
-    /// \param[in]     measure_relative_tol if ture stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
+    /// \param[in]     measure_relative_tol if true stop if |M^(-1)(b-Ax)|/|M^(-1)b| <= tol, else stop if |M^(-1)(b-Ax)|<=tol
     /// \return                             convergence within max_iter iterations
 {
     tol*=tol;
