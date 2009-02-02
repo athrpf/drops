@@ -220,9 +220,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     Stokes.InitVel( &Stokes.v, ZeroVel);
     switch (C.IniCond)
     {
-      case  1: //flow without droplet
-          lset.Init( &One);
-      break;
       case -1: // read from file
       {
         ReadEnsightP2SolCL reader( MG);
@@ -239,8 +236,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         else
             reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
       } break;
-      default:
+      case 0: // zero initial condition
+          lset.Init( EllipsoidCL::DistanceFct);
+        break;
+      case 1: // stationary flow
+      {
         lset.Init( EllipsoidCL::DistanceFct);
+        SSORPcCL ssorpc;
+        PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
+        typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
+        PCGPcT apc( PCGsolver);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.outer_iter, C.outer_tol, 0.6);
+        NSSolverBaseCL<StokesProblemT> stokessolver( Stokes, inexactuzawasolver);
+        SolveStatProblem( Stokes, lset, stokessolver);
+      } break;
+      case  2: //flow without droplet
+          lset.Init( &One);
+      break;
+      default : throw DROPSErrCL("Unknown initial condition");
     }
     const double Vol= EllipsoidCL::GetVolume();
     std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
