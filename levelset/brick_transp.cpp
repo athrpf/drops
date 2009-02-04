@@ -14,7 +14,7 @@
 #include "poisson/transport2phase.h"
 #include <fstream>
 
-DROPS::ParamMesszelleCL C;
+DROPS::ParamMesszelleNsCL C;
 
 DROPS::SVectorCL<3> Inflow (const DROPS::Point3DCL& p, double)
 {
@@ -72,7 +72,7 @@ typedef P2EvalCL<SVectorCL<3>, const VelBndDataCL, const VecDescCL> const_DiscVe
 
 void Strategy (MultiGridCL& MG)
 {
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
     IdxDescCL* lidx= &lset.idx;
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);

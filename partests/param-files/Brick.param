@@ -8,8 +8,8 @@
 Time {
   NumSteps      =   1000
   StepSize      =   5e-4
-  ThetaLevelset =   1   # backward Euler
-  ThetaStokes   =   1   # backward Euler
+  Theta         =   1   # backward Euler
+  Scheme        =   1
 }
 
 # flow solver
@@ -22,12 +22,12 @@ Stokes {
   PcAIter       = 500    # V-cycles multigrid, iter pc for A block
   PcATol        = 2e-5   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol        = 1e-4
+  XFEMStab      = 0.
 }
 
 # Navier-Stokes settings
 NavStokes {
   Nonlinear = 1
-  Scheme    = 1     # time integration: 0=FS op.splitting, 1=theta-scheme
   Tol       = 5e-10
   Iter      = 20
   Reduction = 0.1
@@ -54,6 +54,8 @@ Reparam {
   Freq      =   5   # 0 = no reparametrization
   Method    =   1   # 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq., 3 = Euklidian method
   NarrowBand=  -1.0 # Narrow-Band method, if euclidian reparametrization is used
+  MinGrad   = 0.1   # minimal allowed norm of the gradient of phi
+  MaxGrad   = 10    # maximal allowed norm of the gradient of phi
 }
 
 # adaptive refinement
@@ -74,12 +76,14 @@ Mat {
 
 # experimental conditions
 Exp {
-  RadDrop   =   1e-3 1e-3 1e-3
-  PosDrop   =   10e-3 6e-3 10e-3
-  Gravity   =   0   -9.81   0
-  FlowDir   =   1   # flow in y-direction
-  InflowVel =   0
-  RadInlet  =   5e-3    # 3.5e-3 for old meas. cell
+  RadDrop    =   1e-3 1e-3 1e-3
+  PosDrop    =   10e-3 6e-3 10e-3
+  Gravity    =   0   -9.81   0
+  FlowDir    =   1       # flow in y-direction
+  InflowVel  =   0
+  RadInlet   =   5e-3    # 3.5e-3 for old meas. cell
+  InflowFreq =   0       # inflow frequence
+  InflowAmpl =   0       # inflow amplitude
 }
 
 # surface tension
@@ -89,6 +93,19 @@ SurfTens {
   JumpWidth   = 5e-4    # jump width
   RelPos      = 1.5     # position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
   DirtFactor  = 0.8     # red. factor for surface tension (due to contamination) in lower droplet)
+}
+
+# mass transport
+Transp {
+  DoTransp      =       0	# 0=off, 1=on
+  Theta         =       0.5	# time integration theta scheme
+  Iter          =       200
+  Tol           =       1e-10
+  DiffPos       =       5e-3	# diffusion coefficient (pos. part)
+  DiffNeg       =       1e-2	# diffusion coefficient (neg. part)
+  H             =       0.5	# Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos       =       0.1	# initial concentration (pos. part)
+  IniCNeg       =       5	# initial concentration (neg. part)
 }
 
 LoadBalancing {
@@ -132,17 +149,19 @@ Info{
     PrintNumUnk = 1
     CheckMG     = 1
 }
-
 # Write out results
-MGSerialization {
+Restart {
   Serialization = 2
   Overwrite     = 1
-  SerDir        = ./serialization/
+  Inputfile     = none
+  Outputfile    = ./serialization/
 }
 
-# miscellaneous
-XFEMStab    =   0.
-InitialCond =   0   # 0=zero, 1/2=flow with/without drop, 3=read from file
-InitialFile =   xxx
-MeshFile    =    20e-3x50e-3x20e-3@8x20x8 # 8e-3x40e-3x8e-3@4x20x4
-
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       0	# 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       1	# 0=ReadMeshBuilder, 1=BrickBuilder
+  InitialFile   =       xxx
+  MeshFile      =       20e-3x50e-3x20e-3@8x20x8 # 8e-3x40e-3x8e-3@4x20x4
+  BoundaryType  =       1       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+}

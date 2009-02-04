@@ -33,7 +33,7 @@ TestRefPar: \
    ../partests/TestRefPar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/fe.o ../num/interfacePatch.o ../num/unknowns.o ../out/output.o \
-    ../partests/params.o
+    ../partests/params.o ../levelset/params.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestExchangePar: \
@@ -49,7 +49,7 @@ TestMGSerPar: \
    ../partests/TestMGSerPar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/fe.o ../num/interfacePatch.o ../num/unknowns.o ../out/output.o \
-   ../out/vtkOut.o ../partests/params.o
+   ../out/vtkOut.o ../partests/params.o ../levelset/params.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestInterpolPar: \
@@ -75,7 +75,7 @@ TestGMRESPar: \
    ../partests/TestGMRESPar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o
+   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/params.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestLevelsetPar: \
@@ -91,7 +91,7 @@ TestPoissonPar: \
    ../partests/TestPoissonPar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o
+   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/params.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestStokesPar: \
@@ -100,7 +100,7 @@ TestStokesPar: \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
    ../num/stokessolver.o ../out/output.o ../out/ensightOut.o ../out/vtkOut.o\
-   ../partests/params.o
+   ../partests/params.o ../levelset/params.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestInstatStokesPar: \
@@ -109,7 +109,7 @@ TestInstatStokesPar: \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
    ../num/stokessolver.o ../out/output.o ../out/ensightOut.o ../out/vtkOut.o\
-   ../partests/params.o
+   ../partests/params.o ../levelset/params.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestNavStokesPar: \

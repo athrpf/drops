@@ -214,8 +214,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 
         // Erzeuge ensight case File und geom-File
     EnsightP2SolOutCL *ensight=0;
-    const string EnsCase = C.ensCase;
-    const string filename= C.ensDir + "/" + C.ensCase;
+    const string EnsCase = C.EnsCase;
+    const string filename= C.EnsDir + "/" + C.EnsCase;
     const string datgeo= filename+".geo",
                  datvel= filename+".vel",
                  datpr = filename+".pr";

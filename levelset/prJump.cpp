@@ -228,7 +228,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     MultiGridCL& MG= Stokes.GetMG();
     sigma= C.sigma;
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
 //    lset.SetSurfaceForce( SF_LB);
     lset.SetSurfaceForce( SF_ImprovedLB);
@@ -373,7 +373,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     // Initialize Ensight6 output
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
     Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
-    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),          "Cube",      ensf + ".geo"));
+    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), C.geomName,           ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),             "Levelset",  ensf + ".scl"));
     ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution( new_pr),  "Pressure",  ensf + ".pr"));
     ensight.Register( make_Ensight6Vector( Stokes.GetVelSolution(),        "Velocity",  ensf + ".vel"));
@@ -382,7 +382,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     if (Stokes.UsesXFEM())
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p,  "XPressure", ensf + ".pr"));
 
-    if (C.EnsCase != "none") ensight.Write();
+    if (C.ensight) ensight.Write();
 
     std::cerr << std::endl;
 }

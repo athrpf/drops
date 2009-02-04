@@ -8,8 +8,8 @@
 Time {
   NumSteps	=	10
   StepSize	=	1.0
-  ThetaLevelset	=	1	# IE
-  ThetaStokes	=	1	# IE
+  Theta         =	1	# IE
+  Scheme        =       1
 }
 
 # flow solver
@@ -23,6 +23,14 @@ Stokes {
   PcAIter	=       2
   PcATol	=	1e-2
   PcSTol	=	1e-4
+  XFEMStab      =       1e-1
+}
+
+NavStokes {
+  Nonlinear     =       0
+  Tol           =       5e-10
+  Iter          =       20
+  Reduction     =       0.1
 }
 
 # levelset solver
@@ -47,6 +55,7 @@ Reparam {
   Freq		=	0
   MinGrad	=	0.1
   MaxGrad	=	10
+  NarrowBand    =       -1.0
 }
 
 # material data, all units are SI
@@ -72,7 +81,6 @@ Exp {
   RadInlet	=	3.5e-3
   InflowFreq	=	0
   InflowAmpl	=	0
-  BoundaryType	=	1
 }  
 
 # adaptive refinement
@@ -104,14 +112,29 @@ Transp {
   IniCNeg	=	5
 }
 
-# miscellaneous
+# Ensight settings
+Ensight {
+  EnsightOut    =       1
+  EnsCase       =       xxx
+  EnsDir        =       xxx
+  Binary        =       1
+  MasterOut     =       1
+  GeomName      =       xxx
+}
 
-XFEMStab        =       1e-1
-GeomType	=	-1
-InitialCond	=	1
-InitialFile	=	xxx
-MeshFile	=	2x2x2@5x5x5	# size and num subdivisions of cube
-EnsightCase	=	xxx
-EnsightDir	=	xxx
-SerializationFile =	none
-DeserializationFile =	none
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       1       # 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       -1
+  InitialFile   =       xxx
+  MeshFile      =       2x2x2@5x5x5     # size and num subdivisions of cube
+  BoundaryType  =       1       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+}
+
+# restart computation
+Restart {
+  Inputfile     =       none
+  Outputfile    =       none
+  Overwrite     =       1
+  Serialization =       1
+}

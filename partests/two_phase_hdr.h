@@ -120,7 +120,7 @@ class ZeroFlowCL
     const double SurfTens;
     const Point3DCL g;
 
-    ZeroFlowCL( const ParamMesszelleCL& C)
+    ZeroFlowCL( const ParamMesszelleNsCL& C)
       : rho( JumpCL( C.rhoD, C.rhoF ), H_sm, C.sm_eps),
         mu(  JumpCL( C.muD,  C.muF),   H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}

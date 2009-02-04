@@ -27,7 +27,7 @@ class ZeroFlowCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& C)
+    ZeroFlowCL( const DROPS::ParamMesszelleNsCL& C)
       : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
         mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}
@@ -43,7 +43,7 @@ class DimLessCoeffCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    DimLessCoeffCL( const DROPS::ParamMesszelleCL& C)
+    DimLessCoeffCL( const DROPS::ParamMesszelleNsCL& C)
       : rho( DROPS::JumpCL( 1., C.rhoF/C.rhoD ), DROPS::H_sm, C.sm_eps),
         mu ( DROPS::JumpCL( 1., C.muF/C.muD),    DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma/C.rhoD), g( C.g)    {}

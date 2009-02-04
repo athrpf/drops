@@ -8,8 +8,8 @@
 Time {
   NumSteps	=	0
   StepSize	=	1e-4
-  ThetaLevelset	=	1	# IE
-  ThetaStokes	=	1	# IE
+  Theta         =	1	# no effect
+  Scheme        =       0       # no effect
 }
 
 # flow solver
@@ -22,6 +22,7 @@ Stokes {
   PcAIter	=       100
   PcATol	=	1e-2
   PcSTol	=	1e-2
+  XFEMStab      =       1e-1
 }
 
 # levelset solver
@@ -42,7 +43,6 @@ Coupling {
 
 NavStokes {
   Nonlinear	=	0
-  Scheme	=	2	# no effect
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1
@@ -54,6 +54,7 @@ Reparam {
   Freq		=	0	# 0 = no reparametrization
   MinGrad	=	0.1     # no effect
   MaxGrad	=	10	# no effect
+  NarrowBand    =       -1.0    # Narrow-Band method, if euclidian reparametrization is used
 }
 
 # material data, all units are SI
@@ -87,7 +88,6 @@ Exp {
   RadInlet	=	3.5e-3	# no effect
   InflowFreq	=	0	# no effect
   InflowAmpl	=	0	# no effect
-  BoundaryType	=	0	# no effect
 }
 
 # adaptive refinement
@@ -96,7 +96,6 @@ AdaptRef {
   FinestLevel	=	2
   Width		=	1e-8
 }
-
 
 # surface tension
 SurfTens {
@@ -120,14 +119,29 @@ Transp {
   IniCNeg	=	5	# no effect
 }
 
-# miscellaneous
+# Ensight settings
+Ensight {
+  EnsightOut    =       1
+  EnsCase       =       prJump
+  EnsDir        =       ensight
+  Binary        =       1
+  MasterOut     =       1
+  GeomName      =       Cube
+}
 
-XFEMStab        =       1.0
-InitialCond	=	1	# 1 = stat. Lsg,    2 = p einsetzen, nach u loesen
-InitialFile	=	xxx
-GeomType	=	0	# no effect
-MeshFile	=	4	# num subdivisions of cube
-EnsightCase	=	prJump
-EnsightDir	=	ensight
-SerializationFile =	none	# no effect
-DeserializationFile =	none	# no effect
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       1       # 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       0       # no effect
+  InitialFile   =       xxx
+  MeshFile      =       4       # num subdivisions of cube
+  BoundaryType  =       0       # no effect
+}
+
+# restart computation
+Restart {
+  Inputfile     =       none    # no effect
+  Outputfile    =       none    # no effect
+  Overwrite     =       1       # no effect
+  Serialization =       1       # no effect
+}

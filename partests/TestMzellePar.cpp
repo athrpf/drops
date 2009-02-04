@@ -173,7 +173,7 @@ class ZeroFlowCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& C)
+    ZeroFlowCL( const DROPS::ParamMesszelleNsCL& C)
       : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
         mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}
@@ -189,7 +189,7 @@ class DimLessCoeffCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    DimLessCoeffCL( const DROPS::ParamMesszelleCL& C)
+    DimLessCoeffCL( const DROPS::ParamMesszelleNsCL& C)
       : rho( DROPS::JumpCL( 1., C.rhoF/C.rhoD ), DROPS::H_sm, C.sm_eps),
         mu ( DROPS::JumpCL( 1., C.muF/C.muD),    DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma/C.rhoD), g( C.g)    {}
@@ -259,7 +259,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     // Create the levelset class
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0,
-                       C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+                       C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
 
     // Index describer for levelset, velocity and pressure
     IdxDescCL*   lidx= &lset.idx;
@@ -295,12 +295,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     // Init ensight-output class
     EnsightP2SolOutCL ensight( MG, lidx, C.binary, C.masterOut);
-    const string filename= C.ensDir + "/" + C.ensCase;
+    const string filename= C.EnsDir + "/" + C.EnsCase;
     const string datgeo= filename+".geo",
                  datpr = filename+".pr" ,
                  datvec= filename+".vel",
                  datscl= filename+".scl";
-    ensight.CaseBegin( string(C.ensCase+".case").c_str(), C.num_steps+1);
+    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
     ensight.DescribeGeom( "Messzelle", datgeo);
     ensight.DescribeScalar( "Levelset", datscl, true);
     ensight.DescribeScalar( "Pressure", datpr,  true);

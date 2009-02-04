@@ -38,190 +38,6 @@ class ParamLoadBalCL : public virtual ParamBaseCL
     ParamLoadBalCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
-
-/// \brief Paramater class for ensight parameter
-class ParamEnsightCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name Ensight
-  //@{
-    int    ensight;                             ///< Ensight output
-    string ensCase;                             ///< name of Ensight Case
-    string ensDir;                              ///< local directory for Ensight files
-    string geomName;                            ///< name for the geometry
-    int    masterOut;                           ///< only master writes out ensight files
-    int    binary;                              ///< write out ensight files in binary format
-  //@}
-
-  public:
-    ParamEnsightCL()                        { RegisterParams(); }
-    ParamEnsightCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for VTK parameter
-class ParamVTKCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name VTK
-  //@{
-    int    vtk;                                 ///< VTK output
-    string vtkDir;                              ///< local directory for vtk files
-    string vtkName;                             ///< name of vtk files
-    int    vtkBinary;                           ///< write out ensight files in binary format
-  //@}
-
-  public:
-    ParamVTKCL()                        { RegisterParams(); }
-    ParamVTKCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for general information outputs
-class ParamInfoCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-    /// \name Information about runs
-    //@{
-    int printSize;              ///< Should the size of the mg for all MG be displayed
-    int printNumUnk;            ///< Print number of unknwons
-    int checkMG;                ///< check multigrid for sanety
-    //@}
-  public:
-    ParamInfoCL()                        { RegisterParams(); }
-    ParamInfoCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for output on a quadrilateral grid
-class ParamQuadCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name quadrilateral output
-  //@{
-    int quad;                                   ///< Write out qudrilateral grid
-    int gridX, gridY, gridZ;                    ///< number of gridpoints
-    Point3DCL stepsize;                         ///< Stepsize in each direction
-    Point3DCL barycenter;                       ///< Barycenter of the grid
-    Point3DCL rotation;                         ///< Rotation
-    string quadFileName;                        ///< name of the result-file
-  //@}
-
-  public:
-    ParamQuadCL()                        { RegisterParams(); }
-    ParamQuadCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for serialization of a parallel multigrid
-class ParamMGSerCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name serialization of a multigrid
-  //@{
-    int serialization;     /// Perform serialization
-    int overwrite;         /// Overwrite old output-files or create new for every step.
-    string ser_dir;        /// Output-Dir.
-  //@}
-
-  public:
-    ParamMGSerCL()                        { RegisterParams(); }
-    ParamMGSerCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for creating a brick
-class ParamBrickCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name Initialization of a brick
-  //@{
-    int basicref_x;             ///< basic refinements in x-direction
-    int basicref_y;             ///< basic refinements in y-direction
-    int basicref_z;             ///< basic refinements in z-direction
-    Point3DCL orig;             ///< origin of the brick
-    Point3DCL dim;              ///< dx, dy, dz
-  //@}
-
-  public:
-    ParamBrickCL()                        { RegisterParams(); }
-    ParamBrickCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for reparametrization
-class ParamReparamCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name reparametrize level-set function
-  //@{
-    int RepFreq;                ///< number of timesteps before reparametrize the level-set function
-    int RepMethod;              ///< method of reparametrize level-set function
-    double NarrowBand;          ///< Narrow-Band method for the Euclidian method (e.g. 0.5 : all dof with <50% of the maximal level-set value are considered)
-  //@}
-
-  public:
-    ParamReparamCL()                        { RegisterParams(); }
-    ParamReparamCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for Stokes-Solver
-class ParamStokesCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name parameter for the Stokes solver
-  //@{
-    int    StokesMethod;                        ///< solver for the Stokes problems
-    double inner_tol,                           ///< tolerance for Stokes solver
-           outer_tol;
-    int    inner_iter,                          ///< max. number of iterations for Stokes solver
-           outer_iter;
-    int    pcA_iter;                            ///< max. number of iterations for the preconditionier
-    double pcA_tol,                             ///< tolerance for the preconditioner of A-block
-           pcS_tol;                             ///< tolerance for the preconditioner of Schur complement
-  //@}
-  public:
-    ParamStokesCL()                        { RegisterParams(); }
-    ParamStokesCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
-/// \brief Parameter class for adaptive refinement (with level-set function)
-class ParamApdaptRefCL : public virtual ParamBaseCL
-{
-  protected:
-    void RegisterParams();
-
-  public:
-  /// \name reparametrize level-set function
-  //@{
-    int ref_freq;               ///< number of timesteps before adaptive refinement
-    int ref_flevel;             ///< finest level in the near of the phase boundary
-    double ref_width;           ///< domain of refinement
-  //@}
-
-  public:
-    ParamApdaptRefCL()                        { RegisterParams(); }
-    ParamApdaptRefCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
-};
-
 /// \brief Parameter class for the problem case TestRefPar
 class ParamParRefCL :
         public virtual ParamBaseCL,
@@ -476,13 +292,9 @@ class ParamParNavStokesCL : public virtual ParamParInstatStokesCL
 class ParamParBrickFlowCL :
         public ParamMesszelleNsCL,
         public ParamLoadBalCL,
-        public ParamEnsightCL,
-        public ParamVTKCL,
-        public ParamInfoCL,
         public ParamQuadCL,
-        public ParamMGSerCL,
-        public ParamReparamCL,
-        public ParamStokesCL
+        public ParamVTKCL,
+        public ParamInfoCL
 {
   private:
     void RegisterParams();
@@ -490,22 +302,17 @@ class ParamParBrickFlowCL :
 
   public:
     ParamParBrickFlowCL()
-      : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamEnsightCL(), ParamVTKCL(),
-        ParamInfoCL(), ParamQuadCL()
+      : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamQuadCL(), ParamVTKCL(), ParamInfoCL()
       { RegisterParams(); }
 
     ParamParBrickFlowCL( const string& filename) : ParamMesszelleNsCL()
        { RegisterParams();
          std::ifstream file(filename.c_str());
          ParamMesszelleNsCL::rp_.ReadParams( file);
-         ParamVTKCL::rp_.ReadParams( file);
          ParamLoadBalCL::rp_.ReadParams( file);
-         ParamInfoCL::rp_.ReadParams( file);
+         ParamVTKCL::rp_.ReadParams( file);
          ParamQuadCL::rp_.ReadParams( file);
-         ParamEnsightCL::rp_.ReadParams( file);
-         ParamMGSerCL::rp_.ReadParams( file);
-         ParamReparamCL::rp_.ReadParams( file);
-         ParamStokesCL::rp_.ReadParams( file);
+         ParamInfoCL::rp_.ReadParams( file);
        }
 };
 
@@ -513,20 +320,14 @@ class ParamParBrickFlowCL :
 class ParParamMesszelleNsCL :
         public ParamMesszelleNsCL,
         public ParamLoadBalCL,
-        public ParamEnsightCL,
-        public ParamVTKCL,
-        public ParamInfoCL,
-        public ParamQuadCL,
-        public ParamReparamCL,
-        public ParamStokesCL
+        public ParamQuadCL
 {
   private:
     void RegisterParams();
 
   public:
     ParParamMesszelleNsCL()
-      : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamEnsightCL(), ParamVTKCL(),
-        ParamInfoCL(), ParamQuadCL()
+      : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamQuadCL()
         { RegisterParams(); }
 
     ParParamMesszelleNsCL( const string& filename) : ParamMesszelleNsCL()
@@ -534,13 +335,8 @@ class ParParamMesszelleNsCL :
          std::ifstream file(filename.c_str());
          rp_.ReadParams( file);
          ParamMesszelleNsCL::rp_.ReadParams( file);
-         ParamVTKCL::rp_.ReadParams( file);
          ParamLoadBalCL::rp_.ReadParams( file);
-         ParamInfoCL::rp_.ReadParams( file);
          ParamQuadCL::rp_.ReadParams( file);
-         ParamEnsightCL::rp_.ReadParams( file);
-         ParamReparamCL::rp_.ReadParams( file);
-         ParamStokesCL::rp_.ReadParams( file);
        }
 };
 

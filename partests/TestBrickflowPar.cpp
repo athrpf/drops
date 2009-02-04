@@ -259,7 +259,7 @@ class ZeroFlowCL
     const double SurfTens;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& C)
+    ZeroFlowCL( const DROPS::ParamMesszelleNsCL& C)
       : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
         mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}
@@ -564,7 +564,7 @@ template<typename Coeff>
                          std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary);
     // writer for ensight format
     typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
-    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.ensDir, C.ensCase, C.geomName, /*adaptive=*/true,
+    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
                                   (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
 
     // Serialization
@@ -738,7 +738,7 @@ template<class Coeff>
 
 //    instat_vector_fun_ptr gsigma= &(SurfaceTensionCL::grad_sm_step);
     LevelsetP2CL lset( mg, &SurfaceTensionCL::sm_step, &SurfaceTensionCL::grad_sm_step,
-                       C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+                       C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
 
     AdapTriangCL adapt( pmg, lb, C.ref_width, 0, C.ref_flevel);
 
@@ -762,7 +762,7 @@ template<class Coeff>
 
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
-        infofile = new std::ofstream( string(C.ensCase + ".info").c_str());
+        infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
 
     IFInfo.Init(infofile);
 

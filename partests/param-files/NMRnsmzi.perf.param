@@ -8,8 +8,8 @@
 Time {
   NumSteps      =   1
   StepSize      =   1e-4
-  ThetaLevelset =   1   # backward Euler
-  ThetaStokes   =   1   # backward Euler
+  Theta         =   1   # backward Euler
+  Scheme        =   1   # time integration: 0=FS op.splitting, 1=theta-scheme
 }
 
 # flow solver
@@ -22,12 +22,12 @@ Stokes {
   PcAIter       = 500    # V-cycles multigrid, iter pc for A block
   PcATol        = 2e-5   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol        = 1e-4
+  XFEMStab      = 0.
 }
 
 # Navier-Stokes settings
 NavStokes {
   Nonlinear = 1
-  Scheme    = 1     # time integration: 0=FS op.splitting, 1=theta-scheme
   Tol       = 1e-10
   Iter      = 20
   Reduction = 0.1
@@ -54,6 +54,8 @@ Reparam {
   Freq      =   1   # 0 = no reparametrization
   Method    =   1   # 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
   NarrowBand=  -1.0 # Narrow-Band method, if euclidian reparametrization is used
+  MinGrad   =   0.1 # minimal allowed norm of the gradient of phi
+  MaxGrad   =   10  # maximal allowed norm of the gradient of phi
 }
 
 # adaptive refinement
@@ -80,6 +82,8 @@ Exp {
   FlowDir   =   1   # flow in y-direction
   InflowVel =   -25e-3
   RadInlet  =   3.6e-3  # 3.5e-3 for old meas. cell
+  InflowFreq=   0       # inflow frequence
+  InflowAmpl=   0       # inflow amplitude
 }
 
 # surface tension
@@ -89,6 +93,19 @@ SurfTens {
   JumpWidth   = 5e-4    # jump width
   RelPos      = 1.1     # position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
   DirtFactor  = 0.8     # red. factor for surface tension (due to contamination) in lower droplet)
+}
+
+# mass transport
+Transp {
+  DoTransp    =       0       # 0=off, 1=on
+  Theta       =       0.5     # time integration theta scheme
+  Iter        =       200
+  Tol         =       1e-10
+  DiffPos     =       5e-3    # diffusion coefficient (pos. part)
+  DiffNeg     =       1e-2    # diffusion coefficient (neg. part)
+  H           =       0.5     # Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos     =       0.1     # initial concentration (pos. part)
+  IniCNeg     =       5       # initial concentration (neg. part)
 }
 
 LoadBalancing {
@@ -133,16 +150,19 @@ Info{
     CheckMG     = 1
 }
 
-# Write out results
-MGSerialization {
-  Serialization = 0
-  Overwrite     = 0
-  SerDir        = ./geometry/
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       1      # 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       0      # 0=ReadMeshBuilder, 1=BrickBuilder
+  InitialFile   =       ensight/nsmzi
+  MeshFile      =       ../levelset/gambit/NMR_05.msh
+  BoundaryType  =       0       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
 }
 
-# miscellaneous
-XFEMStab    =   0.
-InitialCond =   1   # 0=zero, 1/2=flow with/without drop, 3=read from file
-InitialFile =   ensight/nsmzi
-MeshFile    =   ../levelset/gambit/NMR_05.msh
-
+# restart computation
+Restart {
+  Inputfile     =       none
+  Outputfile    =       ./geometry/
+  Overwrite     =       0
+  Serialization =       0
+}

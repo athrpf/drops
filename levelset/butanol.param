@@ -8,8 +8,8 @@
 Time {
   NumSteps	=	10000
   StepSize	=	2e-4
-  ThetaLevelset	=	1	# backward Euler
-  ThetaStokes	=	1	# backward Euler
+  Theta         =	1	# backward Euler
+  Scheme        =       1       # time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
 }
 
 # flow solver
@@ -22,11 +22,11 @@ Stokes {
   PcAIter	=       2	# V-cycles multigrid, iter pc for A block
   PcATol	=	1e-14   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol	=	1e-4
+  XFEMStab      =       1e-1
 }
 
 NavStokes {
   Nonlinear	=	1
-  Scheme	=	1	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1
@@ -54,6 +54,7 @@ Reparam {
   Method	=	1	# 0/1 = fast marching without/with modification of zero
   MinGrad	=	0.1	# minimal allowed norm of the gradient of phi
   MaxGrad	=	10	# maximal allowed norm of the gradient of phi
+  NarrowBand    =       -1.0    # Narrow-Band method, if euclidian reparametrization is used
 }
 
 # adaptive refinement
@@ -84,7 +85,6 @@ Exp {
   InflowVel	=	-35e-3
   InflowFreq	=	0	# inflow frequence
   InflowAmpl	=	0	# inflow amplitude
-  BoundaryType	=	0	# boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
   RadInlet	=	3.6e-3	# 3.5e-3 for old meas. cell
 }
 
@@ -110,14 +110,30 @@ Transp {
   IniCNeg	=	5	# initial concentration (neg. part)
 }
 
-# miscellaneous
-XFEMStab        =       1e-1
-InitialCond	=	-1	# 0=zero, 1/2=flow with/without drop, -1=read from file
-GeomType	=	0	# 0=ReadMeshBuilder, 1=BrickBuilder
-InitialFile	=	ensight/stat_butanol0
-MeshFile	=	gambit/NMR_05.msh #old cell: gambit/NMR_klein_grob.msh
-EnsightCase	=	stat_butanol	  # none= no ensight data
-EnsightDir	=	ensight
-SerializationFile =	stat_butanol_ser
-DeserializationFile =	none
 
+# Ensight settings
+Ensight {
+  EnsightOut    =       1
+  EnsCase       =       stat_butanol
+  EnsDir        =       ensight
+  Binary        =       1
+  MasterOut     =       1
+  GeomName      =       Messzelle
+}
+
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       -1      # 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       0       # 0=ReadMeshBuilder, 1=BrickBuilder
+  InitialFile   =       ensight/stat_butanol0
+  MeshFile      =       gambit/NMR_05.msh        # old cell: gambit/NMR_klein_grob.msh
+  BoundaryType  =       0       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+}
+
+# restart computation
+Restart {
+  Inputfile     =       none
+  Outputfile    =       stat_butanol_ser
+  Overwrite     =       1
+  Serialization =       1
+}

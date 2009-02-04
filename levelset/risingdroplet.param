@@ -6,27 +6,27 @@
 
 # time stepping
 Time {
-  NumSteps	=	2
-  StepSize	=	0.05
-  ThetaLevelset	=	0.5	# backward Euler
-  ThetaStokes	=	0.5	# backward Euler
+  NumSteps      =       2
+  StepSize      =       0.05
+  Scheme        =       2       # time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
+  Theta         =       1.0     # backward Euler
 }
 
 # flow solver
 Stokes {
-  InnerIter	=	1000
-  OuterIter	=	200
-  InnerTol	=	1e-10
-  OuterTol	=	1e-6
-  StokesMethod	=	10101	# 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
-  PcAIter	=       2	# V-cycles multigrid, iter pc for A block
-  PcATol	=	1e-99
-  PcSTol	=	1e-4
+  InnerIter     =       1000
+  OuterIter     =       200
+  InnerTol      =       1e-10
+  OuterTol      =       1e-6
+  StokesMethod  =       10101   # 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
+  PcAIter       =       2	# V-cycles multigrid, iter pc for A block
+  PcATol        =       1e-99
+  PcSTol        =       1e-4
+  XFEMStab      =       1e-1
 }
 
 NavStokes {
-  Nonlinear	=	0
-  Scheme	=	2	# time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
+  Nonlinear     =       0
   Tol           =       5e-10
   Iter          =       20
   Reduction     =       0.1
@@ -34,89 +34,102 @@ NavStokes {
 
 # levelset solver
 Levelset {
-  Tol		=	1e-14
-  Iter		=	1000
-  SD		=	0.1
-  CurvDiff	=	-1
-  VolCorrection	=	5
+  Tol           =       1e-14
+  Iter          =       1000
+  SD            =       0.1
+  CurvDiff      =       -1
+  VolCorrection =       5
 }
 
 Coupling {
-  Tol		=	1e-10	# not used a.t.m.
-  Iter		=	8	# -1 = till convergence
-  Stab		=	0       # Laplace-Beltrami-Stabilization
-  Projection	=	0	# 1 = Perform a projection step before FP
+  Tol           =       1e-10	# not used a.t.m.
+  Iter          =       8	# -1 = till convergence
+  Stab          =       0       # Laplace-Beltrami-Stabilization
+  Projection    =       0	# 1 = Perform a projection step before FP
 }
 
 # re-initialization of levelset function
 Reparam {
-  Freq		=	10	# 0 = no reparametrization
-  Method	=	1	# 0/1 = fast marching without/with modification of zero
-  MinGrad	=	0.1	# minimal allowed norm of the gradient of phi
-  MaxGrad	=	10	# maximal allowed norm of the gradient of phi
+  Freq          =       10	# 0 = no reparametrization
+  Method        =       1	# 0/1 = fast marching without/with modification of zero
+  MinGrad       =       0.1	# minimal allowed norm of the gradient of phi
+  MaxGrad       =       10	# maximal allowed norm of the gradient of phi
+  NarrowBand    =       -1.0    # Narrow-Band method, if euclidian reparametrization is used
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	1
-  FinestLevel	=	1
-  Width		=	0.1
+  Freq          =       1
+  FinestLevel   =       1
+  Width         =       0.1
 }
 
 # material data, all units are SI
 Mat {
-  DensDrop	=	1
-  ViscDrop	=	10
-  DensFluid	=	10
-  ViscFluid	=	1
-  SmoothZone	=	0.05
+  DensDrop      =       1
+  ViscDrop      =       10
+  DensFluid     =       10
+  ViscFluid     =       1
+  SmoothZone    =       0.05
 }
 
 # experimental conditions
 Exp {
-  RadDrop	=	0.25 0.25 0.25
-  PosDrop	=	0.5 0.5 0.5
-
-  Gravity	=	0	0	-9.81
-
-  FlowDir	=	1	# no effect
-
-  InflowVel	=	0
-  InflowFreq	=	0	# inflow frequence
-  InflowAmpl	=	0	# inflow amplitude
-  BoundaryType	=	1	# boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
-  RadInlet	=	1
+  RadDrop       =       0.25 0.25 0.25
+  PosDrop       =       0.5 0.5 0.5
+  Gravity       =       0	0	-9.81
+  FlowDir       =       1	# no effect
+  InflowVel     =       0
+  InflowFreq    =       0	# inflow frequence
+  InflowAmpl    =       0	# inflow amplitude
+  RadInlet      =       1
 }
 
 # surface tension
 SurfTens {
-  VarTension	=	0	# 0=off, 1=on
-  SurfTension	=	1	# surface tension coefficient
-  JumpWidth	=	5e-4
-  RelPos	=	1.5	# position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
-  DirtFactor	=	0.8	# red. factor for surface tension (due to contamination) in lower droplet)
+  VarTension    =       0	# 0=off, 1=on
+  SurfTension   =       1	# surface tension coefficient
+  JumpWidth     =       5e-4
+  RelPos        =       1.5	# position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+  DirtFactor    =       0.8	# red. factor for surface tension (due to contamination) in lower droplet)
 }
 
 # mass transport
 Transp {
-  DoTransp	=	0	# 0=off, 1=on
-  Theta		=	0.5	# time integration theta scheme
-  Iter		=	200
-  Tol		=	1e-10
-  DiffPos	=	5e-3	# diffusion coefficient (pos. part)
-  DiffNeg	=	1e-2	# diffusion coefficient (neg. part)
-  H		=	0.5	# Henry number cneg(\infty) = H*cpos(\infty)
-  IniCPos	=	0.1	# initial concentration (pos. part)
-  IniCNeg	=	5	# initial concentration (neg. part)
+  DoTransp      =       0	# 0=off, 1=on
+  Theta         =       0.5	# time integration theta scheme
+  Iter          =       200
+  Tol           =       1e-10
+  DiffPos       =       5e-3	# diffusion coefficient (pos. part)
+  DiffNeg       =       1e-2	# diffusion coefficient (neg. part)
+  H             =       0.5	# Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos       =       0.1	# initial concentration (pos. part)
+  IniCNeg       =       5	# initial concentration (neg. part)
 }
 
-# miscellaneous
-XFEMStab        =       1e-1
-InitialCond	=	0	# 0=zero, 1/2=flow with/without drop, -1=read from file
-GeomType	=	1	# 0=ReadMeshBuilder, 1=BrickBuilder
-InitialFile	=	ensight/risingdroplet0
-MeshFile	=	1x1x2@3x3x6
-EnsightCase	=	risingdroplet # none= no ensight data
-EnsightDir	=	ensight
-SerializationFile =	none
-DeserializationFile =	none
+# Ensight settings
+Ensight {
+  EnsightOut    =       1
+  EnsCase       =       risingdroplet
+  EnsDir        =       ensight
+  Binary        =       1
+  MasterOut     =       1
+  GeomName      =       Brick
+}
+
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       0	# 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       1	# 0=ReadMeshBuilder, 1=BrickBuilder
+  InitialFile   =       ensight/risingdroplet0
+  MeshFile      =       1x1x2@3x3x6
+  BoundaryType  =       1       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+}
+
+# restart computation
+Restart {
+  Inputfile     =       none
+  Outputfile    =       none
+  Overwrite     =       1
+  Serialization =       0
+}

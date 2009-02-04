@@ -6,10 +6,10 @@
 
 # time stepping
 Time {
-  NumSteps		=	500
-  StepSize		=	1e-4
-  ThetaLevelset	=	0.5	# Crank-Nicholson
-  ThetaStokes	=	0.5	# Crank-Nicholson
+  NumSteps	=	500
+  StepSize	=	1e-4
+  Theta         =	0.5	# Crank-Nicholson
+  Scheme        =       0       # no effect
 }
 
 # flow solver
@@ -18,10 +18,18 @@ Stokes {
   OuterIter	=	200
   InnerTol	=	1e-15
   OuterTol	=	1e-11
-  StokesMethod	= 1
+  StokesMethod	=       1
   PcAIter	=       2	# no effect
   PcATol	=	1e-2    # no effect
   PcSTol	=	1e-4    # no effect
+  XFEMStab      =       1e-1
+}
+
+NavStokes {
+  Nonlinear     =       0
+  Tol           =       5e-10
+  Iter          =       20
+  Reduction     =       0.1
 }
 
 # levelset solver
@@ -46,13 +54,14 @@ Reparam {
   Method	=	1	# 0/1 = fast marching without/with modification of zero
   MinGrad	=	0.1	# minimal allowed norm of the gradient of phi
   MaxGrad	=	10	# maximal allowed norm of the gradient of phi
+  NarrowBand    =       -1.0    # Narrow-Band method, if euclidian reparametrization is used
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq			=	0
+  Freq		=	0
   FinestLevel	=	2
-  Width			=	1e-3
+  Width		=	1e-3
 }
 
 # material data, all units are SI
@@ -62,8 +71,6 @@ Mat {
   DensFluid	=	1107
   ViscFluid	=	1.2e-3
   SmoothZone	=	1e-4
-
-  SurfTension	=	0
 }
 
 # experimental conditions
@@ -79,18 +86,53 @@ Exp {
   RadInlet	=	2e-2
   InflowFreq	=	0	# no effect
   InflowAmpl	=	0	# no effect
-  BoundaryType	=	0	# no effect}
+}
 
-# miscellaneous
+# surface tension
+SurfTens {
+  VarTension    =       0       # no effect
+  SurfTension   =       1
+  JumpWidth     =       5e-4    # no effect
+  RelPos        =       1.5     # no effect
+  DirtFactor    =       0.8     # no effect
+}
 
-XFEMStab        =       1.0
-InitialCond	=	1
-InitialFile	=	initial/XXX
+# mass transport
+Transp {
+  DoTransp      =       1       # no effect
+  Theta         =       0.5     # no effect
+  Iter          =       200     # no effect
+  Tol           =       1e-10   # no effect
+  DiffPos       =       5e-3    # no effect
+  DiffNeg       =       1e-2    # no effect
+  H             =       0.5     # no effect
+  IniCPos       =       0.1     # no effect
+  IniCNeg       =       5       # no effect
+}
 
-MeshFile	=	gambit/messzelle.msh
+# Ensight settings
+Ensight {
+  EnsightOut    =       1
+  EnsCase       =       mzi
+  EnsDir        =       ensight
+  Binary        =       1
+  MasterOut     =       1
+  GeomName      =       Cube
+}
 
-EnsightCase	=	mzi
-EnsightDir	=	ensight
-GeomType	=	0	# no effect
-SerializationFile =	none	# no effect
-DeserializationFile =	none	# no effect
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       1       # 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       0       # no effect
+  InitialFile   =       xxx
+  MeshFile      =       gambit/messzelle.msh
+  BoundaryType  =       0       # no effect
+}
+
+# restart computation
+Restart {
+  Inputfile     =       none    # no effect
+  Outputfile    =       none    # no effect
+  Overwrite     =       1
+  Serialization =       0
+}

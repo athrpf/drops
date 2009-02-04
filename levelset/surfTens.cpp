@@ -19,7 +19,7 @@
 #include <fstream>
 
 
-DROPS::ParamMesszelleCL C;
+DROPS::ParamMesszelleNsCL C;
 
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
 //                        -div u = 0

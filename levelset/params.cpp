@@ -6,28 +6,129 @@
 namespace DROPS
 {
 
-void ParamMesszelleCL::RegisterParams()
+void ParamEnsightCL::RegisterParams()
+{
+    rp_.BeginGroup( "Ensight" );
+    rp_.RegInt(     ensight,   "EnsightOut" );
+    rp_.RegString(  EnsCase,   "EnsCase" );
+    rp_.RegString(  EnsDir,    "EnsDir" );
+    rp_.RegString(  geomName,  "GeomName");
+    rp_.RegInt(     masterOut, "MasterOut");
+    rp_.RegInt(     binary,    "Binary");
+    rp_.EndGroup();
+}
+
+void ParamVTKCL::RegisterParams()
+{
+    rp_.BeginGroup( "VTK" );
+    rp_.RegInt(     vtk,       "VTKOut" );
+    rp_.RegString(  vtkDir,    "VTKDir" );
+    rp_.RegString(  vtkName,   "VTKName");
+    rp_.RegInt(     vtkBinary, "Binary");
+    rp_.EndGroup();
+}
+
+void ParamInfoCL::RegisterParams()
+{
+    rp_.BeginGroup( "Info" );
+    rp_.RegInt(     printSize,   "PrintSize");
+    rp_.RegInt(     printNumUnk, "PrintNumUnk");
+    rp_.RegInt(     checkMG,     "CheckMG");
+    rp_.EndGroup();
+}
+
+void ParamQuadCL::RegisterParams()
+{
+    rp_.BeginGroup("QuadrilateralGrid");
+    rp_.RegInt(   quad,         "Quad");
+    rp_.RegInt(   gridX,        "GridX");
+    rp_.RegInt(   gridY,        "GridY");
+    rp_.RegInt(   gridZ,        "GridZ");
+    rp_.RegCoord( stepsize,     "Stepsize");
+    rp_.RegCoord( barycenter,   "Barycenter");
+    rp_.RegCoord( rotation,     "Rotation");
+    rp_.RegString(quadFileName, "FileName");
+    rp_.EndGroup();
+}
+
+void ParamMGSerCL::RegisterParams()
+{
+    rp_.BeginGroup( "Restart");
+    rp_.RegString( ser_dir,               "Outputfile");
+    rp_.RegString( deserialization_file,  "Inputfile");
+    rp_.RegInt(serialization,             "Serialization");
+    rp_.RegInt(overwrite,                 "Overwrite");    
+    rp_.EndGroup();
+}
+
+void ParamBrickCL::RegisterParams()
+{
+    rp_.BeginGroup( "Brick");
+    rp_.RegInt(   basicref_x, "BasicRefX");
+    rp_.RegInt(   basicref_y, "BasicRefY");
+    rp_.RegInt(   basicref_z, "BasicRefZ");
+    rp_.RegCoord( orig,       "orig");
+    rp_.RegCoord( dim,        "dim");
+    rp_.EndGroup();
+}
+
+void ParamReparamCL::RegisterParams()
+{
+    rp_.BeginGroup( "Reparam");
+    rp_.RegInt(    RepFreq,   "Freq");
+    rp_.RegInt(    RepMethod, "Method");
+    rp_.RegDouble( NarrowBand,"NarrowBand");
+    rp_.RegDouble( MinGrad,   "MinGrad");
+    rp_.RegDouble( MaxGrad,   "MaxGrad");
+    rp_.EndGroup();
+}
+
+void ParamAdaptRefCL::RegisterParams()
+{
+    rp_.BeginGroup("AdaptRef");
+    rp_.RegInt( ref_freq,     "Freq");
+    rp_.RegInt( ref_flevel,   "FinestLevel");
+    rp_.RegDouble( ref_width, "Width");
+    rp_.EndGroup();
+}
+
+void ParamStokesCL::RegisterParams()
+{
+    rp_.BeginGroup("Stokes");
+    rp_.RegInt( StokesMethod, "StokesMethod");
+    rp_.RegDouble( inner_tol, "InnerTol");
+    rp_.RegDouble( outer_tol, "OuterTol");
+    rp_.RegInt( inner_iter,   "InnerIter");
+    rp_.RegInt( outer_iter,   "OuterIter");
+    rp_.RegInt( pcA_iter,     "PcAIter");
+    rp_.RegDouble( pcA_tol,   "PcATol");
+    rp_.RegDouble( pcS_tol,   "PcSTol");
+    rp_.RegDouble(XFEMStab,   "XFEMStab");
+    rp_.EndGroup();
+}
+
+void ParamNavStokesCL::RegisterParams()
+{
+    rp_.BeginGroup( "NavStokes");
+    rp_.RegDouble( nonlinear,  "Nonlinear");
+    rp_.RegDouble( ns_tol,     "Tol");
+    rp_.RegDouble( ns_red,     "Reduction");
+    rp_.RegInt( ns_iter,       "Iter");
+    rp_.EndGroup();
+}
+
+void ParamTimeDiscCL::RegisterParams()
 {
     rp_.BeginGroup("Time");
     rp_.RegInt( num_steps,    "NumSteps");
     rp_.RegDouble( dt,        "StepSize");
-    rp_.RegDouble( theta,     "ThetaStokes");
-    rp_.RegDouble( lset_theta,"ThetaLevelset");
+    rp_.RegDouble( theta,     "Theta");
+    rp_.RegInt(    scheme,    "Scheme");
     rp_.EndGroup();
+}
 
-#ifndef _PAR
-    rp_.BeginGroup("Stokes");
-    rp_.RegInt( inner_iter,   "InnerIter");
-    rp_.RegInt( outer_iter,   "OuterIter");
-    rp_.RegDouble( inner_tol, "InnerTol");
-    rp_.RegDouble( outer_tol, "OuterTol");
-    rp_.RegInt( StokesMethod, "StokesMethod");
-    rp_.RegInt( pcA_iter,   "PcAIter");
-    rp_.RegDouble( pcA_tol, "PcATol");
-    rp_.RegDouble( pcS_tol, "PcSTol");
-    rp_.EndGroup();
-#endif
-
+void ParamLevelSetCL::RegisterParams()
+{
     rp_.BeginGroup("Levelset");
     rp_.RegInt( lset_iter,    "Iter");
     rp_.RegDouble( lset_tol,  "Tol");
@@ -35,29 +136,20 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( CurvDiff,  "CurvDiff");
     rp_.RegInt( VolCorr,      "VolCorrection");
     rp_.EndGroup();
+}
 
+void ParamCouplingCL::RegisterParams()
+{
     rp_.BeginGroup("Coupling");
-    rp_.RegInt( cpl_iter,     "Iter");
+    rp_.RegInt(    cpl_iter,  "Iter");
     rp_.RegDouble( cpl_tol,   "Tol");
     rp_.RegDouble( cpl_stab,  "Stab");
     rp_.RegDouble( cpl_proj,  "Projection");
     rp_.EndGroup();
+}
 
-#ifndef _PAR
-    rp_.BeginGroup("Reparam");
-    rp_.RegInt( RepFreq,      "Freq");
-    rp_.RegInt( RepMethod,    "Method");
-    rp_.RegDouble( MinGrad,   "MinGrad");
-    rp_.RegDouble( MaxGrad,   "MaxGrad");
-    rp_.EndGroup();
-#endif
-
-    rp_.BeginGroup("AdaptRef");
-    rp_.RegInt( ref_freq,     "Freq");
-    rp_.RegInt( ref_flevel,   "FinestLevel");
-    rp_.RegDouble( ref_width, "Width");
-    rp_.EndGroup();
-
+void ParamMaterialDataCL::RegisterParams()
+{
     rp_.BeginGroup("Mat");
     rp_.RegDouble( rhoD,      "DensDrop");
     rp_.RegDouble( muD,       "ViscDrop");
@@ -65,7 +157,10 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( muF,       "ViscFluid");
     rp_.RegDouble( sm_eps,    "SmoothZone");
     rp_.EndGroup();
+}
 
+void ParamExperimentalDataCL::RegisterParams()
+{
     rp_.BeginGroup("Exp");
     rp_.RegCoord( Radius,     "RadDrop");
     rp_.RegCoord( Mitte,      "PosDrop");
@@ -73,13 +168,13 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( Anstroem,  "InflowVel");
     rp_.RegDouble( r_inlet,   "RadInlet");
     rp_.RegInt( flow_dir,     "FlowDir");
-#ifndef _PAR
     rp_.RegDouble( inflow_freq, "InflowFreq");
     rp_.RegDouble( inflow_ampl, "InflowAmpl");
-    rp_.RegInt( bnd_type,     "BoundaryType");
-#endif
     rp_.EndGroup();
+}
 
+void ParamSurfaceTensionCL::RegisterParams()
+{
     rp_.BeginGroup("SurfTens");
     rp_.RegInt( st_var,       "VarTension");
     rp_.RegDouble( sigma,     "SurfTension");
@@ -87,8 +182,10 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble( st_relPos, "RelPos");
     rp_.RegDouble( st_red,    "DirtFactor");
     rp_.EndGroup();
+}
 
-#ifndef _PAR
+void ParamTransportCL::RegisterParams()
+{
     rp_.BeginGroup("Transp");
     rp_.RegInt    ( transp_do,      "DoTransp");
     rp_.RegDouble ( transp_theta,   "Theta");
@@ -100,30 +197,22 @@ void ParamMesszelleCL::RegisterParams()
     rp_.RegDouble ( transp_cPos,    "IniCPos");
     rp_.RegDouble ( transp_cNeg,    "IniCNeg");
     rp_.EndGroup();
-#endif
+}
 
-    rp_.RegDouble(XFEMStab,   "XFEMStab");
+void ParamDomainCondCL::RegisterParams()
+{
+    rp_.BeginGroup("DomainCond");
     rp_.RegInt( IniCond,      "InitialCond");
     rp_.RegString( IniData,   "InitialFile");
     rp_.RegString( meshfile,  "MeshFile");
-#ifndef _PAR
     rp_.RegInt( GeomType,     "GeomType");
-    rp_.RegString( EnsCase,   "EnsightCase");
-    rp_.RegString( EnsDir,    "EnsightDir");
-    rp_.RegString( serialization_file,    "SerializationFile");
-    rp_.RegString( deserialization_file,  "DeserializationFile");
-#endif
+    rp_.RegInt( bnd_type,     "BoundaryType");
+    rp_.EndGroup();
 }
 
 void ParamMesszelleNsCL::RegisterParams()
 {
-    rp_.BeginGroup( "NavStokes");
-    rp_.RegInt( scheme,        "Scheme");
-    rp_.RegDouble( nonlinear,  "Nonlinear");
-    rp_.RegDouble( ns_tol,     "Tol");
-    rp_.RegDouble( ns_red,     "Reduction");
-    rp_.RegInt( ns_iter,       "Iter");
-    rp_.EndGroup();
+
 }
 
 void ParamFilmCL::RegisterParams()

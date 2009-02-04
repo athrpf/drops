@@ -16,7 +16,7 @@
 #include <sstream>
 
 
-DROPS::ParamMesszelleCL C;
+DROPS::ParamMesszelleNsCL C;
 
 int FctCode=9;
 
@@ -29,7 +29,7 @@ class ZeroFlowCL
     const DROPS::SmoothedJumpCL rho, mu;
     const DROPS::Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& c)
+    ZeroFlowCL( const DROPS::ParamMesszelleNsCL& c)
       : rho( DROPS::JumpCL( 1, 1), DROPS::H_sm, c.sm_eps),
          mu( DROPS::JumpCL( 1, 1),   DROPS::H_sm, c.sm_eps),
         g()    {}

@@ -178,7 +178,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         sigmap  = &sigmaf;
         gsigmap = &gsigma;
     }
-    LevelsetP2CL lset( MG, sigmap, gsigmap, C.lset_theta, C.lset_SD,
+    LevelsetP2CL lset( MG, sigmap, gsigmap, C.theta, C.lset_SD,
         -1, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     LevelsetRepairCL lsetrepair( lset);
@@ -340,8 +340,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     // Initialize Ensight6 output
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
-    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo", true));
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1, C.binary);
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.geomName,      ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
     ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
@@ -354,7 +354,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     if (Stokes.UsesXFEM())
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
 
-    if (C.EnsCase != "none") ensight.Write( 0.);
+    if (C.ensight) ensight.Write( 0.);
 
     for (int step= 1; step<=C.num_steps; ++step)
     {
@@ -398,9 +398,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
-            if (C.serialization_file != "none") {
+            if (C.serialization) {
                 std::stringstream filename;
-                filename << C.serialization_file;
+                filename << C.ser_dir;
                 if (second) filename << "0";
                 second = !second;
                 MGSerializationCL ser( MG, filename.str().c_str());
@@ -423,7 +423,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (C.transp_do) c.Update();
         }
 
-        if (C.EnsCase != "none") ensight.Write( step*C.dt);
+        if (C.ensight) ensight.Write( step*C.dt);
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t, infofile);

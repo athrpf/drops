@@ -265,12 +265,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 
         // Erzeuge ensight case File und geom-File
         EnsightP2SolOutCL ensight( MG, pidx->GetFinestPtr(), C.binary, C.masterOut);
-        const string filename= C.ensDir + "/" + C.ensCase;
+        const string filename= C.EnsDir + "/" + C.EnsCase;
         const string datgeo= filename+".geo",
         datvel = filename+".vel",
         datpr  = filename+".pr";
 
-        ensight.CaseBegin( string(C.ensCase+".case").c_str());
+        ensight.CaseBegin( string(C.EnsCase+".case").c_str());
         ensight.DescribeGeom(   C.geomName.c_str(), datgeo);
         ensight.DescribeScalar( "Pressure", datpr);
         ensight.DescribeVector( "Velocity", datvel);

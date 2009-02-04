@@ -194,7 +194,7 @@ template<typename Coeff>
                          std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary);
     // writer for ensight format
     typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
-    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.ensDir, C.ensCase, C.geomName, /*adaptive=*/true,
+    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
                                   (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
 
     if (C.vtk)
@@ -365,7 +365,7 @@ template<class Coeff>
         gsigmap = &SurfaceTensionCL::gsigma;
     }
 
-    LevelsetP2CL lset( mg, sigmap, gsigmap, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+    LevelsetP2CL lset( mg, sigmap, gsigmap, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
     if (C.st_var)
         lset.SetSurfaceForce( SF_ImprovedLBVar);
     else
@@ -378,7 +378,7 @@ template<class Coeff>
 
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
-        infofile = new std::ofstream( string(C.ensCase + ".info").c_str());
+        infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
 
     IFInfo.Init(infofile);
 
