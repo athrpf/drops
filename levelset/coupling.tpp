@@ -1143,7 +1143,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
 #endif
 
 #ifndef _PAR
-    ISBBTPreCL ispc( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), 1.0, 0.0, 1e-4, 1e-4);
+    ISBBTPreCL ispc( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4);
     GCRSolverCL<ISBBTPreCL> Ssolver( ispc, 200, 200, 1e-10, true);
 #else
     // Diagonal of B*B^T is not easy to get in parallel version :-(

@@ -253,22 +253,19 @@ class ISBBTPreCL
     const MatrixCL*  B_;
     mutable MatrixCL*  Bs_;                                     ///< scaled Matrix B
     mutable size_t Bversion_;
-    mutable CompositeMatrixCL BBT_;
     const MatrixCL*  M_, *Mvel_;
 
     double     kA_, kM_;
     double     tolA_, tolM_;                                    ///< tolerances of the solvers
-#ifndef _PAR
-    mutable VectorCL D_;                                        ///< diagonal of BB^T
-#endif
     mutable VectorCL Dprsqrtinv_;                               ///< diag(M)^{-1/2}
 #ifndef _PAR
-    typedef DiagPcCL SPcT_;
-    JACPcCL jacpc_;
-    SPcT_ spc_;
-    mutable PCGSolverCL<SPcT_>   solver_;
+    typedef NEGSPcCL SPcT_;
+    SPcT_            spc_;
+    JACPcCL          jacpc_;
+    mutable PCGNESolverCL<SPcT_> solver_;
     mutable PCGSolverCL<JACPcCL> solver2_;
 #else
+    mutable CompositeMatrixCL BBT_;
     typedef ParDummyPcCL    PCSolver1T;                         ///< type of the preconditioner for solver 1
     typedef ParJac0CL       PCSolver2T;                         ///< type of the preconditioner for solver 2
     PCSolver1T PCsolver1_;
@@ -276,39 +273,43 @@ class ISBBTPreCL
     mutable ParPCGSolverCL<PCSolver1T> solver_;                 ///< solver for BB^T
     mutable ParPCGSolverCL<PCSolver2T> solver2_;                ///< solver for M
 
-    const IdxDescCL& pr_idx_;                                   ///< Accessing ExchangeCL for pressure
     const IdxDescCL& vel_idx_;                                  ///< Accessing ExchangeCL for velocity
 #endif
+    const IdxDescCL& pr_idx_;                                   ///< Accessing ExchangeCL for pressure; also used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
+    double regularize_;                                         ///< If regularize_==0. no regularization is performed. Otherwise, a column is attached to Bs.
     void Update () const;                                       ///< Updating the diagonal matrices D and Dprsqrtinv
 
   public:
 #ifndef _PAR
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
-        double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
-        : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL),
+        const IdxDescCL& pr_idx,
+        double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2, double regularize= 0.)
+        : B_( B), Bs_( 0), Bversion_( 0),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
-          spc_( D_),
           solver_( spc_, 500, tolA_, /*relative*/ true),
-          solver2_( jacpc_, 50, tolM_, /*relative*/ true) {}
+          solver2_( jacpc_, 50, tolM_, /*relative*/ true),
+          pr_idx_( pr_idx), regularize_( regularize) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
-          Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
+          Bversion_( pc.Bversion_),
           M_( pc.M_), Mvel_( pc.Mvel_),
           kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
-          D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_),
-          spc_( D_), solver_( spc_, 500, tolA_, /*relative*/ true),
-          solver2_( jacpc_, 50, tolM_, /*relative*/ true) {}
+          Dprsqrtinv_( pc.Dprsqrtinv_),
+          spc_( pc.spc_),
+          solver_( spc_, 500, tolA_, /*relative*/ true),
+          solver2_( jacpc_, 50, tolM_, /*relative*/ true),
+          pr_idx_( pc.pr_idx_), regularize_( pc.regularize_) {}
 #else
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
         const IdxDescCL& pr_idx, const IdxDescCL& vel_idx,
-        double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2)
+        double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2, double regularize= 0.)
         : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL, vel_idx, pr_idx),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
           PCsolver1_( pr_idx), PCsolver2_(pr_idx),
           solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 50, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
-          pr_idx_(pr_idx), vel_idx_(vel_idx) {}
+          vel_idx_(vel_idx), pr_idx_(pr_idx), regularize_( regularize) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.vel_idx_, pc.pr_idx_),
@@ -318,7 +319,7 @@ class ISBBTPreCL
           PCsolver1_( pc.pr_idx_), PCsolver2_( pc.pr_idx_),
           solver_( 800, tolA_, pc.pr_idx_, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 50, tolM_, pc.pr_idx_, PCsolver2_, /*relative*/ true),
-          pr_idx_( pc.pr_idx_), vel_idx_( pc.vel_idx_) {}
+          vel_idx_( pc.vel_idx_), pr_idx_( pc.pr_idx_), regularize_( pc.regularize_){}
 
     /// \name Parallel preconditioner setup ...
     //@{
@@ -355,7 +356,11 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 
     p= 0.0;
     if (kA_ != 0.0) {
+#ifndef _PAR
+        solver_.Solve( *Bs_, p, VectorCL( Dprsqrtinv_*c));
+#else
         solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
+#endif
 //         IF_MASTER
 //             std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
 //                       << "\tresidual: " <<  solver_.GetResid();
@@ -395,30 +400,34 @@ class MinCommPreCL
     const MatrixCL* A_, *B_, *Mvel_, *M_;
     mutable MatrixCL* Bs_;
     mutable size_t Aversion_, Bversion_, Mvelversion_, Mversion_;
-    mutable CompositeMatrixCL BBT_;
-    mutable VectorCL D_, Dprsqrtinv_, Dvelsqrtinv_;
+    mutable VectorCL Dprsqrtinv_, Dvelsqrtinv_;
     double  tol_;
 
-    typedef DiagPcCL SPcT_;
+    typedef NEGSPcCL SPcT_;
     SPcT_ spc_;
-    mutable PCGSolverCL<SPcT_> solver_;
+    mutable PCGNESolverCL<SPcT_> solver_;
+    const IdxDescCL& pr_idx_;                                   ///< Used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
+    double regularize_;
 
     void Update () const;
 
   public:
-    MinCommPreCL (const MatrixCL* A, MatrixCL* B, MatrixCL* Mvel, MatrixCL* M_pr, double tol=1e-2)
+    MinCommPreCL (const MatrixCL* A, MatrixCL* B, MatrixCL* Mvel, MatrixCL* M_pr, const IdxDescCL& pr_idx,
+                  double tol=1e-2, double regularize= 0.0)
         : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
-          BBT_( 0, TRANSP_MUL, 0, MUL), tol_(tol),
-          spc_( D_), solver_( spc_, 200, tol_, /*relative*/ true) {}
+          tol_(tol),
+          spc_( /*symmetric GS*/ true), solver_( spc_, 200, tol_, /*relative*/ true),
+          pr_idx_( pr_idx), regularize_( regularize) {}
 
     MinCommPreCL (const MinCommPreCL & pc)
         : A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
           Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Aversion_( pc.Aversion_), Bversion_( pc.Bversion_), Mvelversion_( pc.Mvelversion_),
-          Mversion_( pc.Mversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL),
-          D_( pc.D_), Dprsqrtinv_( pc.Dprsqrtinv_), Dvelsqrtinv_( pc.Dvelsqrtinv_), tol_(pc.tol_),
-          spc_( D_), solver_( spc_, 200, tol_, /*relative*/ true) {}
+          Mversion_( pc.Mversion_),
+          Dprsqrtinv_( pc.Dprsqrtinv_), Dvelsqrtinv_( pc.Dvelsqrtinv_), tol_(pc.tol_),
+          spc_( pc.spc_), solver_( spc_, 200, tol_, /*relative*/ true),
+          pr_idx_( pc.pr_idx_), regularize_( pc.regularize_) {}
 
     MinCommPreCL& operator= (const MinCommPreCL&) {
         throw DROPSErrCL( "MinCommPreCL::operator= is not permitted.\n");
@@ -447,13 +456,15 @@ template <typename Mat, typename Vec>
         Update();
 
     VectorCL y( b.size());
-    solver_.Solve( BBT_, y, VectorCL( Dprsqrtinv_*b));
+    solver_.Solve( *Bs_, y, VectorCL( Dprsqrtinv_*b));
     if (solver_.GetIter() == solver_.GetMaxIter())
         std::cerr << "MinCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
-    VectorCL z( (*Bs_)*VectorCL( Dvelsqrtinv_*((*A_)*VectorCL( Dvelsqrtinv_*transp_mul( *Bs_, y)))));
+    y*= Dprsqrtinv_;
+    VectorCL z( Dprsqrtinv_*((*B_)*VectorCL( Dvelsqrtinv_*Dvelsqrtinv_*
+        ( (*A_)*VectorCL( Dvelsqrtinv_*Dvelsqrtinv_*transp_mul( *B_, y)) ))));
     VectorCL t( b.size());
-    solver_.Solve( BBT_, t, z);
+    solver_.Solve( *Bs_, t, z);
     if (solver_.GetIter() == solver_.GetMaxIter())
         std::cerr << "MinCommPreCL::Apply: 2nd BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';

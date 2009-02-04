@@ -74,7 +74,7 @@ void SetupMassDiag_P1(const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, con
     }
 }
 
-void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const LevelsetP2CL& lset,
+void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const VecDescCL& lset,
                         const BndDataCL<>& bnd)
 {
     const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
@@ -99,7 +99,7 @@ void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, c
     LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
+        loc_phi.assign( *sit, lset, BndDataCL<> ( 0));
         cut.Init( *sit, loc_phi);
         const bool nocut= !cut.Intersects();
         Numb.assign( *sit, RowIdx, bnd);

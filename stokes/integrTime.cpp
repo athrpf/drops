@@ -12,6 +12,19 @@
 namespace DROPS
 {
 
+#ifndef _PAR
+// Append the kernel of Bs as last column to Bs.
+static void Regularize (MatrixCL& Bs, const IdxDescCL& rowidx, VectorCL ker0, const NEGSPcCL& spc, double regularize)
+{
+    if (rowidx.IsExtended())
+        ker0[std::slice( rowidx.GetXidx().GetNumUnknownsStdFE(), rowidx.NumUnknowns() - rowidx.GetXidx().GetNumUnknownsStdFE(), 1)]= 0.;
+    ker0*= 1./norm( ker0);
+    VectorCL ker( spc.mul( Bs, ker0));
+    ker*= regularize/std::sqrt( dot( ker, ker0));
+    Bs.insert_col( Bs.num_cols(), ker);
+}
+#endif
+
 void ISBBTPreCL::Update() const
 {
     IF_MASTER
@@ -21,12 +34,11 @@ void ISBBTPreCL::Update() const
     Bs_= new MatrixCL( *B_);
     Bversion_= B_->Version();
 
-    BBT_.SetBlock0( Bs_);
-    BBT_.SetBlock1( Bs_);
-
 #ifndef _PAR
     VectorCL Dvelinv( 1.0/ Mvel_->GetDiag());
 #else
+    BBT_.SetBlock0( Bs_);
+    BBT_.SetBlock1( Bs_);
     VectorCL Dvelinv( 1.0/ vel_idx_.GetEx().GetAccumulate(Mvel_->GetDiag()));
 #endif
     ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
@@ -38,12 +50,11 @@ void ISBBTPreCL::Update() const
 #endif
     Dprsqrtinv_.resize( M_->num_rows());
     Dprsqrtinv_= 1.0/Dprsqrt;
-
     ScaleRows( *Bs_, Dprsqrtinv_);
 
-#ifndef _PAR    // Skipp computing diag of BB^T in parallel ...
-    D_.resize( M_->num_rows());
-    D_= 1.0/BBTDiag( *Bs_);
+#ifndef _PAR
+    if (regularize_ != 0.)
+        Regularize( *Bs_, pr_idx_, Dprsqrt, spc_, regularize_);
 #endif
 }
 
@@ -60,9 +71,6 @@ void MinCommPreCL::Update() const
     Mversion_= M_->Version();
     Mvelversion_= Mvel_->Version();
 
-    BBT_.SetBlock0( Bs_);
-    BBT_.SetBlock1( Bs_);
-
     Assert( Mvel_->GetDiag().min() > 0., "MinCommPreCL::Update: Mvel_->GetDiag().min() <= 0\n", DebugNumericC);
     VectorCL Dvelsqrt( std::sqrt( Mvel_->GetDiag()));
     Dvelsqrtinv_.resize( Mvel_->num_rows());
@@ -75,8 +83,9 @@ void MinCommPreCL::Update() const
     Dprsqrtinv_= 1.0/Dprsqrt;
     ScaleRows( *Bs_, Dprsqrtinv_);
 
-    D_.resize( M_->num_rows());
-    D_= 1.0/BBTDiag( *Bs_);
+    if (regularize_ != 0.)
+        Regularize( *Bs_, pr_idx_, Dprsqrt, spc_, regularize_);
 }
 #endif
-}
+
+} // end of namespace DROPS

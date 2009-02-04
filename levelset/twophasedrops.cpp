@@ -246,7 +246,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
         typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
         PCGPcT apc( PCGsolver);
-        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
         InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.outer_iter, C.outer_tol, 0.6);
         NSSolverBaseCL<StokesProblemT> stokessolver( Stokes, inexactuzawasolver);
         SolveStatProblem( Stokes, lset, stokessolver);
