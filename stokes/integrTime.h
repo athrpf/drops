@@ -304,18 +304,20 @@ class ISBBTPreCL
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
         const IdxDescCL& pr_idx, const IdxDescCL& vel_idx,
         double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2, double regularize= 0.)
-        : B_( B), Bs_( 0), Bversion_( 0), BBT_( 0, TRANSP_MUL, 0, MUL, vel_idx, pr_idx),
+        : B_( B), Bs_( 0), Bversion_( 0),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
+          BBT_( 0, TRANSP_MUL, 0, MUL, vel_idx, pr_idx),
           PCsolver1_( pr_idx), PCsolver2_(pr_idx),
           solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 50, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
           vel_idx_(vel_idx), pr_idx_(pr_idx), regularize_( regularize) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
-          Bversion_( pc.Bversion_), BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.vel_idx_, pc.pr_idx_),
+          Bversion_( pc.Bversion_),
           M_( pc.M_), Mvel_( pc.Mvel_),
           kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
           Dprsqrtinv_( pc.Dprsqrtinv_),
+          BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.vel_idx_, pc.pr_idx_),
           PCsolver1_( pc.pr_idx_), PCsolver2_( pc.pr_idx_),
           solver_( 800, tolA_, pc.pr_idx_, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 50, tolM_, pc.pr_idx_, PCsolver2_, /*relative*/ true),
