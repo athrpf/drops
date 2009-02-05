@@ -54,7 +54,7 @@ void ISBBTPreCL::Update() const
 
 #ifndef _PAR
     if (regularize_ != 0.)
-        Regularize( *Bs_, pr_idx_, Dprsqrt, spc_, regularize_);
+        Regularize( *Bs_, *pr_idx_, Dprsqrt, spc_, regularize_);
 #endif
 }
 
@@ -84,7 +84,7 @@ void MinCommPreCL::Update() const
     ScaleRows( *Bs_, Dprsqrtinv_);
 
     if (regularize_ != 0.)
-        Regularize( *Bs_, pr_idx_, Dprsqrt, spc_, regularize_);
+        Regularize( *Bs_, *pr_idx_, Dprsqrt, spc_, regularize_);
 }
 #endif
 

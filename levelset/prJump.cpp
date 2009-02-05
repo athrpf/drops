@@ -324,7 +324,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
         stokessolverfactory.SetMatrixA( &Stokes.A.Data.GetFinest());
         //for Stokes-MGM
         stokessolverfactory.SetMatrices( &Stokes.A.Data.GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
-                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest());
+                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
 
         solver->Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data,
                        curv.Data, Stokes.c.Data);

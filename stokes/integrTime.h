@@ -275,7 +275,7 @@ class ISBBTPreCL
 
     const IdxDescCL& vel_idx_;                                  ///< Accessing ExchangeCL for velocity
 #endif
-    const IdxDescCL& pr_idx_;                                   ///< Accessing ExchangeCL for pressure; also used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
+    const IdxDescCL* pr_idx_;                                   ///< Accessing ExchangeCL for pressure; also used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
     double regularize_;                                         ///< If regularize_==0. no regularization is performed. Otherwise, a column is attached to Bs.
     void Update () const;                                       ///< Updating the diagonal matrices D and Dprsqrtinv
 
@@ -288,7 +288,7 @@ class ISBBTPreCL
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
           solver_( spc_, 500, tolA_, /*relative*/ true),
           solver2_( jacpc_, 50, tolM_, /*relative*/ true),
-          pr_idx_( pr_idx), regularize_( regularize) {}
+          pr_idx_( &pr_idx), regularize_( regularize) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
@@ -310,7 +310,7 @@ class ISBBTPreCL
           PCsolver1_( pr_idx), PCsolver2_(pr_idx),
           solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 50, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
-          vel_idx_(vel_idx), pr_idx_(pr_idx), regularize_( regularize) {}
+          vel_idx_(vel_idx), pr_idx_( &pr_idx), regularize_( regularize) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_),
@@ -342,10 +342,11 @@ class ISBBTPreCL
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
 
-    void SetMatrices (const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+    void SetMatrices (const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
         B_= B;
         Mvel_= Mvel;
         M_= M;
+        pr_idx_= pr_idx;
         Bversion_ = 0;
     }
 };
@@ -408,7 +409,7 @@ class MinCommPreCL
     typedef NEGSPcCL SPcT_;
     SPcT_ spc_;
     mutable PCGNESolverCL<SPcT_> solver_;
-    const IdxDescCL& pr_idx_;                                   ///< Used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
+    const IdxDescCL* pr_idx_;                                   ///< Used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
     double regularize_;
 
     void Update () const;
@@ -420,7 +421,7 @@ class MinCommPreCL
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
           tol_(tol),
           spc_( /*symmetric GS*/ true), solver_( spc_, 200, tol_, /*relative*/ true),
-          pr_idx_( pr_idx), regularize_( regularize) {}
+          pr_idx_( &pr_idx), regularize_( regularize) {}
 
     MinCommPreCL (const MinCommPreCL & pc)
         : A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
@@ -441,11 +442,13 @@ class MinCommPreCL
     void Apply (const Mat&, Vec& x, const Vec& b) const;
 
     void SetMatrixA  (const MatrixCL* A) { A_= A; }
-    void SetMatrices (const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M) {
+    void SetMatrices (const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M,
+                      const IdxDescCL* pr_idx) {
         A_= A;
         B_= B;
         Mvel_= Mvel;
         M_= M;
+        pr_idx_= pr_idx;
         Aversion_ = Bversion_ = Mvelversion_ = Mversion_ = 0;
     }
 };
