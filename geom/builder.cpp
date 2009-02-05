@@ -142,7 +142,6 @@ void BrickBuilderCL::build (MultiGridCL* mgp) const
     std::for_each( va.begin(), va.end(), std::mem_fun( &VertexCL::DestroyRecycleBin ) );
 }
 
-#ifdef _PAR
 void EmptyBrickBuilderCL::build( MultiGridCL* mgp) const
 {
     for (Uint i= 0; i<_numLevel; ++i)
@@ -151,7 +150,6 @@ void EmptyBrickBuilderCL::build( MultiGridCL* mgp) const
     // Create boundary
     base_::buildBoundary(mgp);
 }
-#endif
 
 LBuilderCL::LBuilderCL(const Point3DCL& origin,
                        const Point3DCL& e1,
@@ -685,7 +683,6 @@ void TetraBuilderCL::build(MultiGridCL* mgp) const
     PrepareModify( mgp);
 }
 
-#ifdef _PAR
 void EmptyTetraBuilderCL::build(MultiGridCL* mgp) const
 {
     for (Uint i= 0; i<_numLevel; ++i)
@@ -694,7 +691,6 @@ void EmptyTetraBuilderCL::build(MultiGridCL* mgp) const
     // Create boundary
     buildBoundary(mgp);
 }
-#endif
 
 //--------------------------------------------------------------------
 // Mesh-file-parser
@@ -1290,7 +1286,6 @@ BndCondT ReadMeshBuilderCL::MapBC( Uint gambit_bc)
     }
 }
 
-#ifdef _PAR
 void EmptyReadMeshBuilderCL::build(MultiGridCL* mgp) const
 {
     // Read the mesh file.
@@ -1306,7 +1301,6 @@ void EmptyReadMeshBuilderCL::build(MultiGridCL* mgp) const
     // Create boundary
     base_::buildBoundaryImp(mgp);
 }
-#endif
 
 /*******************************************************************
 *   F I L E B U I L D E R  C L                                    *

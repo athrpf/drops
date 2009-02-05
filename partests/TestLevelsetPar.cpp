@@ -44,7 +44,7 @@ using namespace std;
 * G L O B A L  V A R I B L E S                                              *
 ****************************************************************************/
 DROPS::TimeStoreCL Times(3);    // time table all times are stored within this class
-enum TimePart{                  // numbers for accesing the time table
+enum TimePart{                  // numbers for accessing the time table
     T_Init,
     T_Reparam,
     T_ReparamEuklid
@@ -65,7 +65,7 @@ void SetDescriber()
 /****************************************************************************
 * D E F I N I T I O N   O F   T H E   P R O B L E M                         *
 *****************************************************************************
-* Only natural homogenious boundray conditions, no coeffs                   *
+* Only natural homogeneous boundary conditions, no coeffs                   *
 ****************************************************************************/
 class EmptyCoeffCL {} EmptyCoeff;
 typedef DROPS::BndDataCL<double>                                        BndDataT;
@@ -214,7 +214,7 @@ namespace DROPS
 {
 void Strategy(TestP2LevelSetCL &prob)
 {
-    // Index Describer für je eine Unbekannte auf Vertices und Edges
+    // Index Describer fuer je eine Unbekannte auf Vertices und Edges
     MLIdxDescCL idx( P1_FE);
     ParTimerCL time;
 
@@ -286,7 +286,7 @@ void Strategy(TestP2LevelSetCL &prob)
     if (fastmarch){
         if (ProcCL::IamMaster())
             std::cout << " Reparametrisieren der Levelsetfunktion mittels serial fastmarching\n";
-        FastMarchCL FastMarch(mg, phi, ex);
+        FastMarchCL FastMarch(mg, phi);
 
         time.Reset();
         for (int i=0; i<2; ++i){
@@ -321,7 +321,7 @@ void Strategy(TestP2LevelSetCL &prob)
             std::cout << " Stoere die Levelsetfunktion\n";
         DisturbLevelSet(phi.Data);
 
-        FastMarchCL FastMarch(mg, phi, ex);
+        FastMarchCL FastMarch(mg, phi);
         if (ProcCL::IamMaster())
             std::cout << " Reparametrisieren der Levelsetfunktion mittels eukilidischem Abstand\n";
         time.Reset();

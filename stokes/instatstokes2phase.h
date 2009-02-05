@@ -173,13 +173,8 @@ class VelocityRepairCL : public MGObserverCL
     StokesT& stokes_;
 
   public:
-#ifndef _PAR
     VelocityRepairCL (StokesT& stokes)
         : stokes_( stokes) {}
-#else
-    VelocityRepairCL (StokesT& stokes, ParMultiGridCL& pmg)
-        : MGObserverCL(pmg), stokes_(stokes){}
-#endif
     void pre_refine  ();
     void post_refine ();
     void pre_refine_sequence  () {}
@@ -202,13 +197,8 @@ class PressureRepairCL : public MGObserverCL
     const LevelsetP2CL& ls_;
 
   public:
-#ifndef _PAR
     PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls)
         : stokes_( stokes), ls_( ls) {}
-#else
-    PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls, ParMultiGridCL& pmg)
-        : MGObserverCL(pmg), stokes_(stokes), ls_(ls) {}
-#endif
     void pre_refine  ();
     void post_refine ();
     void pre_refine_sequence  ();

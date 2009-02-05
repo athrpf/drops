@@ -130,7 +130,13 @@ class AdapTriangCL
     const MultiGridCL& GetMG() const { return mg_; }
 
     /// \brief Push back a handler for FE-functions to apply changes due to grid modifications
-    void push_back (MGObserverCL* o) { observer_.push_back( o); }
+    void push_back (MGObserverCL* o)
+    {
+        observer_.push_back( o);
+#ifdef _PAR
+        observer_.back()->SetPMG(pmg_);
+#endif
+    }
 };
 
 } // end of namespace DROPS

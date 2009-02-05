@@ -100,39 +100,6 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     vel/= Volume;
 }
 
-#ifdef _PAR
-template<typename ExCL>
-  void LevelsetP2CL::ReparamFastMarching(ExCL& ex, bool ModifyZero, bool euklid, bool Periodic, bool OnlyZeroLvl)
-/**
-\param ModifyZero   If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
-\param OnlyZeroLvl  If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
-\param Periodic     If true, a special variant of the algorithm for periodic boundaries is used.
-\param ex           \a ExchangeCL for handling parallel dofs
-\param euklid       Use euclidan method for reparametrization
-
-  \todo (of) Was muss aus der ParFastMarchCL aufgerufen werden, wenn man OnlyZeroLvl als Parameter angibt?
-  \todo (of) Periodische Randbedingungen für die Reparametrisierung der Levelset-Funktion
-*/
-{
-    if (Periodic)
-        throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No periodic boundary for parallel fast marching implemented");
-    FastMarchCL FastMarch( MG_, Phi, ex);
-    if (OnlyZeroLvl)
-    {
-        FastMarch.InitZero( ModifyZero);
-        FastMarch.RestoreSigns();
-    }
-    else
-    {
-        if (!euklid)
-            FastMarch.Reparam( ModifyZero);
-        else
-            FastMarch.ReparamEuklid( ModifyZero);
-    }
-}
-#endif
-
-
 template<class DiscVelSolT>
 void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 /**Sets up the stiffness matrices: <br>

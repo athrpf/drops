@@ -135,16 +135,10 @@ class LevelsetP2CL
     int GetIter() const { return gm_.GetIter(); }
     /// Get last resid
     double GetResid() const { return gm_.GetResid(); }
-#ifndef _PAR
     /// Reparametrization by solving evolution equation (not recommended).
     void Reparam( Uint steps, double dt);
     /// Reparametrization by Fast Marching method (recommended).
-    void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false);
-#else
-    /// Reparametrization Euklidian method (recommended) for the parallel version.
-    template<typename ExCL>
-    void ReparamFastMarching(ExCL&, bool ModifyZero= true, bool euklid=true, bool Periodic= false, bool OnlyZeroLvl= false);
-#endif
+    void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false, bool euklid= false);
 
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
@@ -203,13 +197,8 @@ class LevelsetRepairCL : public MGObserverCL
 
   public:
     /// \brief Construct a levelset repair class
-#ifndef _PAR
     LevelsetRepairCL (LevelsetP2CL& ls)
         : ls_( ls) {}
-#else
-    LevelsetRepairCL (LevelsetP2CL& ls, ParMultiGridCL& pmg)
-        : MGObserverCL(pmg), ls_( ls) {}
-#endif
 
     void pre_refine  ();
     void post_refine ();

@@ -40,7 +40,7 @@ TestExchangePar: \
    $(PAR_OBJ) \
    ../partests/TestExchangePar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
-   ../num/unknowns.o ../num/fe.o ../num/interfacePatch.o \
+   ../num/unknowns.o ../num/fe.o ../num/interfacePatch.o ../levelset/fastmarch.o \
    ../partests/params.o ../levelset/levelset.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -58,7 +58,7 @@ TestInterpolPar: \
     ../geom/builder.o ../misc/utils.o ../levelset/levelset.o ../levelset/params.o \
     ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
     ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../partests/params.o
+    ../partests/params.o ../levelset/fastmarch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestSedPar: \

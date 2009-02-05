@@ -8,6 +8,9 @@
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
 #include "num/MGsolver.h"
+#ifdef _PAR
+#include "num/parstokessolver.h"
+#endif
 
 namespace DROPS
 {

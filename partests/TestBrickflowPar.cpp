@@ -445,7 +445,7 @@ template<class Coeff>
         statStokesParam.num_steps   = 0;
         statStokesParam.dt          = 0.;
         statStokesParam.pcA_tol     = 0.02;
-        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
+        StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
         StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
         VelVecDescCL curv(&Stokes.vel_idx),
@@ -580,7 +580,7 @@ template<typename Coeff>
     double relVol = lset.GetVolume()/Vol;
 
     StokesSolverParamST instatStokesParam(C);
-    ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
+    StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
     StokesSolverBaseCL* instatStokesSolver= instatStokesSolverFactory.CreateStokesSolver();
 
     // Navstokes solver
@@ -672,7 +672,7 @@ template<typename Coeff>
                           << "- rel. Volume: " << relVol << std::endl;
 
             time.Reset();
-            lset.ReparamFastMarching( lset.idx.GetEx(), C.RepMethod, C.RepMethod==3);
+            lset.ReparamFastMarching( C.RepMethod, C.RepMethod==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
@@ -750,11 +750,11 @@ template<class Coeff>
 
     DisplayDetailedGeom(mg);
 
-    LevelsetRepairCL lsetrepair( lset, pmg);
+    LevelsetRepairCL lsetrepair( lset);
     adapt.push_back( &lsetrepair);
-    VelocityRepairCL<StokesProblemT> velrepair( Stokes, pmg);
+    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
     adapt.push_back( &velrepair);
-    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset, pmg);
+    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
     adapt.push_back( &prrepair);
 
     /// \todo (of) Testen von SF_ImprovedLBVar!!!

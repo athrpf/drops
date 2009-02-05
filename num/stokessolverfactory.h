@@ -569,12 +569,12 @@ struct StokesSolverParamST
 };
 
 
-/*******************************************************************
-*   P a r S t o k e s S o l v e r F a c t o r y  C L               *
-********************************************************************/
+/*************************************************************
+*   S t o k e s S o l v e r F a c t o r y  C L               *
+**************************************************************/
 /// \brief Factory for producing parallel stokes solver
 template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
-class ParStokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
+class StokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
 {
   private:
     typedef StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT> base_;
@@ -604,8 +604,8 @@ class ParStokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, Pro
     typedef SolverAsPreCL<PCGSolverT> PCGPcT;     PCGPcT PCGPc_;
 
   public:
-    ParStokesSolverFactoryCL( StokesT& Stokes, ParamsT& C);
-    ~ParStokesSolverFactoryCL() {}
+    StokesSolverFactoryCL( StokesT& Stokes, ParamsT& C);
+    ~StokesSolverFactoryCL() {}
 
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     void       SetMatrixA ( const MatrixCL*)  {};
@@ -620,7 +620,7 @@ class ParStokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, Pro
 };
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
-  ParStokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::ParStokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
+  StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::StokesSolverFactoryCL(StokesT& Stokes, ParamsT& C)
     : base_(Stokes, C),
       kA_(C_.num_steps != 0 ? 1.0/C_.dt : 0.0), // C_.num_steps == 0: stat. problem
       kM_(C_.theta),
@@ -635,7 +635,7 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
     {}
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
-  StokesSolverBaseCL* ParStokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::CreateStokesSolver()
+  StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::CreateStokesSolver()
 {
     StokesSolverBaseCL* stokessolver = 0;
     switch (C_.StokesMethod)

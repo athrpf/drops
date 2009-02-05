@@ -55,14 +55,13 @@ class BrickBuilderCL : public MGBuilderCL
 };
 
 
-#ifdef _PAR
 /// \brief Class for setting up data structures of a multigrid of a brick shaped
 ///        domain
 /** In order to create a brick on a parallel computer, the following strategy is
     used. Only the master processor creates the multigrid and all other
     processors have to create an "empty" multigrid, i.e. they only create the
-    level views and the boundary. Therefore this class is instanciated from the
-    non-master processors. The master process instaciate the base class of this
+    level views and the boundary. Therefore this class is instantiated from the
+    non-master processors. The master process instantiates the base class of this
     class.
 */
 class EmptyBrickBuilderCL : public BrickBuilderCL
@@ -79,7 +78,6 @@ class EmptyBrickBuilderCL : public BrickBuilderCL
     /// \brief Build level views and boundary information
     virtual void build( MultiGridCL*) const;
 };
-#endif
 
 class LBuilderCL : public MGBuilderCL
 {
@@ -160,9 +158,8 @@ class TetraBuilderCL : public MGBuilderCL
     build(MultiGridCL*) const;
 };
 
-#ifdef _PAR
 /// \brief Create data structures for a tetrahedron-shaped multigrid
-/** For detailed information see describtion of EmptyBrickBuilderCL*/
+/** For detailed information see description of EmptyBrickBuilderCL*/
 class EmptyTetraBuilderCL : public TetraBuilderCL
 {
   private:
@@ -174,7 +171,6 @@ class EmptyTetraBuilderCL : public TetraBuilderCL
 
     virtual void build( MultiGridCL*) const;
 };
-#endif
 
 //--------------------------------------------------------------------
 // Mesh-file-parser
@@ -393,9 +389,8 @@ class ReadMeshBuilderCL : public MGBuilderCL
     void     GetBC( std::vector<BndCondT>& BC) const { BC= BC_; }
 };
 
-#ifdef _PAR
 /// \brief This class creates an empty domain out of a mesh-file
-/** For detailed information see describtion of EmptyBrickBuilderCL*/
+/** For detailed information see description of EmptyBrickBuilderCL*/
 class EmptyReadMeshBuilderCL : public ReadMeshBuilderCL
 {
   private:
@@ -409,7 +404,6 @@ class EmptyReadMeshBuilderCL : public ReadMeshBuilderCL
     /// Just create the level views boundary-information
     virtual void build(MultiGridCL*) const;
 };
-#endif
 
 /*******************************************************************
 *   F I L E B U I L D E R  C L                                    *

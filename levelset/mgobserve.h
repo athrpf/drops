@@ -33,8 +33,10 @@ class MGObserverCL
     MGObserverCL(ParMultiGridCL& pmg) : pmg_(&pmg) {}
     MGObserverCL() : pmg_(0) {}
 
-    /// Get reference on the parallel multigrid
+    /// Get parallel multigrid.
     ParMultiGridCL& GetPMG() { return *pmg_; }
+    /// Set parallel multigrid.
+    void SetPMG( ParMultiGridCL& pmg) { pmg_= &pmg; }
 #endif
     virtual ~MGObserverCL () {};
 

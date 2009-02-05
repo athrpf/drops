@@ -338,7 +338,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         statStokesParam.num_steps   = 0;
         statStokesParam.dt          = 0.;
         statStokesParam.pcA_tol     = 0.02;
-        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
+        StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
         StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
         const Point3DCL old_Radius= C.Radius;
@@ -421,7 +421,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     {
 
         StokesSolverParamST instatStokesParam(C);
-        ParStokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
+        StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
         StokesSolverBaseCL* instatStokesSolver= instatStokesSolverFactory.CreateStokesSolver();
 
 
@@ -485,7 +485,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 if (ProcCL::IamMaster())
                     std::cerr << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
                 time.Reset();
-                lset.ReparamFastMarching( ExL, C.RepMethod, C.RepMethod==3);
+                lset.ReparamFastMarching( C.RepMethod, C.RepMethod==3);
                 time.Stop(); duration=time.GetMaxTime();
                 relVol = lset.GetVolume()/Vol;
                 if (ProcCL::IamMaster())

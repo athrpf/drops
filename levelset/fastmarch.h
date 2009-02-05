@@ -93,12 +93,11 @@ class FastMarchCL
 #endif
 
   public:
-#ifndef _PAR
     FastMarchCL( MultiGridCL& mg, VecDescCL& v)
+#ifndef _PAR
       : MG_(mg), v_(&v), size_(v.RowIdx->NumUnknowns()), Typ_(Far, size_) {}
 #else
-    FastMarchCL( MultiGridCL& mg, VecDescCL& v, ExchangeCL& ex)
-      : MG_(mg), ex_(&ex), size_(v.RowIdx->NumUnknowns()), Coord_(size_)
+      : MG_(mg), ex_( &v.RowIdx->GetEx()), size_(v.RowIdx->NumUnknowns()), Coord_(size_)
     {
         v_= &v;
         Typ_.resize(Far, size_);
