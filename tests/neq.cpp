@@ -21,23 +21,25 @@ int main ()
 
     CompositeMatrixCL M( &m, TRANSP_MUL, &m, MUL);
     VectorCL b( M.num_rows());
-    //add_col_to_vec( m, 1., b, 10);
+    //add_col_to_vec( m, 1., b, 10); // Test with a consistent rhs.
     //b/= norm( b);
-    b[0]= 1.;
+    b[0]= 1.; // This gives an inconsistent system of linear equations.
 
-    VectorCL ker( std::sqrt( m2.GetDiag()));  //( 1./std::sqrt(m.num_rows()), m.num_rows());
-    ker/= norm( ker);
+    VectorCL ker0( std::sqrt( m2.GetDiag()));  // Kernel of the scaled matrix.
+    ker0/= std::sqrt( dot( ker0, ker0));
+    typedef NEGSPcCL SPcT;
+    SPcT spc( true);
+    VectorCL ker( spc.mul( m, ker0));
+    ker/= std::sqrt( dot( ker, ker0)); // ker is now an spc-unit-norm vector.
     std::cerr << "Kernel: rel. residual norm: " << dot( M*ker, ker)/norm_sq( ker) << " norm ker: " << norm(ker) << '\n';
-    double alpha= std::sqrt( 10.*BBTDiag( m).min());
-    VectorCL scaledKer( alpha * ker); // insertion leads to AA^T + alpha^2*ee^T
+    double alpha= std::sqrt( 1.); // std::sqrt( BBTDiag( m).min());
+    VectorCL scaledKer( alpha * ker); // insertion into A leads to AA^T + alpha^2*ee^T.
     m.insert_col( m.num_cols(), scaledKer);
     std::cerr << "Kernel: after stab: rel. residual norm: " << dot( M*ker, ker)/norm_sq( ker) << " alpha: " << alpha << '\n';
 
     //VectorCL D( 1.0/BBTDiag( m));
     //typedef DiagPcCL SPcT;
     //SPcT spc( D);
-    typedef NEGSPcCL SPcT;
-    SPcT spc( true);
     //typedef DummyPcCL SPcT;
     //SPcT spc;
     typedef SSORPcCL SPc2T;
@@ -45,7 +47,7 @@ int main ()
     SPc2T spc2;
     SPc2T spc3;
     //PCGSolverCL<SPcT> solver( spc, 200, 1e-6, true);
-    PCGNESolverCL<SPcT> solver( spc, 200, 1e-6, true);
+    PCGNESolverCL<SPcT> solver( spc, 400, 1e-6, true);
     //GCRSolverCL<SPcT> solver( spc, 500, 500, 1e-6, true, &std::cerr);
   
     VectorCL x( M.num_cols());
@@ -53,12 +55,13 @@ int main ()
     solver.Solve( m, x, b);
     //solver.Solve( M, x, b);
     t.Stop();
-     std::cout << "Time: " << t.GetTime() << "Iter: " << solver.GetIter()
-               << " Norm from solver: " << solver.GetResid()
-               << " Norm x: " << norm( x) << " Residual: " << norm( M*x - b)
-               << " Norm b: " << norm( b)
-               << " ker^T*x " << dot( ker, x)/norm( ker)
-               << " orth-part of x: " << norm( x - dot( ker, x)*ker) << '\n';
+    std::cout << "Time: " << t.GetTime() << "Iter: " << solver.GetIter()
+              << " Norm from solver: " << solver.GetResid()
+              << " Norm x: " << norm( x) << " Residual: " << norm( M*x - b)
+              << " Norm b: " << norm( b)
+              << " ker^T*x " << dot( ker0, x)/norm( ker0) //<< dot( ker, x)/norm( ker)
+              << " orth-part of x: " << norm( x - dot( ker0, x)*ker0) << '\n';
+    std::cout << "dim: " << m.num_rows() << " x " << m.num_cols() << '\n';
 
   } catch (DROPSErrCL d) {
     d.what( std::cerr);
