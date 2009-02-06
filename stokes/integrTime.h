@@ -273,7 +273,7 @@ class ISBBTPreCL
     mutable ParPCGSolverCL<PCSolver1T> solver_;                 ///< solver for BB^T
     mutable ParPCGSolverCL<PCSolver2T> solver2_;                ///< solver for M
 
-    const IdxDescCL& vel_idx_;                                  ///< Accessing ExchangeCL for velocity
+    const IdxDescCL* vel_idx_;                                  ///< Accessing ExchangeCL for velocity
 #endif
     const IdxDescCL* pr_idx_;                                   ///< Accessing ExchangeCL for pressure; also used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
     double regularize_;                                         ///< If regularize_==0. no regularization is performed. Otherwise, a column is attached to Bs.
@@ -310,17 +310,17 @@ class ISBBTPreCL
           PCsolver1_( pr_idx), PCsolver2_(pr_idx),
           solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 50, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
-          vel_idx_(vel_idx), pr_idx_( &pr_idx), regularize_( regularize) {}
+          vel_idx_( &vel_idx), pr_idx_( &pr_idx), regularize_( regularize) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_),
           M_( pc.M_), Mvel_( pc.Mvel_),
           kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
           Dprsqrtinv_( pc.Dprsqrtinv_),
-          BBT_( Bs_, TRANSP_MUL, Bs_, MUL, pc.vel_idx_, pc.pr_idx_),
-          PCsolver1_( pc.pr_idx_), PCsolver2_( pc.pr_idx_),
-          solver_( 800, tolA_, pc.pr_idx_, PCsolver1_, /*relative*/ true, /*accure*/ true),
-          solver2_( 50, tolM_, pc.pr_idx_, PCsolver2_, /*relative*/ true),
+          BBT_( Bs_, TRANSP_MUL, Bs_, MUL, *pc.vel_idx_, *pc.pr_idx_),
+          PCsolver1_( *pc.pr_idx_), PCsolver2_( *pc.pr_idx_),
+          solver_( 800, tolA_, *pc.pr_idx_, PCsolver1_, /*relative*/ true, /*accure*/ true),
+          solver2_( 50, tolM_, *pc.pr_idx_, PCsolver2_, /*relative*/ true),
           vel_idx_( pc.vel_idx_), pr_idx_( pc.pr_idx_), regularize_( pc.regularize_){}
 
     /// \name Parallel preconditioner setup ...

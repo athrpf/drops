@@ -39,14 +39,14 @@ void ISBBTPreCL::Update() const
 #else
     BBT_.SetBlock0( Bs_);
     BBT_.SetBlock1( Bs_);
-    VectorCL Dvelinv( 1.0/ vel_idx_.GetEx().GetAccumulate(Mvel_->GetDiag()));
+    VectorCL Dvelinv( 1.0/ vel_idx_->GetEx().GetAccumulate(Mvel_->GetDiag()));
 #endif
     ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));
 
 #ifndef _PAR
     VectorCL Dprsqrt( std::sqrt( M_->GetDiag()));
 #else
-    VectorCL Dprsqrt( std::sqrt( pr_idx_.GetEx().GetAccumulate( M_->GetDiag())));
+    VectorCL Dprsqrt( std::sqrt( pr_idx_->GetEx().GetAccumulate( M_->GetDiag())));
 #endif
     Dprsqrtinv_.resize( M_->num_rows());
     Dprsqrtinv_= 1.0/Dprsqrt;
