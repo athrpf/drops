@@ -596,12 +596,23 @@ class StokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, Prolon
 
 // PC for A-block
     //JAC-GMRes
-    typedef ParPreGMResSolverCL<ParJac0CL> GMResSolverT; GMResSolverT GMResSolver_;
-    typedef SolverAsPreCL<GMResSolverT>    GMResPcT;     GMResPcT GMResPc_;
+    typedef ParPreGMResSolverCL<ParJac0CL> GMResSolverT;
+    typedef SolverAsPreCL<GMResSolverT>    GMResPcT;
+    GMResSolverT GMResSolver_;
+    GMResPcT GMResPc_;
 
     //JAC-PCG
-    typedef ParPCGSolverCL<ParJac0CL> PCGSolverT; PCGSolverT PCGSolver_;
-    typedef SolverAsPreCL<PCGSolverT> PCGPcT;     PCGPcT PCGPc_;
+    typedef ParPCGSolverCL<ParJac0CL> PCGSolverT;
+    typedef SolverAsPreCL<PCGSolverT> PCGPcT;
+    PCGSolverT PCGSolver_;
+    PCGPcT PCGPc_;
+
+// BlockPC
+    typedef BlockPreCL<GMResPcT, ISBBTPreCL, LowerBlockPreCL> LBlockGMResBBTOseenPcT;
+    LBlockGMResBBTOseenPcT LBlockGMResBBTOseenPc_;
+
+//GCR solver
+    ParPreGCRSolverCL<LBlockGMResBBTOseenPcT> GCRGMResBBT_;
 
   public:
     StokesSolverFactoryCL( StokesT& Stokes, ParamsT& C);
@@ -610,7 +621,7 @@ class StokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, Prolon
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     void       SetMatrixA ( const MatrixCL*)  {};
     /// Nothing is to be done in parallel, because special preconditioners does not exist
-    void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*, const IdxDescCL* pr_idx){}
+    void       SetMatrices( const MatrixCL*, const MatrixCL*, const MatrixCL*, const MatrixCL*, const IdxDescCL*){}
     /// Nothing is to be done in parallel, because special preconditioners does not exist
     ProlongationVelT* GetPVel() { return 0; }
     /// Nothing is to be done in parallel, because special preconditioners does not exist
@@ -629,9 +640,13 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
       bbtispc_ ( Stokes_.B.Data.GetFinestPtr(), Stokes_.prM.Data.GetFinestPtr(), Stokes_.M.Data.GetFinestPtr(),
                  Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), kA_, kM_, C_.pcS_tol, C_.pcS_tol),
       GMResSolver_(/*restart*/ 100, C_.pcA_iter, C_.pcA_tol, Stokes.vel_idx.GetFinest(), JACVelPc_,
-                   /*rel*/ true, /*accure*/ true, /*ModGS*/ false), GMResPc_( GMResSolver_),
+                   /*rel*/ true, /*accure*/ true, /*ModGS*/ false),
+      GMResPc_( GMResSolver_),
       PCGSolver_(C_.pcA_iter, C_.pcA_tol, Stokes.vel_idx.GetFinest(), JACVelPc_,
-                 /*rel*/ true, /*acc*/ true), PCGPc_(PCGSolver_)
+                 /*rel*/ true, /*acc*/ true),
+      PCGPc_(PCGSolver_),
+      LBlockGMResBBTOseenPc_( GMResPc_, bbtispc_),
+      GCRGMResBBT_( C.outer_iter, C.outer_iter, C.outer_tol, LBlockGMResBBTOseenPc_, true, false, true, &std::cerr)
     {}
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
@@ -649,6 +664,10 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
             stokessolver = new ParInexactUzawaCL<GMResPcT, ISBBTPreCL, APC_OTHER>
                         ( GMResPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
                           C_.outer_iter, C_.outer_tol, C_.inner_tol);
+        break;
+        case 10401 :
+            stokessolver = new BlockMatrixSolverCL<ParPreGCRSolverCL<LBlockGMResBBTOseenPcT> >
+                        ( GCRGMResBBT_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest());
         break;
         default: throw DROPSErrCL("Unknown StokesMethod");
     }

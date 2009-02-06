@@ -132,16 +132,23 @@ class ParSolverBaseCL : public SolverBaseCL
     as well.
 */
 {
-  protected:
-    const IdxDescCL& idx_;      // for getting the ExchangeCL
-    bool             acc_;      // use accur version for computing norms and inner products
+  private:
+    const IdxDescCL* idx_;      // for getting the ExchangeCL
+    bool             acc_;      // use accurate version for computing norms and inner products
 
   public:
     /// \brief Constructor
     ParSolverBaseCL(int maxiter, double tol, const IdxDescCL& idx, bool rel= false, bool acc= true, std::ostream* output=0)
-      : SolverBaseCL(maxiter, tol, rel, output), idx_(idx), acc_(acc) {}
+      : SolverBaseCL(maxiter, tol, rel, output), idx_(&idx), acc_(acc) {}
+    /// \brief Constructor, that does not initialize the index description
+    ParSolverBaseCL(int maxiter, double tol, bool rel= false, bool acc= true, std::ostream* output=0)
+      : SolverBaseCL(maxiter, tol, rel, output), idx_(0), acc_(acc) {}
 
-    const ExchangeCL& GetEx()             const { return idx_.GetEx(); }      ///< return constant reference on exchange class
+    /// \brief Aks for ExchangeCL
+    const ExchangeCL& GetEx() const {
+        Assert(idx_, DROPSErrCL("ParSolverBaseCL::GetEx: Index not set, do you want to use an ExchangeBlockCL?"), DebugParallelNumC);
+        return idx_->GetEx();
+    }
     bool              Accurate()          const { return acc_; }              ///< Check if accurate version of inner products and norms are used
     void              SetAccurate(bool a)       { acc_= a; }                  ///< Set to accurate version
 };
@@ -162,9 +169,12 @@ class ParPreSolverBaseCL : public ParSolverBaseCL
   public:
     typedef PC PrecondT;                            ///< Preconditioner
 
-    /// Constructor
+    /// \brief Constructor
     ParPreSolverBaseCL(int maxiter, double tol, const IdxDescCL& idx, PC& pc, bool rel=true, bool acc= true, std::ostream* output=0)
       : base(maxiter, tol, idx, rel, acc, output), pc_(pc) {}
+    /// \brief Constructor, that does not initialize the index description
+    ParPreSolverBaseCL(int maxiter, double tol, PC& pc, bool rel=true, bool acc= true, std::ostream* output=0)
+      : base(maxiter, tol, rel, acc, output), pc_(pc) {}
 
     PC& GetPC()             {return pc_;}          ///< return reference on preconditioner
     const PC& GetPC() const {return pc_;}          ///< return constant reference on preconditioner
@@ -349,6 +359,10 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
     ParPreGCRSolverCL(int trunc, int maxiter, double tol, const IdxDescCL& idx, PC &pc, bool mod=false,
                       bool rel=true, bool acc=true, std::ostream* output=0)
       : base(maxiter, tol, idx, pc, rel, acc, output), trunc_(trunc), mod_(mod) {}
+    /// \brief Constructor, that does not initialize the index description
+    ParPreGCRSolverCL(int trunc, int maxiter, double tol, PC &pc, bool mod=false,
+                      bool rel=true, bool acc=true, std::ostream* output=0)
+      : base(maxiter, tol, pc, rel, acc, output), trunc_(trunc), mod_(mod) {}
 
     /// \brief Solve a linear equation system with preconditioned Generalized Conjugate Residuals-Method
     template <typename Mat, typename Vec>
@@ -361,13 +375,33 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
         base::_iter = base::_maxiter;
         if (mod_){
             if (base::Accurate())
-                ParModAccurPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError());
+                ParModAccurPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::output_);
             else
                 ParModPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError());
         }
         else
             ParPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::Accurate());
     }
+
+    /// \brief Solve a linear equation system with preconditioned Generalized Conjugate Residuals-Method
+    template <typename Mat, typename Vec>
+      void Solve(const Mat& A, Vec& x, const Vec &b, const ExchangeBlockCL& ex)
+    /// Solve the linear equation system with coefficient matrix \a A and rhs \a b iterative with
+    /// preconditioned GCR algorithm, uses \a x as start-vector and result vector.
+    /// \post x has accumulated form
+    {
+        base::_res  = base::_tol;
+        base::_iter = base::_maxiter;
+        if (mod_){
+            if (base::Accurate())
+                ParModAccurPGCR(A, x, b, ex, base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::output_);
+            else
+                ParModPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError());
+        }
+        else
+            ParPGCR(A, x, b, ex, base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::Accurate());
+    }
+
 };
 
 // ***************************************************************************
@@ -1314,7 +1348,8 @@ bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon&
     then all residual vectors are stored */
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
-                     int m, int& max_iter, double& tol,bool measure_relative_tol /*=true*/)
+                     int m, int& max_iter, double& tol, bool measure_relative_tol /*=true*/,
+                     std::ostream* os)
     /// \param[in]     A                    coefficients of the linear equation system
     /// \param[in,out] x_acc                IN: start vector, OUT: solution of the linear equation system
     /// \param[in]     b                    rhs of the linear equation system
@@ -1340,15 +1375,15 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
     VectorCL a_loc(m+1), a(m+1), c(m), gamma_loc(2), gamma(2);  // derived from std::valarray, so all doubles are stored consecutive in memory!
     VectorCL b_acc(b.size());
 
-    double normb = std::sqrt(ExX.AccNorm_sq(b,b_acc));
+    double normb = ExX.Norm(b, false, true, &b_acc);
     if (normb==0.0 || measure_relative_tol==false)
         normb=1.0;
 
-    double resid = std::sqrt(ExX.AccNorm_sq(r,r_acc))/normb;
+    double resid= ExX.Norm(r, false, true, &r_acc)/normb;
     if (resid<tol){
         max_iter=0; tol=resid; return true;
     }
-    M.Apply(A,z_acc,r_acc);
+    M.Apply(A, z_acc, r_acc);
 
     p_acc.push_back(z_acc);
     Ap.push_back(A*z_acc);
@@ -1359,8 +1394,8 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
     for (int j=0; j<max_iter; ++j)
     {
         // Calc of (r,Ap) / (Ap,Ap)
-        gamma_loc[0] = ExX.LocAccNorm_sq(Ap[last_idx], Ap_acc[last_idx]);  // (Ap,Ap) and accumulation of Ap
-        gamma_loc[1] = ExX.LocAccDot(r_acc, Ap_acc[last_idx]);             // (r,Ap)
+        gamma_loc[0]= ExX.LocNorm_sq( Ap[last_idx], false, true, &Ap_acc[last_idx]);
+        gamma_loc[1]= ExX.LocDot( r_acc, true, Ap_acc[last_idx], true, true);
         GlobalSum(Addr(gamma_loc), Addr(gamma), 2);
         const double alpha = gamma[1] / gamma[0];
 
@@ -1376,13 +1411,15 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
         c[last_idx] = gamma[0];
         int k;
         for (k=0; k<=j && k<m; ++k)
-            a_loc[k] = ExX.LocAccDot(y_acc, Ap_acc[k]);
-
-        a_loc[k] = ExX.LocAccDot(z_acc,r_acc);                // calc of the residual
+            a_loc[k]= ExX.LocDot( y_acc, true, Ap_acc[k], true, true);
+        a_loc[k]= ExX.LocDot( z_acc, true, r_acc, true, true);  // calc of the residual
 
         GlobalSum(Addr(a_loc), Addr(a), k+1);
 
         resid = std::sqrt(a[k]) / normb;
+        if (os)
+            IF_MASTER
+                (*os) << "GCR " << j << ": res " << resid << std::endl;
 
         if (resid<tol){
             max_iter=j; tol=resid; return true;

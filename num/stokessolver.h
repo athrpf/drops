@@ -8,7 +8,9 @@
 #include "num/solver.h"
 #include "num/MGsolver.h"
 #include "stokes/integrTime.h"
-
+#ifdef _PAR
+#  include "parallel/exchange.h"
+#endif
 namespace DROPS
 {
 
@@ -223,11 +225,22 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
 {
   private:
     SolverT& solver_;
+#ifdef _PAR
+    ExchangeBlockCL exBlock_;
+#endif
 
   public:
+#ifndef _PAR
     BlockMatrixSolverCL( SolverT& solver)
         : StokesSolverBaseCL(-1, -1.0), solver_( solver) {}
-
+#else
+    BlockMatrixSolverCL( SolverT& solver, const IdxDescCL& vel_idx, const IdxDescCL& pr_idx)
+        : StokesSolverBaseCL(-1, -1.0), solver_( solver)
+    {
+        exBlock_.AttachTo( vel_idx);
+        exBlock_.AttachTo( pr_idx);
+    }
+#endif
 
 // We overwrite these functions.
     void   SetTol     (double tol) { solver_.SetTol( tol); }
@@ -250,7 +263,11 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
         VectorCL x( M.num_cols());
         x[std::slice( 0, M.num_cols( 0), 1)]= v;
         x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)]= p;
+#ifndef _PAR
         solver_.Solve( M, x, rhs);
+#else
+        solver_.Solve( M, x, rhs, exBlock_);
+#endif
         v= x[std::slice( 0, M.num_cols( 0), 1)];
         p= x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)];
     }
@@ -263,7 +280,11 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
         VectorCL x( M.num_cols());
         x[std::slice( 0, M.num_cols( 0), 1)]= v;
         x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)]= p;
+#ifndef _PAR
         solver_.Solve( M, x, rhs);
+#else
+        solver_.Solve( M, x, rhs, exBlock_);
+#endif
         v= x[std::slice( 0, M.num_cols( 0), 1)];
         p= x[std::slice( M.num_cols( 0), M.num_cols( 1), 1)];
     }
@@ -301,6 +322,7 @@ struct LowerBlockPreCL
     Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc1.Apply( A, v, b);
         Vec c2( c);
+        Assert(pc1.RetAcc(), DROPSErrCL("LowerBlockPreCL::Apply: Accumulation is missing"), DebugParallelNumC);
         c2-= B*v;
         pc2.Apply( /*dummy*/ B, p, c2);
    }
