@@ -1065,9 +1065,11 @@ void FastMarchCL::CleanUp()
 // ===============================================================
 //              variants for periodic boundaries
 // ===============================================================
-#ifndef _PAR
 double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
 {
+#ifdef _PAR
+    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
+#endif
     double val= 1e99;
 
     switch (num)
@@ -1107,6 +1109,10 @@ double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
 
 void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
 {
+#ifdef _PAR
+    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
+#endif
+
     // Knoten an der Phasengrenze als Finished markieren
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
     const Uint idx= v_->RowIdx->GetIdx(),
@@ -1298,6 +1304,9 @@ fil << "\n}\n";
 
 void FastMarchCL::InitClosePer()
 {
+#ifdef _PAR
+    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
+#endif
     // an Finished angrenzende Knoten mit Close markieren und dort v_ updaten
     const Uint idx= v_->RowIdx->GetIdx(),
                lvl= v_->GetLevel();
@@ -1338,6 +1347,10 @@ tim.Start();
 
 void FastMarchCL::UpdatePer( const IdxT NrI)
 {
+#ifdef _PAR
+    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
+#endif
+
     const IdxT MapNrI= Map(NrI);
     // Update all vertices that are not Finished
     if (Typ_[MapNrI] == Finished) return;
@@ -1372,6 +1385,10 @@ void FastMarchCL::UpdatePer( const IdxT NrI)
 
 void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero)
 {
+#ifdef _PAR
+    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
+#endif
+
     InitZeroPer( bnd, ModifyZero);
     InitClosePer();
 
@@ -1399,7 +1416,6 @@ void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero)
 
     RestoreSigns();
 }
-#endif
 
 
 } // end of namespace DROPS

@@ -83,14 +83,12 @@ class FastMarchCL
     void   Update( const IdxT);                         // Update value on a vert and put this vert into Close_
     double CompValueProj( IdxT, int num, const IdxT upd[3]) const;
 
-#ifndef _PAR
     // variants for periodic boundaries
     void   InitClosePer();
     IdxT   FindTrialPer() const;
     void   UpdatePer( const IdxT);
     double CompValueProjPer( IdxT, int num, const IdxT upd[3]) const;
     inline IdxT Map( IdxT i) const { return i<size_ ? i: map_[i-size_]; }
-#endif
 
   public:
     FastMarchCL( MultiGridCL& mg, VecDescCL& v)
