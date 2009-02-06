@@ -17,7 +17,6 @@
 #  include "parallel/exchange.h"
 #  include "parallel/parmultigrid.h"
 #endif
-#include <fstream>
 #include <iomanip>
 #include <map>
 #include <limits>
@@ -280,18 +279,18 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
 
         // Speichere eigene DoFs und sende fremde DoFs
         for (CoupProcIdxT::const_iterator it(coup.begin()), end(coup.end()); it!=end; ++it){
-            // Die erste Hälfte der Indices, die mit einem anderen Proc geteilt werden, übernimmt der Proc selber, die anderen werden gesendet
+            // Die erste Haelfte der Indices, die mit einem anderen Proc geteilt werden, übernimmt der Proc selber, die anderen werden gesendet
             const Uint size=it->second.size();
             const Uint count=size/2;
             sendBuf[sendpos].resize(count);
             int pos=0;
 
-            // Indices, für die dieser Proc zuständig ist
+            // Indices, für die dieser Proc zustaendig ist
             for (Uint i=0; i<count+(size%2); ++i){
                 AccDistIndex.push_back(it->second[i]);
             }
 
-            // Indices, für die der andere Proc zuständig ist
+            // Indices, für die der andere Proc zustaendig ist
             for (Uint i=count+(size%2); i<size; ++i){
                 sendBuf[sendpos][pos++] = GetExternalIdxFromProc(it->second[i],it->first);
             }
@@ -299,12 +298,12 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
             // Senden
             req[sendpos] = ProcCL::Isend(Addr(sendBuf[sendpos]), pos, it->first, tag_+4);
 
-            // nächster Prozessor
+            // naechster Prozessor
             ++sendpos;
         }
 
 
-        // Empfangen der DoFs, für die dieser Proc zuständig ist
+        // Empfangen der DoFs, für die dieser Proc zustaendig ist
         VectorBaseCL<IdxT> recvBuf;
         for (ProcNumCT::const_iterator proc(neighs.begin()), pend(neighs.end()); proc!=pend; ++proc){
             if (*proc<me){
@@ -658,65 +657,53 @@ bool ExchangeCL::IsEqual(const ExchangeCL &ex, std::ostream* os) const
 // E X C H A N G E  B L O C K  C L A S S
 // -------------------------------------
 
-///\brief Construct a class that can store exchange information for m blocks
-ExchangeBlockCL::ExchangeBlockCL(size_t m) : m_(m), ExchgList_(m), Block_(m+1)
+void ExchangeBlockCL::AttachTo(const IdxDescCL& idx)
+/** Beside attaching the index describer to the known indices,
+    this functions creates the default send- and receive requests
+    and correctly fill the offsets.
+    \param[in] idx new index description
+*/
 {
-    created_      = false;
-    blockCreated_ = false;
-    start_tag_    = 1001;
+    idxDesc_.push_back(&idx);
+    SendRecvReq_.push_back( ExchangeCL::RequestCT( 2*idxDesc_.back()->GetEx().GetNumNeighs()));
+    blockOffset_.resize(idxDesc_.size()+1);
+    // fill block offsets
+    blockOffset_[0]=0;
+    for (size_t i=1; i<blockOffset_.size(); ++i){
+        blockOffset_[i]= blockOffset_[i-1] + idxDesc_[i-1]->NumUnknowns();
+    }
 }
 
-/// \brief Remove all information
-void ExchangeBlockCL::clear()
+void ExchangeBlockCL::InitCommunication(const VectorCL& vec, VecRequestCT& req,
+        int tag, std::vector<VectorCL>* recvBuf) const
+/** Initializes the communication, i.e. calling a non-blocking send
+    and receive MPI routine.
+    \param vec     vector (in distributed format), that contains the local elements
+    \param req     container for the requests
+    \param tag     first used tag
+    \param recvBuf indicates, where to buffer the received elements
+ */
 {
-    created_      = false;
-    blockCreated_ = false;
-    for (ExchangeCT::iterator it(ExchgList_.begin()), end(ExchgList_.end()); it!=end; ++it)
-        it->clear();
+    const int mytag= tag<0 ? startTag_ : tag;
+    for (size_t i=0; i<GetNumBlocks(); ++i){
+        idxDesc_[i]->GetEx().InitCommunication( vec, req[i], mytag+i, blockOffset_[i],
+                (recvBuf ? &((*recvBuf)[i]) : 0 ));
+    }
 }
 
-/// \brief Calculate and store indices, where the blocks starts
-void ExchangeBlockCL::CreateBlockIdx()
+void ExchangeBlockCL::AccFromAllProc(VectorCL& vec, VecRequestCT& req,
+        std::vector<VectorCL>* recvBuf) const
+/** After the the communication is finished, the vector \a vec
+    can be accumulated by using the received elements out of
+    \a recvBuf.
+    \param vec    vector, that should be accumulated
+    \param req    requests, for asking if the communication is completed
+    \param recBuf received elements from neighbor processors
+ */
 {
-    Assert(created_ && !blockCreated_, DROPSErrCL("ExchangeBlockCL::CreateBlockIdx: not all index-describer classes recieved, or block_idx has been created allready"), DebugNumericC);
-    Block_[0] = 0;
-    for (size_t i=0; i<m_; ++i)
-        Block_[i+1] = Block_[i] + ExchgList_[i].GetNum();
-    blockCreated_ = true;
-   // Allocate memory for requests
-    SendRecvReq_.resize(GetNumBlocks());
-    if (ProcCL::Size()>1)
-        for (size_t i=0; i<GetNumBlocks(); ++i)
-            SendRecvReq_[i].resize(2*ExchgList_[i].GetNumNeighs());
-
-}
-
-/// \brief Create for a single index-describer an exchange structure
-void ExchangeBlockCL::CreateList(const MultiGridCL& mg, size_t i, MLIdxDescCL *idx, bool CreateMap, bool CreateAccDist)
-/// \param[in] mg Multigrid of that the ExchangeCL should be build
-/// \param[in] i   index of the block to create an ExchangeCL for that block
-/// \param[in] idx row-index describer, that describes the dependences between num and geom
-/// \param[in} CreateMap Create Mapping of indices
-/// \param[in] CreateAccDist Create indices for AccParDot
-/** \todo (of): Bis jetzt wird für jeden Index eine Nachricht geschickt. Es wäre besser, wenn
-        zwischen zwei Prozessoren genau eine Nachricht geschickt werden würde! */
-{
-    Assert(i<m_, DROPSErrCL("ExchangeBlockCL::CreateList: block does not exist"), DebugNumericC);
-    ExchgList_[i].CreateList(mg,idx, CreateMap, CreateAccDist);
-    Created();              // Check if all indices have been submitted. If all indices have been recieved, create  block-indices!
-}
-
-/// \brief Create for all index-describers an single exchange structure
-void ExchangeBlockCL::CreateList(const MultiGridCL& mg, const MLIdxDescCT &idxs, bool CreateMap, bool CreateAccDist)
-/// \param[in] mg Multigrid of that the ExchangeCL should be build
-/// \param[in] idxs      std::vector of pointers to index-describer classes. i-th element of this vector should describe the i-th block
-/// \param[in] CreateMap Create Mapping of indices
-/// \param[in] CreateAccDist Create indices for AccParDot
-{
-    Assert(idxs.size()==m_, DROPSErrCL("ExchangeBlockCL::CreateList: given idx-describers does not fit"), DebugNumericC);
-    for (size_t i=0; i<m_; ++i)
-        CreateList(mg,i,idxs[i],CreateMap,CreateAccDist);
-    Created();
-    Assert(created_ && blockCreated_, DROPSErrCL("ExchangeBlockCL::CreateList: Internal Error, lists not created!"), DebugNumericC);
+    for (size_t i=0; i<GetNumBlocks(); ++i){
+        idxDesc_[i]->GetEx().AccFromAllProc(vec, req[i], blockOffset_[i],
+                (recvBuf ? &((*recvBuf)[i]) : 0));  // &((*recvBuf)[i])
+    }
 }
 } // end of namespace DROPS

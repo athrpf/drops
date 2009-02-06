@@ -226,11 +226,17 @@ Ulint ExchangeCL::GetNumLocIdx()  const
     return numLocalIdx_;
 }
 
-/// \brief Get the number of ditributed sysnums
+/// \brief Get the number of distributed sysnums
 Ulint ExchangeCL::GetNumDistIdx() const
 {
     Assert(created_, DROPSErrCL("ExchangeCL::GetNumDistIdx: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
     return numDistrIdx_;
+}
+
+/// \brief Get number of distributed sysnums, this proc is exclusively responsible for
+Ulint ExchangeCL::GetNumDistAccIdx() const{
+    Assert(created_, DROPSErrCL("ExchangeCL::GetNumDistIdx: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
+    return AccDistIndex.size();
 }
 
 /// \brief get the size of vector, that can be accumulated
@@ -1186,762 +1192,233 @@ double ExchangeCL::Norm(const VectorCL &r) const
 // E X C H A N G E  B L O C K  C L A S S
 // -------------------------------------
 
-// Information functions
-//----------------------
-
-/// \brief returns the ExchangeCL corresponding to the i-th block
-const ExchangeCL& ExchangeBlockCL::Get(size_t i) const{
-    Assert(i<m_, DROPSErrCL("ExchangeBlockCL::Get: block does not exist"), DebugNumericC);
-    return ExchgList_[i];
-}
-
-/// \brief returns the ExchangeCL corresponding to the i-th block
-ExchangeCL& ExchangeBlockCL::Get(size_t i){
-    Assert(i<m_, DROPSErrCL("ExchangeBlockCL::Get: block does not exist"), DebugNumericC);
-    return ExchgList_[i];
-}
-
-/// \brief returns the number of blocks handled by this class
-size_t ExchangeBlockCL::GetNumBlocks() const{
-    return m_;
-}
-
-/// \brief check if all exchange-lists have been created
-bool ExchangeBlockCL::Created()
+inline double ExchangeBlockCL::SumUpLocal(const VectorCL& x, const VectorCL& y) const
+/** Compute the inner product on local elements of vector \a x and \a y */
 {
-    if (created_) return true;
-    bool check=true;
-    for (size_t i=0; i<m_ && check; ++i)
-        check = check && ExchgList_[i].Created();
-    if (check){
-        created_=true;
-        CreateBlockIdx();
+    double locSum=0;
+    for (size_t m=0; m<GetNumBlocks(); ++m){
+        for (IdxT i=0; i<idxDesc_[m]->GetEx().GetNumLocIdx(); ++i){
+            const IdxT vecPos= GetEx(m).LocalIndex[i]+blockOffset_[m];
+            locSum+= x[vecPos] * y[vecPos];
+        }
     }
-    return check;
+    return locSum;
 }
 
-/// \brief get the size of vector, that can be accumulated
-Ulint ExchangeBlockCL::GetNum() const
+inline double ExchangeBlockCL::SumUpDist(const VectorCL& x, const VectorCL& y) const
+/** Compute the inner product on distributed elements of vector \a x and \a y */
 {
-    Assert(created_ && blockCreated_, DROPSErrCL("ExchangeBlockCL::GetNum: Lists have not bee created yet"), DebugNumericC);
-    return Block_[m_];
-}
-
-/// \brief get the size of i-th block
-Ulint ExchangeBlockCL::GetNum(size_t i) const
-{
-    Assert(ExchgList_[i].Created(), DROPSErrCL("ExchangeBlockCL::GetNum(size_t i): i-th ExchangeCL not created yet"), DebugNumericC);
-    return ExchgList_[i].GetNum();
-}
-
-// Communication functions
-//------------------------
-
-void ExchangeBlockCL::InitCommunication(const VectorCL &vec, VecRequestCT& req, int tag, std::vector<VectorCL>* recvBuf) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::InitCommunication: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-
-    const int mytag= tag<0 ? start_tag_ : tag;
-    for (size_t i=0; i<m_; ++i)
-        ExchgList_[i].InitCommunication(vec, req[i], mytag+i, Block_[i], ((recvBuf) ? &((*recvBuf)[i]) : 0));
-}
-
-void ExchangeBlockCL::AccFromAllProc(VectorCL &vec, VecRequestCT& req, std::vector<VectorCL>* recvBuf) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::AccFromAllProc: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    for (size_t i=0; i<m_; ++i)
-        ExchgList_[i].AccFromAllProc(vec, req[i], Block_[i], ((recvBuf) ? &((*recvBuf)[i]) : 0));
-}
-
-double ExchangeBlockCL::ParDotAcc(VectorCL &x, const VectorCL &y) const
-{
-    return GlobalSum(DotAcc(x,y));
-}
-
-double ExchangeBlockCL::DotAcc(VectorCL& x, const VectorCL& y) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::DotAcc: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x.size()==y.size(), DROPSErrCL("ExchangeBlockCL::DotAcc: Vectors do not have the same length"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::DotAcc: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-
-    // local sum of all elements
-    double loc_sum=0;
-    // Send shared entries
-    InitCommunication(x,SendRecvReq_);
-    // while sending, compute local parts
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x[ExchgList_[i].LocalIndex[j]+Block_[i]] * y[ExchgList_[i].LocalIndex[j]+Block_[i]]; // use offset
-    // recieve shared parts
-    AccFromAllProc(x,SendRecvReq_);
-    // compute part of shared verts
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumDistIdx(); ++j)                                               // for all local indices of this block
-            loc_sum += x[ExchgList_[i].DistrIndex[j]+Block_[i]] * y[ExchgList_[i].DistrIndex[j]+Block_[i]]; // use offset
-    // return local sum
-    return loc_sum;
-}
-
-// InnerProduct: Both vectors will be accumulated, this is more accurate
-double ExchangeBlockCL::AccParDot(const VectorCL& x, const VectorCL& y, VectorCL& x_acc, VectorCL& y_acc) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::AccParDot: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x.size()==y.size(), DROPSErrCL("ExchangeBlockCL::AccParDot: Vectors do not have the same length"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::AccParDot: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeCL::AccParDot: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-
-    if (x_acc.size()!=x.size())
-        x_acc.resize(x.size());
-    x_acc = x;
-
-    if (y_acc.size()!=y.size())
-        y_acc.resize(y.size());
-    y_acc = y;
-
-    // Allocate memory for requests and a recieve buffer
-    VecRequestCT req_y(GetNumBlocks());
-    std::vector<VectorCL> secondRecvBuf(GetNumBlocks());
-    for (size_t i=0; i<GetNumBlocks(); ++i){
-        req_y[i].resize(2*ExchgList_[i].GetNumNeighs());
-        secondRecvBuf[i].resize(ExchgList_[i].GetNumReceiveElements());
+    double distSum=0;
+    for (size_t m=0; m<GetNumBlocks(); ++m){
+        for (IdxT i=0; i<idxDesc_[m]->GetEx().GetNumDistAccIdx(); ++i){
+            const IdxT vecPos= GetEx(m).AccDistIndex[i]+blockOffset_[m];
+            distSum+= x[vecPos] * y[vecPos];
+        }
     }
-
-    // Send to all other procs
-    InitCommunication(x, SendRecvReq_, start_tag_);
-    InitCommunication(y, req_y, start_tag_+m_, &secondRecvBuf);
-
-    double loc_sum=0,
-           acc_sum=0;
-
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x[ExchgList_[i].LocalIndex[j]+Block_[i]] * y[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    // now we need the accumulated values
-    AccFromAllProc(x_acc, SendRecvReq_);
-    AccFromAllProc(y_acc, req_y, &secondRecvBuf);
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += x_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]] * y_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    return GlobalSum(loc_sum+acc_sum);
+    return distSum;
 }
 
-
-// InnerProduct: with two accumulated vectors. The first given vec should be accumulated
-double ExchangeBlockCL::AccParDot(const VectorCL& x, const VectorCL& y_acc, VectorCL& x_acc) const
+double ExchangeBlockCL::AccurLocDotNoAcc(const VectorCL& x, const VectorCL& y) const
+/** Perform a (local) inner product on two accumulated vectors.
+    Therefore neither neighborhood communication to exchange
+    distributed entries nor global communication to reduce
+    the sum is performed.
+*/
 {
-    Assert(x.size()==y_acc.size(), DROPSErrCL("ExchangeCL::AccParDot: Vectors do not have the same size"), DebugParallelNumC);
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::DotAcc: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::DotAcc: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeCL::AccParDot: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-
-    if (x_acc.size()!=x.size())
-        x_acc.resize(x.size());
-    x_acc=x;
-
-    InitCommunication(x, SendRecvReq_);
-
-    double loc_sum=0,
-           acc_sum=0;
-
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x[ExchgList_[i].LocalIndex[j]+Block_[i]] * y_acc[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    // now we need the accumulated values
-    AccFromAllProc(x_acc, SendRecvReq_);
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += x_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]] * y_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    return GlobalSum(loc_sum+acc_sum);
+    return SumUpLocal( x, y) + SumUpDist( x, y);
 }
 
-double ExchangeBlockCL::LocAccDot(const VectorCL& x_acc, const VectorCL& y_acc) const
+double ExchangeBlockCL::AccurLocDotOneAcc(const VectorCL& x_acc, const VectorCL& y, VectorCL* y_acc) const
+/** Perform a (local) inner product on an accumulated and a distributed
+    vector. Therefore the vector \a y will be accumulated.
+    \param x_acc accumulated vector
+    \param y     vector in distributed form
+    \param y_acc If \a y_acc points to allocated memory, this vector is used
+                 to store the accumulated  form of y. If \a y_acc is the null
+                 pointer, temporary memory is allocated by this function.
+*/
 {
-    Assert(x_acc.size()==y_acc.size(), DROPSErrCL("ExchangeCL::LocAccDot: Vectors do not have the same size"), DebugParallelNumC);
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::LocAccDot: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x_acc.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::LocAccDot: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
+    // Start sending and receiving as soon as possible (by taking the default receive buffers)
+    InitCommunication( y, SendRecvReq_);
 
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeCL::LocAccDot: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
+    bool newy= (y_acc==0);                 // Check if memory for temporary version of accumulated y must be allocated
+    if (newy)
+        y_acc = new VectorCL(y);            // Create a copy of y
+    else
+        *y_acc= y;                          // Assign y_acc the values of y
 
-    double loc_sum=0,
-           acc_sum=0;
-
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x_acc[ExchgList_[i].LocalIndex[j]+Block_[i]] * y_acc[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += x_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]] * y_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    return loc_sum+acc_sum;
-}
-
-double ExchangeBlockCL::AccNorm_sq(const VectorCL& r, VectorCL& r_acc) const
-{
-    double norm_sq = GlobalSum(LocAccNorm_sq(r,r_acc));
-    DROPS_Check_Norm(norm_sq,"ExchangeCL::Norm: negative squared norm because of accumulation!");
-    return norm_sq;
-}
-
-double ExchangeBlockCL::LocAccNorm_sq(const VectorCL& r, VectorCL& r_acc) const
-{
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeCL::locAccNorm_sq: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-    if (r.size()!=r_acc.size())
-        r_acc.resize(r.size());
-    r_acc = r;
-
-    InitCommunication(r, SendRecvReq_);
-
-    double loc_sum=0,
-           acc_sum=0;
-
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += r[ExchgList_[i].LocalIndex[j]+Block_[i]] * r[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    // now we need the accumulated values
-    AccFromAllProc(r_acc, SendRecvReq_);
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += r_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]] * r_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    return loc_sum+acc_sum;
-}
-
-/// \brief Squared norm of an accumulated vector without a global reduce
-double ExchangeBlockCL::LocAccNorm_sq(const VectorCL& r_acc) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::LocAccNorm_sq: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(r_acc.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::LocAccNorm_sq: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeCL::LocAccNorm_sq: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-
-    double loc_sum=0,
-           acc_sum=0;
-
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += r_acc[ExchgList_[i].LocalIndex[j]+Block_[i]] * r_acc[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += r_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]] * r_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    return loc_sum+acc_sum;
-}
-
-/// \brief Squared norm of an accumulated vector
-double ExchangeBlockCL::AccNorm_sq(const VectorCL& r_acc) const
-{
-    double norm_sq = GlobalSum(LocAccNorm_sq(r_acc));
-    DROPS_Check_Norm(norm_sq,"ExchangeBlockCL::AccNorm_sq: negative squared norm because of accumulation!");
-    return norm_sq;
-}
-
-
-void ExchangeBlockCL::Accumulate(VectorCL &x) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::Accumulate: Lists have not been created (Maybe use CreateList before!)\n"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::Accumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
-
-    InitCommunication(x, SendRecvReq_);
-    AccFromAllProc(x, SendRecvReq_);
-}
-
-VectorCL ExchangeBlockCL::GetAccumulate (const VectorCL &x) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::GetAccumulate: Lists have not been created (Maybe use CreateList before!)\n"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::GetAccumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
-
-    InitCommunication(x, SendRecvReq_);
-    VectorCL x_acc(x);
-    AccFromAllProc(x_acc, SendRecvReq_);
-    return x_acc;
-}
-
-std::vector<VectorCL> ExchangeBlockCL::GetAccumulate (const std::vector<VectorCL>& x) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::GetAccumulate: Lists have not been created (Maybe use CreateList before!)\n"), DebugParallelNumC);
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<x.size(); ++i)
-        Assert(x[i].size()==GetNum(), DROPSErrCL("ExchangeBlockCL::GetAccumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
-#endif
-    // Allocate memory for requests and receive buffers
-    std::valarray<VecRequestCT> req(x.size());
-    std::vector<std::vector<VectorCL> > RecvBuffers(x.size());
-    for (size_t i=0; i<x.size(); ++i){
-        req[i].resize(GetNumBlocks());
-        RecvBuffers[i].resize(GetNumBlocks());
-    }
-    for (size_t i=0; i<x.size(); ++i){
-         for (size_t j=0; j<GetNumBlocks(); ++j){
-            req[i][j].resize(2*ExchgList_[i].GetNumNeighs());
-            RecvBuffers[i][j].resize(ExchgList_[i].GetNumReceiveElements());
-         }
-    }
-
-    // send and receive entires of x
-    for (size_t i=0; i<x.size(); ++i)
-        InitCommunication(x[i], req[i], start_tag_+i*m_, &(RecvBuffers[i]));
-
-    // allocate mem for x_acc and init with x
-    std::vector<VectorCL> x_acc(x.size());
-    for (size_t i=0; i<x.size(); ++i){
-        x_acc[i].resize(x[i].size());
-        x_acc[i]=x[i];
-    }
-
-    // do accumulation
-    for (size_t i=0; i<x.size(); ++i)
-        AccFromAllProc(x_acc[i], req[i], &(RecvBuffers[i]));
-
-    return x_acc;
-}
-
-
-double ExchangeBlockCL::Norm_sq_Acc(VectorCL &r_acc, const VectorCL &r) const
-{
-    if (r_acc.size()!=r.size())
-        r_acc.resize(r.size());
-    r_acc=r;
-    double norm_sq = ParDotAcc(r_acc,r);
-    DROPS_Check_Norm(norm_sq,"ExchangeBlockCL::AccNorm_sq: negative squared norm because of accumulation!");
-    return norm_sq;
-}
-
-double ExchangeBlockCL::Norm(const VectorCL &r) const
-{
-    VectorCL r_acc(r);
-    double norm_sq = ParDotAcc(r_acc,r);
-    DROPS_Check_Norm(norm_sq,"ExchangeBlockCL::Norm old: negative squared norm because of accumulation!");
-    return std::sqrt(norm_sq);
-}
-
-double ExchangeBlockCL::Norm_sq(const VectorCL &r) const
-{
-    VectorCL r_acc(r);
-    double norm_sq = ParDotAcc(r_acc,r);
-    DROPS_Check_Norm(norm_sq,"ExchangeBlockCL::Norm_sq: negative squared norm because of accumulation!");
-    return norm_sq;
-}
-
-double ExchangeBlockCL::ParDot(const VectorCL &x, const VectorCL &y) const{
-    VectorCL x_acc(x);          // temp vector for accumulation
-    return ParDotAcc(x_acc,y);
-}
-
-double ExchangeBlockCL::ParDot(VectorCL &x_acc, const VectorCL &x, const VectorCL &y) const{
-    if (x_acc.size()!=x.size())
-        x_acc.resize(x.size());
-    x_acc=x;
-    return ParDotAcc(x_acc,y);
-}
-
-/****************************************************
-*   L O C  D O T _                                  *
-*****************************************************
-*  inner product of two distributed vectors x and   *
-*  y without performing an global reduce. The       *
-*  vector x will be accumulated and stored in x_acc *
-****************************************************/
-double ExchangeBlockCL::LocDot_(const VectorCL& x, const VectorCL& y, VectorCL* x_acc) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::LocDot_: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::Accumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
-    Assert(x.size()==y.size(), DROPSErrCL("ExchangeBlockCL::LocDot_: Vectors do not have the same length"), DebugParallelNumC);
-
-    bool newx = (x_acc==0);
-
-    double loc_sum=0;                       // sum of local entries
-    double dist_sum=0;                      // sum of distributed entries
-
-    InitCommunication(x, SendRecvReq_);        // send shared entries of x to all neighbor procs
-
-    // assign all values of x to x_acc
-    if (newx)
-        x_acc= new VectorCL(x);
-    else{
-        Assert(x_acc->size()==GetNum(), DROPSErrCL("ExchangeBlockCL::LocDot_: vector x_acc has not the right length"),DebugParallelNumC);
-        *x_acc=x;
-    }
-
-    // local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x[ExchgList_[i].LocalIndex[j]+Block_[i]] * y[ExchgList_[i].LocalIndex[j]+Block_[i]]; // use offset
-
-    AccFromAllProc(*x_acc, SendRecvReq_);   // recieve values from neighbors and sum them up
-
-    // summation over shared indices
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumDistIdx(); ++j)                                               // for all local indices of this block
-            dist_sum += (*x_acc)[ExchgList_[i].DistrIndex[j]+Block_[i]] * y[ExchgList_[i].DistrIndex[j]+Block_[i]]; // use offset
-
-    if (newx){                              // if new x_acc where created give memory free
-        delete x_acc;
-        x_acc=0;
-    }
-
-    return loc_sum+dist_sum;                // return result
-}
-
-/****************************************************
-*   A C C U R  L O C  D O T  N O  A C C _           *
-*****************************************************
-*  inner product of two accumulated vectors x and   *
-*  y without performing an global reduce.           *
-*****************************************************
-*  pre: both vectors are accumulated                *
-****************************************************/
-double ExchangeBlockCL::AccurLocDotNoAcc_(const VectorCL& x, const VectorCL& y) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::AccurLocDotNoAcc_: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x.size()==y.size(), DROPSErrCL("ExchangeBlockCL::AccurLocDotNoAcc_: Vectors do not have the same length"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::AccurLocDotNoAcc_: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeBlockCL::AccurLocDotNoAcc_: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-
-    double loc_sum=0,       // sum of local entries
-           acc_sum=0;       // sum of distributed entries
-
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x[ExchgList_[i].LocalIndex[j]+Block_[i]] * y[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += x[ExchgList_[i].AccDistIndex[j]+Block_[i]] * y[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    return loc_sum+acc_sum;
-}
-
-/****************************************************
-*   A C C U R  L O C  D O T  O N E  A C C _         *
-*****************************************************
-*  Accurate inner product of one accumulated vector *
-*  (x_acc) and one distributed vecor (y) without    *
-*  performing an global reduce. If y_acc not equal  *
-*  zero, the acumulated form of y will be given     *
-*  by return in y_acc.                              *
-*****************************************************
-*  pre: x_acc is accumulated, y is distributed      *
-****************************************************/
-double ExchangeBlockCL::AccurLocDotOneAcc_(const VectorCL& x_acc, const VectorCL& y, VectorCL* y_acc) const
-{
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::AccurLocDotOneAcc_: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x_acc.size()==y.size(), DROPSErrCL("ExchangeBlockCL::AccurLocDotOneAcc_: Vectors do not have the same length"), DebugParallelNumC);
-    Assert(x_acc.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::AccurLocDotOneAcc_: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeBlockCL::AccurLocDotOneAcc_: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-
-    bool newy = (y_acc==0);
-
-    double loc_sum=0,                       // sum of local entries
-           acc_sum=0;                       // sum of distributed entries
-
-    InitCommunication(y, SendRecvReq_);        // send shared entries of x to all neighbor procs
+    const double locSum= SumUpLocal( x_acc, y);         // do summation on local elements
+    AccFromAllProc( *y_acc, SendRecvReq_);              // accumulate vector y
+    const double distSum= SumUpDist( x_acc, *y_acc);    // do summation on distributed elements
 
     if (newy)
-        y_acc = new VectorCL(y);
-    else{
-        Assert(y_acc->size()==x_acc.size(), DROPSErrCL("ExchangeBlockCL::AccurLocDotOneAcc_: y_acc has not the right size"), DebugParallelNumC);
-        *y_acc=y;
-    }
+        delete y_acc;                       // free memory
 
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x_acc[ExchgList_[i].LocalIndex[j]+Block_[i]] * y[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    AccFromAllProc(*y_acc, SendRecvReq_);   // recieve values from neighbors and sum them up
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += x_acc[ExchgList_[i].AccDistIndex[j]+Block_[i]] * (*y_acc)[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    // free memory
-    if (newy){
-        delete y_acc;
-        y_acc=0;
-    }
-
-    return loc_sum+acc_sum;
+    return locSum + distSum;
 }
 
-/****************************************************
-*   A C C U R  L O C  D O T  B O T H   A C C _      *
-*****************************************************
-*  Accurate inner product of two distributed        *
-*  vectors (x and y) without performing an global   *
-*  reduce. If x_acc or y_acc not equal zero, the    *
-*  acumulated form of x or y will be given by return*
-*  in x_acc or y_acc.                               *
-*****************************************************
-*  pre: x and y have distributed form               *
-****************************************************/
-double ExchangeBlockCL::AccurLocDotBothAcc_(const VectorCL& x, const VectorCL& y, VectorCL* x_acc, VectorCL* y_acc) const
+double ExchangeBlockCL::AccurLocDotBothAcc(const VectorCL& x, const VectorCL& y,
+        VectorCL* x_acc, VectorCL* y_acc) const
+/** Perform a (local) inner product on two accumulated vectos
+    Therefore the vector \a x and \a y will be accumulated.
+    \param x     vector in distributed form
+    \param y     vector in distributed form
+    \param x_acc If \a x_acc points to allocated memory, this vector is used
+                 to store the accumulated  form of \a x. If \a x_acc is the null
+                 pointer, temporary memory is allocated by this function.
+    \param y_acc If \a y_acc points to allocated memory, this vector is used
+                 to store the accumulated  form of \a y. If \a y_acc is the null
+                 pointer, temporary memory is allocated by this function.
+*/
 {
-    //throw DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: This function does not work ... ");
-
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
-    Assert(x.size()==y.size(), DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: Vectors do not have the same length"), DebugParallelNumC);
-    Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
-
-#if DROPSDebugC&DebugParallelNumC
-    for (size_t i=0; i<m_; ++i)
-        if (!ExchgList_[i].AccIdxCreated())
-            throw DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: Indices for accumulated distributed indices has not been created. (Maybe use CreateAccDist for CreateList)");
-#endif
-
-    bool newx = (x_acc==0);
-    bool newy = (y_acc==0);
-
-    double loc_sum=0,                       // sum of local entries
-           acc_sum=0;                       // sum of distributed entries
-
-    // Allocate mem for requests for second vector
-    VecRequestCT req_y(GetNumBlocks());
-    std::vector<VectorCL> secondRecvBuf(GetNumBlocks());
-    for (size_t i=0; i<GetNumBlocks(); ++i){
-        req_y[i].resize(2*ExchgList_[i].GetNumNeighs());
-        secondRecvBuf[i].resize(ExchgList_[i].GetNumReceiveElements());
+    // Create an extra receive buffer (beside the default one) and extra requests
+    VecRequestCT req_y( GetNumBlocks());
+    std::vector<VectorCL> recvBuf_y( GetNumBlocks());
+    for (size_t m=0; m<GetNumBlocks(); ++m){
+        req_y[m].resize( 2*idxDesc_[m]->GetEx().GetNumNeighs());
+        recvBuf_y[m].resize( idxDesc_[m]->GetEx().GetNumReceiveElements());
     }
+    // Start sending and receiving elements of x and y as soon as possible
+    InitCommunication( x, SendRecvReq_);
+    InitCommunication( y, req_y, startTag_+GetNumBlocks(), &recvBuf_y);
 
-    InitCommunication(x, SendRecvReq_, start_tag_);             // send and receive shared entries of x to all neighbor procs
-    InitCommunication(y, req_y, start_tag_+m_, &secondRecvBuf);   // send and receive shared entries of x to all neighbor procs
+    // Check if memory for temporary version of accumulated x and/or y must be allocated
+    const bool newx= (x_acc==0), newy= (y_acc==0);
+    if (newx)
+        x_acc = new VectorCL(x);            // Create a copy of x
+    else
+        *x_acc= x;                          // Assign x_acc the values of x
+    if (newy)
+        y_acc = new VectorCL(y);            // Create a copy of y
+    else
+        *y_acc= y;                          // Assign y_acc the values of y
+
+    const double locSum= SumUpLocal( x, y);             // do summation on local elements
+    AccFromAllProc( *x_acc, SendRecvReq_);              // accumulate vector x
+    AccFromAllProc( *y_acc, req_y, &recvBuf_y);         // accumulate vector y
+    const double distSum= SumUpDist( *x_acc, *y_acc);   // do summation on distributed elements
 
     if (newx)
-        x_acc = new VectorCL(x);
-    else{
-        Assert(x_acc->size()==x.size(), DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: x_acc has not the right size"), DebugParallelNumC);
-        *x_acc=x;
-    }
-
+        delete x_acc;                       // free memory
     if (newy)
-        y_acc = new VectorCL(y);
-    else{
-        Assert(y_acc->size()==x.size(), DROPSErrCL("ExchangeBlockCL::AccurLocDotBothAcc_: y_acc has not the right size"), DebugParallelNumC);
-        *y_acc=y;
-    }
+        delete y_acc;                       // free memory
 
-    // do local summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].GetNumLocIdx(); ++j)                                                // for all local indices of this block
-            loc_sum += x[ExchgList_[i].LocalIndex[j]+Block_[i]] * y[ExchgList_[i].LocalIndex[j]+Block_[i]];
-
-    AccFromAllProc(*x_acc, SendRecvReq_);               // sum elemnts up
-    AccFromAllProc(*y_acc, req_y, &secondRecvBuf);      // sum elemnts up
-
-    // now do the global summation
-    for (size_t i=0; i<m_; ++i)                                                                             // in every block
-        for (Ulint j=0; j<ExchgList_[i].AccDistIndex.size(); ++j)                                           // for all local indices of this block
-            acc_sum += (*x_acc)[ExchgList_[i].AccDistIndex[j]+Block_[i]] * (*y_acc)[ExchgList_[i].AccDistIndex[j]+Block_[i]];
-
-    // free memory
-    if (newx){
-        delete x_acc;
-        x_acc=0;
-    }
-
-    if (newy){
-        delete y_acc;
-        y_acc=0;
-    }
-
-    return loc_sum+acc_sum;
+    return locSum + distSum;
 }
 
-/// \brief Local inner product without global reduce
+double ExchangeBlockCL::LocDot (const VectorCL& x, bool isXacc,
+                                const VectorCL& y, bool isYacc,
+                                bool useAccurate,
+                                VectorCL* x_acc, VectorCL *y_acc) const
 /** This function computes the inner product of two vectors without global reduce. The vectors may be available
     in different forms. Therefore the \a acc_x and \a acc_y flag exists. If an accumulation is performed, the
-    result can be given to the caller.*/
-double ExchangeBlockCL::LocDot (const VectorCL& x, bool acc_x,
-                                const VectorCL& y, bool acc_y,
-                                bool useAccur,
-                                VectorCL* x_acc, VectorCL *y_acc) const
-    /// \param[in]  x        first vector
-    /// \param[in]  acc_x    is vector \a x given in accumulated form
-    /// \param[in]  y        second vector
-    /// \param[in]  acc_y    is vector \a y given in accumulated form
-    /// \param[in]  useAccur should the accurater but slower version be used
-    /// \param[out] x_acc    if not equal zero, pointer on the accumulated form of \a x (also non distributed values will be copied)
-    /// \param[out] y_acc    if not equal zero, pointer on the accumulated form of \a y (also non distributed values will be copied)
-    /// \return              inner product of \a x and \a y without global reduce
+    result can be given to the caller.
+    \param[in]  x           first vector
+    \param[in]  isXacc      is vector \a x given in accumulated form
+    \param[in]  y           second vector
+    \param[in]  isYacc      is vector \a y given in accumulated form
+    \param[in]  useAccurate should the more accurate but slower
+    \param[out] x_acc       if not null, accumulated form of \a y
+    \param[out] y_acc       if not null, accumulated form of \a y
+    \return                 inner product of \a x and \a y without global reduce
+*/
 {
-    Assert(created_, DROPSErrCL("ExchangeBlockCL::LocDot: Lists have not been created (Maybe use CreateList before!\n"), DebugParallelNumC);
     Assert(x.size()==y.size(), DROPSErrCL("ExchangeBlockCL::LocDot: Vectors do not have the same length"), DebugParallelNumC);
     Assert(x.size()==GetNum(), DROPSErrCL("ExchangeBlockCL::LocDot: vector length does not fit to the created lists. Maybe used a wrong IdxDescCL?"), DebugParallelNumC);
 
-    if (acc_x && x_acc!=0)
-        *x_acc=x;
-    if (acc_y && y_acc!=0)
-        *y_acc=y;
+    // if x or y is already accumulated and the result should be stored, do it right now
+    if (isXacc && x_acc!=0) *x_acc=x;
+    if (isYacc && y_acc!=0) *y_acc=y;
 
-    if (useAccur){
-        if (acc_x && acc_y)
-            return AccurLocDotNoAcc_(x,y);
-        if (acc_x && !acc_y)
-            return AccurLocDotOneAcc_(x,y,y_acc);
-        if (acc_y && !acc_x)
-            return AccurLocDotOneAcc_(y,x,x_acc);
-        if (!acc_x && !acc_y)
-            return AccurLocDotBothAcc_(x,y,x_acc,y_acc);
+    // Check if accurate should be used
+    if (useAccurate){
+        if (isXacc && isYacc)
+            return AccurLocDotNoAcc(x,y);
+        if (isXacc && !isYacc)
+            return AccurLocDotOneAcc(x,y,y_acc);
+        if (isYacc && !isXacc)
+            return AccurLocDotOneAcc(y,x,x_acc);
+        if (!isYacc && !isXacc)
+            return AccurLocDotBothAcc(x,y,x_acc,y_acc);
     }
     else{
-        if (!acc_x && !acc_y)
-        {   // x and y are not accumulated, so accumulate one
-            if (x_acc && y_acc==0)              // accumulate x
-                return LocDot_(x,y,x_acc);
-            if (y_acc && x_acc==0)              // accumulate y
-                return LocDot_(y,x,y_acc);
-            if (x_acc==0 && y_acc==0)           // no accumulated form is wished
-                return LocDot_(x,y,0);
-            // x and y should be accumulated. That makes no sence
-            throw DROPSErrCL("ExchangeBlockCL::LocDot: It makes no sence to do LocDot to accumulate both vectors. Better use accurate version");
-        }
-        // form here on at least one vector is accumulated
-        if (acc_x && !acc_y)
-            return dot(x,y);
-        if (acc_y && !acc_x)
-            return dot(x,y);
-        // if both vectors are accumulated, you are not allowed to call this function with useAccur==false
-        if (acc_x && acc_y)
-            throw DROPSErrCL("ExchangeBlockCL::LocDot: Cannot perform a normal inner product on two accumulated vectors, set useAccur=true");
+        throw DROPSErrCL("ExchangeBlockCL::LocDot: Sorry, right now is just the accurate version implemented for blocked vectors");
     }
     throw DROPSErrCL("ExchangeBlockCL::LocDot: Internal error, no matching found");
 }
 
-/// \brief Local inner product with global reduce
-double ExchangeBlockCL::ParDot (const VectorCL& x, bool acc_x,
-                                const VectorCL& y, bool acc_y,
-                                bool useAccur,
+double ExchangeBlockCL::ParDot (const VectorCL& x, bool isXacc,
+                                const VectorCL& y, bool isYacc,
+                                bool useAccurate,
                                 VectorCL* x_acc, VectorCL *y_acc) const
-/** This function computes the inner product of two vectors. The vectors may be available in different forms.
-    Therefore the \a acc_x and \a acc_y flag exists. If an accumulation is performed, the
-    result can be given to the caller.*/
-    /// \param[in]  x        first vector
-    /// \param[in]  acc_x    is vector \a x given in accumulated form
-    /// \param[in]  y        second vector
-    /// \param[in]  acc_y    is vector \a y given in accumulated form
-    /// \param[in]  useAccur should the accurater but slower version be used
-    /// \param[out] x_acc    if not equal zero, pointer on the accumulated form of \a x
-    /// \param[out] y_acc    if not equal zero, pointer on the accumulated form of \a y
-    /// \return              inner product of \a x and \a y without global reduce
+/** For detailed information about the parameters, we refer to the
+    documentation of the function ExchangeBlockCL::LocDot.
+*/
 {
-    return GlobalSum(LocDot(x, acc_x, y, acc_y, useAccur, x_acc, y_acc));
+    return GlobalSum(LocDot(x, isXacc, y, isYacc, useAccurate, x_acc, y_acc));
 }
 
-/// \brief Squared norm of a vector without global reduce
-/** This function computes the squared norm of a Vector without global reduce. The Vector \a r can available in
-    accumulated or distributed form (according to switch \a acc_r). If wished the accumulated form of \a r will
-    is given on return within \a r_acc.*/
-double ExchangeBlockCL::LocNorm_sq(const VectorCL &r, bool acc_r, bool useAccur, VectorCL* r_acc) const
-    /// \param[in] r        Vector of which the norm should be computed
-    /// \param[in] acc_r    is vector \a r given in accumulated form
-    /// \param[in] useAccur should the accurater but slower version be used
-    /// \param[out] r_acc   if not equal zero, pointer on the accumulated form of \a r
-    /// \return             norm of the vector \a r
+
+double ExchangeBlockCL::LocNorm_sq( const VectorCL &r, bool isRacc,
+        bool useAccurate, VectorCL* r_acc) const
+/** For detailed information about the parameters, we refer to the
+    documentation of the function ExchangeBlockCL::LocDot.
+*/
 {
-    double loc_norm_sq;//=LocDot(r, acc_r, r, acc_r, useAccur, r_acc, 0);
-    if (acc_r && useAccur){
-        loc_norm_sq= LocAccNorm_sq(r);
+    if (!useAccurate)
+        throw DROPSErrCL("ExchangeBlockCL::LocNorm_sq: ExchangeCL can only handle accurate dots, right now");
+
+    if (isRacc){
+        return LocDot(r, true, r, true, useAccurate, r_acc);
     }
-    else if (!acc_r && useAccur){
-        if (r_acc)
-            loc_norm_sq= LocAccNorm_sq(r,*r_acc);
-        else{
-            VectorCL r_tmp(r.size());
-            loc_norm_sq= LocAccNorm_sq(r,r_tmp);
-        }
+    else{
+        InitCommunication( r, SendRecvReq_);
+        const bool newR= (r_acc==0);
+        if (newR)
+            r_acc= new VectorCL(r);
+        else
+            *r_acc= r;
+
+        const double locSum= SumUpLocal( r, r);
+        AccFromAllProc( *r_acc, SendRecvReq_);
+        const double distSum= SumUpDist( *r_acc, *r_acc);
+
+        if (newR)
+            delete r_acc;
+        return locSum + distSum;
     }
-    else
-        loc_norm_sq=LocDot(r, acc_r, r, acc_r, useAccur, r_acc, 0);
-    if (loc_norm_sq<0.){
-        std::cerr << "EXBLOCKCL: local norm is "<<loc_norm_sq<<" computed by "<<(useAccur?"accur":"not accur")<<" variant"<<std::endl;
-    }
-
-    return loc_norm_sq;
 }
 
-/// \brief Norm of a Vector
-/** This function computes the norm of a Vector. The Vector \a r can available in accumulated or
-    distributed form (according to switch \a acc_r). If wished the accumulated form of \a r will is given
-    on return within \a r_acc.*/
-double ExchangeBlockCL::Norm(const VectorCL &r, bool acc_r, bool useAccur, VectorCL* r_acc) const
-    /// \param[in] r        Vector of which the norm should be computed
-    /// \param[in] acc_r    is vector \a r given in accumulated form
-    /// \param[in] useAccur should the accurater but slower version be used
-    /// \param[out] r_acc   if not equal zero, pointer on the accumulated form of \a r
-    /// \return             norm of the vector \a r
+/// \brief Perform squared Euklidian norm with global reduction of the sum
+double ExchangeBlockCL::Norm_sq( const VectorCL& r, bool isRacc,
+        bool useAccurate, VectorCL* r_acc) const
+/** For detailed information about the parameters, we refer to the
+    documentation of the function ExchangeBlockCL::LocDot.
+*/
 {
-    double norm_sq= GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
-    DROPS_Check_Norm(norm_sq,"ExchangeBlockCL::Norm new: negative squared norm because of accumulation!");
-    return std::sqrt(norm_sq);
+    return GlobalSum(LocNorm_sq(r, isRacc, useAccurate, r_acc));
 }
 
-/// \brief Squared norm of a Vector
-/** This function computes the square of a norm of a Vector. The Vector \a r can available in accumulated or
-    distributed form (according to switch \a acc_r). If wished the accumulated form of \a r will is given
-    on return within \a r_acc.*/
-double ExchangeBlockCL::Norm_sq(const VectorCL& r, bool acc_r, bool useAccur, VectorCL* r_acc) const
-    /// \param[in] r        Vector of which the norm should be computed
-    /// \param[in] acc_r    is vector \a r given in accumulated form
-    /// \param[in] useAccur should the accurater but slower version be used
-    /// \param[out] r_acc   if not equal zero, pointer on the accumulated form of \a r
-    /// \return             square norm of the vector \a r
+double ExchangeBlockCL::Norm( const VectorCL& r, bool isRacc,
+        bool useAccurate, VectorCL* r_acc) const
+/** For detailed information about the parameters, we refer to the
+    documentation of the function ExchangeBlockCL::LocDot.
+*/
 {
-    double norm_sq = GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
-    DROPS_Check_Norm(norm_sq,"ExchangeBlockCL::Norm_sq: negative squared norm because of accumulation!");
-    return norm_sq;
+    return std::sqrt(Norm_sq(r, isRacc, useAccurate, r_acc));
 }
+
+void ExchangeBlockCL::Accumulate( VectorCL& r) const
+{
+    InitCommunication( r, SendRecvReq_);
+    AccFromAllProc( r, SendRecvReq_);
+}
+
+VectorCL ExchangeBlockCL::GetAccumulate( const VectorCL& r) const
+{
+    VectorCL r_acc(r);
+    Accumulate(r_acc);
+    return r_acc;
+}
+
 } // end of namespace DROPS

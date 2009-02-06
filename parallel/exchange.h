@@ -111,7 +111,6 @@ class ExchangeBlockCL; // fwd declaration
 class ExchangeCL
 {
     friend class IdxDescCL;
-    friend class ExchangeBlockCL;
 
   public:
     typedef VectorBaseCL<Ulint>            IndexT;              ///< Type for storage for local and distributed sysnums
@@ -203,7 +202,8 @@ class ExchangeCL
       static int HandlerScatterSysnums(DDD_OBJ objp, void* buf);
     //@}
     inline Ulint GetNumLocIdx()  const;                                                 // get the number of local sysnums
-    inline Ulint GetNumDistIdx() const;                                                 // get the number of ditributed sysnums
+    inline Ulint GetNumDistIdx() const;                                                 // get the number of distributed sysnums
+    inline Ulint GetNumDistAccIdx() const;                                              // get number of distributed sysnums, this proc is exclusively responsible for
     inline Ulint GetNum() const;                                                        // get the size of vector, that can be accumulated
     inline Ulint GetNumReceiveElements() const;                                         // get number of elements, that should be received (i.e. size of the receive buffer)
     inline bool  Created() const;                                                       // check if the list has been created
@@ -272,99 +272,79 @@ extern "C" int HandlerScatterSysnumsEdgeC(DDD_OBJ, void*);
 //@}
 
 
-
 /****************************************************************************
 * E X C H A N G E  B L O C K  C L A S S                                     *
 ****************************************************************************/
-/// \brief Handle exchange of all numerical data for a blocked vector
-/** This class handles the exchange of a blocked vector containing m blocks.
-    For each block an index-describer class is given.
-    \todo (of) AccurLocDotBothAcc_ has to be fixed
+/// \brief Handle exchange of all numerical data for a blocked vector, i.e.
+///    vectors, that have multiple IdxDescCL
+/** This class handles the exchange of a blocked vector containing multiple
+    describers. This is used to perform a blocked version of an iterative
+    solver. For example GCR can be used to solve the Oseen problem
  */
 /****************************************************************************
 * E X C H A N G E  B L O C K  C L A S S                                     *
 ****************************************************************************/
+
 class ExchangeBlockCL
 {
   public:
-    typedef std::vector<ExchangeCL>   ExchangeCT;
-    typedef std::vector<MLIdxDescCL*> MLIdxDescCT;
-    typedef std::vector<Ulint>        BlockSizeCT;
-    typedef VectorBaseCL<ExchangeCL::RequestCT> VecRequestCT;
+    typedef std::vector<const IdxDescCL*>      IdxDescCT;       ///< Container for IdxDescCL
+    typedef std::vector<IdxT>                  BlockOffsetCT;   ///< Container of starting index of block elements
+    typedef std::vector<ExchangeCL::RequestCT> VecRequestCT;    ///< Container for requests
 
   private:
-    size_t       m_;                                                        // number of blocks
-    bool         created_;                                                  // flag if all lists have been created
-    bool         blockCreated_;                                             // flag if the blocks have been created
-    ExchangeCT   ExchgList_;                                                // list of exchange classes
-    BlockSizeCT  Block_;                                                    // (m+1) vector, that stores the first index of each block. Last index stores the size of handleable vectors
-    int          start_tag_;                                                // standard tag for the first block. blocks get consecutive tags (=1001)
-    mutable VecRequestCT SendRecvReq_;                                      // standard request handle for non-blocking sending and receiving
+    IdxDescCT            idxDesc_;      ///< store all index describers to access ExchangeCLs
+    BlockOffsetCT        blockOffset_;  ///< store the length of vectors
+    mutable VecRequestCT SendRecvReq_;  ///< standard requests for sending and receiving
+    int                  startTag_;     ///< first Tag to be used for sending and receiving
 
-    void CreateBlockIdx();                                                  // calc and store the beginning indices of a blocked vector (all ExchangeCLs must have been created!)
+    /// \brief start sending and receiving
+    void InitCommunication(const VectorCL&, VecRequestCT&, int tag=-1, std::vector<VectorCL>* recvBuf =0) const;
+    /// \brief finish communication and accumulate vector
+    void AccFromAllProc(VectorCL&, VecRequestCT&, std::vector<VectorCL>* recvBuf=0) const;
 
-    inline double LocDot_(const VectorCL&, const VectorCL&, VectorCL* x_acc) const;                   // Inner Product of one accumulated and one distributed vector
+    /// \brief Sum up local elements
+    inline double SumUpLocal(const VectorCL&, const VectorCL&) const;
+    /// \brief Sum up distributed elements
+    inline double SumUpDist(const VectorCL&, const VectorCL&) const;
 
-    inline double AccurLocDotNoAcc_(const VectorCL&, const VectorCL&) const;                          // Accure inner product with no accumulation
-    inline double AccurLocDotOneAcc_(const VectorCL&, const VectorCL&, VectorCL*) const;              // Accure inner product with already one accumulated vector
-    inline double AccurLocDotBothAcc_(const VectorCL&, const VectorCL&, VectorCL*, VectorCL*) const;  // Accure inner product with two unaccumulated vectors
+    /// \brief Accurate version of a local inner product with two given accumulated vector
+    inline double AccurLocDotNoAcc(const VectorCL&, const VectorCL&) const;
+    /// \brief Accurate version of a local inner product with one given accumulated vector
+    inline double AccurLocDotOneAcc(const VectorCL&, const VectorCL&, VectorCL*) const;
+    /// \brief Accurate version of a local inner product with no given accumulated vector
+    inline double AccurLocDotBothAcc(const VectorCL&, const VectorCL&, VectorCL*, VectorCL*) const;
+    /// \brief Inner product of one accumulated and one distributed vector
+    inline double LocDot(const VectorCL&, const VectorCL&, VectorCL* x_acc) const;
 
   public:
-    ExchangeBlockCL(size_t m);                                              // Construct a class that can store m blocks
-    void clear();                                                           // remove all information
-//  ~ExchangeBlockCL();
+    ExchangeBlockCL()
+      : idxDesc_(), blockOffset_(), SendRecvReq_(), startTag_(1001) {}
 
-    void CreateList(const MultiGridCL&, const MLIdxDescCT&,                 // Create exchange-lists for all blocks
-                    bool CreateMap=true, bool CreateAccDist=true);
-    void CreateList(const MultiGridCL&, size_t i, MLIdxDescCL*,             // Create exchange-list for i-th block
-                    bool CreateMap=true, bool CreateAccDist=true);
+    /// \brief Attach an index describer
+    void AttachTo(const IdxDescCL&);
+    /// \brief Ask for number of handled blocks
+    size_t GetNumBlocks() const { return idxDesc_.size(); }
+    /// \brief Ask for length of vectors, that can be accumulated
+    IdxT GetNum() const { return blockOffset_.back(); }
+    /// \brief Ask for an ExchangeCL
+    const ExchangeCL& GetEx( size_t i) const { return idxDesc_[i]->GetEx(); }
 
-    inline const ExchangeCL& Get(size_t i) const;                           // Get the i-th exchange block corresponding to the i-th block
-    inline       ExchangeCL& Get(size_t i);
-    inline size_t      GetNumBlocks() const;                                // Get number of blocks
-    inline bool        Created();                                           // check if all exchange-lists have been created;
-    inline Ulint       GetNum() const;                                      // get the size of vector, that can be accumulated
-    inline Ulint       GetNum(size_t i) const;                              // get the size of the i-th block
-
-    /// \name neighborhood communication on blocked vectors
-    /// \brief for detailed describtions see ExchangeCL
-    // @{
-    // start sending and receiving
-    inline void   InitCommunication(const VectorCL&, VecRequestCT&, int tag=-1, std::vector<VectorCL>* recvBuf=0) const;
-    // finish communication and accumulate vector
-    inline void   AccFromAllProc(VectorCL&, VecRequestCT&, std::vector<VectorCL>* recvBuf=0) const;
-
-    inline void                  Accumulate(VectorCL&) const;                           // Accumulate the Vector
-    inline VectorCL              GetAccumulate (const VectorCL&) const;                 // Return accumulated Vector
-    inline std::vector<VectorCL> GetAccumulate (const std::vector<VectorCL>&) const;    // Return accumulated vectors
-
-    // Perform inner products (without and with global reduce)
+    /// \brief Perform an inner product without global reduction of the sum
     inline double LocDot    (const VectorCL&, bool, const VectorCL&, bool, bool useAccur=true, VectorCL* x_acc=0, VectorCL* y_acc=0) const;
+    /// \brief Perform an inner product with global reduction of the sum
     inline double ParDot    (const VectorCL&, bool, const VectorCL&, bool, bool useAccur=true, VectorCL* x_acc=0, VectorCL* y_acc=0) const;
-    // Perform norms (without and with global reduce)
+    /// \brief Perform squared Euklidian norm without global reduction of the sum
     inline double LocNorm_sq(const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0) const;
-    inline double Norm      (const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0) const;
+    /// \brief Perform squared Euklidian norm with global reduction of the sum
     inline double Norm_sq   (const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0) const;
-
-    inline double Norm_sq_Acc(VectorCL&, const VectorCL&) const;            // x_acc^T * x (accumulates second to first parameter)
-    inline double Norm(const VectorCL&) const;                              // returns the euclidian-norm of a vector
-    inline double Norm_sq(const VectorCL&) const;                           // \|x\|_2^2
-
-    inline double ParDotAcc(VectorCL&, const VectorCL&) const;              // InnerProduct: first Vector will be accumulated after the procedure!
-    inline double DotAcc(VectorCL&, const VectorCL&) const;                 // InnerProduct without global reduce. first Vector will be accumulated
-    inline double ParDot(const VectorCL&, const VectorCL&) const;           // InnerProduct: no accumulation of the input vectors but slower as function above
-    inline double ParDot(VectorCL&, const VectorCL&, const VectorCL&) const;// InnerProduct: store the accumulated second vector in the first parameter
-
-    inline double AccParDot(const VectorCL&, const VectorCL&, VectorCL&, VectorCL&) const;// InnerProduct: Both vectors will be accumulated, this is more accurate
-    inline double AccParDot(const VectorCL&, const VectorCL&, VectorCL&) const;         // InnerProduct: with two accumulated vectors. The first given vec should be accumulated
-    inline double AccNorm_sq(const VectorCL&, VectorCL&) const;                         // Norm of a distributed unaccumulated vector
-    inline double AccNorm_sq(const VectorCL&) const;                                    // Norm of an accumulated vector
-    inline double LocAccDot(const VectorCL&, const VectorCL&) const;                    // InnerProduct of two accumulated vectors without global reduce
-    inline double LocAccNorm_sq(const VectorCL&, VectorCL&) const;                      // Norm of a distributed unaccumulated vector without global reduce
-    inline double LocAccNorm_sq(const VectorCL&) const;                                 // Norm of an accumulated vector without global reduce
-    // @}
+    /// \brief Perform Euklidian norm with global reduction of the sum
+    inline double Norm      (const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0) const;
+    /// \brief Accumulate the given vector
+    inline void                  Accumulate(VectorCL&) const;
+    /// \brief Return an accumulated vector
+    inline VectorCL              GetAccumulate (const VectorCL&) const;
 };
-
 } // end of namespace DROPS
 
 // File, where the inline an template-functions are declared

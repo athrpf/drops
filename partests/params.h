@@ -231,15 +231,6 @@ class ParamParExchangeCL : public ParamBaseCL
     void RegisterParams();
 
   public:
-  /// \name Unknowns
-  //@{
-    int numsV1,                                 ///< dof on vertices for first index
-        numsE1,                                 ///< dof on edges for first index
-        numsT1;                                 ///< dof on tetras for first index
-    int numsV2,                                 ///< dof on vertices for second index
-        numsE2,                                 ///< dof on edges for second index
-        numsT2;                                 ///< dof on tetras for second index
-  //@}
   /// \name Misc
   //@{
     int printMG;                                ///< print the MultiGrid into file

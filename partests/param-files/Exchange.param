@@ -3,16 +3,6 @@
 #    Testroutines for sending and recieving of numerical datas
 #=============================================================
 
-# properties of the index 1 and 2
-Unknowns {
- NumsV1 = 1                 # unknowns on vertex for index 1
- NumsE1 = 0                 # unknowns on edge for index 1
- NumsT1 = 0                 # unknowns on tetra for index 1
- NumsV2 = 1                 # unknowns on vertex for index 2
- NumsE2 = 1                 # unknowns on edge for index 2
- NumsT2 = 0                 # unknowns on tetra for index 2
-}
-
 # refine strategy
 Refining {
   BasicRefX      = 3        # number of basic refines in x direction

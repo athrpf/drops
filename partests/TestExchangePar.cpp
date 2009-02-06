@@ -141,19 +141,18 @@ namespace DROPS // für die Strategy und Hilfsfunktionen
 ****************************************************************************/
 void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
 {
-    const int nums3= 1;
     // Setze die GID als Werte auf die Vertices:
     for (MultiGridCL::TriangVertexIteratorCL sit(mg.GetTriangVertexBegin()), end(mg.GetTriangVertexEnd()) ; sit!=end; ++sit)
     {
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x1.RowIdx->GetIdx()) )
-            for (int i=0; i<C.numsV1; ++i)
+            for (Uint i=0; i<x1.RowIdx->NumUnknownsVertex(); ++i)
                 x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())+i ] = (double)(sit->GetGID()+i);
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
-            for (int i=0; i<C.numsV2; ++i)
+            for (Uint i=0; i<x2.RowIdx->NumUnknownsVertex(); ++i)
                 x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] = 1./100.*(sit->GetGID()+i)+0.1;
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) ) {
             const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
-            for (int i=0; i<nums3; ++i) {
+            for (Uint i=0; i<x3.RowIdx->NumUnknownsVertex(); ++i) {
                 x3.Data[ dof+i ] = (sit->GetGID()+i)+0.11;
                 if (x3.RowIdx->IsExtended(dof))
                      x3.Data[ x3.RowIdx->GetXidx()[dof]+i ] = (sit->GetGID()+i)+0.55;
@@ -165,14 +164,14 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
     for (MultiGridCL::TriangEdgeIteratorCL sit(mg.GetTriangEdgeBegin()), end(mg.GetTriangEdgeEnd()) ; sit!=end; ++sit)
     {
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x1.RowIdx->GetIdx()) )
-            for (int i=0; i<C.numsE1; ++i)
+            for (Uint i=0; i<x1.RowIdx->NumUnknownsEdge(); ++i)
                 x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())+i ] = (double)(sit->GetGID()+i);
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
-            for (int i=0; i<C.numsE2; ++i)
+            for (Uint i=0; i<x2.RowIdx->NumUnknownsEdge(); ++i)
                 x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] = 1./100.*(sit->GetGID()+i)+0.1;
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) ) {
             const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
-            for (int i=0; i<nums3; ++i) {
+            for (Uint i=0; i<x3.RowIdx->NumUnknownsEdge(); ++i) {
                 x3.Data[ dof+i ] = (sit->GetGID()+i)+0.11;
                 if (x3.RowIdx->IsExtended(dof))
                      x3.Data[ x3.RowIdx->GetXidx()[dof]+i ] = (sit->GetGID()+i)+0.55;
@@ -184,20 +183,27 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
     for (MultiGridCL::TriangTetraIteratorCL sit(mg.GetTriangTetraBegin()), end(mg.GetTriangTetraEnd()) ; sit!=end; ++sit)
     {
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x1.RowIdx->GetIdx()) )
-            for (int i=0; i<C.numsT1; ++i)
+            for (Uint i=0; i<x1.RowIdx->NumUnknownsTetra(); ++i)
                 x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())+i ] = (double)(sit->GetGID()+i);
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
-            for (int i=0; i<C.numsT2; ++i)
+            for (Uint i=0; i<x2.RowIdx->NumUnknownsTetra(); ++i)
                 x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] = 1./100.*(sit->GetGID()+i)+0.1;
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) ) {
             const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
-            for (int i=0; i<nums3; ++i) {
+            for (Uint i=0; i<x3.RowIdx->NumUnknownsTetra(); ++i) {
                 x3.Data[ dof+i ] = (sit->GetGID()+i)+0.11;
                 if (x3.RowIdx->IsExtended(dof))
                      x3.Data[ x3.RowIdx->GetXidx()[dof]+i ] = (sit->GetGID()+i)+0.55;
             }
         }
     }
+}
+
+
+inline bool CheckValue(double ist, double soll){
+    if (std::fabs(soll-ist)<DoubleEpsC*std::fabs(soll))
+        return true;
+    return false;
 }
 
 /****************************************************************************
@@ -209,7 +215,6 @@ void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
 bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
 {
     bool check = true;
-    const int nums3= 1;
 //  const int me =ProcCL::MyRank();
     // Check vertices
     for (MultiGridCL::TriangVertexIteratorCL sit(mg.GetTriangVertexBegin()), end(mg.GetTriangVertexEnd()) ; sit!=end; ++sit)
@@ -219,17 +224,17 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             bool local_check = true;
             const DDD_HDR vert= sit->GetHdr();
             int num_shared = 0;
+            const IdxT dof= sit->Unknowns(x1.RowIdx->GetIdx());
             for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
-            for (int i=0; i<C.numsV1; ++i)
-                local_check = local_check
-                        && ( std::fabs(x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())+i ] - num_shared*(double)(sit->GetGID()+i))<DoubleEpsC );
+            for (Uint i=0; i<x1.RowIdx->NumUnknownsVertex(); ++i)
+                local_check = local_check && CheckValue( x1.Data[dof+i], num_shared*sit->GetGID()+i);
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << "["<<ProcCL::MyRank()<<"] Index "<<x2.RowIdx->GetIdx()<<": Bei Knoten " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << x1.Data[dof]
                         << " sollte sein: " << (num_shared*(double)(sit->GetGID()))
                         << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
@@ -239,23 +244,23 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             bool local_check = true;
             const DDD_HDR vert= sit->GetHdr();
             int num_shared = 0;
+            const IdxT dof=  sit->Unknowns(x2.RowIdx->GetIdx());
             for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
-            for (int i=0; i<C.numsV2; ++i)
-                local_check = local_check
-                        && ( std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] - num_shared*(1./100.*(sit->GetGID()+i)+0.1 ))<DoubleEpsC*std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ]));
+            for (Uint i=0; i<x2.RowIdx->NumUnknownsVertex(); ++i)
+                local_check = local_check && CheckValue( x2.Data[dof+i], num_shared*(1./100.*(sit->GetGID()+i)+0.1 ));
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << "["<<ProcCL::MyRank()<<"] Index "<<x2.RowIdx->GetIdx()<<": Bei Knoten " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << x2.Data[ dof]
                         << " sollte sein: " << (num_shared*(1./100.*(sit->GetGID())+0.1))
                         << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
         }
 
-        if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) )
+        if ( sit->Unknowns.Exist() && x3.RowIdx && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) )
         {
             bool local_check = true, local_xcheck= true;
             const DDD_HDR vert= sit->GetHdr();
@@ -264,20 +269,18 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
-            for (int i=0; i<nums3; ++i)
-                local_check = local_check
-                        && ( std::fabs(x3.Data[ dof+i ] - num_shared*((sit->GetGID()+i)+0.11 ))<DoubleEpsC*std::fabs(x3.Data[ dof+i ]));
+            for (Uint i=0; i<x3.RowIdx->NumUnknownsVertex(); ++i)
+                local_check = local_check && CheckValue( x3.Data[dof+i], num_shared*((sit->GetGID()+i)+0.11));
             if (x3.RowIdx->IsExtended(dof)) {
                 const IdxT xdof= x3.RowIdx->GetXidx()[dof];
-                for (int i=0; i<nums3; ++i)
-                    local_xcheck = local_xcheck
-                            && ( std::fabs(x3.Data[ xdof+i ] - num_shared*((sit->GetGID()+i)+0.55 ))<DoubleEpsC*std::fabs(x3.Data[ xdof+i ]));
+                for (Uint i=0; i<x3.RowIdx->NumUnknownsVertex(); ++i)
+                    local_xcheck = local_xcheck && CheckValue( x3.Data[xdof+i], num_shared*((sit->GetGID()+i)+0.55 ));
             }
             check = check && local_check && local_xcheck;
             if (!local_check)
             {
                 std::cout << "["<<ProcCL::MyRank()<<"] Index "<<x3.RowIdx->GetIdx()<<": Bei Knoten " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x3.Data[ sit->Unknowns(x3.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << (x3.Data[ dof])
                         << " sollte sein: " << (num_shared*((sit->GetGID())+0.11))
                         << ", Knoten hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
@@ -298,17 +301,17 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             bool local_check = true;
             const DDD_HDR edge= sit->GetHdr();
             int num_shared = 0;
+            const IdxT dof= sit->Unknowns(x1.RowIdx->GetIdx());
             for (int *procList = DDD_InfoProcList(edge); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
-            for (int i=0; i<C.numsE1; ++i)
-                local_check = local_check
-                        && ( std::fabs(x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())+i ] - num_shared*(double)(sit->GetGID()+i))<DoubleEpsC );
+            for (Uint i=0; i<x1.RowIdx->NumUnknownsEdge(); ++i)
+                local_check = local_check && CheckValue( x1.Data[dof+i], num_shared*(double)(sit->GetGID()+i));
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << " Index 1: Bei Ecke " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << (x1.Data[dof])
                         << " sollte sein: " << (num_shared*(double)(sit->GetGID()))
                         << ", Ecke hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
@@ -318,17 +321,17 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             bool local_check = true;
             const DDD_HDR edge= sit->GetHdr();
             int num_shared = 0;
+            const IdxT dof= sit->Unknowns(x2.RowIdx->GetIdx());
             for (int *procList = DDD_InfoProcList(edge); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
-            for (int i=0; i<C.numsE2; ++i)
-                local_check = local_check
-                        && ( std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] - num_shared*(1./100.*(sit->GetGID()+i)+0.1))<DoubleEpsC );
+            for (Uint i=0; i<x2.RowIdx->NumUnknownsEdge(); ++i)
+                local_check = local_check && CheckValue( x2.Data[dof+i], num_shared*(1./100.*(sit->GetGID()+i)+0.1));
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << " Index 2:Bei Ecke " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << (x2.Data[dof])
                         << " sollte sein: " << (num_shared*(1./100.*(sit->GetGID())+0.1))
                         << ", Ecke hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
@@ -342,17 +345,17 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             bool local_check = true;
             const DDD_HDR tetra= sit->GetHdr();
             int num_shared = 0;
+            const IdxT dof= sit->Unknowns(x1.RowIdx->GetIdx());
             for (int *procList = DDD_InfoProcList(tetra); *procList!=-1; procList+=2)
                 if (procList[1]==PrioMaster)
                     ++num_shared;
-            for (int i=0; i<C.numsT1; ++i)
-                local_check = local_check
-                        && ( std::fabs(x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())+i ] - num_shared*(double)(sit->GetGID()+i))<DoubleEpsC );
+            for (Uint i=0; i<x1.RowIdx->NumUnknownsTetra(); ++i)
+                local_check = local_check && CheckValue( x1.Data[dof+i], num_shared*(double)(sit->GetGID()+i));
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << " Index 1: Bei Tetra " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x1.Data[ sit->Unknowns(x1.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << (x1.Data[dof])
                         << " sollte sein: " << (num_shared*(double)(sit->GetGID()))
                         << ", Tetra hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
@@ -362,17 +365,17 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             bool local_check = true;
             const DDD_HDR tetra= sit->GetHdr();
             int num_shared = 0;
+            const IdxT dof= sit->Unknowns(x2.RowIdx->GetIdx());
             for (int *procList = DDD_InfoProcList(tetra); *procList!=-1; procList+=2)
                 if (procList[1]==PrioMaster)
                     ++num_shared;
-            for (int i=0; i<C.numsT2; ++i)
-                local_check = local_check
-                        && ( std::fabs(x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())+i ] - num_shared*(1./100.*(sit->GetGID()+i)+0.1))<DoubleEpsC );
+            for (Uint i=0; i<x3.RowIdx->NumUnknownsTetra(); ++i)
+                local_check = local_check && CheckValue( x2.Data[dof+i], num_shared*(1./100.*(sit->GetGID()+i)+0.1));
             check = check && local_check;
             if (!local_check)
             {
                 std::cout << " Index 2: Bei Tetra " << sit->GetGID() << " ist ein Fehler passiert!\n"
-                        << "  Habe den Wert: " << (x2.Data[ sit->Unknowns(x2.RowIdx->GetIdx())])
+                        << "  Habe den Wert: " << (x2.Data[dof])
                         << " sollte sein: " << (num_shared*(1./100.*(sit->GetGID()) +0.1))
                         << ", Tetra hat auf "<<num_shared<<" Prozessoren einen Wert"<< std::endl;
             }
@@ -591,12 +594,9 @@ bool TestCorrectnessExchangeCL(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* 
 
         SetNum(mg,y_acc1,y_acc2,y_acc3);
 
-        ExchangeCL::RequestCT req1(2*ex1.GetNumNeighs());
-        ExchangeCL::RequestCT req2(2*ex2.GetNumNeighs());
-        ExchangeCL::RequestCT req3(2*exXfem.GetNumNeighs());
-        ex1.InitCommunication(y_acc1.Data, req1);    ex1.AccFromAllProc(y_acc1.Data, req1);
-        ex2.InitCommunication(y_acc2.Data, req2);    ex2.AccFromAllProc(y_acc2.Data, req2);
-        exXfem.InitCommunication(y_acc3.Data, req3); exXfem.AccFromAllProc(y_acc3.Data, req3);
+        ex1.Accumulate(y_acc1.Data);
+        ex2.Accumulate(y_acc2.Data);
+        exXfem.Accumulate(y_acc3.Data);
 
         check = check && CheckNum(mg,y_acc1,y_acc2,y_acc3);
 
@@ -649,8 +649,8 @@ bool TestEquality(const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeBl
     if (ProcCL::IamMaster())
         std::cout << "   - Checke for equality of the classes ... \n";
 
-    bool isequal1 = ex1.IsEqual(ExBlock.Get(0));
-    bool isequal2 = ex2.IsEqual(ExBlock.Get(1));
+    bool isequal1 = ex1.IsEqual(ExBlock.GetEx(0));
+    bool isequal2 = ex2.IsEqual(ExBlock.GetEx(1));
 
     if (Check(isequal1 && isequal2)){
         if (ProcCL::IamMaster())
@@ -659,68 +659,17 @@ bool TestEquality(const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeBl
     else
         throw DROPSErrCL("ExchangeCL differs from ExchangeBlockCL");
 
-    if (ProcCL::IamMaster())
-        std::cout << "   - Checke for same results for norm computations... \n";
-
-    VectorCL x1(ex1.GetNum()), y1(ex1.GetNum());
-    VectorCL x2(ex2.GetNum()), y2(ex2.GetNum());
-    VectorCL xb(ExBlock.GetNum()), yb(ExBlock.GetNum());
-    double singel, blocked;
-    x1= 0.01; y1= 0.03;
-    x2= 0.01; y2= 0.03;
-    xb= 0.01; yb= 0.03;
-
-    std::cout.precision(12);
-    if (ProcCL::IamMaster())
-        std::cout << "     + Norm_sq: ";
-
-    singel = ex1.Norm_sq(x1) + ex2.Norm_sq(x2);
-    blocked= ExBlock.Norm_sq(xb);
-    if (ProcCL::IamMaster())
-        std::cout << "        * NonAccur, dist vecs, old interface: "<<singel-blocked<<" (= "<<singel<<" - "<<blocked<<")"<<'\n';
-
-    singel = ex1.AccNorm_sq(x1,y1) + ex2.AccNorm_sq(x2,y1);
-    blocked= ExBlock.AccNorm_sq(xb,yb);
-    if (ProcCL::IamMaster())
-        std::cout << "        * Accur, dist vecs, old interface:    "<<singel-blocked<<" (= "<<singel<<" - "<<blocked<<")"<<'\n';
-
-
-    singel = ex1.Norm_sq(x1, false, true) + ex2.Norm_sq(x2, false, true);
-    blocked= ExBlock.Norm_sq(xb, false, true);
-    if (ProcCL::IamMaster())
-        std::cout << "        * Accur, dist vecs, new interface:    "<<singel-blocked<<" (= "<<singel<<" - "<<blocked<<")"<<'\n';
-
-    singel = ex1.Norm_sq(x1, false, false) + ex2.Norm_sq(x2, false, false);
-    blocked= ExBlock.Norm_sq(xb, false, false);
-    if (ProcCL::IamMaster())
-        std::cout << "        * NonAccur, dist vecs, new interface: "<<singel-blocked<<" (= "<<singel<<" - "<<blocked<<")"<<'\n';
-
-    singel = ex1.Norm_sq(x1, true, true) + ex2.Norm_sq(x2, true, true);
-    blocked= ExBlock.Norm_sq(xb, true, true);
-    if (ProcCL::IamMaster())
-        std::cout << "        * Accur, acc vecs, new interface:     "<<singel-blocked<<" (= "<<singel<<" - "<<blocked<<")"<<'\n';
-
-    singel = ex1.AccNorm_sq(x1) + ex2.AccNorm_sq(x2);
-    blocked= ExBlock.AccNorm_sq(xb);
-    if (ProcCL::IamMaster())
-        std::cout << "        * Accur, acc vecs, old interface:     "<<singel-blocked<<" (= "<<singel<<" - "<<blocked<<")"<<'\n';
-
-
-
     return true;
 }
 
 /// \brief Create lists for an ExchangeBlockCL
-void CreateExchangeBlockCL(const MultiGridCL& mg, ExchangeBlockCL& ExBlock,
-                      MLIdxDescCL* idx1, MLIdxDescCL* idx2)
+void CreateExchangeBlockCL(ExchangeBlockCL& ExBlock, MLIdxDescCL* idx1, MLIdxDescCL* idx2)
 {
     if (ProcCL::IamMaster())
         std::cout << "   - Kreiere eine Block-Exchange Klasse ... \n";
 
-    ExchangeBlockCL::MLIdxDescCT indices(2);      // Ein Vector, der zwei Pointer auf die Indices verwaltet
-    indices[0]=idx1; indices[1]=idx2;
-    ExBlock.CreateList(mg, indices);
-
+    ExBlock.AttachTo(idx1->GetFinest());
+    ExBlock.AttachTo(idx2->GetFinest());
 }
 
 /// \brief Check if ExchangeBlockCL send and accumulate correct
@@ -740,7 +689,7 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
         // Setzen der Werte
         VecDescCL y_acc1; y_acc1.SetIdx(idx1);
         VecDescCL y_acc2; y_acc2.SetIdx(idx2);
-        VecDescCL y_acc3; y_acc2.SetIdx(idx1);
+        VecDescCL y_acc3; y_acc3.SetIdx(idx1);
         SetNum(mg,y_acc1,y_acc2,y_acc3);
 
         // Einen großen Vektor für die ExchangeBlockCL erzeugen
@@ -748,13 +697,9 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
         y_big[std::slice(0,                  y_acc1.Data.size(), 1)] = y_acc1.Data;
         y_big[std::slice(y_acc1.Data.size(), y_acc2.Data.size(), 1)] = y_acc2.Data;
 
-        ExchangeBlockCL::VecRequestCT req(ExBlock.GetNumBlocks());
-        for (size_t i=0; i<ExBlock.GetNumBlocks(); ++i)
-            req[i].resize(2*ExBlock.Get(i).GetNumNeighs());
-
         // Austausch der Werte
-        ExBlock.InitCommunication(y_big, req);
-        ExBlock.AccFromAllProc(y_big, req);
+        ExBlock.Accumulate(y_big);
+        ExBlock.GetEx(0).Accumulate(y_acc3.Data);
 
         // Checken der Werte
         y_acc1.Data = y_big[std::slice(0,                  y_acc1.Data.size(), 1)];
@@ -763,6 +708,7 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
 
         if (!check)
             throw DROPSErrCL("ExchangeCL has not exchanged values correct");
+        return true;
 
     }
     if (check && ProcCL::IamMaster())
@@ -771,109 +717,86 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
     return check;
 }
 
-/// \brief Test wheather all accumulation strategies and inner products give the same result
-void TestInnerProducts(const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeBlockCL& exBlock,
-                       MLIdxDescCL* idx1, MLIdxDescCL* idx2)
+/// \brief Test whether all accumulation strategies and inner products give the same result
+void TestInnerProducts(const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeBlockCL& exBlock)
 {
-    const IdxT n1= idx1->NumUnknowns(), n2=idx2->NumUnknowns(), n=n1+n2;
+    const IdxT n1=ex1.GetNum(), n2=ex2.GetNum(), n=exBlock.GetNum();
+    // Test vectors
+    const VectorCL x1(0.1, n1), x2(0.1, n2), xB(0.1, n);
+    // Accumulated vectors
+    VectorCL x1_acc_old(x1), x1_acc_new(x1),
+             x2_acc_old(x2), x2_acc_new(x2),
+             x12_acc_old(n), x12_acc_new(n),
+             xB_acc(xB);
 
-    // Vektoren fuer die ExchangeCL
-    VectorCL x1(0.1, n1), x2(0.1, n2), x(0.1, n), z1(0.1,n1), z2(0.1, n2), z(0.1,n);
+    double prod1_old, prod1_new, prod2_old, prod2_new, prod_old, prod_new, prodB;
+    double norm1_new, norm2_new, norm_new, normB;
+    VectorCL dist(3), global_dist(3);   // distances between accumulated vectors (old-new, old-block, new-block)
 
-    // Akkumulierte Formen
-    VectorCL x1_acc(x1), x2_acc(x2), x_acc(x), x_acc_big(n),
-             z1_acc(x1), z2_acc(x2), z_acc(x), z_acc_big(n);                  // fuer das neue Interface
+    // Compute inner products (on distributed vectors)
+    prod1_old= ex1.ParDotAcc(x1_acc_old, x1);
+    prod1_new= ex1.ParDot(x1, false, x1, false, true, &x1_acc_new);
+    prod2_old= ex2.ParDotAcc(x2_acc_old, x2);
+    prod2_new= ex2.ParDot(x2, false, x2, false, true, &x2_acc_new);
+    prodB    = exBlock.ParDot(xB, false, xB, false, true, &xB_acc);
+    prod_old = prod1_old + prod2_old;
+    prod_new = prod1_new + prod2_new;
 
+    // Compute norms (on distributed vectors)
+    norm1_new= ex1.Norm_sq(x1, false, true);
+    norm2_new= ex2.Norm_sq(x2, false, true);
+    norm_new = norm1_new+norm2_new;
+    normB    = exBlock.Norm_sq(xB, false, true);
 
-    double prod1, prod2, prod, zprod1, zprod2, zprod, refprod;
-    prod1   = ex1.ParDotAcc(x1_acc,x1);
-    prod2   = ex2.ParDotAcc(x2_acc,x2);
-    zprod1  = ex1.ParDot(z1, false, x1, false, false, &z1_acc);
-    zprod2  = ex2.ParDot(z2, false, x2, false, false, &z2_acc);
-    zprod   = exBlock.ParDot(z, false, x, false, false, &z_acc);
-    prod    = exBlock.ParDotAcc(x_acc,x);
-    refprod = prod1+prod2;
+    // Compound small vectors to a big one
+    x12_acc_old[std::slice(0,  n1, 1)] = x1_acc_old;
+    x12_acc_old[std::slice(n1, n2, 1)] = x2_acc_old;
+    x12_acc_new[std::slice(0,  n1, 1)] = x1_acc_new;
+    x12_acc_new[std::slice(n1, n2, 1)] = x2_acc_new;
 
-    if (ProcCL::IamMaster())
-        std::cout << "Reference value is "<<refprod<<std::endl;
+    dist[0]= norm_sq( VectorCL( x1_acc_old-x1_acc_new) + VectorCL( x2_acc_old-x2_acc_new));
+    dist[1]= norm_sq( VectorCL( x12_acc_old-xB_acc));
+    dist[2]= norm_sq( VectorCL( x12_acc_new-xB_acc));
 
-    x_acc_big[std::slice(0,  n1, 1)] = x1_acc;
-    x_acc_big[std::slice(n1, n2, 1)] = x2_acc;
-    z_acc_big[std::slice(0,  n1, 1)] = z1_acc;
-    z_acc_big[std::slice(n1, n2, 1)] = z2_acc;
+    GlobalSum(Addr(dist), Addr(global_dist), 3, 0);
 
-    const double diff_ex_ex   = std::sqrt(GlobalSum(norm_sq(VectorCL(x_acc-x_acc_big))));
-    const double diff_newex_ex= std::sqrt(norm_sq(VectorCL(x1_acc-z1_acc)) + norm_sq(VectorCL(x2_acc-z2_acc)));
-    const double diff_block_ni= std::sqrt(GlobalSum(norm_sq(VectorCL(z_acc-x_acc_big))));
-
-    if (ProcCL::IamMaster())
-        std::cout << "  - Differences of accumulated vectors:"<<'\n'
-                  << "    + ExchangeCL vs ExchangeBlockCL:     "<<diff_ex_ex<<'\n'
-                  << "    + ExchangeCL vs new ExchangeCL:      "<<diff_newex_ex<<'\n'
-                  << "    + ExchangeCL vs new ExchangeBlockCL: "<<diff_block_ni<<std::endl;
-
-
-    if (ProcCL::IamMaster())
-        std::cout << "  - Inner product with accumulation (ParDotAcc) Difference: " <<'\n'
-                  << "    + ExchangeCL vs ExchangeBlockCL:     " << std::fabs(prod -(prod1+prod2)) <<'\n'
-                  << "    + DDD        vs ExchangeBlockCL:     " << std::fabs(prod -(refprod)) <<'\n'
-                  << "    + ExchangeCL vs new ExchangeCL :     " << std::fabs(prod-(zprod1+zprod2))<<'\n'
-                  << "    + ExchangeCL vs new ExchangeBlockCL: " << std::fabs(prod -zprod)<<std::endl;
-
-    x1_acc=x1; x2_acc=x2; x_acc=x;
-    VectorCL x1_acc_tmp(x1), x2_acc_tmp(x2), x_acc_tmp(x);
-    VectorCL z1_acc_tmp(z1), z2_acc_tmp(z2), z_acc_tmp(x);
-
-    prod1   = ex1.AccParDot(x1,x1,x1_acc,x1_acc_tmp);
-    prod2   = ex2.AccParDot(x2,x2,x2_acc,x2_acc_tmp);
-    zprod1  = ex1.ParDot(z1, false, x1, false, true, &z1_acc, &z1_acc_tmp);
-    zprod2  = ex2.ParDot(z2, false, x2, false, true, &z2_acc, &z2_acc_tmp);
-    zprod   = exBlock.ParDot(z, false, x, false, true, &z_acc, &z_acc_tmp);
-    prod    = exBlock.AccParDot(x,x,x_acc,x_acc_tmp);
-    if (ProcCL::IamMaster())
-        std::cout << "  - Inner product with accumulated vectors (AccParDot 4 arguments): " <<(prod-refprod)<<'\n'
-                  << "    + ExchangeCL vs ExchangeBlockCL (new):     " << std::fabs(refprod - prod) <<'\n'
-                  << "    + ExchangeCL vs new ExchangeBlockCL (old): " << std::fabs(refprod - zprod)<<std::endl;
-
-    double diff_z_acc= std::sqrt(GlobalSum(norm_sq(VectorCL(z_acc     - z_acc_big))));
-    double diff_x_acc= std::sqrt(GlobalSum(norm_sq(VectorCL(z_acc_tmp - x_acc_big))));
-    if (ProcCL::IamMaster())
-        std::cout << "Differences of x: "<<diff_x_acc<<" and of z "<<diff_z_acc<<std::endl;
-
-    prod1   = ex1.AccParDot(x1,x1_acc,x1_acc_tmp);
-    prod2   = ex2.AccParDot(x2,x2_acc,x2_acc_tmp);
-    zprod1  = ex1.ParDot(z1, false, x1, false, true, &z1_acc);
-    zprod2  = ex2.ParDot(z2, false, x2, false, true, &z2_acc);
-    zprod   = exBlock.ParDot(z, false, x, false, true, &z_acc);
-    prod    = exBlock.AccParDot(x,x_acc,x_acc_tmp);
-    if (ProcCL::IamMaster())
-        std::cout << "  - Inner product with accumulated vectors (AccParDot 3 arguments): " <<(prod-refprod)<<'\n'
-                  << "    + ExchangeCL vs ExchangeCL (new):      " << std::fabs(refprod - (zprod1+zprod2))<<'\n'
-                  << "    + ExchangeCL vs ExchangeBlockCL (old):     " << std::fabs(refprod - prod)<<'\n'
-                  << "    + ExchangeCL vs new ExchangeBlockCL (new): " << std::fabs(refprod - zprod)
+    if (ProcCL::IamMaster()){
+        std::sqrt(global_dist);
+        std::cout << " - Global sum of the local squared distance of the accumulated vectors:\n"
+                  << "   * old interface vs. new interface: " << global_dist[0] << "\n"
+                  << "   * old interface vs. blocked:       " << global_dist[1] << "\n"
+                  << "   * new interface vs. blocked:       " << global_dist[2] << "\n"
                   << std::endl;
-
-    prod1 = ex1.AccNorm_sq(x1,x1_acc);
-    prod2 = ex2.AccNorm_sq(x2,x2_acc);
-    zprod1= ex1.Norm_sq(z1, false, true);
-    zprod2= ex2.Norm_sq(z2, false, true);
-    prod  = exBlock.AccNorm_sq(x,x_acc);
-    if (ProcCL::IamMaster())
-        std::cout << "  - Norm with accumulated vectors (AccNorm_sq): " <<(prod-refprod)<<'\n'
-                  << "    + ExchangeCL vs new ExchangeCL (new):      " << std::fabs(prod -(zprod1+zprod2))<<'\n'
-                  << "    + ExchangeCL vs new ExchangeBlockCL (old): " << std::fabs(prod -zprod)<<std::endl<<std::endl
-                  << "  - Check multiple exchange transfers"<<std::endl;
-
-
-    for (int i=0; i<C.multruns; ++i){
-        ex1.AccParDot(x1,x1_acc,x1_acc_tmp,x1_acc_tmp);
-        if (i%1000==0)
-            IF_MASTER
-              std::cerr << "      "<<i<<" run\n";
+        std::cout << " - Differences of inner products (on distributed vectors):\n"
+                  << "   * old interface vs. new interface: " << (prod_old-prod_new) << "\n"
+                  << "   * old interface vs. blocked:       " << (prod_old-prodB)    << "\n"
+                  << "   * new interface vs. blocked:       " << (prod_new-prodB)    << "\n"
+                  << std::endl;
+        std::cout << " - Differences of norm (on distributed vectors):\n"
+                  << "   * new interface vs. blocked:       " << (norm_new-normB)    << "\n"
+                  << std::endl;
     }
-    if (ProcCL::IamMaster())
-        std::cerr << "    + "<<C.multruns<<" ParDots performed!\n";
 
+    // Compute inner products (on one accumulated and one distributed vectors)
+    prod1_new= ex1.ParDot(x1, false, x1_acc_new, true, true);
+    prod2_new= ex2.ParDot(x2, false, x2_acc_new, true, true);
+    prodB    = exBlock.ParDot(xB, false, xB_acc, true, true);
+    prod_new = prod1_new + prod2_new;
+
+    // Compute norms (on accumulated vectors)
+    norm1_new= ex1.Norm_sq(x1_acc_new, true, true);
+    norm2_new= ex2.Norm_sq(x2_acc_new, true, true);
+    norm_new = norm1_new+norm2_new;
+    normB    = exBlock.Norm_sq(xB_acc, true, true);
+
+    if (ProcCL::IamMaster()){
+        std::cout << " - Differences of inner products (on one distributed and one accumulated vector):\n"
+                  << "   * new interface vs. blocked:       " << (prod_new-prodB)    << "\n"
+                  << std::endl;
+        std::cout << " - Differences of norm (on accumulated vectors):\n"
+                  << "   * new interface vs. blocked:       " << (norm_new-normB)    << "\n"
+                  << std::endl;
+    }
 }
 
 /// \brief Meassure time used for inner products
@@ -969,30 +892,29 @@ void Strategy(ParMultiGridCL &pmg)
     if (ProcCL::IamMaster())
         std::cout << line << std::endl << " * Teste ExchangeCL"<< std::endl;
 
-    ExchangeCL Ex1, Ex2, ExXfem;
+    ExchangeCL ExXfem;
     CreateExchangeCL(mg, &idx1, &idx2, &xfemidx);
     TestCorrectnessExchangeCL(mg, &idx1, &idx2, &xfemidx);
     TestSysnumComputation(mg, &idx1, &idx2, &xfemidx);
 
-return;
     if (ProcCL::IamMaster())
         std::cout << line << std::endl << " * Teste ExchangeBlockCL" << std::endl;
 
-    ExchangeBlockCL ExBlock(2);                 // ExchangeCL, die zwei Indices und somit zwei Blöcke handelt
-    CreateExchangeBlockCL(mg, ExBlock, &idx1, &idx2);
+    ExchangeBlockCL ExBlock;
+    CreateExchangeBlockCL(ExBlock, &idx1, &idx2);
     TestCorrectnessExchangeBlockCL(mg, ExBlock, &idx1, &idx2);
-    TestEquality(Ex1,Ex2,ExBlock);
+    TestEquality( idx1.GetEx(), idx2.GetEx(), ExBlock);
 
     if (ProcCL::IamMaster())
         std::cout << line << std::endl << " * Checke Paralleles InnereProduct ... " << std::endl;
 
-    TestInnerProducts(Ex1, Ex2, ExBlock, &idx1, &idx2);
+    TestInnerProducts( idx1.GetEx(), idx2.GetEx(), ExBlock);
 
     if (C.timeMeas)
     {
         if (ProcCL::IamMaster())
             std::cout << line << std::endl << " * Mache eine Zeitmessungen (" <<C.tests<<" Laeufe) für Innere Produkte ... " << std::endl;
-        MakeTimeMeassurments(Ex1, &idx1);
+        MakeTimeMeassurments( idx1.GetEx(), &idx1);
     }
 }
 } // end of namespace DROPS

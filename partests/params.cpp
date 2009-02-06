@@ -155,15 +155,6 @@ void ParamParPoissonCL::RegisterParams()
 
 void ParamParExchangeCL::RegisterParams()
 {
-    rp_.BeginGroup( "Unknowns");
-    rp_.RegInt( numsV1, "NumsV1");
-    rp_.RegInt( numsE1, "NumsE1");
-    rp_.RegInt( numsT1, "NumsT1");
-    rp_.RegInt( numsV2, "NumsV2");
-    rp_.RegInt( numsE2, "NumsE2");
-    rp_.RegInt( numsT2, "NumsT2");
-    rp_.EndGroup();
-
     rp_.BeginGroup( "Refining");
     rp_.RegInt( basicref_x, "BasicRefX");
     rp_.RegInt( basicref_y, "BasicRefY");
