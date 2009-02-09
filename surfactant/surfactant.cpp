@@ -428,7 +428,7 @@ VectorCL SurfactantP1CL::InitStep ()
     if (theta_ != 1.) {
         GMResSolverCL<GSPcCL> gm( gm_);
         VectorCL tmp( rhs.Data.size());
-        gm.Solve( M.Data, tmp, VectorCL( A.Data*ic.Data + Md.Data*ic.Data));
+        gm.Solve( M.Data, tmp, VectorCL( /*A.Data*ic.Data +*/ Md.Data*ic.Data)); // XXX laplace ic == 0
         std::cerr << "SurfactantP1CL::InitStep: rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
         rhs.Data-= (1. - theta_)*tmp;
     }
@@ -516,17 +516,10 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     timedisc.Init( &sol0);
     timedisc.Update();
 
-    // only for the ensight output
-    DROPS::IdxDescCL ifacefullidx( P1_FE);
-    ifacefullidx.CreateNumbering( mg.GetLastLevel(), mg);
-    DROPS::VecDescCL icext( &ifacefullidx);
-    DROPS::Extend( mg, timedisc.ic, icext);
-    DROPS::NoBndDataCL<> nobnd;
-
     // Additional Ensight6-variables
-    ensight.Register( make_Ensight6Scalar( make_P1Eval( mg, nobnd, icext), "InterfaceSol", ensf + ".sur"));
-    ensight.Register( make_Ensight6Vector( make_P2Eval( mg, Bnd_v, v), "Velocity",      ensf + ".vel", true));
-    ensight.Register( make_Ensight6Scalar( lset2.GetSolution(), "Levelset2",  ensf + ".scl2", true));
+    ensight.Register( make_Ensight6IfaceScalar( mg, timedisc.ic,                 "InterfaceSol", ensf + ".sur", true));
+    ensight.Register( make_Ensight6Vector(      make_P2Eval( mg, Bnd_v, v),      "Velocity",     ensf + ".vel",  true));
+    ensight.Register( make_Ensight6Scalar(      lset2.GetSolution(),             "Levelset2",    ensf + ".scl2", true));
     ensight.Register( make_Ensight6Scalar( ScalarFunAsP2EvalCL( sol0t, 0., &mg), "TrueSol",      ensf + ".sol", true));
     ensight.Write( 0.);
 
@@ -566,9 +559,6 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
                 InitVel( mg, &v, Bnd_v, u_func, step*C.dt);
                 LSInit( mg, lset.Phi, &sphere_2move, step*C.dt);
                 timedisc.Update();
-                ifacefullidx.DeleteNumbering( mg);
-                ifacefullidx.CreateNumbering( mg.GetLastLevel(),  mg);
-                icext.SetIdx( &ifacefullidx);
 
                 lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*C.dt));
                 lset2.SetTimeStep( C.dt);
@@ -581,7 +571,6 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
                 std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
-        Extend( mg, timedisc.ic, icext);
         ensight.Write( step*C.dt);
 //        std::cerr << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, step*C.dt)
 //                  << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, step*C.dt)

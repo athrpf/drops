@@ -5,6 +5,7 @@
 #include "misc/problem.h"
 #include "num/discretize.h"
 #include "levelset/mgobserve.h"
+#include "out/ensightOut.h"
 
 #ifndef DROPS_IFACETRANSP_H
 #define DROPS_IFACETRANSP_H
@@ -87,6 +88,33 @@ class InterfaceP1RepairCL : public MGObserverCL
     void pre_refine_sequence  ();
     void post_refine_sequence ();
 };
+
+///\brief Represents a scalar P1 function on the interface as Ensight6 variable by extension to the
+///       whole domain.
+class Ensight6IfaceScalarCL : public Ensight6VariableCL
+{
+  private:
+    const VecDescCL&   u_;
+    MultiGridCL&       mg_;
+
+  public:
+    Ensight6IfaceScalarCL (MultiGridCL& mg, const VecDescCL& u, std::string varName, std::string fileName, bool timedep= false)
+        : Ensight6VariableCL( varName, fileName, timedep), u_( u), mg_( mg) {}
+ 
+    void Describe (Ensight6OutCL& cf) const { cf.DescribeVariable( this->varName(), true); }
+    void put      (Ensight6OutCL& cf) const;
+};
+
+///\brief Create an Ensight6IfaceP1ScalarCL with operator new.
+///
+/// This is just for uniform code; the analoguous functions for scalars and vectors are more useful
+/// because they help to avoid template parameters in user code.
+inline Ensight6IfaceScalarCL&
+make_Ensight6IfaceScalar (MultiGridCL& mg, const VecDescCL& u,
+    std::string varName, std::string fileName, bool timedep= false)
+{
+    return *new Ensight6IfaceScalarCL( mg, u, varName, fileName, timedep);
+}
 
 } // end of namespace DROPS
 

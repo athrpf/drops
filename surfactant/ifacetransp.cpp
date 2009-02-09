@@ -270,4 +270,18 @@ InterfaceP1RepairCL::post_refine_sequence ()
     fullu_.Clear();
 }
 
+void
+Ensight6IfaceScalarCL::put (Ensight6OutCL& cf) const
+{
+    IdxDescCL p1idx;
+    p1idx.CreateNumbering( u_.RowIdx->TriangLevel(), mg_);
+    VecDescCL p1u( &p1idx);
+    Extend( mg_, u_, p1u);
+    BndDataCL<> bnd( 0);
+
+    cf.putScalar( make_P1Eval( mg_, bnd, p1u), varName());
+
+    p1idx.DeleteNumbering( mg_);
+}
+
 } // end of namespace DROPS

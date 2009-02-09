@@ -47,6 +47,16 @@ void LSInit (const DROPS::MultiGridCL& mg, DROPS::VecDescCL& ls, dist_funT d, do
         ls.Data[it->Unknowns( idx)]= d( 0.5*(it->GetVertex( 0)->GetCoord() + it->GetVertex( 1)->GetCoord()), t);
 }
 
+const double a( -13./8.*std::sqrt( 35./M_PI));
+
+double sol0t (const DROPS::Point3DCL& p, double t)
+{
+    const DROPS::Point3DCL q( p - (C.Mitte + t*u_func(p, t)));
+    const double val( a*(3.*q[0]*q[0]*q[1] - q[1]*q[1]*q[1]));
+
+    return q.norm_sq()/(12. + q.norm_sq())*val;
+}
+
 #define DROPS_FOR_TETRA_INTERFACE_BEGIN( t, ls, p, n) \
     (p).Init( (t), (ls)); \
     if ((p).Intersects()) { /*We are at the phase boundary.*/ \
@@ -90,6 +100,27 @@ double L2_norm_Omega (const DROPS::MultiGridCL& mg, const DiscP1FunT& discsol)
     return std::sqrt( d);
 }
 
+template <typename DiscP1FunT>
+double L2_err (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+    const DiscP1FunT& discsol, dist_funT sol, double t)
+{
+    double d( 0.);
+    const DROPS::Uint lvl = ls.GetLevel();
+    DROPS::InterfacePatchCL patch;
+    DROPS::Quad5_2DCL<> qdiscsol, qsol;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, patch, tri) {
+            qdiscsol.assign(  *it, &patch.GetBary( tri), discsol);
+            qsol.assign( *it, &patch.GetBary( tri), sol, t);
+            qdiscsol-= qsol;
+            d+= DROPS::Quad5_2DCL<>( qdiscsol*qdiscsol).quad( patch.GetFuncDet( tri));
+        }
+        DROPS_FOR_TETRA_INTERFACE_END
+    }
+    return std::sqrt( d);
+}
+
 namespace DROPS // for Strategy
 {
 
@@ -99,9 +130,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::LevelsetP2CL& lset)
 {
     using namespace DROPS;
 
-    LSInit( mg, lset.Phi, &sphere_2move, 1.);
     IdxDescCL fullidx( P1_FE);
-    //DROPS::CreateNumbOnInterface( mg.GetLastLevel(), idx, mg, lset.Phi, C.surf_omit_bound);
     fullidx.CreateNumbering( mg.GetLastLevel(), mg);
     NoBndDataCL<> bnd;
 
@@ -122,9 +151,21 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::LevelsetP2CL& lset)
     reader.ReadScalar( "ensight/surfactant.sur512", DV[9], bnd);
     reader.ReadScalar( "ensight/surfactant.sur1024", DV[10], bnd);
 
+    LSInit( mg, lset.Phi, &sphere_2move, 0.);
+    VecDescCL DVinitial( &fullidx);
+    reader.ReadScalar( "ensight/surfactant.sur0",   DVinitial, bnd);
+    std::cerr << "\ninitial discretization error: "
+              << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DVinitial, 0.), &sol0t, 0.) << std::endl;
+
+    LSInit( mg, lset.Phi, &sphere_2move, 1.);
+    std::cerr << "\nfinal discretization error:" << std::endl;
+    for (int i= 0; i < N - 1; ++i)
+        std::cerr << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.), &sol0t, C.dt*C.num_steps) << ", ";
+
+    std::cerr << std::endl;
     for (int i= 0; i < N - 1; ++i) {
         DV[i].Data-=DV[N - 1].Data;
-//        std::cerr << norm( DV[i].Data) << ", ";
+        // std::cerr << norm( DV[i].Data) << ", ";
         std::cerr << L2_norm( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
     }
     std::cerr << std::endl;
