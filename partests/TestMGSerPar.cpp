@@ -178,7 +178,7 @@ double CheckDOF(const DROPS::MultiGridCL& mg, DROPS::VecDescCL& vec, scal_fun f)
         }
     }
 
-    return GlobalMax(error);
+    return ProcCL::GlobalMax(error);
 }
 
 /// Check if vectorial values are read in correctly
@@ -210,7 +210,7 @@ bool CheckDOF(const DROPS::MultiGridCL& mg, DROPS::VecDescCL& vec, vec_fun f)
                 error= diff;
         }
     }
-    return GlobalMax(error);
+    return ProcCL::GlobalMax(error);
 }
 
 
@@ -455,7 +455,7 @@ void CheckSerialization(DROPS::LoadBalHandlerCL& lb, DROPS::ParMultiGridCL& pmg)
 int main (int argc, char** argv)
 {
 
-    DROPS::ProcCL Proc(&argc, &argv);
+    DROPS::ProcCL::Instance(&argc, &argv);
 
     try
     {

@@ -89,7 +89,7 @@ bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     bool pmg_sane = pmg.IsSane(check),
     mg_sane  = pmg.GetMG().IsSane(check);
     check.close();
-    return DROPS::Check(pmg_sane && mg_sane);
+    return DROPS::ProcCL::Check(pmg_sane && mg_sane);
 }
 
 /// \brief Display number of unknowns
@@ -98,7 +98,7 @@ void DisplayNumUnknownsSparse(const DROPS::MultiGridCL& MG, const DROPS::VecDesc
 ///   are counted multiple due to the overlapping of edges and vertices
 /// global unknowns: all unknowns are just once counted
 {
-    const DROPS::Ulint acc_num_unk = DROPS::GlobalSum(x.Data.size()),
+    const DROPS::Ulint acc_num_unk = DROPS::ProcCL::GlobalSum(x.Data.size()),
                        glo_num_unk = x.RowIdx->GetGlobalNumUnknowns(MG);
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
@@ -139,14 +139,14 @@ template <typename StokesT, typename LevelsetT>
     Ulint GLsize     = lidx->GetGlobalNumUnknowns(MG);
 
     // accumulated size of unknwons
-    Ulint Psize_acc = GlobalSum(Psize);
-    Ulint Vsize_acc = GlobalSum(Vsize);
-    Ulint Lsize_acc = GlobalSum(Lsize);
+    Ulint Psize_acc = ProcCL::GlobalSum(Psize);
+    Ulint Vsize_acc = ProcCL::GlobalSum(Vsize);
+    Ulint Lsize_acc = ProcCL::GlobalSum(Lsize);
 
     // maximal and minimal number of unknowns
-    Ulint P_min= GlobalMin(Psize); Ulint P_max= GlobalMax(Psize);
-    Ulint V_min= GlobalMin(Vsize); Ulint V_max= GlobalMax(Vsize);
-    Ulint L_min= GlobalMin(Lsize); Ulint L_max= GlobalMax(Lsize);
+    Ulint P_min= ProcCL::GlobalMin(Psize); Ulint P_max= ProcCL::GlobalMax(Psize);
+    Ulint V_min= ProcCL::GlobalMin(Vsize); Ulint V_max= ProcCL::GlobalMax(Vsize);
+    Ulint L_min= ProcCL::GlobalMin(Lsize); Ulint L_max= ProcCL::GlobalMax(Lsize);
 
     // ratios between maximal number of unknowns/proc and minimal number
     double P_ratio   = (double)P_max/(double)P_min;
@@ -154,9 +154,9 @@ template <typename StokesT, typename LevelsetT>
     double L_ratio   = (double)L_max/(double)L_min;
 
     // number on boundaries
-    Ulint P_accmax=GlobalMax(ExP.AccDistIndex.size()), P_accmin=GlobalMin(ExP.AccDistIndex.size());
-    Ulint V_accmax=GlobalMax(ExV.AccDistIndex.size()), V_accmin=GlobalMin(ExV.AccDistIndex.size());
-    Ulint L_accmax=GlobalMax(ExL.AccDistIndex.size()), L_accmin=GlobalMin(ExL.AccDistIndex.size());
+    Ulint P_accmax=ProcCL::GlobalMax(ExP.AccDistIndex.size()), P_accmin=ProcCL::GlobalMin(ExP.AccDistIndex.size());
+    Ulint V_accmax=ProcCL::GlobalMax(ExV.AccDistIndex.size()), V_accmin=ProcCL::GlobalMin(ExV.AccDistIndex.size());
+    Ulint L_accmax=ProcCL::GlobalMax(ExL.AccDistIndex.size()), L_accmin=ProcCL::GlobalMin(ExL.AccDistIndex.size());
 
     // ratio of these unknowns
     double P_accratio= (double)P_accmax / (double)P_accmin;
@@ -201,9 +201,9 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
         numDistFaceAllProc= new DROPS::Uint[DROPS::ProcCL::Size()];
     }
     // Gather information about distribution on master processor
-    DROPS::Gather(mg.GetNumTriangTetra(level),      numTetrasAllProc,   DROPS::ProcCL::Master());
-    DROPS::Gather(mg.GetNumTriangFace(level),       numFacesAllProc,    DROPS::ProcCL::Master());
-    DROPS::Gather(mg.GetNumDistributedFaces(level), numDistFaceAllProc, DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumTriangTetra(level),      numTetrasAllProc,   DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumTriangFace(level),       numFacesAllProc,    DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumDistributedFaces(level), numDistFaceAllProc, DROPS::ProcCL::Master());
 
     // Display information
     if (DROPS::ProcCL::IamMaster()){
@@ -524,7 +524,7 @@ template<class Coeff>
 
         // Distribute MG
         lb.DoMigration();
-        if (C.checkMG && !Check( CheckParMultiGrid(pmg)) )
+        if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(pmg)) )
             throw DROPSErrCL("MultiGrid is incorrect!");
 
         // Create indices
@@ -623,7 +623,7 @@ template<typename Coeff>
 
             adap.UpdateTriang( lset);
 
-            if (C.checkMG && !Check( CheckParMultiGrid(adap.GetPMG())) )
+            if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adap.GetPMG())) )
                 throw DROPSErrCL("MultiGrid is incorrect!");
 
             if (adap.WasModified() )
@@ -744,7 +744,7 @@ template<class Coeff>
 
     if (C.IniCond!=3){
         adapt.MakeInitialTriang(::DistanceFct1);
-        if (C.checkMG && !Check( CheckParMultiGrid(pmg)) )
+        if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(pmg)) )
             throw DROPSErrCL("MultiGrid is incorrect!");
     }
 
@@ -784,7 +784,7 @@ template<class Coeff>
 
 int main (int argc, char** argv)
 {
-  DROPS::ProcCL Proc(&argc, &argv);
+  DROPS::ProcCL::Instance(&argc, &argv);
   try
   {
     if (argc!=2)

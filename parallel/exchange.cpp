@@ -173,7 +173,7 @@ void ExchangeCL::TransferSendOrder(bool CreateMap)
 /// which gather or scatters. So the massage has a size of maxNeighs (over all processors) *4.
 {
     numNeighs_= SendList_.size();
-    maxNeighs_=GlobalMax((int)numNeighs_);
+    maxNeighs_= ProcCL::GlobalMax((int)numNeighs_);
 
     const int buffersize= 6 * maxNeighs_*sizeof(IdxT);
     // if there are unknowns on vertices
@@ -590,7 +590,7 @@ bool ExchangeCL::IsAcc(const VectorCL& vec) const
     }
     delete[] senddof_buf;
     delete[] sendval_buf;
-    return Check(ret);
+    return ProcCL::Check(ret);
 }
 
 /// \brief Check if two ExchangeCL's seems to be the same

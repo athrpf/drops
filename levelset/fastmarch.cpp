@@ -736,7 +736,7 @@ void FastMarchCL::CreateGlobNumb()
     locNumb_.resize(numExclusiveDoF, NoIdx);
 
     // Get offset
-    Gather(numExclusiveDoF, Addr(allExclusive_), -1);
+    ProcCL::Gather(numExclusiveDoF, Addr(allExclusive_), -1);
     allOffset_.resize(ProcCL::Size()+1);
     for (int i=0; i<ProcCL::Size(); ++i)
         allOffset_[i+1]  = allOffset_[i] + allExclusive_[i];
@@ -982,7 +982,7 @@ void FastMarchCL::DistributeZeroLevel()
         if (Typ_[i]==Finished)
             ++LocNumFinished;
 
-    Gather(LocNumFinished, Addr(allFinished),-1);
+    ProcCL::Gather(LocNumFinished, Addr(allFinished),-1);
     for (int p=0; p<ProcCL::Size(); ++p)
         GlobNumFinished+=allFinished[p];
 

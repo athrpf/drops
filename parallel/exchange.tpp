@@ -626,7 +626,7 @@ double ExchangeCL::ParDot (const VectorCL& x, bool acc_x,
     /// \param[out] y_acc    if not equal zero, pointer on the accumulated form of \a y
     /// \return              inner product of \a x and \a y without global reduce
 {
-    return GlobalSum(LocDot(x, acc_x, y, acc_y, useAccur, x_acc, y_acc));
+    return ProcCL::GlobalSum(LocDot(x, acc_x, y, acc_y, useAccur, x_acc, y_acc));
 }
 
 /// \brief Squared norm of a vector without global reduce
@@ -699,7 +699,7 @@ double ExchangeCL::Norm(const VectorCL &r, bool acc_r, bool useAccur, VectorCL* 
     /// \param[out] r_acc   if not equal zero, pointer on the accumulated form of \a r
     /// \return             norm of the vector \a r
 {
-    double norm_sq=GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
+    double norm_sq= ProcCL::GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
     if (norm_sq<0.){
         std::cerr << "["<<ProcCL::MyRank()<<"] In function ExchangeCL::Norm:\n Norm of vector smaller than zero: "
                   << "acc_r "<<acc_r<<", use Accur "<<useAccur<<", (bool)r_acc "<<((bool)r_acc)
@@ -721,7 +721,7 @@ double ExchangeCL::Norm_sq(const VectorCL& r, bool acc_r, bool useAccur, VectorC
     /// \param[out] r_acc   if not equal zero, pointer on the accumulated form of \a r
     /// \return             square norm of the vector \a r
 {
-    double norm_sq=GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
+    double norm_sq= ProcCL::GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
     DROPS_Check_Norm(norm_sq, "ExchangeCL::Norm_sq: negative squared norm because of accumulation!");
     return norm_sq;
 }
@@ -838,7 +838,7 @@ double ExchangeCL::ParDotAcc(VectorCL& x, const VectorCL& y)const
         acc_sum += x[DistrIndex[i]] * y[DistrIndex[i]];
 
     // now reduce the local_sum's over all procs
-    return GlobalSum(loc_sum+acc_sum);
+    return ProcCL::GlobalSum(loc_sum+acc_sum);
 }
 
 /// \brief Parallel InnerProduct of two distributed vectors and accumulate of one vector
@@ -938,7 +938,7 @@ double ExchangeCL::AccParDot(const VectorCL& x, const VectorCL& y, VectorCL& x_a
     for (Ulint i=0; i<AccDistIndex.size(); ++i)
         acc_sum += x_acc[AccDistIndex[i]] * y_acc[AccDistIndex[i]];
 
-    return GlobalSum(loc_sum+acc_sum);
+    return ProcCL::GlobalSum(loc_sum+acc_sum);
 }
 
 /// \brief InnerProduct of two accumulated vectors without global reduce
@@ -971,7 +971,7 @@ double ExchangeCL::AccNorm_sq(const VectorCL &r, VectorCL& r_acc) const
 /// \param[in]  r     unaccumulated vector
 /// \param[out] r_acc accumulated vektor r (has not be initialized)
 {
-    double norm_sq= GlobalSum(LocAccNorm_sq(r,r_acc));
+    double norm_sq= ProcCL::GlobalSum(LocAccNorm_sq(r,r_acc));
     DROPS_Check_Norm(norm_sq,"ExchangeCL::AccNorm_sq: negative squared norm because of accumulation!");
     return norm_sq;
 }
@@ -1054,7 +1054,7 @@ double ExchangeCL::AccParDot(const VectorCL &x, const VectorCL& y_acc, VectorCL&
     for (Ulint i=0; i<AccDistIndex.size(); ++i)
         acc_sum += x_acc[AccDistIndex[i]] * y_acc[AccDistIndex[i]];
 
-    return GlobalSum(loc_sum+acc_sum);
+    return ProcCL::GlobalSum(loc_sum+acc_sum);
 }
 
 /// \brief Norm of an accumulated vector
@@ -1076,7 +1076,7 @@ double ExchangeCL::AccNorm_sq(const VectorCL& r_acc) const
     for (Ulint i=0; i<AccDistIndex.size(); ++i)
         acc_sum += r_acc[AccDistIndex[i]] * r_acc[AccDistIndex[i]];
 
-    double norm_sq = GlobalSum(loc_sum+acc_sum);
+    double norm_sq = ProcCL::GlobalSum(loc_sum+acc_sum);
     DROPS_Check_Norm(norm_sq, "ExchangeCL::AccNorm_sq: negative squared norm because of accumulation!");
     return norm_sq;
 }
@@ -1355,7 +1355,7 @@ double ExchangeBlockCL::ParDot (const VectorCL& x, bool isXacc,
     documentation of the function ExchangeBlockCL::LocDot.
 */
 {
-    return GlobalSum(LocDot(x, isXacc, y, isYacc, useAccurate, x_acc, y_acc));
+    return ProcCL::GlobalSum(LocDot(x, isXacc, y, isYacc, useAccurate, x_acc, y_acc));
 }
 
 
@@ -1396,7 +1396,7 @@ double ExchangeBlockCL::Norm_sq( const VectorCL& r, bool isRacc,
     documentation of the function ExchangeBlockCL::LocDot.
 */
 {
-    return GlobalSum(LocNorm_sq(r, isRacc, useAccurate, r_acc));
+    return ProcCL::GlobalSum(LocNorm_sq(r, isRacc, useAccurate, r_acc));
 }
 
 double ExchangeBlockCL::Norm( const VectorCL& r, bool isRacc,

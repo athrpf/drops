@@ -144,7 +144,7 @@ void FaceCL::UnlinkTetra(const TetraCL* tp)
         _Neighbors[0]= _Neighbors[1];
         _Neighbors[2]= _Neighbors[3];
         _Neighbors[3]= 0;
-#else        
+#else
         _Neighbors[0]= _Neighbors[1];
         std::swap( _Neighbors[2], _Neighbors[3]);
 #endif
@@ -1843,7 +1843,7 @@ void MultiGridCL::Refine()
     ParMultiGridCL::AdaptPrioOnSubs();
 
     // make killed ghost to all procs the same
-    killedGhostTetra_=GlobalOr(killedGhostTetra_);
+    killedGhostTetra_= ProcCL::GlobalOr(killedGhostTetra_);
 
     // if no unknowns will be transfered after the refinement algorithm,
     // all subsimplices and killed ghosts can be deleted now
@@ -2107,7 +2107,7 @@ void MultiGridCL::SizeInfo(std::ostream& os)
     elems[0] = GetVertices().size(); elems[1]=GetEdges().size();
     elems[2] = GetFaces().size();    elems[3]=GetTetras().size();
 
-    Gather(elems, recvbuf, 4, ProcCL::Master());
+    ProcCL::Gather(elems, recvbuf, 4, ProcCL::Master());
 
     if (ProcCL::IamMaster()){
         Uint numVerts=0, numEdges=0, numFaces=0, numTetras=0;
@@ -2160,10 +2160,10 @@ void MultiGridCL::ElemInfo(std::ostream& os, int Level)
         if (ratio > rmax) rmax= ratio;
     }
 #ifdef _PAR
-    hmin = GlobalMin(hmin, ProcCL::Master());
-    rmin = GlobalMin(rmin, ProcCL::Master());
-    hmax = GlobalMax(hmax, ProcCL::Master());
-    rmax = GlobalMax(rmax, ProcCL::Master());
+    hmin = ProcCL::GlobalMin(hmin, ProcCL::Master());
+    rmin = ProcCL::GlobalMin(rmin, ProcCL::Master());
+    hmax = ProcCL::GlobalMax(hmax, ProcCL::Master());
+    rmax = ProcCL::GlobalMax(rmax, ProcCL::Master());
 #endif
     IF_MASTER
       os << hmin << " <= h <= " << hmax << '\t'

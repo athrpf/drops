@@ -178,8 +178,8 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<Uint>& gidList, const Vector
     mapping gid->unique consecutive number </p>*/
 {
     // Compute number of points
-    numPoints_= GlobalSum( gidList.size(), ProcCL::Master());
-    size_t maxPoints= GlobalMax( gidList.size(), ProcCL::Master());
+    numPoints_= ProcCL::GlobalSum( gidList.size(), ProcCL::Master());
+    size_t maxPoints= ProcCL::GlobalMax( gidList.size(), ProcCL::Master());
 
     // Workers send gids and coords to master
     if (!ProcCL::IamMaster()){
@@ -336,7 +336,7 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<Uint>& locConnectList)
 /** Send all local connectivities to master or copy in sequiental mode.*/
 {
     // get number of tetras
-    numTetras_= GlobalSum( locConnectList.size()/4, ProcCL::Master());
+    numTetras_= ProcCL::GlobalSum( locConnectList.size()/4, ProcCL::Master());
     // Workers send tetra list to master
     if (!ProcCL::IamMaster()){
         ProcCL::RequestT req_tetra  = ProcCL::Isend(locConnectList, ProcCL::Master(), tag_+2);

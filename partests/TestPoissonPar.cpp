@@ -234,7 +234,7 @@ bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     mg_sane  = pmg.GetMG().IsSane(check);
 
     check.close();
-    bool sane=DROPS::Check(pmg_sane && mg_sane);
+    bool sane=DROPS::ProcCL::Check(pmg_sane && mg_sane);
     if (!sane)
         throw DROPS::DROPSErrCL("CheckParMultiGrid: Error within multigrid!");
     return sane;
@@ -509,7 +509,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     }
 
     size_t *Sizes = new size_t[ProcCL::Size()];
-    Gather(x->Data.size(), Sizes,0);
+    ProcCL::Gather(x->Data.size(), Sizes,0);
     int Gsize=0;
     for (int i=0; i<ProcCL::Size(); ++i) Gsize+=Sizes[i];
 
@@ -710,8 +710,8 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         {
             IdxT old_realUnknowns = old_idx->GetGlobalNumUnknowns(MG);
             IdxT new_realUnknowns = new_idx->GetGlobalNumUnknowns(MG);
-            IdxT old_accUnknwons = GlobalSum(old_x->Data.size());
-            IdxT new_accUnknwons = GlobalSum(new_x->Data.size());
+            IdxT old_accUnknwons = ProcCL::GlobalSum(old_x->Data.size());
+            IdxT new_accUnknwons = ProcCL::GlobalSum(new_x->Data.size());
             if (ProcCL::IamMaster())
                 std::cout << " - Number of Unknowns before after balancing\n"
                           << "   + Number of accumulated unknowns: "
@@ -798,7 +798,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         if (ProcCL::IamMaster())
             std::cout << "   + Check if solution is still accumulated ... ";
 
-        const bool isacc=Check(Poisson.idx.GetEx().IsAcc(new_x->Data));
+        const bool isacc= ProcCL::Check(Poisson.idx.GetEx().IsAcc(new_x->Data));
         if (isacc){
             if (ProcCL::IamMaster())
                 std::cout << "OK\n";
@@ -919,7 +919,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
 
 int main (int argc, char** argv)
 {
-    DROPS::ProcCL Proc(&argc, &argv);
+    DROPS::ProcCL::Instance(&argc, &argv);
     try
     {
         SetDescriber();

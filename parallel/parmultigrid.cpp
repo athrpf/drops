@@ -1061,7 +1061,7 @@ void ParMultiGridCL::XferEnd()
 void ParMultiGridCL::AdjustLevel()
 {
     int myLastLevel  =_mg->GetLastLevel();
-    int allLastLevel = GlobalMax(myLastLevel);       // this procedure is from parallel.h
+    int allLastLevel = ProcCL::GlobalMax(myLastLevel);       // this procedure is from parallel.h
 
     // all procs should have the same number of levels!
     for (; myLastLevel<allLastLevel; ++myLastLevel)
@@ -1086,7 +1086,7 @@ bool ParMultiGridCL::IsSane(std::ostream& os, int Level)
     // Checking all levels
     if (Level==-1)
     {
-        Uint maxLevel= GlobalMax( _mg->GetLastLevel());
+        Uint maxLevel= ProcCL::GlobalMax( _mg->GetLastLevel());
         if (maxLevel != _mg->GetLastLevel() )
         {
             sane= false;
@@ -2284,8 +2284,8 @@ void ParMultiGridCL::DebugInfo(std::ostream &os)
 double ParMultiGridCL::GetBalance()
 {
     int myTetras = _mg->_TriangTetra.size();                                    // all procs count their tetras
-    int maxTetras = GlobalMax(myTetras);
-    int minTetras = GlobalMin(myTetras);
+    int maxTetras = ProcCL::GlobalMax(myTetras);
+    int minTetras = ProcCL::GlobalMin(myTetras);
 
     return std::fabs(1- (double)(maxTetras)/(double)(minTetras));
 }
@@ -2522,7 +2522,7 @@ void PrintMG(const DROPS::ParMultiGridCL& pmg, int type)
     file.close();
 }
 
-bool CheckParMultiGrid(const DROPS::ParMultiGridCL& pmg)
+bool CheckParMultiGrid(const ParMultiGridCL& pmg)
 /**  Check parallel and sequential multigrid on each processor
     \param pmg The parallel multigrid
 */
@@ -2540,7 +2540,7 @@ bool CheckParMultiGrid(const DROPS::ParMultiGridCL& pmg)
     }
     bool pmg_sane = pmg.IsSane(output),
          mg_sane  = pmg.GetMG().IsSane(output);
-    return DROPS::Check(pmg_sane && mg_sane);
+    return ProcCL::Check(pmg_sane && mg_sane);
 }
 
 } // end of namespace DROPS

@@ -156,7 +156,7 @@ bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     mg_sane  = pmg.GetMG().IsSane(check);
 
     check.close();
-    return DROPS::Check(pmg_sane && mg_sane);
+    return DROPS::ProcCL::Check(pmg_sane && mg_sane);
 }
 
 /****************************************************************************
@@ -364,7 +364,7 @@ void Strategy(TestP2LevelSetCL &prob)
 
 int main (int argc, char** argv)
 {
-    DROPS::ProcCL Proc(&argc, &argv);
+    DROPS::ProcCL::Instance(&argc, &argv);
     try
     {
         SetDescriber();

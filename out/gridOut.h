@@ -444,7 +444,7 @@ inline void QuadOutCL::putGeom( std::string fileName)
     // Collect information on master processor, which writes values in the given file
     geom_info_   = new Matrix3DCL<int>(output);
     geom_version_= MG_.GetVersion();
-    GlobalSum(output.GetVals(), geom_info_->GetVals(), output.size());
+    ProcCL::GlobalSum(output.GetVals(), geom_info_->GetVals(), output.size());
     if (ProcCL::IamMaster())
         WriteVals(*os, geom_info_->GetVals(), gridpts_[0], gridpts_[1], gridpts_[2], 2);
 #endif
@@ -521,9 +521,9 @@ void QuadOutCL::putScalar( std::string fileName, const DiscScalT& v)
     Matrix3DCL<double> *globalsol=0;
     if (ProcCL::IamMaster())
         globalsol = new Matrix3DCL<double>(output);
-    GlobalSum(output.GetVals(),
-              ProcCL::IamMaster()? globalsol->GetVals() : 0,
-              output.size(), ProcCL::Master());
+    ProcCL::GlobalSum(output.GetVals(),
+                      ProcCL::IamMaster()? globalsol->GetVals() : 0,
+                      output.size(), ProcCL::Master());
     if (ProcCL::IamMaster())
         WriteVals(*os, globalsol->GetVals(), gridpts_[0], gridpts_[1], gridpts_[2], 12);
     if (globalsol) delete globalsol;
@@ -632,7 +632,7 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
 #else
     if (ProcCL::IamMaster())
         globalsol = new double[3*output.size()];
-    GlobalSum(localsol, ProcCL::IamMaster()? globalsol : 0, 3*output.size(), ProcCL::Master());
+    ProcCL::GlobalSum(localsol, ProcCL::IamMaster()? globalsol : 0, 3*output.size(), ProcCL::Master());
 #endif
 
     IF_MASTER
@@ -754,7 +754,7 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
 #else
     if (ProcCL::IamMaster())
         globalsol = new double[3*output.size()];
-    GlobalSum(localsol, ProcCL::IamMaster()? globalsol : 0, 3*output.size(), ProcCL::Master());
+    ProcCL::GlobalSum(localsol, ProcCL::IamMaster()? globalsol : 0, 3*output.size(), ProcCL::Master());
 #endif
 
     IF_MASTER

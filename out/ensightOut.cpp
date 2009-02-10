@@ -432,7 +432,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     //---------------------------------------------------
     // number of vertices and edges writen by this proc (= number of vals)
     const IdxT locNumUnknowns = GetExclusiveVerts(*_MG, PrioHasUnk, lvl) + GetExclusiveEdges(*_MG, PrioHasUnk, lvl);
-    const IdxT globNumUnknowns = GlobalSum(locNumUnknowns);                                 // global number of vertices
+    const IdxT globNumUnknowns = ProcCL::GlobalSum(locNumUnknowns);                         // global number of vertices
     Uint   *myGID   = new Uint[locNumUnknowns];                                             // array of gids of exclusive vertices, owned by thiss proc
     double *myCoord = new double[3*locNumUnknowns];                                         // and the corresponding coords
 
@@ -610,8 +610,8 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     {
         // at first collect all information in an array tetras of length numTetras
         Uint numTetras=std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl));
-        Uint numAllTetra=GlobalSum(numTetras, master);
-        Uint numMaxTetra=GlobalMax(numTetras, master);
+        Uint numAllTetra= ProcCL::GlobalSum(numTetras, master);
+        Uint numMaxTetra= ProcCL::GlobalMax(numTetras, master);
         Uint *tetras= new Uint[8*numTetras*4];          // regrefine*numTetra*vertices
         Uint pos=0;
 

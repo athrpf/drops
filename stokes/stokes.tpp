@@ -599,7 +599,7 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
 #ifndef _PAR
     __UNUSED__ const IdxT allnum_unks_vel= vecA->RowIdx->NumUnknowns();
 #else
-    __UNUSED__ const IdxT allnum_unks_vel= GlobalSum(vecA->RowIdx->NumUnknowns());
+    __UNUSED__ const IdxT allnum_unks_vel= ProcCL::GlobalSum(vecA->RowIdx->NumUnknowns());
 #endif
     Comment("entering StokesP2P1CL::SetupInstatSystem: "<<allnum_unks_vel<< " velocity unknowns.\n", DebugDiscretizeC);
 
@@ -852,8 +852,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     VectorCL res2_acc(res2);
     const double norm_res1      = std::sqrt(exV.ParDotAcc(res1_acc,res1));
     const double norm_res2      = std::sqrt(exP.ParDotAcc(res2_acc,res2));
-    const double norm_sup_res_1 = GlobalMax(supnorm(res1_acc));
-    const double norm_sup_res_2 = GlobalMax(supnorm(res2_acc));
+    const double norm_sup_res_1 = ProcCL::GlobalMax(supnorm(res1_acc));
+    const double norm_sup_res_2 = ProcCL::GlobalMax(supnorm(res2_acc));
 #endif
 
     IF_MASTER
@@ -889,8 +889,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
 #ifdef _PAR
-    L2_div = GlobalSum(L2_div);
-    L1_div = GlobalSum(L1_div);
+    L2_div = ProcCL::GlobalSum(L2_div);
+    L1_div = ProcCL::GlobalSum(L1_div);
 #endif
     L2_div= std::sqrt(L2_div);
 
@@ -916,8 +916,8 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         vol+= volT;
     }
 #ifdef _PAR
-    vol   = GlobalSum(vol);
-    MW_pr = GlobalSum(MW_pr);
+    vol   = ProcCL::GlobalSum(vol);
+    MW_pr = ProcCL::GlobalSum(MW_pr);
 #endif
     const double c_pr= MW_pr/vol;
     IF_MASTER
@@ -967,9 +967,9 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         L2_Dvel+= Quad3CL::Quad(Dvals)*absdet;
     }
 #ifdef _PAR
-    L2_pr   = GlobalSum(L2_pr);
-    L2_vel  = GlobalSum(L2_pr);
-    L2_Dvel = GlobalSum(L2_pr);
+    L2_pr   = ProcCL::GlobalSum(L2_pr);
+    L2_vel  = ProcCL::GlobalSum(L2_pr);
+    L2_Dvel = ProcCL::GlobalSum(L2_pr);
 #endif
     const double X_norm= std::sqrt(L2_pr + L2_vel + L2_Dvel);
     L2_pr= std::sqrt(L2_pr);
@@ -1041,8 +1041,8 @@ template <class Coeff>
         L2_div+= ( (div[0]*div[0]+div[1]*div[1]+div[2]*div[2]+div[3]*div[3])/120 + div[4]*div[4]*2./15. ) * absdet;
     }
 #ifdef _PAR
-    L2_div= GlobalSum(L2_div);
-    L1_div= GlobalSum(L1_div);
+    L2_div= ProcCL::GlobalSum(L2_div);
+    L1_div= ProcCL::GlobalSum(L1_div);
 #endif
     L2_div= std::sqrt(L2_div);
 
@@ -1119,7 +1119,7 @@ template <class Coeff>
     double loc_vel[6], global_vel[6];
     loc_vel[0]=L1_vel[0]; loc_vel[1]=L1_vel[1]; loc_vel[2]=L1_vel[2];
     loc_vel[3]=L2_vel[0]; loc_vel[4]=L2_vel[1]; loc_vel[5]=L2_vel[2];
-    GlobalSum(loc_vel, global_vel, 6, Drops_MasterC);
+    ProcCL::GlobalSum(loc_vel, global_vel, 6, Drops_MasterC);
     L1_vel[0]=global_vel[0]; L1_vel[1]=global_vel[1]; L1_vel[2]=global_vel[2];
     L2_vel[0]=global_vel[3]; L2_vel[1]=global_vel[4]; L2_vel[2]=global_vel[5];
 #endif
@@ -1149,8 +1149,8 @@ template <class Coeff>
         vol+= sit->GetVolume();
     }
 #ifdef _PAR
-    MW_pr= GlobalSum(MW_pr);
-    vol  = GlobalSum(vol);
+    MW_pr= ProcCL::GlobalSum(MW_pr);
+    vol  = ProcCL::GlobalSum(vol);
 #endif
     const double c_pr= MW_pr / vol;
     IF_MASTER
@@ -1171,8 +1171,8 @@ template <class Coeff>
     }
     size_t pr_size= lsgpr->Data.size();
 #ifdef _PAR
-    pr_size= GlobalSum(pr_size);
-    norm2  = GlobalSum(norm2);
+    pr_size= ProcCL::GlobalSum(pr_size);
+    norm2  = ProcCL::GlobalSum(norm2);
 #endif
     norm2= std::sqrt( norm2 / pr_size);
 
@@ -1201,10 +1201,10 @@ template <class Coeff>
         L1_pr+= sum1 * sit->GetVolume()*6.;
     }
 #ifdef _PAR
-    L2_pr  = GlobalSum(L2_pr);
-    L1_pr  = GlobalSum(L1_pr);
-    mindiff= GlobalMin(mindiff);
-    maxdiff= GlobalMax(maxdiff);
+    L2_pr  = ProcCL::GlobalSum(L2_pr);
+    L1_pr  = ProcCL::GlobalSum(L1_pr);
+    mindiff= ProcCL::GlobalMin(mindiff);
+    maxdiff= ProcCL::GlobalMax(maxdiff);
 #endif
     L2_pr= std::sqrt( L2_pr);
 

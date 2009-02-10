@@ -109,7 +109,7 @@ void CheckParMultiGrid(DROPS::ParMultiGridCL& pmg, int type, int proc=0)
     bool pmg_sane = pmg.IsSane(check),
          mg_sane  = pmg.GetMG().IsSane(check);
 
-    if (DROPS::Check(pmg_sane && mg_sane)){
+    if (DROPS::ProcCL::Check(pmg_sane && mg_sane)){
          if (me==proc) std::cout << "OK\n";
     }
     else{
@@ -228,7 +228,7 @@ bool UnMarkForGhostKill (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
         DROPS::ProcCL::Send(&done, 1, DROPS::ProcCL::MyRank()+1, 563738);
 
 
-    return DROPS::GlobalOr(done);
+    return DROPS::ProcCL::GlobalOr(done);
 }
 
 void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
@@ -381,19 +381,7 @@ using namespace DROPS;
 ****************************************************************************/
 int main(int argc, char* argv[])
 {
-/*
-	MetisPartionerCL PartionerTest;
-
-	PartMethod method = NoMig;
-	PartionerTest.ParPartition(method);
-
-
-
-
-
-	return 0 ;*/
-
-    DROPS::ProcCL Progs(&argc,&argv);
+    DROPS::ProcCL& Progs= DROPS::ProcCL::Instance(&argc,&argv);
     try
     {
         const char line[] = "----------------------------------------------------------------------------------";
@@ -533,7 +521,7 @@ int main(int argc, char* argv[])
                         if (ProcCL::IamMaster())
                             std::cerr << "UnMark for ghost tetra kill"<<std::endl;
                         killedghost=UnMarkForGhostKill(mg, mg.GetLastLevel());
-                        killedghost=GlobalOr(killedghost);
+                        killedghost= ProcCL::GlobalOr(killedghost);
                         if (ProcCL::IamMaster() && killedghost)
                             std::cout << "A ghost tetra will be killed"<<std::endl;
                         break;

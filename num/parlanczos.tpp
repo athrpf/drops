@@ -100,7 +100,7 @@ bool ParLanczos3CL<Mat,Vec>::Step()
     val_loc_[0] = ex_->DotAcc(u_acc_, w_[1]);       // this will be alpha_next_
     val_loc_[1] = dot(v_acc_[1],w_[1]);             // = xi := (\hat{v}_{j+1},\hat{w}_{j+1})
     // now do global reduce on two doubles
-    GlobalSum(val_loc_,val_glob_,2);
+    ProcCL::GlobalSum(val_loc_,val_glob_,2);
 
     if (!init_)         // if not inited, now the algorithm is init
         init_=true;
@@ -168,7 +168,7 @@ void ParLanczos2CL<Mat,Vec,ExCL>::Init(const Mat& A, const Vec &v0, const Vec &w
     Av_= (*A_)*v_acc_;
     val_loc_[2] = dot(v_,w_acc_);
     val_loc_[3] = dot(Av_,w_acc_);
-    GlobalSum(val_loc_, val_glob_, 4);
+    ProcCL::GlobalSum(val_loc_, val_glob_, 4);
     rho_   = val_glob_[0];
     xi_    = val_glob_[1];
     delta_ = val_glob_[2];
@@ -232,7 +232,7 @@ bool ParLanczos2CL<Mat,Vec,ExCL>::Step()
     val_loc_[1] = ex_->DotAcc(w_acc_,w_);
     val_loc_[2] = dot(v_,w_acc_);
     val_loc_[3] = dot(Av_,w_acc_);
-    GlobalSum(val_loc_, val_glob_, 4);
+    ProcCL::GlobalSum(val_loc_, val_glob_, 4);
 
     rho_   = val_glob_[0];
     xi_    = val_glob_[1];
@@ -319,7 +319,7 @@ void ParPreLanczos2CL<Mat,Vec,PC,ExCL>::Init(const Mat& A, const Vec &v0, const 
     pc_.Apply((*A_), Av_ ,(*A_)*v_acc_);
     val_loc_[2] = dot(v_,w_acc_);
     val_loc_[3] = dot(Av_,w_acc_);
-    GlobalSum(val_loc_, val_glob_, 4);
+    ProcCL::GlobalSum(val_loc_, val_glob_, 4);
     rho_   = val_glob_[0];
     xi_    = val_glob_[1];
     delta_ = val_glob_[2];
@@ -390,7 +390,7 @@ bool ParPreLanczos2CL<Mat,Vec,PC,ExCL>::Step()
     val_loc_[1] = ex_->DotAcc(w_acc_,w_);
     val_loc_[2] = dot(v_,w_acc_);
     val_loc_[3] = dot(Av_,w_acc_);
-    GlobalSum(val_loc_, val_glob_, 4);
+    ProcCL::GlobalSum(val_loc_, val_glob_, 4);
 
     rho_   = val_glob_[0];
     xi_    = val_glob_[1];

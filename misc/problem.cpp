@@ -200,7 +200,7 @@ IdxT IdxDescCL::GetExclusiveNumUnknowns(const MultiGridCL &mg, int lvl) const
 /** Get global number over all procs of unknowns. Each unknown is just count one time*/
 IdxT IdxDescCL::GetGlobalNumUnknowns(const MultiGridCL &mg, int lvl) const
 {
-    return GlobalSum(GetExclusiveNumUnknowns(mg,lvl));
+    return ProcCL::GlobalSum(GetExclusiveNumUnknowns(mg,lvl));
 }
 #endif
 
@@ -527,7 +527,7 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
     information[3]= ci; information[4]= Xidx_.size();
 #ifdef _PAR
     std::valarray<IdxT> local_information= information;
-    GlobalSum(Addr(local_information), Addr(information), 5, ProcCL::Master());
+    ProcCL::GlobalSum(Addr(local_information), Addr(information), 5, ProcCL::Master());
 #endif
     IF_MASTER
       std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " << information[4]

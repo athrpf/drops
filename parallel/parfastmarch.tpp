@@ -573,7 +573,7 @@ template<typename ExCL>
 {
     double myVal=(locDoF!=NoIdx ? v_.Data[locDoF] : 1e99);
     double *globVal = new double[ProcCL::Size()];
-    Gather(myVal, globVal,-1);
+    ProcCL::Gather(myVal, globVal,-1);
 
     int minproc=-1;
     double minVal=1e99;

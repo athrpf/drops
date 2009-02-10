@@ -249,7 +249,7 @@ template<typename Coeff>
 
             adap.UpdateTriang( lset);
 
-            if (C.checkMG && !Check( CheckParMultiGrid(adap.GetPMG())) )
+            if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adap.GetPMG())) )
                 throw DROPSErrCL("MultiGrid is incorrect!");
 
             if (adap.WasModified() )
@@ -382,7 +382,7 @@ template<class Coeff>
 
     IFInfo.Init(infofile);
 
-    if (C.checkMG && !Check( CheckParMultiGrid(pmg)) )
+    if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(pmg)) )
          throw DROPSErrCL("MultiGrid is incorrect!");
 
     LevelsetRepairCL lsetrepair( lset);
@@ -451,7 +451,7 @@ template<class Coeff>
 
 int main (int argc, char** argv)
 {
-  DROPS::ProcCL Proc(&argc, &argv);
+  DROPS::ProcCL::Instance(&argc, &argv);
   try
   {
     if (argc!=2)

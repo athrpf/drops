@@ -403,8 +403,8 @@ Uint LoadBalHandlerCL::GetMovedMultiNodes() const{
 double LoadBalHandlerCL::GetTetraBalance() const
 {
     size_t mytetras = mg_->GetTetras().size();
-    size_t mintetras= GlobalMin(mytetras),
-           maxtetras= GlobalMax(mytetras);
+    size_t mintetras= ProcCL::GlobalMin(mytetras),
+           maxtetras= ProcCL::GlobalMax(mytetras);
     return static_cast<double>(maxtetras)/(static_cast<double>(mintetras));
 }
 

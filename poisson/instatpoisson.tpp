@@ -428,9 +428,9 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   int Lsize = lsg.Data.size();
 #ifdef _PAR
   Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(_MG);
-  L2      = GlobalSum(L2, Drops_MasterC);
-  norm2   = GlobalSum(norm2, Drops_MasterC);
-  maxdiff = GlobalMax(maxdiff, Drops_MasterC);
+  L2      = ProcCL::GlobalSum(L2, Drops_MasterC);
+  norm2   = ProcCL::GlobalSum(norm2, Drops_MasterC);
+  maxdiff = ProcCL::GlobalMax(maxdiff, Drops_MasterC);
 #endif
   IF_MASTER
     std::cout << "  2-Norm= " << std::sqrt(norm2)

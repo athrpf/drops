@@ -148,7 +148,7 @@ double ParTimerCL::GetMaxTime()
 /** If maximum over all procs is not computed so far, comput the maximum of times over all procs */
 {
     if (!calcMax_){
-        maxduration_ = GlobalMax(base_::GetTime());
+        maxduration_ = ProcCL::GlobalMax(base_::GetTime());
         calcMax_=true;
     }
     return maxduration_;

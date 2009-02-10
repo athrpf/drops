@@ -20,8 +20,9 @@ namespace DROPS
 /***************************************************************************
 *   P R O C - C L A S S                                                    *
 ***************************************************************************/
-Uint ProcCL::_my_rank=0;
-Uint ProcCL::_size   =0;                // if _size==0, then this proc has not created a ProcCL
+Uint    ProcCL::my_rank_=0;
+Uint    ProcCL::size_   =0;             // if _size==0, then this proc has not created a ProcCL
+ProcCL* ProcCL::instance_=0;            // only one instance of ProcCL may exist (Singleton-Pattern)
 
 #ifdef _MPICXX_INTERFACE
     const ProcCL::CommunicatorT& ProcCL::Communicator_ = MPI::COMM_WORLD;
@@ -54,14 +55,14 @@ ProcCL::ProcCL(int* argc, char*** argv)
     Assert(_size==0, DROPSErrCL(" "), DebugParallelC);
 
     DDD_Init(argc, argv);               // DDD Initialisieren und die Informationen beziehen
-    _my_rank = DDD_InfoMe();
-    _size    = DDD_InfoProcs();
+    my_rank_ = DDD_InfoMe();
+    size_    = DDD_InfoProcs();
 }
 
 ProcCL::~ProcCL()
 {
     DDD_Exit();             // Logoff from DDD
-    _size=0;                // Now, this class can be initialized again...
+    size_=0;                // Now, this class can be initialized again...
 }
 
 void ProcCL::Prompt(int me)

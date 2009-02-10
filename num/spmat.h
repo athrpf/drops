@@ -340,7 +340,7 @@ public:
     size_t num_cols     () const { return _cols; }
     size_t num_nonzeros () const { return _val.size(); }
 #ifdef _PAR
-    size_t num_acc_nonzeros() const { return GlobalSum(num_nonzeros()); }
+    size_t num_acc_nonzeros() const { return ProcCL::GlobalSum(num_nonzeros()); }
 #endif
 
     size_t row_beg (size_t i) const { return _rowbeg[i]; }

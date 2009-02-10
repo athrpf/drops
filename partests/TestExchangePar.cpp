@@ -84,7 +84,7 @@ bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg, ostream& os)
     bool pmg_sane = pmg.IsSane(os),
     mg_sane  = pmg.GetMG().IsSane(os);
     time.Stop(); Times.AddTime(CheckMG,time.GetMaxTime());
-    return DROPS::Check(pmg_sane && mg_sane);
+    return DROPS::ProcCL::Check(pmg_sane && mg_sane);
 }
 
 void PrintExchange(const DROPS::ExchangeCL& ex)
@@ -381,7 +381,7 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
             }
         }
     }
-    return Check(check);
+    return ProcCL::Check(check);
 }
 
 /****************************************************************************
@@ -621,19 +621,19 @@ bool TestSysnumComputation(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2
 
     bool MappingCheck=true;
     for (int p=0; p<ProcCL::Size(); ++p)
-        MappingCheck = MappingCheck &&  Check(CheckIdxMapping(mg, idx1, ex1, p));
+        MappingCheck = MappingCheck &&  ProcCL::Check(CheckIdxMapping(mg, idx1, ex1, p));
 
     if (!MappingCheck)
         throw DROPSErrCL("Sysnumcomputation for Index 1 is not correct!");
 
     for (int p=0; p<ProcCL::Size(); ++p)
-        MappingCheck = MappingCheck &&  Check(CheckIdxMapping(mg, idx2, ex2, p));
+        MappingCheck = MappingCheck &&  ProcCL::Check(CheckIdxMapping(mg, idx2, ex2, p));
 
     if (!MappingCheck)
         throw DROPSErrCL("Sysnumcomputation for Index 2 is not correct!");
 
     for (int p=0; p<ProcCL::Size(); ++p)
-        MappingCheck = MappingCheck &&  Check(CheckIdxMapping(mg, xidx, exXfem, p));
+        MappingCheck = MappingCheck &&  ProcCL::Check(CheckIdxMapping(mg, xidx, exXfem, p));
 
     if (!MappingCheck)
         throw DROPSErrCL("Sysnumcomputation for XFEM-Index is not correct!");
@@ -652,7 +652,7 @@ bool TestEquality(const ExchangeCL& ex1, const ExchangeCL& ex2, const ExchangeBl
     bool isequal1 = ex1.IsEqual(ExBlock.GetEx(0));
     bool isequal2 = ex2.IsEqual(ExBlock.GetEx(1));
 
-    if (Check(isequal1 && isequal2)){
+    if (ProcCL::Check(isequal1 && isequal2)){
         if (ProcCL::IamMaster())
             std::cout << "    --> OK !" << std::endl;
     }
@@ -758,7 +758,7 @@ void TestInnerProducts(const ExchangeCL& ex1, const ExchangeCL& ex2, const Excha
     dist[1]= norm_sq( VectorCL( x12_acc_old-xB_acc));
     dist[2]= norm_sq( VectorCL( x12_acc_new-xB_acc));
 
-    GlobalSum(Addr(dist), Addr(global_dist), 3, 0);
+    ProcCL::GlobalSum(Addr(dist), Addr(global_dist), 3, 0);
 
     if (ProcCL::IamMaster()){
         std::sqrt(global_dist);
@@ -885,7 +885,7 @@ void Strategy(ParMultiGridCL &pmg)
 
     Ulint sizeinfo[3], global_info[3];
     sizeinfo[0] = idx1.NumUnknowns(); sizeinfo[1] = idx2.NumUnknowns(), sizeinfo[2]= xfemidx.NumUnknowns();
-    GlobalSum(sizeinfo,global_info, 3, ProcCL::Master());
+    ProcCL::GlobalSum(sizeinfo,global_info, 3, ProcCL::Master());
     if (ProcCL::IamMaster())
         std::cout << "   - Index1: " <<global_info[0]<<", Index2: " <<global_info[1]<<", XfemIdx: " <<global_info[2]<< " Unbekannte (akkumuliert)\n";
 
@@ -921,7 +921,7 @@ void Strategy(ParMultiGridCL &pmg)
 
 int main (int argc, char** argv)
 {
-    DROPS::ProcCL Proc(&argc, &argv);
+    DROPS::ProcCL::Instance(&argc, &argv);
     try
     {
         SetDescriber();

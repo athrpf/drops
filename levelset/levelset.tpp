@@ -88,12 +88,12 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     // Globalization of  data
     // -----
     const Point3DCL local_bary(bary), local_vel(vel), local_minCoord(minCoord), local_maxCoord(maxCoord);
-    maxGradPhi= GlobalMax(maxGradPhi);
-    Volume    = GlobalSum(Volume);
-    GlobalSum(Addr(local_bary), Addr(bary), 3);
-    GlobalSum(Addr(local_vel), Addr(vel), 3);
-    GlobalMin(Addr(local_minCoord), Addr(minCoord), 3);
-    GlobalMax(Addr(local_maxCoord), Addr(maxCoord), 3);
+    maxGradPhi= ProcCL::GlobalMax(maxGradPhi);
+    Volume    = ProcCL::GlobalSum(Volume);
+    ProcCL::GlobalSum(Addr(local_bary), Addr(bary), 3);
+    ProcCL::GlobalSum(Addr(local_vel), Addr(vel), 3);
+    ProcCL::GlobalMin(Addr(local_minCoord), Addr(minCoord), 3);
+    ProcCL::GlobalMax(Addr(local_maxCoord), Addr(maxCoord), 3);
 #endif
 
     bary/= Volume;
@@ -119,7 +119,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 #ifndef _PAR
     __UNUSED__ const IdxT allnum_unks= num_unks;
 #else
-    __UNUSED__ const IdxT allnum_unks= GlobalSum(num_unks);
+    __UNUSED__ const IdxT allnum_unks= DROPS::ProcCL::GlobalSum(num_unks);
 #endif
     Comment("entering Levelset::SetupSystem: " << allnum_unks << " levelset unknowns.\n", DebugDiscretizeC);
 

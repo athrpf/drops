@@ -79,7 +79,7 @@ bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     mg_sane  = pmg.GetMG().IsSane(check);
 
     check.close();
-    bool sane=DROPS::Check(pmg_sane && mg_sane);
+    bool sane=DROPS::ProcCL::Check(pmg_sane && mg_sane);
     if (!sane)
         throw DROPS::DROPSErrCL("CheckParMultiGrid: Error within multigrid!");
     return sane;
@@ -285,7 +285,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
 
 int main (int argc, char** argv)
 {
-    DROPS::ProcCL Proc(&argc, &argv);
+    DROPS::ProcCL::Instance(&argc, &argv);
     try
     {
         SetDescriber();

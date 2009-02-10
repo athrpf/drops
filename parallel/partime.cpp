@@ -26,7 +26,7 @@ void ParTimerCL::PrintAllTime(std::ostream &os, int proc)
     durations_[ProcCL::MyRank()] = myTime;                                                  // and store this time in the array of durations
 
     if (!calcDur_)
-        Gather(myTime, Addr(durations_),  proc);                                            // Proc "proc" collects all times
+        ProcCL::Gather(myTime, Addr(durations_),  proc);                                    // Proc "proc" collects all times
 
     if (ProcCL::MyRank()==proc)                                                             // only "proc" should print the results onto "os"
         os << "ParTimerCL gets following results:" << std::endl;

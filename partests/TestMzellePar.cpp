@@ -67,7 +67,7 @@ void CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     bool pmg_sane = pmg.IsSane(check),
     mg_sane  = pmg.GetMG().IsSane(check);
     check.close();
-    if( DROPS::Check(pmg_sane && mg_sane) ){
+    if( DROPS::ProcCL::Check(pmg_sane && mg_sane) ){
         IF_MASTER
                 std::cerr << " As far as I can tell, the multigrid is sane\n";
     }
@@ -82,9 +82,7 @@ void CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
 // * Display statistics about unknowns                          *
 // **************************************************************
 using DROPS::Ulint;
-using DROPS::GlobalSum;
-using DROPS::GlobalMax;
-using DROPS::GlobalMin;
+using DROPS::ProcCL;
 void DisplayUnks(const DROPS::MLIdxDescCL* vidx, const DROPS::MLIdxDescCL* pidx, const DROPS::IdxDescCL* lidx,
                  const DROPS::ExchangeCL& ExV, const DROPS::ExchangeCL& ExP, const DROPS::ExchangeCL& ExL,
                  const DROPS::MultiGridCL& MG)
@@ -100,14 +98,14 @@ void DisplayUnks(const DROPS::MLIdxDescCL* vidx, const DROPS::MLIdxDescCL* pidx,
     Ulint GLsize     = lidx->GetGlobalNumUnknowns(MG);
 
     // accumulated size of unknwons
-    Ulint Psize_acc = GlobalSum(Psize);
-    Ulint Vsize_acc = GlobalSum(Vsize);
-    Ulint Lsize_acc = GlobalSum(Lsize);
+    Ulint Psize_acc = ProcCL::GlobalSum(Psize);
+    Ulint Vsize_acc = ProcCL::GlobalSum(Vsize);
+    Ulint Lsize_acc = ProcCL::GlobalSum(Lsize);
 
     // maximal and minimal number of unknowns
-    Ulint P_min= GlobalMin(Psize); Ulint P_max= GlobalMax(Psize);
-    Ulint V_min= GlobalMin(Vsize); Ulint V_max= GlobalMax(Vsize);
-    Ulint L_min= GlobalMin(Lsize); Ulint L_max= GlobalMax(Lsize);
+    Ulint P_min= ProcCL::GlobalMin(Psize); Ulint P_max= ProcCL::GlobalMax(Psize);
+    Ulint V_min= ProcCL::GlobalMin(Vsize); Ulint V_max= ProcCL::GlobalMax(Vsize);
+    Ulint L_min= ProcCL::GlobalMin(Lsize); Ulint L_max= ProcCL::GlobalMax(Lsize);
 
     // ratios between maximal number of unknowns/proc and minimal number
     double P_ratio   = (double)P_max/(double)P_min;
@@ -115,9 +113,9 @@ void DisplayUnks(const DROPS::MLIdxDescCL* vidx, const DROPS::MLIdxDescCL* pidx,
     double L_ratio   = (double)L_max/(double)L_min;
 
     // number on boundaries
-    Ulint P_accmax=GlobalMax(ExP.AccDistIndex.size()), P_accmin=GlobalMin(ExP.AccDistIndex.size());
-    Ulint V_accmax=GlobalMax(ExV.AccDistIndex.size()), V_accmin=GlobalMin(ExV.AccDistIndex.size());
-    Ulint L_accmax=GlobalMax(ExL.AccDistIndex.size()), L_accmin=GlobalMin(ExL.AccDistIndex.size());
+    Ulint P_accmax= ProcCL::GlobalMax(ExP.AccDistIndex.size()), P_accmin= ProcCL::GlobalMin(ExP.AccDistIndex.size());
+    Ulint V_accmax= ProcCL::GlobalMax(ExV.AccDistIndex.size()), V_accmin= ProcCL::GlobalMin(ExV.AccDistIndex.size());
+    Ulint L_accmax= ProcCL::GlobalMax(ExL.AccDistIndex.size()), L_accmin= ProcCL::GlobalMin(ExL.AccDistIndex.size());
 
     // ratio of these unknowns
     double P_accratio= (double)P_accmax / (double)P_accmin;
@@ -525,8 +523,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     else {} // No other method yet implemented
     ensight.CaseEnd();
 
-    double min= GlobalMin(Stokes.p.Data.min()),
-           max= GlobalMax(Stokes.p.Data.max());
+    double min= ProcCL::GlobalMin(Stokes.p.Data.min()),
+           max= ProcCL::GlobalMax(Stokes.p.Data.max());
     if (ProcCL::IamMaster())
         std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
 
@@ -566,7 +564,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
 int main (int argc, char** argv)
 {
   // Init parallel enviroment before using try, so error handling works correct
-  DROPS::ProcCL Proc(&argc, &argv);
+  DROPS::ProcCL::Instance(&argc, &argv);
   try
   {
     DROPS::ParTimerCL alltime, time;
@@ -672,9 +670,9 @@ int main (int argc, char** argv)
         numFacesAllProc   = new DROPS::Uint[DROPS::ProcCL::Size()];
         numDistFaceAllProc= new DROPS::Uint[DROPS::ProcCL::Size()];
     }
-    DROPS::Gather(mg.GetNumTriangTetra(),      numTetrasAllProc,   DROPS::ProcCL::Master());
-    DROPS::Gather(mg.GetNumTriangFace(),       numFacesAllProc,    DROPS::ProcCL::Master());
-    DROPS::Gather(mg.GetNumDistributedFaces(), numDistFaceAllProc, DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumTriangTetra(),      numTetrasAllProc,   DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumTriangFace(),       numFacesAllProc,    DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumDistributedFaces(), numDistFaceAllProc, DROPS::ProcCL::Master());
 
     if (DROPS::ProcCL::IamMaster()){
         double ratioTetra       =  (double)*std::max_element(numTetrasAllProc,   numTetrasAllProc+DROPS::ProcCL::Size())

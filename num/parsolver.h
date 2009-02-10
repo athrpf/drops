@@ -470,7 +470,7 @@ bool ParCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, int& max_ite
     for (int i=1; i<=max_iter; ++i)
     {
         const Vec    v      = A*p_acc;
-        const double gamma  = GlobalSum(dot( v, p_acc));
+        const double gamma  = ProcCL::GlobalSum(dot( v, p_acc));
         const double lambda = alpha/gamma;
         double       beta   = alpha;
 
@@ -539,7 +539,7 @@ bool ParPCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX,
     {
         M.Apply(A, z_acc, r);
         if (M.RetAcc())
-            rho = GlobalSum(dot(z_acc,r));
+            rho = ProcCL::GlobalSum(dot(z_acc,r));
         else
             rho= ExX.ParDotAcc( z_acc, r);
 
@@ -549,7 +549,7 @@ bool ParPCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX,
             p_acc = z_acc + (rho/rho_1)*p_acc;
 
         q= A*p_acc;
-        const double lambda = GlobalSum(dot(p_acc, q));
+        const double lambda = ProcCL::GlobalSum(dot(p_acc, q));
         const double alpha  = rho/lambda;
 
         x_acc += alpha * p_acc;
@@ -685,7 +685,7 @@ void StandardGrammSchmidt(DMatrixCL<double>& H,
         throw DROPSErrCL("StandardGrammSchmidt: Cannot do Gramm Schmidt on that kind of vectors!");
 
     // Syncpoint!
-    GlobalSum(Addr(tmpHCol), H.GetCol(i), i+1);
+    ProcCL::GlobalSum(Addr(tmpHCol), H.GetCol(i), i+1);
     for (int k=0; k<=i; ++k)
         w -= H(k,i)*v[k];
 }
@@ -1168,7 +1168,7 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
         dots[0]= ExX.LocDot(    v, false, r0hat_acc, true, true, &v_acc);
         dots[1]= ExX.LocNorm_sq(r_acc, true, true);
 
-        GlobalSum(Addr(dots), Addr(glob_dots), 2);
+        ProcCL::GlobalSum(Addr(dots), Addr(glob_dots), 2);
 
         resid = std::sqrt(glob_dots[1])/normb;
         if (resid<tol){
@@ -1207,7 +1207,7 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
         dots[2]= ExX.LocAccDot(r0hat_acc, s_acc);
         dots[3]= ExX.LocDot(t, false, r0hat_acc, true, true, &t_acc);
 
-        GlobalSum(Addr(dots), Addr(glob_dots), 4);
+        ProcCL::GlobalSum(Addr(dots), Addr(glob_dots), 4);
 
         if (glob_dots[1]==0.)
         {
@@ -1279,7 +1279,7 @@ bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon&
         // Calc of (r,Ap) / (Ap,Ap)
         gamma_loc[0] = ExX.DotAcc(Ap_acc[last_idx], Ap[last_idx]);  // (Ap,Ap) and accumulation of Ap
         gamma_loc[1] = dot(r_acc, Ap[last_idx]);                    // (r,Ap)
-        GlobalSum(Addr(gamma_loc), Addr(gamma), 2);
+        DROPS::ProcCL::GlobalSum(Addr(gamma_loc), Addr(gamma), 2);
         const double alpha = gamma[1] / gamma[0];
 
         // update of x and r
@@ -1297,7 +1297,7 @@ bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon&
 
         a_loc[k] = dot(z_acc,r_acc);                // calc of the residual
 
-        GlobalSum(Addr(a_loc), Addr(a), k+1);
+        ProcCL::GlobalSum(Addr(a_loc), Addr(a), k+1);
 
         if (a[k]<0)
             std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in PGCR because of accumulation!" << std::endl;
@@ -1396,7 +1396,7 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
         // Calc of (r,Ap) / (Ap,Ap)
         gamma_loc[0]= ExX.LocNorm_sq( Ap[last_idx], false, true, &Ap_acc[last_idx]);
         gamma_loc[1]= ExX.LocDot( r_acc, true, Ap_acc[last_idx], true, true);
-        GlobalSum(Addr(gamma_loc), Addr(gamma), 2);
+        ProcCL::GlobalSum(Addr(gamma_loc), Addr(gamma), 2);
         const double alpha = gamma[1] / gamma[0];
 
         // update of x and r
@@ -1414,7 +1414,7 @@ bool ParModAccurPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Pr
             a_loc[k]= ExX.LocDot( y_acc, true, Ap_acc[k], true, true);
         a_loc[k]= ExX.LocDot( z_acc, true, r_acc, true, true);  // calc of the residual
 
-        GlobalSum(Addr(a_loc), Addr(a), k+1);
+        ProcCL::GlobalSum(Addr(a_loc), Addr(a), k+1);
 
         resid = std::sqrt(a[k]) / normb;
         if (os)

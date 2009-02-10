@@ -22,54 +22,36 @@
 namespace DROPS
 {
 
+/***************************************************************************
+*   C A S T I N G   O F   D D D - P O I N T E R S                          *
+***************************************************************************/
 template<typename T> T ddd_cast (DDD_OBJ p)
   { return reinterpret_cast<T>(p); }
 
 template<typename T> DDD_OBJ ddd_cast (T* p)
   { return reinterpret_cast<DDD_OBJ>(p); }
 
+
 /***************************************************************************
-*   D E C L A R A C T I O N   O F   F U N C T I O N S                      *
+*   G L O B A L - O P E R A T I O N S                                      *
 ***************************************************************************/
 
-/// \brief Get global sum
-template<typename T>
-  inline T GlobalSum(T, int proc=-1);
-
-/// \brief Get global sum over a vector
-template<typename T>
-  inline void GlobalSum(const T*, T*, int cnt, int proc=-1);
-
-/// \brief Get global maximum
-template<typename T>
-  inline T GlobalMax(T, int proc=-1);
-
-/// \brief Get global maximum over a vector
-template<typename T>
-  inline void GlobalMax(const T*, T*, int cnt, int proc=-1);
-
-/// \brief Get global minimum
-template<typename T>
-  inline T GlobalMin(T, int proc=-1);
-
-/// \brief Get global minimum over a vector
-template<typename T>
-  inline void GlobalMin(const T*, T*, int cnt, int proc=-1);
-
-/// \brief Collect one number from all procs
-template<typename T>
-  inline void Gather(T, T*, int proc);
-
-/// \brief Collect multiple numbers from all procs
-template<typename T>
-  inline void Gather(const T*, T*, int cnt, int proc);
-
-/// \brief Check if a boolean value is true on all procs
-inline bool Check(int, int proc=-1);
-
-/// \brief Check if a boolean value is true on at least one proc
-inline bool GlobalOr(int, int proc=-1);
-
+/// \name MPI-Operations
+//@{
+#ifdef _MPICXX_INTERFACE
+#  define MPI_MAX_Operation  MPI::MAX
+#  define MPI_MIN_Operation  MPI::MIN
+#  define MPI_SUM_Operation  MPI::SUM
+#  define MPI_LAND_Operation MPI::LAND
+#  define MPI_LOR_Operation  MPI::LOR
+#else
+#  define MPI_MAX_Operation  MPI_MAX
+#  define MPI_MIN_Operation  MPI_MIN
+#  define MPI_SUM_Operation  MPI_SUM
+#  define MPI_LAND_Operation MPI_LAND
+#  define MPI_LOR_Operation  MPI_LOR
+#endif
+//@}
 
 /***************************************************************************
 *   P R O C - C L A S S                                                    *
@@ -96,45 +78,61 @@ class ProcCL
     typedef MPI_Aint        AintT;              ///< type of addresses
 #endif
 
-    template<typename> struct MPI_TT;           ///< Traits to determine the corresponding MPI_Datatype 
+    template<typename> struct MPI_TT;           ///< Traits to determine the corresponding MPI_Datatype
                                                 /// constant for a given type.
     static const DatatypeT  NullDataType;       ///< MPI-Datatype, which is not set
 
   private:
-    static Uint _my_rank;                       // Which Id do I have?
-    static Uint _size;                          // How many are out there?
+    static Uint my_rank_;                       // Which Id do I have?
+    static Uint size_;                          // How many are out there?
     static const CommunicatorT& Communicator_;  // communicator (=MPI_COMM_WORLD, MPI::COMM_WORLD)
 
-  public:
+    /// \name helper functions for global operations
+    //@{
+      /// \brief Global operation with one argument
+    template <typename T>
+    static inline T GlobalOp(const T&, int, const ProcCL::OperationT&);
+      /// \brief Global operation with multiple argument
+    template <typename T>
+    static inline void GlobalOp(const T*, T*, int, int, const ProcCL::OperationT&);
+      /// \brief Global operation a valarray as argument
+    template <typename T>
+    static inline std::valarray<T> GlobalOp(const std::valarray<T>&, int, const ProcCL::OperationT&);
+    //@}
+
+    static ProcCL* instance_;                   ///< only one instance of ProcCL may exist (Singleton-Pattern)
     ProcCL(int*, char***);                      ///< constructor
     ~ProcCL();                                  ///< destructor
+
+  public:
+      /// \brief Get a pointer to the ProcCL (Singleton-Pattern)
+    static ProcCL* InstancePtr(int* argc, char*** argv) { return instance_ ? instance_ : (instance_= new ProcCL(argc, argv)); }
+      /// \brief Get a reference to the ProcCL (Singleton-Pattern)
+    static ProcCL& Instance(int* argc, char*** argv)    { return *InstancePtr(argc, argv); }
       /// \brief Wait for an input of a proc
     static void Prompt(int);
       /// \brief Check if I am Master
-    static bool IamMaster() { return MyRank()==Drops_MasterC; }     // Drops_MasterC defined in utils.h
+    static bool IamMaster() { return my_rank_==Drops_MasterC; }     // Drops_MasterC defined in utils.h
       /// \brief Get rank of master processor
     static int  Master()    { return Drops_MasterC; }
       /// \brief Get used MPI communicator
     static const CommunicatorT& GetComm() { return Communicator_; }
-    
+      /// \brief check the rank, MPI has given to the calling proc
+    static int MyRank()     { return my_rank_; }
+      /// \brief check how many procs are used by this program
+    static int Size()       { return size_; }
+
     /// \name plain MPI-Calls with C++- or C-Interface of MPI
     //@{
-      /// \brief check the rank, MPI has given to the calling proc
-    static inline int MyRank();
-      /// \brief check how many procs are used by this program
-    static inline int Size();
       /// \brief MPI-Reduce-wrapper
     template <typename T>
     static inline void Reduce(const T*, T*, int, const OperationT&, int);
       /// \brief MPI-Allreduce-wrapper
     template <typename T>
     static inline void AllReduce(const T*, T*, int, const OperationT&);
-      /// \brief MPI-Gather-wrapper (both data-types are the same)
+      /// \brief MPI-Gather-wrapper or MPI-Allgather-wrapper if root<0 (both data-types are the same)
     template <typename T>
-    static inline void Gather(const T*, T*, int, int);
-      /// \brief MPI-Allgather-wrapper (both data-types are the same)
-    template <typename T>
-    static inline void AllGather(const T*, T*, int);
+    static inline void Gather(const T*, T*, int, int root);
       /// \brief MPI-Probe-wrapper
     static inline void Probe(int, int, StatusT&);
       /// \brief MPI-Get_count-wrapper
@@ -194,7 +192,7 @@ class ProcCL
       /// \brief MPI-Isend-wrapper with automatic generated datatype
     template <typename T>
     static inline RequestT Isend(const T*, int, int, int);
-    /// \name Specialized operations on vector classes
+    /// \name Specialized operations on vector-type classes
     //@{
     template <typename T>
     static inline RequestT Isend(const std::valarray<T>&, int, int);
@@ -209,15 +207,66 @@ class ProcCL
     //@}
     //@}
 
-    /// \name helper functions for global operations
+    /// \name Global operations with synchronization
     //@{
-      /// \brief Global operation with one argument
-    template <typename T>
-    static inline T GlobalOp(const T&, int, const ProcCL::OperationT&);
-      /// \brief Global operation with multiple argument
-    template <typename T>
-    static inline void GlobalOp(const T*, T*, int, int, const ProcCL::OperationT&);
+    /// \name Global sum
+    //@{
+    template<typename T>
+    static T GlobalSum(const T& myData, int proc=-1)
+        { return ProcCL::GlobalOp(myData, proc, MPI_SUM_Operation); }
+    template<typename T>
+    static void GlobalSum(const T* myData, T* allData, int cnt, int proc=-1)
+        { return ProcCL::GlobalOp(myData, allData, cnt, proc, MPI_SUM_Operation); }
+    template<typename T>
+    static  std::valarray<T> GlobalSum(const std::valarray<T>& myData, int proc=-1)
+        { return ProcCL::GlobalOp(myData, proc, MPI_SUM_Operation); }
     //@}
+    /// \name Global maximum
+    //@{
+    template<typename T>
+    static T GlobalMax(const T& myData, int proc=-1)
+        { return ProcCL::GlobalOp(myData, proc, MPI_MAX_Operation); }
+    template<typename T>
+    static void GlobalMax(const T* myData, T* allData, int cnt, int proc=-1)
+        { ProcCL::GlobalOp(myData, allData, cnt, proc, MPI_MAX_Operation); }
+    template<typename T>
+    static std::valarray<T> GlobalMax(const std::valarray<T>& myData, int proc=-1)
+        { return ProcCL::GlobalOp(myData, proc, MPI_MAX_Operation); }
+    //@}
+    /// \name Global minimum
+    //@{
+    template<typename T>
+    static T GlobalMin(const T& myData, int proc=-1)
+        { return ProcCL::GlobalOp(myData, proc, MPI_MIN_Operation); }
+    template<typename T>
+    static void GlobalMin(const T* myData, T* allData, int cnt, int proc=-1)
+        { return ProcCL::GlobalOp(myData, allData, cnt, proc, MPI_MIN_Operation); }
+    template<typename T>
+    static  std::valarray<T> GlobalMin(const std::valarray<T>& myData, int proc=-1)
+        { return ProcCL::GlobalOp(myData, proc, MPI_MIN_Operation); }
+    //@}
+    /// \brief Check if a boolean value is true on at least one proc
+    static bool GlobalOr(bool myVal, int proc=-1)
+        { return (bool)ProcCL::GlobalOp((int)myVal, proc, MPI_LOR_Operation); }
+    /// \brief Check if a boolean value is true on all procs
+    static bool Check(bool myVal, int proc=-1)
+        { return (bool)ProcCL::GlobalOp((int)myVal, proc, MPI_LAND_Operation); }
+    //@}
+
+    /// \name Gather operations
+    //@{
+    template<typename T>
+    static void Gather(T myData, T* allData, int proc)
+        { Gather(&myData, allData, 1, proc); }
+
+    template<typename T>
+    static std::valarray<T> Gather(const std::valarray<T>& myData, int proc) {
+        std::valarray<T> allData(Size()*myData.size());
+        Gather(Addr(myData), Addr(allData), myData.size(), proc);;
+        return allData;
+    }
+    //@}
+
 };
 
 template<> struct ProcCL::MPI_TT<int>

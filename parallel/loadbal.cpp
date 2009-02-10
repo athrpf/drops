@@ -438,7 +438,7 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     // calculate the vtxdist-Array
     vtxdist_ = new int[ProcCL::Size()+1];                       // parameter for parmetis
     IndexArray vtx_rcv= new int[ProcCL::Size()];                // recieve buffer for number of nodes on other procs
-    Gather( (int)myVerts_, vtx_rcv, -1);                        // communicate the number of nodes
+    ProcCL::Gather( (int)myVerts_, vtx_rcv, -1);                // communicate the number of nodes
 
     vtxdist_[0]= 0;                                             // proc 0 starts with node 0
     for (int i=0; i<DDD_InfoProcs(); ++i)
@@ -733,7 +733,7 @@ void LoadBalCL::Migrate()
         }
     }
 
-    movedMultiNodes_=GlobalSum(movedMultiNodes_);
+    movedMultiNodes_= ProcCL::GlobalSum(movedMultiNodes_);
 }
 
 
@@ -956,7 +956,7 @@ void LoadBalHandlerCL::DoMigration()
         if (ProcCL::IamMaster()) std::cout << "       --> "<<duration<<" sec\n";
     }
 
-    int allAdjacencies=GlobalSum(lb_->GetNumLocalAdjacencies());
+    int allAdjacencies= ProcCL::GlobalSum(lb_->GetNumLocalAdjacencies());
 
     if (debugMode_ && ProcCL::IamMaster()) std::cout << "  - Compute graph partitioning ... \n";
 

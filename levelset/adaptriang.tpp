@@ -85,7 +85,7 @@ template <class DistFctT>
         }
     }
 #ifdef _PAR
-    modified=GlobalOr(modified);
+    modified= ProcCL::GlobalOr(modified);
 #endif
     if (modified) {
         notify_pre_refine();

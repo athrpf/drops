@@ -77,7 +77,7 @@ bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     bool pmg_sane = pmg.IsSane(check),
     mg_sane  = pmg.GetMG().IsSane(check);
     check.close();
-    return DROPS::Check(pmg_sane && mg_sane);
+    return DROPS::ProcCL::Check(pmg_sane && mg_sane);
 }
 
 /// \brief Display number of unknowns
@@ -86,7 +86,7 @@ void DisplayNumUnknowns(const DROPS::MultiGridCL& MG, const DROPS::VecDescCL& x)
 ///   are counted multiple due to the overlapping of edges and vertices
 /// global unknowns: all unknowns are counted just once
 {
-    const DROPS::Ulint acc_num_unk = DROPS::GlobalSum(x.Data.size()),
+    const DROPS::Ulint acc_num_unk = DROPS::ProcCL::GlobalSum(x.Data.size()),
                        glo_num_unk = x.RowIdx->GetGlobalNumUnknowns(MG);
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
@@ -155,7 +155,7 @@ bool UnMarkForGhostKill (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
     if (ProcCL::MyRank()<ProcCL::Size()-1)
         ProcCL::Send(&done, 1, ProcCL::MyRank()+1, 563738);
 
-    return DROPS::GlobalOr(done);
+    return DROPS::ProcCL::GlobalOr(done);
 }
 
 
@@ -288,7 +288,7 @@ double CheckInterPol(const VecDescCL& vec, const MultiGridCL& mg, bool checkunks
 
     dist = edge_dist>vert_dist ? edge_dist : vert_dist;
 
-    return GlobalMax(dist);
+    return ProcCL::GlobalMax(dist);
 }
 
 typedef BndDataCL<double>    MyBoundaryCL;
@@ -595,7 +595,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
                     marked=UnMarkAround(mg, Point3DCL(), 0.2);
                 marked=true;
         }
-        marked=GlobalOr(marked);
+        marked= ProcCL::GlobalOr(marked);
         if (ProcCL::IamMaster() && marked)
             std::cerr << " At least on tetra has been marked!\n";
 
@@ -650,7 +650,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 
 int main (int argc, char** argv)
 {
-  DROPS::ProcCL Proc(&argc, &argv);
+  DROPS::ProcCL::Instance(&argc, &argv);
   try
   {
 

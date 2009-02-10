@@ -89,7 +89,7 @@ void CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     bool pmg_sane = pmg.IsSane(check),
     mg_sane  = pmg.GetMG().IsSane(check);
     check.close();
-    if( DROPS::Check(pmg_sane && mg_sane) ){
+    if( DROPS::ProcCL::Check(pmg_sane && mg_sane) ){
         IF_MASTER
           std::cerr << " As far as I can tell, the multigrid is sane\n";
     }
@@ -204,8 +204,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     c->SetIdx(pidx); p->SetIdx(pidx);
     A->SetIdx(vidx, vidx); B->SetIdx(pidx, vidx);
 
-    Ulint GPsize_acc = GlobalSum(p->Data.size());
-    Ulint GVsize_acc = GlobalSum(v->Data.size());
+    Ulint GPsize_acc = ProcCL::GlobalSum(p->Data.size());
+    Ulint GVsize_acc = ProcCL::GlobalSum(v->Data.size());
     Ulint GPsize     = pidx->GetGlobalNumUnknowns(MG);
     Ulint GVsize     = vidx->GetGlobalNumUnknowns(MG);
 
@@ -325,7 +325,7 @@ inline double dir_val0(const DROPS::Point2DCL& p) { return (1. - p[0]*p[0])*(1. 
 
 int main (int argc, char** argv)
 {
-    ProcCL Proc(&argc, &argv);
+    DROPS::ProcCL::Instance(&argc, &argv);
     try
     {
         SetDescriber();

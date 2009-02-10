@@ -715,7 +715,7 @@ double LevelsetP2CL::GetVolume( double translation) const
         }
     }
 #ifdef _PAR
-    Volume = GlobalSum(Volume);
+    Volume = ProcCL::GlobalSum(Volume);
 #endif
     return Volume;
 }
@@ -767,7 +767,7 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
 #else
     ParCGSolverCL cg(gm_.GetMaxIter(), gm_.GetTol(), idx);
     cg.Solve( C, SmPhi, M*Phi.Data);
-    __UNUSED__ const double inf_norm= GlobalMax(supnorm( SmPhi-Phi.Data));
+    __UNUSED__ const double inf_norm= ProcCL::GlobalMax(supnorm( SmPhi-Phi.Data));
 #endif
     Comment("||SmPhi - Phi||_oo = " <<inf_norm<< std::endl, DebugDiscretizeC);
 }
@@ -784,7 +784,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
 #ifndef _PAR
     __UNUSED__ const IdxT allnum_unks= num_unks;
 #else
-    __UNUSED__ const IdxT allnum_unks= GlobalSum(num_unks);
+    __UNUSED__ const IdxT allnum_unks= ProcCL::GlobalSum(num_unks);
 #endif
     Comment("entering Levelset::SetupSmoothSystem: " << allnum_unks << " levelset unknowns.\n", DebugDiscretizeC);
 

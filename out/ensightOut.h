@@ -638,7 +638,7 @@ void EnsightP2SolOutCL::putScalar( std::string fileName, const DiscScalT& v, dou
         if(pos!=vals->size())
             throw DROPSErrCL("EnsightP2SolOutCL::putScalar: Not enough data collected!");
 
-        Uint maxUnk=GlobalMax(_nodes,ProcCL::Master());
+        Uint maxUnk= ProcCL::GlobalMax(_nodes,ProcCL::Master());
 
         if (!ProcCL::IamMaster())
         {
@@ -781,7 +781,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
             if(pos!=vals->size())
                 throw DROPSErrCL("EnsightP2SolOutCL::putVector: Not enough data collected!");
 
-            Uint maxUnk=GlobalMax(3*_nodes, ProcCL::Master());
+            Uint maxUnk= ProcCL::GlobalMax(3*_nodes, ProcCL::Master());
 
             if (!ProcCL::IamMaster())
             {
@@ -906,7 +906,7 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
             if(pos!=vals->size())
                 throw DROPSErrCL("EnsightP2SolOutCL::putVector: Not enough data collected!");
 
-            Uint maxUnk=GlobalMax(3*_nodes, ProcCL::Master());
+            Uint maxUnk= ProcCL::GlobalMax(3*_nodes, ProcCL::Master());
 
             if (!ProcCL::IamMaster())
             {
