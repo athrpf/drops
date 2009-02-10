@@ -134,4 +134,24 @@ void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, c
     }
 }
 
+void SetupMassDiag_vecP2(const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const BndDataCL<Point3DCL>& bnd)
+{
+    M.resize( RowIdx.NumUnknowns());
+
+    const Uint lvl= RowIdx.TriangLevel();
+    LocalNumbP2CL Numb;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
+        const double absdet= sit->GetVolume()*6.;
+        Numb.assign( *sit, RowIdx, bnd);
+        for(int i=0; i<10; ++i)
+            if (Numb.WithUnknowns( i)) {
+            	const double contrib= P2DiscCL::GetMass( i, i)*absdet;
+                M[Numb.num[i]  ]+= contrib;
+                M[Numb.num[i]+1]+= contrib;
+                M[Numb.num[i]+2]+= contrib;
+            }
+    }
+}
+
 } // end of namespace DROPS

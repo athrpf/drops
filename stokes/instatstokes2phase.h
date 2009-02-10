@@ -44,6 +44,10 @@ void SetupMassDiag_P1 (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx,
 void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const VecDescCL& lset,
                         const BndDataCL<>& bnd= BndDataCL<>( 0));
 
+/// \brief Compute the main diagonal of the unscaled \f$L_2(\Omega)\f$-mass-matrix.
+void SetupMassDiag_vecP2 (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx,
+                          const BndDataCL<Point3DCL>& bnd= BndDataCL<Point3DCL>( 0));
+
 
 /// problem class for instationary two-pase Stokes flow
 
