@@ -292,6 +292,11 @@ inline void ProcCL::Recv(std::valarray<T>& data, int source, int tag)
   { Recv(Addr(data), data.size(), source, tag); }
 
 template <typename T>
+inline ProcCL::RequestT ProcCL::Irecv(std::valarray<T>& data, int source, int tag)
+  /// as MPI-datatype "MPI_TT<T>::dtype" is used
+  { return Irecv(Addr(data), data.size(), source, tag); }
+
+template <typename T>
   inline void ProcCL::Bcast(std::valarray<T>& vals, int root)
   { Bcast(Addr(vals), vals.size(), root); }
 

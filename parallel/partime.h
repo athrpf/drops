@@ -50,6 +50,9 @@ class ParTimerCL : public TimerCL
     inline void   Start();                                      ///< start time measurement
     inline void   Stop();                                       ///< stop time measurement
     void PrintAllTime(std::ostream&, int proc=Drops_MasterC);   ///< Proc "proc" print the time of all procs onto the given output stream
+    /// \brief Measure bandwidth
+    static double TestBandwidth(std::ostream&, int messageSize=200, int numTest=5);
+
 };
 
 using std::string;

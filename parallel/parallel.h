@@ -203,6 +203,8 @@ class ProcCL
     template <typename T>
     static inline void Recv(std::valarray<T>&, int, int);
     template <typename T>
+    static inline RequestT Irecv(std::valarray<T>&, int, int);
+    template <typename T>
     static inline void Bcast(std::valarray<T>&, int);
     //@}
     //@}

@@ -45,6 +45,40 @@ void ParTimerCL::PrintAllTime(std::ostream &os, int proc)
     }
 }
 
+double ParTimerCL::TestBandwidth(std::ostream& os, int messageSize, int numTest)
+/** Measure the bandwidth between processor 0 and processor size-1.
+    \param messageSize Size of a single message in MB
+    \param numTest Number of messages to be send between two processors
+    \return bandwidth in GB/s
+ */
+{
+    if (ProcCL::IamMaster())
+        os << "Testing bandwidth ...\n";
+
+    std::valarray<byte> buffer('a', messageSize*1024*1024);
+    ParTimerCL timer;
+    timer.Start();
+    ProcCL::RequestT req;
+    if (ProcCL::IamMaster()){
+        for (int i=0; i<numTest; ++i){
+            req= ProcCL::Isend(buffer, ProcCL::Size()-1, 27);
+            ProcCL::Wait(req);
+        }
+    }
+    else if (ProcCL::MyRank()==ProcCL::Size()-1){
+        for (int i=0; i<numTest; ++i){
+            req= ProcCL::Irecv(buffer, ProcCL::Master(), 27);
+            ProcCL::Wait(req);
+        }
+    }
+    timer.Stop();
+    const double bandwidth= (messageSize/1024.)*numTest/timer.GetTime();
+    if (ProcCL::IamMaster())
+        os << " => Measured bandwidth " << bandwidth << " GB/s" << std::endl;
+
+    return bandwidth;
+}
+
 TimeStoreCL::TimeStoreCL(size_t times) :
     durations_(times,0), describer_(times," "), times_(times),
     overall_(0.), counter_(0), counter_descr_(" ")
