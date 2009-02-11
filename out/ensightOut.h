@@ -219,9 +219,9 @@ template <class DiscVectorT>
 class EnsightP2SolOutCL
 /** Specify in the constructor of this class, if the output should be in ASCII
     or binary format. In the parallel version of DROPS you can also specify if
-    only the master should write out the data (this is the default behaviour).
+    only the master should write out the data (this is the default behavior).
     If you do not choose this way, you have to transform the data by the
-    external programm "drops2ensight". */
+    external program "drops2ensight". */
 {
   private:
     const MultiGridCL* _MG;
@@ -301,7 +301,7 @@ class Ensight2PhaseOutCL : public EnsightP2SolOutCL
   private:
     std::string file_geo_, file_scl_, file_pr_, file_vel_;  // filenames
     bool adaptive_;                                         // changing geometry
-    bool timedep_;                                          // timedependend problem
+    bool timedep_;                                          // time-dependent problem
     const StokesT&   stokes_;                               // (Navier-)Stokes problem
     const LevelsetT& lset_;                                 // Levelset problem
 
@@ -313,14 +313,14 @@ class Ensight2PhaseOutCL : public EnsightP2SolOutCL
        \param mg Multigrid of the problem
        \param idx P2 index class
        \param stokes Stokes problem class
-       \param lset   Levelset prblem class
+       \param lset   Levelset problem class
        \param directory directory of ensight files
        \param caseName  name of the case file
        \param geomName name of the geometry
-       \param numsteps number of timesteps
+       \param numsteps number of time steps
        \param adaptive flag if the geometry changes over time
        \param binary    binary of ascii output
-       \param masterout in parallel flag if the youtput should be done by master
+       \param masterout (in parallel) flag if the output should be done by master
     */
 
     Ensight2PhaseOutCL( const MultiGridCL& mg, const IdxDescCL* idx,
@@ -347,7 +347,7 @@ class Ensight2PhaseOutCL : public EnsightP2SolOutCL
 
     ~Ensight2PhaseOutCL() { base_::CaseEnd(); }
 
-    /// \brief Write ensight files for a timestep
+    /// \brief Write ensight files for a time step
     void write(){
         double time   = timedep_  ? stokes_.t : -1.;
         double timeGeo= adaptive_ ? stokes_.t : -1.;
@@ -387,17 +387,10 @@ class ReadEnsightP2SolCL
 #endif
     }
 
-#ifndef _PAR
     template<class BndT>
     void ReadScalar( const std::string&, VecDescCL&, const BndT&) const;
     template<class BndT>
     void ReadVector( const std::string&, VecDescCL&, const BndT&) const;
-#else
-    template<class BndT>
-    void ReadScalar( const std::string&, VecDescCL&, const BndT&, const ExchangeCL&) const;
-    template<class BndT>
-    void ReadVector( const std::string&, VecDescCL&, const BndT&, const ExchangeCL&) const;
-#endif
 };
 
 
@@ -968,18 +961,14 @@ void EnsightP2SolOutCL::putVector( std::string fileName, const DiscVecT& v, doub
 
 // ========== ReadEnsightP2SolCL ==========
 
-#ifndef _PAR
 template <class BndT>
 void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, const BndT& bnd) const
-#else
-template <class BndT>
-void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, const BndT& bnd, const ExchangeCL& ex) const
-#endif
 {
     const Uint lvl= v.GetLevel(),
                idx= v.RowIdx->GetIdx();
     std::string fileName(file);
 #ifdef _PAR
+    const ExchangeCL& ex= v.RowIdx->GetEx();
     AppendProccode(fileName);
 #endif
 
@@ -1050,18 +1039,14 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
     CheckFile( is);
 }
 
-#ifndef _PAR
 template <class BndT>
 void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, const BndT& bnd) const
-#else
-template <class BndT>
-void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, const BndT& bnd, const ExchangeCL& ex) const
-#endif
 {
     const Uint lvl= v.GetLevel(),
                idx= v.RowIdx->GetIdx();
     std::string fileName(file);
 #ifdef _PAR
+    const ExchangeCL& ex= v.RowIdx->GetEx();
     AppendProccode(fileName);
 #endif
 
@@ -1148,7 +1133,7 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
         ex.Accumulate(v.Data);
 
         if (!is)
-            std::cerr << "["<<ProcCL::MyRank()<<"] Habe "<<count<<" Zahlen aus der Datei <"<<fileName<<"> gelesen"<<std::endl;
+            std::cerr << "["<<ProcCL::MyRank()<<"] Read "<<count<<" numbers from file <"<<fileName<<">"<<std::endl;
 #endif
     }
 
