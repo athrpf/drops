@@ -52,7 +52,7 @@ ProcCL* ProcCL::instance_=0;            // only one instance of ProcCL may exist
 
 ProcCL::ProcCL(int* argc, char*** argv)
 {
-    Assert(_size==0, DROPSErrCL(" "), DebugParallelC);
+    Assert(size_==0, DROPSErrCL("ProcCL instanciated multiple times"), DebugParallelC);
 
     DDD_Init(argc, argv);               // DDD Initialisieren und die Informationen beziehen
     my_rank_ = DDD_InfoMe();

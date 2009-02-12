@@ -164,7 +164,7 @@ template <typename T>
 template <typename T>
   inline void ProcCL::Gather(const T* myData, T* globalData, int size, int root)
 {
-    Assert(proc<Size(), DROPSErrCL("Gather: proc does not exists"), DebugParallelC);
+    Assert(root<Size(), DROPSErrCL("Gather: proc does not exists"), DebugParallelC);
     if (root<0)
         MPI_Allgather (const_cast<T*>(myData), size, ProcCL::MPI_TT<T>::dtype, globalData, size, ProcCL::MPI_TT<T>::dtype, Communicator_);
     else
