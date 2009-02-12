@@ -104,10 +104,6 @@ template<class Coeff>
     IFInfo.Update(lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t);
 
-    ExchangeCL& ExV = Stokes.vel_idx.GetEx();
-    ExchangeCL& ExP = Stokes.pr_idx.GetEx();
-    ExchangeCL& ExL = lset.idx.GetEx();
-
     switch (C.IniCond)
     {
       // stationary flow with/without drop
@@ -171,9 +167,9 @@ template<class Coeff>
       case 3:
         {
             ReadEnsightP2SolCL reader( Stokes.GetMG(), false);
-            reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel, ExV);
-            reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr,  ExP);
-            reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData()     ,  ExL);
+            reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+            reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+            reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
             if (ProcCL::IamMaster())
                 std::cerr << "- Initial Conditions successfull read\n";
         } break;

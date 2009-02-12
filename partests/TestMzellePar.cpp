@@ -393,9 +393,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
       case 3:
       {
         ReadEnsightP2SolCL reader( MG, false);
-        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel, ExV);
-        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr,  ExP);
-        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData()     ,  ExL);
+        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
       } break;
 
       // Use distance function
