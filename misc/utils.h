@@ -557,6 +557,34 @@ int CreateDirectory(std::string path);
 /// \brief Remove a file
 int DeleteFile(std::string file);
 
+/// \brief stream buffer without output on screen (as writing to /dev/null)
+class NullStreambufCL: public std::streambuf {
+  public:
+	NullStreambufCL() {}
+
+  protected:
+	/// \brief Usually this streambuf member is used to write output to some physical device. Here the output is just ignored.
+    virtual int_type overflow( int_type c)
+    { return c; }
+};
+
+/// \brief Mute and restore standard output streams
+class MuteStdOstreamCL
+{
+private:
+    std::streambuf *bout_, *berr_, *blog_;
+    NullStreambufCL devnull_;
+
+public:
+    MuteStdOstreamCL()
+    : bout_(std::cout.rdbuf()), berr_(std::cerr.rdbuf()), blog_(std::clog.rdbuf()) {}
+    /// Mute given stream
+    void Mute( std::ostream& os) { os.rdbuf( &devnull_); }
+    /// Mute std::cout, std::cerr, std::clog
+    void Mute() { Mute(std::cout); Mute(std::cerr); Mute(std::clog); }
+    /// Recover behavior of std::cout, std::cerr, std::clog prior construction of this object
+    void Recover() const { std::cout.rdbuf(bout_); std::cerr.rdbuf(berr_); std::clog.rdbuf(blog_); }
+};
 
 } // end of namespace DROPS
 

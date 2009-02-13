@@ -53,6 +53,7 @@ template<typename T> DDD_OBJ ddd_cast (T* p)
 #endif
 //@}
 
+
 /***************************************************************************
 *   P R O C - C L A S S                                                    *
 ***************************************************************************/
@@ -86,6 +87,7 @@ class ProcCL
     static Uint my_rank_;                       // Which Id do I have?
     static Uint size_;                          // How many are out there?
     static const CommunicatorT& Communicator_;  // communicator (=MPI_COMM_WORLD, MPI::COMM_WORLD)
+    static MuteStdOstreamCL* mute_;             // for muting std::cerr, std::cout, std::clog
 
     /// \name helper functions for global operations
     //@{
@@ -101,7 +103,7 @@ class ProcCL
     //@}
 
     static ProcCL* instance_;                   ///< only one instance of ProcCL may exist (Singleton-Pattern)
-    ProcCL(int*, char***);                      ///< constructor
+    ProcCL(int*, char***);                      ///< constructor, mutes all non-master standard output streams
     ~ProcCL();                                  ///< destructor
 
   public:
@@ -121,7 +123,13 @@ class ProcCL
     static int MyRank()     { return my_rank_; }
       /// \brief check how many procs are used by this program
     static int Size()       { return size_; }
-
+    /// \name Parallel output
+    //@{
+      // \brief Mute output of standard output streams for all non-master procs
+    static void MuteStdOstreams()    { if (!IamMaster()) mute_->Mute(); }
+      // \brief Recover behavior of standard output streams
+    static void RecoverStdOstreams() { mute_->Recover(); }
+    //@}
     /// \name plain MPI-Calls with C++- or C-Interface of MPI
     //@{
       /// \brief MPI-Reduce-wrapper

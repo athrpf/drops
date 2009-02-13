@@ -23,6 +23,7 @@ namespace DROPS
 Uint    ProcCL::my_rank_=0;
 Uint    ProcCL::size_   =0;             // if _size==0, then this proc has not created a ProcCL
 ProcCL* ProcCL::instance_=0;            // only one instance of ProcCL may exist (Singleton-Pattern)
+MuteStdOstreamCL* ProcCL::mute_=0;
 
 #ifdef _MPICXX_INTERFACE
     const ProcCL::CommunicatorT& ProcCL::Communicator_ = MPI::COMM_WORLD;
@@ -57,12 +58,16 @@ ProcCL::ProcCL(int* argc, char*** argv)
     DDD_Init(argc, argv);               // DDD Initialisieren und die Informationen beziehen
     my_rank_ = DDD_InfoMe();
     size_    = DDD_InfoProcs();
+    mute_    = new MuteStdOstreamCL();
+    MuteStdOstreams();
 }
 
 ProcCL::~ProcCL()
 {
     DDD_Exit();             // Logoff from DDD
     size_=0;                // Now, this class can be initialized again...
+    RecoverStdOstreams();
+    delete mute_;
 }
 
 void ProcCL::Prompt(int me)
@@ -85,6 +90,7 @@ DROPSErrCL::what(std::ostream& out) const
 void
 DROPSErrCL::handle() const
 {
+    ProcCL::RecoverStdOstreams();
     what(std::cerr);
     std::cerr.flush();
     ProcCL::Abort(-1);
