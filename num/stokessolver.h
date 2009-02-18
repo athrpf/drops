@@ -390,7 +390,7 @@ class BlockPreCL
 class StokesSolverAsPreCL
 {
   private:
-    mutable StokesSolverBaseCL& solver_;
+    StokesSolverBaseCL& solver_;
     mutable std::ostream* output_;
 
   public:
@@ -1307,7 +1307,7 @@ class StokesMGSolverCL: public StokesSolverBaseCL
     StokesMGSolverCL( const MLMatrixCL& prM, const SmootherT& smoother, StokesSolverBaseCL& ds,
                       Uint iter_vel, double tol, bool rel= false, Uint sm = 2, int lvl = -1)
       : StokesSolverBaseCL(iter_vel, tol, rel), prM_(prM), smoother_(smoother), directSolver_(ds),
-        smoothSteps_(sm), usedLevels_(lvl), BVersion_( -1) {}
+        smoothSteps_(sm), usedLevels_(lvl), BVersion_( 0) {}
     ~StokesMGSolverCL() {}
 
     PVelT* GetPVel() { return &PVel_;}

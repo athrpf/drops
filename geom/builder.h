@@ -324,7 +324,7 @@ class ReadMeshBuilderCL : public MGBuilderCL
   private:
     static const char *SymbolicName_[];
 
-    mutable std::istream& f_;
+    std::istream& f_;
     mutable std::vector<Uint> id_history_;
     mutable std::ostream* msg_;
     mutable std::vector<BndCondT> BC_;

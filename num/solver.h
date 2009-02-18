@@ -1838,7 +1838,7 @@ template <class SolverT>
 class SolverAsPreCL
 {
   private:
-    mutable SolverT& solver_;
+    SolverT& solver_;
     mutable std::ostream* output_;
 
   public:
