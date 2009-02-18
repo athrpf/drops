@@ -80,7 +80,7 @@ class StokesSolverFactoryHelperCL
 *   S t o k e s S o l v e r F a c t o r y  C L                     *
 ********************************************************************/
 template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
-class StokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
+class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
 {
   private:
     typedef StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT> base_;
@@ -574,7 +574,7 @@ struct StokesSolverParamST
 **************************************************************/
 /// \brief Factory for producing parallel stokes solver
 template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
-class StokesSolverFactoryCL : StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
+class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>
 {
   private:
     typedef StokesSolverFactoryBaseCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT> base_;
