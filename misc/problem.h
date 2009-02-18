@@ -286,11 +286,10 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
         if ( numLvl>1 )
             throw DROPSErrCL("MLIdxDescCL::resize: No multilevel implemented in parDROPS, yet, sorry");
 #endif
-        if (numLvl <= this->size())
-            static_cast<MLDataCL<IdxDescCL>*>( this)->resize( numLvl);
-        else
-            while (this->size() < numLvl)
-                this->push_back(IdxDescCL( fe, bnd, match, omit_bound));
+        while (this->size() > numLvl)
+            this->pop_back();
+        while (this->size() < numLvl)
+            this->push_back(IdxDescCL( fe, bnd, match, omit_bound));
     }
 
     /// \brief Returns the number of the index on the finest level.
