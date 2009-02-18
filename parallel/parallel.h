@@ -53,7 +53,7 @@ template<typename T> DDD_OBJ ddd_cast (T* p)
 #endif
 //@}
 
-
+class ProcInitCL; //forward declaration
 /***************************************************************************
 *   P R O C - C L A S S                                                    *
 ***************************************************************************/
@@ -61,6 +61,8 @@ template<typename T> DDD_OBJ ddd_cast (T* p)
 class ProcCL
 /** This class acts as an interface to MPI. */
 {
+    friend class ProcInitCL;
+
   public:
 
 #ifdef _MPICXX_INTERFACE
@@ -108,7 +110,7 @@ class ProcCL
 
   public:
       /// \brief Get a pointer to the ProcCL (Singleton-Pattern)
-    static ProcCL* InstancePtr(int* argc, char*** argv) { return instance_ ? instance_ : (instance_= new ProcCL(argc, argv)); }
+    static ProcCL* InstancePtr(int* argc = 0, char*** argv = 0) { return instance_ ? instance_ : (instance_= new ProcCL(argc, argv)); }
       /// \brief Get a reference to the ProcCL (Singleton-Pattern)
     static ProcCL& Instance(int* argc, char*** argv)    { return *InstancePtr(argc, argv); }
       /// \brief Wait for an input of a proc
@@ -277,6 +279,14 @@ class ProcCL
     }
     //@}
 
+};
+
+/// \brief Manage construction and destruction of ProcCL
+class ProcInitCL
+{
+  public:
+    ProcInitCL(int* argc, char*** argv) { ProcCL::Instance( argc, argv); }
+    ~ProcInitCL() { if (ProcCL::InstancePtr()) delete ProcCL::InstancePtr(); }
 };
 
 template<> struct ProcCL::MPI_TT<int>

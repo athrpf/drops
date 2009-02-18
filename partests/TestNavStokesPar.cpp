@@ -483,7 +483,7 @@ void MarkTop (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel, double range)
 
 int main (int argc, char** argv)
 {
-  ProcCL Proc(&argc, &argv);
+  DROPS::ProcInitCL procinit(&argc, &argv);
   try
   {
     SetDescriber();

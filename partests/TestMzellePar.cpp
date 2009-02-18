@@ -564,7 +564,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
 int main (int argc, char** argv)
 {
   // Init parallel enviroment before using try, so error handling works correct
-  DROPS::ProcCL::Instance(&argc, &argv);
+  DROPS::ProcInitCL procinit(&argc, &argv);
   try
   {
     DROPS::ParTimerCL alltime, time;

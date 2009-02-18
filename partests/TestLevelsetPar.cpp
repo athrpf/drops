@@ -364,7 +364,7 @@ void Strategy(TestP2LevelSetCL &prob)
 
 int main (int argc, char** argv)
 {
-    DROPS::ProcCL::Instance(&argc, &argv);
+    DROPS::ProcInitCL procinit(&argc, &argv);
     try
     {
         SetDescriber();

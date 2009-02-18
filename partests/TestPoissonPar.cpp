@@ -919,7 +919,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
 
 int main (int argc, char** argv)
 {
-    DROPS::ProcCL::Instance(&argc, &argv);
+    DROPS::ProcInitCL procinit(&argc, &argv);
     try
     {
         SetDescriber();

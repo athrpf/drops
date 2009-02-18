@@ -455,7 +455,7 @@ void CheckSerialization(DROPS::LoadBalHandlerCL& lb, DROPS::ParMultiGridCL& pmg)
 int main (int argc, char** argv)
 {
 
-    DROPS::ProcCL::Instance(&argc, &argv);
+    DROPS::ProcInitCL procinit(&argc, &argv);
 
     try
     {

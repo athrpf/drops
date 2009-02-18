@@ -503,7 +503,7 @@ template<class Coeff>
 
 int main (int argc, char** argv)
 {
-  DROPS::ProcCL Proc(&argc, &argv);
+  DROPS::ProcInitCL procinit(&argc, &argv);
   try
   {
     if (argc!=2)

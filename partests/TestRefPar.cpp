@@ -381,7 +381,7 @@ using namespace DROPS;
 ****************************************************************************/
 int main(int argc, char* argv[])
 {
-    DROPS::ProcCL::Instance(&argc,&argv);
+    DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParTimerCL::TestBandwidth(std::cerr);
     try
     {
