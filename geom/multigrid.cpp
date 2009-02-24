@@ -2396,14 +2396,14 @@ void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r)
 
 void MarkAll (DROPS::MultiGridCL& mg)
 {
-    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, It)
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/-1, It)
         It->SetRegRefMark();
 }
 
 
 void UnMarkAll (DROPS::MultiGridCL& mg)
 {
-     DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, It)
+     DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/-1, It)
      {
 #ifdef _PAR
          if (!It->IsMaster()) std::cerr <<"Setzte Löschenmarke auf non-master!!!\n";

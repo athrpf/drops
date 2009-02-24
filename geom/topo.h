@@ -186,10 +186,10 @@ inline bool RefinesFace(Ubyte refpat, Ubyte face)
 
 /// Obtain a refinement-rule for the edge-pattern 'refpattern'
 inline const RefRuleCL& GetRefRule(Ubyte refpattern)
-    { return reinterpret_cast<const RefRuleCL&>(RefRuleAr[sizeof(RefRuleCL)*(refpattern)]); }
+    { return *reinterpret_cast<const RefRuleCL*>( RefRuleAr + sizeof( RefRuleCL)*refpattern); }
 
 inline const ChildDataCL& GetChildData(Ubyte VertIndex)
-    { return reinterpret_cast<const ChildDataCL&>(ChildDataAr[sizeof(ChildDataCL)*VertIndex]); }
+    { return *reinterpret_cast<const ChildDataCL*>( ChildDataAr + sizeof( ChildDataCL)*VertIndex); }
 
 } // end  of namespace DROPS
 #endif

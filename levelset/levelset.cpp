@@ -385,7 +385,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
     for (int i= 0; i<3; ++i)
         e[i]= std_basis<3>( i + 1);
 
-    DROPS_FOR_TRIANG_CONST_TETRA( MG, /*default level*/, it)
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, /*default level*/-1, it)
     {
         patch.Init( *it, SmPhi);
 
@@ -409,7 +409,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
 
 void MarkInterface ( scalar_fun_ptr DistFct, double width, MultiGridCL& mg)
 {
-    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, it)
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/-1, it)
     {
         double d= 1e99;
         int num_pos= 0;
@@ -429,7 +429,7 @@ void MarkInterface ( scalar_fun_ptr DistFct, double width, MultiGridCL& mg)
 
 void MarkInterface ( const LevelsetP2CL::const_DiscSolCL& lset, double width, MultiGridCL& mg)
 {
-    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/, it)
+    DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/-1, it)
     {
         double d= 1e99;
         int num_pos= 0;
