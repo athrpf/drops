@@ -774,13 +774,11 @@ int main (int argc, char** argv)
     if (C.deserialization_file == "none")
         adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
 
-    bool mgok = false;
-#ifdef _PAR
-    DROPS::ProcCL::Check( CheckParMultiGrid(*pmg));
-#endif
     std::cerr << DROPS::SanityMGOutCL(*mg) << std::endl;
-    if (mgok)
+#ifdef _PAR
+    if (DROPS::ProcCL::Check( CheckParMultiGrid( *pmg)))
         std::cerr << "As far as I can tell the ParMultigridCl is sane\n";
+#endif
     MyStokesCL prob( *mg, ZeroFlowCL(C), *bnddata, C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
 
     Strategy( prob, adap);    // do all the stuff
