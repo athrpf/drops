@@ -6,7 +6,6 @@
 #include "geom/builder.h"
 #include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
-#include "num/stokessolver.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
@@ -15,6 +14,13 @@
 #include "levelset/mzelle_hdr.h"
 #include "poisson/transport2phase.h"
 #include "num/stokessolverfactory.h"
+#ifndef _PAR
+#include "num/stokessolver.h"
+#else
+#include "num/parstokessolver.h"
+#include "parallel/loadbal.h"
+#include "parallel/parmultigrid.h"
+#endif
 #include <fstream>
 #include <sstream>
 
@@ -63,6 +69,149 @@ double Initialcpos (const DROPS::Point3DCL& , double)
 {
     return C.transp_cNeg;
 }
+
+#ifdef _PAR
+/// \brief Display a detailed list of unknowns
+template <typename StokesT, typename LevelsetT>
+  void DisplayUnks(const StokesT& Stokes, const LevelsetT& levelset, const DROPS::MultiGridCL& MG)
+/** This functions write information about unknowns on the display. These
+    informations are for the level-set-, pressure- and velocity-DOF:
+    <ul>
+     <li> global DOF
+     <li> accumulated DOF
+     <li> max and min DOF on a single processor (and the ratio)
+     <li> max and min number of distributed DOF on a processor (and the ratio to the remaining DOF)
+    </ul>
+*/
+{
+    using namespace DROPS;
+    const MLIdxDescCL* vidx = &Stokes.vel_idx,
+                     * pidx = &Stokes.pr_idx;
+    const IdxDescCL*   lidx = &levelset.idx;
+    const ExchangeCL& ExV = Stokes.vel_idx.GetEx(),
+                    & ExP = Stokes.pr_idx.GetEx(),
+                    & ExL = levelset.idx.GetEx();
+
+    // local number on unknowns
+    Ulint Psize      = pidx->NumUnknowns();
+    Ulint Vsize      = vidx->NumUnknowns();
+    Ulint Lsize      = lidx->NumUnknowns();
+
+    // global number of unknowns
+    Ulint GPsize     = pidx->GetGlobalNumUnknowns(MG);
+    Ulint GVsize     = vidx->GetGlobalNumUnknowns(MG);
+    Ulint GLsize     = lidx->GetGlobalNumUnknowns(MG);
+
+    // accumulated size of unknwons
+    Ulint Psize_acc = ProcCL::GlobalSum(Psize);
+    Ulint Vsize_acc = ProcCL::GlobalSum(Vsize);
+    Ulint Lsize_acc = ProcCL::GlobalSum(Lsize);
+
+    // maximal and minimal number of unknowns
+    Ulint P_min= ProcCL::GlobalMin(Psize); Ulint P_max= ProcCL::GlobalMax(Psize);
+    Ulint V_min= ProcCL::GlobalMin(Vsize); Ulint V_max= ProcCL::GlobalMax(Vsize);
+    Ulint L_min= ProcCL::GlobalMin(Lsize); Ulint L_max= ProcCL::GlobalMax(Lsize);
+
+    // ratios between maximal number of unknowns/proc and minimal number
+    double P_ratio   = (double)P_max/(double)P_min;
+    double V_ratio   = (double)V_max/(double)V_min;
+    double L_ratio   = (double)L_max/(double)L_min;
+
+    // number on boundaries
+    Ulint P_accmax=ProcCL::GlobalMax(ExP.AccDistIndex.size()), P_accmin=ProcCL::GlobalMin(ExP.AccDistIndex.size());
+    Ulint V_accmax=ProcCL::GlobalMax(ExV.AccDistIndex.size()), V_accmin=ProcCL::GlobalMin(ExV.AccDistIndex.size());
+    Ulint L_accmax=ProcCL::GlobalMax(ExL.AccDistIndex.size()), L_accmin=ProcCL::GlobalMin(ExL.AccDistIndex.size());
+
+    // ratio of these unknowns
+    double P_accratio= (double)P_accmax / (double)P_accmin;
+    double V_accratio= (double)V_accmax / (double)V_accmin;
+    double L_accratio= (double)L_accmax / (double)L_accmin;
+
+    // output on screen
+    std::cerr << "  + Number of DOF\n        "
+                << std::setw(10)<<"global"<<std::setw(10)<<"accum"<<std::setw(10)
+                << "max"<<std::setw(10)<<"min"<<std::setw(10)<<"ratio"<<"  |  "
+                << std::setw(10)<<"max_acc" <<std::setw(10)<<"min_acc"<<std::setw(10)<<"ratio_acc"<<std::endl;
+
+    std::cerr << "    "<<"pr  "
+                << std::setw(10)<<GPsize<<std::setw(10)<<Psize_acc<<std::setw(10)<<P_max
+                << std::setw(10)<<P_min<< std::setw(10)<<P_ratio<<"  |  "
+                << std::setw(10)<<P_accmax<<std::setw(10)<<P_accmin<<std::setw(10)<<P_accratio<<std::endl;
+
+    std::cerr << "    "<<"vel "
+                << std::setw(10)<<GVsize<<std::setw(10)<<Vsize_acc<<std::setw(10)<<V_max
+                << std::setw(10)<<V_min<< std::setw(10)<<V_ratio<<"  |  "
+                << std::setw(10)<<V_accmax<<std::setw(10)<<V_accmin<<std::setw(10)<<V_accratio<<std::endl;
+
+    std::cerr << "    "<<"scl "
+                << std::setw(10)<<GLsize<<std::setw(10)<<Lsize_acc<<std::setw(10)<<L_max
+                << std::setw(10)<<L_min<< std::setw(10)<<L_ratio<<"  |  "
+                << std::setw(10)<<L_accmax<<std::setw(10)<<L_accmin<<std::setw(10)<<L_accratio<<std::endl;
+
+    std::cerr << std::endl;
+}
+
+void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
+{
+    const DROPS::Uint level=mg.GetLastLevel();
+    DROPS::Uint *numTetrasAllProc=0;
+    DROPS::Uint *numFacesAllProc=0;
+    DROPS::Uint *numDistFaceAllProc=0;
+    if (DROPS::ProcCL::IamMaster()){
+        numTetrasAllProc  = new DROPS::Uint[DROPS::ProcCL::Size()];
+        numFacesAllProc   = new DROPS::Uint[DROPS::ProcCL::Size()];
+        numDistFaceAllProc= new DROPS::Uint[DROPS::ProcCL::Size()];
+    }
+    // Gather information about distribution on master processor
+    DROPS::ProcCL::Gather(mg.GetNumTriangTetra(level),      numTetrasAllProc,   DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumTriangFace(level),       numFacesAllProc,    DROPS::ProcCL::Master());
+    DROPS::ProcCL::Gather(mg.GetNumDistributedFaces(level), numDistFaceAllProc, DROPS::ProcCL::Master());
+
+    // Display information
+    if (DROPS::ProcCL::IamMaster()){
+        double ratioTetra       =  (double)*std::max_element(numTetrasAllProc,   numTetrasAllProc+DROPS::ProcCL::Size())
+                                  /(double)*std::min_element(numTetrasAllProc,   numTetrasAllProc+DROPS::ProcCL::Size());
+        DROPS::Uint allTetra    =  std::accumulate(numTetrasAllProc, numTetrasAllProc+DROPS::ProcCL::Size(), 0),
+                    allFace     =  std::accumulate(numFacesAllProc, numFacesAllProc+DROPS::ProcCL::Size(), 0),
+                    allDistFace =  std::accumulate(numDistFaceAllProc, numDistFaceAllProc+DROPS::ProcCL::Size(), 0);
+        double      *ratioDistFace=new double[DROPS::ProcCL::Size()];
+
+        // global information
+        std::cerr << "Detailed information about the parallel multigrid:\n"
+                  << "#(master tetras on finest level):    "<<allTetra<<'\n'
+                  << "#(all Faces on finest level):        "<<allFace<<'\n'
+                  << "#(distributed Faces on fines level): "<<allDistFace<<'\n';
+
+        // local information for all processors
+        for (int i=0; i<DROPS::ProcCL::Size(); ++i)
+            ratioDistFace[i]= ((double)numDistFaceAllProc[i]/(double)numFacesAllProc[i]*100.);
+
+        double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+DROPS::ProcCL::Size());
+        std::cerr << "Ratio between max/min Tetra: "<<ratioTetra
+                  <<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
+
+        std::cerr << std::setw(6)  <<  "Proc"
+                  << std::setw(8)  << "#Tetra"
+                  << std::setw(8)  << "#Faces"
+                  << std::setw(12) << "#DistFaces"
+                  << std::setw(12) << "%DistFaces"
+                  << '\n';
+        for (int i=0; i<DROPS::ProcCL::Size(); ++i)
+            std::cerr << std::setw(6)  << i
+                      << std::setw(8)  << numTetrasAllProc[i]
+                      << std::setw(8)  << numFacesAllProc[i]
+                      << std::setw(12) << numDistFaceAllProc[i]
+                      << std::setw(12) << ratioDistFace[i] << std::endl;
+
+        // free memory
+        if (numTetrasAllProc)   delete[] numTetrasAllProc;
+        if (numFacesAllProc)    delete[] numFacesAllProc;
+        if (numDistFaceAllProc) delete[] numDistFaceAllProc;
+        if (ratioDistFace)      delete[] ratioDistFace;
+    }
+}
+#endif
+
 
 namespace DROPS // for Strategy
 {
@@ -246,7 +395,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
         typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
         PCGPcT apc( PCGsolver);
+#ifdef _PAR
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+#else
         ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+#endif
         InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.outer_iter, C.outer_tol, 0.6);
         NSSolverBaseCL<StokesProblemT> stokessolver( Stokes, inexactuzawasolver);
         SolveStatProblem( Stokes, lset, stokessolver);
@@ -256,17 +409,23 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
       break;
       default : throw DROPSErrCL("Unknown initial condition");
     }
-    const double Vol= EllipsoidCL::GetVolume();
-    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-    double dphi= lset.AdjustVolume( Vol, 1e-9);
-    std::cerr << "volume correction is " << dphi << std::endl;
-    lset.Phi.Data+= dphi;
-    std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
+#ifndef _PAR
     MG.SizeInfo( std::cerr);
     std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+#else
+    DisplayDetailedGeom( MG);
+    DisplayUnks(Stokes, lset, MG);
+#endif
+
+    const double Vol= EllipsoidCL::GetVolume();
+    std::cerr << "initial volume: " << lset.GetVolume()/Vol << std::endl;
+    double dphi= lset.AdjustVolume( Vol, 1e-9);
+    std::cerr << "initial volume correction is " << dphi << std::endl;
+    lset.Phi.Data+= dphi;
+    std::cerr << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     double D[2] = {C.transp_cPos, C.transp_cNeg};
@@ -289,7 +448,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         c.Update();
         std::cerr << c.c.Data.size() << " concentration unknowns,\n";
     }
-
     // Stokes-Solver
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
@@ -303,7 +461,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     if (C.nonlinear==0.0)
         navstokessolver = new NSSolverBaseCL<StokesProblemT>(Stokes, *stokessolver);
     else
-        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT,DeltaSquaredPolicyCL>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
+        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
 
     // Time discretisation + coupling
     TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, C);
@@ -332,13 +490,18 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //         stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
 
     bool second = false;
-    std::ofstream infofile((C.EnsCase+".info").c_str());
     double lsetmaxGradPhi, lsetminGradPhi;
-    IFInfo.WriteHeader(infofile);
+    std::ofstream* infofile = 0;
+    IF_MASTER {
+        infofile = new std::ofstream ((C.EnsCase+".info").c_str());
+        IFInfo.WriteHeader(*infofile);
+    }
+
     if (C.num_steps == 0)
         SolveStatProblem( Stokes, lset, *navstokessolver);
 
     // Initialize Ensight6 output
+#ifndef _PAR
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
     Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1, C.binary);
     ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.geomName,      ensf + ".geo", true));
@@ -356,12 +519,20 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     if (C.ensight) ensight.Write( 0.);
 
+#else
+    typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
+    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
+                                  C.num_steps, C.binary, C.masterOut);
+#endif
     for (int step= 1; step<=C.num_steps; ++step)
     {
-        std::cerr << "======================================================== step " << step << ":\n";
+        std::cerr << "============================================================ step " << step << std::endl;
 
         IFInfo.Update( lset, Stokes.GetVelSolution());
-        IFInfo.Write(Stokes.t, infofile);
+
+        IF_MASTER
+            IFInfo.Write(Stokes.t, *infofile);
+
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
 
@@ -377,7 +548,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
                 dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cerr << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
-                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                std::cerr << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
                 forceUpdate = true; // volume correction modifies the level set
         }
 
@@ -413,7 +584,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             dphi= lset.AdjustVolume( Vol, 1e-9);
             std::cerr << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
-            std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cerr << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
             forceUpdate  = true;
         }
 
@@ -423,10 +594,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (C.transp_do) c.Update();
         }
 
+#ifndef _PAR
         if (C.ensight) ensight.Write( step*C.dt);
+#else
+        if (C.ensight) ensightwriter.write();
+#endif
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
-    IFInfo.Write(Stokes.t, infofile);
+    IF_MASTER
+        IFInfo.Write(Stokes.t, *infofile);
     std::cerr << std::endl;
     delete timedisc;
     delete navstokessolver;
@@ -443,11 +619,21 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata)
         if (!meshfile)
             throw DROPS::DROPSErrCL ("error while opening mesh file\n");
 
-        DROPS::ReadMeshBuilderCL builder (meshfile);
+        DROPS::ReadMeshBuilderCL *mgb= 0;       // builder of the multigrid
+
+        // read geometry information from a file and create the multigrid
+        IF_MASTER
+            mgb = new DROPS::ReadMeshBuilderCL( meshfile );
+        IF_NOT_MASTER
+            mgb = new DROPS::EmptyReadMeshBuilderCL( meshfile );
+        // Create the multigrid
         if (C.deserialization_file == "none")
-            mgp= new DROPS::MultiGridCL( builder);
+            mgp= new DROPS::MultiGridCL( *mgb);
         else {
-            DROPS::FileBuilderCL filebuilder( C.deserialization_file, &builder);
+#ifdef _PAR
+            throw DROPS::DROPSErrCL( "Sorry, no parallel deserialization yet");
+#endif
+            DROPS::FileBuilderCL filebuilder( C.deserialization_file, mgb);
             mgp= new DROPS::MultiGridCL( filebuilder);
         }
         const DROPS::BoundaryCL& bnd= mgp->GetBnd();
@@ -457,12 +643,13 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata)
         DROPS::StokesVelBndDataCL::bnd_val_fun* bnd_fun = new DROPS::StokesVelBndDataCL::bnd_val_fun[num_bnd];
         for (DROPS::BndIdxT i=0; i<num_bnd; ++i)
         {
-            bnd_fun[i]= (bc[i]= builder.GetBC( i))==DROPS::DirBC ? &InflowCell : &DROPS::ZeroVel;
+            bnd_fun[i]= (bc[i]= mgb->GetBC( i))==DROPS::DirBC ? &InflowCell : &DROPS::ZeroVel;
             std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
         }
         bnddata = new DROPS::StokesBndDataCL(num_bnd, bc, bnd_fun);
         delete[] bc;
         delete[] bnd_fun;
+        delete   mgb;
     }
     if (C.GeomType == 1) {
         int nx, ny, nz;
@@ -474,15 +661,24 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata)
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
         if (!brick_info)
-            DROPS::DROPSErrCL("error while reading geometry information: " + mesh);
+            throw DROPS::DROPSErrCL("error while reading geometry information: " + mesh);
         C.r_inlet= dx/2;
         DROPS::Point3DCL orig, px, py, pz;
         px[0]= dx; py[1]= dy; pz[2]= dz;
-        DROPS::BrickBuilderCL builder ( orig, px, py, pz, nx, ny, nz);
+
+        DROPS::BrickBuilderCL *mgb = 0;
+        IF_MASTER
+            mgb = new DROPS::BrickBuilderCL( orig, px, py, pz, nx, ny, nz);
+        IF_NOT_MASTER
+            mgb = new DROPS::EmptyBrickBuilderCL(orig, px, py, pz);
+
         if (C.deserialization_file == "none")
-            mgp= new DROPS::MultiGridCL( builder);
+            mgp= new DROPS::MultiGridCL( *mgb);
         else {
-            DROPS::FileBuilderCL filebuilder( C.deserialization_file, &builder);
+#ifdef _PAR
+            throw DROPS::DROPSErrCL( "Sorry, no parallel deserialization yet");
+#endif
+            DROPS::FileBuilderCL filebuilder( C.deserialization_file, mgb);
             mgp= new DROPS::MultiGridCL( filebuilder);
         }
         DROPS::BndCondT bc[6]= { DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC };
@@ -504,19 +700,40 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata)
                 //bc[2]= bc[4]= bc[5]= DROPS::NatBC;          //Kanal
                 bfun[2]= &DROPS::ZeroVel;
                 //bfun[2]=bfun[4]=bfun[5]= &DROPS::ZeroVel;   //Kanal
-                bfun[2]=
                 bfun[3]= &InflowBrick;
             } break;
             default: throw DROPS::DROPSErrCL("Unknown boundary data type");
         }
         bnddata = new DROPS::StokesBndDataCL(6, bc, bfun);
+        delete mgb;
     }
 }
+
+#ifdef _PAR
+void DistributeGeom( DROPS::MultiGridCL& mg, DROPS::ParMultiGridCL* pmg, DROPS::LoadBalHandlerCL* &lb)
+{
+    // Create the multigrid and tell parallel multigrid about the geometry
+    pmg->AttachTo( mg);
+
+    // Create a load balancer and do initial distribution of the geometry
+    lb = new DROPS::LoadBalHandlerCL( mg);
+    lb->DoInitDistribution(DROPS::ProcCL::Master());
+    int refineStrategy = 1;
+    switch (refineStrategy) {
+        case 0 : lb->SetStrategy(DROPS::NoMig);     break;
+        case 1 : lb->SetStrategy(DROPS::Adaptive);  break;
+        case 2 : lb->SetStrategy(DROPS::Recursive); break;
+    }
+}
+#endif
 
 int main (int argc, char** argv)
 {
   try
   {
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+#endif
     std::ifstream param;
     if (argc!=2)
     {
@@ -539,24 +756,41 @@ int main (int argc, char** argv)
 
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
-
+#ifdef _PAR
+    DROPS::ParMultiGridCL *pmg= DROPS::ParMultiGridCL::InstancePtr();
+    DROPS::LoadBalHandlerCL *lb=  0;
+#endif
     CreateGeom(mg, bnddata);
     EllipsoidCL::Init( C.Mitte, C.Radius);
-
+#ifdef _PAR
+    DistributeGeom( *mg, pmg, lb);
+    DROPS::AdapTriangCL adap( *pmg, *lb, C.ref_width, 0, C.ref_flevel);
+#else
     DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel);
+#endif
 
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (C.deserialization_file == "none")
         adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
 
+    bool mgok = false;
+#ifdef _PAR
+    DROPS::ProcCL::Check( CheckParMultiGrid(*pmg));
+#endif
     std::cerr << DROPS::SanityMGOutCL(*mg) << std::endl;
-    MyStokesCL prob(*mg, ZeroFlowCL(C), *bnddata, C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
+    if (mgok)
+        std::cerr << "As far as I can tell the ParMultigridCl is sane\n";
+    MyStokesCL prob( *mg, ZeroFlowCL(C), *bnddata, C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
 
     Strategy( prob, adap);    // do all the stuff
 
     delete mg;
     delete bnddata;
+#ifdef _PAR
+    if (pmg)     delete pmg;
+    if (lb)      delete lb;
+#endif
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

@@ -14,6 +14,15 @@ CPP = $(wildcard *.cpp)
 
 OBJ = $(CPP:%.cpp=%.o)
 
+# include common rules:
+include ../Make.common
+
+PAR_OBJ_ = ../parallel/parallel.o ../parallel/parmultigrid.o \
+           ../parallel/partime.o ../parallel/addeddata.o ../parallel/loadbal.o \
+           ../parallel/exchange.o ../parallel/memmgr_std.o ../parallel/parmgserialization.o \
+           ../parallel/logger.o
+
+PAR_OBJ = $(if $(PAR_BUILD),$(PAR_OBJ_),)
 
 # rules
 
@@ -73,8 +82,6 @@ twophasedrops: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o ../misc/xfem.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
-    ../num/interfacePatch.o
+    ../num/interfacePatch.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-# include common rules:
-include ../Make.common
