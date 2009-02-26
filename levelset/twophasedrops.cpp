@@ -733,6 +733,7 @@ int main (int argc, char** argv)
   {
 #ifdef _PAR
     DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit();
 #endif
     std::ifstream param;
     if (argc!=2)
@@ -786,7 +787,6 @@ int main (int argc, char** argv)
     delete mg;
     delete bnddata;
 #ifdef _PAR
-    if (pmg)     delete pmg;
     if (lb)      delete lb;
 #endif
     return 0;

@@ -286,6 +286,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
 int main (int argc, char** argv)
 {
     DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit();
     try
     {
         SetDescriber();

@@ -785,6 +785,7 @@ template<class Coeff>
 int main (int argc, char** argv)
 {
   DROPS::ProcInitCL procinit(&argc, &argv);
+  DROPS::ParMultiGridInitCL pmginit();
   try
   {
     if (argc!=2)

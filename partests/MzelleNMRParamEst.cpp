@@ -483,6 +483,7 @@ template<class Coeff>
 int main (int argc, char** argv)
 {
   DROPS::ProcInitCL procinit(&argc, &argv);
+  DROPS::ParMultiGridInitCL pmginit();
   try
   {
     if (argc!=2)
@@ -548,7 +549,6 @@ int main (int argc, char** argv)
     }
 
     // free memory
-    if (pmg)     delete pmg;
     if (mg)      delete mg;
     if (lb)      delete lb;
     if (bnddata) delete bnddata;

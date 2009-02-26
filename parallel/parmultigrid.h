@@ -1,18 +1,18 @@
-//**************************************************************************
-// File:    parmultigrid.h                                                 *
-// Content: Class   that constitute the parallel multigrid                 *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, RZ RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:                                                                   *
-// Begin:   November, 14th, 2005                                           *
-//**************************************************************************
-// remarks:                                                                *
-//  + no unknown on faces can be transfered. See doxygen!                  *
-//**************************************************************************
+//****************************************************************************************
+// File:    parmultigrid.h                                                               *
+// Content: Class   that constitute the parallel multigrid                               *
+// Author:  Sven Gross, Joerg Grande, Volker Reichelt, Patrick Esser, IGPM RWTH Aachen   *
+//          Oliver Fortmeier, RZ RWTH Aachen                                             *
+// Version: 0.1                                                                          *
+// Date:                                                                                 *
+// Begin:   November, 14th, 2005                                                         *
+//****************************************************************************************
+// remarks:                                                                              *
+//  + no unknown on faces can be transfered. See doxygen!                                *
+//****************************************************************************************
 /// \author Oliver Fortmeier
 /// \file parmultigrid.h
-/// \brief Handling of parallel MultiGird data structures
+/// \brief Handling of parallel MultiGrid data structures
 #ifndef DROPS_PAR_MULTIGRID_H
 #define DROPS_PAR_MULTIGRID_H
 
@@ -33,6 +33,9 @@
 
 namespace DROPS
 {
+
+class ParMultiGridInitCL; //forward declaration
+
 /****************************************************************************
 * P A R  M U L T I  G R I D  C L A S S                                      *
 ****************************************************************************/
@@ -53,6 +56,8 @@ namespace DROPS
 ****************************************************************************/
 class ParMultiGridCL
 {
+    friend class ParMultiGridInitCL;
+
   public: // typedefs
       /// \brief Vector of pointers to  Vector-Describer-Classes.
       ///
@@ -360,6 +365,14 @@ class ParMultiGridCL
     template<typename SimplexT>
     static int ScatterInterpolValues(DDD_OBJ, void*);                       // Scatter unknowns of an interpolated simplex
     //@}
+};
+
+/// \brief Manage construction and destruction of ParMultiGridCL
+class ParMultiGridInitCL
+{
+  public:
+    ParMultiGridInitCL()  { ParMultiGridCL::Instance(); }
+    ~ParMultiGridInitCL() { if (ParMultiGridCL::InstancePtr()) delete ParMultiGridCL::InstancePtr(); }
 };
 
 // Declaration of spezialized template functions

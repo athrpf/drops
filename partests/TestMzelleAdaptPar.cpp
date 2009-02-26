@@ -448,6 +448,7 @@ template<class Coeff>
 int main (int argc, char** argv)
 {
   DROPS::ProcInitCL procinit(&argc, &argv);
+  DROPS::ParMultiGridInitCL pmginit();
   try
   {
     if (argc!=2)
@@ -466,8 +467,7 @@ int main (int argc, char** argv)
     }
     param >> C;
     param.close();
-    IF_MASTER
-      std::cerr << C << std::endl;
+    std::cerr << C << std::endl;
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
@@ -513,7 +513,6 @@ int main (int argc, char** argv)
     }
 
     // free memory
-    if (pmg)     delete pmg;
     if (mg)      delete mg;
     if (lb)      delete lb;
     if (bnddata) delete bnddata;

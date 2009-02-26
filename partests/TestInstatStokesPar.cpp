@@ -351,6 +351,7 @@ inline double dir_val0(const DROPS::Point2DCL& p) { return (1. - p[0]*p[0])*(1. 
 int main (int argc, char** argv)
 {
     DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit();
     try
     {
         SetDescriber();

@@ -382,6 +382,7 @@ using namespace DROPS;
 int main(int argc, char* argv[])
 {
     DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit();
     DROPS::ParTimerCL::TestBandwidth(std::cerr);
     try
     {
