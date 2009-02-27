@@ -192,7 +192,7 @@ void Strategy( ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 int main (int argc, char** argv)
 {
   DROPS::ProcInitCL procinit(&argc, &argv);
-  DROPS::ParMultiGridInitCL pmginit();
+  DROPS::ParMultiGridInitCL pmginit;
   try
   {
     if (argc!=2)

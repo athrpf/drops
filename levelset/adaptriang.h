@@ -28,8 +28,8 @@ class AdapTriangCL
   private:
     MultiGridCL& mg_;
 #ifdef _PAR
-    ParMultiGridCL&   pmg_;
-    LoadBalHandlerCL& lb_;
+    ParMultiGridCL*  pmg_;
+    LoadBalHandlerCL lb_;
 #endif
     double width_;
     int c_level_, f_level_;
@@ -67,7 +67,7 @@ class AdapTriangCL
             (*obs)->pre_refine();
 #else
         if (!observer_.empty()){
-            pmg_.DeleteVecDesc();
+            pmg_->DeleteVecDesc();
             for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
               (*obs)->pre_refine();
         }
@@ -80,8 +80,8 @@ class AdapTriangCL
             (*obs)->post_refine();
 #ifdef _PAR
         if ( !observer_.empty() ){
-            pmg_.DelAllUnkRecv();
-            pmg_.DeleteRecvBuffer();
+            pmg_->DelAllUnkRecv();
+            pmg_->DeleteRecvBuffer();
         }
 #endif
     }
@@ -100,20 +100,37 @@ class AdapTriangCL
     //@}
 
   public:
-#ifndef _PAR
-    AdapTriangCL( MultiGridCL& mg, double width, int c_level, int f_level)
-      : mg_(mg), width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
-      { Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0); }
-#else
-    AdapTriangCL( ParMultiGridCL& pmg, LoadBalHandlerCL& lb, double width, int c_level, int f_level)
-      : mg_(pmg.GetMG()), pmg_(pmg), lb_(lb), width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
-      { Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0); }
+    AdapTriangCL(  MultiGridCL& mg, double width, int c_level, int f_level, __UNUSED__ int refineStrategy = 1)
+      : mg_( mg), 
+#ifdef _PAR
+      pmg_( ParMultiGridCL::InstancePtr()), lb_( mg_), 
+#endif
+      width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
+      { 
+        Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0);
+#ifdef _PAR
+        pmg_->AttachTo( mg_);
+        lb_.DoInitDistribution( ProcCL::Master());
+        switch ( refineStrategy) {
+            case 0 : lb_.SetStrategy( NoMig);     break;
+            case 1 : lb_.SetStrategy( Adaptive);  break;
+            case 2 : lb_.SetStrategy( Recursive); break;
+        }
+#endif
+      }
 
+#ifdef _PAR
     /// \brief Get a reference onto the parallel MultiGrid
-    ParMultiGridCL& GetPMG() { return pmg_; }
+    ParMultiGridCL& GetPMG() { return *pmg_; }
 
     /// \brief Get a constant reference onto the parallel MultiGrid
-    const ParMultiGridCL& GetPMG() const { return pmg_; }
+    const ParMultiGridCL& GetPMG() const { return *pmg_; }
+    
+    /// \brief Get a reference onto the LoadBalHandlerCL
+    LoadBalHandlerCL& GetLb() { return lb_; }
+
+    /// \brief Get a constant reference onto the LoadBalHandlerCL
+    const LoadBalHandlerCL& GetLb() const { return lb_; }
 #endif
 
     /// \brief Make initial triangulation according to a distance function
@@ -134,7 +151,7 @@ class AdapTriangCL
     {
         observer_.push_back( o);
 #ifdef _PAR
-        observer_.back()->SetPMG(pmg_);
+        observer_.back()->SetPMG( *pmg_);
 #endif
     }
 };

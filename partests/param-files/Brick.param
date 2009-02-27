@@ -163,5 +163,5 @@ DomainCond {
   GeomType      =       1	# 0=ReadMeshBuilder, 1=BrickBuilder
   InitialFile   =       xxx
   MeshFile      =       20e-3x50e-3x20e-3@8x20x8 # 8e-3x40e-3x8e-3@4x20x4
-  BoundaryType  =       1       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+  BoundaryType  =       3       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
 }

@@ -565,7 +565,7 @@ int main (int argc, char** argv)
 {
   // Init parallel enviroment before using try, so error handling works correct
   DROPS::ProcInitCL procinit(&argc, &argv);
-  DROPS::ParMultiGridInitCL pmginit();
+  DROPS::ParMultiGridInitCL pmginit;
   try
   {
     DROPS::ParTimerCL alltime, time;

@@ -13,6 +13,7 @@
 
 // include std header for two-phase flows
 #include "partests/two_phase_hdr.h"
+#include "levelset/mzelle_hdr.h"
 
 // include parallel computing!
 #include "parallel/parallel.h"
@@ -334,11 +335,11 @@ template<typename Coeff>
 
 
 template<class Coeff>
-  void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
+  void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adapt)
 {
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
-    MultiGridCL& mg= pmg.GetMG();
+    MultiGridCL& mg= Stokes.GetMG();
     ParTimerCL time;
     double duration;
 
@@ -367,18 +368,13 @@ template<class Coeff>
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
 
-    AdapTriangCL adapt( pmg, lb, C.ref_width, 0, C.ref_flevel);
-    typedef double (*DistFctT)(const DROPS::Point3DCL&);
-    const DistFctT &distfnct=::EllipsoidCL::DistanceFct;
-    adapt.MakeInitialTriang(distfnct);
-
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
         infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
 
     IFInfo.Init(infofile);
 
-    if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(pmg)) )
+    if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adapt.GetPMG())) )
          throw DROPSErrCL("MultiGrid is incorrect!");
 
     LevelsetRepairCL lsetrepair( lset);
@@ -408,7 +404,7 @@ template<class Coeff>
     Stokes.prM.SetIdx( pidx, pidx); Stokes.prA.SetIdx( pidx, pidx);
 
     if (C.printNumUnk)
-        DisplayUnks(Stokes, lset, pmg.GetMG());
+        DisplayUnks(Stokes, lset, mg);
 
     //Setup initial problem
     if (ProcCL::IamMaster())
@@ -444,11 +440,10 @@ template<class Coeff>
 }
 } // end of namespace DROPS
 
-
 int main (int argc, char** argv)
 {
   DROPS::ProcInitCL procinit(&argc, &argv);
-  DROPS::ParMultiGridInitCL pmginit();
+  DROPS::ParMultiGridInitCL pmginit;
   try
   {
     if (argc!=2)
@@ -472,24 +467,25 @@ int main (int argc, char** argv)
     DROPS::ParTimerCL alltime;
     SetDescriber();
 
-    typedef DROPS::ZeroFlowCL                             CoeffT;
+    typedef ZeroFlowCL                                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     // Create Geometry
-    DROPS::ParMultiGridCL   *pmg=0;
     DROPS::MultiGridCL      *mg=0;
-    DROPS::LoadBalHandlerCL *lb=0;
     DROPS::StokesBndDataCL  *bnddata=0;
-    CreateGeom(mg, pmg, lb, bnddata, DROPS::Inflow, C.meshfile, C.refineStrategy, newMZelle, C.r_inlet);
-
-    mg->SizeInfo(std::cerr);
+    CreateGeom(mg, bnddata, DROPS::Inflow, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
 
     // Init problem
     EllipsoidCL::Init( C.Mitte, C.Radius );
-    MyStokesCL prob(*mg, DROPS::ZeroFlowCL(C), *bnddata);
+    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, C.refineStrategy);
+    mg->SizeInfo(std::cerr);
+
+    adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
+
+    MyStokesCL prob( *mg, ZeroFlowCL(C), *bnddata);
 
     // Solve the problem
-    Strategy( prob, *pmg, *lb);    // do all the stuff
+    Strategy( prob, adap);    // do all the stuff
 
     alltime.Stop();
     Times.SetOverall(alltime.GetMaxTime());
@@ -514,7 +510,6 @@ int main (int argc, char** argv)
 
     // free memory
     if (mg)      delete mg;
-    if (lb)      delete lb;
     if (bnddata) delete bnddata;
 
     return 0;

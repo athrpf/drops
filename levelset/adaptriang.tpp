@@ -91,7 +91,7 @@ template <class DistFctT>
         notify_pre_refine();
         mg_.Refine();
 #ifdef _PAR
-        pmg_.HandleUnknownsAfterRefine();
+        pmg_->HandleUnknownsAfterRefine();
         if (lb)
             lb_.DoMigration();
 #endif
