@@ -20,16 +20,16 @@
 namespace DROPS
 {
 
-/// \brief Paramater class for loadbalancing parameter
+/// \brief Parameter class for load balancing parameter
 class ParamLoadBalCL : public virtual ParamBaseCL
 {
   protected:
     void RegisterParams();
 
   public:
-  /// \name Loadbalancing
+  /// \name Load balancing
   //@{
-    int refineStrategy;                         ///< Algorithm of calculate the loabal-graph for refinement
+    int refineStrategy;                         ///< Algorithm to calculate the load balancing graph for refinement
     double quality;                             ///< quality-parameter for ParMetis
   //@}
 
@@ -51,34 +51,34 @@ class ParamParRefCL :
   //@{
     int init_cond;              ///< init multigrid as brick (0) or read from serialization file
     int refined;                ///< number of refinements, that has been done to create multigrid in case of init_cond==1
-    int markall;                ///< number of refinements of all tetraeder
+    int markall;                ///< number of refinements of all tetrahedra
     int markdrop;               ///< number of refinements of the drop
     int markcorner;             ///< number or refinements around the corner (0,0,0)
-    int markingproc;            ///< number of the proc that should mark its tetraeder
+    int markingproc;            ///< number of the proc that should mark its tetrahedra
     int Strategy;               ///< Strategy for refinement
   //@}
   /// \name Coarsening
   //@{
-    int coarsedrop;             ///< number of coarsening tetraeder of the drop
-    int coarseall;              ///< number of coarsening all tetraeder
-    int unmarkingproc;          ///< number of the proc that should unmark its tetraeder
+    int coarsedrop;             ///< number of coarsening tetrahedra of the drop
+    int coarseall;              ///< number of coarsening all tetrahedra
+    int unmarkingproc;          ///< number of the proc that should unmark its tetrahedra
   //@}
-  /// \name Loadbalancing
+  /// \name Load balancing
   //@{
-    int refineStrategy;         ///< Algorithm of calculate the loabal-graph for refinement
-    int coarseStrategy;         ///< Algorithm of calculate the loabal-graph for coarsening
-    int middleMig;              ///< Do a loadbalancing step with adaptive graph partitioning after refinement and before coarsening
+    int refineStrategy;         ///< Algorithm to calculate the load balancing graph for refinement
+    int coarseStrategy;         ///< Algorithm to calculate the load balancing graph for coarsening
+    int middleMig;              ///< Do a load balancing step with adaptive graph partitioning after refinement and before coarsening
   //@}
   /// \name Misc
   //@{
     int printSize;              ///< Should the size of the mg for all MG be displayed
-    int printPMG;               ///< Should the debuginfo of the ParMultiGridCL printed into a file
+    int printPMG;               ///< Should the debug info of the ParMultiGridCL printed into a file
     int printGEO;               ///< Should the mesh be printed in Geomview format
     int printTime;              ///< Should the time for each part be printed
     int checkRef;               ///< Check parallel multigrid after every refine
     int checkMig;               ///< Check parallel multigrid after every migrate
     int checkDDD;               ///< do a DDD-GCC (Global Consistency Check)
-    string init_pre;            ///< prefix of files, where the serializated multigrid can be found
+    string init_pre;            ///< prefix of files, where the serialized multigrid can be found
   //@}
 
     ParamParRefCL()                        { RegisterParams(); }
@@ -101,7 +101,7 @@ class ParamParStokesCL :
     void RegisterParams();
 
   public:
-  /// \name Stokes-Coeffs
+  /// \name Stokes coefficients
   //@{
     double nu;                                  ///< Coeff of the diffusion
   //@}
@@ -109,11 +109,11 @@ class ParamParStokesCL :
   //@{
     int basicref_x, basicref_y, basicref_z;     ///< number of basic refinements of the brick
     double dx, dy, dz;                          ///< Dimension of the brick
-    int refall;                                 ///< number of refinements of all tetraeder
+    int refall;                                 ///< number of refinements of all tetrahedra
   //@}
-  /// \name Loadbalancing
+  /// \name Load balancing
   //@{
-    int refineStrategy;                         ///< Algorithm of calculate the loabal-graph for refinement
+    int refineStrategy;                         ///< Algorithm to calculate the load balancing graph for refinement
   //@}
   /// \name Misc
   //@{
@@ -142,14 +142,14 @@ class ParamParInstatStokesCL : public virtual ParamParStokesCL
   //@{
     double    inflowVel;                        ///< max. inflow velocity (parabolic profile)
     Point3DCL g;                                ///< gravity
-    double    frequence;                        ///< frequence of inflow
-    double    ampl;                             ///< amplitute of inflow
+    double    frequence;                        ///< frequency of inflow
+    double    ampl;                             ///< amplitude of inflow
   //@}
   /// \name Time
   //@{
-    int timesteps;                              ///< number of timesteps
+    int timesteps;                              ///< number of time steps
     double theta;                               ///< for theta-scheme
-    double stepsize;                            ///< timestep-size
+    double stepsize;                            ///< time step size
   //@}
 
     ParamParInstatStokesCL() : ParamParStokesCL()
@@ -165,20 +165,20 @@ class ParamParPoissonCL : public ParamBrickCL
     void RegisterParams();
 
   public:
-  /// \name Poisson-Coeffs
+  /// \name Poisson Coefficients
   //@{
     double nu;                                  ///< Coeff of the diffusion
   //@}
   /// \name Refining
   //@{
-    int refall;                                 ///< number of refinements of all tetraeder or number of adaptive steps
-    int markdrop;                               ///< number of refinements of tetraeder around drop
-    int markcorner;                             ///< number of refinements of tetraeder around corner
+    int refall;                                 ///< number of refinements of all tetrahedra or number of adaptive steps
+    int markdrop;                               ///< number of refinements of tetrahedra around drop
+    int markcorner;                             ///< number of refinements of tetrahedra around corner
     int adaptiv;                                ///< Should the adaptive-strategy be used
   //@}
-  /// \name Loadbalancing
+  /// \name Load balancing
   //@{
-    int refineStrategy;                         ///< Algorithm of calculate the loabal-graph for refinement
+    int refineStrategy;                         ///< Algorithm to calculate the load balancing graph for refinement
     int transferUnks;                           ///< Should the unknowns be transfered too
   //@}
   /// \name Solver
@@ -191,7 +191,7 @@ class ParamParPoissonCL : public ParamBrickCL
     int iter;                                   ///< max iterations for the solver
     double tol;                                 ///< toleration for the solver
     int restart;                                ///< if solver==GMRES, dimension of Krylov subspace, solver==GCR, truncation
-    int useMGS;                                 ///< if solver=GMRES, use the modified Gramm-Schmidt
+    int useMGS;                                 ///< if solver=GMRES, use the modified Gram-Schmidt
     int relative;                               ///< use relative resid
     int accur;                                  ///< use accur variant of solver, if exists
     int modified;                               ///< use modified variant for better scalability
@@ -203,7 +203,7 @@ class ParamParPoissonCL : public ParamBrickCL
     int printMG;                                ///< print the multigrid as ascii file
     int printSize;                              ///< print information about the multigrid
     int printUnknowns;                          ///< print information about number of unknowns
-    int check;                                  ///< check multigrid for sanety
+    int check;                                  ///< check multigrid for sanity
   //@}
   /// \name Ensight
   //@{
@@ -245,8 +245,8 @@ class ParamParExchangeCL : public ParamBaseCL
   //@{
     int basicref_x, basicref_y, basicref_z;     ///< number of basic refinements of the brick
     double dx, dy, dz;                          ///< Dimension of the brick
-    int refall;                                 ///< number of refinements of all tetraeder or number of adaptive steps
-    int refineStrategy;                         ///< Algorithm of calculate the loabal-graph for refinement
+    int refall;                                 ///< number of refinements of all tetrahedra or number of adaptive steps
+    int refineStrategy;                         ///< Algorithm to calculate the load balancing graph for refinement
     int migEveryTime;                           ///< Migration after every refinement
   //@}
     ParamParExchangeCL()                        { RegisterParams(); }
@@ -263,9 +263,9 @@ class ParamParNavStokesCL : public virtual ParamParInstatStokesCL
   public:
     /// \name NavierStokes
     //@{
-    double reduction;                           ///< reduction within adaptive fixpoint iteration
-    int    nav_iter;                            ///< maximal iterations of fixpoint steps
-    double nav_tol;                             ///< tolerance for fixpoint iteration
+    double reduction;                           ///< reduction within adaptive fixed point iteration
+    int    nav_iter;                            ///< maximal iterations of fixed point steps
+    double nav_tol;                             ///< tolerance for fixed point iteration
     int    markTop;
     //@}
 
@@ -341,9 +341,9 @@ class ParamParFilmCL : public ParamBaseCL
   /// \name Geometry
   //@{
     Point3DCL Dim;                              ///< Dimension of the brick
-    int nx;                                     ///< Number of gridpoints in x direction
-    int ny;                                     ///< Number of gridpoints in y direction
-    int nz;                                     ///< Number of gridpoints in z direction
+    int nx;                                     ///< Number of grid points in x direction
+    int ny;                                     ///< Number of grid points in y direction
+    int nz;                                     ///< Number of grid points in z direction
     int Refine;                                 ///< Number of regular refinements
   //@}
   /// \name Material data
@@ -361,7 +361,7 @@ class ParamParFilmCL : public ParamBaseCL
     int    Restart;                             ///< Restart of GMRES
     int    Iter;                                ///< Maximal iterations
     double Tol;                                 ///< Tolerance
-    int    UseMGS;                              ///< use standard or modified Gramm-Schmidt
+    int    UseMGS;                              ///< use standard or modified Gram-Schmidt
   //@}
   /// \name Ensight
   //@{
@@ -387,10 +387,10 @@ class ParamParSerCL :
   public:
   /// \name Refining
   //@{
-    int markall;                ///< number of refinements of all tetraeder
+    int markall;                ///< number of refinements of all tetrahedra
     int markdrop;               ///< number of refinements of the drop
     int markcorner;             ///< number or refinements around the corner (0,0,0)
-    int markingproc;            ///< number of the proc that should mark its tetraeder
+    int markingproc;            ///< number of the proc that should mark its tetrahedra
   //@}
 
     int mode;                   ///< mode=0: write serialized multigrid into a file, mode=1: read serialized multigrid
