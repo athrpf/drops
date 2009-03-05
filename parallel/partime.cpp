@@ -55,6 +55,12 @@ double ParTimerCL::TestBandwidth(std::ostream& os, int messageSize, int numTest)
     if (ProcCL::IamMaster())
         os << "Testing bandwidth ...\n";
 
+    if (ProcCL::Size()==1){
+        if (ProcCL::IamMaster())
+            os << " => Skipping, because only a single processor is involved" << std::endl;
+        return 0.;
+    }
+
     std::valarray<byte> buffer('a', messageSize*1024*1024);
     ParTimerCL timer;
     timer.Start();

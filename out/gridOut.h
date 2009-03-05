@@ -270,10 +270,18 @@ class QuadOutCL
     Matrix3DCL<int>   *geom_info_;   // this matrix contains information, how many processors write out a single point of the quadrilateral gird
     size_t             geom_version_;// version of the multigrid (for geom_info_)
     Matrix3DCL<LocationCL> locations_;// store information, where the quadrilateral can be found
+    ProcCL::OperationT reduceOp_;     // operation for user defined reduce
 #endif
 
   private:
     void CheckFile( const std::ofstream&) const;
+
+#ifdef _PAR
+    template <typename T>
+    static inline void PerformReduce(const void* invec, void* inoutvec, int len);
+    static inline void ReduceCXX(const void* invec, void* inoutvec, int len, const ProcCL::DatatypeT& datatype);
+    static inline void ReduceC(void* invec, void* inoutvec, int* len, ProcCL::DatatypeT* datatype);
+#endif
 
   public:
     QuadOutCL( const MultiGridCL& mg, const IdxDescCL* idx)
@@ -287,7 +295,12 @@ class QuadOutCL
                const Point3DCL& bary, const Point3DCL& rot)
       : MG_( mg), idx_( idx), geom_info_(0), geom_version_(size_t(-1))
       { Init(nx, ny, nz, h, bary, rot);}
-    ~QuadOutCL() { if (geom_info_) delete geom_info_; }
+    ~QuadOutCL() {
+        if (geom_info_) delete geom_info_;
+#ifdef _PAR
+        ProcCL::FreeOp(reduceOp_);
+#endif
+    }
 
     /// \brief Store geometric information about the quadrilateral grid
     void Init(int nx, int ny, int nz, const Point3DCL& h,
@@ -337,6 +350,13 @@ inline void QuadOutCL::Init(int nx, int ny, int nz, const Point3DCL& h,
     rotmat_= RZ * RY * RX;
 
     locations_.resize(gridpts_[0], gridpts_[1], gridpts_[2]);
+#ifdef _PAR
+# ifdef _MPICXX_INTERFACE
+    ProcCL::InitOp(reduceOp_, &ReduceCXX, true);
+# else
+    ProcCL::InitOp(reduceOp_, &ReduceC, true);
+#endif
+#endif
 }
 
 
@@ -345,6 +365,40 @@ inline void QuadOutCL::CheckFile( const std::ofstream& os) const
     if (!os) throw DROPSErrCL( "QuadOutCL: error while opening file!");
 }
 
+
+#ifdef _PAR
+template <typename T>
+inline void QuadOutCL::PerformReduce(const void* invec, void* inoutvec, int len)
+{
+    T* in   = (T*) invec;
+    T* inout= (T*) inoutvec;
+    for (int i=0; i<len; ++i){
+    	const T abs_inout= inout[i]<0 ? -inout[i] : inout[i];
+    	const T abs_in   = in[i]<0    ? -in[i]    : in[i];
+        inout[i]= abs_inout>abs_in ? inout[i] : in[i];
+	}
+}
+
+inline void QuadOutCL::ReduceC(void* invec, void* inoutvec, int* len, ProcCL::DatatypeT* datatype)
+{
+    if ( *datatype==ProcCL::MPI_TT<double>::dtype ){
+        PerformReduce<double>(invec, inoutvec, *len);
+    }
+    else if ( *datatype==ProcCL::MPI_TT<int>::dtype  ){
+        PerformReduce<int>(invec, inoutvec, *len);
+    }
+}
+
+inline void QuadOutCL::ReduceCXX(const void* invec, void* inoutvec, int len, const ProcCL::DatatypeT& datatype)
+{
+    if ( datatype==ProcCL::MPI_TT<double>::dtype ){
+        PerformReduce<double>(invec, inoutvec, len);
+    }
+    else if ( datatype==ProcCL::MPI_TT<int>::dtype  ){
+        PerformReduce<int>(invec, inoutvec, len);
+    }
+}
+#endif
 
 inline void QuadOutCL::putLog( std::string fileName)
 {
@@ -412,7 +466,7 @@ inline void QuadOutCL::putGeom( std::string fileName)
 #pragma omp master
         std::cout << "   * Using "<<num_threads<<" thread(s) to get geometry ..." << std::endl;
     }
-#pragma omp for
+#pragma omp for schedule(dynamic)
     for (int k=0; k<gridpts_[2]; ++k)
     {
 #ifndef _PAR
@@ -444,7 +498,7 @@ inline void QuadOutCL::putGeom( std::string fileName)
     // Collect information on master processor, which writes values in the given file
     geom_info_   = new Matrix3DCL<int>(output);
     geom_version_= MG_.GetVersion();
-    ProcCL::GlobalSum(output.GetVals(), geom_info_->GetVals(), output.size());
+    ProcCL::GlobalOp(output.GetVals(), geom_info_->GetVals(), output.size(), -1, reduceOp_);
     if (ProcCL::IamMaster())
         WriteVals(*os, geom_info_->GetVals(), gridpts_[0], gridpts_[1], gridpts_[2], 2);
 #endif
@@ -452,7 +506,6 @@ inline void QuadOutCL::putGeom( std::string fileName)
     timer.Stop(); duration=timer.GetTime();
     IF_MASTER
         std::cerr << "   * took "<<duration<<" sec."<<std::endl;
-
 }
 
 
@@ -521,9 +574,9 @@ void QuadOutCL::putScalar( std::string fileName, const DiscScalT& v)
     Matrix3DCL<double> *globalsol=0;
     if (ProcCL::IamMaster())
         globalsol = new Matrix3DCL<double>(output);
-    ProcCL::GlobalSum(output.GetVals(),
-                      ProcCL::IamMaster()? globalsol->GetVals() : 0,
-                      output.size(), ProcCL::Master());
+    ProcCL::GlobalOp(output.GetVals(),
+                     ProcCL::IamMaster()? globalsol->GetVals() : 0,
+                     output.size(), ProcCL::Master(), reduceOp_);
     if (ProcCL::IamMaster())
         WriteVals(*os, globalsol->GetVals(), gridpts_[0], gridpts_[1], gridpts_[2], 12);
     if (globalsol) delete globalsol;
@@ -632,7 +685,9 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
 #else
     if (ProcCL::IamMaster())
         globalsol = new double[3*output.size()];
-    ProcCL::GlobalSum(localsol, ProcCL::IamMaster()? globalsol : 0, 3*output.size(), ProcCL::Master());
+    ProcCL::GlobalOp(localsol,
+                     ProcCL::IamMaster()? globalsol : 0,
+                     3*output.size(), ProcCL::Master(), reduceOp_);
 #endif
 
     IF_MASTER
@@ -754,7 +809,9 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
 #else
     if (ProcCL::IamMaster())
         globalsol = new double[3*output.size()];
-    ProcCL::GlobalSum(localsol, ProcCL::IamMaster()? globalsol : 0, 3*output.size(), ProcCL::Master());
+    ProcCL::GlobalOp(localsol,
+                     ProcCL::IamMaster()? globalsol : 0,
+                     3*output.size(), ProcCL::Master(), reduceOp_);
 #endif
 
     IF_MASTER

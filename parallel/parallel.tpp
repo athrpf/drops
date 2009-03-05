@@ -136,6 +136,11 @@ inline void ProcCL::Commit(DatatypeT& type)
 inline void ProcCL::Free(ProcCL::DatatypeT& type)
   { type.Free(); }
 
+inline void ProcCL::InitOp(OperationT& op, FunctionT* function, bool commute)
+  { op.Init(function, commute);}
+
+inline void ProcCL::FreeOp(OperationT& op)
+  { op.Free(); }
 
 template<typename T>
   inline void ProcCL::Bcast(T* data, int size, int proc)
@@ -239,6 +244,12 @@ inline void ProcCL::Commit(DatatypeT& type)
 
 inline void ProcCL::Free(ProcCL::DatatypeT& type)
   { MPI_Type_free(&type); }
+
+inline void ProcCL::InitOp(OperationT& op, FunctionT* function, bool commute)
+  { MPI_Op_create(function, commute, &op); }
+
+inline void ProcCL::FreeOp(OperationT& op)
+  { MPI_Op_free(&op); }
 
 template<typename T>
   inline void ProcCL::Bcast(T* data, int size, int proc)

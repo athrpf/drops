@@ -72,6 +72,7 @@ class ProcCL
     typedef ::MPI::Datatype DatatypeT;          ///< type of data-types
     typedef ::MPI::Comm     CommunicatorT;      ///< type of communicator
     typedef ::MPI::Aint     AintT;              ///< type of addresses
+    typedef ::MPI::User_function FunctionT;     ///< type of user defined functions
 #else
     typedef MPI_Op          OperationT;         ///< type of operations
     typedef MPI_Status      StatusT;            ///< type of stati
@@ -79,6 +80,7 @@ class ProcCL
     typedef MPI_Datatype    DatatypeT;          ///< type of data-types
     typedef MPI_Comm        CommunicatorT;      ///< type of communicator
     typedef MPI_Aint        AintT;              ///< type of addresses
+    typedef MPI_User_function FunctionT;        ///< type of user defined functions
 #endif
 
     template<typename> struct MPI_TT;           ///< Traits to determine the corresponding MPI_Datatype
@@ -90,19 +92,6 @@ class ProcCL
     static Uint size_;                          // How many are out there?
     static const CommunicatorT& Communicator_;  // communicator (=MPI_COMM_WORLD, MPI::COMM_WORLD)
     static MuteStdOstreamCL* mute_;             // for muting std::cerr, std::cout, std::clog
-
-    /// \name helper functions for global operations
-    //@{
-      /// \brief Global operation with one argument
-    template <typename T>
-    static inline T GlobalOp(const T&, int, const ProcCL::OperationT&);
-      /// \brief Global operation with multiple argument
-    template <typename T>
-    static inline void GlobalOp(const T*, T*, int, int, const ProcCL::OperationT&);
-      /// \brief Global operation a valarray as argument
-    template <typename T>
-    static inline std::valarray<T> GlobalOp(const std::valarray<T>&, int, const ProcCL::OperationT&);
-    //@}
 
     static ProcCL* instance_;                   ///< only one instance of ProcCL may exist (Singleton-Pattern)
     ProcCL(int*, char***);                      ///< constructor, mutes all non-master standard output streams
@@ -175,6 +164,10 @@ class ProcCL
     static inline void Commit(DatatypeT&);
       /// \brief MPI-wrapper for freeing a datatype
     static inline void Free(ProcCL::DatatypeT& type);
+      /// \brief MPI-wrapper for creating an operation
+    static inline void InitOp(OperationT&, FunctionT*, bool);
+      /// \brief MPI-wrapper for freeing an operation
+    static inline void FreeOp(OperationT&);
       /// \brief MPI-Bcast-wrapper
     template <typename T>
     static inline void Bcast(T*, int, int);
@@ -217,6 +210,19 @@ class ProcCL
     template <typename T>
     static inline void Bcast(std::valarray<T>&, int);
     //@}
+    //@}
+
+    /// \name helper functions for global operations
+    //@{
+      /// \brief Global operation with one argument
+    template <typename T>
+    static inline T GlobalOp(const T&, int, const ProcCL::OperationT&);
+      /// \brief Global operation with multiple argument
+    template <typename T>
+    static inline void GlobalOp(const T*, T*, int, int, const ProcCL::OperationT&);
+      /// \brief Global operation a valarray as argument
+    template <typename T>
+    static inline std::valarray<T> GlobalOp(const std::valarray<T>&, int, const ProcCL::OperationT&);
     //@}
 
     /// \name Global operations with synchronization
