@@ -245,8 +245,7 @@ class IdxDescCL: public FE_InfoCL
     { Bnd_= Bnd; match_= match; CreateNumbering( level, mg, lsetp); }
     /// \brief Update numbering of extended DoFs.
     /// Has to be called whenever level set function has changed to account for the moving interface.
-    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
-    { if (IsExtended()) NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false); }
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset);
     /// \brief Returns true, if XFEM is used and standard DoF \p dof is extended.
     bool IsExtended( IdxT dof) const
     { return IsExtended() ? extIdx_[dof] != NoIdx : false; }

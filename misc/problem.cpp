@@ -369,6 +369,16 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
 #endif
 }
 
+void IdxDescCL::UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
+{
+    if (IsExtended()) {
+    NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false);
+#ifdef _PAR
+    ex_->CreateList(mg, this, true, true);
+#endif
+    }
+}
+
 void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
 /// This routine writes NoIdx as unknown-index for all indices of the
 /// given index-description. NumUnknowns will be set to zero.
@@ -529,13 +539,12 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
     std::valarray<IdxT> local_information= information;
     ProcCL::GlobalSum(Addr(local_information), Addr(information), 5, ProcCL::Master());
 #endif
-    IF_MASTER
-      std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " << information[4]
-                << "\t#new dof: " << information[0]
-                << "\t#deleted dof: " << information[1]
-                << "\t#renumbered dof: " << information[2]
-                << "\t#copied extended-dof: " << information[3]
-                << '\n';
+    std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " << information[4]
+              << "\t#new dof: " << information[0]
+              << "\t#deleted dof: " << information[1]
+              << "\t#renumbered dof: " << information[2]
+              << "\t#copied extended-dof: " << information[3]
+              << '\n';
 }
 
 } // end of namespace DROPS
