@@ -164,7 +164,7 @@ class ExchangeCL
       // flags and sizes
     Ulint numLocalIdx_;    // number of local sysnums
     Ulint numDistrIdx_;    // number of distributed sysnums
-    Ulint vecSize_;        // check, how big the vector for accumulation mus be (cannot prevent all errors)
+    Ulint vecSize_;        // check, how long the vector for accumulation must be (cannot prevent all errors)
     Uint  numNeighs_;      // number of neighbors
     Ulint numAllRecvUnk_;  // size, that the receive buffer must has at least
     bool  created_;        // Flag for checking if the lists are created

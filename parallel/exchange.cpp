@@ -240,7 +240,7 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
     // Falls gewuenscht, werden jetzt noch die Indices erstellt, so dass akkumulierte Vektoren behandelt werden
     // koennen. Dies ist im Prinzip die Umkehrung der akkumulierten in die verteilte Form.
     //
-    // Die geteilten DoFs werden so aufgeteilt, dass für eine DoF genau ein Prozessor zustaendig ist. Dazu
+    // Die geteilten DoFs werden so aufgeteilt, dass fuer eine DoF genau ein Prozessor zustaendig ist. Dazu
     // sammelt jeder Prozessor die verteilten DoFs ein, falls er der Prozessor mit der kleinsten Id ist.
     /// \todo (of) mehr Dokumentation
     if (forAccParDot)
@@ -279,18 +279,18 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
 
         // Speichere eigene DoFs und sende fremde DoFs
         for (CoupProcIdxT::const_iterator it(coup.begin()), end(coup.end()); it!=end; ++it){
-            // Die erste Haelfte der Indices, die mit einem anderen Proc geteilt werden, übernimmt der Proc selber, die anderen werden gesendet
+            // Die erste Haelfte der Indices, die mit einem anderen Proc geteilt werden, uebernimmt der Proc selber, die anderen werden gesendet
             const Uint size=it->second.size();
             const Uint count=size/2;
             sendBuf[sendpos].resize(count);
             int pos=0;
 
-            // Indices, für die dieser Proc zustaendig ist
+            // Indices, fuer die dieser Proc zustaendig ist
             for (Uint i=0; i<count+(size%2); ++i){
                 AccDistIndex.push_back(it->second[i]);
             }
 
-            // Indices, für die der andere Proc zustaendig ist
+            // Indices, fuer die der andere Proc zustaendig ist
             for (Uint i=count+(size%2); i<size; ++i){
                 sendBuf[sendpos][pos++] = GetExternalIdxFromProc(it->second[i],it->first);
             }
@@ -303,7 +303,7 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
         }
 
 
-        // Empfangen der DoFs, für die dieser Proc zustaendig ist
+        // Empfangen der DoFs, fuer die dieser Proc zustaendig ist
         VectorBaseCL<IdxT> recvBuf;
         for (ProcNumCT::const_iterator proc(neighs.begin()), pend(neighs.end()); proc!=pend; ++proc){
             if (*proc<me){
@@ -319,7 +319,7 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
             }
         }
 
-        // Warten bis alle MPI-Sends abgeschlossen ist, damit die Felder gelöscht werden können
+        // Warten bis alle MPI-Sends abgeschlossen ist, damit die Felder geloescht werden koennen
         ProcCL::WaitAll(req);
 
         // Setzen der Flags
@@ -332,10 +332,10 @@ void ExchangeCL::CreateList(const MultiGridCL& mg, IdxDescCL *RowIdx, bool Creat
 /// In order to handle numerical data, all processors must know something about
 /// the distributed sysnums. I. e. which sysnums are stored local and which are
 /// distributed. And if they do have a distributed sysnum, they have to know,
-/// with wich other processors, they share this sysnum. All neccessary lists
+/// with which other processors, they share this sysnum. All necessary lists
 /// and data structures are set up by this function.
 /// \param mg        the multigrid
-/// \param RowIdx    a pointer to the indix of the dof (e.g. velocity, pressure, ...)
+/// \param RowIdx    a pointer to the index of the dof (e.g. velocity, pressure, ...)
 /// \param CreateMap This function can create a mapping (localsysnum, proc)->external sysnum. Set this
 ///    this flag, to create such a mapping. This map is also used to perform inner products on accumulated
 ///    vectors.
