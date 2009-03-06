@@ -372,9 +372,9 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
 void IdxDescCL::UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
 {
     if (IsExtended()) {
-    NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false);
+        NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false);
 #ifdef _PAR
-    ex_->CreateList(mg, this, true, true);
+        ex_->CreateList(mg, this, true, true);
 #endif
     }
 }
@@ -532,19 +532,14 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
         }
     }
 
-    std::valarray<IdxT> information( 5);
-    information[0]= ni; information[1]= di; information[2]= ri;
-    information[3]= ci; information[4]= Xidx_.size();
-#ifdef _PAR
-    std::valarray<IdxT> local_information= information;
-    ProcCL::GlobalSum(Addr(local_information), Addr(information), 5, ProcCL::Master());
-#endif
-    std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " << information[4]
-              << "\t#new dof: " << information[0]
-              << "\t#deleted dof: " << information[1]
-              << "\t#renumbered dof: " << information[2]
-              << "\t#copied extended-dof: " << information[3]
+#ifndef _PAR
+    std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " <<Xidx_.size()
+              << "\t#new dof: " << ni
+              << "\t#deleted dof: " << di
+              << "\t#renumbered dof: " << ri
+              << "\t#copied extended-dof: " << ci
               << '\n';
+#endif
 }
 
 } // end of namespace DROPS
