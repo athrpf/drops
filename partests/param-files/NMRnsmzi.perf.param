@@ -115,14 +115,14 @@ LoadBalancing {
 
 # Quadrilateral Grid
 QuadrilateralGrid {
-    Quad        =   0                       # Write out quadrilateral grid
-    GridX       =   48                      # Gridpoints in X dimension
-    GridY       =   48                      # Gridpoints in Y dimension
-    GridZ       =   48                      # Gridpoints in Z dimension
-    Stepsize    =   5e-05   5e-05   5e-05   # Stepsize in each direction
-    Barycenter  =   0   -0.0083 0           # Barycenter of the grid
-    Rotation    =   0   0       0           # Rotation
-    FileName    = ./wrapNMR                 # result-file prefix
+    Quad        = 1                     # Write out qudrilateral grid
+    GridX       = 128                    # Gridpoints in X dimension
+    GridY       = 100                    # Gridpoints in Y dimension
+    GridZ       = 37                    # Gridpoints in Z dimension
+    Stepsize    = 7.8e-5 23.5e-5 20e-5  # Stepsize in each direction
+    Barycenter  = -0.35e-3 -11e-3 0           # Barycenter of the grid
+    Rotation    = 0 0 0                 # Rotation
+    FileName    = ./wrapNMR             # result-file prefix
 }
 
 # Ensight settings

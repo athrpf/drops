@@ -423,13 +423,17 @@ class FileBuilderCL : public MGBuilderCL
     mutable std::map<size_t, FaceCL*>     faceAddressMap;
     mutable std::map<size_t, TetraCL*>   tetraAddressMap;
 
+#ifdef _PAR
+    /// \brief Read parallel information from a stream
+    template <typename SimplexT>
+    void ReadParInfo(std::istream&, SimplexT&) const;
+#endif
     void BuildVerts   (MultiGridCL*) const;
     void BuildEdges   (MultiGridCL*) const;
     void BuildFacesI  (MultiGridCL*) const;
     void BuildTetras  (MultiGridCL*) const;
     void AddChildren  ()             const;
     void BuildFacesII (MultiGridCL*) const;
-
     void CheckFile( const std::ifstream& is) const;
 
   protected:
@@ -465,6 +469,11 @@ class MGSerializationCL
     void CreateAddrMaps ();
 
     // Writing-Routines
+#ifdef _PAR
+    /// \brief Write information about distribution
+    template <typename SimplexT>
+    void WriteParInfo(std::ofstream& os, const SimplexT&) const;
+#endif
     void WriteEdges    ();
     void WriteFaces    ();
     void WriteVertices ();
@@ -477,6 +486,46 @@ class MGSerializationCL
     void WriteMG ();
 };
 
+#ifdef _PAR
+
+/// \brief Specialization of ReadParInfo for edges due to accMFR
+template <>
+void FileBuilderCL::ReadParInfo<EdgeCL>(std::istream&, EdgeCL&) const;
+
+template <typename SimplexT>
+  void FileBuilderCL::ReadParInfo(std::istream& is, SimplexT& s) const
+/// read information from stream \a is, tell simplex these information. If
+/// the simplex was a distributed object while serialization notify DDD about
+/// the this distributed object
+{
+    DDD_PRIO prio;
+    int numDist, distProc;
+    DDD_GID oldGid;
+
+    is >> prio >> numDist;
+    s.SetPrio( prio);
+    if ( numDist){
+        is >> oldGid;
+        for (int i=0; i<numDist; ++i){
+            is >> distProc;
+            Assert( distProc!=ProcCL::MyRank(), DROPSErrCL("FileBuilderCL::ReadParInfo: Cannot identify with myself"), DebugParallelC);
+            DDD_IdentifyNumber( s.GetHdr(), distProc, oldGid);
+        }
+    }
+}
+
+template <typename SimplexT>
+  void MGSerializationCL::WriteParInfo(std::ofstream& os, const SimplexT& s) const
+{
+    os << ' ' << s.GetPrio() << ' ' << s.GetNumDist()-1;
+    if ( !s.IsLocal()){
+        os << ' ' << s.GetGID();
+        for (const int* proclist= s.GetProcList(); *proclist!=-1; proclist+=2)
+            if ( *proclist!=ProcCL::MyRank())
+                os << ' ' << (*proclist);
+    }
+}
+#endif
 
 } //end of namespace DROPS
 

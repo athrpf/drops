@@ -149,7 +149,7 @@ double DistanceFct( const DROPS::Point3DCL& p)
 namespace DROPS{
 
 template<class Coeff>
-  void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset, ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
+  void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset, ParMultiGridCL& pmg)
 {
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
     ParTimerCL time;
@@ -157,13 +157,14 @@ template<class Coeff>
 
     MultiGridCL& mg=pmg.GetMG();
 
+    // Create indices
+    CreateIdxAndAssignIdx(Stokes, lset, mg);
+
     switch (C.IniCond)
     {
       // zero flow
       case 0:
       {
-        // Create indices
-        CreateIdxAndAssignIdx(Stokes, lset, mg);
         DisplayUnks(Stokes, lset, mg);
 
         // Initial velocity is zero
@@ -177,8 +178,6 @@ template<class Coeff>
       // stationary flow with/without drop
       case 1: case 2:
       {
-        // Create indices
-        CreateIdxAndAssignIdx(Stokes, lset, mg);
         // Initial velocity is zero
         Stokes.InitVel( &Stokes.v, Null);
         // Initial levelset function is distance to the drop
@@ -240,59 +239,26 @@ template<class Coeff>
         delete statStokesSolver;
       }break;
 
-      case 3:
+      case -1:
       {
-        // Create and number (on master) indices
-        MLIdxDescCL read_vel_idx( vecP2_FE), read_pr_idx( P1_FE);
-        IdxDescCL read_lset_idx( P2_FE);
-
-        if (ProcCL::IamMaster()){
-            if (C.checkMG){
-                std::ofstream sanity_file("ser_sanity.txt");
-                if (mg.IsSane(sanity_file))
-                    std::cerr << "Multigrid is sane on master\n";
-                else
-                    std::cerr << "Multigrid is not sane on master\n ==> Check right dimension of the computational domain!";
-            }
-            Stokes.CreateNumberingVel( mg.GetLastLevel(), &read_vel_idx,  false);
-            Stokes.CreateNumberingPr ( mg.GetLastLevel(), &read_pr_idx,   false);
-            lset.CreateNumbering     ( mg.GetLastLevel(), &read_lset_idx, false);
+        MLIdxDescCL* pidx= &Stokes.pr_idx;
+        // Read velocity, pressure and levelset
+        ReadFEFromFile( lset.Phi, mg, C.IniData+"levelset");
+        ReadFEFromFile( Stokes.v, mg, C.IniData+"velocity");
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
+        if (Stokes.UsesXFEM()) {
+            VecDescCL pneg( pidx), ppos( pidx);
+            ReadFEFromFile( pneg, mg, C.IniData+"pressureNeg");
+            ReadFEFromFile( ppos, mg, C.IniData+"pressurePos");
+            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, mg);
         }
-
-        // Allocate memory for unknowns
-        VecDescCL read_vel_vec(&read_vel_idx), read_pr_vec(&read_pr_idx), read_lset_vec(&read_lset_idx);
-
-        // Read DOF
-        if (ProcCL::IamMaster()){
-            ReadDOF(mg, &read_vel_vec,  std::string(C.ser_dir+"velocity"));
-            ReadDOF(mg, &read_pr_vec,   std::string(C.ser_dir+"pressure"));
-            ReadDOF(mg, &read_lset_vec, std::string(C.ser_dir+"level-set"));
+        else{
+            ReadFEFromFile( Stokes.p, mg, C.IniData+"pressure");
         }
-
-        // Distribute MG
-        lb.DoMigration();
-        if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(pmg)) )
-            throw DROPSErrCL("MultiGrid is incorrect!");
-
-        // Create indices
-        CreateIdxAndAssignIdx(Stokes, lset, mg);
-        /// \todo Hier muessen noch die Level der Indices gesetzt werden. Warum?
-//         read_vel_idx.TriangLevel = Stokes.vel_idx.TriangLevel;
-//         read_pr_idx.TriangLevel  = Stokes.pr_idx.TriangLevel;
-//         read_lset_idx.TriangLevel= lset.idx.TriangLevel;
-
-        pmg.HandleNewIdx(&read_vel_idx,  &Stokes.v);
-        pmg.HandleNewIdx(&read_pr_idx,   &Stokes.p);
-        pmg.HandleNewIdx(&read_lset_idx, &lset.Phi);
-        pmg.DelAllUnkRecv();
-        pmg.DeleteRecvBuffer();
-
-        Stokes.DeleteNumbering(&read_vel_idx);
-        Stokes.DeleteNumbering( &read_pr_idx);
-        lset.DeleteNumbering(     &read_lset_idx);
 
         if (ProcCL::IamMaster())
-                std::cerr << "- Initial Conditions successfull read\n";
+            std::cerr << "- Initial Conditions successfull read\n";
       } break;
     }
 
@@ -315,8 +281,8 @@ template<typename Coeff>
                                   (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
 
     // Serialization
-    typedef TwoPhaseSerializationCL<StokesProblemT, LevelsetP2CL> SerializationT;
-    SerializationT serializer(adap.GetMG(), C.ser_dir, Stokes, lset, C.overwrite, C.num_steps/(C.overwrite+1));
+    typedef TwoPhaseStoreCL<StokesProblemT> SerializationT;
+    SerializationT serializer(adap.GetMG(), Stokes, lset, C.ser_dir);
 
     if (C.vtk)
         vtkwriter.write();
@@ -452,8 +418,9 @@ template<typename Coeff>
             if (ProcCL::IamMaster())
                 std::cerr << "\n==> Serialize data ...\n";
             time.Reset();
-            serializer.Serialize(step);
+            serializer.Write();
             time.Stop(); duration=time.GetMaxTime();
+
             if (ProcCL::IamMaster())
                 std::cerr << "- Serialization took " <<duration<< " sec"<<std::endl;
         }
@@ -508,7 +475,7 @@ template<class Coeff>
     //Setup initial problem
     std::cerr << "=================================================================================== Init:\n"
               << "==> Initialize Problem\n";
-    InitProblemWithDrop(Stokes, lset, adapt.GetPMG(), adapt.GetLb());
+    InitProblemWithDrop(Stokes, lset, adapt.GetPMG());
 
     SolveCoupledNS(Stokes, lset, adapt);
 
@@ -558,11 +525,16 @@ int main (int argc, char** argv)
 
     CreateGeom(mg, bnddata, Inflow, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
 
+    DROPS::ParMultiGridCL::Instance().AttachTo(*mg);
+    DROPS::CheckParMultiGrid(DROPS::ParMultiGridCL::Instance());
+
     // Init problem
     EllipsoidCL::Init( C.Mitte, C.Radius );
-    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, C.refineStrategy);
+    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? 1 : -1)*C.refineStrategy);
 
-    adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
+    if (C.deserialization_file == "none")
+        adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
+
 
     MyStokesCL prob( *mg, ZeroFlowCL(C), *bnddata, DROPS::P1_FE, 0.0);
 

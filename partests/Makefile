@@ -157,7 +157,7 @@ TestBrickflowPar: \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
    ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
-   ../stokes/integrTime.o
+   ../stokes/integrTime.o ../misc/xfem.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestFilmPar: \

@@ -1,29 +1,33 @@
-##=============================================================
+#=============================================================
 #    DROPS parameter file for    TestBrickPar
 #    simulation of two-phase flow:
 #    sedimentation of a droplet
 #=============================================================
+
 # time stepping
 Time {
-  NumSteps      =   1000
+  NumSteps      =   0
   StepSize      =   1e-4
-  ThetaLevelset =   1   # backward Euler
-  ThetaStokes   =   1   # backward Euler
+  Theta         =   1   # backward Euler
+  Scheme        =   1     # time integration: 0=FS op.splitting, 1=theta-scheme
 }
 
 # flow solver
 Stokes {
- InnerIter     =   1000
- OuterIter     =   200
- InnerTol      =   1e-12
- OuterTol      =   1e-10
- StokesMethod  =   -1  # no effect
+  InnerIter     = 1000
+  OuterIter     = 200
+  InnerTol      = 0.1     # inner reduction for InexactUzawa
+  OuterTol      = 1e-10
+  StokesMethod  = 20401   # 1*= GCR, 2*= InexactUzawa, 3*= MinRes, 4*= GMRes, 5*= GMResR
+  PcAIter       = 500    # V-cycles multigrid, iter pc for A block
+  PcATol        = 2e-5   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
+  PcSTol        = 1e-4
+  XFEMStab      = 0.
 }
 
 # Navier-Stokes settings
 NavStokes {
   Nonlinear = 1
-  Scheme    = 1     # time integration: 0=FS op.splitting, 1=theta-scheme
   Tol       = 1e-7
   Iter      = 20
   Reduction = 0.1
@@ -35,7 +39,7 @@ Levelset {
   Iter          =   1000
   SD            =   0.1
   CurvDiff      =   -1
-  VolCorrection =   0
+  VolCorrection =   1
 }
 
 Coupling {
@@ -47,16 +51,18 @@ Coupling {
 
 # re-initialization of levelset function
 Reparam {
-  Freq      =   0   # 0 = no reparametrization
+  Freq      =   5   # 0 = no reparametrization
   Method    =   1   # 0/1 = fast marching without/with modification of zero, 2 = evolve rep. eq.
   NarrowBand=  -1.0 # Narrow-Band method, if euclidian reparametrization is used
+  MinGrad   =   0.1 # minimal allowed norm of the gradient of phi
+  MaxGrad   =   10  # maximal allowed norm of the gradient of phi
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq          =   0
-  FinestLevel   =   2          # finest level of the grid
-  Width         =   0.0115      # refine the grid in this distance to the middle of the drop/NMR-Window(?)
+  Freq          =   1
+  FinestLevel   =   1
+  Width         =   0.4e-3
 }
 
 # material data, all units are SI
@@ -67,23 +73,39 @@ Mat {
   ViscFluid     =   1.388e-3
   SmoothZone    =   1e-4
 }
+
 # experimental conditions
 Exp {
-  RadDrop   =   -1.75e-3 -1.75e-3 -1.75e-3
-  PosDrop   =   0  -11e-3  0                    # used to define, where the grid should be refined
+  RadDrop   =   1.75e-3 1.75e-3 1.75e-3
+  PosDrop   =   0  -10e-3  0
   Gravity   =   0   -9.81   0
   FlowDir   =   1   # flow in y-direction
-  InflowVel =   -0.0515
+  InflowVel =   -25e-3
   RadInlet  =   3.6e-3  # 3.5e-3 for old meas. cell
+  InflowFreq=   0       # inflow frequence
+  InflowAmpl=   0       # inflow amplitude
 }
 
 # surface tension
 SurfTens {
-  VarTension  = 0       # 0=off, 1=on
+  VarTension  = 1       # 0=off, 1=on
   SurfTension = 1.63e-3 # surface tension coefficient
   JumpWidth   = 5e-4    # jump width
   RelPos      = 0.5     # position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
   DirtFactor  = 0.8     # red. factor for surface tension (due to contamination) in lower droplet)
+}
+
+# mass transport
+Transp {
+  DoTransp    =       0       # 0=off, 1=on
+  Theta       =       0.5     # time integration theta scheme
+  Iter        =       200
+  Tol         =       1e-10
+  DiffPos     =       5e-3    # diffusion coefficient (pos. part)
+  DiffNeg     =       1e-2    # diffusion coefficient (neg. part)
+  H           =       0.5     # Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos     =       0.1     # initial concentration (pos. part)
+  IniCNeg     =       5       # initial concentration (neg. part)
 }
 
 LoadBalancing {
@@ -93,7 +115,7 @@ LoadBalancing {
 
 # Quadrilateral Grid
 QuadrilateralGrid {
-    Quad        = 0                     # Write out qudrilateral grid
+    Quad        = 1                     # Write out qudrilateral grid
     GridX       = 128                    # Gridpoints in X dimension
     GridY       = 100                    # Gridpoints in Y dimension
     GridZ       = 37                    # Gridpoints in Z dimension
@@ -109,15 +131,15 @@ Ensight {
     EnsCase     = nsmzi
     EnsDir      = ensight
     Binary      = 0
-    MasterOut   = 0
+    MasterOut   = 1
     GeomName    = messzelle
 }
 
 #VTK output
 VTK{
-    VTKOut      = 1
+    VTKOut      = 0
     VTKDir      = vtk
-    VTKName     = mzelle
+    VTKName     = brick_adapt
     Binary      = 0
 }
 
@@ -128,16 +150,19 @@ Info{
     CheckMG     = 1
 }
 
-# Write out results
-MGSerialization {
-  Serialization = 0
-  Overwrite     = 1
-  SerDir        = ./geometry/
+# domain, bnd/ini conditions
+DomainCond {
+  InitialCond   =       1      # 0=zero, 1/2=flow with/without drop, -1=read from file
+  GeomType      =       0      # 0=ReadMeshBuilder, 1=BrickBuilder
+  InitialFile   =       ensight/nsmzi
+  MeshFile      =       ../levelset/gambit/NMR_05.msh
+  BoundaryType  =       0       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
 }
 
-
-# miscellaneous
-XFEMStab    =   5e-6
-InitialCond =   2   # 0=zero, 1/2=flow with/without drop, 3=read from file
-InitialFile =   input/nsmzi
-MeshFile    =   ../levelset/gambit/NMR_05.msh
+# restart computation
+Restart {
+  Inputfile     =       none
+  Outputfile    =       ./geometry/
+  Overwrite     =       1
+  Serialization =       0
+}

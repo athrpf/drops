@@ -225,6 +225,7 @@ class VertexCL
     bool                  IsMaster        () const { return GetPrio()>=PrioMaster; }        ///< check if vertex is master
     bool                  MayStoreUnk     () const { return GetPrio()==PrioHasUnk; }        ///< check for ability of storing unknowns due to priority
     bool                  IsLocal         () const { return DDD_InfoIsLocal(GetHdr());}     ///< check if vertex is local
+    int                   GetNumDist      () const;                                         ///< get number of procs on which the vertex is stored
     bool                  IsExclusive     ( Priority prio=PrioMaster ) const;               ///< check if vertex is exclusive
     int *                 GetProcList     () const { return DDD_InfoProcList(GetHdr());}    ///< get list of procs and prios of this vertex
     void                  XferDelete      ()                                                ///< tell DDD vertex will be deleted
@@ -343,6 +344,7 @@ class EdgeCL
     void DecMarkForRef        () const { --_MFR; --_AccMFR; }                   ///< decrease the local and accumulated mark for refinement count
     void ResetMarkForRef      ()       { _MFR= 0; _AccMFR= 0; }                 ///< remove the local and accumulated mark for refinement
     short int GetAccMFR       () const {return _AccMFR;}                        ///< get accumulated mark for refinement
+    void SetAccMFR ( short int MFR)    { _AccMFR= MFR; }                        ///< Set accumulated MFR
 #endif
     bool IsMarkedForRemovement() const { return _RemoveMark; }                  ///< check if edge is marked for removement
     void SetRemoveMark        ()       { _RemoveMark= true; }                   ///< set mark for removement
@@ -365,10 +367,11 @@ class EdgeCL
     bool                  IsMaster        () const { return GetPrio()>=PrioMaster; }        ///< check if edge is master
     bool                  MayStoreUnk     () const { return GetPrio()==PrioHasUnk; }        ///< check for ability of storing unknowns due to priority
     bool                  IsLocal         () const { return DDD_InfoIsLocal(GetHdr());}     ///< check if this edge is just stored on this proc
+    int                   GetNumDist      () const;                                         ///< get number of procs on which the edge is stored
     int *                 GetProcList     () const { return DDD_InfoProcList(GetHdr());}    ///< get list of procs and prios of this edge
     bool                  IsExclusive     ( Priority prio=PrioMaster ) const;               ///< check if edge is exclusive
     void                  XferDelete      ()                                                ///< tell DDD that this edge will be deleted
-        { DDD_XferDeleteObj(&_dddH);
+    { DDD_XferDeleteObj(&_dddH);
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
@@ -485,6 +488,7 @@ class FaceCL
     bool            IsMaster       () const { return GetPrio()>=PrioMaster; }           ///< check if face is master
     bool            MayStoreUnk    () const { return GetPrio()==PrioHasUnk; }           ///< check for ability of storing unknowns due to priority
     bool            IsLocal        () const { return DDD_InfoIsLocal(GetHdr());}        ///< check if this face is just stored on this proc
+    int             GetNumDist     () const;                                            ///< get number of procs on which the face is stored
     int *           GetProcList    () const { return DDD_InfoProcList(GetHdr());}       ///< get list of procs and prios of this face
     bool            IsOnProcBnd    () const;                                            ///< check if face lies between two procs
     DDD_PROC        GetNeighborProc() const                                             ///< get neighbor proc over the face
@@ -608,6 +612,9 @@ class TetraCL
 
 // ===== Interface for refinement =====
     inline  TetraCL (VertexCL*, VertexCL*, VertexCL*, VertexCL*, TetraCL*, IdCL<TetraCL> id= IdCL<TetraCL>());     ///< constructor of verts and parent; FileBuilderCL has to construct the _Id, too, thus it can optionally be set.
+#ifdef _PAR
+    inline  TetraCL (VertexCL*, VertexCL*, VertexCL*, VertexCL*, TetraCL*, Uint, IdCL<TetraCL> id= IdCL<TetraCL>());     ///< constructor of verts and level, if no parent is available; FileBuilderCL has to construct the _Id, too, thus it can optionally be set.
+#endif
     TetraCL (const TetraCL&);                                                   ///< Danger!!! Copying simplices might corrupt the multigrid structure!!!
     inline ~TetraCL ();
 
@@ -669,6 +676,7 @@ class TetraCL
     bool    HasGhost   () const;                                                 ///< check if tetra has a ghost-copy somewhere
     bool    HasLbNr    () const { return _lbNr>=0;}                              ///< check if this tetra got a number for load balance
     bool    IsLocal    () const { return DDD_InfoIsLocal(GetHdr());}             ///< check if this tetra is just stored on this proc
+    int     GetNumDist () const;                                                 ///< get number of procs on which the tetra is stored
     int *   GetProcList() const { return DDD_InfoProcList(GetHdr());}            ///< get list of procs and prios of this tetra
     bool    IsExclusive( Priority prio=PrioMaster ) const;                       ///< check if tetra is exclusive
 
@@ -1546,6 +1554,20 @@ inline TetraCL::TetraCL (VertexCL* vp0, VertexCL* vp1, VertexCL* vp2, VertexCL* 
     subscribed_=true;
 #endif
 }
+
+inline TetraCL::TetraCL (VertexCL* vp0, VertexCL* vp1, VertexCL* vp2, VertexCL* vp3, TetraCL* Parent, Uint lvl, IdCL<TetraCL> id)
+    : _Id(id), _RefRule(UnRefRuleC), _RefMark(NoRefMarkC), _lbNr(-1),
+      _Parent( Parent), _Children(0)/*, ProcSysNum(0)*/
+{
+    Assert(!Parent && Parent->GetLevel()!=lvl-1, DROPSErrCL("TetraCL::TetraCL: Parent and given level does not match"), DebugRefineEasyC);
+    _Vertices[0] = vp0; _Vertices[1] = vp1;
+    _Vertices[2] = vp2; _Vertices[3] = vp3;
+    DDD_HdrConstructor(&_dddH, _dddT, PrioMaster, lvl);
+#if DROPSDebugC&DebugSubscribeC
+    subscribed_=true;
+#endif
+}
+
 #endif
 
 

@@ -39,8 +39,27 @@ DDD_TYPE TetraCL::_dddT=0;
 SArrayCL<EdgeCL*, NumAllEdgesC> TetraCL::_ePtrs(static_cast<EdgeCL*>(0));
 SArrayCL<FaceCL*, NumAllFacesC> TetraCL::_fPtrs(static_cast<FaceCL*>(0));
 
-// E d g e C L
+// V e r t e x C L
+#ifdef _PAR
+int VertexCL::GetNumDist() const
+{
+    int count=0;
+    for (const int* proclist= GetProcList(); *proclist!=-1; proclist+=2)
+        ++count;
+    return count;
+}
+#endif
 
+// E d g e C L
+#ifdef _PAR
+int EdgeCL::GetNumDist() const
+{
+    int count=0;
+    for (const int* proclist= GetProcList(); *proclist!=-1; proclist+=2)
+        ++count;
+    return count;
+}
+#endif
 
 // Assumes that the next Level with respect to ep exists.
 void EdgeCL::BuildMidVertex(VertContT& container, const BoundaryCL& Bnd)
@@ -183,6 +202,15 @@ bool FaceCL::IsLinkedTo( const TetraCL* tp) const
     return GetLevel()==tp->GetLevel() ? _Neighbors[0]==tp || _Neighbors[1]==tp
     : _Neighbors[2]==tp || _Neighbors[3]==tp;
 }
+
+int FaceCL::GetNumDist() const
+{
+    int count=0;
+    for (const int* proclist= GetProcList(); *proclist!=-1; proclist+=2)
+        ++count;
+    return count;
+}
+
 #endif
 
 Point3DCL GetBaryCenter(const FaceCL& f)
@@ -397,6 +425,16 @@ void TetraCL::SetChild(Uint c, TetraCL* cp)
     if (!_Children) _Children= new SArrayCL<TetraCL*, MaxChildrenC>;
     (*_Children)[c]= cp;
 }
+
+#ifdef _PAR
+int TetraCL::GetNumDist() const
+{
+    int count=0;
+    for (const int* proclist= GetProcList(); *proclist!=-1; proclist+=2)
+        ++count;
+    return count;
+}
+#endif
 
 // member functions for r e f i n e m e n t
 
@@ -865,7 +903,7 @@ Check for:
         }
 #ifdef _PAR
     // check, if the MFR and AccMFR is right for undistributed edge
-    if (DDD_InfoIsLocal( const_cast<DDD_HDR>(&_dddH) ) && _AccMFR!=_MFR)
+    if ( IsLocal() && _AccMFR!=_MFR)
     {
         sane= false;
         os << "Unconsistent MFR for undistributed edge. ";

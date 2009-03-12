@@ -194,6 +194,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
     adap.push_back( &prrepair);
 
+    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.ser_dir);
+
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
     MLIdxDescCL* pidx= &Stokes.pr_idx;
@@ -211,7 +213,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
-    // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceeding CreateNumberings
+    // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceding CreateNumberings
 //     Stokes.SetNumVelLvl ( 2);
 //     Stokes.SetNumPrLvl  ( 2);
 //     Stokes.vel_idx.GetCoarsest().CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
@@ -228,19 +230,34 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     {
       case -1: // read from file
       {
+#ifndef _PAR
         ReadEnsightP2SolCL reader( MG);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+#else
+        ReadFEFromFile( lset.Phi, MG, C.IniData+"levelset");
+        ReadFEFromFile( Stokes.v, MG, C.IniData+"velocity");
+#endif
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
         if (Stokes.UsesXFEM()) {
             VecDescCL pneg( pidx), ppos( pidx);
+#ifndef _PAR
             reader.ReadScalar( C.IniData+".prNeg", pneg, Stokes.GetBndData().Pr);
             reader.ReadScalar( C.IniData+".prPos", ppos, Stokes.GetBndData().Pr);
+#else
+            ReadFEFromFile( pneg, MG, C.IniData+"pressureNeg");
+            ReadFEFromFile( ppos, MG, C.IniData+"pressurePos");
+#endif
             P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
         }
-        else
-            reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+        else{
+#ifndef _PAR
+            reader.ReadScalar( C.IniData+".pr", Stokes.p, Stokes.GetBndData().Pr);
+#else
+            ReadFEFromFile( Stokes.p, MG, C.IniData+"pressure");
+#endif
+        }
       } break;
       case 0: // zero initial condition
           lset.Init( EllipsoidCL::DistanceFct);
@@ -424,8 +441,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
                 filename << C.ser_dir;
                 if (second) filename << "0";
                 second = !second;
-                MGSerializationCL ser( MG, filename.str().c_str());
-                ser.WriteMG();
+                ser.Write();
             }
         }
 
@@ -495,7 +511,7 @@ int main (int argc, char** argv)
 
     CreateGeom(mg, bnddata, C.GeomType == 0 ? InflowCell : InflowBrick, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
     EllipsoidCL::Init( C.Mitte, C.Radius);
-    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel);
+    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? 1 : -1));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (C.deserialization_file == "none")

@@ -22,7 +22,7 @@ Stokes {
   PcAIter       = 500    # V-cycles multigrid, iter pc for A block
   PcATol        = 2e-5   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol        = 1e-4
-  XFEMStab    =   0.
+  XFEMStab    =   1e-1
 }
 
 NavStokes {
@@ -60,7 +60,7 @@ Reparam {
 # adaptive refinement
 AdaptRef {
   Freq          =  1
-  FinestLevel   =  2
+  FinestLevel   =  3
   Width         =  0.4e-3
 }
 
@@ -154,14 +154,14 @@ Restart {
   Serialization = 0
   Overwrite     = 0
   Inputfile     =       none
-  Outputfile    =       ./geometry/
+  Outputfile    =       ./serialization/
 }
 
 # domain, bnd/ini conditions
 DomainCond {
   InitialCond   =       0	# 0=zero, 1/2=flow with/without drop, -1=read from file
   GeomType      =       1	# 0=ReadMeshBuilder, 1=BrickBuilder
-  InitialFile   =       ensight/nsmzi
+  InitialFile   =       ./serialization/0
   MeshFile      =       20e-3x50e-3x20e-3@8x20x8
   BoundaryType  =       3       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
 }

@@ -59,8 +59,8 @@
 
 
 enum TimePart{
-    T_create_pmg,
-    T_disc_init,
+    T_create_geom,
+    T_write_vel,
     T_create_ex,
     T_solve_NS_init
 };
@@ -69,8 +69,8 @@ DROPS::TimeStoreCL Times(4);
 
 void SetDescriber()
 {
-    Times.SetDescriber(T_create_pmg,    "Initialization of parallel multigrid");
-    Times.SetDescriber(T_disc_init,     "Discretizing Stokes/Curv for initial velocities");
+    Times.SetDescriber(T_create_geom,   "Writing geometry in quadrilateral grid");
+    Times.SetDescriber(T_write_vel,     "Integrate velocity");
     Times.SetDescriber(T_create_ex,     "Create ExchangeCL");
     Times.SetDescriber(T_solve_NS_init, "Solving NavStokes for initial velocities");
     Times.SetCounterDescriber("Moved MultiNodes");
@@ -420,15 +420,25 @@ template<class Coeff>
         time.Reset();
         LevelsetP2CL::const_DiscSolCL lset_sol=lset.GetSolution();
         QuadOutCL brickout( mg, &lset.idx, C.gridX, C.gridY, C.gridZ, C.stepsize, C.barycenter, C.rotation);
+        ParTimerCL timerQuad;
+        timerQuad.Start();
         brickout.putGeom(C.quadFileName + std::string(".geo"));
+        timerQuad.Stop();
+        duration= timerQuad.GetTime();
+        Times.AddTime(T_create_geom, duration);
         if (ProcCL::IamMaster())
             std::cerr << " - (integrated) velocities"<<std::endl;
+        timerQuad.Start();
         brickout.putVector(C.quadFileName + std::string(".vel_norm"),
                            C.quadFileName + std::string(".velY"),
                            C.quadFileName + std::string(".velZ"),
                            Stokes.GetVelSolution());
+        timerQuad.Stop();
+        duration= timerQuad.GetTime();
+        Times.AddTime(T_write_vel, duration);
         time.Stop();
         duration=time.GetTime();
+
         if (ProcCL::IamMaster())
             std::cerr << " => Took "<<duration<<" sec."<<std::endl;
     }
@@ -506,6 +516,10 @@ int main (int argc, char** argv)
         basename.append(refLevel);
         basename.append("_Proc");
         DROPS_LOGGER_WRITEOUT(basename.c_str(), (DROPS::ProcCL::Size()==1));
+    }
+    if (DROPS::ProcCL::IamMaster()){
+        std::cerr << "Statistics: TimeQuadGeom " << Times.GetTime(T_create_geom)
+                  << " TimeQuadInt " << Times.GetTime(T_write_vel) << std::endl;
     }
 
     // free memory

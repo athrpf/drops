@@ -129,7 +129,6 @@ template<class Coeff>
         statStokesParam.pcA_tol     = 0.02;
         StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
         StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
-        StokesSolverBaseCL& schurSolver=*statStokesSolver;
 
         VelVecDescCL curv(&Stokes.vel_idx),
                     cplN(&Stokes.vel_idx);
@@ -158,18 +157,18 @@ template<class Coeff>
         {
             Stokes.SetupNonlinear( &Stokes.N, &Stokes.v, &cplN, lset, Stokes.t);
             cplN.Data-= (1-theta) * (Stokes.N.Data * Stokes.v.Data);
-            schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
+            statStokesSolver->Solve( Stokes.A.Data, Stokes.B.Data,
                                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
             if (ProcCL::IamMaster())
-                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
-                            <<", resid "<<schurSolver.GetResid()<<std::endl;
-            ++step; iters+= schurSolver.GetIter();
-        } while (schurSolver.GetIter() > 0);
+                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<statStokesSolver->GetIter()
+                            <<", resid "<<statStokesSolver->GetResid()<<std::endl;
+            ++step; iters+= statStokesSolver->GetIter();
+        } while (statStokesSolver->GetIter() > 0);
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
         {
             std::cerr << "- Solving Stokes for initialization took "<<duration<<" sec, "
-                      << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<schurSolver.GetResid()<<'\n';
+                      << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<statStokesSolver->GetResid()<<'\n';
             // Log measured duration
             DROPS_LOGGER_SETVALUE("SolStokesTime",duration);
             DROPS_LOGGER_SETVALUE("SolStokesIter",iters);
@@ -241,12 +240,13 @@ template<typename Coeff>
     // Set time step and create matrices
     cpl.SetTimeStep( C.dt);
 
-    for (int step= 1; step<=C.num_steps; ++step)
+    int step= 1;
+    for (; step<=C.num_steps; ++step)
     {
         ParTimerCL step_time;
         step_time.Reset();
         if (ProcCL::IamMaster())
-            std::cerr << "=================================================================================== Schritt " << step << ":\n"
+            std::cerr << "=================================================================================== step " << step << ":\n"
                       << " Idx for vel  "<<Stokes.v.RowIdx->GetIdx()
                       << "\n Idx for pr   "<<Stokes.p.RowIdx->GetIdx()
                       << "\n Idx for lset "<<lset.Phi.RowIdx->GetIdx()<<std::endl;
@@ -283,15 +283,18 @@ template<typename Coeff>
 
         cpl.DoStep( C.cpl_iter);
 
-        double rel_norm_diff=  Stokes.vel_idx.GetEx().Norm( VectorCL(Stokes.v.Data-u_old), true)
-                             / Stokes.vel_idx.GetEx().Norm( Stokes.v.Data, true);
-        double norm_vel = Stokes.vel_idx.GetEx().Norm( Stokes.v.Data, true);
+        VectorCL e (Stokes.v.Data-u_old);
+        double L2NormE   = std::sqrt(Stokes.vel_idx.GetEx().ParDot(VectorCL(Stokes.M.Data*e), false, e, true, true));
+        double L2NormUnew= std::sqrt(Stokes.vel_idx.GetEx().ParDot(VectorCL(Stokes.M.Data*Stokes.v.Data), false, Stokes.v.Data, true, true));
+        double norm_diff = L2NormE/L2NormUnew;
+        double timeDeriv = L2NormE/C.dt;
 
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster()){
             std::cerr << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec.\n"
-                      << "  => Relative Difference of velocity to previous solution: " << rel_norm_diff
-                      << ", norm of velocity-vector is "<< norm_vel
+                      << "  (Step "<<step<<") => relative L2-Norm of velocity-change: " << norm_diff
+                      << ", L2-Norm of velocity: " << L2NormUnew
+                      << ", time-derivative: "<<timeDeriv
                       << std::endl;
             // Store measured values
             DROPS_LOGGER_SETVALUE("NavStokesCoupledLevelset",duration);
@@ -352,14 +355,20 @@ template<typename Coeff>
             DROPS_LOGGER_NEXTSTEP();
         }
 
-        if (rel_norm_diff<=C.XFEMStab){     // use XFEMStab as criteria
+        if (timeDeriv<=C.XFEMStab){     // use XFEMStab as criteria
             IF_MASTER
-              std::cerr << " ==> relative difference in velocity has just changed by "<< rel_norm_diff
+            std::cerr << " ==> norm velocity has just changed by "<< norm_diff
                         << ", tolerance of "<<C.XFEMStab<<" has been reached!"
                         << std::endl;
             break;
         }
     }
+    if (step==C.num_steps){
+        IF_MASTER
+            std::cerr<< " ============> ATENTION: TOLERANCE NOT REACHED"<<std::endl;
+    }
+
+    Times.IncCounter(step);
     timeIntegrationTimer.Stop();
     Times.AddTime(T_solve_NS, timeIntegrationTimer.GetTime());
     delete instatStokesSolver;
@@ -448,6 +457,9 @@ template<class Coeff>
 
     SolveCoupledNS(Stokes, lset, adapt);
 
+    if (ProcCL::IamMaster())
+        std::cerr << "=================================================================================== Transform:\n";
+
     if (C.quad){
         if (ProcCL::IamMaster())
             std::cerr << "Write out geometry and velocity on the quadrilateral grid\n - geometry" << std::endl;
@@ -482,6 +494,7 @@ int main (int argc, char** argv)
   DROPS::ParMultiGridInitCL pmginit;
   try
   {
+    DROPS::ParTimerCL::TestBandwidth(std::cerr);
     if (argc!=2)
     {
         IF_MASTER
@@ -510,7 +523,7 @@ int main (int argc, char** argv)
     // Create Geometry
     DROPS::MultiGridCL      *mg=0;
     DROPS::StokesBndDataCL  *bnddata=0;
-    CreateGeom(mg, bnddata, DROPS::Inflow, C.meshfile, 0, C.bnd_type, C.deserialization_file, C.r_inlet);
+    CreateGeom(mg, bnddata, DROPS::Inflow, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
 
     mg->SizeInfo(std::cerr);
 
@@ -543,7 +556,7 @@ int main (int argc, char** argv)
         std::string basename("./TestMzelleAdaptPar_Level");
         basename.append(refLevel);
         basename.append("_Proc");
-        DROPS_LOGGER_WRITEOUT(basename.c_str(), (DROPS::ProcCL::Size()==1));
+        //DROPS_LOGGER_WRITEOUT(basename.c_str(), (DROPS::ProcCL::Size()==1));
     }
 
     // free memory

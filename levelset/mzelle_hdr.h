@@ -199,8 +199,6 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata,
                  const std::string& deserialization_file, double& r_inlet)
 {
 #ifdef _PAR
-    if (deserialization_file != "none")
-        throw DROPS::DROPSErrCL( "Sorry, no parallel deserialization yet");
     DROPS::ParMultiGridCL::InstancePtr();
 #endif
     if (GeomType == 0) {
@@ -382,7 +380,7 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
 {
 #ifndef _PAR
     mg.SizeInfo( std::cerr);
-#else    
+#else
     const DROPS::Uint level=mg.GetLastLevel();
     DROPS::Uint *numTetrasAllProc=0;
     DROPS::Uint *numFacesAllProc=0;
@@ -442,5 +440,93 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
 #endif
 }
 
+namespace DROPS{
+/// \brief Class for serializing a two-phase flow problem, i.e., storing
+///    the multigrid and the numerical data
+/// \todo  Storing of transport data!
+template <typename StokesT>
+class TwoPhaseStoreCL
+{
+  private:
+    MultiGridCL&        mg_;
+    const StokesT&      Stokes_;
+    const LevelsetP2CL& lset_;
+    std::string         path_;
+    Uint                numRecoverySteps_;
+    Uint                recoveryStep_;
+    IdxDescCL           p1idx_;             ///< used to split P1X into two P1 functions
+    VecDescCL           pneg_,              ///< one part of P1X
+                        ppos_;              ///< other part of P1X
+
+
+    /// \brief Write a numerical data, stored in v, in a file, named filename
+    template <typename VecDescT>
+    void WriteFEToFile(VecDescT& v, std::string filename)
+    {
+#ifdef _PAR
+        ProcCL::AppendProcNum( filename);
+#endif
+        std::ofstream file( filename.c_str());
+        if (!file) throw DROPSErrCL("TwoPhaseStoreCL::WriteFEToFile: Cannot open file from writing");
+        v.Write( mg_, file);
+    }
+
+  public:
+      /// \brief Construct a class for storing a two-phase flow problem in files
+      /** This class generates multiple files, all with prefix path, for storing
+       *  the geometric as well as the numerical data.
+       *  \param recoverySteps number of backup steps before overwriting files
+       *  */
+    TwoPhaseStoreCL(MultiGridCL& mg, const StokesT& Stokes, const LevelsetP2CL& lset,
+                    const std::string& path, Uint recoverySteps=2)
+      : mg_(mg), Stokes_(Stokes), lset_(lset), path_(path), numRecoverySteps_(recoverySteps),
+        recoveryStep_(0), p1idx_( P1_FE), pneg_( &p1idx_), ppos_( &p1idx_) {}
+
+    /// \brief Write all information in a file
+    void Write()
+    {
+        // Create filename
+        std::stringstream filename;
+        filename << path_ << ((recoveryStep_++)%numRecoverySteps_);
+
+        // write multigrid
+        MGSerializationCL ser( mg_, filename.str().c_str());
+        ser.WriteMG();
+
+#ifdef _PAR
+        // write numerical data
+        // Since serial DROPS can read ensight files, this is omitted for serial DROPS.
+        WriteFEToFile(Stokes_.v, filename.str() + "velocity");
+        WriteFEToFile(lset_.Phi, filename.str() + "levelset");
+        if ( Stokes_.UsesXFEM()){
+            if ( p1idx_.NumUnknowns()!=0)
+                p1idx_.DeleteNumbering( mg_);
+            p1idx_.CreateNumbering( Stokes_.p.RowIdx->TriangLevel(), mg_); // Create a P1 describer for splitting P1X function
+            P1XtoP1 ( *Stokes_.p.RowIdx, Stokes_.p.Data, p1idx_, ppos_.Data, pneg_.Data, lset_.Phi, mg_); // also resizes data of ppos_ and pneg_
+            WriteFEToFile(pneg_, filename.str() + "pressureNeg");
+            WriteFEToFile(ppos_, filename.str() + "pressurePos");
+        }
+        else{
+            WriteFEToFile(Stokes_.p, filename.str() + "pressure");
+        }
+#endif
+    }
+};
+
+/// Read a serialized finite element function from a file
+/// \param VecDescT VecDescBaseCL corresponding to the finite element function
+/// \pre CreateNumering of v.RowIdx must have been called
+template <typename VecDescT>
+void ReadFEFromFile(VecDescT& v, const MultiGridCL& mg, std::string filename)
+{
+    std::cout << "Read FE "<<filename<<std::endl;
+#ifdef _PAR
+    ProcCL::AppendProcNum( filename);
+#endif
+    std::ifstream file( filename.c_str());
+    if (!file) throw DROPSErrCL("ReadFEFromFile: Cannot open file");
+    v.Read( mg, file);
+}
+}   // end of namespace DROPS
 
 #endif

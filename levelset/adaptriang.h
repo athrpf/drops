@@ -101,16 +101,19 @@ class AdapTriangCL
 
   public:
     AdapTriangCL(  MultiGridCL& mg, double width, int c_level, int f_level, __UNUSED__ int refineStrategy = 1)
-      : mg_( mg), 
+      : mg_( mg),
 #ifdef _PAR
-      pmg_( ParMultiGridCL::InstancePtr()), lb_( mg_), 
+      pmg_( ParMultiGridCL::InstancePtr()), lb_( mg_),
 #endif
       width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
-      { 
+      {
         Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0);
 #ifdef _PAR
         pmg_->AttachTo( mg_);
-        lb_.DoInitDistribution( ProcCL::Master());
+        if (refineStrategy>=0)
+            lb_.DoInitDistribution( ProcCL::Master());
+        else
+            refineStrategy*=-1;
         switch ( refineStrategy) {
             case 0 : lb_.SetStrategy( NoMig);     break;
             case 1 : lb_.SetStrategy( Adaptive);  break;
@@ -125,7 +128,7 @@ class AdapTriangCL
 
     /// \brief Get a constant reference onto the parallel MultiGrid
     const ParMultiGridCL& GetPMG() const { return *pmg_; }
-    
+
     /// \brief Get a reference onto the LoadBalHandlerCL
     LoadBalHandlerCL& GetLb() { return lb_; }
 
@@ -143,8 +146,11 @@ class AdapTriangCL
     /// \brief Check if the triangulation has been modified within last update
     bool WasModified () const { return modified_; }
 
-    /// \brief Get a reference onto the MultiGrid
+    /// \name Get a reference onto the MultiGrid
+    //@{
     const MultiGridCL& GetMG() const { return mg_; }
+    MultiGridCL&       GetMG()       { return mg_; }
+    //@}
 
     /// \brief Push back a handler for FE-functions to apply changes due to grid modifications
     void push_back (MGObserverCL* o)

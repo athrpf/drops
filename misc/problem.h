@@ -501,6 +501,11 @@ class VecDescBaseCL
     void Clear();
     /// \brief Empty Data and set RowIdx to 0.
     void Reset();
+
+    /// \brief Write Data on a stream
+    void Write(const MultiGridCL&, std::ostream&) const;
+    /// \brief Read Data from a stream
+    void Read(const MultiGridCL&, std::istream&);
 };
 
 
@@ -678,6 +683,67 @@ void VecDescBaseCL<T>::Reset()
 {
     RowIdx = 0;
     Data.resize(0);
+}
+
+template<class T>
+void VecDescBaseCL<T>::Write(const MultiGridCL& mg, std::ostream& os) const
+/// Writes numerical data on a stream, which can be read by VecDescBaseCL::Read
+{
+    // Number of unknowns for error-checking while reading
+    os << RowIdx->NumUnknowns() <<std::endl;
+    Uint idx= RowIdx->GetIdx();
+
+    // write out data on vertices
+    if ( RowIdx->NumUnknownsVertex()){                              // there are unknowns on vertices
+        DROPS_FOR_TRIANG_CONST_VERTEX( mg, -1, it){                 // iterate over all vertices
+            if ( it->Unknowns.Exist( idx))                          // dof exists on vertex
+                for (Uint i=0; i<RowIdx->NumUnknownsVertex(); ++i)  // scalar or vectorial data
+                    os << Data[ it->Unknowns( idx)] << ' ';
+        }
+        os << std::endl;
+    }
+
+    // write out data on edges (documentation, see vertices)
+    if ( RowIdx->NumUnknownsEdge()){
+        DROPS_FOR_TRIANG_CONST_EDGE( mg, -1, it){
+            if ( it->Unknowns.Exist( idx))
+                for (Uint i=0; i<RowIdx->NumUnknownsEdge(); ++i)
+                    os << Data[ it->Unknowns( idx)+i] << ' ';
+        }
+        os << std::endl;
+    }
+}
+
+template<class T>
+void VecDescBaseCL<T>::Read(const MultiGridCL& mg, std::istream& is)
+/// Read data from stream \a is, which should have been created
+/// by VecDescBaseCL::Write.
+/// \pre CreateNumbering for RowIdx and SetIdx must have been
+///      called
+{
+
+    IdxT numUnk= 0, readUnk= 0;
+    is >> std::ws >> numUnk;
+    Uint idx= RowIdx->GetIdx();
+
+    // read data to vertices (documentation, see VecDescBaseCL::Write)
+    if ( RowIdx->NumUnknownsVertex())
+        DROPS_FOR_TRIANG_CONST_VERTEX( mg, -1, it)
+            if ( it->Unknowns.Exist( idx))
+                for (Uint i=0; i<RowIdx->NumUnknownsVertex(); ++i, ++readUnk)
+                    is >> std::ws >> Data[it->Unknowns( idx)+i];
+
+    // read data to edges
+    if ( RowIdx->NumUnknownsEdge())
+        DROPS_FOR_TRIANG_CONST_EDGE( mg, -1, it)
+            if ( it->Unknowns.Exist( idx))
+                for (Uint i=0; i<RowIdx->NumUnknownsEdge(); ++i, ++readUnk)
+                    is >> std::ws >> Data[it->Unknowns( idx)+i];
+    if (!is)
+        throw DROPSErrCL("VecDescBaseCL::Read: Error while reading unknowns");
+
+    if ( readUnk!=numUnk)
+        throw DROPSErrCL("VecDescBaseCL::Read: Number of unknowns does not match");
 }
 
 template<typename MatT, typename IdxT>
