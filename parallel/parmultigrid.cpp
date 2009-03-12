@@ -1057,7 +1057,7 @@ void ParMultiGridCL::XferEnd()
 
 
 /// \brief This function assures, that every proc has the same number of level. This is important in the refinement algorithm
-/** Make sure, the containers are modifyable*/
+/** Make sure, the containers are modifiable*/
 void ParMultiGridCL::AdjustLevel()
 {
     int myLastLevel  =_mg->GetLastLevel();
@@ -2540,7 +2540,10 @@ bool CheckParMultiGrid(const ParMultiGridCL& pmg)
     }
     bool pmg_sane = pmg.IsSane(output),
          mg_sane  = pmg.GetMG().IsSane(output);
-    return ProcCL::Check(pmg_sane && mg_sane);
+    bool sane     = ProcCL::Check(pmg_sane && mg_sane);
+    if (!sane)
+        throw DROPSErrCL("CheckParMultiGrid: Multigrid is not sane!");
+    return sane;
 }
 
 } // end of namespace DROPS
