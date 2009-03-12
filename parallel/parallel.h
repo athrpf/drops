@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <valarray>
+#include <string>
 #include "misc/utils.h"
 #include <ddd.h>
 
@@ -90,6 +91,7 @@ class ProcCL
   private:
     static Uint my_rank_;                       // Which Id do I have?
     static Uint size_;                          // How many are out there?
+    static int  procDigits_;                    // How many digits are necessary to decode rank of process?
     static const CommunicatorT& Communicator_;  // communicator (=MPI_COMM_WORLD, MPI::COMM_WORLD)
     static MuteStdOstreamCL* mute_;             // for muting std::cerr, std::cout, std::clog
 
@@ -121,6 +123,10 @@ class ProcCL
       // \brief Recover behavior of standard output streams
     static void RecoverStdOstreams() { mute_->Recover(); }
     //@}
+
+    /// \brief Append rank of processor to an string
+    static void AppendProcNum( std::string&);
+
     /// \name plain MPI-Calls with C++- or C-Interface of MPI
     //@{
       /// \brief MPI-Reduce-wrapper

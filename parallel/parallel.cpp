@@ -22,6 +22,7 @@ namespace DROPS
 ***************************************************************************/
 Uint    ProcCL::my_rank_=0;
 Uint    ProcCL::size_   =0;             // if _size==0, then this proc has not created a ProcCL
+int     ProcCL::procDigits_=0;
 ProcCL* ProcCL::instance_=0;            // only one instance of ProcCL may exist (Singleton-Pattern)
 MuteStdOstreamCL* ProcCL::mute_=0;
 
@@ -58,6 +59,11 @@ ProcCL::ProcCL(int* argc, char*** argv)
     DDD_Init(argc, argv);               // DDD Initialisieren und die Informationen beziehen
     my_rank_ = DDD_InfoMe();
     size_    = DDD_InfoProcs();
+    procDigits_= 1;
+    int procs  = Size();
+    while( procs>9){
+        ++procDigits_; procs/=10;
+    }
     mute_    = new MuteStdOstreamCL();
     MuteStdOstreams();
 }
@@ -76,6 +82,14 @@ void ProcCL::Prompt(int me)
     if (MyRank()==me)
         std::cin >> in;
     Barrier();
+}
+
+void ProcCL::AppendProcNum( std::string& str)
+{
+    char format[]= ".%0Xi", postfix[8];
+    format[3]= '0' + char(procDigits_);
+    std::sprintf( postfix, format, ProcCL::MyRank());
+    str+= postfix;
 }
 
 #ifdef _PAR
