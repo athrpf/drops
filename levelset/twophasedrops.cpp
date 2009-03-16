@@ -265,16 +265,23 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
       case 1: // stationary flow
       {
         lset.Init( EllipsoidCL::DistanceFct);
+#ifdef _PAR
+        ParJac0CL jacpc( Stokes.vel_idx.GetFinest());
+        typedef ParPCGSolverCL<ParJac0CL> PCGSolverT;
+        typedef SolverAsPreCL<PCGSolverT> PCGPcT;
+        PCGSolverT PCGSolver(200, 1e-2, Stokes.vel_idx.GetFinest(), jacpc, /*rel*/ true, /*acc*/ true);
+        PCGPcT     apc(PCGSolver);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(),
+                                                                           C.outer_iter, C.outer_tol, 0.6, 50, &std::cerr);
+#else
         SSORPcCL ssorpc;
         PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
         typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
         PCGPcT apc( PCGsolver);
-#ifdef _PAR
-        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
-#else
         ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.outer_iter, C.outer_tol, 0.6, 50);
 #endif
-        InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.outer_iter, C.outer_tol, 0.6);
         NSSolverBaseCL<StokesProblemT> stokessolver( Stokes, inexactuzawasolver);
         SolveStatProblem( Stokes, lset, stokessolver);
       } break;
