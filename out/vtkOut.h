@@ -98,9 +98,9 @@ class VTKOutCL
     void GatherCoord();
 #else
     /// Gather coordinates and (g)ids
-    void GatherCoord( VectorBaseCL<Uint>&, VectorBaseCL<float>&);
+    void GatherCoord( VectorBaseCL<DDD_GID>&, VectorBaseCL<float>&);
     /// Communicate coords to master
-    void CommunicateCoords(const VectorBaseCL<Uint>&, const VectorBaseCL<float>&);
+    void CommunicateCoords(const VectorBaseCL<DDD_GID>&, const VectorBaseCL<float>&);
 #endif
     /// Write coordinates into a vtk legacy file
     void WriteCoords();
@@ -113,9 +113,9 @@ class VTKOutCL
     void GatherTetra();
 #else
     /// Gather tetras
-    void GatherTetra( VectorBaseCL<Uint>&) const;
+    void GatherTetra( VectorBaseCL<DDD_GID>&) const;
     /// Communicate tetras
-    void CommunicateTetra(const VectorBaseCL<Uint>&);
+    void CommunicateTetra(const VectorBaseCL<DDD_GID>&);
     /// Write out the distribution of tetrahedra as CELL_DATA
     void WriteDistribution();
 #endif

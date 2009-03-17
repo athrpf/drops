@@ -433,7 +433,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
     // number of vertices and edges writen by this proc (= number of vals)
     const IdxT locNumUnknowns = GetExclusiveVerts(*_MG, PrioHasUnk, lvl) + GetExclusiveEdges(*_MG, PrioHasUnk, lvl);
     const IdxT globNumUnknowns = ProcCL::GlobalSum(locNumUnknowns);                         // global number of vertices
-    Uint   *myGID   = new Uint[locNumUnknowns];                                             // array of gids of exclusive vertices, owned by thiss proc
+    DDD_GID *myGID   = new DDD_GID[locNumUnknowns];                                         // array of gids of exclusive vertices, owned by thiss proc
     double *myCoord = new double[3*locNumUnknowns];                                         // and the corresponding coords
 
     _nodes = locNumUnknowns;
@@ -531,7 +531,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         for (int p=0; p<ProcCL::Size(); ++p)                                            // print the gids with coords of all procs into the file
         {                                                                               // it is important that the information of proc 0 are print first, then of proc 1 and so on ( because of the ordering of the printed vals)
             IdxT numUnk;                                                                // number of exclusive verts of the other proc
-            Uint *Gids=0;                                                               // receive-buffer for gids
+            DDD_GID *Gids=0;                                                            // receive-buffer for gids
             double *coord=0;                                                            // receive-biffer for coords
             if (p!=me)  // ==> p!=master
             {                                                                           // receive gids and coords
@@ -539,7 +539,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
                 ProcCL::Probe(p, _tag, stat);
                 numUnk = ProcCL::GetCount<Uint>(stat);
 
-                Gids  = new Uint[numUnk];
+                Gids  = new DDD_GID[numUnk];
                 coord = new double[3*numUnk];
                 ProcCL::Recv(Gids, numUnk, p, _tag);
                 ProcCL::Recv(coord, 3*numUnk, p, _tag+1);
@@ -612,7 +612,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         Uint numTetras=std::distance(_MG->GetTriangTetraBegin(lvl),_MG->GetTriangTetraEnd(lvl));
         Uint numAllTetra= ProcCL::GlobalSum(numTetras, master);
         Uint numMaxTetra= ProcCL::GlobalMax(numTetras, master);
-        Uint *tetras= new Uint[8*numTetras*4];          // regrefine*numTetra*vertices
+        DDD_GID *tetras= new DDD_GID[8*numTetras*4];          // regrefine*numTetra*vertices
         Uint pos=0;
 
         for (MultiGridCL::const_TriangTetraIteratorCL it= _MG->GetTriangTetraBegin(lvl),    // for all tetras
@@ -635,7 +635,6 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         }
 
         if (pos!=8*numTetras*4){
-            std::cerr <<"["<<ProcCL::MyRank()<<"]!!!!!!!! Number of tetra information does not match!!!!!!!\n";
             throw DROPSErrCL("EnsightP2SolOutCL:putGeom: Number of tetra information does not match");
         }
 
@@ -665,8 +664,8 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
                       << std::setw(8) << (8*numAllTetra)<<std::endl;
             }
             // this is the master proc. He has to write all information!
-            Uint *Gids= new Uint[8*numMaxTetra*4];  // storage for all gids of one proc
-            Uint numGids;                           // number of all gids
+            DDD_GID *Gids= new DDD_GID[8*numMaxTetra*4];  // storage for all gids of one proc
+            Uint numGids;                                 // number of all gids
 
             // for each process write out his tetras
             for (int p=0; p<ProcCL::Size(); ++p)

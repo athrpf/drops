@@ -219,8 +219,8 @@ class VertexCL
     Uint                  GetLevel        () const { return _dddH.attr;}                    ///< get level of vertex (=first appearance in the multigrid)
     // parallel functions
     static DDD_TYPE       GetType         ()       { return _dddT;}                         ///< get DDD-Vertex-Type
-    Uint                  GetPrio         () const { return _dddH.prio;}                    ///< get priority
-    Uint                  GetGID          () const { return _dddH.gid;}                     ///< get global id
+    DDD_PRIO              GetPrio         () const { return _dddH.prio;}                    ///< get priority
+    DDD_GID               GetGID          () const { return _dddH.gid;}                     ///< get global id
     DDD_HDR               GetHdr          () const { return const_cast<DDD_HDR>(&_dddH);}   ///< get DDD-Hdr of this vertex
     bool                  IsMaster        () const { return GetPrio()>=PrioMaster; }        ///< check if vertex is master
     bool                  MayStoreUnk     () const { return GetPrio()==PrioHasUnk; }        ///< check for ability of storing unknowns due to priority
@@ -361,8 +361,8 @@ class EdgeCL
 #else
     Uint                  GetLevel        () const { return _dddH.attr;}                    ///< return level (stored within the DDD-Header)
     static DDD_TYPE       GetType         ()       { return _dddT;}                         ///< return DDD-type of edges
-    Uint                  GetPrio         () const { return _dddH.prio;}                    ///< return priority of this edge
-    Uint                  GetGID          () const { return _dddH.gid;}                     ///< return global id of this edge
+    DDD_PRIO              GetPrio         () const { return _dddH.prio;}                    ///< return priority of this edge
+    DDD_GID               GetGID          () const { return _dddH.gid;}                     ///< return global id of this edge
     DDD_HDR               GetHdr          () const { return const_cast<DDD_HDR>(&_dddH);}   ///< return DDD-Hdr of this edge
     bool                  IsMaster        () const { return GetPrio()>=PrioMaster; }        ///< check if edge is master
     bool                  MayStoreUnk     () const { return GetPrio()==PrioHasUnk; }        ///< check for ability of storing unknowns due to priority
@@ -481,8 +481,8 @@ class FaceCL
 #else
     Uint            GetLevel       () const { return _dddH.attr;}                       ///< get level of the face (stored within the DDD-Header)
     static DDD_TYPE GetType        ()       { return _dddT;}                            ///< get DDD-type of the faces
-    Uint            GetPrio        () const { return _dddH.prio;}                       ///< get priority of the face
-    Uint            GetGID         () const { return _dddH.gid;}                        ///< get global id of the face
+    DDD_PRIO        GetPrio        () const { return _dddH.prio;}                       ///< get priority of the face
+    DDD_GID         GetGID         () const { return _dddH.gid;}                        ///< get global id of the face
     DDD_HDR         GetHdr         () const { return const_cast<DDD_HDR>(&_dddH);}      ///< get DDD-Hdr of the face
     bool            IsGhost        () const { return GetPrio()<PrioMaster; }            ///< check if face is ghost
     bool            IsMaster       () const { return GetPrio()>=PrioMaster; }           ///< check if face is master
@@ -665,8 +665,8 @@ class TetraCL
     bool IsProcBnd (Uint face) const { return _Faces[face]->IsOnProcBnd(); }     ///< check if face of tetra is on processor-boundary
 
     Uint    GetLevel   () const { return _dddH.attr;}                            ///< return level of tetra (stored within DDD-Header)
-    Uint    GetPrio    () const { return _dddH.prio;}                            ///< get priority of the tetra
-    Uint    GetGID     () const { return _dddH.gid;}                             ///< get global id of the tetra
+    DDD_PRIO GetPrio    () const { return _dddH.prio;}                            ///< get priority of the tetra
+    DDD_GID GetGID     () const { return _dddH.gid;}                             ///< get global id of the tetra
     DDD_HDR GetHdr     () const { return const_cast<DDD_HDR>( &_dddH); }         ///< get Hdr of the tetra (const)
     DDD_HDR GetHdr     ()       { return &_dddH; }                               ///< get Hdr of the tetra
     idxtype GetLbNr    () const { return _lbNr;}                                 ///< get number for load balance

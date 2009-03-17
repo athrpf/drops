@@ -604,13 +604,15 @@ int main(int argc, char* argv[])
         for (int ref =0; ref<C.coarsedrop+C.coarseall; ++ref)
         {
             if (ref < C.coarsedrop){
-                if (me==master) cout << " + Coarse drop (" << ref << ") ... \n";
+                cout << " + Coarse drop (" << ref << ") ... \n";
                 if (C.unmarkingproc==-1 || C.unmarkingproc==me)
                     UnMarkDrop(mg, mg.GetLastLevel());
             }
-            else if (C.unmarkingproc==-1 || C.unmarkingproc==me){
-                if (me==0) cout << " + Coarse all (" << ref << ") ... \n";
-                DROPS::UnMarkAll(mg);
+            else {
+                cout << " + Coarse all (" << ref << ") ... \n";
+                if (C.unmarkingproc==-1 || C.unmarkingproc==me){
+                    DROPS::UnMarkAll(mg);
+                }
             }
 
             time.Reset(); pmg.Refine(); time.Stop();
