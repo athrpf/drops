@@ -102,7 +102,7 @@ void Strategy (MultiGridCL& MG)
                                                                     "Velocity",      ensf + ".vel", true));
     ensight.Register( make_Ensight6Scalar( c.GetSolution(),         "Concentration", ensf + ".c",   true));
     ensight.Register( make_Ensight6Scalar( c.GetSolution( c.ct),    "TransConc",     ensf + ".ct",  true));
- 
+
     MG.SizeInfo( std::cerr);
     std::cerr << c.c.Data.size() << " concentration unknowns,\n";
     std::cerr << v.Data.size() << " velocity unknowns,\n";
@@ -147,7 +147,7 @@ int main (int argc, char** argv)
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, 20, 20, 20);
     DROPS::MultiGridCL mg( builder);
     std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
-    EllipsoidCL::Init( C.Mitte, C.Radius);
+    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
 
     Strategy( mg);    // do all the stuff
 

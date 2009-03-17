@@ -414,7 +414,7 @@ int main (int argc, char** argv)
     param.close();
     std::cerr << C << std::endl;
 
-    typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
+    typedef DROPS::InstatStokes2PhaseP2P1CL<DROPS::ZeroFlowCL>    MyStokesCL;
 
     const double L= 1; // Vol= 8*L*L*L;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
@@ -428,13 +428,13 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
-    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
+    MyStokesCL prob(builder, DROPS::ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
                     C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
 
     DROPS::MultiGridCL& mg = prob.GetMG();
-    EllipsoidCL::Init( C.Mitte, C.Radius );
+    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius );
     DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
-    adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
+    adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 

@@ -469,8 +469,8 @@ template<class Coeff>
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
         infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
-
     IFInfo.Init(infofile);
+    IFInfo.WriteHeader();
 
     //Setup initial problem
     std::cerr << "=================================================================================== Init:\n"
@@ -480,7 +480,6 @@ template<class Coeff>
     SolveCoupledNS(Stokes, lset, adapt);
 
     if (ProcCL::IamMaster()){
-        infofile->close();
         delete infofile;
     }
 }
@@ -514,7 +513,7 @@ int main (int argc, char** argv)
     DROPS::ParTimerCL alltime;
     SetDescriber();
 
-    typedef ZeroFlowCL                                    CoeffT;
+    typedef DROPS::ZeroFlowCL                             CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::ParTimerCL time;
@@ -529,14 +528,13 @@ int main (int argc, char** argv)
     DROPS::CheckParMultiGrid(DROPS::ParMultiGridCL::Instance());
 
     // Init problem
-    EllipsoidCL::Init( C.Mitte, C.Radius );
+    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius );
     DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? 1 : -1)*C.refineStrategy);
 
     if (C.deserialization_file == "none")
-        adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
+        adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
-
-    MyStokesCL prob( *mg, ZeroFlowCL(C), *bnddata, DROPS::P1_FE, 0.0);
+    MyStokesCL prob( *mg, DROPS::ZeroFlowCL(C), *bnddata, DROPS::P1_FE, 0.0);
 
     Strategy( prob, adap);    // do all the stuff
 

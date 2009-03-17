@@ -414,8 +414,8 @@ template<class Coeff>
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
         infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
-
     IFInfo.Init(infofile);
+    IFInfo.WriteHeader();
 
     if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adapt.GetPMG())) )
          throw DROPSErrCL("MultiGrid is incorrect!");
@@ -517,7 +517,7 @@ int main (int argc, char** argv)
     DROPS::ParTimerCL alltime;
     SetDescriber();
 
-    typedef ZeroFlowCL                                    CoeffT;
+    typedef DROPS::ZeroFlowCL                             CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     // Create Geometry
@@ -528,12 +528,12 @@ int main (int argc, char** argv)
     mg->SizeInfo(std::cerr);
 
     // Init problem
-    EllipsoidCL::Init( C.Mitte, C.Radius );
+    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius );
     DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, C.refineStrategy);
     mg->SizeInfo(std::cerr);
 
     adap.MakeInitialTriang( DROPS::DistanceYToBarycenterOfDrop);
-    MyStokesCL prob(*mg, ZeroFlowCL(C), *bnddata);
+    MyStokesCL prob(*mg, DROPS::ZeroFlowCL(C), *bnddata);
 
     // Solve the problem
     Strategy( prob, adap);    // do all the stuff

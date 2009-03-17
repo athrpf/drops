@@ -21,48 +21,13 @@
 #include "stokes/stokes.h"
 #include "partests/params.h"
 #include "levelset/levelset.h"
+#include "levelset/mzelle_hdr.h"
 
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <stdlib.h>
-
-namespace DROPS{
-/// \brief Information about a droplet
-class InterfaceInfoCL
-{
-  private:
-    std::ofstream *infofile_;   ///< Pointer to a file, where to write out information
-
-  public:
-    InterfaceInfoCL() : infofile_(0) {}
-
-    void Init(std::ofstream *info){
-        infofile_=info;
-    }
-
-    Point3DCL bary;             ///< barycenter of a droplet
-    Point3DCL min;              ///< bottom of a droplet
-    Point3DCL max;              ///< top of a droplet
-    Point3DCL vel;              ///< (accumulated) velocity of the droplet
-    double maxGrad;             ///< maximal 2-norm of the gradient of the level set function
-    double Vol;                 ///< volume of a droplet
-
-    /// \brief Update
-    template <typename LsetCL, typename VelDesc>
-    void Update(const LsetCL& ls, const VelDesc& u){
-        ls.GetInfo( maxGrad, Vol, bary, vel, u, min, max);
-    }
-
-    /// \brief Write information in a file
-    void Write(double time){
-        if (!infofile_) return;
-        (*infofile_) << time << '\t' << maxGrad << '\t' << Vol << '\t' << bary << '\t' << vel
-                     << '\t' << min << '\t' << max << std::endl;
-    }
-} IFInfo;
-}
 
 namespace DROPS{
 /// \brief Class for describing surface tension forces
@@ -109,13 +74,6 @@ class SurfaceTensionCL
         return ret;
     }
 };
-}
-
-/*******************************************************************************
-*    C R E A T E   G E O M E T R I E S                                         *
-*******************************************************************************/
-
-namespace DROPS{
 
 /// \brief Create all numberings for stokes DOF and level-set DOF and assign them
 template<typename StokesT, typename LevelsetT>
@@ -139,13 +97,13 @@ void CreateIdxAndAssignIdx(StokesT& Stokes, LevelsetT& lset, const MultiGridCL& 
     Stokes.prA.SetIdx( &Stokes.pr_idx,  &Stokes.pr_idx);
     lset.Phi.SetIdx(   &lset.idx);
 }
-}
+
 
 
 /*******************************************************************************
 *    G L O B A L   A N D   S T A T I C   V A R I A B L E S                     *
 *******************************************************************************/
-namespace DROPS{
+
 
 const char line[] ="------------------------------------------------------------";
 
@@ -154,6 +112,7 @@ double SurfaceTensionCL::eps           = 5e-4;
 double SurfaceTensionCL::lambda        = 1.5;
 double SurfaceTensionCL::sigma         = 0.0;
 double SurfaceTensionCL::sigma_dirt_fac= 0.8;
-}
+
+}       // end of namespace
 
 #endif

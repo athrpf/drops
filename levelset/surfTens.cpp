@@ -215,7 +215,7 @@ int main (int argc, char** argv)
     param.close();
     std::cerr << C << std::endl;
 
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<DROPS::ZeroFlowCL>    MyStokesCL;
 
     const double L= 3e-3;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
@@ -229,19 +229,19 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
-    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
+    MyStokesCL prob(builder, DROPS::ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 
-    EllipsoidCL::Init( C.Mitte, C.Radius);
+    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
     for (int i=0; i<C.ref_flevel; ++i)
     {
-        DROPS::MarkInterface( EllipsoidCL::DistanceFct, C.ref_width, mg);
+        DROPS::MarkInterface( DROPS::EllipsoidCL::DistanceFct, C.ref_width, mg);
         mg.Refine();
     }
     std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
 
-    Strategy( prob);  // do all the stuff
+    DROPS::Strategy( prob);  // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

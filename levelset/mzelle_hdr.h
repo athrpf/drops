@@ -13,6 +13,9 @@
 #include "num/discretize.h"
 #include "stokes/instatstokes2phase.h"
 
+namespace DROPS
+{
+
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
 //                        -div u = 0
 //                             u = u0, t=t0
@@ -22,15 +25,15 @@ class ZeroFlowCL
 {
 // \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
   public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
+    static Point3DCL f(const Point3DCL&, double)
+        { Point3DCL ret(0.0); return ret; }
+    const SmoothedJumpCL rho, mu;
     const double SurfTens;
-    const DROPS::Point3DCL g;
+    const Point3DCL g;
 
-    ZeroFlowCL( const DROPS::ParamMesszelleNsCL& C)
-      : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
-        mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
+    ZeroFlowCL( const ParamMesszelleNsCL& C)
+      : rho( JumpCL( C.rhoD, C.rhoF ), H_sm, C.sm_eps),
+        mu(  JumpCL( C.muD,  C.muF),   H_sm, C.sm_eps),
         SurfTens( C.sigma), g( C.g)    {}
 };
 
@@ -38,32 +41,32 @@ class DimLessCoeffCL
 {
 // \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
   public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
+    static Point3DCL f(const Point3DCL&, double)
+        { Point3DCL ret(0.0); return ret; }
+    const SmoothedJumpCL rho, mu;
     const double SurfTens;
-    const DROPS::Point3DCL g;
+    const Point3DCL g;
 
-    DimLessCoeffCL( const DROPS::ParamMesszelleNsCL& C)
-      : rho( DROPS::JumpCL( 1., C.rhoF/C.rhoD ), DROPS::H_sm, C.sm_eps),
-        mu ( DROPS::JumpCL( 1., C.muF/C.muD),    DROPS::H_sm, C.sm_eps),
+    DimLessCoeffCL( const ParamMesszelleNsCL& C)
+      : rho( JumpCL( 1., C.rhoF/C.rhoD ), H_sm, C.sm_eps),
+        mu ( JumpCL( 1., C.muF/C.muD),    H_sm, C.sm_eps),
         SurfTens( C.sigma/C.rhoD), g( C.g)    {}
 };
 
 class EllipsoidCL
 {
   private:
-    static DROPS::Point3DCL Mitte_;
-    static DROPS::Point3DCL Radius_;
+    static Point3DCL Mitte_;
+    static Point3DCL Radius_;
 
   public:
-    EllipsoidCL( const DROPS::Point3DCL& Mitte, const DROPS::Point3DCL& Radius)
+    EllipsoidCL( const Point3DCL& Mitte, const Point3DCL& Radius)
     { Init( Mitte, Radius); }
-    static void Init( const DROPS::Point3DCL& Mitte, const DROPS::Point3DCL& Radius)
+    static void Init( const Point3DCL& Mitte, const Point3DCL& Radius)
     { Mitte_= Mitte;    Radius_= Radius; }
-    static double DistanceFct( const DROPS::Point3DCL& p)
+    static double DistanceFct( const Point3DCL& p)
     {
-        DROPS::Point3DCL d= p - Mitte_;
+        Point3DCL d= p - Mitte_;
         const double avgRad= cbrt(Radius_[0]*Radius_[1]*Radius_[2]);
         d/= Radius_;
         return std::abs( avgRad)*d.norm() - avgRad;
@@ -71,8 +74,8 @@ class EllipsoidCL
     static double GetVolume() { return 4./3.*M_PI*Radius_[0]*Radius_[1]*Radius_[2]; }
 };
 
-DROPS::Point3DCL EllipsoidCL::Mitte_;
-DROPS::Point3DCL EllipsoidCL::Radius_;
+Point3DCL EllipsoidCL::Mitte_;
+Point3DCL EllipsoidCL::Radius_;
 
 // collision setting (rising butanol droplet in water)
 //  RadDrop1 =  1.50e-3  1.500e-3  1.50e-3
@@ -84,23 +87,23 @@ DROPS::Point3DCL EllipsoidCL::Radius_;
 class TwoEllipsoidCL
 {
   private:
-    static DROPS::Point3DCL Mitte1_,  Mitte2_;
-    static DROPS::Point3DCL Radius1_, Radius2_;
+    static Point3DCL Mitte1_,  Mitte2_;
+    static Point3DCL Radius1_, Radius2_;
 
   public:
-    TwoEllipsoidCL( const DROPS::Point3DCL& Mitte1, const DROPS::Point3DCL& Radius1,
-                    const DROPS::Point3DCL& Mitte2, const DROPS::Point3DCL& Radius2)
+    TwoEllipsoidCL( const Point3DCL& Mitte1, const Point3DCL& Radius1,
+                    const Point3DCL& Mitte2, const Point3DCL& Radius2)
     { Init( Mitte1, Radius1, Mitte2, Radius2); }
-    static void Init( const DROPS::Point3DCL& Mitte1, const DROPS::Point3DCL& Radius1,
-                      const DROPS::Point3DCL& Mitte2, const DROPS::Point3DCL& Radius2)
+    static void Init( const Point3DCL& Mitte1, const Point3DCL& Radius1,
+                      const Point3DCL& Mitte2, const Point3DCL& Radius2)
     { Mitte1_= Mitte1;    Radius1_= Radius1;
       Mitte2_= Mitte2;    Radius2_= Radius2;}
-    static double DistanceFct( const DROPS::Point3DCL& p)
+    static double DistanceFct( const Point3DCL& p)
     {
-        DROPS::Point3DCL d1= p - Mitte1_;
+        Point3DCL d1= p - Mitte1_;
         const double avgRad1= cbrt(Radius1_[0]*Radius1_[1]*Radius1_[2]);
         d1/= Radius1_;
-        DROPS::Point3DCL d2= p - Mitte2_;
+        Point3DCL d2= p - Mitte2_;
         const double avgRad2= cbrt(Radius2_[0]*Radius2_[1]*Radius2_[2]);
         d2/= Radius2_;
         return std::min(std::abs( avgRad1)*d1.norm() - avgRad1, std::abs( avgRad2)*d2.norm() - avgRad2);
@@ -109,29 +112,37 @@ class TwoEllipsoidCL
         + 4./3.*M_PI*Radius2_[0]*Radius2_[1]*Radius2_[2]; }
 };
 
-DROPS::Point3DCL TwoEllipsoidCL::Mitte1_;
-DROPS::Point3DCL TwoEllipsoidCL::Radius1_;
-DROPS::Point3DCL TwoEllipsoidCL::Mitte2_;
-DROPS::Point3DCL TwoEllipsoidCL::Radius2_;
+Point3DCL TwoEllipsoidCL::Mitte1_;
+Point3DCL TwoEllipsoidCL::Radius1_;
+Point3DCL TwoEllipsoidCL::Mitte2_;
+Point3DCL TwoEllipsoidCL::Radius2_;
 
 class InterfaceInfoCL
 {
+  private:
+    std::ofstream* file_;    ///< write information, to this file
+
   public:
-    DROPS::Point3DCL bary, vel, min, max;
+    Point3DCL bary, vel, min, max;
     double maxGrad, Vol, h_min, h_max;
 
+
     template<class DiscVelSolT>
-    void Update (const DROPS::LevelsetP2CL& ls, const DiscVelSolT& u) {
+    void Update (const LevelsetP2CL& ls, const DiscVelSolT& u) {
         ls.GetInfo( maxGrad, Vol, bary, vel, u, min, max);
         std::pair<double, double> h= h_interface( ls.GetMG().GetTriangEdgeBegin( ls.Phi.RowIdx->TriangLevel()), ls.GetMG().GetTriangEdgeEnd( ls.Phi.RowIdx->TriangLevel()), ls.Phi);
         h_min= h.first; h_max= h.second;
     }
-    void WriteHeader(std::ofstream& file) {
-        file << "# time maxGradPhi volume bary_drop min_drop max_drop vel_drop h_min h_max" << std::endl;
+    void WriteHeader() {
+        if (file_)
+          (*file_) << "# time maxGradPhi volume bary_drop min_drop max_drop vel_drop h_min h_max" << std::endl;
     }
-    void Write (double time, std::ofstream& file) {
-        file << time << " " << maxGrad << " " << Vol << " " << bary << " " << min << " " << max << " " << vel << " " << h_min << " " << h_max << std::endl;
+    void Write (double time) {
+        if (file_)
+          (*file_) << time << " " << maxGrad << " " << Vol << " " << bary << " " << min << " " << max << " " << vel << " " << h_min << " " << h_max << std::endl;
     }
+    /// \brief Set file for writing
+    void Init(std::ofstream* file) { file_= file; }
 } IFInfo;
 
 double eps=5e-4, // Sprungbreite
@@ -139,7 +150,7 @@ double eps=5e-4, // Sprungbreite
     sigma_dirt_fac= 0.8; // gesenkte OFspannung durch Verunreinigungen im unteren Teil des Tropfens
 double sigma;
 
-double sm_step(const DROPS::Point3DCL& p)
+double sm_step(const Point3DCL& p)
 {
     double y_mid= lambda*IFInfo.bary[1] + (1-lambda)*IFInfo.max[1], // zwischen Tropfenschwerpunkt und Oberkante
         y= p[1] - y_mid;
@@ -149,11 +160,11 @@ double sm_step(const DROPS::Point3DCL& p)
     return sigma_dirt_fac*sigma + (sigma - sigma_dirt_fac*sigma) * (std::sin(z)+1)/2;
 }
 
-DROPS::Point3DCL grad_sm_step (const DROPS::Point3DCL& p)
+Point3DCL grad_sm_step (const Point3DCL& p)
 {
     double y_mid= lambda*IFInfo.bary[1] + (1-lambda)*IFInfo.max[1], // zwischen Tropfenschwerpunkt und Oberkante
         y= p[1] - y_mid;
-    DROPS::Point3DCL ret;
+    Point3DCL ret;
     if (y > eps) return ret;
     if (y < -eps) return ret;
     const double z=y/eps*M_PI/2.;
@@ -161,7 +172,7 @@ DROPS::Point3DCL grad_sm_step (const DROPS::Point3DCL& p)
     return ret;
 }
 
-double lin(const DROPS::Point3DCL& p)
+double lin(const Point3DCL& p)
 {
     const double y_top= IFInfo.max[1],
                  y_bot= IFInfo.bary[1],
@@ -169,68 +180,66 @@ double lin(const DROPS::Point3DCL& p)
     return sigma + (p[1] - y_top)*y_slope;
 }
 
-DROPS::Point3DCL grad_lin (const DROPS::Point3DCL&)
+Point3DCL grad_lin (const Point3DCL&)
 {
     const double y_top= IFInfo.max[1],
                  y_bot= IFInfo.bary[1],
                  y_slope= sigma*(1 - sigma_dirt_fac)/(y_top - y_bot);
-    DROPS::Point3DCL ret;
+    Point3DCL ret;
     ret[1]= y_slope;
     return ret;
 }
 
-double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
-DROPS::Point3DCL gsigma (const DROPS::Point3DCL&, double) { return DROPS::Point3DCL(); }
+double sigmaf (const Point3DCL&, double) { return sigma; }
+Point3DCL gsigma (const Point3DCL&, double) { return Point3DCL(); }
 
-double sigma_step(const DROPS::Point3DCL& p, double) { return sm_step( p); }
-DROPS::Point3DCL gsigma_step (const DROPS::Point3DCL& p, double) { return grad_sm_step( p); }
+double sigma_step(const Point3DCL& p, double) { return sm_step( p); }
+Point3DCL gsigma_step (const Point3DCL& p, double) { return grad_sm_step( p); }
 
-namespace DROPS{
 /// \brief Timedepending zero function as a helper function
-SVectorCL<3> Null( const Point3DCL&, double) { return DROPS::SVectorCL<3>(0.); }
+SVectorCL<3> Null( const Point3DCL&, double) { return SVectorCL<3>(0.); }
 double       One ( const Point3DCL&)         { return 1.; }
-}
 
 /// \brief Create geometry of a Mzelle of a brick
-void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata,
-                 DROPS::instat_vector_fun_ptr inflow,
+void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
+                 instat_vector_fun_ptr inflow,
                  const std::string& meshfile_name,
                  int GeomType, int bnd_type,
                  const std::string& deserialization_file, double& r_inlet)
 {
 #ifdef _PAR
-    DROPS::ParMultiGridCL::InstancePtr();
+    ParMultiGridCL::InstancePtr();
 #endif
     if (GeomType == 0) {
         std::ifstream meshfile( meshfile_name.c_str());
         if (!meshfile)
-            throw DROPS::DROPSErrCL ("error while opening mesh file\n");
+            throw DROPSErrCL ("error while opening mesh file\n");
 
-        DROPS::ReadMeshBuilderCL *mgb= 0;       // builder of the multigrid
+        ReadMeshBuilderCL *mgb= 0;       // builder of the multigrid
 
         // read geometry information from a file and create the multigrid
         IF_MASTER
-            mgb = new DROPS::ReadMeshBuilderCL( meshfile );
+            mgb = new ReadMeshBuilderCL( meshfile );
         IF_NOT_MASTER
-            mgb = new DROPS::EmptyReadMeshBuilderCL( meshfile );
+            mgb = new EmptyReadMeshBuilderCL( meshfile );
         // Create the multigrid
         if (deserialization_file == "none")
-            mgp= new DROPS::MultiGridCL( *mgb);
+            mgp= new MultiGridCL( *mgb);
         else {
-            DROPS::FileBuilderCL filebuilder( deserialization_file, mgb);
-            mgp= new DROPS::MultiGridCL( filebuilder);
+            FileBuilderCL filebuilder( deserialization_file, mgb);
+            mgp= new MultiGridCL( filebuilder);
         }
-        const DROPS::BoundaryCL& bnd= mgp->GetBnd();
-        const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
+        const BoundaryCL& bnd= mgp->GetBnd();
+        const BndIdxT num_bnd= bnd.GetNumBndSeg();
 
-        DROPS::BndCondT* bc = new DROPS::BndCondT[num_bnd];
-        DROPS::StokesVelBndDataCL::bnd_val_fun* bnd_fun = new DROPS::StokesVelBndDataCL::bnd_val_fun[num_bnd];
-        for (DROPS::BndIdxT i=0; i<num_bnd; ++i)
+        BndCondT* bc = new BndCondT[num_bnd];
+        StokesVelBndDataCL::bnd_val_fun* bnd_fun = new StokesVelBndDataCL::bnd_val_fun[num_bnd];
+        for (BndIdxT i=0; i<num_bnd; ++i)
         {
-            bnd_fun[i]= (bc[i]= mgb->GetBC( i))==DROPS::DirBC ? inflow : &DROPS::ZeroVel;
+            bnd_fun[i]= (bc[i]= mgb->GetBC( i))==DirBC ? inflow : &ZeroVel;
             std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
         }
-        bnddata = new DROPS::StokesBndDataCL(num_bnd, bc, bnd_fun);
+        bnddata = new StokesBndDataCL(num_bnd, bc, bnd_fun);
         delete[] bc;
         delete[] bnd_fun;
         delete   mgb;
@@ -245,54 +254,54 @@ void CreateGeom (DROPS::MultiGridCL* &mgp, DROPS::StokesBndDataCL* &bnddata,
         std::istringstream brick_info( mesh);
         brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
         if (!brick_info)
-            throw DROPS::DROPSErrCL("error while reading geometry information: " + mesh);
+            throw DROPSErrCL("error while reading geometry information: " + mesh);
         r_inlet= dx/2;
-        DROPS::Point3DCL orig, px, py, pz;
+        Point3DCL orig, px, py, pz;
         px[0]= dx; py[1]= dy; pz[2]= dz;
 
-        DROPS::BrickBuilderCL *mgb = 0;
+        BrickBuilderCL *mgb = 0;
         IF_MASTER
-            mgb = new DROPS::BrickBuilderCL( orig, px, py, pz, nx, ny, nz);
+            mgb = new BrickBuilderCL( orig, px, py, pz, nx, ny, nz);
         IF_NOT_MASTER
-            mgb = new DROPS::EmptyBrickBuilderCL(orig, px, py, pz);
+            mgb = new EmptyBrickBuilderCL(orig, px, py, pz);
 
         if (deserialization_file == "none")
-            mgp= new DROPS::MultiGridCL( *mgb);
+            mgp= new MultiGridCL( *mgb);
         else {
-            DROPS::FileBuilderCL filebuilder( deserialization_file, mgb);
-            mgp= new DROPS::MultiGridCL( filebuilder);
+            FileBuilderCL filebuilder( deserialization_file, mgb);
+            mgp= new MultiGridCL( filebuilder);
         }
-        DROPS::BndCondT bc[6]= { DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC };
-        DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[6]=
-            { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel };
+        BndCondT bc[6]= { Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC };
+        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[6]=
+            { &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel };
         switch (bnd_type)
         {
             case 1 : // hom. Dirichlet bnd-data
               break;
             case 2 : // inhom. Dirichlet bnd-data for in-/outflow
             {
-                bc[2]= bc[3]= DROPS::DirBC;
+                bc[2]= bc[3]= DirBC;
                 bfun[2]= bfun[3]= inflow;
             } break;
             case 3 : // tube/canal
             {
-                bc[3]= DROPS::DirBC;
-                bc[2]= DROPS::NatBC; //Rohr
-                //bc[2]= bc[4]= bc[5]= DROPS::NatBC;          //Kanal
-                bfun[2]= &DROPS::ZeroVel;
-                //bfun[2]=bfun[4]=bfun[5]= &DROPS::ZeroVel;   //Kanal
+                bc[3]= DirBC;
+                bc[2]= NatBC; //Rohr
+                //bc[2]= bc[4]= bc[5]= NatBC;          //Kanal
+                bfun[2]= &ZeroVel;
+                //bfun[2]=bfun[4]=bfun[5]= &ZeroVel;   //Kanal
                 bfun[3]= inflow;
             } break;
-            default: throw DROPS::DROPSErrCL("Unknown boundary data type");
+            default: throw DROPSErrCL("Unknown boundary data type");
         }
-        bnddata = new DROPS::StokesBndDataCL(6, bc, bfun);
+        bnddata = new StokesBndDataCL(6, bc, bfun);
         delete mgb;
     }
 }
 
 /// \brief Display a detailed list of unknowns
 template <typename StokesT, typename LevelsetT>
-  void DisplayUnks(const StokesT& Stokes, const LevelsetT& levelset, __UNUSED__ const DROPS::MultiGridCL& MG)
+  void DisplayUnks(const StokesT& Stokes, const LevelsetT& levelset, __UNUSED__ const MultiGridCL& MG)
 /** This functions write information about unknowns on the display. These
     informations are for the level-set-, pressure- and velocity-DOF:
     - global DOF
@@ -306,7 +315,6 @@ template <typename StokesT, typename LevelsetT>
     std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
     std::cerr << levelset.Phi.Data.size() << " levelset unknowns.\n";
 #else
-    using namespace DROPS;
     const MLIdxDescCL* vidx = &Stokes.vel_idx,
                      * pidx = &Stokes.pr_idx;
     const IdxDescCL*   lidx = &levelset.idx;
@@ -376,33 +384,33 @@ template <typename StokesT, typename LevelsetT>
 #endif
 }
 
-void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
+void DisplayDetailedGeom(MultiGridCL& mg)
 {
 #ifndef _PAR
     mg.SizeInfo( std::cerr);
 #else
-    const DROPS::Uint level=mg.GetLastLevel();
-    DROPS::Uint *numTetrasAllProc=0;
-    DROPS::Uint *numFacesAllProc=0;
-    DROPS::Uint *numDistFaceAllProc=0;
-    if (DROPS::ProcCL::IamMaster()){
-        numTetrasAllProc  = new DROPS::Uint[DROPS::ProcCL::Size()];
-        numFacesAllProc   = new DROPS::Uint[DROPS::ProcCL::Size()];
-        numDistFaceAllProc= new DROPS::Uint[DROPS::ProcCL::Size()];
+    const Uint level=mg.GetLastLevel();
+    Uint *numTetrasAllProc=0;
+    Uint *numFacesAllProc=0;
+    Uint *numDistFaceAllProc=0;
+    if (ProcCL::IamMaster()){
+        numTetrasAllProc  = new Uint[ProcCL::Size()];
+        numFacesAllProc   = new Uint[ProcCL::Size()];
+        numDistFaceAllProc= new Uint[ProcCL::Size()];
     }
     // Gather information about distribution on master processor
-    DROPS::ProcCL::Gather(mg.GetNumTriangTetra(level),      numTetrasAllProc,   DROPS::ProcCL::Master());
-    DROPS::ProcCL::Gather(mg.GetNumTriangFace(level),       numFacesAllProc,    DROPS::ProcCL::Master());
-    DROPS::ProcCL::Gather(mg.GetNumDistributedFaces(level), numDistFaceAllProc, DROPS::ProcCL::Master());
+    ProcCL::Gather(mg.GetNumTriangTetra(level),      numTetrasAllProc,   ProcCL::Master());
+    ProcCL::Gather(mg.GetNumTriangFace(level),       numFacesAllProc,    ProcCL::Master());
+    ProcCL::Gather(mg.GetNumDistributedFaces(level), numDistFaceAllProc, ProcCL::Master());
 
     // Display information
-    if (DROPS::ProcCL::IamMaster()){
-        double ratioTetra       =  (double)*std::max_element(numTetrasAllProc,   numTetrasAllProc+DROPS::ProcCL::Size())
-                                  /(double)*std::min_element(numTetrasAllProc,   numTetrasAllProc+DROPS::ProcCL::Size());
-        DROPS::Uint allTetra    =  std::accumulate(numTetrasAllProc, numTetrasAllProc+DROPS::ProcCL::Size(), 0),
-                    allFace     =  std::accumulate(numFacesAllProc, numFacesAllProc+DROPS::ProcCL::Size(), 0),
-                    allDistFace =  std::accumulate(numDistFaceAllProc, numDistFaceAllProc+DROPS::ProcCL::Size(), 0);
-        double      *ratioDistFace=new double[DROPS::ProcCL::Size()];
+    if (ProcCL::IamMaster()){
+        double ratioTetra       =  (double)*std::max_element(numTetrasAllProc,   numTetrasAllProc+ProcCL::Size())
+                                  /(double)*std::min_element(numTetrasAllProc,   numTetrasAllProc+ProcCL::Size());
+        Uint allTetra    =  std::accumulate(numTetrasAllProc, numTetrasAllProc+ProcCL::Size(), 0),
+                    allFace     =  std::accumulate(numFacesAllProc, numFacesAllProc+ProcCL::Size(), 0),
+                    allDistFace =  std::accumulate(numDistFaceAllProc, numDistFaceAllProc+ProcCL::Size(), 0);
+        double      *ratioDistFace=new double[ProcCL::Size()];
 
         // global information
         std::cerr << "Detailed information about the parallel multigrid:\n"
@@ -411,10 +419,10 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
                   << "#(distributed Faces on fines level): "<<allDistFace<<'\n';
 
         // local information for all processors
-        for (int i=0; i<DROPS::ProcCL::Size(); ++i)
+        for (int i=0; i<ProcCL::Size(); ++i)
             ratioDistFace[i]= ((double)numDistFaceAllProc[i]/(double)numFacesAllProc[i]*100.);
 
-        double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+DROPS::ProcCL::Size());
+        double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+ProcCL::Size());
         std::cerr << "Ratio between max/min Tetra: "<<ratioTetra
                   <<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
 
@@ -424,7 +432,7 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
                   << std::setw(12) << "#DistFaces"
                   << std::setw(12) << "%DistFaces"
                   << '\n';
-        for (int i=0; i<DROPS::ProcCL::Size(); ++i)
+        for (int i=0; i<ProcCL::Size(); ++i)
             std::cerr << std::setw(6)  << i
                       << std::setw(8)  << numTetrasAllProc[i]
                       << std::setw(8)  << numFacesAllProc[i]
@@ -440,7 +448,6 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
 #endif
 }
 
-namespace DROPS{
 /// \brief Class for serializing a two-phase flow problem, i.e., storing
 ///    the multigrid and the numerical data
 /// \todo  Storing of transport data!

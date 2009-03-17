@@ -368,8 +368,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     std::ofstream* infofile = 0;
     IF_MASTER {
         infofile = new std::ofstream ((C.EnsCase+".info").c_str());
-        IFInfo.WriteHeader(*infofile);
     }
+    IFInfo.Init(infofile);
+    IFInfo.WriteHeader();
 
     if (C.num_steps == 0)
         SolveStatProblem( Stokes, lset, *navstokessolver);
@@ -403,9 +404,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         std::cerr << "============================================================ step " << step << std::endl;
 
         IFInfo.Update( lset, Stokes.GetVelSolution());
-
-        IF_MASTER
-            IFInfo.Write(Stokes.t, *infofile);
+        IFInfo.Write(Stokes.t);
 
         timedisc->DoStep( C.cpl_iter);
         if (C.transp_do) c.DoStep( step*C.dt);
@@ -476,12 +475,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 #endif
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
-    IF_MASTER
-        IFInfo.Write(Stokes.t, *infofile);
+    IFInfo.Write(Stokes.t);
     std::cerr << std::endl;
     delete timedisc;
     delete navstokessolver;
     delete stokessolver;
+    if (infofile) delete infofile;
 //     delete stokessolver1;
 }
 
@@ -512,26 +511,26 @@ int main (int argc, char** argv)
     param.close();
     std::cerr << C << std::endl;
 
-    typedef ZeroFlowCL                                    CoeffT;
+    typedef DROPS::ZeroFlowCL                             CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
 
     CreateGeom(mg, bnddata, C.GeomType == 0 ? InflowCell : InflowBrick, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
-    EllipsoidCL::Init( C.Mitte, C.Radius);
+    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
     DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? 1 : -1));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (C.deserialization_file == "none")
-        adap.MakeInitialTriang( EllipsoidCL::DistanceFct);
+        adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
     std::cerr << DROPS::SanityMGOutCL(*mg) << std::endl;
 #ifdef _PAR
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cerr << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
-    MyStokesCL prob( *mg, ZeroFlowCL(C), *bnddata, C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
+    MyStokesCL prob( *mg, DROPS::ZeroFlowCL(C), *bnddata, C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
 
     Strategy( prob, adap);    // do all the stuff
 
