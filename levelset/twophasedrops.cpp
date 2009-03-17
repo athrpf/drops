@@ -444,10 +444,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
             if (C.serialization) {
+#ifndef _PAR
                 std::stringstream filename;
                 filename << C.ser_dir;
                 if (second) filename << "0";
                 second = !second;
+#endif
                 ser.Write();
             }
         }
