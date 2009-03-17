@@ -395,6 +395,86 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     }
 };
 
+/// \brief Contains the nodes and weights of a quadrature rule on the reference tetrahedron. It uses 5 nodes an is exact up to degree 3.
+///
+/// The data is initialized exactly once on program-startup by the global object in num/discretize.cpp.
+class Quad3DataCL
+{
+  public:
+    Quad3DataCL ();
+
+    enum { NumNodesC= 5};
+
+    static BaryCoordCL           Node[NumNodesC]; ///< quadrature nodes
+    static const double          Wght[2];         ///< quadrature weights
+    static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
+
+    /// M contains the barycentric coordinates of a tetrahedron; the
+    /// return-value is a new[]-allocated array of the quadrature-points
+    /// for this tetrahedron.
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M);
+};
+
+
+/// \brief Quadrature rule on a tetrahedron of degree 3 with 5 nodes.
+///
+/// The numerical data for the actual quadrature is contained in Quad3DataCL -- it does not depend on the template parameter.
+template<class T=double>
+class Quad3CL: public GridFunctionCL<T>
+{
+  public:
+    typedef GridFunctionCL<T> base_type;
+    typedef typename base_type::value_type value_type;
+    typedef typename base_type::instat_fun_ptr instat_fun_ptr;
+
+  protected:
+    typedef Quad3CL<T> self_;
+
+  public:
+    Quad3CL(): base_type( value_type(), Quad3DataCL::NumNodesC) {}
+    Quad3CL(const value_type& t): base_type( t, Quad3DataCL::NumNodesC) {}
+
+    Quad3CL(const TetraCL&, instat_fun_ptr, double= 0.0, const BaryCoordCL* const= Quad3DataCL::Node);
+    Quad3CL(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad3DataCL::Node);
+    Quad3CL(const LocalP2CL<value_type>&);
+    Quad3CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
+    template <class _BndData, class _VD>
+      Quad3CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+    template <class PFunT>
+      Quad3CL(const TetraCL&, const PFunT&, double= 0.0);
+
+DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad3CL, T, base_type)
+
+    inline self_&
+    assign(const TetraCL&, instat_fun_ptr , double= 0.0, const BaryCoordCL* const= Quad3DataCL::Node);
+    inline self_&
+    assign(const LocalP1CL<value_type>&, const BaryCoordCL* const= Quad3DataCL::Node);
+    inline self_&
+    assign(const LocalP2CL<value_type>&);
+    inline self_&
+    assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
+    template <class _BndData, class _VD>
+      inline self_&
+      assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+    template <class PFunT>
+      inline self_&
+      assign(const TetraCL&, const PFunT&, double= 0.0);
+
+    /// M contains the barycentric coordinates of a tetrahedron; the
+    /// return-value is a new[]-allocated array of the quadrature-points
+    /// for this tetrahedron.
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M) {
+        return Quad3DataCL::TransformNodes( M);
+    }
+
+    // Integration:
+    // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
+    // Diskretisierung nicht vergessen wird (beliebter folgenschwerer Fehler :-)
+    inline T quad (double absdet) const;
+
+    // Quadraturformel zur Annaeherung von \int f*phi, phi = P2-Hutfunktion
+    inline T quadP2 (int i, double absdet) const;
+};
 
 /// \brief Contains the nodes and weights of a positive quadrature rule on the reference tetrahedron. It uses 15 nodes an is exact up to degree 5.
 ///
@@ -548,7 +628,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
 };
 
 
-class Quad3CL
+class Quad3PosWeightsCL
 // contains cubatur on reference-tetra, that is exact up to degree 3, positive,
 // and uses only 8 points.
 // Do not forget to multiply the result of Quad() by the determinant of the affine trafo
@@ -573,7 +653,7 @@ class Quad3CL
       Quad(IteratorT, ValueT*const);
 };
 
-inline double Quad3CL::Quad(const TetraCL& t, instat_scalar_fun_ptr f, double tt)
+inline double Quad3PosWeightsCL::Quad(const TetraCL& t, instat_scalar_fun_ptr f, double tt)
 {
     const Point3DCL* pts= GetPoints();
     return ( f(GetWorldCoord(t, pts[0]), tt) + f(GetWorldCoord(t, pts[1]), tt)
@@ -582,7 +662,7 @@ inline double Quad3CL::Quad(const TetraCL& t, instat_scalar_fun_ptr f, double tt
             +f(GetWorldCoord(t, pts[6]), tt) + f(GetWorldCoord(t, pts[7]), tt) )*3./80.;
 
 }
-inline double Quad3CL::Quad(const TetraCL& t, scalar_fun_ptr f)
+inline double Quad3PosWeightsCL::Quad(const TetraCL& t, scalar_fun_ptr f)
 {
     const Point3DCL* pts= GetPoints();
     return ( f(GetWorldCoord(t, pts[0])) + f(GetWorldCoord(t, pts[1]))
@@ -591,7 +671,7 @@ inline double Quad3CL::Quad(const TetraCL& t, scalar_fun_ptr f)
             +f(GetWorldCoord(t, pts[6])) + f(GetWorldCoord(t, pts[7])) )*3./80.;
 
 }
-inline SVectorCL<3> Quad3CL::Quad(const TetraCL& t, instat_vector_fun_ptr f, double tt)
+inline SVectorCL<3> Quad3PosWeightsCL::Quad(const TetraCL& t, instat_vector_fun_ptr f, double tt)
 {
     const Point3DCL* pts= GetPoints();
     return ( f(GetWorldCoord(t, pts[0]), tt) + f(GetWorldCoord(t, pts[1]), tt)
@@ -600,7 +680,7 @@ inline SVectorCL<3> Quad3CL::Quad(const TetraCL& t, instat_vector_fun_ptr f, dou
             +f(GetWorldCoord(t, pts[6]), tt) + f(GetWorldCoord(t, pts[7]), tt) )*3./80.;
 
 }
-inline SVectorCL<3> Quad3CL::Quad(const TetraCL& t, vector_fun_ptr f)
+inline SVectorCL<3> Quad3PosWeightsCL::Quad(const TetraCL& t, vector_fun_ptr f)
 {
     const Point3DCL* pts= GetPoints();
     return ( f(GetWorldCoord(t, pts[0])) + f(GetWorldCoord(t, pts[1]))
@@ -610,20 +690,20 @@ inline SVectorCL<3> Quad3CL::Quad(const TetraCL& t, vector_fun_ptr f)
 
 }
 
-inline double Quad3CL::Quad(const double* vals)
+inline double Quad3PosWeightsCL::Quad(const double* vals)
 {
     return (vals[0] + vals[1] + vals[2] + vals[3])/240.
           +(vals[4] + vals[5] + vals[6] + vals[7])*3./80.;
 }
 
-inline SVectorCL<3> Quad3CL::Quad(const SVectorCL<3>* vals)
+inline SVectorCL<3> Quad3PosWeightsCL::Quad(const SVectorCL<3>* vals)
 {
     return (vals[0] + vals[1] + vals[2] + vals[3])/240.
           +(vals[4] + vals[5] + vals[6] + vals[7])*3./80.;
 }
 
 template<class IteratorT, class ValueT>
-inline void Quad3CL::Quad(IteratorT beg, ValueT*const ret)
+inline void Quad3PosWeightsCL::Quad(IteratorT beg, ValueT*const ret)
 {
     ValueT tmp0= *beg++; tmp0+= *beg++; tmp0+= *beg++; tmp0+= *beg++;
     tmp0/=240.;

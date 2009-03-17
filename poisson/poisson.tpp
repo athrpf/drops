@@ -263,7 +263,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimator(const TetraCL& t, const VecDescC
     const double absdet= std::fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
-    const double P0f= Quad3CL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
+    const double P0f= Quad3PosWeightsCL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
     _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
 
     // Integrals over boundary - distinguish between inner-boundary and domain-boundary
@@ -352,7 +352,7 @@ double PoissonP1CL<Coeff>::ResidualErrEstimatorL2(const TetraCL& t, const VecDes
     const double absdet= std::fabs(det);
     // Integral over tetra
     circumcircle(t, cc_center, cc_radius);
-    const double P0f= Quad3CL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
+    const double P0f= Quad3PosWeightsCL::Quad(t, &CoeffCL::f, 0.0)*6.; // absdet/vol = 6.
     _err+= 4.*cc_radius*cc_radius*P0f*P0f*absdet/6.;
 
     // Integrals over boundary - distinguish between inner-boundary and domain-boundary

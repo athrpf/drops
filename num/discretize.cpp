@@ -11,6 +11,46 @@
 
 namespace DROPS
 {
+//**************************************************************************
+// Class: Quad3DataCL                                                      *
+//**************************************************************************
+
+BaryCoordCL Quad3DataCL::Node[NumNodesC];
+
+const double Quad3DataCL::Wght[2]= {
+    -2./15., /* -(n+1)^2/[4(n+2)] /6       Node[0]*/
+    3./40.,  /* (n+3)^2/[4(n+1)(n+2)] /6 , Node[1] bis Node[4]*/
+};
+
+std::valarray<double> Quad3DataCL::P2_Val[10]; // P2_Val[i] contains FE_P2CL::H_i( Node).
+
+Quad3DataCL::Quad3DataCL()
+{
+    Node[0]= BaryCoordCL( 0.25);
+    const double A= 1./6.,
+                 B= 0.5;
+    Node[1]= MakeBaryCoord( A,A,A,B);
+    Node[2]= MakeBaryCoord( A,A,B,A);
+    Node[3]= MakeBaryCoord( A,B,A,A);
+    Node[4]= MakeBaryCoord( B,A,A,A);
+
+    FE_P2CL::ApplyAll( NumNodesC, Node, P2_Val);
+}
+
+BaryCoordCL* Quad3DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M)
+{
+    BaryCoordCL* tN = new BaryCoordCL[NumNodesC];
+    for (Uint i=0; i< NumNodesC; ++i)
+        //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+        for (Uint k=0; k<4; ++k)
+            tN[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
+                    + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
+    return tN;
+}
+
+namespace {
+    Quad3DataCL theQuad3DataInitializer_; // The constructor sets up the static arrays
+} // end of anonymous namespace
 
 //**************************************************************************
 // Class: Quad5DataCL                                                      *
@@ -107,7 +147,7 @@ namespace {
 } // end of anonymous namespace
 
 
-const double Quad3CL::_points[8][3]= {
+const double Quad3PosWeightsCL::_points[8][3]= {
     {0.,0.,0.}, {1.,0.,0.}, {0.,1.,0.}, {0.,0.,1.},
     {1./3.,1./3.,0.}, {1./3.,0.,1./3.}, {0.,1./3.,1./3.},
     {1./3.,1./3.,1./3.}

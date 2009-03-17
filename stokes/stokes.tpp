@@ -901,7 +901,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     // Compute the pressure-coefficient in direction of 1/std::sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double MW_pr= 0, vol= 0;
-    const Uint numpts= Quad3CL::GetNumPoints();
+    const Uint numpts= Quad3PosWeightsCL::GetNumPoints();
     double* pvals= new double[numpts];
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
          send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl); sit != send; ++sit)
@@ -909,10 +909,10 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         const double volT= sit->GetVolume();
         for (Uint i=0; i<numpts; ++i)
         {
-            const Point3DCL& p= Quad3CL::GetPoints()[i];
+            const Point3DCL& p= Quad3PosWeightsCL::GetPoints()[i];
             pvals[i]= pr.val(*sit, p[0], p[1], p[2]);
         }
-        MW_pr+= Quad3CL::Quad(pvals)*volT*6.;
+        MW_pr+= Quad3PosWeightsCL::Quad(pvals)*volT*6.;
         vol+= volT;
     }
 #ifdef _PAR
@@ -938,7 +938,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
         vel.GetDoF(*sit, veldof);
         for (Uint i=0; i<numpts; ++i)
         {
-            const Point3DCL& p= Quad3CL::GetPoints()[i];
+            const Point3DCL& p= Quad3PosWeightsCL::GetPoints()[i];
             const Point3DCL  p_world= GetWorldCoord(*sit, p);
 
             const double prtmp= pr.val(*sit, p[0], p[1], p[2]) - c_pr - LsgPr(p_world);
@@ -962,9 +962,9 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
                 Dvals[i]+= inner_prod(tmpD, tmpD);
             }
         }
-        L2_pr+= Quad3CL::Quad(pvals)*absdet;
-        L2_vel+= Quad3CL::Quad(vals)*absdet;
-        L2_Dvel+= Quad3CL::Quad(Dvals)*absdet;
+        L2_pr+= Quad3PosWeightsCL::Quad(pvals)*absdet;
+        L2_vel+= Quad3PosWeightsCL::Quad(vals)*absdet;
+        L2_Dvel+= Quad3PosWeightsCL::Quad(Dvals)*absdet;
     }
 #ifdef _PAR
     L2_pr   = ProcCL::GlobalSum(L2_pr);
@@ -1231,9 +1231,9 @@ template <class Coeff>
     double hT; // radius of circumcircle of T
     circumcircle(s, cc, hT);
     // P_0(f) := (f, 1_T)_T * 1_T = int(f, T)/|T|
-    const SVectorCL<3> P0f= Quad3CL::Quad(s, &Coeff::f, t)*6.;
+    const SVectorCL<3> P0f= Quad3PosWeightsCL::Quad(s, &Coeff::f, t)*6.;
 
-    const Uint numpts= Quad3CL::GetNumPoints();
+    const Uint numpts= Quad3PosWeightsCL::GetNumPoints();
     double* vals= new double[numpts];
     double err_sq= 0.0;
 
@@ -1252,11 +1252,11 @@ template <class Coeff>
         double tmp= 0.;
         for (Uint j=0; j<10; ++j)
         {
-            tmp+= inner_prod( veldof[j], M*FE_P2CL::DHRef(j, Quad3CL::GetPoints()[i][0], Quad3CL::GetPoints()[i][1], Quad3CL::GetPoints()[i][2]) );
+            tmp+= inner_prod( veldof[j], M*FE_P2CL::DHRef(j, Quad3PosWeightsCL::GetPoints()[i][0], Quad3PosWeightsCL::GetPoints()[i][1], Quad3PosWeightsCL::GetPoints()[i][2]) );
         }
         vals[i]= tmp*tmp;
     }
-    err_sq+= Quad3CL::Quad(vals)*absdet;
+    err_sq+= Quad3PosWeightsCL::Quad(vals)*absdet;
     delete[] vals;
 
     // hT^2*int((-laplace(u) + grad(p) - P0f)^2, T) -- the sign of grad(p) is due to the implemented version of stokes eq.
@@ -1676,7 +1676,7 @@ template <class Coeff>
         }
 
     // || P_0(f) - grad(p_h) ||_L2 squared * Vol(T)
-    const SVectorCL<3> P0f= Quad3CL::Quad(t, &Coeff::f)*absdet/std::sqrt(vol); // == *absdet/std::sqrt(vol)....
+    const SVectorCL<3> P0f= Quad3PosWeightsCL::Quad(t, &Coeff::f)*absdet/std::sqrt(vol); // == *absdet/std::sqrt(vol)....
     const SVectorCL<3> gp= pr.val(t.GetVertex(0)->GetCoord())*M*FE_P1CL::DH0Ref()
                           +pr.val(t.GetVertex(1)->GetCoord())*M*FE_P1CL::DH1Ref()
                           +pr.val(t.GetVertex(2)->GetCoord())*M*FE_P1CL::DH2Ref()
@@ -1840,15 +1840,15 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     double det, absdet;
 
 // We only use the linear part of the velocity-solution!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    double* pvals= new double[Quad3CL::GetNumPoints()];
-    double* pvals_sq= new double[Quad3CL::GetNumPoints()];
+    double* pvals= new double[Quad3PosWeightsCL::GetNumPoints()];
+    double* pvals_sq= new double[Quad3PosWeightsCL::GetNumPoints()];
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
         absdet= std::fabs(det);
 
-        for (Uint i=0; i<Quad3CL::GetNumPoints(); ++i)
+        for (Uint i=0; i<Quad3PosWeightsCL::GetNumPoints(); ++i)
         {
             pvals[i]= std::fabs( inner_prod(T*FE_P1BubbleCL::DH0Ref(), vel.val(*sit->GetVertex(0)) )
                            +inner_prod(T*FE_P1BubbleCL::DH1Ref(), vel.val(*sit->GetVertex(1)) )
@@ -1856,8 +1856,8 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
                            +inner_prod(T*FE_P1BubbleCL::DH3Ref(), vel.val(*sit->GetVertex(3)) ) );
             pvals_sq[i]= pvals[i]*pvals[i];
         }
-        L1_div+= Quad3CL::Quad(pvals)*absdet;
-        L2_div+= Quad3CL::Quad(pvals_sq)*absdet;
+        L1_div+= Quad3PosWeightsCL::Quad(pvals)*absdet;
+        L2_div+= Quad3PosWeightsCL::Quad(pvals_sq)*absdet;
     }
     L2_div= std::sqrt(L2_div);
     std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
@@ -1885,22 +1885,22 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     norm2= std::sqrt(norm2/countverts);
 
     Point3DCL L1_vel(0.0), L2_vel(0.0);
-    SVectorCL<3>* vvals= new SVectorCL<3>[Quad3CL::GetNumPoints()];
-    SVectorCL<3>* vvals_sq= new SVectorCL<3>[Quad3CL::GetNumPoints()];
+    SVectorCL<3>* vvals= new SVectorCL<3>[Quad3PosWeightsCL::GetNumPoints()];
+    SVectorCL<3>* vvals_sq= new SVectorCL<3>[Quad3PosWeightsCL::GetNumPoints()];
     for(MultiGridCL::const_TriangTetraIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
         absdet= std::fabs(det);
 //        Point3DCL sum(0.0), diff, Diff[5];
-        for (Uint i=0; i<Quad3CL::GetNumPoints(); ++i)
+        for (Uint i=0; i<Quad3PosWeightsCL::GetNumPoints(); ++i)
         {
-            const Point3DCL& pt= Quad3CL::GetPoints()[i];
+            const Point3DCL& pt= Quad3PosWeightsCL::GetPoints()[i];
             vvals[i]= fabs(LsgVel(GetWorldCoord(*sit, pt), 0.) - vel.lin_val(*sit, pt[0], pt[1], pt[2]));
             vvals_sq[i]= vvals[i]*vvals[i];
         }
-        L1_vel+= Quad3CL::Quad(vvals)*absdet;
-        L2_vel+= Quad3CL::Quad(vvals_sq)*absdet;
+        L1_vel+= Quad3PosWeightsCL::Quad(vvals)*absdet;
+        L2_vel+= Quad3PosWeightsCL::Quad(vvals_sq)*absdet;
     }
     L2_vel= sqrt(L2_vel);
     delete[] vvals_sq; delete[] vvals;

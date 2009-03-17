@@ -331,6 +331,140 @@ template<class T>
 
 }
 
+//**************************************************************************
+// Class: Quad3CL                                                          *
+//**************************************************************************
+
+template<class T>
+  inline Quad3CL<T>&
+  Quad3CL<T>::assign(const TetraCL& s, instat_fun_ptr f , double t, const BaryCoordCL* const node)
+{
+    for (Uint i= 0; i < Quad3DataCL::NumNodesC; ++i)
+        (*this)[i]= f( GetWorldCoord( s, node[i]), t);
+    return *this;
+}
+
+template<class T>
+  inline Quad3CL<T>&
+  Quad3CL<T>::assign(const LocalP1CL<value_type>& f, const BaryCoordCL* const node)
+{
+    for (size_t i= 0; i < Quad3DataCL::NumNodesC; ++i)
+        (*this)[i]= f( node[i]);
+    return *this;
+}
+
+template<class T>
+  inline Quad3CL<T>&
+  Quad3CL<T>::assign(const LocalP2CL<value_type>& f)
+{
+    (*this)= f[0]*static_cast<GridFunctionCL<double> >( Quad3DataCL::P2_Val[0]);
+    for (size_t i= 1; i < 10; ++i)
+        (*this)+= f[i]*static_cast<GridFunctionCL<double> >( Quad3DataCL::P2_Val[i]);
+    return *this;
+}
+
+template<class T>
+  inline Quad3CL<T>&
+  Quad3CL<T>::assign(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
+{
+    for (size_t i= 0; i < Quad3DataCL::NumNodesC; ++i)
+        (*this)[i]= f( node[i]);
+    return *this;
+}
+
+template<class T>
+  template <class _BndData, class _VD>
+      inline Quad3CL<T>&
+      Quad3CL<T>::assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
+{
+    const double oldt= f.GetTime();
+    f.SetTime( t);
+    value_type dof[10];
+    f.GetDoF( s, dof);
+    (*this)= T();
+    for (size_t i= 0; i < Quad3DataCL::NumNodesC; ++i)
+        for (size_t j= 0; j < 10; ++j)
+            (*this)[i]+= dof[j]*Quad3DataCL::P2_Val[j][i];
+    f.SetTime( oldt);
+    return *this;
+}
+
+template<class T>
+  template <class PFunT>
+    inline Quad3CL<T>&
+    Quad3CL<T>::assign(const TetraCL& s, const PFunT& f, double t)
+{
+    const double oldt= f.GetTime();
+    f.SetTime( t);
+    for (size_t i= 0; i < Quad3DataCL::NumNodesC; ++i)
+        (*this)[i]= f.val( s, Quad3DataCL::Node[i]);
+    f.SetTime( oldt);
+    return *this;
+}
+
+template<class T>
+  Quad3CL<T>::Quad3CL(const TetraCL& s,
+                      instat_fun_ptr f, double t, const BaryCoordCL* const node)
+  : base_type( value_type(), Quad3DataCL::NumNodesC)
+{
+    this->assign( s, f, t, node);
+}
+
+template<class T>
+  Quad3CL<T>::Quad3CL(const LocalP1CL<value_type>& f, const BaryCoordCL* const node)
+    : base_type( value_type(), Quad3DataCL::NumNodesC)
+{
+    this->assign( f, node);
+}
+
+template<class T>
+  Quad3CL<T>::Quad3CL(const LocalP2CL<value_type>& f)
+  : base_type( value_type(), Quad3DataCL::NumNodesC)
+{
+    this->assign( f);
+}
+
+template<class T>
+  Quad3CL<T>::Quad3CL(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
+    : base_type( value_type(), Quad3DataCL::NumNodesC)
+{
+    this->assign( f, node);
+}
+
+template<class T>
+  template <class _BndData, class _VD>
+    Quad3CL<T>::Quad3CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
+    : base_type( value_type(), Quad3DataCL::NumNodesC)
+{
+    this->assign( s, f, t);
+}
+
+template<class T>
+  template <class PFunT>
+    Quad3CL<T>::Quad3CL(const TetraCL& s, const PFunT& f, double t)
+    : base_type( value_type(), Quad3DataCL::NumNodesC)
+{
+    this->assign( s, f, t);
+}
+
+template<class T>
+  inline T Quad3CL<T>::quad (double absdet) const
+{
+    return absdet*(
+          -2./15. *  (*this)[0] + 3./40. * ((*this)[1]+(*this)[2]+(*this)[3]+(*this)[4])
+    );
+}
+
+    // Quadraturformel zur Annaeherung von \int f*phi, phi = P2-Hutfunktion
+template<class T>
+  inline T Quad3CL<T>::quadP2 (int i, double absdet) const
+{
+    typedef Quad3DataCL Q;
+    return absdet*(
+          -2./15.*Q::P2_Val[i][0]*(*this)[0]
+        + 3./40.*(Q::P2_Val[i][1]*(*this)[1]+Q::P2_Val[i][2]*(*this)[2]+Q::P2_Val[i][3]*(*this)[3]+Q::P2_Val[i][4]*(*this)[4])
+    );
+}
 
 //**************************************************************************
 // Class: Quad5CL                                                          *
@@ -450,14 +584,6 @@ template<class T>
 
 template<class T>
   inline T Quad5CL<T>::quad (double absdet) const
-// {
-//     return absdet*(
-//           0.01975308641975308641975308641975308641975 *  (*this)[0]
-//         + 0.01198951396316977000173064248499538621936 * ((*this)[1]+(*this)[2]+(*this)[3]+(*this)[4])
-//         + 0.01151136787104539754677023934921978132914 * ((*this)[5]+(*this)[6]+(*this)[7]+(*this)[8])
-//         + 0.008818342151675485008818342151675485008818* ((*this)[9]+(*this)[10]+(*this)[11]+(*this)[12]+(*this)[13]+(*this)[14])
-//     );
-// }
 {
     return absdet*(
           8./405. *  (*this)[0]
