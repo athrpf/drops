@@ -832,6 +832,9 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
     maxGradPhi= -1.;
     minGradPhi= 1e99;
 
+    double maxNorm;
+    double minNorm;
+
     DROPS_FOR_TRIANG_TETRA( MG_, MG_.GetLastLevel(), it)
     {
         GetTrafoTr( T, det, *it);
@@ -848,11 +851,15 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
         VectorCL normGrad( 5);
         for (int v=0; v<5; ++v) // init normGrad
             normGrad[v]= norm( gradPhi[v]);
-        const double maxNorm= normGrad.max();
-        const double minNorm= normGrad.min();
+        maxNorm= normGrad.max();
+        minNorm= normGrad.min();
         if (maxNorm > maxGradPhi) maxGradPhi= maxNorm;
         if (minNorm < minGradPhi) minGradPhi= minNorm;
     }
+#ifdef _PAR
+    maxGradPhi= ProcCL::GlobalMax( maxNorm= maxGradPhi);
+    minGradPhi= ProcCL::GlobalMax( minNorm= minGradPhi);
+#endif
 }
 
 //*****************************************************************************
