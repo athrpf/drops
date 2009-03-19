@@ -400,11 +400,11 @@ void EnsightP2SolOutCL::CaseEnd()
 }
 
 /// \brief Write part of the geometry into file (filename)
-/** A master process writes all cordinates of the GIDS into the file.
+/** A master process writes all coordinates of the GIDS into the file.
     If not masterout this works like this:
-    Every process writes a geometry-part-file filname(proc-id). In this file
+    Every process writes a geometry-part-file filename(proc-id). In this file
     all tetras are listed. To gain a complete ensight geometry file, paste all
-    geomety-files together or use the program "pardrops2ens"
+    geometry-files together or use the program "pardrops2ens"
     If masterout is set:
     All processor send the connectivity part to a master processor. This proc
     writes these information into a valid ensight format and no post-processing
@@ -412,7 +412,7 @@ void EnsightP2SolOutCL::CaseEnd()
 void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 {
 
-    // create two list to buffer received coors and points
+    // create two list to buffer received coords and points
     std::queue <showInt> bufferedIDs;
     std::queue <showFloat> bufferedCoors;
 
@@ -428,7 +428,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         AppendTimecode( fileName);
     }
 
-    // Collect coordiates and gids of the global nodes
+    // Collect coordinates and gids of the global nodes
     //---------------------------------------------------
     // number of vertices and edges written by this proc (= number of vals)
     const IdxT locNumUnknowns = GetExclusiveVerts(*_MG, PrioHasUnk, lvl) + GetExclusiveEdges(*_MG, PrioHasUnk, lvl);
@@ -445,7 +445,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         {
             if (pos_GID>=locNumUnknowns || pos_Coord>=3*locNumUnknowns)                     // error checking
                 std::cerr << "["<<ProcCL::MyRank()<<"] putGeom (Vertex): "
-                        << "zu wenig Speicher allokiert (pos_GID " <<pos_GID<<"/"
+                        << "not enough memory allocated (pos_GID " <<pos_GID<<"/"
                         <<locNumUnknowns<< ")!" << std::endl;
 
             Point3DCL c=it->GetCoord();                                                     // get coordinates
@@ -463,7 +463,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         {
             if (pos_GID>locNumUnknowns || pos_Coord>3*locNumUnknowns)
                 std::cerr << "["<<ProcCL::MyRank()<<"] putGeom (Edge): "
-                        << "zu wenig Speicher allokiert (pos_GID " <<pos_GID<<"/"
+                        << "not enough memory allocated (pos_GID " <<pos_GID<<"/"
                         <<locNumUnknowns<< ")!" << std::endl;
 
             Point3DCL c= GetBaryCenter( *it);
