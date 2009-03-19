@@ -44,8 +44,8 @@ class VTKOutCL
     typedef std::map<const VertexCL*, Uint> vertexAddressMapT;
     typedef std::map<const EdgeCL*, Uint>     edgeAddressMapT;
 #else
-    typedef std::map < Uint, Uint > GIDMapT;        // map GID to number
-    typedef std::vector< Uint >     ProcOffsetCT;   // position in tetras_ where all tetras of a processor are lying
+    typedef std::map < DDD_GID, Uint > GIDMapT;     // map GID to number
+    typedef std::vector< Uint >        ProcOffsetCT;// position in tetras_ where all tetras of a processor are lying
 #endif
 
     const MultiGridCL& mg_;                         // reference to the multigrid
@@ -67,12 +67,12 @@ class VTKOutCL
     ProcOffsetCT        procOffset_;                // index in tetras_, where tetras of a processor are lying
 #endif
 
-    VectorBaseCL<float> coords_;                    // Coordinates of the points
-    VectorBaseCL<Uint>  tetras_;                    // Connectivities (tetras)
-    Uint                numPoints_;                 // number of points (only accessible by master process)
-    Uint                numTetras_;                 // number of tetras (only accessible by master process)
-    Uint                numLocPoints_;              // number of local exclusive verts and edges
-    bool                wrotePointDataLine_;        // flag if descibtionline for point data has been written
+    VectorBaseCL<float>   coords_;                  // Coordinates of the points
+    VectorBaseCL<DDD_GID> tetras_;                  // Connectivities (tetras)
+    Uint                  numPoints_;               // number of points (only accessible by master process)
+    Uint                  numTetras_;               // number of tetras (only accessible by master process)
+    Uint                  numLocPoints_;            // number of local exclusive verts and edges
+    bool                  wrotePointDataLine_;      // flag if descibtionline for point data has been written
 
     /// Put timecode as postfix to a filename
     void AppendTimecode( std::string&) const;

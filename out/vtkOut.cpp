@@ -195,7 +195,7 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<DDD_GID>& gidList, const Vec
 
         // Create memory
         coords_.resize(3*numPoints_);
-        Uint *recvGID= new Uint[maxPoints];
+        DDD_GID *recvGID= new DDD_GID[maxPoints];
 
         // Recieve Coords and GIDs from all processes
         int recievePos= 0, recieved=0, counter=0;
@@ -205,7 +205,7 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<DDD_GID>& gidList, const Vec
                  // Get number of recieved gids and coord
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, tag_, stat);
-                recieved = ProcCL::GetCount<Uint>(stat);
+                recieved = ProcCL::GetCount<DDD_GID>(stat);
 
                 // Recieve GIDs and Coords
                 ProcCL::Recv(recvGID, recieved, p, tag_);
@@ -357,7 +357,7 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<DDD_GID>& locConnectList)
                 // Get number of recieved tetras
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, tag_+2, stat);
-                recieved = ProcCL::GetCount<Uint>(stat);
+                recieved = ProcCL::GetCount<DDD_GID>(stat);
                 // Recieve tetras
                 ProcCL::Recv(Addr(tetras_)+recievePos, recieved, p, tag_+2);
                 // increment next free position

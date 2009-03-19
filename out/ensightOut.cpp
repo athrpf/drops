@@ -430,7 +430,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
 
     // Collect coordiates and gids of the global nodes
     //---------------------------------------------------
-    // number of vertices and edges writen by this proc (= number of vals)
+    // number of vertices and edges written by this proc (= number of vals)
     const IdxT locNumUnknowns = GetExclusiveVerts(*_MG, PrioHasUnk, lvl) + GetExclusiveEdges(*_MG, PrioHasUnk, lvl);
     const IdxT globNumUnknowns = ProcCL::GlobalSum(locNumUnknowns);                         // global number of vertices
     DDD_GID *myGID   = new DDD_GID[locNumUnknowns];                                         // array of gids of exclusive vertices, owned by thiss proc
@@ -537,7 +537,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
             {                                                                           // receive gids and coords
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, _tag, stat);
-                numUnk = ProcCL::GetCount<Uint>(stat);
+                numUnk = ProcCL::GetCount<DDD_GID>(stat);
 
                 Gids  = new DDD_GID[numUnk];
                 coord = new double[3*numUnk];
@@ -674,7 +674,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
                 {
                     ProcCL::StatusT stat;
                     ProcCL::Probe(p, _tag, stat);
-                    numGids = (Uint)ProcCL::GetCount<Uint>(stat);
+                    numGids = (Uint)ProcCL::GetCount<DDD_GID>(stat);
                     ProcCL::Recv(Gids, numGids, p, _tag);
                 }
                 else
