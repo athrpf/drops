@@ -18,6 +18,7 @@ ParTimerCL::ParTimerCL() : durations_(ProcCL::Size())
     maxduration_=-1.;                                                                       // Flag for the maximal time
     calcMax_=false;                                                                         // maxtime
     calcDur_=false;                                                                         // and the time of all proces are not computed yet
+    Start();
 }
 
 void ParTimerCL::PrintAllTime(std::ostream &os, int proc)

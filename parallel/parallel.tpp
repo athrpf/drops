@@ -146,6 +146,9 @@ template<typename T>
   inline void ProcCL::Bcast(T* data, int size, int proc)
   { Communicator_.Bcast(data, size, ProcCL::MPI_TT<T>::dtype, proc); }
 
+inline double ProcCL::Wtime()
+  { return MPI::Wtime(); }
+
 inline void ProcCL::Barrier()
   { Communicator_.Barrier(); }
 
@@ -254,6 +257,9 @@ inline void ProcCL::FreeOp(OperationT& op)
 template<typename T>
   inline void ProcCL::Bcast(T* data, int size, int proc)
   { MPI_Bcast(data, size, ProcCL::MPI_TT<T>::dtype, proc, Communicator_); }
+
+inline double ProcCL::Wtime()
+  { return MPI_Wtime(); }
 
 inline void ProcCL::Barrier()
   { MPI_Barrier(Communicator_); }

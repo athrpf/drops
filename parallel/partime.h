@@ -29,30 +29,29 @@ namespace DROPS{
 /****************************************************************************
 * P A R  T I M E R  C L A S S                                               *
 ****************************************************************************/
-class ParTimerCL : public TimerCL
+class ParTimerCL
 {
-  public:
-    typedef TimerCL  base_;
   private:
     double   maxduration_;                          // maximal time over the procs
     VectorCL durations_;                            // durations of all procs
+    double   start_;
+    double   end_;
 
     bool calcMax_,                                  // Flag for remembering, if maximal time is calculated
          calcDur_;                                  // and if the array of durations is set
 
   public:
-    ParTimerCL();                                   // constructor
+      ParTimerCL();                                   // constructor
 
-    inline double GetMyTime() const;                            ///< get local time
-    inline double GetMaxTime();                                 ///< get time of the proc, that used most time
-    inline double GetTime() {return GetMaxTime();}              ///< get time of the proc, that used most time
-    inline void   Reset(double time=0);                         ///< reset timer and start measurement
-    inline void   Start();                                      ///< start time measurement
-    inline void   Stop();                                       ///< stop time measurement
-    void PrintAllTime(std::ostream&, int proc=Drops_MasterC);   ///< Proc "proc" print the time of all procs onto the given output stream
-    /// \brief Measure bandwidth
-    static double TestBandwidth(std::ostream&, int messageSize=200, int numTest=5);
-
+      inline double GetMyTime() const;                            ///< get local time
+      inline double GetMaxTime();                                 ///< get time of the proc, that used most time
+      inline double GetTime() {return GetMaxTime();}              ///< get time of the proc, that used most time
+      inline void   Reset();                                      ///< reset timer and start measurement
+      inline void   Start();                                      ///< start time measurement
+      inline void   Stop();                                       ///< stop time measurement
+      void PrintAllTime(std::ostream&, int proc=Drops_MasterC);   ///< Proc "proc" print the time of all procs onto the given output stream
+      /// \brief Measure bandwidth
+      static double TestBandwidth(std::ostream&, int messageSize=200, int numTest=5);
 };
 
 using std::string;
@@ -60,6 +59,7 @@ using std::string;
 * T I M E  S T O R E  C L A S S                                             *
 ****************************************************************************/
 /// \brief Class for storing and handling of time measurements
+/** This class uses MPI timer to compute times */
 /****************************************************************************
 * T I M E  S T O R E  C L A S S                                             *
 ****************************************************************************/
@@ -120,38 +120,34 @@ void ParTimerCL::Start()
     calcMax_=false;
     calcDur_=false;
     ProcCL::Barrier();
-    base_::Start();
+    start_= ProcCL::Wtime();
 }
 
 void ParTimerCL::Stop()
-/** Use base class to stop time measurement. */
+/** Stop time measurement. */
 {
-    base_::Stop();
+    end_= ProcCL::Wtime();
     maxduration_=-1.;
     calcMax_=false;
     calcDur_=false;
 }
 
-void ParTimerCL::Reset(double time)
+void ParTimerCL::Reset()
 /** Reset the time and start the time measurement. */
 {
-    maxduration_=-1.;
-    calcMax_=false;
-    calcDur_=false;
-    ProcCL::Barrier();
-    base_::Reset(time);         // Reset performs also a Start()!
+    this->Start();
 }
 
 double ParTimerCL::GetMyTime() const
 {
-    return base_::GetTime();
+      return end_-start_;
 }
 
 double ParTimerCL::GetMaxTime()
 /** If maximum over all procs is not computed so far, comput the maximum of times over all procs */
 {
     if (!calcMax_){
-        maxduration_ = ProcCL::GlobalMax(base_::GetTime());
+        maxduration_ = ProcCL::GlobalMax(end_-start_);
         calcMax_=true;
     }
     return maxduration_;

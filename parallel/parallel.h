@@ -177,6 +177,8 @@ class ProcCL
       /// \brief MPI-Bcast-wrapper
     template <typename T>
     static inline void Bcast(T*, int, int);
+      /// \brief MPI get time
+    static inline double Wtime();
       /// \brief MPI-Barrier-wrapper
     static inline void Barrier();
       /// \brief Abort MPI
