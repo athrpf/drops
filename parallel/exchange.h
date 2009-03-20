@@ -251,6 +251,7 @@ class ExchangeCL
     inline bool      IsOnProc(IdxT,ProcNumT);                                           // Check if a sysnum can be found on another proc
     inline ProcNumCT GetProcs(IdxT) const;                                              // Get list of procs that owns a sysnum (except local proc)
     inline Uint      GetNumProcs(IdxT) const;                                           // Get number of procs, that owns a sysnum
+    inline bool      IsExclusive(IdxT) const;                                           // Is a sysnum on the calling processor exclusive (i.e. this proc has the smallest proc id)
 
     inline ProcNumCT GetNeighbors() const;                                              // Get procs that shares at least one unknown with this proc
     inline Uint      GetNumNeighs() const;                                              // Get number of neighbor processes

@@ -793,6 +793,20 @@ Uint ExchangeCL::GetNumProcs(IdxT i) const
     return SysProc_[i].size()+1;
 }
 
+/// \brief Check if calling processor has smallest rank, that owns a sysnum
+bool ExchangeCL::IsExclusive(IdxT i) const
+{
+    if (ProcCL::Size()==1)
+        return true;
+    if (!IsDist(i))
+        return true;
+    ProcNumCT procs= GetProcs(i);
+    for (ProcNumCT::const_iterator it(procs.begin()); it!=procs.end(); ++it)
+        if (*it<ProcCL::MyRank())
+            return false;
+    return true;
+}
+
 /// \brief Get procs that shares at least one unknown with this proc
 ExchangeCL::ProcNumCT ExchangeCL::GetNeighbors() const
 {
