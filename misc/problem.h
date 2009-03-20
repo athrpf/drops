@@ -503,9 +503,9 @@ class VecDescBaseCL
     void Reset();
 
     /// \brief Write Data on a stream
-    void Write(const MultiGridCL&, std::ostream&) const;
+    void Write(std::ostream&, bool binary=false) const;
     /// \brief Read Data from a stream
-    void Read(const MultiGridCL&, std::istream&);
+    void Read(std::istream&, bool binary=false);
 };
 
 
@@ -686,64 +686,54 @@ void VecDescBaseCL<T>::Reset()
 }
 
 template<class T>
-void VecDescBaseCL<T>::Write(const MultiGridCL& mg, std::ostream& os) const
+void VecDescBaseCL<T>::Write(std::ostream& os, bool binary) const
 /// Writes numerical data on a stream, which can be read by VecDescBaseCL::Read
+/// \param os where to put the data
+/// \param binary write out data in binary format
 {
-    // Number of unknowns for error-checking while reading
-    os << RowIdx->NumUnknowns() <<std::endl;
-    Uint idx= RowIdx->GetIdx();
-
-    // write out data on vertices
-    if ( RowIdx->NumUnknownsVertex()){                              // there are unknowns on vertices
-        DROPS_FOR_TRIANG_CONST_VERTEX( mg, -1, it){                 // iterate over all vertices
-            if ( it->Unknowns.Exist( idx))                          // dof exists on vertex
-                for (Uint i=0; i<RowIdx->NumUnknownsVertex(); ++i)  // scalar or vectorial data
-                    os << Data[ it->Unknowns( idx)] << ' ';
-        }
-        os << std::endl;
+    if (binary){
+        size_t numUnk= Data.size();
+        os.write( (char*)(&(numUnk)), sizeof(size_t));
+        os.write( (char*)Addr(Data), sizeof(typename T::value_type)*Data.size());
     }
 
-    // write out data on edges (documentation, see vertices)
-    if ( RowIdx->NumUnknownsEdge()){
-        DROPS_FOR_TRIANG_CONST_EDGE( mg, -1, it){
-            if ( it->Unknowns.Exist( idx))
-                for (Uint i=0; i<RowIdx->NumUnknownsEdge(); ++i)
-                    os << Data[ it->Unknowns( idx)+i] << ' ';
-        }
-        os << std::endl;
+    else {
+        // Write out 16 digits
+        os.precision(16);
+        os << Data;
     }
 }
 
 template<class T>
-void VecDescBaseCL<T>::Read(const MultiGridCL& mg, std::istream& is)
+void VecDescBaseCL<T>::Read(std::istream& is, bool binary)
 /// Read data from stream \a is, which should have been created
 /// by VecDescBaseCL::Write.
+/// \param is where to read the data
+/// \param binary read data in binary format
 /// \pre CreateNumbering for RowIdx and SetIdx must have been
 ///      called
 {
+    // read number of unknowns for error checking
+    size_t readUnk= 0;
+    if (binary)
+        is.read( (char*)(&readUnk), sizeof(size_t));
+    else{
+        is >> readUnk;
+        is.seekg(0);    // rewind
+    }
 
-    IdxT numUnk= 0, readUnk= 0;
-    is >> std::ws >> numUnk;
-    Uint idx= RowIdx->GetIdx();
+    // Check if number of unknowns is correct
+    if (   ( !RowIdx->IsExtended() && RowIdx->NumUnknowns()!=readUnk)
+         ||( RowIdx->IsExtended()  && RowIdx->GetXidx().GetNumUnknownsStdFE()!=readUnk ) )
+    {
+        throw DROPSErrCL("VecDescBaseCL::Read: Number of Unknowns does not match, wrong FE-type?");
+    }
 
-    // read data to vertices (documentation, see VecDescBaseCL::Write)
-    if ( RowIdx->NumUnknownsVertex())
-        DROPS_FOR_TRIANG_CONST_VERTEX( mg, -1, it)
-            if ( it->Unknowns.Exist( idx))
-                for (Uint i=0; i<RowIdx->NumUnknownsVertex(); ++i, ++readUnk)
-                    is >> std::ws >> Data[it->Unknowns( idx)+i];
-
-    // read data to edges
-    if ( RowIdx->NumUnknownsEdge())
-        DROPS_FOR_TRIANG_CONST_EDGE( mg, -1, it)
-            if ( it->Unknowns.Exist( idx))
-                for (Uint i=0; i<RowIdx->NumUnknownsEdge(); ++i, ++readUnk)
-                    is >> std::ws >> Data[it->Unknowns( idx)+i];
-    if (!is)
-        throw DROPSErrCL("VecDescBaseCL::Read: Error while reading unknowns");
-
-    if ( readUnk!=numUnk)
-        throw DROPSErrCL("VecDescBaseCL::Read: Number of unknowns does not match");
+    // read data
+    if (binary)
+        is.read( (char*)(Addr(Data)), sizeof(typename T::value_type)*readUnk);
+    else
+        in(is, Data);
 }
 
 template<typename MatT, typename IdxT>
