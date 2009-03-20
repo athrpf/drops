@@ -194,8 +194,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
     adap.push_back( &prrepair);
 
-    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.ser_dir);
-
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
     MLIdxDescCL* pidx= &Stokes.pr_idx;
@@ -230,34 +228,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     {
       case -1: // read from file
       {
-#ifndef _PAR
-        ReadEnsightP2SolCL reader( MG);
-        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
-        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-#else
         ReadFEFromFile( lset.Phi, MG, C.IniData+"levelset");
         ReadFEFromFile( Stokes.v, MG, C.IniData+"velocity");
-#endif
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
-        if (Stokes.UsesXFEM()) {
-            VecDescCL pneg( pidx), ppos( pidx);
-#ifndef _PAR
-            reader.ReadScalar( C.IniData+".prNeg", pneg, Stokes.GetBndData().Pr);
-            reader.ReadScalar( C.IniData+".prPos", ppos, Stokes.GetBndData().Pr);
-#else
-            ReadFEFromFile( pneg, MG, C.IniData+"pressureNeg");
-            ReadFEFromFile( ppos, MG, C.IniData+"pressurePos");
-#endif
-            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
-        }
-        else{
-#ifndef _PAR
-            reader.ReadScalar( C.IniData+".pr", Stokes.p, Stokes.GetBndData().Pr);
-#else
-            ReadFEFromFile( Stokes.p, MG, C.IniData+"pressure");
-#endif
-        }
+        ReadFEFromFile( Stokes.p, MG, C.IniData+"pressure", false, &lset.Phi); // pass also level set, as p may be extended
       } break;
       case 0: // zero initial condition
           lset.Init( EllipsoidCL::DistanceFct);
@@ -303,24 +278,23 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     double D[2] = {C.transp_cPos, C.transp_cNeg};
-    TransportP1CL c( MG, Bnd_c, Stokes.GetBndData().Vel, C.transp_theta, D, C.transp_H, &Stokes.v, lset,
+    TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.transp_theta, D, C.transp_H, &Stokes.v, lset,
         /*t*/ 0., C.dt, C.transp_iter, C.transp_tol);
-    TransportRepairCL transprepair(c, MG);
+    TransportRepairCL transprepair(massTransp, MG);
     if (C.transp_do)
     {
         adap.push_back(&transprepair);
-        MLIdxDescCL* cidx= &c.idx;
-        c.CreateNumbering( MG.GetLastLevel(), cidx);
-        c.ct.SetIdx( cidx);
+        MLIdxDescCL* cidx= &massTransp.idx;
+        massTransp.CreateNumbering( MG.GetLastLevel(), cidx);
+        massTransp.ct.SetIdx( cidx);
         if (C.IniCond != -1)
-            c.Init( &Initialcneg, &Initialcpos);
+            massTransp.Init( &Initialcneg, &Initialcpos);
         else
         {
-            ReadEnsightP2SolCL reader( MG);
-            reader.ReadScalar( C.IniData+".ct", c.ct, c.GetBndData());
+            ReadFEFromFile( massTransp.ct, MG, C.IniData+"concentrationTransf");
         }
-        c.Update();
-        std::cerr << c.c.Data.size() << " concentration unknowns,\n";
+        massTransp.Update();
+        std::cerr << massTransp.c.Data.size() << " concentration unknowns,\n";
     }
     // Stokes-Solver
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
@@ -363,7 +337,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //         Stokes.pr_idx.GetFinest().GetXidx().GetNumUnknownsStdFE(),
 //         stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
 
-    bool second = false;
     double lsetmaxGradPhi, lsetminGradPhi;
     std::ofstream* infofile = 0;
     IF_MASTER {
@@ -374,6 +347,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     if (C.num_steps == 0)
         SolveStatProblem( Stokes, lset, *navstokessolver);
+
+    // for serialization of geometry and numerical data
+    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.transp_do ? &massTransp : 0, C.ser_dir);
 
     // Initialize Ensight6 output
 #ifndef _PAR
@@ -386,8 +362,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     ensight.Register( make_Ensight6Scalar    ( ScalarFunAsP2EvalCL( sigmap, 0., &MG, MG.GetLastLevel()),
                                                                         "Surfaceforce",  ensf + ".sf",  true));
     if (C.transp_do) {
-        ensight.Register( make_Ensight6Scalar( c.GetSolution(),         "Concentration", ensf + ".c",   true));
-        ensight.Register( make_Ensight6Scalar( c.GetSolution( c.ct),    "TransConc",     ensf + ".ct",  true));
+        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution(),"Concentration", ensf + ".c",   true));
+        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct),
+                                                                        "TransConc",     ensf + ".ct",  true));
     }
     if (Stokes.UsesXFEM())
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
@@ -407,7 +384,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         IFInfo.Write(Stokes.t);
 
         timedisc->DoStep( C.cpl_iter);
-        if (C.transp_do) c.DoStep( step*C.dt);
+        if (C.transp_do) massTransp.DoStep( step*C.dt);
 
         // WriteMatrices( Stokes, step);
         std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
@@ -442,15 +419,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
-            if (C.serialization) {
-#ifndef _PAR
-                std::stringstream filename;
-                filename << C.ser_dir;
-                if (second) filename << "0";
-                second = !second;
-#endif
+            if (C.serialization)
                 ser.Write();
-            }
         }
 
         // volume correction
@@ -465,7 +435,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         // update
         if (forceUpdate) {
             timedisc->Update();
-            if (C.transp_do) c.Update();
+            if (C.transp_do) massTransp.Update();
         }
 
 #ifndef _PAR

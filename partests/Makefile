@@ -135,9 +135,9 @@ TestMzelleAdaptPar: \
    ../partests/TestMzelleAdaptPar.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../levelset/levelset.o ../levelset/fastmarch.o ../levelset/params.o \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
-   ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
+   ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o \
    ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
-   ../stokes/integrTime.o
+   ../stokes/integrTime.o ../misc/xfem.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 MzelleNMRParamEst: \
@@ -147,7 +147,7 @@ MzelleNMRParamEst: \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
    ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
-   ../stokes/integrTime.o
+   ../stokes/integrTime.o ../misc/xfem.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestBrickflowPar: \

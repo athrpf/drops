@@ -12,6 +12,7 @@
 #include "levelset/levelset.h"
 #include "num/discretize.h"
 #include "stokes/instatstokes2phase.h"
+#include "poisson/transport2phase.h"
 
 namespace DROPS
 {
@@ -448,6 +449,53 @@ void DisplayDetailedGeom(MultiGridCL& mg)
 #endif
 }
 
+/// \brief Write finite element function, stored in \a v, in a file, named \a filename
+void WriteFEToFile( const VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary=false, const VecDescCL* lsetp=0)
+{
+    if (!v.RowIdx->IsExtended()) {
+#ifdef _PAR
+        ProcCL::AppendProcNum( filename);
+#endif
+        std::ofstream file( filename.c_str());
+        if (!file) throw DROPSErrCL("WriteFEToFile: Cannot open file "+filename+" for writing");
+        v.Write( file, binary);
+    }
+    else { // extended FE
+        IdxDescCL p1( P1_FE);
+        p1.CreateNumbering( v.RowIdx->TriangLevel(), mg, *v.RowIdx);
+        VecDescCL vpos(&p1), vneg(&p1);
+        P1XtoP1 ( *v.RowIdx, v.Data, p1, vpos.Data, vneg.Data, *lsetp, mg);
+        WriteFEToFile(vneg, mg, filename + "Neg");
+        WriteFEToFile(vpos, mg, filename + "Pos");
+        p1.DeleteNumbering(mg);
+    }
+}
+
+/// Read a serialized finite element function from a file
+/// \pre CreateNumbering of v.RowIdx must have been called before
+void ReadFEFromFile( VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary=false, const VecDescCL* lsetp=0)
+{
+    if (!v.RowIdx->IsExtended()) {
+
+        std::cout << "Read FE "<<filename<<std::endl;
+#ifdef _PAR
+        ProcCL::AppendProcNum( filename);
+#endif
+        std::ifstream file( filename.c_str());
+        if (!file) throw DROPSErrCL("ReadFEFromFile: Cannot open file "+filename);
+        v.Read( file, binary);
+    }
+    else { // extended FE
+        IdxDescCL p1( P1_FE);
+        p1.CreateNumbering( v.RowIdx->TriangLevel(), mg, *v.RowIdx);
+        VecDescCL vpos(&p1), vneg(&p1);
+        ReadFEFromFile(vneg, mg, filename + "Neg");
+        ReadFEFromFile(vpos, mg, filename + "Pos");
+        P1toP1X ( *v.RowIdx, v.Data, p1, vpos.Data, vneg.Data, *lsetp, mg);
+        p1.DeleteNumbering(mg);
+    }
+}
+
 /// \brief Class for serializing a two-phase flow problem, i.e., storing
 ///    the multigrid and the numerical data
 /// \todo  Storing of transport data!
@@ -455,27 +503,21 @@ template <typename StokesT>
 class TwoPhaseStoreCL
 {
   private:
-    MultiGridCL&        mg_;
-    const StokesT&      Stokes_;
-    const LevelsetP2CL& lset_;
-    std::string         path_;
-    Uint                numRecoverySteps_;
-    Uint                recoveryStep_;
-    IdxDescCL           p1idx_;             ///< used to split P1X into two P1 functions
-    VecDescCL           pneg_,              ///< one part of P1X
-                        ppos_;              ///< other part of P1X
+    MultiGridCL&         mg_;
+    const StokesT&       Stokes_;
+    const LevelsetP2CL&  lset_;
+    const TransportP1CL* transp_;
+    std::string          path_;
+    Uint                 numRecoverySteps_;
+    Uint                 recoveryStep_;
 
-
-    /// \brief Write a numerical data, stored in v, in a file, named filename
-    template <typename VecDescT>
-    void WriteFEToFile(VecDescT& v, std::string filename)
+    /// \brief Write time info
+    void WriteTime( std::string filename)
     {
-#ifdef _PAR
-        ProcCL::AppendProcNum( filename);
-#endif
         std::ofstream file( filename.c_str());
-        if (!file) throw DROPSErrCL("TwoPhaseStoreCL::WriteFEToFile: Cannot open file from writing");
-        v.Write( mg_, file);
+        if (!file) throw DROPSErrCL("TwoPhaseStoreCL::WriteTime: Cannot open file "+filename+" for writing");
+        file << Stokes_.t << "\n";
+        file.close();
     }
 
   public:
@@ -484,10 +526,10 @@ class TwoPhaseStoreCL
        *  the geometric as well as the numerical data.
        *  \param recoverySteps number of backup steps before overwriting files
        *  */
-    TwoPhaseStoreCL(MultiGridCL& mg, const StokesT& Stokes, const LevelsetP2CL& lset,
+    TwoPhaseStoreCL(MultiGridCL& mg, const StokesT& Stokes, const LevelsetP2CL& lset, const TransportP1CL* transp,
                     const std::string& path, Uint recoverySteps=2)
-      : mg_(mg), Stokes_(Stokes), lset_(lset), path_(path), numRecoverySteps_(recoverySteps),
-        recoveryStep_(0), p1idx_( P1_FE), pneg_( &p1idx_), ppos_( &p1idx_) {}
+      : mg_(mg), Stokes_(Stokes), lset_(lset), transp_(transp), path_(path), numRecoverySteps_(recoverySteps),
+        recoveryStep_(0) {}
 
     /// \brief Write all information in a file
     void Write()
@@ -495,45 +537,22 @@ class TwoPhaseStoreCL
         // Create filename
         std::stringstream filename;
         filename << path_ << ((recoveryStep_++)%numRecoverySteps_);
+        // first master writes time info
+        IF_MASTER
+            WriteTime( filename.str() + "time");
 
         // write multigrid
-        MGSerializationCL ser( mg_, filename.str().c_str());
+        MGSerializationCL ser( mg_, filename.str());
         ser.WriteMG();
 
-#ifdef _PAR
         // write numerical data
-        // Since serial DROPS can read ensight files, this is omitted for serial DROPS.
-        WriteFEToFile(Stokes_.v, filename.str() + "velocity");
-        WriteFEToFile(lset_.Phi, filename.str() + "levelset");
-        if ( Stokes_.UsesXFEM()){
-            if ( p1idx_.NumUnknowns()!=0)
-                p1idx_.DeleteNumbering( mg_);
-            p1idx_.CreateNumbering( Stokes_.p.RowIdx->TriangLevel(), mg_); // Create a P1 describer for splitting P1X function
-            P1XtoP1 ( *Stokes_.p.RowIdx, Stokes_.p.Data, p1idx_, ppos_.Data, pneg_.Data, lset_.Phi, mg_); // also resizes data of ppos_ and pneg_
-            WriteFEToFile(pneg_, filename.str() + "pressureNeg");
-            WriteFEToFile(ppos_, filename.str() + "pressurePos");
-        }
-        else{
-            WriteFEToFile(Stokes_.p, filename.str() + "pressure");
-        }
-#endif
+        WriteFEToFile(Stokes_.v, mg_, filename.str() + "velocity");
+        WriteFEToFile(lset_.Phi, mg_, filename.str() + "levelset");
+        WriteFEToFile(Stokes_.p, mg_, filename.str() + "pressure", false, &lset_.Phi); // pass also level set, as p may be extended
+        if (transp_) WriteFEToFile(transp_->ct, mg_, filename.str() + "concentrationTransf");
     }
 };
 
-/// Read a serialized finite element function from a file
-/// \param VecDescT VecDescBaseCL corresponding to the finite element function
-/// \pre CreateNumering of v.RowIdx must have been called
-template <typename VecDescT>
-void ReadFEFromFile(VecDescT& v, const MultiGridCL& mg, std::string filename)
-{
-    std::cout << "Read FE "<<filename<<std::endl;
-#ifdef _PAR
-    ProcCL::AppendProcNum( filename);
-#endif
-    std::ifstream file( filename.c_str());
-    if (!file) throw DROPSErrCL("ReadFEFromFile: Cannot open file");
-    v.Read( mg, file);
-}
 }   // end of namespace DROPS
 
 #endif

@@ -243,6 +243,9 @@ class IdxDescCL: public FE_InfoCL
     /// \brief Used to number unknowns and store boundary condition and matching function.
     void CreateNumbering( Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0)
     { Bnd_= Bnd; match_= match; CreateNumbering( level, mg, lsetp); }
+    /// \brief Used to number unknowns taking boundary condition and matching function from \a baseIdx
+    void CreateNumbering( Uint level, MultiGridCL& mg, const IdxDescCL& baseIdx, const VecDescCL* lsetp= 0)
+    { Bnd_= baseIdx.Bnd_; match_= baseIdx.match_; CreateNumbering( level, mg, lsetp); }
     /// \brief Update numbering of extended DoFs.
     /// Has to be called whenever level set function has changed to account for the moving interface.
     void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset);
@@ -698,8 +701,8 @@ void VecDescBaseCL<T>::Write(std::ostream& os, bool binary) const
     }
 
     else {
-        // Write out 16 digits
-        os.precision(16);
+        // Write out all digits
+        os.precision(std::numeric_limits<typename T::value_type>::digits10);
         os << Data;
     }
 }

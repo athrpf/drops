@@ -282,7 +282,7 @@ template<typename Coeff>
 
     // Serialization
     typedef TwoPhaseStoreCL<StokesProblemT> SerializationT;
-    SerializationT serializer(adap.GetMG(), Stokes, lset, C.ser_dir);
+    SerializationT serializer(adap.GetMG(), Stokes, lset, 0, C.ser_dir);
 
     if (C.vtk)
         vtkwriter.write();
