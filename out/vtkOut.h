@@ -31,21 +31,23 @@ namespace DROPS
 class VTKOutCL
 /** This class writes out data in VTK legacy format. Therefore all data are sent
     to the master processor, that is responsible for the I/O. The user can write
-    out the geometry, scalar and vectorial valued finite element functions.
+    out the geometry, scalar and vector-valued finite element functions.
 
-    To use this class correct, the geometry has to be written out at first. Then
+    To use this class correct, the geometry has to be written out first. Then
     the finite element functions can be put into the vtk files.
 
-    \todo binary output does not correctly work
+    \todo binary output does not work correctly
 */
 {
   private:
 #ifndef _PAR
     typedef std::map<const VertexCL*, Uint> vertexAddressMapT;
     typedef std::map<const EdgeCL*, Uint>     edgeAddressMapT;
+    typedef VectorBaseCL<Uint>              TetraVecT;
 #else
     typedef std::map < DDD_GID, Uint > GIDMapT;     // map GID to number
     typedef std::vector< Uint >        ProcOffsetCT;// position in tetras_ where all tetras of a processor are lying
+    typedef VectorBaseCL<DDD_GID>      TetraVecT;
 #endif
 
     const MultiGridCL& mg_;                         // reference to the multigrid
@@ -68,7 +70,7 @@ class VTKOutCL
 #endif
 
     VectorBaseCL<float>   coords_;                  // Coordinates of the points
-    VectorBaseCL<DDD_GID> tetras_;                  // Connectivities (tetras)
+    TetraVecT             tetras_;                  // Connectivities (tetras)
     Uint                  numPoints_;               // number of points (only accessible by master process)
     Uint                  numTetras_;               // number of tetras (only accessible by master process)
     Uint                  numLocPoints_;            // number of local exclusive verts and edges
