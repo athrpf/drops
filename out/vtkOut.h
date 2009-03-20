@@ -128,15 +128,15 @@ class VTKOutCL
     /// \name Write out FE functions
     //@{
     /// Gather scalar data
-    template<class DiscScalT>
+    template <typename DiscScalT>
     void GatherScalar(const DiscScalT&, VectorBaseCL<float>&) const;
     /// Gather vectorial data
-    template<class DiscScalT>
-    void GatherVector(const DiscScalT&, VectorBaseCL<float>&) const;
+    template <typename DiscVecT>
+    void GatherVector(const DiscVecT&, VectorBaseCL<float>&) const;
     /// Write data
     void WriteValues(const VectorBaseCL<float>&, const std::string&, int);
 #ifdef _PAR
-    /// Communicar data
+    /// Communicate data
     void CommunicateValues(const VectorBaseCL<float>&, VectorBaseCL<float>&, int);
 #endif
     //@}
@@ -150,12 +150,12 @@ class VTKOutCL
     void PutGeom( double time, bool writeDistribution=false);
 
     /// \brief Write scalar variable into file
-    template<class DiscScalT>
+    template <typename DiscScalT>
     void PutScalar( const std::string&, const DiscScalT&);
 
-    /// \brief Write vectorial variable into file
-    template<class DiscScalT>
-    void PutVector( const std::string&, const DiscScalT&);
+    /// \brief Write vector-valued variable into file
+    template <typename DiscVecT>
+    void PutVector( const std::string&, const DiscVecT&);
 
     /// \brief End output of a file
     void Commit(){
@@ -190,7 +190,7 @@ class TwoPhaseVTKCL : public VTKOutCL
     TwoPhaseVTKCL (const MultiGridCL& mg, const StokesCL& st, const LevelsetCL& ls,
                    Uint numsteps, const std::string& filename, bool binary, bool writeDistribution=false);
 
-    /// \brief Write alle information of a two phase problem
+    /// \brief Write all information of a two phase problem
     void write();
 };
 
@@ -219,7 +219,7 @@ class TwoPhaseTransportVTKCL : public TwoPhaseVTKCL<StokesCL, LevelsetCL>
 //              template definitions
 //=====================================================
 
-template<class DiscScalT>
+template <typename DiscScalT>
   void VTKOutCL::PutScalar( const std::string& name, const DiscScalT& f)
 /** Write values of a scalar valued function into the vtk legacy file
     \param name name of the function
@@ -237,8 +237,8 @@ template<class DiscScalT>
     WriteValues( allData, name, 1);
 }
 
-template<class DiscScalT>
-  void VTKOutCL::PutVector( const std::string& name, const DiscScalT& f)
+template <typename  DiscVecT>
+  void VTKOutCL::PutVector( const std::string& name, const DiscVecT& f)
 /** Write values of a scalar valued function into the vtk legacy file
     \param name name of the function
     \param f    function*/
@@ -255,7 +255,7 @@ template<class DiscScalT>
     WriteValues( allData, name, 3);
 }
 
-template<class DiscScalT>
+template <typename DiscScalT>
   void VTKOutCL::GatherScalar(const DiscScalT& f, VectorBaseCL<float>& locData) const
 /** Gather values of the function f on vertices and edges*/
 {
@@ -280,8 +280,8 @@ template<class DiscScalT>
     }
 }
 
-template<class DiscScalT>
-  void VTKOutCL::GatherVector(const DiscScalT& f, VectorBaseCL<float>& locData) const
+template <typename DiscVecT>
+  void VTKOutCL::GatherVector(const DiscVecT& f, VectorBaseCL<float>& locData) const
 /** Gather values of the function f on vertices and edges*/
 {
     // Allocate mem
