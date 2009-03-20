@@ -322,7 +322,9 @@ struct LowerBlockPreCL
     Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc1.Apply( A, v, b);
         Vec c2( c);
+#ifdef _PAR
         Assert(pc1.RetAcc(), DROPSErrCL("LowerBlockPreCL::Apply: Accumulation is missing"), DebugParallelNumC);
+#endif
         c2-= B*v;
         pc2.Apply( /*dummy*/ B, p, c2);
    }
