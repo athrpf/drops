@@ -536,8 +536,9 @@ void FastMarchCL::ReparamEuklid( bool ModifyZero)
 #endif
 
     Comment("Calculate Euclidian distance\n", DebugParallelNumC);
-
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
 {
 #ifdef _OPENMP
 #pragma omp master
@@ -546,7 +547,9 @@ void FastMarchCL::ReparamEuklid( bool ModifyZero)
     }
 #endif
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
     for(int i=0; i<(int)size_; ++i)
         if (Typ_[i]!=Finished)
             v_->Data[i]=MinDist(i);
@@ -564,7 +567,9 @@ void FastMarchCL::RestoreSigns()
     std::cout << "   * Using "<<omp_get_num_threads()<<" thread(s) to restore signs ..." << std::endl;
 #endif
 
+#ifdef _OPENMP
 #pragma omp for schedule( static)
+#endif
     for (int i=0; i<(int)Old_.size(); ++i){
         if (Old_[i]<0){
             v_->Data[i]*= -1;
