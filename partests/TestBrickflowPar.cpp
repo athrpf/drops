@@ -385,7 +385,7 @@ template<typename Coeff>
                           << "- rel. Volume: " << relVol << std::endl;
 
             time.Reset();
-            lset.ReparamFastMarching( C.RepMethod, C.RepMethod==3);
+            lset.ReparamFastMarching( C.RepMethod, false, false, C.RepMethod==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
