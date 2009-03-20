@@ -66,11 +66,10 @@ class FastMarchCL
     ExchangeCL                *ex_;                                 // for accumulation of values
 
     const IdxT                 size_;                               // number of DoF
-
+#endif
     VectorCL                   CoordZeroLevel_;                     // Coordinates of zero level of levelset function over all process
     VectorCL                   ValueZeroLevel_;                     // Values of zero level of levelset function over all procs
 
-#endif
     std::set<IdxT>             Close_;                              // DoF which have a Finished marked DoF as neighboor
     VectorBaseCL<VertexNeighT> neigh_;                              // neighboor tetras of DoF
     VectorBaseCL<Point3DCL>    Coord_;                              // coordinates of DoF
@@ -82,6 +81,10 @@ class FastMarchCL
     IdxT   FindTrial() const;                           // Find vert with minimal value in Close_
     void   Update( const IdxT);                         // Update value on a vert and put this vert into Close_
     double CompValueProj( IdxT, int num, const IdxT upd[3]) const;
+    /// \brief Store all vertices and values around the zero level of the levelset function
+    void InitZeroSet(VectorCL&, VectorCL&);
+    /// \brief Approximate Distance to zero level
+    double MinDist(IdxT);
 
     // variants for periodic boundaries
     void   InitClosePer();
@@ -109,6 +112,9 @@ class FastMarchCL
     /// \brief Reparametrization of the levelset function with the fast marching algorithm.
     /// This function also calls InitZero and RestoreSigns.
     void Reparam( bool ModifyZero= true);
+
+    /// \brief Reparametrize with Euclidian distance to vertices around the zero level
+    void ReparamEuklid( bool ModifyZero=true);
 
     /// \name variants for periodic boundaries
     //@{
@@ -139,8 +145,6 @@ class FastMarchCL
     inline bool IsExclusive(IdxT i);                            ///< Check if a DoF is exclusive
 
     void DistributeZeroLevel();                                 ///< Distribute all DoF marked as Finished to all procs
-    void ReparamEuklid( bool ModifyZero=true);                  ///< Reparametrize direct
-    double MinDist(IdxT);                                       ///< Approximate Distance to zero level
 #endif
 };
 

@@ -667,11 +667,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
         if (!euklid)
             fm.Reparam( ModifyZero);
         else {
-#ifndef _PAR
-            throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No euclidean strategy for serial fast marching implemented");
-#else
             fm.ReparamEuklid( ModifyZero);
-#endif
         }
     }
 }
@@ -858,7 +854,7 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
     }
 #ifdef _PAR
     maxGradPhi= ProcCL::GlobalMax( maxNorm= maxGradPhi);
-    minGradPhi= ProcCL::GlobalMax( minNorm= minGradPhi);
+    minGradPhi= ProcCL::GlobalMin( minNorm= minGradPhi);
 #endif
 }
 

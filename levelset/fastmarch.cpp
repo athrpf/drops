@@ -8,6 +8,9 @@
 #include "levelset/fastmarch.h"
 #include <fstream>
 #include <cstring>
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
 
 
 namespace DROPS
@@ -422,6 +425,7 @@ void FastMarchCL::Update( const IdxT NrI)
 #ifndef _PAR
 void FastMarchCL::Reparam( bool ModifyZero)
 {
+    TimerCL time;
     InitZero( ModifyZero);
     InitClose();
 
@@ -447,10 +451,13 @@ void FastMarchCL::Reparam( bool ModifyZero)
     }
 
     RestoreSigns();
+    time.Stop();
+    std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
 }
 #else
 void FastMarchCL::Reparam( bool ModifyZero)
 {
+    ParTimerCL time;
     Comment("Reparametrization\n", DebugParallelNumC);
 
     // Create global numbering, for neighborhood
@@ -502,40 +509,109 @@ void FastMarchCL::Reparam( bool ModifyZero)
     // Assign old signs
     RestoreSigns();
     CleanUp();
+    time.Stop();
+    std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
 }
+#endif
 
 void FastMarchCL::ReparamEuklid( bool ModifyZero)
 {
+#ifndef _PAR
+    TimerCL time;
+#else
+    ParTimerCL time;
+#endif
     Comment("Reparametrization\n", DebugParallelNumC);
 
      // Init Zero-Level of levelset function
     InitZero(ModifyZero);
-
+#ifndef _PAR
+    InitZeroSet(CoordZeroLevel_, ValueZeroLevel_);
+#else
     // tell other procs about finished-marked DoF's
     DistributeFinished();
 
     // Distribute zerolevel
     DistributeZeroLevel();
+#endif
 
-    Comment("Calculate euklidian distance\n", DebugParallelNumC);
+    Comment("Calculate Euclidian distance\n", DebugParallelNumC);
 
-    for(IdxT i=0; i<size_; ++i)
+#pragma omp parallel
+{
+#ifdef _OPENMP
+#pragma omp master
+    {
+        std::cout << "   * Using "<<omp_get_num_threads()<<" thread(s) to compute distance ..." << std::endl;
+    }
+#endif
+
+#pragma omp for
+    for(int i=0; i<(int)size_; ++i)
         if (Typ_[i]!=Finished)
             v_->Data[i]=MinDist(i);
 
     RestoreSigns();
 }
-#endif
+    time.Stop();
+    std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
+}
 
 void FastMarchCL::RestoreSigns()
 { // restore signs of v_
-    for (IdxT i=0, N= Old_.size(); i<N; ++i){
+#ifdef _OPENMP
+#pragma omp master
+    std::cout << "   * Using "<<omp_get_num_threads()<<" thread(s) to restore signs ..." << std::endl;
+#endif
+
+#pragma omp for schedule( static)
+    for (int i=0; i<(int)Old_.size(); ++i){
         if (Old_[i]<0){
             v_->Data[i]*= -1;
         }
     }
 }
 
+void FastMarchCL::InitZeroSet(VectorCL& CoordZeroLevel, VectorCL& ValueZeroLevel)
+{
+    size_t NumFinished=0;
+    for (IdxT i=0; i<size_; ++i)
+        if (Typ_[i]==Finished){
+#ifdef _PAR
+            if (v_->RowIdx->GetEx().IsExclusive(i))
+#endif
+                ++NumFinished;
+        }
+
+    CoordZeroLevel.resize( 3*NumFinished);
+    ValueZeroLevel.resize( NumFinished);
+    IdxT pos1=0, pos2=0;
+    for (IdxT i=0; i<size_; ++i){
+        if (Typ_[i]==Finished){
+#ifdef _PAR
+            if (v_->RowIdx->GetEx().IsExclusive(i))
+#endif
+            {
+                for (int j=0; j<3; ++j)
+                    CoordZeroLevel[pos1++]=Coord_[i][j];
+                ValueZeroLevel[pos2++]=v_->Data[i];
+            }
+        }
+    }
+}
+
+double FastMarchCL::MinDist(IdxT nr)
+{
+    double min=1e99;
+    for (IdxT i=0; i<ValueZeroLevel_.size(); ++i)
+    {
+        double dist=  (MakePoint3D( CoordZeroLevel_[3*i+0], CoordZeroLevel_[3*i+1], CoordZeroLevel_[3*i+2])-Coord_[nr]).norm()
+                    + ValueZeroLevel_[i];
+        min = std::min(min, dist);
+    }
+    Assert(min!=1e99, DROPSErrCL("FastMarchCL::MinDist: No minimal distance found"), DebugParallelNumC);
+    return min;
+}
 
 // ------------------------------------------
 // only parallel functions
@@ -574,7 +650,7 @@ template<typename SimplexT>
 
 template<typename SimplexT>
   int FastMarchCL::HandlerFinishedScatter(DDD_OBJ objp, void* buf)
-/** On reciever side, update value and mark of finished DoFs*/
+/** On receiver side, update value and mark of finished DoFs*/
 {
     SimplexT* const sp= ddd_cast<SimplexT*>(objp);
     CoupMarkValST* buffer = static_cast<CoupMarkValST*>(buf);
@@ -975,39 +1051,23 @@ void FastMarchCL::Distribute()
 
 void FastMarchCL::DistributeZeroLevel()
 {
-    IdxT LocNumFinished=0, GlobNumFinished=0;
-    VectorBaseCL<IdxT> allFinished(ProcCL::Size());
+    VectorCL myCoordZeroLevel, myValueZeroLevel;
+    InitZeroSet(myCoordZeroLevel, myValueZeroLevel);
 
-    for (IdxT i=0; i<size_; ++i)
-        if (Typ_[i]==Finished)
-            ++LocNumFinished;
+    IdxT LocNumFinished=myValueZeroLevel.size(), GlobNumFinished=0;
+    VectorBaseCL<IdxT> allFinished(ProcCL::Size());
 
     ProcCL::Gather(LocNumFinished, Addr(allFinished),-1);
     for (int p=0; p<ProcCL::Size(); ++p)
         GlobNumFinished+=allFinished[p];
 
-    if (ProcCL::IamMaster()){
-        std::cerr << " Euklidian FastMarching: global finished dofs " << GlobNumFinished
-                  << ", used memory " << (4*GlobNumFinished/1024) << " kB" << std::endl;
-    }
+    std::cout << " Euklidian FastMarching: global finished dofs " << GlobNumFinished
+              << ", used memory " << (4*GlobNumFinished/1024) << " kB" << std::endl;
 
-    CoordZeroLevel_.resize(3*GlobNumFinished);
-    ValueZeroLevel_.resize(GlobNumFinished);
+    CoordZeroLevel_.resize( 3*GlobNumFinished);
+    ValueZeroLevel_.resize( GlobNumFinished);
 
-    VectorCL myCoordZeroLevel(3*LocNumFinished);
-    VectorCL myValueZeroLevel(LocNumFinished);
-
-    IdxT pos1=0, pos2=0;
-    for (IdxT i=0; i<size_; ++i){
-        if (Typ_[i]==Finished){
-            for (int j=0; j<3; ++j)
-                myCoordZeroLevel[pos1++]=Coord_[i][j];
-            myValueZeroLevel[pos2++]=v_->Data[i];
-        }
-    }
-
-    pos1=0;
-    pos2=0;
+    size_t pos1=0, pos2=0;
     for (int p=0; p<ProcCL::Size(); ++p)
     {
         if (p==ProcCL::MyRank())
@@ -1026,20 +1086,6 @@ void FastMarchCL::DistributeZeroLevel()
         pos2 +=   allFinished[p];
     }
 }
-
-double FastMarchCL::MinDist(IdxT nr)
-{
-    double min=1e99;
-    for (IdxT i=0; i<ValueZeroLevel_.size(); ++i)
-    {
-        double dist=  (MakePoint3D( CoordZeroLevel_[3*i+0], CoordZeroLevel_[3*i+1], CoordZeroLevel_[3*i+2])-Coord_[nr]).norm()
-                    + ValueZeroLevel_[i];
-        min = std::min(min, dist);
-    }
-    Assert(min!=1e99, DROPSErrCL("FastMarchCL::MinDist: No minimal distance found"), DebugParallelNumC);
-    return min;
-}
-
 
 void FastMarchCL::CleanUp()
 {

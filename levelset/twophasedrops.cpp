@@ -407,7 +407,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             if (lsetmaxGradPhi > C.MaxGrad || lsetminGradPhi < C.MinGrad) {
                 std::cerr << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-                lset.ReparamFastMarching( C.RepMethod);
+                lset.ReparamFastMarching( C.RepMethod, false, false, C.RepMethod==3);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
                 std::cerr << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 forceVolCorr = forceUpdate = true; // volume correction and update after reparam
