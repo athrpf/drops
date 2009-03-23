@@ -82,6 +82,6 @@ twophasedrops: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o ../misc/xfem.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
-    ../num/interfacePatch.o $(PAR_OBJ)
+    ../num/interfacePatch.o ../out/vtkOut.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 

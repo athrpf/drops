@@ -54,6 +54,7 @@ AdaptRef {
   Freq      =   1
   FinestLevel   =   1
   Width     =   0.75e-3
+  RefineStrategy =   1    # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
 }
 
 # material data, all units are SI
@@ -77,7 +78,6 @@ Exp {
 
 # Load balancing
 LoadBalancing {
-  RefineStrategy =   1    # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
   Qualtity       =   1.00 # Quality of loadbalancing (1.0 is perfect, suggestion of ParMETIS: 1.05)
 }
 

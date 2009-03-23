@@ -60,8 +60,9 @@ Reparam {
 # adaptive refinement
 AdaptRef {
   Freq          = 1         # adaptive refinement every n steps
-  FinestLevel   = 3         # finest level used in refinement strategy
+  FinestLevel   = 1         # finest level used in refinement strategy
   Width         = 0.4e-3
+  RefineStrategy= 1         # algorithm to determine the load balancing graph for refinement
 }
 
 # material data, all units are SI
@@ -115,6 +116,14 @@ Ensight {
   Binary        = 0          # 1 = binary output, 0 = ascii output
   MasterOut     = 1
   GeomName      = Brick
+}
+
+#VTK output
+VTK{
+  VTKOut        = 0
+  VTKDir        = vtk
+  VTKName       = nsmzi
+  Binary        = 0
 }
 
 # Write out results

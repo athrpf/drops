@@ -57,7 +57,7 @@ void ParamMGSerCL::RegisterParams()
     rp_.RegString( ser_dir,               "Outputfile");
     rp_.RegString( deserialization_file,  "Inputfile");
     rp_.RegInt(serialization,             "Serialization");
-    rp_.RegInt(overwrite,                 "Overwrite");    
+    rp_.RegInt(overwrite,                 "Overwrite");
     rp_.EndGroup();
 }
 
@@ -86,9 +86,10 @@ void ParamReparamCL::RegisterParams()
 void ParamAdaptRefCL::RegisterParams()
 {
     rp_.BeginGroup("AdaptRef");
-    rp_.RegInt( ref_freq,     "Freq");
-    rp_.RegInt( ref_flevel,   "FinestLevel");
-    rp_.RegDouble( ref_width, "Width");
+    rp_.RegInt(    ref_freq,       "Freq");
+    rp_.RegInt(    ref_flevel,     "FinestLevel");
+    rp_.RegDouble( ref_width,      "Width");
+    rp_.RegInt(    refineStrategy, "RefineStrategy" );
     rp_.EndGroup();
 }
 

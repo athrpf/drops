@@ -17,7 +17,6 @@ namespace DROPS
 void ParamLoadBalCL::RegisterParams()
 {
     rp_.BeginGroup( "LoadBalancing" );
-    rp_.RegInt(     refineStrategy, "RefineStrategy" );
     rp_.RegDouble(  quality       , "Qualtity" );
     rp_.EndGroup();
 }

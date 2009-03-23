@@ -29,7 +29,6 @@ class ParamLoadBalCL : public virtual ParamBaseCL
   public:
   /// \name Load balancing
   //@{
-    int refineStrategy;                         ///< Algorithm to calculate the load balancing graph for refinement
     double quality;                             ///< quality-parameter for ParMetis
   //@}
 
@@ -284,7 +283,6 @@ class ParamParBrickFlowCL :
         public ParamMesszelleNsCL,
         public ParamLoadBalCL,
         public ParamQuadCL,
-        public ParamVTKCL,
         public ParamInfoCL
 {
   private:
@@ -293,7 +291,7 @@ class ParamParBrickFlowCL :
 
   public:
     ParamParBrickFlowCL()
-      : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamQuadCL(), ParamVTKCL(), ParamInfoCL()
+      : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamQuadCL(), ParamInfoCL()
       { RegisterParams(); }
 
     ParamParBrickFlowCL( const string& filename) : ParamMesszelleNsCL()

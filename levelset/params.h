@@ -191,6 +191,7 @@ class ParamAdaptRefCL : public virtual ParamBaseCL
     int    ref_freq;            ///< number of timesteps before adaptive refinement
     int    ref_flevel;          ///< finest level in the near of the phase boundary
     double ref_width;           ///< domain of refinement
+    int refineStrategy;         ///< algorithm to determine the load balancing graph for refinement
   //@}
 
   public:
@@ -401,7 +402,8 @@ class ParamMesszelleNsCL:
         public ParamAdaptRefCL,
         public ParamNavStokesCL,
         public ParamDomainCondCL,
-        public ParamMGSerCL
+        public ParamMGSerCL,
+        public ParamVTKCL
 
 {
   private:

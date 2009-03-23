@@ -95,6 +95,7 @@ AdaptRef {
   Freq		=	0	# no effect
   FinestLevel	=	2
   Width		=	1e-8
+  RefineStrategy=  1
 }
 
 # surface tension
@@ -127,6 +128,14 @@ Ensight {
   Binary        =       1
   MasterOut     =       1
   GeomName      =       Brick
+}
+
+#VTK output
+VTK{
+  VTKOut        = 0
+  VTKDir        = vtk
+  VTKName       = brick_transp
+  Binary        = 0
 }
 
 # domain, bnd/ini conditions

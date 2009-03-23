@@ -62,6 +62,7 @@ AdaptRef {
   Freq		=	0
   FinestLevel	=	2
   Width		=	1e-3
+  RefineStrategy=  1
 }
 
 # material data, all units are SI
@@ -118,6 +119,14 @@ Ensight {
   Binary        =       1
   MasterOut     =       1
   GeomName      =       Cube
+}
+
+#VTK output
+VTK{
+  VTKOut        = 0
+  VTKDir        = vtk
+  VTKName       = nsmzi
+  Binary        = 0
 }
 
 # domain, bnd/ini conditions

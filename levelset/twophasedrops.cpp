@@ -8,6 +8,7 @@
 #include "stokes/integrTime.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
+#include "out/vtkOut.h"
 #include "levelset/coupling.h"
 #include "levelset/params.h"
 #include "levelset/adaptriang.h"
@@ -354,7 +355,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     // Initialize Ensight6 output
 #ifndef _PAR
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1, C.binary);
+    Ensight6OutCL ensight( C.EnsCase + ".case", (C.ensight ? C.num_steps/C.ensight+1 : 0), C.binary);
     ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.geomName,      ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
@@ -374,8 +375,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 #else
     typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
     EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
-                                  C.num_steps, C.binary, C.masterOut);
+                                  (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
+    if (C.ensight) ensightwriter.write();
 #endif
+
+    // writer for vtk-format
+    typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
+    VTKWriterT vtkwriter( adap.GetMG(), Stokes, lset,  (C.vtk ? C.num_steps/C.vtk+1 : 0),
+                          std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary);
+
     for (int step= 1; step<=C.num_steps; ++step)
     {
         std::cerr << "============================================================ step " << step << std::endl;
@@ -438,11 +446,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (C.transp_do) massTransp.Update();
         }
 
+        if (C.ensight && step%C.ensight==0)
 #ifndef _PAR
-        if (C.ensight) ensight.Write( step*C.dt);
+            ensight.Write( Stokes.t);
 #else
-        if (C.ensight) ensightwriter.write();
+            ensightwriter.write();
 #endif
+        if (C.vtk && step%C.vtk==0)
+            vtkwriter.write();
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t);
@@ -489,7 +500,7 @@ int main (int argc, char** argv)
 
     CreateGeom(mg, bnddata, C.GeomType == 0 ? InflowCell : InflowBrick, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
     DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
-    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? 1 : -1));
+    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? C.refineStrategy : -1));
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (C.deserialization_file == "none")

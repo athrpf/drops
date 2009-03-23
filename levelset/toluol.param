@@ -64,6 +64,7 @@ AdaptRef {
   Freq		=	10
   FinestLevel	=	3
   Width		=	0.25e-3
+  RefineStrategy= 1
 }
 
 # material data, all units are SI
@@ -120,6 +121,14 @@ Ensight {
   Binary        =       1
   MasterOut     =       1
   GeomName      =       Messzelle
+}
+
+#VTK output
+VTK{
+  VTKOut        = 0
+  VTKDir        = vtk
+  VTKName       = stat_toluol
+  Binary        = 0
 }
 
 # domain, bnd/ini conditions
