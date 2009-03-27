@@ -660,6 +660,11 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
                         ( PCGPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
                           C_.outer_iter, C_.outer_tol, C_.inner_tol);
         break;
+        case 20400 :
+            stokessolver = new ParInexactUzawaCL<GMResPcT, ParDummyPcCL, APC_OTHER>
+                         ( GMResPc_, DummyPrPc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
+                           C_.outer_iter, C_.outer_tol, C_.inner_tol, 500, &std::cout);
+        break;
         case 20401 :
             stokessolver = new ParInexactUzawaCL<GMResPcT, ISBBTPreCL, APC_OTHER>
                         ( GMResPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
