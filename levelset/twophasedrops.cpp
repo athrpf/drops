@@ -207,7 +207,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         lset.SetSurfaceForce( SF_ImprovedLB);
 
     if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
-         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
+        Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
     if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
@@ -227,6 +227,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     Stokes.InitVel( &Stokes.v, ZeroVel);
     switch (C.IniCond)
     {
+#ifndef _PAR
+      case -10: // read from ensight-file [deprecated]
+      {
+        std::cerr << "read from ensight-file [DEPRECATED]\n";
+        ReadEnsightP2SolCL reader( MG);
+        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
+        if (Stokes.UsesXFEM()) {
+            VecDescCL pneg( pidx), ppos( pidx);
+            reader.ReadScalar( C.IniData+".prNeg", pneg, Stokes.GetBndData().Pr);
+            reader.ReadScalar( C.IniData+".prPos", ppos, Stokes.GetBndData().Pr);
+            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
+        }
+        else
+            reader.ReadScalar( C.IniData+".pr", Stokes.p, Stokes.GetBndData().Pr);
+      } break;
+#endif
       case -1: // read from file
       {
         ReadFEFromFile( lset.Phi, MG, C.IniData+"levelset");
