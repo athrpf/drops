@@ -1417,9 +1417,9 @@ inline double QuadGradP1Bubble(const SMatrixCL<3,3>& T, Uint i, Uint j)
     }
     else if (i==4 && j==4)
     { // the bubble-function in both args
-        return 4096./2835.*( T(1,1)*T(1,1) + (T(1,1) + T(1,2))*(T(1,2) + T(1,3)) + T(1,3)*T(1,3)
-                            +T(2,1)*T(2,1) + (T(2,1) + T(2,2))*(T(2,2) + T(2,3)) + T(2,3)*T(2,3)
-                            +T(3,1)*T(3,1) + (T(3,1) + T(3,2))*(T(3,2) + T(3,3)) + T(3,3)*T(3,3) );
+        return 4096./1825.*( T(0,0)*T(0,0) + (T(0,0) + T(0,1))*(T(0,1) + T(0,2)) + T(0,2)*T(0,2)
+                            +T(1,0)*T(1,0) + (T(1,0) + T(1,1))*(T(1,1) + T(1,2)) + T(1,2)*T(1,2)
+                            +T(2,0)*T(2,0) + (T(2,0) + T(2,1))*(T(2,1) + T(2,2)) + T(2,2)*T(2,2) );
     }
     // linear function with bubble function; the integral of the gradients over the tetra vanishes
     // (proof via partial integration on tetra.)
