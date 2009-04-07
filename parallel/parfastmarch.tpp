@@ -601,7 +601,7 @@ template<typename ExCL>
 
 template<typename ExCL>
   ParFastMarchCL<ExCL>::ParFastMarchCL( MultiGridCL& mg, VecDescCL& v, ExCL& ex)
-    : MG_(mg), ex_(ex), size_(v.RowIdx->NumUnknowns), v_(v),
+    : MG_(mg), ex_(ex), size_(v.RowIdx->NumUnknowns()), v_(v),
       Typ_(Far, size_), Coord_(0), HasGhost_(0), CoordExt_(0), DataExt_(0),
       FMTransfer_(v_,Coord_,neigh_,Typ_,DataExt_,CoordExt_,TypExt_,HasGhost_,ex),
       initpar_(false)
