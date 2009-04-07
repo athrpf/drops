@@ -22,6 +22,9 @@
 #ifndef M_PI
 #  include <math.h>
 #endif
+#ifdef _OPENMP
+#  include <omp.h>  // for timing
+#endif
 
 namespace DROPS
 {
@@ -350,12 +353,19 @@ public:
 template <class type> Ulint IdCL<type>::_Counter = 0;
 
 
-/// Get to know how fast DROPS is !  :-)
+/// \brief Get to know how fast DROPS is !  :-)
+/// Time measurement is done by getrusage if OpenMP is not enabled, otherwise
+/// use OpenMP to determine time.
 class TimerCL
 {
   private:
+#ifdef _OPENMP
+    double _t_begin;
+#else
     rusage _t_begin, _t_end;
+#endif
     double _time;
+
 
   public:
     TimerCL(double time=0.) { Reset(time); }
@@ -364,14 +374,25 @@ class TimerCL
     //@{
     double GetTime() const     { return _time; }
     void Reset(double time= 0) { _time= time; Start(); }
-    void Start()               { getrusage(RUSAGE_SELF,&_t_begin); }
+    void Start()               {
+#ifndef _OPENMP
+        getrusage(RUSAGE_SELF,&_t_begin);
+#else
+        _t_begin= omp_get_wtime();
+#endif
+        }
     void Stop()
     {
+#ifndef _OPENMP
         getrusage(RUSAGE_SELF,&_t_end);
         _time+= (_t_end.ru_utime.tv_sec - _t_begin.ru_utime.tv_sec)
               + (_t_end.ru_stime.tv_sec - _t_begin.ru_stime.tv_sec)
               + double(_t_end.ru_utime.tv_usec - _t_begin.ru_utime.tv_usec
-                      +_t_end.ru_stime.tv_usec - _t_begin.ru_stime.tv_usec)/1000000; }
+                      +_t_end.ru_stime.tv_usec - _t_begin.ru_stime.tv_usec)/1000000;
+#else
+        _time+= omp_get_wtime()-_t_begin;
+#endif
+        }
     //@}
 };
 
@@ -444,8 +465,8 @@ WriteToFile (const StreamableT& obj, std::string filename , std::string name= st
 
 /// \brief Functor to select the second component of a std::pair-like type.
 ///
-/// This is needed, as the C++-standard comittee deemed selectors for
-/// pairs unneccessary.
+/// This is needed, as the C++-standard committee deemed selectors for
+/// pairs unnecessary.
 template <class Pair>
 struct select2nd : public std::unary_function<Pair, typename Pair::second_type>
 {
