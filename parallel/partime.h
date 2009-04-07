@@ -87,6 +87,9 @@ class TimeStoreCL
     /// \brief Set overall time
     void SetOverall(double time) {overall_=time;}
 
+    /// \brief Get overall time
+    double GetOverall() const { return overall_; }
+
     /// \brief Get a stored time
     inline double GetTime(size_t timeT) const;
 
