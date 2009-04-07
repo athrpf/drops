@@ -222,7 +222,7 @@ class LoadBalHandlerCL
 
   public:
     /// \brief Constructor
-    LoadBalHandlerCL(MultiGridCL& mg, float ub=1.05);
+    LoadBalHandlerCL(MultiGridCL& mg, float ub=1.00);
     /// \brief Constructor that creates a distributed multigrid
     LoadBalHandlerCL(const MGBuilderCL&, int master, PartMethod meth=KWay, bool geom=true, bool debug=false);
     /// \brief Destructor, that frees the memory of the LoadBalCL
