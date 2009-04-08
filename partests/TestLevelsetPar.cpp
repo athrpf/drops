@@ -215,7 +215,7 @@ namespace DROPS
 void Strategy(TestP2LevelSetCL &prob)
 {
     // Index Describer fuer je eine Unbekannte auf Vertices und Edges
-    MLIdxDescCL idx( P1_FE);
+    MLIdxDescCL idx( P2_FE);
     ParTimerCL time;
 
     bool euklid=true, fastmarch=true;
@@ -286,7 +286,8 @@ void Strategy(TestP2LevelSetCL &prob)
     if (fastmarch){
         if (ProcCL::IamMaster())
             std::cout << " Reparametrisieren der Levelsetfunktion mittels serial fastmarching\n";
-        FastMarchCL FastMarch(mg, phi);
+        //FastMarchCL FastMarch(mg, phi);
+        ParFastMarchCL<ExchangeCL> FastMarch(mg, phi, phi.RowIdx->GetEx());
 
         time.Reset();
         for (int i=0; i<2; ++i){
