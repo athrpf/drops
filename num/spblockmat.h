@@ -265,6 +265,7 @@ class CompositeMatrixBaseCL
     //@{
     const ExchangeCL& GetEx0() const { return idx0_.GetEx(); }
     const ExchangeCL& GetEx1() const { return idx1_.GetEx(); }
+    VectorCL GetDiag() const { throw DROPSErrCL("CompositeMatrixBaseCL:GetDiag(): Not implemented"); return VectorCL(); };
     //@}
 #endif
 
@@ -280,6 +281,7 @@ class CompositeMatrixBaseCL
         return operation_[b] == MUL ? TRANSP_MUL : MUL;
     }
     CompositeMatrixBaseCL<MatT1, MatT0> GetTranspose() const;
+    size_t Version() const { return block0_->Version(); }
     //@}
 };
 
