@@ -188,6 +188,3 @@ TestFilmPar: \
 # include common rules:
 include ../Make.common
 
-# overrides targets that are deleted by distclean
-
-DISTDELETE = ensight/* vtk/* output/* *.case *.info
