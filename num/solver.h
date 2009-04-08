@@ -759,7 +759,7 @@ PCGNE(const Mat& A, Vec& u, const Vec& b, const PreCon& M,
     double normb= norm( b);
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
     double resid= norm( r)/normb;
-    // std::cerr << "PCGNE: iter: 0 resid: " << resid <<'\n';
+    // std::cout << "PCGNE: iter: 0 resid: " << resid <<'\n';
     if (resid <= tol) {
         tol= resid;
         max_iter= 0;
@@ -782,7 +782,7 @@ PCGNE(const Mat& A, Vec& u, const Vec& b, const PreCon& M,
         M.Apply( A, z, r);
 
         resid= norm( r)/normb;
-        // if ( i%10 == 0) std::cerr << "PCGNE: iter: " << i << " resid: " << resid <<'\n';
+        // if ( i%10 == 0) std::cout << "PCGNE: iter: " << i << " resid: " << resid <<'\n';
         if (resid <= tol) {
             tol= resid;
             max_iter= i;
@@ -939,7 +939,7 @@ GMRES(const Mat& A, Vec& x, const Vec& b, const PreCon& M,
                 }
                 else GMRES_Update( y, i, H, s, v);
                 double resid2= norm( Vec( b - A*y));
-                std::cerr << "GMRES: absolute residual 2-norm: " << resid2
+                std::cout << "GMRES: absolute residual 2-norm: " << resid2
                           << "\tabsolute preconditioned residual 2-norm: "
                           << std::fabs( s[i+1]) << '\n';
             }
@@ -1162,7 +1162,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         max_iter= 0;
         return true;
     }
-    std::cerr << "PMINRES: k: 0\tresidual: " << res << '\n';
+    std::cout << "PMINRES: k: 0\tresidual: " << res << '\n';
     for (int k= 1; k <= max_iter; ++k) {
         switch (k) {
           case 1:
@@ -1205,7 +1205,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         x+= dx;
 
         res= std::fabs( norm_r0*b[0][1])/normb;
-        if (k%10==0) std::cerr << "PMINRES: k: " << k << "\tresidual: " << res << '\n';
+        if (k%10==0) std::cout << "PMINRES: k: " << k << "\tresidual: " << res << '\n';
         if (res<= tol || lucky==true) {
             tol= res;
             max_iter= k;
@@ -1214,7 +1214,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         q.next( A);
         if (q.breakdown()) {
             lucky= true;
-            std::cerr << "PMINRES: lucky breakdown\n";
+            std::cout << "PMINRES: lucky breakdown\n";
         }
         c.rotate(); s.rotate(); r.rotate(); p.rotate(); b.rotate();
     }
@@ -1246,7 +1246,7 @@ MINRES(const Mat& A, Vec& x, const Vec& rhs, int& max_iter, double& tol,
 // The return value indicates convergence within max_iter (input)
 // iterations (true), or no convergence or breakdown within
 // max_iter iterations (false). In cases of breakdown a message is printed
-// std::cerr and the iteration returns the approximate solution found.
+// std::cout and the iteration returns the approximate solution found.
 //
 // Upon successful return, output arguments have the following values:
 //
@@ -1287,7 +1287,7 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
         if (rho_1 == 0.0) {
             tol = norm( r)/normb;
             max_iter= i;
-            std::cerr << "BiCGSTAB: Breakdown with rho_1 = 0.\n";
+            std::cout << "BiCGSTAB: Breakdown with rho_1 = 0.\n";
             return false;
         }
         if (i == 1) p= r;
@@ -1320,7 +1320,7 @@ BICGSTAB( const Mat& A, Vec& x, const Vec& b,
         if (omega == 0.0) {
             tol= norm( r)/normb;
             max_iter= i;
-            std::cerr << "BiCGSTAB: Breakdown with omega_ = 0.\n";
+            std::cout << "BiCGSTAB: Breakdown with omega_ = 0.\n";
             return false;
         }
     }
@@ -1369,7 +1369,7 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
     double resid= norm( r)/normb;
     for (int k= 0; k < max_iter; ++k) {
-        if (k%10==0) std::cerr << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+        if (k%10==0) std::cout << "GCR: k: " << k << "\tresidual: " << resid << '\n';
         if (resid < tol) {
             tol= resid;
             max_iter= k;
@@ -1448,19 +1448,19 @@ GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
             max_iter= k;
             return true;
         }
-        std::cerr << "GMRESR: k: " << k << "\tresidual: " << resid << '\n';
+        std::cout << "GMRESR: k: " << k << "\tresidual: " << resid << '\n';
         u.push_back( Vec( b.size()));
         u[k+1]=0;
         inner_tol=0.0;
         double in_tol = inner_tol;
         int in_max_iter = inner_max_iter;
         GMRES(A, u[k+1], r, M, m, in_max_iter, in_tol, true, false, method);
-        std::cerr << "norm of u_k_0: "<<norm(u[k+1])<<"\n";
-        std::cerr << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << '\n';
+        std::cout << "norm of u_k_0: "<<norm(u[k+1])<<"\n";
+        std::cout << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << '\n';
         if (norm(A*u[k+1]-r)>0.999*norm(r) and norm(u[k+1]) < 1e-3)
         {
             u[k+1] = transp_mul(A, r);
-            std::cerr<<"LSQR switch!\n";
+            std::cout<<"LSQR switch!\n";
         }
         c.push_back( A*u[k+1]);
         for (int i= 1; i <= k; ++i) {
@@ -1793,7 +1793,7 @@ class GMResRSolverCL : public SolverBaseCL
         if (output_ != 0)
             *output_ << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
-            std::cerr << "GmresRSolverCL: iterations: " << GetIter()
+            std::cout << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
     }
     template <typename Mat, typename Vec>
@@ -1805,7 +1805,7 @@ class GMResRSolverCL : public SolverBaseCL
         if (output_ != 0)
             *output_ << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
-            std::cerr << "GmresRSolverCL: iterations: " << GetIter()
+            std::cout << "GmresRSolverCL: iterations: " << GetIter()
                      << "\tresidual: " << GetResid() << std::endl;
     }
 };
@@ -1865,7 +1865,7 @@ class SolverAsPreCL
         solver_.Solve( A, x, b);
 //         if (solver_.GetIter()==solver_.GetMaxIter())
 //           IF_MASTER
-//             std::cerr << "===> Warning: Cannot solve inner system!\n";
+//             std::cout << "===> Warning: Cannot solve inner system!\n";
         if (output_ != 0)
           IF_MASTER
             *output_ << "SolverAsPreCL: iterations: " << solver_.GetIter()

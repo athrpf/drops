@@ -97,7 +97,7 @@ template <class SimplexT>
   void InterfaceCL<SimplexT>::InitIF()
 {
     if (SimplexIF_!=0){
-        std::cerr << "=====> InterfaceCL: Allready defined that Interface!" << std::endl;
+        std::cout << "=====> InterfaceCL: Allready defined that Interface!" << std::endl;
     }
 
     DDD_TYPE  O[1];
@@ -136,7 +136,7 @@ template <class SimplexT>
   void AllSimplexIFCL<SimplexT>::InitIF()
 {
     if (AllSimplexIF_!=0){
-        std::cerr << "=====> InterfaceCL: Allready defined that Interface!" << std::endl;
+        std::cout << "=====> InterfaceCL: Allready defined that Interface!" << std::endl;
     }
 
     DDD_TYPE  O[1];

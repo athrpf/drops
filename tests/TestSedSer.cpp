@@ -49,7 +49,7 @@ void DisplayNumUnknowns(const DROPS::MultiGridCL&, const DROPS::VecDescCL& x)
     const DROPS::Ulint acc_num_unk = x.Data.size();
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
-    std::cerr << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
+    std::cout << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
               <<acc_num_unk<< std::endl;
 }
 
@@ -218,7 +218,7 @@ template<typename Coeff>
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
     for (int step= 1; step<=C.num_steps; ++step)
     {
-        std::cerr << "=================================================================================== Schritt " << step << ":\n"
+        std::cout << "=================================================================================== Schritt " << step << ":\n"
                   << "==> Solving coupled Levelset-Navier-Stokes problem ....\n"
                   << " Idx for vel  "<<Stokes.v.RowIdx->GetIdx()
                   << "\n Idx for pr   "<<Stokes.p.RowIdx->GetIdx()
@@ -230,7 +230,7 @@ template<typename Coeff>
         offset+=C.Anstroem;
         lset.Init(MovingDroplet);
 
-        std::cerr << "==> Adaptive Refinement of MultiGrid"<<std::endl;
+        std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
 
         adap.UpdateTriang( Stokes, lset);
         CheckInterPol(Stokes, lset);
@@ -270,7 +270,7 @@ template<class Coeff>
 
 
     //Setup initial problem
-    std::cerr << "=================================================================================== Init:\n"
+    std::cout << "=================================================================================== Init:\n"
               << "==> Initialize Problem\n";
     InitProblemWithDrop(Stokes, lset);
 
@@ -287,7 +287,7 @@ int main (int argc, char** argv)
     if (argc!=2)
     {
         IF_MASTER
-          std::cerr << "You have to specify one parameter:\n\t"
+          std::cout << "You have to specify one parameter:\n\t"
                     << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
@@ -295,13 +295,13 @@ int main (int argc, char** argv)
     if (!param)
     {
         IF_MASTER
-          std::cerr << "error while opening parameter file\n";
+          std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
     IF_MASTER
-      std::cerr << C << std::endl;
+      std::cout << C << std::endl;
 
     typedef ZeroFlowCL                                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;

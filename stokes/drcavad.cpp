@@ -124,16 +124,16 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         MG.Refine();
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+        std::cout << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
                   << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
-        std::cerr << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
+        std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
-        std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
+        std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
         if (p2->RowIdx)
         {
@@ -164,17 +164,17 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         time.Start();
         Stokes.SetupSystem(A, b, B, c);
         time.Stop();
-        std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+        std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
         time.Start();
         A->Data * v1->Data;
         time.Stop();
-        std::cerr << " A*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << " A*x took " << time.GetTime() << " seconds!" << std::endl;
         time.Reset();
         time.Start();
         transp_mul( A->Data, v1->Data);
         time.Stop();
-        std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
 /*
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
@@ -186,12 +186,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->GetRowLevel());
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
         IdxT unk= vert->Unknowns(A->RowIdx->Idx);
-        std::cerr << vert->GetCoord() << " has index " << unk << std::endl;
-        std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;
-        std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
+        std::cout << vert->GetCoord() << " has index " << unk << std::endl;
+        std::cout << "A(i,i) = " << A->Data(unk,unk) <<std::endl;
+        std::cout << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
 */
 //        Uint meth;
-//        std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
+//        std::cout << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
         time.Reset();
 
         MLMatDescCL M;
@@ -199,7 +199,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         Stokes.SetupPrMass( &M);
 
         double outer_tol= tol;
-//        std::cerr << "tol = "; std::cin >> outer_tol;
+//        std::cout << "tol = "; std::cin >> outer_tol;
 
         if (meth)
         {
@@ -213,16 +213,16 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         {
 //            double tau;
 //            Uint inner_iter;
-//            std::cerr << "tau = "; std::cin >> tau;
-//            std::cerr << "#PCG steps = "; std::cin >> inner_iter;
+//            std::cout << "tau = "; std::cin >> tau;
+//            std::cout << "#PCG steps = "; std::cin >> inner_iter;
             Uzawa_PCG_CL uzawaSolver( M.Data.GetFinest(), 5000, outer_tol, uzawa_inner_iter, inner_iter_tol, tau);
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
-            std::cerr << "Iterationen: " << uzawaSolver.GetIter()
+            std::cout << "Iterationen: " << uzawaSolver.GetIter()
                       << "\tNorm des Res.: " << uzawaSolver.GetResid() << std::endl;
         }
-        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
+        std::cout << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
 //        Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
         if (step==0)
         {
@@ -234,7 +234,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
 //    std::cin >> dummy;
         new_marks= Estimator.Estimate(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG) );
         time.Stop();
-        std::cerr << "Estimation took " << time.GetTime() << " seconds\n";
+        std::cout << "Estimation took " << time.GetTime() << " seconds\n";
         A->Reset();
         B->Reset();
         b->Reset();
@@ -243,7 +243,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (new_marks && ++step<maxStep);
     // we want the solution to be in Stokes.v, Stokes.pr
@@ -268,7 +268,7 @@ int main (int argc, char** argv)
   {
     if (argc!=9)
     {
-        std::cerr << "Usage: drvcavad <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>" << std::endl;
+        std::cout << "Usage: drvcavad <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>" << std::endl;
         return 1;
     }
 
@@ -293,21 +293,21 @@ int main (int argc, char** argv)
     double markratio= std::atof(argv[6]);
     double tau= std::atof(argv[7]);
     unsigned int uz_inner_iter= std::atoi(argv[8]);
-    std::cerr << "inner iter tol: " << inner_iter_tol << ", ";
-    std::cerr << "tol: " << tol << ", ";
-    std::cerr << "meth: " << meth << ", ";
-    std::cerr << "refinements: " << num_ref << ", ";
-    std::cerr << "relative error reduction: " << rel_red << ", ";
-    std::cerr << "markratio: " << markratio << ", ";
-    std::cerr << "tau: " << tau << ", ";
-    std::cerr << "uzawa inner iter: " << uz_inner_iter << std::endl;
+    std::cout << "inner iter tol: " << inner_iter_tol << ", ";
+    std::cout << "tol: " << tol << ", ";
+    std::cout << "meth: " << meth << ", ";
+    std::cout << "refinements: " << num_ref << ", ";
+    std::cout << "relative error reduction: " << rel_red << ", ";
+    std::cout << "markratio: " << markratio << ", ";
+    std::cout << "tau: " << tau << ", ";
+    std::cout << "uzawa inner iter: " << uz_inner_iter << std::endl;
     Strategy(prob, inner_iter_tol, tol, meth, num_ref, rel_red, markratio, tau, uz_inner_iter);
-//    std::cerr << "hallo" << std::endl;
-//    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+//    std::cout << "hallo" << std::endl;
+//    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
-    std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+    std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
     fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, prob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
 
     DROPS::MLIdxDescCL tecIdx;

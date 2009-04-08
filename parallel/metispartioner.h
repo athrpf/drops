@@ -129,7 +129,7 @@ method = KWay;
 			break;
 
 		default:
-			std::cerr<<"MetisPartioner: Method not implemented yet."<<std::endl;
+			std::cout<<"MetisPartioner: Method not implemented yet."<<std::endl;
 	}
 
 }
@@ -161,7 +161,7 @@ void SerPartition(IndexArray &, PartMethod method )
 			break;
 
 		default:
-			std::cerr<<"MetisPartioner: Method not implemented yet."<<std::endl;
+			std::cout<<"MetisPartioner: Method not implemented yet."<<std::endl;
 	}
 
 }

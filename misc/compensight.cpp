@@ -106,12 +106,12 @@ template<typename T>
 /// \param valFileName  name of the file that contains value information
 {
     if (!CheckFile(geomFile_)){
-        std::cerr << "Cannot open file "<<geomFileName<<std::endl;
+        std::cout << "Cannot open file "<<geomFileName<<std::endl;
         exit(-1);
     }
 
     if (!CheckFile(valFile_)){
-        std::cerr << "Cannot open file "<<valFileName<<std::endl;
+        std::cout << "Cannot open file "<<valFileName<<std::endl;
         exit(-1);
     }
 }
@@ -223,7 +223,7 @@ template<typename T>
 */
 {
     if (a.Size()!=b.Size()){
-        std::cerr << "Not the same length!\n";
+        std::cout << "Not the same length!\n";
         return;
     }
 
@@ -324,7 +324,7 @@ template<typename T>
 */
 {
     if (refVal.Size()!=toTransVal.Size()){
-        std::cerr << "Transform: Incompatible sizes"<<std::endl;
+        std::cout << "Transform: Incompatible sizes"<<std::endl;
         std::exit(-1);
     }
 
@@ -359,7 +359,7 @@ using DROPS::Transform;
 int main(int argc, char* argv[])
 {
     if (argc!=6 && argc!=8){
-        std::cerr << "Usage (compare): "<<argv[0]<<" <0 scalar/ 1 vector> <par_geom_file> <par_val_file> "
+        std::cout << "Usage (compare): "<<argv[0]<<" <0 scalar/ 1 vector> <par_geom_file> <par_val_file> "
                   << "<ser_geom_file> <ser_val_file> "
                   <<std::endl<<"or"<<std::endl
                   << "Usage(transform): "<<argv[0]<<" -t <0 scalar/ 1 vector> <par_geom_file> <par_val_file> "
@@ -375,8 +375,8 @@ int main(int argc, char* argv[])
     std::string a(argv[start_idx+1]), b(argv[start_idx+2]),
                 c(argv[start_idx+3]), d(argv[start_idx+4]);
 
-    std::cerr << "Used geometry:"<<a<<" and "<<c<<std::endl;
-    std::cerr << "Used data:    "<<b<<" and "<<d<<std::endl;
+    std::cout << "Used geometry:"<<a<<" and "<<c<<std::endl;
+    std::cout << "Used data:    "<<b<<" and "<<d<<std::endl;
 
     if (type)    // vectoriel data
     {

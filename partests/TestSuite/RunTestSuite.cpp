@@ -97,7 +97,7 @@ void PrepareTestOutput(Reporter* pResult,ofstream &target){
 			  			  
 			   
 			  if (!tplTop || !tplBtn)  {                        
-			    cerr << "Output generation failed! Templates not found.";
+			    cout << "Output generation failed! Templates not found.";
 			    exit(-1) ; 			    
 			  } // END IF 		
 
@@ -236,7 +236,7 @@ int main(int argc, char * argv[]) {
       if(hdir == NULL)
       {
       
-        cerr<<"Error reading directory: " << testLocation << endl ;
+        cout<<"Error reading directory: " << testLocation << endl ;
         exit(-1);
       }      
   

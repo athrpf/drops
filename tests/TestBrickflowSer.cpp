@@ -52,7 +52,7 @@ void DisplayNumUnknowns(const DROPS::MultiGridCL&, const DROPS::VecDescCL& x)
     const DROPS::Ulint glo_num_unk = x.Data.size();
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
-    std::cerr << "  + Number of DOF of index "<<idx<<":  " <<glo_num_unk<< std::endl;
+    std::cout << "  + Number of DOF of index "<<idx<<":  " <<glo_num_unk<< std::endl;
 }
 
 class ZeroFlowCL
@@ -141,7 +141,7 @@ class EnsightOutCL
     template<class Coeff>
     void write(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
     {
-        std::cerr <<"- Writing ensight file no "<<counter_<<" for time "<<time_<<std::endl;
+        std::cout <<"- Writing ensight file no "<<counter_<<" for time "<<time_<<std::endl;
         ensight_->putGeom(   datgeo, time_);
         ensight_->putScalar( datpr, Stokes.GetPrSolution(), time_);
         ensight_->putVector( datvel, Stokes.GetVelSolution(), time_);
@@ -183,7 +183,7 @@ template<class Coeff>
         typedef PCGSolverCL<APcPcT> ASolverT;
         ASolverT Asolver( Apcpc, 500, 0.02, /*relative=*/ true);
         typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver/*, &std::cerr*/);
+        APcT Apc( Asolver/*, &std::cout*/);
         typedef InexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
         OseenSolverT schurSolver( Apc, ispc, C.outer_iter, C.outer_tol, C.stokes_inner_red, 500);
 
@@ -197,7 +197,7 @@ template<class Coeff>
         curv.Data=0.;
         lset.AccumulateBndIntegral( curv);
         time.Stop(); duration=time.GetTime();
-        std::cerr << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
+        std::cout << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
 
         //Solve initial problem
         double theta= C.stat_theta, nl= C.stat_nonlinear;
@@ -213,12 +213,12 @@ template<class Coeff>
             schurSolver.Solve( mat, Stokes.B.Data,
                                     Stokes.v.Data, Stokes.p.Data,
                                     VectorCL( Stokes.b.Data + nl*cplN.Data), Stokes.c.Data);
-            std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
+            std::cout << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
                       <<", resid "<<schurSolver.GetResid()<<std::endl;
             ++step; iters+= schurSolver.GetIter();
         } while (schurSolver.GetIter() > 0);
         time.Stop(); duration=time.GetTime();
-        std::cerr << "- Solving Stokes for initialization took "<<duration<<" sec, "
+        std::cout << "- Solving Stokes for initialization took "<<duration<<" sec, "
                   << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<schurSolver.GetResid()<<'\n';
       }break;
       case 3:
@@ -227,7 +227,7 @@ template<class Coeff>
             reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
             reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
             reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
-            std::cerr << "- Initial Conditions successfull read\n";
+            std::cout << "- Initial Conditions successfull read\n";
         } break;
     }
 }
@@ -259,7 +259,7 @@ template<typename Coeff>
                        /*relative=*/ true, RightPreconditioning);
 
     typedef SolverAsPreCL<ASolverT> APcT;
-    APcT Apc( Asolver/*,&std::cerr*/);
+    APcT Apc( Asolver/*,&std::cout*/);
 
     // stokes solver
     typedef InexactUzawaCL<APcT, SPcT> OseenSolverT;
@@ -267,7 +267,7 @@ template<typename Coeff>
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
-    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red, &std::cerr);
+    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red, &std::cout);
 
     // coupling levelset NavStokes
     time.Reset();
@@ -277,7 +277,7 @@ template<typename Coeff>
 
     time.Stop();
     duration=time.GetTime();
-    std::cerr << "- Updating discretization took "<<duration<<" sec.\n";
+    std::cout << "- Updating discretization took "<<duration<<" sec.\n";
 
     // Set time step and create matrices
     cpl.SetTimeStep( C.dt);
@@ -286,7 +286,7 @@ template<typename Coeff>
     {
         TimerCL step_time;
         step_time.Reset();
-        std::cerr << "=================================================================================== Schritt " << step << ":\n"
+        std::cout << "=================================================================================== Schritt " << step << ":\n"
                   << " Idx for vel  "<<Stokes.v.RowIdx->GetIdx()
                   << "\n Idx for pr   "<<Stokes.p.RowIdx->GetIdx()
                   << "\n Idx for lset "<<lset.Phi.RowIdx->GetIdx()<<std::endl;
@@ -294,7 +294,7 @@ template<typename Coeff>
 
         if (C.ref_freq && step%C.ref_freq==0)
         {
-            std::cerr << "==> Adaptive Refinement of MultiGrid"<<std::endl;
+            std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
 
             adap.UpdateTriang( Stokes, lset);
             if (adap.WasModified() )
@@ -312,7 +312,7 @@ template<typename Coeff>
         DisplayNumUnknowns(adap.GetMG(), Stokes.p);
         DisplayNumUnknowns(adap.GetMG(), lset.Phi);
 
-        std::cerr << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
+        std::cout << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
 
 
         cpl.DoStep( C.cpl_iter);
@@ -324,42 +324,42 @@ template<typename Coeff>
         (*infofile) << Stokes.t << '\t' << maxGradPhi << '\t' << Volume << '\t' << bary_drop << '\t' << min_drop << '\t' << max_drop << std::endl;
 
         time.Stop(); duration=time.GetTime();
-        std::cerr << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
+        std::cout << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
         relVol = lset.GetVolume()/Vol;
-        std::cerr << "- rel. Volume: " << relVol << std::endl;
+        std::cout << "- rel. Volume: " << relVol << std::endl;
         if (C.VolCorr)
         {
-            std::cerr << "\n==> Adjust volume ...\n";
+            std::cout << "\n==> Adjust volume ...\n";
             double dphi= lset.AdjustVolume( Vol, 1e-9);
             lset.Phi.Data+= dphi;
             relVol = lset.GetVolume()/Vol;
-            std::cerr << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
+            std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
         }
 
         // Reparametrization of levelset function
         if (C.RepFreq && step%C.RepFreq==0)
         {
-            std::cerr << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
+            std::cout << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
             time.Reset();
             lset.ReparamFastMarching();
             time.Stop(); duration=time.GetTime();
             relVol = lset.GetVolume()/Vol;
-            std::cerr << "- FastMarching took "<<duration<<" sec."<<std::endl;
-            std::cerr << "- rel. Volume: " << relVol << std::endl;
+            std::cout << "- FastMarching took "<<duration<<" sec."<<std::endl;
+            std::cout << "- rel. Volume: " << relVol << std::endl;
             if (C.VolCorr)
             {
-                std::cerr << "\n==> Adjust volume ...\n";
+                std::cout << "\n==> Adjust volume ...\n";
 
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 lset.Phi.Data+= dphi;
                 relVol = lset.GetVolume()/Vol;
-                std::cerr << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
+                std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
             }
         }
 
         step_time.Stop();
         duration=step_time.GetTime();
-        std::cerr <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
+        std::cout <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
     }
 
     infofile->close();
@@ -405,7 +405,7 @@ template<class Coeff>
 
 
     //Setup initial problem
-    std::cerr << "=================================================================================== Init:\n"
+    std::cout << "=================================================================================== Init:\n"
               << "==> Initialize Problem\n";
     InitProblemWithDrop(Stokes, lset, infofile);
 
@@ -422,19 +422,19 @@ int main (int argc, char** argv)
   {
     if (argc!=2)
     {
-        std::cerr << "You have to specify one parameter:\n\t"
+        std::cout << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
     std::ifstream param( argv[1]);
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     DROPS::TimerCL alltime;
 
@@ -451,7 +451,7 @@ int main (int argc, char** argv)
     brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
     if (!brick_info || dx!=dz)
     {
-        std::cerr << "error while reading geometry information: " << mesh << "\n";
+        std::cout << "error while reading geometry information: " << mesh << "\n";
         return 1;
     }
 

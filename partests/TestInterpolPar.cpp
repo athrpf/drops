@@ -91,7 +91,7 @@ void DisplayNumUnknowns(const DROPS::MultiGridCL& MG, const DROPS::VecDescCL& x)
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
+        std::cout << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
                   <<acc_num_unk<< "/" <<glo_num_unk<< std::endl;
 }
 
@@ -147,7 +147,7 @@ bool UnMarkForGhostKill (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
                 for (DROPS::TetraCL::const_ChildPIterator ch(It->GetChildBegin()),
                     chEnd(It->GetChildEnd()); ch!=chEnd; ++ch)
                     (*ch)->SetRemoveMark();
-                std::cerr << "Tetra "<<It->GetGID()<<" marked for ghost-kill by proc "<<ProcCL::MyRank()<<std::endl;
+                std::cout << "Tetra "<<It->GetGID()<<" marked for ghost-kill by proc "<<ProcCL::MyRank()<<std::endl;
                 done=1;
             }
         }
@@ -245,7 +245,7 @@ double CheckInterPol(const VecDescCL& vec, const MultiGridCL& mg, bool checkunks
             }
         }
     }
-//     std::cerr << "["<<ProcCL::MyRank()<<"] Idx "<<idx<<": max difference ("<<vert_dist<<") found on ("<<max_vert->GetGID()
+//     std::cout << "["<<ProcCL::MyRank()<<"] Idx "<<idx<<": max difference ("<<vert_dist<<") found on ("<<max_vert->GetGID()
 //               <<") Vertex: "<<max_vert->GetCoord()
 //               << ": "<< vec.Data[max_vert->Unknowns(idx)]<<", instead of "<<f(max_vert->GetCoord())<<std::endl;
 
@@ -281,7 +281,7 @@ double CheckInterPol(const VecDescCL& vec, const MultiGridCL& mg, bool checkunks
     }
 
 //     if (vec.RowIdx->NumUnknownsEdge){
-//         std::cerr << "["<<ProcCL::MyRank()<<"] Idx "<<idx<<": max difference ("<<edge_dist<<") found on ("<<max_edge->GetGID()
+//         std::cout << "["<<ProcCL::MyRank()<<"] Idx "<<idx<<": max difference ("<<edge_dist<<") found on ("<<max_edge->GetGID()
 //                   <<") Edge: "<<GetBaryCenter(*max_edge)
 //                   << ": "<< vec.Data[max_edge->Unknowns(idx)]<<", instead of "<<f(GetBaryCenter(*max_edge))<<std::endl;
 //     }
@@ -360,13 +360,13 @@ void UpdateTriang(VecDescCL& P1_dir,
     if (writefiles) PrintMG(pmg, MIG);
 
     if (ProcCL::IamMaster())
-        std::cerr <<"["<<ProcCL::MyRank()<<"] Level before Ref: "<<LevelBeforeRef<<" now "<<mg.GetLastLevel()<<std::endl;
+        std::cout <<"["<<ProcCL::MyRank()<<"] Level before Ref: "<<LevelBeforeRef<<" now "<<mg.GetLastLevel()<<std::endl;
     if (LevelBeforeRef>mg.GetLastLevel())
     {
         throw DROPSErrCL("MultiGrid Level has been decreased!");
     }
     if (ProcCL::IamMaster() && printNumSimplices)
-        std::cerr << " - Distribution of elements (after refinement and loadbalancing): level of mg: "<<mg.GetLastLevel()<<"\n";
+        std::cout << " - Distribution of elements (after refinement and loadbalancing): level of mg: "<<mg.GetLastLevel()<<"\n";
     if (printNumSimplices) mg.SizeInfo(std::cout);
 
     // Point 5: Creation of numbering
@@ -388,7 +388,7 @@ void UpdateTriang(VecDescCL& P1_dir,
     new_z->SetIdx(new_z_idx);
 
     if (ProcCL::IamMaster())
-        std::cerr <<"Number of unknowns:"<<std::endl;
+        std::cout <<"Number of unknowns:"<<std::endl;
     DisplayNumUnknowns(mg, *new_u);
     DisplayNumUnknowns(mg, *new_v);
     DisplayNumUnknowns(mg, *new_w);
@@ -537,7 +537,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         ParTimerCL timer;
         timer.Start();
         if (ProcCL::IamMaster())
-            std::cerr << "------------------------------------------\n Interpolation step "
+            std::cout << "------------------------------------------\n Interpolation step "
                       <<ref<<"\n------------------------------------------"<<std::endl;
         SetFunction(dirp1, mg);
         SetFunction(neup1, mg);
@@ -553,7 +553,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 
         if (printEnsight){
             if (ProcCL::IamMaster())
-                std::cerr << "Write ensightfiles for time "<<ref<<std::endl;
+                std::cout << "Write ensightfiles for time "<<ref<<std::endl;
 
             ensight->putGeom( datgeo, ref);
             ensight->putScalar(*dattmp1, fun_P1_dir, ref);
@@ -570,22 +570,22 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         {
             case 1:
                 if (ProcCL::IamMaster())
-                    std::cerr << "Mark around "<<e<<std::endl;
+                    std::cout << "Mark around "<<e<<std::endl;
                 marked=MarkAround(mg, e, 0.5);
                 break;
             case 2:
                 if (ProcCL::IamMaster())
-                    std::cerr << "UnMark around "<<e<<std::endl;
+                    std::cout << "UnMark around "<<e<<std::endl;
                 marked=UnMarkAround(mg, e, 0.7);
                 break;
             case 3:
 //                 if (ProcCL::IamMaster())
-//                     std::cerr << "UnMark for ghost tetra kill"<<std::endl;
+//                     std::cout << "UnMark for ghost tetra kill"<<std::endl;
 //                 killedghost=UnMarkForGhostKill(mg, mg.GetLastLevel());
 //                 killedghost=GlobalOr(killedghost);
 //                 marked=killedghost;
 //                 if (ProcCL::IamMaster() && killedghost)
-//                    std::cerr << "A ghost tetra will be killed"<<std::endl;
+//                    std::cout << "A ghost tetra will be killed"<<std::endl;
                 marked=true;
                 break;
             default:
@@ -597,7 +597,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         }
         marked= ProcCL::GlobalOr(marked);
         if (ProcCL::IamMaster() && marked)
-            std::cerr << " At least on tetra has been marked!\n";
+            std::cout << " At least on tetra has been marked!\n";
 
         UpdateTriang(dirp1, neup1, dirp2, neup2, mixedp2,
                      dirBnd, neuBnd, mixedBnd,
@@ -610,7 +610,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
                      err_mixed_p2= CheckInterPol(neup2, mg);
 
         if (ProcCL::IamMaster())
-            std::cerr << "Maximal distance between function and interpolated P1/P2-functions:"
+            std::cout << "Maximal distance between function and interpolated P1/P2-functions:"
                       << "\n  +  P1 with Dirichlet       boundary conditions: "<<err_dir_p1
                       << "\n  +  P1 with Neumann         boundary conditions: "<<err_neu_p1
                       << "\n  +  P2 with Dirichlet       boundary conditions: "<<err_dir_p2
@@ -627,7 +627,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 
         if (printEnsight){
             if (ProcCL::IamMaster())
-                std::cerr << "Write ensightfiles for time "<<(0.5+ref)<<std::endl;
+                std::cout << "Write ensightfiles for time "<<(0.5+ref)<<std::endl;
 
             ensight->putGeom( datgeo, 0.5+ref);
             ensight->putScalar(*dattmp1, fun_P1_dir2, 0.5+ref);
@@ -640,7 +640,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         timer.Stop();
         double duration= timer.GetMaxTime();
         if (ProcCL::IamMaster())
-            std::cerr << "Step "<<ref<<" took "<<duration<<" sec"<<std::endl;
+            std::cout << "Step "<<ref<<" took "<<duration<<" sec"<<std::endl;
     }
 
     ensight->CaseEnd();
@@ -682,7 +682,7 @@ int main (int argc, char** argv)
     }
 
     if (DROPS::ProcCL::IamMaster())
-        std::cerr <<" Refine 2 times regular ... "<<std::endl;
+        std::cout <<" Refine 2 times regular ... "<<std::endl;
     DROPS::MarkAll(mg);
     pmg.Refine();
     lb.DoMigration();
@@ -693,7 +693,7 @@ int main (int argc, char** argv)
 
 
     if (DROPS::ProcCL::IamMaster())
-        std::cerr <<" Refine 1 times around "<<orig<<" ... "<<std::endl;
+        std::cout <<" Refine 1 times around "<<orig<<" ... "<<std::endl;
 
     e1[0]=0.;  e1[1]=0.; e1[2]=0.5;
     MarkAround(mg, e1, 0.5);

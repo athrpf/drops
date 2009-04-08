@@ -68,7 +68,7 @@ void DisplayNumUnknowns(__UNUSED__ const DROPS::MultiGridCL& MG, const DROPS::Ve
     const DROPS::Ulint acc_num_unk = x.Data.size();
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
-    std::cerr << "  + Number of DOF of index "<<idx<<":  "
+    std::cout << "  + Number of DOF of index "<<idx<<":  "
               <<acc_num_unk<<std::endl;
 }
 
@@ -190,7 +190,7 @@ double CheckInterPol(const VecDescCL& vec, const MultiGridCL& mg)
         }
     }
 
-//     std::cerr << "Idx "<<idx<<": max difference ("<<vert_dist<<") found on Vertex: "<<max_vert->GetCoord()
+//     std::cout << "Idx "<<idx<<": max difference ("<<vert_dist<<") found on Vertex: "<<max_vert->GetCoord()
 //               << ": "<< vec.Data[max_vert->Unknowns(idx)]<<", instead of "<<f(max_vert->GetCoord())<<std::endl;
 
     if (vec.RowIdx->NumUnknownsEdge==1){
@@ -220,7 +220,7 @@ double CheckInterPol(const VecDescCL& vec, const MultiGridCL& mg)
     }
 
 //     if (vec.RowIdx->NumUnknownsEdge){
-//         std::cerr << "Idx "<<idx<<": max difference ("<<edge_dist<<") found on Edge: "<<GetBaryCenter(*max_edge)
+//         std::cout << "Idx "<<idx<<": max difference ("<<edge_dist<<") found on Edge: "<<GetBaryCenter(*max_edge)
 //                   << ": "<< vec.Data[max_edge->Unknowns(idx)]<<", instead of "<<f(GetBaryCenter(*max_edge))<<std::endl;
 //     }
 
@@ -275,14 +275,14 @@ void UpdateTriang(VecDescCL& P1_dir,
     mg.Refine();
     Uint LastLevel= mg.GetLastLevel();
 
-    std::cerr <<"Level before Ref: "<<LevelBeforeRef<<" now "<<mg.GetLastLevel()<<std::endl;
+    std::cout <<"Level before Ref: "<<LevelBeforeRef<<" now "<<mg.GetLastLevel()<<std::endl;
     if (LevelBeforeRef>mg.GetLastLevel())
     {
         throw DROPSErrCL("MultiGrid Level has been decreased!");
     }
 
-    std::cerr <<" Level before Ref: "<<LevelBeforeRef<<" now "<<mg.GetLastLevel()<<std::endl;
-    std::cerr << " - Distribution of elements (after refinement and loadbalancing): level of mg: "<<mg.GetLastLevel()<<"\n";
+    std::cout <<" Level before Ref: "<<LevelBeforeRef<<" now "<<mg.GetLastLevel()<<std::endl;
+    std::cout << " - Distribution of elements (after refinement and loadbalancing): level of mg: "<<mg.GetLastLevel()<<"\n";
     if (printNumSimplices) mg.SizeInfo(std::cout);
 
     // Point 5: Creation of numbering
@@ -303,7 +303,7 @@ void UpdateTriang(VecDescCL& P1_dir,
     new_y->SetIdx(new_y_idx);
     new_z->SetIdx(new_z_idx);
 
-    std::cerr <<"Number of unknowns:"<<std::endl;
+    std::cout <<"Number of unknowns:"<<std::endl;
     DisplayNumUnknowns(mg, *new_u);
     DisplayNumUnknowns(mg, *new_v);
     DisplayNumUnknowns(mg, *new_w);
@@ -401,7 +401,7 @@ void Strategy(MultiGridCL& mg)
 
     for (int ref=1; ref<=steps; ++ref)
     {
-        std::cerr << "------------------------------------------\n Interpolation step "
+        std::cout << "------------------------------------------\n Interpolation step "
                   <<ref<<"\n------------------------------------------"<<std::endl;
         SetFunction(dirp1, mg);
         SetFunction(neup1, mg);
@@ -423,19 +423,19 @@ void Strategy(MultiGridCL& mg)
         switch (ref)
         {
             case 1:
-                std::cerr << "Mark around "<<e<<std::endl;
+                std::cout << "Mark around "<<e<<std::endl;
                 marked=MarkAround(mg, e, 0.5);
                 break;
             case 2:
-                std::cerr << "UnMark around "<<e<<std::endl;
+                std::cout << "UnMark around "<<e<<std::endl;
                 marked=UnMarkAround(mg, e, 0.7);
                 break;
             case 3:
-                std::cerr << "UnMark for ghost tetra kill"<<std::endl;
+                std::cout << "UnMark for ghost tetra kill"<<std::endl;
                 // killedghost=UnMarkForGhostKill(mg, mg.GetLastLevel());
                 // killedghost=GlobalOr(killedghost);
                 // if (ProcCL::IamMaster() && killedghost)
-                //    std::cerr << "A ghost tetra will be killed"<<std::endl;
+                //    std::cout << "A ghost tetra will be killed"<<std::endl;
                 marked=true;
                 break;
             default:
@@ -446,7 +446,7 @@ void Strategy(MultiGridCL& mg)
                 marked=true;
         }
         if (marked)
-            std::cerr << " At least on tetra has been marked!\n";
+            std::cout << " At least on tetra has been marked!\n";
 
         UpdateTriang(dirp1, neup1, dirp2, neup2, mixedp1, mixedp2,
                      dirBnd, neuBnd, mixedBnd,
@@ -459,7 +459,7 @@ void Strategy(MultiGridCL& mg)
                      err_mixed_p1= CheckInterPol(neup1, mg),
                      err_mixed_p2= CheckInterPol(neup2, mg);
 
-        std::cerr << "Maximal distance between function and interpolated P1/P2-functions:"
+        std::cout << "Maximal distance between function and interpolated P1/P2-functions:"
                   << "\n  +  P1 with Dirichlet       boundary conditions: "<<err_dir_p1
                   << "\n  +  P1 with Neumann         boundary conditions: "<<err_neu_p1
                   << "\n  +  P2 with Dirichlet       boundary conditions: "<<err_dir_p2
@@ -483,14 +483,14 @@ int main (int, char**)
 
     DROPS::MultiGridCL mg(*mgb);
 
-    std::cerr <<" Refine 2 times regular ... "<<std::endl;
+    std::cout <<" Refine 2 times regular ... "<<std::endl;
     DROPS::MarkAll(mg);
     mg.Refine();
 
 //     DROPS::MarkAll(mg);
 //     mg.Refine();
 
-    std::cerr <<" Refine 1 times around "<<orig<<" ... "<<std::endl;
+    std::cout <<" Refine 1 times around "<<orig<<" ... "<<std::endl;
 
     e1[0]=0.;  e1[1]=0.; e1[2]=0.5;
     MarkAround(mg, e1, 0.5);

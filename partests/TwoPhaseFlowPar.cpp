@@ -86,7 +86,7 @@ template<class Coeff>
   void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset, ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 {
     if (ProcCL::IamMaster())
-        std::cerr << "=================================================================================== Init:\n"
+        std::cout << "=================================================================================== Init:\n"
                     << "==> Initialize Problem\n";
 
     ParTimerCL time;
@@ -150,7 +150,7 @@ template<class Coeff>
         typedef ParPCGSolverCL<APcPcT,ExchangeCL> ASolverT;
         ASolverT Asolver( 500, 0.02, ExV, Apcpc, /*relative=*/ true, /*accur*/ true);
         typedef SolverAsPreCL<ASolverT> APcT;
-        APcT Apc( Asolver/*, &std::cerr*/);
+        APcT Apc( Asolver/*, &std::cout*/);
         typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM, ExchangeCL, ExchangeCL> OseenSolverT;
         OseenSolverT schurSolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.1);
 
@@ -166,7 +166,7 @@ template<class Coeff>
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
         {
-            std::cerr << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
+            std::cout << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
             // Log measured duration.
             DROPS_LOGGER_SETVALUE("StokesCurv",duration);
         }
@@ -183,14 +183,14 @@ template<class Coeff>
             schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
                                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
             if (ProcCL::IamMaster())
-                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
+                std::cout << "- Solving lin. Stokes ("<<step<<"): iter "<<schurSolver.GetIter()
                             <<", resid "<<schurSolver.GetResid()<<std::endl;
             ++step; iters+= schurSolver.GetIter();
         } while (schurSolver.GetIter() > 0);
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
         {
-            std::cerr << "- Solving Stokes for initialization took "<<duration<<" sec, "
+            std::cout << "- Solving Stokes for initialization took "<<duration<<" sec, "
                         << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<schurSolver.GetResid()<<'\n';
             DROPS_LOGGER_SETVALUE("SolStokesTime",duration);
             DROPS_LOGGER_SETVALUE("SolStokesIter",iters);
@@ -206,9 +206,9 @@ template<class Coeff>
             if (C.checkMG){
                 std::ofstream sanity_file("ser_sanity.txt");
                 if (mg.IsSane(sanity_file))
-                    std::cerr << "Multigrid is sane on master\n";
+                    std::cout << "Multigrid is sane on master\n";
                 else
-                    std::cerr << "Multigrid is not sane on master\n ==> Check right dimension of the computational domain!";
+                    std::cout << "Multigrid is not sane on master\n ==> Check right dimension of the computational domain!";
             }
             Stokes.CreateNumberingVel( mg.GetLastLevel(), &read_vel_idx,  false);
             Stokes.CreateNumberingPr ( mg.GetLastLevel(), &read_pr_idx,   false);
@@ -254,7 +254,7 @@ template<class Coeff>
         pmg.AttachTo(0, &Stokes.v); pmg.AttachTo(1, &Stokes.p); pmg.AttachTo(2, &lset.Phi);
 
         if (ProcCL::IamMaster())
-                std::cerr << "- Initial Conditions successfull read\n";
+                std::cout << "- Initial Conditions successfull read\n";
       } break;
     }
 }
@@ -300,15 +300,15 @@ template<typename Coeff>
 //                         /*relative=*/ true, /*acc*/ true, /*modGS*/false, RightPreconditioning, /*mod4par*/false);
 
     typedef SolverAsPreCL<ASolverT> APcT;
-    APcT Apc( Asolver/*, &std::cerr*/);
+    APcT Apc( Asolver/*, &std::cout*/);
 
     // stokes solver
     typedef ParInexactUzawaCL<APcT, SPcT, APC_OTHER, ExchangeCL, ExchangeCL> OseenSolverT;
-    OseenSolverT oseensolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.2, 500, &std::cerr);
+    OseenSolverT oseensolver( Apc, ispc, ExV, ExP, C.outer_iter, C.outer_tol, 0.2, 500, &std::cout);
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT, OseenSolverT> NSSolverT;
-    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red, &std::cerr);
+    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red, &std::cout);
 
     // coupling levelset NavStokes
     time.Reset();
@@ -322,7 +322,7 @@ template<typename Coeff>
     time.Stop();
     duration=time.GetMaxTime();
     if (ProcCL::IamMaster())
-        std::cerr << "- Updating discretization took "<<duration<<" sec.\n";
+        std::cout << "- Updating discretization took "<<duration<<" sec.\n";
 
     // Set time step and create matrices
     cpl.SetTimeStep( C.dt);
@@ -332,7 +332,7 @@ template<typename Coeff>
         ParTimerCL step_time;
         step_time.Reset();
         if (ProcCL::IamMaster())
-            std::cerr << "=================================================================================== Schritt " << step << ":\n"
+            std::cout << "=================================================================================== Schritt " << step << ":\n"
                       << " Idx for vel  "<<Stokes.v.RowIdx->GetIdx()
                       << "\n Idx for pr   "<<Stokes.p.RowIdx->GetIdx()
                       << "\n Idx for lset "<<lset.Phi.RowIdx->GetIdx()<<std::endl;
@@ -341,7 +341,7 @@ template<typename Coeff>
         if (C.ref_freq && step%C.ref_freq==0)
         {
             if (ProcCL::IamMaster())
-                std::cerr << "==> Adaptive Refinement of MultiGrid"<<std::endl;
+                std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
 
             adap.UpdateTriang( lset);
 
@@ -363,13 +363,13 @@ template<typename Coeff>
             DisplayUnks(Stokes, lset, adap.GetMG());
 
         if (ProcCL::IamMaster())
-            std::cerr << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
+            std::cout << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
 
         cpl.DoStep( C.cpl_iter);
 
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster()){
-            std::cerr << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
+            std::cout << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
             // Store measured values
             DROPS_LOGGER_SETVALUE("NavStokesCoupledLevelset",duration);
         }
@@ -389,32 +389,32 @@ template<typename Coeff>
         {
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster())
-                std::cerr << "\n==> Reparametrization\n"
+                std::cout << "\n==> Reparametrization\n"
                           << "- rel. Volume: " << relVol << std::endl;
             time.Reset();
             lset.ReparamFastMarching( ExL, C.RepMethod, C.RepMethod==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
-                std::cerr << "- Reparametrization took "<<duration<<" sec."<<std::endl;
+                std::cout << "- Reparametrization took "<<duration<<" sec."<<std::endl;
                 DROPS_LOGGER_SETVALUE("Reparametrization",duration);
             }
         }
 
         if (ProcCL::IamMaster())
-            std::cerr << "- rel. Volume: " << relVol << std::endl;
+            std::cout << "- rel. Volume: " << relVol << std::endl;
 
         if (C.VolCorr)
         {
             time.Reset();
             if (ProcCL::IamMaster())
-                std::cerr << "\n==> Adjust volume ...\n";
+                std::cout << "\n==> Adjust volume ...\n";
             double dphi= lset.AdjustVolume( Vol, 1e-9);
             lset.Phi.Data+= dphi;
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
-                std::cerr << "- Lifting level-set function took "<< duration << " sec\n"
+                std::cout << "- Lifting level-set function took "<< duration << " sec\n"
                           << "- Volume correction " << dphi <<", new rel. Volume is " << relVol << std::endl;
                 DROPS_LOGGER_SETVALUE("VolumeCorrection",duration);
             }
@@ -423,7 +423,7 @@ template<typename Coeff>
         step_time.Stop();
         duration=step_time.GetMaxTime();
         if (ProcCL::IamMaster()){
-            std::cerr <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
+            std::cout <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
             DROPS_LOGGER_SETVALUE("TotalStep",duration);
             // Tell the logger class that the calculation step is over now
             DROPS_LOGGER_NEXTSTEP();
@@ -519,18 +519,18 @@ template<class Coeff>
 
     if (C.quad){
         if (ProcCL::IamMaster())
-            std::cerr << "Write out geometry and velocity on the quadrilateral grid\n - geometry" << std::endl;
+            std::cout << "Write out geometry and velocity on the quadrilateral grid\n - geometry" << std::endl;
         time.Reset();
         LevelsetP2CL::const_DiscSolCL lset_sol=lset.GetSolution();
         QuadOutCL brickout( mg, &lset.idx, C.gridX, C.gridY, C.gridZ, C.stepsize, C.barycenter, C.rotation);
         brickout.putGeom("wrap.geo");
         if (ProcCL::IamMaster())
-            std::cerr << " - (integrated) velocities"<<std::endl;
+            std::cout << " - (integrated) velocities"<<std::endl;
         brickout.putVector("wrap.vel_norm", "wrap.velY", "wrap.velZ", Stokes.GetVelSolution(), &lset_sol);
         time.Stop();
         duration=time.GetTime();
         if (ProcCL::IamMaster())
-            std::cerr << " => Took "<<duration<<" sec."<<std::endl;
+            std::cout << " => Took "<<duration<<" sec."<<std::endl;
     }
 
     if (ProcCL::IamMaster()){
@@ -550,7 +550,7 @@ int main (int argc, char** argv)
     if (argc!=2)
     {
         IF_MASTER
-          std::cerr << "You have to specify one parameter:\n\t"
+          std::cout << "You have to specify one parameter:\n\t"
                     << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
@@ -558,13 +558,13 @@ int main (int argc, char** argv)
     if (!param)
     {
         IF_MASTER
-          std::cerr << "error while opening parameter file\n";
+          std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
     IF_MASTER
-      std::cerr << C << std::endl;
+      std::cout << C << std::endl;
 
     typedef DROPS::ZeroFlowCL                             CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;

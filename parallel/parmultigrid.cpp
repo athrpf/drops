@@ -1914,7 +1914,7 @@ void ParMultiGridCL::HandlerVGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* 
         // put all boundary vertices into the buffer
         for( VertexCL::const_BndVertIt it= vp->GetBndVertBegin(), end= vp->GetBndVertEnd(); it!=end; ++it, ++buffer)
         {
-            //std::cerr << it->GetCoord2D() << std::endl;
+            //std::cout << it->GetCoord2D() << std::endl;
             *buffer= *it;
         }
     }
@@ -1980,10 +1980,10 @@ void ParMultiGridCL::HandlerTGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* 
         }
         // For Problem prob2_sun_2_procs.param (Test-Case for pointer-length in DDD!)
 //      if (tp->GetGID()==1728){
-//          std::cerr << "["<<ProcCL::MyRank()<<"]  sizeof(*buffer)="<<sizeof(*buffer)<<", sizeof(*ChildPIterator)="<<sizeof(*(tp->GetChildBegin()))<<"  Tetra: "<<tp->GetGID()<<", werde folgende Kinder versenden:\n   ";
+//          std::cout << "["<<ProcCL::MyRank()<<"]  sizeof(*buffer)="<<sizeof(*buffer)<<", sizeof(*ChildPIterator)="<<sizeof(*(tp->GetChildBegin()))<<"  Tetra: "<<tp->GetGID()<<", werde folgende Kinder versenden:\n   ";
 //          for (int i=0; i<cnt; ++i)
-//              std::cerr << (tmp[i])->GetGID() <<",  ";
-//          std::cerr  << std::endl;
+//              std::cout << (tmp[i])->GetGID() <<",  ";
+//          std::cout  << std::endl;
 //      }
     }
     else if ( VecDescRecv() && (type == AddedScalCL::GetType() || type == AddedVecCL::GetType()) )
@@ -1999,7 +1999,7 @@ void ParMultiGridCL::HandlerTScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void*
     if (newness!=XFER_NEW && tp->IsGhost() )
     {
         // This case shouldn't happen, because this case is catched by the migrate function in LoadBalCL
-        std::cerr << ">>>>["<<ProcCL::MyRank()<<"] HandlerScatterTetra: ("<<tp->GetGID()<<") Master replaced by Ghost, continuing anyway, workaround enabled! Seems to be an illegal xfer!!!!"<<std::endl;
+        std::cout << ">>>>["<<ProcCL::MyRank()<<"] HandlerScatterTetra: ("<<tp->GetGID()<<") Master replaced by Ghost, continuing anyway, workaround enabled! Seems to be an illegal xfer!!!!"<<std::endl;
         tp->GetHdr()->prio= PrioMaster;
     }
 
@@ -2009,10 +2009,10 @@ void ParMultiGridCL::HandlerTScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void*
 
         // For Problem Problems/prob2_sun_2_procs.param! (Test-Case for pointer-length in DDD!)
 //      if (ProcCL::MyRank()==0 && tp->GetGID()==1728){
-//          std::cerr << "["<<ProcCL::MyRank()<<"]  sizeof(*buffer)="<<sizeof(*buffer)<<", sizeof(buffer)="<<sizeof(buffer)<<": Tetra "<<tp->GetGID()<<" Soll folgende Kinder empfangen:\n   ";
+//          std::cout << "["<<ProcCL::MyRank()<<"]  sizeof(*buffer)="<<sizeof(*buffer)<<", sizeof(buffer)="<<sizeof(buffer)<<": Tetra "<<tp->GetGID()<<" Soll folgende Kinder empfangen:\n   ";
 //          for (int i=0; i<cnt; ++i)
-//              std::cerr << (tmp[i])->GetGID() << ",  ";
-//          std::cerr  << std::endl;
+//              std::cout << (tmp[i])->GetGID() << ",  ";
+//          std::cout  << std::endl;
 //      }
 
         // Create new children-container if necessary
@@ -2118,7 +2118,7 @@ void ParMultiGridCL::HandlerTUpdate( DDD_OBJ obj)
 /// \brief DDD may use this function to delete a simplex, but this must not be happend!
 void ParMultiGridCL::DeleteObj(void * /* buffer*/, size_t /*size*/, int ddd_typ)
 {
-    std::cerr << "Deleting Object of type " << ddd_typ << " is still missing!" << std::endl;
+    std::cout << "Deleting Object of type " << ddd_typ << " is still missing!" << std::endl;
 }
 
 
@@ -2205,11 +2205,11 @@ void ParMultiGridCL::Show( DDD_GID gid, char *mesg, int proc)
         DDD_HDR hdr= DDD_SearchHdr( gid);
         if (!hdr)
         {
-            std::cerr << "...stored only locally." << std::endl;
+            std::cout << "...stored only locally." << std::endl;
             return;
         }
         for( int* proclist= DDD_InfoProcList( hdr); *proclist!=-1; proclist+= 2)
-            std::cerr << "...stored on proc " << *proclist << " with prio " << PrioToString((Uint)proclist[1]) << std::endl;
+            std::cout << "...stored on proc " << *proclist << " with prio " << PrioToString((Uint)proclist[1]) << std::endl;
     }
 }
 
@@ -2528,12 +2528,12 @@ bool CheckParMultiGrid(const ParMultiGridCL& pmg)
 */
 {
     char dat[30];
-    std::ostream output (std::cerr.rdbuf());
+    std::ostream output (std::cout.rdbuf());
     std::sprintf(dat,"output/sane%i.chk",DROPS::ProcCL::MyRank());
     std::ofstream checkfile(dat);
     if (!checkfile){
         IF_MASTER
-          std::cerr << "Cannot open file "<<dat<<" to write sanity check output. Using std::cerr"<<std::endl;
+          std::cout << "Cannot open file "<<dat<<" to write sanity check output. Using std::cout"<<std::endl;
     }
     else{
         output.rdbuf(checkfile.rdbuf());

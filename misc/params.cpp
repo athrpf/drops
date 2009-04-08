@@ -101,7 +101,7 @@ void ReadParamsCL::ReadData( std::istream& is)
 {
     if (!IsKnown( name_))
     {
-        std::cerr << "Skipping unknown parameter " << name_ << std::endl;
+        std::cout << "Skipping unknown parameter " << name_ << std::endl;
         is.ignore( 256, '\n');
         return;
     }
@@ -187,7 +187,7 @@ void ReadParamsCL::PrintWarning() const
     for (InfoT::const_iterator it= info_.begin(), end= info_.end(); it!=end; ++it)
         if(!it->second.second) // parameter uninitialized
         {
-            std::cerr << "WARNING: Parameter " << it->first << " uninitialized!\n";
+            std::cout << "WARNING: Parameter " << it->first << " uninitialized!\n";
             AllOk= false;
         }
     if (!AllOk) throw DROPSErrCL("ReadParamsCL: Parameters above are missing in parameter file!");

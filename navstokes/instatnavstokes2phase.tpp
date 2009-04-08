@@ -19,7 +19,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, cons
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP2CL n;
 #ifndef _PAR
-    std::cerr << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
+    std::cout << "entering SetupNonlinear: " << num_unks_vel << " vels. ";
 #endif
 
     Quad5CL<Point3DCL> Grad[10], GradRef[10], u_loc, u_rho;
@@ -86,7 +86,7 @@ void InstatNavierStokes2PhaseP2P1CL<Coeff>::SetupNonlinear_P2 (MatrixCL& N, cons
 
     mN.Build();
 #ifndef _PAR
-    std::cerr << N.num_nonzeros() << " nonzeros in N!" << std::endl;
+    std::cout << N.num_nonzeros() << " nonzeros in N!" << std::endl;
 #endif
 }
 

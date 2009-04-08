@@ -93,7 +93,7 @@ class ProcCL
     static Uint size_;                          // How many are out there?
     static int  procDigits_;                    // How many digits are necessary to decode rank of process?
     static const CommunicatorT& Communicator_;  // communicator (=MPI_COMM_WORLD, MPI::COMM_WORLD)
-    static MuteStdOstreamCL* mute_;             // for muting std::cerr, std::cout, std::clog
+    static MuteStdOstreamCL* mute_;             // for muting std::cout, std::cout, std::clog
 
     static ProcCL* instance_;                   ///< only one instance of ProcCL may exist (Singleton-Pattern)
     ProcCL(int*, char***);                      ///< constructor, mutes all non-master standard output streams

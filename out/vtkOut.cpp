@@ -65,7 +65,7 @@ void VTKOutCL::NewFile(double time)
     AppendTimecode(filename);
     file_.open(filename.c_str());
     if (!file_){
-        std::cerr << "Cannot open file "<<filename<<std::endl;
+        std::cout << "Cannot open file "<<filename<<std::endl;
     }
     CheckFile( file_);
     PutHeader(time);

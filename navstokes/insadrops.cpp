@@ -344,7 +344,7 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
     ensight.Write( 0.);
 
     for (; timestep<num_timestep; ++timestep, t+= dt, NS.t+= dt) {
-        std::cerr << "----------------------------------------------------------------------------"
+        std::cout << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
         if (timestep%(num_timestep/10) == 0) { // modify the grid
             if (timestep>0) { // perform cleanup, which is not neccessary for t==0.
@@ -359,7 +359,7 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
-            std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
+            std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
             M_pr.SetIdx( pidx1, pidx1);
             NS.SetupPrMass( &M_pr);
@@ -382,7 +382,7 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
             time.Reset(); time.Start();
             NS.SetupNonlinear( &NS.N, v1, &NS.cplN, t, t);
             time.Stop();
-            std::cerr << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
+            std::cout << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
             NS.SetupInstatRhs( &NS.b, &NS.c, &NS.cplM, t, &NS.b, t);
 //            instatsolver= new InstatNavStokesThetaSchemeCL<NavStokesCL,
 //                              FPDeCo_Schur_PCG_CL<NavStokesCL> >(NS, *statsolver, theta);
@@ -393,9 +393,9 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
         }
         NS.SetTime( t+dt); // We have to set the new time!
         instatsolver->SetTimeStep( dt);
-        std::cerr << "Before timestep." << std::endl;
+        std::cout << "Before timestep." << std::endl;
         instatsolver->DoStep( *v1, p1->Data);
-        std::cerr << "After timestep." << std::endl;
+        std::cout << "After timestep." << std::endl;
         NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
         ensight.Write( t+dt);
     }
@@ -412,7 +412,7 @@ int main (int argc, char** argv)
   {
     if (argc!=12)
     {
-        std::cerr << "Usage (insadrops):  <fp_tol> <fp_maxiter> "
+        std::cout << "Usage (insadrops):  <fp_tol> <fp_maxiter> "
                   << "<deco_red> <stokes_maxiter> <poi_tol> <poi_maxiter> "
                   << "<theta> <num_timestep> <shell_width> <c_level> <f_level>" << std::endl;
         return 1;
@@ -440,17 +440,17 @@ int main (int argc, char** argv)
     int c_level= std::atoi(argv[10]);
     int f_level= std::atoi(argv[11]);
 
-    std::cerr << "fp_tol: " << fp_tol<< ", ";
-    std::cerr << "fp_maxiter: " << fp_maxiter << ", ";
-    std::cerr << "deco_red: " << deco_red << ", ";
-    std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
-    std::cerr << "poi_tol: " << poi_tol << ", ";
-    std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
-    std::cerr << "theta: " << theta << ", ";
-    std::cerr << "num_timestep: " << num_timestep <<  ", ";
-    std::cerr << "shell_width: " << shell_width <<  ", ";
-    std::cerr << "c_level: " << c_level << ", ";
-    std::cerr << "f_level: " << f_level << std::endl;
+    std::cout << "fp_tol: " << fp_tol<< ", ";
+    std::cout << "fp_maxiter: " << fp_maxiter << ", ";
+    std::cout << "deco_red: " << deco_red << ", ";
+    std::cout << "stokes_maxiter: " << stokes_maxiter << ", ";
+    std::cout << "poi_tol: " << poi_tol << ", ";
+    std::cout << "poi_maxiter: " << poi_maxiter << ", ";
+    std::cout << "theta: " << theta << ", ";
+    std::cout << "num_timestep: " << num_timestep <<  ", ";
+    std::cout << "shell_width: " << shell_width <<  ", ";
+    std::cout << "c_level: " << c_level << ", ";
+    std::cout << "f_level: " << f_level << std::endl;
 
     typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL> NSOnBrickCL;
     typedef NSOnBrickCL MyNavierStokesCL;
@@ -461,8 +461,8 @@ int main (int argc, char** argv)
     Strategy(prob, fp_tol, fp_maxiter, deco_red, stokes_maxiter, poi_tol, poi_maxiter,
              theta, num_timestep, shell_width, c_level, f_level);
 
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("navstokespr.off");
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

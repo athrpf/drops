@@ -164,7 +164,7 @@ double TimeStoreCL::AddTime(size_t timeT, double time)
 */
 {
     if(timeT>=times_)
-        std::cerr << "---> Wrong access on TimeStoreCL!" << std::endl;
+        std::cout << "---> Wrong access on TimeStoreCL!" << std::endl;
     else
         durations_[timeT] += time;
     return time;
@@ -179,7 +179,7 @@ double TimeStoreCL::AddTime(const size_t timeT, TimerT timer)
 */
 {
     if(timeT>=times_){
-        std::cerr << "---> Wrong access on TimeStoreCL!" << std::endl;
+        std::cout << "---> Wrong access on TimeStoreCL!" << std::endl;
         return -1.;
     }
     timer.Stop();
@@ -195,7 +195,7 @@ double TimeStoreCL::GetTime(size_t timeT) const
 */
 {
     if(timeT>=times_)
-        std::cerr << "---> Wrong access on TimeStoreCL!" << std::endl;
+        std::cout << "---> Wrong access on TimeStoreCL!" << std::endl;
     else
         return durations_[timeT];
     return 1e300;

@@ -28,7 +28,7 @@ static void Regularize (MatrixCL& Bs, const IdxDescCL& rowidx, VectorCL ker0, co
 void ISBBTPreCL::Update() const
 {
     IF_MASTER
-      std::cerr << "ISBBTPreCL::Update: old version: " << Bversion_
+      std::cout << "ISBBTPreCL::Update: old version: " << Bversion_
                 << "\tnew version: " << B_->Version() << '\n';
     delete Bs_;
     Bs_= new MatrixCL( *B_);
@@ -61,7 +61,7 @@ void ISBBTPreCL::Update() const
 #ifndef _PAR
 void MinCommPreCL::Update() const
 {
-    std::cerr << "MinCommPreCL::Update: old/new versions: " << Aversion_  << '/' << A_->Version()
+    std::cout << "MinCommPreCL::Update: old/new versions: " << Aversion_  << '/' << A_->Version()
         << '\t' << Bversion_ << '/' << B_->Version() << '\t' << Mversion_ << '/' << M_->Version()
         << '\t' << Mvelversion_ << '/' << Mvel_->Version() << '\n';
     delete Bs_;

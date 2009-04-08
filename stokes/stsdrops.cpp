@@ -109,18 +109,18 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
     PCGSolverCL<PC2> pcgsolver( Spc, 100, 0.6);
     const double resid0= std::sqrt( norm_sq( ru) + norm_sq( g - B*xu));
     double resid= 0.0;
-    std::cerr << "residual (2-norm): " << resid0 << '\n';
+    std::cout << "residual (2-norm): " << resid0 << '\n';
 
     for (int k= 1; k<=max_iter; ++k) {
         w= 0.0;
         Apc.Apply( A, w, ru);
         w+= xu;
         z= 0.0;
-//        std::cerr << "B*w : " << norm( B*w) << "\tprojektion auf 1: "
+//        std::cout << "B*w : " << norm( B*w) << "\tprojektion auf 1: "
 //                  << (B*w)*VectorCL( 1.0/std::sqrt( (double)g.size()), g.size())
 //                  << "\n";
         pcgsolver.Solve( asc, z, VectorCL( B*w - g));
-        std::cerr << "pcgsolver: iterations: " << pcgsolver.GetIter()
+        std::cout << "pcgsolver: iterations: " << pcgsolver.GetIter()
                   << "\tresid: " << pcgsolver.GetResid() << '\n';
 
         b= transp_mul( B, z);
@@ -131,7 +131,7 @@ SchurAR(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec& g
         z_xpaypby2(ru, ru, -1.0, A*VectorCL(xuneu - xu), -1.0, transp_mul( B, z)); // ru-= A*(xuneu - xu) + transp_mul( B, z);
         xu= xuneu;
         resid= std::sqrt( norm_sq( f - A*xu - transp_mul( B, xp)) + norm_sq( g - B*xu));
-        std::cerr << "relative residual (2-norm): " << resid/resid0
+        std::cout << "relative residual (2-norm): " << resid/resid0
                   << "\tv: " << norm( f - A*xu - transp_mul( B, xp))
                   << "\tp: " << norm( g - B*xu)
                   << '\n';
@@ -244,13 +244,13 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+            std::cout << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
                       << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         poissonSolver2_.Apply( A, v_corr, res1);
 //        poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
 //        poissonSolver2_.Solve( A, v_corr, res1);
-//        std::cerr << "velocity: iterations: " << poissonSolver2_.GetIter()
+//        std::cout << "velocity: iterations: " << poissonSolver2_.GetIter()
 //                  << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
         v-= v_corr;
     }
@@ -276,7 +276,7 @@ ZeroMean(DROPS::P1EvalCL< double,
         vol+= sit->GetVolume();
     }
     const double c= MV/vol;
-    std::cerr << "\nconstant pressure offset: " << c << ", volume of domain: " << vol
+    std::cout << "\nconstant pressure offset: " << c << ", volume of domain: " << vol
               << std::endl;
     for (DROPS::MultiGridCL::TriangVertexIteratorCL sit= mg.GetTriangVertexBegin( lvl),
          send= mg.GetTriangVertexEnd( lvl); sit != send; ++sit) {
@@ -391,7 +391,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatrixCL& A_pr, DROPS::IdxD
                 A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
     }
     A.Build();
-    std::cerr << A_pr.num_nonzeros() << " nonzeros in A_pr.\n";
+    std::cout << A_pr.num_nonzeros() << " nonzeros in A_pr.\n";
 }
 
 // We know, there are only natural boundary conditions.
@@ -407,9 +407,9 @@ SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MLMatDescCL& M
         SetupPoissonPressure( mg, *itA, *itRow, *itCol);
         ++itRow; ++itCol;
     }
-    std::cerr << "Check MG-Data..." << std::endl;
-    std::cerr << "                begin     " << MGData.RowIdx->GetCoarsest().NumUnknowns() << std::endl;
-    std::cerr << "                end       " << MGData.RowIdx->GetFinest().NumUnknowns() << std::endl;
+    std::cout << "Check MG-Data..." << std::endl;
+    std::cout << "                begin     " << MGData.RowIdx->GetCoarsest().NumUnknowns() << std::endl;
+    std::cout << "                end       " << MGData.RowIdx->GetFinest().NumUnknowns() << std::endl;
     //CheckMGData( MGData.begin(), MGData.end());
 }
 
@@ -637,7 +637,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     time.Reset(); time.Start();
     NS.SetupSystem( &NS.A, &NS.b, &NS.B, &NS.c);
     time.Stop();
-    std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
+    std::cout << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
     MG_pr.SetIdx( pidx1, pidx1);
@@ -657,10 +657,10 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
 //    const double rhoinv=  1.0 - EigenValueMaxMG( MG_vel, xx, 10);
 //    statsolver= new PMinresSP_FullMG_CL( MG_vel, MG_pr, MG_Mpr, a,
 //                     1, 1, 1, b, stokes_maxiter, stokes_tol);
-    std::cerr << "Before solve." << std::endl;
+    std::cout << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
-    std::cerr << "After solve." << std::endl;
-    std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+    std::cout << "After solve." << std::endl;
+    std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
     NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::DLsgVel, &MyPdeCL::LsgPr);
     delete statsolver; statsolver= 0;
     ResetSystem( NS);
@@ -710,7 +710,7 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
     time.Reset(); time.Start();
     NS.SetupSystem( &NS.A, &NS.b, &NS.B, &NS.c);
     time.Stop();
-    std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
+    std::cout << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     ML_pr.SetIdx( pidx1, pidx1);
 //    SetupLumpedPrMass( NS, ML_pr);
@@ -739,10 +739,10 @@ StrategyUzawaCGEff(DROPS::StokesP2P1CL<Coeff>& NS,
                         *velprep,
                         *ispcp,
                         stokes_maxiter, stokes_tol);
-    std::cerr << "Before solve." << std::endl;
+    std::cout << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
-    std::cerr << "After solve." << std::endl;
-    std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+    std::cout << "After solve." << std::endl;
+    std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
     DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
          DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
     ZeroMean( pr);
@@ -794,7 +794,7 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
     time.Reset(); time.Start();
     NS.SetupSystem( &NS.A, &NS.b, &NS.B, &NS.c);
     time.Stop();
-    std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
+    std::cout << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
     PVel.SetIdx( vidx1, vidx1);
@@ -819,10 +819,10 @@ StrategyUzawaCG(DROPS::StokesP2P1CL<Coeff>& NS,
                         *velprep,
                         *ispcp,
                         stokes_maxiter, stokes_tol);
-    std::cerr << "Before solve." << std::endl;
+    std::cout << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
-    std::cerr << "After solve." << std::endl;
-    std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+    std::cout << "After solve." << std::endl;
+    std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
     DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
          DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
     ZeroMean( pr);
@@ -882,7 +882,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     time.Reset(); time.Start();
     NS.SetupSystem( &NS.A, &NS.b, &NS.B, &NS.c);
     time.Stop();
-    std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
+    std::cout << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
     SetupP1ProlongationMatrix( mg, PPr);
@@ -917,10 +917,10 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
                         *ispcp,
                         MGPC,
                         M_pr.Data.GetFinest(), stokes_maxiter, stokes_tol, 1.0/kA);
-    std::cerr << "Before solve." << std::endl;
+    std::cout << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
-    std::cerr << "After solve." << std::endl;
-    std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+    std::cout << "After solve." << std::endl;
+    std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
     DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
          DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
     ZeroMean( pr);
@@ -971,7 +971,7 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     time.Reset(); time.Start();
     NS.SetupSystem( &NS.A, &NS.b, &NS.B, &NS.c);
     time.Stop();
-    std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
+    std::cout << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
     M_pr.SetIdx( pidx1, pidx1);
@@ -989,10 +989,10 @@ StrategyAR(DROPS::StokesP2P1CL<Coeff>& NS,
     SetupP1ProlongationMatrix( mg, PPr);
 
 //    statsolver= new PSchur_Diag_AR_CL( MG_vel, ispc, stokes_maxiter, stokes_tol);
-    std::cerr << "Before solve." << std::endl;
+    std::cout << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
-    std::cerr << "After solve." << std::endl;
-    std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+    std::cout << "After solve." << std::endl;
+    std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
     DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
          DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
     ZeroMean( pr);
@@ -1045,7 +1045,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     time.Reset(); time.Start();
     NS.SetupSystem( &NS.A, &NS.b, &NS.B, &NS.c);
     time.Stop();
-    std::cerr << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
+    std::cout << "SetupSystem: " << time.GetTime() << " seconds" << std::endl;
     time.Reset();
     PPr.SetIdx( pidx1, pidx1);
     M_pr.SetIdx( pidx1, pidx1);
@@ -1070,9 +1070,9 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     SetupP2ProlongationMatrix( mg, *(statsolver->GetPVel()), vidx1, vidx1);
     SetupP1ProlongationMatrix( mg, PPr);
 
-    std::cerr << "Before solve." << std::endl;
+    std::cout << "Before solve." << std::endl;
     statsolver->Solve( NS.A.Data, NS.B.Data, v1->Data, p1->Data, NS.b.Data, NS.c.Data);
-    std::cerr << "After solve." << std::endl;
+    std::cout << "After solve." << std::endl;
     DROPS::P1EvalCL<double, const DROPS::StokesBndDataCL::PrBndDataCL,
          DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
     ZeroMean( pr);
@@ -1091,7 +1091,7 @@ int main (int argc, char** argv)
     // No C-IO here
     std::ios::sync_with_stdio(false);
     if (argc!=10) {
-        std::cerr <<
+        std::cout <<
 "Usage (stsdrops): <stokes_maxiter> <stokes_tol> <poi_maxiter> <poi_tol>\n"
 "    <kA> <kM> <gamma> <level> <method>" << std::endl;
         return 1;
@@ -1105,15 +1105,15 @@ int main (int argc, char** argv)
     double gamma= std::atof( argv[7]);
     int level= std::atoi( argv[8]);
     int method= std::atoi( argv[9]);
-    std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
-    std::cerr << "stokes_tol: " << stokes_tol << ", ";
-    std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
-    std::cerr << "poi_tol: " << poi_tol << ", ";
-    std::cerr << "kA: " << kA << ", ";
-    std::cerr << "kM: " << kM << ", ";
-    std::cerr << "gamma: " << gamma << ", ";
-    std::cerr << "level: " << level << ", ";
-    std::cerr << "method: " << method << std::endl;
+    std::cout << "stokes_maxiter: " << stokes_maxiter << ", ";
+    std::cout << "stokes_tol: " << stokes_tol << ", ";
+    std::cout << "poi_maxiter: " << poi_maxiter << ", ";
+    std::cout << "poi_tol: " << poi_tol << ", ";
+    std::cout << "kA: " << kA << ", ";
+    std::cout << "kM: " << kM << ", ";
+    std::cout << "gamma: " << gamma << ", ";
+    std::cout << "level: " << level << ", ";
+    std::cout << "method: " << method << std::endl;
 
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
@@ -1161,11 +1161,11 @@ int main (int argc, char** argv)
                     kA, kM);
         break;
       default:
-        std::cerr << "Unknown method.\n";
+        std::cout << "Unknown method.\n";
         break;
     }
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

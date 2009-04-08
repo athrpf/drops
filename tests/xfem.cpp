@@ -156,7 +156,7 @@ int main (int argc, char** argv)
         xfemstab=atof(argv[2]);
     }
 
-    std::cerr << "numref: " << numref << "\txfemstab: " << xfemstab <<'\n';
+    std::cout << "numref: " << numref << "\txfemstab: " << xfemstab <<'\n';
 
     DROPS::BrickBuilderCL brick( Point3DCL( -1.0),
                                   2.0*std_basis<3>(1),
@@ -178,7 +178,7 @@ int main (int argc, char** argv)
     IdxDescCL idx( P1X_FE, BndCondCL(0), 0, /*omit_bound=*/ xfemstab);
     idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
     ExtIdxDescCL& extidx= idx.GetXidx();
-    std::cerr << "P1-Unbekannte: " << extidx.GetNumUnknownsStdFE()
+    std::cout << "P1-Unbekannte: " << extidx.GetNumUnknownsStdFE()
               << " P1X-Unbekannte: " << idx.NumUnknowns() << '\n';
 
     VecDescCL beta( &idx), b( &idx);
@@ -250,7 +250,7 @@ int main (int argc, char** argv)
     int max_iter= 200;
     double tol= 1e-16;
     PCG( M.Data, beta.Data, b.Data, JACPcCL( 1.0), max_iter, tol, /*measure_relative_tol*/ true);
-    std::cerr <<  "iter: " << max_iter << "\ttol: " << tol << '\n';
+    std::cout <<  "iter: " << max_iter << "\ttol: " << tol << '\n';
 
     //Ensight output
     NoBndDataCL<> ubnd;
@@ -284,12 +284,12 @@ int main (int argc, char** argv)
         }
     }
 
-    std::cerr << std::setprecision(20);
-    std::cerr << "||u_l||_0^2 = " << dot (M.Data*beta.Data, beta.Data) <<'\n';
-    std::cerr << "|| u ||_0^2 = " << intval << '\n';
+    std::cout << std::setprecision(20);
+    std::cout << "||u_l||_0^2 = " << dot (M.Data*beta.Data, beta.Data) <<'\n';
+    std::cout << "|| u ||_0^2 = " << intval << '\n';
     const double err = intval - dot (M.Data*beta.Data, beta.Data);
-    std::cerr << "|| u - u_l ||_0 = " << std::scientific << std::sqrt(std::abs(err)) << '\n';
-    if (err<0) std::cerr << "Fehler: Norm der Projektion > Norm der Funktion\n";
+    std::cout << "|| u - u_l ||_0 = " << std::scientific << std::sqrt(std::abs(err)) << '\n';
+    if (err<0) std::cout << "Fehler: Norm der Projektion > Norm der Funktion\n";
   } catch (DROPSErrCL d) {
         d.handle();
     }

@@ -13,7 +13,7 @@ void ComputeIntOnCuts( const TetraCL& t, const VecDescCL& ls, const LocalP2CL<>&
     for (int ch=0; ch<8; ch++)
     {
         cut.ComputeCutForChild(ch);
-        if (ch==0) cut.DebugInfo( std::cerr, true);
+        if (ch==0) cut.DebugInfo( std::cout, true);
         quadPos[ch]= cut.quad( f, absdet, true);  // integrate on positive part
         quadNeg[ch]= cut.quad( f, absdet, false); // integrate on negative part
     }
@@ -25,7 +25,7 @@ bool CheckSum( const VectorCL& v1, const VectorCL& v2, const VectorCL& v)
     const VectorCL diff(v1+v2-v);
     if (norm(diff)>1e-18)
     {
-        std::cerr << ">>> inconsistency!\nquadPos = \t" << v1 << "\nquadNeg = \t" << v2 << "\nsum = \t\t" << VectorCL(v1+v2)
+        std::cout << ">>> inconsistency!\nquadPos = \t" << v1 << "\nquadNeg = \t" << v2 << "\nsum = \t\t" << VectorCL(v1+v2)
                   << "should be\t" << v << "\ndiff = \t\t" << diff << std::endl;
         return false;
     }
@@ -53,18 +53,18 @@ int main ()
     for (int i=0; i<10; ++i)
     {
         LocalP2CL<> f;    f[i]= 1.;
-        std::cerr << "======== testing P2 basis function " << i << "===========\n";
+        std::cout << "======== testing P2 basis function " << i << "===========\n";
 
         ComputeIntOnCuts( t, ones, f, absdet, quadSum, quadNeg);
-        if (norm(quadNeg)>0) { std::cerr << ">>> quadNeg should be zero!\n"; return 1; }
+        if (norm(quadNeg)>0) { std::cout << ">>> quadNeg should be zero!\n"; return 1; }
 
         Quad2CL<> q( f);
         const double integral= q.quad(absdet),
             diff= std::abs(integral-quadSum.sum());
         if (diff>1e-17)
         {
-            std::cerr << ">>> sum of quadSum should be equal to integral over tetra!\n";
-            std::cerr << quadSum.sum() << " != " << integral << ",\tdiff = " << diff << std::endl;
+            std::cout << ">>> sum of quadSum should be equal to integral over tetra!\n";
+            std::cout << quadSum.sum() << " != " << integral << ",\tdiff = " << diff << std::endl;
             return 1;
         }
 
@@ -88,8 +88,8 @@ int main ()
         ComputeIntOnCuts( t, ls, f, absdet, quadPos, quadNeg);
         ok= ok && CheckSum( quadPos, quadNeg, quadSum);
     }
-    if (ok) std::cerr << "\n\nCONGRATULATIONS! All tests successfully!\n";
-    else    std::cerr << "\n\n>>> HELP! Some errors occured!\n";
+    if (ok) std::cout << "\n\nCONGRATULATIONS! All tests successfully!\n";
+    else    std::cout << "\n\n>>> HELP! Some errors occured!\n";
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

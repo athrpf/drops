@@ -177,13 +177,13 @@ void MyUzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+            std::cout << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
                       << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         poissonSolver2_.Apply( A, v_corr, res1);
 //        poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
 //        poissonSolver2_.Solve( A, v_corr, res1);
-//        std::cerr << "velocity: iterations: " << poissonSolver2_.GetIter()
+//        std::cout << "velocity: iterations: " << poissonSolver2_.GetIter()
 //                  << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
         v-= v_corr;
     }
@@ -209,7 +209,7 @@ ZeroMean(DROPS::P1EvalCL< double,
         vol+= sit->GetVolume();
     }
     const double c= MV/vol;
-    std::cerr << "\nconstant pressure offset: " << c << ", volume of domain: " << vol
+    std::cout << "\nconstant pressure offset: " << c << ", volume of domain: " << vol
               << std::endl;
     for (DROPS::MultiGridCL::TriangVertexIteratorCL sit= mg.GetTriangVertexBegin( lvl),
          send= mg.GetTriangVertexEnd( lvl); sit != send; ++sit) {
@@ -281,7 +281,7 @@ SetupPoissonPressure( DROPS::MultiGridCL& mg, DROPS::MatrixCL& A_pr, DROPS::IdxD
                 A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
     }
     A.Build();
-    std::cerr << A_pr.num_nonzeros() << " nonzeros in A_pr.\n";
+    std::cout << A_pr.num_nonzeros() << " nonzeros in A_pr.\n";
 }
 
 // We know, there are only natural boundary conditions.
@@ -297,9 +297,9 @@ SetupPoissonPressureMG(DROPS::StokesP2P1CL<Coeff>& stokes, DROPS::MLMatDescCL& M
         SetupPoissonPressure( mg, *itA, *itRow, *itCol);
         ++itRow; ++itCol;
     }
-    std::cerr << "Check MG-Data..." << std::endl;
-    std::cerr << "                begin     " << MGData.RowIdx->GetCoarsest().NumUnknowns() << std::endl;
-    std::cerr << "                end       " << MGData.RowIdx->GetFinest().NumUnknowns() << std::endl;
+    std::cout << "Check MG-Data..." << std::endl;
+    std::cout << "                begin     " << MGData.RowIdx->GetCoarsest().NumUnknowns() << std::endl;
+    std::cout << "                end       " << MGData.RowIdx->GetFinest().NumUnknowns() << std::endl;
     //CheckMGData( MGData.begin(), MGData.end());
 }
 
@@ -656,7 +656,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
     ensight.Write( 0.);
 
     for (; timestep<num_timestep; ++timestep, t+= dt) {
-        std::cerr << "----------------------------------------------------------------------------"
+        std::cout << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
 //        if (timestep%(num_timestep/10) == 0) { // modify the grid
         if (timestep == 0) { // modify the grid
@@ -674,7 +674,7 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
-            std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
+            std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
             M_pr.SetIdx( pidx1, pidx1);
             NS.SetupPrMass( &M_pr);
@@ -692,11 +692,11 @@ StrategyMRes(DROPS::StokesP2P1CL<Coeff>& NS,
         DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,
              DROPS::VecDescCL> pr( p1, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
-        std::cerr << "Before timestep." << std::endl;
+        std::cout << "Before timestep." << std::endl;
         instatsolver->DoStep( v1->Data, p1->Data);
 //        instatsolver->DoStep( v1->Data, p1->Data, timestep==0);
-        std::cerr << "After timestep." << std::endl;
-        std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+        std::cout << "After timestep." << std::endl;
+        std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
         NS.CheckSolution( v1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
         ensight.Write( t+dt);
     }
@@ -770,7 +770,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
     ensight.Write( 0.);
 
     for (; timestep<num_timestep; ++timestep, t+= dt) {
-        std::cerr << "----------------------------------------------------------------------------"
+        std::cout << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
 //        if (timestep%(num_timestep/10) == 0) { // modify the grid
         if (timestep == 0) { // modify the grid
@@ -791,7 +791,7 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
-            std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
+            std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
             M_pr.SetIdx( pidx1, pidx1);
             NS.SetupPrMass( &M_pr);
@@ -822,10 +822,10 @@ StrategyUzawa(DROPS::StokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
         instatsolver->SetTimeStep( dt);
-        std::cerr << "Before timestep." << std::endl;
+        std::cout << "Before timestep." << std::endl;
         instatsolver->DoStep( v1->Data, p1->Data);
-        std::cerr << "After timestep." << std::endl;
-        std::cerr << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
+        std::cout << "After timestep." << std::endl;
+        std::cout << "StatSolver: iterations: " << statsolver->GetIter() << '\n';
         DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
@@ -897,7 +897,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     ensight.Write( 0.);
 
     for (; timestep<num_timestep; ++timestep, t+= dt) {
-        std::cerr << "----------------------------------------------------------------------------"
+        std::cout << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
 //        if (timestep%(num_timestep/10) == 0) { // modify the grid
         if (timestep == 0) { // modify the grid
@@ -916,7 +916,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
             time.Reset(); time.Start();
             NS.SetupInstatSystem( &NS.A, &NS.B, &NS.M);
             time.Stop();
-            std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
+            std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
             time.Reset();
             M_pr.SetIdx( pidx1, pidx1);
             NS.SetupPrMass( &M_pr);
@@ -940,10 +940,10 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatsolverCL( NS, *statsolver, theta);
         }
         instatsolver->SetTimeStep( dt);
-        std::cerr << "Before timestep." << std::endl;
+        std::cout << "Before timestep." << std::endl;
         instatsolver->DoStep( v1->Data, p1->Data);
 //        instatsolver->DoStep( v1->Data, p1->Data, timestep==0);
-        std::cerr << "After timestep." << std::endl;
+        std::cout << "After timestep." << std::endl;
         DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,
              DROPS::VecDescCL> pr( &NS.p, &NS.GetBndData().Pr, &mg);
         ZeroMean( pr);
@@ -961,7 +961,7 @@ int main (int argc, char** argv)
   try
   {
     if (argc!=13) {
-        std::cerr <<
+        std::cout <<
 "Usage (isadrops): <stokes_maxiter> <stokes_tol> <poi_maxiter> <poi_tol>\n"
 "    <theta> <num_timestep> <kA> <kM> <shell_width> <c_level> <f_level>\n"
 "    <method>" << std::endl;
@@ -991,18 +991,18 @@ int main (int argc, char** argv)
     int c_level= std::atoi( argv[10]);
     int f_level= std::atoi( argv[11]);
     int method= std::atoi( argv[12]);
-    std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
-    std::cerr << "stokes_tol: " << stokes_tol << ", ";
-    std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
-    std::cerr << "poi_tol: " << poi_tol << ", ";
-    std::cerr << "theta: " << theta << ", ";
-    std::cerr << "num_timestep: " << num_timestep <<  ", ";
-    std::cerr << "kA: " << kA <<  ", ";
-    std::cerr << "kM: " << kM <<  ", ";
-    std::cerr << "shell_width: " << shell_width <<  ", ";
-    std::cerr << "c_level: " << c_level << ", ";
-    std::cerr << "f_level: " << f_level << ", ";
-    std::cerr << "method: " << method << std::endl;
+    std::cout << "stokes_maxiter: " << stokes_maxiter << ", ";
+    std::cout << "stokes_tol: " << stokes_tol << ", ";
+    std::cout << "poi_maxiter: " << poi_maxiter << ", ";
+    std::cout << "poi_tol: " << poi_tol << ", ";
+    std::cout << "theta: " << theta << ", ";
+    std::cout << "num_timestep: " << num_timestep <<  ", ";
+    std::cout << "kA: " << kA <<  ", ";
+    std::cout << "kM: " << kM <<  ", ";
+    std::cout << "shell_width: " << shell_width <<  ", ";
+    std::cout << "c_level: " << c_level << ", ";
+    std::cout << "f_level: " << f_level << ", ";
+    std::cout << "method: " << method << std::endl;
 
     typedef DROPS::StokesP2P1CL<MyPdeCL::StokesCoeffCL> NSOnBrickCL;
     typedef NSOnBrickCL MyStokesCL;
@@ -1024,11 +1024,11 @@ int main (int argc, char** argv)
                       theta, num_timestep, kA, kM, shell_width, c_level, f_level);
         break;
       default:
-        std::cerr << "Unknown method.\n";
+        std::cout << "Unknown method.\n";
         break;
     }
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

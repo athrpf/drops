@@ -844,10 +844,10 @@ void FastMarchCL::CreateGlobNumb()
 #if DROPSDebugC&DebugParallelNumC
     for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(), end=MG_.GetTriangVertexEnd(); it!=end; ++it)
         if (globNumb_[ it->Unknowns(idx) ]==NoIdx)
-            it->DebugInfo(std::cerr);
+            it->DebugInfo(std::cout);
     for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(), end=MG_.GetTriangEdgeEnd(); it!=end; ++it)
         if (globNumb_[ it->Unknowns(idx) ]==NoIdx)
-            it->DebugInfo(std::cerr);
+            it->DebugInfo(std::cout);
 
     for (IdxT i=0; i<numDoF; ++i)
         if (globNumb_[i]==NoIdx)
@@ -862,7 +862,7 @@ void FastMarchCL::CreateGlobNumb()
 
     IdxT maxEntry=*std::max_element(globNumb_.begin(), globNumb_.end());
     if (maxEntry>globsize_){
-        std::cerr << "["<<ProcCL::MyRank()<<"] max entry is "<<maxEntry<<" and globalsize_ is "<<globsize_<<std::endl;
+        std::cout << "["<<ProcCL::MyRank()<<"] max entry is "<<maxEntry<<" and globalsize_ is "<<globsize_<<std::endl;
         throw DROPSErrCL("FastMarchCL::CreateGlobNumb: max entry in globNumb is bigger than global size");
     }
 #endif

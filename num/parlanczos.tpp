@@ -111,7 +111,7 @@ bool ParLanczos3CL<Mat,Vec>::Step()
     if (delta_<=DoubleEpsC)
     {
         if (ProcCL::IamMaster())
-            std::cerr << "===> Breakdown of Lanczos!\n";
+            std::cout << "===> Breakdown of Lanczos!\n";
         breakdown_ = true;
         return false;
     }
@@ -175,9 +175,9 @@ void ParLanczos2CL<Mat,Vec,ExCL>::Init(const Mat& A, const Vec &v0, const Vec &w
     sigma_ = val_glob_[3];
 
     if (rho_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
     if (xi_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
 
     rho_ = std::sqrt(std::fabs(rho_)); xi_ = std::sqrt(std::fabs(xi_));
 
@@ -240,9 +240,9 @@ bool ParLanczos2CL<Mat,Vec,ExCL>::Step()
     sigma_ = val_glob_[3];
 
     if (rho_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
     if (xi_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
 
     rho_ = std::sqrt(std::fabs(rho_));
     xi_ = std::sqrt(std::fabs(xi_));
@@ -258,7 +258,7 @@ bool ParLanczos2CL<Mat,Vec,ExCL>::Step()
     if (breakdown_){
         luckybreakdown_ = check_rho || check_xi;
         if (ProcCL::IamMaster())
-            std::cerr << "===> "
+            std::cout << "===> "
                     << (luckybreakdown_? "lucky" : "serious")
                     << " Breakdown of coupled Lanczos, because "
                     << (check_rho ? "v is nearly zero" : "")
@@ -326,9 +326,9 @@ void ParPreLanczos2CL<Mat,Vec,PC,ExCL>::Init(const Mat& A, const Vec &v0, const 
     sigma_ = val_glob_[3];
 
     if (rho_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
     if (xi_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
 
     rho_ = std::sqrt(std::fabs(rho_)); xi_ = std::sqrt(std::fabs(xi_));
 
@@ -398,9 +398,9 @@ bool ParPreLanczos2CL<Mat,Vec,PC,ExCL>::Step()
     sigma_ = val_glob_[3];
 
     if (rho_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of v!" << std::endl;
     if (xi_<0)
-        std::cerr << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
+        std::cout << "ParLanczos2CL::Step(): negative norm of w!" << std::endl;
 
     rho_ = std::sqrt(std::fabs(rho_));
     xi_ = std::sqrt(std::fabs(xi_));
@@ -416,7 +416,7 @@ bool ParPreLanczos2CL<Mat,Vec,PC,ExCL>::Step()
     if (breakdown_){
         luckybreakdown_ = check_rho || check_xi;
         if (ProcCL::IamMaster())
-            std::cerr << "===> "
+            std::cout << "===> "
                     << (luckybreakdown_? "lucky" : "serious")
                     << " Breakdown of coupled Lanczos, because "
                     << (check_delta ? "(v,w) is nearly zero" : "")

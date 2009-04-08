@@ -56,16 +56,16 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
 //    err_idx->Set( 2, 0, 0, 0, 1);
     do
     {
-        std::cerr << DROPS::SanityMGOutCL(MG) << std::endl;
+        std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
         MG.Refine();
         Poisson.CreateNumbering( MG.GetLastLevel(), new_idx);    // erzeuge Nummerierung zu diesem Index
-        std::cerr << "altes und neues TriangLevel: " << old_idx->TriangLevel() << ", "
+        std::cout << "altes und neues TriangLevel: " << old_idx->TriangLevel() << ", "
                   << new_idx->TriangLevel() << std::endl;
         b->SetIdx( new_idx);                        // Erster Vektor aus new_idx
         new_x->SetIdx( new_idx);                    // Zweiter Vektor ebenfalls aus new_idx
-        std::cerr << "Anzahl der Unbekannten: " << old_x->Data.size() << ", "
+        std::cout << "Anzahl der Unbekannten: " << old_x->Data.size() << ", "
                   << new_x->Data.size() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         if (step==0)
         {
             Estimator.Init(typename MyPoissonCL::DiscSolCL(new_x, &BndData, &MG) );
@@ -89,8 +89,8 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
 //        CG(A->Data, new_x->Data, b->Data, max_iter, tol);
         A->Reset();
         b->Reset();
-        std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
-//        std::cerr << "Loesung: " << new_x->Data << std::endl;
+        std::cout << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
+//        std::cout << "Loesung: " << new_x->Data << std::endl;
         Poisson.CheckSolution(*new_x, &::Lsg);
 //        CreateNumbering(new_idx->TriangLevel, err_idx);
 //        err->SetIdx( err_idx);
@@ -100,7 +100,7 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega, double rel_red)
 //        DeleteNumbering(err_idx);
         std::swap(old_x, new_x);
         std::swap(old_idx, new_idx);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (new_marks && step++<6);
     // I want the solution to be in Poisson.x
@@ -156,7 +156,7 @@ int main (int argc, char** argv)
   {
     if (argc!=3)
     {
-        std::cerr << "You have to specify two parameters:\n\tdrops <omega> <err_red>" << std::endl;
+        std::cout << "You have to specify two parameters:\n\tdrops <omega> <err_red>" << std::endl;
         return 1;
     }
     double omega;
@@ -200,19 +200,19 @@ int main (int argc, char** argv)
         MarkDrop(mg, std::min(mg.GetLastLevel(),10u));
 //        MarkAll(mg);
 //        MarkSome(mg);
-        std::cerr << DROPS::SanityMGOutCL(mg);
-//        std::cerr << DROPS::DumpMGCL(mg);
-//        std::cerr << i << std::endl;
+        std::cout << DROPS::SanityMGOutCL(mg);
+//        std::cout << DROPS::DumpMGCL(mg);
+//        std::cout << i << std::endl;
         mg.Refine();
     }
 */
 //    MarkAll(mg);
     omega= std::atof(argv[1]);
     rel_red= std::atof(argv[2]);
-    std::cerr << "Omega: " << omega << " rel_red: " << rel_red << std::endl;
+    std::cout << "Omega: " << omega << " rel_red: " << rel_red << std::endl;
     DROPS::Strategy(prob, omega, rel_red);
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");
     fil << DROPS::GeomSolOutCL<MyPoissonCL::DiscSolCL>(mg, prob.GetSolution(), &colormap, -1, false, 0.0, prob.x.Data.min(), prob.x.Data.max()) << std::endl;
 //    std::cout.flags(std::ios::fixed|std::ios::showpoint);
@@ -220,8 +220,8 @@ int main (int argc, char** argv)
 //          theend=const_cast<const DROPS::MultiGridCL&>(mg).GetTriangVertexEnd(prob.GetSolution().GetTriangLevel()); tit!=theend; ++tit )
 //        std::cout << prob.GetSolution().val(*tit) << '\n';
 //    std::cout << DROPS::GeomSolOutCL<DROPS::PoissonLinearDirectCL::PoissonDiscSolCL>(mg, prob.GetSolution(), &colormap, -1, false, 0.0, 0.0, 1.1) << std::endl;
-//    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
-//    std::cerr << "Verts: "   << mg.GetVertices().size()
+//    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
+//    std::cout << "Verts: "   << mg.GetVertices().size()
 //              << " Edges: "  << mg.GetEdges().size()
 //              << " Tetras: " << mg.GetTetras().size()
 //              << std::endl;
@@ -231,8 +231,8 @@ int main (int argc, char** argv)
     for (DROPS::Uint i=0; i<6; ++i)
     {
         UnMarkDrop(mg, min(mg.GetLastLevel(),10u));
-//        std::cerr << DROPS::SanityMGOutCL(mg);
-//        std::cerr << i << std::endl;
+//        std::cout << DROPS::SanityMGOutCL(mg);
+//        std::cout << i << std::endl;
         mg.Refine();
     }
     UnMarkAll(mg);
@@ -244,9 +244,9 @@ int main (int argc, char** argv)
     UnMarkAll(mg);
     mg.Refine();
 */
-//    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+//    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
 /*
-    std::cerr << "Verts: "   << mg.GetVertices().size()
+    std::cout << "Verts: "   << mg.GetVertices().size()
          << " Edges: "  << mg.GetEdges().size()
          << " Tetras: " << mg.GetTetras().size()
          << std::endl;

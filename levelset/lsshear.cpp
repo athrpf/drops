@@ -124,14 +124,14 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
     lset.Phi.SetIdx( lidx);
     lset.Init( DistanceFct);
 
-    MG.SizeInfo( std::cerr);
+    MG.SizeInfo( std::cout);
     b->SetIdx( vidx);
     c->SetIdx( pidx);
     cpl_M.SetIdx( vidx);
     p->SetIdx( pidx);
     v->SetIdx( vidx);
-    std::cerr << "Anzahl der Druck-Unbekannten: " << p->Data.size() << std::endl;
-    std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v->Data.size() << std::endl;
+    std::cout << "Anzahl der Druck-Unbekannten: " << p->Data.size() << std::endl;
+    std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v->Data.size() << std::endl;
     A->Reset();
     B->Reset();
     M->Reset();
@@ -146,20 +146,20 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
     Stokes.SetupSystem2( B, c, lset, Stokes.t);
     Stokes.SetupPrMass( &prM, lset);
     time.Stop();
-    std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+    std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
 
     Stokes.InitVel( v, ZeroVel);
     lset.SetupSystem( Stokes.GetVelSolution() );
 
     Uint meth;
-    std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
+    std::cout << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
     time.Reset();
 
     double outer_tol;
-    std::cerr << "tol = "; std::cin >> outer_tol;
+    std::cout << "tol = "; std::cin >> outer_tol;
 
     {
-        std::cerr << "Computing initial velocity..." << std::endl;
+        std::cout << "Computing initial velocity..." << std::endl;
         PSchur_GSPCG_CL schurSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
         schurSolver.Solve( A->Data, B->Data, v->Data, p->Data, b->Data, c->Data);
     }
@@ -186,7 +186,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
 
         for (Uint step= 1; step<=num_steps; ++step)
         {
-            std::cerr << "======================================================== Schritt " << step << ":\n";
+            std::cout << "======================================================== Schritt " << step << ":\n";
             cpl.DoStep( FPsteps);
             ensight.Write( step*delta_t);
         }
@@ -196,7 +196,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         double tau;
         Uint inner_iter;
         tau=  0.5*delta_t;
-        std::cerr << "#PCG steps = "; std::cin >> inner_iter;
+        std::cout << "#PCG steps = "; std::cin >> inner_iter;
         typedef Uzawa_PCG_CL StokesSolverT;
         StokesSolverT uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
@@ -207,15 +207,15 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
 
         for (Uint step= 1; step<=num_steps; ++step)
         {
-            std::cerr << "============= Schritt " << step << ":\n";
+            std::cout << "============= Schritt " << step << ":\n";
             cpl.DoStep( FPsteps);
             ensight.Write( step*delta_t);
         }
-        std::cerr << "Iterationen: " << uzawaSolver.GetIter()
+        std::cout << "Iterationen: " << uzawaSolver.GetIter()
                   << "\tNorm des Res.: " << uzawaSolver.GetResid() << std::endl;
     }
 
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 } // end of namespace DROPS
@@ -227,16 +227,16 @@ int main (int argc, char** argv)
   {
     if (argc!=4)
     {
-        std::cerr << "You have to specify three parameters:\n\tlsshear <inner_iter_tol> <num_subdiv> <surf.tension>" << std::endl;
+        std::cout << "You have to specify three parameters:\n\tlsshear <inner_iter_tol> <num_subdiv> <surf.tension>" << std::endl;
         return 1;
     }
 
     double inner_iter_tol= std::atof(argv[1]);
     int sub_div= std::atoi(argv[2]);
     sigma= std::atof(argv[3]);
-    std::cerr << "inner iter tol:  " << inner_iter_tol << std::endl;
-    std::cerr << "sub divisions:   " << sub_div << std::endl;
-    std::cerr << "surface tension: " << sigma << std::endl;
+    std::cout << "inner iter tol:  " << inner_iter_tol << std::endl;
+    std::cout << "sub divisions:   " << sub_div << std::endl;
+    std::cout << "surface tension: " << sigma << std::endl;
     DROPS::Point3DCL null(0.0);
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
@@ -254,10 +254,10 @@ int main (int argc, char** argv)
     MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     Strategy(prob, inner_iter_tol);
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
-    std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+    std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
 
     return 0;
   }

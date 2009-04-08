@@ -69,7 +69,7 @@ void CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
     check.close();
     if( DROPS::ProcCL::Check(pmg_sane && mg_sane) ){
         IF_MASTER
-                std::cerr << " As far as I can tell, the multigrid is sane\n";
+                std::cout << " As far as I can tell, the multigrid is sane\n";
     }
     else
         throw DROPS::DROPSErrCL("Found error in multigrid!");
@@ -124,27 +124,27 @@ void DisplayUnks(const DROPS::MLIdxDescCL* vidx, const DROPS::MLIdxDescCL* pidx,
 
     // output on screen
     if (DROPS::ProcCL::IamMaster()){
-        std::cerr << "  + Number of DOF\n        "
+        std::cout << "  + Number of DOF\n        "
                   << std::setw(10)<<"global"<<std::setw(10)<<"accum"<<std::setw(10)
                   << "max"<<std::setw(10)<<"min"<<std::setw(10)<<"ratio"<<"  |  "
                   << std::setw(10)<<"max_acc" <<std::setw(10)<<"min_acc"<<std::setw(10)<<"ratio_acc"<<std::endl;
 
-        std::cerr << "    "<<"pr  "
+        std::cout << "    "<<"pr  "
                   << std::setw(10)<<GPsize<<std::setw(10)<<Psize_acc<<std::setw(10)<<P_max
                   << std::setw(10)<<P_min<< std::setw(10)<<P_ratio<<"  |  "
                   << std::setw(10)<<P_accmax<<std::setw(10)<<P_accmin<<std::setw(10)<<P_accratio<<std::endl;
 
-        std::cerr << "    "<<"vel "
+        std::cout << "    "<<"vel "
                   << std::setw(10)<<GVsize<<std::setw(10)<<Vsize_acc<<std::setw(10)<<V_max
                   << std::setw(10)<<V_min<< std::setw(10)<<V_ratio<<"  |  "
                   << std::setw(10)<<V_accmax<<std::setw(10)<<V_accmin<<std::setw(10)<<V_accratio<<std::endl;
 
-        std::cerr << "    "<<"scl "
+        std::cout << "    "<<"scl "
                   << std::setw(10)<<GLsize<<std::setw(10)<<Lsize_acc<<std::setw(10)<<L_max
                   << std::setw(10)<<L_min<< std::setw(10)<<L_ratio<<"  |  "
                   << std::setw(10)<<L_accmax<<std::setw(10)<<L_accmin<<std::setw(10)<<L_accratio<<std::endl;
 
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
 }
 
@@ -276,7 +276,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     // If wished print out the geometry on a quadrilateral grid
     if (C.quad){
         if (ProcCL::IamMaster())
-            std::cerr << "Write out geometry of the quadrilateral grid" << std::endl;
+            std::cout << "Write out geometry of the quadrilateral grid" << std::endl;
         brickout = new QuadOutCL( MG, lidx);
         brickout->Init( C.gridX, C.gridY, C.gridZ, C.stepsize, C.barycenter, C.rotation);
         brickout->putGeom(C.quadFileName + std::string(".geo"));
@@ -288,7 +288,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 //     ExchangeBlockCL& Ex = Stokes.GetEx();
     ExchangeCL& ExL = lset.idx.GetEx();
 
-    // Get information about problem size and out them onto std::cerr
+    // Get information about problem size and out them onto std::cout
     DisplayUnks(vidx, pidx, lidx, ExV, ExP, ExL, MG);
 
     // Init ensight-output class
@@ -348,7 +348,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         // Setup initial problem
         VelVecDescCL curv( vidx);
         if (ProcCL::IamMaster())
-            std::cerr << "=================================================================================== Init:\n"
+            std::cout << "=================================================================================== Init:\n"
                       << "==> Initialize Problem\n";
         time.Reset();
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
@@ -358,7 +358,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         lset.AccumulateBndIntegral( curv);
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
-            std::cerr << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
+            std::cout << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
 
         // Solve initial problem
         double theta= C.theta;
@@ -372,13 +372,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             statStokesSolver->Solve( Stokes.A.Data, Stokes.B.Data,
                                Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
             if (ProcCL::IamMaster())
-                std::cerr << "- Solving lin. Stokes ("<<step<<"): iter "<<statStokesSolver->GetIter()
+                std::cout << "- Solving lin. Stokes ("<<step<<"): iter "<<statStokesSolver->GetIter()
                           <<", resid "<<statStokesSolver->GetResid()<<std::endl;
             ++step; iters+= statStokesSolver->GetIter();
         } while (statStokesSolver->GetIter() > 0);
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
-            std::cerr << "- Solving Stokes for initialization took "<<duration<<" sec, "
+            std::cout << "- Solving Stokes for initialization took "<<duration<<" sec, "
                       << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<statStokesSolver->GetResid()<<'\n';
 
         if (C.IniCond==2) // stationary flow without drop
@@ -406,7 +406,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     const double Vol= 4./3.*M_PI*C.Radius[0]*C.Radius[1]*C.Radius[2];
     double relVol = lset.GetVolume()/Vol;
     if (ProcCL::IamMaster())
-        std::cerr << "- Relative Volume is " << relVol << std::endl;
+        std::cout << "- Relative Volume is " << relVol << std::endl;
 
     // Write solution out in ensight format
     ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
@@ -437,7 +437,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         time.Stop();
         duration=time.GetMaxTime();
         if (ProcCL::IamMaster())
-            std::cerr << "- Updating discretization took "<<duration<<" sec.\n";
+            std::cout << "- Updating discretization took "<<duration<<" sec.\n";
 
         // Set time step and create matrices
         cpl.SetTimeStep( C.dt);
@@ -447,25 +447,25 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             ParTimerCL step_time;
             step_time.Reset();
             if (ProcCL::IamMaster())
-                std::cerr << "=================================================================================== Schritt " << step << ":\n"
+                std::cout << "=================================================================================== Schritt " << step << ":\n"
                           << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
             time.Reset();
             cpl.DoStep( C.cpl_iter);
             time.Stop(); duration=time.GetMaxTime();
             if (ProcCL::IamMaster())
-                std::cerr << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
+                std::cout << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster())
-                std::cerr << "- rel. Volume: " << relVol << std::endl;
+                std::cout << "- rel. Volume: " << relVol << std::endl;
             if (C.VolCorr)
             {
                 if (ProcCL::IamMaster())
-                    std::cerr << "\n==> Adjust volume ...\n";
+                    std::cout << "\n==> Adjust volume ...\n";
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 lset.Phi.Data+= dphi;
                 relVol = lset.GetVolume()/Vol;
                 if (ProcCL::IamMaster())
-                    std::cerr << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
+                    std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
             }
             if ((C.ensight && step%C.ensight==0) || step==C.num_steps)
             {
@@ -481,26 +481,26 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             if (C.RepFreq && step%C.RepFreq==0)
             {
                 if (ProcCL::IamMaster())
-                    std::cerr << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
+                    std::cout << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
                 time.Reset();
                 lset.ReparamFastMarching( C.RepMethod, C.RepMethod==3);
                 time.Stop(); duration=time.GetMaxTime();
                 relVol = lset.GetVolume()/Vol;
                 if (ProcCL::IamMaster())
-                    std::cerr << "- FastMarching took "<<duration<<" sec."<<std::endl;
+                    std::cout << "- FastMarching took "<<duration<<" sec."<<std::endl;
 
                 if (ProcCL::IamMaster())
-                    std::cerr << "- rel. Volume: " << relVol << std::endl;
+                    std::cout << "- rel. Volume: " << relVol << std::endl;
                 if (C.VolCorr)
                 {
                     if (ProcCL::IamMaster())
-                        std::cerr << "\n==> Adjust volume ...\n";
+                        std::cout << "\n==> Adjust volume ...\n";
 
                     double dphi= lset.AdjustVolume( Vol, 1e-9);
                     lset.Phi.Data+= dphi;
                     relVol = lset.GetVolume()/Vol;
                     if (ProcCL::IamMaster())
-                        std::cerr << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
+                        std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
                 }
                 step_time.Stop();
                 // Write solution out after reparametrization
@@ -515,7 +515,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             }
             step_time.Stop(); duration=step_time.GetMaxTime();
             if (ProcCL::IamMaster()){
-                std::cerr <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
+                std::cout <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
             }
         }
         delete instatStokesSolver;
@@ -526,12 +526,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     double min= ProcCL::GlobalMin(Stokes.p.Data.min()),
            max= ProcCL::GlobalMax(Stokes.p.Data.max());
     if (ProcCL::IamMaster())
-        std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+        std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
 
     if (C.quad){
         LevelsetP2CL::const_DiscSolCL lset_sol=lset.GetSolution();
         if (ProcCL::IamMaster())
-            std::cerr << "Writing out velocity on quadrilateral grid"<<std::endl;
+            std::cout << "Writing out velocity on quadrilateral grid"<<std::endl;
         brickout->putVector(C.quadFileName + std::string(".vel_norm"),
                             C.quadFileName + std::string(".velY"),
                             C.quadFileName + std::string(".velZ"),
@@ -571,26 +571,26 @@ int main (int argc, char** argv)
     DROPS::ParTimerCL alltime, time;
     double duration;
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << "TestMzellePar: Running on "<<DROPS::ProcCL::Size()<<" processors!\n";
+        std::cout << "TestMzellePar: Running on "<<DROPS::ProcCL::Size()<<" processors!\n";
 
     // Read parameter
     if (argc!=2)
     {
-        std::cerr << "You have to specify one parameter:\n\t"
+        std::cout << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
     std::ifstream param( argv[1]);
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
 
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << C << std::endl;
+        std::cout << C << std::endl;
 
     // Typedefinition of the problem
     typedef ZeroFlowCL                                    CoeffT;
@@ -601,7 +601,7 @@ int main (int argc, char** argv)
     std::ifstream meshfile( C.meshfile.c_str());
     if (!meshfile)
     {
-        std::cerr << "error while opening mesh file " << C.meshfile << "\n";
+        std::cout << "error while opening mesh file " << C.meshfile << "\n";
         return 1;
     }
     DROPS::ReadMeshBuilderCL * mgb;
@@ -624,7 +624,7 @@ int main (int argc, char** argv)
     const DROPS::BoundaryCL& bnd= mg.GetBnd();
     const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
     if (num_bnd>10) {
-        std::cerr << "Increase size of BndSegs in main() for proper use!\n";
+        std::cout << "Increase size of BndSegs in main() for proper use!\n";
         return 1;
     }
     DROPS::BndCondT bc[10];
@@ -633,7 +633,7 @@ int main (int argc, char** argv)
     {
         bnd_fun[i]= (bc[i]= mgb->GetBC( i))==DROPS::DirBC ? &Inflow : &Null;
         if (DROPS::ProcCL::IamMaster())
-            std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
+            std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
     }
 
     // Setup problem
@@ -645,23 +645,23 @@ int main (int argc, char** argv)
     for (int i=0; i<C.ref_flevel; ++i)
     {
         if (DROPS::ProcCL::IamMaster())
-            std::cerr << "+ Refine drop "<<i<<std::endl;
+            std::cout << "+ Refine drop "<<i<<std::endl;
         MarkDrop( mg);
         mg.Refine();
     }
     lb.DoMigration();
     time.Stop(); duration=time.GetMaxTime();
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << " Creating and distributing of multigrid took "<<duration<<" sec."<<std::endl;
+        std::cout << " Creating and distributing of multigrid took "<<duration<<" sec."<<std::endl;
 
     // Check the parallel multigrid
     CheckParMultiGrid(pmg);
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << " Number of simplices over procs:\n";
-    mg.SizeInfo(std::cerr);
+        std::cout << " Number of simplices over procs:\n";
+    mg.SizeInfo(std::cout);
     double tetra_ratio=lb.GetTetraBalance();
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << " Maximal number of tetras over minimal number of tetras: "<<tetra_ratio<<std::endl;
+        std::cout << " Maximal number of tetras over minimal number of tetras: "<<tetra_ratio<<std::endl;
 
     DROPS::Uint *numTetrasAllProc=0;
     DROPS::Uint *numFacesAllProc=0;
@@ -685,12 +685,12 @@ int main (int argc, char** argv)
         for (int i=0; i<DROPS::ProcCL::Size(); ++i)
             ratioDistFace[i]= ((double)numDistFaceAllProc[i]/(double)numFacesAllProc[i]*100.);
         double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+DROPS::ProcCL::Size());
-        std::cerr << "#(master tetras in finest level): "<<allTetra<<", #(distributed Faces): "<<allDistFace<<", #(all Faces): "<<allFace<<"\n"
+        std::cout << "#(master tetras in finest level): "<<allTetra<<", #(distributed Faces): "<<allDistFace<<", #(all Faces): "<<allFace<<"\n"
                   << "Proc\tTetra\tFace\t(%Distributed Faces)\n";
         for (int i=0; i<DROPS::ProcCL::Size(); ++i)
-            std::cerr << i << '\t'<< numTetrasAllProc[i]<<'\t'<<numDistFaceAllProc[i]
+            std::cout << i << '\t'<< numTetrasAllProc[i]<<'\t'<<numDistFaceAllProc[i]
                       <<'\t'<<ratioDistFace[i]<<std::endl;
-        std::cerr << "Ratio between max/min Tetra: "<<ratioTetra<<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
+        std::cout << "Ratio between max/min Tetra: "<<ratioTetra<<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
         delete[] numTetrasAllProc;
         delete[] numFacesAllProc;
         delete[] numDistFaceAllProc;
@@ -700,7 +700,7 @@ int main (int argc, char** argv)
     Strategy( prob);
     alltime.Stop(); duration=alltime.GetMaxTime();
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << " The whole programm took "<<duration<<" sec."<<std::endl;
+        std::cout << " The whole programm took "<<duration<<" sec."<<std::endl;
 
     return 0;
   }

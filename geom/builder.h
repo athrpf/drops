@@ -223,7 +223,7 @@ struct MeshNodeCL
     Uint num_expected;
 
     void
-    Check( std::ostream* msg= &std::cerr);
+    Check( std::ostream* msg= &std::cout);
 };
 
 // Three node-ids, then id of right cell, then left cell. On boundaries, one of
@@ -245,7 +245,7 @@ struct MeshFaceCL
     Uint num_expected;
 
     void // Check sanity of data and reoder sections.
-    Check( std::ostream* msg= &std::cerr);
+    Check( std::ostream* msg= &std::cout);
     MFaceCL // 1-based index-access to mfaces
     operator[](Uint) const; // This could probably be sped up a lot if it should ever
                             // be neccessary. Call Check(), before you use this!!!
@@ -280,7 +280,7 @@ struct MeshCellCL
     Uint num_expected;
 
     void
-    Check( std::ostream* msg= &std::cerr);
+    Check( std::ostream* msg= &std::cout);
 };
 
 // Used to accumulate the faces and vertices of the cells, as this information
@@ -376,7 +376,7 @@ class ReadMeshBuilderCL : public MGBuilderCL
 
   public:
     // Input stream, from which the mesh is read. Pass a pointer to an output stream,
-    // e. g. msg= &std::cerr, if you want to know, what happens during multigrid-construction.
+    // e. g. msg= &std::cout, if you want to know, what happens during multigrid-construction.
     ReadMeshBuilderCL(std::istream& f, std::ostream* msg= 0);
 
     virtual void

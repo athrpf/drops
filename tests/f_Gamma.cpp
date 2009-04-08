@@ -86,7 +86,7 @@ void WriteFct( std::ostream& os)
         case 0: // 1
             term= "1"; break;
         default:
-            std::cerr << "Fehler in WriteFct, fct = " << fct << std::endl;
+            std::cout << "Fehler in WriteFct, fct = " << fct << std::endl;
     }
     if (fct>=9)
         switch (fct/10)
@@ -100,7 +100,7 @@ void WriteFct( std::ostream& os)
             case 0: // 1
                 term+= "1"; break;
             default:
-                std::cerr << "Fehler in WriteFct (quadratisch), fct = " << fct << std::endl;
+                std::cout << "Fehler in WriteFct (quadratisch), fct = " << fct << std::endl;
         }
     for (int i=0; i<3; ++i)
         os << ' ' << (i==idx-1 ? term : "0");
@@ -121,7 +121,7 @@ DROPS::Point3DCL TestFct( const DROPS::Point3DCL& p, double)
         case 0: // 1
             val= 1; break;
         default:
-            std::cerr << "Fehler in TestFct, fct = " << fct << std::endl;
+            std::cout << "Fehler in TestFct, fct = " << fct << std::endl;
     }
     if (fct>=9)
         switch (fct2)
@@ -131,11 +131,11 @@ DROPS::Point3DCL TestFct( const DROPS::Point3DCL& p, double)
             case 0: // 1
                 val*= 1; break;
             default:
-                std::cerr << "Fehler in TestFct (quadratisch), fct = " << fct << std::endl;
+                std::cout << "Fehler in TestFct (quadratisch), fct = " << fct << std::endl;
         }
 
     DROPS::Point3DCL ret;
-    if (idx<1 || idx>3) std::cerr << "Fehler in TestFct, idx = " << idx << std::endl;
+    if (idx<1 || idx>3) std::cout << "Fehler in TestFct, idx = " << idx << std::endl;
     ret[idx-1]= val;
     return ret;
 }
@@ -170,18 +170,18 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, NULL, &lset);
 
     VecDescCL f_Gamma( vidx), v( vidx);
-    MG.SizeInfo( std::cerr);
+    MG.SizeInfo( std::cout);
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
     Stokes.v.SetIdx( vidx);
 
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
 
     const double Vol= 4./3*M_PI*std::pow( C.Radius[0], 3);
-    std::cerr << "Volumen = " << Vol << "\tKruemmung = " << curv << "\n\n";
+    std::cout << "Volumen = " << Vol << "\tKruemmung = " << curv << "\n\n";
     typedef std::map<int,double> LsgMapT;
     LsgMapT reflsg;
     reflsg[1]= 0;
@@ -214,24 +214,24 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
         Stokes.InitVel( &v, TestFct);
         const double fv= dot( f_Gamma.Data, v.Data);
         const double err= std::abs(fv - Lsg);
-        WriteFct( std::cerr);
-        std::cerr << "\nfct " << FctCode << ":\tval = " << fv << "\tref = " << Lsg << "\nerror = " << err << "\n\n";
+        WriteFct( std::cout);
+        std::cout << "\nfct " << FctCode << ":\tval = " << fv << "\tref = " << Lsg << "\nerror = " << err << "\n\n";
         errVec.push_back( err);
         refVec.push_back( Lsg);
     }
 
-    std::cerr << "\n\n\"f\",";
+    std::cout << "\n\n\"f\",";
     for (LsgMapT::iterator it= reflsg.begin(), end= reflsg.end(); it!=end; ++it)
-    { std::cerr << "\""; FctCode= it->first; WriteFct( std::cerr); std::cerr << "\","; }
+    { std::cout << "\""; FctCode= it->first; WriteFct( std::cout); std::cout << "\","; }
 
-    std::cerr << "\n\n\"Referenz\",";
+    std::cout << "\n\n\"Referenz\",";
     for (size_t i=0; i<refVec.size(); ++i)
-        std::cerr << refVec[i] << ",\t";
+        std::cout << refVec[i] << ",\t";
 
-    std::cerr << "\n\n" << C.ref_flevel << ",\t";
+    std::cout << "\n\n" << C.ref_flevel << ",\t";
     for (size_t i=0; i<errVec.size(); ++i)
-        std::cerr << errVec[i] << ",\t";
-    std::cerr << "\n\n";
+        std::cout << errVec[i] << ",\t";
+    std::cout << "\n\n";
 }
 
 template<class Coeff>
@@ -261,7 +261,7 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, NULL, &lset);
 
     VecDescCL f_Const( vidx), f_LaplBeltrami( vidx), v( vidx);
-    MG.SizeInfo( std::cerr);
+    MG.SizeInfo( std::cout);
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
@@ -269,12 +269,12 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.A.SetIdx( vidx, vidx);
     Stokes.M.SetIdx( vidx, vidx);
 
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
 
     const double Vol= 4./3*M_PI*std::pow( C.Radius[0], 3);
-    std::cerr << "Volumen = " << Vol << "\tKruemmung = " << curv << "\n\n";
+    std::cout << "Volumen = " << Vol << "\tKruemmung = " << curv << "\n\n";
 
     Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &Stokes.b, lset, 0.);
 
@@ -288,25 +288,25 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     lset.AccumulateBndIntegral( f_Const);
 
     VectorCL d( curv*f_Const.Data - f_LaplBeltrami.Data);
-    std::cerr << "|d| = \t\t" << norm(d) << std::endl;
+    std::cout << "|d| = \t\t" << norm(d) << std::endl;
     VectorCL A_inv_d( d.size());
     SSORPcCL pc;
     PCG_SsorCL cg( pc, 1000, 1e-18);
-    std::cerr << "Solving system with stiffness matrix:\t";
+    std::cout << "Solving system with stiffness matrix:\t";
     cg.Solve( Stokes.A.Data, A_inv_d, d);
-    std::cerr << cg.GetIter() << " iter,\tresid = " << cg.GetResid();
+    std::cout << cg.GetIter() << " iter,\tresid = " << cg.GetResid();
     const double sup= std::sqrt(dot( A_inv_d, d));
 
-    std::cerr << "\n\nsup |f1(v)-f2(v)|/|v|_1 = \t\t" << sup
+    std::cout << "\n\nsup |f1(v)-f2(v)|/|v|_1 = \t\t" << sup
               << "\n|A^-1 d| = \t\t" << norm( A_inv_d) << std::endl;
     MLMatrixCL MA;
     MA.LinComb( 1, Stokes.M.Data, 1, Stokes.A.Data);
     VectorCL MA_inv_d( A_inv_d);
-    std::cerr << "Solving system with MA matrix:\t";
+    std::cout << "Solving system with MA matrix:\t";
     cg.Solve( MA, MA_inv_d, d);
-    std::cerr << cg.GetIter() << " iter,\tresid = " << cg.GetResid();
+    std::cout << cg.GetIter() << " iter,\tresid = " << cg.GetResid();
     const double sup2= std::sqrt(dot( MA_inv_d, d));
-    std::cerr << "\n\nsup |f1(v)-f2(v)|/||v||_1 = \t\t" << sup2
+    std::cout << "\n\nsup |f1(v)-f2(v)|/||v||_1 = \t\t" << sup2
               << "\n|(MA)^-1 d| = " << norm( MA_inv_d) << std::endl;
 }
 
@@ -351,7 +351,7 @@ int main (int argc, char** argv)
   {
     if (argc>2)
     {
-        std::cerr << "You have to specify at most one parameter:\n\t"
+        std::cout << "You have to specify at most one parameter:\n\t"
                   << argv[0] << " [<param_file>]" << std::endl;
         return 1;
     }
@@ -362,12 +362,12 @@ int main (int argc, char** argv)
         param.open( "f_Gamma.param");
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
 
@@ -401,7 +401,7 @@ int main (int argc, char** argv)
         MarkDrop( mg);
         mg.Refine();
     }
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     DROPS::GeomMGOutCL out( mg, -1, false, 0);
     std::ofstream fil("cube.off");
     fil << out;

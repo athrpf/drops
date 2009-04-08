@@ -324,7 +324,7 @@ int TestInterpolateOld()
         if (diff!=0.) return 1;
     }
     std::cout << std::endl;
-    std::cerr << std::endl << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << std::endl << DROPS::SanityMGOutCL(mg) << std::endl;
     return 0;
 }
 

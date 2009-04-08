@@ -84,16 +84,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     lset.Phi.SetIdx( lidx);
     lset.Init( EllipsoidCL::DistanceFct);
     const double Vol= EllipsoidCL::GetVolume();
-    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    MG.SizeInfo( std::cerr);
+    MG.SizeInfo( std::cout);
     Stokes.b.SetIdx( vidx);
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
     Stokes.v.SetIdx( vidx);
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
@@ -118,13 +118,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();
-        std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         time.Reset();
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, VectorCL( Stokes.b.Data + curv.Data), Stokes.c.Data);
         time.Stop();
-        std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
     }
     curv.Clear();
     lset.AccumulateBndIntegral( curv);
@@ -153,19 +153,19 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     for (int step= 1; step<=C.num_steps; ++step)
     {
-        std::cerr << "======================================================== Schritt " << step << ":\n";
+        std::cout << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_iter);
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
 
         ensight.Write( step*C.dt);
-        std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+        std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr)
         {
             double dphi= lset.AdjustVolume( Vol, 1e-9);
-            std::cerr << "volume correction is " << dphi << std::endl;
+            std::cout << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
-            std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         }
 
         if (C.RepFreq && step%C.RepFreq==0)
@@ -175,17 +175,17 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             lset.AccumulateBndIntegral( curv);
 
             ensight.Write( (step+0.1)*C.dt);
-            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr)
             {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
-                std::cerr << "volume correction is " << dphi << std::endl;
+                std::cout << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
-                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 } // end of namespace DROPS
@@ -197,7 +197,7 @@ int main (int argc, char** argv)
   {
     if (argc>2)
     {
-        std::cerr << "You have to specify at most one parameter:\n\t"
+        std::cout << "You have to specify at most one parameter:\n\t"
                   << argv[0] << " [<param_file>]" << std::endl;
         return 1;
     }
@@ -208,12 +208,12 @@ int main (int argc, char** argv)
         param.open( "surfTens.param");
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<DROPS::ZeroFlowCL>    MyStokesCL;
 
@@ -239,13 +239,13 @@ int main (int argc, char** argv)
         DROPS::MarkInterface( DROPS::EllipsoidCL::DistanceFct, C.ref_width, mg);
         mg.Refine();
     }
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
 
     DROPS::Strategy( prob);  // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
-    std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+    std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
 
     return 0;
   }

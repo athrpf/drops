@@ -444,7 +444,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         if (it->IsExclusive(PrioHasUnk))                                                    // just collect information, if the vert is exclusive
         {
             if (pos_GID>=locNumUnknowns || pos_Coord>=3*locNumUnknowns)                     // error checking
-                std::cerr << "["<<ProcCL::MyRank()<<"] putGeom (Vertex): "
+                std::cout << "["<<ProcCL::MyRank()<<"] putGeom (Vertex): "
                         << "not enough memory allocated (pos_GID " <<pos_GID<<"/"
                         <<locNumUnknowns<< ")!" << std::endl;
 
@@ -462,7 +462,7 @@ void EnsightP2SolOutCL::putGeom( std::string fileName, double t)
         if (it->IsExclusive(PrioHasUnk))
         {
             if (pos_GID>locNumUnknowns || pos_Coord>3*locNumUnknowns)
-                std::cerr << "["<<ProcCL::MyRank()<<"] putGeom (Edge): "
+                std::cout << "["<<ProcCL::MyRank()<<"] putGeom (Edge): "
                         << "not enough memory allocated (pos_GID " <<pos_GID<<"/"
                         <<locNumUnknowns<< ")!" << std::endl;
 

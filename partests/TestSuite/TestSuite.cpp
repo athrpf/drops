@@ -172,12 +172,12 @@ using namespace std;
         this->lastReport->push_back(pCurrentProgReport);
                                                                                          
         if(pProgLabel == NULL ) {
-          cerr << " Missing 'label' in 'program'-tag " << endl ;
+          cout << " Missing 'label' in 'program'-tag " << endl ;
           return NULL;
         } // END IF
                                         
         if(pExecPath == NULL ) {
-          cerr << " Missing 'exec' in 'program'-tag " << endl;
+          cout << " Missing 'exec' in 'program'-tag " << endl;
           return NULL;
         }
                                                                                       
@@ -248,7 +248,7 @@ using namespace std;
             // Check if an mpi-runner is set.
             if(pProcStr!=NULL && pMpiRunner==NULL)
             {
-              cerr << "Performing tests with mpi on different processors requires the 'mprunner' attribute to be set. "<<endl;
+              cout << "Performing tests with mpi on different processors requires the 'mprunner' attribute to be set. "<<endl;
               return NULL;
             }            
             
@@ -643,9 +643,9 @@ using namespace std;
                                                                                         
       // Check for sub-expression
       if(compiledExp.re_nsub < 1 ) {
-        cerr << "getValueByRegex: " << endl;
-        cerr << "the regular expression has to contain at least one sub-expression: " << endl;
-        cerr << regExp << endl;
+        cout << "getValueByRegex: " << endl;
+        cout << "the regular expression has to contain at least one sub-expression: " << endl;
+        cout << regExp << endl;
         return false;
       } // END IF
                                                                                                                                                                 
@@ -658,10 +658,10 @@ using namespace std;
         return false;
       } else if(resCode != 0 ) {
         char buffer[1024];
-        cerr << "getValueByRegex: " << endl;
-        cerr << regExp << endl;
+        cout << "getValueByRegex: " << endl;
+        cout << regExp << endl;
         regerror (resCode, &compiledExp, &buffer[0], sizeof(buffer));
-        cerr << buffer << endl;
+        cout << buffer << endl;
         return false ;
       }
                                                                               
@@ -706,7 +706,7 @@ using namespace std;
       string pTplConfigStr("");
 
       if(!this->readFileToBuffer(pSourceFile,pTplConfigStr)) {
-        cerr << " Error reading configuration-template '"<<pSourceFile<<"' "<<endl;
+        cout << " Error reading configuration-template '"<<pSourceFile<<"' "<<endl;
         return ;
       } // END IF
             

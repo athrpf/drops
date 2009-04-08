@@ -160,7 +160,7 @@ class BBuilderCL : public MGBuilderCL
 class ReadMeshBuilderCL : public MGBuilderCL
 {
     // Input stream, from which the mesh is read. Pass a pointer to an output stream,
-    // e. g. msg= &std::cerr, if you want to know, what happens during multigrid-construction.
+    // e. g. msg= &std::cout, if you want to know, what happens during multigrid-construction.
     ReadMeshBuilderCL(std::istream& f, std::ostream* msg= 0);
 
     BndCondT GetBC( Uint i)                    const;

@@ -145,18 +145,18 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         MG.Refine();
         NS.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         NS.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << (refstep!=0 ?
+        std::cout << "altes und neues TriangLevel: " << (refstep!=0 ?
         int(vidx2->TriangLevel()) : -1) << ", " << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
         cplN->SetIdx(vidx1);
         cplM->SetIdx(vidx1);
-        std::cerr << "#Druck-Unbekannte: " << p2->Data.size() << ", "
+        std::cout << "#Druck-Unbekannte: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
-        std::cerr << "#Geschwindigkeitsunbekannte: " << v2->Data.size() << ", "
+        std::cout << "#Geschwindigkeitsunbekannte: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
         if (v2->RowIdx)
         {
@@ -175,12 +175,12 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         time.Start();
         NS.SetupInstatSystem(A, B, M);
         time.Stop();
-        std::cerr << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
+        std::cout << "SetupInstatSystem: " << time.GetTime() << " seconds" << std::endl;
         time.Reset();
         time.Start();
         A->Data * v1->Data;
         time.Stop();
-        std::cerr << " A*x: " << time.GetTime() << " seconds" << std::endl;
+        std::cout << " A*x: " << time.GetTime() << " seconds" << std::endl;
         time.Reset();
 
         MLMatDescCL M_pr;
@@ -206,27 +206,27 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         time.Start();
         NS.SetupNonlinear(N, v1, cplN, 0., 0.);
         time.Stop();
-        std::cerr << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
+        std::cout << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
         NS.SetupInstatRhs( b, c, cplM, 0., b, 0.);
 //        InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Schur_PCG_CL<NavStokesCL> >
 //          instatsolver(NS, statsolver, theta);
         InstatNavStokesThetaSchemeCL<NavStokesCL, FPDeCo_Uzawa_PCG_CL<NavStokesCL> >
             instatsolver(NS, statsolver, theta);
-        std::cerr << "After constructor." << std::endl;
+        std::cout << "After constructor." << std::endl;
         double t= 0.;
         NS.t= 0;
         for (int timestep=0; t<1.; ++timestep, t+= dt, NS.t+= dt)
         {
 //if (timestep==25) return;
-            std::cerr << "------------------------------------------------------------------"
+            std::cout << "------------------------------------------------------------------"
                       << std::endl << "t: " << t << std::endl;
             NS.SetTime(t+dt); // We have to set the new time!
             if (timestep==0) // Check the initial solution, at least velocities.
                 NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
             instatsolver.SetTimeStep(dt);
-            std::cerr << "Before timestep." << std::endl;
+            std::cout << "Before timestep." << std::endl;
             instatsolver.DoStep(*v1, p1->Data);
-            std::cerr << "After timestep." << std::endl;
+            std::cout << "After timestep." << std::endl;
             NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
         }
         MarkAll(MG);
@@ -244,7 +244,7 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (refstep++ < num_ref);
     // we want the solution to be in _v
@@ -269,7 +269,7 @@ int main (int argc, char** argv)
   {
     if (argc!=10)
     {
-        std::cerr << "Usage (insdrops): <num_refinement> <fp_tol> <fp_maxiter> "
+        std::cout << "Usage (insdrops): <num_refinement> <fp_tol> <fp_maxiter> "
                   << "<deco_red> <stokes_maxiter> <poi_tol> <poi_maxiter> "
                   << "<theta> <dt>" << std::endl;
         return 1;
@@ -294,15 +294,15 @@ int main (int argc, char** argv)
     int poi_maxiter= std::atoi(argv[7]);
     double theta= std::atof(argv[8]);
     double dt= std::atof(argv[9]);
-    std::cerr << "num_ref: " << num_ref << ", ";
-    std::cerr << "fp_tol: " << fp_tol<< ", ";
-    std::cerr << "fp_maxiter: " << fp_maxiter << ", ";
-    std::cerr << "deco_red: " << deco_red << ", ";
-    std::cerr << "stokes_maxiter: " << stokes_maxiter << ", ";
-    std::cerr << "poi_tol: " << poi_tol << ", ";
-    std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
-    std::cerr << "theta: " << theta << ", ";
-    std::cerr << "dt: " << dt << std::endl;
+    std::cout << "num_ref: " << num_ref << ", ";
+    std::cout << "fp_tol: " << fp_tol<< ", ";
+    std::cout << "fp_maxiter: " << fp_maxiter << ", ";
+    std::cout << "deco_red: " << deco_red << ", ";
+    std::cout << "stokes_maxiter: " << stokes_maxiter << ", ";
+    std::cout << "poi_tol: " << poi_tol << ", ";
+    std::cout << "poi_maxiter: " << poi_maxiter << ", ";
+    std::cout << "theta: " << theta << ", ";
+    std::cout << "dt: " << dt << std::endl;
 
     typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL>
             NSOnBrickCL;
@@ -314,8 +314,8 @@ int main (int argc, char** argv)
     Strategy(prob, num_ref, fp_tol, fp_maxiter, deco_red, stokes_maxiter, poi_tol, poi_maxiter,
              theta, dt);
 
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("navstokespr.off");
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

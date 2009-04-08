@@ -235,16 +235,16 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         MG.Refine();
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+        std::cout << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
                   << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
-        std::cerr << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
+        std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
-        std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
+        std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
         if (p2->RowIdx)
         {
@@ -265,17 +265,17 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         time.Start();
         Stokes.SetupSystem(A, b, B, c);
         time.Stop();
-        std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+        std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
         time.Start();
         A->Data * v1->Data;
         time.Stop();
-        std::cerr << " A*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << " A*x took " << time.GetTime() << " seconds!" << std::endl;
         time.Reset();
         time.Start();
         transp_mul( A->Data, v1->Data);
         time.Stop();
-        std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
 /*
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
@@ -306,10 +306,10 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
             time.Start();
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
             time.Stop();
-            std::cerr << "Iterationen: " << uzawaSolver.GetIter()
+            std::cout << "Iterationen: " << uzawaSolver.GetIter()
                       << "\tNorm des Res.: " << uzawaSolver.GetResid() << std::endl;
         }
-        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
+        std::cout << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         if (step==0)
         {
             Estimator.Init(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG));
@@ -319,7 +319,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         if (step+1 == maxStep) Estimator.SwitchMark();
         new_marks= Estimator.Estimate(typename MyStokesCL::const_DiscPrSolCL(p1, &PrBndData, &MG), typename MyStokesCL::const_DiscVelSolCL(v1, &VelBndData, &MG) );
         time.Stop();
-        std::cerr << "Estimation took " << time.GetTime() << " seconds\n";
+        std::cout << "Estimation took " << time.GetTime() << " seconds\n";
         A->Reset();
         B->Reset();
         b->Reset();
@@ -328,7 +328,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, double inner_iter_tol, double tol,
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (new_marks && ++step<maxStep);
     // we want the solution to be in Stokes.v, Stokes.pr
@@ -383,16 +383,16 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         MG.Refine();
         NS.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         NS.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+        std::cout << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
                   << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
-        std::cerr << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
+        std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
-        std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
+        std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
         if (v2->RowIdx)
         {
@@ -410,17 +410,17 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         time.Start();
         NS.SetupSystem(A, b, B, c);
         time.Stop();
-        std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+        std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
         time.Start();
         A->Data * v1->Data;
         time.Stop();
-        std::cerr << " A*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << " A*x took " << time.GetTime() << " seconds!" << std::endl;
         time.Reset();
         time.Start();
         transp_mul( A->Data, v1->Data);
         time.Stop();
-        std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
 
 //        { // write system in files for MatLab
 //            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), Ndat("Nmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
@@ -449,7 +449,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 //            e= B->Data*v1->Data                             - c->Data;
             z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
 
-            std::cerr << "fp_step: " << fp_step << ", res = " << (res= std::sqrt( norm_sq( d) + norm_sq( e))) << std::endl;
+            std::cout << "fp_step: " << fp_step << ", res = " << (res= std::sqrt( norm_sq( d) + norm_sq( e))) << std::endl;
             if (res < fp_tol )
                 break;
 
@@ -459,7 +459,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             uzawaSolver.SetTol(uzawa_tol);
             uzawaSolver.Init_A_Pc(AN.GetFinest()); // only for Uzawa_IPCG_CL.
             uzawaSolver.Solve(AN, B->Data, w, q, d, e);
-            std::cerr << "iteration stopped after step " << uzawaSolver.GetIter()
+            std::cout << "iteration stopped after step " << uzawaSolver.GetIter()
                       << " with res = " << uzawaSolver.GetResid() << std::endl;
 
             // calculate adaption:
@@ -475,7 +475,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
                 + transp_mul( B->Data, p1->Data) - b->Data - rhsN.Data))
                 + dot( e, VectorCL( B->Data*v1->Data - c->Data));
             omega/= norm_sq( d) + norm_sq( e);
-            std::cerr << "omega = " << omega << std::endl;
+            std::cout << "omega = " << omega << std::endl;
 
             // update solution:
 //            v1->Data-= omega*w;
@@ -484,7 +484,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             axpy(-omega, q, p1->Data);
         }
         time.Stop();
-        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
+        std::cout << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
 
         A->Reset();
         B->Reset();
@@ -494,7 +494,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (++step<maxStep);
     // we want the solution to be in NS.v, NS.pr
@@ -519,8 +519,8 @@ int main (int argc, char** argv)
   {
     if (argc!=9)
     {
-        std::cerr << "Usage (stokes): nsdrops <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>" << std::endl;
-        std::cerr << "Usage (navstokes): <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
+        std::cout << "Usage (stokes): nsdrops <inner_iter_tol> <tol> <meth> <num_refinement> <rel_red> <markratio> <tau> <uz_inner_iter>" << std::endl;
+        std::cout << "Usage (navstokes): <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
         return 1;
     }
 
@@ -547,19 +547,19 @@ int main (int argc, char** argv)
         double markratio= std::atof(argv[6]);
         double tau= std::atof(argv[7]);
         unsigned int uz_inner_iter= std::atoi(argv[8]);
-        std::cerr << "inner iter tol: " << inner_iter_tol << ", ";
-        std::cerr << "tol: " << tol << ", ";
-        std::cerr << "meth: " << meth << ", ";
-        std::cerr << "refinements: " << num_ref << ", ";
-        std::cerr << "relative error reduction: " << rel_red << ", ";
-        std::cerr << "markratio: " << markratio << ", ";
-        std::cerr << "tau: " << tau << ", ";
-        std::cerr << "uzawa inner iter: " << uz_inner_iter << std::endl;
+        std::cout << "inner iter tol: " << inner_iter_tol << ", ";
+        std::cout << "tol: " << tol << ", ";
+        std::cout << "meth: " << meth << ", ";
+        std::cout << "refinements: " << num_ref << ", ";
+        std::cout << "relative error reduction: " << rel_red << ", ";
+        std::cout << "markratio: " << markratio << ", ";
+        std::cout << "tau: " << tau << ", ";
+        std::cout << "uzawa inner iter: " << uz_inner_iter << std::endl;
         Strategy(stokesprob, inner_iter_tol, tol, meth, num_ref, rel_red, markratio, tau, uz_inner_iter);
 
         double min= stokesprob.p.Data.min(),
                max= stokesprob.p.Data.max();
-        std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+        std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
         std::ofstream fil("stokespr.off");
         fil << DROPS::GeomSolOutCL<MyStokesCL::const_DiscPrSolCL>(mg, stokesprob.GetPrSolution(), &colormap, -1, false, 0.0, -10, 10) << std::endl;
         std::ofstream fil2("stokespr_cut.off");
@@ -591,19 +591,19 @@ int main (int argc, char** argv)
         v3d.close();
     }
 {
-        std::cerr << "Enter nsdrops parameters: <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
+        std::cout << "Enter nsdrops parameters: <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
         double fp_tol= 0.0; std::cin >> fp_tol;
         double poi_tol= 0.0; std::cin >> poi_tol;
         int fp_maxiter= 0; std::cin >> fp_maxiter;
         int poi_maxiter= 0; std::cin >> poi_maxiter;
         double uzawa_red= 0.0; std::cin >> uzawa_red;
         int num_ref= 0; std::cin >> num_ref;
-        std::cerr << "fp_tol: " << fp_tol<< ", ";
-        std::cerr << "poi_tol: " << poi_tol << ", ";
-        std::cerr << "fp_maxiter: " << fp_maxiter << ", ";
-        std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
-        std::cerr << "uzawa_red: " << uzawa_red << ", ";
-        std::cerr << "num_ref: " << num_ref << std::endl;
+        std::cout << "fp_tol: " << fp_tol<< ", ";
+        std::cout << "poi_tol: " << poi_tol << ", ";
+        std::cout << "fp_maxiter: " << fp_maxiter << ", ";
+        std::cout << "poi_maxiter: " << poi_maxiter << ", ";
+        std::cout << "uzawa_red: " << uzawa_red << ", ";
+        std::cout << "num_ref: " << num_ref << std::endl;
 
         typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL>
                 NSOnBrickCL;
@@ -614,8 +614,8 @@ int main (int argc, char** argv)
 
         StrategyNavSt(prob, num_ref, fp_tol, fp_maxiter, uzawa_red, poi_tol, poi_maxiter);
 
-        std::cerr << "hallo" << std::endl;
-        std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+        std::cout << "hallo" << std::endl;
+        std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
         std::ofstream fil("navstokespr.off");
         double min= prob.p.Data.min(),
                max= prob.p.Data.max();

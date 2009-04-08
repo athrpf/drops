@@ -116,16 +116,16 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         MG.Refine();
         Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         Stokes.CreateNumberingPr( MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+        std::cout << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
                   << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
-        std::cerr << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
+        std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
-        std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
+        std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
 
         if (p2->RowIdx)
@@ -147,17 +147,17 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         time.Start();
         Stokes.SetupSystem(A, b, B, c);
         time.Stop();
-        std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+        std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
         time.Start();
         A->Data * v1->Data;
         time.Stop();
-        std::cerr << " A*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << " A*x took " << time.GetTime() << " seconds!" << std::endl;
         time.Reset();
         time.Start();
         transp_mul( A->Data, v1->Data);
         time.Stop();
-        std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
 /*
         { // write system in files for MatLab
             std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
@@ -170,13 +170,13 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         MultiGridCL::TriangVertexIteratorCL vert= MG.GetTriangVertexBegin(A->GetRowLevel());
         while (vert->GetCoord()[0]!=half || vert->GetCoord()[1]!=half || vert->GetCoord()[2]!=half) ++vert;
         IdxT unk= vert->Unknowns(A->RowIdx->Idx);
-        std::cerr << vert->GetCoord() << " has index " << unk << std::endl;
-        std::cerr << "A(i,i) = " << A->Data(unk,unk) <<std::endl;
-        std::cerr << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
+        std::cout << vert->GetCoord() << " has index " << unk << std::endl;
+        std::cout << "A(i,i) = " << A->Data(unk,unk) <<std::endl;
+        std::cout << "B(i,j) = " << B->Data(vert->Unknowns(B->RowIdx->Idx),unk) << std::endl;
 */        Uint meth;
         int max_iter;
         double tol;
-        std::cerr << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
+        std::cout << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;
         time.Reset();
         if (meth)
         {
@@ -189,7 +189,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             PCG_SsorCL poissonsolver( poissonpc, 500, inner_iter_tol);
             SchurComplMatrixCL<PCG_SsorCL, MLMatrixCL> BABT( poissonsolver, A->Data, B->Data);
             double outer_tol;
-            std::cerr << "tol = "; std::cin >> outer_tol;
+            std::cout << "tol = "; std::cin >> outer_tol;
             time.Start();
             VectorCL rhs( -c->Data);
             {
@@ -197,16 +197,16 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
                 int max_iter= 200;
                 VectorCL tmp(vidx1->NumUnknowns());
                 PCG(A->Data, tmp, b->Data, pc, max_iter, tol);
-                std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
+                std::cout << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
                 rhs+= B->Data*tmp;
             }
-            std::cerr << "rhs has been set!" << std::endl;
+            std::cout << "rhs has been set!" << std::endl;
 //            tol= 1.0e-14;
             max_iter= 200;
             tol= outer_tol;
     //        PCG(A->Data, new_x->Data, b->Data, pc, max_iter, tol);
             PCG(BABT, p1->Data, rhs, schur_pc, max_iter, tol);
-            std::cerr << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
+            std::cout << "Iterationen: " << max_iter << "    Norm des Residuums: " << tol << std::endl;
 
             tol= outer_tol;
             max_iter= 200;
@@ -218,9 +218,9 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             max_iter= 5000;
             double tau;
             Uint inner_iter;
-            std::cerr << "tol = "; std::cin >> tol;
-            std::cerr << "tau = "; std::cin >> tau;
-            std::cerr << "#PCG steps = "; std::cin >> inner_iter;
+            std::cout << "tol = "; std::cin >> tol;
+            std::cout << "tau = "; std::cin >> tau;
+            std::cout << "#PCG steps = "; std::cin >> inner_iter;
             MLMatDescCL prM;
             prM.SetIdx( pidx1, pidx1);
             Stokes.SetupPrMass( &prM);
@@ -229,10 +229,10 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
             uzawaSolver.Solve( A->Data, B->Data, v1->Data, p1->Data, b->Data, c->Data);
 //            Uzawa( A->Data, B->Data, M.Data, v1->Data, p1->Data, b->Data, c->Data, tau, max_iter, tol, inner_iter, inner_iter_tol);
             time.Stop();
-            std::cerr << "iterations: " << uzawaSolver.GetIter()
+            std::cout << "iterations: " << uzawaSolver.GetIter()
                       << "\tresidual: " << uzawaSolver.GetResid() << std::endl;
         }
-        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
+        std::cout << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         Stokes.CheckSolution(v1, p1, &LsgVel, &LsgPr);
         typename MyStokesCL::const_DiscPrSolCL  pr(p1, &PrBndData, &MG);
         typename MyStokesCL::const_DiscVelSolCL vel(v1, &VelBndData, &MG);
@@ -245,7 +245,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         B->Reset();
         b->Reset();
         c->Reset();
-//        std::cerr << "Loesung Druck: " << p1->Data << std::endl;
+//        std::cout << "Loesung Druck: " << p1->Data << std::endl;
 //        CreateNumbering(new_idx->TriangLevel, err_idx);
 //        err->SetIdx(err_idx);
 //        NumMarked= EstimateError(new_x, 0.2, &Estimator);
@@ -257,7 +257,7 @@ void Strategy(StokesP1BubbleP1CL<Coeff>& Stokes, double omega, double inner_iter
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (new_marks && ++step<maxStep);
     // we want the solution to be in Stokes.v, Stokes.pr
@@ -282,7 +282,7 @@ int main (int argc, char** argv)
   {
     if (argc!=4)
     {
-        std::cerr << "You have to specify three parameters:\n\tsdrops <omega> <inner_iter_tol> <relative error reduction>" << std::endl;
+        std::cout << "You have to specify three parameters:\n\tsdrops <omega> <inner_iter_tol> <relative error reduction>" << std::endl;
         return 1;
     }
 
@@ -305,10 +305,10 @@ int main (int argc, char** argv)
     double omega= std::atof(argv[1]);
     double inner_iter_tol= std::atof(argv[2]);
     double rel_red= std::atof(argv[3]);
-    std::cerr << "Omega: " << omega << " inner iter tol: " << inner_iter_tol << " rel. error reduction: " << rel_red << std::endl;
+    std::cout << "Omega: " << omega << " inner iter tol: " << inner_iter_tol << " rel. error reduction: " << rel_red << std::endl;
     Strategy(prob, omega, inner_iter_tol, 8, rel_red);
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

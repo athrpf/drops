@@ -99,7 +99,7 @@ TimeStoreCL::TimeStoreCL(size_t times) :
 void TimeStoreCL::SetDescriber(size_t timeT, string str)
 {
     if(timeT>=times_)
-        std::cerr << "---> Wrong access on TimeStoreCL!" << std::endl;
+        std::cout << "---> Wrong access on TimeStoreCL!" << std::endl;
     else
         describer_[timeT] = str;
 }

@@ -333,7 +333,7 @@ int main (int argc, char** argv)
 
         if (ProcCL::IamMaster()){
             DROPS::Point3DCL y; y[1]=(C.Dim[1])/2.;
-            std::cerr << "Maximale Geschwindigkeit: "<<(PoissonCoeffCL::Vel(y,0.))<<" eps="<<C.HeatConductivity<<std::endl;
+            std::cout << "Maximale Geschwindigkeit: "<<(PoissonCoeffCL::Vel(y,0.))<<" eps="<<C.HeatConductivity<<std::endl;
         }
 
         if (ProcCL::IamMaster()){

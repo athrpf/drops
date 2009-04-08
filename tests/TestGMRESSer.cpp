@@ -114,15 +114,15 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     //--------
     idx->Set(1,0,0,0); // 1 unknown on vertex
 
-    std::cerr << line << std::endl;
-    std::cerr << " Numbering unknowns ... " << std::endl;
+    std::cout << line << std::endl;
+    std::cout << " Numbering unknowns ... " << std::endl;
 
     // Create numbering of the unknowns according to the index.
     time.Reset();
     Poisson.CreateNumbering(MG.GetLastLevel(), idx);
     time.Stop();
-    std::cerr << " - Time for numbering unknowns "<<time.GetTime() << std::endl;
-    std::cerr << "   Number of unknwons: "<<idx->NumUnknowns << std::endl;
+    std::cout << " - Time for numbering unknowns "<<time.GetTime() << std::endl;
+    std::cout << "   Number of unknwons: "<<idx->NumUnknowns << std::endl;
 
     // tell vectors and matrices about the unknowns
     b->SetIdx( idx); x->SetIdx( idx); vU.SetIdx( idx);
@@ -131,8 +131,8 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
 
     // Point 2
     //--------
-    std::cerr << line << std::endl;
-    std::cerr << " Discretize ... " << std::endl;
+    std::cout << line << std::endl;
+    std::cout << " Discretize ... " << std::endl;
 
     time.Reset();
     Poisson.SetupInstatSystem(*A, *M,0.);
@@ -143,13 +143,13 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     b->Data = vf.Data + vU.Data + vA.Data  + vM.Data;
     time.Stop();
 
-    std::cerr << " - Time for setting up matrices and rhs "<<time.GetTime()
+    std::cout << " - Time for setting up matrices and rhs "<<time.GetTime()
               << " sec " << std::endl;
 
     // Point 3
     //--------
     // Solve
-    std::cerr << line << std::endl
+    std::cout << line << std::endl
               << " Solve the system ... " << std::endl;
 
     // typedefinition of the preconditioner
@@ -163,7 +163,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     time.Reset();
     gmres.Solve(AUM, x->Data, b->Data);
     time.Stop();
-    std::cerr << " - Time for solving the system with GMRES " << time.GetTime() << '\n'
+    std::cout << " - Time for solving the system with GMRES " << time.GetTime() << '\n'
               << "   iter:  " << gmres.GetIter() << '\n'
               << "   resid: " << gmres.GetResid() << std::endl;
 }
@@ -175,14 +175,14 @@ int main (int argc, char** argv)
     try
     {
         if (argc!=2){
-            std::cerr << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
+            std::cout << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
         }
         std::ifstream param( argv[1]);
         if (!param){
-            std::cerr << "error while opening parameter file\n"; return 1;
+            std::cout << "error while opening parameter file\n"; return 1;
         }
         param >> C; param.close();
-        std::cerr << C << std::endl;
+        std::cout << C << std::endl;
 
         DROPS::TimerCL time;
 
@@ -200,7 +200,7 @@ int main (int argc, char** argv)
             { &Null, &Null, &Null, &Null, &Null, &Null};
         DROPS::InstatPoissonBndDataCL bdata(6, IsNeumann, bnd_fun);
 
-        std::cerr << line << std::endl
+        std::cout << line << std::endl
                   << " Create initial grid and set up problem ... \n";
 
         time.Reset();
@@ -211,24 +211,24 @@ int main (int argc, char** argv)
         PoissonOnBCL prob(mgb, PoissonCoeffCL(), bdata);
         DROPS::MultiGridCL &mg = prob.GetMG();
         time.Stop();
-        std::cerr << " - Time for setting up problem "<<time.GetTime()<<" sec."<<std::endl;
+        std::cout << " - Time for setting up problem "<<time.GetTime()<<" sec."<<std::endl;
 
         // Refine grid regular
-        std::cerr << line << std::endl
+        std::cout << line << std::endl
                   << " Refining grid ... " << std::endl;
         time.Reset();
         for (int ref=0; ref<C.refall; ++ref)
         {
             // Markieren und verfeinern
-            std::cerr << " Refine (" << ref << ") regular ... \n";
+            std::cout << " Refine (" << ref << ") regular ... \n";
             DROPS::MarkAll(mg);
             mg.Refine();
         }
         time.Stop();
-        std::cerr << " - Time for refining grid took "<<time.GetTime()<<" sec."<<std::endl
+        std::cout << " - Time for refining grid took "<<time.GetTime()<<" sec."<<std::endl
                   << "  Number of geometry objects: ";
 
-        mg.SizeInfo(cerr);
+        mg.SizeInfo(cout);
 
         DROPS::Strategy(prob);
 

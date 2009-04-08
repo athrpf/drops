@@ -82,9 +82,9 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 /// The stream for dedug output.
 /// In parallel mode, the proc number is printed in front of the message
 #ifndef _PAR
-#  define cdebug std::cerr
+#  define cdebug std::cout
 #else
-#  define cdebug std::cerr << "["<<ProcCL::MyRank()<<"]: "
+#  define cdebug std::cout << "["<<ProcCL::MyRank()<<"]: "
 #endif
 
 /// \brief This macro controls, for which portions of the code debugging and
@@ -446,7 +446,7 @@ inline seq_out (Iterator begin, Iterator end, std::ostream& out)
 
 /// \brief Output obj via operator<<  to a file filename.
 ///
-/// The filename and an optional name are reported on std::cerr.
+/// The filename and an optional name are reported on std::cout.
 template <class StreamableT>
 void
 WriteToFile (const StreamableT& obj, std::string filename , std::string name= std::string())
@@ -454,10 +454,10 @@ WriteToFile (const StreamableT& obj, std::string filename , std::string name= st
     std::ofstream mystream( filename.c_str());
     mystream.precision( 18);
     if (!mystream) {
-        std::cerr << filename << std::endl;
+        std::cout << filename << std::endl;
         throw DROPSErrCL( "WriteToFile: error while opening file\n");
     }
-    std::cerr << "Writing to file \"" << filename << "\".    Description: " << name << '\n';
+    std::cout << "Writing to file \"" << filename << "\".    Description: " << name << '\n';
     mystream << obj << std::flush;
     if (!mystream)
         throw DROPSErrCL( "WriteToFile: write failed\n");
@@ -601,9 +601,9 @@ public:
     : bout_(std::cout.rdbuf()), berr_(std::cerr.rdbuf()), blog_(std::clog.rdbuf()) {}
     /// Mute given stream
     void Mute( std::ostream& os) { os.rdbuf( &devnull_); }
-    /// Mute std::cout, std::cerr, std::clog
-    void Mute() { Mute(std::cout); Mute(std::cerr); Mute(std::clog); }
-    /// Recover behavior of std::cout, std::cerr, std::clog prior construction of this object
+    /// Mute std::cout, std::cout, std::clog
+    void Mute() { Mute(std::cout); Mute(std::clog); }
+    /// Recover behavior of std::cout, std::cout, std::clog prior construction of this object
     void Recover() const { std::cout.rdbuf(bout_); std::cerr.rdbuf(berr_); std::clog.rdbuf(blog_); }
 };
 

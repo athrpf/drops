@@ -113,7 +113,7 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, doub
 
     IdxT num[4];
 
-    std::cerr << "entering SetupLBP1: " << num_unks << " dof.\n";
+    std::cout << "entering SetupLBP1: " << num_unks << " dof.\n";
 
     Point3DCL grad[4];
 
@@ -146,7 +146,7 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, doub
     }
     M.Build();
     mat->Data*= D; // diffusion coefficient
-    std::cerr << mat->Data.num_nonzeros() << " nonzeros in A_LB" << std::endl;
+    std::cout << mat->Data.num_nonzeros() << " nonzeros in A_LB" << std::endl;
 }
 
 void SetupConvectionP1OnTriangle ( const BaryCoordCL triangle[3], double det,
@@ -207,7 +207,7 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
 
     IdxT num[4];
 
-    std::cerr << "entering SetupInterfaceRhsP1: " << num_unks << " dof.\n";
+    std::cout << "entering SetupInterfaceRhsP1: " << num_unks << " dof.\n";
 
     LocalP1CL<> p1[4];
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
@@ -228,7 +228,7 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
             }
         }
     }
-    std::cerr << " Rhs set up." << std::endl;
+    std::cout << " Rhs set up." << std::endl;
 }
 
 

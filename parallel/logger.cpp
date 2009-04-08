@@ -52,7 +52,7 @@ void LoggerCL::writeOut(const std::string& fileName,bool printHeader)
 
     if(!outFile.is_open())
     {
-       std::cerr << " Error: Can not open file '"<<fileName<<"' for writting!"<<std::endl;
+       std::cout << " Error: Can not open file '"<<fileName<<"' for writting!"<<std::endl;
        return;
     }
 

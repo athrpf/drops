@@ -151,9 +151,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     Stokes.c.SetIdx( pidx);
     Stokes.p.SetIdx( pidx);
     Stokes.v.SetIdx( vidx);
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
     Stokes.A.SetIdx(vidx, vidx);
     Stokes.B.SetIdx(pidx, vidx);
     Stokes.M.SetIdx(vidx, vidx);
@@ -173,7 +173,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();
-        std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         time.Reset();
         SSORPcCL ssorpc;
@@ -183,7 +183,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
         time.Stop();
-        std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
       } break;
 
       case 2: // Nusselt solution
@@ -206,7 +206,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     }
 
     const double Vol= lset.GetVolume(); // approx. C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
-    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     // Initialize Ensight6 output
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
@@ -261,9 +261,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     bool secondSerial= false;
     for (int step= 1; step<=C.num_steps; ++step)
     {
-        std::cerr << "======================================================== Schritt " << step << ":\n";
+        std::cout << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_iter);
-        std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+        std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
         bool forceVolCorr= false, forceUpdate= false,
              doReparam= C.RepFreq && step%C.RepFreq == 0,
@@ -272,9 +272,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         // volume correction before reparam/grid modification
         if (C.VolCorr && (doReparam || doGridMod)) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
-                std::cerr << "volume correction is " << dphi << std::endl;
+                std::cout << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
-                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
                 forceUpdate= true; // volume correction modifies the level set
         }
 
@@ -282,15 +282,15 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         if (doReparam) {
         	double lsetmaxGradPhi, lsetminGradPhi;
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-            std::cerr << "checking level set func: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+            std::cout << "checking level set func: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
             if (lsetmaxGradPhi > 10 || lsetminGradPhi < 0.1) {
                 lset.ReparamFastMarching( C.RepMethod, /*periodic*/ true);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-                std::cerr << "after reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+                std::cout << "after reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 forceVolCorr= forceUpdate= true; // volume correction and update after reparam
             }
             else
-            	std::cerr << "Gradient does not exceed bounds, reparametrization skipped.\n";
+            	std::cout << "Gradient does not exceed bounds, reparametrization skipped.\n";
         }
 
         // grid modification
@@ -315,9 +315,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         // volume correction
         if (C.VolCorr && (step%C.VolCorr==0 || forceVolCorr)) {
             double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
-            std::cerr << "volume correction is " << dphi << std::endl;
+            std::cout << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
-            std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             forceUpdate= true;
         }
 
@@ -329,7 +329,7 @@ if (step%10==0)
         ensight.Write( step*C.dt);
     }
 
-    std::cerr << std::endl;
+    std::cout << std::endl;
     delete stokessolver;
     delete navstokessolver;
 }
@@ -378,19 +378,19 @@ int main (int argc, char** argv)
   {
     if (argc!=2)
     {
-        std::cerr << "You have to specify one parameter:\n\t"
+        std::cout << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
     std::ifstream param( argv[1]);
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     typedef ZeroFlowCL                                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
@@ -411,7 +411,7 @@ int main (int argc, char** argv)
 
     if (C.BndCond.size()!=6)
     {
-        std::cerr << "too many/few bnd conditions!\n"; return 1;
+        std::cout << "too many/few bnd conditions!\n"; return 1;
     }
     DROPS::BndCondT bc[6], bc_ls[6];
     DROPS::BoundaryCL::BndTypeCont bndType;
@@ -433,7 +433,7 @@ int main (int argc, char** argv)
             case '2':
                 bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
-                std::cerr << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
+                std::cout << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
                 return 1;
         }
     }
@@ -449,7 +449,7 @@ int main (int argc, char** argv)
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
-        std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
+        std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
     }
 
     DROPS::AdapTriangCL adap( *mgp, C.ref_width, 0, C.ref_flevel);
@@ -458,17 +458,17 @@ int main (int argc, char** argv)
     if (C.deserialization_file == "none")
         adap.MakeInitialTriang( DistanceFct);
 
-    std::cerr << DROPS::SanityMGOutCL(*mgp) << std::endl;
-    mgp->SizeInfo( std::cerr);
-    std::cerr << "Film Reynolds number Re_f = "
+    std::cout << DROPS::SanityMGOutCL(*mgp) << std::endl;
+    mgp->SizeInfo( std::cout);
+    std::cout << "Film Reynolds number Re_f = "
               << C.rhoF*C.rhoF*C.g[0]*std::pow(C.Filmdicke,3)/C.muF/C.muF/3 << std::endl;
-    std::cerr << "max. inflow velocity at film surface = "
+    std::cout << "max. inflow velocity at film surface = "
               << C.rhoF*C.g[0]*C.Filmdicke*C.Filmdicke/C.muF/2 << std::endl;
     Strategy( prob, lset, adap);  // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
-    std::cerr << "pressure min/max: "<<min<<", "<<max<<std::endl;
+    std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
 
     return 0;
   }

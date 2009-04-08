@@ -136,7 +136,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
     const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
 
     IF_MASTER
-        std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+        std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -198,7 +198,7 @@ void PoissonP1CL<Coeff>::GetDiscError(const MLMatDescCL& A, instat_scalar_fun_pt
     }
 
     VectorCL res( A.Data*lsg-b.Data);
-    std::cerr <<"|| Ax - b || = "<< norm( res)<<", max "<< supnorm( res)
+    std::cout <<"|| Ax - b || = "<< norm( res)<<", max "<< supnorm( res)
               <<" (with x=continuous solution)"<<std::endl;
 }
 
@@ -237,7 +237,7 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
         }
     }
     globalerr= std::sqrt(globalerr);
-    std::cerr << "Estimated global W1_2-error: " << globalerr << ". Marked " << num_ref << ", unmarked " << num_un_ref
+    std::cout << "Estimated global W1_2-error: " << globalerr << ". Marked " << num_ref << ", unmarked " << num_un_ref
               << " out of " << num_tetra << " tetrahedrons." << std::endl;
     return num_ref || num_un_ref;
 }
@@ -579,7 +579,7 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
     IdxT Numb[10];
     bool IsOnDirBnd[10];
 
-    std::cerr << "entering SetupSystem: " << ColIdx.NumUnknowns()
+    std::cout << "entering SetupSystem: " << ColIdx.NumUnknowns()
               << " unknowns, " << std::endl;
 
 // fill value part of matrices
@@ -662,7 +662,7 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
                 }
             }
     }
-    std::cerr << "done: value part fill" << std::endl;
+    std::cout << "done: value part fill" << std::endl;
 
     A.Build();
 }
@@ -686,7 +686,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 
     const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
 
-    std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+    std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -718,7 +718,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
            }
         }
     }
-    std::cerr << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
+    std::cout << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
               << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
               << "max-Norm= " << maxdiff                          << std::endl
               << " L2-Norm= " << L2                               << std::endl;

@@ -73,25 +73,25 @@ void DisplayDetailedGeom(DROPS::MultiGridCL& mg)
         double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+DROPS::ProcCL::Size());
 
         // global information
-        std::cerr << "Detailed information about the parallel multigrid:\n"
+        std::cout << "Detailed information about the parallel multigrid:\n"
                   << "#(master tetras on finest level):    "<<allTetra<<'\n'
                   << "#(all Faces on finest level):        "<<allFace<<'\n'
                   << "#(distributed Faces on fines level): "<<allDistFace<<'\n';
-        std::cerr << "Ratio between max/min Tetra: "<<ratioTetra
+        std::cout << "Ratio between max/min Tetra: "<<ratioTetra
                   <<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
 
         // local information for all processors
         for (int i=0; i<DROPS::ProcCL::Size(); ++i)
             ratioDistFace[i]= ((double)numDistFaceAllProc[i]/(double)numFacesAllProc[i]*100.);
 
-        std::cerr << std::setw(6)  <<  "Proc"
+        std::cout << std::setw(6)  <<  "Proc"
                   << std::setw(8)  << "#Tetra"
                   << std::setw(8)  << "#Faces"
                   << std::setw(12) << "#DistFaces"
                   << std::setw(12) << "%DistFaces"
                   << '\n';
         for (int i=0; i<DROPS::ProcCL::Size(); ++i)
-            std::cerr << std::setw(6)  << i
+            std::cout << std::setw(6)  << i
                       << std::setw(8)  << numTetrasAllProc[i]
                       << std::setw(8)  << numFacesAllProc[i]
                       << std::setw(12) << numDistFaceAllProc[i]
@@ -162,9 +162,9 @@ void Strategy( ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
                         std::string(C.vtkDir + "/" + C.vtkName), false);
     for (int i=1; i<=C.num_steps; ++i){
         if (ProcCL::IamMaster()){
-            std::cerr << line << " Step "<<i<<std::endl;
-            std::cerr << "Center of the droplet: "<<movingDroplet.GetCenter()<<std::endl;
-            std::cerr << "Sedimentation velocity: "<<movingDroplet.GetSedVel()<<"("<<C.Anstroem<<")"<<std::endl;
+            std::cout << line << " Step "<<i<<std::endl;
+            std::cout << "Center of the droplet: "<<movingDroplet.GetCenter()<<std::endl;
+            std::cout << "Sedimentation velocity: "<<movingDroplet.GetSedVel()<<"("<<C.Anstroem<<")"<<std::endl;
         }
         time.Reset();
         adapt.MakeInitialTriang(MovingDropletCL::DistFunction);
@@ -177,7 +177,7 @@ void Strategy( ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         }
         time.Stop(); durationWrite=time.GetTime();
         if (ProcCL::IamMaster()){
-            std::cerr << "Refinements for step "<<i<<" took: "<<durationRef<<" s.\n"
+            std::cout << "Refinements for step "<<i<<" took: "<<durationRef<<" s.\n"
                       << "Writing geometry for setp "<<i<<" took "<<durationWrite<<"s."<<std::endl;
         }
 
@@ -198,7 +198,7 @@ int main (int argc, char** argv)
     if (argc!=2)
     {
         IF_MASTER
-          std::cerr << "You have to specify one parameter:\n\t"
+          std::cout << "You have to specify one parameter:\n\t"
                     << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
@@ -206,13 +206,13 @@ int main (int argc, char** argv)
     if (!param)
     {
         IF_MASTER
-          std::cerr << "error while opening parameter file\n";
+          std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
     IF_MASTER
-      std::cerr << C << std::endl;
+      std::cout << C << std::endl;
 
     DROPS::ParMultiGridCL pmg(3);
 
@@ -226,7 +226,7 @@ int main (int argc, char** argv)
     brick_info >> dx >> dy >> dz >> nx >> ny >> nz;
     if (!brick_info || dx!=dz)
     {
-        std::cerr << "error while reading geometry information: " << mesh << "\n";
+        std::cout << "error while reading geometry information: " << mesh << "\n";
         return 1;
     }
 

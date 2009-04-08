@@ -374,7 +374,7 @@ int main (int argc, char** argv)
 
         if (argc!=2){
             if (ProcCL::IamMaster()){
-                std::cerr << "usage: "<<argv[0]<<" <num_ref>" << std::endl;
+                std::cout << "usage: "<<argv[0]<<" <num_ref>" << std::endl;
             }
             throw DROPS::DROPSErrCL("No enough parameters are given!");
         }

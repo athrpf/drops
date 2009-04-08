@@ -461,7 +461,7 @@ int main (int argc, char** argv)
     {
         if (argc<2){
             if (DROPS::ProcCL::IamMaster()){
-              std::cerr << "usage: "<<argv[0]<<" <param-file> ";
+              std::cout << "usage: "<<argv[0]<<" <param-file> ";
             }
             throw DROPS::DROPSErrCL("No enough parameters are given!");
         }
@@ -469,7 +469,7 @@ int main (int argc, char** argv)
         // Read configuration
         std::ifstream param( argv[1]);
         if (!param){
-          std::cerr << "error while opening parameter file\n"; return 1;
+          std::cout << "error while opening parameter file\n"; return 1;
         }
         param >> C;
 

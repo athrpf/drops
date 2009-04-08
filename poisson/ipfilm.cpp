@@ -85,7 +85,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
   M.SetIdx(&idx, &idx);
   U.SetIdx(&idx, &idx);
 
-  std::cerr << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
+  std::cout << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
     << std::endl;
   Poisson.SetupInstatSystem(A, M, 0);
 
@@ -107,14 +107,14 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, int time_steps,
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
-    std::cerr << "t= " << Poisson.t << std::endl;
-    std::cerr << "Iterationen: " << solver.GetIter()
+    std::cout << "t= " << Poisson.t << std::endl;
+    std::cout << "Iterationen: " << solver.GetIter()
       << "\tNorm des Residuums: " << solver.GetResid() << std::endl;
     average+= solver.GetIter();
     ens.Write( step*dt);
   }
   average/= time_steps;
-  std::cerr << "Anzahl der Iterationen im Durchschnitt: " << average
+  std::cout << "Anzahl der Iterationen im Durchschnitt: " << average
             << std::endl;
 }
 
@@ -141,9 +141,9 @@ int main()
     double dt= 0.0;
     int time_steps= 0, brick_ref= 0;
 
-    std::cerr << "\nDelta t = "; std::cin >> dt;
-    std::cerr << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
-    std::cerr << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_ref;
+    std::cout << "\nDelta t = "; std::cin >> dt;
+    std::cout << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
+    std::cout << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_ref;
 
     // bnd cond: x=0/dx, y=0/dy, z=0/dz
     const bool isneumann[6]=
@@ -160,7 +160,7 @@ int main()
       MarkAll(mg);
       mg.Refine();
     }
-    mg.SizeInfo(std::cerr);
+    mg.SizeInfo(std::cout);
 
     // Diffusionskoeffizient
     //double nu= 6.303096;

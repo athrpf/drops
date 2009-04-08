@@ -513,7 +513,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
     SparseMatBuilderCL<double> M(&M_, num_unks, num_unks);
     b.resize( 0);
     b.resize( num_unks);
-    std::cerr << "entering SetupReparamSystem: " << num_unks << " levelset unknowns. ";
+    std::cout << "entering SetupReparamSystem: " << num_unks << " levelset unknowns. ";
 
     Quad2CL<double>    Sign_Phi;
     Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
@@ -569,7 +569,7 @@ void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorC
     }
     M.Build();
     R.Build();
-    std::cerr << M_.num_nonzeros() << " nonzeros in M, "
+    std::cout << M_.num_nonzeros() << " nonzeros in M, "
               << R_.num_nonzeros() << " nonzeros in R!" << std::endl;
 }
 #endif
@@ -588,14 +588,14 @@ void LevelsetP2CL::SetTimeStep( double dt, double theta)
 void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
 {
     IF_MASTER
-      std::cerr << "ComputeRhs-dt_: " << dt_ << std::endl;
+      std::cout << "ComputeRhs-dt_: " << dt_ << std::endl;
     rhs= (1./dt_)*Phi.Data;
     if (theta_ != 1.) {
         VectorCL tmp( rhs.size());
         SolverT gm( gm_);
         gm.Solve( E, tmp, (const VectorCL)( H*Phi.Data));
         IF_MASTER
-          std::cerr << "ComputeRhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
+          std::cout << "ComputeRhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
         rhs-= (1. - theta_)*tmp;
     }
 }
@@ -604,14 +604,14 @@ void LevelsetP2CL::DoLinStep( const VectorCL& rhs)
 {
     gm_.Solve( L_, Phi.Data, rhs);
     IF_MASTER
-      std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
+      std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep( const VectorCL& rhs)
 {
     gm_.Solve( L_, Phi.Data, VectorCL( E*rhs));
     IF_MASTER
-      std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
+      std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
 }
 
 void LevelsetP2CL::DoStep()

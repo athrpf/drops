@@ -87,7 +87,7 @@ void InitPr( VecDescCL& p, double delta_p, const MultiGridCL& mg, const FiniteEl
         }
         break;
       default:
-        std::cerr << "InitPr not implemented yet for this FE type!\n";
+        std::cout << "InitPr not implemented yet for this FE type!\n";
     }
 }
 
@@ -96,29 +96,29 @@ double my_abs( double x) { return std::abs(x); }
 void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& prM, double delta_p, const MultiGridCL& mg, const FiniteElementT prFE, const ExtIdxDescCL& Xidx, double p_ex_avg)
 {
     const double min= p.Data.min(), max= p.Data.max();
-    std::cerr << "pressure min/max/diff:\t" << min << "\t" << max << "\t" << (max-min-delta_p) << "\n";
+    std::cout << "pressure min/max/diff:\t" << min << "\t" << max << "\t" << (max-min-delta_p) << "\n";
 
     VectorCL ones( 1.0, p.Data.size());
     if (prFE==P1X_FE)
         for (int i=Xidx.GetNumUnknownsStdFE(), n=ones.size(); i<n; ++i)
             ones[i]= 0;
     const double Vol= dot( prM*ones, ones)*C.muD; // note that prM is scaled by 1/mu !!
-// std::cerr << "Vol = " << Vol << '\n';
+// std::cout << "Vol = " << Vol << '\n';
     const double p_avg= dot( prM*p.Data, ones)*C.muD/Vol; // note that prM is scaled by 1/mu !!
     VectorCL diff( p.Data - p_avg*ones);
     const double p0_avg= dot( prM*diff, ones)*C.muD/Vol;
-    std::cerr << "average of pressure:\t" << p_avg << std::endl;
-    std::cerr << "avg. of scaled pr:\t" << p0_avg << std::endl;
+    std::cout << "average of pressure:\t" << p_avg << std::endl;
+    std::cout << "avg. of scaled pr:\t" << p0_avg << std::endl;
 
     if (prFE==P1X_FE)
     {
         VecDescCL p_exakt( p.RowIdx);
         InitPr( p_exakt, delta_p, mg, prFE, Xidx);
         const double p_ex_avg2= dot( prM*p_exakt.Data, ones)*C.muD/Vol;
-        std::cerr << "avg. of exact pr:\t" << p_ex_avg2 << std::endl;
+        std::cout << "avg. of exact pr:\t" << p_ex_avg2 << std::endl;
         diff-= VectorCL( p_exakt.Data - p_ex_avg*ones);
         const double L2= std::sqrt( C.muD*dot( prM*diff, diff));
-        std::cerr << "*************\n"
+        std::cout << "*************\n"
                   << "assuming avg(p*)==" << p_ex_avg
                   << "  ===>  \t||e_p||_L2 = " << L2 << std::endl
                   << "*************\n";
@@ -171,7 +171,7 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
         }
     }
     L2= std::sqrt(L2);
-    std::cerr << "*************\n"
+    std::cout << "*************\n"
               << "assuming avg(p*)==" << p_ex_avg
               << "  ===>  \t||e_p||_L2 = " << L2 << std::endl
               << "                           \t||e_p||_L1 = " << L1 << std::endl
@@ -215,7 +215,7 @@ void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
 
 void PrintNorm( string name, const VectorCL& v)
 {
-    std::cerr << name << ":\t2-norm: "
+    std::cout << name << ":\t2-norm: "
         << norm( v) << "\tmax: " << supnorm( v) << std::endl;
 }
 
@@ -254,13 +254,13 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     lset.Init( EllipsoidCL::DistanceFct);
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr ( MG.GetLastLevel(), pidx, NULL, &lset);
-    MG.SizeInfo( std::cerr);
+    MG.SizeInfo( std::cout);
     Stokes.SetIdx();
     Stokes.v.SetIdx(vidx);
     Stokes.p.SetIdx(pidx);
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
 
     new_pr.SetIdx( lidx);
     Stokes.InitVel( &Stokes.v, ZeroVel);
@@ -285,14 +285,14 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();
-        std::cerr << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx());
         VectorCL surf( Stokes.b.Data + curv.Data), BTp( transp_mul( Stokes.B.Data, Stokes.p.Data));
         PrintNorm( "surf. force", curv.Data);
         PrintNorm( "BT p", BTp);
         PrintNorm( "Diff.", VectorCL(curv.Data - BTp));
-        std::cerr << "Solving velocity for exact pressure given...\n";
+        std::cout << "Solving velocity for exact pressure given...\n";
         PCG.Solve( Stokes.A.Data, Stokes.v.Data, VectorCL( curv.Data - transp_mul( Stokes.B.Data, Stokes.p.Data)) );
       } break;
 
@@ -306,7 +306,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
         time.Stop();
-        std::cerr << "Discretizing Stokes/Surf.Force for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Discretizing Stokes/Surf.Force for initial velocities took "<<time.GetTime()<<" sec.\n";
 
         //InitPr( Stokes.p, prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx().GetFinest());
         time.Reset();
@@ -328,16 +328,16 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 
         solver->Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v.Data, Stokes.p.Data,
                        curv.Data, Stokes.c.Data);
-        std::cerr << "iter: " << solver->GetIter()
+        std::cout << "iter: " << solver->GetIter()
                   << "\tresid: " << solver->GetResid() << std::endl;
         time.Stop();
-        std::cerr << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
+        std::cout << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
         delete solver;
       }
     }
 
     const VectorCL& u= Stokes.v.Data;
-    std::cerr << "\n----------------\n || u ||_oo = " << supnorm(u)
+    std::cout << "\n----------------\n || u ||_oo = " << supnorm(u)
               << "\n || u ||_M  = " << std::sqrt( dot( Stokes.M.Data*u, u))
               << "\n || u ||_A  = " << std::sqrt( dot( Stokes.A.Data*u, u))
               << "\n----------------\n";
@@ -362,8 +362,8 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
             if (pr<lim_min) Stokes.p.Data[i]= lim_min;
             sum_lim+= Stokes.p.Data[i];
         }
-        std::cerr << "extended pr: min/max/avg = " << xmin << ", " << xmax << ", " << sum/num << std::endl;
-        std::cerr << "limited pr:  min/max/avg = " << lim_min << ", " << lim_max << ", " << sum_lim/num << std::endl;
+        std::cout << "extended pr: min/max/avg = " << xmin << ", " << xmax << ", " << sum/num << std::endl;
+        std::cout << "limited pr:  min/max/avg = " << lim_min << ", " << lim_max << ", " << sum_lim/num << std::endl;
     }
 
     L2ErrorPr( Stokes.p, lset, Stokes.prM.Data.GetFinest(), prJump, MG, Stokes.GetPrFE(), Stokes.GetXidx(), avg_ex);
@@ -384,7 +384,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 
     if (C.ensight) ensight.Write();
 
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 } // end of namespace DROPS
@@ -396,7 +396,7 @@ int main (int argc, char** argv)
   {
     if (argc>2)
     {
-        std::cerr << "You have to specify at most one parameter:\n\t"
+        std::cout << "You have to specify at most one parameter:\n\t"
                   << argv[0] << " [<param_file>]" << std::endl;
         return 1;
     }
@@ -407,12 +407,12 @@ int main (int argc, char** argv)
         param.open( "prJump.param");
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     typedef DROPS::InstatStokes2PhaseP2P1CL<DROPS::ZeroFlowCL>    MyStokesCL;
 
@@ -436,7 +436,7 @@ int main (int argc, char** argv)
     DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
     adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
 
     Strategy( prob, adap);  // do all the stuff
 

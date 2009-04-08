@@ -126,7 +126,7 @@ class MatConnect
           _weight[it*FacePtsYZ+                         +iy]*= 0.5;     // z=0
           _weight[it*FacePtsYZ+(_MeshRefZ)*(_MeshRefY+1)+iy]*= 0.5;     // z=zl
         }
-      std::cerr << "Quadrature weights initialized!\n";
+      std::cout << "Quadrature weights initialized!\n";
     }
 
     template<int num> static int getLexNum(const DROPS::Point3DCL& p)
@@ -504,6 +504,6 @@ int main()
 {
     DROPS::VectorCL q( C.q_h, (C.ny+1)*(C.nz+1)*(C.nt+1));
     const double J= Guetefunktional( q);
-    std::cerr << "J = " << J << std::endl;
+    std::cout << "J = " << J << std::endl;
     return 0;
 }

@@ -191,7 +191,7 @@ class FracStepScheme2PhaseCL : public ThetaScheme2PhaseCL<StokesT,SolverT>
     }
 
     void DoSubStep( int maxFPiter= -1) {
-        std::cerr << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << step_ << '\n';
+        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << step_ << '\n';
         base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
         base_::DoStep( maxFPiter);
         step_= (step_ + 1)%3;

@@ -189,7 +189,7 @@ void TestExactness()
     DROPS::TetraBuilderCL tet( 0);
     DROPS::MultiGridCL mg( tet);
     TetraCL& s= *mg.GetAllTetraBegin();
-//    s.DebugInfo( std::cerr);
+//    s.DebugInfo( std::cout);
     std::cout.precision( 18);
 
     NewQuadT q;
@@ -240,7 +240,7 @@ void TestP2Mass()
 
 void TestTransform()
 {
-    std::cerr << "\n\nTestTransform():\n";
+    std::cout << "\n\nTestTransform():\n";
     Uint rule = 0; // Choose a refinement rule
     double absdet=0.;
     double intval=0.;
@@ -253,7 +253,7 @@ void TestTransform()
         qf.assign( *sit, &hsq);
         intval+= qf.quad( absdet);
         }
-    std::cerr << std::setprecision(10) <<  "Integral: " << intval << '\n';
+    std::cout << std::setprecision(10) <<  "Integral: " << intval << '\n';
 
     SArrayCL<BaryCoordCL,4> M;
     for (Uint i=0; i<4; ++i)
@@ -275,7 +275,7 @@ void TestTransform()
         qf.assign( *sit, &hsq, 0.0, nodes);
         intval+= qf.quad( absdet);
     }
-    std::cerr << "Integral: " << intval << '\n';
+    std::cout << "Integral: " << intval << '\n';
 }
 
 

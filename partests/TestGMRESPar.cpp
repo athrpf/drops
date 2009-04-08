@@ -113,7 +113,7 @@ void PrintGEO(const DROPS::ParMultiGridCL& pmg)
 //     else if (type == MIG)
 //         sprintf(filename, "output/%i_MG_MIG_%i.mg",me,MIGnum++);
 //     if (me==0)
-//         std::cerr << " - Writing multigrid into: " << filename<< " (for proc 0)"<<std::endl;
+//         std::cout << " - Writing multigrid into: " << filename<< " (for proc 0)"<<std::endl;
 //
 //     ofstream file(filename);
 //     pmg.DebugInfo(file);
@@ -130,7 +130,7 @@ void PrintExchange(const DROPS::ExchangeCL& ex)
     ex.DebugInfo(file);
     file.close();
     if (me==0)
-        cerr << "    --> Schreibe in Datei: " << filename << "  \n";
+        cout << "    --> Schreibe in Datei: " << filename << "  \n";
 }
 
 /****************************************************************************
@@ -324,7 +324,7 @@ void Solve(const Mat &A, Vec &x, const Vec &b, IdxDescCL &idx)
     time.Stop(); duration[2]= time.GetMaxTime();
 
     if (ProcCL::IamMaster())
-        std::cerr << "LES solved with three different versions of GMRES:\n"
+        std::cout << "LES solved with three different versions of GMRES:\n"
                   << "           VERSION                         : ITER\t"<<std::setw(11)<<"RESID\t"<<"TIME\n"
                   << " - GMRES Version 1 (no mod for par, mod GS): "
                   << std::setw(5)<<solver_v1.GetIter()<<'\t'<<solver_v1.GetResid()<<'\t'<<duration[0]<<'\n'
@@ -385,17 +385,17 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
 
     IdxT numUnknowns=idx->GetGlobalNumUnknowns(MG);
     if (ProcCL::IamMaster()){
-        std::cerr << line << std::endl;
-        std::cerr << " Number of unknowns (accumulated): " << Gsize << std::endl;
-        std::cerr << " Number of real unknowns:          " << numUnknowns << std::endl;
-        for (int i=0; i<ProcCL::Size(); ++i) std::cerr << " - Proc " <<i<< ": " <<Sizes[i]<<" unknowns\n";
+        std::cout << line << std::endl;
+        std::cout << " Number of unknowns (accumulated): " << Gsize << std::endl;
+        std::cout << " Number of real unknowns:          " << numUnknowns << std::endl;
+        for (int i=0; i<ProcCL::Size(); ++i) std::cout << " - Proc " <<i<< ": " <<Sizes[i]<<" unknowns\n";
     }
 
     // Point 2
     //--------
     if (ProcCL::IamMaster()){
-        std::cerr << line << std::endl;
-        std::cerr << " Discretize ... " << std::endl;
+        std::cout << line << std::endl;
+        std::cout << " Discretize ... " << std::endl;
     }
 
     time.Reset();
@@ -411,14 +411,14 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
     //--------
     // Solve
     if (ProcCL::IamMaster())
-        std::cerr << line << std::endl;
+        std::cout << line << std::endl;
     Solve(AUM, x->Data, b->Data, idx->GetFinest());
 
     // Point 4
     //--------
     if (ProcCL::IamMaster()){
-        std::cerr << line << std::endl;
-        std::cerr << " Check the solution ... " << std::endl;
+        std::cout << line << std::endl;
+        std::cout << " Check the solution ... " << std::endl;
     }
 
     time.Reset();
@@ -438,15 +438,15 @@ int main (int argc, char** argv)
         //DDD_SetOption(OPT_INFO_XFER, XFER_SHOW_MEMUSAGE/*|XFER_SHOW_MSGSALL*/);
 
         if (argc!=2 && ProcCL::IamMaster()){
-            std::cerr << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
+            std::cout << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
         }
         std::ifstream param( argv[1]);
         if (!param && ProcCL::IamMaster()){
-            std::cerr << "error while opening parameter file\n"; return 1;
+            std::cout << "error while opening parameter file\n"; return 1;
         }
         param >> C; param.close();
         if (ProcCL::IamMaster())
-            std::cerr << C << std::endl;
+            std::cout << C << std::endl;
 
         DROPS::ParTimerCL time, alltime;
 
@@ -468,7 +468,7 @@ int main (int argc, char** argv)
         DROPS::InstatPoissonBndDataCL bdata(6, IsNeumann, bnd_fun);
 
         if (ProcCL::IamMaster()){
-            std::cerr << line << std::endl
+            std::cout << line << std::endl
                  << " Create initial grid and distribution ... \n";
         }
 
@@ -499,20 +499,20 @@ int main (int argc, char** argv)
         for (int ref=0; ref<steps; ++ref)
         {
             // Markieren und verfeinern
-            if (ProcCL::IamMaster()) cerr << " Refine (" << ref << ") ";
+            if (ProcCL::IamMaster()) cout << " Refine (" << ref << ") ";
             if (ref<C.refall)
             {
-                if (ProcCL::IamMaster()) cerr << "regular ...\n";
+                if (ProcCL::IamMaster()) cout << "regular ...\n";
                 DROPS::MarkAll(mg);
             }
             else if (ref<C.refall+C.markdrop)
             {
-                if (ProcCL::IamMaster()) cerr << "drop ...\n";
+                if (ProcCL::IamMaster()) cout << "drop ...\n";
                 MarkDrop(mg,mg.GetLastLevel());
             }
             else
             {
-                if (ProcCL::IamMaster()) cerr << "corner ...\n";
+                if (ProcCL::IamMaster()) cout << "corner ...\n";
                 MarkLeftDownCorner(mg,mg.GetLastLevel());
             }
             time.Reset();
@@ -527,19 +527,19 @@ int main (int argc, char** argv)
 
         if (C.check)
         {
-            if (ProcCL::IamMaster()) cerr << " Check the parallel multigrid ... " << flush;
+            if (ProcCL::IamMaster()) cout << " Check the parallel multigrid ... " << flush;
             time.Reset();
             if (CheckParMultiGrid(pmg)){
-                if (ProcCL::IamMaster()) cerr << " OK\n";
+                if (ProcCL::IamMaster()) cout << " OK\n";
             }
             else
-                if (ProcCL::IamMaster()) cerr << "  !!! not OK !!!\n";
+                if (ProcCL::IamMaster()) cout << "  !!! not OK !!!\n";
             time.Stop();
             Times.AddTime(T_Check, time.GetMaxTime());
         }
         if (ProcCL::IamMaster())
-            cerr << line << endl << " Distribution of elemente:\n";
-        mg.SizeInfo(cerr);
+            cout << line << endl << " Distribution of elemente:\n";
+        mg.SizeInfo(cout);
 
         if (C.printGEO)
             PrintGEO(pmg);
@@ -550,12 +550,12 @@ int main (int argc, char** argv)
         DROPS::Strategy(prob);
 
         if (ProcCL::IamMaster()){
-            cerr << line << std::endl;
+            cout << line << std::endl;
         }
 
         alltime.Stop();
         Times.SetOverall(alltime.GetMaxTime());
-        Times.Print(cerr);
+        Times.Print(cout);
 
         return 0;
     }

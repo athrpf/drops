@@ -427,7 +427,7 @@ void Solve(const Mat &A, Vec &x, const Vec &b, const IdxDescCL& idx)
         case 61: P_J_BiCGStab.Solve(A,x,b);      steps=P_J_BiCGStab.GetIter(); res=P_J_BiCGStab.GetResid(); break;
         case 62: P_S_BiCGStab.Solve(A,x,b);      steps=P_S_BiCGStab.GetIter(); res=P_S_BiCGStab.GetResid(); break;
         case 63: P_B_BiCGStab.Solve(A,x,b);      steps=P_S_BiCGStab.GetIter(); res=P_S_BiCGStab.GetResid(); break;
-        default: std::cerr << "No solver found\n"; return;
+        default: std::cout << "No solver found\n"; return;
     }
     time.Stop(); duration = time.GetMaxTime(); Times.AddTime(T_Solve, duration);
     double realresid = idx.GetEx().Norm(VectorCL(A*x-b),false);
@@ -625,7 +625,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
 
     do{                                     // start the adaptive cycle
         if (step==8)
-            std::cerr << "In step "<<step<<std::endl;
+            std::cout << "In step "<<step<<std::endl;
         ParTimerCL steptimer; steptimer.Start();
         if (ProcCL::IamMaster()){
             std::cout << line <<"\n Step " <<step<< " of the adaptive cycle\n";
@@ -656,7 +656,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
             std::cout << " - Refine ... " << std::endl;
 
         if (MG.KilledGhosts() && ProcCL::IamMaster())
-                std::cerr << "   + Refine with killed ghosts!\n";
+                std::cout << "   + Refine with killed ghosts!\n";
         time.Start();
         pmg.HandleUnknownsAfterRefine();
         time.Stop(); Times.AddTime(T_HandleUnkAfterRef, time.GetMaxTime());

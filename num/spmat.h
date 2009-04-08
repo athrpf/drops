@@ -627,7 +627,7 @@ std::istream& operator>> (std::istream& in, SparseMatBaseCL<T>& A)
         if (!in)
             throw DROPSErrCL( "SparseMatBaseCL operator>>: Stream corrupt.\n");
         if (r > numrows || c > numcols) {
-            std::cerr << "r: " << r << "\tc: " << c << "\tv: " << v << "\tnz: " << nz << '\n';
+            std::cout << "r: " << r << "\tc: " << c << "\tv: " << v << "\tnz: " << nz << '\n';
             throw DROPSErrCL( "SparseMatBaseCL operator>>: Inconsistent data.\n");
         }
         B( r - 1, c - 1)= v; // Indices in the stream are 1-based.
@@ -1205,7 +1205,7 @@ reverse_cuthill_mckee (const SparseMatBaseCL<T>& M_in, PermutationT& p,
         // Find a start vertex v.
         size_t max_iter= 5;
         size_t v= pseudo_peripheral_node( V, *M, max_iter);
-        std::cerr << "reverse_cuthill_mckee: p_p_n iterations: " << max_iter << '\n';
+        std::cout << "reverse_cuthill_mckee: p_p_n iterations: " << max_iter << '\n';
 
         // Traverse the graph starting with v and number the vertices.
         breadth_first( v, *M, p, idx, degree);

@@ -206,7 +206,7 @@ int main ()
     TestSingleTetra();
     TestPlaneInCube();
 
-    std::cerr << "SetupInterfaceMassP1:\n";
+    std::cout << "SetupInterfaceMassP1:\n";
     DROPS::BrickBuilderCL brick(DROPS::std_basis<3>(0),
                                 DROPS::std_basis<3>(1),
                                 DROPS::std_basis<3>(2),
@@ -226,7 +226,7 @@ int main ()
 
     MatDescCL M( &ifaceidx, &ifaceidx);
     SetupInterfaceMassP1( mg, &M, lset.Phi);
-    std::cerr << "Writing matrix to m_iface.txt\n";
+    std::cout << "Writing matrix to m_iface.txt\n";
     std::ofstream fff( "m_iface.txt");
     fff.precision( 18);
     fff << M.Data << std::endl;
@@ -234,7 +234,7 @@ int main ()
 
     MatDescCL Mnew( &ifaceidx, &ifaceidx);
     SetupInterfaceMassP1New( mg, &Mnew, lset.Phi);
-    std::cerr << "Writing new matrix to mnew_iface.txt\n";
+    std::cout << "Writing new matrix to mnew_iface.txt\n";
     std::ofstream ggg( "mnew_iface.txt");
     ggg.precision( 18);
     ggg << Mnew.Data << std::endl;

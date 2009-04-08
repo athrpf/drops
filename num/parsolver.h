@@ -461,7 +461,7 @@ bool ParCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, int& max_ite
     if (alpha<=tol)
     {
         if (alpha<0)
-            std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in CG because of accumulation!" << std::endl;
+            std::cout << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in CG because of accumulation!" << std::endl;
         tol= std::sqrt(alpha);
         max_iter= 0;
         return true;
@@ -482,7 +482,7 @@ bool ParCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, int& max_ite
         if (alpha<=tol)
         {
             if (alpha<0)
-                std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in CG because of accumulation!" << std::endl;
+                std::cout << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in CG because of accumulation!" << std::endl;
 
             tol= std::sqrt(std::fabs(alpha));
             max_iter= i;
@@ -560,7 +560,7 @@ bool ParPCG(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX,
 
         if (resid<=tol){
             if (res<0){
-                std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in PCG because of accumulation!"
+                std::cout << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in PCG because of accumulation!"
                           << "\n   Please use accurate version."<<std::endl;
                 resid=0;
             }
@@ -1182,7 +1182,7 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
         if (glob_dots[0]==0.)
         {
             if (ProcCL::MyRank()==0)
-                std::cerr << ">>>>> BREAKDOWN of BiCGStab!" <<std::endl;
+                std::cout << ">>>>> BREAKDOWN of BiCGStab!" <<std::endl;
             tol = resid;
             max_iter=i;
             return false;
@@ -1212,7 +1212,7 @@ template <typename Mat, typename Vec, typename PreCon, typename ExCL>
         if (glob_dots[1]==0.)
         {
             if (ProcCL::MyRank()==0)
-                std::cerr << ">>>>> BREAKDOWN of BiCGStab!" <<std::endl;
+                std::cout << ">>>>> BREAKDOWN of BiCGStab!" <<std::endl;
             tol = resid;
             max_iter=i;
             return false;
@@ -1300,13 +1300,13 @@ bool ParModPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon&
         ProcCL::GlobalSum(Addr(a_loc), Addr(a), k+1);
 
         if (a[k]<0)
-            std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in PGCR because of accumulation!" << std::endl;
+            std::cout << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in PGCR because of accumulation!" << std::endl;
 
         resid = std::sqrt(a[k]) / normb;
         if (true && j%20==0){
             double realresid = ExX.Norm(static_cast<Vec>(b-A*x_acc));
             if (ProcCL::IamMaster())
-                std::cerr << "j: "<<j<<"\tresid="<< resid<<", realresid " <<realresid << std::endl;
+                std::cout << "j: "<<j<<"\tresid="<< resid<<", realresid " <<realresid << std::endl;
         }
 
         if (/*a[j+1]*/ resid<tol){
@@ -1511,7 +1511,7 @@ bool ParPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
     double resid= ExX.Norm( r, false, useAcc)/normb;
 
 //     IF_MASTER
-//       std::cerr << "Starting GCR with tol: "<<tol<<",\tnorm_rhs: "<<mynorm<<'\n'
+//       std::cout << "Starting GCR with tol: "<<tol<<",\tnorm_rhs: "<<mynorm<<'\n'
 //                 << "          norm_rhs_up: "<<normb0<<"\tnorm_rhs_low:   "<<normb1<<'\n'
 //                 << "          max_rhs:     "<<max_rhs<<'\n';
     for (int k= 0; k < max_iter; ++k) {
@@ -1524,7 +1524,7 @@ bool ParPGCR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
 //             double max_up = GlobalMax(supnorm(Vec(x_acc[std::slice( 0, A.num_rows( 0), 1)])));
 //             double max_low= GlobalMax(supnorm(Vec(x_acc[std::slice( A.num_rows( 0), A.num_rows( 1), 1)])));
 //             IF_MASTER
-//                 std::cerr << "GCR: k: " << k << "\tresidual: " << resid<<'\n'
+//                 std::cout << "GCR: k: " << k << "\tresidual: " << resid<<'\n'
 //                         << "         \tresid_up:   "<<res_0<<'\n'
 //                         << "         \tresid_low:  "<<res_1<<'\n'
 //                         << "         \tsup(x):     "<<max_x<<'\n'
@@ -1641,7 +1641,7 @@ bool ParQMR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Lanczos lan
         norm_r  = ExX.ParDotAcc(r_acc,r);
 
         if (norm_r<0)
-            std::cerr << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in QMR because of accumulation!" << std::endl;
+            std::cout << "["<<ProcCL::MyRank()<<"]==> negative squared norm of resid in QMR because of accumulation!" << std::endl;
         if (norm_r/normb<tol)
         {
             tol = std::sqrt(std::fabs(norm_r)/normb);

@@ -49,7 +49,7 @@ template <class Coeff>
 #endif
 
     IF_MASTER
-      std::cerr << "\nChecken der Loesung des LGS:\n"
+      std::cout << "\nChecken der Loesung des LGS:\n"
                 << "|| Ax + Nx + BTy - f || = " << norm_res1 << ", max. " << sup_res1 << std::endl
                 << "||      Bx       - g || = " << norm_res2 << ", max. " << sup_res2 << std::endl<<std::endl;
 
@@ -86,7 +86,7 @@ template <class Coeff>
     L2_div= std::sqrt(L2_div);
 
     IF_MASTER
-      std::cerr << "|| div x ||_L1 = " << L1_div << '\n'
+      std::cout << "|| div x ||_L1 = " << L1_div << '\n'
                 << "|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
@@ -164,7 +164,7 @@ template <class Coeff>
     L2_vel= sqrt(L2_vel);
 
     IF_MASTER
-      std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
+      std::cout << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
                 << "w-2-Norm= " << norm2 << std::endl
                 << " L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")" << std::endl
                 << " L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")" << std::endl
@@ -193,7 +193,7 @@ template <class Coeff>
 #endif
     const double c_pr= MW_pr / vol;
     IF_MASTER
-      std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
+      std::cout << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
     VertexCL* maxvert= 0;
     for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
@@ -246,7 +246,7 @@ template <class Coeff>
     L2_pr= std::sqrt( L2_pr);
 
     IF_MASTER
-      std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
+      std::cout << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
                 << "w-2-Norm= " << norm2 << std::endl
                 << " L2-Norm= " << L2_pr << std::endl
                 << " L1-Norm= " << L1_pr << std::endl

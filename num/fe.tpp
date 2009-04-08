@@ -750,7 +750,7 @@ Interpolate(P1EvalCL<Data, _BndData, _VD>& sol, const P1EvalCL<Data, _BndData, c
             ++counter1;
         }
 
-    std::cerr << "Interpolate: " << counter1 << " vertex-DoF of "
+    std::cout << "Interpolate: " << counter1 << " vertex-DoF of "
               << old_sol.GetSolution()->Data.size() << " copied, "
               << counter2 << " new Mid-vertex-DoF interpolated." << std::endl;
 }
@@ -1086,7 +1086,7 @@ void Interpolate(P2EvalCL<Data, _BndData, _VD>& sol, const P2EvalCL<Data, _BndDa
                 ++num_vert_copy;
         }
 
-        std::cerr << "Interpolate: " << num_vert_copy << " vertex-DoF copied, "
+        std::cout << "Interpolate: " << num_vert_copy << " vertex-DoF copied, "
                                      << num_edge_copy << " edge-DoF copied, "
                                      << num_child_edge << " edge-DoF interpolated."
                                      << std::endl;

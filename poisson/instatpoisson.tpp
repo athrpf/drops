@@ -384,7 +384,7 @@ void InstatPoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);
 
   IF_MASTER
-    std::cerr << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+    std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),

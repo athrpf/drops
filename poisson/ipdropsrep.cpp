@@ -78,7 +78,7 @@ class NeuValCL
           return GradZ( p, t);
         default:
         {
-          std::cerr <<"error: neu_val";
+          std::cout <<"error: neu_val";
           return 1;
         }
       }
@@ -117,7 +117,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   cplA.SetIdx( &idx);
   cplM.SetIdx( &idx);
 
-  std::cerr << "Anzahl der Unbekannten: " <<  x.Data.size() << std::endl;
+  std::cout << "Anzahl der Unbekannten: " <<  x.Data.size() << std::endl;
 
   // Steifigkeitsmatrix mit Index idx (Zeilen und Spalten)
   A.SetIdx( &idx, &idx);
@@ -175,7 +175,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   /*
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
-    std::cerr << *(p->second) << "\n";
+    std::cout << *(p->second) << "\n";
   }
   */
 
@@ -186,8 +186,8 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
-    std::cerr << "t= " << Poisson.t << std::endl;
-    std::cerr << "Iterationen: " << pcg_solver.GetIter()
+    std::cout << "t= " << Poisson.t << std::endl;
+    std::cout << "Iterationen: " << pcg_solver.GetIter()
       << "    Norm des Residuums: " << pcg_solver.GetResid() << std::endl;
     Poisson.CheckSolution(x, exact_sol, Poisson.t);
   }
@@ -200,7 +200,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double dt,
 
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
-    std::cerr << *(p->second) << "\n";
+    std::cout << *(p->second) << "\n";
   }
   */
 
@@ -229,9 +229,9 @@ int main()
     double dt= 0.0;
     int time_steps= 0, brick_div= 0;
 
-    std::cerr << "\nDelta t = "; std::cin >> dt;
-    std::cerr << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
-    std::cerr << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_div;
+    std::cout << "\nDelta t = "; std::cin >> dt;
+    std::cout << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
+    std::cout << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_div;
 
 
     // Dirichlet boundary conditions
@@ -260,7 +260,7 @@ int main()
       mg.Refine();
     }
 
-    mg.SizeInfo(std::cerr);
+    mg.SizeInfo(std::cout);
     DROPS::Strategy(prob, dt, time_steps);
 
 

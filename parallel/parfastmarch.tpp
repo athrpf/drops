@@ -1047,7 +1047,7 @@ template<typename ExCL>
     for (IdxT i=0; i<HasGhost_.size(); ++i){
         for (typename GhostsList::iterator it(HasGhost_[i].begin()), end(HasGhost_[i].end()); it!=end; ++it){
             if (ex_.IsOnProc(i,it->first)){
-                std::cerr << "["<<ProcCL::MyRank()<<"] Index "<<i<<" ist als Ghost auf Proc "<<it->first<<" vorhanden, dort aber auch als dist vorliegend\n";
+                std::cout << "["<<ProcCL::MyRank()<<"] Index "<<i<<" ist als Ghost auf Proc "<<it->first<<" vorhanden, dort aber auch als dist vorliegend\n";
                 throw DROPSErrCL("Distributed Ghost!");
             }
         }

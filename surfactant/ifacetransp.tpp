@@ -14,7 +14,7 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
     const Uint lvl= mat->GetRowLevel();
     IdxT num[4];
 
-    std::cerr << "entering SetupConvectionP1: " << num_unks << " dof. ";
+    std::cout << "entering SetupConvectionP1: " << num_unks << " dof. ";
 
     LocalP1CL<> p1[4];
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
@@ -53,7 +53,7 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
         }
     }
     m.Build();
-    std::cerr << mat->Data.num_nonzeros() << " nonzeros in interface convection matrix!" << std::endl;
+    std::cout << mat->Data.num_nonzeros() << " nonzeros in interface convection matrix!" << std::endl;
 }
 
 
@@ -65,7 +65,7 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
     const Uint lvl= mat->GetRowLevel();
     IdxT num[4];
 
-    std::cerr << "entering SetupMassDivP1: " << num_unks << " dof. ";
+    std::cout << "entering SetupMassDivP1: " << num_unks << " dof. ";
 
     LocalP1CL<> p1[4];
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
@@ -107,7 +107,7 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
         }
     }
     m.Build();
-    std::cerr << mat->Data.num_nonzeros() << " nonzeros in mass-divergence matrix!" << std::endl;
+    std::cout << mat->Data.num_nonzeros() << " nonzeros in mass-divergence matrix!" << std::endl;
 }
 
 } // end of namespace DROPS

@@ -20,7 +20,7 @@ DROPSErrCL::what(std::ostream& out) const
 void
 DROPSErrCL::handle() const
 {
-    what(std::cerr);
+    what(std::cerr );
     std::cerr.flush();
     std::abort();
 }

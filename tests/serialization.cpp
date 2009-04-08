@@ -16,7 +16,7 @@ int main (int argc, char** argv)
     // Multigrid aufbauen
 //    std::ifstream meshfile( "mesh.txt");
 //    if (!meshfile) {
-//        std::cerr << "error while opening mesh file " << "mesh.txt" << "\n";
+//        std::cout << "error while opening mesh file " << "mesh.txt" << "\n";
 //        return 1;
 //    }
 //    DROPS::ReadMeshBuilderCL builder( meshfile);
@@ -28,7 +28,7 @@ int main (int argc, char** argv)
 //    MarkAll( mg);
 //    mg.Refine();
     mg.SizeInfo( std::cout);
-    std::cerr << SanityMGOutCL(mg) << std::endl;
+    std::cout << SanityMGOutCL(mg) << std::endl;
 
     MGSerializationCL serial (mg, "out-");
     serial.WriteMG();
@@ -38,10 +38,10 @@ int main (int argc, char** argv)
     TetraBuilderCL builder2(rule);
     FileBuilderCL buildmg("out-", &builder2);
     MultiGridCL mg2(buildmg);
-    std::cerr << "\n \n MultiGrid aus Datei gelesen\n \n";
+    std::cout << "\n \n MultiGrid aus Datei gelesen\n \n";
 
     mg2.SizeInfo( std::cout);
-    std::cerr << SanityMGOutCL(mg2) << std::endl;
+    std::cout << SanityMGOutCL(mg2) << std::endl;
 
     MGSerializationCL serial2 (mg2, "neu-");
     serial2.WriteMG();

@@ -114,16 +114,16 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         MG.Refine();
         NS.CreateNumberingVel( MG.GetLastLevel(), vidx1);
         NS.CreateNumberingPr ( MG.GetLastLevel(), pidx1);
-        std::cerr << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
+        std::cout << "altes und neues TriangLevel: " << vidx2->TriangLevel() << ", "
                   << vidx1->TriangLevel() << std::endl;
-        MG.SizeInfo(std::cerr);
+        MG.SizeInfo(std::cout);
         b->SetIdx(vidx1);
         c->SetIdx(pidx1);
         p1->SetIdx(pidx1);
         v1->SetIdx(vidx1);
-        std::cerr << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
+        std::cout << "Anzahl der Druck-Unbekannten: " << p2->Data.size() << ", "
                   << p1->Data.size() << std::endl;
-        std::cerr << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
+        std::cout << "Anzahl der Geschwindigkeitsunbekannten: " << v2->Data.size() << ", "
                   << v1->Data.size() << std::endl;
         if (v2->RowIdx)
         {
@@ -141,17 +141,17 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         time.Start();
         NS.SetupSystem(A, b, B, c);
         time.Stop();
-        std::cerr << time.GetTime() << " seconds for setting up all systems!" << std::endl;
+        std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
         time.Reset();
         time.Start();
         A->Data * v1->Data;
         time.Stop();
-        std::cerr << " A*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << " A*x took " << time.GetTime() << " seconds!" << std::endl;
         time.Reset();
         time.Start();
         transp_mul( A->Data, v1->Data);
         time.Stop();
-        std::cerr << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
+        std::cout << "AT*x took " << time.GetTime() << " seconds!" << std::endl;
 
 //        { // write system in files for MatLab
 //            std::ofstream Adat("Amat.dat"), Bdat("Bmat.dat"), Ndat("Nmat.dat"), bdat("fvec.dat"), cdat("gvec.dat");
@@ -199,7 +199,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 //            e= B->Data*v1->Data                             - c->Data;
             z_xpay(e, B->Data*v1->Data, -1.0, c->Data);
 
-            std::cerr << "fp_step: " << fp_step << ", res = " << (res= std::sqrt(d*d + e*e) ) << std::endl;
+            std::cout << "fp_step: " << fp_step << ", res = " << (res= std::sqrt(d*d + e*e) ) << std::endl;
             if (res < fp_tol )
                 break;
 
@@ -209,7 +209,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             uzawaSolver.SetTol(uzawa_tol);
             uzawaSolver.Init_A_Pc(AN); // only for Uzawa_IPCG_CL.
             uzawaSolver.Solve(AN, B->Data, w, q, d, e);
-            std::cerr << "iteration stopped after step " << uzawaSolver.GetIter()
+            std::cout << "iteration stopped after step " << uzawaSolver.GetIter()
                       << " with res = " << uzawaSolver.GetResid() << std::endl;
 
             // calculate adaption:
@@ -224,7 +224,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
             omega= d*(A->Data*v1->Data) + d*(N->Data*v1->Data) + d*transp_mul( B->Data, p1->Data) + e*(B->Data*v1->Data)
                  - d*b->Data - d*rhsN.Data - e*c->Data;
             omega/= d*d + e*e;
-            std::cerr << "omega = " << omega << std::endl;
+            std::cout << "omega = " << omega << std::endl;
 
             // update solution:
 //            v1->Data-= omega*w;
@@ -235,7 +235,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
 */
 
         time.Stop();
-        std::cerr << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
+        std::cout << "Das Verfahren brauchte "<<time.GetTime()<<" Sekunden.\n";
         NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
         MarkAll(MG);
 
@@ -247,7 +247,7 @@ void StrategyNavSt(NavierStokesP2P1CL<Coeff>& NS, int maxStep, double fp_tol, in
         std::swap(p2, p1);
         std::swap(vidx2, vidx1);
         std::swap(pidx2, pidx1);
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
     while (++step<maxStep);
     // we want the solution to be in NS.v, NS.pr
@@ -272,7 +272,7 @@ int main (int argc, char** argv)
   {
     if (argc!=7)
     {
-        std::cerr << "Usage (navstokes): <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
+        std::cout << "Usage (navstokes): <fp_tol> <poi_tol> <fp_maxiter> <poi_maxiter> <uzawa_red> <num_refinement>" << std::endl;
         return 1;
     }
 
@@ -294,12 +294,12 @@ int main (int argc, char** argv)
         int poi_maxiter= std::atoi(argv[4]);
         double uzawa_red= std::atof(argv[5]);
         int num_ref= std::atoi(argv[6]);
-        std::cerr << "fp_tol: " << fp_tol<< ", ";
-        std::cerr << "poi_tol: " << poi_tol << ", ";
-        std::cerr << "fp_maxiter: " << fp_maxiter << ", ";
-        std::cerr << "poi_maxiter: " << poi_maxiter << ", ";
-        std::cerr << "uzawa_red: " << uzawa_red << ", ";
-        std::cerr << "num_ref: " << num_ref << std::endl;
+        std::cout << "fp_tol: " << fp_tol<< ", ";
+        std::cout << "poi_tol: " << poi_tol << ", ";
+        std::cout << "fp_maxiter: " << fp_maxiter << ", ";
+        std::cout << "poi_maxiter: " << poi_maxiter << ", ";
+        std::cout << "uzawa_red: " << uzawa_red << ", ";
+        std::cout << "num_ref: " << num_ref << std::endl;
 
         typedef DROPS::NavierStokesP2P1CL<MyPdeCL::StokesCoeffCL>
                 NSOnBrickCL;
@@ -310,8 +310,8 @@ int main (int argc, char** argv)
 
         StrategyNavSt(prob, num_ref, fp_tol, fp_maxiter, uzawa_red, poi_tol, poi_maxiter);
 
-        std::cerr << "hallo" << std::endl;
-        std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+        std::cout << "hallo" << std::endl;
+        std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
         std::ofstream fil("navstokespr.off");
         double min= prob.p.Data.min(),
                max= prob.p.Data.max();

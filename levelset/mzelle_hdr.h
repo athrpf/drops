@@ -238,7 +238,7 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
         for (BndIdxT i=0; i<num_bnd; ++i)
         {
             bnd_fun[i]= (bc[i]= mgb->GetBC( i))==DirBC ? inflow : &ZeroVel;
-            std::cerr << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cerr);
+            std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
         }
         bnddata = new StokesBndDataCL(num_bnd, bc, bnd_fun);
         delete[] bc;
@@ -312,9 +312,9 @@ template <typename StokesT, typename LevelsetT>
 */
 {
 #ifndef _PAR
-    std::cerr << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cerr << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cerr << levelset.Phi.Data.size() << " levelset unknowns.\n";
+    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
+    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
+    std::cout << levelset.Phi.Data.size() << " levelset unknowns.\n";
 #else
     const MLIdxDescCL* vidx = &Stokes.vel_idx,
                      * pidx = &Stokes.pr_idx;
@@ -360,27 +360,27 @@ template <typename StokesT, typename LevelsetT>
 
     // output on screen
     if (ProcCL::IamMaster()){
-        std::cerr << "  + Number of DOF\n        "
+        std::cout << "  + Number of DOF\n        "
                   << std::setw(10)<<"global"<<std::setw(10)<<"accum"<<std::setw(10)
                   << "max"<<std::setw(10)<<"min"<<std::setw(10)<<"ratio"<<"  |  "
                   << std::setw(10)<<"max_acc" <<std::setw(10)<<"min_acc"<<std::setw(10)<<"ratio_acc"<<std::endl;
 
-        std::cerr << "    "<<"pr  "
+        std::cout << "    "<<"pr  "
                   << std::setw(10)<<GPsize<<std::setw(10)<<Psize_acc<<std::setw(10)<<P_max
                   << std::setw(10)<<P_min<< std::setw(10)<<P_ratio<<"  |  "
                   << std::setw(10)<<P_accmax<<std::setw(10)<<P_accmin<<std::setw(10)<<P_accratio<<std::endl;
 
-        std::cerr << "    "<<"vel "
+        std::cout << "    "<<"vel "
                   << std::setw(10)<<GVsize<<std::setw(10)<<Vsize_acc<<std::setw(10)<<V_max
                   << std::setw(10)<<V_min<< std::setw(10)<<V_ratio<<"  |  "
                   << std::setw(10)<<V_accmax<<std::setw(10)<<V_accmin<<std::setw(10)<<V_accratio<<std::endl;
 
-        std::cerr << "    "<<"scl "
+        std::cout << "    "<<"scl "
                   << std::setw(10)<<GLsize<<std::setw(10)<<Lsize_acc<<std::setw(10)<<L_max
                   << std::setw(10)<<L_min<< std::setw(10)<<L_ratio<<"  |  "
                   << std::setw(10)<<L_accmax<<std::setw(10)<<L_accmin<<std::setw(10)<<L_accratio<<std::endl;
 
-        std::cerr << std::endl;
+        std::cout << std::endl;
     }
 #endif
 }
@@ -388,7 +388,7 @@ template <typename StokesT, typename LevelsetT>
 void DisplayDetailedGeom(MultiGridCL& mg)
 {
 #ifndef _PAR
-    mg.SizeInfo( std::cerr);
+    mg.SizeInfo( std::cout);
 #else
     const Uint level=mg.GetLastLevel();
     Uint *numTetrasAllProc=0;
@@ -414,7 +414,7 @@ void DisplayDetailedGeom(MultiGridCL& mg)
         double      *ratioDistFace=new double[ProcCL::Size()];
 
         // global information
-        std::cerr << "Detailed information about the parallel multigrid:\n"
+        std::cout << "Detailed information about the parallel multigrid:\n"
                   << "#(master tetras on finest level):    "<<allTetra<<'\n'
                   << "#(all Faces on finest level):        "<<allFace<<'\n'
                   << "#(distributed Faces on fines level): "<<allDistFace<<'\n';
@@ -424,17 +424,17 @@ void DisplayDetailedGeom(MultiGridCL& mg)
             ratioDistFace[i]= ((double)numDistFaceAllProc[i]/(double)numFacesAllProc[i]*100.);
 
         double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+ProcCL::Size());
-        std::cerr << "Ratio between max/min Tetra: "<<ratioTetra
+        std::cout << "Ratio between max/min Tetra: "<<ratioTetra
                   <<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
 
-        std::cerr << std::setw(6)  <<  "Proc"
+        std::cout << std::setw(6)  <<  "Proc"
                   << std::setw(8)  << "#Tetra"
                   << std::setw(8)  << "#Faces"
                   << std::setw(12) << "#DistFaces"
                   << std::setw(12) << "%DistFaces"
                   << '\n';
         for (int i=0; i<ProcCL::Size(); ++i)
-            std::cerr << std::setw(6)  << i
+            std::cout << std::setw(6)  << i
                       << std::setw(8)  << numTetrasAllProc[i]
                       << std::setw(8)  << numFacesAllProc[i]
                       << std::setw(12) << numDistFaceAllProc[i]

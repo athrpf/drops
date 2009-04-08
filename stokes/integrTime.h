@@ -365,11 +365,11 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
         solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
 #endif
 //         IF_MASTER
-//             std::cerr << "ISBBTPreCL p: iterations: " << solver_.GetIter()
+//             std::cout << "ISBBTPreCL p: iterations: " << solver_.GetIter()
 //                       << "\tresidual: " <<  solver_.GetResid();
         if (solver_.GetIter() == solver_.GetMaxIter()){
           IF_MASTER
-            std::cerr << "ISBBTPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
+            std::cout << "ISBBTPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                     << '\t' << solver_.GetResid() << '\n';
         }
         p= kA_*(Dprsqrtinv_*p);
@@ -378,12 +378,12 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
         Vec p2_( c.size());
         solver2_.Solve( *M_, p2_, c);
 //         IF_MASTER
-//             std::cerr << "\t p2: iterations: " << solver2_.GetIter()
+//             std::cout << "\t p2: iterations: " << solver2_.GetIter()
 //                       << "\tresidual: " <<  solver2_.GetResid()
 //                       << '\n';
         if (solver2_.GetIter() == solver2_.GetMaxIter()){
           IF_MASTER
-            std::cerr << "ISBBTPreCL::Apply: 2nd BBT-solve: " << solver2_.GetIter()
+            std::cout << "ISBBTPreCL::Apply: 2nd BBT-solve: " << solver2_.GetIter()
                     << '\t' << solver2_.GetResid() << '\n';
         }
 
@@ -463,7 +463,7 @@ template <typename Mat, typename Vec>
     VectorCL y( b.size());
     solver_.Solve( *Bs_, y, VectorCL( Dprsqrtinv_*b));
     if (solver_.GetIter() == solver_.GetMaxIter())
-        std::cerr << "MinCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
+        std::cout << "MinCommPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
     y*= Dprsqrtinv_;
     VectorCL z( Dprsqrtinv_*((*B_)*VectorCL( Dvelsqrtinv_*Dvelsqrtinv_*
@@ -471,7 +471,7 @@ template <typename Mat, typename Vec>
     VectorCL t( b.size());
     solver_.Solve( *Bs_, t, z);
     if (solver_.GetIter() == solver_.GetMaxIter())
-        std::cerr << "MinCommPreCL::Apply: 2nd BBT-solve: " << solver_.GetIter()
+        std::cout << "MinCommPreCL::Apply: 2nd BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
     x= Dprsqrtinv_*t;
 }
@@ -505,15 +505,15 @@ void ISPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //    double new_res;
 //    double old_res= norm( c);
     ssor_.Apply( A_, p, c);
-//    std::cerr << " residual: " <<  (new_res= norm( A_*p - c)) << '\t';
-//    std::cerr << " reduction: " << new_res/old_res << '\t';
+//    std::cout << " residual: " <<  (new_res= norm( A_*p - c)) << '\t';
+//    std::cout << " reduction: " << new_res/old_res << '\t';
     p*= kA_;
 //    double mnew_res;
 //    double mold_res= norm( c);
     Vec p2_( c.size());
     ssor_.Apply( M_, p2_, c);
-//    std::cerr << " residual: " <<  (mnew_res= norm( M_*p2_ - c)) << '\t';
-//    std::cerr << " reduction: " << mnew_res/mold_res << '\n';
+//    std::cout << " residual: " <<  (mnew_res= norm( M_*p2_ - c)) << '\t';
+//    std::cout << " reduction: " << mnew_res/mold_res << '\n';
     p+= kM_*p2_;
 }
 
@@ -523,17 +523,17 @@ template <typename Mat, typename Vec>
 void ISNonlinearPreCL<SolverT>::Apply(const Mat&, Vec& p, const Vec& c) const
 {
     p= 0.0;
-//    std::cerr << "ISNonlinearPreCL";
+//    std::cout << "ISNonlinearPreCL";
     if (kA_ != 0.0) {
         solver_.Solve( A_, p, c);
-//        std::cerr << "\tp: iterations: " << solver_.GetIter()
+//        std::cout << "\tp: iterations: " << solver_.GetIter()
 //                  << "\tresidual: " <<  solver_.GetResid();
         p*= kA_;
     }
     if ( kM_ != 0.0) {
         Vec p2_( c.size());
         solver_.Solve( M_, p2_, c);
-//        std::cerr << "\t p2: iterations: " << solver_.GetIter()
+//        std::cout << "\t p2: iterations: " << solver_.GetIter()
 //                  << "\tresidual: " <<  solver_.GetResid()
 //                  << '\n';
         p+= kM_*p2_;
@@ -548,7 +548,7 @@ void ISNonlinearPreCL<ASolverT, MSolverT>::Apply(const Mat&, Vec& p, const Vec& 
     if (kA_ != 0.0) {
         Asolver_.Solve( A_, p, c);
 //     IF_MASTER
-//       std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
+//       std::cout << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
 //                 << "\tresidual: " <<  solver_.GetResid()<<std::endl;
         p*= kA_;
     }
@@ -556,7 +556,7 @@ void ISNonlinearPreCL<ASolverT, MSolverT>::Apply(const Mat&, Vec& p, const Vec& 
         Vec p2_( c.size());
         Msolver_.Solve( M_, p2_, c);
 //         IF_MASTER
-//           std::cerr << "\t p2: iterations: " << solver_.GetIter()
+//           std::cout << "\t p2: iterations: " << solver_.GetIter()
 //                     << "\tresidual: " <<  solver_.GetResid()
 //                     << '\n';
         p+= kM_*p2_;
@@ -572,19 +572,19 @@ void ISNonlinearPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     const double ee= p.size(); // = dot( e, e);
     VectorCL c2( (dot(c, e)/ee)*e);
     VectorCL c3( c - c2);
-std::cerr << "norm( c): " << norm( c) << "\tnorm( e): " << norm( e)
+std::cout << "norm( c): " << norm( c) << "\tnorm( e): " << norm( e)
           << "\tdot(c, e)/norm( c)/norm( e): " << dot(c, e)/norm( c)/ee << '\n';
     p= 0.0;
     solver_.Solve( A_, p, c3);
     p+= c2;
-    std::cerr << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
+    std::cout << "ISNonlinearPreCL p: iterations: " << solver_.GetIter()
               << "\tresidual: " <<  solver_.GetResid();
     p*= kA_;
     if ( kM_ != 0.0) {
         Vec p2_( c.size());
         solver_.Solve( M_, p2_, c);
-std::cerr << "norm( p2): " << norm( p2_);
-        std::cerr << "\t p2: iterations: " << solver_.GetIter()
+std::cout << "norm( p2): " << norm( p2_);
+        std::cout << "\t p2: iterations: " << solver_.GetIter()
                   << "\tresidual: " <<  solver_.GetResid()
                   << '\n';
         p+= kM_*p2_;
@@ -646,20 +646,20 @@ ISMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
     MLMatrixCL::const_iterator finestP = --P_.end();
 //    double new_res= (Apr_.back().A.Data*p - c).norm();
 //    double old_res;
-//    std::cerr << "Pressure: iterations: " << iter_prA_ <<'\t';
+//    std::cout << "Pressure: iterations: " << iter_prA_ <<'\t';
     for (DROPS::Uint i=0; i<iter_prA_; ++i) {
         DROPS::MGMPr( ones_.end()-1, Apr_.begin(), --Apr_.end(), finestP, p, c2_, smoother, sm, solver, lvl, -1);
 //        old_res= new_res;
-//        std::cerr << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
-//        std::cerr << " reduction: " << new_res/old_res << '\n';
+//        std::cout << " residual: " <<  (new_res= (Apr_.back().A.Data*p - c).norm()) << '\t';
+//        std::cout << " reduction: " << new_res/old_res << '\n';
     }
     p*= kA_;
-//    std::cerr << " residual: " <<  (Apr_.back().A.Data*p - c).norm() << '\t';
+//    std::cout << " residual: " <<  (Apr_.back().A.Data*p - c).norm() << '\t';
 
     Vec p2( p.size());
     for (DROPS::Uint i=0; i<iter_prM_; ++i)
         DROPS::MGM( Mpr_.begin(), --Mpr_.end(), finestP, p2, c, smoother, sm, solver, lvl, -1);
-//    std::cerr << "Mass: iterations: " << iter_prM_ << '\t'
+//    std::cout << "Mass: iterations: " << iter_prM_ << '\t'
 //              << " residual: " <<  (Mpr_.back().A.Data*p2 - c).norm() << '\n';
 
     p+= kM_*p2;

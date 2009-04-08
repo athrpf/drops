@@ -88,7 +88,7 @@ class NeuValCL
           return GradZ( p, t);
         default:
         {
-          std::cerr <<"error: neu_val";
+          std::cout <<"error: neu_val";
           return 1;
         }
       }
@@ -109,7 +109,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   Poisson.M.SetIdx( idx, idx);
   Poisson.b.SetIdx( idx);
   Poisson.x.SetIdx( idx);
-  std::cerr << "Create System\n";
+  std::cout << "Create System\n";
   Poisson.SetupInstatSystem( Poisson.A, Poisson.M, Poisson.t);
 
   SSORsmoothCL smoother(1.0);
@@ -119,7 +119,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   MLMatrixCL* P = mg_solver.GetProlongation();
   SetupP1ProlongationMatrix( MG, *P, idx, idx);
 
-  std::cerr << "Check Data...\n";
+  std::cout << "Check Data...\n";
   CheckMGData( Poisson.A.Data, *P);
   InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, MGSolverCL<SSORsmoothCL, PCG_SsorCL> >
     ThetaScheme(Poisson, mg_solver, theta);
@@ -164,7 +164,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
 
   //for (ci p= nmap.begin(); p!= nmap.end(); p++)
   //{
-  //  std::cerr << *(p->second) << "\n";
+  //  std::cout << *(p->second) << "\n";
   //}
 
 
@@ -174,14 +174,14 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
-    std::cerr << "t= " << Poisson.t << std::endl;
-    std::cerr << "Iterationen: " << mg_solver.GetIter()
+    std::cout << "t= " << Poisson.t << std::endl;
+    std::cout << "Iterationen: " << mg_solver.GetIter()
       << "    Norm des Residuums: " << mg_solver.GetResid() << std::endl;
     Poisson.CheckSolution(x, exact_sol, Poisson.t);
     average+= mg_solver.GetIter();
   }
   average/= time_steps;
-  std::cerr << "Anzahl der Iterationen im Durchschnitt: " << average
+  std::cout << "Anzahl der Iterationen im Durchschnitt: " << average
     << std::endl;
 
   /*
@@ -189,7 +189,7 @@ void MGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
 
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
-    std::cerr << *(p->second) << "\n";
+    std::cout << *(p->second) << "\n";
   }
   */
 
@@ -215,7 +215,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   A.SetIdx(&idx, &idx);
   M.SetIdx(&idx, &idx);
 
-  std::cerr << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
+  std::cout << "Anzahl der Unbekannten: " <<  Poisson.x.Data.size()
     << std::endl;
   Poisson.SetupInstatSystem(A, M, Poisson.t);
 
@@ -263,7 +263,7 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
 
   //for (ci p= nmap.begin(); p!= nmap.end(); p++)
   //{
-  //  std::cerr << *(p->second) << "\n";
+  //  std::cout << *(p->second) << "\n";
   //}
 
 
@@ -273,21 +273,21 @@ void CGStrategy(InstatPoissonP1CL<Coeff>& Poisson, double dt, double time_steps,
   for (int step=1;step<=time_steps;step++)
   {
     ThetaScheme.DoStep(x);
-    std::cerr << "t= " << Poisson.t << std::endl;
-    std::cerr << "Iterationen: " << pcg_solver.GetIter()
+    std::cout << "t= " << Poisson.t << std::endl;
+    std::cout << "Iterationen: " << pcg_solver.GetIter()
       << "    Norm des Residuums: " << pcg_solver.GetResid() << std::endl;
     Poisson.CheckSolution(x, exact_sol, Poisson.t);
     average+= pcg_solver.GetIter();
   }
   average/= time_steps;
-  std::cerr << "Anzahl der Iterationen im Durchschnitt: " << average
+  std::cout << "Anzahl der Iterationen im Durchschnitt: " << average
     << std::endl;
   /*
   // Ausgabe Loesung
 
   for (ci p= nmap.begin(); p!= nmap.end(); p++)
   {
-    std::cerr << *(p->second) << "\n";
+    std::cout << *(p->second) << "\n";
   }
   */
 
@@ -321,9 +321,9 @@ int main()
     //dt= 0.01;
     //time_steps= 100;
     //brick_ref= 3;
-    std::cerr << "\nDelta t = "; std::cin >> dt;
-    std::cerr << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
-    std::cerr << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_ref;
+    std::cout << "\nDelta t = "; std::cin >> dt;
+    std::cout << "\nAnzahl der Zeitschritte = "; std::cin >> time_steps;
+    std::cout << "\nAnzahl der Verfeinerungen = "; std::cin >> brick_ref;
 
     /*
     // Dirichlet boundary conditions
@@ -351,7 +351,7 @@ int main()
       MarkAll(mg);
       mg.Refine();
     }
-    mg.SizeInfo(std::cerr);
+    mg.SizeInfo(std::cout);
 
     // Diffusionskoeffizient
     //double nu= 6.303096;

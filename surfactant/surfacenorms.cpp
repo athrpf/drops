@@ -154,25 +154,25 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::LevelsetP2CL& lset)
     LSInit( mg, lset.Phi, &sphere_2move, 0.);
     VecDescCL DVinitial( &fullidx);
     reader.ReadScalar( "ensight/surfactant.sur0",   DVinitial, bnd);
-    std::cerr << "\ninitial discretization error: "
+    std::cout << "\ninitial discretization error: "
               << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DVinitial, 0.), &sol0t, 0.) << std::endl;
 
     LSInit( mg, lset.Phi, &sphere_2move, 1.);
-    std::cerr << "\nfinal discretization error:" << std::endl;
+    std::cout << "\nfinal discretization error:" << std::endl;
     for (int i= 0; i < N - 1; ++i)
-        std::cerr << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.), &sol0t, C.dt*C.num_steps) << ", ";
+        std::cout << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.), &sol0t, C.dt*C.num_steps) << ", ";
 
-    std::cerr << std::endl;
+    std::cout << std::endl;
     for (int i= 0; i < N - 1; ++i) {
         DV[i].Data-=DV[N - 1].Data;
-        // std::cerr << norm( DV[i].Data) << ", ";
-        std::cerr << L2_norm( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
+        // std::cout << norm( DV[i].Data) << ", ";
+        std::cout << L2_norm( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
     for (int i= 0; i < N - 1; ++i) {
-        std::cerr << L2_norm_Omega( mg, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
+        std::cout << L2_norm_Omega( mg, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 } // end of namespace DROPS
@@ -184,20 +184,20 @@ int main (int argc, char** argv)
   {
     if (argc!=2)
     {
-        std::cerr << "You have to specify one parameter:\n\t"
+        std::cout << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
     std::ifstream param( argv[1]);
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
-    std::cerr << "Setting up interface-PDE:\n";
+    std::cout << C << std::endl;
+    std::cout << "Setting up interface-PDE:\n";
     DROPS::BrickBuilderCL brick( DROPS::MakePoint3D( -2., -2., -2.),
                                  4.*DROPS::std_basis<3>( 1),
                                  4.*DROPS::std_basis<3>( 2),

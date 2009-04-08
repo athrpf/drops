@@ -19,7 +19,7 @@ MGM(const MLMatrixCL::const_iterator& begin, const MLMatrixCL::const_iterator& f
        || fine==begin)
     { // use direct solver
         Solver.Solve( *fine, x, b);
-/*        std::cerr << "MGM: direct solver: iterations: " << Solver.GetIter()
+/*        std::cout << "MGM: direct solver: iterations: " << Solver.GetIter()
                   << "\tresiduum: " << Solver.GetResid() << '\n';*/
         return;
     }
@@ -50,7 +50,7 @@ void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL
     VectorCL tmp;
     if (residerr == true) {
         resid= norm( b - *finest * x);
-        //std::cerr << "initial residual: " << resid << '\n';
+        //std::cout << "initial residual: " << resid << '\n';
     }
     else
         tmp.resize( x.size());
@@ -65,9 +65,9 @@ void MG(const MLMatrixCL& MGData, const ProlongationT& Prolong, const SmootherCL
         if (residerr == true) {
             old_resid= resid;
             resid= norm( b - *finest * x);
-//            std::cerr << "iteration: " << it  << "\tresidual: " << resid;
-//            std::cerr << "\treduction: " << resid/old_resid;
-//            std::cerr << '\n';
+//            std::cout << "iteration: " << it  << "\tresidual: " << resid;
+//            std::cout << "\treduction: " << resid/old_resid;
+//            std::cout << '\n';
         }
         else if ((resid= norm( tmp - x)) <= tol) break;
     }
@@ -97,7 +97,7 @@ void StokesMGM( const MLMatrixCL::const_iterator& beginA,  const MLMatrixCL::con
         // use direct solver
         std::cout << "P2P1:StokesMGM: use direct solver " << std::endl;
         Solver.Solve( *fineA, *fineB, u, p, b, c);
-        //std::cerr << "P2P1:StokesMGM: direct solver: iter: " << Solver.GetIter() << "\tresid: " << Solver.GetResid() << std::endl;
+        //std::cout << "P2P1:StokesMGM: direct solver: iter: " << Solver.GetIter() << "\tresid: " << Solver.GetResid() << std::endl;
         return;
     }
     --coarseA;

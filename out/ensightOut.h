@@ -979,7 +979,7 @@ void ReadEnsightP2SolCL::ReadScalar( const std::string& file, VecDescCL& v, cons
     {
 #ifdef _PAR
         IF_MASTER
-            std::cerr << "ReadEnsightP2SolCL::ReadScalar: Binary parallel output for ensight not yet implemented! (of)" << std::endl;
+            std::cout << "ReadEnsightP2SolCL::ReadScalar: Binary parallel output for ensight not yet implemented! (of)" << std::endl;
         throw DROPSErrCL("ReadEnsightP2SolCL::ReadScalar: Binary parallel output for ensight not yet implemented!");
 #endif
         showFloat fl;
@@ -1059,7 +1059,7 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
     {
 #ifdef _PAR
         IF_MASTER
-            std::cerr << "ReadEnsightP2SolCL::ReadVector: Binary parallel output for ensight not yet implemented! (of)" << std::endl;
+            std::cout << "ReadEnsightP2SolCL::ReadVector: Binary parallel output for ensight not yet implemented! (of)" << std::endl;
         throw DROPSErrCL("ReadEnsightP2SolCL::ReadVector: Binary parallel output for ensight not yet implemented!");
 #endif
         showFloat fl;
@@ -1133,7 +1133,7 @@ void ReadEnsightP2SolCL::ReadVector( const std::string& file, VecDescCL& v, cons
         ex.Accumulate(v.Data);
 
         if (!is)
-            std::cerr << "["<<ProcCL::MyRank()<<"] Read "<<count<<" numbers from file <"<<fileName<<">"<<std::endl;
+            std::cout << "["<<ProcCL::MyRank()<<"] Read "<<count<<" numbers from file <"<<fileName<<">"<<std::endl;
 #endif
     }
 

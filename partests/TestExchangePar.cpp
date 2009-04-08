@@ -125,7 +125,7 @@ void DoRefinement(DROPS::ParMultiGridCL &pmg)
         ::Times.IncCounter(lb.GetMovedMultiNodes());
     }
     if (C.checkMG)
-        CheckParMultiGrid(pmg,std::cerr);
+        CheckParMultiGrid(pmg,std::cout);
     time.Stop(); Times.AddTime(Refine, time.GetMaxTime());
 }
 
@@ -491,7 +491,7 @@ bool CheckIdxMapping(const DROPS::MultiGridCL& mg, DROPS::MLIdxDescCL* idxDesc, 
                 if (it->Unknowns.Exist() && it->Unknowns.Exist(idx)){
                     DROPS::Ulint sysnum=it->Unknowns(idx);
                     if (DistNum(*it)!=ex.GetNumProcs(sysnum)){
-                        std::cerr << "["<<ProcCL::MyRank()<<"] DistNum="<<DistNum(*it)<<", ExCL="<<ex.GetProcs(sysnum).size()+1<<std::endl;
+                        std::cout << "["<<ProcCL::MyRank()<<"] DistNum="<<DistNum(*it)<<", ExCL="<<ex.GetProcs(sysnum).size()+1<<std::endl;
                         throw DROPS::DROPSErrCL("Falsche ProcDimension!");
                     }
                     if (!IsDist(*it, p))
@@ -499,7 +499,7 @@ bool CheckIdxMapping(const DROPS::MultiGridCL& mg, DROPS::MLIdxDescCL* idxDesc, 
                     const DROPS::IdxT extSysnum=GID_Sys_Map[it->GetGID()];
                     for (Uint i=0; i<idxDesc->NumUnknownsVertex(); ++i)
                         if (extSysnum+i != ex.GetExternalIdxFromProc(sysnum+i,p)){
-                            std::cerr <<"["<<ProcCL::MyRank()<<"] Falsche Zuordnung (i="<<i<<"), Vert "<<it->GetGID()
+                            std::cout <<"["<<ProcCL::MyRank()<<"] Falsche Zuordnung (i="<<i<<"), Vert "<<it->GetGID()
                                     <<" orig Sysnum= "<<(extSysnum+i)<<", calcSysnum="<<ex.GetExternalIdxFromProc(sysnum+i,p)
                                     <<std::endl;
                             throw DROPS::DROPSErrCL("Falsche Zuordnung!");
@@ -512,7 +512,7 @@ bool CheckIdxMapping(const DROPS::MultiGridCL& mg, DROPS::MLIdxDescCL* idxDesc, 
                 if (it->Unknowns.Exist() && it->Unknowns.Exist(idx)){
                     DROPS::Ulint sysnum=it->Unknowns(idx);
                     if (DistNum(*it)!=ex.GetNumProcs(sysnum)){
-                        std::cerr << "["<<ProcCL::MyRank()<<"] DistNum="<<DistNum(*it)<<", ExCL="<<ex.GetProcs(sysnum).size()+1<<std::endl;
+                        std::cout << "["<<ProcCL::MyRank()<<"] DistNum="<<DistNum(*it)<<", ExCL="<<ex.GetProcs(sysnum).size()+1<<std::endl;
                         throw DROPS::DROPSErrCL("Falsche ProcDimension!");
                     }
 
@@ -929,11 +929,11 @@ int main (int argc, char** argv)
         //DDD_SetOption(OPT_INFO_XFER, XFER_SHOW_MEMUSAGE/*|XFER_SHOW_MSGSALL*/);
 
         if (argc!=2){
-            std::cerr << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
+            std::cout << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
         }
         std::ifstream param( argv[1]);
         if (!param){
-            std::cerr << "error while opening parameter file\n"; return 1;
+            std::cout << "error while opening parameter file\n"; return 1;
         }
         param >> C;
         param.close();

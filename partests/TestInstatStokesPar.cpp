@@ -185,8 +185,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     pidx->SetFE( P1_FE);
 
     if (ProcCL::IamMaster()){
-        std::cerr << line << std::endl;
-        std::cerr << " - Numbering DOFs ... \n";
+        std::cout << line << std::endl;
+        std::cout << " - Numbering DOFs ... \n";
     }
 
     // erzeuge Nummerierung zu diesem Index und fuelle die ExchangeCL
@@ -208,8 +208,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     Ulint GVsize     = vidx->GetGlobalNumUnknowns(MG);
 
     if (ProcCL::IamMaster()){
-        std::cerr << "  + Number of pressure DOF (accumulated/global):  " << GPsize_acc <<"/"<<GPsize << std::endl;
-        std::cerr << "  + Number of velocity DOF (accumulated):  " << GVsize_acc <<"/"<<GVsize << std::endl;
+        std::cout << "  + Number of pressure DOF (accumulated/global):  " << GPsize_acc <<"/"<<GPsize << std::endl;
+        std::cout << "  + Number of velocity DOF (accumulated):  " << GVsize_acc <<"/"<<GVsize << std::endl;
     }
 
         // Erzeuge ensight case File und geom-File
@@ -231,21 +231,21 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 
     if (C.printInfo){
         if (ProcCL::IamMaster())
-            std::cerr << '\n' << "   + ExchangeCL size for velocity:\n";
-        ExV.SizeInfo(std::cerr);
+            std::cout << '\n' << "   + ExchangeCL size for velocity:\n";
+        ExV.SizeInfo(std::cout);
         if (ProcCL::IamMaster())
-            std::cerr << "\n   + ExchangeCL size for pressure:\n";
-        ExP.SizeInfo(std::cerr);
+            std::cout << "\n   + ExchangeCL size for pressure:\n";
+        ExP.SizeInfo(std::cout);
     }
 
     if (ProcCL::IamMaster())
-        std::cerr << line << std::endl << " Seting up matrices ...\n";
+        std::cout << line << std::endl << " Seting up matrices ...\n";
     timer.Reset();
     Stokes.SetupInstatSystem(A,B,M);
     timer.Stop(); duration = timer.GetMaxTime();
     ::Times.AddTime(T_disc,duration);
     if (ProcCL::IamMaster())
-        std::cerr << "     ---> " << duration << " sec \n";
+        std::cout << "     ---> " << duration << " sec \n";
 
     Stokes.InitVel(v,&Null,0);
 
@@ -271,7 +271,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     typedef ParPCGSolverCL<APcPcT> ASolverT;
     ASolverT Asolver( 500, 0.02, Stokes.vel_idx.GetFinest(), Apcpc, /*relative=*/ true, /*accur*/ true);
     typedef SolverAsPreCL<ASolverT> APcT;
-    APcT Apc( Asolver/*, &std::cerr*/);
+    APcT Apc( Asolver/*, &std::cout*/);
     typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
     OseenSolverT Solver( Apc, ispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.outer_iter, C.outer_tol, 0.1);
 
@@ -286,7 +286,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     for (int time=0; time<C.timesteps; ++time, t+=dt)
     {
         if (ProcCL::IamMaster())
-            std::cerr << line<< '\n' << "  Solving timestep " << time << ", time " << t << '\n'
+            std::cout << line<< '\n' << "  Solving timestep " << time << ", time " << t << '\n'
                       << "  ---------------- " << '\n' << '\n'
                       << " - Solving stat. Stokes problem" << std::endl;
         timer.Reset();
@@ -294,7 +294,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
         timer.Stop(); duration = timer.GetMaxTime();
         ::Times.AddTime(T_solve, duration);
         if (ProcCL::IamMaster())
-            std::cerr << "   + Time     " << duration << '\n'
+            std::cout << "   + Time     " << duration << '\n'
                       << "   + Steps    " << Solver.GetIter() << '\n'
                       << "   + Resid    " << Solver.GetResid() <<'\n'<< std::endl;
 
@@ -306,7 +306,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
         }
 
         if (ProcCL::IamMaster())
-            std::cerr << " - Checking solution ...\n";
+            std::cout << " - Checking solution ...\n";
 
         Stokes.CheckSolution(v,p,&LsgVel,&LsgPr,t);
     }
@@ -358,18 +358,18 @@ int main (int argc, char** argv)
         //DDD_SetOption(OPT_INFO_XFER, XFER_SHOW_MEMUSAGE/*|XFER_SHOW_MSGSALL*/);
 
         if (argc<2 && DROPS::ProcCL::IamMaster()){
-            std::cerr << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
+            std::cout << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
         }
         std::ifstream param( argv[1]);
         if (!param && DROPS::ProcCL::IamMaster()){
-            std::cerr << "error while opening parameter file: "<<argv[1]<<"\n";
+            std::cout << "error while opening parameter file: "<<argv[1]<<"\n";
             return 1;
         }
 
         param >> C;
         param.close();
         if (DROPS::ProcCL::IamMaster())
-            std::cerr << C << std::endl;
+            std::cout << C << std::endl;
 
         DROPS::ParTimerCL time, alltime;
         double duration;
@@ -391,8 +391,8 @@ int main (int argc, char** argv)
 
         if (DROPS::ProcCL::IamMaster())
         {
-            std::cerr << line << std::endl;
-            std::cerr << " - Create init grid and distribute ... \n";
+            std::cout << line << std::endl;
+            std::cout << " - Create init grid and distribute ... \n";
         }
         time.Reset();
         if (DROPS::ProcCL::IamMaster())
@@ -421,19 +421,19 @@ int main (int argc, char** argv)
         }
         time.Stop(); duration = time.GetMaxTime(); Times.AddTime(T_init,duration);
         if (DROPS::ProcCL::IamMaster())
-            std::cerr << "     ---> " << duration << " sec \n";
+            std::cout << "     ---> " << duration << " sec \n";
         if (C.printInfo)
-            mg.SizeInfo(cerr);
+            mg.SizeInfo(cout);
 
 
         if (DROPS::ProcCL::IamMaster()){
-            std::cerr << line << std::endl;
-            std::cerr << " - Refine the grid "<<C.refall<<" at inflow\n   and use the following load balancing strategy: ";
+            std::cout << line << std::endl;
+            std::cout << " - Refine the grid "<<C.refall<<" at inflow\n   and use the following load balancing strategy: ";
             switch (C.refineStrategy){
-                case 0: std::cerr << "No LoadBalancing\n"; break;
-                case 1: std::cerr << "adaptive\n"; break;
-                case 2: std::cerr << "PartKWay\n"; break;
-                default: std::cerr << "unknown strategy\nusing no strategy"; C.refineStrategy=0;
+                case 0: std::cout << "No LoadBalancing\n"; break;
+                case 1: std::cout << "adaptive\n"; break;
+                case 2: std::cout << "PartKWay\n"; break;
+                default: std::cout << "unknown strategy\nusing no strategy"; C.refineStrategy=0;
             }
         }
 
@@ -442,7 +442,7 @@ int main (int argc, char** argv)
         {
             // Markieren und verfeinern
             if (DROPS::ProcCL::IamMaster()){
-                std::cerr << "   + Refine inflow ("<<ref<<") and migrate ...\n";
+                std::cout << "   + Refine inflow ("<<ref<<") and migrate ...\n";
             }
             MarkInflow(mg,C.dy,10.0);
             pmg.Refine();
@@ -452,8 +452,8 @@ int main (int argc, char** argv)
         time.Stop(); duration=time.GetMaxTime(); Times.AddTime(T_ref,duration);
         if (C.printInfo){
             if (DROPS::ProcCL::IamMaster())
-                std::cerr << "     ---> " << duration << " sec \n" << " - Verteilung der Elemente:\n";
-            mg.SizeInfo(cerr);
+                std::cout << "     ---> " << duration << " sec \n" << " - Verteilung der Elemente:\n";
+            mg.SizeInfo(cout);
         }
 
         DROPS::Strategy(*prob, pmg);
@@ -461,16 +461,16 @@ int main (int argc, char** argv)
         alltime.Stop();
         Times.SetOverall(alltime.GetMaxTime());
         if (DROPS::ProcCL::IamMaster())
-            std::cerr << line << std::endl;
-        Times.Print(cerr);
+            std::cout << line << std::endl;
+        Times.Print(cout);
 
         if (DROPS::ProcCL::IamMaster())
-            std::cerr << line<<std::endl<<" - Check parallel multigrid ... ";
+            std::cout << line<<std::endl<<" - Check parallel multigrid ... ";
         if (CheckParMultiGrid(pmg)){
-            if (DROPS::ProcCL::IamMaster()) cerr << " OK\n";
+            if (DROPS::ProcCL::IamMaster()) cout << " OK\n";
         }
         else
-            if (DROPS::ProcCL::IamMaster()) cerr << "  !!! not OK !!!\n";
+            if (DROPS::ProcCL::IamMaster()) cout << "  !!! not OK !!!\n";
         return 0;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }

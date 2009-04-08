@@ -254,7 +254,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     _iter= 0;
     for(;;++_iter) { // ever
         NS_.SetupNonlinear(&NS_.N, &v, &cplN);
-        //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
+        //std::cout << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
         AN_->GetFinest().LinComb( 1., A, alpha, NS_.N.Data.GetFinest());
 
         // calculate defect:
@@ -267,8 +267,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 #endif
         /// \todo(merge) Do we need this output? Or should/could we use the (*output_)?
         IF_MASTER
-          std::cerr << _iter << ": res = " << _res << std::endl;
-        //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
+          std::cout << _iter << ": res = " << _res << std::endl;
+        //if (_iter == 0) std::cout << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
         if (_res < _tol || _iter>=_maxiter)
             break;
 
@@ -285,7 +285,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         // update solution:
         const double omega( relax.RelaxFactor());
         IF_MASTER
-          std::cerr << "omega = " << omega << std::endl;
+          std::cout << "omega = " << omega << std::endl;
         v.Data-= omega*w;
         p     -= omega*q;
     }
@@ -311,7 +311,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     _iter= 0;
     for(;;++_iter) { // ever
         NS_.SetupNonlinear(&NS_.N, &v, &cplN);
-        //std::cerr << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
+        //std::cout << "sup_norm : N: " << supnorm( _NS.N.Data) << std::endl;
         AN_->LinComb( 1., A, alpha, NS_.N.Data);
         // calculate defect:
         d= *AN_*v.Data + transp_mul( B, p) - b - alpha*cplN.Data;
@@ -322,8 +322,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         _res= std::sqrt( ExVel.Norm_sq(d, false, useAccur, &d_acc) + ExPr.Norm_sq(e, false, useAccur, &e_acc) );
 #endif
         IF_MASTER
-          std::cerr << _iter << ": res = " << _res << std::endl;
-        //if (_iter == 0) std::cerr << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
+          std::cout << _iter << ": res = " << _res << std::endl;
+        //if (_iter == 0) std::cout << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
         if (_res < _tol || _iter>=_maxiter)
             break;
 
@@ -340,7 +340,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         // update solution:
         const double omega( relax.RelaxFactor());
         IF_MASTER
-          std::cerr << "omega = " << omega << std::endl;
+          std::cout << "omega = " << omega << std::endl;
         v.Data-= omega*w;
         p     -= omega*q;
     }

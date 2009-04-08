@@ -47,30 +47,30 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, double omega)
     Uint sm= 0;
     int lvl= 0;
     double tol= 0.0;
-    std::cerr << "tolerance: "; std::cin >> tol;
-    std::cerr << "how many levels? (-1=all) > "; std::cin >> lvl;
+    std::cout << "tolerance: "; std::cin >> tol;
+    std::cout << "how many levels? (-1=all) > "; std::cin >> lvl;
 
     double resid, old_resid;
     SORsmoothCL smoother(omega);  //gewichtetes Gauss-Seidel
     CGSolverCL  solver(200, tol); //CG-Verfahren
     do
     {
-        std::cerr << "Smoothing steps (0=Quit): "; std::cin >> sm;
+        std::cout << "Smoothing steps (0=Quit): "; std::cin >> sm;
         if (sm<=0) return;
         // delete former solution
         Poisson.x.Data.resize(0);
         Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
-//        std::cerr << "initial error:" << std::endl;
+//        std::cout << "initial error:" << std::endl;
 //        Poisson.CheckSolution();
         resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
-        std::cerr << "initial residuum: " << resid <<std::endl;
+        std::cout << "initial residuum: " << resid <<std::endl;
         do
         {
             MGM( Poisson.A.Data.begin(), finest, finestP, Poisson.x.Data, Poisson.b.Data, smoother, sm, solver, lvl, -1);
             Poisson.CheckSolution(&::Lsg);
             old_resid= resid;
             resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
-            std::cerr << "residuum: " << resid << "\tred. " << resid/old_resid << std::endl;
+            std::cout << "residuum: " << resid << "\tred. " << resid/old_resid << std::endl;
         } while ( resid > tol);
     } while (sm>0);
 
@@ -113,7 +113,7 @@ int main (int argc, char** argv)
   {
     if (argc<2)
     {
-        std::cerr << "missing argument! Usage: MGdrops <omega>" << std::endl;
+        std::cout << "missing argument! Usage: MGdrops <omega>" << std::endl;
         return 1;
     }
     double omega;
@@ -150,13 +150,13 @@ int main (int argc, char** argv)
         MarkDrop(mg, std::min(mg.GetLastLevel(),10u));
 //        MarkAll(mg);
 //        MarkSome(mg);
-//        std::cerr << DROPS::SanityMGOutCL(mg);
-//        std::cerr << DROPS::DumpMGCL(mg);
-//        std::cerr << i << std::endl;
+//        std::cout << DROPS::SanityMGOutCL(mg);
+//        std::cout << DROPS::DumpMGCL(mg);
+//        std::cout << i << std::endl;
         mg.Refine();
     }
 #endif
-    std::cerr << "Creating Grid..." << std::endl;
+    std::cout << "Creating Grid..." << std::endl;
     for (DROPS::Uint i=0; i<3; ++i)
     {
 //        MarkDrop(mg,mg.GetLastLevel());
@@ -164,13 +164,13 @@ int main (int argc, char** argv)
         mg.Refine();
     }
     omega= std::atof(argv[1]);
-    std::cerr << omega << std::endl;
+    std::cout << omega << std::endl;
     DROPS::Strategy(prob, omega);
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");
     fil << DROPS::GeomSolOutCL<MyPoissonCL::DiscSolCL>(mg, prob.GetSolution(), &colormap, -1, false, 0.0, prob.x.Data.min(), prob.x.Data.max()) << std::endl;
-//    mg.SizeInfo(std::cerr);
+//    mg.SizeInfo(std::cout);
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

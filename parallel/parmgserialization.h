@@ -48,9 +48,9 @@ class ParSerializeErrCL : public DROPSErrCL
         if (level_>0)
             base::handle();
         else{
-            base::what(std::cerr);
+            base::what(std::cout);
             if (ProcCL::IamMaster())
-                std::cerr << "===> Skipping serialization and continue program <===" << std::endl;
+                std::cout << "===> Skipping serialization and continue program <===" << std::endl;
         }
     }
 };

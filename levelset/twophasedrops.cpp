@@ -142,13 +142,13 @@ void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2
     Stokes.SetupPrMass ( &Stokes.prM, lset);
     Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
     time.Stop();
-    std::cerr << "Discretizing took "<< time.GetTime() << " sec.\n";
+    std::cout << "Discretizing took "<< time.GetTime() << " sec.\n";
     time.Reset();
     Stokes.b.Data += curv.Data;
     solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v, Stokes.p.Data, Stokes.b.Data, cplN, Stokes.c.Data, 1.0);
     time.Stop();
-    std::cerr << "Solving (Navier-)Stokes took "<< time.GetTime() << " sec.\n";
-    std::cerr << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
+    std::cout << "Solving (Navier-)Stokes took "<< time.GetTime() << " sec.\n";
+    std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 }
 
 // For a two-level MG-solver: P2P1 -- P2P1X; canonical prolongations
@@ -230,7 +230,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 #ifndef _PAR
       case -10: // read from ensight-file [deprecated]
       {
-        std::cerr << "read from ensight-file [DEPRECATED]\n";
+        std::cout << "read from ensight-file [DEPRECATED]\n";
         ReadEnsightP2SolCL reader( MG);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
@@ -268,7 +268,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         PCGPcT     apc(PCGSolver);
         ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
         ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(),
-                                                                           C.outer_iter, C.outer_tol, 0.6, 50, &std::cerr);
+                                                                           C.outer_iter, C.outer_tol, 0.6, 50, &std::cout);
 #else
         SSORPcCL ssorpc;
         PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
@@ -290,11 +290,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     DisplayUnks(Stokes, lset, MG);
 
     const double Vol= EllipsoidCL::GetVolume();
-    std::cerr << "initial volume: " << lset.GetVolume()/Vol << std::endl;
+    std::cout << "initial volume: " << lset.GetVolume()/Vol << std::endl;
     double dphi= lset.AdjustVolume( Vol, 1e-9);
-    std::cerr << "initial volume correction is " << dphi << std::endl;
+    std::cout << "initial volume correction is " << dphi << std::endl;
     lset.Phi.Data+= dphi;
-    std::cerr << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
+    std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     double D[2] = {C.transp_cPos, C.transp_cNeg};
@@ -314,7 +314,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             ReadFEFromFile( massTransp.ct, MG, C.IniData+"concentrationTransf");
         }
         massTransp.Update();
-        std::cerr << massTransp.c.Data.size() << " concentration unknowns,\n";
+        std::cout << massTransp.c.Data.size() << " concentration unknowns,\n";
     }
     // Stokes-Solver
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
@@ -405,7 +405,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     for (int step= 1; step<=C.num_steps; ++step)
     {
-        std::cerr << "============================================================ step " << step << std::endl;
+        std::cout << "============================================================ step " << step << std::endl;
 
         IFInfo.Update( lset, Stokes.GetVelSolution());
         IFInfo.Write(Stokes.t);
@@ -414,7 +414,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         if (C.transp_do) massTransp.DoStep( step*C.dt);
 
         // WriteMatrices( Stokes, step);
-        std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+        std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
         bool forceVolCorr= false, forceUpdate= false,
              doReparam= C.RepFreq && step%C.RepFreq == 0,
@@ -423,9 +423,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         // volume correction before reparam/grid modification
         if (C.VolCorr && (doReparam || doGridMod)) {
                 dphi= lset.AdjustVolume( Vol, 1e-9);
-                std::cerr << "volume correction is " << dphi << std::endl;
+                std::cout << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
-                std::cerr << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
+                std::cout << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
                 forceUpdate = true; // volume correction modifies the level set
         }
 
@@ -433,10 +433,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         if (doReparam) {
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             if (lsetmaxGradPhi > C.MaxGrad || lsetminGradPhi < C.MinGrad) {
-                std::cerr << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+                std::cout << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 lset.ReparamFastMarching( C.RepMethod, false, false, C.RepMethod==3);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-                std::cerr << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+                std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 forceVolCorr = forceUpdate = true; // volume correction and update after reparam
             }
         }
@@ -453,9 +453,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         // volume correction
         if (C.VolCorr && (step%C.VolCorr==0 || forceVolCorr)) {
             dphi= lset.AdjustVolume( Vol, 1e-9);
-            std::cerr << "volume correction is " << dphi << std::endl;
+            std::cout << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
-            std::cerr << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cout << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
             forceUpdate  = true;
         }
 
@@ -476,7 +476,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t);
-    std::cerr << std::endl;
+    std::cout << std::endl;
     delete timedisc;
     delete navstokessolver;
     delete stokessolver;
@@ -497,19 +497,19 @@ int main (int argc, char** argv)
     std::ifstream param;
     if (argc!=2)
     {
-        std::cerr << "Using default parameter file: risingdroplet.param\n";
+        std::cout << "Using default parameter file: risingdroplet.param\n";
         param.open( "risingdroplet.param");
     }
     else
         param.open( argv[1]);
     if (!param)
     {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     typedef DROPS::ZeroFlowCL                             CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
@@ -525,10 +525,10 @@ int main (int argc, char** argv)
     if (C.deserialization_file == "none")
         adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
-    std::cerr << DROPS::SanityMGOutCL(*mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 #ifdef _PAR
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
-        std::cerr << "As far as I can tell the ParMultigridCl is sane\n";
+        std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
     MyStokesCL prob( *mg, DROPS::ZeroFlowCL(C), *bnddata, C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
 

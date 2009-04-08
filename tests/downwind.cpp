@@ -17,7 +17,7 @@ print_frobeniusnorm (const MatrixCL& M)
             if ( M.col_ind( nz) > i) FU+= vsq;
             if ( M.col_ind( nz) == i) FD+= vsq;
         }
-    std::cerr << "frobeniusnorm: F: " << std::sqrt( F) << '\t'
+    std::cout << "frobeniusnorm: F: " << std::sqrt( F) << '\t'
         << "FL: " << std::sqrt( FL) << '\t'
         << "FU: " << std::sqrt( FU) << '\t'
         << "FD: " << std::sqrt( FD) << '\n';
@@ -36,7 +36,7 @@ non_symmetric_part (const MatrixCL& M, MatrixCL& NP)
         }
     }
     N.Build();
-    std::cerr << "non_symmetric_part: nonzeros: " << NP.num_nonzeros () << '\n';
+    std::cout << "non_symmetric_part: nonzeros: " << NP.num_nonzeros () << '\n';
 }
 
 void
@@ -102,7 +102,7 @@ depth_first (IdxT v, const MatrixCL& M, PermutationT& p, IdxT& idx, size_t& c)
             depth_first( w, M, p, idx, c);
         if (p[w] == NoIdx - 1) {
             ++c;
-//            std::cerr << "Cycle detected at vertex " << w
+//            std::cout << "Cycle detected at vertex " << w
 //                << ". Edge (" << v << ", " << w << ") ignored.\n";
         }
     }
@@ -140,7 +140,7 @@ ow << w;
     if (idx != M.num_rows())
         throw DROPSErrCL( "topo_sort: Sort failed.\n");
 
-    std::cerr << "topo_sort: " << c << " cycles detected.\n";
+    std::cout << "topo_sort: " << c << " cycles detected.\n";
 }
 
 
@@ -180,7 +180,7 @@ bey (const MatrixCL& M, PermutationT& p)
     for (IdxT v= 0; v < M.num_rows(); ++v)
         if (p[v] == NoIdx) bey_depth_first( v, M, Mt, p, idx);
 
-    std::cerr << "bey: Could number " << idx << " dofs topologically.\n";
+    std::cout << "bey: Could number " << idx << " dofs topologically.\n";
     for (IdxT v= 0; v < M.num_rows(); ++v)
         if (p[v] == NoIdx) p[v]= idx++;
 
@@ -203,16 +203,16 @@ void TestPermutation()
     Mb( 1, 0)= 0.0;
     Mb( 1, 2)= 1.0;
     Mb.Build();
-    std::cerr << "M (the digraph):\n" << M << '\n';
+    std::cout << "M (the digraph):\n" << M << '\n';
 
     PermutationT p;
     topo_sort ( M, p);
-    seq_out( p.begin(), p.end(), std::cerr);
+    seq_out( p.begin(), p.end(), std::cout);
 
     VectorCL v( 3);
     v[0]= 0.; v[1]= 1.; v[2]= 2.;
     permute_Vector( v, p);
-    std::cerr << v << '\n';
+    std::cout << v << '\n';
 
     MatrixCL m;
     MatrixBuilderCL mb( &m, 3, 3);
@@ -228,25 +228,25 @@ void TestPermutation()
     mb.Build();
     MatrixCL m2( m), m3( m);
     
-    std::cerr << "Matrix:\n" << m << '\n' << "Permutation:\n";
-    seq_out( p.begin(), p.end(), std::cerr);
+    std::cout << "Matrix:\n" << m << '\n' << "Permutation:\n";
+    seq_out( p.begin(), p.end(), std::cout);
 
     m.permute_columns( p);
-    std::cerr << "Columns permuted:\n" << m << '\n';
+    std::cout << "Columns permuted:\n" << m << '\n';
 
     m2.permute_rows( p);
-    std::cerr << "Rows permuted:\n" << m2 << '\n';
+    std::cout << "Rows permuted:\n" << m2 << '\n';
 
     m3.permute_columns( p);
     m3.permute_rows( p);
-    std::cerr << "Columns and rows permuted:\n" << m3 << '\n';
+    std::cout << "Columns and rows permuted:\n" << m3 << '\n';
 
     
     print_frobeniusnorm( M);
     M.permute_rows( p);
-    std::cerr << "M, rows permuted:\n" << M << '\n';
+    std::cout << "M, rows permuted:\n" << M << '\n';
     M.permute_columns( p);
-    std::cerr << "M permuted:\n" << M << '\n';
+    std::cout << "M permuted:\n" << M << '\n';
     print_frobeniusnorm( M);
 }
 
@@ -267,7 +267,7 @@ depth_first_strategy()
     print_frobeniusnorm( M);
     PermutationT p;
     topo_sort ( N, p);
-    // seq_out( p.begin(), p.end(), std::cerr);
+    // seq_out( p.begin(), p.end(), std::cout);
     M.permute_rows( p);
     M.permute_columns( p);
     print_frobeniusnorm( M);
@@ -292,7 +292,7 @@ bey_strategy()
     print_frobeniusnorm( N);
     PermutationT p;
     bey( N, p);
-    // seq_out( p.begin(), p.end(), std::cerr);
+    // seq_out( p.begin(), p.end(), std::cout);
     M.permute_rows( p);
     M.permute_columns( p);
     print_frobeniusnorm( M);
@@ -315,14 +315,14 @@ Test_rcm()
     Mb( 1, 0)= 0.0;
     Mb( 1, 2)= 1.0;
     Mb.Build();
-    std::cerr << "M (the digraph):\n" << M << '\n';
+    std::cout << "M (the digraph):\n" << M << '\n';
     print_frobeniusnorm( M);
 
     PermutationT p;
     reverse_cuthill_mckee( M, p);
     M.permute_rows( p);
     M.permute_columns( p);
-    std::cerr << "M permuted:\n" << M << '\n';
+    std::cout << "M permuted:\n" << M << '\n';
     print_frobeniusnorm( M);
 }
 

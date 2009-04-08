@@ -106,7 +106,7 @@ void DisplayNumUnknowns(const DROPS::MultiGridCL& MG, const DROPS::VecDescCL& x)
     const DROPS::Uint  idx=x.RowIdx->GetIdx();
 
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
+        std::cout << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
                   <<acc_num_unk<< "/" <<glo_num_unk<< std::endl;
 }
 
@@ -300,7 +300,7 @@ template<class Coeff>
      GlobalMax(Addr(dist_vals), Addr(global_dist_vals), dist_vals.size(), ProcCL::Master());
 
      if (ProcCL::IamMaster())
-         std::cerr  << "Diferences (at time "<<time<<"):"
+         std::cout  << "Diferences (at time "<<time<<"):"
                     << "\npr            : "<< std::setw(10) << pr_dist        << ", absolut: "<<abs_pr_dist
                     << "\nvel (Vertex)  : "<< std::setw(10) << vel_dist_vert  << ", absolut: "<<abs_vel_dist_vert
                     << "\nvel (Edge)    : "<< std::setw(10) << vel_dist_edge  << ", absolut: "<<abs_vel_dist_edge
@@ -383,7 +383,7 @@ template<typename Coeff>
 
         ParTimerCL time;
         if (ProcCL::IamMaster())
-            std::cerr << "=================================================================================== Schritt " << step << ":\n"
+            std::cout << "=================================================================================== Schritt " << step << ":\n"
                       << "==> Solving coupled Levelset-Navier-Stokes problem ....\n"
                       << " Idx for vel  "<<Stokes.v.RowIdx->GetIdx()
                       << "\n Idx for pr   "<<Stokes.p.RowIdx->GetIdx()
@@ -402,11 +402,11 @@ template<typename Coeff>
 
         lset.GetInfo( dummy1, dummy2, bary, dummy3, Stokes.GetVelSolution(), dummy4, dummy5);
         IF_MASTER
-                std::cerr << "Position of the drop "<<bary[1]<<std::endl;
+                std::cout << "Position of the drop "<<bary[1]<<std::endl;
 
 
         if (ProcCL::IamMaster())
-            std::cerr << "==> Adaptive Refinement of MultiGrid"<<std::endl;
+            std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
 
         adap.UpdateTriang( lset);
         if (C.ensight && step%C.ensight==0)
@@ -420,7 +420,7 @@ template<typename Coeff>
         int cplmem=GlobalSum(DDD_InfoCplMemory());
         Uint numdistobj=GlobalSum(Stokes.GetMG().GetNumDistributedObjects());
         if (ProcCL::IamMaster()){
-             std::cerr << "Memory for couplings: "<<cplmem<<"\nnumber of distributed objects "<<numdistobj<<'\n'
+             std::cout << "Memory for couplings: "<<cplmem<<"\nnumber of distributed objects "<<numdistobj<<'\n'
                        << "--> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
         }
     }
@@ -460,7 +460,7 @@ template<class Coeff>
     cplmem=GlobalSum(DDD_InfoCplMemory());
     numdistobj=GlobalSum(mg.GetNumDistributedObjects());
     if (ProcCL::IamMaster()){
-            std::cerr << "Memory for couplings: "<<cplmem<<"\nnumber of distributed objects "<<numdistobj<<'\n'
+            std::cout << "Memory for couplings: "<<cplmem<<"\nnumber of distributed objects "<<numdistobj<<'\n'
                     << "--> Step 0 took "<<dur<<" sec."<<std::endl;
     }
 
@@ -480,8 +480,8 @@ template<class Coeff>
     Stokes.CreateNumberingPr ( mg.GetLastLevel(), pidx, 0, &lset);
 
     if (DROPS::ProcCL::IamMaster())
-        std::cerr << " - Distribution of elements of the multigrid of level "<<mg.GetLastLevel()<<"\n";
-    mg.SizeInfo(std::cerr);
+        std::cout << " - Distribution of elements of the multigrid of level "<<mg.GetLastLevel()<<"\n";
+    mg.SizeInfo(std::cout);
 
     // Tell matrices and vectors about the numbering
     v->SetIdx( vidx);               p->SetIdx( pidx);
@@ -492,7 +492,7 @@ template<class Coeff>
 
     //Setup initial problem
     if (ProcCL::IamMaster())
-        std::cerr << "=================================================================================== Init:\n"
+        std::cout << "=================================================================================== Init:\n"
                     << "==> Initialize Problem\n";
 
     InitProblemWithDrop(Stokes, lset);
@@ -510,7 +510,7 @@ int main (int argc, char** argv)
     if (argc!=2)
     {
         IF_MASTER
-          std::cerr << "You have to specify one parameter:\n\t"
+          std::cout << "You have to specify one parameter:\n\t"
                     << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
@@ -518,13 +518,13 @@ int main (int argc, char** argv)
     if (!param)
     {
         IF_MASTER
-          std::cerr << "error while opening parameter file\n";
+          std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
     IF_MASTER
-      std::cerr << C << std::endl;
+      std::cout << C << std::endl;
 
     DROPS::ParTimerCL alltime;
     SetDescriber();
@@ -543,7 +543,7 @@ int main (int argc, char** argv)
     brick_info >> dim_of_brick[0] >> dim_of_brick[1] >> dim_of_brick[2] >> nx >> ny >> nz;
     if (!brick_info)
     {
-        std::cerr << "error while reading geometry information: " << mesh << "\n";
+        std::cout << "error while reading geometry information: " << mesh << "\n";
         return 1;
     }
 
@@ -584,7 +584,7 @@ int main (int argc, char** argv)
 
     alltime.Stop();
     Times.SetOverall(alltime.GetMaxTime());
-    Times.Print(std::cerr);
+    Times.Print(std::cout);
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
   return 0;

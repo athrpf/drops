@@ -53,7 +53,7 @@ void P1XRepairCL::operator() ()
             ++ci;
         }
     }
-//     std::cerr << "P1XRepairCL::(): #P1-unknowns: " << extidx.GetNumUnknownsStdFE()
+//     std::cout << "P1XRepairCL::(): #P1-unknowns: " << extidx.GetNumUnknownsStdFE()
 //               << "\t#copied extended-dof: " << ci << '\n';
 }
 

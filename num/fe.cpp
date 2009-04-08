@@ -66,7 +66,7 @@ void SetupP1ProlongationMatrix(const MultiGridCL& mg, MatrixCL& P,
         if ( sit->IsRefined() && sit->GetMidVertex()->Unknowns.Exist()
              && !sit->GetMidVertex()->Unknowns.Exist(c_idx) )  {
             // only new non-boundary vertices are interpolated
-// if(!(*sit->GetMidVertex()->Unknowns.Exist(idx)) std::cerr << "no unknown index in mid vertex" << std::endl;
+// if(!(*sit->GetMidVertex()->Unknowns.Exist(idx)) std::cout << "no unknown index in mid vertex" << std::endl;
             i= sit->GetMidVertex()->Unknowns(f_idx);
             if (sit->GetVertex(0)->Unknowns.Exist())
                 mat(i,sit->GetVertex(0)->Unknowns(c_idx))= 0.5;

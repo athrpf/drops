@@ -14,15 +14,15 @@ void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P)
     MLMatrixCL::const_iterator coarseP = P.begin(), fineP = ++P.begin();
     for(; fine!=A.end(); ++coarse, ++fine, ++lvl)
     {
-//        if (lvl==1) std::cerr << fine->A.Data << std::endl;
+//        if (lvl==1) std::cout << fine->A.Data << std::endl;
         const Uint nu= coarse->num_cols();
         VectorCL ei(nu), Ai(nu);
 
-        std::cerr << nu << " unknowns on level " << lvl << std::endl;
+        std::cout << nu << " unknowns on level " << lvl << std::endl;
 
         if (nu>700)
         {
-            std::cerr << "Check skipped: too many unknowns, too much time..." << std::endl;
+            std::cout << "Check skipped: too many unknowns, too much time..." << std::endl;
             continue;
         }
 
@@ -35,7 +35,7 @@ void CheckMGData( const MLMatrixCL& A, const MLMatrixCL& P)
             {
                 if (std::fabs(Ai[j] - (*coarse)(i,j))>1e-6)
                 {
-                    std::cerr << "Auf coarse-Level " << lvl << ": A_H(" << i << ", " << j <<")= "
+                    std::cout << "Auf coarse-Level " << lvl << ": A_H(" << i << ", " << j <<")= "
                               << (*coarse)(i,j) << " != " << Ai[j] << std::endl;
                 }
             }

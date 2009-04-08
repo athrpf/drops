@@ -346,6 +346,77 @@ class ExchangeBlockCL
     /// \brief Return an accumulated vector
     inline VectorCL              GetAccumulate (const VectorCL&) const;
 };
+
+
+
+///// \brief Structure for sending non-zeros of a matrix belonging to a face
+//template <size_t numNNZVertexVertex, size_t numNNZVertexEdge, size_t numNNZEdgeEdge>
+//struct FaceDoFInfoST
+///** In order to send non-zeroes of a matrix while accumulating the matrix
+//    the GIDs of the vertices and edges are send and the corresponding non-zeroes
+//    are send. These data are collected in this class.
+//    \param numNNZVertexVertex number of non-zeroes belonging to the coupling of vertex-vertex DOF
+//    \param numNNZVertexEdge number of non-zeroes belonging to the coupling of vertex-edge DOF
+//    \param numNNZEdgeEdge number of non-zeroes belonging to the coupling of edge-edge DOF
+//*/
+//{
+//    DDD_GID vertexGID[3];                           ///< defining order of vertices on sender side
+//    DDD_GID edgeGID[3];                             ///< defining order of edges on sender side
+//    double  NNZVertexVertex[9*numNNZVertexVertex];  ///< non-zeroes belonging to coupling of vertex-vertex
+//    double  NNZVertexEdge[9*numNNZVertexEdge];      ///< non-zeroes belonging to coupling of vertex-edge
+//    double  NNZEdgeEdge[9*numNNZEdgeEdge];          ///< non-zeroes belonging to coupling of egde-edge
+//};
+//
+///// \brief Transfering non-zeroes of scalar P1 scalar P1 matrix
+//typedef FaceDoFsP1sP1ST FaceDoFInfoST<1, 0, 0>;
+///// \brief Transfering non-zeroes of vector P2 vector P2 matrix
+//typedef FaceDoFsP1sP1ST FaceDoFInfoST<9, 9, 9>;
+//
+//
+//template<typename MatDescT>
+//class AccumulateMatrixCL
+//{
+//  public:
+//    typedef typename MatDescT::IdxT     IdxT;       ///< IdxDescCL
+//    typedef typename MatDescT::DataType DataType;   ///< MatrixT
+//
+//  private:
+//    MatDescT& mat_;
+//    static IdxT* current_RowIdx_;   ///< Pointer to the index-description used for row-indices while accumulating the matrix.
+//    static IdxT* current_ColIdx_;   ///< Pointer to the index-description used for column-indices while accumulating the matrix.
+//    static DataType current_Data_;  ///< The numerical data while accumulating the matrix.
+//
+//    /// \brief Gather non-zeroes of the matrix (for DDD)
+//    template <typename DOFInfoT>
+//    static int HandlerGatherNNZ ( DDD_OBJ objp, void* buf);
+//    /// \brief Scatter non-zeroes of the matrix (for DDD)
+//    template <typename DOFInfoT>
+//    static int HandlerScatterNNZ( DDD_OBJ objp, void* buf);
+//
+//  public:
+//    AccumulateMatrixCL(MatDescT& mat)
+//        : mat_(mat) {}
+//    void Accumulate();
+//};
+//
+//
+//template <typename DOFInfoT>
+//template<typename MatDescT>
+//  int AccumulateMatrixCL<MatDescCL>::HandlerGatherNNZ(DDD_OBJ facep, void* buffer)
+//{
+//    FaceCL*   face   = ddd_cast<FaceCL*>(facep);
+//    DOFInfoT* dofInfo= static_cast<DOFInfoT*>(buffer);
+//
+//    // Gather gids
+//    for (Uint i=0; i<3; ++i)
+//        dofInfo->vertexGID[i]= face->GetVertex(i);
+//    for (Uint i=0; i<3; ++i)
+//        dofInfo->edgeGID[i]= face->GetEdge(i);
+//
+//    // Gather non-zeros
+//    // TBC
+//}
+
 } // end of namespace DROPS
 
 // File, where the inline an template-functions are declared

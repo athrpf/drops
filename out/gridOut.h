@@ -505,7 +505,7 @@ inline void QuadOutCL::putGeom( std::string fileName)
     if (os) delete os;
     timer.Stop(); duration=timer.GetTime();
     IF_MASTER
-        std::cerr << "   * took "<<duration<<" sec."<<std::endl;
+        std::cout << "   * took "<<duration<<" sec."<<std::endl;
 }
 
 
@@ -710,7 +710,7 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
     if (osZ) delete osZ;
     timer.Stop(); duration=timer.GetTime();
     IF_MASTER
-        std::cerr << "   * took "<<duration<<" sec."<<std::endl;
+        std::cout << "   * took "<<duration<<" sec."<<std::endl;
 
 }
 
@@ -768,7 +768,7 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
 
     IF_MASTER{
 #pragma omp master
-        std::cerr << "   * Using "<<num_threads<<" thread(s) to fetch points ..." << std::endl;
+        std::cout << "   * Using "<<num_threads<<" thread(s) to fetch points ..." << std::endl;
     }
 #pragma omp for
     for (int k=0; k<gridpts_[2]; ++k)
@@ -834,7 +834,7 @@ void QuadOutCL::putVector(std::string fileName, std::string fileNameY, std::stri
     if (osZ) delete osZ;
     timer.Stop(); duration=timer.GetTime();
     IF_MASTER
-        std::cerr << "   * took "<<duration<<" sec."<<std::endl;
+        std::cout << "   * took "<<duration<<" sec."<<std::endl;
 }
 
 } // end of namespace DROPS

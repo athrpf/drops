@@ -374,8 +374,8 @@ void TetraCL::BuildEdges (EdgeContT& edgecont)
               case 2:
                 edgecont.push_back( EdgeCL(v0, v1, GetLevel(), commonBndVerts[0].GetBndIdx(), commonBndVerts[1].GetBndIdx()) );   break;
               default:
-                v0->DebugInfo( std::cerr); std::cerr << std::endl;
-                v1->DebugInfo( std::cerr); std::cerr << std::endl;
+                v0->DebugInfo( std::cout); std::cout << std::endl;
+                v1->DebugInfo( std::cout); std::cout << std::endl;
                 throw DROPSErrCL("TetraCL::BuildEdges: Found edge on more than two BndSegs!");
             }
             _Edges[edge]= &edgecont.back();
@@ -1511,9 +1511,9 @@ void PeriodicEdgesCL::AccumulateMFR( int lvl)
     Shrink();
     for (int i=0; i<=lvl; ++i)
         Recompute( mg_.GetEdgesBegin(i), mg_.GetEdgesEnd(i));
-//std::cerr << " \n>>> After Recompute:\n"; DebugInfo( std::cerr);
+//std::cout << " \n>>> After Recompute:\n"; DebugInfo( std::cout);
     Accumulate();
-//std::cerr << " \n>>> After Accumulate:\n"; DebugInfo( std::cerr);
+//std::cout << " \n>>> After Accumulate:\n"; DebugInfo( std::cout);
     Shrink();
 }
 
@@ -2398,8 +2398,8 @@ void circumcircle(const TetraCL& t, Point3DCL& c, double& r)
             || std::fabs( (c-p0).norm() - (c-t.GetVertex(2)->GetCoord()).norm()) > DoubleEpsC
             || std::fabs( (c-p0).norm() - (c-t.GetVertex(3)->GetCoord()).norm()) > DoubleEpsC) )
     {
-        std::cerr << "circumcircle: Didn't find circumcenter. c: " << c << '\n';
-        t.DebugInfo(std::cerr);
+        std::cout << "circumcircle: Didn't find circumcenter. c: " << c << '\n';
+        t.DebugInfo(std::cout);
         throw DROPSErrCL();
     }
     r= (c-p0).norm();
@@ -2424,8 +2424,8 @@ void circumcircle(const TetraCL& t, Uint face, Point3DCL& c, double& r)
         && (   std::fabs( (c-v0).norm() - (c-(p1+v0)).norm()) > DoubleEpsC
             || std::fabs( (c-v0).norm() - (c-(p2+v0)).norm()) > DoubleEpsC) )
     {
-        std::cerr << "circumcircle: Didn't find circumcenter. c: " << c << " face: " << face << '\n';
-        t.DebugInfo(std::cerr);
+        std::cout << "circumcircle: Didn't find circumcenter. c: " << c << " face: " << face << '\n';
+        t.DebugInfo(std::cout);
         throw DROPSErrCL();
     }
     r= (c-v0).norm();
@@ -2444,7 +2444,7 @@ void UnMarkAll (DROPS::MultiGridCL& mg)
      DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/-1, It)
      {
 #ifdef _PAR
-         if (!It->IsMaster()) std::cerr <<"Setzte Löschenmarke auf non-master!!!\n";
+         if (!It->IsMaster()) std::cout <<"Setzte Löschenmarke auf non-master!!!\n";
 #endif
             It->SetRemoveMark();
      }

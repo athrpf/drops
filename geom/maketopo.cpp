@@ -30,8 +30,8 @@ class TopoErrCL
     }
 
     void handle() const{
-        what(std::cerr);
-        std::cerr.flush();
+        what(std::cout);
+        std::cout.flush();
         std::abort();
     }
 };
@@ -356,8 +356,8 @@ int main()
     std::string   TextLine;
     std::ifstream FileIn  ("topo.cpp.in");
     std::ofstream FileOut ("topo.cpp");
-    if (!FileIn)  { std::cerr << "Couldn't open file 'topo.cpp.in' for reading!" << std::endl; return -1; }
-    if (!FileOut) { std::cerr << "Couldn't open file 'topo.cpp' for writing!" << std::endl; return -1; }
+    if (!FileIn)  { std::cout << "Couldn't open file 'topo.cpp.in' for reading!" << std::endl; return -1; }
+    if (!FileOut) { std::cout << "Couldn't open file 'topo.cpp' for writing!" << std::endl; return -1; }
 
     while (std::getline(FileIn,TextLine))
         if (TextLine.size()>=3 && TextLine.substr(0,3)==std::string("//@"))
@@ -365,8 +365,8 @@ int main()
         else
             FileOut << TextLine << '\n';
 
-    if (!FileIn.eof()) { std::cerr << "Error reading 'topo.cpp.in'!" << std::endl; return -1; }
-    if (!FileOut)      { std::cerr << "Error writing 'topo.cpp'!" << std::endl; return -1; }
+    if (!FileIn.eof()) { std::cout << "Error reading 'topo.cpp.in'!" << std::endl; return -1; }
+    if (!FileOut)      { std::cout << "Error writing 'topo.cpp'!" << std::endl; return -1; }
     FileIn.close();
     FileOut.close();
     return 0;

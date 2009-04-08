@@ -115,7 +115,7 @@ void CheckParMultiGrid(DROPS::ParMultiGridCL& pmg, int type, int proc=0)
     else{
         // Always exit on error
         if (me==proc) std::cout << " nicht OK!!!\n";
-            std::cerr << "EXIT Error found in multigrid\n";
+            std::cout << "EXIT Error found in multigrid\n";
             exit(-1);
     }
     if (C.checkDDD){
@@ -219,7 +219,7 @@ bool UnMarkForGhostKill (DROPS::MultiGridCL& mg, DROPS::Uint maxLevel)
                 for (DROPS::TetraCL::const_ChildPIterator ch(It->GetChildBegin()),
                     chEnd(It->GetChildEnd()); ch!=chEnd; ++ch)
                     (*ch)->SetRemoveMark();
-                std::cerr << "Tetra "<<It->GetGID()<<" marked for ghost-kill by proc "<<DROPS::ProcCL::MyRank()<<std::endl;
+                std::cout << "Tetra "<<It->GetGID()<<" marked for ghost-kill by proc "<<DROPS::ProcCL::MyRank()<<std::endl;
                 done=1;
             }
         }
@@ -271,7 +271,7 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
             }
 
             if (me==0)
-                std::cerr << "  - Berechne eine Graphpartitionierung ...\n";
+                std::cout << "  - Berechne eine Graphpartitionierung ...\n";
             time.Reset();
             if (me==proc){
                 lb.SerPartKWay();
@@ -283,7 +283,7 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
             }
 
             if (me==0)
-                std::cerr << "  - Migration ...\n";
+                std::cout << "  - Migration ...\n";
 
             // Verteile das MultiGrid
             time.Reset();
@@ -311,7 +311,7 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
 
             std::ofstream serSanity("sanity.txt");
 
-            std::cerr << "\n \n MultiGrid mit "<<mg->GetNumLevel()<<" Leveln aus Datei gelesen\n \n";
+            std::cout << "\n \n MultiGrid mit "<<mg->GetNumLevel()<<" Leveln aus Datei gelesen\n \n";
             serSanity << SanityMGOutCL(*mg) << std::endl;
         }
         else
@@ -383,7 +383,7 @@ int main(int argc, char* argv[])
 {
     DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
-    DROPS::ParTimerCL::TestBandwidth(std::cerr);
+    DROPS::ParTimerCL::TestBandwidth(std::cout);
     try
     {
         const char line[] = "----------------------------------------------------------------------------------";
@@ -400,11 +400,11 @@ int main(int argc, char* argv[])
 
         // Parameter file einlesen ...
         if (argc!=2){
-            std::cerr << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
+            std::cout << "You have to specify one parameter:\n\t" << argv[0] << " <param_file>" << std::endl; return 1;
         }
         std::ifstream param( argv[1]);
         if (!param){
-            std::cerr << "error while opening parameter file\n"; return 1;
+            std::cout << "error while opening parameter file\n"; return 1;
         }
 
         param >> C;
@@ -521,14 +521,14 @@ int main(int argc, char* argv[])
                         break;
                     case 4:
                         if (ProcCL::IamMaster())
-                            std::cerr << "UnMark for ghost tetra kill"<<std::endl;
+                            std::cout << "UnMark for ghost tetra kill"<<std::endl;
                         killedghost=UnMarkForGhostKill(mg, mg.GetLastLevel());
                         killedghost= ProcCL::GlobalOr(killedghost);
                         if (ProcCL::IamMaster() && killedghost)
                             std::cout << "A ghost tetra will be killed"<<std::endl;
                         break;
                     default:
-                        std::cerr << "I do not know this case!\n";
+                        std::cout << "I do not know this case!\n";
                 }
             break;
             case 3:

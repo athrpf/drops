@@ -701,7 +701,7 @@ double ExchangeCL::Norm(const VectorCL &r, bool acc_r, bool useAccur, VectorCL* 
 {
     double norm_sq= ProcCL::GlobalSum(LocNorm_sq(r, acc_r, useAccur, r_acc));
     if (norm_sq<0.){
-        std::cerr << "["<<ProcCL::MyRank()<<"] In function ExchangeCL::Norm:\n Norm of vector smaller than zero: "
+        std::cout << "["<<ProcCL::MyRank()<<"] In function ExchangeCL::Norm:\n Norm of vector smaller than zero: "
                   << "acc_r "<<acc_r<<", use Accur "<<useAccur<<", (bool)r_acc "<<((bool)r_acc)
                   << ", squared value "<<norm_sq<<std::endl;
     }
@@ -1193,7 +1193,7 @@ double ExchangeCL::Norm(const VectorCL &r) const
     double norm_sq = ParDotAcc(r_acc,r);
 
     if (norm_sq<0.){
-        std::cerr << "["<<ProcCL::MyRank()<<"] In function ExchangeCL::Norm (1 arg):\n Norm of vector smaller than zero: "
+        std::cout << "["<<ProcCL::MyRank()<<"] In function ExchangeCL::Norm (1 arg):\n Norm of vector smaller than zero: "
                   << "squared value "<<norm_sq<<std::endl;
         throw DROPSErrCL("ExchangeCL::Norm: negative squared norm because of accumulation!");
     }

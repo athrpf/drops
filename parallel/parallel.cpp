@@ -105,8 +105,8 @@ void
 DROPSErrCL::handle() const
 {
     ProcCL::RecoverStdOstreams();
-    what(std::cerr);
-    std::cerr.flush();
+    what(std::cout);
+    std::cout.flush();
     ProcCL::Abort(-1);
     std::abort();
 }

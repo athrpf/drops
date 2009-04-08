@@ -99,31 +99,31 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
 {
     const Uint lvl= i.TriangLevel();
     if (lvl != j.TriangLevel()) {
-        std::cerr << "Compare_Indices: Indices on different levels.\n";
+        std::cout << "Compare_Indices: Indices on different levels.\n";
         return false;
     }
     if (i.NumUnknowns() != j.NumUnknowns()) {
-        std::cerr << "Compare_Indices: NumUnknowns different.\n";
+        std::cout << "Compare_Indices: NumUnknowns different.\n";
         return false;
     }
     if (i.GetFE() !=  j.GetFE()) {
-        std::cerr << "Compare_Indices: FE types different.\n";
+        std::cout << "Compare_Indices: FE types different.\n";
         return false;
     }
     if (i.NumUnknownsVertex_ != j.NumUnknownsVertex_) {
-        std::cerr << "Compare_Indices: NumUnknownsVertex different.\n";
+        std::cout << "Compare_Indices: NumUnknownsVertex different.\n";
         return false;
     }
     if (i.NumUnknownsEdge_ != j.NumUnknownsEdge_) {
-        std::cerr << "Compare_Indices: NumUnknownsEdge different.\n";
+        std::cout << "Compare_Indices: NumUnknownsEdge different.\n";
         return false;
     }
     if (i.NumUnknownsFace_ != j.NumUnknownsFace_) {
-        std::cerr << "Compare_Indices: NumUnknownsFace different.\n";
+        std::cout << "Compare_Indices: NumUnknownsFace different.\n";
         return false;
     }
     if (i.NumUnknownsTetra_ != j.NumUnknownsTetra_) {
-        std::cerr << "Compare_Indices: NumUnknownsTetra different.\n";
+        std::cout << "Compare_Indices: NumUnknownsTetra different.\n";
         return false;
     }
     if (!mg)
@@ -138,7 +138,7 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
              theend= mg->GetTriangVertexEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
                 if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
-                    std::cerr << "Compare_Indices: Vertex difference.\n";
+                    std::cout << "Compare_Indices: Vertex difference.\n";
                     return false;
                 }
     if (i.NumUnknownsEdge_ != 0)
@@ -146,7 +146,7 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
              theend= mg->GetTriangEdgeEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
                 if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
-                    std::cerr << "Compare_Indices: Edge difference.\n";
+                    std::cout << "Compare_Indices: Edge difference.\n";
                     return false;
                 }
     if (i.NumUnknownsFace_ != 0)
@@ -154,7 +154,7 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
              theend= mg->GetTriangFaceEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
                 if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
-                    std::cerr << "Compare_Indices: Face difference.\n";
+                    std::cout << "Compare_Indices: Face difference.\n";
                     return false;
                 }
     if ( i.NumUnknownsTetra_ != 0)
@@ -162,7 +162,7 @@ bool IdxDescCL::Equal(IdxDescCL& i, IdxDescCL& j, const MultiGridCL* mg)
              theend= mg->GetTriangTetraEnd( lvl); it != theend; ++it)
             if (it->Unknowns.Exist())
                 if ( (it->Unknowns.Exist( iidx) != it->Unknowns.Exist( jidx)) ) {
-                    std::cerr << "Compare_Indices: Tetra difference.\n";
+                    std::cout << "Compare_Indices: Tetra difference.\n";
                     return false;
                 }
     return true;
@@ -513,7 +513,7 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
 
     if (Xidx_.size() != Xidx_old_.size()) {
 #ifndef _PAR
-          std::cerr << "ExtIdxDescCL::Old2New: Xidx: " << Xidx_.size()
+          std::cout << "ExtIdxDescCL::Old2New: Xidx: " << Xidx_.size()
                     << "\tXidx_old: " << Xidx_old_.size()
                     << "Extended Unknowns set to 0.\n";
 #endif
@@ -533,7 +533,7 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
     }
 
 #ifndef _PAR
-    std::cerr << "ExtIdxDescCL::Old2New: #P1-unknowns: " <<Xidx_.size()
+    std::cout << "ExtIdxDescCL::Old2New: #P1-unknowns: " <<Xidx_.size()
               << "\t#new dof: " << ni
               << "\t#deleted dof: " << di
               << "\t#renumbered dof: " << ri

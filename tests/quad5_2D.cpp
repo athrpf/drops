@@ -40,7 +40,7 @@ void TestExactness()
     b[1]= DROPS::std_basis<4>(2);
     b[2]= DROPS::std_basis<4>(3);
     TetraCL& s= *mg.GetAllTetraBegin();
-//    s.DebugInfo( std::cerr);
+//    s.DebugInfo( std::cout);
     std::cout.precision(25);
 
     Quad5_2DCL<> q;

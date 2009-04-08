@@ -51,7 +51,7 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
     BaryPtrT BaryPtr[4];
     if (intersec_<3)
     { // cuts = Kind + leere Menge
-//if (debug) std::cerr <<"Fall <3:\tKind + leere Menge\n";
+//if (debug) std::cout <<"Fall <3:\tKind + leere Menge\n";
         if ( part == (num_sign_[2]>0) )
         { // integriere ueber Kind
             for (int i=0; i<4; ++i)
@@ -63,7 +63,7 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
     }
     else if (intersec_==3)
     { // cuts = Tetra + Tetra-Stumpf
-//if (debug) std::cerr <<"Fall 3:\tTetra + Tetra-Stumpf\n";
+//if (debug) std::cout <<"Fall 3:\tTetra + Tetra-Stumpf\n";
         int vertA= -1;  // cut-Tetra = APQR
         const int signA= num_sign_[0]==1 ? -1 : 1; // sign of vert A occurs only once
         for (int i=0; vertA==-1 && i<4; ++i)
@@ -74,7 +74,7 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
 
         const double volFrac= VolFrac( BaryPtr);
         const ValueT quadTetra= P1DiscCL::Quad( f, BaryPtr)*(absdet*volFrac);
-//if (debug) std::cerr << "vertA = " << vertA << "\tvolFrac = " << volFrac << "\t= 1 / " << 1/volFrac << std::endl;
+//if (debug) std::cout << "vertA = " << vertA << "\tvolFrac = " << volFrac << "\t= 1 / " << 1/volFrac << std::endl;
         if ( part == (signA==1) )
             return quadTetra;
         else // Gesamt-Tetra - cut-Tetra
@@ -90,31 +90,31 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
       //                                                     A-|-------B |
       //                                                      \|        \|
       //                                                       P---------Q
-//if (debug) std::cerr <<"Fall 4: 2x 5-Flaechner\t";
+//if (debug) std::cout <<"Fall 4: 2x 5-Flaechner\t";
         int vertAB[2], // cut mit VZ==part = ABPQRS
             signAB= part ? 1 : -1;
         for (int i=0, k=0; i<4 && k<2; ++i)
             if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
         // connectivity AP automatisch erfuellt, check for connectivity AR
         const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
-//if (debug) if (!AR) std::cerr << "\nAR not connected!\n";
+//if (debug) if (!AR) std::cout << "\nAR not connected!\n";
 
-//if (debug) std::cerr << "vertA = " << vertAB[0] << "\tvertB = " << vertAB[1] << std::endl;
-//if (debug) std::cerr << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cerr << Edge_[i] << "\t"; std::cerr << std::endl;
+//if (debug) std::cout << "vertA = " << vertAB[0] << "\tvertB = " << vertAB[1] << std::endl;
+//if (debug) std::cout << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cout << Edge_[i] << "\t"; std::cout << std::endl;
         // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
         // ABPR    (bzw. ABPQ)
         BaryPtr[0]= &BaryDoF_[data.Vertices[vertAB[0]]];
         BaryPtr[1]= &BaryDoF_[data.Vertices[vertAB[1]]];
         BaryPtr[2]= &Bary_[0];    BaryPtr[3]= &Bary_[AR ? 2 : 1];
-//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
+//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         ValueT integral= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
         // QBPR    (bzw. RBPQ)
         BaryPtr[0]= &Bary_[AR ? 1 : 2];
-//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
+//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
         // QBSR    (bzw. RBSQ)
         BaryPtr[2]= &Bary_[3];
-//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
+//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
 
         return absdet*integral;
@@ -134,7 +134,7 @@ void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
 
     if (intersec_<3)
     { // cuts = Kind + leere Menge
-//if (debug) std::cerr <<"Fall <3:\tKind + leere Menge\n";
+//if (debug) std::cout <<"Fall <3:\tKind + leere Menge\n";
         if ( num_sign_[2]>0 )
         {
             int_pos= quadChild;    int_neg= ValueT();
@@ -146,7 +146,7 @@ void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
     }
     else if (intersec_==3)
     { // cuts = Tetra + Tetra-Stumpf
-//if (debug) std::cerr <<"Fall 3:\tTetra + Tetra-Stumpf\n";
+//if (debug) std::cout <<"Fall 3:\tTetra + Tetra-Stumpf\n";
         int vertA= -1;  // cut-Tetra = APQR
         const int signA= num_sign_[0]==1 ? -1 : 1; // sign of vert A occurs only once
         for (int i=0; vertA==-1 && i<4; ++i)
@@ -157,7 +157,7 @@ void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
 
         const double volFrac= VolFrac( BaryPtr);
         const ValueT quadTetra= P1DiscCL::Quad( f, BaryPtr)*(absdet*volFrac);
-//if (debug) std::cerr << "vertA = " << vertA << "\tvolFrac = " << volFrac << "\t= 1 / " << 1/volFrac << std::endl;
+//if (debug) std::cout << "vertA = " << vertA << "\tvolFrac = " << volFrac << "\t= 1 / " << 1/volFrac << std::endl;
         if ( signA==1 )
         {
             int_pos= quadTetra;   int_neg= quadChild - quadTetra;
@@ -173,31 +173,31 @@ void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
       //                                                     A-|-------B |
       //                                                      \|        \|
       //                                                       P---------Q
-//if (debug) std::cerr <<"Fall 4: 2x 5-Flaechner\t";
+//if (debug) std::cout <<"Fall 4: 2x 5-Flaechner\t";
         int vertAB[2], // cut mit VZ == + = ABPQRS
             signAB= 1;
         for (int i=0, k=0; i<4 && k<2; ++i)
             if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
         // connectivity AP automatisch erfuellt, check for connectivity AR
         const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
-//if (debug) if (!AR) std::cerr << "\nAR not connected!\n";
+//if (debug) if (!AR) std::cout << "\nAR not connected!\n";
 
-//if (debug) std::cerr << "vertA = " << vertAB[0] << "\tvertB = " << vertAB[1] << std::endl;
-//if (debug) std::cerr << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cerr << Edge_[i] << "\t"; std::cerr << std::endl;
+//if (debug) std::cout << "vertA = " << vertAB[0] << "\tvertB = " << vertAB[1] << std::endl;
+//if (debug) std::cout << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cout << Edge_[i] << "\t"; std::cout << std::endl;
         // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
         // ABPR    (bzw. ABPQ)
         BaryPtr[0]= &BaryDoF_[data.Vertices[vertAB[0]]];
         BaryPtr[1]= &BaryDoF_[data.Vertices[vertAB[1]]];
         BaryPtr[2]= &Bary_[0];    BaryPtr[3]= &Bary_[AR ? 2 : 1];
-//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
+//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         ValueT integral= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
         // QBPR    (bzw. RBPQ)
         BaryPtr[0]= &Bary_[AR ? 1 : 2];
-//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
+//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
         // QBSR    (bzw. RBSQ)
         BaryPtr[2]= &Bary_[3];
-//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cerr << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
+//if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
 
         int_pos= absdet*integral;    int_neg= quadChild - int_pos;
@@ -224,10 +224,10 @@ template <class It>
             // hmean+= h;
             // ++num;
         }
-    // std::cerr << "mean : " << hmean/num << '\n';
-    // emax->DebugInfo( std::cerr);
-    // emax->GetVertex( 0)->DebugInfo( std::cerr);
-    // emax->GetVertex( 1)->DebugInfo( std::cerr);
+    // std::cout << "mean : " << hmean/num << '\n';
+    // emax->DebugInfo( std::cout);
+    // emax->GetVertex( 0)->DebugInfo( std::cout);
+    // emax->GetVertex( 1)->DebugInfo( std::cout);
 
     return std::make_pair( hmin, hmax);
 }

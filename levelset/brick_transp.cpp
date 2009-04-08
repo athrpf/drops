@@ -103,23 +103,23 @@ void Strategy (MultiGridCL& MG)
     ensight.Register( make_Ensight6Scalar( c.GetSolution(),         "Concentration", ensf + ".c",   true));
     ensight.Register( make_Ensight6Scalar( c.GetSolution( c.ct),    "TransConc",     ensf + ".ct",  true));
 
-    MG.SizeInfo( std::cerr);
-    std::cerr << c.c.Data.size() << " concentration unknowns,\n";
-    std::cerr << v.Data.size() << " velocity unknowns,\n";
-    std::cerr << lset.Phi.Data.size() << " levelset unknowns.\n";
+    MG.SizeInfo( std::cout);
+    std::cout << c.c.Data.size() << " concentration unknowns,\n";
+    std::cout << v.Data.size() << " velocity unknowns,\n";
+    std::cout << lset.Phi.Data.size() << " levelset unknowns.\n";
 
     const double Vol= EllipsoidCL::GetVolume();
-    std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+    std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     if (C.EnsCase != "none") ensight.Write();
 
     c.SetTimeStep( C.dt);
     for (int step= 1; step <= C.num_steps; ++step) {
-        std::cerr << "======================================================== Schritt " << step << ":\n";
+        std::cout << "======================================================== Schritt " << step << ":\n";
         c.DoStep( step*C.dt);
         if (C.EnsCase != "none") ensight.Write( step*C.dt);
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 } // end of namespace DROPS
@@ -129,24 +129,24 @@ int main (int argc, char** argv)
 {
   try {
     if (argc != 2) {
-        std::cerr << "You have to specify one parameter:\n\t"
+        std::cout << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
     std::ifstream param( argv[1]);
     if (!param) {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
 
     DROPS::Point3DCL e1(0.), e2(0.), e3(0.), orig;
     e1[0]=2*C.r_inlet; e2[1]=1.0; e3[2]= 2*C.r_inlet;
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, 20, 20, 20);
     DROPS::MultiGridCL mg( builder);
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
 
     Strategy( mg);    // do all the stuff

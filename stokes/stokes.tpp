@@ -74,11 +74,11 @@ template <class Coeff>
          sit != send; ++sit)
         lsgpr[sit->Unknowns( pidx)]= LsgPr( sit->GetCoord(), t);
 
-    std::cerr << "discretization error to check the system (x,y = continuous solution): " << std::endl;
+    std::cout << "discretization error to check the system (x,y = continuous solution): " << std::endl;
     VectorCL res( A.Data*lsgvel + transp_mul(B.Data, lsgpr) - b.Data);
-    std::cerr << "|| Ax + BTy - f || = "<< norm( res)<< ", max "<< supnorm( res) << std::endl;
+    std::cout << "|| Ax + BTy - f || = "<< norm( res)<< ", max "<< supnorm( res) << std::endl;
     VectorCL resB( B.Data*lsgvel - c.Data);
-    std::cerr << "|| Bx - g || = " <<  norm( resB) << ", max " << supnorm( resB) << std::endl;
+    std::cout << "|| Bx - g || = " <<  norm( resB) << ", max " << supnorm( resB) << std::endl;
 }
 
 
@@ -193,7 +193,7 @@ template <class CoeffT>
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
 #ifndef _PAR
-    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
+    std::cout << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
 #endif
 
     // fill value part of matrices
@@ -310,13 +310,13 @@ template <class CoeffT>
         }
     }
 #ifndef _PAR
-    std::cerr << "done: value part fill" << std::endl;
+    std::cout << "done: value part fill" << std::endl;
 #endif
 
     A.Build();
     B.Build();
 #ifndef _PAR
-    std::cerr << matA.num_nonzeros() << " nonzeros in A, "
+    std::cout << matA.num_nonzeros() << " nonzeros in A, "
               << matB.num_nonzeros() << " nonzeros in B! " << std::endl;
 #endif
 }
@@ -353,7 +353,7 @@ void SetupStiffnessMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, cons
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
 #ifndef _PAR
-    std::cerr << "entering SetupStiffnessMatrix: " <<num_unks_vel<<" vels, " << std::endl;
+    std::cout << "entering SetupStiffnessMatrix: " <<num_unks_vel<<" vels, " << std::endl;
 #endif
 
     // fill value part of matrices
@@ -398,11 +398,11 @@ void SetupStiffnessMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, cons
             }
     }
 #ifndef _PAR
-    std::cerr << "done: value part fill" << std::endl;
+    std::cout << "done: value part fill" << std::endl;
 #endif
     A.Build();
 #ifndef _PAR
-    std::cerr << matA.num_nonzeros() << " nonzeros in A. " << std::endl;
+    std::cout << matA.num_nonzeros() << " nonzeros in A. " << std::endl;
 #endif
 }
 
@@ -481,7 +481,7 @@ void SetupInstatSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const S
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
 #ifndef _PAR
-    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
+    std::cout << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
 #endif
 
     // fill value part of matrices
@@ -561,14 +561,14 @@ void SetupInstatSystem_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const S
         }
     }
 #ifndef _PAR
-    std::cerr << "done: value part fill" << std::endl;
+    std::cout << "done: value part fill" << std::endl;
 #endif
 
     A.Build();
     B.Build();
     I.Build();
 #ifndef _PAR
-    std::cerr << matA.num_nonzeros() << " nonzeros in A, "
+    std::cout << matA.num_nonzeros() << " nonzeros in A, "
               << matB.num_nonzeros() << " nonzeros in B, "
               << matI.num_nonzeros() << " nonzeros in I! " << std::endl;
 #endif
@@ -735,7 +735,7 @@ void SetupMassMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const Sto
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
 #ifndef _PAR
-    std::cerr << "entering SetupMass: " << num_unks_vel << " vels, " << std::endl;
+    std::cout << "entering SetupMass: " << num_unks_vel << " vels, " << std::endl;
 #endif
 
     // fill value part of matrices
@@ -776,11 +776,11 @@ void SetupMassMatrix_P2P1( const MultiGridCL& MG, const CoeffT& Coeff, const Sto
 
     }
 #ifndef _PAR
-    std::cerr << "done: value part fill" << std::endl;
+    std::cout << "done: value part fill" << std::endl;
 #endif
     I.Build();
 #ifndef _PAR
-    std::cerr << matI.num_nonzeros() << " nonzeros in M! " << std::endl;
+    std::cout << matI.num_nonzeros() << " nonzeros in M! " << std::endl;
 #endif
 }
 
@@ -857,7 +857,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 #endif
 
     IF_MASTER
-        std::cerr << "\nChecken der Loesung..."
+        std::cout << "\nChecken der Loesung..."
                   << "\n|| Ax + BTy - F || = " << norm_res1 << ", max. " << norm_sup_res_1
                   << "\n||       Bx - G || = " << norm_res2 << ", max. " << norm_sup_res_2
                   << '\n' << std::endl;
@@ -895,7 +895,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     L2_div= std::sqrt(L2_div);
 
     IF_MASTER
-        std::cerr << "|| div x ||_L1 = " << L1_div
+        std::cout << "|| div x ||_L1 = " << L1_div
                   << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
     // Compute the pressure-coefficient in direction of 1/std::sqrt(meas(Omega)), which eliminates
@@ -921,7 +921,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
 #endif
     const double c_pr= MW_pr/vol;
     IF_MASTER
-        std::cerr << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
+        std::cout << "\nconstant pressure offset is " << c_pr << ", volume of cube is " << vol << std::endl;
 
     // Some norms of velocities: u_h - u
     double L2_Dvel(0.0), L2_vel(0.0);
@@ -980,7 +980,7 @@ void StokesP2P1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const VecDes
     delete[] pvals;
 
     IF_MASTER
-        std::cerr << "|| (u_h, p_h) - (u, p) ||_X = " << X_norm
+        std::cout << "|| (u_h, p_h) - (u, p) ||_X = " << X_norm
                   << ", || u_h - u ||_L2 = " <<  L2_vel << ", || Du_h - Du ||_L2 = " << L2_Dvel
                   << ", || p_h - p ||_L2 = " << L2_pr
                   << "\nDruck: Abweichung von der tatsaechlichen Loesung:"
@@ -1008,9 +1008,9 @@ template <class Coeff>
         SetupInstatRhs( &bb, &cc, &cplM, t, &bb, t);
         VectorCL res1( M.Data*lsgvel->Data + theta*dt*(A.Data*lsgvel->Data) + dt*transp_mul( B.Data, lsgpr->Data ) - theta*dt*bb.Data - cplM.Data);
         VectorCL res2( B.Data*lsgvel->Data - cc.Data);
-        std::cerr << "\nChecken der Loesung...\n";
-        std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
-        std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
+        std::cout << "\nChecken der Loesung...\n";
+        std::cout << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
+        std::cout << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
     }
 */
 
@@ -1047,7 +1047,7 @@ template <class Coeff>
     L2_div= std::sqrt(L2_div);
 
     IF_MASTER
-        std::cerr << "|| div x ||_L1 = " << L1_div
+        std::cout << "|| div x ||_L1 = " << L1_div
                   << "\n|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
@@ -1125,7 +1125,7 @@ template <class Coeff>
 #endif
     L2_vel= sqrt(L2_vel);
     IF_MASTER
-        std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:"
+        std::cout << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:"
                   << "\nw-2-Norm= " << norm2
                   << "\n L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")"
                   << "\n L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")"
@@ -1154,7 +1154,7 @@ template <class Coeff>
 #endif
     const double c_pr= MW_pr / vol;
     IF_MASTER
-        std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
+        std::cout << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
     const VertexCL* maxvert= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
@@ -1179,9 +1179,9 @@ template <class Coeff>
 #ifndef _PAR
     if (maxvert)
     {
-        std::cerr << "Maximaler Druckfehler: ";
-        maxvert->DebugInfo( std::cerr);
-        std::cerr << std::endl;
+        std::cout << "Maximaler Druckfehler: ";
+        maxvert->DebugInfo( std::cout);
+        std::cout << std::endl;
     }
 #endif
 
@@ -1209,7 +1209,7 @@ template <class Coeff>
     L2_pr= std::sqrt( L2_pr);
 
     IF_MASTER
-        std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:"
+        std::cout << "Druck: Abweichung von der tatsaechlichen Loesung:"
                   << "\nw-2-Norm= " << norm2
                   << "\n L2-Norm= " << L2_pr
                   << "\n L1-Norm= " << L1_pr
@@ -1393,11 +1393,11 @@ void StokesP1BubbleP1CL<Coeff>::GetDiscError(instat_vector_fun_ptr LsgVel, scala
          sit != send; ++sit)
         lsgpr[sit->Unknowns(pidx)]= LsgPr(sit->GetCoord());
 
-    std::cerr << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
+    std::cout << "discretization error to check the system (x,y = continuous solution): "<<std::endl;
     VectorCL res( A.Data*lsgvel + transp_mul(B.Data,lsgpr)-b.Data);
-    std::cerr <<"|| Ax + BTy - f || = "<< norm( res)<<", max "<< supnorm( res) << std::endl;
+    std::cout <<"|| Ax + BTy - f || = "<< norm( res)<<", max "<< supnorm( res) << std::endl;
     VectorCL resB( B.Data*lsgvel - c.Data);
-    std::cerr <<"|| Bx - g || = "<< norm( resB)<<", max "<< supnorm( resB) << std::endl;
+    std::cout <<"|| Bx - g || = "<< norm( resB)<<", max "<< supnorm( resB) << std::endl;
 }
 
 
@@ -1467,7 +1467,7 @@ void SetupSystem_P1BubbleP1( const MultiGridCL& MG, const CoeffT& Coeff, const S
     const IdxT stride= 1;   // stride between unknowns on same simplex, which
                             // depends on numbering of the unknowns
 
-    std::cerr << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
+    std::cout << "entering SetupSystem: " <<num_unks_vel<<" vels, "<<num_unks_pr<<" prs"<< std::endl;
 
     // fill value part of matrices
     SMatrixCL<3,3> T;
@@ -1572,11 +1572,11 @@ void SetupSystem_P1BubbleP1( const MultiGridCL& MG, const CoeffT& Coeff, const S
                 }
         }
     }
-    std::cerr << "done: value part fill" << std::endl;
+    std::cout << "done: value part fill" << std::endl;
 
     A.Build();
     B.Build();
-    std::cerr << matA.num_nonzeros() << " nonzeros in A, "
+    std::cout << matA.num_nonzeros() << " nonzeros in A, "
               << matB.num_nonzeros() << " nonzeros in B! " << std::endl;
 }
 
@@ -1730,7 +1730,7 @@ template <class Coeff>
             err_sq+= (grad_n - grad_me).norm_sq()/8.*absdet2D*absdet2D;
         }
     }
-//    std::cerr << err_sq << '\n';
+//    std::cout << err_sq << '\n';
     return err_sq;
 }
 
@@ -1830,9 +1830,9 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     VectorCL res1( A.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data ) - b.Data);
     VectorCL res2( B.Data*lsgvel->Data - c.Data);
 
-    std::cerr << "\nChecken der Loesung...\n";
-    std::cerr << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
-    std::cerr << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
+    std::cout << "\nChecken der Loesung...\n";
+    std::cout << "|| Ax + BTy - F || = " << norm( res1) << ", max. " << supnorm( res1) << std::endl;
+    std::cout << "||       Bx - G || = " << norm( res2) << ", max. " << supnorm( res2) << std::endl << std::endl;
 
     const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG);
     double L1_div= 0, L2_div= 0;
@@ -1860,8 +1860,8 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         L2_div+= Quad3PosWeightsCL::Quad(pvals_sq)*absdet;
     }
     L2_div= std::sqrt(L2_div);
-    std::cerr << "|| div x ||_L1 = " << L1_div << std::endl;
-    std::cerr << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
+    std::cout << "|| div x ||_L1 = " << L1_div << std::endl;
+    std::cout << "|| div x ||_L2 = " << L2_div << std::endl << std::endl;
     delete[] pvals_sq; delete[] pvals;
 
     Uint countverts=0;
@@ -1904,7 +1904,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     }
     L2_vel= sqrt(L2_vel);
     delete[] vvals_sq; delete[] vvals;
-    std::cerr << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
+    std::cout << "Geschwindigkeit: Abweichung von der tatsaechlichen Loesung:\n"
               << "w-2-Norm= " << norm2 << std::endl
               << " L2-Norm= (" << L2_vel[0]<<", "<<L2_vel[1]<<", "<<L2_vel[2]<<")" << std::endl
               << " L1-Norm= (" << L1_vel[0]<<", "<<L1_vel[1]<<", "<<L1_vel[2]<<")" << std::endl
@@ -1928,7 +1928,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
         vol+= sit->GetVolume();
     }
     const double c_pr= MW_pr / vol;
-    std::cerr << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
+    std::cout << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
@@ -1960,7 +1960,7 @@ void StokesP1BubbleP1CL<Coeff>::CheckSolution(const VelVecDescCL* lsgvel, const 
     L2_pr= std::sqrt( L2_pr);
 
 
-    std::cerr << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
+    std::cout << "Druck: Abweichung von der tatsaechlichen Loesung:\n"
               << "w-2-Norm= " << norm2 << std::endl
               << " L2-Norm= " << L2_pr << std::endl
               << " L1-Norm= " << L1_pr << std::endl

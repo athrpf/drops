@@ -664,7 +664,7 @@ void LoadBalCL::Migrate()
         movedMultiNodes_++;
 #if DROPSDebugC
         if ( it->GetGID()==observe1 || it->GetGID()==observe2 || it->GetGID()==observe3)
-            std::cerr << "["<<ProcCL::MyRank()<<"] ===> Transfer des Tetras mit GID "<<it->GetGID() << " nach " << dest << " als ";
+            std::cout << "["<<ProcCL::MyRank()<<"] ===> Transfer des Tetras mit GID "<<it->GetGID() << " nach " << dest << " als ";
 #endif
 
         if (it->IsUnrefined() )
@@ -672,7 +672,7 @@ void LoadBalCL::Migrate()
             ParMultiGridCL::TXfer( *it, dest, PrioMaster, true);
 #if DROPSDebugC
             if ( it->GetGID()==observe1 || it->GetGID()==observe2 || it->GetGID()==observe3)
-                std::cerr << "E1-Xfer mit delete =1 und PrioMaster" << std::endl;
+                std::cout << "E1-Xfer mit delete =1 und PrioMaster" << std::endl;
 #endif
         }
         else
@@ -688,7 +688,7 @@ void LoadBalCL::Migrate()
             }
 #if DROPSDebugC
             if ( it->GetGID()==observe1 || it->GetGID()==observe2 || it->GetGID()==observe3)
-                std::cerr << "E2-Xfer mit delete ="<< (it->GetPrio()==PrioGhost)
+                std::cout << "E2-Xfer mit delete ="<< (it->GetPrio()==PrioGhost)
                         << " und Prio"<<(asPrio==PrioMaster?"Master":"Ghost")<<" Unrefined=" << it->IsUnrefined()
                         << std::endl;
 #endif
@@ -707,7 +707,7 @@ void LoadBalCL::Migrate()
                     ParMultiGridCL::TXfer( **ch, dest, PrioMaster, true);
 #if DROPSDebugC
                     if ( it->GetGID()==observe1 || (*ch)->GetGID()==observe1 || (*ch)->GetGID()==observe2 || (*ch)->GetGID()==observe3)
-                        std::cerr << "["<<ProcCL::MyRank()<<"]===> Transfer des Tetras mit GID "<< (*ch)->GetGID()
+                        std::cout << "["<<ProcCL::MyRank()<<"]===> Transfer des Tetras mit GID "<< (*ch)->GetGID()
                                 << " als Kind von " << it->GetGID() << " nach " << dest
                                 << " als M1-Xfer mit delete =1 und PrioMaster" << std::endl;
 #endif
@@ -723,7 +723,7 @@ void LoadBalCL::Migrate()
                     }
 #if DROPSDebugC
                     if ( (*ch)->GetGID()==observe1 || (*ch)->GetGID()==observe2 || (*ch)->GetGID()==observe3)
-                        std::cerr << "["<<ProcCL::MyRank()<<"]===> Transfer des Tetras mit GID "<< (*ch)->GetGID()
+                        std::cout << "["<<ProcCL::MyRank()<<"]===> Transfer des Tetras mit GID "<< (*ch)->GetGID()
                                 << " als Kind von " << it->GetGID() << " nach " << dest
                                 << " als M2-Xfer mit delete =" << E2Xfer
                                 << " und PrioMaster und ChangePrio to Prio"<< (E2Xfer?"Master":"Ghost") << std::endl;
@@ -896,7 +896,7 @@ LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, PartM
     }
 
     if (debugMode_ && ProcCL::IamMaster())
-        std::cerr << "  - Compute Graphpartitioning ...\n";
+        std::cout << "  - Compute Graphpartitioning ...\n";
 
     if (debugMode_) timer.Reset();
     if (ProcCL::MyRank()==master)
@@ -910,7 +910,7 @@ LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, PartM
 
     // distribute the multigrid
     if (debugMode_ && ProcCL::IamMaster())
-        std::cerr << "  - Migration ...\n";
+        std::cout << "  - Migration ...\n";
 
     if (debugMode_) timer.Reset();
     ParMultiGridCL::XferStart();
@@ -936,7 +936,7 @@ void LoadBalHandlerCL::DoMigration()
     // Just do a migration if this is wished
     if (strategy_==NoMig) return;
     if (ProcCL::Size()==1){
-        std::cerr << "Skip migration, because only one proc is involved!\n"; return;
+        std::cout << "Skip migration, because only one proc is involved!\n"; return;
     }
 
     // Time measurement
@@ -945,7 +945,7 @@ void LoadBalHandlerCL::DoMigration()
 
     Assert(ProcCL::Size()>1, DROPSErrCL("LoadBalHandlerCL::DoMigration: Only one proc found"), DebugLoadBalC);
 
-    if (debugMode_ && ProcCL::IamMaster()) std::cerr << "  - Create dual reduced graph ... \n";
+    if (debugMode_ && ProcCL::IamMaster()) std::cout << "  - Create dual reduced graph ... \n";
 
     if (debugMode_) timer.Reset();
     lb_->CreateDualRedGraph();
@@ -1019,7 +1019,7 @@ void LoadBalHandlerCL::DoInitDistribution(int)
     if (ProcCL::Size()==1){
         movedNodes_=0;
         edgeCut_=0;
-        std::cerr << "Skip migration, because only one proc is involved!\n"; return;
+        std::cout << "Skip migration, because only one proc is involved!\n"; return;
     }
 
     if (debugMode_ && ProcCL::IamMaster())
@@ -1027,13 +1027,13 @@ void LoadBalHandlerCL::DoInitDistribution(int)
     lb_->CreateDualRedGraph(true);
 
     if (debugMode_ && ProcCL::IamMaster())
-        std::cerr << "  - Create graph partition ...\n";
+        std::cout << "  - Create graph partition ...\n";
     if (ProcCL::IamMaster()){
         lb_->SerPartKWay();
     }
 
     if (debugMode_ && ProcCL::IamMaster())
-        std::cerr << "  - Migration ...\n";
+        std::cout << "  - Migration ...\n";
     ParMultiGridCL::XferStart();
     lb_->Migrate();
     ParMultiGridCL::XferEnd();

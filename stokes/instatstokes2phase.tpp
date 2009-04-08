@@ -965,7 +965,7 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
 
     LocalNumbP2CL n;
 #ifndef _PAR
-    std::cerr << "entering SetupSystem1: " << num_unks_vel << " vels. ";
+    std::cout << "entering SetupSystem1: " << num_unks_vel << " vels. ";
 #endif
 
     Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
@@ -1166,7 +1166,7 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
     mA.Build();
     mM.Build();
 #ifndef _PAR
-    std::cerr << A.num_nonzeros() << " nonzeros in A, "
+    std::cout << A.num_nonzeros() << " nonzeros in A, "
               << M.num_nonzeros() << " nonzeros in M! " << std::endl;
 #endif
 }
@@ -1265,7 +1265,7 @@ void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDa
 
     LocalNumbP2CL n;
 #ifndef _PAR
-    std::cerr << "entering SetupLB: " << num_unks_vel << " vels. ";
+    std::cout << "entering SetupLB: " << num_unks_vel << " vels. ";
 #endif
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     LocalP2CL<Point3DCL> GradLP2[10];
@@ -1347,7 +1347,7 @@ void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDa
 
     mA.Build();
 #ifndef _PAR
-    std::cerr << A.num_nonzeros() << " nonzeros in A_LB" << std::endl;
+    std::cout << A.num_nonzeros() << " nonzeros in A_LB" << std::endl;
 #endif
 }
 
@@ -1372,7 +1372,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
     for (size_t lvl=0; lvl < B->Data.size(); ++lvl, ++itB, ++itRow, ++itCol)
     {
 #ifndef _PAR
-        std::cerr << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs. ";
+        std::cout << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs. ";
 #endif
         switch (GetPrFE())
         {
@@ -1388,7 +1388,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
                 throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
         }
 #ifndef _PAR
-        std::cerr << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
+        std::cout << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
 #endif
     }
 }

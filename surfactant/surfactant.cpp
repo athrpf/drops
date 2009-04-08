@@ -214,8 +214,8 @@ void TransportP1FunctionCL::SetupSystem( const DiscVelSolT& vel, MatrixCL& E, Ma
                                bH(&H, num_unks, num_unks);
     IdxT Numb[4];
 
-    std::cerr << "entering TransportP1Function::SetupSystem: " << num_unks << "  unknowns. ";
-    std::cerr << "SD_: " << SD_ << " dt_: " << dt_ << " theta_ :" << theta_ << "\n";
+    std::cout << "entering TransportP1Function::SetupSystem: " << num_unks << "  unknowns. ";
+    std::cout << "SD_: " << SD_ << " dt_: " << dt_ << " theta_ :" << theta_ << "\n";
 
     // fill value part of matrices
     Quad5CL<Point3DCL>  u_loc;
@@ -271,7 +271,7 @@ void TransportP1FunctionCL::SetupSystem( const DiscVelSolT& vel, MatrixCL& E, Ma
     }
     bE.Build();
     bH.Build();
-    std::cerr << E.num_nonzeros() << " nonzeros in E, "
+    std::cout << E.num_nonzeros() << " nonzeros in E, "
               << H.num_nonzeros() << " nonzeros in H! " << std::endl;
 }
 
@@ -289,13 +289,13 @@ void TransportP1FunctionCL::DoStep (VectorCL& u, const DiscVelSolT& vel)
 		GMResSolverCL<GSPcCL> gm( gm_);
 		VectorCL tmp( rhs.size());
 		gm.Solve( E_old, tmp, VectorCL( H_old*u));
-		std::cerr << "TransportP1FunctionCL::DoStep rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
+		std::cout << "TransportP1FunctionCL::DoStep rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
 		rhs-= (1. - theta_)*tmp;
 	    }
 	    gm_.Solve( L_, u, VectorCL(E_*rhs));
-            if (N != 1) std::cerr << "substep " << i << ": iter: " << gm_.GetIter() << " ";
+            if (N != 1) std::cout << "substep " << i << ": iter: " << gm_.GetIter() << " ";
     }
-    std::cerr << "TransportP1FunctionCL::DoStep: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
+    std::cout << "TransportP1FunctionCL::DoStep: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
 }
 
 typedef BndDataCL<Point3DCL> VelBndDataT;
@@ -400,20 +400,20 @@ void SurfactantP1CL::Update()
     M.Data.clear();
     M.SetIdx( cidx, cidx);
     DROPS::SetupInterfaceMassP1( MG_, &M, lset_.Phi);
-    std::cerr << "M is set up.\n";
+    std::cout << "M is set up.\n";
     A.Data.clear();
     A.SetIdx( cidx, cidx);
     DROPS::SetupLBP1( MG_, &A, lset_.Phi, D_);
-    std::cerr << "A is set up.\n";
+    std::cout << "A is set up.\n";
     //C.Data.clear();
     //C.SetIdx( cidx, cidx);
     //DROPS::SetupConvectionP1( MG_, &C, lset_.Phi, make_P2Eval( MG_, Bnd_v_, *v_, t_));
-    //std::cerr << "C is set up.\n";
+    //std::cout << "C is set up.\n";
     Md.Data.clear();
     Md.SetIdx( cidx, cidx);
     DROPS::SetupMassDivP1( MG_, &Md, lset_.Phi, make_P2Eval( MG_, Bnd_v_, *v_, t_));
-    std::cerr << "Md is set up.\n";
-    std::cerr << "SurfactantP1CL::Update: Finished\n";
+    std::cout << "Md is set up.\n";
+    std::cout << "SurfactantP1CL::Update: Finished\n";
 }
 
 VectorCL SurfactantP1CL::InitStep ()
@@ -429,7 +429,7 @@ VectorCL SurfactantP1CL::InitStep ()
         GMResSolverCL<GSPcCL> gm( gm_);
         VectorCL tmp( rhs.Data.size());
         gm.Solve( M.Data, tmp, VectorCL( /*A.Data*ic.Data +*/ Md.Data*ic.Data)); // XXX laplace ic == 0
-        std::cerr << "SurfactantP1CL::InitStep: rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
+        std::cout << "SurfactantP1CL::InitStep: rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
         rhs.Data-= (1. - theta_)*tmp;
     }
     // rhs.Data*= std::sqrt( M.Data.GetDiag()); // scaling
@@ -455,9 +455,9 @@ void SurfactantP1CL::DoStep (const VectorCL& rhsext)
     // transp_rhs.Data/= std::sqrt( M.Data.GetDiag()); // scaling
     L_.LinComb( 1./dt_, M.Data, theta_, A.Data, theta_, Md.Data);
     const VectorCL therhs( M.Data*transp_rhs.Data);
-    std::cerr << "Before solve: res = " << norm( L_*ic.Data - therhs) << std::endl;
+    std::cout << "Before solve: res = " << norm( L_*ic.Data - therhs) << std::endl;
     gm_.Solve( L_, ic.Data, therhs);
-    std::cerr << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
+    std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
 }
 
 void SurfactantP1CL::CommitStep ()
@@ -489,7 +489,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     LSInit( mg, lset2.Phi, &sphere_2move, 0.);
 
     const double Vol= lset.GetVolume();
-    std::cerr << "droplet volume: " << Vol << std::endl;
+    std::cout << "droplet volume: " << Vol << std::endl;
 
     BndDataCL<Point3DCL> Bnd_v( 6, bc, bf);
     IdxDescCL vidx( vecP2_FE);
@@ -524,12 +524,12 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     ensight.Write( 0.);
 
     // timedisc.SetTimeStep( C.dt, C.theta_surf);
-//    std::cerr << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, 0.)
+//    std::cout << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, 0.)
 //              << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, 0.)
 //              << std::endl;
 
     for (int step= 1; step <= C.num_steps; ++step) {
-        std::cerr << "======================================================== step " << step << ":\n";
+        std::cout << "======================================================== step " << step << ":\n";
 
         LSInit( mg, lset.Phi, &sphere_2move, step*C.dt);
         timedisc.DoStep( step*C.dt);
@@ -541,12 +541,12 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 //        lset2.SetTimeStep( C.dt);
 //        lset2.DoStep( rhs);
 
-        std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+        std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         if (C.VolCorr) {
             double dphi= lset.AdjustVolume( Vol, 1e-9);
-            std::cerr << "volume correction is " << dphi << std::endl;
+            std::cout << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
-            std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         }
         //if (C.RepFreq && step%C.RepFreq==0) { // reparam levelset function
             // lset.ReparamFastMarching( C.RepMethod);
@@ -563,20 +563,20 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
                 lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*C.dt));
                 lset2.SetTimeStep( C.dt);
             }
-            std::cerr << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+            std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.VolCorr) {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
-                std::cerr << "volume correction is " << dphi << std::endl;
+                std::cout << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
-                std::cerr << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
+                std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             }
         }
         ensight.Write( step*C.dt);
-//        std::cerr << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, step*C.dt)
+//        std::cout << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, step*C.dt)
 //                  << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, step*C.dt)
 //                  << std::endl;
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
 }
 
 
@@ -585,21 +585,21 @@ int main (int argc, char* argv[])
   try {
     std::ifstream param;
     if (argc!=2) {
-        std::cerr << "Using default parameter file: surfactant.param\n";
+        std::cout << "Using default parameter file: surfactant.param\n";
         param.open( "surfactant.param");
     }
     else
         param.open( argv[1]);
     if (!param) {
-        std::cerr << "error while opening parameter file\n";
+        std::cout << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    std::cerr << C << std::endl;
+    std::cout << C << std::endl;
     ensf= C.EnsDir + "/" + C.EnsCase; // basename of the ensight files
 
-    std::cerr << "Setting up interface-PDE:\n";
+    std::cout << "Setting up interface-PDE:\n";
     DROPS::BrickBuilderCL brick( DROPS::MakePoint3D( -2., -2., -2.),
                                  4.*DROPS::std_basis<3>( 1),
                                  4.*DROPS::std_basis<3>( 2),
@@ -633,7 +633,7 @@ int main (int argc, char* argv[])
 
     DROPS::MatDescCL M( &ifaceidx, &ifaceidx);
     DROPS::SetupInterfaceMassP1( mg, &M, lset.Phi);
-    std::cerr << "M is set up.\n";
+    std::cout << "M is set up.\n";
     DROPS::MatDescCL A( &ifaceidx, &ifaceidx);
     DROPS::SetupLBP1( mg, &A, lset.Phi, C.muI);
     DROPS::MatrixCL L;
@@ -652,7 +652,7 @@ int main (int argc, char* argv[])
 
     DROPS::VecDescCL x( &ifaceidx);
     surfsolver.Solve( L, x.Data, b.Data);
-    std::cerr << "Iter: " << surfsolver.GetIter() << "\tres: " << surfsolver.GetResid() << '\n';
+    std::cout << "Iter: " << surfsolver.GetIter() << "\tres: " << surfsolver.GetResid() << '\n';
 
     DROPS::WriteToFile( x.Data, "x_iface.txt", "solution");
 
@@ -665,7 +665,7 @@ int main (int argc, char* argv[])
     ensight.Write();
 
     double L2_err( L2_error( mg, lset.Phi, make_P1Eval( mg, nobnd, xext), &sol0));
-    std::cerr << "L_2-error: " << L2_err << std::endl;
+    std::cout << "L_2-error: " << L2_err << std::endl;
 
     return 0;
   }

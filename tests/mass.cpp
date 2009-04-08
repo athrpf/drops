@@ -13,17 +13,17 @@ main()
     std::ifstream s0( "Mvel.txt");
     MatrixCL M;
     in( s0, M);
-    std::cerr << "supnorm( M): " << supnorm( M) << '\n';
+    std::cout << "supnorm( M): " << supnorm( M) << '\n';
 
     std::ifstream s1( "Mvel_old.txt");
     MatrixCL M1;
     in( s1, M1);
     M1*= 1107.;
-    std::cerr << "supnorm( M1): " << supnorm( M1) << '\n';
+    std::cout << "supnorm( M1): " << supnorm( M1) << '\n';
 
     MatrixCL D;
     D.LinComb( 1., M, -1., M1);
-    std::cerr << "supnorm( D): " << supnorm( D) << '\n';
+    std::cout << "supnorm( D): " << supnorm( D) << '\n';
 
     MatrixCL I( std::valarray<double>( 1.0, M.num_rows()));
 
@@ -40,7 +40,7 @@ main()
     VectorCL r( 1.0, M.num_rows());
     VectorCL r2( r/norm( r));
     ExactAsolver.Solve( N, v, r2);
-    std::cerr << "\niterations: " << ExactAsolver.GetIter()
+    std::cout << "\niterations: " << ExactAsolver.GetIter()
               << "\tresidual: " << ExactAsolver.GetResid()
               << '\n' << norm( v)
               << '\n' << norm( N*v - r2)

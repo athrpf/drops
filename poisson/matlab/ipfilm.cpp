@@ -322,7 +322,7 @@ static void ipdrops( double theta, double tol, int iter, int Flag)
 //      MarkAll(mg);
 //      mg.Refine();
 //    }
-    // mg.SizeInfo(std::cerr);
+    // mg.SizeInfo(std::cout);
     DROPS::Strategy(prob, theta, tol, iter, Flag);
 
     return;

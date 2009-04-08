@@ -204,7 +204,7 @@ void ExchangeCL::TransferSendOrder(bool CreateMap)
     for( RecvSysnumCT::const_iterator it(RecvSysnums_.begin()); it!=RecvSysnums_.end(); ++it){
         for (ExchangeDataCL::SysnumListCT::const_iterator sysit(it->second.begin()); sysit!=it->second.end(); ++sysit){
             if ( (*sysit)>=(int)RowIdx_->NumUnknowns()){
-                std::cerr << "["<<ProcCL::MyRank()<<"] Found a strange sysnum "<<(*sysit)<<std::endl;
+                std::cout << "["<<ProcCL::MyRank()<<"] Found a strange sysnum "<<(*sysit)<<std::endl;
                 throw DROPSErrCL("ExchangeCL::TransferSendOrder: Recieve sequence has not been set correct");
             }
         }
@@ -347,7 +347,7 @@ void ExchangeCL::CreateList(const MultiGridCL& mg, IdxDescCL *RowIdx, bool Creat
     SendList_.clear();
 
     if (ProcCL::Size()==1){
-        std::cerr << "Skipping CreateExchangeCL, because only one proc is involved!\n";
+        std::cout << "Skipping CreateExchangeCL, because only one proc is involved!\n";
         created_    = true;
         accIdxCreated_=true;
         mapCreated_=false;
@@ -573,7 +573,7 @@ bool ExchangeCL::IsAcc(const VectorCL& vec) const
         for (int i=0; i<count; ++i){
             if (std::fabs(recvval_buf[i]-vec[recvdof_buf[i]])>1e-10){
                 ret=false;
-                  std::cerr << "["<<ProcCL::MyRank()<<"] Differ at Pos " << recvdof_buf[i]
+                  std::cout << "["<<ProcCL::MyRank()<<"] Differ at Pos " << recvdof_buf[i]
                             << " by loc " <<vec[recvdof_buf[i]]<<" ext "<<recvval_buf[i]
                             << " on proc "<<*proc<<std::endl;
 
@@ -610,7 +610,7 @@ bool ExchangeCL::IsEqual(const ExchangeCL &ex, std::ostream* os) const
         return false;
     }
     if (vecSize_!= ex.vecSize_){
-        std::cerr << "["<<ProcCL::MyRank()<<"] vecSize is not equal!" << std::endl;
+        std::cout << "["<<ProcCL::MyRank()<<"] vecSize is not equal!" << std::endl;
         return false;
     }
 

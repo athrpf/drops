@@ -37,7 +37,7 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     MultiGridCL& MG= Poisson.GetMG();
     TimerCL time;
 
-    MG.SizeInfo(std::cerr);
+    MG.SizeInfo(std::cout);
 
     // Initialize the idx, A, P
     time.Reset();
@@ -54,9 +54,9 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     SetupP2ProlongationMatrix( MG, P);
 
     time.Stop();
-    std::cerr << "Setting up all stuff took " << time.GetTime()
+    std::cout << "Setting up all stuff took " << time.GetTime()
               << " seconds. " << std::endl;
-//    std::cerr << "Check Data...\n";
+//    std::cout << "Check Data...\n";
 //    CheckMGData( MGData.begin(), MGData.end() );
     MLMatrixCL::const_iterator finest = --Poisson.A.Data.end();
     MLMatrixCL::const_iterator finestP= --P.Data.end();
@@ -65,8 +65,8 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     int lvl= 0;
     Uint nit;
     double tol= 0.0;
-    std::cerr << "tolerance: "; std::cin >> tol;
-    std::cerr << "how many levels? (-1=all) > "; std::cin >> lvl;
+    std::cout << "tolerance: "; std::cin >> tol;
+    std::cout << "how many levels? (-1=all) > "; std::cin >> lvl;
 
     double resid, old_resid;
 //    JORsmoothCL smoother(omega);  // Jacobi
@@ -77,15 +77,15 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
     CGSolverCL  solver(200, tol); //CG-Verfahren
     do
     {
-        std::cerr << "Smoothing steps (0=Quit): "; std::cin >> sm;
+        std::cout << "Smoothing steps (0=Quit): "; std::cin >> sm;
         if (sm<=0) return;
         // delete former solution
         Poisson.x.Data.resize(0);
         Poisson.x.Data.resize(Poisson.x.RowIdx->NumUnknowns());
-        std::cerr << "initial error:" << std::endl;
+        std::cout << "initial error:" << std::endl;
         Poisson.CheckSolution(&::Lsg);
         resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
-        std::cerr << "initial residuum: " << resid <<std::endl;
+        std::cout << "initial residuum: " << resid <<std::endl;
         nit = 0;
         time.Reset();
         do
@@ -95,12 +95,12 @@ void Strategy(PoissonP2CL<Coeff>& Poisson, double omega)
             old_resid= resid;
             resid= norm( Poisson.b.Data - Poisson.A.Data * Poisson.x.Data);
             nit = nit+1;
-            std::cerr << "iteration: " << nit
+            std::cout << "iteration: " << nit
                       << "\tresiduum: " << resid
                       << "\tred. " << resid/old_resid << std::endl;
         } while ( resid > tol);
         time.Stop();
-        std::cerr << " time = "<< time.GetTime() <<std::endl;
+        std::cout << " time = "<< time.GetTime() <<std::endl;
     } while (sm>0);
 }
 
@@ -140,7 +140,7 @@ int main (int argc, char** argv)
   {
     if (argc<2)
     {
-        std::cerr << "missing argument! Usage: MGdrops <omega>" << std::endl;
+        std::cout << "missing argument! Usage: MGdrops <omega>" << std::endl;
         return 1;
     }
     double omega;
@@ -172,7 +172,7 @@ int main (int argc, char** argv)
         mg.Refine();
     }
 #endif
-    std::cerr << "Creating Grid..." << std::endl;
+    std::cout << "Creating Grid..." << std::endl;
     for (DROPS::Uint i=0; i<4; ++i)
     {
         DROPS::MarkAll(mg);
@@ -180,13 +180,13 @@ int main (int argc, char** argv)
     }
 //    omega= 1.0;
     omega= std::atof(argv[1]);
-    std::cerr << omega << std::endl;
+    std::cout << omega << std::endl;
     DROPS::Strategy(prob, omega);
-    std::cerr << "hallo" << std::endl;
-    std::cerr << DROPS::SanityMGOutCL(mg) << std::endl;
+    std::cout << "hallo" << std::endl;
+    std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     std::ofstream fil("ttt.off");
 //    fil << DROPS::GeomSolOutCL<MyPoissonCL::DiscSolCL>(mg, prob.GetSolution(), &colormap, -1, false, 0.0, prob.x.Data.min(), prob.x.Data.max()) << std::endl;
-    mg.SizeInfo(std::cerr);
+    mg.SizeInfo(std::cout);
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

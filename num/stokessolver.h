@@ -458,7 +458,7 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT, Mat>& M, const Vecto
 {
     VectorCL x( M.A_.num_cols());
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
-//    std::cerr << "> inner iterations: " << M.solver_.GetIter()
+//    std::cout << "> inner iterations: " << M.solver_.GetIter()
 //              << "\tresidual: " << M.solver_.GetResid() << std::endl;
     return M.B_*x;
 }
@@ -533,7 +533,7 @@ void UzawaSolverCL<PoissonSolverT>::doSolve(
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+            std::cout << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
                       << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         _poissonSolver.SetTol( std::sqrt( res1_norm)/20.0);
@@ -586,7 +586,7 @@ void UzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::doSolve(
             return;
         }
         if( (_iter%output)==0)
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+            std::cout << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
                       << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
@@ -624,27 +624,27 @@ void SchurSolverCL<PoissonSolverT>::doSolve(
     if (_tmp.size() != v.size())
         _tmp.resize( v.size());
     _poissonSolver.Solve( A, _tmp, b);
-    std::cerr << "iterations: " << _poissonSolver.GetIter()
+    std::cout << "iterations: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
     rhs+= B*_tmp;
 
-    std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
+    std::cout << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
     CG( SchurComplMatrixCL<PoissonSolverT, Mat>( _poissonSolver, A, B), p, rhs, iter, tol);
-    std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
-    std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
+    std::cout << "iterations: " << iter << "\tresidual: " << tol << std::endl;
+    std::cout << "pressure has been solved! Now solving velocities..." << std::endl;
 
     _poissonSolver.Solve( A, v, Vec(b - transp_mul(B, p)));
-    std::cerr << "Iterationen: " << _poissonSolver.GetIter()
+    std::cout << "Iterationen: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
     _iter= iter+_poissonSolver.GetIter();
     _res= tol + _poissonSolver.GetResid();
-/* std::cerr << "Real residuals are: "
+/* std::cout << "Real residuals are: "
           << norm( A*v+transp_mul(B, p)-b) << ", "
           << norm( B*v-c) << std::endl; */
-    std::cerr << "-----------------------------------------------------" << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
 }
 
 template <class PoissonSolverT>
@@ -694,7 +694,7 @@ inline void Uzawa_IPCG_CL::doSolve(
         }
 
         if( (_iter%output)==0 )
-            std::cerr << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+            std::cout << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
                       << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
 
         _A_IPCGsolver.Solve( A, v_corr, res1);
@@ -727,24 +727,24 @@ void PSchurSolverCL<PoissonSolverT>::doSolve(const Mat& A, const Mat& B, Vec& v,
     if (_tmp.size() != v.size())
         _tmp.resize( v.size());
     _poissonSolver.Solve( A, _tmp, b);
-    std::cerr << "iterations: " << _poissonSolver.GetIter()
+    std::cout << "iterations: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
     rhs+= B*_tmp;
 
-    std::cerr << "rhs has been set! Now solving pressure..." << std::endl;
+    std::cout << "rhs has been set! Now solving pressure..." << std::endl;
     int iter= _maxiter;
     double tol= _tol;
     PCG( SchurComplMatrixCL<PoissonSolverT, Mat>( _poissonSolver, A, B), p, rhs, _schurPc, iter, tol);
-    std::cerr << "iterations: " << iter << "\tresidual: " << tol << std::endl;
-    std::cerr << "pressure has been solved! Now solving velocities..." << std::endl;
+    std::cout << "iterations: " << iter << "\tresidual: " << tol << std::endl;
+    std::cout << "pressure has been solved! Now solving velocities..." << std::endl;
 
     _poissonSolver.Solve( A, v, Vec( b - transp_mul(B, p)));
-    std::cerr << "iterations: " << _poissonSolver.GetIter()
+    std::cout << "iterations: " << _poissonSolver.GetIter()
               << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
 
     _iter= iter+_poissonSolver.GetIter();
     _res= std::sqrt( tol*tol + _poissonSolver.GetResid()*_poissonSolver.GetResid());
-    std::cerr << "-----------------------------------------------------" << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
 }
 
 template <class PoissonSolverT>
@@ -776,24 +776,24 @@ void PSchurSolver2CL<InnerSolverT, OuterSolverT>::doSolve(
     Vec rhs( -c);
     if (tmp_.size() != v.size()) tmp_.resize( v.size());
     innerSolver_.Solve( A, tmp_, b);
-    std::cerr << "rhs     : iterations: " << innerSolver_.GetIter()
+    std::cout << "rhs     : iterations: " << innerSolver_.GetIter()
               << "\tresidual: " << innerSolver_.GetResid() << std::endl;
     rhs+= B*tmp_;
 
     outerSolver_.SetTol( _tol);
     outerSolver_.SetMaxIter( _maxiter);
     outerSolver_.Solve( SchurComplMatrixCL<InnerSolverT, Mat>( innerSolver_, A, B), p, rhs);
-    std::cerr << "pressure: iterations: " << outerSolver_.GetIter()
+    std::cout << "pressure: iterations: " << outerSolver_.GetIter()
               << "\tresidual: " << outerSolver_.GetResid() << std::endl;
 
     innerSolver_.Solve( A, v, Vec( b - transp_mul(B, p)));
-    std::cerr << "velocity: iterations: " << innerSolver_.GetIter()
+    std::cout << "velocity: iterations: " << innerSolver_.GetIter()
               << "\tresidual: " << innerSolver_.GetResid() << std::endl;
 
     _iter= innerSolver_.GetIter() + outerSolver_.GetIter();
     _res= std::sqrt( std::pow( innerSolver_.GetResid(), 2)
                    + std::pow( outerSolver_.GetResid(), 2));
-    std::cerr << "-----------------------------------------------------" << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
 }
 
 template <typename InnerSolverT, typename OuterSolverT>
@@ -903,7 +903,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     int pr_iter_cumulative= 0;
     double resid0= std::sqrt( norm_sq( ru) + norm_sq( rp));
     double resid= resid0;
-    std::cerr << "residual (2-norm): " << resid
+    std::cout << "residual (2-norm): " << resid
               << "\tres-impuls: " << norm( ru)
               << "\tres-mass: " << norm( rp)
               << '\n';
@@ -932,7 +932,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
             PCG( *asc, z, c, Spc, inneriter, innertol);
             break;
           default:
-            std::cerr << "WARNING: InexactUzawa: Unknown apcmeth; using GMRes.\n";
+            std::cout << "WARNING: InexactUzawa: Unknown apcmeth; using GMRes.\n";
             // fall through
           case APC_OTHER:
             innertol= innerred; // GMRES can do relative tolerances.
@@ -946,7 +946,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
             Apc.Apply( A, zhat, zbar);
         }
         pr_iter_cumulative+= inneriter;
-        std::cerr << "pr solver: iterations: " << pr_iter_cumulative
+        std::cout << "pr solver: iterations: " << pr_iter_cumulative
                   << "\tresid: " << innertol << '\n';
         du= w - zhat;
         xu+= du;
@@ -954,7 +954,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         ru-= A*du + zbar; // z_xpaypby2(ru, ru, -1.0, A*du, -1.0, zbar);
         rp= g - B*xu;
         resid= std::sqrt( norm_sq( ru) + norm_sq( rp));
-        std::cerr << "residual reduction (2-norm): " << resid/resid0
+        std::cout << "residual reduction (2-norm): " << resid/resid0
                   << "\nresidual (2-norm): " << resid
                   << "\tres-impuls: " << norm( ru)
                   << "\tres-mass: " << norm( rp)
@@ -1027,7 +1027,7 @@ UzawaCGEff(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const Vec
         if (beta1 <= 0.0) {throw DROPSErrCL( "UzawaCGEff: Matrix is not spd.\n");}
         // This is for fair comparisons of different solvers:
         err= std::sqrt( norm_sq( f - (A*xu + transp_mul( B, xp))) + norm_sq( g - B*xu));
-        std::cerr << "relative residual (2-norm): " << err/err0
+        std::cout << "relative residual (2-norm): " << err/err0
                   << "\t(problem norm): " << std::sqrt( beta1/initialbeta) << '\n';
 //        if (beta1/initialbeta <= tol*tol) {
 //            tol= std::sqrt( beta1/initialbeta);
@@ -1088,7 +1088,7 @@ UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
     Spc.Apply( B, r2p, s2);
     double rho0= dot( s1, VectorCL( A*s1 - ru)) + dot( r2p, s2);
     const double initialrho= rho0;
-//    std::cerr << "UzawaCG: rho: " << rho0 << '\n';
+//    std::cout << "UzawaCG: rho: " << rho0 << '\n';
     if (rho0<=0.0) throw DROPSErrCL("UzawaCG: Matrix is not spd.\n");
 //    tol*= tol*rho0*rho0; // For now, measure the relative error.
 //    if (rho0<=tol) {
@@ -1119,11 +1119,11 @@ UzawaCG(const Mat& A, const Mat& B, Vec& u, Vec& p, const Vec& b, const Vec& c,
         r2p= 0.0;
         Spc.Apply( B, r2p, s2);
         rho1= dot( s1, VectorCL( A*s1 - ru)) + dot( r2p, s2);
-//        std::cerr << "UzawaCG: rho: " << rho1 << '\n';
+//        std::cout << "UzawaCG: rho: " << rho1 << '\n';
         if (rho1<=0.0) throw DROPSErrCL("UzawaCG: Matrix is not spd.\n");
         // This is for fair comparisons of different solvers:
         err= std::sqrt( norm_sq( b - (A*u + transp_mul( B, p))) + norm_sq( c - B*u));
-        std::cerr << "relative residual (2-norm): " << err/err0
+        std::cout << "relative residual (2-norm): " << err/err0
                 << "\t(problem norm): " << std::sqrt( rho1/initialrho)<< '\n';
 //        if (rho1 <= tol) {
 //            tol= std::sqrt( rho1);
@@ -1216,18 +1216,18 @@ EigenValueMaxMG(const MLMatrixCL& A, const ProlongationT& P, VectorCL& x, int it
 //    CGSolverCL  solver( 200, tol); //CG-Verfahren
     SSORPcCL directpc; PCG_SsorCL solver( directpc, 200, 1e-15);
     x/= norm( x);
-    std::cerr << "EigenValueMaxMG:\n";
+    std::cout << "EigenValueMaxMG:\n";
     for (int i= 0; i<iter; ++i) {
         tmp= 0.0;
         MGM( A.begin(), finest, finestP, tmp, A*x, smoother, sm, solver, lvl, -1);
         z= x - tmp;
         l= dot( x, z);
-        std::cerr << "iteration: " << i  << "\tlambda: " << l << "\trelative_change= : " << (i==0 ? -1 : std::fabs( (l-l_old)/l_old)) << '\n';
+        std::cout << "iteration: " << i  << "\tlambda: " << l << "\trelative_change= : " << (i==0 ? -1 : std::fabs( (l-l_old)/l_old)) << '\n';
         if (i > 0 && std::fabs( (l-l_old)/l_old) < tol) break;
         l_old= l;
         x= z/norm( z);
     }
-    std::cerr << "maximal value for lambda: " << l << '\n';
+    std::cout << "maximal value for lambda: " << l << '\n';
     return l;
 }
 
@@ -1276,7 +1276,7 @@ ScaledMGPreCL<ProlongationT>::Apply( const MLMatrixCL& A, VectorCL& x, const Vec
         x+= dx*s_;
     }
     const double res= norm(r - A*x);
-    std::cerr << "ScaledMGPreCL: it: " << iter_ << "\treduction: " << (oldres==0.0 ? res : res/oldres) << '\n';
+    std::cout << "ScaledMGPreCL: it: " << iter_ << "\treduction: " << (oldres==0.0 ? res : res/oldres) << '\n';
 }
 
 template<class SmootherT, class PVelT= MLMatrixCL, class PPrT= MLMatrixCL>
@@ -1357,7 +1357,7 @@ class StokesMGSolverCL: public StokesSolverBaseCL
                 break;
             }
         }
-        std::cerr << "StokesMGM: actual residual = " << actualtol
+        std::cout << "StokesMGM: actual residual = " << actualtol
                   << "  after " << nit << " iterations " << std::endl;
         _res = actualtol;
         _iter= nit;

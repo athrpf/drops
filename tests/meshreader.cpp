@@ -181,11 +181,11 @@ int TestReading()
     std::cout << "---------------------------------------------------\n";
     std::istringstream is( meshfile);
 //    std::copy( std::istream_iterator<char>( is), std::istream_iterator<char>(),
-//               std::ostream_iterator<char>( std::cerr));
+//               std::ostream_iterator<char>( std::cout));
     DROPS::ReadMeshBuilderCL builder( is);
     DROPS::MultiGridCL mg( builder);
-    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+    std::cout << DROPS::DumpMGCL( mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
 
     return 0;
 }
@@ -195,8 +195,8 @@ int Test()
 //    std::cout << "---------------------------------------------------\n";
     DROPS::ReadMeshBuilderCL builder( std::cin);
     DROPS::MultiGridCL mg( builder);
-//    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+//    std::cout << DROPS::DumpMGCL( mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;
     return 0;
 }
@@ -208,8 +208,8 @@ int TestRefineUniform()
     DROPS::MultiGridCL mg( builder);
     DROPS::MarkAll( mg);
     mg.Refine();
-//    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+//    std::cout << DROPS::DumpMGCL( mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;
     return 0;
 }
@@ -224,8 +224,8 @@ int TestRefine()
         if (It->GetId().GetIdent()%7 == 1)
             It->SetRegRefMark();
     mg.Refine();
-//    std::cerr << DROPS::DumpMGCL( mg) << std::endl;
-    std::cerr << DROPS::SanityMGOutCL( mg) << std::endl;
+//    std::cout << DROPS::DumpMGCL( mg) << std::endl;
+    std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     std::cout << DROPS:: GeomMGOutCL( mg) << std::flush;
     return 0;
 }

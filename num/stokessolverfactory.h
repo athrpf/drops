@@ -646,7 +646,7 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
                  /*rel*/ true, /*acc*/ true),
       PCGPc_(PCGSolver_),
       LBlockGMResBBTOseenPc_( GMResPc_, bbtispc_),
-      GCRGMResBBT_( C.outer_iter, C.outer_iter, C.outer_tol, LBlockGMResBBTOseenPc_, true, false, true, &std::cerr)
+      GCRGMResBBT_( C.outer_iter, C.outer_iter, C.outer_tol, LBlockGMResBBTOseenPc_, true, false, true, &std::cout)
     {}
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>

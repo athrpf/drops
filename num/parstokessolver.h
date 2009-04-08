@@ -160,7 +160,7 @@ template<class PoissonSolverT, typename MatT, typename ExVCL>
     VectorCL x(  M.A_.num_cols() );
     M.solver_.Solve( M.A_, x, transp_mul( M.B_, v));
 //     IF_MASTER
-//       std::cerr << "> inner iterations: " << M.solver_.GetIter()
+//       std::cout << "> inner iterations: " << M.solver_.GetIter()
 //                 << "\tresidual: " << M.solver_.GetResid()
 //                 << std::endl;
     return M.B_*x;
@@ -295,7 +295,7 @@ template <typename Mat, typename Vec, typename PC1, typename PC2, typename ExVCL
                     ParPCG( *asc, z, c, exP, Spc, inneriter, innertol);
                 break;
             default:
-                std::cerr << "WARNING: InexactUzawa: Unknown apcmeth; using GMRes.\n";
+                std::cout << "WARNING: InexactUzawa: Unknown apcmeth; using GMRes.\n";
             // fall through
             case APC_OTHER:
                 innertol= innerred; // GMRES can do relative tolerances.
@@ -342,7 +342,7 @@ template <typename Mat, typename Vec, typename PC1, typename PC2, typename ExVCL
     if (asc!=0) delete asc;
     usedinnerit = pr_iter_cumulative;
     IF_MASTER
-        std::cerr << "===> Warning, InexactUzawa stoped without reaching tolerance!" << std::endl;
+        std::cout << "===> Warning, InexactUzawa stoped without reaching tolerance!" << std::endl;
     return false;
 }
 }

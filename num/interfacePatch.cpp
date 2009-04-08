@@ -65,7 +65,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
     }
     if (num_sign_[1]==4)
     {
-        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        std::cout << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
         numchildtriangles_= 0;
         return false;
     }
@@ -126,7 +126,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
         tmp[1]= A(0,1)*PS[0] + A(1,1)*PS[1] + A(2,1)*PS[2];
         Solve2x2( detATA, ATA, ab_, tmp);
         //if (ab_[0]<0 || ab_[1]<0)
-        //    std::cerr<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
+        //    std::cout<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
         // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
         numchildtriangles_= 2;
     }
@@ -170,7 +170,7 @@ bool InterfacePatchCL::ComputeCutForChild( Uint ch)
         return false;
     if (num_sign_[1]==4)
     {
-        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        std::cout << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
         return false;
     }
 
@@ -269,13 +269,13 @@ void InterfacePatchCL::ComputeSubTets()
     // Schleife ueber die Kinder
     for (Uint ch=0; ch < 8 && Intersects(); ++ch)
     {
-        //std::cerr << "Kind " << ch << "\n \n";
+        //std::cout << "Kind " << ch << "\n \n";
         data  = GetChildData (RegRef_.Children[ch]);
 
         //cuts = Child + empty set
         if (!ComputeCutForChild(ch) || (intersec_==3 && innersec_==0))
         {
-            //std::cerr << "cuts = Child + empty set: " << num_sign_[2] <<"\n";
+            //std::cout << "cuts = Child + empty set: " << num_sign_[2] <<"\n";
             for (Uint i=0; i<4; ++i)
                 BaryCoords[i]=BaryDoF_[data.Vertices[i]];
             InsertSubTetra( BaryCoords, num_sign_[2]>0);
@@ -285,7 +285,7 @@ void InterfacePatchCL::ComputeSubTets()
             {
                 case 1 : // cuts = Tetra + Tetra
                 {
-                    //std::cerr << "cuts = Tetra + Tetra"<<"\n";
+                    //std::cout << "cuts = Tetra + Tetra"<<"\n";
                     for (int i=0; i<3; ++i)
                         BaryCoords[i]= Bary_[i];
                     for (int i=0; i<4; ++i)
@@ -298,7 +298,7 @@ void InterfacePatchCL::ComputeSubTets()
                 case 2 : // cuts = Tetra + Pyramide mit 4eckiger Grundflaeche
                 {
                     // tetra
-                    //std::cerr << "cuts = Tetra + Pyramide"<<"\n";
+                    //std::cout << "cuts = Tetra + Pyramide"<<"\n";
                     for (int i=0; i<3; ++i)
                         BaryCoords[i]= Bary_[i];
 
@@ -337,7 +337,7 @@ void InterfacePatchCL::ComputeSubTets()
                 } break;
                 case 3 : // cuts = Tetra + Tetra-Stumpf
                 {
-                    //std::cerr << "cuts = Tetra + Tetra-Stumpf\n";
+                    //std::cout << "cuts = Tetra + Tetra-Stumpf\n";
                     int vertA= -1;  // cut-Tetra = APQR
                     const int signA= num_sign_[0]==1 ? -1 : 1; // sign of vert A occurs only once
                     for (int i=0; vertA==-1 && i<4; ++i)
@@ -388,7 +388,7 @@ void InterfacePatchCL::ComputeSubTets()
             //                                                     A-|-------B |
             //                                                      \|        \|
             //                                                       P---------Q
-            //std::cerr << "cuts = 2x 5-Flaechner\n";
+            //std::cout << "cuts = 2x 5-Flaechner\n";
             int vertAB[2]; // cut mit VZ==part = ABPQRS
 
             //erst werden die "negativen" Kinder in die Liste hinzugefuegt, dann die "positiven"

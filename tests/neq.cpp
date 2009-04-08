@@ -31,11 +31,11 @@ int main ()
     SPcT spc( true);
     VectorCL ker( spc.mul( m, ker0));
     ker/= std::sqrt( dot( ker, ker0)); // ker is now an spc-unit-norm vector.
-    std::cerr << "Kernel: rel. residual norm: " << dot( M*ker, ker)/norm_sq( ker) << " norm ker: " << norm(ker) << '\n';
+    std::cout << "Kernel: rel. residual norm: " << dot( M*ker, ker)/norm_sq( ker) << " norm ker: " << norm(ker) << '\n';
     double alpha= std::sqrt( 1.); // std::sqrt( BBTDiag( m).min());
     VectorCL scaledKer( alpha * ker); // insertion into A leads to AA^T + alpha^2*ee^T.
     m.insert_col( m.num_cols(), scaledKer);
-    std::cerr << "Kernel: after stab: rel. residual norm: " << dot( M*ker, ker)/norm_sq( ker) << " alpha: " << alpha << '\n';
+    std::cout << "Kernel: after stab: rel. residual norm: " << dot( M*ker, ker)/norm_sq( ker) << " alpha: " << alpha << '\n';
 
     //VectorCL D( 1.0/BBTDiag( m));
     //typedef DiagPcCL SPcT;
@@ -48,7 +48,7 @@ int main ()
     SPc2T spc3;
     //PCGSolverCL<SPcT> solver( spc, 200, 1e-6, true);
     PCGNESolverCL<SPcT> solver( spc, 400, 1e-6, true);
-    //GCRSolverCL<SPcT> solver( spc, 500, 500, 1e-6, true, &std::cerr);
+    //GCRSolverCL<SPcT> solver( spc, 500, 500, 1e-6, true, &std::cout);
   
     VectorCL x( M.num_cols());
     TimerCL t;
@@ -64,7 +64,7 @@ int main ()
     std::cout << "dim: " << m.num_rows() << " x " << m.num_cols() << '\n';
 
   } catch (DROPSErrCL d) {
-    d.what( std::cerr);
+    d.what( std::cout);
   }
 
     return 0;
