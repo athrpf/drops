@@ -218,7 +218,7 @@ template<class NavStokesT>
 
 template<class NavStokesT>
   inline void
-  DeltaSquaredPolicyCL::Update (NavStokesT&, const MatrixCL&, const MatrixCL&,
+  DeltaSquaredPolicyCL::Update (__UNUSED__ NavStokesT& ns, const MatrixCL&, const MatrixCL&,
     const VecDescCL&, const VectorCL&, const VectorCL&, VecDescCL&, const VectorCL&,
     const VectorCL& w, const VectorCL& q, double)
 {
@@ -228,8 +228,17 @@ template<class NavStokesT>
         return;
     }
     w_diff_=  w - w_old_; q_diff_= q - q_old_;
+#ifndef _PAR
     omega_*= -(dot( w_diff_, w_old_) + dot( q_diff_, q_old_))
               / (norm_sq( w_diff_) + norm_sq( q_diff_));
+#else
+    ExchangeCL& ExVel  = ns.vel_idx.GetEx();
+    ExchangeCL& ExPr   = ns.pr_idx.GetEx();
+    const bool useAccur= true;
+    omega_*= -(ExVel.ParDot( w_diff_, true, w_old_, true, useAccur)
+               + ExPr.ParDot( q_diff_, true, q_old_, true, useAccur))
+              / (ExVel.Norm_sq( w_diff_, true, useAccur) + ExPr.Norm_sq( q_diff_, true, useAccur));
+#endif
 
     w_old_= w; q_old_= q;
 }
