@@ -102,12 +102,10 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
             return (new LinThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
                         (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_stab));
         break;
+        case 3 :
+            std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
         case 2 :
             return (new RecThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab));
-        break;
-        case 3 :
-            return (new ThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
                         (Stokes, lset, *solver, C.theta, C.nonlinear, C.cpl_proj, C.cpl_stab));
         break;
         case 4 :
@@ -230,7 +228,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 #ifndef _PAR
       case -10: // read from ensight-file [deprecated]
       {
-        std::cout << "read from ensight-file [DEPRECATED]\n";
+        std::cout << "[DEPRECATED] read from ensight-file [DEPRECATED]\n";
         ReadEnsightP2SolCL reader( MG);
         reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
         reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);

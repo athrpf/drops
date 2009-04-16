@@ -9,7 +9,7 @@ Time {
   NumSteps      = 5
   StepSize      = 3e-3
   Theta         = 1         # backward Euler
-  Scheme        = 1         # time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
+  Scheme        = 1         # time integration: 1=linthetascheme, 2=recthetascheme, 3=, 4=operator splitting, 5=cranknicolson
 }
 
 # flow solver

@@ -8,7 +8,7 @@
 Time {
   NumSteps      =       2
   StepSize      =       0.05
-  Scheme        =       2       # time integration: 1=linthetascheme, 2=recthetascheme, 3=thetascheme, 4=operator splitting, 5=cranknicolson
+  Scheme        =       2       # time integration: 1=linthetascheme, 2=recthetascheme, 3=, 4=operator splitting, 5=cranknicolson
   Theta         =       1.0     # backward Euler
 }
 
