@@ -635,11 +635,11 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 }
 
 
-void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl, __UNUSED__ bool euklid)
+void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl, bool euklid)
 /** \param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
  *  \param OnlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
  *  \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
- *  \param euklid: Use euclidan method for reparametrization, should be used in parallel.
+ *  \param euklid: Use Euclidian method for reparametrization, should be used in parallel.
  */
 {
     FastMarchCL fm( MG_, Phi);
@@ -877,7 +877,7 @@ void LevelsetRepairCL::pre_refine()
 
 void
 LevelsetRepairCL::post_refine ()
-/// Do all things to complete the repairment of the FE level-set function
+/// Do all things to complete the repairing of the FE level-set function
 {
     VecDescCL loc_phi;
     IdxDescCL loc_lidx( P2_FE);

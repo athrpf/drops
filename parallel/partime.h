@@ -117,7 +117,7 @@ class TimeStoreCL
 *   I M P L E M E N T A T I O N   O F   I N L I N E   F U N C T I O N S     *
 ****************************************************************************/
 void ParTimerCL::Start()
-/** Perform a barrier and using base class to start time measurement. */
+/** Perform a barrier and use wall time to start time measurement. */
 {
     maxduration_=-1.;
     calcMax_=false;
@@ -147,7 +147,7 @@ double ParTimerCL::GetMyTime() const
 }
 
 double ParTimerCL::GetMaxTime()
-/** If maximum over all procs is not computed so far, comput the maximum of times over all procs */
+/** If maximum over all procs has not been computed so far, compute the maximum of times over all procs */
 {
     if (!calcMax_){
         maxduration_ = ProcCL::GlobalMax(end_-start_);
@@ -158,7 +158,7 @@ double ParTimerCL::GetMaxTime()
 
 double TimeStoreCL::AddTime(size_t timeT, double time)
 /** Add the given time to the specified time
-    \param timeT add to wich time
+    \param timeT add to which time
     \param time  used time
     \return added time
 */
@@ -173,7 +173,7 @@ double TimeStoreCL::AddTime(size_t timeT, double time)
 template<typename TimerT>
 double TimeStoreCL::AddTime(const size_t timeT, TimerT timer)
 /** Stop the timer and add the time to the specified time
-    \param timeT add to wich time
+    \param timeT add to which time
     \param timer  timer
     \return added time
 */
