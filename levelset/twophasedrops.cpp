@@ -367,7 +367,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         SolveStatProblem( Stokes, lset, *navstokessolver);
 
     // for serialization of geometry and numerical data
-    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.transp_do ? &massTransp : 0, C.ser_dir);
+    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.transp_do ? &massTransp : 0, C.ser_dir, C.overwrite);
 
     // Initialize Ensight6 output
 #ifndef _PAR
@@ -502,7 +502,7 @@ int main (int argc, char** argv)
         param.open( argv[1]);
     if (!param)
     {
-        std::cout << "error while opening parameter file\n";
+        std::cerr << "error while opening parameter file\n";
         return 1;
     }
     param >> C;

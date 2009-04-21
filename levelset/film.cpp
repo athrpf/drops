@@ -248,7 +248,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
             //for Stokes-MGM
         stokessolverfactory.SetMatrices( &cpl.GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
                                          &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
-    }  
+    }
 
 
     UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
@@ -378,14 +378,14 @@ int main (int argc, char** argv)
   {
     if (argc!=2)
     {
-        std::cout << "You have to specify one parameter:\n\t"
+        std::cerr << "You have to specify one parameter:\n\t"
                   << argv[0] << " <param_file>" << std::endl;
         return 1;
     }
     std::ifstream param( argv[1]);
     if (!param)
     {
-        std::cout << "error while opening parameter file\n";
+        std::cerr << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
@@ -411,7 +411,7 @@ int main (int argc, char** argv)
 
     if (C.BndCond.size()!=6)
     {
-        std::cout << "too many/few bnd conditions!\n"; return 1;
+        std::cerr << "too many/few bnd conditions!\n"; return 1;
     }
     DROPS::BndCondT bc[6], bc_ls[6];
     DROPS::BoundaryCL::BndTypeCont bndType;
@@ -433,7 +433,7 @@ int main (int argc, char** argv)
             case '2':
                 bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
-                std::cout << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
+                std::cerr << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
                 return 1;
         }
     }
