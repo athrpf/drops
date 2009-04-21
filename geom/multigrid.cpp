@@ -318,7 +318,7 @@ TetraCL::GetNormal(Uint face, Point3DCL& normal, double& dir) const
 dir is set to 1.0 if the normal points out of the tetra,
 else it is set to -1.0.
 Normal has unit length, but the length of the cross-product is returned,
-which is useful for integration over that face
+which is useful for integration over that face.
 If the triangulation is consistently numbered, both tetras on a face will
 return the same normal in "normal" (, of course "dir" will be different).
 */
@@ -692,7 +692,7 @@ The faces for new refinement are stored in the static TetraCL::fPtrs array.
 First look for them in the recycle bin (maybe they were created before),
 if the face cannot be found, create it and link boundary, if necessary.
 */
-///\todo (of) Ist lokale Subface-Nummererierung auf verschiedenen Prozessen eindeutig??
+///\todo (of) Ist lokale Subface-Nummerierung auf verschiedenen Prozessen eindeutig??
 {
     const Uint nextLevel= GetLevel()+1;
 
@@ -875,7 +875,7 @@ bool EdgeCL::IsSane(std::ostream& os) const
 /**
 Check for:
 <ol>
- <li> both vertices are on domain boundry, if the edge lies on it</li>
+ <li> both vertices are on domain boundary, if the edge lies on it</li>
  <li> in parallel, if AccMFR is equal to MFR, if the edge is undistributed</li>
  <li> not unsubscribed from DDD</li>
 </ol>
@@ -1123,7 +1123,7 @@ Check for:
 <ol>
  <li> volume of children sums up to my volume</li>
  <li> Master exists, if I am Ghost</li>
- <li> all childs are masters</li>
+ <li> all children are masters</li>
  <li> neighbor-connections are right </li>
  <li> whether the ordering of the vertices in each edge is induced by the ordering of the vertices in the tetra</li>
  <li> whether the vertices of opposing edges contain all four vertices of the tetra </li>
@@ -1704,8 +1704,8 @@ void MultiGridCL::UnrefineGrid (Uint Level)
     // rescue verts special, because they can be found in different levels
     ParMultiGridCL::RescueGhostVerts( 0);
 
-    /// \todo (of): Kann es einen Master aus höheren Leveln geben, der noch einen Knoten braucht, der hier im
-    /// Zuge von killedGhost gelöscht wird?
+    /// \todo (of): Kann es einen Master aus hoeheren Leveln geben, der noch einen Knoten braucht, der hier im
+    /// Zuge von killedGhost geloescht wird?
 
     // tell which simplices will be deleted
     // also if numerical data will be submitted after the refinement algorithm, no parallal information will be
@@ -1757,7 +1757,7 @@ void MultiGridCL::UnrefineGrid (Uint Level)
             ++it;
     }
 
-    /// \todo (of): Wieso hat Sven hier geschrieben, dass PrioVGhost-Kanten nicht die Referenz auf den MidVertex löschen dürfen?
+    /// \todo (of): Wieso hat Sven hier geschrieben, dass PrioVGhost-Kanten nicht die Referenz auf den MidVertex loeschen duerfen?
     Comment("Now adapting midvertex pointers on level " << Level << ". " << std::endl, DebugRefineEasyC);
     for (EdgeIterator eIt= _Edges[Level].begin(), eEnd= _Edges[Level].end(); eIt!=eEnd; ++eIt){
         if ( (eIt->IsRefined() /*&& eIt->GetHdr()->prio!=PrioVGhost*/ && eIt->GetMidVertex()->IsMarkedForRemovement()) ){
@@ -1766,11 +1766,11 @@ void MultiGridCL::UnrefineGrid (Uint Level)
     }
 
 
-    // in differenc to serial version, the edges, faces and vertices are deleted at other positions
+    // in difference to serial version, the edges, faces and vertices are deleted at other positions
     // all subsimplices will be deleted after the refinement is done. So DDD has (if needed) all the time
     // access to these unknowns.
 
-    /// \todo (of) Müssen evtl. auch noch Vertices aus Level Level gelöscht werden?
+    /// \todo (of) Muessen evtl. auch noch Vertices aus Level Level geloescht werden?
 
     Comment("Unrefining grid " << Level << " done." << std::endl, DebugRefineEasyC);
 }
@@ -1847,7 +1847,7 @@ void MultiGridCL::Refine()
         throw DROPSErrCL("MultiGridCL::Refine: toDelGhosts_ should be empty!");
     else
         toDelGhosts_.resize(0);
-    ParMultiGridCL::AdjustLevel();      // all procs must have the same number on levels
+    ParMultiGridCL::AdjustLevel();      // all procs must have the same number of levels
 #endif
 
     const int tmpLastLevel( GetLastLevel() );
@@ -2130,30 +2130,37 @@ bool MultiGridCL::IsSane (std::ostream& os, int Level) const
 void MultiGridCL::SizeInfo(std::ostream& os)
 {
 #ifndef _PAR
-    os << GetVertices().size() << " Verts, "
-       << GetEdges().size()    << " Edges, "
-       << GetFaces().size()    << " Faces, "
-       << GetTetras().size()   << " Tetras"
+    size_t numVerts= GetVertices().size(),
+           numEdges= GetEdges().size(),
+           numFaces= GetFaces().size(),
+           numTetras= GetTetras().size(),
+           numTetrasRef= numTetras - std::distance( GetTriangTetraBegin(), GetTriangTetraEnd());
+    os << numVerts  << " Verts, "
+       << numEdges  << " Edges, "
+       << numFaces  << " Faces, "
+       << numTetras << " Tetras"
        << std::endl;
 #else
-    int  elems[4],
+    int  elems[5],
         *recvbuf=0;
 
     if (ProcCL::IamMaster())
-        recvbuf = new int[4*ProcCL::Size()];
+        recvbuf = new int[5*ProcCL::Size()];
 
     elems[0] = GetVertices().size(); elems[1]=GetEdges().size();
     elems[2] = GetFaces().size();    elems[3]=GetTetras().size();
+    elems[4] = elems[3] - std::distance( GetTriangTetraBegin(), GetTriangTetraEnd());
 
-    ProcCL::Gather(elems, recvbuf, 4, ProcCL::Master());
+    ProcCL::Gather(elems, recvbuf, 5, ProcCL::Master());
 
+    Uint numVerts=0, numEdges=0, numFaces=0, numTetras=0, numTetrasRef=0;
     if (ProcCL::IamMaster()){
-        Uint numVerts=0, numEdges=0, numFaces=0, numTetras=0;
         for (int i=0; i<ProcCL::Size(); ++i){
             numVerts  += recvbuf[i*4+0];
             numEdges  += recvbuf[i*4+1];
             numFaces  += recvbuf[i*4+2];
             numTetras += recvbuf[i*4+3];
+            numTetrasRef += recvbuf[i*4+4];
         }
 
         for (int i=0; i<ProcCL::Size(); ++i){
@@ -2173,6 +2180,32 @@ void MultiGridCL::SizeInfo(std::ostream& os)
     }
     delete[] recvbuf;
 #endif
+    IF_MASTER
+    {
+        // print out memory usage.
+        // before manipulating stream, remember previous precision and format flags
+        const int prec= os.precision();
+        const std::ios_base::fmtflags ff= os.flags();
+        // print only one digit after decimal point
+        os.precision(1);
+        os.setf( std::ios_base::fixed);
+
+        size_t vMem= numVerts*sizeof(VertexCL),
+               eMem= numEdges*sizeof(EdgeCL),
+               fMem= numFaces*sizeof(FaceCL),
+               tMem= numTetras*sizeof(TetraCL) + numTetrasRef*8*sizeof(TetraCL*),
+                   // also account for Children_ arrays which are allocated for all refined tetras
+               Mem= vMem + eMem + fMem + tMem;
+        double MemMB= double(Mem)/1024/1024;
+        os << "Memory used for geometry: " << MemMB << " MB ("
+           << (double(vMem)/Mem*100) << "% verts, "
+           << (double(eMem)/Mem*100) << "% edges, "
+           << (double(fMem)/Mem*100) << "% faces, "
+           << (double(tMem)/Mem*100) << "% tetras)\n";
+        // restore precision and format flags
+        os.precision(prec);
+        os.flags( ff);
+    }
 }
 
 void MultiGridCL::ElemInfo(std::ostream& os, int Level)
@@ -2211,7 +2244,7 @@ void MultiGridCL::ElemInfo(std::ostream& os, int Level)
 #ifdef _PAR
 /// \brief Get number of distributed objects on local processor
 Uint MultiGridCL::GetNumDistributedObjects() const
-/** Count vertices, edges, faces and tetrahedra, that are stored on at leas two
+/** Count vertices, edges, faces and tetrahedra, that are stored on at least two
     processors. */
 {
     Uint numdistVert=0, numdistEdge=0, numdistFace=0, numdistTetra=0;
@@ -2227,7 +2260,7 @@ Uint MultiGridCL::GetNumDistributedObjects() const
     return numdistVert+numdistEdge+numdistFace+numdistTetra;
 }
 
-/// \brief Get number of tetraeder of a given level
+/// \brief Get number of tetrahedra of a given level
 Uint MultiGridCL::GetNumTriangTetra(int Level)
 {
     Uint numTetra=0;
@@ -2444,7 +2477,7 @@ void UnMarkAll (DROPS::MultiGridCL& mg)
      DROPS_FOR_TRIANG_TETRA( mg, /*default-level*/-1, It)
      {
 #ifdef _PAR
-         if (!It->IsMaster()) std::cout <<"Setzte Löschenmarke auf non-master!!!\n";
+         if (!It->IsMaster()) std::cerr <<"Marking non-master tetra for removement!!!\n";
 #endif
             It->SetRemoveMark();
      }
