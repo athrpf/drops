@@ -573,7 +573,7 @@ class TetraCL
     Usint          _RefRule;                                            // actual refinement of the tetrahedron
     mutable Usint  _RefMark;                                           // refinement-mark (e.g. set by the error estimator)
 #ifndef _PAR
-    Uint          _Level;// : 8;
+    Uint          _Level : 8;
 #else
     idxtype                  _lbNr;                                     // number of this Tetra used for LoadBalance with parmetis (typedef in parmetis.h), initialized with -1 as no number
     static DDD_TYPE          _dddT;                                     // DDD-Type for Tetras, for every Tetra the same
