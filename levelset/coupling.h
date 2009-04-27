@@ -8,6 +8,7 @@
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
 #include "num/MGsolver.h"
+#include <vector>
 #ifdef _PAR
 #include "num/parstokessolver.h"
 #endif
@@ -159,7 +160,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 
 /// \brief Compute the relaxation factor in RecThetaScheme2PhaseCL by Aitken's delta-squared method.
 ///
-/// This vector version of classical delta-squared concergence-acceleration computes the
+/// This vector version of classical delta-squared convergence-acceleration computes the
 /// relaxation factor in span{ (v, phi)^T}.
 class cplDeltaSquaredPolicyCL
 {
@@ -168,39 +169,52 @@ class cplDeltaSquaredPolicyCL
              v_diff_, phi_diff_;
     double   omega_;
     bool     firststep_;
+    std::ostream* output_;
 
   public:
-   cplDeltaSquaredPolicyCL( size_t vsize, size_t phisize)
-   {
-       resize( vsize, phisize);
-   }
-   void resize( size_t vsize, size_t phisize)
-   {
-       v_old_.resize ( vsize); phi_old_.resize ( phisize);
-       v_diff_.resize( vsize); phi_diff_.resize( phisize);
-       reset();
-   }
-   void reset()
-   {
-       omega_ = 1.0; firststep_ = true;
-   }
-   inline void Update( const VectorCL& v, const VectorCL& phi)
-   {
-        if (firststep_) {
-            v_old_= v; phi_old_= phi;
-            firststep_ = false;
-            return;
-        }
-        v_diff_=  v - v_old_; phi_diff_= phi - phi_old_;
-        omega_*= -(dot( v_diff_, v_old_) + dot( phi_diff_, phi_old_))
-                / (norm_sq( v_diff_) + norm_sq( phi_diff_));
+    cplDeltaSquaredPolicyCL( std::ostream* output = 0) :
+        omega_( 1.0), firststep_( true), output_( output) {}
 
-        v_old_= v; phi_old_= phi;
-   }
-   double RelaxFactor () const { return omega_; }
+    inline void Update( VecDescCL& v, VecDescCL& phi);
 };
 
-template <class StokesT, class SolverT>
+/// \brief Always uses 1 as relaxation factor in RecThetaScheme2PhaseCL
+class cplFixedPolicyCL
+{
+  private:
+    std::ostream* output_;
+  public:
+    cplFixedPolicyCL  ( std::ostream* output = 0) : output_( output)  {}
+    inline void Update( const VecDescCL&, const VecDescCL&) {}
+};
+
+/// \brief Broyden method for nonlinear system (velocity - levelset)
+///
+/// Deuflhard: Newton Methods for Nonlinear Problems,
+/// Affine Invariance and Adaptive Algorithms, pp 81-90
+class cplBroydenPolicyCL
+{
+  private:
+    double thetamax_;
+    double kappamax_;
+    double sigma0_, sigma_;
+    double kappa_;
+    bool   firststep_;
+    double tol_;
+    std::ostream* output_;
+
+    typedef std::vector<VectorCL> VecValueT;
+
+    VecValueT F1_, F2_, deltaF1_, deltaF2_;
+    std::vector<double> gamma_;
+
+  public:
+    cplBroydenPolicyCL ( std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
+    inline void Update( VecDescCL&, VecDescCL&);
+};
+
+
+template <class StokesT, class SolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
 class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 {
   protected:
@@ -227,8 +241,6 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     bool         withProj_;
     const double stab_;
 
-    cplDeltaSquaredPolicyCL dsp_;
-
 #ifdef _PAR
     typedef ParJac0CL MsolverPCT;
     typedef ParPCGSolverCL<MsolverPCT> MsolverT;
@@ -245,7 +257,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void ComputePressure ();
 
     void ComputeVelocityDot ();
-    void DoFPIter2();
+    void EvalLsetNavStokesEquations();
 
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
@@ -265,7 +277,6 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 
     void InitStep();
     void DoProjectionStep(const VectorCL&);
-    void DoFPIter();
     void CommitStep();
 
     void DoStep( int maxFPiter= -1);
@@ -273,11 +284,11 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void Update();
 };
 
-template <class StokesT, class SolverT>
-class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, SolverT>
+template <class StokesT, class SolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
+class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, SolverT, RelaxationPolicyT>
 {
   private:
-    typedef RecThetaScheme2PhaseCL<StokesT, SolverT> base_;
+    typedef RecThetaScheme2PhaseCL<StokesT, SolverT, RelaxationPolicyT> base_;
     using base_::Stokes_;
     using base_::LvlSet_;
     using base_::mat_;
@@ -296,14 +307,14 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
 
 };
 
-template <class StokesT, class SolverT>
-class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT,SolverT>
+template <class StokesT, class SolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
+class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT,SolverT, RelaxationPolicyT>
 {
   private:
     static const double facdt_[3];
     static const double theta_[3];
 
-    typedef RecThetaScheme2PhaseCL<StokesT,SolverT> base_;
+    typedef RecThetaScheme2PhaseCL<StokesT,SolverT, RelaxationPolicyT> base_;
 
     double dt3_;
     int step_;
@@ -339,14 +350,14 @@ class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT,SolverT>
     void Update() { base_::Update(); }
 };
 
-template <class NavStokesT, class SolverT>
-const double FracStepScheme2PhaseCL<NavStokesT,SolverT>::facdt_[3]
+template <class NavStokesT, class SolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<NavStokesT, SolverT, RelaxationPolicyT>::facdt_[3]
 //  = { 1./3, 1./3, 1./3 };
 //  = { 1./3, 1./3, 1./3 };
   = { 1.0 - std::sqrt( 0.5), std::sqrt( 2.0) - 1.0, 1.0 - std::sqrt( 0.5) };
 
-template <class NavStokesT, class SolverT>
-const double FracStepScheme2PhaseCL<NavStokesT,SolverT>::theta_[3]
+template <class NavStokesT, class SolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<NavStokesT,SolverT,RelaxationPolicyT>::theta_[3]
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };

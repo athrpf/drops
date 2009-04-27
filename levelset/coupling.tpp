@@ -490,11 +490,11 @@ void OperatorSplitting2PhaseCL<StokesT,SolverT>::Update()
 //              RecThetaScheme2PhaseCL
 // ==============================================
 
-template <class StokesT, class SolverT>
-RecThetaScheme2PhaseCL<StokesT,SolverT>::RecThetaScheme2PhaseCL
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, theta, nonlinear),
-    solver_( solver), withProj_( withProjection), stab_( stab), dsp_( 0, 0)
+    solver_( solver), withProj_( withProjection), stab_( stab)
 #ifdef _PAR
     , MsolverPC_(Stokes.vel_idx.GetFinest()), Msolver_(200, 1e-10, Stokes.vel_idx.GetFinest(), MsolverPC_, false, true),
     SsolverPC_(Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
@@ -505,12 +505,12 @@ RecThetaScheme2PhaseCL<StokesT,SolverT>::RecThetaScheme2PhaseCL
     Update();
 }
 
-template <class StokesT, class SolverT>
-RecThetaScheme2PhaseCL<StokesT,SolverT>::~RecThetaScheme2PhaseCL()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::~RecThetaScheme2PhaseCL()
 {}
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& b)
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::MaybeStabilize (VectorCL& b)
 {
     if (stab_ == 0.0) return;
 
@@ -529,8 +529,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::MaybeStabilize (VectorCL& b)
     b+= s*(LB_.Data*Stokes_.v.Data);
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::InitStep()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
     LvlSet_.ComputeRhs( ls_rhs_);
@@ -545,29 +545,15 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::InitStep()
         Stokes_.p.Data*= theta_; // Just to have a better starting-value for p.
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoProjectionStep( const VectorCL& /*rhscurv*/)
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::DoProjectionStep( const VectorCL& /*rhscurv*/)
 // perform preceding projection step
 {
     std::cout << "~~~~~~~~~~~~~~~~ NO Projection step\n";
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter()
-{
-    VectorCL v( Stokes_.v.Data), phi( LvlSet_.Phi.Data);
-    DoFPIter2();
-    Stokes_.v.Data   = v   - Stokes_.v.Data;
-    LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
-    dsp_.Update( Stokes_.v.Data, LvlSet_.Phi.Data);
-    const double omega = dsp_.RelaxFactor();
-    std::cout << "omega: " << omega << std::endl;
-    Stokes_.v.Data   = v   - omega*Stokes_.v.Data;
-    LvlSet_.Phi.Data = phi - omega*LvlSet_.Phi.Data;
-}
-
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter2()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::EvalLsetNavStokesEquations()
 // perform fixed point iteration
 {
 #ifndef _PAR
@@ -647,8 +633,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoFPIter2()
               << "\ttime: " << duration << "s\n";
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::CommitStep()
 {
     std::swap( b_, old_b_);
     std::swap( cplM_, old_cplM_);
@@ -669,50 +655,56 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::CommitStep()
         ComputeVelocityDot();
     }
     oldv_= Stokes_.v.Data;
-    dsp_.reset();
 
 //     static int mycount( 1);
 //     if ( mycount++ % 20 == 1) {
 //         VectorCL pp( Stokes_.p.Data);
 //         ComputePressure();
-// #ifndef _PAR
 //         std::cout << "pressure difference: " << norm( Stokes_.p.Data - pp)/norm( pp) << '\n';
-// #endif
 //         Stokes_.p.Data= pp;
 //
 //         if (theta_ != 1.) { // Implicit Euler does not need and calculate vdot_.
 //             VectorCL vd( vdot_);
 //             ComputeVelocityDot();
-// #ifndef _PAR
 //             std::cout << "vdot difference: " << norm( vdot_ - vd)/norm( vd) << '\n';
-// #endif
 //             vdot_= vd;
 //         }
 //     }
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::DoStep( int maxFPiter)
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
         maxFPiter= 99;
 
     InitStep();
+    RelaxationPolicyT relax;
     for (int i=0; i<maxFPiter; ++i)
     {
         std::cout << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
-        DoFPIter();
+        const VectorCL v( Stokes_.v.Data);
+        const VectorCL phi( LvlSet_.Phi.Data);
+        EvalLsetNavStokesEquations();
         if (solver_.GetIter()==0 && LvlSet_.GetSolver().GetResid()<LvlSet_.GetSolver().GetTol()) // no change of vel -> no change of Phi
         {
             std::cout << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
+        Stokes_.v.Data   = v   - Stokes_.v.Data;
+        LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
+
+        // quasi newton method: relax computes the update vector
+        relax.Update( Stokes_.v, LvlSet_.Phi);
+
+        Stokes_.v.Data   = v   - Stokes_.v.Data;
+        LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
     }
     CommitStep();
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
 #ifndef _PAR
@@ -768,16 +760,14 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::Update()
         ComputeVelocityDot();
     }
 
-    dsp_.resize( Stokes_.v.Data.size(), LvlSet_.Phi.Data.size());
-
     time.Stop();
     duration=time.GetTime();
     std::cout << "Discretizing took " << duration << " sec.\n";
 }
 
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::ComputePressure ()
 {
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
@@ -825,8 +815,8 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputePressure ()
 #endif
 }
 
-template <class StokesT, class SolverT>
-void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputeVelocityDot ()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::ComputeVelocityDot ()
 {
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
@@ -849,18 +839,18 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT>::ComputeVelocityDot ()
 //            CrankNicolsonScheme2PhaseCL
 // ==============================================
 
-template <class StokesT, class SolverT>
-CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::CrankNicolsonScheme2PhaseCL
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+CrankNicolsonScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::CrankNicolsonScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, solver, 1.0, nonlinear, withProjection, stab), step_(1)
 {}
 
-template <class StokesT, class SolverT>
-CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::~CrankNicolsonScheme2PhaseCL()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+CrankNicolsonScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::~CrankNicolsonScheme2PhaseCL()
 {}
 
-template <class StokesT, class SolverT>
-void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::DoStep(int maxFPIter)
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void CrankNicolsonScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::DoStep(int maxFPIter)
 {
     switch (step_)
     {
@@ -883,12 +873,123 @@ void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::DoStep(int maxFPIter)
     base_::DoStep(maxFPIter);
 }
 
-template <class StokesT, class SolverT>
-void CrankNicolsonScheme2PhaseCL<StokesT,SolverT>::Update()
+template <class StokesT, class SolverT, class RelaxationPolicyT>
+void CrankNicolsonScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::Update()
 {
     base_::SetTimeStep(tmpdt_, 1.0);
     base_::Update();
     step_= 1;
 }
+
+inline void cplDeltaSquaredPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
+{
+    if (firststep_) {
+        const size_t vsize = v.Data.size();
+        const size_t phisize = phi.Data.size();
+        v_old_.resize   ( vsize);
+        phi_old_.resize ( phisize);
+        v_diff_.resize  ( vsize);
+        phi_diff_.resize( phisize);
+        v_old_= v.Data; phi_old_= phi.Data;
+        firststep_ = false;
+        if (output_)
+            (*output_) << "omega: " << omega_ << std::endl;
+        return;
+    }
+    v_diff_=  v.Data - v_old_; phi_diff_= phi.Data - phi_old_;
+#ifndef _PAR
+    omega_*= -(dot( v_diff_, v_old_) + dot( phi_diff_, phi_old_))
+            / (norm_sq( v_diff_) + norm_sq( phi_diff_));
+#else
+    const bool useAccur=true;
+    ExchangeCL& ExVel  = v.RowIdx->GetEx();
+    ExchangeCL& ExLset = phi.RowIdx->GetEx();
+    omega_*=-(ExVel.ParDot( v_diff_, true, v_old_, true, useAccur)
+            + ExLset.ParDot( phi_diff_, true, phi_old_, true, useAccur))
+            / (ExVel.Norm_sq( v_diff_, true, useAccur) + ExLset.Norm_sq( phi_diff_, true, useAccur));
+#endif
+    if (output_)
+        (*output_) << "omega: " << omega_ << std::endl;
+    v_old_= v.Data; phi_old_= phi.Data;
+    v.Data   *= omega_;
+    phi.Data *= omega_;
+}
+
+inline void cplBroydenPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
+{
+    F1_.push_back( v.Data);
+    F2_.push_back( phi.Data);
+#ifndef _PAR
+    sigma_ = norm_sq( v.Data) + norm_sq( phi.Data);
+#else
+    const bool useAccur=true;
+    ExchangeCL& ExVel  = v.RowIdx->GetEx();
+    ExchangeCL& ExLset = phi.RowIdx->GetEx();
+    sigma_ = ExVel.Norm_sq( v.Data, true, useAccur) + ExLset.Norm_sq( phi.Data, true, useAccur);
+#endif
+
+    if (sigma_ < tol_*tol_) {
+        if (output_)
+            (*output_) << "Solution found" << std::endl;
+        //return;
+    }
+
+    if (firststep_) {
+        firststep_ = false;
+        sigma0_ = sigma_;
+        return;
+    }
+
+    // at this point: F1_.size() >= 2
+    const size_t pos = F1_.size() - 2;
+    deltaF1_.push_back( VectorCL( F1_.back() - F1_[pos]));
+    deltaF2_.push_back( VectorCL( F2_.back() - F2_[pos]));
+
+    const double theta = std::sqrt(sigma_/sigma0_);
+    if (theta >= thetamax_) {
+        if (output_)
+            (*output_) << "No convergence: theta = " << theta << std::endl;
+        //return;
+    }
+    sigma0_ = sigma_;
+
+    VectorCL w1( deltaF1_.back());
+    VectorCL w2( deltaF2_.back());
+#ifndef _PAR
+    gamma_.push_back( norm_sq( w1) + norm_sq( w2));
+#else
+    gamma_.push_back( ExVel.Norm_sq( w1, true, useAccur) + ExLset.Norm_sq( w2, true, useAccur));
+#endif
+
+    kappa_ /= (1.0-2.0*theta);
+
+    if (kappa_ >= kappamax_){
+        if (output_)
+            (*output_) << "ill-conditioned update: kappa = "<< kappa_ << std::endl;
+        //return;
+    }
+
+    VectorCL v1( F1_.back()), v2( F2_.back());
+#ifndef _PAR
+    const double factor = 1.0 - ( dot( w1, v1) + dot( w2, v2)) / gamma_.back();
+#else
+    const double factor = 1.0 - ( ExVel.ParDot( w1, true, v1, true, useAccur) + ExLset.ParDot( w2, true, v2, true, useAccur)) / gamma_.back();
+#endif
+    v1*= factor;
+    v2*= factor;
+
+    for (int j=deltaF1_.size()-1; j>=0; --j) {
+#ifndef _PAR
+        const double beta = ( dot (deltaF1_[j], v1) + dot( deltaF2_[j], v2)) / gamma_[j];
+#else
+        const double beta = ( ExVel.ParDot (deltaF1_[j], true, v1, true, useAccur) + ExLset.ParDot( deltaF2_[j], true, v2, true, useAccur)) / gamma_[j];
+#endif
+        v1 -= beta*F1_[j+1];
+        v2 -= beta*F2_[j+1];
+    }
+    v.Data   = v1;
+    phi.Data = v2;
+}
+
 
 } // end of namespace DROPS
