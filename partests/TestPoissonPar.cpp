@@ -489,23 +489,15 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
         std::cout << " Write ensight case and geometry files ... " << std::endl;
     }
 
-    EnsightP2SolOutCL *ensight= 0;
-    string            *dattmp= 0;
+    Ensight6OutCL *ensight= 0;
     if (C.ensight)
     {
         // Create ensight case and geometry file
-        ensight = new EnsightP2SolOutCL( MG, idx->GetFinestPtr(), false, true);
+        std::string ensf( C.EnsDir + "/" + C.EnsCase);
+        ensight = new Ensight6OutCL( C.EnsCase + ".case", 0, false, true);
+        ensight->Register( make_Ensight6Geom      ( MG, idx->GetFinest().TriangLevel(), C.geomName, ensf + ".geo"));
+        ensight->Register( make_Ensight6Scalar    ( Poisson.GetSolution(),              C.varName,  ensf + ".tmp"));
         ensight->SetMasterOut();
-        const string EnsCase=C.EnsCase;
-        const string filename= C.EnsDir + "/" + EnsCase;
-        const string datgeo= filename+".geo";
-        dattmp = new string(filename+".tmp");
-        ensight->CaseBegin( string(EnsCase+".case").c_str());
-        ensight->DescribeGeom(   C.geomName.c_str(), datgeo);
-        ensight->DescribeScalar( C.varName.c_str(), *dattmp);
-        ensight->Commit();
-        ensight->CaseEnd();
-        ensight->putGeom( datgeo);
     }
 
     size_t *Sizes = new size_t[ProcCL::Size()];
@@ -560,7 +552,7 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
             std::cout << " Write ensight-Data files" << std::endl;
         }
 
-        ensight->putScalar(*dattmp, Poisson.GetSolution());
+        ensight->Write();
     }
 }
 
@@ -616,10 +608,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
     std::vector<VecDescCL*> DescWrapper(1); // for ParMultiGridCL we need a vector of (VecDescCL*)
 
     // Output of the solution in ensight format
-    EnsightP2SolOutCL *ensight=0;
-    string            *dattmp=0;
-    string            *interpol=0;
-    string            *datgeo=0;
+    Ensight6OutCL *ensight=0;
 
     old_x->SetIdx(old_idx);
 
@@ -741,33 +730,22 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
             old_x->Clear();
 
             if (C.ensight)
-            {
-                ensight->putGeom( *datgeo, step+1);
-                P1EvalCL<double, const InstatPoissonBndDataCL, const VecDescCL>  ensSol(new_x, &BndData, &MG);
-                ensight->putScalar(*interpol, ensSol, step+1);
-            }
+                ensight->Write( step+1);
         }
         else    // init ensight
         {
             if (C.ensight)
             {
                 // Create ensight files
-                ensight = new EnsightP2SolOutCL( MG, new_idx->GetFinestPtr(), false);
-                ensight->SetMasterOut();
-                const string EnsCase=C.EnsCase;
-                const string filename= C.EnsDir + '/' + EnsCase;
-                datgeo  = new string (filename+".geo");
-                dattmp  = new string(filename+".tmp");
-                interpol= new string(filename+".interpol");
-                ensight->CaseBegin( string(EnsCase+".case").c_str(), 7);
-                ensight->DescribeGeom(   C.geomName.c_str(), *datgeo,   true);
-                ensight->DescribeScalar( C.varName.c_str(),  *dattmp,   true);
-                ensight->DescribeScalar( "Interpolation",    *interpol, true);
-                ensight->Commit();
-
-                ensight->putGeom( *datgeo, step+1);
+                std::string ensf( C.EnsDir + "/" + C.EnsCase);
+                ensight = new Ensight6OutCL( C.EnsCase + ".case", 7, false);
+                ensight->Register( make_Ensight6Geom  ( MG, new_idx->GetFinest().TriangLevel(), C.geomName, ensf + ".geo", true));
+                ensight->Register( make_Ensight6Scalar( Poisson.GetSolution(),              C.varName,  ensf + ".tmp", true));
                 P1EvalCL<double, const InstatPoissonBndDataCL, const VecDescCL>  ensSol(new_x, &BndData, &MG);
-                ensight->putScalar(*interpol, ensSol, step+1);
+                ensight->Register( make_Ensight6Scalar( ensSol, "Interpolation",  ensf + ".interpol", true));
+                ensight->SetMasterOut();
+
+                ensight->Write( step+1);
             }
         }
 
@@ -839,12 +817,8 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
         b->Reset();
 
         if (C.ensight)
-        {
-            P1EvalCL<double, const InstatPoissonBndDataCL, const VecDescCL>  ensSol(new_x, &BndData, &MG);
-            ensight->putScalar(*dattmp, ensSol, step+1);
-            ensight->Commit();
-        }
-
+            ensight->Write( step+1);
+ 
         // Point 10: Error estimation
         // -----------------------------------------------------------------
         //  Test different refinements. These are not necessarily reasonable
@@ -912,8 +886,6 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
             std::cout << "==> Step "<<step<<" took "<<duration<<" sec.\n";
     } while(newmarks && step<=C.refall);
 
-    if (C.ensight)
-        ensight->CaseEnd();
 }
 } // end of namespace DROPS
 

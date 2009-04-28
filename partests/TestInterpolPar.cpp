@@ -44,12 +44,13 @@ using std::string;
 ****************************************************************************/
 const std::string EnsDir= "ensight";
 const std::string EnsCase="InterPol";
+std::string ensf( EnsDir + "/" + EnsCase);
 const DROPS::Uint base_ref_x=3, base_ref_y=6, base_ref_z=3;
 const DROPS::Uint refineStrategy=2; // 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
 const int steps=4;
 const double dx=3., dy=6., dz=3.;
 const char line[] ="------------------------------------------------------------";
-const bool writefiles=false, printNumSimplices=false, printEnsight=false;
+const bool writefiles=false, printNumSimplices=false, printEnsight=true;
 
 enum TimePart{
     T_refine,
@@ -513,24 +514,17 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 
 
     // Erzeuge ensight case File und geom-File
-
-    EnsightP2SolOutCL *ensight = new EnsightP2SolOutCL( mg, &neup2_idx, false);
-    ensight->SetMasterOut();
-    const string filename= EnsDir + "/" + EnsCase;
-    const string datgeo=   filename+".geo";
-
-    string *dattmp1 = new string(filename+".dat1");
-    string *dattmp2 = new string(filename+".dat2");
-    string *dattmp3 = new string(filename+".dat3");
-    string *dattmp4 = new string(filename+".dat4");
-
-    ensight->CaseBegin( string(EnsCase+".case").c_str(), 6);
-    ensight->DescribeGeom(   "Wuerfel", datgeo, true);
-    ensight->DescribeScalar( "DirP1", *dattmp1, true);
-    ensight->DescribeScalar( "NeuP1", *dattmp2, true);
-    ensight->DescribeScalar( "DirP2", *dattmp3, true);
-    ensight->DescribeScalar( "NeuP2", *dattmp4, true);
-    ensight->Commit();
+    Ensight6OutCL ensight( EnsCase + ".case", 6, false, true);
+    ensight.Register( make_Ensight6Geom( mg, neup2_idx.TriangLevel(),   "Wuerfel", ensf + ".geo", true));
+    P1EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P1_dir(&dirp1, &dirBnd, &mg);
+    P1EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P1_neu(&neup1, &neuBnd, &mg);
+    P2EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P2_dir(&dirp2, &dirBnd,  &mg);
+    P2EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P2_neu(&neup2, &neuBnd, &mg);
+    P2EvalCL<Point3DCL, const MyVecBoundaryCL, const VecDescCL>  fun_P2_mixed(&mixedp2, &mixedBnd, &mg);
+    ensight.Register( make_Ensight6Scalar( fun_P1_dir,  "DirP1Pressure",      ensf + ".dat1",  true));
+    ensight.Register( make_Ensight6Scalar( fun_P1_neu,  "NeuP1Pressure",      ensf + ".dat2",  true));
+    ensight.Register( make_Ensight6Scalar( fun_P2_dir,  "DirP2Pressure",      ensf + ".dat3",  true));
+    ensight.Register( make_Ensight6Scalar( fun_P2_neu,  "NeuP2Pressure",      ensf + ".dat4",  true));
 
     for (int ref=1; ref<=steps; ++ref)
     {
@@ -545,22 +539,11 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         SetFunction(neup2, mg);
         SetFunction(mixedp2, mg);
 
-        P1EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P1_dir(&dirp1, &dirBnd, &mg);
-        P1EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P1_neu(&neup1, &neuBnd, &mg);
-        P2EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P2_dir(&dirp2, &dirBnd,  &mg);
-        P2EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P2_neu(&neup2, &neuBnd, &mg);
-        P2EvalCL<Point3DCL, const MyVecBoundaryCL, const VecDescCL>  fun_P2_mixed(&mixedp2, &mixedBnd, &mg);
-
-        if (printEnsight){
+        if (printEnsight) {
             if (ProcCL::IamMaster())
                 std::cout << "Write ensightfiles for time "<<ref<<std::endl;
 
-            ensight->putGeom( datgeo, ref);
-            ensight->putScalar(*dattmp1, fun_P1_dir, ref);
-            ensight->putScalar(*dattmp2, fun_P1_neu, ref);
-            ensight->putScalar(*dattmp3, fun_P2_dir, ref);
-            ensight->putScalar(*dattmp4, fun_P2_neu, ref);
-            ensight->Commit();
+            ensight.Write( ref);
         }
 
         Point3DCL e;
@@ -618,23 +601,11 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
                       << "\n  +  P2 with mixed vectorial boundary conditions: "<<err_mixed_p2
                       << std::endl;
 
-        P1EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P1_dir2(&dirp1, &dirBnd, &mg);
-        P1EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P1_neu2(&neup1, &neuBnd, &mg);
-        P2EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P2_dir2(&dirp2, &dirBnd,  &mg);
-        P2EvalCL<double, const MyBoundaryCL, const VecDescCL>  fun_P2_neu2(&neup2, &neuBnd, &mg);
-        P2EvalCL<Point3DCL, const MyVecBoundaryCL, const VecDescCL>  fun_P2_mixed2(&mixedp2, &mixedBnd, &mg);
-
-
         if (printEnsight){
             if (ProcCL::IamMaster())
                 std::cout << "Write ensightfiles for time "<<(0.5+ref)<<std::endl;
 
-            ensight->putGeom( datgeo, 0.5+ref);
-            ensight->putScalar(*dattmp1, fun_P1_dir2, 0.5+ref);
-            ensight->putScalar(*dattmp2, fun_P1_neu2, 0.5+ref);
-            ensight->putScalar(*dattmp3, fun_P2_dir2, 0.5+ref);
-            ensight->putScalar(*dattmp4, fun_P2_neu2, 0.5+ref);
-            ensight->Commit();
+            ensight.Write( 0.5+ref);
         }
 
         timer.Stop();
@@ -642,8 +613,6 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
         if (ProcCL::IamMaster())
             std::cout << "Step "<<ref<<" took "<<duration<<" sec"<<std::endl;
     }
-
-    ensight->CaseEnd();
 }
 } // end of namespace DROPS
 

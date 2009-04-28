@@ -213,20 +213,14 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     }
 
         // Erzeuge ensight case File und geom-File
-    EnsightP2SolOutCL *ensight=0;
-    const string EnsCase = C.EnsCase;
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-                 datvel= filename+".vel",
-                 datpr = filename+".pr";
+    Ensight6OutCL *ensight=0;
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
 
     if (C.ensight){
-        ensight = new EnsightP2SolOutCL( MG, pidx->GetFinestPtr(), false);
-        ensight->CaseBegin( string(EnsCase+".case").c_str(), C.timesteps);
-        ensight->DescribeGeom(   (C.geomName).c_str(), datgeo);
-        ensight->DescribeScalar( "Pressure", datpr, true);
-        ensight->DescribeVector( "Velocity", datvel, true);
-        ensight->putGeom( datgeo);
+        ensight= new Ensight6OutCL( C.EnsCase + ".case", C.timesteps, false);
+        ensight->Register( make_Ensight6Geom      ( MG, pidx->GetFinest().TriangLevel(), C.geomName, ensf + ".geo"));
+        ensight->Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
+        ensight->Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
     }
 
     if (C.printInfo){
@@ -299,11 +293,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
                       << "   + Resid    " << Solver.GetResid() <<'\n'<< std::endl;
 
         DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,DROPS::VecDescCL> pr(&Stokes.p, &Stokes.GetBndData().Pr, &MG);
-        if (C.ensight){
-            ensight->putScalar(datpr, Stokes.GetPrSolution(),t);
-            ensight->putVector(datvel, Stokes.GetVelSolution(),t);
-            ensight->Commit();
-        }
+        if (C.ensight)
+            ensight->Write( t);
 
         if (ProcCL::IamMaster())
             std::cout << " - Checking solution ...\n";
@@ -311,10 +302,8 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
         Stokes.CheckSolution(v,p,&LsgVel,&LsgPr,t);
     }
 
-    if (C.ensight){
-        ensight->CaseEnd();
+    if (C.ensight)
         delete ensight;
-    }
 }
 } // end of namespace DROPS
 

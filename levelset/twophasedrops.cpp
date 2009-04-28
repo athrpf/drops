@@ -370,9 +370,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.transp_do ? &massTransp : 0, C.ser_dir, C.overwrite);
 
     // Initialize Ensight6 output
-#ifndef _PAR
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", (C.ensight ? C.num_steps/C.ensight+1 : 0), C.binary);
+    Ensight6OutCL ensight( C.EnsCase + ".case", (C.ensight ? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
     ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.geomName,      ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
@@ -384,17 +383,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct),
                                                                         "TransConc",     ensf + ".ct",  true));
     }
+#ifndef _PAR
     if (Stokes.UsesXFEM())
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
+#endif
 
     if (C.ensight) ensight.Write( 0.);
-
-#else
-    typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
-    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
-                                  (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
-    if (C.ensight) ensightwriter.write();
-#endif
 
     // writer for vtk-format
     typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
@@ -464,11 +458,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         }
 
         if (C.ensight && step%C.ensight==0)
-#ifndef _PAR
             ensight.Write( Stokes.t);
-#else
-            ensightwriter.write();
-#endif
         if (C.vtk && step%C.vtk==0)
             vtkwriter.write();
     }

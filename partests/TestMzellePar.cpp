@@ -292,19 +292,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     DisplayUnks(vidx, pidx, lidx, ExV, ExP, ExL, MG);
 
     // Init ensight-output class
-    EnsightP2SolOutCL ensight( MG, lidx, C.binary, C.masterOut);
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-                 datpr = filename+".pr" ,
-                 datvec= filename+".vel",
-                 datscl= filename+".scl";
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str(), C.num_steps+1);
-    ensight.DescribeGeom( "Messzelle", datgeo);
-    ensight.DescribeScalar( "Levelset", datscl, true);
-    ensight.DescribeScalar( "Pressure", datpr,  true);
-    ensight.DescribeVector( "Velocity", datvec, true);
-    ensight.putGeom( datgeo);
-
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps+1);
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
+    ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
 
     // Tell matrices and vectors about the numbering
     lset.Phi.SetIdx( lidx);
@@ -409,10 +402,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         std::cout << "- Relative Volume is " << relVol << std::endl;
 
     // Write solution out in ensight format
-    ensight.putVector( datvec, Stokes.GetVelSolution(), 0);
-    ensight.putScalar( datpr,  Stokes.GetPrSolution(), 0);
-    ensight.putScalar( datscl, lset.GetSolution(), 0);
-    ensight.Commit();
+    if (C.ensight) ensight.Write( 0.);
 
     // Use fractional step for solving coupled Navier-Stokes problem
     if (C.scheme)
@@ -470,10 +460,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             if ((C.ensight && step%C.ensight==0) || step==C.num_steps)
             {
                 step_time.Stop();
-                ensight.putScalar( datpr, Stokes.GetPrSolution(), step*C.dt);
-                ensight.putVector( datvec, Stokes.GetVelSolution(), step*C.dt);
-                ensight.putScalar( datscl, lset.GetSolution(), step*C.dt);
-                ensight.Commit();
+                ensight.Write( step*C.dt);
                 step_time.Start();
             }
 
@@ -506,10 +493,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 // Write solution out after reparametrization
                 if ((C.ensight && step%C.ensight==0) || step==C.num_steps)
                 {
-                    ensight.putScalar( datpr, Stokes.GetPrSolution(), (step+0.1)*C.dt);
-                    ensight.putVector( datvec, Stokes.GetVelSolution(), (step+0.1)*C.dt);
-                    ensight.putScalar( datscl, lset.GetSolution(), (step+0.1)*C.dt);
-                    ensight.Commit();
+                    ensight.Write( (step+0.1)*C.dt);
                 }
                 step_time.Start();
             }
@@ -521,7 +505,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         delete instatStokesSolver;
     }
     else {} // No other method yet implemented
-    ensight.CaseEnd();
 
     double min= ProcCL::GlobalMin(Stokes.p.Data.min()),
            max= ProcCL::GlobalMax(Stokes.p.Data.max());

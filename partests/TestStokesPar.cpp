@@ -264,22 +264,12 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
             std::cout << line << std::endl << " - Write solution out in ensight format ... " << std::endl;
 
         // Erzeuge ensight case File und geom-File
-        EnsightP2SolOutCL ensight( MG, pidx->GetFinestPtr(), C.binary, C.masterOut);
-        const string filename= C.EnsDir + "/" + C.EnsCase;
-        const string datgeo= filename+".geo",
-        datvel = filename+".vel",
-        datpr  = filename+".pr";
-
-        ensight.CaseBegin( string(C.EnsCase+".case").c_str());
-        ensight.DescribeGeom(   C.geomName.c_str(), datgeo);
-        ensight.DescribeScalar( "Pressure", datpr);
-        ensight.DescribeVector( "Velocity", datvel);
-        ensight.Commit();
-        ensight.CaseEnd();
-        ensight.putGeom( datgeo);
-
-        ensight.putScalar(datpr, Stokes.GetPrSolution());
-        ensight.putVector(datvel, Stokes.GetVelSolution());
+        std::string ensf( C.EnsDir + "/" + C.EnsCase);
+        Ensight6OutCL ensight( C.EnsCase + ".case", 0, C.binary, C.masterOut);
+        ensight.Register( make_Ensight6Geom      ( MG, pidx->GetFinest().TriangLevel(),   C.geomName,      ensf + ".geo"));
+        ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr"));
+        ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel"));
+        ensight.Write();
     }
 
     if (C.vtk){

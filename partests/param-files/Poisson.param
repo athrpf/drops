@@ -20,7 +20,7 @@ Brick{
 
 # refine strategy
 Refining {
-  RefAll      = 4       # regular refinement or number of adaptive steps
+  RefAll      = 5       # regular refinement or number of adaptive steps
   MarkDrop    = 0       # mark droplet once if non adaptive, if 0 then mark not else marke once. If adaptive mark tetras around drop
   MarkCorner  = 0       # mark corner
   Adpativ     = 0       # to be adaptive or not
@@ -42,10 +42,10 @@ Solver {
   Iteration   = 1000   # number of maximal iterations for solver
   Tol         = 1e-10   # tolerace for the residuum
   Restart     = 50     # dimension of Krylov subspace if solver is GMRES or truncation-parameter, if solver is GCR
-  UseMGS      = 0      # use modified Gramm-Schmidt for GMRES to compute Krylov subspace basis (slower, but more accurate)
+  UseMGS      = 0      # use modified Gram-Schmidt for GMRES to compute Krylov subspace basis (slower, but more accurate)
   Relative    = 0      # use relative measurement for resid
   Accur       = 1      # use accur variant of solver (not: CG, QMR) (always: BiCGStab)
-  Modified    = 1      # modified variante for better scalability
+  Modified    = 1      # modified variant for better scalability
   PreCondMeth = 1      # left or right preconditioning (for GMRES): 0 left, 1 right
 }
 

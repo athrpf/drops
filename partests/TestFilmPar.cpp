@@ -180,20 +180,13 @@ void Solve(const Mat &A, Vec &x, const Vec &b, IdxDescCL& idx)
 
 
 template<class PoissonCoeffCL>
-void WriteEnsightFiles(const MultiGridCL& mg, const InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
+void WriteEnsightFiles(MultiGridCL& mg, const InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
 {
-    EnsightP2SolOutCL ensight( mg, Poisson.idx.GetFinestPtr(), /*binary=*/false, /*masterout=*/true);
-
-    const string filename= C.EnsDir + "/" + C.EnsCase;
-    const string datgeo= filename+".geo",
-                 dattmp= string(filename+".tmp");
-    ensight.CaseBegin( string(C.EnsCase+".case").c_str());
-    ensight.DescribeGeom(   C.geomName.c_str(), datgeo);
-    ensight.DescribeScalar( C.varName.c_str(),  dattmp);
-    ensight.Commit();
-    ensight.CaseEnd();
-    ensight.putGeom( datgeo);
-    ensight.putScalar(dattmp, Poisson.GetSolution());
+    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    Ensight6OutCL ensight( C.EnsCase + ".case",  0, /*binary=*/false, /*masterout=*/true);
+    ensight.Register( make_Ensight6Geom  ( mg, Poisson.idx.GetFinest().TriangLevel(), C.geomName, ensf + ".geo"));
+    ensight.Register( make_Ensight6Scalar( Poisson.GetSolution(),                     C.varName,  ensf + ".tmp"));
+    ensight.Write();
 }
 
 /****************************************************************************

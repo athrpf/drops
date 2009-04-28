@@ -6,11 +6,12 @@
 
 DIR = partests
 EXEC = TestRefPar TestExchangePar TestMGSerPar TestInterpolPar \
-       TestGMRESPar TestLevelsetPar \
+       TestGMRESPar \
        TestPoissonPar TestStokesPar TestInstatStokesPar \
        TestMzellePar TestMzelleAdaptPar MzelleNMRParamEst TestBrickflowPar \
        TestFilmPar
        
+# compile errors; not converted to Ensight6OutCL:       TestLevelsetPar
 # out of date: TestSedPar TestNavStokesPar TestRefSedPar TwoPhaseFlowPar
 
 DELETE = $(EXEC)
