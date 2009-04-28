@@ -266,7 +266,7 @@ class ISBBTPreCL
     mutable PCGSolverCL<JACPcCL> solver2_;
 #else
     mutable CompositeMatrixCL BBT_;
-    typedef ParDummyPcCL    PCSolver1T;                         ///< type of the preconditioner for solver 1
+    typedef ParJacNEG0CL    PCSolver1T;                         ///< type of the preconditioner for solver 1
     typedef ParJac0CL       PCSolver2T;                         ///< type of the preconditioner for solver 2
     PCSolver1T PCsolver1_;
     PCSolver2T PCsolver2_;

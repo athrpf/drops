@@ -68,11 +68,11 @@ AdaptRef {
 
 # material data, all units are SI
 Mat {
-  DensDrop      =   845.442
-  ViscDrop      =   3.281e-3
-  DensFluid     =   986.506
-  ViscFluid     =   1.388e-3
-  SmoothZone    =   1e-4
+  DensDrop	=	867.493			# toluene / water
+  ViscDrop	=	5.96e-4
+  DensFluid	=	998.781
+  ViscFluid	=	1.029e-3
+  SmoothZone	=	1e-4
 }
 
 # experimental conditions
@@ -89,11 +89,11 @@ Exp {
 
 # surface tension
 SurfTens {
-  VarTension  = 1       # 0=off, 1=on
-  SurfTension = 1.63e-3 # surface tension coefficient
-  JumpWidth   = 5e-4    # jump width
-  RelPos      = 1.1     # position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
-  DirtFactor  = 0.8     # red. factor for surface tension (due to contamination) in lower droplet)
+  VarTension	=	0	# 0=off, 1=on
+  SurfTension	=	34.31e-3
+  JumpWidth	=	5e-4
+  RelPos	=	1.5	# position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+  DirtFactor	=	0.8	# red. factor for surface tension (due to contamination) in lower droplet)
 }
 
 # mass transport

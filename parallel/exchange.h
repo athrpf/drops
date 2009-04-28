@@ -34,7 +34,52 @@
 
 namespace DROPS{
 
+// fwd declaration
 class ExchangeCL;
+class ExchangeBlockCL;
+class AccumulateMatrixCL;
+
+/****************************************************************************
+* E X C H A N G E  D A T A  S E N D  C L A S S                              *
+****************************************************************************/
+/// \brief Handle sending of numerical data among two processes
+/** This class handles sending data among this processor and another
+    processor.
+    It uses a MPI Datatype for gathering.
+ */
+/****************************************************************************
+* E X C H A N G E  D A T A  S E N D  C L A S S                              *
+****************************************************************************/
+class ExchangeDataSendCL
+{
+  public:
+    friend class ExchangeMatrixCL;
+
+  protected:
+    int                     toProc_;                                            // handle communication among "me" and "toProc_"
+    ProcCL::DatatypeT       SendType_;                                          // type for sending
+    int                     count_;                                             // number of elements to send
+#ifdef DebugParallelNumC
+    Ulint                   SendTypeSize_;                                      // how big the transfered vector must be at least
+#endif
+
+    // Set processor, that receive data
+    void SetToProc(const int proc) { toProc_= proc; }
+    // Create MPI-Datatype for sending
+    void CreateDataType(const int count, const int blocklength[], const int array_of_displacements[]);
+
+  public:
+    ExchangeDataSendCL(int proc);
+    ExchangeDataSendCL();
+    ExchangeDataSendCL(const ExchangeDataSendCL&);
+    ~ExchangeDataSendCL();
+
+    /// \brief Get rank of neighbor processor
+    inline int GetProc() const { return toProc_; }
+    // Send data to "toProc_" (nonblocking, asynchronous)
+    template <typename VectorT>
+    inline ProcCL::RequestT Isend(const VectorT&, int tag, Ulint offset) const;
+};
 
 /****************************************************************************
 * E X C H A N G E  D A T A  C L A S S                                       *
@@ -48,23 +93,16 @@ class ExchangeCL;
 /****************************************************************************
 * E X C H A N G E  D A T A  C L A S S                                       *
 ****************************************************************************/
-class ExchangeDataCL
+class ExchangeDataCL : public ExchangeDataSendCL
 {
-  friend class ExchangeCL;
+  public:
+    friend class ExchangeCL;
+    typedef ExchangeDataSendCL base;                 ///< base class
+    typedef std::vector<int> SysnumListCT;           ///< Sequence, where to store the recieved unknowns
 
   private:
-    typedef std::vector<int> SysnumListCT;                                      // Sequence, where to store the recieved unknowns
-
-    int                     toProc_;                                            // handle comm between "me" and "toProc_"
-    ProcCL::DatatypeT       SendType_;                                          // Type for sending
-    SysnumListCT            Sysnums_;                                           // sysnums of the recieved data
-#ifdef DebugParallelNumC
-    Ulint                   SendTypeSize_;                                      // how big the transfered vector must be at least
-#endif
-
-    void SetToProc(const int Proc);
-    void CreateDataType(const int count, const int blocklength[], const int array_of_displacements[]);
-    void CreateSysnums(const SysnumListCT&);                                    // Create SysnumListCT for recieving
+    SysnumListCT            Sysnums_;                ///< sysnums of the received data
+    void CreateSysnums(const SysnumListCT&);         // Create SysnumListCT for receiving
 
   public:
     ExchangeDataCL(int proc);
@@ -72,22 +110,16 @@ class ExchangeDataCL
     ExchangeDataCL(const ExchangeDataCL&);
     ~ExchangeDataCL();
 
-    // Get rank of neighbor proc
-    inline int GetProc() const;
     // Get number of received elements
     inline size_t GetNumRecvEntries() const;
-    // Send data to "toProc_" (nonblocking, asynchronous)
-    inline ProcCL::RequestT Isend(const VectorCL&, int tag, Ulint offset) const;
-    // Recieve data (nonblocking)
+    // Receive data (nonblocking)
     inline ProcCL::RequestT Irecv(int tag, VectorCL& recvBuf, Ulint offset) const;
     // add data from "toProc_"
     inline void Accumulate(VectorCL&, Ulint offsetV, VectorCL& recvBuf, Ulint offsetRecv) const;
 
-    // print, where to store recieved unknowns
+    // print, where to store received unknowns
     void DebugInfo(std::ostream&) const;
 };
-
-class ExchangeBlockCL; // fwd declaration
 
 /****************************************************************************
 * E X C H A N G E  C L A S S                                                *
@@ -348,74 +380,70 @@ class ExchangeBlockCL
 };
 
 
+/****************************************************************************
+* E X C H A N G E  M A T R I X  C L A S S                                   *
+****************************************************************************/
+/// \brief Handle the accumulation of a sparse matrix (MatrixCL)
+/** This class is capable of determining the communication pattern for
+    accumulating a sparse matrix, and performing the accumulation.
+    \todo(par) Develope an "accure" version of accumulation
+ */
+/****************************************************************************
+* E X C H A N G E  M A T R I X  C L A S S                                   *
+****************************************************************************/
+class ExchangeMatrixCL
+{
+  public:
+    typedef ExchangeCL::ProcNumCT  ProcNumCT;       ///< Container for storing neighbor processes
+    typedef ProcNumCT::iterator    ProcNum_iter;    ///< iterator of ProcNumCT
+    typedef std::vector<size_t>    CouplingCT;      ///< Container of distributed matrix elements
 
-///// \brief Structure for sending non-zeros of a matrix belonging to a face
-//template <size_t numNNZVertexVertex, size_t numNNZVertexEdge, size_t numNNZEdgeEdge>
-//struct FaceDoFInfoST
-///** In order to send non-zeroes of a matrix while accumulating the matrix
-//    the GIDs of the vertices and edges are send and the corresponding non-zeroes
-//    are send. These data are collected in this class.
-//    \param numNNZVertexVertex number of non-zeroes belonging to the coupling of vertex-vertex DOF
-//    \param numNNZVertexEdge number of non-zeroes belonging to the coupling of vertex-edge DOF
-//    \param numNNZEdgeEdge number of non-zeroes belonging to the coupling of edge-edge DOF
-//*/
-//{
-//    DDD_GID vertexGID[3];                           ///< defining order of vertices on sender side
-//    DDD_GID edgeGID[3];                             ///< defining order of edges on sender side
-//    double  NNZVertexVertex[9*numNNZVertexVertex];  ///< non-zeroes belonging to coupling of vertex-vertex
-//    double  NNZVertexEdge[9*numNNZVertexEdge];      ///< non-zeroes belonging to coupling of vertex-edge
-//    double  NNZEdgeEdge[9*numNNZEdgeEdge];          ///< non-zeroes belonging to coupling of egde-edge
-//};
-//
-///// \brief Transfering non-zeroes of scalar P1 scalar P1 matrix
-//typedef FaceDoFsP1sP1ST FaceDoFInfoST<1, 0, 0>;
-///// \brief Transfering non-zeroes of vector P2 vector P2 matrix
-//typedef FaceDoFsP1sP1ST FaceDoFInfoST<9, 9, 9>;
-//
-//
-//template<typename MatDescT>
-//class AccumulateMatrixCL
-//{
-//  public:
-//    typedef typename MatDescT::IdxT     IdxT;       ///< IdxDescCL
-//    typedef typename MatDescT::DataType DataType;   ///< MatrixT
-//
-//  private:
-//    MatDescT& mat_;
-//    static IdxT* current_RowIdx_;   ///< Pointer to the index-description used for row-indices while accumulating the matrix.
-//    static IdxT* current_ColIdx_;   ///< Pointer to the index-description used for column-indices while accumulating the matrix.
-//    static DataType current_Data_;  ///< The numerical data while accumulating the matrix.
-//
-//    /// \brief Gather non-zeroes of the matrix (for DDD)
-//    template <typename DOFInfoT>
-//    static int HandlerGatherNNZ ( DDD_OBJ objp, void* buf);
-//    /// \brief Scatter non-zeroes of the matrix (for DDD)
-//    template <typename DOFInfoT>
-//    static int HandlerScatterNNZ( DDD_OBJ objp, void* buf);
-//
-//  public:
-//    AccumulateMatrixCL(MatDescT& mat)
-//        : mat_(mat) {}
-//    void Accumulate();
-//};
-//
-//
-//template <typename DOFInfoT>
-//template<typename MatDescT>
-//  int AccumulateMatrixCL<MatDescCL>::HandlerGatherNNZ(DDD_OBJ facep, void* buffer)
-//{
-//    FaceCL*   face   = ddd_cast<FaceCL*>(facep);
-//    DOFInfoT* dofInfo= static_cast<DOFInfoT*>(buffer);
-//
-//    // Gather gids
-//    for (Uint i=0; i<3; ++i)
-//        dofInfo->vertexGID[i]= face->GetVertex(i);
-//    for (Uint i=0; i<3; ++i)
-//        dofInfo->edgeGID[i]= face->GetEdge(i);
-//
-//    // Gather non-zeros
-//    // TBC
-//}
+  private:
+    /// each element of ExList_ handles the send-process with a single neighbor processor
+    std::vector<ExchangeDataSendCL>    ExList_;
+    /// Buffer for receiving elements
+    std::vector<VectorCL>              RecvBuf_;
+    /// Where to add/store received non-zeroes
+    std::vector<CouplingCT>            Coupl_;
+    /// flag, if non-zero is not stored on local processor
+    static size_t NoIdx_;
+
+    /// Determine the intersection of two processor lists
+    inline ProcNum_iter Intersect(ProcNumCT& a, ProcNumCT& b, ProcNumCT& result)
+    /// Sort both lists and use the standard intersection algorithm
+    {
+        a.sort();
+        b.sort();
+        return std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+    }
+
+    /// Determine the position, where a nonzero is stored
+    inline size_t GetPosInVal(const size_t row, const size_t col, const MatrixCL& mat)
+    /// if the non-zero (row,col) is not stored by the local processor, this function
+    /// returns NoIdx_
+    {
+        Assert( row<mat.num_rows() && col<mat.num_cols(), DROPSErrCL("ExchangeMatrixCL::GetPosInVal: Row or col out of bounds"), DebugParallelNumC);
+        const size_t *pos= std::lower_bound( mat.GetFirstCol(row), mat.GetFirstCol(row+1), col);
+        return (pos != mat.GetFirstCol(row+1) && *pos==col) ? pos-mat.GetFirstCol(0) : NoIdx_;
+    }
+
+  public:
+    // default constructors and destructors
+
+    /// \brief Reset
+    void Clear() { ExList_.clear(); RecvBuf_.clear(); Coupl_.clear(); }
+
+    /// \brief Determine the communication pattern for accumulating a matrix
+    void BuildCommPattern(const MatrixCL& mat, const IdxDescCL& RowIdx, const IdxDescCL& ColIdx){
+        BuildCommPattern(mat, RowIdx.GetEx(), ColIdx.GetEx());
+    }
+
+    /// \brief Determine the communication pattern for accumulating a matrix
+    void BuildCommPattern(const MatrixCL&, const ExchangeCL& RowEx, const ExchangeCL& ColEx);
+
+    /// \brief Accumulate a matrix
+    MatrixCL Accumulate(const MatrixCL&);
+};
 
 } // end of namespace DROPS
 

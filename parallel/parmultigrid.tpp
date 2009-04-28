@@ -19,10 +19,10 @@ void ShowSimplex( IterT begin, IterT end, DDD_GID gid, char *mesg, int proc= -1)
         return;
     for (IterT it= begin; it!=end; ++it)
         if (it->GetGID()==gid)
-    {
-        std::cout << "Show " << mesg << ":\n";
-        it->DebugInfo( std::cout);
-    }
+        {
+            std::cerr << "Show " << mesg << ":\n";
+            it->DebugInfo( std::cerr);
+        }
 }
 
 

@@ -22,37 +22,35 @@
 #include <limits>
 
 namespace DROPS{
-// ------------------------------------
-// E X C H A N G E  D A T A  C L A S S
-// ------------------------------------
-ExchangeDataCL::ExchangeDataCL(int proc) : toProc_(proc), SendType_(MPI_DATATYPE_NULL) { }
 
-ExchangeDataCL::ExchangeDataCL(const ExchangeDataCL &ex)
-{
-    toProc_   = ex.toProc_;
-    SendType_ = ex.SendType_;
-    Sysnums_ = ex.Sysnums_;
-#ifdef DebugParallelNumC
-    SendTypeSize_=NoIdx;
-#endif
-}
+// --------------------------------------------
+// E X C H A N G E  D A T A  S E N D  C L A S S
+// --------------------------------------------
 
-/// \brief Destructor
-ExchangeDataCL::~ExchangeDataCL()
+ExchangeDataSendCL::ExchangeDataSendCL(int proc)
+  : toProc_(proc), SendType_(MPI_DATATYPE_NULL), count_(-1) {}
+
+ExchangeDataSendCL::ExchangeDataSendCL()
+  : toProc_(-1), SendType_(MPI_DATATYPE_NULL), count_(-1) {}
+
+ExchangeDataSendCL::ExchangeDataSendCL(const ExchangeDataSendCL& ex)
+  : toProc_(ex.toProc_), SendType_(ex.SendType_), count_(ex.count_) {}
+
+ExchangeDataSendCL::~ExchangeDataSendCL()
 {
-    Sysnums_.resize(0);
     if (SendType_!=ProcCL::NullDataType)
         ProcCL::Free(SendType_);
 }
 
-/// \brief Set the corresponding proc
-void ExchangeDataCL::SetToProc(const int Proc)
-{
-    toProc_ = Proc;
-}
-
 /// \brief Create Datatype for sending
-void ExchangeDataCL::CreateDataType(const int count, const int blocklength[], const int array_of_displacements[])
+void ExchangeDataSendCL::CreateDataType(const int count,
+        const int blocklength[], const int array_of_displacements[])
+/** This function creates a MPI datatype that is reposible for gathering
+    the data.
+    \param count number of elements to be send
+    \param blocklength length of each block
+    \param array_of_displacements position of the elements
+*/
 {
     if (SendType_!=ProcCL::NullDataType)
         ProcCL::Free(SendType_);
@@ -61,9 +59,32 @@ void ExchangeDataCL::CreateDataType(const int count, const int blocklength[], co
 #ifdef DebugParallelNumC
     SendTypeSize_= array_of_displacements[count-1] + blocklength[count-1];
 #endif
+    count_= count;
 }
 
-/// \brief Create describtion of the positions, where to store the recieved unknowns
+// ------------------------------------
+// E X C H A N G E  D A T A  C L A S S
+// ------------------------------------
+
+ExchangeDataCL::ExchangeDataCL(int proc) : base(proc), Sysnums_() {}
+
+ExchangeDataCL::ExchangeDataCL(const ExchangeDataCL &ex) : base(), Sysnums_(ex.Sysnums_)
+{
+    toProc_   = ex.toProc_;
+    SendType_ = ex.SendType_;
+#ifdef DebugParallelNumC
+    SendTypeSize_=ex.SendTypeSize_;
+#endif
+}
+
+/// \brief Destructor
+ExchangeDataCL::~ExchangeDataCL()
+{
+    Sysnums_.resize(0);
+}
+
+
+/// \brief Create description of the positions, where to store the received unknowns
 void ExchangeDataCL::CreateSysnums(const SysnumListCT &sys)
 {
     Sysnums_=sys;
@@ -121,8 +142,7 @@ void ExchangeCL::clear()
     accIdxCreated_=false;
 }
 
-/// \name Definition of the wrappers for DDD
-//@{
+// Definition of the wrappers for DDD
 extern "C" int HandlerGatherSysnumsVertexC(DDD_OBJ objp, void* buf){
     return ExchangeCL::HandlerGatherSysnums<VertexCL>(objp, buf);
 }
@@ -135,7 +155,7 @@ extern "C" int HandlerGatherSysnumsEdgeC(DDD_OBJ objp, void* buf){
 extern "C" int HandlerScatterSysnumsEdgeC(DDD_OBJ objp, void* buf){
     return ExchangeCL::HandlerScatterSysnums<EdgeCL>(objp, buf);
 }
-//@}
+
 
 
 void ExchangeCL::CreateExchangeDataMPIType()
@@ -705,5 +725,137 @@ void ExchangeBlockCL::AccFromAllProc(VectorCL& vec, VecRequestCT& req,
         idxDesc_[i]->GetEx().AccFromAllProc(vec, req[i], blockOffset_[i],
                 (recvBuf ? &((*recvBuf)[i]) : 0));  // &((*recvBuf)[i])
     }
+}
+
+// -----------------------------------------
+// E X C H A N G E   M A T R I X   C L A S S
+// -----------------------------------------
+
+size_t ExchangeMatrixCL::NoIdx_= std::numeric_limits<size_t>::max();
+
+/// \brief Determine the communication pattern for accumulating a matrix
+void ExchangeMatrixCL::BuildCommPattern(const MatrixCL& mat,
+        const ExchangeCL& RowEx, const ExchangeCL& ColEx)
+/** To accumulate a matrix, the non-zeros which are stored by multiple processors, have to
+    communicated among the processors. Therefore, each processor determines the non-zeroes
+    it has to send to neighbors. And second, each processor determines how handle the received
+    non-zeroes from a neighbor processor.
+    \todo Are RowEx.GetProcs( i) and ColEx.GetProcs( j) already sorted?
+    \param mat distributed matrix
+    \param RowEx ExchangeCL that corresponds to row
+    \param ColEx ExchangeCL that corresponds to column
+*/
+{
+    // reset
+    Clear();
+
+    // Collect information about distributed non-zeroes in the matrix
+    typedef std::map<int, std::vector<int>  > AODMap;
+    typedef std::map<int, std::vector<IdxT> > RemoteDOFMap;
+
+    AODMap aod;                              // mapping: proc -> array of displacements
+    RemoteDOFMap remoteRowDOF, remoteColDOF; // mapping: proc -> remote (row|col)DOFs
+
+    ProcNumCT NZonProcs( ProcCL::Size());   // stores the intersection
+    for (size_t i=0; i<mat.num_rows(); ++i) {
+        if (RowEx.IsDist(i)){
+            for (size_t nz=mat.row_beg(i); nz<mat.row_beg(i+1); ++nz){
+                const size_t j= mat.col_ind(nz);
+                if ( ColEx.IsDist( j)){     // here, i and j are both distributed
+                    // determine all neighbor processors, that owns i *and* j as well
+                    ProcNumCT RowProcs( RowEx.GetProcs( i));
+                    ProcNumCT ColProcs( ColEx.GetProcs( j));
+                    ProcNum_iter end = Intersect( RowProcs, ColProcs, NZonProcs);
+
+                    for (ProcNum_iter proc= NZonProcs.begin(); proc!=end; ++proc){
+                        // mark the non-zero, that this non-zero should be sent to neighbor *proc
+                        aod[*proc].push_back( (int)nz);
+                        // determine the dof number on remote processor *proc
+                        remoteRowDOF[*proc].push_back( RowEx.GetExternalIdxFromProc( i, *proc));
+                        remoteColDOF[*proc].push_back( ColEx.GetExternalIdxFromProc( j, *proc));
+                    }
+                }
+            }
+        }
+    }
+
+    // Create MPI-Type for sending
+    std::vector<int> blocklength;
+    ExList_.resize( aod.size(), ExchangeDataCL(-1));
+    size_t expos=0;
+    for (AODMap::const_iterator it= aod.begin(); it!=aod.end(); ++it){
+        ExList_[expos].SetToProc( it->first);
+        blocklength.resize(it->second.size(), 1);
+        ExList_[expos].CreateDataType( it->second.size(), Addr(blocklength), Addr(it->second));
+        expos++;
+    }
+
+    // Send "send-order"
+    std::vector<ProcCL::RequestT> req( 2*remoteRowDOF.size());
+    size_t pos=0;
+    for (RemoteDOFMap::const_iterator it= remoteRowDOF.begin(); it!=remoteRowDOF.end(); ++it)
+        req[pos++]= ProcCL::Isend( it->second, it->first, 2211);
+    for (RemoteDOFMap::const_iterator it= remoteColDOF.begin(); it!=remoteColDOF.end(); ++it)
+        req[pos++]= ProcCL::Isend( it->second, it->first, 2212);
+
+
+    // Create receive sequence
+    std::vector<IdxT> recvBufRowDOF, recvBufColDOF;
+    RecvBuf_.resize( ExList_.size());
+    Coupl_.resize( ExList_.size());
+    for (size_t ex=0; ex<ExList_.size(); ++ex){
+        // receive sequence
+        int messagelength= ProcCL::GetMessageLength<IdxT>( ExList_[ex].GetProc(), 2211);
+        recvBufRowDOF.resize( messagelength);
+        recvBufColDOF.resize( messagelength);
+        ProcCL::Recv( Addr(recvBufRowDOF),messagelength, ExList_[ex].GetProc(), 2211);
+        ProcCL::Recv( Addr(recvBufColDOF), messagelength, ExList_[ex].GetProc(), 2212);
+
+        // create sequence
+        Coupl_[ex].resize( messagelength);
+        for (size_t k=0; k<recvBufRowDOF.size(); ++k)
+            Coupl_[ex][k]= GetPosInVal(recvBufRowDOF[k], recvBufColDOF[k], mat);
+
+        // reserve memory for receiving
+        RecvBuf_[ex].resize( messagelength);
+    }
+    // Before cleaning up remoteRowDOF and remoteColDOF, check if all messages has been received
+    ProcCL::WaitAll( req);
+}
+
+MatrixCL ExchangeMatrixCL::Accumulate(const MatrixCL& mat)
+/** According to the communication pattern accumulate the distributed non-zero elements of
+    the matrix mat.
+    \pre BuildCommPattern must have been called for the pattern of the matrix \a mat
+    \param  mat input, distributed matrix
+    \return matrix, with accumulated non-zeros
+ */
+{
+    // Make a copy of distributed values
+    MatrixCL result( mat);
+
+    // Initialize communication
+    std::vector<ProcCL::RequestT> send_req( ExList_.size());
+    std::vector<ProcCL::RequestT> recv_req( ExList_.size());
+    for (size_t ex=0; ex<ExList_.size(); ++ex){
+        send_req[ex]= ExList_[ex].Isend( mat.val(), 2213, 0);
+        recv_req[ex]= ProcCL::Irecv( RecvBuf_[ex], ExList_[ex].GetProc(), 2213);
+    }
+
+    // do accumulation
+    for (size_t ex=0; ex<ExList_.size(); ++ex){
+        // wait until non-zeros have been received
+        ProcCL::Wait( recv_req[ex]);
+        // add received non-zeros
+        for ( size_t nz=0; nz<RecvBuf_[ex].size(); ++nz){
+            if (Coupl_[ex][nz]!=NoIdx_)
+                result.val()[Coupl_[ex][nz]]+= RecvBuf_[ex][nz];
+        }
+    }
+
+    // wait until send are finished before leaving this routine
+    ProcCL::WaitAll(send_req);
+
+    return result;
 }
 } // end of namespace DROPS

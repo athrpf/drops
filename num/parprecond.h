@@ -21,6 +21,7 @@
 
 #include "parallel/exchange.h"
 #include "num/spmat.h"
+#include "num/spblockmat.h"
 #include "num/solver.h"
 #include "misc/problem.h"
 
@@ -208,6 +209,68 @@ class ParJac0CL : public ParJacCL
         Jacobi0(A, diag_, x, b, omega_, std::fabs(omega_-1.)>DoubleEpsC);
     }
 };
+
+// ********************************************************************************
+/// \brief Class for performing one step of the Jacobi-Iteration on a matrix A*A^T
+///   with startvector 0
+// ********************************************************************************
+class ParJacNEG0CL : public ParJac0CL
+{
+  protected:
+    typedef ParJac0CL base_;        ///< base class
+    ExchangeMatrixCL  exMat_;       ///< handling of accumulating matrix-entries
+
+    /// \brief Determine the diagonal of A*A^T
+    inline void MySetDiag(const MatrixCL& A, const ExchangeCL& RowEx, const ExchangeCL& ColEx);
+
+  public:
+    /// \brief Constructor
+    ParJacNEG0CL (const IdxDescCL& idx, double omega=1) : base_(idx, omega) {}
+
+    /// \name Compute diagonal of matrix AA^T
+    //@{
+    /// \brief Set known diagonal of A*A^T as diagonal
+    void SetDiag(const VectorCL& d) { base_::diag_.resize(d.size()); base_::diag_=d; }
+
+    /// \brief Determine diagonal of a matrix A is not implemented for all MatTs
+    template<typename MatT>
+    void SetDiag(const MatT&){
+        throw DROPSErrCL("ParJacNEG0CL::SetDiag: Not defined for that matrix type.");
+    }
+    //@}
+};
+
+inline void ParJacNEG0CL::MySetDiag(const MatrixCL& A, const ExchangeCL& RowEx, const ExchangeCL& ColEx)
+/// This function determines the diagonal of the matrix A*A^T and stores this diagonal
+/// in the base class. Therefore, the matrix A has to be accumulated. This is done by
+/// the class MatrixExchangeCL.
+///
+/// Conservatively, we assume that the pattern of the matrix has changed, so the MatrixExchangeCL
+/// is created each time, this function is called.
+///
+/// \todo(par) Determine when to create the communication-pattern more precisely
+/// \param A     Compute diagonal of the matrix A*A^T
+/// \param RowEx ExchangeCL according to the RowIdx of matrix A
+/// \param ColEx ExchangeCL according to the ColIdx of matrix A
+{
+    // Accumulate matrix
+    exMat_.BuildCommPattern(A, RowEx, ColEx);
+    MatrixCL Aacc(exMat_.Accumulate(A));
+    // Determine diagonal of AA^T
+    base_::diag_.resize(Aacc.num_rows());
+    for (size_t i = 0; i < Aacc.num_rows(); ++i)
+        for (size_t nz = Aacc.row_beg(i); nz < Aacc.row_beg(i + 1); ++nz)
+            base_::diag_[i] += Aacc.val(nz) * A.val(nz);
+    RowEx.Accumulate(base_::diag_);
+}
+
+/// \brief (Specialization) SetDiag for CompositeMatrixBaseCL<MatrixCL, MatrixCL>
+template <>
+inline void ParJacNEG0CL::SetDiag(const CompositeMatrixBaseCL<MatrixCL, MatrixCL>& BBT)
+{
+    MySetDiag(*BBT.GetBlock1(), BBT.GetEx1(), BBT.GetEx0());
+}
+
 
 // ********************************************************************************
 /// \brief Class for performing one Step of the Jacobi-Iteration with startvector 0 and own matrix

@@ -13,24 +13,16 @@
 
 namespace DROPS{
 
-// ------------------------------------
-// E X C H A N G E  D A T A  C L A S S
-// ------------------------------------
-/// \brief Get the corresponding proc
-int ExchangeDataCL::GetProc() const
-{
-    return toProc_;
-}
-
-/// \brief Get number of received elements
-size_t ExchangeDataCL::GetNumRecvEntries() const
-{
-    return Sysnums_.size();
-}
+// --------------------------------------------
+// E X C H A N G E  D A T A  S E N D  C L A S S
+// --------------------------------------------
 
 /// \brief Send data
-ProcCL::RequestT ExchangeDataCL::Isend(const VectorCL& v, int tag, Ulint offset) const
-/** This procedure send the datas with an non-blocking non-synchronous MPI Send.
+template <typename VectorT>
+ProcCL::RequestT ExchangeDataSendCL::Isend(const VectorT& v, int tag, Ulint offset) const
+/** This procedure send the data with a non-blocking non-synchronous MPI Send. Since this
+    procedure is used to send vector-entries as well as non-zero-elements of a matrix, the
+    type VectorT is a template parameter.
     \param v      vector, that contains elements for sending (local data)
     \param tag    used tag for communication
     \param offset start element of the vector
@@ -41,7 +33,18 @@ ProcCL::RequestT ExchangeDataCL::Isend(const VectorCL& v, int tag, Ulint offset)
     return ProcCL::Isend(Addr(v)+offset, 1, SendType_, toProc_, tag);
 }
 
-/// \brief Recieve data
+
+// ------------------------------------
+// E X C H A N G E  D A T A  C L A S S
+// ------------------------------------
+
+/// \brief Get number of received elements
+size_t ExchangeDataCL::GetNumRecvEntries() const
+{
+    return Sysnums_.size();
+}
+
+/// \brief Receive data
 ProcCL::RequestT ExchangeDataCL::Irecv(int tag, VectorCL& recvBuf, Ulint offset) const
 /** This procedure receives the datas with an non-blocking non-synchronous MPI
     Receive.
@@ -56,7 +59,7 @@ ProcCL::RequestT ExchangeDataCL::Irecv(int tag, VectorCL& recvBuf, Ulint offset)
     return ProcCL::Irecv(Addr(recvBuf)+offset, GetNumRecvEntries(), toProc_, tag);
 }
 
-/// \brief Add data
+/// \brief Add data (call for vectors)
 void ExchangeDataCL::Accumulate(VectorCL& v, Ulint offsetV, VectorCL& recvBuf, Ulint offsetRecv) const
 /** This procedure accumulates received data. It assumes, that the data has been
     received.
@@ -67,11 +70,10 @@ void ExchangeDataCL::Accumulate(VectorCL& v, Ulint offsetV, VectorCL& recvBuf, U
     \pre Communication has to be done before entering this procedure
 */
 {
-    // add the datas to the positions described by Sysnums_
+    // add the data to the positions described by Sysnums_
     for (Uint i=0; i<GetNumRecvEntries(); ++i)
         v[Sysnums_[i]+offsetV] += recvBuf[i+offsetRecv];
 }
-
 
 // --------------------------
 // E X C H A N G E  C L A S S
@@ -166,7 +168,7 @@ template <typename SimplexT>
 
 template <typename SimplexT>
   int ExchangeCL::HandlerScatterSysnums(DDD_OBJ objp, void* buf)
-/// Scatter sendposition on reciever-side. Therefore iterate over the
+/// Scatter sendposition on receiver-side. Therefore iterate over the
 /// content of the buffer and check for the right content for this processor.
 /// The content of the message is described detailed in the documentation of
 /// TransferSendOrder. (Should be private! Just public, so DDD can call this function)
@@ -757,6 +759,8 @@ IdxT ExchangeCL::GetExternalIdxFromProc(IdxT myIdx, ProcNumT proc) const
 /// \brief Check if a sysnum is distributed
 bool ExchangeCL::IsDist(IdxT i) const
 {
+    if (ProcCL::Size()==1)
+        return false;
     Assert(mapCreated_,
            DROPSErrCL("ExchangeCL::IsDist: The mapping: (external idx) -> (my idx) is not created. \nMaybe set flag CreateMapIdx for CreateList()!"),
            DebugParallelNumC);

@@ -2205,11 +2205,11 @@ void ParMultiGridCL::Show( DDD_GID gid, char *mesg, int proc)
         DDD_HDR hdr= DDD_SearchHdr( gid);
         if (!hdr)
         {
-            std::cout << "...stored only locally." << std::endl;
+            std::cerr << "...stored only locally." << std::endl;
             return;
         }
         for( int* proclist= DDD_InfoProcList( hdr); *proclist!=-1; proclist+= 2)
-            std::cout << "...stored on proc " << *proclist << " with prio " << PrioToString((Uint)proclist[1]) << std::endl;
+            std::cerr << "...stored on proc " << *proclist << " with prio " << PrioToString((Uint)proclist[1]) << std::endl;
     }
 }
 

@@ -190,6 +190,8 @@ class ProcCL
       /// \brief MPI-Get_count-wrapper
     template <typename T>
     static inline int GetCount(StatusT&);
+    template <typename T>
+    static inline int GetMessageLength(int, int);
       /// \brief MPI-Waitall-wrapper for all requests in a valarray
     static inline void WaitAll(std::valarray<RequestT>&);
       /// \brief MPI-Waitall-wrapper for all requests in a vector
@@ -211,6 +213,8 @@ class ProcCL
     static inline RequestT Isend(const std::valarray<T>&, const DatatypeT&, int, int);
     template <typename T>
     static inline RequestT Isend(const std::vector<T>&, const DatatypeT&, int, int);
+    template <typename T>
+    static inline RequestT Isend(const std::vector<T>&, int, int);
     template <typename T>
     static inline void Recv(std::valarray<T>&, int, int);
     template <typename T>

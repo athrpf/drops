@@ -39,6 +39,8 @@ void ISBBTPreCL::Update() const
 #else
     BBT_.SetBlock0( Bs_);
     BBT_.SetBlock1( Bs_);
+    if (solver_.GetPC().NeedDiag())
+        solver_.GetPC().SetDiag(BBT_);
     VectorCL Dvelinv( 1.0/ vel_idx_->GetEx().GetAccumulate(Mvel_->GetDiag()));
 #endif
     ScaleCols( *Bs_, VectorCL( std::sqrt( Dvelinv)));

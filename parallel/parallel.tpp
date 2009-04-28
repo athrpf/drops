@@ -271,8 +271,16 @@ inline void ProcCL::Abort(int code)
 #endif  // _MPICXX_INTERFACE
 
 template <typename T>
- inline int ProcCL::GetCount(ProcCL::StatusT& status)
- { return GetCount(status, ProcCL::MPI_TT<T>::dtype); }
+  inline int ProcCL::GetCount(ProcCL::StatusT& status)
+  { return GetCount(status, ProcCL::MPI_TT<T>::dtype); }
+
+template <typename T>
+  inline int ProcCL::GetMessageLength(int source, int tag)
+{
+    StatusT status;
+    Probe(source, tag, status);
+    return GetCount<T>(status);
+}
 
 inline void ProcCL::WaitAll(std::valarray<ProcCL::RequestT>& reqs)
   { WaitAll((int)reqs.size(), Addr(reqs)); }
@@ -303,6 +311,10 @@ template <typename T>
 template <typename T>
   inline ProcCL::RequestT ProcCL::Isend(const std::vector<T>& data, const DatatypeT& type, int dest, int tag)
   { return Isend(Addr(data), data.size(), type, dest, tag); }
+
+template <typename T>
+  inline ProcCL::RequestT ProcCL::Isend(const std::vector<T>& data, int dest, int tag)
+  { return Isend(Addr(data), data.size(), MPI_TT<T>::dtype, dest, tag); }
 
 template <typename T>
 inline void ProcCL::Recv(std::valarray<T>& data, int source, int tag)
