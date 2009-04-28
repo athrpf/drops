@@ -515,7 +515,7 @@ class VecDescBaseCL
 /// \brief A sparse matrix together with two IdxDescCL -objects,
 ///     that couple the row- and column- indices to simplices in a
 ///     multigrid.
-template<typename MatT, typename IdxT>
+template<typename MatT, typename IdxDescT>
 class MatDescBaseCL
 {
   public:
@@ -527,11 +527,11 @@ class MatDescBaseCL
     MatDescBaseCL()
         : RowIdx( 0), ColIdx( 0) {}
     /// \brief Initialize RowIdx an ColIdx; Data is still default-constructed.
-    MatDescBaseCL( IdxT* r, IdxT* c) { SetIdx( r, c); }
+    MatDescBaseCL( IdxDescT* r, IdxDescT* c) { SetIdx( r, c); }
 
-    IdxT* RowIdx; ///< Pointer to the index-description used for row-indices.
-    IdxT* ColIdx; ///< Pointer to the index-description used for column-indices.
-    DataType  Data; ///< The numerical data.
+    IdxDescT* RowIdx; ///< Pointer to the index-description used for row-indices.
+    IdxDescT* ColIdx; ///< Pointer to the index-description used for column-indices.
+    DataType  Data;   ///< The numerical data.
 
     /// \brief The triangulation-level of the row-index.
     Uint GetRowLevel() const { return RowIdx->TriangLevel(); }
@@ -539,7 +539,7 @@ class MatDescBaseCL
     Uint GetColLevel() const { return ColIdx->TriangLevel(); }
 
     /// \brief Use a new index for accessing the components.
-    void SetIdx( IdxT*, IdxT*);
+    void SetIdx( IdxDescT*, IdxDescT*);
     /// \brief Empty Data and set the index-pointers to 0.
     void Reset();
 };
@@ -739,8 +739,8 @@ void VecDescBaseCL<T>::Read(std::istream& is, bool binary)
         in(is, Data);
 }
 
-template<typename MatT, typename IdxT>
-void MatDescBaseCL<MatT, IdxT>::SetIdx( IdxT* row, IdxT* col)
+template<typename MatT, typename IdxDescT>
+void MatDescBaseCL<MatT, IdxDescT>::SetIdx( IdxDescT* row, IdxDescT* col)
 /// Prepares the matrix for usage with new index-objects for
 /// its components. As constructing sparse matrices is fairly involved,
 /// this routine does not modify Data. SparseMatBuilderCL should be used
@@ -750,8 +750,8 @@ void MatDescBaseCL<MatT, IdxT>::SetIdx( IdxT* row, IdxT* col)
     ColIdx= col;
 }
 
-template<typename MatT, typename IdxT>
-void MatDescBaseCL<MatT, IdxT>::Reset()
+template<typename MatT, typename IdxDescT>
+void MatDescBaseCL<MatT, IdxDescT>::Reset()
 /// Sets the index-pointers to 0 and clears the matrix.
 {
     RowIdx = 0;
