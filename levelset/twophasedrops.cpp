@@ -68,7 +68,7 @@ double Initialcneg (const DROPS::Point3DCL& , double)
 
 double Initialcpos (const DROPS::Point3DCL& , double)
 {
-    return C.transp_cNeg;
+    return C.transp_cPos;
 }
 
 namespace DROPS // for Strategy
@@ -295,7 +295,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
-    double D[2] = {C.transp_cPos, C.transp_cNeg};
+    double D[2] = {C.transp_diffPos, C.transp_diffNeg};
     TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.transp_theta, D, C.transp_H, &Stokes.v, lset,
         /*t*/ 0., C.dt, C.transp_iter, C.transp_tol);
     TransportRepairCL transprepair(massTransp, MG);
