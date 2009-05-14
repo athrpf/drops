@@ -363,6 +363,10 @@ public:
     SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&,
                               double, const SparseMatBaseCL<T>&);
+    SparseMatBaseCL& LinComb (double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&,
+                              double, const SparseMatBaseCL<T>&);
 
     void insert_col (size_t c, const VectorBaseCL<T>& v);
 
@@ -793,6 +797,18 @@ SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatB
     SparseMatBaseCL<T> tmp;
     tmp.LinComb( coeffA, A, coeffB, B);
     return this->LinComb( 1.0, tmp, coeffC, C);
+}
+
+/// \brief Compute the linear combination of four sparse matrices.
+template <typename T>
+SparseMatBaseCL<T>& SparseMatBaseCL<T>::LinComb (double coeffA, const SparseMatBaseCL<T>& A,
+                                                 double coeffB, const SparseMatBaseCL<T>& B,
+                                                 double coeffC, const SparseMatBaseCL<T>& C,
+                                                 double coeffD, const SparseMatBaseCL<T>& D)
+{
+    SparseMatBaseCL<T> tmp;
+    tmp.LinComb( coeffA, A, coeffB, B, coeffC, C);
+    return this->LinComb( 1.0, tmp, coeffD, D);
 }
 
 /// \brief Inserts v as column c. The old columns [c, num_cols()) are shifted to the right.
