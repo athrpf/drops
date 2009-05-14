@@ -57,15 +57,25 @@ double sol0t (const DROPS::Point3DCL& p, double t)
     return q.norm_sq()/(12. + q.norm_sq())*val;
 }
 
-#define DROPS_FOR_TETRA_INTERFACE_BEGIN( t, ls, p, n) \
-    (p).Init( (t), (ls)); \
-    if ((p).Intersects()) { /*We are at the phase boundary.*/ \
-        for (int ch__= 0; ch__ < 8; ++ch__) { \
-            (p).ComputeForChild( ch__); \
-            for (int n= 0; n < (p).GetNumTriangles(); ++n) \
+template <typename DiscP1FunT>
+double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+    const DiscP1FunT& discsol)
+{
+    double d( 0.);
+    const DROPS::Uint lvl = ls.GetLevel();
+    DROPS::InterfacePatchCL patch;
+    DROPS::Quad5_2DCL<> qdiscsol;
 
-#define DROPS_FOR_TETRA_INTERFACE_END }}
- 
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, patch, tri) {
+            qdiscsol.assign(  *it, &patch.GetBary( tri), discsol);
+            d+= qdiscsol.quad( patch.GetFuncDet( tri));
+        }
+        DROPS_FOR_TETRA_INTERFACE_END
+    }
+    return d;
+}
+
 
 template <typename DiscP1FunT>
 double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
@@ -125,54 +135,81 @@ namespace DROPS // for Strategy
 {
 
 const int N= 11;
+const int L= 4;
 
-void Strategy (DROPS::MultiGridCL& mg, DROPS::LevelsetP2CL& lset)
+void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
 {
     using namespace DROPS;
 
+    MultiGridCL& mg= adap.GetMG();
     IdxDescCL fullidx( P1_FE);
     fullidx.CreateNumbering( mg.GetLastLevel(), mg);
     NoBndDataCL<> bnd;
 
-    VecDescCL DV[N];
+    LevelsetRepairCL lsetrepair( lset);
+    adap.push_back( &lsetrepair);
+
+    VecDescCL DV[L][N];
+    InterfaceP1RepairCL* ifrep[L][N];
+    const char* lvlstr[]= { "-lvl2/", "-lvl3/", "-lvl4/", "-lvl5/" };
+
+  for (int l= 0; l < L; ++l) {
     for (int i= 0; i < N; ++i)
-        DV[i].SetIdx( &fullidx);
+        DV[l][i].SetIdx( &fullidx);
 
     ReadEnsightP2SolCL reader( mg);
-    reader.ReadScalar( "ensight/surfactant.sur1",   DV[0], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur2",   DV[1], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur4",   DV[2], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur8",  DV[3], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur16",  DV[4], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur32",  DV[5], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur64", DV[6], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur128", DV[7], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur256",  DV[8], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur512", DV[9], bnd);
-    reader.ReadScalar( "ensight/surfactant.sur1024", DV[10], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur1",   DV[l][0], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur2",   DV[l][1], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur4",   DV[l][2], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur8",   DV[l][3], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur16",  DV[l][4], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur32",  DV[l][5], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur64",  DV[l][6], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur128", DV[l][7], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur256", DV[l][8], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur512", DV[l][9], bnd);
+    reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur1024", DV[l][10], bnd);
 
-    LSInit( mg, lset.Phi, &sphere_2move, 0.);
-    VecDescCL DVinitial( &fullidx);
-    reader.ReadScalar( "ensight/surfactant.sur0",   DVinitial, bnd);
-    std::cout << "\ninitial discretization error: "
-              << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DVinitial, 0.), &sol0t, 0.) << std::endl;
+    if (l == L - 1) continue;
+    for (int i= 0; i < N; ++i) {
+        ifrep[l][i]= new InterfaceP1RepairCL( mg, lset.Phi, DV[l][i]);
+        adap.push_back( ifrep[l][i]);
+    }
+    adap.SetFineLevel( mg.GetLastLevel() + 1);
+    adap.UpdateTriang( lset);
+    LSInit( mg, lset.Phi, &sphere_2move, 1.);
+  }
+
+    // LSInit( mg, lset.Phi, &sphere_2move, 0.);
+    // VecDescCL DVinitial( &fullidx);
+    // reader.ReadScalar( "ensight/surfactant.sur0",   DVinitial, bnd);
+    // std::cout << "\ninitial discretization error: "
+    //           << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DVinitial, 0.), &sol0t, 0.) << std::endl;
 
     LSInit( mg, lset.Phi, &sphere_2move, 1.);
-    std::cout << "\nfinal discretization error:" << std::endl;
-    for (int i= 0; i < N - 1; ++i)
-        std::cout << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.), &sol0t, C.dt*C.num_steps) << ", ";
+    // std::cout << "\nfinal discretization error:" << std::endl;
+    // for (int i= 0; i < N - 1; ++i)
+    //     std::cout << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[0][i], 1.), &sol0t, C.dt*C.num_steps) << ", ";
 
     std::cout << std::endl;
+  for (int l= 0; l < L; ++l) {
+    std::cout << " Level: " << l + 2 << ":\n";
+    std::cout << "Integral on \\Gamma: ";
     for (int i= 0; i < N - 1; ++i) {
-        DV[i].Data-=DV[N - 1].Data;
+        std::cout << Integral_Gamma( mg, lset.Phi, make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
+    }
+    std::cout << "\nL_2 error: ";
+    for (int i= 0; i < N - 1; ++i) {
+        DV[l][i].Data-=DV[L-1][N - 1].Data;
         // std::cout << norm( DV[i].Data) << ", ";
-        std::cout << L2_norm( mg, lset.Phi, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
+        std::cout << L2_norm( mg, lset.Phi, make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
     }
+    // std::cout << std::endl;
+    // for (int i= 0; i < N - 1; ++i) {
+    //     std::cout << L2_norm_Omega( mg, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
+    // }
     std::cout << std::endl;
-    for (int i= 0; i < N - 1; ++i) {
-        std::cout << L2_norm_Omega( mg, make_P1Eval( mg, bnd, DV[i], 1.)) << ", ";
-    }
-    std::cout << std::endl;
+  }
 }
 
 } // end of namespace DROPS
@@ -210,7 +247,7 @@ int main (int argc, char** argv)
     DROPS::LevelsetP2CL lset( mg);
     lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
-    Strategy( mg, lset);
+    Strategy( adap, lset);
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }

@@ -9,12 +9,13 @@ namespace DROPS {
 template <class DiscVelSolT>
 void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const DiscVelSolT& u)
 {
-    const IdxT num_unks= mat->RowIdx->NumUnknowns();
-    MatrixBuilderCL m( &mat->Data, num_unks, num_unks);
+    const IdxT num_rows= mat->RowIdx->NumUnknowns();
+    const IdxT num_cols= mat->ColIdx->NumUnknowns();
+    MatrixBuilderCL m( &mat->Data, num_rows, num_cols);
     const Uint lvl= mat->GetRowLevel();
-    IdxT num[4];
+    IdxT numr[4], numc[4];
 
-    std::cout << "entering SetupConvectionP1: " << num_unks << " dof. ";
+    std::cout << "entering SetupConvectionP1: " << num_rows << " rows, " << num_cols << " cols. ";
 
     LocalP1CL<> p1[4];
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
@@ -31,7 +32,8 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
         patch.Init( *it, ls);
         if (patch.Intersects()) { // We are at the phase boundary.
-            GetLocalNumbP1NoBnd( num, *it, *mat->RowIdx);
+            GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
+            GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
             P1DiscCL::GetGradients( grad, dummy, *it);
             u_loc.assign( *it, u);
             std::memset( coup, 0, 4*4*sizeof( double));
@@ -44,10 +46,10 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
             }
 
             for(int i= 0; i < 4; ++i) {// assemble row Numb[i]
-                if (num[i] == NoIdx) continue;
+                if (numr[i] == NoIdx) continue;
                 for(int j= 0; j < 4; ++j) {
-                    if (num[j] == NoIdx) continue;
-                    m( num[i], num[j])+= coup[i][j]; // Order of indices is correct as the assemply of coup is adapted.
+                    if (numc[j] == NoIdx) continue;
+                    m( numr[i], numc[j])+= coup[i][j]; // Order of indices is correct as the assemply of coup is adapted.
                 }
             }
         }
@@ -60,12 +62,13 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
 template <class DiscVelSolT>
 void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const DiscVelSolT& u)
 {
-    const IdxT num_unks= mat->RowIdx->NumUnknowns();
-    MatrixBuilderCL m( &mat->Data, num_unks, num_unks);
+    const IdxT num_rows= mat->RowIdx->NumUnknowns();
+    const IdxT num_cols= mat->ColIdx->NumUnknowns();
+    MatrixBuilderCL m( &mat->Data, num_rows, num_cols);
     const Uint lvl= mat->GetRowLevel();
-    IdxT num[4];
+    IdxT numr[4], numc[4];
 
-    std::cout << "entering SetupMassDivP1: " << num_unks << " dof. ";
+    std::cout << "entering SetupMassDivP1: " << num_rows << " rows, " << num_cols << " cols. ";
 
     LocalP1CL<> p1[4];
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
@@ -84,7 +87,8 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
         patch.Init( *it, ls);
         if (patch.Intersects()) { // We are at the phase boundary.
-            GetLocalNumbP1NoBnd( num, *it, *mat->RowIdx);
+            GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
+            GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
             GetTrafoTr( T, dummy, *it);
             P2DiscCL::GetGradients( gradp2, gradrefp2, T);
             u_loc.assign( *it, u);
@@ -98,10 +102,10 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
             }
 
             for(int i= 0; i < 4; ++i) {// assemble row Numb[i]
-                if (num[i] == NoIdx) continue;
+                if (numr[i] == NoIdx) continue;
                 for(int j= 0; j < 4; ++j) {
-                    if (num[j] == NoIdx) continue;
-                    m( num[i], num[j])+= coup[i][j];
+                    if (numc[j] == NoIdx) continue;
+                    m( numr[i], numc[j])+= coup[i][j];
                 }
             }
         }

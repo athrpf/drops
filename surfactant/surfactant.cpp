@@ -56,7 +56,8 @@ double rhs0 (const DROPS::Point3DCL& p, double)
 // ...and the corresponding solution (extended)
 double sol0 (const DROPS::Point3DCL& p, double)
 {
-    return p.norm_sq()/(12. + p.norm_sq())*rhs0( p, 0.);
+//    return p.norm_sq()/(12. + p.norm_sq())*rhs0( p, 0.);
+    return 1. + p.norm_sq()/(12. + p.norm_sq())*rhs0( p, 0.);
 }
 
 double sol0t (const DROPS::Point3DCL& p, double t)
@@ -64,7 +65,8 @@ double sol0t (const DROPS::Point3DCL& p, double t)
     const Point3DCL q( p - (C.Mitte + t*u_func(p, t)));
     const double val( a*(3.*q[0]*q[0]*q[1] - q[1]*q[1]*q[1]));
 
-    return q.norm_sq()/(12. + q.norm_sq())*val;
+//    return q.norm_sq()/(12. + q.norm_sq())*val;
+    return 1. + q.norm_sq()/(12. + q.norm_sq())*val;
 }
 
 template<class DiscP1FunType>
@@ -115,6 +117,25 @@ double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     return std::sqrt( d);
 }
 
+template <typename DiscP1FunT>
+double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+    const DiscP1FunT& discsol)
+{
+    double d( 0.);
+    const DROPS::Uint lvl = ls.GetLevel();
+    DROPS::InterfacePatchCL patch;
+    DROPS::Quad5_2DCL<> qdiscsol;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, patch, tri) {
+            qdiscsol.assign(  *it, &patch.GetBary( tri), discsol);
+            d+= qdiscsol.quad( patch.GetFuncDet( tri));
+        }
+        DROPS_FOR_TETRA_INTERFACE_END
+    }
+    return d;
+}
+
 void LinearLSInit (const DROPS::MultiGridCL& mg, DROPS::VecDescCL& ls, DROPS::scalar_fun_ptr d)
 {
     const DROPS::Uint lvl= ls.GetLevel(),
@@ -158,163 +179,33 @@ void InitVel ( const MultiGridCL& mg, VecDescCL* vec, BndDataCL<Point3DCL>& Bnd,
     }
 }
 
-
-class TransportP1FunctionCL
-/// Solve D/Dt u = 0, u(t^0) given, with SDFEM
+void P1Init (instat_scalar_fun_ptr icf, VecDescCL& ic, MultiGridCL& mg, double t)
 {
-  public:
-    typedef BndDataCL<>    BndDataT;
-    typedef P1EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
-    typedef P1EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
+    const Uint lvl= ic.GetLevel(),
+               idx= ic.RowIdx->GetIdx();
 
-    const IdxDescCL&    p1idx;
-
-  private:
-    MultiGridCL&        MG_;
-    double              SD_,       ///< streamline diffusion
-                        theta_,
-                        dt_;
-    MatrixCL            L_;
-    BndDataT            Bnd_;
-    GSPcCL              pc_;
-    GMResSolverCL<GSPcCL>  gm_;
-
-  public:
-    MatrixCL            E_old, E_, H_old, H_;
-
-    template<class DiscVelSolT>
-    TransportP1FunctionCL (MultiGridCL& mg, const DiscVelSolT& v_old, const IdxDescCL& thep1idx, double dt, double theta= 0.5, double SD= 0., int iter= 1000, double tol= 1e-7)
-    : p1idx( thep1idx), MG_( mg), SD_( SD),
-        theta_( theta), dt_( dt), Bnd_( BndDataT( mg.GetBnd().GetNumBndSeg())),
-        gm_( pc_, 500, iter, tol, true)
-    {
-        if (theta_ != 1.) SetupSystem( v_old, E_old, H_old);
+    DROPS_FOR_TRIANG_VERTEX( mg, lvl, it) {
+        if (it->Unknowns.Exist( idx))
+            ic.Data[it->Unknowns( idx)]= icf( it->GetCoord(), t);
     }
-
-    /// \remarks call SetupSystem \em before calling SetTimeStep!
-    template<class DiscVelSolT>
-    void SetupSystem (const DiscVelSolT&, MatrixCL& E, MatrixCL& H);
-    /// perform one time step
-    template <class DiscVelSolT>
-    void DoStep (VectorCL& u, const DiscVelSolT& /* new velocity*/);
-
-};
-
-template<class DiscVelSolT>
-void TransportP1FunctionCL::SetupSystem( const DiscVelSolT& vel, MatrixCL& E, MatrixCL& H)
-// Sets up the stiffness matrices:
-// E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-// H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-// where v_i, v_j denote the ansatz functions.
-{
-    const IdxT num_unks= p1idx.NumUnknowns();
-    const Uint lvl= p1idx.TriangLevel();
-
-    SparseMatBuilderCL<double> bE(&E, num_unks, num_unks),
-                               bH(&H, num_unks, num_unks);
-    IdxT Numb[4];
-
-    std::cout << "entering TransportP1Function::SetupSystem: " << num_unks << "  unknowns. ";
-    std::cout << "SD_: " << SD_ << " dt_: " << dt_ << " theta_ :" << theta_ << "\n";
-
-    // fill value part of matrices
-    Quad5CL<Point3DCL>  u_loc;
-    Point3DCL Grad[4];
-    Quad5CL<> u_Grad[4], // fuer u grad v_i
-              p1[4];
-    double det, absdet, h_T;
-
-    LocalP1CL<> p1dummy;
-    for (int i= 0; i < 4; ++i) {
-        p1dummy[i]= 1.0;
-        p1[i].assign( p1dummy);
-        p1dummy[i]= 0.0;
-    }
-
-    DROPS_FOR_TRIANG_CONST_TETRA( const_cast<const MultiGridCL&>( MG_), lvl, sit) {
-        P1DiscCL::GetGradients( Grad, det, *sit);
-        absdet= std::fabs( det);
-        h_T= std::pow( absdet, 1./3.);
-
-        // save information about the edges and verts of the tetra in Numb
-        GetLocalNumbP1NoBnd( Numb, *sit, p1idx);
-
-        // save velocities inside tetra for quadrature in u_loc
-        u_loc.assign( *sit, vel);
-        for(int i=0; i<4; ++i)
-            u_Grad[i]= dot( Grad[i], u_loc);
-
-        /// \todo fixed limit for maxV (maxV_limit), any better idea?
-        double maxV = 1.; // scaling of SD parameter
-        //const double limit= 1e-3;
-//         for(int i= 0; i < Quad5CL<>::NumNodesC; ++i)
-//            maxV = std::max( maxV, u_loc[i].norm());
-        // const double maxV= 1.; // no scaling
-//        const double sd_fact= SD_ * h_T; // / std::max( maxV, limit / h_T);
-        for(int i= 0; i < 4; ++i)    // assemble row Numb[i]
-            for(int j= 0; j < 4; ++j) {
-                // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-               bE( Numb[i], Numb[j])+= P1DiscCL::GetMass(i,j) * absdet
-                                       + Quad5CL<>( u_Grad[i]*p1[j]).quad( absdet)*SD_/maxV*h_T;
-
-               // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-               bH( Numb[i], Numb[j])+= Quad5CL<>( u_Grad[j]*p1[i]).quad( absdet)
-                                       + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
-                // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-/*                bE( Numb[i], Numb[j])+= P1DiscCL::GetMass(i,j) * absdet * (1. + sd_fact/std::max(dt_, 1.2*h_T/maxV))
-                                        + Quad5CL<>( u_Grad[i]*p1[j]).quad( absdet) * sd_fact * theta_;
-
-                // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-                bH( Numb[i], Numb[j])+= Quad5CL<>( u_Grad[j]*p1[i]).quad( absdet) * (1. + sd_fact/std::max(dt_, 1.2*h_T/maxV))
-                                      + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * sd_fact * theta_;*/
-            }
-    }
-    bE.Build();
-    bH.Build();
-    std::cout << E.num_nonzeros() << " nonzeros in E, "
-              << H.num_nonzeros() << " nonzeros in H! " << std::endl;
 }
-
-template <class DiscVelSolT>
-void TransportP1FunctionCL::DoStep (VectorCL& u, const DiscVelSolT& vel)
-{
-    SetupSystem( vel, E_, H_);
-    L_.clear();
-    const int N= 1;
-    L_.LinComb( 1./(dt_/N), E_, theta_, H_);
-
-    for (int i= 0; i < N ; ++i) {
-	    VectorCL rhs( (1./(dt_/N))*u);
-	    if (theta_ != 1.) {
-		GMResSolverCL<GSPcCL> gm( gm_);
-		VectorCL tmp( rhs.size());
-		gm.Solve( E_old, tmp, VectorCL( H_old*u));
-		std::cout << "TransportP1FunctionCL::DoStep rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
-		rhs-= (1. - theta_)*tmp;
-	    }
-	    gm_.Solve( L_, u, VectorCL(E_*rhs));
-            if (N != 1) std::cout << "substep " << i << ": iter: " << gm_.GetIter() << " ";
-    }
-    std::cout << "TransportP1FunctionCL::DoStep: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
-}
-
-typedef BndDataCL<Point3DCL> VelBndDataT;
 
 /// \brief P1-discretization and solution of the transport equation on the interface
-class SurfactantP1CL
+class SurfactantcGP1CL
 {
   public:
-//    typedef BndDataCL<Point3DCL>                              VelBndDataT;
+    typedef BndDataCL<Point3DCL>                              VelBndDataT;
     typedef NoBndDataCL<>                                     BndDataT;
     typedef P1EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
     typedef P1EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
 
-    IdxDescCL idx, full_idx;
+    IdxDescCL idx;
     VecDescCL ic; ///< concentration on the interface
     MatDescCL A,  ///< diffusion matrix
               M,  ///< mass matrix
               C,  ///< convection matrix
-              Md; ///< mass matrix with interface-divergence of velocity
+              Md, ///< mass matrix with interface-divergence of velocity
+              M2; ///< mass matrix: new trial- and test- functions on old interface
 
   private:
     MatrixCL      L_;              ///< sum of matrices
@@ -326,18 +217,23 @@ class SurfactantP1CL
     const VelBndDataT&  Bnd_v_;  ///< Boundary condition for the velocity
     VecDescCL*          v_;      ///< velocity at current time step
     LevelsetP2CL&       lset_;   ///< levelset at current time step
-    TransportP1FunctionCL* fulltransport_;
+
+    IdxDescCL           oldidx_; ///< idx that corresponds to old time (and oldls_)
+    VectorCL            oldic_;  ///< interface concentration at old time
+    VecDescCL           oldls_;  ///< levelset at old time
+    VecDescCL           oldv_;   ///< velocity at old time
+    double              oldt_;   ///< old time
 
     GSPcCL                  pc_;
     GMResSolverCL<GSPcCL>   gm_;
     double omit_bound_;
 
   public:
-    SurfactantP1CL (MultiGridCL& mg, const VelBndDataT& Bnd_v,
+    SurfactantcGP1CL (MultiGridCL& mg, const VelBndDataT& Bnd_v,
         double theta, double D, VecDescCL* v, LevelsetP2CL& lset,
         double t, double dt, int iter= 1000, double tol= 1e-7, double omit_bound= -1.)
-    : idx( P1IF_FE), full_idx( P1_FE), MG_( mg), D_( D), theta_( theta), dt_( dt), t_( t),
-        Bnd_v_( Bnd_v), v_( v), lset_( lset), fulltransport_( 0), gm_( pc_, 100, iter, tol, true),
+    : idx( P1IF_FE), MG_( mg), D_( D), theta_( theta), dt_( dt), t_( t),
+        Bnd_v_( Bnd_v), v_( v), lset_( lset), oldidx_( P1IF_FE), gm_( pc_, 100, iter, tol, true),
         omit_bound_( omit_bound)
     { idx.GetXidx().SetBound( omit_bound); }
 
@@ -349,6 +245,9 @@ class SurfactantP1CL
 
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     void SetTimeStep( double dt, double theta=-1);
+
+    /// save a copy of the old level-set; must be called before DoStep.
+    void InitOld ();
 
     /// perform one time step
     void DoStep (double new_t);
@@ -371,102 +270,104 @@ class SurfactantP1CL
     ///@}
 };
 
-void P1Init (instat_scalar_fun_ptr icf, VecDescCL& ic, MultiGridCL& mg, double t)
-{
-    const Uint lvl= ic.GetLevel(),
-               idx= ic.RowIdx->GetIdx();
-
-    DROPS_FOR_TRIANG_VERTEX( mg, lvl, it) {
-        if (it->Unknowns.Exist( idx))
-            ic.Data[it->Unknowns( idx)]= icf( it->GetCoord(), t);
-    }
-}
-
-void SurfactantP1CL::Init (instat_scalar_fun_ptr icf)
+void SurfactantcGP1CL::Init (instat_scalar_fun_ptr icf)
 {
     P1Init ( icf, ic, MG_, 0.);
 }
 
-void SurfactantP1CL::SetTimeStep (double dt, double theta)
+void SurfactantcGP1CL::SetTimeStep (double dt, double theta)
 {
     dt_= dt;
     if (theta >= 0. && theta <= 1.) theta_= theta;
 }
 
-void SurfactantP1CL::Update()
+void SurfactantcGP1CL::Update()
 {
     IdxDescCL* cidx= ic.RowIdx;
 
     M.Data.clear();
     M.SetIdx( cidx, cidx);
     DROPS::SetupInterfaceMassP1( MG_, &M, lset_.Phi);
-    std::cout << "M is set up.\n";
+    // std::cout << "M is set up.\n";
     A.Data.clear();
     A.SetIdx( cidx, cidx);
     DROPS::SetupLBP1( MG_, &A, lset_.Phi, D_);
-    std::cout << "A is set up.\n";
-    //C.Data.clear();
-    //C.SetIdx( cidx, cidx);
-    //DROPS::SetupConvectionP1( MG_, &C, lset_.Phi, make_P2Eval( MG_, Bnd_v_, *v_, t_));
-    //std::cout << "C is set up.\n";
+    // std::cout << "A is set up.\n";
+    C.Data.clear();
+    C.SetIdx( cidx, cidx);
+    DROPS::SetupConvectionP1( MG_, &C, lset_.Phi, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    // std::cout << "C is set up.\n";
     Md.Data.clear();
     Md.SetIdx( cidx, cidx);
     DROPS::SetupMassDivP1( MG_, &Md, lset_.Phi, make_P2Eval( MG_, Bnd_v_, *v_, t_));
-    std::cout << "Md is set up.\n";
+    // std::cout << "Md is set up.\n";
+
+    if (theta_ != 1.0) {
+        M2.Data.clear();
+        M2.SetIdx( cidx, cidx);
+        DROPS::SetupInterfaceMassP1( MG_, &M2, oldls_);
+        // std::cout << "M2 is set up.\n";
+    }
     std::cout << "SurfactantP1CL::Update: Finished\n";
 }
 
-VectorCL SurfactantP1CL::InitStep ()
+VectorCL SurfactantcGP1CL::InitStep ()
 {
-    full_idx.CreateNumbering( idx.TriangLevel(), MG_);
-    std::cout << "full NumUnknowns: " << full_idx.NumUnknowns() << std::endl;
 
-    fulltransport_= new TransportP1FunctionCL( MG_, make_P2Eval( MG_, Bnd_v_, *v_, t_), full_idx, dt_,  /*theta=*/theta_, /*SD=*/ ::C.surf_SD, /*iter=*/ 2000, /*tol=*/ 0.1*gm_.GetTol());
+    idx.CreateNumbering( oldidx_.TriangLevel(), MG_, &lset_.Phi); // InitOld deletes oldidx_ and swaps idx and oldidx_.
+    std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
+    ic.SetIdx( &idx);
 
-    VecDescCL rhs( &idx);
-    rhs.Data= (1./dt_)*ic.Data;
-    if (theta_ != 1.) {
-        GMResSolverCL<GSPcCL> gm( gm_);
-        VectorCL tmp( rhs.Data.size());
-        gm.Solve( M.Data, tmp, VectorCL( /*A.Data*ic.Data +*/ Md.Data*ic.Data)); // XXX laplace ic == 0
-        std::cout << "SurfactantP1CL::InitStep: rhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
-        rhs.Data-= (1. - theta_)*tmp;
-    }
-    // rhs.Data*= std::sqrt( M.Data.GetDiag()); // scaling
-    DROPS::VecDescCL rhsext( &full_idx);
-    DROPS::Extend( MG_, rhs, rhsext);
-    return rhsext.Data;
+    MatDescCL m( &idx, &oldidx_);
+    DROPS::SetupMixedMassP1( MG_, &m, lset_.Phi);
+    // std::cout << "mixed M on new interface is set up.\n";
+    VectorCL rhs( theta_*(m.Data*oldic_));
+
+    if (theta_ == 1.0) return rhs;
+
+    m.Data.clear();
+    DROPS::SetupMixedMassP1( MG_, &m, oldls_);
+    // std::cout << "mixed M on old interface is set up.\n";
+    rhs+= (1. - theta_)*(m.Data*oldic_);
+
+    m.Data.clear();
+    DROPS::SetupLBP1( MG_, &m, oldls_, D_);
+    // std::cout << "mixed A on old interface is set up.\n";
+    VectorCL rhs2( m.Data*oldic_);
+    m.Data.clear();
+    DROPS::SetupConvectionP1( MG_, &m, oldls_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    // std::cout << "mixed C on old interface is set up.\n";
+    rhs2+= m.Data*oldic_;
+    m.Data.clear();
+    DROPS::SetupMassDivP1( MG_, &m, oldls_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    // std::cout << "mixed Md on old interface is set up.\n";
+    rhs2+= m.Data*oldic_;
+
+    return VectorCL( rhs - ((1. - theta_)*dt_)*rhs2);
 }
 
-void SurfactantP1CL::DoStep (const VectorCL& rhsext)
+void SurfactantcGP1CL::DoStep (const VectorCL& rhs)
 {
-    idx.DeleteNumbering( MG_);
-    idx.CreateNumbering( idx.TriangLevel(), MG_, &lset_.Phi);
-    std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
-
-    VecDescCL transp_rhs( &idx),
-              transp_rhsext( &full_idx);
-    transp_rhsext.Data= rhsext;
-    fulltransport_->DoStep( transp_rhsext.Data, make_P2Eval( MG_, Bnd_v_, *v_, t_)); // XXX new velocity and old velocity in constrt.
-    Restrict( MG_, transp_rhsext, transp_rhs);
-
-    ic.SetIdx( &idx);
     Update();
-    // transp_rhs.Data/= std::sqrt( M.Data.GetDiag()); // scaling
-    L_.LinComb( 1./dt_, M.Data, theta_, A.Data, theta_, Md.Data);
-    const VectorCL therhs( M.Data*transp_rhs.Data);
-    std::cout << "Before solve: res = " << norm( L_*ic.Data - therhs) << std::endl;
-    gm_.Solve( L_, ic.Data, therhs);
+
+    if (theta_ == 1.)
+        L_.LinComb( theta_, M.Data, dt_*theta_, A.Data, dt_*theta_, Md.Data, dt_*theta_, C.Data);
+    else {
+        MatrixCL m;
+        m.LinComb( theta_, M.Data, dt_*theta_, A.Data, dt_*theta_, Md.Data, dt_*theta_, C.Data);
+        L_.LinComb( 1., m, 1. - theta_, M2.Data);
+    }
+    std::cout << "Before solve: res = " << norm( L_*ic.Data - rhs) << std::endl;
+    gm_.Solve( L_, ic.Data, rhs);
     std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
 }
 
-void SurfactantP1CL::CommitStep ()
+void SurfactantcGP1CL::CommitStep ()
 {
-    full_idx.DeleteNumbering( MG_);
-    delete fulltransport_;
+    return;
 }
 
-void SurfactantP1CL::DoStep (double new_t) // XXX inkonsistenz bei velocity
+void SurfactantcGP1CL::DoStep (double new_t)
 {
     VectorCL rhs( InitStep());
     t_= new_t;
@@ -474,6 +375,20 @@ void SurfactantP1CL::DoStep (double new_t) // XXX inkonsistenz bei velocity
     CommitStep();
 }
 
+void SurfactantcGP1CL::InitOld ()
+{
+    if (oldidx_.NumUnknowns() > 0)
+        oldidx_.DeleteNumbering( MG_);
+    oldidx_.swap( idx);
+    oldic_.resize( ic.Data.size());
+    oldic_= ic.Data;
+    oldls_.RowIdx= lset_.Phi.RowIdx;
+    oldls_.Data.resize( lset_.Phi.Data.size());
+    oldls_.Data= lset_.Phi.Data;
+    oldv_.SetIdx( v_->RowIdx);
+    oldv_.Data= v_->Data;
+    oldt_= t_;
+}
 
 void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset,
     DROPS::Ensight6OutCL& ensight)
@@ -500,7 +415,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, 0.));
     lset2.SetTimeStep( C.dt);
 
-    SurfactantP1CL timedisc( mg, Bnd_v, C.theta_surf, C.muI, &v, lset, /* t */ 0., C.dt, C.surf_iter, C.surf_tol, C.surf_omit_bound);
+    SurfactantcGP1CL timedisc( mg, Bnd_v, C.theta_surf, C.muI, &v, lset, /* t */ 0., C.dt, C.surf_iter, C.surf_tol, C.surf_omit_bound);
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -514,7 +429,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     std::cout << "NumUnknowns: " << timedisc.idx.NumUnknowns() << std::endl;
     timedisc.ic.SetIdx( &timedisc.idx);
     timedisc.Init( &sol0);
-    timedisc.Update();
+    // timedisc.Update();
 
     // Additional Ensight6-variables
     ensight.Register( make_Ensight6IfaceScalar( mg, timedisc.ic,                 "InterfaceSol", ensf + ".sur", true));
@@ -527,12 +442,16 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 //    std::cout << "L_2-error: " << L2_error( mg, lset.Phi, timedisc.GetSolution(), &sol0t, 0.)
 //              << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, 0.)
 //              << std::endl;
+    BndDataCL<> ifbnd( 0);
+    std::cerr << "initial surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, make_P1Eval(  mg, ifbnd, timedisc.ic, 0.)) << '\n';
 
     for (int step= 1; step <= C.num_steps; ++step) {
         std::cout << "======================================================== step " << step << ":\n";
 
+        timedisc.InitOld();
         LSInit( mg, lset.Phi, &sphere_2move, step*C.dt);
         timedisc.DoStep( step*C.dt);
+        std::cerr << "surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, make_P1Eval(  mg, ifbnd, timedisc.ic, step*C.dt)) << '\n';
 
         //lset2.DoStep();
 //        VectorCL rhs( lset2.Phi.Data.size());
@@ -618,7 +537,8 @@ int main (int argc, char* argv[])
     // Initialize Ensight6 output
     std::string ensf( C.EnsDir + "/" + C.EnsCase);
     Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
-    ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "Geometrie",     ensf + ".geo", true));
+    // ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "Geometrie",     ensf + ".geo", true));
+    ensight.Register( make_Ensight6Geom      ( mg, mg.GetLastLevel(),   "Geometrie",     ensf + ".geo", false));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
 
     if (C.TestCase > 0) { // Time dependent tests in Strategy

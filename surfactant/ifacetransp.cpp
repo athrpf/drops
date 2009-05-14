@@ -107,13 +107,14 @@ void SetupLBP1OnTriangle (InterfacePatchCL& patch, int tri, Point3DCL grad[4], d
 
 void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, double D)
 {
-    const IdxT num_unks= mat->RowIdx->NumUnknowns();
-    MatrixBuilderCL M( &mat->Data, num_unks, num_unks);
+    const IdxT num_rows= mat->RowIdx->NumUnknowns();
+    const IdxT num_cols= mat->ColIdx->NumUnknowns();
+    MatrixBuilderCL M( &mat->Data, num_rows, num_cols);
     const Uint lvl = mat->GetRowLevel();
 
-    IdxT num[4];
+    IdxT numr[4], numc[4];
 
-    std::cout << "entering SetupLBP1: " << num_unks << " dof.\n";
+    std::cout << "entering SetupLBP1: " << num_rows << " rows, " << num_cols << " cols. ";
 
     Point3DCL grad[4];
 
@@ -125,7 +126,8 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, doub
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
         patch.Init( *it, ls);
         if (patch.Intersects()) { // We are at the phase boundary.
-            GetLocalNumbP1NoBnd( num, *it, *mat->RowIdx);
+            GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
+            GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
             P1DiscCL::GetGradients( grad, dummy, *it);
             std::memset( coup, 0, 4*4*sizeof( double));
 
@@ -136,10 +138,10 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, doub
             }
 
             for(int i= 0; i < 4; ++i) {// assemble row Numb[i]
-                if (num[i] == NoIdx) continue;
+                if (numr[i] == NoIdx) continue;
                 for(int j= 0; j < 4; ++j) {
-                    if (num[j] == NoIdx) continue;
-                    M( num[i],   num[j])+= coup[j][i];
+                    if (numc[j] == NoIdx) continue;
+                    M( numr[i],   numc[j])+= coup[j][i];
                 }
             }
         }
@@ -199,6 +201,67 @@ void SetupInterfaceRhsP1OnTriangle (const LocalP1CL<> p1[4],
     }
 }
 
+void SetupMixedMassP1OnTriangle (const BaryCoordCL triangle[3], double det,
+    const LocalP1CL<> p1[4], Quad5_2DCL<> q[4], double coup[4][4])
+{
+    for (int i= 0; i < 4; ++i)
+        q[i].assign( p1[i], triangle);
+
+    Quad5_2DCL<> m;
+    for (int i= 0; i < 4; ++i) {
+        m= q[i]*q[i];
+        coup[i][i]+= m.quad( det);
+        for(int j= 0; j < i; ++j) {
+            m= q[j]*q[i];
+            coup[i][j]+= m.quad( det);
+            coup[j][i]+= m.quad( det);
+        }
+    }
+}
+
+void SetupMixedMassP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls)
+{
+    const IdxT rows= mat->RowIdx->NumUnknowns(),
+               cols= mat->ColIdx->NumUnknowns();
+    MatrixBuilderCL m( &mat->Data, rows, cols);
+    const Uint lvl= mat->GetRowLevel();
+    IdxT rownum[4], colnum[4];
+
+    std::cerr << "entering SetupMixedMassP1: " << rows << " rows, " << cols << " cols. ";
+
+    LocalP1CL<> p1[4];
+    p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
+    Quad5_2DCL<double> qp1[4];
+
+    double coup[4][4];
+    InterfacePatchCL patch;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        patch.Init( *it, ls);
+        if (!patch.Intersects()) continue; // We are at the phase boundary.
+
+        GetLocalNumbP1NoBnd( rownum, *it, *mat->RowIdx);
+        GetLocalNumbP1NoBnd( colnum, *it, *mat->ColIdx);
+        std::memset( coup, 0, 4*4*sizeof( double));
+
+        for (int ch= 0; ch < 8; ++ch) {
+            patch.ComputeForChild( ch);
+            for (int tri= 0; tri < patch.GetNumTriangles(); ++tri)
+                SetupMixedMassP1OnTriangle ( &patch.GetBary( tri), patch.GetFuncDet( tri), p1, qp1, coup);
+        }
+
+        for(int i= 0; i < 4; ++i) {// assemble row Numb[i]
+            if (rownum[i] == NoIdx) continue;
+            for(int j= 0; j < 4; ++j) {
+                if (colnum[j] == NoIdx) continue;
+                m( rownum[i], colnum[j])+= coup[i][j];
+            }
+        }
+    }
+    m.Build();
+    std::cerr << mat->Data.num_nonzeros() << " nonzeros in mixed mass-divergence matrix!" << std::endl;
+}
+
 void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
     const VecDescCL& ls,instat_scalar_fun_ptr f)
 {
@@ -207,7 +270,7 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
 
     IdxT num[4];
 
-    std::cout << "entering SetupInterfaceRhsP1: " << num_unks << " dof.\n";
+    std::cout << "entering SetupInterfaceRhsP1: " << num_unks << " dof... ";
 
     LocalP1CL<> p1[4];
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
@@ -239,9 +302,15 @@ InterfaceP1RepairCL::post_refine ()
     IdxDescCL loc_idx( P1_FE);
 
     loc_idx.CreateNumbering( fullp1idx_.TriangLevel(), mg_);
+//    loc_idx.CreateNumbering( mg_.GetLastLevel(), mg_);
     loc_u.SetIdx( &loc_idx);
     DROPS::NoBndDataCL<> dummy;
+
+//    P1EvalCL<double, DROPS::NoBndDataCL<>, const VecDescCL> oldsol( &fullu_, &dummy, &mg_);
+//    P1EvalCL<double, DROPS::NoBndDataCL<>,       VecDescCL>    sol( &loc_u , &dummy, &mg_);
+//    Interpolate( sol, oldsol);
     RepairAfterRefineP1( make_P1Eval( mg_, dummy, fullu_), loc_u);
+
     fullu_.Clear();
     fullp1idx_.swap( loc_idx);
     loc_idx.DeleteNumbering( mg_);
