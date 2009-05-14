@@ -136,6 +136,10 @@ class AdapTriangCL
     const LoadBalHandlerCL& GetLb() const { return lb_; }
 #endif
 
+    void SetWidth       (double width) { width_  = width; }
+    void SetCoarseLevel (int c_level)  { c_level_= c_level; }
+    void SetFineLevel   (int f_level)  { f_level_= f_level; }
+
     /// \brief Make initial triangulation according to a distance function
     template <class DistFctT>
       void MakeInitialTriang (DistFctT&);
