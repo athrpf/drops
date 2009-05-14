@@ -149,11 +149,10 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
             u_Grad[i]= dot( u_loc, Grad[i]);
 
 //        double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
-//        const double maxV_limit= 1e-5;
-//        for(int i=0; i<Quad5CL<>::NumNodesC; ++i)
+//        const double limit= 1e-3;
+//        for(int i=0; i<Quad5DataCL::NumNodesC; ++i)
 //            maxV = std::max( maxV, u_loc[i].norm());
-//        if( maxV < maxV_limit) maxV= maxV_limit; // no scaling for extremely small velocities
-//        /// \todo fixed limit for maxV (maxV_limit), any better idea?
+//        maxV= std::max( maxV, limit/h_T); // no scaling for extremely small velocities
         double maxV= 1; // no scaling
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             for(int j=0; j<10; ++j)
