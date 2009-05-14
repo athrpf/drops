@@ -146,7 +146,7 @@ class InterfaceInfoCL
     void Init(std::ofstream* file) { file_= file; }
 } IFInfo;
 
-double eps=5e-4, // Sprungbreite
+double eps=5e-4, // halbe Sprungbreite
     lambda=1.5, // Position des Sprungs zwischen Oberkante (lambda=0) und Schwerpunkt (lambda=1)
     sigma_dirt_fac= 0.8; // gesenkte OFspannung durch Verunreinigungen im unteren Teil des Tropfens
 double sigma;
