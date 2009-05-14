@@ -201,7 +201,7 @@ class IdxDescCL: public FE_InfoCL
     using FE_InfoCL::IsExtended;
 
     /// \brief The constructor uses the lowest available index for the
-    ///     numbering. The triangulation level must be set separately.
+    ///     numbering. The triangulation level is initialized as 0.
     IdxDescCL( FiniteElementT fe= P1_FE, const BndCondCL& bnd= BndCondCL(0), match_fun match=0, double omit_bound=-99);
     /// \brief The copy will inherit the index number, whereas the index
     ///     of the original will be invalidated.
