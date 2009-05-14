@@ -294,6 +294,138 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
     std::cout << " Rhs set up." << std::endl;
 }
 
+/// \todo This should be a generic function somewhere in num or misc.
+void P1Init (instat_scalar_fun_ptr icf, VecDescCL& ic, MultiGridCL& mg, double t)
+{
+    const Uint lvl= ic.GetLevel(),
+               idx= ic.RowIdx->GetIdx();
+
+    DROPS_FOR_TRIANG_VERTEX( mg, lvl, it) {
+        if (it->Unknowns.Exist( idx))
+            ic.Data[it->Unknowns( idx)]= icf( it->GetCoord(), t);
+    }
+}
+
+void SurfactantcGP1CL::Init (instat_scalar_fun_ptr icf)
+{
+    P1Init ( icf, ic, MG_, 0.);
+}
+
+void SurfactantcGP1CL::SetTimeStep (double dt, double theta)
+{
+    dt_= dt;
+    if (theta >= 0. && theta <= 1.) theta_= theta;
+}
+
+void SurfactantcGP1CL::Update()
+{
+    IdxDescCL* cidx= ic.RowIdx;
+
+    M.Data.clear();
+    M.SetIdx( cidx, cidx);
+    DROPS::SetupInterfaceMassP1( MG_, &M, lset_vd_);
+    // std::cout << "M is set up.\n";
+    A.Data.clear();
+    A.SetIdx( cidx, cidx);
+    DROPS::SetupLBP1( MG_, &A, lset_vd_, D_);
+    // std::cout << "A is set up.\n";
+    C.Data.clear();
+    C.SetIdx( cidx, cidx);
+    DROPS::SetupConvectionP1( MG_, &C, lset_vd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    // std::cout << "C is set up.\n";
+    Md.Data.clear();
+    Md.SetIdx( cidx, cidx);
+    DROPS::SetupMassDivP1( MG_, &Md, lset_vd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    // std::cout << "Md is set up.\n";
+
+    if (theta_ != 1.0) {
+        M2.Data.clear();
+        M2.SetIdx( cidx, cidx);
+        DROPS::SetupInterfaceMassP1( MG_, &M2, oldls_);
+        // std::cout << "M2 is set up.\n";
+    }
+    std::cout << "SurfactantP1CL::Update: Finished\n";
+}
+
+VectorCL SurfactantcGP1CL::InitStep ()
+{
+
+    idx.CreateNumbering( oldidx_.TriangLevel(), MG_, &lset_vd_); // InitOld deletes oldidx_ and swaps idx and oldidx_.
+    std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
+    ic.SetIdx( &idx);
+
+    MatDescCL m( &idx, &oldidx_);
+    DROPS::SetupMixedMassP1( MG_, &m, lset_vd_);
+    // std::cout << "mixed M on new interface is set up.\n";
+    VectorCL rhs( theta_*(m.Data*oldic_));
+
+    if (theta_ == 1.0) return rhs;
+
+    m.Data.clear();
+    DROPS::SetupMixedMassP1( MG_, &m, oldls_);
+    // std::cout << "mixed M on old interface is set up.\n";
+    rhs+= (1. - theta_)*(m.Data*oldic_);
+
+    m.Data.clear();
+    DROPS::SetupLBP1( MG_, &m, oldls_, D_);
+    // std::cout << "mixed A on old interface is set up.\n";
+    VectorCL rhs2( m.Data*oldic_);
+    m.Data.clear();
+    DROPS::SetupConvectionP1( MG_, &m, oldls_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    // std::cout << "mixed C on old interface is set up.\n";
+    rhs2+= m.Data*oldic_;
+    m.Data.clear();
+    DROPS::SetupMassDivP1( MG_, &m, oldls_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    // std::cout << "mixed Md on old interface is set up.\n";
+    rhs2+= m.Data*oldic_;
+
+    return VectorCL( rhs - ((1. - theta_)*dt_)*rhs2);
+}
+
+void SurfactantcGP1CL::DoStep (const VectorCL& rhs)
+{
+    Update();
+
+    if (theta_ == 1.)
+        L_.LinComb( theta_, M.Data, dt_*theta_, A.Data, dt_*theta_, Md.Data, dt_*theta_, C.Data);
+    else {
+        MatrixCL m;
+        m.LinComb( theta_, M.Data, dt_*theta_, A.Data, dt_*theta_, Md.Data, dt_*theta_, C.Data);
+        L_.LinComb( 1., m, 1. - theta_, M2.Data);
+    }
+    std::cout << "Before solve: res = " << norm( L_*ic.Data - rhs) << std::endl;
+    gm_.Solve( L_, ic.Data, rhs);
+    std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
+}
+
+void SurfactantcGP1CL::CommitStep ()
+{
+    return;
+}
+
+void SurfactantcGP1CL::DoStep (double new_t)
+{
+    VectorCL rhs( InitStep());
+    t_= new_t;
+    DoStep( rhs);
+    CommitStep();
+}
+
+void SurfactantcGP1CL::InitOld ()
+{
+    if (oldidx_.NumUnknowns() > 0)
+        oldidx_.DeleteNumbering( MG_);
+    oldidx_.swap( idx);
+    oldic_.resize( ic.Data.size());
+    oldic_= ic.Data;
+    oldls_.RowIdx= lset_vd_.RowIdx;
+    oldls_.Data.resize( lset_vd_.Data.size());
+    oldls_.Data= lset_vd_.Data;
+    oldv_.SetIdx( v_->RowIdx);
+    oldv_.Data= v_->Data;
+    oldt_= t_;
+}
+
 
 void
 InterfaceP1RepairCL::post_refine ()

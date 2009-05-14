@@ -4,6 +4,7 @@
 #include "geom/multigrid.h"
 #include "misc/problem.h"
 #include "num/discretize.h"
+#include "num/solver.h"
 #include "levelset/mgobserve.h"
 #include "out/ensightOut.h"
 
@@ -79,6 +80,86 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
             for (int n= 0; n < (p).GetNumTriangles(); ++n) \
 
 #define DROPS_FOR_TETRA_INTERFACE_END }}
+
+/// \brief P1-discretization and solution of the transport equation on the interface
+class SurfactantcGP1CL
+{
+  public:
+    typedef BndDataCL<Point3DCL>                              VelBndDataT;
+    typedef NoBndDataCL<>                                     BndDataT;
+    typedef P1EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
+    typedef P1EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
+
+    IdxDescCL idx;
+    VecDescCL ic; ///< concentration on the interface
+    MatDescCL A,  ///< diffusion matrix
+              M,  ///< mass matrix
+              C,  ///< convection matrix
+              Md, ///< mass matrix with interface-divergence of velocity
+              M2; ///< mass matrix: new trial- and test- functions on old interface
+
+  private:
+    MatrixCL      L_;              ///< sum of matrices
+    MultiGridCL&  MG_;
+    double        D_,              ///< diffusion coefficient
+                  theta_, dt_, t_; ///< time scheme parameter, time step and time
+
+    BndDataT            Bnd_;
+    const VelBndDataT&  Bnd_v_;  ///< Boundary condition for the velocity
+    VecDescCL*          v_;      ///< velocity at current time step
+    VecDescCL&          lset_vd_;///< levelset at current time step
+
+    IdxDescCL           oldidx_; ///< idx that corresponds to old time (and oldls_)
+    VectorCL            oldic_;  ///< interface concentration at old time
+    VecDescCL           oldls_;  ///< levelset at old time
+    VecDescCL           oldv_;   ///< velocity at old time
+    double              oldt_;   ///< old time
+
+    GSPcCL                  pc_;
+    GMResSolverCL<GSPcCL>   gm_;
+    double omit_bound_;
+
+  public:
+    SurfactantcGP1CL (MultiGridCL& mg, const VelBndDataT& Bnd_v,
+        double theta, double D, VecDescCL* v, VecDescCL& lset_vd,
+        double t, double dt, int iter= 1000, double tol= 1e-7, double omit_bound= -1.)
+    : idx( P1IF_FE), MG_( mg), D_( D), theta_( theta), dt_( dt), t_( t),
+        Bnd_v_( Bnd_v), v_( v), lset_vd_( lset_vd), oldidx_( P1IF_FE), gm_( pc_, 100, iter, tol, true),
+        omit_bound_( omit_bound)
+    { idx.GetXidx().SetBound( omit_bound); }
+
+    const MultiGridCL& GetMG() const { return MG_; }
+    GMResSolverCL<GSPcCL>& GetSolver() { return gm_; }
+
+     /// initialize the interface concentration
+    void Init (instat_scalar_fun_ptr);
+
+    /// \remarks call SetupSystem \em before calling SetTimeStep!
+    void SetTimeStep( double dt, double theta=-1);
+
+    /// save a copy of the old level-set; must be called before DoStep.
+    void InitOld ();
+
+    /// perform one time step
+    void DoStep (double new_t);
+
+    const_DiscSolCL GetSolution() const
+        { return const_DiscSolCL( &ic, &Bnd_, &MG_); }
+    const_DiscSolCL GetSolution( const VecDescCL& Myic) const
+        { return const_DiscSolCL( &Myic, &Bnd_, &MG_); }
+    ///@}
+
+    /// \name For internal use only
+    /// The following member functions are added to enable an easier implementation
+    /// of the coupling navstokes-levelset. They should not be called by a common user.
+    /// Use DoStep() instead.
+    ///@{
+    VectorCL InitStep ();
+    void DoStep (const VectorCL&);
+    void CommitStep ();
+    void Update ();
+    ///@}
+};
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair an interface p1-function.
 ///
