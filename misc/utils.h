@@ -13,17 +13,31 @@
 #include <string>
 #include <vector>
 #include <valarray>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#if defined(DROPS_WIN)
+#  include <windows.h>
+#  undef max
+#  undef min
+#else
+#  include <sys/time.h>
+#  include <sys/resource.h>
+#  include <sys/stat.h>
+#  include <sys/types.h>
+#endif
 #include <cmath>
 
 #ifndef M_PI
-#  include <math.h>
+# ifdef DROPS_WIN
+#  define _USE_MATH_DEFINES
+# endif
+# include <math.h>
 #endif
+
 #ifdef _OPENMP
 #  include <omp.h>  // for timing
+#endif
+
+#ifdef DROPS_WIN
+double cbrt(double arg);
 #endif
 
 namespace DROPS
