@@ -179,7 +179,7 @@ xfem: \
 f_Gamma: \
     ../tests/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/params.o ../num/interfacePatch.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../num/interfacePatch.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 

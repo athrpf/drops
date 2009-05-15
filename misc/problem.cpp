@@ -509,11 +509,11 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
 {
     VectorCL tmp( v->Data);
     v->SetIdx( v->RowIdx);
-#ifndef __SUNPRO_CC
-    v->Data[std::slice( 0, Xidx_.size(), 1)]= tmp[std::slice( 0, Xidx_.size(), 1)];
-#else
+#if defined(__SUNPRO_CC) || defined(DROPS_WIN)
     for (size_t i=0; i<Xidx_.size(); ++i)
         v->Data[i] = tmp[i];
+#else
+    v->Data[std::slice( 0, Xidx_.size(), 1)]= tmp[std::slice( 0, Xidx_.size(), 1)];
 #endif
 
     if (Xidx_.size() != Xidx_old_.size()) {

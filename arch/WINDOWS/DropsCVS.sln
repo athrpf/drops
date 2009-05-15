@@ -1,0 +1,100 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DropsCVS", "DropsCVS.vcproj", "{E7FA773C-8942-40BD-ACAB-262AC5606586}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Metis", "Metis.vcproj", "{995403AE-713D-42B8-95C5-FADE188F8ECA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ParMetis", "ParMetis.vcproj", "{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ddd", "ddd.vcproj", "{10865DCE-7902-404B-A535-84DCF954F787}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		DebugMPI|Win32 = DebugMPI|Win32
+		DebugMPI|x64 = DebugMPI|x64
+		DebugSerial|Win32 = DebugSerial|Win32
+		DebugSerial|x64 = DebugSerial|x64
+		ReleaseMPI|Win32 = ReleaseMPI|Win32
+		ReleaseMPI|x64 = ReleaseMPI|x64
+		ReleaseSerial|Win32 = ReleaseSerial|Win32
+		ReleaseSerial|x64 = ReleaseSerial|x64
+		TestRefPar_Debug|Win32 = TestRefPar_Debug|Win32
+		TestRefPar_Debug|x64 = TestRefPar_Debug|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugMPI|Win32.ActiveCfg = Debug|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugMPI|Win32.Build.0 = Debug|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugMPI|x64.ActiveCfg = Debug|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugMPI|x64.Build.0 = Debug|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugSerial|Win32.ActiveCfg = DebugSerial|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugSerial|Win32.Build.0 = DebugSerial|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugSerial|x64.ActiveCfg = DebugSerial|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.DebugSerial|x64.Build.0 = DebugSerial|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseMPI|Win32.ActiveCfg = Release|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseMPI|Win32.Build.0 = Release|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseMPI|x64.ActiveCfg = Release|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseMPI|x64.Build.0 = Release|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseSerial|Win32.ActiveCfg = ReleaseSerial|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseSerial|Win32.Build.0 = ReleaseSerial|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseSerial|x64.ActiveCfg = ReleaseSerial|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.ReleaseSerial|x64.Build.0 = ReleaseSerial|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.TestRefPar_Debug|Win32.ActiveCfg = TestRefPar_Debug|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.TestRefPar_Debug|Win32.Build.0 = TestRefPar_Debug|Win32
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.TestRefPar_Debug|x64.ActiveCfg = TestRefPar_Debug|x64
+		{E7FA773C-8942-40BD-ACAB-262AC5606586}.TestRefPar_Debug|x64.Build.0 = TestRefPar_Debug|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugMPI|Win32.ActiveCfg = Debug|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugMPI|Win32.Build.0 = Debug|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugMPI|x64.ActiveCfg = Debug|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugMPI|x64.Build.0 = Debug|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugSerial|Win32.ActiveCfg = DebugSerial|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugSerial|Win32.Build.0 = DebugSerial|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.DebugSerial|x64.ActiveCfg = DebugSerial|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseMPI|Win32.ActiveCfg = Release|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseMPI|Win32.Build.0 = Release|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseMPI|x64.ActiveCfg = Release|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseMPI|x64.Build.0 = Release|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseSerial|Win32.ActiveCfg = ReleaseSerial|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseSerial|Win32.Build.0 = ReleaseSerial|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.ReleaseSerial|x64.ActiveCfg = ReleaseSerial|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.TestRefPar_Debug|Win32.ActiveCfg = TestRefPar_Debug|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.TestRefPar_Debug|Win32.Build.0 = TestRefPar_Debug|Win32
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.TestRefPar_Debug|x64.ActiveCfg = TestRefPar_Debug|x64
+		{995403AE-713D-42B8-95C5-FADE188F8ECA}.TestRefPar_Debug|x64.Build.0 = TestRefPar_Debug|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugMPI|Win32.ActiveCfg = Debug|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugMPI|Win32.Build.0 = Debug|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugMPI|x64.ActiveCfg = Debug|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugMPI|x64.Build.0 = Debug|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugSerial|Win32.ActiveCfg = DebugSerial|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugSerial|Win32.Build.0 = DebugSerial|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.DebugSerial|x64.ActiveCfg = DebugSerial|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseMPI|Win32.ActiveCfg = Release|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseMPI|Win32.Build.0 = Release|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseMPI|x64.ActiveCfg = Release|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseMPI|x64.Build.0 = Release|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseSerial|Win32.ActiveCfg = ReleaseSerial|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseSerial|Win32.Build.0 = ReleaseSerial|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.ReleaseSerial|x64.ActiveCfg = ReleaseSerial|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.TestRefPar_Debug|Win32.ActiveCfg = TestRefPar_Debug|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.TestRefPar_Debug|Win32.Build.0 = TestRefPar_Debug|Win32
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.TestRefPar_Debug|x64.ActiveCfg = TestRefPar_Debug|x64
+		{7C7C036A-E3C0-4D7B-82FD-A7EFA80CE624}.TestRefPar_Debug|x64.Build.0 = TestRefPar_Debug|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.DebugMPI|Win32.ActiveCfg = Debug|Win32
+		{10865DCE-7902-404B-A535-84DCF954F787}.DebugMPI|x64.ActiveCfg = Debug|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.DebugMPI|x64.Build.0 = Debug|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.DebugSerial|Win32.ActiveCfg = Debug|Win32
+		{10865DCE-7902-404B-A535-84DCF954F787}.DebugSerial|x64.ActiveCfg = Debug|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.ReleaseMPI|Win32.ActiveCfg = Release|Win32
+		{10865DCE-7902-404B-A535-84DCF954F787}.ReleaseMPI|x64.ActiveCfg = Release|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.ReleaseMPI|x64.Build.0 = Release|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.ReleaseSerial|Win32.ActiveCfg = Release|Win32
+		{10865DCE-7902-404B-A535-84DCF954F787}.ReleaseSerial|x64.ActiveCfg = Release|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.TestRefPar_Debug|Win32.ActiveCfg = TestRefPar_Debug|Win32
+		{10865DCE-7902-404B-A535-84DCF954F787}.TestRefPar_Debug|Win32.Build.0 = TestRefPar_Debug|Win32
+		{10865DCE-7902-404B-A535-84DCF954F787}.TestRefPar_Debug|x64.ActiveCfg = TestRefPar_Debug|x64
+		{10865DCE-7902-404B-A535-84DCF954F787}.TestRefPar_Debug|x64.Build.0 = TestRefPar_Debug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

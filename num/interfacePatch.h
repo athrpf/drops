@@ -24,7 +24,7 @@ class InterfacePatchCL
 
   private:
     static const double approxZero_;
-    static const bool   LinearEdgeIntersection= true;
+    static const bool   LinearEdgeIntersection;
     const RefRuleCL RegRef_;
     int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
     int             intersec_, ch_, Edge_[4], innersec_; // intersec_: # of all intersections, innersec_ = # of edge intersections

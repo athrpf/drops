@@ -12,7 +12,7 @@ namespace DROPS
 //*****************************************************************************
 
 const double InterfacePatchCL::approxZero_= 2.*std::numeric_limits<double>::epsilon();
-const bool   InterfacePatchCL::LinearEdgeIntersection;
+const bool   InterfacePatchCL::LinearEdgeIntersection = true;
 BaryCoordCL  InterfacePatchCL::AllEdgeBaryCenter_[10][10];
 BaryCoordCL  InterfacePatchCL::BaryDoF_[10];
 

@@ -331,6 +331,11 @@ template<> struct ProcCL::MPI_TT<byte>
 template<> struct ProcCL::MPI_TT<float>
   { static const ProcCL::DatatypeT& dtype; };
 
+#ifdef DROPS_WIN
+template<> struct ProcCL::MPI_TT<size_t>
+  { static const ProcCL::DatatypeT& dtype; };
+#endif
+
 } // namespace DROPS
 
 #include "parallel/parallel.tpp"        // for inline and/or template functions!

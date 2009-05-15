@@ -823,11 +823,30 @@ class TriangCL
     ptr_iterator begin (int lvl= -1)
         { MaybeCreate( lvl); return &*triang_[StdIndex( lvl)].begin(); }
     ptr_iterator end   (int lvl= -1)
-        { MaybeCreate( lvl); return &*triang_[StdIndex( lvl)].end(); }
+        {
+            MaybeCreate( lvl);
+#ifdef DROPS_WIN
+            ptr_iterator t = &(*(triang_[StdIndex( lvl )].end()-1));
+            t++;
+            return t;
+#else
+            return &*triang_[StdIndex( lvl)].end();
+#endif
+        }
+
     const_ptr_iterator begin (int lvl= -1) const
         { MaybeCreate( lvl); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].begin()); }
     const_ptr_iterator end   (int lvl= -1) const
-        { MaybeCreate( lvl); return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].end()); }
+        {
+            MaybeCreate( lvl);
+#ifdef DROPS_WIN
+            const_ptr_iterator t = const_cast<const_ptr_iterator>( &(*(triang_[StdIndex( lvl )].end()-1)) );
+            t++;
+            return t;
+#else
+            return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].end());
+#endif
+        }
 
     LevelCont&       operator[] (int lvl)
         { MaybeCreate( lvl); return triang_[StdIndex( lvl)]; }

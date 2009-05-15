@@ -1457,7 +1457,7 @@ GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
         GMRES(A, u[k+1], r, M, m, in_max_iter, in_tol, true, false, method);
         std::cout << "norm of u_k_0: "<<norm(u[k+1])<<"\n";
         std::cout << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << '\n';
-        if (norm(A*u[k+1]-r)>0.999*norm(r) and norm(u[k+1]) < 1e-3)
+        if (norm(A*u[k+1]-r)>0.999*norm(r) && norm(u[k+1]) < 1e-3)
         {
             u[k+1] = transp_mul(A, r);
             std::cout<<"LSQR switch!\n";

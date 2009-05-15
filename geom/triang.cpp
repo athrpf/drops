@@ -1,3 +1,8 @@
+#ifdef DROPS_WIN
+#  include "misc/utils.h"
+#  include "geom/topo.h"
+#endif
+
 struct RawRuleCL
 {
     int ChildNum;

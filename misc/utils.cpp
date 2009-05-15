@@ -5,6 +5,13 @@
 #include "misc/utils.h"
 #include <iostream>
 
+#ifdef DROPS_WIN
+double cbrt(double arg)
+{
+    return pow(arg, 1.0/3);
+}
+#endif
+
 namespace DROPS
 {
 
@@ -42,7 +49,12 @@ int CreateDirectory(std::string path)
     \return returns error code of mkdir
 */
 {
+#ifdef DROPS_WIN
+    throw DROPSErrCL("Creating directories is not implemented for Windows OS");
+    return 0;
+#else
     return mkdir(path.c_str(), 0777);
+#endif
 }
 
 int DeleteFile(std::string file)
@@ -51,7 +63,12 @@ int DeleteFile(std::string file)
     \return returns error code of remove
 */
 {
+#ifdef DROPS_WIN
+    throw DROPSErrCL("Deleting Files is not implemented for Windows OS");
+    return 0;
+#else
     return remove(file.c_str());
+#endif
 }
 
 } // end of namespace DROPS
