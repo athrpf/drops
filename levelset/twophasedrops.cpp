@@ -125,7 +125,12 @@ template <class Coeff>
 void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
                        NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL<Coeff> >& solver)
 {
+#ifndef _PAR
     TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
     time.Reset();
     VelVecDescCL cplM, cplN;
     VecDescCL curv;
@@ -140,12 +145,14 @@ void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2
     Stokes.SetupPrMass ( &Stokes.prM, lset);
     Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
     time.Stop();
-    std::cout << "Discretizing took "<< time.GetTime() << " sec.\n";
+    duration = time.GetTime();
+    std::cout << "Discretizing took "<< duration << " sec.\n";
     time.Reset();
     Stokes.b.Data += curv.Data;
     solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v, Stokes.p.Data, Stokes.b.Data, cplN, Stokes.c.Data, 1.0);
     time.Stop();
-    std::cout << "Solving (Navier-)Stokes took "<< time.GetTime() << " sec.\n";
+    duration = time.GetTime();
+    std::cout << "Solving (Navier-)Stokes took "<<  duration << " sec.\n";
     std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 }
 
