@@ -1162,7 +1162,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         max_iter= 0;
         return true;
     }
-    std::cout << "PMINRES: k: 0\tresidual: " << res << '\n';
+    std::cout << "PMINRES: k: 0\tresidual: " << res << std::endl;
     for (int k= 1; k <= max_iter; ++k) {
         switch (k) {
           case 1:
@@ -1205,7 +1205,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         x+= dx;
 
         res= std::fabs( norm_r0*b[0][1])/normb;
-        if (k%10==0) std::cout << "PMINRES: k: " << k << "\tresidual: " << res << '\n';
+        if (k%10==0) std::cout << "PMINRES: k: " << k << "\tresidual: " << res << std::endl;
         if (res<= tol || lucky==true) {
             tol= res;
             max_iter= k;
@@ -1214,7 +1214,7 @@ PMINRES(const Mat& A, Vec& x, const Vec&, Lanczos& q, int& max_iter, double& tol
         q.next( A);
         if (q.breakdown()) {
             lucky= true;
-            std::cout << "PMINRES: lucky breakdown\n";
+            std::cout << "PMINRES: lucky breakdown" << std::endl;
         }
         c.rotate(); s.rotate(); r.rotate(); p.rotate(); b.rotate();
     }
@@ -1369,7 +1369,7 @@ GCR(const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
     if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
     double resid= norm( r)/normb;
     for (int k= 0; k < max_iter; ++k) {
-        if (k%10==0) std::cout << "GCR: k: " << k << "\tresidual: " << resid << '\n';
+        if (k%10==0) std::cout << "GCR: k: " << k << "\tresidual: " << resid << std::endl;
         if (resid < tol) {
             tol= resid;
             max_iter= k;
@@ -1448,7 +1448,7 @@ GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
             max_iter= k;
             return true;
         }
-        std::cout << "GMRESR: k: " << k << "\tresidual: " << resid << '\n';
+        std::cout << "GMRESR: k: " << k << "\tresidual: " << resid << std::endl;
         u.push_back( Vec( b.size()));
         u[k+1]=0;
         inner_tol=0.0;
@@ -1456,7 +1456,7 @@ GMRESR( const Mat& A, Vec& x, const Vec& b, const Preconditioner& M,
         int in_max_iter = inner_max_iter;
         GMRES(A, u[k+1], r, M, m, in_max_iter, in_tol, true, false, method);
         std::cout << "norm of u_k_0: "<<norm(u[k+1])<<"\n";
-        std::cout << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << '\n';
+        std::cout << "inner iteration:  " << in_max_iter << " GMRES iteration(s),\tresidual: " << in_tol << std::endl;
         if (norm(A*u[k+1]-r)>0.999*norm(r) && norm(u[k+1]) < 1e-3)
         {
             u[k+1] = transp_mul(A, r);
