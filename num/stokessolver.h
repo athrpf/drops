@@ -906,7 +906,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     std::cout << "residual (2-norm): " << resid
               << "\tres-impuls: " << norm( ru)
               << "\tres-mass: " << norm( rp)
-              << '\n';
+              << std::endl;
     if (resid <= tol) { // The fixed point iteration between levelset and Stokes
         tol= resid;     // equation uses this to determine convergence.
         max_iter= 0;
@@ -947,7 +947,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
         }
         pr_iter_cumulative+= inneriter;
         std::cout << "pr solver: iterations: " << pr_iter_cumulative
-                  << "\tresid: " << innertol << '\n';
+                  << "\tresid: " << innertol << std::endl;
         du= w - zhat;
         xu+= du;
         xp+= z;
@@ -958,7 +958,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
                   << "\nresidual (2-norm): " << resid
                   << "\tres-impuls: " << norm( ru)
                   << "\tres-mass: " << norm( rp)
-                  << '\n';
+                  << std::endl;
         if (resid <= tol) { // absolute errors
             tol= resid;
             max_iter= k;
