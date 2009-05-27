@@ -43,6 +43,17 @@ DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
     return ret;
 }
 
+//microchannel (eindhoven)
+DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
+{
+    DROPS::SVectorCL<3> ret(0.);
+    const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
+                 z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
+
+    ret[0]= y * z * C.Anstroem * (1-C.inflow_ampl*std::cos(2*M_PI*C.inflow_freq*t));
+    return ret;
+}
+
 //mzelle_ns_adap.cpp + mzelle_instat.cpp
 DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
 {
@@ -512,7 +523,7 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
 
-    CreateGeom(mg, bnddata, C.GeomType == 0 ? InflowCell : InflowBrick, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
+    CreateGeom(mg, bnddata, C.GeomType == 0 ? InflowCell : (C.bnd_type == 4 ? InflowChannel : InflowBrick), C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
     DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
     DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? C.refineStrategy : -1));
     // If we read the Multigrid, it shouldn't be modified;

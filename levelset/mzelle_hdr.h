@@ -292,6 +292,13 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
                 bfun[2]= &ZeroVel;
                 //bfun[2]=bfun[4]=bfun[5]= &ZeroVel;   //Kanal
                 bfun[3]= inflow;
+            } break;           
+            case 4 : // channel (eindhoven)
+            {
+                bc[0]= DirBC;
+                bc[1]= NatBC; //Rohr
+                bfun[1]= &ZeroVel;
+                bfun[0]= inflow;
             } break;
             default: throw DROPSErrCL("Unknown boundary data type");
         }
