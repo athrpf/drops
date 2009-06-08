@@ -1392,14 +1392,14 @@ inline bool VertexCL::HasBnd(const BndPointCL& BndVert) const
 
 #ifndef _PAR
 inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, BndIdxT bnd1, short int MFR)
-    : _MidVertex(0), _MFR(MFR), _RemoveMark(false), _Level(Level)
+    : _MidVertex(0), _MFR(MFR), _localMFR(MFR), _RemoveMark(false), _Level(Level)
 {
     _Vertices[0]= vp0; _Vertices[1]= vp1;
     _Bnd[0]= bnd0; _Bnd[1]= bnd1;
 }
 #else
 inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, BndIdxT bnd1, short int MFR)
-    : _MidVertex(0), _MFR(MFR), _RemoveMark(false), _AccMFR(MFR)/*, ProcSysNum(0)*/
+    : _MidVertex(0), _MFR(MFR), _localMFR(MFR), _RemoveMark(false), _AccMFR(MFR)/*, ProcSysNum(0)*/
 {
     _Vertices[0]= vp0; _Vertices[1]= vp1;
     _Bnd[0]= bnd0; _Bnd[1]= bnd1;
@@ -1413,13 +1413,13 @@ inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, B
 #ifndef _PAR
 inline EdgeCL::EdgeCL (const EdgeCL& e)
     : _Vertices(e._Vertices), _MidVertex(e._MidVertex), _Bnd(e._Bnd),
-      _MFR(e._MFR), _RemoveMark(e._RemoveMark), _Level(e._Level),
+      _MFR(e._MFR), _localMFR(e._localMFR), _RemoveMark(e._RemoveMark), _Level(e._Level),
       Unknowns(e.Unknowns)
 {}
 #else
 inline EdgeCL::EdgeCL (const EdgeCL& e)
     : _Vertices(e._Vertices), _MidVertex(e._MidVertex), _Bnd(e._Bnd),
-      _MFR(e._MFR), _RemoveMark(e._RemoveMark), _AccMFR(e._AccMFR),
+      _MFR(e._MFR), _localMFR(e._localMFR), _RemoveMark(e._RemoveMark), _AccMFR(e._AccMFR),
       Unknowns(e.Unknowns)/*, ProcSysNum(0)*/
 {
     DDD_HdrConstructorMove(&_dddH, const_cast<DDD_HEADER*>( &e._dddH));
