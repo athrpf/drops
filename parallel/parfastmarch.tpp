@@ -72,9 +72,9 @@ template<typename ExCL>
                                    std::vector<byte>& typ_ext,                                      // types on external DoF
                                    VectorBaseCL<GhostsList>& hasghost,                              // hasGhost DoF
                                    ExCL& ex)                                                        // ExchangeCL
-    : FlagIdxMPIT_(ProcCL::NullDataType), CoordValMPIT_(ProcCL::NullDataType),
+    : StopIdx(NoIdx-1), FlagIdxMPIT_(ProcCL::NullDataType), CoordValMPIT_(ProcCL::NullDataType),
       IdxValMPIT_(ProcCL::NullDataType), IdxTypeMPIT_(ProcCL::NullDataType),
-      StopIdx(NoIdx-1), v_(v), Coord_(coord), neigh_(neigh), Typ_(typ), DataExt_(v_ext),
+      v_(v), Coord_(coord), neigh_(neigh), Typ_(typ), DataExt_(v_ext),
       CoordExt_(coord_ext), TypExt_(typ_ext), HasGhost_(hasghost), ex_(ex), neighs_(ex.GetNeighbors()),
       tag_(3001)
 {
