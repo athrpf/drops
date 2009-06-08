@@ -1930,6 +1930,12 @@ void MultiGridCL::Scale( double s)
         it->_Coord*= s;
 }
 
+void MultiGridCL::Transform( Point3DCL (*mapping)(const Point3DCL&))
+{
+    for (VertexIterator it= GetAllVertexBegin(), end= GetAllVertexEnd();
+        it!=end; ++it)
+        it->_Coord= mapping(it->_Coord);
+}
 
 class VertPtrLessCL : public std::binary_function<const VertexCL*, const VertexCL* , bool>
 {

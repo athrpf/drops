@@ -1062,6 +1062,7 @@ class MultiGridCL
     void Refine();                                              // in parallel mode, this function uses a parallel version for refinement!
 
     void Scale( double);
+    void Transform( Point3DCL (*mapping)(const Point3DCL&));
     void MakeConsistentNumbering();
     void SizeInfo(std::ostream&);                               // all procs have to call this function in parallel mode!
     void ElemInfo(std::ostream&, int Level= -1);                // all procs have to call this function in parallel mode
