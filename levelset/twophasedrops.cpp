@@ -494,10 +494,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
 int main (int argc, char** argv)
 {
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+#endif
   try
   {
 #ifdef _PAR
-    DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
 #endif
     std::ifstream param;
