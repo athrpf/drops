@@ -33,9 +33,9 @@ class ZeroFlowCL
     const Point3DCL g;
 
     ZeroFlowCL( const ParamMesszelleNsCL& C)
-      : rho( JumpCL( C.rhoD, C.rhoF ), H_sm, C.sm_eps),
-        mu(  JumpCL( C.muD,  C.muF),   H_sm, C.sm_eps),
-        SurfTens( C.sigma), g( C.g)    {}
+      : rho( JumpCL( C.mat_DensDrop, C.mat_DensFluid ), H_sm, C.mat_SmoothZone),
+        mu(  JumpCL( C.mat_ViscDrop,  C.mat_ViscFluid),   H_sm, C.mat_SmoothZone),
+        SurfTens( C.sft_SurfTension), g( C.exp_Gravity)    {}
 };
 
 class DimLessCoeffCL
@@ -49,9 +49,9 @@ class DimLessCoeffCL
     const Point3DCL g;
 
     DimLessCoeffCL( const ParamMesszelleNsCL& C)
-      : rho( JumpCL( 1., C.rhoF/C.rhoD ), H_sm, C.sm_eps),
-        mu ( JumpCL( 1., C.muF/C.muD),    H_sm, C.sm_eps),
-        SurfTens( C.sigma/C.rhoD), g( C.g)    {}
+      : rho( JumpCL( 1., C.mat_DensFluid/C.mat_DensDrop ), H_sm, C.mat_SmoothZone),
+        mu ( JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop),    H_sm, C.mat_SmoothZone),
+        SurfTens( C.sft_SurfTension/C.mat_DensDrop), g( C.exp_Gravity)    {}
 };
 
 class EllipsoidCL
@@ -292,7 +292,7 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
                 bfun[2]= &ZeroVel;
                 //bfun[2]=bfun[4]=bfun[5]= &ZeroVel;   //Kanal
                 bfun[3]= inflow;
-            } break;           
+            } break;
             case 4 : // channel (eindhoven)
             {
                 bc[0]= DirBC;
@@ -563,3 +563,4 @@ class TwoPhaseStoreCL
 }   // end of namespace DROPS
 
 #endif
+

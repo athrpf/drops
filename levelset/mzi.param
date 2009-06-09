@@ -109,6 +109,8 @@ Transp {
   H             =       0.5     # no effect
   IniCPos       =       0.1     # no effect
   IniCNeg       =       5       # no effect
+  NitschePenalty  =       0     # no effect
+  NitscheXFEMStab =       0.1   # no effect
 }
 
 # Ensight settings

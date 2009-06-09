@@ -9,7 +9,6 @@ Time {
   NumSteps      =       20
   StepSize      =       5e-2
   Scheme        =       2       # time integration: 1=linthetascheme, 2=recthetascheme, 3=, 4=operator splitting, 5=cranknicolson
-  Theta         =       1.0     # backward Euler
 }
 
 # flow solver
@@ -23,6 +22,8 @@ Stokes {
   PcATol	=	1e-2    # no effect
   PcSTol	=	1e-4    # no effect
   XFEMStab      =       1.0
+  Theta         =       1.0     # backward Euler
+
 }
 
 NavStokes {
@@ -39,6 +40,7 @@ Levelset {
   SD		=	0
   CurvDiff	=	-5e-9
   VolCorrection	=	0
+  Theta         =       1.0     # backward Euler
 }
 
 Coupling {
@@ -94,6 +96,7 @@ Exp {
 AdaptRef {
   Freq		=	0	# no effect
   FinestLevel	=	2
+  CoarsestLevel =       0
   Width		=	1e-8
   RefineStrategy=  1
 }
@@ -118,6 +121,8 @@ Transp {
   H		=	0.5	# Henry number cneg(\infty) = H*cpos(\infty)
   IniCPos	=	0.1	# initial concentration (pos. part)
   IniCNeg	=	5	# initial concentration (neg. part)
+  NitschePenalty  = 0
+  NitscheXFEMStab = 0.1
 }
 
 # Ensight settings

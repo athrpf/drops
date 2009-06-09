@@ -8,7 +8,6 @@
 Time {
   NumSteps      = 100
   StepSize      = 5e-4
-  Theta         = 1         # backward Euler
   Scheme        = 1         # time integration: 1=linthetascheme, 2=recthetascheme, 3=, 4=operator splitting, 5=cranknicolson
 }
 
@@ -23,6 +22,7 @@ Stokes {
   PcATol        =       1e-2    # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol        =       1e-4
   XFEMStab      =       1e-1
+  Theta         =       1       # backward Euler
 }
 
 NavStokes {
@@ -39,6 +39,7 @@ Levelset {
   SD            = 0.1       # streamline diffusion parameter
   CurvDiff      = -1
   VolCorrection = 1         # volume correction every n steps
+  Theta         = 1         # backward Euler
 }
 
 Coupling {
@@ -61,6 +62,7 @@ Reparam {
 AdaptRef {
   Freq          = 10        # adaptive refinement every n steps
   FinestLevel   = 2         # finest level used in refinement strategy
+  CoarsestLevel = 0
   Width         = 1e-6
   RefineStrategy= 1         # algorithm to determine the load balancing graph for refinement
 }
@@ -97,15 +99,17 @@ SurfTens {
 
 # mass transport
 Transp {
-  DoTransp      = 0         # 0=off, 1=on
-  Theta         = 0.5       # time integration theta scheme
-  Iter          = 200
-  Tol           = 1e-10
-  DiffPos       = 5e-3      # diffusion coefficient (pos. part)
-  DiffNeg       = 1e-2      # diffusion coefficient (neg. part)
-  H             = 0.5       # Henry number cneg(\infty) = H*cpos(\infty)
-  IniCPos       = 0.1       # initial concentration (pos. part)
-  IniCNeg       = 5         # initial concentration (neg. part)
+  DoTransp        = 0         # 0=off, 1=on
+  Theta           = 0.5       # time integration theta scheme
+  Iter            = 200
+  Tol             = 1e-10
+  DiffPos         = 5e-3      # diffusion coefficient (pos. part)
+  DiffNeg         = 1e-2      # diffusion coefficient (neg. part)
+  H               = 0.5       # Henry number cneg(\infty) = H*cpos(\infty)
+  IniCPos         = 0.1       # initial concentration (pos. part)
+  IniCNeg         = 5         # initial concentration (neg. part)
+  NitschePenalty  = 0
+  NitscheXFEMStab = 0.1
 }
 
 # Ensight settings

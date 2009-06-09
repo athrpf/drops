@@ -8,7 +8,6 @@
 Time {
   NumSteps	=	0
   StepSize	=	1e-4
-  Theta         =	1	# no effect
   Scheme        =       0       # no effect
 }
 
@@ -23,6 +22,8 @@ Stokes {
   PcATol	=	1e-2
   PcSTol	=	1e-2
   XFEMStab      =       1e-1
+  Theta         =       1       # no effect
+
 }
 
 # levelset solver
@@ -32,6 +33,8 @@ Levelset {
   SD		=	0
   CurvDiff	=	-5e-9
   VolCorrection	=	0
+  Theta         =       1       # no effect
+
 }
 
 Coupling {
@@ -94,6 +97,7 @@ Exp {
 AdaptRef {
   Freq		=	0	# no effect
   FinestLevel	=	2
+  CoarsestLevel =       0
   Width		=	1e-8
   RefineStrategy=  1
 }
@@ -118,6 +122,8 @@ Transp {
   H		=	0.5	# no effect
   IniCPos	=	0.1	# no effect
   IniCNeg	=	5	# no effect
+  NitschePenalty        = 0     # no effect
+  NitscheXFEMStab       = 0     # no effect
 }
 
 # Ensight settings

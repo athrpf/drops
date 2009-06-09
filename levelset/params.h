@@ -19,12 +19,12 @@ class ParamEnsightCL : public virtual ParamBaseCL
   public:
   /// \name Ensight
   //@{
-    int    ensight;                             ///< Ensight output
-    string EnsCase;                             ///< name of Ensight Case
-    string EnsDir;                              ///< local directory for Ensight files
-    string geomName;                            ///< name for the geometry
-    int    masterOut;                           ///< only master writes out ensight files
-    int    binary;                              ///< write out ensight files in binary format
+    int    ens_EnsightOut;                          ///< Ensight output
+    string ens_EnsCase;                             ///< name of Ensight Case
+    string ens_EnsDir;                              ///< local directory for Ensight files
+    string ens_GeomName;                            ///< name for the geometry
+    int    ens_MasterOut;                           ///< only master writes out ensight files
+    int    ens_Binary;                              ///< write out ensight files in binary format
   //@}
 
   public:
@@ -41,10 +41,10 @@ class ParamVTKCL : public virtual ParamBaseCL
   public:
   /// \name VTK
   //@{
-    int    vtk;                                 ///< VTK output
-    string vtkDir;                              ///< local directory for vtk files
-    string vtkName;                             ///< name of vtk files
-    int    vtkBinary;                           ///< write out ensight files in binary format
+    int    vtk_VTKOut;                           ///< VTK output
+    string vtk_VTKDir;                           ///< local directory for vtk files
+    string vtk_VTKName;                          ///< name of vtk files
+    int    vtk_Binary;                           ///< write out ensight files in binary format
   //@}
 
   public:
@@ -61,9 +61,9 @@ class ParamInfoCL : public virtual ParamBaseCL
   public:
     /// \name Information about runs
     //@{
-    int printSize;              ///< Should the size of the mg for all MG be displayed
-    int printNumUnk;            ///< Print number of unknowns
-    int checkMG;                ///< check multigrid for sanety
+    int inf_PrintSize;              ///< Should the size of the mg for all MG be displayed
+    int inf_PrintNumUnk;            ///< Print number of unknowns
+    int inf_CheckMG;                ///< check multigrid for sanety
     //@}
   public:
     ParamInfoCL()                        { RegisterParams(); }
@@ -79,12 +79,12 @@ class ParamQuadCL : public virtual ParamBaseCL
   public:
   /// \name quadrilateral output
   //@{
-    int quad;                                   ///< Write out quadrilateral grid
-    int gridX, gridY, gridZ;                    ///< number of gridpoints
-    Point3DCL stepsize;                         ///< Stepsize in each direction
-    Point3DCL barycenter;                       ///< Barycenter of the grid
-    Point3DCL rotation;                         ///< Rotation
-    string quadFileName;                        ///< name of the result-file
+    int qlg_Quad;                                   ///< Write out quadrilateral grid
+    int qlg_GridX, qlg_GridY, qlg_GridZ;            ///< number of gridpoints
+    Point3DCL qlg_Stepsize;                         ///< Stepsize in each direction
+    Point3DCL qlg_Barycenter;                       ///< Barycenter of the grid
+    Point3DCL qlg_Rotation;                         ///< Rotation
+    string qlg_FileName;                            ///< name of the result-file
   //@}
 
   public:
@@ -101,11 +101,11 @@ class ParamMGSerCL : public virtual ParamBaseCL
   public:
   /// \name (de-)serialization of a multigrid
   //@{
-    int    serialization;                 ///< Perform serialization
-    int    overwrite;                     ///< Overwrite old output-files or create new for every step.
+    int    rst_Serialization;                 ///< Perform serialization
+    int    rst_Overwrite;                     ///< Overwrite old output-files or create new for every step.
 
-    string ser_dir,                       ///< writes multigrid to serialisation files, special value "none" to ignore
-           deserialization_file;          ///< reads multigrid from deserialization files, special value "none" to ignore
+    string rst_Outputfile,                    ///< writes multigrid to serialisation files, special value "none" to ignore
+           rst_Inputfile;                     ///< reads multigrid from deserialization files, special value "none" to ignore
   //@}
 
   public:
@@ -122,11 +122,11 @@ class ParamBrickCL : public virtual ParamBaseCL
   public:
   /// \name Initialization of a brick
   //@{
-    int basicref_x;             ///< basic refinements in x-direction
-    int basicref_y;             ///< basic refinements in y-direction
-    int basicref_z;             ///< basic refinements in z-direction
-    Point3DCL orig;             ///< origin of the brick
-    Point3DCL dim;              ///< dx, dy, dz
+    int brk_BasicRefX;             ///< basic refinements in x-direction
+    int brk_BasicRefY;             ///< basic refinements in y-direction
+    int brk_BasicRefZ;             ///< basic refinements in z-direction
+    Point3DCL brk_orig;            ///< origin of the brick
+    Point3DCL brk_dim;             ///< dx, dy, dz
   //@}
 
   public:
@@ -143,11 +143,11 @@ class ParamReparamCL : public virtual ParamBaseCL
   public:
   /// \name reparametrize level-set function
   //@{
-    int    RepFreq;             ///< number of timesteps before reparametrize the level-set function
-    int    RepMethod;           ///< method of reparametrize level-set function
-    double NarrowBand;          ///< Narrow-Band method for the Euclidian method (e.g. 0.5 : all dof with <50% of the maximal level-set value are considered)
-    double MinGrad,             ///< minimal allowed norm of the gradient of phi
-           MaxGrad;             ///< maximal allowed norm of the gradient of phi
+    int    rpm_Freq;            ///< number of timesteps before reparametrize the level-set function
+    int    rpm_Method;          ///< method of reparametrize level-set function
+    double rpm_NarrowBand;      ///< Narrow-Band method for the Euclidian method (e.g. 0.5 : all dof with <50% of the maximal level-set value are considered)
+    double rpm_MinGrad,         ///< minimal allowed norm of the gradient of phi
+           rpm_MaxGrad;         ///< maximal allowed norm of the gradient of phi
   //@}
 
   public:
@@ -164,15 +164,17 @@ class ParamStokesCL : public virtual ParamBaseCL
   public:
   /// \name parameter for the Stokes equation
   //@{
-    int    StokesMethod;                        ///< solver for the Stokes problems
-    double inner_tol,                           ///< tolerance for Stokes solver
-           outer_tol;
-    int    inner_iter,                          ///< max. number of iterations for Stokes solver
-           outer_iter;
-    int    pcA_iter;                            ///< max. number of iterations for the preconditionier
-    double pcA_tol,                             ///< tolerance for the preconditioner of A-block
-           pcS_tol;                             ///< tolerance for the preconditioner of Schur complement
-    double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
+    int    stk_StokesMethod;                      ///< solver for the Stokes problems
+    double stk_InnerTol,                          ///< tolerance for Stokes solver
+           stk_OuterTol;
+    int    stk_InnerIter,                         ///< max. number of iterations for Stokes solver
+           stk_OuterIter;
+    int    stk_PcAIter;                           ///< max. number of iterations for the preconditionier
+    double stk_PcATol,                            ///< tolerance for the preconditioner of A-block
+           stk_PcSTol;                            ///< tolerance for the preconditioner of Schur complement
+    double stk_XFEMStab;                          ///< threshold for discarding ext. dofs parameter, default 0.1
+    double stk_Theta;                             ///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
+
   //@}
   public:
     ParamStokesCL()                        { RegisterParams(); }
@@ -188,10 +190,11 @@ class ParamAdaptRefCL : public virtual ParamBaseCL
   public:
   /// \name reparametrize level-set function
   //@{
-    int    ref_freq;            ///< number of timesteps before adaptive refinement
-    int    ref_flevel;          ///< finest level in the near of the phase boundary
-    double ref_width;           ///< domain of refinement
-    int refineStrategy;         ///< algorithm to determine the load balancing graph for refinement
+    int    ref_Freq;               ///< number of timesteps before adaptive refinement
+    int    ref_FinestLevel;        ///< finest level in the near of the phase boundary
+    int    ref_CoarsestLevel;      ///< coarsest level in the near of the phase boundary
+    double ref_Width;              ///< domain of refinement
+    int    ref_RefineStrategy;     ///< algorithm to determine the load balancing graph for refinement
   //@}
 
   public:
@@ -208,10 +211,10 @@ class ParamNavStokesCL : public virtual ParamBaseCL
   public:
   /// \name parameter for the Navier-Stokes
   //@{
-    double nonlinear;           ///< magnitude of nonlinear term
-    double ns_tol,              ///< Tolerance of the Navier-Stokes-solver
-           ns_red;              ///< The Oseen-residual is reduced by this factor (<1.0)
-    int    ns_iter;             ///< Maximal number of iterations of the solver
+    double ns_Nonlinear;         ///< magnitude of nonlinear term
+    double ns_Tol,               ///< Tolerance of the Navier-Stokes-solver
+           ns_Reduction;         ///< The Oseen-residual is reduced by this factor (<1.0)
+    int    ns_Iter;              ///< Maximal number of iterations of the solver
     //@}
   public:
     ParamNavStokesCL()                        { RegisterParams(); }
@@ -227,10 +230,9 @@ class ParamTimeDiscCL : public virtual ParamBaseCL
   public:
   /// \name parameter for the time discretisation
   //@{
-    double dt;                                  ///< time step size
-    int    num_steps;                           ///< number of timesteps
-    double theta;                               ///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
-    int    scheme;                              ///< 1=lintheta-scheme, 2=rectheta-scheme, 3=theta-scheme, 4=operator splitting, 5=crank-nicolson-scheme
+    double tm_StepSize;                            ///< time step size
+    int    tm_NumSteps;                            ///< number of timesteps
+    int    tm_Scheme;                              ///< 1=lintheta-scheme, 2=rectheta-scheme, 3=theta-scheme, 4=operator splitting, 5=crank-nicolson-scheme
   //@}
   public:
     ParamTimeDiscCL()                        { RegisterParams(); }
@@ -246,11 +248,13 @@ class ParamLevelSetCL : public virtual ParamBaseCL
   public:
   /// \name parameter for the Level-Set function
   //@{
-    double lset_tol;                            ///< tolerance for Level Set solver
-    int    lset_iter;                           ///< max. number of iterations for Level Set solver
-    double lset_SD,                             ///< streamline diffusion parameter
-           CurvDiff;                            ///< smoothing of Level Set function before curvature term discretization
-    int    VolCorr;                             ///< volume correction (0=no)
+    double lvs_Tol;                           ///< tolerance for Level Set solver
+    int    lvs_Iter;                          ///< max. number of iterations for Level Set solver
+    double lvs_SD,                            ///< streamline diffusion parameter
+           lvs_CurvDiff;                      ///< smoothing of Level Set function before curvature term discretization
+    int    lvs_VolCorrection;                 ///< volume correction (0=no)
+    double lvs_Theta;                         ///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
+
   //@}
   public:
     ParamLevelSetCL()                        { RegisterParams(); }
@@ -266,10 +270,10 @@ class ParamCouplingCL : public virtual ParamBaseCL
   public:
   /// \name parameter for the coupling between level set function and Navier-Stokes equation
   //@{
-    double cpl_tol;                             ///< tolerance for the coupling
-    int    cpl_iter;                            ///< max. number of iterations for the fixed-point iteration
-    double cpl_stab;                            ///< Laplace-Beltrami-stabilization
-    double cpl_proj;                            ///< 1 = perform a projection step before FP
+    double cpl_Tol;                             ///< tolerance for the coupling
+    int    cpl_Iter;                            ///< max. number of iterations for the fixed-point iteration
+    double cpl_Stab;                            ///< Laplace-Beltrami-stabilization
+    double cpl_Projection;                      ///< 1 = perform a projection step before FP
   //@}
   public:
     ParamCouplingCL()                        { RegisterParams(); }
@@ -287,11 +291,11 @@ class ParamMaterialDataCL : public virtual ParamBaseCL
   ///
   /// D = drop,    F =  surrounding fluid
   //@{
-    double rhoD,                                ///< density
-           rhoF,
-           muD,                                 ///< dynamic viscosity
-           muF,
-           sm_eps;                              ///< width of smooth transition zone for jumping coefficients
+    double mat_DensDrop,                        ///< density
+           mat_DensFluid,
+           mat_ViscDrop,                        ///< dynamic viscosity
+           mat_ViscFluid,
+           mat_SmoothZone;                      ///< width of smooth transition zone for jumping coefficients
   //@}
   public:
     ParamMaterialDataCL()                        { RegisterParams(); }
@@ -307,14 +311,14 @@ class ParamExperimentalDataCL : public virtual ParamBaseCL
   public:
   ///\name Experimental setup
   //@{
-    Point3DCL Radius;                           ///< radii of the ellipsoidal droplet
-    Point3DCL Mitte;                            ///< position of the droplet
-    double Anstroem,                            ///< max. inflow velocity (parabolic profile)
-           r_inlet;                             ///< radius at inlet of measuring device
-    int    flow_dir;                            ///< flow direction (x/y/z = 0/1/2)
-    Point3DCL g;                                ///< gravity
-    double inflow_freq,                         ///< inflow frequence
-           inflow_ampl;                         ///< inflow amplitude
+    Point3DCL exp_RadDrop;                         ///< radii of the ellipsoidal droplet
+    Point3DCL exp_PosDrop;                         ///< position of the droplet
+    double    exp_InflowVel,                       ///< max. inflow velocity (parabolic profile)
+              exp_RadInlet;                        ///< radius at inlet of measuring device
+    int       exp_FlowDir;                         ///< flow direction (x/y/z = 0/1/2)
+    Point3DCL exp_Gravity;                         ///< gravity
+    double    exp_InflowFreq,                      ///< inflow frequence
+              exp_InflowAmpl;                      ///< inflow amplitude
   //@}
   public:
     ParamExperimentalDataCL()                        { RegisterParams(); }
@@ -330,11 +334,11 @@ class ParamSurfaceTensionCL : public virtual ParamBaseCL
   public:
   ///\name Surface Force
   //@{
-    int st_var;                                 ///< variable surface tension: 0= off, 1=on
-    double sigma,                               ///< surface tension coefficient
-           st_jumpWidth,                        ///< jump width
-           st_relPos,                           ///< position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
-           st_red;                              ///< red. factor for surface tension (due to contamination) in lower droplet)
+    int sft_VarTension;                          ///< variable surface tension: 0= off, 1=on
+    double sft_SurfTension,                      ///< surface tension coefficient
+           sft_JumpWidth,                        ///< jump width
+           sft_RelPos,                           ///< position of the jump between upper edge (lambda=0) and barycenter (lambda=1)
+           sft_DirtFactor;                       ///< red. factor for surface tension (due to contamination) in lower droplet)
   //@}
   public:
     ParamSurfaceTensionCL()                        { RegisterParams(); }
@@ -350,15 +354,17 @@ class ParamTransportCL : public virtual ParamBaseCL
   public:
   ///\name Mass Transport
   //@{
-    int    transp_do;                           ///< mass transport on (1) or off (0)
-    double transp_theta;                        ///< time integration theta scheme
-    int    transp_iter;
-    double transp_tol,
-           transp_diffPos,                      ///< diffusion coefficient (pos. part)
-           transp_diffNeg,                      ///< diffusion coefficient (neg. part)
-           transp_H,                            ///< Henry number cneg(\f$\infty\f$) = H*cpos(\f$\infty\f$)
-           transp_cPos,                         ///< initial concentration (pos. part)
-           transp_cNeg;                         ///< initial concentration (neg. part)
+    int    trp_DoTransp;                     ///< mass transport on (1) or off (0)
+    double trp_Theta;                        ///< time integration theta scheme
+    int    trp_Iter;
+    double trp_Tol,
+           trp_DiffPos,                      ///< diffusion coefficient (pos. part)
+           trp_DiffNeg,                      ///< diffusion coefficient (neg. part)
+           trp_H,                            ///< Henry number cneg(\f$\infty\f$) = H*cpos(\f$\infty\f$)
+           trp_IniCPos,                      ///< initial concentration (pos. part)
+           trp_IniCNeg,                      ///< initial concentration (neg. part)
+           trp_NitschePenalty,
+           trp_NitscheXFEMStab;              ///< threshold for discarding ext. dofs parameter, default 0.1
   //@}
   public:
     ParamTransportCL()                        { RegisterParams(); }
@@ -374,11 +380,11 @@ class ParamDomainCondCL : public virtual ParamBaseCL
   public:
   /// \name reparametrize level-set function
   //@{
-    int    IniCond,                             ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
-           GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
-    string IniData,                             ///< file prefix when reading data for initial condition
-           meshfile;                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
-    int    bnd_type;                            ///< boundary type: 1= hom. Dirichlet, 2= inhom. Dirichlet bnd-data for in-/outflow, 3= tube/canal
+    int    dmc_InitialCond,                         ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
+           dmc_GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
+    string dmc_InitialFile,                         ///< file prefix when reading data for initial condition
+           dmc_MeshFile;                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+    int    dmc_BoundaryType;                        ///< boundary type: 1= hom. Dirichlet, 2= inhom. Dirichlet bnd-data for in-/outflow, 3= tube/canal
   //@}
 
   public:
@@ -437,47 +443,49 @@ class ParamFilmCL: public ParamBaseCL
     void RegisterParams();
 
   public:
-    int    StokesMethod;                        // solver for the Stokes problems
-    double inner_tol, outer_tol,                // Parameter der Loeser
-           ns_tol, ns_red, nonlinear,           // fuer Flow & Levelset
-           lset_tol, lset_SD, cpl_tol;
-    int    inner_iter, outer_iter,
-           ns_iter, lset_iter;
-    int    pcA_iter;                            // max. number of iterations for the preconditionier
-    double pcA_tol,                             // tolerance for the preconditioner
-           pcS_tol;
-    int    cpl_iter;                            // Kopplung Levelset/Flow: Anzahl Fixpunkt-Iterationen
-    double XFEMStab;                            ///< threshold for discarding ext. dofs parameter, default 0.1
+    int    stk_StokesMethod;                        // solver for the Stokes problems
+    double stk_InnerTol, stk_OuterTol,              // Parameter der Loeser
+           ns_Tol, ns_Reduction, ns_Nonlinear,      // fuer Flow & Levelset
+           lvs_Tol, lvs_SD, cpl_Tol;
+    int    stk_InnerIter, stk_OuterIter,
+           ns_Iter, lvs_Iter;
+    int    stk_PcAIter;                             // max. number of iterations for the preconditionier
+    double stk_PcATol,                              // tolerance for the preconditioner
+           stk_PcSTol;
+    int    cpl_Iter;                                // Kopplung Levelset/Flow: Anzahl Fixpunkt-Iterationen
+    double stk_XFEMStab;                           ///< threshold for discarding ext. dofs parameter, default 0.1
 
-    double dt;                                  // Zeitschrittweite
-    int    num_steps;                           // Anzahl Zeitschritte
-    double theta, lset_theta;                   // 0=FwdEuler, 1=BwdEuler, 0.5=CN
+    double tm_StepSize;                             // Zeitschrittweite
+    int    tm_NumSteps;                             // Anzahl Zeitschritte
+    double stk_Theta, lvs_Theta;                    // 0=FwdEuler, 1=BwdEuler, 0.5=CN
 
-    double sigma,                               // Oberflaechenspannung
-           CurvDiff,                            // num. Glaettung Kruemmungstermberechnung
-           rhoF, rhoG, muF, muG,                // Stoffdaten: Dichte/Viskositaet
-           sm_eps,                              // Glaettungszone fuer Dichte-/Viskositaetssprung
-           PumpAmpl, PumpFreq,                  // Frequenz und Amplitude der Anregung
-           AmplZ;                               // Amplitude in z-Richtung der initialen Phasengrenze
+    double mat_SurfTension,                         // Oberflaechenspannung
+           lvs_CurvDiff,                            // num. Glaettung Kruemmungstermberechnung
+           mat_DensFluid, mat_DensGas,              // Stoffdaten: Dichte/Viskositaet
+           mat_ViscFluid, mat_ViscGas,
+           mat_SmoothZone,                          // Glaettungszone fuer Dichte-/Viskositaetssprung
+           exp_PumpAmpl, exp_PumpFreq,              // Frequenz und Amplitude der Anregung
+           exp_Ampl_zDir;                           // Amplitude in z-Richtung der initialen Phasengrenze
 
-    Point3DCL g;                                // Schwerkraft
-    double    Filmdicke;                        // Filmdicke
-    Point3DCL mesh_res,                         // Gitteraufloesung und
-              mesh_size;                        // Gittergroesse in x-/y-/z-Richtung
-    int       VolCorr,                          // Volumenkorrektur (0=false)
-              IniCond;                          // Anfangsbedingung (0=Null, 1= stat. flow, -1= read from file )
+    Point3DCL exp_Gravity;                          // Schwerkraft
+    double    exp_Thickness;                        // Filmdicke
+    Point3DCL mcl_MeshResolution,                   // Gitteraufloesung und
+              mcl_MeshSize;                         // Gittergroesse in x-/y-/z-Richtung
+    int       lvs_VolCorrection,                    // Volumenkorrektur (0=false)
+              mcl_InitialCond;                      // Anfangsbedingung (0=Null, 1= stat. flow, -1= read from file )
 
-    int    ref_flevel, ref_freq;                // Parameter fuer
-    double ref_width;                           // adaptive Verfeinerung
+    int    ref_FinestLevel, ref_Freq,               // Parameter fuer
+           ref_CoarsestLevel;
+    double ref_Width;                               // adaptive Verfeinerung
 
-    int    RepFreq, RepMethod;                  // Parameter fuer Reparametrisierung
+    int    rpm_Freq, rpm_Method;                    // Parameter fuer Reparametrisierung
 
-    string EnsCase,                             // Ensight Case,
-           EnsDir,                              // lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
-           IniData,
-           BndCond,
-           serialization_file,                  ///< writes multigrid to serialisation files, special value "none" to ignore
-           deserialization_file;                ///< reads multigrid from deserialization files, special value "none" to ignore
+    string mcl_EnsightCase,                         // Ensight Case,
+           mcl_EnsightDir,                          // lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
+           mcl_InitialFile,
+           mcl_BndCond,
+           mcl_SerializationFile,                   ///< writes multigrid to serialisation files, special value "none" to ignore
+           mcl_DeserializationFile;                 ///< reads multigrid from deserialization files, special value "none" to ignore
 
     ParamFilmCL()                        { RegisterParams(); }
     ParamFilmCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
@@ -486,6 +494,7 @@ class ParamFilmCL: public ParamBaseCL
 } // end of namespace DROPS
 
 #endif
+
 
 
 

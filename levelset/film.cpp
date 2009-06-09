@@ -37,9 +37,9 @@ class ZeroFlowCL
     const DROPS::Point3DCL g;
 
     ZeroFlowCL( const DROPS::ParamFilmCL& C)
-      : rho( DROPS::JumpCL( C.rhoF, C.rhoG ), DROPS::H_sm, C.sm_eps),
-        mu(  DROPS::JumpCL( C.muF,  C.muG),   DROPS::H_sm, C.sm_eps),
-        SurfTens( C.sigma), g( C.g)    {}
+      : rho( DROPS::JumpCL( C.mat_DensFluid, C.mat_DensGas ), DROPS::H_sm, C.mat_SmoothZone),
+        mu(  DROPS::JumpCL( C.mat_ViscFluid,  C.mat_ViscGas),   DROPS::H_sm, C.mat_SmoothZone),
+        SurfTens( C.mat_SurfTension), g( C.exp_Gravity)    {}
 };
 
 class DimLessCoeffCL
@@ -53,37 +53,37 @@ class DimLessCoeffCL
     const DROPS::Point3DCL g;
 
     DimLessCoeffCL( const DROPS::ParamFilmCL& C)
-      : rho( DROPS::JumpCL( 1., C.rhoG/C.rhoF ), DROPS::H_sm, C.sm_eps),
-        mu ( DROPS::JumpCL( 1., C.muG/C.muF),    DROPS::H_sm, C.sm_eps),
-        SurfTens( C.sigma/C.rhoF), g( C.g)    {}
+      : rho( DROPS::JumpCL( 1., C.mat_DensGas/C.mat_DensFluid ), DROPS::H_sm, C.mat_SmoothZone),
+        mu ( DROPS::JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid),    DROPS::H_sm, C.mat_SmoothZone),
+        SurfTens( C.mat_SurfTension/C.mat_DensFluid), g( C.exp_Gravity)    {}
 };
 
 
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double d= p[1]/C.Filmdicke;
-    static const double u= C.rhoF*C.g[0]*C.Filmdicke*C.Filmdicke/C.muF/2;
-    ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.PumpAmpl*std::sin(2*M_PI*t*C.PumpFreq))
-                 : (C.mesh_size[1]-p[1])/(C.mesh_size[1]-C.Filmdicke)*u;
+    const double d= p[1]/C.exp_Thickness;
+    static const double u= C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2;
+    ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.exp_PumpAmpl*std::sin(2*M_PI*t*C.exp_PumpFreq))
+                 : (C.mcl_MeshSize[1]-p[1])/(C.mcl_MeshSize[1]-C.exp_Thickness)*u;
     return ret;
 }
 
 double DistanceFct( const DROPS::Point3DCL& p)
 {
     // wave length = 100 x film width
-    const double wave= std::sin(2*M_PI*p[0]/C.mesh_size[0]),
-        z= p[2]/C.mesh_size[2]*2; // z \in [-1,1]
-//    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*wave);
-//    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*(wave + C.AmplZ*std::cos(z*M_PI)));
-    const double z_fac=  (1 + C.AmplZ/2*std::cos(z*M_PI));  // (z=+-1) 1-C.AmplZ <= z_fac <= 1+C.AmplZ (z=0)
-    return p[1] - C.Filmdicke * (1 + C.PumpAmpl*wave) * z_fac;
+    const double wave= std::sin(2*M_PI*p[0]/C.mcl_MeshSize[0]),
+        z= p[2]/C.mcl_MeshSize[2]*2; // z \in [-1,1]
+//    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*wave);
+//    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*(wave + C.exp_Ampl_zDir*std::cos(z*M_PI)));
+    const double z_fac=  (1 + C.exp_Ampl_zDir/2*std::cos(z*M_PI));  // (z=+-1) 1-C.exp_Ampl_zDir <= z_fac <= 1+C.exp_Ampl_zDir (z=0)
+    return p[1] - C.exp_Thickness * (1 + C.exp_PumpAmpl*wave) * z_fac;
 }
 
 bool periodic_xz( const DROPS::Point3DCL& p, const DROPS::Point3DCL& q)
 { // matching y-z- or x-y-coords, resp.
     const DROPS::Point3DCL d= fabs(p-q),
-                           L= fabs(C.mesh_size);
+                           L= fabs(C.mcl_MeshSize);
     return (d[1] + d[2] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12)  // dy=dz=0 and dx=Lx
       ||   (d[0] + d[1] < 1e-12 && std::abs( d[2] - L[2]) < 1e-12)  // dx=dy=0 and dz=Lz
       ||   (d[1] < 1e-12 && std::abs( d[0] - L[0]) < 1e-12 && std::abs( d[2] - L[2]) < 1e-12);  // dy=0 and dx=Lx and dz=Lz
@@ -160,14 +160,14 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
-    switch (C.IniCond)
+    switch (C.mcl_InitialCond)
     {
       case 1: // stationary flow
       {
         TimerCL time;
         VelVecDescCL curv( vidx);
         time.Reset();
-        Stokes.SetupPrMass(  &Stokes.prM, lset/*, C.muF, C.muG*/);
+        Stokes.SetupPrMass(  &Stokes.prM, lset/*, C.mat_ViscFluid, C.mat_ViscGas*/);
         Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
         Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
         curv.Clear();
@@ -177,8 +177,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
 
         time.Reset();
         SSORPcCL ssorpc;
-        PCG_SsorCL PCGsolver( ssorpc, C.inner_iter, C.inner_tol);
-        PSchurSolverCL<PCG_SsorCL> schurSolver( PCGsolver, Stokes.prM.Data, C.outer_iter, C.outer_tol);
+        PCG_SsorCL PCGsolver( ssorpc, C.stk_InnerIter, C.stk_InnerTol);
+        PSchurSolverCL<PCG_SsorCL> schurSolver( PCGsolver, Stokes.prM.Data, C.stk_OuterIter, C.stk_OuterTol);
 
         schurSolver.Solve( Stokes.A.Data, Stokes.B.Data,
             Stokes.v.Data, Stokes.p.Data, Stokes.b.Data, Stokes.c.Data);
@@ -194,23 +194,23 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
       case -1: // read from file
       {
         ReadEnsightP2SolCL reader( MG);
-        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( C.mcl_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        reader.ReadScalar( C.mcl_InitialFile+".scl", lset.Phi, lset.GetBndData());
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx); // Zero-vector for now.
-        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
+        reader.ReadScalar( C.mcl_InitialFile+".pr",  Stokes.p, Stokes.GetBndData().Pr); // reads the P1-part of the pressure
       } break;
 
       default:
         Stokes.InitVel( &Stokes.v, ZeroVel);
     }
 
-    const double Vol= lset.GetVolume(); // approx. C.Filmdicke * C.mesh_size[0] * C.mesh_size[2];
+    const double Vol= lset.GetVolume(); // approx. C.exp_Thickness * C.mcl_MeshSize[0] * C.mcl_MeshSize[2];
     std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
     // Initialize Ensight6 output
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    std::string ensf( C.mcl_EnsightDir + "/" + C.mcl_EnsightCase);
+    Ensight6OutCL ensight( C.mcl_EnsightCase + ".case", C.tm_NumSteps + 1);
     ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),   "falling film", ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "Levelset",     ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure",     ensf + ".pr",  true));
@@ -228,16 +228,16 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     // Navier-Stokes-Solver
     typedef NSSolverBaseCL<StokesProblemT> SolverT;
     SolverT * navstokessolver = 0;
-    if (C.nonlinear==0.0)
+    if (C.ns_Nonlinear==0.0)
         navstokessolver = new NSSolverBaseCL<StokesProblemT>(Stokes, *stokessolver);
     else
-        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_iter, C.ns_tol, C.ns_red);
+        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
 
     LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, *navstokessolver, C.theta, /*nonlinear*/ 0., /*implicitCurv*/ true);
+        cpl( Stokes, lset, *navstokessolver, C.stk_Theta, /*ns_Nonlinear*/ 0., /*implicitCurv*/ true);
 
-    cpl.SetTimeStep( C.dt);
-    if (C.nonlinear!=0.0 || C.num_steps == 0) {
+    cpl.SetTimeStep( C.tm_StepSize);
+    if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
         stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
             //for Stokes-MGM
         stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
@@ -259,19 +259,18 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     stokessolverfactory.GetVankaSmoother().SetRelaxation( 0.8);
 
     bool secondSerial= false;
-    for (int step= 1; step<=C.num_steps; ++step)
+    for (int step= 1; step<=C.tm_NumSteps; ++step)
     {
         std::cout << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.cpl_iter);
+        cpl.DoStep( C.cpl_Iter);
         std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-
         bool forceVolCorr= false, forceUpdate= false,
-             doReparam= C.RepFreq && step%C.RepFreq == 0,
-             doGridMod= C.ref_freq && step%C.ref_freq == 0;
+             doReparam= C.rpm_Freq && step%C.rpm_Freq == 0,
+             doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
 
         // volume correction before reparam/grid modification
-        if (C.VolCorr && (doReparam || doGridMod)) {
-                double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
+        if (C.lvs_VolCorrection && (doReparam || doGridMod)) {
+                double dphi= lset.AdjustVolume( Vol, 1e-9, C.mcl_MeshSize[0] * C.mcl_MeshSize[2]);
                 std::cout << "volume correction is " << dphi << std::endl;
                 lset.Phi.Data+= dphi;
                 std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
@@ -284,7 +283,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             std::cout << "checking level set func: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
             if (lsetmaxGradPhi > 10 || lsetminGradPhi < 0.1) {
-                lset.ReparamFastMarching( C.RepMethod, /*periodic*/ true);
+                lset.ReparamFastMarching( C.rpm_Method, /*periodic*/ true);
                 lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
                 std::cout << "after reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
                 forceVolCorr= forceUpdate= true; // volume correction and update after reparam
@@ -298,23 +297,23 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
             adap.UpdateTriang( lset);
             forceUpdate  |= adap.WasModified();
             forceVolCorr |= adap.WasModified();
-            if (C.serialization_file != "none") {
+            if (C.mcl_SerializationFile != "none") {
                 std::stringstream filename;
-                filename << C.serialization_file;
+                filename << C.mcl_SerializationFile;
                 if (secondSerial) filename << "0";
                 secondSerial = !secondSerial;
                 MGSerializationCL ser( MG, filename.str().c_str());
                 ser.WriteMG();
                 filename << ".time";
                 std::ofstream serTime( filename.str().c_str());
-                serTime << "Serialization info:\ntime step = " << step << "\t\tt = " << step*C.dt << "\n";
+                serTime << "Serialization info:\ntime step = " << step << "\t\tt = " << step*C.tm_StepSize << "\n";
                 serTime.close();
             }
         }
 
         // volume correction
-        if (C.VolCorr && (step%C.VolCorr==0 || forceVolCorr)) {
-            double dphi= lset.AdjustVolume( Vol, 1e-9, C.mesh_size[0] * C.mesh_size[2]);
+        if (C.lvs_VolCorrection && (step%C.lvs_VolCorrection==0 || forceVolCorr)) {
+            double dphi= lset.AdjustVolume( Vol, 1e-9, C.mcl_MeshSize[0] * C.mcl_MeshSize[2]);
             std::cout << "volume correction is " << dphi << std::endl;
             lset.Phi.Data+= dphi;
             std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
@@ -326,7 +325,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
             cpl.Update();
 
 if (step%10==0)
-        ensight.Write( step*C.dt);
+        ensight.Write( step*C.tm_StepSize);
     }
 
     std::cout << std::endl;
@@ -396,20 +395,20 @@ int main (int argc, char** argv)
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;
-    orig[2]= -C.mesh_size[2]/2;
-    e1[0]= C.mesh_size[0];
-    e2[1]= C.mesh_size[1];
-    e3[2]= C.mesh_size[2];
-    DROPS::BrickBuilderCL builder( orig, e1, e2, e3, int( C.mesh_res[0]), int( C.mesh_res[1]), int( C.mesh_res[2]) );
+    orig[2]= -C.mcl_MeshSize[2]/2;
+    e1[0]= C.mcl_MeshSize[0];
+    e2[1]= C.mcl_MeshSize[1];
+    e3[2]= C.mcl_MeshSize[2];
+    DROPS::BrickBuilderCL builder( orig, e1, e2, e3, int( C.mcl_MeshResolution[0]), int( C.mcl_MeshResolution[1]), int( C.mcl_MeshResolution[2]) );
     DROPS::MultiGridCL* mgp;
-    if (C.deserialization_file == "none")
+    if (C.mcl_DeserializationFile == "none")
         mgp= new DROPS::MultiGridCL( builder);
     else {
-        DROPS::FileBuilderCL filebuilder( C.deserialization_file, &builder);
+        DROPS::FileBuilderCL filebuilder( C.mcl_DeserializationFile, &builder);
         mgp= new DROPS::MultiGridCL( filebuilder);
     }
 
-    if (C.BndCond.size()!=6)
+    if (C.mcl_BndCond.size()!=6)
     {
         std::cerr << "too many/few bnd conditions!\n"; return 1;
     }
@@ -420,7 +419,7 @@ int main (int argc, char** argv)
     for (int i=0; i<6; ++i)
     {
         bc_ls[i]= DROPS::Nat0BC;
-        switch(C.BndCond[i])
+        switch(C.mcl_BndCond[i])
         {
             case 'w': case 'W':
                 bc[i]= DROPS::WallBC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
@@ -433,37 +432,37 @@ int main (int argc, char** argv)
             case '2':
                 bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
-                std::cerr << "Unknown bnd condition \"" << C.BndCond[i] << "\"\n";
+                std::cerr << "Unknown bnd condition \"" << C.mcl_BndCond[i] << "\"\n";
                 return 1;
         }
     }
 
-    MyStokesCL prob( *mgp, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, C.XFEMStab);
+    MyStokesCL prob( *mgp, CoeffT(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun, bc_ls), DROPS::P1X_FE, C.stk_XFEMStab);
 
     const DROPS::BoundaryCL& bnd= mgp->GetBnd();
     bnd.SetPeriodicBnd( bndType, periodic_xz);
 
     sigma= prob.GetCoeff().SurfTens;
     DROPS::LevelsetP2CL lset( *mgp, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
-        &sigmaf, /*grad sigma*/ 0, C.lset_theta, C.lset_SD, 0, C.lset_iter, C.lset_tol, C.CurvDiff);
+        &sigmaf, /*grad sigma*/ 0, C.lvs_Theta, C.lvs_SD, 0, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {
         std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
     }
 
-    DROPS::AdapTriangCL adap( *mgp, C.ref_width, 0, C.ref_flevel);
+    DROPS::AdapTriangCL adap( *mgp, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel);
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
-    if (C.deserialization_file == "none")
+    if (C.mcl_DeserializationFile == "none")
         adap.MakeInitialTriang( DistanceFct);
 
     std::cout << DROPS::SanityMGOutCL(*mgp) << std::endl;
     mgp->SizeInfo( std::cout);
     std::cout << "Film Reynolds number Re_f = "
-              << C.rhoF*C.rhoF*C.g[0]*std::pow(C.Filmdicke,3)/C.muF/C.muF/3 << std::endl;
+              << C.mat_DensFluid*C.mat_DensFluid*C.exp_Gravity[0]*std::pow(C.exp_Thickness,3)/C.mat_ViscFluid/C.mat_ViscFluid/3 << std::endl;
     std::cout << "max. inflow velocity at film surface = "
-              << C.rhoF*C.g[0]*C.Filmdicke*C.Filmdicke/C.muF/2 << std::endl;
+              << C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2 << std::endl;
     Strategy( prob, lset, adap);  // do all the stuff
 
     double min= prob.p.Data.min(),
@@ -474,3 +473,4 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

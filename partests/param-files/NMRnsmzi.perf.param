@@ -8,7 +8,6 @@
 Time {
   NumSteps      =   1
   StepSize      =   1e-4
-  Theta         =   1   # backward Euler
   Scheme        =   1   # time integration: 0=FS op.splitting, 1=theta-scheme
 }
 
@@ -23,6 +22,7 @@ Stokes {
   PcATol        = 2e-5   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol        = 1e-4
   XFEMStab      = 0.
+  Theta         = 1      # backward Euler
 }
 
 # Navier-Stokes settings
@@ -40,6 +40,7 @@ Levelset {
   SD            =   0.1
   CurvDiff      =   -1
   VolCorrection =   1
+  Theta         =   1   # backward Euler
 }
 
 Coupling {
@@ -62,6 +63,7 @@ Reparam {
 AdaptRef {
   Freq          =   1
   FinestLevel   =   1
+  CoarsestLevel =   0
   Width         =   0.4e-3
   RefineStrategy =   1    # 0 no loadbalancing, 1 adaptive repart, 2 PartKWay
 }
@@ -107,6 +109,8 @@ Transp {
   H           =       0.5     # Henry number cneg(\infty) = H*cpos(\infty)
   IniCPos     =       0.1     # initial concentration (pos. part)
   IniCNeg     =       5       # initial concentration (neg. part)
+  NitschePenalty  = 0
+  NitscheXFEMStab = 0.1
 }
 
 LoadBalancing {

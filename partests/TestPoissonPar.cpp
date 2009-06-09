@@ -818,7 +818,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
 
         if (C.ensight)
             ensight->Write( step+1);
- 
+
         // Point 10: Error estimation
         // -----------------------------------------------------------------
         //  Test different refinements. These are not necessarily reasonable
@@ -935,7 +935,7 @@ int main (int argc, char** argv)
 
         DROPS::MGBuilderCL * mgb;
         if (ProcCL::IamMaster())
-            mgb = new DROPS::BrickBuilderCL(orig, e1, e2, e3, C.basicref_x, C.basicref_y, C.basicref_z);
+            mgb = new DROPS::BrickBuilderCL(orig, e1, e2, e3, C.brk_BasicRefX, C.brk_BasicRefY, C.brk_BasicRefZ);
         else
             mgb = new DROPS::EmptyBrickBuilderCL(orig, e1, e2, e3);
 
@@ -1027,3 +1027,4 @@ int main (int argc, char** argv)
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

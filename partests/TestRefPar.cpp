@@ -243,15 +243,15 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
 
     if(C.init_cond==0)
     {
-        e1[0]=C.dim[0]; e2[1]=C.dim[1]; e3[2]= C.dim[2];
+        e1[0]=C.brk_dim[0]; e2[1]=C.brk_dim[1]; e3[2]= C.brk_dim[2];
         if (ProcCL::MyRank()==proc)
         {
-            BrickBuilderCL brick(C.orig, e1, e2, e3, C.basicref_x, C.basicref_y, C.basicref_z);
+            BrickBuilderCL brick(C.brk_orig, e1, e2, e3, C.brk_BasicRefX, C.brk_BasicRefY, C.brk_BasicRefZ);
             mg = new DROPS::MultiGridCL(brick);
         }
         else
         {
-            EmptyBrickBuilderCL emptyBrick(C.orig, e1, e2, e3, C.basicref_x);
+            EmptyBrickBuilderCL emptyBrick(C.brk_orig, e1, e2, e3, C.brk_BasicRefX);
             mg = new DROPS::MultiGridCL(emptyBrick);
         }
         pmg.AttachTo(*mg);
@@ -667,3 +667,4 @@ int main(int argc, char* argv[])
     catch (DROPS::DROPSErrCL err) { cout << "In Assert gelaufen!\n";err.handle(); }
     return 0;
 }
+

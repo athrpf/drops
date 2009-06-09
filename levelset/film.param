@@ -9,8 +9,6 @@
 Time {
   NumSteps	=	10000
   StepSize	=	1e-4
-  ThetaLevelset	=	1	# backward Euler
-  ThetaStokes	=	1	# backward Euler
 }
 
 # flow solver
@@ -24,11 +22,11 @@ Stokes {
   PcATol	=	1e-4
   PcSTol	=	1e-4
   XFEMStab	=	1
+  Theta         =       1
 }
 
 NavStokes {
   Nonlinear	=	1
-  Scheme	=	1	# time integration: 0=FS op.splitting, 1=theta-scheme
   Tol           =       5e-10
   Iter          =       10
   Reduction     =       0.1
@@ -41,6 +39,7 @@ Levelset {
   SD		=	1
   CurvDiff	=	-1
   VolCorrection	=	1
+  Theta         =       1
 }
 
 Coupling {
@@ -58,6 +57,7 @@ Reparam {
 AdaptRef {
   Freq		=	10
   FinestLevel	=	2
+  CoarsestLevel =       0
   Width		=	5e-4
 }
 

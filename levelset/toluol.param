@@ -10,7 +10,6 @@
 Time {
   NumSteps	=	10000
   StepSize	=	2e-4
-  Theta 	=	1	# backward Euler
   Scheme        =       1       # time integration: 1=linthetascheme, 2=recthetascheme, 3=, 4=operator splitting, 5=cranknicolson
 }
 
@@ -24,7 +23,8 @@ Stokes {
   PcAIter	=       2	# V-cycles multigrid, iter pc for A block
   PcATol	=	1e-14   # only for efficiency abs. resid, (gmres, pcg, bicgstab rel. resid: 1e-2)
   PcSTol	=	1e-4
-  XFEMStab      =       1e-1  
+  XFEMStab      =       1e-1
+  Theta         =       1       # backward Euler
 }
 
 NavStokes {
@@ -41,6 +41,7 @@ Levelset {
   SD		=	0.1
   CurvDiff	=	-1
   VolCorrection	=	5
+  Theta         =       1       # backward Euler
 }
 
 Coupling {
@@ -63,6 +64,7 @@ Reparam {
 AdaptRef {
   Freq		=	10
   FinestLevel	=	3
+  CoarsestLevel =       0
   Width		=	0.25e-3
   RefineStrategy= 1
 }
@@ -111,6 +113,8 @@ Transp {
   H		=	0.5	# Henry number cneg(\infty) = H*cpos(\infty)
   IniCPos	=	0.1	# initial concentration (pos. part)
   IniCNeg	=	5	# initial concentration (neg. part)
+  NitschePenalty        = 0
+  NitscheXFEMStab       = 0.1
 }
 
 # Ensight settings

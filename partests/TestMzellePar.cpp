@@ -172,9 +172,9 @@ class ZeroFlowCL
     const DROPS::Point3DCL g;
 
     ZeroFlowCL( const DROPS::ParamMesszelleNsCL& C)
-      : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
-        mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
-        SurfTens( C.sigma), g( C.g)    {}
+      : rho( DROPS::JumpCL( C.mat_DensDrop, C.mat_DensFluid ), DROPS::H_sm, C.mat_SmoothZone),
+        mu(  DROPS::JumpCL( C.mat_ViscDrop,  C.mat_ViscFluid),   DROPS::H_sm, C.mat_SmoothZone),
+        SurfTens( C.sft_SurfTension), g( C.exp_Gravity)    {}
 };
 
 // Not used a.t.m
@@ -188,9 +188,9 @@ class DimLessCoeffCL
     const DROPS::Point3DCL g;
 
     DimLessCoeffCL( const DROPS::ParamMesszelleNsCL& C)
-      : rho( DROPS::JumpCL( 1., C.rhoF/C.rhoD ), DROPS::H_sm, C.sm_eps),
-        mu ( DROPS::JumpCL( 1., C.muF/C.muD),    DROPS::H_sm, C.sm_eps),
-        SurfTens( C.sigma/C.rhoD), g( C.g)    {}
+      : rho( DROPS::JumpCL( 1., C.mat_DensFluid/C.mat_DensDrop ), DROPS::H_sm, C.mat_SmoothZone),
+        mu ( DROPS::JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop),    DROPS::H_sm, C.mat_SmoothZone),
+        SurfTens( C.sft_SurfTension/C.mat_DensDrop), g( C.exp_Gravity)    {}
 };
 
 
@@ -208,9 +208,9 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double s2= C.r_inlet*C.r_inlet,
-                 r2= p.norm_sq() - p[C.flow_dir]*p[C.flow_dir];
-    ret[C.flow_dir]= -(r2-s2)/s2*C.Anstroem;
+    const double s2= C.exp_RadInlet*C.exp_RadInlet,
+                 r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
+    ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
     return ret;
 }
 
@@ -221,9 +221,9 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 // **************************************************************
 double DistanceFct( const DROPS::Point3DCL& p)
 {
-    DROPS::Point3DCL d= C.Mitte-p;
-    const double avgRad = cbrt(C.Radius[0]*C.Radius[1]* C.Radius[2]);
-    d/= C.Radius/avgRad;
+    DROPS::Point3DCL d= C.exp_PosDrop-p;
+    const double avgRad = cbrt(C.exp_RadDrop[0]*C.exp_RadDrop[1]* C.exp_RadDrop[2]);
+    d/= C.exp_RadDrop/avgRad;
     return d.norm()-avgRad;
 }
 
@@ -257,7 +257,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     // Create the levelset class
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0,
-                       C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+                       C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff, C.rpm_NarrowBand);
 
     // Index describer for levelset, velocity and pressure
     IdxDescCL*   lidx= &lset.idx;
@@ -274,12 +274,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     QuadOutCL *brickout=0;
     // If wished print out the geometry on a quadrilateral grid
-    if (C.quad){
+    if (C.qlg_Quad){
         if (ProcCL::IamMaster())
             std::cout << "Write out geometry of the quadrilateral grid" << std::endl;
         brickout = new QuadOutCL( MG, lidx);
-        brickout->Init( C.gridX, C.gridY, C.gridZ, C.stepsize, C.barycenter, C.rotation);
-        brickout->putGeom(C.quadFileName + std::string(".geo"));
+        brickout->Init( C.qlg_GridX, C.qlg_GridY, C.qlg_GridZ, C.qlg_Stepsize, C.qlg_Barycenter, C.qlg_Rotation);
+        brickout->putGeom(C.qlg_FileName + std::string(".geo"));
     }
 
     // References of Exchange classes
@@ -292,8 +292,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     DisplayUnks(vidx, pidx, lidx, ExV, ExP, ExL, MG);
 
     // Init ensight-output class
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps+1);
+    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps+1);
     ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo", true));
     ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
@@ -319,23 +319,23 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 
     // Compute intitial state
-    switch (C.IniCond)
+    switch (C.dmc_InitialCond)
     {
       // stationary flow with/without drop
       case 1: case 2:
       {
         StokesSolverParamST statStokesParam(C);
-        statStokesParam.StokesMethod= 20301;
-        statStokesParam.num_steps   = 0;
-        statStokesParam.dt          = 0.;
-        statStokesParam.pcA_tol     = 0.02;
+        statStokesParam.stk_StokesMethod= 20301;
+        statStokesParam.tm_NumSteps   = 0;
+        statStokesParam.tm_StepSize   = 0.;
+        statStokesParam.stk_PcATol     = 0.02;
         StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
         StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
-        const Point3DCL old_Radius= C.Radius;
-        if (C.IniCond==2) // stationary flow without drop
+        const Point3DCL old_Radius= C.exp_RadDrop;
+        if (C.dmc_InitialCond==2) // stationary flow without drop
             for (int i=0; i<3; ++i)
-                C.Radius[i]= -10.;
+                C.exp_RadDrop[i]= -10.;
         lset.Init( DistanceFct);
 
         // Setup initial problem
@@ -354,7 +354,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             std::cout << "- Discretizing Stokes/Curv for initialization "<<duration<<" sec.\n";
 
         // Solve initial problem
-        double theta= C.theta;
+        double theta= C.stk_Theta;
         time.Reset();
         int step=0;
         int iters=0;
@@ -374,9 +374,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             std::cout << "- Solving Stokes for initialization took "<<duration<<" sec, "
                       << "steps "<<(step-1)<<", iter "<<iters<<", resid "<<statStokesSolver->GetResid()<<'\n';
 
-        if (C.IniCond==2) // stationary flow without drop
+        if (C.dmc_InitialCond==2) // stationary flow without drop
         {
-            C.Radius= old_Radius;
+            C.exp_RadDrop= old_Radius;
             lset.Init( DistanceFct);
         }
         delete statStokesSolver;
@@ -386,9 +386,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
       case 3:
       {
         ReadEnsightP2SolCL reader( MG, false);
-        reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
-        reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( C.dmc_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        reader.ReadScalar( C.dmc_InitialFile+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+        reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
       } break;
 
       // Use distance function
@@ -396,16 +396,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         lset.Init( DistanceFct);
     }
 
-    const double Vol= 4./3.*M_PI*C.Radius[0]*C.Radius[1]*C.Radius[2];
+    const double Vol= 4./3.*M_PI*C.exp_RadDrop[0]*C.exp_RadDrop[1]*C.exp_RadDrop[2];
     double relVol = lset.GetVolume()/Vol;
     if (ProcCL::IamMaster())
         std::cout << "- Relative Volume is " << relVol << std::endl;
 
     // Write solution out in ensight format
-    if (C.ensight) ensight.Write( 0.);
+    if (C.ens_EnsightOut) ensight.Write( 0.);
 
     // Use fractional step for solving coupled Navier-Stokes problem
-    if (C.scheme)
+    if (C.tm_Scheme)
     {
 
         StokesSolverParamST instatStokesParam(C);
@@ -414,7 +414,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
 
         typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
-        NSSolverT nssolver( Stokes, *instatStokesSolver, C.ns_iter, C.ns_tol, C.ns_red);
+        NSSolverT nssolver( Stokes, *instatStokesSolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
 
         time.Reset();
         // Coupling Navier-Stokes with Levelset
@@ -422,7 +422,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 //         CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
 
         typedef RecThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+        CouplingT cpl( Stokes, lset, nssolver, C.stk_Theta, C.ns_Nonlinear);
 
         time.Stop();
         duration=time.GetMaxTime();
@@ -430,9 +430,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             std::cout << "- Updating discretization took "<<duration<<" sec.\n";
 
         // Set time step and create matrices
-        cpl.SetTimeStep( C.dt);
+        cpl.SetTimeStep( C.tm_StepSize);
 
-        for (int step= 1; step<=C.num_steps; ++step)
+        for (int step= 1; step<=C.tm_NumSteps; ++step)
         {
             ParTimerCL step_time;
             step_time.Reset();
@@ -440,14 +440,14 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 std::cout << "=================================================================================== Schritt " << step << ":\n"
                           << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
             time.Reset();
-            cpl.DoStep( C.cpl_iter);
+            cpl.DoStep( C.cpl_Iter);
             time.Stop(); duration=time.GetMaxTime();
             if (ProcCL::IamMaster())
                 std::cout << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster())
                 std::cout << "- rel. Volume: " << relVol << std::endl;
-            if (C.VolCorr)
+            if (C.lvs_VolCorrection)
             {
                 if (ProcCL::IamMaster())
                     std::cout << "\n==> Adjust volume ...\n";
@@ -457,20 +457,20 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 if (ProcCL::IamMaster())
                     std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
             }
-            if ((C.ensight && step%C.ensight==0) || step==C.num_steps)
+            if ((C.ens_EnsightOut && step%C.ens_EnsightOut==0) || step==C.tm_NumSteps)
             {
                 step_time.Stop();
-                ensight.Write( step*C.dt);
+                ensight.Write( step*C.tm_StepSize);
                 step_time.Start();
             }
 
             // Reparametrization of levelset function
-            if (C.RepFreq && step%C.RepFreq==0)
+            if (C.rpm_Freq && step%C.rpm_Freq==0)
             {
                 if (ProcCL::IamMaster())
                     std::cout << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
                 time.Reset();
-                lset.ReparamFastMarching( C.RepMethod, C.RepMethod==3);
+                lset.ReparamFastMarching( C.rpm_Method, C.rpm_Method==3);
                 time.Stop(); duration=time.GetMaxTime();
                 relVol = lset.GetVolume()/Vol;
                 if (ProcCL::IamMaster())
@@ -478,7 +478,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
                 if (ProcCL::IamMaster())
                     std::cout << "- rel. Volume: " << relVol << std::endl;
-                if (C.VolCorr)
+                if (C.lvs_VolCorrection)
                 {
                     if (ProcCL::IamMaster())
                         std::cout << "\n==> Adjust volume ...\n";
@@ -491,9 +491,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 }
                 step_time.Stop();
                 // Write solution out after reparametrization
-                if ((C.ensight && step%C.ensight==0) || step==C.num_steps)
+                if ((C.ens_EnsightOut && step%C.ens_EnsightOut==0) || step==C.tm_NumSteps)
                 {
-                    ensight.Write( (step+0.1)*C.dt);
+                    ensight.Write( (step+0.1)*C.tm_StepSize);
                 }
                 step_time.Start();
             }
@@ -511,13 +511,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     if (ProcCL::IamMaster())
         std::cout << "pressure min/max: "<<min<<", "<<max<<std::endl;
 
-    if (C.quad){
+    if (C.qlg_Quad){
         LevelsetP2CL::const_DiscSolCL lset_sol=lset.GetSolution();
         if (ProcCL::IamMaster())
             std::cout << "Writing out velocity on quadrilateral grid"<<std::endl;
-        brickout->putVector(C.quadFileName + std::string(".vel_norm"),
-                            C.quadFileName + std::string(".velY"),
-                            C.quadFileName + std::string(".velZ"),
+        brickout->putVector(C.qlg_FileName + std::string(".vel_norm"),
+                            C.qlg_FileName + std::string(".velY"),
+                            C.qlg_FileName + std::string(".velZ"),
                             Stokes.GetVelSolution(), &lset_sol);
         delete brickout;
     }
@@ -535,7 +535,7 @@ void MarkDrop (DROPS::MultiGridCL& mg, int maxLevel= -1)
     for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
              ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
     {
-        if ( DistanceFct(GetBaryCenter(*It)) <= C.ref_width)
+        if ( DistanceFct(GetBaryCenter(*It)) <= C.ref_Width)
             It->SetRegRefMark();
     }
 }
@@ -581,10 +581,10 @@ int main (int argc, char** argv)
 
     // Create geometry on proc 0
     DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
-    std::ifstream meshfile( C.meshfile.c_str());
+    std::ifstream meshfile( C.dmc_MeshFile.c_str());
     if (!meshfile)
     {
-        std::cout << "error while opening mesh file " << C.meshfile << "\n";
+        std::cout << "error while opening mesh file " << C.dmc_MeshFile << "\n";
         return 1;
     }
     DROPS::ReadMeshBuilderCL * mgb;
@@ -597,7 +597,7 @@ int main (int argc, char** argv)
 
     // Init load balancing class
     DROPS::LoadBalHandlerCL lb(mg, C.quality);
-    switch (C.refineStrategy){
+    switch (C.ref_RefineStrategy){
         case 0 : lb.SetStrategy(DROPS::NoMig);     break;
         case 1 : lb.SetStrategy(DROPS::Adaptive);  break;
         case 2 : lb.SetStrategy(DROPS::Recursive); break;
@@ -625,7 +625,7 @@ int main (int argc, char** argv)
     time.Reset();
     // Distribute and refine multigrid
     lb.DoInitDistribution(DROPS::ProcCL::Master());
-    for (int i=0; i<C.ref_flevel; ++i)
+    for (int i=0; i<C.ref_FinestLevel; ++i)
     {
         if (DROPS::ProcCL::IamMaster())
             std::cout << "+ Refine drop "<<i<<std::endl;
@@ -689,3 +689,4 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }   // error handling
 }
+

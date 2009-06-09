@@ -8,7 +8,6 @@
 Time {
   NumSteps	=	10
   StepSize	=	1.0
-  Theta         =	1	# IE
   Scheme        =       1
 }
 
@@ -24,6 +23,7 @@ Stokes {
   PcATol	=	1e-2
   PcSTol	=	1e-4
   XFEMStab      =       1e-1
+  Theta         =       1       # IE
 }
 
 NavStokes {
@@ -40,6 +40,7 @@ Levelset {
   SD		=	0
   CurvDiff	=	-5e-9
   VolCorrection	=	0
+  Theta         =       1       # IE
 }
 
 Coupling {
@@ -87,7 +88,9 @@ Exp {
 AdaptRef {
   Freq		=	0
   FinestLevel	=	2	# num of refinements
+  CoarsestLevel =       0
   Width		=	4.9e-4
+  RefineStrategy=       1
 }
 
 # surface tension
@@ -110,8 +113,9 @@ Transp {
   H			=	0.5
   IniCPos	=	0.1
   IniCNeg	=	5
+  NitschePenalty=       0
+  NitscheXFEMStab=      0
 }
-
 # Ensight settings
 Ensight {
   EnsightOut    =       1
@@ -120,6 +124,14 @@ Ensight {
   Binary        =       1
   MasterOut     =       1
   GeomName      =       xxx
+}
+
+#VTK output
+VTK{
+  VTKOut        = 0
+  VTKDir        = xxx
+  VTKName       = xxx
+  Binary        = 0
 }
 
 # domain, bnd/ini conditions

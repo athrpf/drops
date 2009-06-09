@@ -102,11 +102,11 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
     if (prFE==P1X_FE)
         for (int i=Xidx.GetNumUnknownsStdFE(), n=ones.size(); i<n; ++i)
             ones[i]= 0;
-    const double Vol= dot( prM*ones, ones)*C.muD; // note that prM is scaled by 1/mu !!
+    const double Vol= dot( prM*ones, ones)*C.mat_ViscDrop; // note that prM is scaled by 1/mu !!
 // std::cout << "Vol = " << Vol << '\n';
-    const double p_avg= dot( prM*p.Data, ones)*C.muD/Vol; // note that prM is scaled by 1/mu !!
+    const double p_avg= dot( prM*p.Data, ones)*C.mat_ViscDrop/Vol; // note that prM is scaled by 1/mu !!
     VectorCL diff( p.Data - p_avg*ones);
-    const double p0_avg= dot( prM*diff, ones)*C.muD/Vol;
+    const double p0_avg= dot( prM*diff, ones)*C.mat_ViscDrop/Vol;
     std::cout << "average of pressure:\t" << p_avg << std::endl;
     std::cout << "avg. of scaled pr:\t" << p0_avg << std::endl;
 
@@ -114,10 +114,10 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
     {
         VecDescCL p_exakt( p.RowIdx);
         InitPr( p_exakt, delta_p, mg, prFE, Xidx);
-        const double p_ex_avg2= dot( prM*p_exakt.Data, ones)*C.muD/Vol;
+        const double p_ex_avg2= dot( prM*p_exakt.Data, ones)*C.mat_ViscDrop/Vol;
         std::cout << "avg. of exact pr:\t" << p_ex_avg2 << std::endl;
         diff-= VectorCL( p_exakt.Data - p_ex_avg*ones);
-        const double L2= std::sqrt( C.muD*dot( prM*diff, diff));
+        const double L2= std::sqrt( C.mat_ViscDrop*dot( prM*diff, diff));
         std::cout << "*************\n"
                   << "assuming avg(p*)==" << p_ex_avg
                   << "  ===>  \t||e_p||_L2 = " << L2 << std::endl
@@ -226,17 +226,17 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
-    sigma= C.sigma;
+    sigma= C.sft_SurfTension;
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff);
 
 //    lset.SetSurfaceForce( SF_LB);
     lset.SetSurfaceForce( SF_ImprovedLB);
 //    lset.SetSurfaceForce( SF_Const);
     const double Vol= 8.,
 //        prJump= C.sigma, // for SF_Const force
-        prJump= C.sigma*2/C.Radius[0], // for SF_*LB force
-        avg_ex= prJump/2.*(8./3.*M_PI*C.Radius[0]*C.Radius[0]*C.Radius[0] - Vol)/Vol; // for spherical interface
+        prJump= C.sft_SurfTension*2/C.exp_RadDrop[0], // for SF_*LB force
+        avg_ex= prJump/2.*(8./3.*M_PI*C.exp_RadDrop[0]*C.exp_RadDrop[0]*C.exp_RadDrop[0] - Vol)/Vol; // for spherical interface
 //        avg_ex= 0; // for planar interface
 
     IdxDescCL* lidx= &lset.idx;
@@ -268,12 +268,12 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     Stokes.SetupPrStiff( &Stokes.prA, lset); // makes no sense for P0
 
     SSORPcCL ssor;
-    PCG_SsorCL PCG( ssor, C.inner_iter, C.inner_tol); // for computing curvature force
+    PCG_SsorCL PCG( ssor, C.stk_InnerIter, C.stk_InnerTol); // for computing curvature force
 
     VelVecDescCL curv( vidx);
     VelVecDescCL curvForce( vidx);
 
-    switch (C.IniCond)
+    switch (C.dmc_InitialCond)
     {
       case 2:
       {
@@ -371,9 +371,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     PostProcessPr( Stokes.p, new_pr, MG);
 
     // Initialize Ensight6 output
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
-    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), C.geomName,           ensf + ".geo"));
+    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps + 1);
+    ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), C.ens_GeomName,           ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),             "Levelset",  ensf + ".scl"));
     ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution( new_pr),  "Pressure",  ensf + ".pr"));
     ensight.Register( make_Ensight6Vector( Stokes.GetVelSolution(),        "Velocity",  ensf + ".vel"));
@@ -382,7 +382,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
     if (Stokes.UsesXFEM())
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p,  "XPressure", ensf + ".pr"));
 
-    if (C.ensight) ensight.Write();
+    if (C.ens_EnsightOut) ensight.Write();
 
     std::cout << std::endl;
 }
@@ -420,7 +420,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
 
-    const int n= std::atoi( C.meshfile.c_str());
+    const int n= std::atoi( C.dmc_MeshFile.c_str());
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
 
     const DROPS::BndCondT bc[6]=
@@ -429,11 +429,11 @@ int main (int argc, char** argv)
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
     MyStokesCL prob(builder, DROPS::ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
-                    C.XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.XFEMStab);
+                    C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
     DROPS::MultiGridCL& mg = prob.GetMG();
-    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius );
-    DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
+    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop );
+    DROPS::AdapTriangCL adap( mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel);
     adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
     std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
@@ -444,3 +444,4 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

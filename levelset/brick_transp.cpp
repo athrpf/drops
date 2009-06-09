@@ -19,9 +19,9 @@ DROPS::ParamMesszelleNsCL C;
 DROPS::SVectorCL<3> Inflow (const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double x = p[0]*(2*C.r_inlet-p[0]) / (C.r_inlet*C.r_inlet),
-                 z = p[2]*(2*C.r_inlet-p[2]) / (C.r_inlet*C.r_inlet);
-    ret[1]= x * z * C.Anstroem;
+    const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
+                 z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
+    ret[1]= x * z * C.exp_InflowVel;
     return ret;
 }
 
@@ -72,7 +72,7 @@ typedef P2EvalCL<SVectorCL<3>, const VelBndDataCL, const VecDescCL> const_DiscVe
 
 void Strategy (MultiGridCL& MG)
 {
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff);
     IdxDescCL* lidx= &lset.idx;
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
@@ -86,7 +86,7 @@ void Strategy (MultiGridCL& MG)
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     TransportP1CL c( MG, Bnd_c, Bnd_v, /*theta*/ 0.5, D, H, &v, lset,
-        /*t*/ 0., C.dt, C.outer_iter, C.outer_tol);
+        /*t*/ 0., C.tm_StepSize, C.stk_OuterIter, C.stk_OuterTol);
     MLIdxDescCL* cidx= &c.idx;
     c.CreateNumbering( MG.GetLastLevel(), cidx);
     c.ct.SetIdx( cidx);
@@ -94,8 +94,8 @@ void Strategy (MultiGridCL& MG)
     c.Update();
 
     // Initialize Ensight6 output
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps + 1);
     ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),   "Messzelle",     ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
     ensight.Register( make_Ensight6Vector( const_DiscVelSolCL( &v, &Bnd_v, &MG),
@@ -111,13 +111,13 @@ void Strategy (MultiGridCL& MG)
     const double Vol= EllipsoidCL::GetVolume();
     std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    if (C.EnsCase != "none") ensight.Write();
+    if (C.ens_EnsCase != "none") ensight.Write();
 
-    c.SetTimeStep( C.dt);
-    for (int step= 1; step <= C.num_steps; ++step) {
+    c.SetTimeStep( C.tm_StepSize);
+    for (int step= 1; step <= C.tm_NumSteps; ++step) {
         std::cout << "======================================================== Schritt " << step << ":\n";
-        c.DoStep( step*C.dt);
-        if (C.EnsCase != "none") ensight.Write( step*C.dt);
+        c.DoStep( step*C.tm_StepSize);
+        if (C.ens_EnsCase != "none") ensight.Write( step*C.tm_StepSize);
     }
     std::cout << std::endl;
 }
@@ -143,11 +143,11 @@ int main (int argc, char** argv)
     std::cout << C << std::endl;
 
     DROPS::Point3DCL e1(0.), e2(0.), e3(0.), orig;
-    e1[0]=2*C.r_inlet; e2[1]=1.0; e3[2]= 2*C.r_inlet;
+    e1[0]=2*C.exp_RadInlet; e2[1]=1.0; e3[2]= 2*C.exp_RadInlet;
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, 20, 20, 20);
     DROPS::MultiGridCL mg( builder);
     std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
-    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
+    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
 
     Strategy( mg);    // do all the stuff
 
@@ -155,3 +155,4 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

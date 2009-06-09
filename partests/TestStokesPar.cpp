@@ -156,7 +156,7 @@ namespace DROPS // for Strategy
 *****************************************************************************
 *   Das ist die Strategy, um die Poisson-Gleichung, die durch die           *
 *   Koeffizienten von oben gegeben sind, zu loesen. Es werden lineare FE    *
-*   und das CG-Verfahren für das Loesen des linearen Gleichungssystems      *
+*   und das CG-Verfahren fï¿½r das Loesen des linearen Gleichungssystems      *
 *   verwendet. Es wird nicht adaptiv vorgegangen                            *
 ****************************************************************************/
 template<class Coeff>
@@ -232,13 +232,13 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     // Preconditioner for A (must be quite exact, so use PCG)
     typedef ParJac0CL APcT;
     APcT APc(Stokes.vel_idx.GetFinest());
-    ParPCGSolverCL<APcT> cgsolver(C.pcA_iter, C.pcA_tol, Stokes.vel_idx.GetFinest(), APc, true, true);
+    ParPCGSolverCL<APcT> cgsolver(C.stk_PcAIter, C.stk_PcATol, Stokes.vel_idx.GetFinest(), APc, true, true);
     typedef SolverAsPreCL<ParPCGSolverCL<APcT> > APcSolverT;
     APcSolverT APcSolver(cgsolver);
     // Preconditioner for Schur-Complement
     typedef ParDummyPcCL SPcT; SPcT Spc(Stokes.pr_idx.GetFinest());
     ParInexactUzawaCL<APcSolverT, SPcT, APC_SYM>
-            symmSchurSolver(APcSolver, Spc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.outer_iter, C.outer_tol, 0.3, C.inner_iter);
+            symmSchurSolver(APcSolver, Spc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.stk_OuterIter, C.stk_OuterTol, 0.3, C.stk_InnerIter);
 
     if (ProcCL::IamMaster())
         std::cout << line << std::endl<<" - Solve system with InexactUzawa (PCG for approximate Schur-Complement-Matrix) ..." <<std::endl;
@@ -258,23 +258,23 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
                   << "   + Resid:      " << symmSchurSolver.GetResid() << std::endl
                   << "   + real Resid: " << real_resid << std::endl;
 
-    if (C.ensight)
+    if (C.ens_EnsightOut)
     {
         if (ProcCL::IamMaster())
             std::cout << line << std::endl << " - Write solution out in ensight format ... " << std::endl;
 
         // Erzeuge ensight case File und geom-File
-        std::string ensf( C.EnsDir + "/" + C.EnsCase);
-        Ensight6OutCL ensight( C.EnsCase + ".case", 0, C.binary, C.masterOut);
-        ensight.Register( make_Ensight6Geom      ( MG, pidx->GetFinest().TriangLevel(),   C.geomName,      ensf + ".geo"));
+        std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+        Ensight6OutCL ensight( C.ens_EnsCase + ".case", 0, C.ens_Binary, C.ens_MasterOut);
+        ensight.Register( make_Ensight6Geom      ( MG, pidx->GetFinest().TriangLevel(),   C.ens_GeomName,      ensf + ".geo"));
         ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr"));
         ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel"));
         ensight.Write();
     }
 
-    if (C.vtk){
-        const std::string filenames=C.vtkDir + "/" + C.vtkName;
-        VTKOutCL vtkwriter(MG, "StokesLoesung", 2, filenames.c_str(), C.vtkBinary);
+    if (C.vtk_VTKOut){
+        const std::string filenames=C.vtk_VTKDir + "/" + C.vtk_VTKName;
+        VTKOutCL vtkwriter(MG, "StokesLoesung", 2, filenames.c_str(), C.vtk_Binary);
         vtkwriter.PutGeom(0.0);
         vtkwriter.PutScalar("pressure", Stokes.GetPrSolution());
         vtkwriter.PutVector("velocity", Stokes.GetVelSolution());
@@ -436,3 +436,4 @@ int main (int argc, char** argv)
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

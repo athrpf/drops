@@ -70,8 +70,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
-    sigma= C.sigma;
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff);
+    sigma= C.sft_SurfTension;
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -105,10 +105,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 
-    PSchur_PCG_CL   schurSolver( Stokes.prM.Data, C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
+    PSchur_PCG_CL   schurSolver( Stokes.prM.Data, C.stk_OuterIter, C.stk_OuterTol, C.stk_InnerIter, C.stk_InnerTol);
     VelVecDescCL curv( vidx);
 
-    if (C.IniCond != 0)
+    if (C.dmc_InitialCond != 0)
     {
         // solve stationary problem for initial velocities
         TimerCL time;
@@ -130,8 +130,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     lset.AccumulateBndIntegral( curv);
 
     // Initialize Ensight6 output
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
-    Ensight6OutCL ensight( C.EnsCase + ".case", C.num_steps + 1);
+    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps + 1);
     ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(),        "Maesszelle", ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),           "Levelset",   ensf + ".scl", true));
     ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),       "Pressure",   ensf + ".pr",  true));
@@ -140,27 +140,27 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     ensight.Write();
 
-    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.dt, C.theta);
-    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.outer_iter, C.outer_tol, C.inner_iter, C.inner_tol);
-    ISPschurSolver.SetTol( C.outer_tol);
+    ISPreCL ispc( Stokes.prA.Data, Stokes.prM.Data, 1./C.tm_StepSize, C.stk_Theta);
+    ISPSchur_PCG_CL ISPschurSolver( ispc,  C.stk_OuterIter, C.stk_OuterTol, C.stk_InnerIter, C.stk_InnerTol);
+    ISPschurSolver.SetTol( C.stk_OuterTol);
 
     typedef NSSolverBaseCL<StokesProblemT> SolverT;
     SolverT navstokessolver(Stokes, ISPschurSolver);
 
     LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, navstokessolver, C.theta, 0.);
-    cpl.SetTimeStep( C.dt);
+        cpl( Stokes, lset, navstokessolver, C.stk_Theta, 0.);
+    cpl.SetTimeStep( C.tm_StepSize);
 
-    for (int step= 1; step<=C.num_steps; ++step)
+    for (int step= 1; step<=C.tm_NumSteps; ++step)
     {
         std::cout << "======================================================== Schritt " << step << ":\n";
-        cpl.DoStep( C.cpl_iter);
+        cpl.DoStep( C.cpl_Iter);
         curv.Clear();
         lset.AccumulateBndIntegral( curv);
 
-        ensight.Write( step*C.dt);
+        ensight.Write( step*C.tm_StepSize);
         std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        if (C.VolCorr)
+        if (C.lvs_VolCorrection)
         {
             double dphi= lset.AdjustVolume( Vol, 1e-9);
             std::cout << "volume correction is " << dphi << std::endl;
@@ -168,15 +168,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
         }
 
-        if (C.RepFreq && step%C.RepFreq==0)
+        if (C.rpm_Freq && step%C.rpm_Freq==0)
         {
-            lset.ReparamFastMarching( C.RepMethod);
+            lset.ReparamFastMarching( C.rpm_Method);
             curv.Clear();
             lset.AccumulateBndIntegral( curv);
 
-            ensight.Write( (step+0.1)*C.dt);
+            ensight.Write( (step+0.1)*C.tm_StepSize);
             std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            if (C.VolCorr)
+            if (C.lvs_VolCorrection)
             {
                 double dphi= lset.AdjustVolume( Vol, 1e-9);
                 std::cout << "volume correction is " << dphi << std::endl;
@@ -221,7 +221,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL orig(-L), e1, e2, e3;
     e1[0]= e2[1]= e3[2]= 2*L;
 
-    const int n= std::atoi( C.meshfile.c_str());
+    const int n= std::atoi( C.dmc_MeshFile.c_str());
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
 
     const DROPS::BndCondT bc[6]=
@@ -233,10 +233,10 @@ int main (int argc, char** argv)
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 
-    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius);
-    for (int i=0; i<C.ref_flevel; ++i)
+    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
+    for (int i=0; i<C.ref_FinestLevel; ++i)
     {
-        DROPS::MarkInterface( DROPS::EllipsoidCL::DistanceFct, C.ref_width, mg);
+        DROPS::MarkInterface( DROPS::EllipsoidCL::DistanceFct, C.ref_Width, mg);
         mg.Refine();
     }
     std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
@@ -251,3 +251,4 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

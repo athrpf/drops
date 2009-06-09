@@ -50,9 +50,9 @@ const double tolerance=DROPS::DoubleEpsC;
 void MarkDrop (const DROPS::MultiGridCL& mg)
 {
     DROPS::Point3DCL Mitte;
-    Mitte[0]=0.5*(C.dim[0]-C.orig[0]);
-    Mitte[1]=0.5*(C.dim[1]-C.orig[1]);;
-    Mitte[2]=0.5*(C.dim[2]-C.orig[2]);;
+    Mitte[0]=0.5*(C.brk_dim[0]-C.brk_orig[0]);
+    Mitte[1]=0.5*(C.brk_dim[1]-C.brk_orig[1]);;
+    Mitte[2]=0.5*(C.brk_dim[2]-C.brk_orig[2]);;
 
     for (DROPS::MultiGridCL::const_TriangTetraIteratorCL It(mg.GetTriangTetraBegin()), ItEnd(mg.GetTriangTetraEnd()); It!=ItEnd; ++It)
         if ( (GetBaryCenter(*It)-Mitte).norm()<=std::max(0.1,1.5*std::pow(It->GetVolume(),1.0/3.0)) )
@@ -61,7 +61,7 @@ void MarkDrop (const DROPS::MultiGridCL& mg)
 
 void MarkCorner (DROPS::MultiGridCL& mg)
 {
-    DROPS::Point3DCL Corner(C.orig);
+    DROPS::Point3DCL Corner(C.brk_orig);
     /// \todo Aufrufparameter maxLevel entfernt
     ///  - for (DROPS::MultiGridCL::TriangTetraIteratorCL It(mg.GetTriangTetraBegin(maxLevel)),
     ///  - ItEnd(mg.GetTriangTetraEnd(maxLevel)); It!=ItEnd; ++It)
@@ -78,21 +78,21 @@ void MarkCorner (DROPS::MultiGridCL& mg)
 /// Init pressure
 double Pressure(const DROPS::Point3DCL& x, double)
 {
-    return (x-C.orig+C.dim).norm();
+    return (x-C.brk_orig+C.brk_dim).norm();
 }
 
 /// Init levelset as distance to origin of the brick
 double Levelset(const DROPS::Point3DCL& x, double)
 {
-    return (x-C.orig).norm()+1.;
+    return (x-C.brk_orig).norm()+1.;
 }
 
 /// Init velocity as parabolic profile with zero velocities at the bottom of the brick
 DROPS::Point3DCL Velocity(const DROPS::Point3DCL& x, double =0.)
 {
-    const double y=  (C.orig[0]-x[0])*(C.orig[0]+C.dim[0]-x[0])
-                   * (C.orig[2]-x[2])*(C.orig[2]+C.dim[2]-x[2])
-                   * (x[1]-C.orig[1]);
+    const double y=  (C.brk_orig[0]-x[0])*(C.brk_orig[0]+C.brk_dim[0]-x[0])
+                   * (C.brk_orig[2]-x[2])*(C.brk_orig[2]+C.brk_dim[2]-x[2])
+                   * (x[1]-C.brk_orig[1]);
     return DROPS::MakePoint3D(10., y, 10.);
 }
 
@@ -289,13 +289,13 @@ void PerformSerialization(DROPS::LoadBalHandlerCL& lb, DROPS::ParMultiGridCL& pm
         cout << line << " Write out multigrid\n" << line << flush;
 
     // Write out multigrid
-    DROPS::ParMGSerializationCL writer(mg, C.ser_dir, DROPS::ProcCL::Master());
+    DROPS::ParMGSerializationCL writer(mg, C.rst_Outputfile, DROPS::ProcCL::Master());
     writer.WriteMG();
 
 
     VTKOutCL *vtkwriter=0;
-    if (C.vtk){
-        vtkwriter = new VTKOutCL(mg, C.vtkName, 1, string(C.vtkDir + "/serialization") , C.vtkBinary);
+    if (C.vtk_VTKOut){
+        vtkwriter = new VTKOutCL(mg, C.vtk_VTKName, 1, string(C.vtk_VTKDir + "/serialization") , C.vtk_Binary);
         vtkwriter->PutGeom(0.0);
     }
 
@@ -326,7 +326,7 @@ void PerformSerialization(DROPS::LoadBalHandlerCL& lb, DROPS::ParMultiGridCL& pm
         writer.WriteDOF(&pr_vec, "Pressure");
         writer.WriteDOF(&vel_vec, "Velocity");
 
-        if (C.vtk){
+        if (C.vtk_VTKOut){
             vtkwriter->PutScalar("Pressure", PrFE  (&pr_vec,   &pr_bnd,   &mg));
             vtkwriter->PutScalar("Levelset", LsetFE(&lset_vec, &lset_bnd, &mg));
             vtkwriter->PutVector("Velocity", VelFE (&vel_vec,  &vel_bnd,  &mg));
@@ -379,9 +379,9 @@ void CheckSerialization(DROPS::LoadBalHandlerCL& lb, DROPS::ParMultiGridCL& pmg)
         pmg.AttachTo(vel_vec,  &vel_bnd);
 
         if (ProcCL::IamMaster()){
-            ReadDOF(mg, pr_vec,   std::string(C.ser_dir+"Pressure"));
-            ReadDOF(mg, lset_vec, std::string(C.ser_dir+"Levelset"));
-            ReadDOF(mg, vel_vec,  std::string(C.ser_dir+"Velocity"));
+            ReadDOF(mg, pr_vec,   std::string(C.rst_Outputfile+"Pressure"));
+            ReadDOF(mg, lset_vec, std::string(C.rst_Outputfile+"Levelset"));
+            ReadDOF(mg, vel_vec,  std::string(C.rst_Outputfile+"Velocity"));
         }
 
     }
@@ -487,7 +487,7 @@ int main (int argc, char** argv)
 
         // Create a unitcube at origin 0
         DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
-        e1[0]=C.dim[0]; e2[1]=C.dim[1]; e3[2]= C.dim[2];
+        e1[0]=C.brk_dim[0]; e2[1]=C.brk_dim[1]; e3[2]= C.brk_dim[2];
 
         DROPS::MGBuilderCL        * mgb     = 0;
         DROPS::BrickBuilderCL     * builder = 0;
@@ -495,15 +495,15 @@ int main (int argc, char** argv)
         if (DROPS::ProcCL::IamMaster()){
             // if mode==0, then create a brick and write it out
             if (C.mode==0){
-                mgb = new DROPS::BrickBuilderCL(C.orig, e1, e2, e3, C.basicref_x, C.basicref_y, C.basicref_z);
+                mgb = new DROPS::BrickBuilderCL(C.brk_orig, e1, e2, e3, C.brk_BasicRefX, C.brk_BasicRefY, C.brk_BasicRefZ);
             }
             else{
-                builder = new DROPS::BrickBuilderCL(C.orig, e1, e2, e3, C.basicref_x, C.basicref_y, C.basicref_z);
-                mgb = new DROPS::FileBuilderCL(C.ser_dir, builder);
+                builder = new DROPS::BrickBuilderCL(C.brk_orig, e1, e2, e3, C.brk_BasicRefX, C.brk_BasicRefY, C.brk_BasicRefZ);
+                mgb = new DROPS::FileBuilderCL(C.rst_Outputfile, builder);
             }
         }
         else{
-            mgb = new DROPS::EmptyBrickBuilderCL(C.orig, e1, e2, e3);
+            mgb = new DROPS::EmptyBrickBuilderCL(C.brk_orig, e1, e2, e3);
         }
 
         // Create multigrid and attach to pmg
@@ -526,4 +526,5 @@ int main (int argc, char** argv)
     catch (DROPS::DROPSErrCL err) { err.handle(); }
 
 }
+
 

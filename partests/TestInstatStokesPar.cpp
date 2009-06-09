@@ -150,8 +150,8 @@ namespace DROPS // for Strategy
 * S T R A T E G Y                                                           *
 *****************************************************************************
 *   Das ist die Strategy, um die Poisson-Gleichung, die durch die           *
-*   Koeffizienten von oben gegeben sind, zu lösen. Es werden lineare FE     *
-*   und das CG-Verfahren für das Lösen des linearen Gleichungssystems       *
+*   Koeffizienten von oben gegeben sind, zu lï¿½sen. Es werden lineare FE     *
+*   und das CG-Verfahren fï¿½r das Lï¿½sen des linearen Gleichungssystems       *
 *   verwendet. Es wird nicht adaptiv vorgegangen                            *
 ****************************************************************************/
 template<class Coeff>
@@ -214,11 +214,11 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
 
         // Erzeuge ensight case File und geom-File
     Ensight6OutCL *ensight=0;
-    std::string ensf( C.EnsDir + "/" + C.EnsCase);
+    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
 
-    if (C.ensight){
-        ensight= new Ensight6OutCL( C.EnsCase + ".case", C.timesteps, false);
-        ensight->Register( make_Ensight6Geom      ( MG, pidx->GetFinest().TriangLevel(), C.geomName, ensf + ".geo"));
+    if (C.ens_EnsightOut){
+        ensight= new Ensight6OutCL( C.ens_EnsCase + ".case", C.timesteps, false);
+        ensight->Register( make_Ensight6Geom      ( MG, pidx->GetFinest().TriangLevel(), C.ens_GeomName, ensf + ".geo"));
         ensight->Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
         ensight->Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
     }
@@ -267,7 +267,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
     typedef SolverAsPreCL<ASolverT> APcT;
     APcT Apc( Asolver/*, &std::cout*/);
     typedef ParInexactUzawaCL<APcT, SPcT, APC_SYM> OseenSolverT;
-    OseenSolverT Solver( Apc, ispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.outer_iter, C.outer_tol, 0.1);
+    OseenSolverT Solver( Apc, ispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(), C.stk_OuterIter, C.stk_OuterTol, 0.1);
 
       // Solver for the time integration
     typedef InstatStokesThetaSchemeCL<StokesP2P1CL<Coeff>, OseenSolverT> InstatSolverT;
@@ -293,7 +293,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
                       << "   + Resid    " << Solver.GetResid() <<'\n'<< std::endl;
 
         DROPS::P1EvalCL<double, const DROPS::StokesPrBndDataCL,DROPS::VecDescCL> pr(&Stokes.p, &Stokes.GetBndData().Pr, &MG);
-        if (C.ensight)
+        if (C.ens_EnsightOut)
             ensight->Write( t);
 
         if (ProcCL::IamMaster())
@@ -302,7 +302,7 @@ void Strategy(StokesP2P1CL<Coeff>& Stokes, const ParMultiGridCL& /*pmg*/)
         Stokes.CheckSolution(v,p,&LsgVel,&LsgPr,t);
     }
 
-    if (C.ensight)
+    if (C.ens_EnsightOut)
         delete ensight;
 }
 } // end of namespace DROPS
@@ -464,3 +464,4 @@ int main (int argc, char** argv)
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+

@@ -118,15 +118,15 @@ DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double x = (p[0]/C.r_inlet)*(p[0]/C.r_inlet)-1,
-                 z = (p[2]/C.r_inlet)*(p[2]/C.r_inlet)-1;
+    const double x = (p[0]/C.exp_RadInlet)*(p[0]/C.exp_RadInlet)-1,
+                 z = (p[2]/C.exp_RadInlet)*(p[2]/C.exp_RadInlet)-1;
 
 //     Inflow with waves
 //     const double freq= 50, ampl= 0.1;
 //     ret[1]= x * z * C.Anstroem * (1-ampl*std::cos(2*M_PI*freq*t));  // Rohr
 
     // constant inflow
-    ret[1]= x * z * C.Anstroem;
+    ret[1]= x * z * C.exp_InflowVel;
 
     return ret;
 }
@@ -134,9 +134,9 @@ DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 // distance function of a droplet droplet
 double DistanceFct1( const DROPS::Point3DCL& p)
 {
-    DROPS::Point3DCL d= C.Mitte-p;
-    const double avgRad = cbrt(C.Radius[0]*C.Radius[1]* C.Radius[2]);
-    d/= C.Radius/avgRad;
+    DROPS::Point3DCL d= C.exp_PosDrop-p;
+    const double avgRad = cbrt(C.exp_RadDrop[0]*C.exp_RadDrop[1]* C.exp_RadDrop[2]);
+    d/= C.exp_RadDrop/avgRad;
     return d.norm()-avgRad;
 }
 
@@ -160,7 +160,7 @@ template<class Coeff>
     // Create indices
     CreateIdxAndAssignIdx(Stokes, lset, mg);
 
-    switch (C.IniCond)
+    switch (C.dmc_InitialCond)
     {
       // zero flow
       case 0:
@@ -187,10 +187,10 @@ template<class Coeff>
         IFInfo.Write(Stokes.t);
 
         StokesSolverParamST statStokesParam(C);
-        statStokesParam.StokesMethod= 20301;
-        statStokesParam.num_steps   = 0;
-        statStokesParam.dt          = 0.;
-        statStokesParam.pcA_tol     = 0.02;
+        statStokesParam.stk_StokesMethod= 20301;
+        statStokesParam.tm_NumSteps   = 0;
+        statStokesParam.tm_StepSize          = 0.;
+        statStokesParam.stk_PcATol     = 0.02;
         StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
         StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
@@ -213,7 +213,7 @@ template<class Coeff>
         }
 
         //Solve initial problem
-        double theta= C.theta;
+        double theta= C.stk_Theta;
         time.Reset();
         int step=0;
         int iters=0;
@@ -243,18 +243,18 @@ template<class Coeff>
       {
         MLIdxDescCL* pidx= &Stokes.pr_idx;
         // Read velocity, pressure and levelset
-        ReadFEFromFile( lset.Phi, mg, C.IniData+"levelset");
-        ReadFEFromFile( Stokes.v, mg, C.IniData+"velocity");
+        ReadFEFromFile( lset.Phi, mg, C.dmc_InitialFile+"levelset");
+        ReadFEFromFile( Stokes.v, mg, C.dmc_InitialFile+"velocity");
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
         if (Stokes.UsesXFEM()) {
             VecDescCL pneg( pidx), ppos( pidx);
-            ReadFEFromFile( pneg, mg, C.IniData+"pressureNeg");
-            ReadFEFromFile( ppos, mg, C.IniData+"pressurePos");
+            ReadFEFromFile( pneg, mg, C.dmc_InitialFile+"pressureNeg");
+            ReadFEFromFile( ppos, mg, C.dmc_InitialFile+"pressurePos");
             P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, mg);
         }
         else{
-            ReadFEFromFile( Stokes.p, mg, C.IniData+"pressure");
+            ReadFEFromFile( Stokes.p, mg, C.dmc_InitialFile+"pressure");
         }
 
         if (ProcCL::IamMaster())
@@ -273,23 +273,23 @@ template<typename Coeff>
 
     // writer for vtk-format
     typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
-    VTKWriterT vtkwriter(adap.GetMG(), Stokes, lset, (C.vtk ? C.num_steps/C.vtk+1 : 0),
-                         std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary);
+    VTKWriterT vtkwriter(adap.GetMG(), Stokes, lset, (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
+                         std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
     // writer for ensight format
     typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
-    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
-                                  (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
+    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.ens_EnsDir, C.ens_EnsCase, C.ens_GeomName, /*adaptive=*/true,
+                                  (C.ens_EnsightOut? C.tm_NumSteps/C.ens_EnsightOut+1 : 0), C.ens_Binary, C.ens_MasterOut);
 
     // Serialization
     typedef TwoPhaseStoreCL<StokesProblemT> SerializationT;
-    SerializationT serializer(adap.GetMG(), Stokes, lset, 0, C.ser_dir);
+    SerializationT serializer(adap.GetMG(), Stokes, lset, 0, C.rst_Outputfile);
 
-    if (C.vtk)
+    if (C.vtk_VTKOut)
         vtkwriter.write();
-    if (C.ensight)
+    if (C.ens_EnsightOut)
         ensightwriter.write();
 
-    const double Vol= 4./3.*M_PI*C.Radius[0]*C.Radius[1]*C.Radius[2];
+    const double Vol= 4./3.*M_PI*C.exp_RadDrop[0]*C.exp_RadDrop[1]*C.exp_RadDrop[2];
     double relVol = lset.GetVolume()/Vol;
 
     StokesSolverParamST instatStokesParam(C);
@@ -298,16 +298,16 @@ template<typename Coeff>
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
-    NSSolverT nssolver( Stokes, *instatStokesSolver, C.ns_iter, C.ns_tol, C.ns_red);
+    NSSolverT nssolver( Stokes, *instatStokesSolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
 
     // coupling levelset NavStokes
     time.Reset();
     // Coupling Navier-Stokes with Levelset
 //     typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
     typedef LinThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-    CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, true);
+    CouplingT cpl( Stokes, lset, nssolver, C.stk_Theta, C.ns_Nonlinear, true);
 //     typedef RecThetaScheme2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-//     CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear, false);
+//     CouplingT cpl( Stokes, lset, nssolver, C.stk_theta, C.nonlinear, false);
 
 
     time.Stop();
@@ -316,9 +316,9 @@ template<typename Coeff>
         std::cout << "- Updating discretization took "<<duration<<" sec.\n";
 
     // Set time step and create matrices
-    cpl.SetTimeStep( C.dt);
+    cpl.SetTimeStep( C.tm_StepSize);
 
-    for (int step= 1; step<=C.num_steps; ++step)
+    for (int step= 1; step<=C.tm_NumSteps; ++step)
     {
         ParTimerCL step_time;
         step_time.Reset();
@@ -329,14 +329,14 @@ template<typename Coeff>
                       << "\n Idx for lset "<<lset.Phi.RowIdx->GetIdx()<<std::endl;
         time.Reset();
 
-        if (C.ref_freq && step%C.ref_freq==0)
+        if (C.ref_Freq && step%C.ref_Freq==0)
         {
             if (ProcCL::IamMaster())
                 std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
 
             adap.UpdateTriang( lset);
 
-            if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adap.GetPMG())) )
+            if (C.inf_CheckMG && !ProcCL::Check( CheckParMultiGrid(adap.GetPMG())) )
                 throw DROPSErrCL("MultiGrid is incorrect!");
 
             if (adap.WasModified() )
@@ -351,13 +351,13 @@ template<typename Coeff>
             }
         }
 
-        if (C.printNumUnk)
+        if (C.inf_PrintNumUnk)
             DisplayUnks(Stokes, lset, adap.GetMG());
 
         if (ProcCL::IamMaster())
             std::cout << "==> Solving coupled Levelset-Navier-Stokes problem ....\n";
 
-        cpl.DoStep( C.cpl_iter);
+        cpl.DoStep( C.cpl_Iter);
 
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster()){
@@ -367,9 +367,9 @@ template<typename Coeff>
         }
 
         // Write out solution
-        if (C.ensight && step%C.ensight==0)
+        if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)
             ensightwriter.write();
-        if (C.vtk && step%C.vtk==0)
+        if (C.vtk_VTKOut && step%C.vtk_VTKOut==0)
             vtkwriter.write();
 
         // Write out droplet information
@@ -377,7 +377,7 @@ template<typename Coeff>
         IFInfo.Write(Stokes.t);
 
         // Reparametrization of levelset function
-        if (C.RepFreq && step%C.RepFreq==0)
+        if (C.rpm_Freq && step%C.rpm_Freq==0)
         {
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster())
@@ -385,7 +385,7 @@ template<typename Coeff>
                           << "- rel. Volume: " << relVol << std::endl;
 
             time.Reset();
-            lset.ReparamFastMarching( C.RepMethod, false, false, C.RepMethod==3);
+            lset.ReparamFastMarching( C.rpm_Method, false, false, C.rpm_Method==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
@@ -397,7 +397,7 @@ template<typename Coeff>
             std::cout << "- rel. Volume: " << relVol << std::endl;
 
         // Correction of the volume
-        if (C.VolCorr)
+        if (C.lvs_VolCorrection)
         {
             if (ProcCL::IamMaster())
                 std::cout << "\n==> Adjust volume ...\n";
@@ -413,7 +413,7 @@ template<typename Coeff>
         }
 
         // Serialization
-        if (C.serialization && step%C.serialization==0)
+        if (C.rst_Serialization && step%C.rst_Serialization==0)
         {
             if (ProcCL::IamMaster())
                 std::cout << "\n==> Serialize data ...\n";
@@ -445,14 +445,14 @@ template<class Coeff>
     ParTimerCL time;
 
     // Set parameter of the surface tension
-    SurfaceTensionCL::eps           = C.st_jumpWidth;
-    SurfaceTensionCL::lambda        = C.st_relPos;
+    SurfaceTensionCL::eps           = C.sft_JumpWidth;
+    SurfaceTensionCL::lambda        = C.sft_RelPos;
     SurfaceTensionCL::sigma         = Stokes.GetCoeff().SurfTens;
-    SurfaceTensionCL::sigma_dirt_fac= C.st_red;
+    SurfaceTensionCL::sigma_dirt_fac= C.sft_DirtFactor;
 
 //    instat_vector_fun_ptr gsigma= &(SurfaceTensionCL::grad_sm_step);
     LevelsetP2CL lset( mg, &SurfaceTensionCL::sigma_step, &SurfaceTensionCL::gsigma_step,
-                       C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+                       C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff, C.rpm_NarrowBand);
 
     DisplayDetailedGeom(mg);
 
@@ -468,7 +468,7 @@ template<class Coeff>
 
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
-        infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
+        infofile = new std::ofstream( string(C.ens_EnsCase + ".info").c_str());
     IFInfo.Init(infofile);
     IFInfo.WriteHeader();
 
@@ -522,16 +522,16 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL      *mg=0;
     DROPS::StokesBndDataCL  *bnddata=0;
 
-    CreateGeom(mg, bnddata, Inflow, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
+    CreateGeom(mg, bnddata, Inflow, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
 
     DROPS::ParMultiGridCL::Instance().AttachTo(*mg);
     DROPS::CheckParMultiGrid(DROPS::ParMultiGridCL::Instance());
 
     // Init problem
-    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius );
-    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, ((C.deserialization_file == "none") ? 1 : -1)*C.refineStrategy);
+    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop );
+    DROPS::AdapTriangCL adap( *mg, C.ref_Width, 0, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? 1 : -1)*C.ref_RefineStrategy);
 
-    if (C.deserialization_file == "none")
+    if (C.rst_Inputfile == "none")
         adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
     MyStokesCL prob( *mg, DROPS::ZeroFlowCL(C), *bnddata, DROPS::P1_FE, 0.0);
@@ -548,7 +548,7 @@ int main (int argc, char** argv)
 
         // build specific name for logfile.
         char refLevel[32];
-        sprintf(refLevel,"%d",C.ref_flevel);
+        sprintf(refLevel,"%d",C.ref_FinestLevel);
         std::string refStr(&refLevel[0]);
         std::string basename("./TestBrickflowPar_Level_");
        // std::string basename("/home/th179319/DropsTimeMeas/results/TestBrickflowPar_Rad3_Level_");
@@ -562,4 +562,5 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+
 

@@ -82,22 +82,22 @@ namespace DROPS{
 DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double s2= C.r_inlet*C.r_inlet,
-                 r2= p.norm_sq() - p[C.flow_dir]*p[C.flow_dir];
-    ret[C.flow_dir]= -(r2-s2)/s2*C.Anstroem;
+    const double s2= C.exp_RadInlet*C.exp_RadInlet,
+                 r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
+    ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
     return ret;
 }
 
 /// \brief Get y-distance to midpoint of the meassurements ...
 double DistanceToBarycenterOfQuadGrid( const DROPS::Point3DCL& p)
 {
-    return p[1]-C.barycenter[1];
+    return p[1]-C.qlg_Barycenter[1];
 }
 
 /// \brief Get y-distance to midpoint of the droplet ...
 double DistanceYToBarycenterOfDrop( const DROPS::Point3DCL& p)
 {
-    return p[1]-C.Mitte[1];
+    return p[1]-C.exp_PosDrop[1];
 }
 
 
@@ -117,16 +117,16 @@ template<class Coeff>
     IFInfo.Update(lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t);
 
-    switch (C.IniCond)
+    switch (C.dmc_InitialCond)
     {
       // stationary flow with/without drop
       case 1: case 2:
       {
         StokesSolverParamST statStokesParam(C);
-        statStokesParam.StokesMethod= 20301;
-        statStokesParam.num_steps   = 0;
-        statStokesParam.dt          = 0.;
-        statStokesParam.pcA_tol     = 0.02;
+        statStokesParam.stk_StokesMethod= 20301;
+        statStokesParam.tm_NumSteps   = 0;
+        statStokesParam.tm_StepSize          = 0.;
+        statStokesParam.stk_PcATol     = 0.02;
         StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> statStokesSolverFactory(Stokes, statStokesParam);
         StokesSolverBaseCL* statStokesSolver= statStokesSolverFactory.CreateStokesSolver();
 
@@ -149,7 +149,7 @@ template<class Coeff>
         }
 
         //Solve initial problem
-        double theta= C.theta;
+        double theta= C.stk_Theta;
         time.Reset();
         int step=0;
         int iters=0;
@@ -178,9 +178,9 @@ template<class Coeff>
       case 3:
         {
             ReadEnsightP2SolCL reader( Stokes.GetMG(), false);
-            reader.ReadVector( C.IniData+".vel", Stokes.v, Stokes.GetBndData().Vel);
-            reader.ReadScalar( C.IniData+".pr",  Stokes.p, Stokes.GetBndData().Pr);
-            reader.ReadScalar( C.IniData+".scl", lset.Phi, lset.GetBndData());
+            reader.ReadVector( C.dmc_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
+            reader.ReadScalar( C.dmc_InitialFile+".pr",  Stokes.p, Stokes.GetBndData().Pr);
+            reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
             if (ProcCL::IamMaster())
                 std::cout << "- Initial Conditions successfull read\n";
         } break;
@@ -199,16 +199,16 @@ template<typename Coeff>
 
     // writer in vtk-format
     typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
-    VTKWriterT vtkwriter(adap.GetMG(), Stokes, lset, (C.vtk ? C.num_steps/C.vtk+1 : 0),
-                         std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary);
+    VTKWriterT vtkwriter(adap.GetMG(), Stokes, lset, (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
+                         std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
     // writer for ensight format
     typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightWriterT;
-    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.EnsDir, C.EnsCase, C.geomName, /*adaptive=*/true,
-                                  (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
+    EnsightWriterT ensightwriter( adap.GetMG(), lset.Phi.RowIdx, Stokes, lset, C.ens_EnsDir, C.ens_EnsCase, C.ens_GeomName, /*adaptive=*/true,
+                                  (C.ens_EnsightOut? C.tm_NumSteps/C.ens_EnsightOut+1 : 0), C.ens_Binary, C.ens_MasterOut);
 
-    if (C.vtk)
+    if (C.vtk_VTKOut)
         vtkwriter.write();
-    if (C.ensight)
+    if (C.ens_EnsightOut)
         ensightwriter.write();
 
     const double Vol= EllipsoidCL::GetVolume();
@@ -221,7 +221,7 @@ template<typename Coeff>
 
     // Navstokes solver
     typedef AdaptFixedPtDefectCorrCL<StokesProblemT> NSSolverT;
-    NSSolverT nssolver( Stokes, oseensolver, C.ns_iter, C.ns_tol, C.ns_red);
+    NSSolverT nssolver( Stokes, oseensolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
 
     // coupling levelset NavStokes
     time.Reset();
@@ -230,7 +230,7 @@ template<typename Coeff>
 //    CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
 
     typedef RecThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-    CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+    CouplingT cpl( Stokes, lset, nssolver, C.stk_Theta, C.ns_Nonlinear);
 
     time.Stop();
     duration=time.GetMaxTime();
@@ -238,10 +238,10 @@ template<typename Coeff>
         std::cout << "- Updating discretization took "<<duration<<" sec.\n";
 
     // Set time step and create matrices
-    cpl.SetTimeStep( C.dt);
+    cpl.SetTimeStep( C.tm_StepSize);
 
     int step= 1;
-    for (; step<=C.num_steps; ++step)
+    for (; step<=C.tm_NumSteps; ++step)
     {
         ParTimerCL step_time;
         step_time.Reset();
@@ -252,14 +252,14 @@ template<typename Coeff>
                       << "\n Idx for lset "<<lset.Phi.RowIdx->GetIdx()<<std::endl;
         time.Reset();
 
-        if (C.ref_freq && step%C.ref_freq==0)
+        if (C.ref_Freq && step%C.ref_Freq==0)
         {
             if (ProcCL::IamMaster())
                 std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
 
             adap.UpdateTriang( lset);
 
-            if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adap.GetPMG())) )
+            if (C.inf_CheckMG && !ProcCL::Check( CheckParMultiGrid(adap.GetPMG())) )
                 throw DROPSErrCL("MultiGrid is incorrect!");
 
             if (adap.WasModified() )
@@ -273,7 +273,7 @@ template<typename Coeff>
             }
         }
 
-        if (C.printNumUnk)
+        if (C.inf_PrintNumUnk)
             DisplayUnks(Stokes, lset, adap.GetMG());
 
         if (ProcCL::IamMaster())
@@ -281,13 +281,13 @@ template<typename Coeff>
 
         VectorCL u_old= Stokes.v.Data;
 
-        cpl.DoStep( C.cpl_iter);
+        cpl.DoStep( C.cpl_Iter);
 
         VectorCL e (Stokes.v.Data-u_old);
         double L2NormE   = std::sqrt(Stokes.vel_idx.GetEx().ParDot(VectorCL(Stokes.M.Data*e), false, e, true, true));
         double L2NormUnew= std::sqrt(Stokes.vel_idx.GetEx().ParDot(VectorCL(Stokes.M.Data*Stokes.v.Data), false, Stokes.v.Data, true, true));
         double norm_diff = L2NormE/L2NormUnew;
-        double timeDeriv = L2NormE/C.dt;
+        double timeDeriv = L2NormE/C.tm_StepSize;
 
         time.Stop(); duration=time.GetMaxTime();
         if (ProcCL::IamMaster()){
@@ -301,9 +301,9 @@ template<typename Coeff>
         }
 
         // Write out solution
-        if (C.ensight && step%C.ensight==0)
+        if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)
             ensightwriter.write();
-        if (C.vtk && step%C.vtk==0)
+        if (C.vtk_VTKOut && step%C.vtk_VTKOut==0)
             vtkwriter.write();
 
         // Write out droplet information
@@ -311,14 +311,14 @@ template<typename Coeff>
         IFInfo.Write(Stokes.t);
 
         // Reparametrization of levelset function
-        if (C.RepFreq && step%C.RepFreq==0)
+        if (C.rpm_Freq && step%C.rpm_Freq==0)
         {
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster())
                 std::cout << "\n==> Reparametrization\n"
                           << "- rel. Volume: " << relVol << std::endl;
             time.Reset();
-            lset.ReparamFastMarching( C.RepMethod, C.RepMethod==3);
+            lset.ReparamFastMarching( C.rpm_Method, C.rpm_Method==3);
             time.Stop(); duration=time.GetMaxTime();
             relVol = lset.GetVolume()/Vol;
             if (ProcCL::IamMaster()){
@@ -330,7 +330,7 @@ template<typename Coeff>
         if (ProcCL::IamMaster())
             std::cout << "- rel. Volume: " << relVol << std::endl;
 
-        if (C.VolCorr)
+        if (C.lvs_VolCorrection)
         {
             time.Reset();
             if (ProcCL::IamMaster())
@@ -355,17 +355,17 @@ template<typename Coeff>
             DROPS_LOGGER_NEXTSTEP();
         }
 
-        if (timeDeriv<=C.XFEMStab){     // use XFEMStab as criteria
+        if (timeDeriv<=C.stk_XFEMStab){     // use XFEMStab as criteria
             IF_MASTER
             std::cout << " ==> norm velocity has just changed by "<< norm_diff
-                        << ", tolerance of "<<C.XFEMStab<<" has been reached!"
+                        << ", tolerance of "<<C.stk_XFEMStab<<" has been reached!"
                         << std::endl;
             break;
         }
     }
-    if (step==C.num_steps){
+    if (step==C.tm_NumSteps){
         IF_MASTER
-            std::cout<< " ============> ATENTION: TOLERANCE NOT REACHED"<<std::endl;
+            std::cout<< " ============> ATTENTION: TOLERANCE NOT REACHED"<<std::endl;
     }
 
     Times.IncCounter(step);
@@ -385,14 +385,14 @@ template<class Coeff>
     double duration;
 
     // Set parameter of the surface tension
-    SurfaceTensionCL::eps           = C.st_jumpWidth;
-    SurfaceTensionCL::lambda        = C.st_relPos;
+    SurfaceTensionCL::eps           = C.sft_JumpWidth;
+    SurfaceTensionCL::lambda        = C.sft_RelPos;
     SurfaceTensionCL::sigma         = Stokes.GetCoeff().SurfTens;
-    SurfaceTensionCL::sigma_dirt_fac= C.st_red;
+    SurfaceTensionCL::sigma_dirt_fac= C.sft_DirtFactor;
 
     instat_scalar_fun_ptr sigmap  = 0;
     instat_vector_fun_ptr gsigmap = 0;
-    if (C.st_var)
+    if (C.sft_VarTension)
     {
         sigmap  = &SurfaceTensionCL::sigma_step;
         gsigmap = &SurfaceTensionCL::gsigma_step;
@@ -403,8 +403,8 @@ template<class Coeff>
         gsigmap = &SurfaceTensionCL::gsigma;
     }
 
-    LevelsetP2CL lset( mg, sigmap, gsigmap, C.theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
-    if (C.st_var)
+    LevelsetP2CL lset( mg, sigmap, gsigmap, C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff, C.rpm_NarrowBand);
+    if (C.sft_VarTension)
         lset.SetSurfaceForce( SF_ImprovedLBVar);
     else
         lset.SetSurfaceForce( SF_ImprovedLB);
@@ -413,11 +413,11 @@ template<class Coeff>
 
     std::ofstream *infofile=0;
     if (ProcCL::IamMaster())
-        infofile = new std::ofstream( string(C.EnsCase + ".info").c_str());
+        infofile = new std::ofstream( string(C.ens_EnsCase + ".info").c_str());
     IFInfo.Init(infofile);
     IFInfo.WriteHeader();
 
-    if (C.checkMG && !ProcCL::Check( CheckParMultiGrid(adapt.GetPMG())) )
+    if (C.inf_CheckMG && !ProcCL::Check( CheckParMultiGrid(adapt.GetPMG())) )
          throw DROPSErrCL("MultiGrid is incorrect!");
 
     LevelsetRepairCL lsetrepair( lset);
@@ -446,7 +446,7 @@ template<class Coeff>
     Stokes.M.SetIdx(vidx, vidx);    Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx); Stokes.prA.SetIdx( pidx, pidx);
 
-    if (C.printNumUnk)
+    if (C.inf_PrintNumUnk)
         DisplayUnks(Stokes, lset, mg);
 
     //Setup initial problem
@@ -460,18 +460,18 @@ template<class Coeff>
     if (ProcCL::IamMaster())
         std::cout << "=================================================================================== Transform:\n";
 
-    if (C.quad){
+    if (C.qlg_Quad){
         if (ProcCL::IamMaster())
             std::cout << "Write out geometry and velocity on the quadrilateral grid\n - geometry" << std::endl;
         time.Reset();
         LevelsetP2CL::const_DiscSolCL lset_sol=lset.GetSolution();
-        QuadOutCL brickout( mg, &lset.idx, C.gridX, C.gridY, C.gridZ, C.stepsize, C.barycenter, C.rotation);
-        brickout.putGeom(C.quadFileName + std::string(".geo"));
+        QuadOutCL brickout( mg, &lset.idx, C.qlg_GridX, C.qlg_GridY, C.qlg_GridZ, C.qlg_Stepsize, C.qlg_Barycenter, C.qlg_Rotation);
+        brickout.putGeom(C.qlg_FileName + std::string(".geo"));
         if (ProcCL::IamMaster())
             std::cout << " - (integrated) velocities"<<std::endl;
-        brickout.putVector(C.quadFileName + std::string(".vel_norm"),
-                           C.quadFileName + std::string(".velY"),
-                           C.quadFileName + std::string(".velZ"),
+        brickout.putVector(C.qlg_FileName + std::string(".vel_norm"),
+                           C.qlg_FileName + std::string(".velY"),
+                           C.qlg_FileName + std::string(".velZ"),
                            Stokes.GetVelSolution());
         time.Stop();
         duration=time.GetTime();
@@ -523,13 +523,13 @@ int main (int argc, char** argv)
     // Create Geometry
     DROPS::MultiGridCL      *mg=0;
     DROPS::StokesBndDataCL  *bnddata=0;
-    CreateGeom(mg, bnddata, DROPS::Inflow, C.meshfile, C.GeomType, C.bnd_type, C.deserialization_file, C.r_inlet);
+    CreateGeom(mg, bnddata, DROPS::Inflow, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
 
     mg->SizeInfo(std::cout);
 
     // Init problem
-    DROPS::EllipsoidCL::Init( C.Mitte, C.Radius );
-    DROPS::AdapTriangCL adap( *mg, C.ref_width, 0, C.ref_flevel, C.refineStrategy);
+    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop );
+    DROPS::AdapTriangCL adap( *mg, C.ref_Width, 0, C.ref_FinestLevel, C.ref_RefineStrategy);
     mg->SizeInfo(std::cout);
 
     adap.MakeInitialTriang( DROPS::DistanceYToBarycenterOfDrop);
@@ -545,11 +545,11 @@ int main (int argc, char** argv)
     // Writeout logging-results
     if (DROPS::ProcCL::IamMaster()){
         // DROPS_LOGGER_WRITEOUT("TestMzelleAdaptPar", (DROPS::ProcCL::Size()==1));
-        std::cout << C.ref_flevel << std::endl;
+        std::cout << C.ref_FinestLevel << std::endl;
 
         // build specific name for logfile.
         char refLevel[32];
-        sprintf(refLevel,"%d",C.ref_flevel);
+        sprintf(refLevel,"%d",C.ref_FinestLevel);
         std::string refStr(&refLevel[0]);
 
         //std::string basename("/home/th179319/DropsTimeMeas/results/TestMzelleAdaptPar_Level");
@@ -567,4 +567,5 @@ int main (int argc, char** argv)
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
 }
+
 
