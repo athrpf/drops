@@ -818,20 +818,14 @@ class TriangCL
 
     void clear () { triang_.clear(); }
     Uint size  (int lvl= -1) const
-        { MaybeCreate( lvl); return triang_[StdIndex( lvl)].size(); }
+        { MaybeCreate( lvl); return triang_[StdIndex( lvl)].size() - 1; }
 
     ptr_iterator begin (int lvl= -1)
         { MaybeCreate( lvl); return &*triang_[StdIndex( lvl)].begin(); }
     ptr_iterator end   (int lvl= -1)
         {
             MaybeCreate( lvl);
-#ifdef DROPS_WIN
-            ptr_iterator t = &(*(triang_[StdIndex( lvl )].end()-1));
-            t++;
-            return t;
-#else
-            return &*triang_[StdIndex( lvl)].end();
-#endif
+            return &*(triang_[StdIndex( lvl)].end() - 1);
         }
 
     const_ptr_iterator begin (int lvl= -1) const
@@ -839,19 +833,15 @@ class TriangCL
     const_ptr_iterator end   (int lvl= -1) const
         {
             MaybeCreate( lvl);
-#ifdef DROPS_WIN
-            const_ptr_iterator t = const_cast<const_ptr_iterator>( &(*(triang_[StdIndex( lvl )].end()-1)) );
-            t++;
-            return t;
-#else
-            return const_cast<const_ptr_iterator>( &*triang_[StdIndex( lvl)].end());
-#endif
+            return const_cast<const_ptr_iterator>( &*( triang_[StdIndex( lvl)].end() - 1));
         }
 
+    ///@{ Cave: The returned level-container contains a zero-pointer as last element, which serves as end-iterator for the end()-functions in this class.
     LevelCont&       operator[] (int lvl)
         { MaybeCreate( lvl); return triang_[StdIndex( lvl)]; }
     const LevelCont& operator[] (int lvl) const
         { MaybeCreate( lvl); return triang_[StdIndex( lvl)]; }
+    ///@}
 
     inline int  StdIndex    (int lvl) const;
 
@@ -1735,8 +1725,11 @@ template <class SimplexT>
         triang_.clear();
         triang_.resize( mg_.GetNumLevel());
     }
-    if (triang_[level].empty())
+    if (triang_[level].empty()) {
         TriangFillCL<SimplexT>::fill( mg_, triang_[level], level);
+        // Append a zero-pointer as explicit end-iterator of the sequence.
+        triang_[level].push_back( 0);
+    }
 }
 
 #ifdef _PAR
