@@ -90,13 +90,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
     }
     time.Stop();
     duration=time.GetTime();
-    IF_MASTER
-    {
-        std::cout << "Discretizing NavierStokes for old level set took "<< duration <<" sec.\n";
-#ifdef _PAR
-        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
-#endif
-    }
+    std::cout << "Discretizing NavierStokes for old level set took "<< duration <<" sec.\n";
     time.Reset();
 
     // setup system for levelset eq.
@@ -106,26 +100,14 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
 
     time.Stop();
     duration=time.GetTime();
-    IF_MASTER
-    {
-        std::cout << "Discretizing Levelset took " << duration << " sec.\n";
-#ifdef _PAR
-        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
-#endif
-    }
+    std::cout << "Discretizing Levelset took " << duration << " sec.\n";
     time.Reset();
 
     LvlSet_.DoLinStep( ls_rhs_);
 
     time.Stop();
     duration=time.GetTime();
-    IF_MASTER
-    {
-        std::cout << "Solving Levelset took " << duration << " sec.\n";
-#ifdef _PAR
-        DROPS_LOGGER_SETVALUE("SolveLevelset",duration);
-#endif
-    }
+    std::cout << "Solving Levelset took " << duration << " sec.\n";
 
     time.Reset();
 
@@ -146,13 +128,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::SolveLsNs()
 
     time.Stop();
     duration=time.GetTime();
-    IF_MASTER
-    {
-        std::cout << "Discretizing Rhs/Curv took "<< duration <<" sec.\n";
-#ifdef _PAR
-        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
-#endif
-    }
+    std::cout << "Discretizing Rhs/Curv took "<< duration <<" sec.\n";
 
     time.Reset();
     solver_.Solve( *mat_, Stokes_.B.Data,
@@ -243,13 +219,7 @@ void LinThetaScheme2PhaseCL<StokesT,SolverT>::Update()
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
     time.Stop();
     duration=time.GetTime();
-    IF_MASTER
-    {
-        std::cout << "Discretizing took " << duration << " sec.\n";
-#ifdef _PAR
-        DROPS_LOGGER_SETVALUE("DiscretizeLevelset",duration);
-#endif
-    }
+    std::cout << "Discretizing took " << duration << " sec.\n";
 }
 
 // ==============================================
@@ -583,11 +553,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::EvalLsetNavStoke
     time.Stop();
     duration=time.GetTime();
     std::cout << "Discretizing Levelset took " << duration << " sec.\n";
-#ifdef _PAR
-    IF_MASTER {
-        DROPS_LOGGER_ADDVALUE("DiscretizeLevelset",duration);
-    }
-#endif
+
     time.Reset();
 
     LvlSet_.DoStep( ls_rhs_);
@@ -596,11 +562,6 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::EvalLsetNavStoke
     duration=time.GetTime();
     std::cout << "Solving Levelset took " << duration << " sec.\n";
 
-#ifdef _PAR
-    IF_MASTER {
-        DROPS_LOGGER_SETVALUE("SolveLevelset",duration);
-    }
-#endif
     time.Reset();
     time.Start();
 
