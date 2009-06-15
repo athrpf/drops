@@ -240,8 +240,15 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     SolverT&     solver_;
     bool         withProj_;
     const double stab_;
+    MLMatrixCL*  Mold_;
+    bool         trapezoid_;
 
-#ifdef _PAR
+#ifndef _PAR
+    SSORPcCL ssorpc_;
+    PCG_SsorCL Msolver_;
+    ISBBTPreCL ispc_;
+    GCRSolverCL<ISBBTPreCL> Ssolver_;
+#else
     typedef ParJac0CL MsolverPCT;
     typedef ParPCGSolverCL<MsolverPCT> MsolverT;
     MsolverPCT MsolverPC_;
@@ -262,7 +269,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          SolverT& solver, double theta= 0.5, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0);
+                         bool withProjection= false, double stab= 0.0, bool trapezoid= false);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
