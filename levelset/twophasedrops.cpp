@@ -284,7 +284,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         PCGPcT     apc(PCGSolver);
         ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
         ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(),
-                                                                           C.outer_iter, C.outer_tol, 0.6, 50, &std::cout);
+                                                                           C.stk_OuterIter, C.stk_OuterTol, 0.6, 50, &std::cout);
 #else
         SSORPcCL ssorpc;
         PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
