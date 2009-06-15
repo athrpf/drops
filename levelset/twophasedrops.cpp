@@ -115,9 +115,9 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 3 :
             std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
-        case 2 :
+        case 2 : case 6 :
             return (new RecThetaScheme2PhaseCL<StokesProblemT, NSSolverBaseCL<StokesProblemT> >
-                        (Stokes, lset, *solver, C.stk_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+                        (Stokes, lset, *solver, C.stk_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, C.tm_Scheme == 6));
         break;
         case 4 :
             return (new OperatorSplitting2PhaseCL<StokesProblemT, StokesSolverBaseCL>
