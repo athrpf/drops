@@ -464,7 +464,7 @@ template <class StokesT, class SolverT, class RelaxationPolicyT>
 RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, SolverT& solver, double theta, double nonlinear, bool withProjection, double stab, bool trapezoid)
   : base_( Stokes, ls, theta, nonlinear),
-    solver_( solver), withProj_( withProjection), stab_( stab), Mold_( 0), trapezoid_( trapezoid && theta == 0.5),
+    solver_( solver), withProj_( withProjection), stab_( stab), Mold_( 0), Eold_( 0), L_( 0),trapezoid_( trapezoid && theta == 0.5),
 #ifndef _PAR
     ssorpc_(), Msolver_( ssorpc_, 200, 1e-10, true),
     ispc_( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
@@ -476,13 +476,14 @@ RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::RecThetaScheme2PhaseC
                Ssolver_(100, 200, 1e-10, Stokes.pr_idx.GetFinest(), SsolverPC_, true)
 #endif
 {
+    L_ = new MatrixCL();
     Update();
 }
 
 template <class StokesT, class SolverT, class RelaxationPolicyT>
 RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::~RecThetaScheme2PhaseCL()
 {
-    delete Mold_;
+    delete Mold_; delete Eold_; delete L_;
 }
 
 template <class StokesT, class SolverT, class RelaxationPolicyT>
@@ -509,13 +510,13 @@ template <class StokesT, class SolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
-    LvlSet_.ComputeRhs( ls_rhs_);
-
     std::cout << "InitStep-dt_: " << dt_ << std::endl;
     if (trapezoid_) {
+        ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data) + phidot_;
         rhs_ = (1./dt_) * (Stokes_.M.Data * Stokes_.v.Data) + vdot_;
     }
     else {
+        LvlSet_.ComputeRhs( ls_rhs_);
         rhs_= (1./dt_)*Stokes_.v.Data;
         if (theta_ != 1.)
             rhs_+= (1. - theta_)*vdot_;
@@ -548,7 +549,11 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::EvalLsetNavStoke
 
     // setup system for levelset eq.
     LvlSet_.SetupSystem( Stokes_.GetVelSolution());
-    LvlSet_.SetTimeStep( dt_);
+    if (trapezoid_) {
+        L_->LinComb( 1./dt_, LvlSet_.E, 1./dt_, *Eold_, 1.0, LvlSet_.H);
+    }
+    else
+        LvlSet_.SetTimeStep( dt_);
 
     time.Stop();
     duration=time.GetTime();
@@ -556,7 +561,13 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::EvalLsetNavStoke
 
     time.Reset();
 
-    LvlSet_.DoStep( ls_rhs_);
+    if (trapezoid_) {
+        VectorCL ls_rhs2 ( ls_rhs_ + (1./dt_) * (LvlSet_.E * oldphi_));
+        LvlSet_.GetSolver().Solve( *L_, LvlSet_.Phi.Data, ls_rhs2);
+        std::cout << "res = " << LvlSet_.GetSolver().GetResid() << ", iter = " << LvlSet_.GetSolver().GetIter() << std::endl;
+    }
+    else
+        LvlSet_.DoStep( ls_rhs_);
 
     time.Stop();
     duration=time.GetTime();
@@ -627,6 +638,10 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::CommitStep()
             vdot_ = Stokes_.M.Data * vdot1 + (*Mold_) * vdot1 - vdot_;
             delete Mold_;
             Mold_ = new MLMatrixCL( Stokes_.M.Data);
+
+            phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
+            delete Eold_;
+            Eold_ = new MatrixCL (LvlSet_.E);
         }
         else {
             if (theta_ != 1.) {
@@ -641,6 +656,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::CommitStep()
         ComputePressure();
         ComputeVelocityDot();
     }
+    oldphi_ = LvlSet_.Phi.Data;
     oldv_= Stokes_.v.Data;
 
 //     static int mycount( 1);
@@ -713,6 +729,7 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::Update()
     Stokes_.ClearMat();
     LvlSet_.ClearMat();
     mat_->clear();
+    L_->clear();
     // IndexDesc setzen
     b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
     cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
@@ -720,6 +737,10 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::Update()
     curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
     rhs_.resize( vidx->NumUnknowns());
     ls_rhs_.resize( LvlSet_.idx.NumUnknowns());
+    phidot_.resize( LvlSet_.idx.NumUnknowns());
+    oldphi_.resize( LvlSet_.idx.NumUnknowns());
+    oldphi_ = LvlSet_.Phi.Data;
+
     vdot_.resize( vidx->NumUnknowns());
     oldv_.resize( vidx->NumUnknowns());
     oldv_= Stokes_.v.Data;
@@ -793,6 +814,9 @@ void RecThetaScheme2PhaseCL<StokesT,SolverT,RelaxationPolicyT>::ComputeVelocityD
         delete Mold_;
         Mold_ = new MLMatrixCL( Stokes_.M.Data);
         vdot_ = (-1.0)*( Stokes_.A.Data * Stokes_.v.Data ) + old_curv_->Data + old_b_->Data - transp_mul( Stokes_.B.Data, Stokes_.p.Data );
+        delete Eold_;
+        Eold_ = new MatrixCL( LvlSet_.E);
+        phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
         return;
     }
     VectorCL b2( old_b_->Data + old_curv_->Data

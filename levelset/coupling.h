@@ -214,7 +214,7 @@ class cplBroydenPolicyCL
 };
 
 
-template <class StokesT, class SolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+template <class StokesT, class SolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
 class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 {
   protected:
@@ -235,12 +235,16 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::LB_;
 
     VectorCL vdot_, // time derivative of v
-             oldv_; // old velocity
+             oldv_, // old velocity
+             phidot_, // time derivate of phi
+             oldphi_; // old level set
 
     SolverT&     solver_;
     bool         withProj_;
     const double stab_;
     MLMatrixCL*  Mold_;
+    MatrixCL*    Eold_;
+    MatrixCL*    L_;
     bool         trapezoid_;
 
 #ifndef _PAR
