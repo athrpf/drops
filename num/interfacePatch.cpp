@@ -1,6 +1,6 @@
 /// \file interfacePatch.cpp
 /// \brief Computes 2D patches and 3D cuts of tetrahedra and interface
-/// \author Sven Gross, Joerg Grande, Patrick Esser, IGPM
+/// \author Sven Gross, Joerg Grande, Patrick Esser,Eva IGPM
 
 #include "num/interfacePatch.h"
 
@@ -37,6 +37,7 @@ void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls, double trans
         PhiLoc_[v]= ls.Data[v<4 ? t.GetVertex(v)->Unknowns(idx_ls) : t.GetEdge(v-4)->Unknowns(idx_ls)] + translation;
         sign_[v]= Sign(PhiLoc_[v]);
     }
+    barysubtetra_ = false;
 }
 
 void InterfacePatchCL::Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation)
@@ -48,9 +49,64 @@ void InterfacePatchCL::Init( const TetraCL& t, const LocalP2CL<double>& ls, doub
         Coord_[v]= v<4 ? t.GetVertex(v)->GetCoord() : GetBaryCenter( *t.GetEdge(v-4));
         sign_[v]= Sign(PhiLoc_[v]);
     }
+    barysubtetra_ = false;
 }
 
-bool InterfacePatchCL::ComputeForChild( Uint ch)
+ SMatrixCL<3,4> GetCoordMatrix( const TetraCL& t)
+{
+   SMatrixCL<3,4> V;
+   for (int i = 0; i<3; ++i)
+       for(int j=0; j<4; ++j)
+           V(i,j)= t.GetVertex(j)->GetCoord()[i];
+   return V;
+
+}
+
+// Init for SubtetraT
+void InterfacePatchCL::Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation) 
+{
+	st_ = st;
+    ch_= -1;
+    
+    for (int v=0; v<10; ++v)
+    { 
+    	BaryCoordCL tempBaryCoord_ = v<4 ? st[v] : BaryCenter(st[VertOfEdge(v-4,0)],st[VertOfEdge(v-4,1)]);
+    	PhiLoc_[v] =ls( tempBaryCoord_) + translation; 
+    // collect data on all DoF
+        Coord_[v]= GetCoordMatrix(t)* tempBaryCoord_;
+        sign_[v]= Sign(PhiLoc_[v]);
+    }
+    barysubtetra_ = true;
+}
+
+// multiplication of SubTetraT with st
+InterfacePatchCL::SubTetraT InterfacePatchCL::MultiplySubTetra(const InterfacePatchCL::SubTetraT & Tetrak_ )
+{
+ SubTetraT TetrakBary_;
+ for (int i = 0; i <4; ++i)
+  {
+	 for (int j = 0; j <4; ++j)
+	 {
+		 {
+			 TetrakBary_[i] += (st_[j]*Tetrak_[i][j]);
+		 }
+	 }
+  }
+ return TetrakBary_;
+}
+
+BaryCoordCL InterfacePatchCL::MultiplyBaryCoord(const BaryCoordCL& Tetrak_ )
+{
+ BaryCoordCL TetrakBary_;
+
+	 for (int j = 0; j <4; ++j)
+	 {
+	     TetrakBary_ += (st_[j]*Tetrak_[j]);
+	 }
+
+ return TetrakBary_;
+}
+bool InterfacePatchCL::ComputeForChild( Uint ch) 
 {
     const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
     ch_= ch;
@@ -137,6 +193,15 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
         sqrtDetATA_/= 2;
 
     return true; // computed patch of child;
+    
+    // if Init for Sub TatraT has been used, coordinates must be transformed
+    if (barysubtetra_ == true)
+    {
+        for (int k=0 ; k<intersec_; ++k)
+        {
+            Bary_[k] = MultiplyBaryCoord(Bary_[k]);
+        }
+    }
 }
 
 
@@ -412,6 +477,19 @@ void InterfacePatchCL::ComputeSubTets()
             }
         } //intersec_==4 Ende
     } //Ende der Schleife ueber die Kinder
+    
+    // if Init for SubTetraT has bee unsed, coordinates must be transformed
+     if (barysubtetra_ == true)
+     {	
+         for (Uint k=0 ; k<posTetras.size(); ++k)
+         {
+             posTetras[k] = MultiplySubTetra(posTetras[k]);
+         }
+         for (Uint k=0 ; k<negTetras.size(); ++k)
+         {
+             negTetras[k] = MultiplySubTetra(negTetras[k]);
+         }
+     }
 }
 
 } // end of namespace DROPS
