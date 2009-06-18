@@ -37,12 +37,12 @@ check_%:
 	./runtest $*
 
 reftest: \
-    ../tests/reftest.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/reftest.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ip1test: \
-    ../tests/interp1.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+    ../tests/interp1.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CXX) -o $@ $^ $(LFLAGS)
@@ -51,19 +51,19 @@ ip1check: ip1test
 	@ ./ip1test > /dev/null 2>&1 || echo "WARNING: P1-repair failed."
 
 ip2test: \
-    ../tests/interp2.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+    ../tests/interp2.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prolongationp2test: \
-    ../tests/prolongationp2test.o ../geom/multigrid.o ../geom/topo.o \
+    ../tests/prolongationp2test.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 tetrabuildertest: \
-    ../tests/tetrabuildertest.o ../geom/multigrid.o ../geom/topo.o \
+    ../tests/tetrabuildertest.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o \
     ../num/unknowns.o ../geom/builder.o ../geom/boundary.o ../misc/utils.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -73,7 +73,7 @@ mattest: \
 
 testfe: \
     ../tests/testfe.o ../misc/utils.o ../geom/topo.o \
-    ../geom/multigrid.o ../num/unknowns.o
+    ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 sbuffer: \
@@ -85,13 +85,13 @@ minres: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 meshreader: \
-    ../tests/meshreader.o ../geom/multigrid.o ../geom/topo.o \
+    ../tests/meshreader.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o \
     ../num/unknowns.o ../geom/builder.o ../geom/boundary.o ../misc/utils.o \
     ../out/output.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 restrictp2: \
-    ../tests/restrictp2.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
+    ../tests/restrictp2.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o ../out/output.o \
     ../num/unknowns.o ../geom/builder.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../geom/boundary.o ../misc/utils.o
 	$(CXX) -o $@ $^ $(LFLAGS)
@@ -101,13 +101,13 @@ vectest: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 p2local: ../tests/p2local.o ../misc/utils.o \
-  ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o ../num/unknowns.o \
+  ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o ../num/unknowns.o \
   ../out/output.o  ../misc/problem.o ../geom/builder.o ../num/interfacePatch.o \
   ../num/discretize.o ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 quadbase: \
-    ../tests/quadbase.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/quadbase.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
@@ -117,17 +117,17 @@ globallist: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 serialization: \
-    ../tests/serialization.o  ../misc/utils.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/serialization.o  ../misc/utils.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../out/output.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 triang: \
-    ../tests/triang.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/triang.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 quadCut: \
-    ../tests/quadCut.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/quadCut.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
     ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
@@ -148,7 +148,7 @@ mass: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 quad5: \
-    ../tests/quad5.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/quad5.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
@@ -158,26 +158,26 @@ downwind: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 quad5_2D: \
-    ../tests/quad5_2D.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/quad5_2D.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 interfaceP1FE: \
-    ../tests/interfaceP1FE.o  ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/interfaceP1FE.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
     ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 xfem: \
-    ../tests/xfem.o ../misc/utils.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/xfem.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../num/discretize.o ../levelset/levelset.o ../levelset/fastmarch.o \
     ../stokes/instatstokes2phase.o ../out/ensightOut.o ../misc/xfem.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 f_Gamma: \
-    ../tests/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../tests/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../num/interfacePatch.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o 

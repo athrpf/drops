@@ -20,7 +20,7 @@ OBJ = $(CPP:%.cpp=%.o)
 default: ClrScr all
 
 surfactant: \
-    ../surfactant/surfactant.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../surfactant/surfactant.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../misc/params.o ../num/interfacePatch.o \
     ../levelset/fastmarch.o ../surfactant/ifacetransp.o ../surfactant/params.o \
@@ -28,7 +28,7 @@ surfactant: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfacenorms: \
-    ../surfactant/surfacenorms.o ../geom/boundary.o ../geom/builder.o ../geom/multigrid.o \
+    ../surfactant/surfacenorms.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../misc/params.o ../num/interfacePatch.o \
     ../levelset/fastmarch.o ../surfactant/ifacetransp.o ../surfactant/params.o \
