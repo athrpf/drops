@@ -304,10 +304,15 @@ template<typename Coeff>
     time.Reset();
     // Coupling Navier-Stokes with Levelset
 //     typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-    typedef LinThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-    CouplingT cpl( Stokes, lset, nssolver, C.stk_Theta, C.ns_Nonlinear, true);
-//     typedef RecThetaScheme2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
-//     CouplingT cpl( Stokes, lset, nssolver, C.stk_theta, C.nonlinear, false);
+
+    typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
+    ParJac0CL jacparpc( lset.idx);
+    LsetSolverT gm(/*restart*/100, C.lvs_Iter, C.lvs_Tol, lset.idx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+
+    typedef LinThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
+    CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, true);
+//     typedef RecThetaScheme2PhaseCL<StokesProblemT, LsetSolverT> CouplingT;
+//     CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_theta, C.lvs_Theta, C.nonlinear, false);
 
 
     time.Stop();
@@ -452,7 +457,7 @@ template<class Coeff>
 
 //    instat_vector_fun_ptr gsigma= &(SurfaceTensionCL::grad_sm_step);
     LevelsetP2CL lset( mg, &SurfaceTensionCL::sigma_step, &SurfaceTensionCL::gsigma_step,
-                       C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff, C.rpm_NarrowBand);
+                       C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
 
     DisplayDetailedGeom(mg);
 

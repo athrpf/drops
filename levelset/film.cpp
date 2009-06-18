@@ -233,8 +233,20 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     else
         navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
 
-    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, *navstokessolver, C.stk_Theta, /*ns_Nonlinear*/ 0., /*implicitCurv*/ true);
+    // Level-Set-Solver
+#ifndef _PAR
+    typedef GMResSolverCL<SSORPcCL> LsetSolverT;
+    SSORPcCL ssorpc;
+    LsetSolverT* gm = new LsetSolverT( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
+#else
+    typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
+    ParJac0CL jacparpc( lidx);
+    LsetSolverT gm = new LsetSolverT
+           (/*restart*/100, iter, tol, idx, pc_,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+#endif
+
+    LinThetaScheme2PhaseCL<StokesProblemT, LsetSolverT>
+        cpl( Stokes, lset, *navstokessolver, *gm, C.stk_Theta, C.lvs_Theta, /*ns_Nonlinear*/ 0., /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.tm_StepSize);
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
@@ -444,7 +456,7 @@ int main (int argc, char** argv)
 
     sigma= prob.GetCoeff().SurfTens;
     DROPS::LevelsetP2CL lset( *mgp, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
-        &sigmaf, /*grad sigma*/ 0, C.lvs_Theta, C.lvs_SD, 0, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff);
+        &sigmaf, /*grad sigma*/ 0, C.lvs_SD, C.lvs_CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {

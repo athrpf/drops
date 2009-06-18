@@ -71,7 +71,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
     sigma= C.sft_SurfTension;
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_SD, C.lvs_CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -147,8 +147,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     typedef NSSolverBaseCL<StokesProblemT> SolverT;
     SolverT navstokessolver(Stokes, ISPschurSolver);
 
-    LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-        cpl( Stokes, lset, navstokessolver, C.stk_Theta, 0.);
+    typedef GMResSolverCL<SSORPcCL> LsetSolverT;
+    SSORPcCL ssorpc;
+    GMResSolverCL<SSORPcCL> gm( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
+
+    LinThetaScheme2PhaseCL<StokesProblemT, LsetSolverT>
+        cpl( Stokes, lset, navstokessolver, gm, C.stk_Theta, C.lvs_Theta, 0.);
     cpl.SetTimeStep( C.tm_StepSize);
 
     for (int step= 1; step<=C.tm_NumSteps; ++step)

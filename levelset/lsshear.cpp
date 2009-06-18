@@ -67,7 +67,7 @@ double DistanceFct( const DROPS::Point3DCL& p)
 }
 
 double sigma;
-double sigmaf (const DROPS::Point3DCL&, double) { return sigma; } 
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
 
 namespace DROPS // for Strategy
 {
@@ -102,7 +102,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, 0.5, 0.1);
+    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, 0.1);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -172,7 +172,9 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
     ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",         ensf + ".pr",  true));
     ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",         ensf + ".vel", true));
     ensight.Write();
-
+    typedef GMResSolverCL<SSORPcCL> LSetSolver;
+    SSORPcCL ssorpc;
+    LSetSolver gm( ssorpc, 100, 1000, 1e-7);
     if (meth)
     {
 //        typedef PSchur_PCG_CL StokesSolverT;
@@ -180,8 +182,8 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         PSchur_GSPCG_CL StokesSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, StokesSolver);
-        LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-            cpl( Stokes, lset, dummyFP, /*theta*/ 0.5, /*nonlinear*/ 0.);
+        LinThetaScheme2PhaseCL<StokesProblemT, LSetSolver>
+            cpl( Stokes, lset, dummyFP, gm, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
         for (Uint step= 1; step<=num_steps; ++step)
@@ -201,8 +203,8 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         StokesSolverT uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, uzawaSolver);
-        LinThetaScheme2PhaseCL<StokesProblemT, SolverT>
-            cpl( Stokes, lset, dummyFP, /*theta*/ 0.5, /*nonlinear*/ 0.);
+        LinThetaScheme2PhaseCL<StokesProblemT, LSetSolver>
+            cpl( Stokes, lset, dummyFP, gm, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
         for (Uint step= 1; step<=num_steps; ++step)

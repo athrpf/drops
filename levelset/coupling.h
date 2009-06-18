@@ -8,6 +8,7 @@
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
 #include "num/MGsolver.h"
+#include "num/nssolver.h"
 #include <vector>
 #ifdef _PAR
 #include "num/parstokessolver.h"
@@ -28,21 +29,23 @@ class TimeDisc2PhaseCL
     VelVecDescCL *cplN_, *old_cplN_;  // couplings with convection matrix N
     VecDescCL    *curv_, *old_curv_;  // curvature term
     VectorCL      rhs_, ls_rhs_;
-    MLMatrixCL*   mat_;               // 1./dt*M + theta*A
+    MLMatrixCL*   mat_;               // navier-stokes upper left block
+    MatrixCL*     L_;                 // level set system
 
-    double theta_, dt_;
+    double stk_theta_, ls_theta_, dt_;
     const double nonlinear_;
 
     VecDescCL    cplLB_;
     MLMatDescCL  LB_;
 
   public:
-    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double theta= 0.5, double nonlinear=1.);
+    TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, double stk_theta= 0.5, double sl_theta = 0.5, double nonlinear=1.);
     virtual ~TimeDisc2PhaseCL();
 
-    double GetTheta()    const { return theta_; }
-    double GetTime()     const { return Stokes_.t; }
-    double GetTimeStep() const { return dt_; }
+    double GetStokesTheta()    const { return stk_theta_; }
+    double GetLsetTheta()      const { return ls_theta_; }
+    double GetTime()           const { return Stokes_.t; }
+    double GetTimeStep()       const { return dt_; }
     MLMatrixCL*       GetUpperLeftBlock ()       { return mat_; }
     const MLMatrixCL* GetUpperLeftBlock () const { return mat_; }
 
@@ -63,11 +66,12 @@ class TimeDisc2PhaseCL
     virtual void Update() = 0;
 };
 
-template <class StokesT, class SolverT>
+template <class StokesT, class LsetSolverT>
 class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 {
   private:
     typedef TimeDisc2PhaseCL<StokesT> base_;
+    typedef NSSolverBaseCL<StokesT> StokesSolverT;
     using base_::Stokes_;
     using base_::LvlSet_;
     using base_::b_;       using base_::old_b_;
@@ -76,31 +80,33 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::curv_;    using base_::old_curv_;
     using base_::rhs_;
     using base_::ls_rhs_;
-    using base_::mat_; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
-    using base_::theta_;
+    using base_::mat_; // 1./dt*M + stk_theta*A + stab_*_theta*_dt*LB
+    using base_::L_;   // 1./dt*E + ls_theta*H
+    using base_::stk_theta_;
+    using base_::ls_theta_;
     using base_::nonlinear_;
     using base_::dt_;
     using base_::cplLB_;
     using base_::LB_;
 
-    SolverT&     solver_;
+    StokesSolverT& solver_;
+    LsetSolverT&   lsetsolver_;
     VecDescCL    *cplA_;
     bool         implCurv_;
 
   public:
     LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                            SolverT& solver, double theta= 0.5,
+    		                StokesSolverT& solver, LsetSolverT& lsetsolver, double stk_theta= 0.5, double ls_theta = 0.5,
                             double nonlinear= 1., bool implicitCurv= false);
     ~LinThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites base-class-method
         base_::SetTimeStep( dt);
-        LvlSet_.SetTimeStep( dt);
     }
     void SetTimeStep( double dt, double theta) {
         base_::SetTimeStep( dt);
-        if (theta >=0 ) theta_= theta;
-        LvlSet_.SetTimeStep( dt, theta);
+        if (theta >=0 ) stk_theta_= theta;
+        ls_theta_ = theta;
     }
 
     void SolveLsNs();
@@ -111,7 +117,7 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void Update();
 };
 
-template <class StokesT, class SolverT>
+template <class StokesT, class LsetSolverT>
 class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 {
   private:
@@ -125,11 +131,14 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
     using base_::rhs_;
     using base_::ls_rhs_;
     using base_::mat_; // 1./dt*M + theta*A
-    using base_::theta_;
+    using base_::L_;
+    using base_::stk_theta_;
+    using base_::ls_theta_;
     using base_::dt_;
     using base_::nonlinear_;
 
-    SolverT&                solver_;
+    StokesSolverBaseCL&     solver_;
+    LsetSolverT&            lsetsolver_;
     SSORPcCL                pc_;
     GMResSolverCL<SSORPcCL> gm_;
 
@@ -142,7 +151,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 
   public:
     OperatorSplitting2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-        SolverT& solver, int gm_iter, double gm_tol, double nonlinear= 1);
+    		StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, int gm_iter, double gm_tol, double nonlinear= 1);
     ~OperatorSplitting2PhaseCL();
 
     void SetTimeStep( double dt) { base_::SetTimeStep(dt); }
@@ -214,11 +223,12 @@ class cplBroydenPolicyCL
 };
 
 
-template <class StokesT, class SolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
 class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 {
   protected:
     typedef TimeDisc2PhaseCL<StokesT> base_;
+    typedef NSSolverBaseCL<StokesT> StokesSolverT;
     using base_::Stokes_;
     using base_::LvlSet_;
     using base_::b_;       using base_::old_b_;
@@ -227,24 +237,27 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::curv_;    using base_::old_curv_;
     using base_::rhs_;
     using base_::ls_rhs_;
-    using base_::mat_; // 1./dt*M + theta*A + stab_*_theta*_dt*LB
-    using base_::theta_;
+    using base_::mat_;      // 1./dt*M + theta*A + stab_*_theta*_dt*LB
+    using base_::stk_theta_;
+    using base_::ls_theta_;
     using base_::dt_;
     using base_::nonlinear_;
     using base_::cplLB_;
     using base_::LB_;
+    using base_::L_;
 
     VectorCL vdot_, // time derivative of v
              oldv_, // old velocity
              phidot_, // time derivate of phi
              oldphi_; // old level set
 
-    SolverT&     solver_;
+    StokesSolverT& solver_;
+    LsetSolverT&   lsetsolver_;
+
     bool         withProj_;
     const double stab_;
     MLMatrixCL*  Mold_;
     MatrixCL*    Eold_;
-    MatrixCL*    L_;
     bool         trapezoid_;
 
 #ifndef _PAR
@@ -267,23 +280,22 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void MaybeStabilize (VectorCL&);
     void ComputePressure ();
 
-    void ComputeVelocityDot ();
+    void ComputeDots ();
     void EvalLsetNavStokesEquations();
 
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                         SolverT& solver, double theta= 0.5, double nonlinear= 1.,
+    		             StokesSolverT& solver, LsetSolverT& lsetsolver, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
                          bool withProjection= false, double stab= 0.0, bool trapezoid= false);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
         base_::SetTimeStep( dt);
-        LvlSet_.SetTimeStep( dt);
     }
     void SetTimeStep (double dt, double theta) { // for the fractional-step-method
         base_::SetTimeStep( dt);
-        theta_= theta;
-        LvlSet_.SetTimeStep( dt, theta_);
+        stk_theta_= theta;
+        ls_theta_ = theta;
     }
 
     void InitStep();
@@ -295,11 +307,11 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
     void Update();
 };
 
-template <class StokesT, class SolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
-class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, SolverT, RelaxationPolicyT>
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
+class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
 {
   private:
-    typedef RecThetaScheme2PhaseCL<StokesT, SolverT, RelaxationPolicyT> base_;
+    typedef RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
     using base_::Stokes_;
     using base_::LvlSet_;
     using base_::mat_;
@@ -309,7 +321,7 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
 
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                         SolverT& solver, double nonlinear= 1.,
+    		             NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, double nonlinear= 1.,
                          bool withProjection= false, double stab= 0.0);
     ~CrankNicolsonScheme2PhaseCL();
 
@@ -318,23 +330,23 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, Solver
 
 };
 
-template <class StokesT, class SolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
-class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT,SolverT, RelaxationPolicyT>
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
+class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
 {
   private:
     static const double facdt_[3];
     static const double theta_[3];
 
-    typedef RecThetaScheme2PhaseCL<StokesT,SolverT, RelaxationPolicyT> base_;
+    typedef RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
 
     double dt3_;
     int step_;
 
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-                               SolverT& solver, double nonlinear= 1, bool withProjection= false,
+    	                       NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, double nonlinear= 1, bool withProjection= false,
                                double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
+        : base_( Stokes, ls, solver, lsetsolver, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -361,14 +373,14 @@ class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT,SolverT, Re
     void Update() { base_::Update(); }
 };
 
-template <class NavStokesT, class SolverT, class RelaxationPolicyT>
-const double FracStepScheme2PhaseCL<NavStokesT, SolverT, RelaxationPolicyT>::facdt_[3]
+template <class NavStokesT, class LsetSolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<NavStokesT, LsetSolverT, RelaxationPolicyT>::facdt_[3]
 //  = { 1./3, 1./3, 1./3 };
 //  = { 1./3, 1./3, 1./3 };
   = { 1.0 - std::sqrt( 0.5), std::sqrt( 2.0) - 1.0, 1.0 - std::sqrt( 0.5) };
 
-template <class NavStokesT, class SolverT, class RelaxationPolicyT>
-const double FracStepScheme2PhaseCL<NavStokesT,SolverT,RelaxationPolicyT>::theta_[3]
+template <class NavStokesT, class LsetSolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<NavStokesT,LsetSolverT,RelaxationPolicyT>::theta_[3]
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };

@@ -217,8 +217,13 @@ template<typename Coeff>
 //    typedef LinThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
 //    CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
 
-    typedef RecThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-    CouplingT cpl( Stokes, lset, nssolver, C.stk_Theta, C.ns_Nonlinear);
+    typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
+    ParJac0CL jacparpc( lset.idx);
+    LsetSolverT gm(/*restart*/100, C.lvs_Iter, C.lvs_Tol, lset.idx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+
+    typedef RecThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
+    CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
+
 
     time.Stop();
     duration=time.GetMaxTime();
@@ -362,7 +367,7 @@ template<class Coeff>
         gsigmap = &SurfaceTensionCL::gsigma;
     }
 
-    LevelsetP2CL lset( mg, sigmap, gsigmap, C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff, C.rpm_NarrowBand);
+    LevelsetP2CL lset( mg, sigmap, gsigmap, C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
     if (C.sft_VarTension)
         lset.SetSurfaceForce( SF_ImprovedLBVar);
     else

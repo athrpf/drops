@@ -475,151 +475,6 @@ void LevelsetP2CL::CreateNumbering( Uint level, IdxDescCL* idx, match_fun match)
     idx->CreateNumbering( level, MG_, Bnd_, match);
 }
 
-#ifndef _PAR
-void LevelsetP2CL::Reparam( Uint steps, double dt)
-// Reparametrization of the levelset function Phi
-{
-    VectorCL Psi= Phi.Data, b;
-    MatrixCL L, R, M;
-
-    for (Uint i=0; i<steps; ++i)
-    {
-        SetupReparamSystem( M, R, Psi, b);
-        L.LinComb( 1./dt, M, theta_, R);
-
-        b+= (1./dt)*(M*Psi) - (1.-theta_) * (R*Psi);
-        gm_.Solve( L, Psi, b);
-        std::cout << "Reparam: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
-    }
-
-    Phi.Data= Psi;
-}
-
-double func_abs( double x) { return std::abs(x); }
-
-void LevelsetP2CL::SetupReparamSystem( MatrixCL& M_, MatrixCL& R_, const VectorCL& Psi, VectorCL& b) const
-// M, R, b describe the following terms used for reparametrization:
-// b_i  = ( S(Phi0),           v_i     )
-// M_ij = ( v_j,               v_i     )
-// R_ij = ( w(Psi) grad v_j,   v_i     )
-//      + (|S(Phi0)| grad v_j, grad v_i) * diff
-// where v_i, v_j denote the ansatz functions
-// and w(Psi) = sign(Phi0) * grad Psi / |grad Psi| the scaled gradient of Psi
-{
-    const IdxT num_unks= Phi.RowIdx->NumUnknowns();
-    const Uint lvl= Phi.GetLevel();
-
-    SparseMatBuilderCL<double> R(&R_, num_unks, num_unks);
-    SparseMatBuilderCL<double> M(&M_, num_unks, num_unks);
-    b.resize( 0);
-    b.resize( num_unks);
-    std::cout << "entering SetupReparamSystem: " << num_unks << " levelset unknowns. ";
-
-    Quad2CL<double>    Sign_Phi;
-    Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
-    SMatrixCL<3,3>     T;
-    P2DiscCL::GetGradientsOnRef( GradRef);
-
-    IdxT         Numb[10];
-    SVectorCL<3> grad_Psi[4];
-    const_DiscSolCL    phi= GetSolution();
-    double det, absdet;
-    const double alpha= 0.1;  // for smoothing of signum fct
-
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
-         sit!=send; ++sit)
-    {
-        GetTrafoTr( T, det, *sit);
-        P2DiscCL::GetGradients( Grad, GradRef, T);
-        absdet= std::fabs( det);
-
-        GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
-
-        // init Sign_Phi, w_loc
-        for (int i=0; i<4; ++i)
-        {
-            Sign_Phi[i]= SmoothedSign( phi.val( *sit->GetVertex(i)), alpha);
-            grad_Psi[i]= Point3DCL();  // init with zero
-            for (int l=0; l<10; ++l)
-                grad_Psi[i]+= Psi[ Numb[l]] * Grad[l][i];
-            w_loc[i]= (Sign_Phi[i]/grad_Psi[i].norm() )*grad_Psi[i];
-        }
-        // values in barycenter
-        Point3DCL gr= 0.25*(grad_Psi[0]+grad_Psi[1]+grad_Psi[2]+grad_Psi[3]);
-        Sign_Phi[4]= SmoothedSign( phi.val( *sit, 0.25, 0.25, 0.25), alpha);
-        w_loc[4]=    Sign_Phi[4]*gr/gr.norm();
-
-        Quad2CL<> w_Grad[10];
-        for (int i=0; i<10; ++i)
-            w_Grad[i]= dot(w_loc, Grad[i]);
-
-        for(int i=0; i<10; ++i)    // assemble row Numb[i]
-        {
-            // b_i  = ( S(Phi0),         v_i + SD * w(Psi) grad v_i )
-            b[ Numb[i]]+= Sign_Phi.quadP2( i, absdet);
-            for(int j=0; j<10; ++j)
-            {
-                // M_ij = ( v_j, v_i )
-                M( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j)*absdet;
-                // R_ij = ( w(Psi) grad v_j, v_i + SD * w(Psi) grad v_i )
-                R( Numb[i], Numb[j])+= w_Grad[j].quadP2(i, absdet)
-                    + diff_*Quad2CL<>(dot( Grad[j]*Sign_Phi.apply( func_abs), Grad[i])).quad( absdet);
-            }
-        }
-    }
-    M.Build();
-    R.Build();
-    std::cout << M_.num_nonzeros() << " nonzeros in M, "
-              << R_.num_nonzeros() << " nonzeros in R!" << std::endl;
-}
-#endif
-
-void LevelsetP2CL::SetTimeStep( double dt, double theta)
-/** Assign new step size and combine the two matrices E and H.
-    \remarks call SetupSystem \em before calling SetTimeStep!
-*/
-{
-    dt_= dt;
-    if (theta >= 0) theta_= theta;
-
-    L_.LinComb( 1./dt_, E, theta_, H);
-}
-
-void LevelsetP2CL::ComputeRhs( VectorCL& rhs) const
-{
-    IF_MASTER
-      std::cout << "ComputeRhs-dt_: " << dt_ << std::endl;
-    rhs= (1./dt_)*Phi.Data;
-    if (theta_ != 1.) {
-        VectorCL tmp( rhs.size());
-        SolverT gm( gm_);
-        gm.Solve( E, tmp, (const VectorCL)( H*Phi.Data));
-        IF_MASTER
-          std::cout << "ComputeRhs: res = " << gm.GetResid() << ", iter = " << gm.GetIter() << std::endl;
-        rhs-= (1. - theta_)*tmp;
-    }
-}
-
-void LevelsetP2CL::DoLinStep( const VectorCL& rhs)
-{
-    gm_.Solve( L_, Phi.Data, rhs);
-    IF_MASTER
-      std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
-}
-
-void LevelsetP2CL::DoStep( const VectorCL& rhs)
-{
-    gm_.Solve( L_, Phi.Data, VectorCL( E*rhs));
-    IF_MASTER
-      std::cout << "res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() <<std::endl;
-}
-
-void LevelsetP2CL::DoStep()
-{
-    VectorCL rhs( Phi.Data.size());
-    ComputeRhs( rhs);
-    DoStep( rhs);
-}
 
 bool LevelsetP2CL::Intersects( const TetraCL& t) const
 {
@@ -757,11 +612,12 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
     SetupSmoothSystem( M, A);
     C.LinComb( 1, M, diff, A);
 #ifndef _PAR
-    PCG_SsorCL pcg( pc_, gm_.GetMaxIter(), gm_.GetTol());
+    SSORPcCL pc;
+    PCG_SsorCL pcg( pc, 500, 1e-10);
     pcg.Solve( C, SmPhi, M*Phi.Data);
     __UNUSED__ double inf_norm= supnorm( SmPhi-Phi.Data);
 #else
-    ParCGSolverCL cg(gm_.GetMaxIter(), gm_.GetTol(), idx);
+    ParCGSolverCL cg( 500, 1e-10, idx);
     cg.Solve( C, SmPhi, M*Phi.Data);
     __UNUSED__ const double inf_norm= ProcCL::GlobalMax(supnorm( SmPhi-Phi.Data));
 #endif

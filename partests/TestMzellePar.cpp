@@ -257,7 +257,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     // Create the levelset class
     LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0,
-                       C.lvs_Theta, C.lvs_SD, -1, C.lvs_Iter, C.lvs_Tol, C.lvs_CurvDiff, C.rpm_NarrowBand);
+                       C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
 
     // Index describer for levelset, velocity and pressure
     IdxDescCL*   lidx= &lset.idx;
@@ -420,9 +420,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         // Coupling Navier-Stokes with Levelset
 //         typedef CouplLsNsFracStep2PhaseCL<StokesProblemT, NSSolverT> CouplingT;
 //         CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
+        typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
+        ParJac0CL jacparpc( *lidx);
+        LsetSolverT gm(/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 
-        typedef RecThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, C.stk_Theta, C.ns_Nonlinear);
+        typedef RecThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
+        CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
 
         time.Stop();
         duration=time.GetMaxTime();

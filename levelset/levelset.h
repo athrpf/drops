@@ -40,14 +40,6 @@ class LevelsetP2CL
     typedef BndDataCL<>    BndDataT;
     typedef P2EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
     typedef P2EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
-#ifndef _PAR
-    typedef SSORPcCL                                          PCT;
-    typedef GMResSolverCL<PCT>                                SolverT;
-#else
-    typedef ParJac0CL                                         PCT;
-    typedef ParPreGMResSolverCL<PCT>                          SolverT;
-#endif
-
 
     IdxDescCL             idx;
     VecDescCL             Phi;        ///< level set function
@@ -56,14 +48,9 @@ class LevelsetP2CL
 
   private:
     MultiGridCL&        MG_;
-    double              diff_,     ///< amount of diffusion in reparametrization
-                        curvDiff_, ///< amount of diffusion in curvature calculation
-                        SD_,       ///< streamline diffusion
-                        theta_, dt_;
-    MatrixCL            L_;
+    double              curvDiff_, ///< amount of diffusion in curvature calculation
+                        SD_;       ///< streamline diffusion
     BndDataT            Bnd_;
-    mutable PCT         pc_;
-    SolverT             gm_;
     SurfaceForceT       SF_;
 
     void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
@@ -73,44 +60,20 @@ class LevelsetP2CL
   public:
     MatrixCL            E, H;
 
-#ifndef _PAR
     LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
-        double theta= 0.5, double SD= 0., double diff= 0., int iter= 1000, double tol= 1e-7,
-        double curvDiff= -1.)
-    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())),
-        gm_( pc_, 100, iter, tol), SF_( SF_ImprovedLB)
+        double SD= 0., double curvDiff= -1., double __UNUSED__ narrowBand=-1.)
+    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), curvDiff_( curvDiff), SD_( SD),
+        Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())), SF_( SF_ImprovedLB)
     {}
 
     LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, instat_scalar_fun_ptr sig= 0,
-        instat_vector_fun_ptr gsig= 0, double theta= 0.5, double SD= 0, double diff= 0,
-        Uint iter= 1000, double tol= 1e-7, double curvDiff= -1)
-    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( bnd), gm_( pc_, 100, iter, tol), SF_(SF_ImprovedLB)
+        instat_vector_fun_ptr gsig= 0, double SD= 0, double curvDiff= -1)
+    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), curvDiff_( curvDiff), SD_( SD),
+        Bnd_( bnd), SF_(SF_ImprovedLB)
     {}
-#else
-    LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
-                  double theta= 0.5, double SD= 0, double diff= 0, Uint iter=1000, double tol=1e-7,
-                  double curvDiff= -1, double __UNUSED__ narrowBand=-1.)
-      : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg()) ), pc_(idx),
-        gm_(/*restart*/100, iter, tol, idx, pc_, /*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true),
-        SF_(SF_ImprovedLB)
-    {}
-
-    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, instat_scalar_fun_ptr sig= 0,
-                  instat_vector_fun_ptr gsig= 0, double theta= 0.5, double SD= 0,
-                  double diff= 0, Uint iter=1000, double tol=1e-7, double curvDiff= -1)
-      : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), diff_(diff), curvDiff_( curvDiff), SD_( SD),
-        theta_( theta), dt_( 0.), Bnd_( bnd), pc_(idx),
-        gm_(/*restart*/100, iter, tol, idx, pc_, true, true, false, LeftPreconditioning, true), SF_(SF_ImprovedLB)
-    {}
-#endif
 
     const MultiGridCL& GetMG() const { return MG_; }    ///< Get reference on the multigrid
     MultiGridCL& GetMG() { return MG_; }                ///< Get reference on the multigrid
-    SolverT& GetSolver() { return gm_; }                ///< Get reference onto solver
-    const SolverT& GetSolver() const { return gm_; }    ///< Get constant reference onto solver
 
     const BndDataT& GetBndData() const { return Bnd_; }
 
@@ -125,18 +88,8 @@ class LevelsetP2CL
     void Init( scalar_fun_ptr);
 
     /// \remarks call SetupSystem \em before calling SetTimeStep!
-    void SetTimeStep( double dt, double theta=-1);
-    /// \remarks call SetupSystem \em before calling SetTimeStep!
     template<class DiscVelSolT>
     void SetupSystem( const DiscVelSolT&);
-    /// perform one time step
-    void DoStep();
-    /// Get last iterations
-    int GetIter() const { return gm_.GetIter(); }
-    /// Get last resid
-    double GetResid() const { return gm_.GetResid(); }
-    /// Reparametrization by solving evolution equation (not recommended).
-    void Reparam( Uint steps, double dt);
     /// Reparametrization by Fast Marching method (recommended).
     void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false, bool euklid= false);
 
@@ -160,24 +113,13 @@ class LevelsetP2CL
     /// Set surface tension and its gradient.
     void   SetSigma( instat_scalar_fun_ptr sig, instat_vector_fun_ptr gsig= 0) { sigma= sig; grad_sigma= gsig; }
     /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
-    void   ClearMat() { E.clear(); H.clear(); L_.clear(); }
+    void   ClearMat() { E.clear(); H.clear(); }
     /// \name Evaluate Solution
     ///@{
     const_DiscSolCL GetSolution() const
         { return const_DiscSolCL( &Phi, &Bnd_, &MG_); }
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
         { return const_DiscSolCL( &MyPhi, &Bnd_, &MG_); }
-    ///@}
-
-    /// \name For internal use only
-    /// The following member functions are added to enable an easier implementation
-    /// of the coupling navstokes-levelset. They should not be called by a common user.
-    /// Use LevelsetP2CL::DoStep() instead.
-    ///@{
-    void ComputeRhs( VectorCL&) const;
-    const MatrixCL& GetL() const { return L_; }
-    void DoStep    ( const VectorCL&);
-    void DoLinStep ( const VectorCL&);
     ///@}
 };
 
