@@ -1104,7 +1104,7 @@ void ExchangeCL::Accumulate(VectorCL &x) const
 {
     Assert(created_, DROPSErrCL("ExchangeCL::Accumulate: Lists have not been created (Maybe use CreateList before!)\n"), DebugParallelNumC);
     if (x.size()!=vecSize_)
-        printf ("ExchangeCL::Accumulate: Vector has size %li, but should be %li; MyRank %i\n", x.size(), vecSize_, ProcCL::MyRank());
+        printf ("ExchangeCL::Accumulate: Vector has size %lu, but should be %li; MyRank %i\n", (unsigned long)x.size(), vecSize_, ProcCL::MyRank());
     Assert(x.size()==vecSize_, DROPSErrCL("ExchangeCL::Accumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
 
     RequestCT req(ExList_.size());
