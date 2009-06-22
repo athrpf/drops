@@ -1006,7 +1006,7 @@ inline void cplBroydenPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
     v1*= factor;
     v2*= factor;
 
-    for (int j=deltaF1_.size()-1; j>=0; --j) {
+    for (int j=deltaF1_.size()-2; j>=0; --j) {
 #ifndef _PAR
         const double beta = ( dot (deltaF1_[j], v1) + dot( deltaF2_[j], v2)) / gamma_[j];
 #else
