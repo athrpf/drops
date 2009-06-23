@@ -175,6 +175,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
     typedef GMResSolverCL<SSORPcCL> LSetSolver;
     SSORPcCL ssorpc;
     LSetSolver gm( ssorpc, 100, 1000, 1e-7);
+    LevelsetModifyCL lsetmod( 0, 0, 0, 0, 0, 0);
     if (meth)
     {
 //        typedef PSchur_PCG_CL StokesSolverT;
@@ -183,7 +184,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, StokesSolver);
         LinThetaScheme2PhaseCL<StokesProblemT, LSetSolver>
-            cpl( Stokes, lset, dummyFP, gm, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
+            cpl( Stokes, lset, dummyFP, gm, lsetmod, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
         for (Uint step= 1; step<=num_steps; ++step)
@@ -204,7 +205,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, uzawaSolver);
         LinThetaScheme2PhaseCL<StokesProblemT, LSetSolver>
-            cpl( Stokes, lset, dummyFP, gm, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
+            cpl( Stokes, lset, dummyFP, gm, lsetmod, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
         for (Uint step= 1; step<=num_steps; ++step)

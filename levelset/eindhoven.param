@@ -27,7 +27,7 @@ Stokes {
 
 NavStokes {
   Nonlinear     = 0         # 1 = Navier Stokes; 0 = Stokes
-  Tol           = 1e-10
+  Tol           = 1e-10     # 0.1 for recthetascheme
   Iter          = 20
   Reduction     = 0.1
 }
@@ -43,7 +43,7 @@ Levelset {
 }
 
 Coupling {
-  Tol           = 1e-10     # not used a.t.m.
+  Tol           = 1e-10     # for recthetascheme
   Iter          = 10        # -1 = till convergence
   Stab          = 1.0       # laplace beltrami stabilization
   Projection    = 0         # only thetascheme: 1 = Perform a projection step before FP

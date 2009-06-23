@@ -149,6 +149,67 @@ class LevelsetRepairCL : public MGObserverCL
     void post_refine_sequence () {}
 };
 
+/// \brief volume correction and reparametrisation of level set function phi
+class LevelsetModifyCL
+{
+private:
+	int    rpm_Freq_,
+	       rpm_Method_;
+	double rpm_MaxGrad_,
+	       rpm_MinGrad_;
+    int    lvs_VolCorrection_;
+
+    const double Vol_;
+
+    int    step_;
+
+public:
+    LevelsetModifyCL( int rpm_Freq, int rpm_Method, double rpm_MaxGrad, double rpm_MinGrad, int lvs_VolCorrection, double Vol) :
+    	rpm_Freq_( rpm_Freq), rpm_Method_( rpm_Method), rpm_MaxGrad_( rpm_MaxGrad),
+    	rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0) {}
+
+    double maybeModify( LevelsetP2CL& lset) {
+        ++step_;
+    	bool doReparam= rpm_Freq_ && step_%rpm_Freq_ == 0;
+        bool doVolCorr= lvs_VolCorrection_ && step_%lvs_VolCorrection_ == 0;
+        double dphi = 0.0;
+
+        if (! (doReparam || doVolCorr)) return dphi;
+
+        double lsetmaxGradPhi, lsetminGradPhi;
+
+        if (doReparam) {
+        	lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
+        	doReparam = (lsetmaxGradPhi > rpm_MaxGrad_ || lsetminGradPhi < rpm_MinGrad_);
+        }
+
+        // volume correction before reparam
+        if (lvs_VolCorrection_ && doReparam) {
+            dphi= lset.AdjustVolume( Vol_, 1e-9);
+            std::cout << "volume correction is " << dphi << std::endl;
+            lset.Phi.Data+= dphi;
+            std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
+        }
+
+        // reparam levelset function
+        if (doReparam) {
+            std::cout << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+            lset.ReparamFastMarching( rpm_Method_, false, false, rpm_Method_==3);
+            lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
+            std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+        }
+
+        if (doVolCorr) {
+            dphi= lset.AdjustVolume( Vol_, 1e-9);
+            std::cout << "volume correction is " << dphi << std::endl;
+            lset.Phi.Data+= dphi;
+            std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
+        }
+        return dphi;
+    }
+};
+
+
 
 /// marks all tetrahedra in the band |\p DistFct(x)| < \p width for refinement
 void MarkInterface (scalar_fun_ptr DistFct, double width, MultiGridCL&);

@@ -244,9 +244,10 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     LsetSolverT gm = new LsetSolverT
            (/*restart*/100, iter, tol, idx, pc_,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
+    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 10.0, /*rpm_MinGrad*/ 0.1, C.lvs_VolCorrection, Vol);
 
     LinThetaScheme2PhaseCL<StokesProblemT, LsetSolverT>
-        cpl( Stokes, lset, *navstokessolver, *gm, C.stk_Theta, C.lvs_Theta, /*ns_Nonlinear*/ 0., /*implicitCurv*/ true);
+        cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, C.stk_Theta, C.lvs_Theta, /*ns_Nonlinear*/ 0., /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.tm_StepSize);
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
@@ -276,39 +277,13 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
         std::cout << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_Iter);
         std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-        bool forceVolCorr= false, forceUpdate= false,
-             doReparam= C.rpm_Freq && step%C.rpm_Freq == 0,
-             doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
 
-        // volume correction before reparam/grid modification
-        if (C.lvs_VolCorrection && (doReparam || doGridMod)) {
-                double dphi= lset.AdjustVolume( Vol, 1e-9, C.mcl_MeshSize[0] * C.mcl_MeshSize[2]);
-                std::cout << "volume correction is " << dphi << std::endl;
-                lset.Phi.Data+= dphi;
-                std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-                forceUpdate= true; // volume correction modifies the level set
-        }
-
-        // reparam levelset function
-        if (doReparam) {
-        	double lsetmaxGradPhi, lsetminGradPhi;
-            lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-            std::cout << "checking level set func: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-            if (lsetmaxGradPhi > 10 || lsetminGradPhi < 0.1) {
-                lset.ReparamFastMarching( C.rpm_Method, /*periodic*/ true);
-                lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-                std::cout << "after reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-                forceVolCorr= forceUpdate= true; // volume correction and update after reparam
-            }
-            else
-            	std::cout << "Gradient does not exceed bounds, reparametrization skipped.\n";
-        }
+        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
 
         // grid modification
         if (doGridMod) {
             adap.UpdateTriang( lset);
-            forceUpdate  |= adap.WasModified();
-            forceVolCorr |= adap.WasModified();
+            cpl.Update();
             if (C.mcl_SerializationFile != "none") {
                 std::stringstream filename;
                 filename << C.mcl_SerializationFile;
@@ -323,21 +298,8 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
             }
         }
 
-        // volume correction
-        if (C.lvs_VolCorrection && (step%C.lvs_VolCorrection==0 || forceVolCorr)) {
-            double dphi= lset.AdjustVolume( Vol, 1e-9, C.mcl_MeshSize[0] * C.mcl_MeshSize[2]);
-            std::cout << "volume correction is " << dphi << std::endl;
-            lset.Phi.Data+= dphi;
-            std::cout << "new rel. Volume: " << lset.GetVolume()/Vol << std::endl;
-            forceUpdate= true;
-        }
-
-        // update
-        if (forceUpdate)
-            cpl.Update();
-
-if (step%10==0)
-        ensight.Write( step*C.tm_StepSize);
+        if (step%10==0)
+            ensight.Write( step*C.tm_StepSize);
     }
 
     std::cout << std::endl;

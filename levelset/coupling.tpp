@@ -12,13 +12,14 @@ namespace DROPS
 // ==============================================
 
 template <class StokesT>
-TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, double stk_theta, double ls_theta, double nonlinear)
+TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double stk_theta, double ls_theta, double nonlinear)
   : Stokes_( Stokes), LvlSet_( ls), b_( &Stokes.b), old_b_( new VelVecDescCL),
     cplM_( new VelVecDescCL), old_cplM_( new VelVecDescCL),
     cplN_( new VelVecDescCL), old_cplN_( new VelVecDescCL),
     curv_( new VelVecDescCL), old_curv_(new VelVecDescCL),
     rhs_( Stokes.b.RowIdx->NumUnknowns()), ls_rhs_( ls.Phi.RowIdx->NumUnknowns()),
-    mat_( new MLMatrixCL( Stokes.vel_idx.size())), L_( new MatrixCL()), stk_theta_( stk_theta), ls_theta_( ls_theta), nonlinear_( nonlinear)
+    mat_( new MLMatrixCL( Stokes.vel_idx.size())), L_( new MatrixCL()), stk_theta_( stk_theta),
+    ls_theta_( ls_theta), nonlinear_( nonlinear), lsetmod_( lsetmod)
 {
     Stokes_.SetLevelSet( ls);
     LB_.Data.resize( Stokes.vel_idx.size());
@@ -43,9 +44,9 @@ TimeDisc2PhaseCL<StokesT>::~TimeDisc2PhaseCL()
 
 template <class StokesT, class LsetSolverT>
 LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::LinThetaScheme2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
     		double stk_theta, double ls_theta, double nonlinear, bool implicitCurv)
-  : base_( Stokes, ls, stk_theta, ls_theta, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
+  : base_( Stokes, ls, lsetmod, stk_theta, ls_theta, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
     cplA_(new VelVecDescCL), implCurv_( implicitCurv)
 {
     Update();
@@ -109,6 +110,8 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::SolveLsNs()
     time.Stop();
     duration=time.GetTime();
     std::cout << "Solving Levelset took " << duration << " sec.\n";
+
+    lsetmod_.maybeModify( LvlSet_);
 
     time.Reset();
 
@@ -232,9 +235,9 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::Update()
 
 template <class StokesT, class LsetSolverT>
 OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::OperatorSplitting2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, int gm_iter, double gm_tol, double nonlinear)
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear)
 
-  : base_( Stokes, ls, /*theta*/ 1.0 - std::sqrt( 2.)/2., 1.0 - std::sqrt( 2.)/2., nonlinear), solver_(solver), lsetsolver_( lsetsolver),
+  : base_( Stokes, ls, lsetmod, /*theta*/ 1.0 - std::sqrt( 2.)/2., 1.0 - std::sqrt( 2.)/2., nonlinear), solver_(solver), lsetsolver_( lsetsolver),
     gm_( pc_, 100, gm_iter, gm_tol, false /*test absolute resid*/),
     cplA_( new VelVecDescCL), old_cplA_( new VelVecDescCL),
     alpha_( (1.0 - 2.0*stk_theta_)/(1.0 - stk_theta_))
@@ -476,9 +479,9 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::Update()
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool trapezoid)
-  : base_( Stokes, ls, stk_theta, ls_theta, nonlinear),
-    solver_( solver), lsetsolver_( lsetsolver), tol_( tol), withProj_( withProjection), stab_( stab), Mold_( 0), Eold_( 0), trapezoid_( trapezoid && stk_theta == 0.5 && ls_theta == 0.5),
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool trapezoid)
+  : base_( Stokes, ls, lsetmod, stk_theta, ls_theta, nonlinear),
+    solver_( solver), lsetsolver_( lsetsolver), tol_(tol), withProj_( withProjection), stab_( stab), Mold_( 0), Eold_( 0), trapezoid_( trapezoid && stk_theta == 0.5 && ls_theta == 0.5),
 #ifndef _PAR
     ssorpc_(), Msolver_( ssorpc_, 200, 1e-10, true),
     ispc_( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
@@ -523,6 +526,7 @@ template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
+    dphi_ = 0;
     std::cout << "InitStep-dt_: " << dt_ << std::endl;
     if (trapezoid_) {
         ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data)    + phidot_;
@@ -582,12 +586,15 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavS
     else
     	ls_rhs2 = LvlSet_.E * ls_rhs_;
 
+    LvlSet_.Phi.Data -= dphi_;
     lsetsolver_.Solve( *L_, LvlSet_.Phi.Data, ls_rhs2);
     std::cout << "res = " << lsetsolver_.GetResid() << ", iter = " << lsetsolver_.GetIter() << std::endl;
 
     time.Stop();
     duration=time.GetTime();
     std::cout << "Solving Levelset took " << duration << " sec.\n";
+
+    dphi_ = lsetmod_.maybeModify( LvlSet_);
 
     time.Reset();
     time.Start();
@@ -880,8 +887,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots 
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 CrankNicolsonScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CrankNicolsonScheme2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, double nonlinear, bool withProjection, double stab)
-  : base_( Stokes, ls, solver, lsetsolver, 1.0, 1.0, nonlinear, withProjection, stab), step_(1)
+    ( StokesT& Stokes, LevelsetP2CL& ls, NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double nonlinear, bool withProjection, double stab)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab), step_(1)
 {}
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>

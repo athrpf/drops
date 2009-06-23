@@ -104,28 +104,28 @@ void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 
 template< class StokesProblemT, class LevelSetSolverT>
 TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
-    NSSolverBaseCL<StokesProblemT>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C)
+    NSSolverBaseCL<StokesProblemT>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C, LevelsetModifyCL& lsetmod)
 {
     if (C.tm_NumSteps == 0) return 0;
     switch (C.tm_Scheme)
     {
         case 1 :
             return (new LinThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Stab));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Stab));
         break;
         case 3 :
             std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
         case 2 : case 6 :
             return (new RecThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, C.tm_Scheme == 6));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, C.tm_Scheme == 6));
         break;
         case 4 :
             return (new OperatorSplitting2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, C.stk_InnerIter, C.stk_InnerTol, C.ns_Nonlinear));
+                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, C.stk_InnerIter, C.stk_InnerTol, C.ns_Nonlinear));
         break;
         case 5 :
             return (new CrankNicolsonScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
@@ -356,8 +356,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
            (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
 
+    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
+
     // Time discretisation + coupling
-    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C);
+    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
     if (C.tm_NumSteps != 0) timedisc->SetTimeStep( C.tm_StepSize);
 
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
@@ -382,7 +384,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //         Stokes.pr_idx.GetFinest().GetXidx().GetNumUnknownsStdFE(),
 //         stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
 
-    double lsetmaxGradPhi, lsetminGradPhi;
     std::ofstream* infofile = 0;
     IF_MASTER {
         infofile = new std::ofstream ((C.ens_EnsCase+".info").c_str());
@@ -433,57 +434,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         if (C.trp_DoTransp) massTransp.DoStep( step*C.tm_StepSize);
 
         // WriteMatrices( Stokes, step);
-        std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-        bool forceVolCorr= false, forceUpdate= false,
-             doReparam= C.rpm_Freq && step%C.rpm_Freq == 0,
-             doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
-
-        if (doReparam) {
-        	lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-        	doReparam = (lsetmaxGradPhi > C.rpm_MaxGrad || lsetminGradPhi < C.rpm_MinGrad);
-        }
-
-        // volume correction before reparam/grid modification
-        if (C.lvs_VolCorrection && (doReparam || doGridMod)) {
-                dphi= lset.AdjustVolume( Vol, 1e-9);
-                std::cout << "volume correction is " << dphi << std::endl;
-                lset.Phi.Data+= dphi;
-                std::cout << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
-                forceUpdate = true; // volume correction modifies the level set
-        }
-
-        // reparam levelset function
-        if (doReparam) {
-            std::cout << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-            lset.ReparamFastMarching( C.rpm_Method, false, false, C.rpm_Method==3);
-            lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-            std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-            forceVolCorr = forceUpdate = true; // volume correction and update after reparam
-        }
+        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
 
         // grid modification
         if (doGridMod) {
             adap.UpdateTriang( lset);
-            forceUpdate  |= adap.WasModified();
-            forceVolCorr |= adap.WasModified();
-            if (C.rst_Serialization)
-                ser.Write();
-        }
-
-        // volume correction
-        if (C.lvs_VolCorrection && (step%C.lvs_VolCorrection==0 || forceVolCorr)) {
-            dphi= lset.AdjustVolume( Vol, 1e-9);
-            std::cout << "volume correction is " << dphi << std::endl;
-            lset.Phi.Data+= dphi;
-            std::cout << "new rel. volume: " << lset.GetVolume()/Vol << std::endl;
-            forceUpdate  = true;
-        }
-
-        // update
-        if (forceUpdate) {
             timedisc->Update();
             if (C.trp_DoTransp) massTransp.Update();
+            if (C.rst_Serialization)
+                ser.Write();
         }
 
         if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)

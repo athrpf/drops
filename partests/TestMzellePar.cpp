@@ -424,8 +424,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         ParJac0CL jacparpc( *lidx);
         LsetSolverT gm(/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 
+        LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, 0, 1, C.lvs_VolCorrection, Vol);
         typedef RecThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, gm, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
+        CouplingT cpl( Stokes, lset, nssolver, gm, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
 
         time.Stop();
         duration=time.GetMaxTime();
@@ -447,19 +448,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
             time.Stop(); duration=time.GetMaxTime();
             if (ProcCL::IamMaster())
                 std::cout << "- Solving coupled Levelset-Navier-Stokes problem took "<<duration<<" sec."<<std::endl;
-            relVol = lset.GetVolume()/Vol;
-            if (ProcCL::IamMaster())
-                std::cout << "- rel. Volume: " << relVol << std::endl;
-            if (C.lvs_VolCorrection)
-            {
-                if (ProcCL::IamMaster())
-                    std::cout << "\n==> Adjust volume ...\n";
-                double dphi= lset.AdjustVolume( Vol, 1e-9);
-                lset.Phi.Data+= dphi;
-                relVol = lset.GetVolume()/Vol;
-                if (ProcCL::IamMaster())
-                    std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
-            }
+
             if ((C.ens_EnsightOut && step%C.ens_EnsightOut==0) || step==C.tm_NumSteps)
             {
                 step_time.Stop();
@@ -467,39 +456,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
                 step_time.Start();
             }
 
-            // Reparametrization of levelset function
-            if (C.rpm_Freq && step%C.rpm_Freq==0)
-            {
-                if (ProcCL::IamMaster())
-                    std::cout << "\n==> Reparametrization with FastMarching algorithm"<<std::endl;
-                time.Reset();
-                lset.ReparamFastMarching( C.rpm_Method, C.rpm_Method==3);
-                time.Stop(); duration=time.GetMaxTime();
-                relVol = lset.GetVolume()/Vol;
-                if (ProcCL::IamMaster())
-                    std::cout << "- FastMarching took "<<duration<<" sec."<<std::endl;
-
-                if (ProcCL::IamMaster())
-                    std::cout << "- rel. Volume: " << relVol << std::endl;
-                if (C.lvs_VolCorrection)
-                {
-                    if (ProcCL::IamMaster())
-                        std::cout << "\n==> Adjust volume ...\n";
-
-                    double dphi= lset.AdjustVolume( Vol, 1e-9);
-                    lset.Phi.Data+= dphi;
-                    relVol = lset.GetVolume()/Vol;
-                    if (ProcCL::IamMaster())
-                        std::cout << "- Volume correction "<<dphi<<", new rel. Volume is " <<relVol<< std::endl;
-                }
-                step_time.Stop();
-                // Write solution out after reparametrization
-                if ((C.ens_EnsightOut && step%C.ens_EnsightOut==0) || step==C.tm_NumSteps)
-                {
-                    ensight.Write( (step+0.1)*C.tm_StepSize);
-                }
-                step_time.Start();
-            }
             step_time.Stop(); duration=step_time.GetMaxTime();
             if (ProcCL::IamMaster()){
                 std::cout <<"========> Step "<<step<<" took "<<duration<<" sec."<<std::endl;

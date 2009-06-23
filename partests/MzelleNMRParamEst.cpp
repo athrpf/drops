@@ -212,7 +212,6 @@ template<typename Coeff>
         ensightwriter.write();
 
     const double Vol= EllipsoidCL::GetVolume();
-    double relVol = lset.GetVolume()/Vol;
 
     StokesSolverParamST instatStokesParam(C);
     StokesSolverFactoryCL<StokesProblemT, StokesSolverParamST> instatStokesSolverFactory(Stokes, instatStokesParam);
@@ -232,9 +231,10 @@ template<typename Coeff>
     typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
     ParJac0CL jacparpc( lset.idx);
     LsetSolverT gm(/*restart*/100, C.lvs_Iter, C.lvs_Tol, lset.idx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, 0, 1, C.lvs_VolCorrection, Vol);
 
     typedef RecThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
-    CouplingT cpl( Stokes, lset, nssolver, gm, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
+    CouplingT cpl( Stokes, lset, nssolver, gm, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
 
 
     time.Stop();
@@ -314,42 +314,6 @@ template<typename Coeff>
         // Write out droplet information
         IFInfo.Update(lset, Stokes.GetVelSolution());
         IFInfo.Write(Stokes.t);
-
-        // Reparametrization of levelset function
-        if (C.rpm_Freq && step%C.rpm_Freq==0)
-        {
-            relVol = lset.GetVolume()/Vol;
-            if (ProcCL::IamMaster())
-                std::cout << "\n==> Reparametrization\n"
-                          << "- rel. Volume: " << relVol << std::endl;
-            time.Reset();
-            lset.ReparamFastMarching( C.rpm_Method, C.rpm_Method==3);
-            time.Stop(); duration=time.GetMaxTime();
-            relVol = lset.GetVolume()/Vol;
-            if (ProcCL::IamMaster()){
-                std::cout << "- Reparametrization took "<<duration<<" sec."<<std::endl;
-                DROPS_LOGGER_SETVALUE("Reparametrization",duration);
-            }
-        }
-
-        if (ProcCL::IamMaster())
-            std::cout << "- rel. Volume: " << relVol << std::endl;
-
-        if (C.lvs_VolCorrection)
-        {
-            time.Reset();
-            if (ProcCL::IamMaster())
-                std::cout << "\n==> Adjust volume ...\n";
-            double dphi= lset.AdjustVolume( Vol, 1e-9);
-            lset.Phi.Data+= dphi;
-            time.Stop(); duration=time.GetMaxTime();
-            relVol = lset.GetVolume()/Vol;
-            if (ProcCL::IamMaster()){
-                std::cout << "- Lifting level-set function took "<< duration << " sec\n"
-                          << "- Volume correction " << dphi <<", new rel. Volume is " << relVol << std::endl;
-                DROPS_LOGGER_SETVALUE("VolumeCorrection",duration);
-            }
-        }
 
         step_time.Stop();
         duration=step_time.GetMaxTime();
