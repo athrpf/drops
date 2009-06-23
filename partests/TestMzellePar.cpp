@@ -425,7 +425,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
         LsetSolverT gm(/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 
         typedef RecThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
-        CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
+        CouplingT cpl( Stokes, lset, nssolver, gm, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear);
 
         time.Stop();
         duration=time.GetMaxTime();

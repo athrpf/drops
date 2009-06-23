@@ -317,7 +317,7 @@ template<typename Coeff>
 //    CouplingT cpl( Stokes, lset, nssolver, C.nonlinear);
 
     typedef RecThetaScheme2PhaseCL <StokesProblemT, NSSolverT> CouplingT;
-    CouplingT cpl( Stokes, lset, nssolver, C.theta, C.nonlinear);
+    CouplingT cpl( Stokes, lset, nssolver, C.cpl_Tol, C.theta, C.nonlinear);
 
     time.Stop();
     duration=time.GetMaxTime();

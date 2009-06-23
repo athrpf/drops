@@ -28,10 +28,11 @@ class NSSolverBaseCL : public SolverBaseCL
     using SolverBaseCL::_maxiter;
     using SolverBaseCL::_tol;
     using SolverBaseCL::_res;
+    using SolverBaseCL::rel_;
 
   public:
-    NSSolverBaseCL (NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter= -1, double tol= -1.0)
-        : SolverBaseCL(maxiter, tol), NS_( NS), solver_( solver) {}
+    NSSolverBaseCL (NavStokesT& NS, StokesSolverBaseCL& solver, int maxiter= -1, double tol= -1.0, bool rel= false)
+        : SolverBaseCL(maxiter, tol, rel), NS_( NS), solver_( solver) {}
 
     virtual ~NSSolverBaseCL() {}
 
@@ -259,6 +260,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     ExchangeCL& ExPr = NS_.pr_idx.GetEx();
     const bool useAccur=true;
 #endif
+    double res0= 1.;
 
     _iter= 0;
     for(;;++_iter) { // ever
@@ -276,16 +278,18 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 #endif
         /// \todo(merge) Do we need this output? Or should/could we use the (*output_)?
         IF_MASTER
-          std::cout << _iter << ": res = " << _res << std::endl;
-        //if (_iter == 0) std::cout << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
-        if (_res < _tol || _iter>=_maxiter)
+          std::cout << _iter << ": res = " << _res << " reltol: " << this->GetRelError() << std::endl;
+        if (this->GetRelError() == true && _iter == 0)
+            res0= _res;
+        if (_res < _tol*res0 || _iter>=_maxiter) // if absolute errors are required, res0==1.
             break;
 
         // solve correction:
         double outer_tol= _res*red_;
-        if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
-        w= 0.0; q= 0.0;
+        if (outer_tol < 0.5*_tol && this->GetRelError() == false)
+            outer_tol= 0.5*_tol;
         solver_.SetTol( outer_tol);
+        w= 0.0; q= 0.0;
         solver_.Solve( AN_->GetFinest(), B, w, q, d, e); // solver_ should use a relative termination criterion.
 
         // calculate step length omega:
@@ -316,6 +320,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     ExchangeCL& ExPr = NS_.pr_idx.GetEx();
     const bool useAccur=true;
 #endif
+    double res0= 1.;
 
     _iter= 0;
     for(;;++_iter) { // ever
@@ -331,14 +336,16 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         _res= std::sqrt( ExVel.Norm_sq(d, false, useAccur, &d_acc) + ExPr.Norm_sq(e, false, useAccur, &e_acc) );
 #endif
         IF_MASTER
-          std::cout << _iter << ": res = " << _res << std::endl;
-        //if (_iter == 0) std::cout << "new tol: " << (_tol= std::min( 0.1*_res, 5e-10)) << '\n';
-        if (_res < _tol || _iter>=_maxiter)
+          std::cout << _iter << ": res = " << _res << " reltol: " << this->GetRelError() << std::endl;
+        if (this->GetRelError() == true && _iter == 0)
+            res0= _res;
+        if (_res < _tol*res0 || _iter>=_maxiter) // if absolute errors are required, res0==1.
             break;
 
         // solve correction:
         double outer_tol= _res*red_;
-        if (outer_tol < 0.5*_tol) outer_tol= 0.5*_tol;
+        if (outer_tol < 0.5*_tol && this->GetRelError() == false)
+            outer_tol= 0.5*_tol;
         w= 0.0; q= 0.0;
         solver_.SetTol( outer_tol);
         solver_.Solve( *AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.

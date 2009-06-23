@@ -192,9 +192,10 @@ class cplFixedPolicyCL
 {
   private:
     std::ostream* output_;
+
   public:
-    cplFixedPolicyCL  ( std::ostream* output = 0) : output_( output)  {}
-    inline void Update( const VecDescCL&, const VecDescCL&) {}
+    cplFixedPolicyCL (std::ostream* output = 0) : output_( output) {}
+    inline void Update (const VecDescCL&, const VecDescCL&) {}
 };
 
 /// \brief Broyden method for nonlinear system (velocity - levelset)
@@ -218,7 +219,8 @@ class cplBroydenPolicyCL
     std::vector<double> gamma_;
 
   public:
-    cplBroydenPolicyCL ( std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
+    cplBroydenPolicyCL (std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), sigma_( -1.), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
+
     inline void Update( VecDescCL&, VecDescCL&);
 };
 
@@ -253,6 +255,7 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 
     StokesSolverT& solver_;
     LsetSolverT&   lsetsolver_;
+    double       tol_;
 
     bool         withProj_;
     const double stab_;
@@ -285,8 +288,9 @@ class RecThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-    		             StokesSolverT& solver, LsetSolverT& lsetsolver, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0, bool trapezoid= false);
+        StokesSolverT& solver, LsetSolverT& lsetsolver, double tol,
+        double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
+        bool withProjection= false, double stab= 0.0, bool trapezoid= false);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version

@@ -312,7 +312,7 @@ template<typename Coeff>
     typedef LinThetaScheme2PhaseCL <StokesProblemT, LsetSolverT> CouplingT;
     CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, true);
 //     typedef RecThetaScheme2PhaseCL<StokesProblemT, LsetSolverT> CouplingT;
-//     CouplingT cpl( Stokes, lset, nssolver, gm, C.stk_theta, C.lvs_Theta, C.nonlinear, false);
+//     CouplingT cpl( Stokes, lset, nssolver, gm, C.cpl_Tol, C.stk_theta, C.lvs_Theta, C.nonlinear, false);
 
 
     time.Stop();

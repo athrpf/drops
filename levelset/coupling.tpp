@@ -476,9 +476,9 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::Update()
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool trapezoid)
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool trapezoid)
   : base_( Stokes, ls, stk_theta, ls_theta, nonlinear),
-    solver_( solver), lsetsolver_( lsetsolver), withProj_( withProjection), stab_( stab), Mold_( 0), Eold_( 0), trapezoid_( trapezoid && stk_theta == 0.5 && ls_theta == 0.5),
+    solver_( solver), lsetsolver_( lsetsolver), tol_( tol), withProj_( withProjection), stab_( stab), Mold_( 0), Eold_( 0), trapezoid_( trapezoid && stk_theta == 0.5 && ls_theta == 0.5),
 #ifndef _PAR
     ssorpc_(), Msolver_( ssorpc_, 200, 1e-10, true),
     ispc_( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
@@ -630,6 +630,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavS
     std::cout << "Discretizing NavierStokes/Curv took "<<duration<<" sec.\n";
 
     time.Reset();
+
+    solver_.SetRelError( true);
     solver_.Solve( *mat_, Stokes_.B.Data,
         Stokes_.v, Stokes_.p.Data,
         b2, *cplN_, Stokes_.c.Data, alpha);
@@ -729,8 +731,17 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep( int 
         // quasi newton method: relax computes the update vector
         relax.Update( Stokes_.v, LvlSet_.Phi);
 
+        double res_u( dot( Stokes_.v.Data, Stokes_.M.Data*Stokes_.v.Data)),
+            res_phi( dot( LvlSet_.Phi.Data, LvlSet_.E*LvlSet_.Phi.Data)),
+            res( std::sqrt( res_u + res_phi));
+        std::cout << "residual: " << res << " residual of u, phi: " << std::sqrt( res_u)
+                  << ", " << std::sqrt( res_phi) << std::endl;
         Stokes_.v.Data   = v   - Stokes_.v.Data;
         LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
+        if (res < tol_) {
+            std::cout << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
+            break;
+        }
     }
     CommitStep();
 }

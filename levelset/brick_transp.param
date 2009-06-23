@@ -28,7 +28,7 @@ Stokes {
 
 NavStokes {
   Nonlinear     =       0
-  Tol           =       5e-10
+  Tol           =       5e-10 # 0.1 for recthetascheme
   Iter          =       20
   Reduction     =       0.1
 }
@@ -44,7 +44,7 @@ Levelset {
 }
 
 Coupling {
-  Tol 		= 	1
+  Tol 		= 	5e-10   # used by recthetascheme
   Iter 		= 	-1 	# = till convergence
   Stab		=	0.0     # Laplace-Beltrami-Stabilization
   Projection	=	0	# 1 = Perform a projection step before FP
