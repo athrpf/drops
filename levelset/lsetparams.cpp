@@ -204,6 +204,18 @@ void ParamTransportCL::RegisterParams()
     rp_.EndGroup();
 }
 
+void ParamSurfactantTransportCL::RegisterParams()
+{
+    rp_.BeginGroup("SurfTransp");
+    rp_.RegInt    ( surf_DoTransp, "DoTransp");
+    rp_.RegDouble ( surf_Theta,    "Theta");
+    rp_.RegInt    ( surf_Iter,     "Iter");
+    rp_.RegDouble ( surf_Tol,      "Tol");
+    rp_.RegDouble ( surf_OmitBound,"OmitBound");
+    rp_.RegDouble ( surf_Visc,     "Visc");
+    rp_.EndGroup();
+}
+
 void ParamDomainCondCL::RegisterParams()
 {
     rp_.BeginGroup("DomainCond");

@@ -121,7 +121,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
     }
     if (num_sign_[1]==4)
     {
-        std::cout << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
         numchildtriangles_= 0;
         return false;
     }
@@ -235,7 +235,7 @@ bool InterfacePatchCL::ComputeCutForChild( Uint ch)
         return false;
     if (num_sign_[1]==4)
     {
-        std::cout << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
         return false;
     }
 

@@ -5,6 +5,7 @@
 #include "misc/problem.h"
 #include "num/discretize.h"
 #include "num/solver.h"
+#include "num/interfacePatch.h"
 #include "levelset/mgobserve.h"
 #include "out/ensightOut.h"
 
@@ -80,6 +81,27 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
             for (int n= 0; n < (p).GetNumTriangles(); ++n) \
 
 #define DROPS_FOR_TETRA_INTERFACE_END }}
+
+
+/// \brief Short-hand for integral on the interface.
+template <typename DiscP1FunT>
+double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+    const DiscP1FunT& discsol)
+{
+    double d( 0.);
+    const DROPS::Uint lvl = ls.GetLevel();
+    DROPS::InterfacePatchCL patch;
+    DROPS::Quad5_2DCL<> qdiscsol;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, patch, tri) {
+            qdiscsol.assign(  *it, &patch.GetBary( tri), discsol);
+            d+= qdiscsol.quad( patch.GetFuncDet( tri));
+        }
+        DROPS_FOR_TETRA_INTERFACE_END
+    }
+    return d;
+}
 
 /// \brief P1-discretization and solution of the transport equation on the interface
 class SurfactantcGP1CL

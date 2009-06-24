@@ -14,6 +14,8 @@
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
 #include "poisson/transport2phase.h"
+#include "surfactant/ifacetransp.h"
+
 #include "num/stokessolverfactory.h"
 #ifndef _PAR
 #include "num/stokessolver.h"
@@ -80,6 +82,17 @@ double Initialcneg (const DROPS::Point3DCL& , double)
 double Initialcpos (const DROPS::Point3DCL& , double)
 {
     return C.trp_IniCPos;
+}
+
+// Initial data and rhs for surfactant transport
+const double a( -13./8.*std::sqrt( 35./M_PI));
+double surf_rhs (const DROPS::Point3DCL& p, double)
+{
+    return a*(3.*p[0]*p[0]*p[1] - p[1]*p[1]*p[1]);
+}
+double surf_sol (const DROPS::Point3DCL& p, double)
+{
+    return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));
 }
 
 namespace DROPS // for Strategy
@@ -331,6 +344,18 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         std::cout << massTransp.c.Data.size() << " concentration unknowns,\n";
     }
 
+    /// \todo rhs beruecksichtigen
+    SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    InterfaceP1RepairCL surf_repair( MG, lset.Phi, surfTransp.ic);
+    if (C.surf_DoTransp)
+    {
+        adap.push_back( &surf_repair);
+        surfTransp.idx.CreateNumbering( MG.GetLastLevel(), MG, &lset.Phi);
+        std::cout << "Surfactant transport: NumUnknowns: " << surfTransp.idx.NumUnknowns() << std::endl;
+        surfTransp.ic.SetIdx( &surfTransp.idx);
+        surfTransp.Init( &surf_sol);
+    }
+
     // Stokes-Solver
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
@@ -411,6 +436,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct),
                                                                         "TransConc",     ensf + ".ct",  true));
     }
+    if (C.surf_DoTransp) {
+        ensight.Register( make_Ensight6IfaceScalar( MG, surfTransp.ic,  "InterfaceSol",  ensf + ".sur", true));
+    }
+
 #ifndef _PAR
     if (Stokes.UsesXFEM())
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
@@ -430,20 +459,27 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         IFInfo.Update( lset, Stokes.GetVelSolution());
         IFInfo.Write(Stokes.t);
 
+        if (C.surf_DoTransp) surfTransp.InitOld();
         timedisc->DoStep( C.cpl_Iter);
         if (C.trp_DoTransp) massTransp.DoStep( step*C.tm_StepSize);
+        if (C.surf_DoTransp) {
+            surfTransp.DoStep( step*C.tm_StepSize);
+            BndDataCL<> ifbnd( 0);
+            std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, make_P1Eval(  MG, ifbnd, surfTransp.ic, step*C.tm_StepSize)) << '\n';
+        }
 
         // WriteMatrices( Stokes, step);
 
-        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
-
         // grid modification
+        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
         if (doGridMod) {
             adap.UpdateTriang( lset);
-            timedisc->Update();
-            if (C.trp_DoTransp) massTransp.Update();
-            if (C.rst_Serialization)
-                ser.Write();
+            if (adap.WasModified()) {
+                timedisc->Update();
+                if (C.trp_DoTransp) massTransp.Update();
+                if (C.rst_Serialization)
+                    ser.Write();
+            }
         }
 
         if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)

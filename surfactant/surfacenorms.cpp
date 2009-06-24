@@ -16,21 +16,21 @@ DROPS::ParamSurfactantCL C;
 
 DROPS::Point3DCL u_func (const DROPS::Point3DCL&, double)
 {
-    return C.Velocity;
+    return C.exp_Velocity;
 }
 
 double sphere_2 (const DROPS::Point3DCL& p)
 {
-    DROPS::Point3DCL x( p - C.Mitte);
+    DROPS::Point3DCL x( p - C.exp_PosDrop);
 
-    return x.norm() - C.Radius[0];
+    return x.norm() - C.exp_Radius[0];
 }
 
 double sphere_2move (const DROPS::Point3DCL& p, double t)
 {
-    DROPS::Point3DCL x( p - (C.Mitte + t*u_func(p, t)));
+    DROPS::Point3DCL x( p - (C.exp_PosDrop + t*u_func(p, t)));
 
-    return x.norm() - C.Radius[0];
+    return x.norm() - C.exp_Radius[0];
 }
 
 typedef double (*dist_funT) (const DROPS::Point3DCL&, double);
@@ -51,7 +51,7 @@ const double a( -13./8.*std::sqrt( 35./M_PI));
 
 double sol0t (const DROPS::Point3DCL& p, double t)
 {
-    const DROPS::Point3DCL q( p - (C.Mitte + t*u_func(p, t)));
+    const DROPS::Point3DCL q( p - (C.exp_PosDrop + t*u_func(p, t)));
     const double val( a*(3.*q[0]*q[0]*q[1] - q[1]*q[1]*q[1]));
 
     return q.norm_sq()/(12. + q.norm_sq())*val;
@@ -189,7 +189,7 @@ void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
     LSInit( mg, lset.Phi, &sphere_2move, 1.);
     // std::cout << "\nfinal discretization error:" << std::endl;
     // for (int i= 0; i < N - 1; ++i)
-    //     std::cout << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[0][i], 1.), &sol0t, C.dt*C.num_steps) << ", ";
+    //     std::cout << L2_err( mg, lset.Phi, make_P1Eval( mg, bnd, DV[0][i], 1.), &sol0t, C.tm_StepSize*C.tm_NumSteps) << ", ";
 
     std::cout << std::endl;
   for (int l= 0; l < L; ++l) {
@@ -241,7 +241,7 @@ int main (int argc, char** argv)
                                  4.*DROPS::std_basis<3>( 3),
                                  C.cdiv, C.cdiv, C.cdiv);
     DROPS::MultiGridCL mg( brick);
-    DROPS::AdapTriangCL adap( mg, C.ref_width, 0, C.ref_flevel);
+    DROPS::AdapTriangCL adap( mg, C.ref_Width, 0, C.ref_FinestLevel);
     adap.MakeInitialTriang( sphere_2);
 
     DROPS::LevelsetP2CL lset( mg);

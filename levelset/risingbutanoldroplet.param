@@ -112,6 +112,16 @@ Transp {
   NitscheXFEMStab =       0.1
 }
 
+# surfactant transport
+SurfTransp {
+  DoTransp      = 0         # 0=off, 1=on
+  Theta         = 0.5
+  Iter          = 1000
+  Tol           = 1e-10
+  OmitBound     = -1.       # keeps all dof
+  Visc          = 1e-5      # interfacial diffusion coefficient
+}
+
 # Ensight settings
 Ensight {
   EnsightOut    = 1

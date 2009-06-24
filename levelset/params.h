@@ -371,6 +371,32 @@ class ParamTransportCL : public virtual ParamBaseCL
     ParamTransportCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
+/// \brief Parameter class for surfactant transport
+class ParamSurfactantTransportCL : public virtual ParamBaseCL
+{
+  protected:
+    void RegisterParams();
+
+  public:
+  ///\name Surfactant Transport
+  //@{
+    int    surf_DoTransp;  ///< surfactant transport on (1) or off (0) 0.5=CrankNicholson
+    double surf_Theta;     ///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
+    int    surf_Iter;      ///< iterations of solver for surfactant equation
+    double surf_Tol;       ///< tolerance of solver for surfactant equation
+    double surf_OmitBound; ///< omit dof with small mass on the interface
+    double surf_Visc;      ///< diffusion coefficient on the interface
+  //@}
+
+  public:
+    ParamSurfactantTransportCL () { RegisterParams(); }
+    ParamSurfactantTransportCL (const string& filename) {
+        RegisterParams();
+        std::ifstream file(filename.c_str());
+        rp_.ReadParams (file);
+    }
+};
+
 /// \brief Parameter class for domain conditions like boundary cond. and geometry
 class ParamDomainCondCL : public virtual ParamBaseCL
 {
@@ -400,6 +426,7 @@ class ParamMesszelleNsCL:
         public ParamStokesCL,
         public ParamTimeDiscCL,
         public ParamTransportCL,
+        public ParamSurfactantTransportCL,
         public ParamLevelSetCL,
         public ParamCouplingCL,
         public ParamMaterialDataCL,
@@ -422,6 +449,7 @@ class ParamMesszelleNsCL:
         rp_.ReadParams( file);
         ParamTimeDiscCL::rp_.ReadParams( file);
         ParamTransportCL::rp_.ReadParams( file);
+        ParamSurfactantTransportCL::rp_.ReadParams( file);
         ParamLevelSetCL::rp_.ReadParams( file);
         ParamCouplingCL::rp_.ReadParams( file);
         ParamEnsightCL::rp_.ReadParams( file);

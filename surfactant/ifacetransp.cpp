@@ -319,6 +319,7 @@ void SurfactantcGP1CL::SetTimeStep (double dt, double theta)
 
 void SurfactantcGP1CL::Update()
 {
+    // std::cout << "SurfactantcGP1CL::Update:\n";
     IdxDescCL* cidx= ic.RowIdx;
 
     M.Data.clear();
@@ -350,6 +351,7 @@ void SurfactantcGP1CL::Update()
 VectorCL SurfactantcGP1CL::InitStep ()
 {
 
+    // std::cout << "SurfactantcGP1CL::InitStep:\n";
     idx.CreateNumbering( oldidx_.TriangLevel(), MG_, &lset_vd_); // InitOld deletes oldidx_ and swaps idx and oldidx_.
     std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
     ic.SetIdx( &idx);
