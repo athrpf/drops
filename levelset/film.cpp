@@ -37,8 +37,8 @@ class ZeroFlowCL
     const DROPS::Point3DCL g;
 
     ZeroFlowCL( const DROPS::ParamFilmCL& C)
-      : rho( DROPS::JumpCL( C.mat_DensFluid, C.mat_DensGas ), DROPS::H_sm, C.mat_SmoothZone),
-        mu(  DROPS::JumpCL( C.mat_ViscFluid,  C.mat_ViscGas),   DROPS::H_sm, C.mat_SmoothZone),
+      : rho( DROPS::JumpCL( C.mat_DensFluid, C.mat_DensGas), DROPS::H_sm, C.mat_SmoothZone),
+        mu(  DROPS::JumpCL( C.mat_ViscFluid, C.mat_ViscGas), DROPS::H_sm, C.mat_SmoothZone),
         SurfTens( C.mat_SurfTension), g( C.exp_Gravity)    {}
 };
 
@@ -53,15 +53,15 @@ class DimLessCoeffCL
     const DROPS::Point3DCL g;
 
     DimLessCoeffCL( const DROPS::ParamFilmCL& C)
-      : rho( DROPS::JumpCL( 1., C.mat_DensGas/C.mat_DensFluid ), DROPS::H_sm, C.mat_SmoothZone),
-        mu ( DROPS::JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid),    DROPS::H_sm, C.mat_SmoothZone),
+      : rho( DROPS::JumpCL( 1., C.mat_DensGas/C.mat_DensFluid), DROPS::H_sm, C.mat_SmoothZone),
+        mu ( DROPS::JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid), DROPS::H_sm, C.mat_SmoothZone),
         SurfTens( C.mat_SurfTension/C.mat_DensFluid), g( C.exp_Gravity)    {}
 };
 
 
-DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double t)
+DROPS::Point3DCL Inflow( const DROPS::Point3DCL& p, double t)
 {
-    DROPS::SVectorCL<3> ret(0.);
+    DROPS::Point3DCL ret(0.);
     const double d= p[1]/C.exp_Thickness;
     static const double u= C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2;
     ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.exp_PumpAmpl*std::sin(2*M_PI*t*C.exp_PumpFreq))
@@ -247,7 +247,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 10.0, /*rpm_MinGrad*/ 0.1, C.lvs_VolCorrection, Vol);
 
     LinThetaScheme2PhaseCL<StokesProblemT, LsetSolverT>
-        cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, C.stk_Theta, C.lvs_Theta, /*ns_Nonlinear*/ 0., /*implicitCurv*/ true);
+        cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.tm_StepSize);
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
