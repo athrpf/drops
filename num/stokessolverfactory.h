@@ -382,7 +382,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new InexactUzawaCL<MGsymmPcT, MinCommPreCL, APC_SYM>
                         ( MGPcsymm_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
-        case 20204 :
+        case 20203 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISPreCL, APC_SYM>
                         ( MGPcsymm_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
@@ -394,7 +394,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new InexactUzawaCL<PCGPcT, MinCommPreCL, APC_SYM>
                         ( PCGPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
-        case 20304 :
+        case 20303 :
             stokessolver = new InexactUzawaCL<PCGPcT, ISPreCL, APC_SYM>
                         ( PCGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
@@ -420,7 +420,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 30202 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos2T> >( PMinResMGMinComm_);
         break;
-        case 30204 :
+        case 30203 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos5T> >( PMinResMGISPre_);
         break;
         case 30301 :
@@ -429,7 +429,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 30302 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos4T> >( PMinResPCGMinComm_);
         break;
-        case 30304 :
+        case 30303 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos6T> >( PMinResPCGISPre_);
         break;
         case 40101 :
@@ -498,7 +498,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             }
         }
         break;
-        default: throw DROPSErrCL("Unknown StokesMethod");
+        default: throw DROPSErrCL("StokesSolverFactoryCL: Unknown Stokes solver");
     }
     return stokessolver;
 }
