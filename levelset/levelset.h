@@ -162,15 +162,16 @@ private:
     const double Vol_;
 
     int    step_;
+    bool   reparam_;
 
 public:
     LevelsetModifyCL( int rpm_Freq, int rpm_Method, double rpm_MaxGrad, double rpm_MinGrad, int lvs_VolCorrection, double Vol) :
-    	rpm_Freq_( rpm_Freq), rpm_Method_( rpm_Method), rpm_MaxGrad_( rpm_MaxGrad),
-    	rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0) {}
+        rpm_Freq_( rpm_Freq), rpm_Method_( rpm_Method), rpm_MaxGrad_( rpm_MaxGrad),
+        rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0), reparam_(true) {}
+
 
     double maybeModify( LevelsetP2CL& lset) {
-        ++step_;
-    	bool doReparam= rpm_Freq_ && step_%rpm_Freq_ == 0;
+        bool doReparam= reparam_ && rpm_Freq_ && step_%rpm_Freq_ == 0;
         bool doVolCorr= lvs_VolCorrection_ && step_%lvs_VolCorrection_ == 0;
         double dphi = 0.0;
 
@@ -179,8 +180,8 @@ public:
         double lsetmaxGradPhi, lsetminGradPhi;
 
         if (doReparam) {
-        	lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
-        	doReparam = (lsetmaxGradPhi > rpm_MaxGrad_ || lsetminGradPhi < rpm_MinGrad_);
+            lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
+            doReparam = (lsetmaxGradPhi > rpm_MaxGrad_ || lsetminGradPhi < rpm_MinGrad_);
         }
 
         // volume correction before reparam
@@ -197,6 +198,7 @@ public:
             lset.ReparamFastMarching( rpm_Method_, false, false, rpm_Method_==3);
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
+            reparam_ = false;
         }
 
         if (doVolCorr) {
@@ -206,6 +208,10 @@ public:
             std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
         }
         return dphi;
+    }
+    void init() {
+        step_++;
+        reparam_ = true;
     }
 };
 

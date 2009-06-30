@@ -172,6 +172,7 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::CommitStep()
 template <class StokesT, class LsetSolverT>
 void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::DoStep( int)
 {
+    lsetmod_.init();
     SolveLsNs();
     CommitStep();
 }
@@ -526,6 +527,7 @@ template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
+    lsetmod_.init();
     dphi_ = 0;
     std::cout << "InitStep-dt_: " << dt_ << std::endl;
     if (trapezoid_) {
