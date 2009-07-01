@@ -12,14 +12,13 @@ namespace DROPS
 // ==============================================
 
 template <class StokesT>
-TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double stk_theta, double ls_theta, double nonlinear)
+TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double nonlinear)
   : Stokes_( Stokes), LvlSet_( ls), b_( &Stokes.b), old_b_( new VelVecDescCL),
     cplM_( new VelVecDescCL), old_cplM_( new VelVecDescCL),
     cplN_( new VelVecDescCL), old_cplN_( new VelVecDescCL),
     curv_( new VelVecDescCL), old_curv_(new VelVecDescCL),
     rhs_( Stokes.b.RowIdx->NumUnknowns()), ls_rhs_( ls.Phi.RowIdx->NumUnknowns()),
-    mat_( new MLMatrixCL( Stokes.vel_idx.size())), L_( new MatrixCL()), stk_theta_( stk_theta),
-    ls_theta_( ls_theta), nonlinear_( nonlinear), lsetmod_( lsetmod)
+    mat_( new MLMatrixCL( Stokes.vel_idx.size())), L_( new MatrixCL()), nonlinear_( nonlinear), lsetmod_( lsetmod)
 {
     Stokes_.SetLevelSet( ls);
     LB_.Data.resize( Stokes.vel_idx.size());
@@ -45,9 +44,9 @@ TimeDisc2PhaseCL<StokesT>::~TimeDisc2PhaseCL()
 template <class StokesT, class LsetSolverT>
 LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::LinThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-    		double stk_theta, double ls_theta, double nonlinear, bool implicitCurv)
-  : base_( Stokes, ls, lsetmod, stk_theta, ls_theta, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
-    cplA_(new VelVecDescCL), implCurv_( implicitCurv)
+                double stk_theta, double ls_theta, double nonlinear, bool implicitCurv)
+  : base_( Stokes, ls, lsetmod, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
+  stk_theta_( stk_theta), ls_theta_( ls_theta), cplA_(new VelVecDescCL), implCurv_( implicitCurv)
 {
     Update();
 }
@@ -238,8 +237,9 @@ template <class StokesT, class LsetSolverT>
 OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::OperatorSplitting2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear)
 
-  : base_( Stokes, ls, lsetmod, /*theta*/ 1.0 - std::sqrt( 2.)/2., 1.0 - std::sqrt( 2.)/2., nonlinear), solver_(solver), lsetsolver_( lsetsolver),
+  : base_( Stokes, ls, lsetmod, nonlinear), solver_(solver), lsetsolver_( lsetsolver),
     gm_( pc_, 100, gm_iter, gm_tol, false /*test absolute resid*/),
+    stk_theta_( 1.0 - std::sqrt( 2.)/2.), ls_theta_( 1.0 - std::sqrt( 2.)/2.),
     cplA_( new VelVecDescCL), old_cplA_( new VelVecDescCL),
     alpha_( (1.0 - 2.0*stk_theta_)/(1.0 - stk_theta_))
 {
@@ -475,36 +475,24 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::Update()
 
 
 // ==============================================
-//              RecThetaScheme2PhaseCL
+//            CoupledTimeDisc2PhaseBaseCL
 // ==============================================
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool trapezoid)
-  : base_( Stokes, ls, lsetmod, stk_theta, ls_theta, nonlinear),
-    solver_( solver), lsetsolver_( lsetsolver), tol_(tol), withProj_( withProjection), stab_( stab), Mold_( 0), Eold_( 0), trapezoid_( trapezoid && stk_theta == 0.5 && ls_theta == 0.5),
-#ifndef _PAR
-    ssorpc_(), Msolver_( ssorpc_, 200, 1e-10, true),
-    ispc_( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
-    Ssolver_( ispc_, 200, 200, 1e-10, true)
-#else
-    MsolverPC_(Stokes.vel_idx.GetFinest()), Msolver_(200, 1e-10, Stokes.vel_idx.GetFinest(), MsolverPC_, false, true),
-    SsolverPC_(Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
-               Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
-               Ssolver_(100, 200, 1e-10, Stokes.pr_idx.GetFinest(), SsolverPC_, true)
-#endif
+CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CoupledTimeDisc2PhaseBaseCL
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double nonlinear, bool withProjection, double stab)
+  : base_( Stokes, ls, lsetmod, nonlinear),
+    solver_( solver), lsetsolver_( lsetsolver), tol_(tol), withProj_( withProjection), stab_( stab), alpha_( nonlinear_)
 {
     Update();
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~RecThetaScheme2PhaseCL()
-{
-    delete Mold_; delete Eold_;
-}
+CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~CoupledTimeDisc2PhaseBaseCL()
+{}
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MaybeStabilize (VectorCL& b)
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MaybeStabilize (VectorCL& b)
 {
     if (stab_ == 0.0) return;
 
@@ -517,47 +505,31 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MaybeStabili
 
     MLMatrixCL mat0( *mat_);
     mat_->clear();
-    const double s= stab_*stk_theta_*dt_;
+    const double s= stab_*dt_;
     std::cout << "Stabilizing with: " << s << '\n';
     mat_->LinComb( 1., mat0, s, LB_.Data);
     b+= s*(LB_.Data*Stokes_.v.Data);
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
     lsetmod_.init();
     dphi_ = 0;
     std::cout << "InitStep-dt_: " << dt_ << std::endl;
-    if (trapezoid_) {
-        ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data)    + phidot_;
-        rhs_    = (1./dt_) * (Stokes_.M.Data * Stokes_.v.Data) + vdot_;
-    }
-    else {
-    	ls_rhs_ = (1./dt_)*LvlSet_.Phi.Data;
-        if ( ls_theta_ != 1.)
-            ls_rhs_ += ( 1. - ls_theta_ )*phidot_;
-
-        rhs_= (1./dt_)*Stokes_.v.Data;
-        if ( stk_theta_ != 1.)
-            rhs_    += ( 1. - stk_theta_)*vdot_;
-    }
     Stokes_.t+= dt_;
-
-    if (stk_theta_!= 0. && stk_theta_!= 1. && (!trapezoid_))
-        Stokes_.p.Data*= stk_theta_; // Just to have a better starting-value for p.
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoProjectionStep( const VectorCL& /*rhscurv*/)
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoProjectionStep( const VectorCL& /*rhscurv*/)
 // perform preceding projection step
 {
     std::cout << "~~~~~~~~~~~~~~~~ NO Projection step\n";
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavStokesEquations()
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavStokesEquations()
 // perform fixed point iteration
 {
 #ifndef _PAR
@@ -570,26 +542,15 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavS
     time.Start();
 
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
-    if (trapezoid_)
-        L_->LinComb( 1./dt_, LvlSet_.E, 1./dt_, *Eold_, 1.0, LvlSet_.H);
-    else
-        L_->LinComb( 1./dt_, LvlSet_.E, ls_theta_, LvlSet_.H);
-
+    SetupLevelsetSystem();
+    LvlSet_.Phi.Data -= dphi_;
     time.Stop();
     duration=time.GetTime();
     std::cout << "Discretizing Levelset took " << duration << " sec.\n";
 
     time.Reset();
 
-    VectorCL ls_rhs2 ( ls_rhs_.size());
-    if (trapezoid_)
-        ls_rhs2 = ls_rhs_ + (1./dt_) * (LvlSet_.E * oldphi_);
-    else
-    	ls_rhs2 = LvlSet_.E * ls_rhs_;
-
-    LvlSet_.Phi.Data -= dphi_;
-    lsetsolver_.Solve( *L_, LvlSet_.Phi.Data, ls_rhs2);
+    lsetsolver_.Solve( *L_, LvlSet_.Phi.Data, ls_rhs_);
     std::cout << "res = " << lsetsolver_.GetResid() << ", iter = " << lsetsolver_.GetIter() << std::endl;
 
     time.Stop();
@@ -601,49 +562,18 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavS
     time.Reset();
     time.Start();
 
-    curv_->Clear();
-    LvlSet_.AccumulateBndIntegral( *curv_);
+    SetupNavStokesSystem();
 
-    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
-    if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
-        Stokes_.UpdatePressure( &Stokes_.p);
-        Stokes_.c.SetIdx( &Stokes_.pr_idx);
-        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
-        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        // The MatrixBuilderCL's method of determining when to reuse the pattern
-        // is not save for P1X-elements.
-        Stokes_.B.Data.clear();
-        Stokes_.prA.Data.clear();
-        Stokes_.prM.Data.clear();
-        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
-    }
-    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
-    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
-    VectorCL b2( curv_->Data + b_->Data);
-    double alpha = nonlinear_;
-    if (trapezoid_) {
-        mat_->LinComb( 1./dt_, Stokes_.M.Data, 1./dt_, *Mold_, 1.0, Stokes_.A.Data);
-        b2 += rhs_ + (1./dt_) * (Stokes_.M.Data * oldv_); /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data + coupling of M with vdot_new*/
-    }
-    else {
-        mat_->LinComb( 1./dt_, Stokes_.M.Data, stk_theta_, Stokes_.A.Data);
-        b2 *= stk_theta_;
-        b2 += Stokes_.M.Data*rhs_; /* only if time-dep DirBC:+ (1./dt_)*cplM_->Data + coupling of M with vdot_new*/
-        alpha *= stk_theta_;
-    }
-    MaybeStabilize( b2);
+    MaybeStabilize( rhs_);
     time.Stop();
     duration=time.GetTime();
     std::cout << "Discretizing NavierStokes/Curv took "<<duration<<" sec.\n";
 
     time.Reset();
-
     solver_.SetRelError( true);
     solver_.Solve( *mat_, Stokes_.B.Data,
         Stokes_.v, Stokes_.p.Data,
-        b2, *cplN_, Stokes_.c.Data, alpha);
+        rhs_, *cplN_, Stokes_.c.Data, alpha_);
     time.Stop();
     duration=time.GetTime();
     std::cout << "Solving NavierStokes: residual: " << solver_.GetResid()
@@ -652,71 +582,16 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavS
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     std::swap( b_, old_b_);
     std::swap( cplM_, old_cplM_);
     std::swap( cplN_, old_cplN_);
     std::swap( curv_, old_curv_);
-
-    if (stk_theta_ != 0.) {
-        VectorCL vdot1( (1./dt_)*(Stokes_.v.Data - oldv_));
-        if (trapezoid_) {
-            vdot_ = Stokes_.M.Data * vdot1 + (*Mold_) * vdot1 - vdot_;
-            delete Mold_;
-            Mold_ = new MLMatrixCL( Stokes_.M.Data);
-        }
-        else {
-            if (stk_theta_ != 1.) {
-                vdot_= vdot1 - (1. - stk_theta_)*vdot_;
-
-                Stokes_.p.Data*= 1./stk_theta_;
-                vdot_*= 1./stk_theta_;
-            }
-        }
-    }
-    else {
-        ComputePressure();
-        ComputeDots();
-    }
-
-    if (ls_theta_ != 0.) {
-        if (trapezoid_) {
-            phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
-            delete Eold_;
-            Eold_ = new MatrixCL (LvlSet_.E);
-        }
-        else {
-            if (ls_theta_ != 1.) {
-                phidot_= (1./dt_)*(LvlSet_.Phi.Data - oldphi_) - (1. - ls_theta_)*phidot_;
-                phidot_*= 1./ls_theta_;
-            }
-        }
-    }
-    else
-    	throw DROPSErrCL ("Explicit Euler for Level Set not implemented, yet\n");
-
-    oldphi_ = LvlSet_.Phi.Data;
-    oldv_= Stokes_.v.Data;
-
-//     static int mycount( 1);
-//     if ( mycount++ % 20 == 1) {
-//         VectorCL pp( Stokes_.p.Data);
-//         ComputePressure();
-//         std::cout << "pressure difference: " << norm( Stokes_.p.Data - pp)/norm( pp) << '\n';
-//         Stokes_.p.Data= pp;
-//
-//         if (stk_theta_ != 1.) { // Implicit Euler does not need and calculate vdot_.
-//             VectorCL vd( vdot_);
-//             ComputeDots();
-//             std::cout << "vdot difference: " << norm( vdot_ - vd)/norm( vd) << '\n';
-//             vdot_= vd;
-//         }
-//     }
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep( int maxFPiter)
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
         maxFPiter= 99;
@@ -756,6 +631,455 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep( int 
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+{
+    MLIdxDescCL* const vidx= &Stokes_.vel_idx;
+
+    Stokes_.ClearMat();
+    LvlSet_.ClearMat();
+    mat_->clear();
+    L_->clear();
+
+    // IndexDesc setzen
+    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
+    cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
+    cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
+    curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
+
+    rhs_.resize   ( vidx->NumUnknowns());
+    ls_rhs_.resize( LvlSet_.idx.NumUnknowns());
+}
+
+// ==============================================
+//            MidPointTimeDisc2PhaseCL
+// ==============================================
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MidPointTimeDisc2PhaseCL
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
+    implicitpressure_( implicitpressure)
+{
+    if (Stokes_.UsesXFEM() && !implicitpressure_) {
+        std::cerr << "MidPointTimeDisc2PhaseCL: XFEM for pressure detected. This is not implemented, yet, using fully implicit pressure" << std::endl;
+        implicitpressure_ = true;
+    }
+    Update();
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+{
+    base_::InitStep();
+    if (implicitpressure_) {       // Just to have a better starting-value for p.
+        Stokes_.p.Data *= 2.0;
+    }
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+{
+    base_::CommitStep();
+    oldphi_ = LvlSet_.Phi.Data;
+    if (implicitpressure_) {
+        Stokes_.p.Data *= 0.5;
+    }
+    else {
+        oldp_= Stokes_.p.Data;
+    }
+    oldv_= Stokes_.v.Data;
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+{
+#ifndef _PAR
+    TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
+    time.Reset();
+    time.Start();
+
+    base_::Update();
+    oldphi_.resize( LvlSet_.idx.NumUnknowns());
+    oldphi_ = LvlSet_.Phi.Data;
+
+    oldv_.resize( Stokes_.v.Data.size());
+    oldv_= Stokes_.v.Data;
+
+    oldp_.resize( Stokes_.p.Data.size());
+    oldp_= Stokes_.p.Data;
+
+    Stokes_.SetIdx();
+
+    Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    time.Stop();
+    duration=time.GetTime();
+    std::cout << "Discretizing took " << duration << " sec.\n";
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+{
+    curv_->Clear();
+    const VectorCL tmpphi( LvlSet_.Phi.Data);
+    LvlSet_.Phi.Data += oldphi_;
+    LvlSet_.Phi.Data *= 0.5;
+    LvlSet_.AccumulateBndIntegral( *curv_);
+
+    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
+    if (Stokes_.UsesXFEM()) {
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
+        Stokes_.UpdatePressure( &Stokes_.p);
+        Stokes_.c.SetIdx( &Stokes_.pr_idx);
+        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
+        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        Stokes_.B.Data.clear();
+        Stokes_.prA.Data.clear();
+        Stokes_.prM.Data.clear();
+        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    }
+    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
+    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+
+    LvlSet_.Phi.Data = tmpphi;
+
+    alpha_ = nonlinear_;
+
+    mat_->LinComb( 2./dt_, Stokes_.M.Data, 1.0, Stokes_.A.Data);
+    rhs_ = 2.0/dt_ * VectorCL(Stokes_.M.Data * oldv_) - Stokes_.A.Data * oldv_ + 2.0* curv_->Data + 2.0* Stokes_.b.Data;
+    if (!implicitpressure_)
+        rhs_ -= transp_mul(Stokes_.B.Data, oldp_);
+
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+{
+    const VectorCL tmpv( Stokes_.v.Data);
+    Stokes_.v.Data = 0.5 * VectorCL( Stokes_.v.Data + oldv_);
+    // setup system for levelset eq.
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+    Stokes_.v.Data = tmpv;
+
+    L_->LinComb( 2./dt_, LvlSet_.E, 1.0, LvlSet_.H);
+    ls_rhs_ = 2.0/dt_ * VectorCL(LvlSet_.E * oldphi_) - LvlSet_.H * oldphi_;
+}
+
+// ==============================================
+//            TrapezoidTimeDisc2PhaseCL
+// ==============================================
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::TrapezoidTimeDisc2PhaseCL
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
+    implicitpressure_( implicitpressure), Mold_( 0), Eold_( 0)
+{
+    Update();
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~TrapezoidTimeDisc2PhaseCL()
+{
+    delete Eold_; delete Mold_;
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+{
+    base_::InitStep();
+    fixed_ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data)    + phidot_;
+    fixed_rhs_    = (1./dt_) * (Stokes_.M.Data * Stokes_.v.Data) + vdot_;
+    if (implicitpressure_)              // Just to have a better starting-value for p.
+        Stokes_.p.Data *= 2.0;
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+{
+    base_::CommitStep();
+    VectorCL vdot1( (1./dt_)*(Stokes_.v.Data - oldv_));
+    vdot_ = Stokes_.M.Data * vdot1 + (*Mold_) * vdot1 - vdot_;
+    delete Mold_;
+    Mold_ = new MLMatrixCL( Stokes_.M.Data);
+
+    phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
+    delete Eold_;
+    Eold_ = new MatrixCL (LvlSet_.E);
+
+    oldphi_ = LvlSet_.Phi.Data;
+    oldv_= Stokes_.v.Data;
+    if (implicitpressure_)
+        Stokes_.p.Data *= 0.5;
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+{
+#ifndef _PAR
+    TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
+    time.Reset();
+    time.Start();
+
+    base_::Update();
+
+    oldphi_.resize( LvlSet_.idx.NumUnknowns());
+    oldphi_ = LvlSet_.Phi.Data;
+    fixed_ls_rhs_.resize( LvlSet_.idx.NumUnknowns());
+
+    phidot_.resize( LvlSet_.idx.NumUnknowns());
+
+    oldv_.resize( Stokes_.v.Data.size());
+    oldv_= Stokes_.v.Data;
+    fixed_rhs_.resize( Stokes_.v.Data.size());
+
+    vdot_.resize( Stokes_.v.Data.size());
+
+    Stokes_.SetIdx();
+
+    // Diskretisierung
+    LvlSet_.AccumulateBndIntegral( *old_curv_);
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, old_b_, old_cplM_, LvlSet_, Stokes_.t);
+    Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+
+    // Vorkonditionierer
+    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
+    Stokes_.SetupPrMass( &Stokes_.prM, LvlSet_);
+
+    ComputeDots();
+    time.Stop();
+    duration=time.GetTime();
+    std::cout << "Discretizing took " << duration << " sec.\n";
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots ()
+{
+    delete Mold_;
+    Mold_ = new MLMatrixCL( Stokes_.M.Data);
+    vdot_ = (-1.0)*( Stokes_.A.Data * Stokes_.v.Data ) + old_curv_->Data + old_b_->Data;
+    if (!implicitpressure_)
+        vdot_ -= transp_mul( Stokes_.B.Data, Stokes_.p.Data );
+
+    delete Eold_;
+    Eold_ = new MatrixCL( LvlSet_.E);
+    phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+{
+    curv_->Clear();
+    LvlSet_.AccumulateBndIntegral( *curv_);
+
+    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
+    if (Stokes_.UsesXFEM()) {
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
+        Stokes_.UpdatePressure( &Stokes_.p);
+        Stokes_.c.SetIdx( &Stokes_.pr_idx);
+        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
+        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        Stokes_.B.Data.clear();
+        Stokes_.prA.Data.clear();
+        Stokes_.prM.Data.clear();
+        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    }
+    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
+    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+
+    alpha_ = nonlinear_;
+    mat_->LinComb( 1./dt_, Stokes_.M.Data, 1./dt_, *Mold_, 1.0, Stokes_.A.Data);
+    rhs_ = fixed_rhs_ + (1./dt_) * (Stokes_.M.Data * oldv_) + curv_->Data + b_->Data ; /* TODO time-dep DirBC*/
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+{
+    // setup system for levelset eq.
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+
+    L_->LinComb( 1./dt_, LvlSet_.E, 1./dt_, *Eold_, 1.0, LvlSet_.H);
+    ls_rhs_ = fixed_ls_rhs_ + (1./dt_) * (LvlSet_.E * oldphi_);
+}
+
+// ==============================================
+//            EulerBackwardScheme2PhaseCL
+// ==============================================
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EulerBackwardScheme2PhaseCL
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double nonlinear, bool withProjection, double stab)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab)
+{
+    Update();
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~EulerBackwardScheme2PhaseCL()
+{}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+// compute all terms that don't change during the following FP iterations
+{
+    base_::InitStep();
+    fixed_ls_rhs_ = (1./dt_)*LvlSet_.Phi.Data;
+    fixed_rhs_    = (1./dt_)*Stokes_.v.Data;
+}
+
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+{}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+{
+#ifndef _PAR
+    TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
+    time.Reset();
+    time.Start();
+
+    std::cout << "Updating discretization...\n";
+    base_::Update();
+    Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    fixed_ls_rhs_.resize( LvlSet_.idx.NumUnknowns());
+    fixed_rhs_.resize   ( Stokes_.v.Data.size());
+
+    Stokes_.SetIdx();
+    time.Stop();
+    duration=time.GetTime();
+    std::cout << "Discretizing took " << duration << " sec.\n";
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+{
+    curv_->Clear();
+    LvlSet_.AccumulateBndIntegral( *curv_);
+
+    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
+    if (Stokes_.UsesXFEM()) {
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
+        Stokes_.UpdatePressure( &Stokes_.p);
+        Stokes_.c.SetIdx( &Stokes_.pr_idx);
+        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
+        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        Stokes_.B.Data.clear();
+        Stokes_.prA.Data.clear();
+        Stokes_.prM.Data.clear();
+        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    }
+    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
+    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+
+    alpha_ = nonlinear_;
+    mat_->LinComb( 1./dt_, Stokes_.M.Data, 1.0, Stokes_.A.Data);
+    rhs_ = Stokes_.M.Data * fixed_rhs_ + curv_->Data + b_->Data;
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+{
+    // setup system for levelset eq.
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+
+    L_->LinComb( 1./dt_, LvlSet_.E, 1.0, LvlSet_.H);
+    ls_rhs_ = LvlSet_.E * fixed_ls_rhs_;
+}
+
+// ==============================================
+//              RecThetaScheme2PhaseCL
+// ==============================================
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
+    stk_theta_( stk_theta), ls_theta_( ls_theta),
+#ifndef _PAR
+    ssorpc_(), Msolver_( ssorpc_, 200, 1e-10, true),
+    ispc_( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
+    Ssolver_( ispc_, 200, 200, 1e-10, true)
+#else
+    MsolverPC_(Stokes.vel_idx.GetFinest()), Msolver_(200, 1e-10, Stokes.vel_idx.GetFinest(), MsolverPC_, false, true),
+    SsolverPC_(Stokes.B.Data.GetFinestPtr(), Stokes.prM.Data.GetFinestPtr(), Stokes.M.Data.GetFinestPtr(),
+               Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 1.0, 0.0, 1e-4, 1e-4),
+               Ssolver_(100, 200, 1e-10, Stokes.pr_idx.GetFinest(), SsolverPC_, true)
+#endif
+{
+    stab_ *= stk_theta_;
+    Update();
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~RecThetaScheme2PhaseCL()
+{}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+// compute all terms that don't change during the following FP iterations
+{
+    base_::InitStep();
+    fixed_ls_rhs_ = (1./dt_)*LvlSet_.Phi.Data + ( 1. - ls_theta_ )*phidot_;
+
+    fixed_rhs_= (1./dt_)*Stokes_.v.Data + ( 1. - stk_theta_)*vdot_;
+
+    Stokes_.p.Data*= stk_theta_; // Just to have a better starting-value for p.
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+{
+    base_::CommitStep();
+
+    vdot_  = ((1./dt_)*(Stokes_.v.Data - oldv_)     - (1. - stk_theta_)*vdot_)  / stk_theta_;
+
+    phidot_= ((1./dt_)*(LvlSet_.Phi.Data - oldphi_) - (1. - ls_theta_)*phidot_) / ls_theta_;
+
+    oldphi_ = LvlSet_.Phi.Data;
+    oldv_= Stokes_.v.Data;
+    Stokes_.p.Data*= 1./stk_theta_;
+
+
+//     static int mycount( 1);
+//     if ( mycount++ % 20 == 1) {
+//         VectorCL pp( Stokes_.p.Data);
+//         ComputePressure();
+//         std::cout << "pressure difference: " << norm( Stokes_.p.Data - pp)/norm( pp) << '\n';
+//         Stokes_.p.Data= pp;
+//
+//         if (stk_theta_ != 1.) { // Implicit Euler does not need and calculate vdot_.
+//             VectorCL vd( vdot_);
+//             ComputeDots();
+//             std::cout << "vdot difference: " << norm( vdot_ - vd)/norm( vd) << '\n';
+//             vdot_= vd;
+//         }
+//     }
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
@@ -769,23 +1093,7 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
     time.Start();
 
     std::cout << "Updating discretization...\n";
-    if (withProj_ || stab_!=0.0)
-    {
-        LB_.Data.clear();
-        LB_.SetIdx( vidx, vidx);
-        cplLB_.SetIdx( vidx);
-    }
-    Stokes_.ClearMat();
-    LvlSet_.ClearMat();
-    mat_->clear();
-    L_->clear();
-    // IndexDesc setzen
-    b_->SetIdx( vidx);       old_b_->SetIdx( vidx);
-    cplM_->SetIdx( vidx);    old_cplM_->SetIdx( vidx);
-    cplN_->SetIdx( vidx);    old_cplN_->SetIdx( vidx);
-    curv_->SetIdx( vidx);    old_curv_->SetIdx( vidx);
-    rhs_.resize( vidx->NumUnknowns());
-    ls_rhs_.resize( LvlSet_.idx.NumUnknowns());
+    base_::Update();
     phidot_.resize( LvlSet_.idx.NumUnknowns());
     oldphi_.resize( LvlSet_.idx.NumUnknowns());
     oldphi_ = LvlSet_.Phi.Data;
@@ -793,12 +1101,9 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
     vdot_.resize( vidx->NumUnknowns());
     oldv_.resize( vidx->NumUnknowns());
     oldv_= Stokes_.v.Data;
+    fixed_ls_rhs_.resize( LvlSet_.idx.NumUnknowns());
+    fixed_rhs_.resize   ( Stokes_.v.Data.size());
     Stokes_.SetIdx();
-
-    cplLB_.SetIdx( vidx);
-    LB_.Data.clear();
-    LB_.SetIdx( vidx, vidx);
-    Stokes_.SetupLB( &LB_, &cplLB_, LvlSet_, Stokes_.t);
 
     // Diskretisierung
     LvlSet_.AccumulateBndIntegral( *old_curv_);
@@ -811,16 +1116,9 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
     Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
     Stokes_.SetupPrMass( &Stokes_.prM, LvlSet_);
 
-    if (trapezoid_) {
-        ComputeDots();
-    }
-    else {
-        // initialer Druck
-        if (stk_theta_ != 1.) {
-            ComputePressure();
-            ComputeDots();
-        }
-    }
+    // initialer Druck
+    ComputePressure();
+    ComputeDots();
 
     time.Stop();
     duration=time.GetTime();
@@ -859,15 +1157,6 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputePress
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots ()
 {
-    if (trapezoid_) {
-        delete Mold_;
-        Mold_ = new MLMatrixCL( Stokes_.M.Data);
-        vdot_ = (-1.0)*( Stokes_.A.Data * Stokes_.v.Data ) + old_curv_->Data + old_b_->Data - transp_mul( Stokes_.B.Data, Stokes_.p.Data );
-        delete Eold_;
-        Eold_ = new MatrixCL( LvlSet_.E);
-        phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
-        return;
-    }
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
         + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data)
@@ -880,6 +1169,45 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots 
     VectorCL b3 ((-1.0) * (LvlSet_.H * LvlSet_.Phi.Data));
     Msolver_.Solve( LvlSet_.E, phidot_, b3);
     std::cout << "ComputeDots: phidot: iter= " << Msolver_.GetIter() << "\tres= " << Msolver_.GetResid() << std::endl;
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+{
+    curv_->Clear();
+    LvlSet_.AccumulateBndIntegral( *curv_);
+
+    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
+    if (Stokes_.UsesXFEM()) {
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
+        Stokes_.UpdatePressure( &Stokes_.p);
+        Stokes_.c.SetIdx( &Stokes_.pr_idx);
+        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
+        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        Stokes_.B.Data.clear();
+        Stokes_.prA.Data.clear();
+        Stokes_.prM.Data.clear();
+        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    }
+    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
+    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+
+    alpha_ = nonlinear_ * stk_theta_;
+    mat_->LinComb( 1./dt_, Stokes_.M.Data, stk_theta_, Stokes_.A.Data);
+    rhs_ = Stokes_.M.Data * fixed_rhs_ + stk_theta_* curv_->Data + stk_theta_* b_->Data ; /* TODO time-dep DirBC*/
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+{
+    // setup system for levelset eq.
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+
+    L_->LinComb( 1./dt_, LvlSet_.E, ls_theta_, LvlSet_.H);
+    ls_rhs_ = LvlSet_.E * fixed_ls_rhs_;
 }
 
 

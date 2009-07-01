@@ -128,9 +128,9 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 3 :
             std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
-        case 2 : case 6 :
+        case 2 :
             return (new RecThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, C.tm_Scheme == 6));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         case 4 :
             return (new OperatorSplitting2PhaseCL<StokesProblemT, LevelSetSolverT>
@@ -139,6 +139,18 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         case 5 :
             return (new CrankNicolsonScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 6 :
+            return (new TrapezoidTimeDisc2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false));
+        break;
+        case 7 :
+            return (new TrapezoidTimeDisc2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true));
+        break;
+        case 8 :
+            return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
