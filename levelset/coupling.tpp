@@ -815,8 +815,10 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSte
 
     oldphi_ = LvlSet_.Phi.Data;
     oldv_= Stokes_.v.Data;
-    if (implicitpressure_)
+    if (implicitpressure_) {
+        vdot_ += transp_mul( Stokes_.B.Data, Stokes_.p.Data);
         Stokes_.p.Data *= 0.5;
+    }
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
@@ -870,7 +872,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDo
     Mold_ = new MLMatrixCL( Stokes_.M.Data);
     vdot_ = (-1.0)*( Stokes_.A.Data * Stokes_.v.Data ) + old_curv_->Data + old_b_->Data;
     if (!implicitpressure_)
-        vdot_ -= transp_mul( Stokes_.B.Data, Stokes_.p.Data );
+        vdot_ -= transp_mul( Stokes_.B.Data, Stokes_.p.Data);
 
     delete Eold_;
     Eold_ = new MatrixCL( LvlSet_.E);
