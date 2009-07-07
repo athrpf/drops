@@ -752,7 +752,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavSt
     alpha_ = nonlinear_;
 
     mat_->LinComb( 2./dt_, Stokes_.M.Data, 1.0, Stokes_.A.Data);
-    rhs_ = 2.0/dt_ * VectorCL(Stokes_.M.Data * oldv_) - Stokes_.A.Data * oldv_ + 2.0* curv_->Data + 2.0* Stokes_.b.Data;
+    rhs_ = 2.0/dt_ * VectorCL(Stokes_.M.Data * oldv_) - Stokes_.A.Data * oldv_ + 2.0* curv_->Data + 2.0* Stokes_.b.Data
+           + nonlinear_*(old_cplN_->Data - Stokes_.N.Data * oldv_);
     if (!implicitpressure_)
         rhs_ -= transp_mul(Stokes_.B.Data, oldp_);
 
@@ -854,6 +855,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
     LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, old_b_, old_cplM_, LvlSet_, Stokes_.t);
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
 
     // Vorkonditionierer
     Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
@@ -870,7 +872,8 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDo
 {
     delete Mold_;
     Mold_ = new MLMatrixCL( Stokes_.M.Data);
-    vdot_ = (-1.0)*( Stokes_.A.Data * Stokes_.v.Data ) + old_curv_->Data + old_b_->Data;
+    vdot_ = (-1.0)*( Stokes_.A.Data * Stokes_.v.Data ) + old_curv_->Data + old_b_->Data
+            + nonlinear_*(old_cplN_->Data - Stokes_.N.Data*Stokes_.v.Data);
     if (!implicitpressure_)
         vdot_ -= transp_mul( Stokes_.B.Data, Stokes_.p.Data);
 
