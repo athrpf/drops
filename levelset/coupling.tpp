@@ -329,6 +329,8 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoStokesFPIter()
         Stokes_.prM.Data.clear();
         Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     }
+    else
+        Stokes_.SetupRhs2( &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
     Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
     time.Stop();
@@ -582,6 +584,34 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLse
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupStokesMatVec()
+/// setup matrices A, M, B, prA, prM and vectors b+cplA, cplM, curv, c 
+{
+    curv_->Clear();
+    LvlSet_.AccumulateBndIntegral( *curv_);
+
+    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
+    if (Stokes_.UsesXFEM()) {
+        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
+        Stokes_.UpdatePressure( &Stokes_.p);
+        Stokes_.c.SetIdx( &Stokes_.pr_idx);
+        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
+        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
+        // The MatrixBuilderCL's method of determining when to reuse the pattern
+        // is not save for P1X-elements.
+        Stokes_.B.Data.clear();
+        Stokes_.prA.Data.clear();
+        Stokes_.prM.Data.clear();
+        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
+    }
+    else
+        Stokes_.SetupRhs2( &Stokes_.c, LvlSet_, Stokes_.t);
+    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
+    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+}
+
+template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     std::swap( b_, old_b_);
@@ -723,29 +753,11 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
-    curv_->Clear();
     const VectorCL tmpphi( LvlSet_.Phi.Data);
     LvlSet_.Phi.Data += oldphi_;
     LvlSet_.Phi.Data *= 0.5;
-    LvlSet_.AccumulateBndIntegral( *curv_);
 
-    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
-    if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
-        Stokes_.UpdatePressure( &Stokes_.p);
-        Stokes_.c.SetIdx( &Stokes_.pr_idx);
-        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
-        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        // The MatrixBuilderCL's method of determining when to reuse the pattern
-        // is not save for P1X-elements.
-        Stokes_.B.Data.clear();
-        Stokes_.prA.Data.clear();
-        Stokes_.prM.Data.clear();
-        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
-    }
-    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
-    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+    base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
     LvlSet_.Phi.Data = tmpphi;
 
@@ -885,26 +897,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDo
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
-    curv_->Clear();
-    LvlSet_.AccumulateBndIntegral( *curv_);
-
-    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
-    if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
-        Stokes_.UpdatePressure( &Stokes_.p);
-        Stokes_.c.SetIdx( &Stokes_.pr_idx);
-        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
-        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        // The MatrixBuilderCL's method of determining when to reuse the pattern
-        // is not save for P1X-elements.
-        Stokes_.B.Data.clear();
-        Stokes_.prA.Data.clear();
-        Stokes_.prM.Data.clear();
-        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
-    }
-    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
-    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+    base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
     alpha_ = nonlinear_;
     mat_->LinComb( 1./dt_, Stokes_.M.Data, 1./dt_, *Mold_, 1.0, Stokes_.A.Data);
@@ -978,26 +971,7 @@ void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update(
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
-    curv_->Clear();
-    LvlSet_.AccumulateBndIntegral( *curv_);
-
-    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
-    if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
-        Stokes_.UpdatePressure( &Stokes_.p);
-        Stokes_.c.SetIdx( &Stokes_.pr_idx);
-        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
-        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        // The MatrixBuilderCL's method of determining when to reuse the pattern
-        // is not save for P1X-elements.
-        Stokes_.B.Data.clear();
-        Stokes_.prA.Data.clear();
-        Stokes_.prM.Data.clear();
-        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
-    }
-    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
-    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+    base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
     alpha_ = nonlinear_;
     mat_->LinComb( 1./dt_, Stokes_.M.Data, 1.0, Stokes_.A.Data);
@@ -1179,26 +1153,7 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
-    curv_->Clear();
-    LvlSet_.AccumulateBndIntegral( *curv_);
-
-    Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, b_, cplM_, LvlSet_, Stokes_.t);
-    if (Stokes_.UsesXFEM()) {
-        Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
-        Stokes_.UpdatePressure( &Stokes_.p);
-        Stokes_.c.SetIdx( &Stokes_.pr_idx);
-        Stokes_.B.SetIdx( &Stokes_.pr_idx, &Stokes_.vel_idx);
-        Stokes_.prA.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        Stokes_.prM.SetIdx( &Stokes_.pr_idx, &Stokes_.pr_idx);
-        // The MatrixBuilderCL's method of determining when to reuse the pattern
-        // is not save for P1X-elements.
-        Stokes_.B.Data.clear();
-        Stokes_.prA.Data.clear();
-        Stokes_.prM.Data.clear();
-        Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
-    }
-    Stokes_.SetupPrStiff( &Stokes_.prA, LvlSet_);
-    Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
+    base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
     alpha_ = nonlinear_ * stk_theta_;
     mat_->LinComb( 1./dt_, Stokes_.M.Data, stk_theta_, Stokes_.A.Data);

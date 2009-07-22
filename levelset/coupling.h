@@ -271,6 +271,7 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     void DoProjectionStep( const VectorCL&);
     void MaybeStabilize  ( VectorCL&);
     void EvalLsetNavStokesEquations();
+    void SetupStokesMatVec();
 
   public:
     CoupledTimeDisc2PhaseBaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver,
@@ -545,6 +546,10 @@ class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT, LsetSolver
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
     int    GetSubStep()     const { return step_; }
+
+    void SetTimeStep (double dt) { // overwrites baseclass-version
+        dt3_= dt;
+    }
 
     void SetTimeStep( double dt, int step = -1) {
         dt3_= dt;
