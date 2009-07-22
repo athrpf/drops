@@ -18,6 +18,7 @@
 
  // include numeric computing!
 #include "levelset/adaptriang.h"
+#include "levelset/surfacetension.h"
 
  // include in- and output
 #include "out/output.h"
@@ -90,6 +91,9 @@ double DistanceFct1( const DROPS::Point3DCL& p)
     const DROPS::Point3DCL d= C.Mitte-p;
     return d.norm()-C.Radius;
 }
+
+double sigma;
+double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
 
 namespace DROPS{
 
@@ -240,8 +244,9 @@ template<typename Coeff>
 template<class Coeff>
   void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, MultiGridCL& mg)
 {
-    LevelsetP2CL lset( mg, Stokes.GetCoeff().SurfTens,
-                       C.lset_theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
+    sigma= Stokes.GetCoeff().SurfTens;
+    SurfaceTensionCL sf( sigmaf, 0);
+    LevelsetP2CL lset( mg, sf, C.lset_theta, C.lset_SD, C.RepDiff, C.lset_iter, C.lset_tol, C.CurvDiff);
 
     AdapTriangCL adapt( mg, C.ref_width, 0, C.ref_flevel);
     adapt.MakeInitialTriang(::DistanceFct1);

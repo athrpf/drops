@@ -31,6 +31,8 @@
 #include "num/parstokessolver.h"
 #include "num/nssolver.h"
 #include "num/stokessolverfactory.h"
+#include "levelset/surfacetension.h"
+#include "levelset/surfacetension.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -256,8 +258,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     sigma= Stokes.GetCoeff().SurfTens;
 
     // Create the levelset class
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0,
-                       C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
+    SurfaceTensionCL sf( sigmaf, 0);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
 
     // Index describer for levelset, velocity and pressure
     IdxDescCL*   lidx= &lset.idx;

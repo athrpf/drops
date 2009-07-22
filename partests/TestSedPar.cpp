@@ -30,6 +30,7 @@
 #include "num/parstokessolver.h"
 #include "stokes/integrTime.h"
 #include "levelset/adaptriang.h"
+#include "levelset/surfacetension.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -434,9 +435,8 @@ template<class Coeff>
     sigma= Stokes.GetCoeff().SurfTens;
 
     ParTimerCL time;
-
-    LevelsetP2CL lset( mg, &sigmaf, /*grad sigma*/ 0,
-                       C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+    SurfaceTensionCL sf( sigmaf, 0);
+    LevelsetP2CL lset( mg, sf, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
     lset.SetSurfaceForce( SF_ImprovedLB);
 
     AdapTriangCL adapt( pmg, lb, C.ref_width, 0, C.ref_flevel);

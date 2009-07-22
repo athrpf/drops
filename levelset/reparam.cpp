@@ -7,6 +7,7 @@
 #include <fstream>
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
+#include "levelset/surfacetension.h"
 #include "out/ensightOut.h"
 
 double SmoothedSign( double x, double alpha)
@@ -155,7 +156,8 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
 {
     MultiGridCL& mg= prob.GetMG();
     // Levelset: sigma= 0, theta= 0.5, SD= 0
-    LevelsetP2CL lset( mg, &sigma, /*grad sigma*/ 0, 0.5);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( mg, sf, 0.5);
 
     IdxDescCL& lidx= lset.idx;
     MLIdxDescCL& vidx= prob.vel_idx;

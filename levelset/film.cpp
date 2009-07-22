@@ -16,6 +16,7 @@
 #include "levelset/coupling.h"
 #include "levelset/params.h"
 #include "levelset/mgobserve.h"
+#include "levelset/surfacetension.h"
 #include <fstream>
 
 
@@ -417,8 +418,9 @@ int main (int argc, char** argv)
     bnd.SetPeriodicBnd( bndType, periodic_xz);
 
     sigma= prob.GetCoeff().SurfTens;
+    DROPS::SurfaceTensionCL sf( sigmaf, 0);
     DROPS::LevelsetP2CL lset( *mgp, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
-        &sigmaf, /*grad sigma*/ 0, C.lvs_SD, C.lvs_CurvDiff);
+        sf, C.lvs_SD, C.lvs_CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)
     {

@@ -7,6 +7,7 @@
 #include "num/fe.h"
 #include "misc/problem.h"
 #include "levelset/levelset.h"
+#include "levelset/surfacetension.h"
 #include "stokes/instatstokes2phase.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
@@ -169,8 +170,9 @@ int main (int argc, char** argv)
                                //2*std_basis<3>( 2), 2*std_basis<3>( 3));
  //   MultiGridCL mg( builder);
 
-
-    LevelsetP2CL lset( mg);
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( mg, sf);
     lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( &phasebnd);

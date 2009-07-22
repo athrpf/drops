@@ -13,6 +13,7 @@
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "levelset/coupling.h"
+#include "levelset/surfacetension.h"
 #include <fstream>
 
 const double      delta_t= 0.01;
@@ -102,7 +103,8 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, 0.1);
+    SurfaceTensionCL sf( sigmaf);
+    LevelsetP2CL lset( MG, sf, 0.1);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;

@@ -129,7 +129,7 @@ triang: \
 quadCut: \
     ../tests/quadCut.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
-    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o
+    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 bicgstab: \
@@ -166,21 +166,22 @@ quad5_2D: \
 interfaceP1FE: \
     ../tests/interfaceP1FE.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
-    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o
+    ../levelset/levelset.o ../levelset/fastmarch.o ../num/discretize.o ../num/fe.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 xfem: \
     ../tests/xfem.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../num/discretize.o ../levelset/levelset.o ../levelset/fastmarch.o \
-    ../stokes/instatstokes2phase.o ../out/ensightOut.o ../misc/xfem.o
+    ../stokes/instatstokes2phase.o ../out/ensightOut.o ../misc/xfem.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 f_Gamma: \
     ../tests/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../num/interfacePatch.o \
-    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o 
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o \
+    ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 neq: \

@@ -16,6 +16,7 @@
 #include "levelset/coupling.h"
 #include "levelset/params.h"
 #include "levelset/mzelle_hdr.h"
+#include "levelset/surfacetension.h"
 #include <fstream>
 
 
@@ -71,7 +72,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
     sigma= C.sft_SurfTension;
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_SD, C.lvs_CurvDiff);
+    SurfaceTensionCL sf( sigmaf, 0);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;

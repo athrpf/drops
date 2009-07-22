@@ -13,6 +13,7 @@
 #include "levelset/params.h"
 #include "levelset/adaptriang.h"
 #include "levelset/mzelle_hdr.h"
+#include "levelset/surfacetension.h"
 #include "poisson/transport2phase.h"
 #include "surfactant/ifacetransp.h"
 
@@ -225,7 +226,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         sigmap  = &sigmaf;
         gsigmap = &gsigma;
     }
-    LevelsetP2CL lset( MG, sigmap, gsigmap, C.lvs_SD, C.lvs_CurvDiff);
+    SurfaceTensionCL sf( sigmap, gsigmap);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);

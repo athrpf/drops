@@ -32,7 +32,7 @@
 namespace DROPS{
 /// \brief Class for describing surface tension forces
 /** This class needs access to an InterfaceInfoCL named as IFInfo.*/
-class SurfaceTensionCL
+class SurfaceTensionDataCL
 {
   public:
     static double eps;              ///< depth of the jump
@@ -108,10 +108,10 @@ void CreateIdxAndAssignIdx(StokesT& Stokes, LevelsetT& lset, const MultiGridCL& 
 const char line[] ="------------------------------------------------------------";
 
 // Init of static members
-double SurfaceTensionCL::eps           = 5e-4;
-double SurfaceTensionCL::lambda        = 1.5;
-double SurfaceTensionCL::sigma         = 0.0;
-double SurfaceTensionCL::sigma_dirt_fac= 0.8;
+double SurfaceTensionDataCL::eps           = 5e-4;
+double SurfaceTensionDataCL::lambda        = 1.5;
+double SurfaceTensionDataCL::sigma         = 0.0;
+double SurfaceTensionDataCL::sigma_dirt_fac= 0.8;
 
 }       // end of namespace
 

@@ -124,7 +124,7 @@ SurfTransp {
 
 # Ensight settings
 Ensight {
-  EnsightOut    =       1
+  EnsightOut    =       0
   EnsCase       =       risingdroplet
   EnsDir        =       ensight
   Binary        =       1

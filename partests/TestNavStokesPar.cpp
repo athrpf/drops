@@ -29,6 +29,7 @@
 #include "num/parprecond.h"
 #include "num/stokessolver.h"
 #include "num/nssolver.h"
+#include "levelset/surfacetension.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -255,7 +256,9 @@ void Strategy(NavierStokesP2P1CL<Coeff> & NavStokes, ParMultiGridCL& pmg, LoadBa
     double duration;
 
     MultiGridCL& MG= NavStokes.GetMG();
-    LevelsetP2CL lset( MG);                 // levelset just for refinement
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( MG, sf);                 // levelset just for refinement
     AdapTriangCL adapt(pmg, lb, 0.1, 1, 2);
     actual_time=0.;
     adapt.MakeInitialTriang(::SignedDistToInterfaceWOTime);

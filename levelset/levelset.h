@@ -12,6 +12,7 @@
 #include "num/bndData.h"
 #include "num/fe.h"
 #include "levelset/mgobserve.h"
+#include "levelset/surfacetension.h"
 #include <vector>
 
 #ifdef _PAR
@@ -43,8 +44,6 @@ class LevelsetP2CL
 
     IdxDescCL             idx;
     VecDescCL             Phi;        ///< level set function
-    instat_scalar_fun_ptr sigma;      ///< variable surface tension
-    instat_vector_fun_ptr grad_sigma; ///< gradient of sigma
 
   private:
     MultiGridCL&        MG_;
@@ -53,6 +52,7 @@ class LevelsetP2CL
     BndDataT            Bnd_;
     SurfaceForceT       SF_;
 
+    SurfaceTensionCL&   sf_;      ///< data for surface tension
     void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
     void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
@@ -60,16 +60,15 @@ class LevelsetP2CL
   public:
     MatrixCL            E, H;
 
-    LevelsetP2CL( MultiGridCL& mg, instat_scalar_fun_ptr sig= 0,instat_vector_fun_ptr gsig= 0,
+    LevelsetP2CL( MultiGridCL& mg, SurfaceTensionCL& sf,
         double SD= 0., double curvDiff= -1., double __UNUSED__ narrowBand=-1.)
-    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), curvDiff_( curvDiff), SD_( SD),
-        Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())), SF_( SF_ImprovedLB)
+    : idx( P2_FE), MG_( mg), curvDiff_( curvDiff), SD_( SD),
+        Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())), SF_( SF_ImprovedLB), sf_(sf)
     {}
 
-    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, instat_scalar_fun_ptr sig= 0,
-        instat_vector_fun_ptr gsig= 0, double SD= 0, double curvDiff= -1)
-    : idx( P2_FE), sigma( sig), grad_sigma( gsig), MG_( mg), curvDiff_( curvDiff), SD_( SD),
-        Bnd_( bnd), SF_(SF_ImprovedLB)
+    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, SurfaceTensionCL& sf, double SD= 0, double curvDiff= -1)
+    : idx( P2_FE), MG_( mg), curvDiff_( curvDiff), SD_( SD),
+        Bnd_( bnd), SF_(SF_ImprovedLB), sf_(sf)
     {}
 
     const MultiGridCL& GetMG() const { return MG_; }    ///< Get reference on the multigrid
@@ -110,8 +109,6 @@ class LevelsetP2CL
     SurfaceForceT GetSurfaceForce() const { return SF_; }
     /// Discretize surface force
     void   AccumulateBndIntegral( VecDescCL& f) const;
-    /// Set surface tension and its gradient.
-    void   SetSigma( instat_scalar_fun_ptr sig, instat_vector_fun_ptr gsig= 0) { sigma= sig; grad_sigma= gsig; }
     /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
     void   ClearMat() { E.clear(); H.clear(); }
     /// \name Evaluate Solution

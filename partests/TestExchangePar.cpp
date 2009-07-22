@@ -27,6 +27,7 @@
  // include numeric computing!
 #include "num/spmat.h"
 #include "levelset/levelset.h"
+#include "levelset/surfacetension.h"
 
 // Standard-Header-Files für Ausgaben
 #include <iostream>
@@ -863,8 +864,9 @@ void Strategy(ParMultiGridCL &pmg)
     idx2.SetFE( P2_FE);
 
     MLIdxDescCL xfemidx( P1X_FE, 1, BndCondCL(0), 0, 0.1);
-
-    LevelsetP2CL lset( mg);
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( mg, sf);
     lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
     /// \todo paralleles UpdateXNumbering()
     lset.Phi.SetIdx( &lset.idx);

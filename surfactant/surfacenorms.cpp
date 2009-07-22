@@ -8,6 +8,7 @@
 #include "geom/builder.h"
 #include "levelset/levelset.h"
 #include "levelset/adaptriang.h"
+#include "levelset/surfacetension.h"
 #include "out/ensightOut.h"
 
 #include <fstream>
@@ -244,7 +245,9 @@ int main (int argc, char** argv)
     DROPS::AdapTriangCL adap( mg, C.ref_Width, 0, C.ref_FinestLevel);
     adap.MakeInitialTriang( sphere_2);
 
-    DROPS::LevelsetP2CL lset( mg);
+    DROPS::instat_scalar_fun_ptr sigma (0);
+    DROPS::SurfaceTensionCL sf( sigma, 0);
+    DROPS::LevelsetP2CL lset( mg, sf);
     lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
     Strategy( adap, lset);

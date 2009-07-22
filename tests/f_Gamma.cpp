@@ -12,6 +12,7 @@
 #include "num/stokessolver.h"
 #include "levelset/coupling.h"
 #include "levelset/params.h"
+#include "levelset/surfacetension.h"
 #include <fstream>
 #include <sstream>
 
@@ -154,7 +155,8 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
 
     MultiGridCL& MG= Stokes.GetMG();
     const double curv= 2/C.exp_RadDrop[0];
-    LevelsetP2CL lset( MG, &sigmaf, NULL, C.lvs_Theta, C.lvs_SD, 0, C.lvs_Iter, C.lvs_Tol, /*CurvDiff*/ -1.);
+    SurfaceTensionCL sf( sigmaf, 0);
+    LevelsetP2CL lset( MG, sf, C.lvs_Theta, C.lvs_SD, 0, C.lvs_Iter, C.lvs_Tol, /*CurvDiff*/ -1.);
 //    lset.SetSurfaceForce( SF_Const);
 
     IdxDescCL* lidx= &lset.idx;
@@ -246,7 +248,8 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
     const double curv= 2/C.exp_RadDrop[0];
-    LevelsetP2CL lset( MG, &sigmaf, NULL, C.lvs_SD, /*CurvDiff*/ -1.);
+    SurfaceTensionCL sf( sigmaf, 0);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, /*CurvDiff*/ -1.);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;

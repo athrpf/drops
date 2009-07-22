@@ -1,6 +1,6 @@
 #include "geom/builder.h"
 #include "levelset/levelset.h"
-
+#include "levelset/surfacetension.h"
 #include <fstream>
 
 using namespace DROPS;
@@ -10,8 +10,9 @@ TestSingleTetra()
 {
     TetraBuilderCL tetra( 0); // unrefined reference tetra
     MultiGridCL mg( tetra);
-
-    LevelsetP2CL lset( mg);
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( mg, sf);
 
     lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
@@ -74,8 +75,9 @@ TestPlaneInCube()
                                 DROPS::std_basis<3>(3),
                                 10, 1, 1);
     MultiGridCL mg( brick);
-
-    LevelsetP2CL lset( mg);
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( mg, sf);
 
     lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
@@ -213,8 +215,9 @@ int main ()
                                 DROPS::std_basis<3>(3),
                                 20, 20, 20);
     MultiGridCL mg( brick);
-
-    LevelsetP2CL lset( mg);
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    LevelsetP2CL lset( mg, sf);
 
     lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);

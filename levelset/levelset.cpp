@@ -318,12 +318,11 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
 
 void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
     const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
-    instat_scalar_fun_ptr sigma, instat_vector_fun_ptr grad_sigma, const Quad5_2DCL<Point3DCL> e[3],
-    double det, VectorCL& f)
+    const Quad5_2DCL<Point3DCL> e[3], double det, VectorCL& f, SurfaceTensionCL& sf)
 {
-    if (grad_sigma == 0)
+    if ((sf.GetGradSigma() == 0) && sf.GetInputMethod() == Sigma_X)
     {
-        SF_ImprovedLaplBeltramiOnTriangle( t, p, patch, Grad_f, Numb, sigma, e, det, f);
+        SF_ImprovedLaplBeltramiOnTriangle( t, p, patch, Grad_f, Numb, sf.GetSigma(), e, det, f);
         return;
     }
     static Quad5_2DCL<>          p2[10];   // P2-Hat-Functions...
@@ -336,15 +335,17 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         n+= patch.GetPhi(v)*Grad[v];
     }
     for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
-
-    Quad5_2DCL<> qsigma( t, p, sigma), // surface tension
+   
+    Quad5_2DCL<> qsigma, // surface tension
                  q1,                   // Term 1
-                 q2_3;                 // Term 2 minus Term 3
+                 q2_3,                 // Term 2 minus Term 3
+                 qgradsigmaPhPhte_m_Phgradsigmae; // for Term 2 and 3
     Quad5_2DCL<Point3DCL> qPhPhte,                         // Common term in Term 1 and Term 2
                           qsigmaPhPhte,                    // for Term 1
-                          qgradsigma( t, p, grad_sigma),   // for Term 2
-                          qPhgradsigma( qgradsigma);       // for Term 3
-    Quad5_2DCL<>          qgradsigmaPhPhte_m_Phgradsigmae; // for Term 2 and 3
+                          qgradsigma;   // for Term 2
+    sf.ComputeSF(t, p, qsigma, qgradsigma);
+    Quad5_2DCL<Point3DCL> qPhgradsigma( qgradsigma);  
+
     qPhgradsigma.apply( patch, &InterfacePatchCL::ApplyProj);
 
     for (int i= 0; i < 3; ++i)
@@ -363,8 +364,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     }
 }
 
-void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
-    instat_scalar_fun_ptr sigma, instat_vector_fun_ptr grad_sigma, VecDescCL& f)
+void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, VecDescCL& f, SurfaceTensionCL& sf)
 // computes the integral sigma \int_\Gamma \kappa v n ds = sigma
 // \int_\Gamma grad id grad v ds
 {
@@ -402,7 +402,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi,
             patch.ComputeForChild( ch);
             for (int t= 0; t < patch.GetNumTriangles(); ++t)
                 SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary( t),
-                    patch, Grad,  Numb, sigma, grad_sigma, e, patch.GetFuncDet( t), f.Data);
+                    patch, Grad,  Numb, e, patch.GetFuncDet( t), f.Data, sf);
         } // Ende der for-Schleife ueber die Kinder
     }
 }
@@ -532,16 +532,17 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     VecDescCL SmPhi= Phi;
     if (curvDiff_>0)
         SmoothPhi( SmPhi.Data, curvDiff_);
+        
     switch (SF_)
     {
       case SF_LB:
-        SF_LaplBeltrami( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
+        SF_LaplBeltrami( MG_, SmPhi, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_Const:
-        SF_ConstForce( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
+        SF_ConstForce( MG_, SmPhi, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLB:
-        SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma(std_basis<3>(0), 0.), f); break;
+        SF_ImprovedLaplBeltrami( MG_, SmPhi, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLBVar:
-        SF_ImprovedLaplBeltrami( MG_, SmPhi, sigma, grad_sigma, f); break;
+         SF_ImprovedLaplBeltrami( MG_, SmPhi, f, sf_); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }

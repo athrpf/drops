@@ -36,6 +36,7 @@
 #include "num/stokessolverfactory.h"
 #include "stokes/integrTime.h"
 #include "levelset/adaptriang.h"
+#include "levelset/surfacetension.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -414,14 +415,14 @@ template<class Coeff>
     ParTimerCL time;
 
     // Set parameter of the surface tension
-    SurfaceTensionCL::eps           = C.sft_JumpWidth;
-    SurfaceTensionCL::lambda        = C.sft_RelPos;
-    SurfaceTensionCL::sigma         = Stokes.GetCoeff().SurfTens;
-    SurfaceTensionCL::sigma_dirt_fac= C.sft_DirtFactor;
+    SurfaceTensionDataCL::eps           = C.sft_JumpWidth;
+    SurfaceTensionDataCL::lambda        = C.sft_RelPos;
+    SurfaceTensionDataCL::sigma         = Stokes.GetCoeff().SurfTens;
+    SurfaceTensionDataCL::sigma_dirt_fac= C.sft_DirtFactor;
 
-//    instat_vector_fun_ptr gsigma= &(SurfaceTensionCL::grad_sm_step);
-    LevelsetP2CL lset( mg, &SurfaceTensionCL::sigma_step, &SurfaceTensionCL::gsigma_step,
-                       C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
+//    instat_vector_fun_ptr gsigma= &(SurfaceTensionDataCL::grad_sm_step);
+    SurfaceTensionCL sf( &SurfaceTensionDataCL::sigma_step, &SurfaceTensionDataCL::gsigma_step);
+    LevelsetP2CL lset( mg, sf, C.lvs_SD, C.lvs_CurvDiff, C.rpm_NarrowBand);
 
     DisplayDetailedGeom(mg);
 

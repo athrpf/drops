@@ -34,6 +34,7 @@
 #include "num/parstokessolver.h"
 #include "stokes/integrTime.h"
 #include "levelset/adaptriang.h"
+#include "levelset/surfacetension.h"
 
  // include in- and output
 #include "partests/params.h"
@@ -442,25 +443,25 @@ template<class Coeff>
     double duration;
 
     // Set parameter of the surface tension
-    SurfaceTensionCL::eps           = C.st_jumpWidth;
-    SurfaceTensionCL::lambda        = C.st_relPos;
-    SurfaceTensionCL::sigma         = Stokes.GetCoeff().SurfTens;
-    SurfaceTensionCL::sigma_dirt_fac= C.st_red;
+    SurfaceTensionDataCL::eps           = C.st_jumpWidth;
+    SurfaceTensionDataCL::lambda        = C.st_relPos;
+    SurfaceTensionDataCL::sigma         = Stokes.GetCoeff().SurfTens;
+    SurfaceTensionDataCL::sigma_dirt_fac= C.st_red;
 
     instat_scalar_fun_ptr sigmap  = 0;
     instat_vector_fun_ptr gsigmap = 0;
     if (C.st_var)
     {
-        sigmap  = &SurfaceTensionCL::sigma_step;
-        gsigmap = &SurfaceTensionCL::gsigma_step;
+        sigmap  = &SurfaceTensionDataCL::sigma_step;
+        gsigmap = &SurfaceTensionDataCL::gsigma_step;
     }
     else
     {
-        sigmap  = &SurfaceTensionCL::sigmaf;
-        gsigmap = &SurfaceTensionCL::gsigma;
+        sigmap  = &SurfaceTensionDataCL::sigmaf;
+        gsigmap = &SurfaceTensionDataCL::gsigma;
     }
-
-    LevelsetP2CL lset( mg, sigmap, gsigmap, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
+    SurfaceTensionCL sf( sigmap, gsigmap);
+    LevelsetP2CL lset( mg, sf, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
     if (C.st_var)
         lset.SetSurfaceForce( SF_ImprovedLBVar);
     else

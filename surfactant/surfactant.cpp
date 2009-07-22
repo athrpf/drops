@@ -3,6 +3,7 @@
 #include "geom/builder.h"
 #include "levelset/levelset.h"
 #include "levelset/adaptriang.h"
+#include "levelset/surfacetension.h"
 #include "out/ensightOut.h"
 
 #include <fstream>
@@ -180,7 +181,9 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     LSInit( mg, lset.Phi, &sphere_2move, 0.);
 
     BndDataCL<> lsetbnd2( 6);
-    DROPS::LevelsetP2CL lset2( mg, lsetbnd2, 0, 0, C.lvs_Theta, C.lvs_SD); // Only for output
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    DROPS::LevelsetP2CL lset2( mg, lsetbnd2, sf, C.lvs_Theta, C.lvs_SD); // Only for output
     lset2.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset2.Phi.SetIdx( &lset2.idx);
     LSInit( mg, lset2.Phi, &sphere_2move, 0.);
@@ -308,7 +311,9 @@ int main (int argc, char* argv[])
     DROPS::AdapTriangCL adap( mg, C.ref_Width, 0, C.ref_FinestLevel);
     adap.MakeInitialTriang( sphere_2);
 
-    DROPS::LevelsetP2CL lset( mg);
+    instat_scalar_fun_ptr sigma (0);
+    SurfaceTensionCL sf( sigma, 0);
+    DROPS::LevelsetP2CL lset( mg, sf);
     lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
     lset.Phi.SetIdx( &lset.idx);
     LinearLSInit( mg, lset.Phi, &sphere_2);

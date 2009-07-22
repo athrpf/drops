@@ -17,6 +17,7 @@
 #include "levelset/adaptriang.h"
 #include "levelset/params.h"
 #include "levelset/mzelle_hdr.h"
+#include "levelset/surfacetension.h"
 #include "num/stokessolverfactory.h"
 #include <fstream>
 #include <iomanip>
@@ -227,8 +228,9 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= C.sft_SurfTension;
+    SurfaceTensionCL sf( sigmaf, 0);
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, &sigmaf, /*grad sigma*/ 0, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
 
 //    lset.SetSurfaceForce( SF_LB);
     lset.SetSurfaceForce( SF_ImprovedLB);

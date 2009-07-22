@@ -42,7 +42,7 @@ TestExchangePar: \
    ../partests/TestExchangePar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/fe.o ../num/interfacePatch.o ../levelset/fastmarch.o \
-   ../partests/params.o ../levelset/levelset.o ../num/discretize.o
+   ../partests/params.o ../levelset/levelset.o ../num/discretize.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestMGSerPar: \
@@ -50,7 +50,7 @@ TestMGSerPar: \
    ../partests/TestMGSerPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/fe.o ../num/interfacePatch.o ../num/unknowns.o ../out/output.o \
-   ../out/vtkOut.o ../partests/params.o ../levelset/lsetparams.o
+   ../out/vtkOut.o ../partests/params.o ../levelset/lsetparams.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestInterpolPar: \
@@ -59,7 +59,7 @@ TestInterpolPar: \
     ../geom/builder.o ../misc/utils.o ../levelset/levelset.o ../levelset/lsetparams.o \
     ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
     ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../partests/params.o ../levelset/fastmarch.o
+    ../partests/params.o ../levelset/fastmarch.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestSedPar: \
@@ -68,7 +68,7 @@ TestSedPar: \
     ../geom/builder.o ../misc/utils.o ../levelset/levelset.o ../levelset/lsetparams.o \
     ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
     ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o
+    ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestGMRESPar: \
@@ -76,7 +76,7 @@ TestGMRESPar: \
    ../partests/TestGMRESPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o
+   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestLevelsetPar: \
@@ -92,7 +92,7 @@ TestPoissonPar: \
    ../partests/TestPoissonPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o
+   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestStokesPar: \
@@ -101,7 +101,7 @@ TestStokesPar: \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
    ../num/stokessolver.o ../out/output.o ../out/ensightOut.o ../out/vtkOut.o\
-   ../partests/params.o ../levelset/lsetparams.o
+   ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestInstatStokesPar: \
@@ -110,7 +110,7 @@ TestInstatStokesPar: \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
    ../num/stokessolver.o ../out/output.o ../out/ensightOut.o ../out/vtkOut.o\
-   ../partests/params.o ../levelset/lsetparams.o
+   ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestNavStokesPar: \
@@ -119,7 +119,7 @@ TestNavStokesPar: \
    ../geom/builder.o ../levelset/levelset.o ../misc/utils.o ../misc/problem.o ../misc/params.o\
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
    ../num/stokessolver.o ../out/output.o ../out/ensightOut.o \
-   ../partests/params.o  
+   ../partests/params.o  ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestMzellePar: \
@@ -128,7 +128,8 @@ TestMzellePar: \
    ../geom/builder.o ../levelset/levelset.o ../levelset/fastmarch.o ../levelset/lsetparams.o \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
-   ../out/ensightOut.o ../partests/params.o ../stokes/instatstokes2phase.o ../stokes/integrTime.o
+   ../out/ensightOut.o ../partests/params.o ../stokes/instatstokes2phase.o ../stokes/integrTime.o \
+   ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestMzelleAdaptPar: \
@@ -138,7 +139,7 @@ TestMzelleAdaptPar: \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o \
    ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
-   ../stokes/integrTime.o ../misc/xfem.o
+   ../stokes/integrTime.o ../misc/xfem.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 MzelleNMRParamEst: \
@@ -148,7 +149,7 @@ MzelleNMRParamEst: \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
    ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
-   ../stokes/integrTime.o ../misc/xfem.o
+   ../stokes/integrTime.o ../misc/xfem.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestBrickflowPar: \
@@ -158,7 +159,7 @@ TestBrickflowPar: \
    ../misc/utils.o ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
    ../num/fe.o ../num/stokessolver.o ../num/interfacePatch.o ../out/output.o  \
    ../out/ensightOut.o ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o \
-   ../stokes/integrTime.o ../misc/xfem.o
+   ../stokes/integrTime.o ../misc/xfem.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestFilmPar: \
@@ -166,7 +167,7 @@ TestFilmPar: \
    ../partests/TestFilmPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o
+   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 #TestRefSedPar: \
@@ -182,7 +183,7 @@ TestFilmPar: \
 #   ../num/unknowns.o ../geom/topo.o ../geom/builder.o ../misc/problem.o ../num/discretize.o\
 #   ../levelset/fastmarch.o ../levelset/lsetparams.o ../partests/params.o ../misc/params.o \
 #   ../levelset/levelset.o ../num/fe.o ../stokes/instatstokes2phase.o ../out/ensightOut.o \
-#   ../out/vtkOut.o
+#   ../out/vtkOut.o ../levelset/surfacetension.o
 #	$(CXX) -o $@ $^ $(LFLAGS)
 
 
