@@ -144,6 +144,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
 
     typedef BlockPreCL<MGPcT,       ISBBTPreCL,   LowerBlockPreCL> LBlockMGBBTOseenPcT;
     typedef BlockPreCL<MGPcT,       MinCommPreCL, LowerBlockPreCL> LBlockMGMinCommOseenPcT;
+    typedef BlockPreCL<MGPcT,       ISPreCL,      LowerBlockPreCL> LBlockMGISPreOseenPcT;
     typedef BlockPreCL<MGPcT,       VankaSchurPreCL, LowerBlockPreCL> LBlockMGVankaOseenPcT;
     typedef BlockPreCL<GMResPcT,    ISBBTPreCL,   LowerBlockPreCL> LBlockGMResBBTOseenPcT;
     typedef BlockPreCL<GMResPcT,    MinCommPreCL, LowerBlockPreCL> LBlockGMResMinCommOseenPcT;
@@ -160,6 +161,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
 
     LBlockMGBBTOseenPcT        LBlockMGBBTOseenPc_;
     LBlockMGMinCommOseenPcT    LBlockMGMinCommOseenPc_;
+    LBlockMGISPreOseenPcT      LBlockMGISPreOseenPc_;
     LBlockMGVankaOseenPcT      LBlockMGVankaOseenPc_;
     LBlockGMResBBTOseenPcT     LBlockGMResBBTOseenPc_;
     LBlockGMResMinCommOseenPcT LBlockGMResMinCommOseenPc_;
@@ -171,6 +173,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
 //GCR solver
     GCRSolverCL<LBlockMGBBTOseenPcT>        GCRMGBBT_;
     GCRSolverCL<LBlockMGMinCommOseenPcT>    GCRMGMinComm_;
+    GCRSolverCL<LBlockMGISPreOseenPcT>      GCRMGISPre_;
     GCRSolverCL<LBlockMGVankaOseenPcT>      GCRMGVanka_;
     GCRSolverCL<LBlockGMResBBTOseenPcT>     GCRGMResBBT_;
     GCRSolverCL<LBlockGMResMinCommOseenPcT> GCRGMResMinComm_;
@@ -280,7 +283,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         DiagMGISPreOseenPc_      ( MGPcsymm_,   isprepc_), DiagGMResMinCommPc_       ( GMResPc_,    mincommispc_),
         DiagPCGBBTOseenPc_       ( PCGPc_,      bbtispc_), DiagPCGMinCommOseenPc_    ( PCGPc_,   mincommispc_),
         DiagPCGISPreOseenPc_     ( PCGPc_,      isprepc_),
-        LBlockMGBBTOseenPc_      ( MGPc_,       bbtispc_), LBlockMGMinCommOseenPc_   ( MGPc_,    mincommispc_),
+        LBlockMGBBTOseenPc_      ( MGPc_,       bbtispc_), LBlockMGMinCommOseenPc_   ( MGPc_,    mincommispc_),    LBlockMGISPreOseenPc_( MGPc_, isprepc_),
         LBlockMGVankaOseenPc_    ( MGPc_,       vankaschurpc_),
         LBlockGMResBBTOseenPc_   ( GMResPc_,    bbtispc_), LBlockGMResMinCommOseenPc_( GMResPc_, mincommispc_),
         LBlockBiCGBBTOseenPc_    ( BiCGStabPc_, bbtispc_), LBlockBiCGMinCommOseenPc_ ( BiCGStabPc_, mincommispc_),
@@ -288,6 +291,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         // GCR solver
         GCRMGBBT_           ( LBlockMGBBTOseenPc_,        C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false),
         GCRMGMinComm_       ( LBlockMGMinCommOseenPc_,    C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false),
+        GCRMGISPre_         ( LBlockMGISPreOseenPc_,      C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false),
         GCRMGVanka_         ( LBlockMGVankaOseenPc_,      C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false),
         GCRGMResBBT_        ( LBlockGMResBBTOseenPc_,     C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false),
         GCRGMResMinComm_    ( LBlockGMResMinCommOseenPc_, C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false),
@@ -348,6 +352,9 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 10102 :
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGMinCommOseenPcT> >   ( GCRMGMinComm_);
         break;
+        case 10103 :
+            stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGISPreOseenPcT> >     ( GCRMGISPre_); 
+        break;
         case 10401 :
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockGMResBBTOseenPcT> >    ( GCRGMResBBT_);
         break;
@@ -373,6 +380,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 20102 :
             stokessolver = new InexactUzawaCL<MGPcT, MinCommPreCL, APC_OTHER>
                         ( MGPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+        break;
+        case 20103 :
+            stokessolver = new InexactUzawaCL<MGPcT, ISPreCL, APC_OTHER>
+                        ( MGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
         case 20201 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL, APC_SYM>
@@ -406,6 +417,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new InexactUzawaCL<GMResPcT, MinCommPreCL, APC_OTHER>
                         ( GMResPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
+        case 20403 :
+            stokessolver = new InexactUzawaCL<GMResPcT, ISPreCL, APC_OTHER>
+                        ( GMResPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+        break;
         case 20501 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, ISBBTPreCL, APC_OTHER>
                         ( BiCGStabPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
@@ -413,6 +428,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 20502 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, MinCommPreCL, APC_OTHER>
                         ( BiCGStabPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+        break;
+        case 20503 :
+            stokessolver = new InexactUzawaCL<BiCGStabPcT, ISPreCL, APC_OTHER>
+                        ( BiCGStabPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
         case 30201 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos1T> >( PMinResMGBBT_);
