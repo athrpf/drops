@@ -26,6 +26,7 @@ void P1XtoP1 (const IdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, 
     // add extended pressure
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it) {
         const IdxT   nr= it->Unknowns( idxnum);
+        if (!it->Unknowns.Exist( idxnum)) continue;
         const IdxT p1nr= it->Unknowns( p1idxnum);
         if (extIdx[nr]==NoIdx) continue;
 
@@ -47,6 +48,7 @@ void P1toP1X (const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const 
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it)
     {
         const IdxT nr= it->Unknowns(idxnum);
+        if (!it->Unknowns.Exist( idxnum)) continue;
         const IdxT p1nr= it->Unknowns(p1idxnum);
         const bool is_pos= InterfacePatchCL::Sign( lset.Data[it->Unknowns(lsidxnum)])==1;
         if (is_pos)
@@ -59,6 +61,7 @@ void P1toP1X (const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const 
     DROPS_FOR_TRIANG_CONST_VERTEX( mg, lvl, it)
     {
         const IdxT nr= it->Unknowns(idxnum);
+        if (!it->Unknowns.Exist( idxnum)) continue;
         const IdxT p1nr= it->Unknowns(p1idxnum);
         if (extIdx[nr]==NoIdx) continue;
         p1x[extIdx[nr]]+= (posPart[p1nr] - negPart[p1nr]);

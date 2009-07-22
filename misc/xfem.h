@@ -42,10 +42,10 @@ class Ensight6P1XScalarCL : public Ensight6VariableCL
     MultiGridCL& mg_;
 
   public:
-    Ensight6P1XScalarCL (MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v,
+    Ensight6P1XScalarCL (MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v, const BndDataCL<>& bnd,
         std::string varName, std::string fileName, bool timedep= false)
         : Ensight6VariableCL( varName, fileName, timedep),
-          v_( v), vneg_( &p1idx_), vpos_( &p1idx_), lset_( lset), bnd_( 0), mg_( mg) {}
+          v_( v), vneg_( &p1idx_), vpos_( &p1idx_), lset_( lset), bnd_( bnd), mg_( mg) {}
     ~Ensight6P1XScalarCL () { if (p1idx_.NumUnknowns() != 0) p1idx_.DeleteNumbering( mg_); }
 
     void Describe (Ensight6OutCL& cf) const {
@@ -55,7 +55,7 @@ class Ensight6P1XScalarCL : public Ensight6VariableCL
     void put      (Ensight6OutCL&)    const {
         if (p1idx_.NumUnknowns() != 0)
             p1idx_.DeleteNumbering( mg_);
-        p1idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_);
+        p1idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_, bnd_);
         P1XtoP1 ( *v_.RowIdx, v_.Data, p1idx_, vpos_.Data, vneg_.Data, lset_, mg_);
     }
 };
@@ -68,7 +68,14 @@ inline Ensight6P1XScalarCL&
 make_Ensight6P1XScalar (MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v,
     std::string varName, std::string fileName, bool timedep= false)
 {
-    return *new Ensight6P1XScalarCL( mg, lset, v, varName, fileName, timedep);
+    return *new Ensight6P1XScalarCL( mg, lset, v, BndDataCL<>( 0), varName, fileName, timedep);
+}
+
+inline Ensight6P1XScalarCL&
+make_Ensight6P1XScalar (MultiGridCL& mg, const VecDescCL& lset, const VecDescCL& v, const BndDataCL<>& bnd,
+    std::string varName, std::string fileName, bool timedep= false)
+{
+    return *new Ensight6P1XScalarCL( mg, lset, v, bnd, varName, fileName, timedep);
 }
 #endif
 

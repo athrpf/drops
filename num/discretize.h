@@ -788,6 +788,7 @@ class P1DiscCL
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
     static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const Point3DCL pt[4]);
+    static void GetP1Basis( Quad5_2DCL<> p1[4], const BaryCoordCL* const p);
 };
 
 class P1DDiscCL

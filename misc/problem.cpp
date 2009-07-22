@@ -444,6 +444,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
                 for (Uint i=0; i<4; ++i)
                 { // extend all DoFs
                     if (loc_int[i] < limit) continue; // omit DoFs of minor importance, which lead to unstable solutions
+                    if (!it->GetVertex(i)->Unknowns.Exist( sysnum)) continue;
                     const IdxT nr= it->GetVertex(i)->Unknowns(sysnum);
                     if (Xidx_[nr]==NoIdx) // not extended yet
                         Xidx_[nr]= extIdx++;
@@ -453,6 +454,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
                 { // extend only DoFs on interface
                     if (cut.GetSign(i)!=0) continue;
                     if (loc_int[i] < limit) continue; // omit DoFs of minor importance, which lead to unstable solutions
+                    if (!it->GetVertex(i)->Unknowns.Exist( sysnum)) continue;
                     const IdxT nr= it->GetVertex(i)->Unknowns(sysnum);
                     if (Xidx_[nr]==NoIdx) // not extended yet
                         Xidx_[nr]= extIdx++;

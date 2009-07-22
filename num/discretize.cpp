@@ -228,4 +228,17 @@ void P2DiscCL::GetP2Basis( Quad5_2DCL<> p2[10], const BaryCoordCL* const p)
     }
 }
 
+void P1DiscCL::GetP1Basis( Quad5_2DCL<> p1[4], const BaryCoordCL* const p)
+{
+    BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
+    Quad5_2DCL<>::SetInterface( p, NodeInTetra);
+    for (int j= 0; j < Quad5_2DDataCL::NumNodesC; ++j) {
+        const BaryCoordCL& Node= NodeInTetra[j];
+        p1[0][j]= FE_P1CL::H0( Node);
+        p1[1][j]= FE_P1CL::H1( Node);
+        p1[2][j]= FE_P1CL::H2( Node);
+        p1[3][j]= FE_P1CL::H3( Node);
+    }
+}
+
 } // end of namespace DROPS
