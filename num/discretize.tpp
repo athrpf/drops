@@ -30,8 +30,6 @@ template<class T>
     typedef VecDescCL::DataType VecT;
     typedef DoFHelperCL<value_type, VecT> DoFT;
     const VecT& v= vd.Data;
-    const Uint tlvl= s.GetLevel();
-    const Uint vlvl= vd.GetLevel();
     const Uint idx= vd.RowIdx->GetIdx();
     for (Uint i= 0; i< NumVertsC; ++i)
         (*this)[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
@@ -45,8 +43,6 @@ template<class T>
     inline LocalP1CL<T>&
     LocalP1CL<T>::assign(const TetraCL& s, const P1FunT& f, double t)
 {
-    const Uint tlvl= s.GetLevel();
-    const Uint flvl= f.GetLevel();
     const double tmp= f.GetTime();
     f.SetTime( t);
     f.GetDoF( s, *this);
