@@ -690,6 +690,8 @@ MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MidPointTimeDis
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
     implicitpressure_( implicitpressure)
 {
+    if (nonlinear != 0.0)
+        throw DROPSErrCL("MidPointTimeDisc2PhaseCL: Not yet implemented for Navier-Stokes equations\n");
     if (Stokes_.UsesXFEM() && !implicitpressure_) {
         std::cerr << "MidPointTimeDisc2PhaseCL: XFEM for pressure detected. This is not implemented, yet, using fully implicit pressure" << std::endl;
         implicitpressure_ = true;
@@ -764,8 +766,7 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavSt
     alpha_ = nonlinear_;
 
     mat_->LinComb( 2./dt_, Stokes_.M.Data, 1.0, Stokes_.A.Data);
-    rhs_ = 2.0/dt_ * VectorCL(Stokes_.M.Data * oldv_) - Stokes_.A.Data * oldv_ + 2.0* curv_->Data + 2.0* Stokes_.b.Data
-           + nonlinear_*(old_cplN_->Data - Stokes_.N.Data * oldv_);
+    rhs_ = 2.0/dt_ * VectorCL(Stokes_.M.Data * oldv_) - Stokes_.A.Data * oldv_ + 2.0* curv_->Data + 2.0* Stokes_.b.Data;
     if (!implicitpressure_)
         rhs_ -= transp_mul(Stokes_.B.Data, oldp_);
 
