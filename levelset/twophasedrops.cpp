@@ -374,7 +374,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
 //     StokesSolverAsPreCL pc (*stokessolver1, 1);
-//     GCRSolverCL<StokesSolverAsPreCL> gcr(pc, C.outer_iter, C.outer_iter, C.outer_tol, /*rel*/ false);
+//     GCRSolverCL<StokesSolverAsPreCL> gcr(pc, C.stk_OuterIter, C.stk_OuterIter, C.stk_OuterTol, /*rel*/ false);
 //     BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> >* stokessolver =
 //             new BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> > (gcr);
 
@@ -459,12 +459,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
 #endif
 
-    if (C.ens_EnsightOut) ensight.Write( 0.);
-
     // writer for vtk-format
     typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
     VTKWriterT vtkwriter( adap.GetMG(), Stokes, lset,  (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
                           std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+
+    if (C.ens_EnsightOut)
+        ensight.Write( 0.);
+    if (C.vtk_VTKOut)
+        vtkwriter.write();
 
     for (int step= 1; step<=C.tm_NumSteps; ++step)
     {
