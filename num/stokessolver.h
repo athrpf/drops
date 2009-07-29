@@ -885,7 +885,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
     PC1& Apc, PC2& Spc,
     int& max_iter, double& tol,
     InexactUzawaApcMethodT apcmeth= APC_OTHER,
-    double innerred= 0.3, int innermaxiter= 500)
+    double innerred= 0.3, int innermaxiter= 500, bool rel= false)
 {
     VectorCL ru( f - A*xu - transp_mul( B, xp));
     VectorCL rp( g - B*xu);
@@ -907,6 +907,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
               << "\tres-impuls: " << norm( ru)
               << "\tres-mass: " << norm( rp)
               << std::endl;
+    if (rel) tol*= resid0;
     if (resid <= tol) { // The fixed point iteration between levelset and Stokes
         tol= resid;     // equation uses this to determine convergence.
         max_iter= 0;
@@ -961,7 +962,7 @@ InexactUzawa(const Mat& A, const Mat& B, Vec& xu, Vec& xp, const Vec& f, const V
                   << std::endl;
         if (resid <= tol) { // absolute errors
             tol= resid;
-            max_iter= k;
+            max_iter= pr_iter_cumulative;
             delete asc;
             return true;
         }
@@ -979,7 +980,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
 {
     _res=  _tol;
     _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_, innermaxiter_);
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_, innermaxiter_, rel_);
 }
 
 template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
@@ -989,7 +990,7 @@ template <class ApcT, class SpcT, InexactUzawaApcMethodT Apcmeth>
 {
     _res=  _tol;
     _iter= _maxiter;
-    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_, innermaxiter_);
+    InexactUzawa( A, B, v, p, b, c, Apc_, Spc_, _iter, _res, Apcmeth, innerreduction_, innermaxiter_, rel_);
 }
 
 //-----------------------------------------------------------------------------
