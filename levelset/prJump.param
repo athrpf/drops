@@ -126,6 +126,16 @@ Transp {
   NitscheXFEMStab       = 0     # no effect
 }
 
+# surfactant transport
+SurfTransp {
+  DoTransp      = 0         # no effect
+  Theta         = 0.5       # no effect
+  Iter          = 1000      # no effect
+  Tol           = 1e-10     # no effect
+  OmitBound     = -1.       # no effect
+  Visc          = 1e-5      # no effect
+}
+
 # Ensight settings
 Ensight {
   EnsightOut    =       1
