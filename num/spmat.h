@@ -715,6 +715,23 @@ template <typename T>
         val[nz]*= v[col[nz]];
 }
 
+template <typename T>
+void ortho( VectorBaseCL<T>& v, const VectorBaseCL<T>& k) /// orthogonalize v w.r.t. k
+{
+    const double alpha= dot(v,k)/dot(k,k);
+    v-= alpha*k;
+}
+
+
+template <typename T>
+void ortho( VectorBaseCL<T>& v, const VectorBaseCL<T>& k, const SparseMatBaseCL<T>& Y) /// orthogonalize v w.r.t. k and inner product induced by Y
+{
+    const VectorBaseCL<T> Yk(Y*k);
+    const double alpha= dot(v,Yk)/dot(k,Yk); 
+    v-= alpha*k;
+}
+
+
 /// \brief Compute the linear combination of two sparse matrices efficiently.
 /// \todo Das alte Pattern wiederzuverwenden, macht mal wieder Aerger:
 ///   Zur Zeit (2.2008) mit der Matrix im NS-Loeser nach Gitteraenderungen, die
