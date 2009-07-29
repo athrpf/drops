@@ -212,18 +212,18 @@ class ISMGPreCL
 
     DROPS::MLMatrixCL& Apr_;
     DROPS::MLMatrixCL& Mpr_;
-    DROPS::MLMatrixCL& P_;
+    DROPS::MLMatrixCL  P_;
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
     double kA_, kM_;
     std::vector<DROPS::VectorCL> ones_;
 
   public:
-    ISMGPreCL(DROPS::MLMatrixCL& A_pr, DROPS::MLMatrixCL& M_pr, DROPS::MLMatrixCL& P,
+    ISMGPreCL(DROPS::MLMatrixCL& A_pr, DROPS::MLMatrixCL& M_pr,
                     double kA, double kM, DROPS::Uint iter_prA=1,
                     DROPS::Uint iter_prM = 1)
         : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
-          Apr_( A_pr), Mpr_( M_pr), P_(P), iter_prA_( iter_prA), iter_prM_( iter_prM),
+          Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM),
           kA_( kA), kM_( kM), ones_( Mpr_.size())
     {
         // Compute projection on constant pressure function only once.
@@ -236,6 +236,8 @@ class ISMGPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& /*A*/, Vec& p, const Vec& c) const;
+    
+    MLMatrixCL* GetProlongation() { return &P_; }
 };
 
 
@@ -287,7 +289,7 @@ class ISBBTPreCL
         : B_( B), Bs_( 0), Bversion_( 0),
           M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
           solver_( spc_, 500, tolA_, /*relative*/ true),
-          solver2_( jacpc_, 50, tolM_, /*relative*/ true),
+          solver2_( jacpc_, 500, tolM_, /*relative*/ true),
           pr_idx_( &pr_idx), regularize_( regularize) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
@@ -298,7 +300,7 @@ class ISBBTPreCL
           Dprsqrtinv_( pc.Dprsqrtinv_),
           spc_( pc.spc_),
           solver_( spc_, 500, tolA_, /*relative*/ true),
-          solver2_( jacpc_, 50, tolM_, /*relative*/ true),
+          solver2_( jacpc_, 500, tolM_, /*relative*/ true),
           pr_idx_( pc.pr_idx_), regularize_( pc.regularize_) {}
 #else
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
@@ -309,7 +311,7 @@ class ISBBTPreCL
           BBT_( 0, TRANSP_MUL, 0, MUL, vel_idx, pr_idx),
           PCsolver1_( pr_idx), PCsolver2_(pr_idx),
           solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
-          solver2_( 50, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
+          solver2_( 500, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
           vel_idx_( &vel_idx), pr_idx_( &pr_idx), regularize_( regularize) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
         : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
@@ -320,7 +322,7 @@ class ISBBTPreCL
           BBT_( Bs_, TRANSP_MUL, Bs_, MUL, *pc.vel_idx_, *pc.pr_idx_),
           PCsolver1_( *pc.pr_idx_), PCsolver2_( *pc.pr_idx_),
           solver_( 800, tolA_, *pc.pr_idx_, PCsolver1_, /*relative*/ true, /*accure*/ true),
-          solver2_( 50, tolM_, *pc.pr_idx_, PCsolver2_, /*relative*/ true),
+          solver2_( 500, tolM_, *pc.pr_idx_, PCsolver2_, /*relative*/ true),
           vel_idx_( pc.vel_idx_), pr_idx_( pc.pr_idx_), regularize_( pc.regularize_){}
 
     /// \name Parallel preconditioner setup ...
@@ -369,7 +371,7 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //                       << "\tresidual: " <<  solver_.GetResid();
         if (solver_.GetIter() == solver_.GetMaxIter()){
           IF_MASTER
-            std::cout << "ISBBTPreCL::Apply: 1st BBT-solve: " << solver_.GetIter()
+            std::cout << "ISBBTPreCL::Apply: BBT-solve: " << solver_.GetIter()
                     << '\t' << solver_.GetResid() << '\n';
         }
         p= kA_*(Dprsqrtinv_*p);
@@ -383,7 +385,7 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 //                       << '\n';
         if (solver2_.GetIter() == solver2_.GetMaxIter()){
           IF_MASTER
-            std::cout << "ISBBTPreCL::Apply: 2nd BBT-solve: " << solver2_.GetIter()
+            std::cout << "ISBBTPreCL::Apply: M-solve: " << solver2_.GetIter()
                     << '\t' << solver2_.GetResid() << '\n';
         }
 

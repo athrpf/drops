@@ -1393,23 +1393,28 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
     MLMatrixCL::iterator     itB   = B->Data.begin();
     MLIdxDescCL::iterator    itRow = B->RowIdx->begin();
     MLIdxDescCL::iterator    itCol = B->ColIdx->begin();
-    if ( B->RowIdx->size() == 1)
+    if ( B->RowIdx->size() == 1 || B->ColIdx->size() == 1)
+    { // setup B only on finest level, if row or column index has only 1 level
         itCol = B->ColIdx->GetFinestIter();
-    for (size_t lvl=0; lvl < B->Data.size(); ++lvl, ++itB, ++itRow, ++itCol)
+        itRow = B->RowIdx->GetFinestIter();
+        itB   = B->Data.GetFinestIter();
+    }
+    for (; itB!=B->Data.end() && itRow!=B->RowIdx->end() && itCol!=B->ColIdx->end(); ++itB, ++itRow, ++itCol)
     {
 #ifndef _PAR
-        std::cout << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs. ";
+        std::cout << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs, " << itCol->NumUnknowns() << " vels. ";
 #endif
+        VecDescCL* rhsPtr= itB==B->Data.GetFinestIter() ? c : 0; // setup rhs only on finest level
         switch (GetPrFE())
         {
             case P0_FE:
-                SetupSystem2_P2P0 ( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, &(*itRow), &(*itCol), t); break;
+                SetupSystem2_P2P0 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
             case P1_FE:
-                SetupSystem2_P2P1 ( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, &(*itRow), &(*itCol), t); break;
+                SetupSystem2_P2P1 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
             case P1X_FE:
-                SetupSystem2_P2P1X( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, lset, &(*itRow), &(*itCol), t); break;
+                SetupSystem2_P2P1X( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
             case P1D_FE:
-                SetupSystem2_P2P1D( _MG, _Coeff, _BndData, &(*itB), lvl == B->Data.size()-1 ? c : 0, &(*itRow), &(*itCol), t); break;
+                SetupSystem2_P2P1D( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
             default:
                 throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
         }

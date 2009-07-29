@@ -21,7 +21,7 @@ namespace DROPS {
     <tr><td>  4 </td><td> GMRes             </td><td> GMRes                              </td><td> VankaSchurPreCL              </td></tr>
     <tr><td>  5 </td><td> GMResR            </td><td> BiCGStab                           </td><td>                              </td></tr>
     <tr><td>  6 </td><td>                   </td><td> VankaPre                           </td><td> VankaPre                     </td></tr>
-    <tr><td>  7 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
+    <tr><td>  7 </td><td>                   </td><td>                                    </td><td> ISMGPreCL                    </td></tr>
     <tr><td>  8 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
     <tr><td>  9 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
     <tr><td> 30 </td><td> StokesMGM         </td><td> PVankaSmootherCL                   </td><td> PVankaSmootherCL             </td></tr>
@@ -70,8 +70,9 @@ class StokesSolverFactoryHelperCL
     }
     bool PrMGUsed  ( const ParamsT& C) const
     {
-        const int APc = (C.stk_StokesMethod / 100) % 100;
-        return (( APc == 30) || ( APc == 31));
+        const int APc = (C.stk_StokesMethod / 100) % 100,
+            SPc = C.stk_StokesMethod % 100;
+        return (( APc == 30) || ( APc == 31) || (SPc == 7));
     }
 };
 
@@ -100,6 +101,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     MinCommPreCL    mincommispc_;
     VankaSchurPreCL vankaschurpc_;
     ISPreCL         isprepc_;
+    ISMGPreCL       ismgpre_;
 
 // PC for A-block
     // MultiGrid symm.
@@ -269,6 +271,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         bbtispc_    ( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), kA_, kM_, C_.stk_PcSTol, C_.stk_PcSTol /* enable regularization: , 0.707*/),
         mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(),Stokes_.pr_idx.GetFinest(), C_.stk_PcSTol /* enable regularization: , 0.707*/),
         vankaschurpc_( &Stokes.pr_idx), isprepc_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
+        ismgpre_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_), 
         // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPc_, 500, 1e-6, true),
         MGSolversymm_ ( smoother_, coarsesolversymm_, C_.stk_PcAIter, C_.stk_PcATol, false),
@@ -343,6 +346,14 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
 StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::CreateStokesSolver()
 {
+    if (Stokes_.UsesXFEM())
+    { // check whether solver is well-defined for XFEM
+        if (C_.stk_StokesMethod/10000 == 30)
+            throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
+        if (C_.stk_StokesMethod%100 == 7)
+            throw DROPSErrCL("ISMGPreCL not implemented for P1X-elements");
+    }
+    
     StokesSolverBaseCL* stokessolver = 0;
     switch (C_.stk_StokesMethod)
     {
@@ -385,6 +396,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new InexactUzawaCL<MGPcT, ISPreCL, APC_OTHER>
                         ( MGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
+        case 20107 :
+            stokessolver = new InexactUzawaCL<MGPcT, ISMGPreCL, APC_OTHER>
+                        ( MGPc_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+        break;
         case 20201 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL, APC_SYM>
                         ( MGPcsymm_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
@@ -396,6 +411,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 20203 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISPreCL, APC_SYM>
                         ( MGPcsymm_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+        break;
+        case 20207 :
+            stokessolver = new InexactUzawaCL<MGsymmPcT, ISMGPreCL, APC_SYM>
+                        ( MGPcsymm_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
         case 20301 :
             stokessolver = new InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM>
@@ -432,6 +451,10 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         case 20503 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, ISPreCL, APC_OTHER>
                         ( BiCGStabPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+        break;
+        case 20507 :
+            stokessolver = new InexactUzawaCL<BiCGStabPcT, ISMGPreCL, APC_OTHER>
+                        ( BiCGStabPc_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
         break;
         case 30201 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos1T> >( PMinResMGBBT_);
@@ -488,8 +511,6 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new BlockMatrixSolverCL<GMResRSolverCL<LBlockBiCGMinCommOseenPcT> > ( GMResRBiCGStabMinComm_);
         break;
         case 303030 : {
-            if (C_.stk_XFEMStab >= 0) // P1X
-                throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
             if (C_.ns_Nonlinear==0.0){ // stokes
                 mgvankasolversymm_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
                            ( Stokes_.prM.Data, vankasmoother, blockminressolver, C_.stk_OuterIter, C_.stk_OuterTol, false, 2),
@@ -503,8 +524,6 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         }
         break;
         case 303131 : {
-            if (C_.stk_XFEMStab >= 0) // P1X
-                throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
             if (C_.ns_Nonlinear==0.0){ // stokes
                 mgbssolversymm_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
                            ( Stokes_.prM.Data, bssmoother, blockminressolver, C_.stk_OuterIter, C_.stk_OuterTol, false, 2),
@@ -553,6 +572,8 @@ ProlongationPT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prolon
         case 30 : return (C_.ns_Nonlinear == 0 ? mgvankasolversymm_->GetPPr() :  mgvankasolver_->GetPPr()); break;
         case 31 : return (C_.ns_Nonlinear == 0 ? mgbssolversymm_->GetPPr()    :  mgbssolver_->GetPPr());    break;
     }
+    if (SPc_ == 7 ) // ISMGPreCL
+        return ismgpre_.GetProlongation();
     return 0;
 }
 
