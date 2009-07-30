@@ -216,7 +216,9 @@ class ISMGPreCL
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
     double kA_, kM_;
-    std::vector<DROPS::VectorCL> ones_;
+    mutable std::vector<DROPS::VectorCL> ones_;
+    
+    void MaybeInitOnes() const;
 
   public:
     ISMGPreCL(DROPS::MLMatrixCL& A_pr, DROPS::MLMatrixCL& M_pr,
@@ -224,14 +226,8 @@ class ISMGPreCL
                     DROPS::Uint iter_prM = 1)
         : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
           Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM),
-          kA_( kA), kM_( kM), ones_( Mpr_.size())
-    {
-        // Compute projection on constant pressure function only once.
-        Uint i= 0;
-        for (MLMatrixCL::const_iterator it= Mpr_.begin(); it != Mpr_.end(); ++it, ++i) {
-            ones_[i].resize( it->num_cols(), 1.0/it->num_cols());
-        }
-    }
+          kA_( kA), kM_( kM), ones_(0)
+    {}
 
     template <typename Mat, typename Vec>
     void
@@ -643,6 +639,7 @@ template <typename Mat, typename Vec>
 void
 ISMGPreCL::Apply(const Mat& /*A*/, Vec& p, const Vec& c) const
 {
+    MaybeInitOnes();
     p= 0.0;
     const Vec c2_( c - dot( ones_.back(), c));
     MLMatrixCL::const_iterator finestP = --P_.end();

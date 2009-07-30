@@ -25,6 +25,18 @@ static void Regularize (MatrixCL& Bs, const IdxDescCL& rowidx, VectorCL ker0, co
 }
 #endif
 
+void ISMGPreCL::MaybeInitOnes() const
+{
+    if (Mpr_.size() == ones_.size()) return;
+    // Compute projection on constant pressure function only once.
+    Uint i= 0;
+    ones_.resize(0); // clear all
+    ones_.resize(Mpr_.size());
+    for (MLMatrixCL::const_iterator it= Mpr_.begin(); it != Mpr_.end(); ++it, ++i) {
+        ones_[i].resize( it->num_cols(), 1.0/it->num_cols());
+    }
+}
+
 void ISBBTPreCL::Update() const
 {
     IF_MASTER
