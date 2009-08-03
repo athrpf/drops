@@ -143,7 +143,7 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 6 :
             return (new TrapezoidTimeDisc2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false));
         break;
         case 7 :
             return (new TrapezoidTimeDisc2PhaseCL<StokesProblemT, LevelSetSolverT>
@@ -151,6 +151,14 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 8 :
             return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 11 :
+            return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 12 :
+            return (new FracStepScheme2PhaseCL<TrapezoidTimeDisc2PhaseCL, StokesProblemT, LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");

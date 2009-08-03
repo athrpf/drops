@@ -362,6 +362,7 @@ class TrapezoidTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lse
 
     VectorCL fixed_rhs_, fixed_ls_rhs_;
 
+    double stk_theta_, ls_theta_;
     bool implicitpressure_;
 
     MLMatrixCL*  Mold_;
@@ -374,12 +375,20 @@ class TrapezoidTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lse
 
   public:
     TrapezoidTimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
-                              LevelsetModifyCL& lsetmod, double tol, double nonlinear = 1.0,
+                              LevelsetModifyCL& lsetmod, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
                               bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
     ~TrapezoidTimeDisc2PhaseCL();
 
     void Update();
 
+    void SetTimeStep (double dt) { // overwrites baseclass-version
+        base_::SetTimeStep( dt);
+    }
+    void SetTimeStep (double dt, double theta) { // for the fractional-step-method
+        base_::SetTimeStep( dt);
+        stk_theta_= theta;
+        ls_theta_ = theta;
+    }
 };
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
@@ -525,14 +534,14 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, LsetSo
 
 };
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
-class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
 {
   private:
     static const double facdt_[3];
     static const double theta_[3];
 
-    typedef RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT> base_;
 
     double dt3_;
     int step_;
@@ -572,14 +581,14 @@ class FracStepScheme2PhaseCL : public RecThetaScheme2PhaseCL<StokesT, LsetSolver
     void Update() { base_::Update(); }
 };
 
-template <class NavStokesT, class LsetSolverT, class RelaxationPolicyT>
-const double FracStepScheme2PhaseCL<NavStokesT, LsetSolverT, RelaxationPolicyT>::facdt_[3]
+template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::facdt_[3]
 //  = { 1./3, 1./3, 1./3 };
 //  = { 1./3, 1./3, 1./3 };
   = { 1.0 - std::sqrt( 0.5), std::sqrt( 2.0) - 1.0, 1.0 - std::sqrt( 0.5) };
 
-template <class NavStokesT, class LsetSolverT, class RelaxationPolicyT>
-const double FracStepScheme2PhaseCL<NavStokesT,LsetSolverT,RelaxationPolicyT>::theta_[3]
+template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::theta_[3]
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };

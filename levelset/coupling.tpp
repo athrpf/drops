@@ -585,7 +585,7 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLse
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupStokesMatVec()
-/// setup matrices A, M, B, prA, prM and vectors b+cplA, cplM, curv, c 
+/// setup matrices A, M, B, prA, prM and vectors b+cplA, cplM, curv, c
 {
     curv_->Clear();
     LvlSet_.AccumulateBndIntegral( *curv_);
@@ -791,8 +791,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevel
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::TrapezoidTimeDisc2PhaseCL
-    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
+    ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool implicitpressure)
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),  stk_theta_( stk_theta), ls_theta_( ls_theta),
     implicitpressure_( implicitpressure), Mold_( 0), Eold_( 0)
 {
     Update();
@@ -810,8 +810,8 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep(
     base_::InitStep();
     fixed_ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data)    + phidot_;
     fixed_rhs_    = (1./dt_) * (Stokes_.M.Data * Stokes_.v.Data) + vdot_;
-    if (implicitpressure_)              // Just to have a better starting-value for p.
-        Stokes_.p.Data *= 2.0;
+    if (!implicitpressure_)              // Just to have a better starting-value for p.
+        Stokes_.p.Data *= stk_theta_;
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
@@ -819,7 +819,8 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSte
 {
     base_::CommitStep();
     VectorCL vdot1( (1./dt_)*(Stokes_.v.Data - oldv_));
-    vdot_ = Stokes_.M.Data * vdot1 + (*Mold_) * vdot1 - vdot_;
+    vdot_ = stk_theta_ * (Stokes_.M.Data * vdot1) + (1.0 - stk_theta_) * ((*Mold_) * vdot1) - (1.0 - stk_theta_) * vdot_;
+    vdot_ /= stk_theta_;
     delete Mold_;
     Mold_ = new MLMatrixCL( Stokes_.M.Data);
 
@@ -829,10 +830,10 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSte
 
     oldphi_ = LvlSet_.Phi.Data;
     oldv_= Stokes_.v.Data;
-    if (implicitpressure_) {
+    if (implicitpressure_)
         vdot_ += transp_mul( Stokes_.B.Data, Stokes_.p.Data);
-        Stokes_.p.Data *= 0.5;
-    }
+    else
+        Stokes_.p.Data /= stk_theta_;
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
@@ -900,9 +901,9 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavS
 {
     base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
-    alpha_ = nonlinear_;
-    mat_->LinComb( 1./dt_, Stokes_.M.Data, 1./dt_, *Mold_, 1.0, Stokes_.A.Data);
-    rhs_ = fixed_rhs_ + (1./dt_) * (Stokes_.M.Data * oldv_) + curv_->Data + b_->Data ; /* TODO time-dep DirBC*/
+    alpha_ = nonlinear_ * stk_theta_;
+    mat_->LinComb( stk_theta_/dt_, Stokes_.M.Data, (1.0-stk_theta_)/dt_, *Mold_, stk_theta_, Stokes_.A.Data);
+    rhs_ = (1.0 - stk_theta_)*fixed_rhs_ + stk_theta_*( (1./dt_) * (Stokes_.M.Data * oldv_) + curv_->Data + b_->Data); /* TODO time-dep DirBC*/
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
@@ -911,8 +912,8 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLeve
     // setup system for levelset eq.
     LvlSet_.SetupSystem( Stokes_.GetVelSolution());
 
-    L_->LinComb( 1./dt_, LvlSet_.E, 1./dt_, *Eold_, 1.0, LvlSet_.H);
-    ls_rhs_ = fixed_ls_rhs_ + (1./dt_) * (LvlSet_.E * oldphi_);
+    L_->LinComb( ls_theta_/dt_, LvlSet_.E, (1.0-ls_theta_)/dt_, *Eold_, ls_theta_, LvlSet_.H);
+    ls_rhs_ = (1.0 - ls_theta_) * fixed_ls_rhs_ + (ls_theta_/dt_) * (LvlSet_.E * oldphi_);
 }
 
 // ==============================================
