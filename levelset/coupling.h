@@ -59,7 +59,6 @@ class TimeDisc2PhaseCL
     //@}
 
     virtual void SetTimeStep (double dt) {dt_= dt;}
-
     virtual void DoStep( int maxFPiter= -1) = 0;
 
     // update after grid has changed
@@ -592,7 +591,9 @@ const double FracStepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, Relaxation
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
-#endif
+
 } // end of namespace DROPS
 
 #include "levelset/coupling.tpp"
+
+#endif
