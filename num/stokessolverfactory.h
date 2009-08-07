@@ -2,7 +2,11 @@
 /// \brief creates several standard Stokes-solver
 /// \author Sven Gross, Joerg Grande, Patrick Esser, IGPM
 
+#ifndef _PAR
 #include "num/stokessolver.h"
+#else
+#include "num/parstokessolver.h"
+#endif
 
 namespace DROPS {
 
@@ -386,75 +390,75 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         break;
         case 20101 :
             stokessolver = new InexactUzawaCL<MGPcT, ISBBTPreCL, APC_OTHER>
-                        ( MGPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20102 :
             stokessolver = new InexactUzawaCL<MGPcT, MinCommPreCL, APC_OTHER>
-                        ( MGPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20103 :
             stokessolver = new InexactUzawaCL<MGPcT, ISPreCL, APC_OTHER>
-                        ( MGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20107 :
             stokessolver = new InexactUzawaCL<MGPcT, ISMGPreCL, APC_OTHER>
-                        ( MGPc_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPc_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20201 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISBBTPreCL, APC_SYM>
-                        ( MGPcsymm_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPcsymm_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20202 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, MinCommPreCL, APC_SYM>
-                        ( MGPcsymm_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPcsymm_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20203 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISPreCL, APC_SYM>
-                        ( MGPcsymm_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPcsymm_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20207 :
             stokessolver = new InexactUzawaCL<MGsymmPcT, ISMGPreCL, APC_SYM>
-                        ( MGPcsymm_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( MGPcsymm_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20301 :
             stokessolver = new InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM>
-                        ( PCGPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( PCGPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20302 :
             stokessolver = new InexactUzawaCL<PCGPcT, MinCommPreCL, APC_SYM>
-                        ( PCGPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( PCGPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20303 :
             stokessolver = new InexactUzawaCL<PCGPcT, ISPreCL, APC_SYM>
-                        ( PCGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( PCGPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20401 :
             stokessolver = new InexactUzawaCL<GMResPcT, ISBBTPreCL, APC_OTHER>
-                        ( GMResPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( GMResPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20402 :
             stokessolver = new InexactUzawaCL<GMResPcT, MinCommPreCL, APC_OTHER>
-                        ( GMResPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( GMResPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20403 :
             stokessolver = new InexactUzawaCL<GMResPcT, ISPreCL, APC_OTHER>
-                        ( GMResPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( GMResPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20501 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, ISBBTPreCL, APC_OTHER>
-                        ( BiCGStabPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( BiCGStabPc_, bbtispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20502 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, MinCommPreCL, APC_OTHER>
-                        ( BiCGStabPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( BiCGStabPc_, mincommispc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20503 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, ISPreCL, APC_OTHER>
-                        ( BiCGStabPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( BiCGStabPc_, isprepc_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 20507 :
             stokessolver = new InexactUzawaCL<BiCGStabPcT, ISMGPreCL, APC_OTHER>
-                        ( BiCGStabPc_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                        ( BiCGStabPc_, ismgpre_, C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, C_.stk_InnerIter);
         break;
         case 30201 :
             stokessolver = new BlockMatrixSolverCL<PMResSolverCL<Lanczos1T> >( PMinResMGBBT_);
