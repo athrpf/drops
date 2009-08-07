@@ -7,7 +7,7 @@
 // History: begin - Jan, 24 2008                                           *
 //**************************************************************************
 
-#include <stokes/integrTime.h>
+#include "stokes/integrTime.h"
 
 namespace DROPS
 {
