@@ -55,6 +55,9 @@ class VectorBaseCL: public std::valarray<T>
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE( VectorBaseCL, T, base_type)
 
+    const T* raw() const { return Addr( *this); }
+    T*       raw()       { return &(*this)[0]; }
+
 #if (DROPSDebugC & DebugNumericC)
     using base_type::operator[];
 
