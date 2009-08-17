@@ -147,7 +147,7 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 7 :
             return (new TrapezoidTimeDisc2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true));
         break;
         case 8 :
             return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
