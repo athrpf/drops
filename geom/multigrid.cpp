@@ -496,6 +496,133 @@ void MultiGridCL::MakeConsistentNumbering()
 }
 
 
+void SetAllEdges (TetraCL* tp, EdgeCL* e0, EdgeCL* e1, EdgeCL* e2, EdgeCL* e3, EdgeCL* e4, EdgeCL* e5)
+{
+    tp->SetEdge( 0, e0);
+    tp->SetEdge( 1, e1);
+    tp->SetEdge( 2, e2);
+    tp->SetEdge( 3, e3);
+    tp->SetEdge( 4, e4);
+    tp->SetEdge( 5, e5);
+}
+
+void SetAllFaces (TetraCL* tp, FaceCL* f0, FaceCL* f1, FaceCL* f2, FaceCL* f3)
+{
+    tp->SetFace( 0, f0);
+    tp->SetFace( 1, f1);
+    tp->SetFace( 2, f2);
+    tp->SetFace( 3, f3);
+}
+
+bool HasMultipleBndSegs (const TetraCL& t)
+{
+    Uint numbnd= 0;
+    for (Uint i= 0; numbnd < 2 && i < NumFacesC; ++i)
+        if (t.IsBndSeg( i)) ++numbnd;
+
+    return numbnd > 1;
+}
+
+void MultiGridCL::SplitMultiBoundaryTetras()
+{
+    ClearTriangCache();
+    PrepareModify();
+    // Uint count= 0;
+
+    // Note that new tetras can be appended to _Tetras[0] in this loop; it is assumed that
+    // the pointers and iterators to the present tetras are not invalidated by appending
+    // to _Tetras[0]. (This assumption must of course hold for the refinement algorithm to
+    // work at all.) The new tetras never require further splitting.
+    for (TetraLevelCont::iterator t= _Tetras[0].begin(), theend= _Tetras[0].end(); t != theend; ) {
+        if (!HasMultipleBndSegs( *t)) {
+            ++t;
+            continue;
+        }
+        // ++count;
+
+        // t: (v0 v1 v2 v3)
+
+        // One new vertex: The barycenter b is in level 0 in the interior of \Omega; store it and its address.
+        Point3DCL b( GetBaryCenter( *t));
+        _Vertices[0].push_back( VertexCL( b, /*first level*/ 0));
+        VertexCL* bp( &_Vertices[0].back());
+
+        // Four new edges: (v0 b) (v1 b) (v2 b) (b v3); they have no midvertices and no boundary descriptions
+        EdgeCL* ep[4];
+        _Edges[0].push_back( EdgeCL( t->_Vertices[0], bp, /*level*/ 0));
+        ep[0]= &_Edges[0].back();
+        _Edges[0].push_back( EdgeCL( t->_Vertices[1], bp, /*level*/ 0));
+        ep[1]= &_Edges[0].back();
+        _Edges[0].push_back( EdgeCL( t->_Vertices[2], bp, /*level*/ 0));
+        ep[2]= &_Edges[0].back();
+        _Edges[0].push_back( EdgeCL( bp, t->_Vertices[3], /*level*/ 0));
+        ep[3]= &_Edges[0].back();
+
+        // Six new faces: (v0 v1 b) (v0 v2 b) (v0 b v3) (v1 v2 b) (v1 b v3) (v2 b v3); they have no boundary descriptions
+        FaceCL* fp[6];
+        for (int i= 0; i < 6; ++i) {
+            _Faces[0].push_back( FaceCL( /*level*/ 0));
+            fp[i]= &_Faces[0].back();
+        }
+
+        // Four new tetras: (v0 v1 v2 b) (v0 v1 b v3) (v0 v2 b v3) (v1 v2 b v3)
+        TetraCL* tp[4];
+        _Tetras[0].push_back( TetraCL( t->_Vertices[0], t->_Vertices[1], t->_Vertices[2], bp, /*parent*/ 0));
+        tp[0]= &_Tetras[0].back();
+        _Tetras[0].push_back( TetraCL( t->_Vertices[0], t->_Vertices[1], bp, t->_Vertices[3], /*parent*/ 0));
+        tp[1]= &_Tetras[0].back();
+        _Tetras[0].push_back( TetraCL( t->_Vertices[0], t->_Vertices[2], bp, t->_Vertices[3], /*parent*/ 0));
+        tp[2]= &_Tetras[0].back();
+        _Tetras[0].push_back( TetraCL( t->_Vertices[1], t->_Vertices[2], bp, t->_Vertices[3], /*parent*/ 0));
+        tp[3]= &_Tetras[0].back();
+        // Set the edge-pointers
+        SetAllEdges( tp[0], t->_Edges[EdgeByVert(0, 1)], t->_Edges[EdgeByVert(0, 2)], t->_Edges[EdgeByVert(1, 2)], ep[0], ep[1], ep[2]);
+        SetAllEdges( tp[1], t->_Edges[EdgeByVert(0, 1)], ep[0], ep[1], t->_Edges[EdgeByVert(0, 3)], t->_Edges[EdgeByVert(1, 3)], ep[3]);
+        SetAllEdges( tp[2], t->_Edges[EdgeByVert(0, 2)], ep[0], ep[2], t->_Edges[EdgeByVert(0, 3)], t->_Edges[EdgeByVert(2, 3)], ep[3]);
+        SetAllEdges( tp[3], t->_Edges[EdgeByVert(1, 2)], ep[1], ep[2], t->_Edges[EdgeByVert(1, 3)], t->_Edges[EdgeByVert(2, 3)], ep[3]);
+        // Set the face-pointers
+        SetAllFaces( tp[0], fp[3], fp[1], fp[0], t->_Faces[FaceByVert( 0, 1, 2)]);
+        SetAllFaces( tp[1], fp[4], fp[2], t->_Faces[FaceByVert( 0, 1, 3)], fp[0]);
+        SetAllFaces( tp[2], fp[5], fp[2], t->_Faces[FaceByVert( 0, 2, 3)], fp[1]);
+        SetAllFaces( tp[3], fp[5], fp[4], t->_Faces[FaceByVert( 1, 2, 3)], fp[3]);
+
+        // Set tetra-pointers of the new faces
+        fp[0]->SetNeighbor( 0, tp[0]); fp[0]->SetNeighbor( 1, tp[1]);
+        fp[1]->SetNeighbor( 0, tp[0]); fp[1]->SetNeighbor( 1, tp[2]);
+        fp[2]->SetNeighbor( 0, tp[1]); fp[2]->SetNeighbor( 1, tp[2]);
+        fp[3]->SetNeighbor( 0, tp[0]); fp[3]->SetNeighbor( 1, tp[3]);
+        fp[4]->SetNeighbor( 0, tp[1]); fp[4]->SetNeighbor( 1, tp[3]);
+        fp[5]->SetNeighbor( 0, tp[2]); fp[5]->SetNeighbor( 1, tp[3]);
+
+        // Set tetra-pointers of the faces of t to the corresponding new tetra
+        if (t->GetFace( 0)->GetNeighbor( 0) == &*t)
+            t->_Faces[0]->SetNeighbor( 0, tp[3]);
+        else
+            t->_Faces[0]->SetNeighbor( 1, tp[3]);
+        if (t->GetFace( 1)->GetNeighbor( 0) == &*t)
+            t->_Faces[1]->SetNeighbor( 0, tp[2]);
+        else
+            t->_Faces[1]->SetNeighbor( 1, tp[2]);
+        if (t->GetFace( 2)->GetNeighbor( 0) == &*t)
+            t->_Faces[2]->SetNeighbor( 0, tp[1]);
+        else
+            t->_Faces[2]->SetNeighbor( 1, tp[1]);
+        if (t->GetFace( 3)->GetNeighbor( 0) == &*t)
+            t->_Faces[3]->SetNeighbor( 0, tp[0]);
+        else
+            t->_Faces[3]->SetNeighbor( 1, tp[0]);
+
+        // Remove *t (now unused), increment t *before* erasing
+        TetraLevelCont::iterator tmp= t;
+        ++t;
+        _Tetras[0].erase( tmp);
+    }
+
+    FinalizeModify();
+
+    // std::cerr << "Split " << count << " tetras.\n";
+}
+
 class EdgeByVertLessCL : public std::binary_function<const EdgeCL*, const EdgeCL* , bool>
 {
   public:

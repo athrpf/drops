@@ -289,6 +289,7 @@ class MultiGridCL
     void Scale( double);
     void Transform( Point3DCL (*mapping)(const Point3DCL&));
     void MakeConsistentNumbering();
+    void SplitMultiBoundaryTetras();                            ///< Tetras adjacent to more than one boundary-segment are subdivided into four tetras using the barycenter. This method must be called prior to Refine or MakeConsistentNumbering.
     void SizeInfo(std::ostream&);                               // all procs have to call this function in parallel mode!
     void ElemInfo(std::ostream&, int Level= -1);                // all procs have to call this function in parallel mode
 #ifdef _PAR
