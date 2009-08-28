@@ -55,7 +55,7 @@ class Ensight6P1XScalarCL : public Ensight6VariableCL
     void put      (Ensight6OutCL&)    const {
         if (p1idx_.NumUnknowns() != 0)
             p1idx_.DeleteNumbering( mg_);
-        p1idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_, bnd_);
+        p1idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_, *v_.RowIdx);
         P1XtoP1 ( *v_.RowIdx, v_.Data, p1idx_, vpos_.Data, vneg_.Data, lset_, mg_);
     }
 };
