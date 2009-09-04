@@ -628,6 +628,12 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep(
 
     InitStep();
     RelaxationPolicyT relax;
+#ifdef _PAR
+    const bool useAccur=true;
+    ExchangeCL& ExVel  = Stokes_.v.RowIdx->GetEx();
+    ExchangeCL& ExLset = LvlSet_.Phi.RowIdx->GetEx();
+#endif
+    double res_u = 0.0, res_phi = 0.0, res = 0.0;
     for (int i=0; i<maxFPiter; ++i)
     {
         std::cout << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
@@ -645,9 +651,15 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep(
         // quasi newton method: relax computes the update vector
         relax.Update( Stokes_.v, LvlSet_.Phi);
 
-        double res_u( dot( Stokes_.v.Data, Stokes_.M.Data*Stokes_.v.Data)),
-            res_phi( dot( LvlSet_.Phi.Data, LvlSet_.E*LvlSet_.Phi.Data)),
-            res( std::sqrt( res_u + res_phi));
+#ifndef _PAR
+        res_u   = dot( Stokes_.v.Data, Stokes_.M.Data*Stokes_.v.Data);
+        res_phi = dot( LvlSet_.Phi.Data, LvlSet_.E*LvlSet_.Phi.Data);
+#else
+        res_u   = ExVel.ParDot( Stokes_.v.Data, true, Stokes_.M.Data*Stokes_.v.Data, true, useAccur);
+        res_phi = ExLset.ParDot( LvlSet_.Phi.Data, true, LvlSet_.E*LvlSet_.Phi.Data, true, useAccur);
+#endif
+        res = std::sqrt( res_u + res_phi);
+
         std::cout << "residual: " << res << " residual of u, phi: " << std::sqrt( res_u)
                   << ", " << std::sqrt( res_phi) << std::endl;
         Stokes_.v.Data   = v   - Stokes_.v.Data;
@@ -786,11 +798,11 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevel
 }
 
 // ==============================================
-//            TrapezoidTimeDisc2PhaseCL
+//            SpaceTimeDiscTheta2PhaseCL
 // ==============================================
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::TrapezoidTimeDisc2PhaseCL
+SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SpaceTimeDiscTheta2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool implicitpressure)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),  stk_theta_( stk_theta), ls_theta_( ls_theta),
     implicitpressure_( implicitpressure), Mold_( 0), Eold_( 0)
@@ -799,13 +811,13 @@ TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::TrapezoidTimeD
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~TrapezoidTimeDisc2PhaseCL()
+SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~SpaceTimeDiscTheta2PhaseCL()
 {
     delete Eold_; delete Mold_;
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
 {
     base_::InitStep();
     fixed_ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data)    + phidot_;
@@ -815,7 +827,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep(
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     base_::CommitStep();
     VectorCL vdot1( (1./dt_)*(Stokes_.v.Data - oldv_));
@@ -837,7 +849,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSte
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 {
 #ifndef _PAR
     TimerCL time;
@@ -882,7 +894,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots ()
+void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots ()
 {
     delete Mold_;
     Mold_ = new MLMatrixCL( Stokes_.M.Data);
@@ -897,7 +909,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDo
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
     base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
@@ -907,7 +919,7 @@ void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavS
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void TrapezoidTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
     LvlSet_.SetupSystem( Stokes_.GetVelSolution());

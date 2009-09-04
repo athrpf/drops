@@ -329,7 +329,7 @@ class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lset
 };
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class TrapezoidTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
 {
   protected:
     typedef CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
@@ -373,10 +373,10 @@ class TrapezoidTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lse
     void SetupLevelsetSystem();
 
   public:
-    TrapezoidTimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
+    SpaceTimeDiscTheta2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
                               bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
-    ~TrapezoidTimeDisc2PhaseCL();
+    ~SpaceTimeDiscTheta2PhaseCL();
 
     void Update();
 
