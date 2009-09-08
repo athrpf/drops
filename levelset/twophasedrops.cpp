@@ -161,6 +161,14 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
             return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
+        case 13 :
+            return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 14 :
+            return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
 }

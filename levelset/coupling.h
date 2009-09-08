@@ -352,11 +352,10 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
     using base_::alpha_;
 
     void ComputeDots ();
-
-  private:
     VectorCL oldv_,     // old velocity
-             oldphi_,   // old levelset
-             phidot_,   // "time derivate" of phi
+             oldphi_;   // old levelset
+  private:
+    VectorCL phidot_,   // "time derivate" of phi
              vdot_;     // "time derivate" of v
 
     VectorCL fixed_rhs_, fixed_ls_rhs_;
@@ -457,6 +456,9 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
 
     void ComputeDots ();
 
+    VectorCL oldv_,     // old velocity
+             oldphi_;   // old levelset
+
   private:
     VectorCL fixed_rhs_, fixed_ls_rhs_;
     double stk_theta_, ls_theta_;
@@ -467,9 +469,7 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
     void SetupLevelsetSystem();
 
     VectorCL vdot_,     // time derivative of v
-             oldv_,     // old velocity
-             phidot_,   // time derivate of phi
-             oldphi_;   // old levelset
+             phidot_;   // time derivate of phi
 
 #ifndef _PAR
     SSORPcCL ssorpc_;
@@ -533,6 +533,7 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, LsetSo
 
 };
 
+// Handbook of Numerical Analysis (Ciarlet/Lions), Volume IX: Numerical Methods for Fluids (Part 3) by R. Glowinski
 template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
 class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
 {
@@ -591,6 +592,71 @@ const double FracStepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, Relaxation
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
+
+
+// Handbook of Numerical Analysis (Ciarlet/Lions), Volume IX: Numerical Methods for Fluids (Part 3) by R. Glowinski: Remark 10.3
+template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class Frac2StepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
+{
+  private:
+    static const double facdt_[2];
+    static const double theta_[2];
+
+    typedef BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    using base_::oldv_;
+    using base_::oldphi_;
+    using base_::Stokes_;
+    using base_::LvlSet_;
+    double dt2_;
+    int step_;
+
+  public:
+    Frac2StepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
+                               NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
+                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
+
+    double GetSubTimeStep() const { return facdt_[step_]*dt2_; }
+    double GetSubTheta()    const { return theta_[step_]; }
+    int    GetSubStep()     const { return step_; }
+
+    void SetTimeStep (double dt) { // overwrites baseclass-version
+        dt2_= dt;
+    }
+
+    void SetTimeStep( double dt, int step = -1) {
+        dt2_= dt;
+        if (step>=0) step_= step%2;
+    }
+
+    void DoSubStep( int maxFPiter= -1) {
+        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Fractional Step Method: Substep " << step_ << '\n';
+        base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
+        base_::DoStep( maxFPiter);
+        step_= (step_ + 1)%2;
+    }
+
+    void DoStep( int maxFPiter= -1) {
+        VectorCL v(Stokes_.v.Data);
+        VectorCL phi(LvlSet_.Phi.Data);
+        double t(Stokes_.t);
+        DoSubStep( maxFPiter);
+        oldv_ = v;
+        oldphi_ = phi;
+        Stokes_.t = t;
+        DoSubStep( maxFPiter);
+    }
+
+    void Update() { base_::Update(); }
+};
+
+template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
+const double Frac2StepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::facdt_[2]
+  = { 1.0 - std::sqrt( 0.5), 1.0 };
+
+template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
+const double Frac2StepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::theta_[2]
+  = { 1.0, 1.0 - std::sqrt( 0.5) };
 
 } // end of namespace DROPS
 

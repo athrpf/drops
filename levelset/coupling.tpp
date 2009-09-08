@@ -820,8 +820,8 @@ template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
 {
     base_::InitStep();
-    fixed_ls_rhs_ = (1./dt_) * (LvlSet_.E * LvlSet_.Phi.Data)    + phidot_;
-    fixed_rhs_    = (1./dt_) * (Stokes_.M.Data * Stokes_.v.Data) + vdot_;
+    fixed_ls_rhs_ = (1./dt_) * (LvlSet_.E * oldphi_)    + phidot_;
+    fixed_rhs_    = (1./dt_) * (Stokes_.M.Data * oldv_) + vdot_;
     if (!implicitpressure_)              // Just to have a better starting-value for p.
         Stokes_.p.Data *= stk_theta_;
 }
@@ -832,7 +832,6 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSt
     base_::CommitStep();
     VectorCL vdot1( (1./dt_)*(Stokes_.v.Data - oldv_));
     vdot_ = stk_theta_ * (Stokes_.M.Data * vdot1) + (1.0 - stk_theta_) * ((*Mold_) * vdot1) - (1.0 - stk_theta_) * vdot_;
-    vdot_ /= stk_theta_;
     delete Mold_;
     Mold_ = new MLMatrixCL( Stokes_.M.Data);
 
@@ -846,6 +845,7 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSt
         vdot_ += transp_mul( Stokes_.B.Data, Stokes_.p.Data);
     else
         Stokes_.p.Data /= stk_theta_;
+    vdot_ /= stk_theta_;
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
@@ -1035,9 +1035,9 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
     base_::InitStep();
-    fixed_ls_rhs_ = (1./dt_)*LvlSet_.Phi.Data + ( 1. - ls_theta_ )*phidot_;
+    fixed_ls_rhs_ = (1./dt_)*oldphi_ + ( 1. - ls_theta_ )*phidot_;
 
-    fixed_rhs_= (1./dt_)*Stokes_.v.Data + ( 1. - stk_theta_)*vdot_;
+    fixed_rhs_= (1./dt_)*oldv_ + ( 1. - stk_theta_)*vdot_;
 
     Stokes_.p.Data*= stk_theta_; // Just to have a better starting-value for p.
 }
