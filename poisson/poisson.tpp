@@ -728,7 +728,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 #endif
 
     std::cout << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
-              << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
+              << "w-2-Norm= " << std::sqrt(norm2/dataSize)        << std::endl
               << "max-Norm= " << maxdiff                          << std::endl
               << " L2-Norm= " << std::sqrt(L2)                    << std::endl;
     return L2;
