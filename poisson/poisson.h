@@ -51,7 +51,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
         : _base( mgb, coeff, bdata), idx( P1_FE)
     {
 #ifdef _PAR
-        throw DROPSErrCL("This class has not been parallelized yes, sorry");
+        throw DROPSErrCL("This class has not been parallelized yet, sorry");
 #endif
     }
     // numbering of unknowns
@@ -104,12 +104,7 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
-                const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE)
-    {
-#ifdef _PAR
-        throw DROPSErrCL("This class has not been parallelized yes, sorry");
-#endif
-    }
+                const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE) {}
 
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
