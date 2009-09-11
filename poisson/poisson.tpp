@@ -677,6 +677,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
         SetupSystem_P2( _MG, _Coeff, _BndData, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol);
 }
 
+/// \todo CheckSolution checks 2-norm and max-norm just on vertices and not on edges
 template<class Coeff>
 double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun_ptr Lsg) const
 {
@@ -703,7 +704,6 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
         sum+= 2./15. * diff*diff;
         L2+= sum*absdet;
     }
-    L2= std::sqrt(L2);
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
@@ -718,16 +718,29 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
            }
         }
     }
+    size_t dataSize= lsg.Data.size();
+#ifdef _PAR
+    // not completely correct, but nearly ...
+    norm2= ProcCL::GlobalSum(norm2);
+    maxdiff= ProcCL::GlobalMax(maxdiff);
+    L2= ProcCL::GlobalSum(L2);
+    dataSize= ProcCL::GlobalSum(dataSize);
+#endif
+
     std::cout << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
               << "w-2-Norm= " << std::sqrt(norm2/lsg.Data.size()) << std::endl
               << "max-Norm= " << maxdiff                          << std::endl
-              << " L2-Norm= " << L2                               << std::endl;
+              << " L2-Norm= " << std::sqrt(L2)                    << std::endl;
     return L2;
 }
 
 template<class Coeff>
 void PoissonP2CL<Coeff>::SetNumLvl( size_t n)
 {
+#ifdef _PAR
+    if (n>1)
+        throw DROPSErrCL(" PoissonP2CL<Coeff>::SetNumLvl: Sorry, in parallel version no multi-level is implemented, yet!");
+#endif
     match_fun match= _MG.GetBnd().GetMatchFun();
     idx.resize( n, P2_FE, _BndData, match);
     A.Data.resize( idx.size());
