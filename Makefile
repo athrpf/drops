@@ -80,6 +80,10 @@ depend_%:
 prog_%:
 	cd $(@D) && $(MAKE) $(*F)
 
+libs: DDD ParMetis
+
+clean_libs: clean_DDD clean_ParMetis
+
 DDD:
 	cd $(DDD_HOME) && ./install && gmake clean && \
 	gmake -j ARCH_CFLAGS="$(OPTFLAGS)" ARCH_TYPE="__PC__" ARCH_CC="$(ARCH_CC)" ARCH_LINK="$(ARCH_CC)"
