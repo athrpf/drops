@@ -1,0 +1,80 @@
+DimX=2, DimY=2, DimZ=1
+ Refine 2 times regular ... 
+ Refine 1 times around 0 0 0  ... 
+ - Distribution of elements: level of mg: 4
+     On Proc 0 are: 1534 Verts, 10356 Edges, 16061 Faces, 7530 Tetras
+     On Proc 1 are: 1130 Verts, 1575 Edges, 10586 Faces, 16423 Tetras
+     On Proc 2 are: 7698 Verts, 1298 Edges, 1634 Faces, 10878 Tetras
+     On Proc 3 are: 16691 Verts, 7761 Edges, 1384 Faces, 1494 Tetras
+  Accumulated: 27053 Verts, 20990 Edges, 29665 Faces, 36325 Tetras
+Memory used for geometry: 13.8 MB (16.5% verts, 10.5% edges, 14.8% faces, 58.2% tetras)
+------------------------------------------
+ Interpolation step 1
+------------------------------------------
+Mark around 1 2 0.5 
+ At least on tetra has been marked!
+[0] Level before Ref: 4 now 4
+Number of unknowns:
+  + Number of DOF of index 5 (accumulated/global):  4475/3793
+  + Number of DOF of index 6 (accumulated/global):  6332/5472
+  + Number of DOF of index 7 (accumulated/global):  36207/33371
+  + Number of DOF of index 8 (accumulated/global):  43309/40138
+  + Number of DOF of index 9 (accumulated/global):  117714/108690
+Maximal distance between function and interpolated P1/P2-functions:
+  +  P1 with Dirichlet       boundary conditions: 0.0136986
+  +  P1 with Neumann         boundary conditions: 0.0136986
+  +  P2 with Dirichlet       boundary conditions: 0
+  +  P2 with Neumann         boundary conditions: 0
+  +  P2 with mixed vectorial boundary conditions: 0
+------------------------------------------
+ Interpolation step 2
+------------------------------------------
+UnMark around 1 2 0.5 
+ At least on tetra has been marked!
+[0] Level before Ref: 4 now 4
+Number of unknowns:
+  + Number of DOF of index 0 (accumulated/global):  3943/3425
+  + Number of DOF of index 1 (accumulated/global):  5786/5083
+  + Number of DOF of index 2 (accumulated/global):  32619/30423
+  + Number of DOF of index 3 (accumulated/global):  39657/37115
+  + Number of DOF of index 4 (accumulated/global):  106680/99624
+Maximal distance between function and interpolated P1/P2-functions:
+  +  P1 with Dirichlet       boundary conditions: 0
+  +  P1 with Neumann         boundary conditions: 0
+  +  P2 with Dirichlet       boundary conditions: 0.0136986
+  +  P2 with Neumann         boundary conditions: 0.0136986
+  +  P2 with mixed vectorial boundary conditions: 0.0136986
+------------------------------------------
+ Interpolation step 3
+------------------------------------------
+ At least on tetra has been marked!
+[0] Level before Ref: 4 now 4
+Number of unknowns:
+  + Number of DOF of index 5 (accumulated/global):  4018/3417
+  + Number of DOF of index 6 (accumulated/global):  5854/5050
+  + Number of DOF of index 7 (accumulated/global):  32900/30415
+  + Number of DOF of index 8 (accumulated/global):  39924/37082
+  + Number of DOF of index 9 (accumulated/global):  107490/99573
+Maximal distance between function and interpolated P1/P2-functions:
+  +  P1 with Dirichlet       boundary conditions: 0
+  +  P1 with Neumann         boundary conditions: 0
+  +  P2 with Dirichlet       boundary conditions: 0
+  +  P2 with Neumann         boundary conditions: 0
+  +  P2 with mixed vectorial boundary conditions: 0
+------------------------------------------
+ Interpolation step 4
+------------------------------------------
+ At least on tetra has been marked!
+[0] Level before Ref: 4 now 4
+Number of unknowns:
+  + Number of DOF of index 0 (accumulated/global):  4011/3419
+  + Number of DOF of index 1 (accumulated/global):  5886/5052
+  + Number of DOF of index 2 (accumulated/global):  32935/30417
+  + Number of DOF of index 3 (accumulated/global):  40038/37084
+  + Number of DOF of index 4 (accumulated/global):  107712/99573
+Maximal distance between function and interpolated P1/P2-functions:
+  +  P1 with Dirichlet       boundary conditions: 0
+  +  P1 with Neumann         boundary conditions: 0
+  +  P2 with Dirichlet       boundary conditions: 0
+  +  P2 with Neumann         boundary conditions: 0
+  +  P2 with mixed vectorial boundary conditions: 0

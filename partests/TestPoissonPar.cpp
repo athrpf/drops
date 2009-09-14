@@ -436,7 +436,8 @@ void Solve(const Mat &A, Vec &x, const Vec &b, const IdxDescCL& idx)
         std::cout << " - Iterations:  " << steps << std::endl;
         std::cout << " - Residuum:    " << res  << std::endl;
         std::cout << " - real Resid:  " << realresid << std::endl;
-        std::cout << " - Time:        " << duration << std::endl;
+        if (C.poisson_printTime)
+            std::cout << " - Time:        " << duration << std::endl;
         std::cout << " - Norm(b):     " << normb << std::endl;
     }
 }
@@ -1021,7 +1022,8 @@ int main (int argc, char** argv)
 
         alltime.Stop();
         Times.SetOverall(alltime.GetMaxTime());
-        Times.Print(cout);
+        if (C.poisson_printTime)
+            Times.Print(cout);
 
         return 0;
     }

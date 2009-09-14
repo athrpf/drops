@@ -21,7 +21,7 @@ Misc {
  PrintMG         = 1    # print the parallel multigrid in files
  PrintEx         = 1    # print size of messages bewteen procs
  CheckMG         = 1    # check pmg
- TimeMeas        = 1    # benchmark for accumulate
+ TimeMeas        = 0    # benchmark for accumulate
  Tests           = 100  # number of runs of accumulate
  MultRuns        = 100  # number of multiple accumulations
  PrintMsgSize    = 1    # display message size between all procs according to the index

@@ -1,0 +1,100 @@
+DimX=2, DimY=2, DimZ=1
+#=============================================
+#    DROPS parameter file
+#=============================================
+
+Misc:CheckMG	=	1
+Misc:MultRuns	=	100
+Misc:PrintEx	=	1
+Misc:PrintMG	=	1
+Misc:PrintMsgSize	=	1
+Misc:Tests	=	100
+Misc:TimeMeas	=	0
+Refining:BasicRefX	=	3
+Refining:BasicRefY	=	3
+Refining:BasicRefZ	=	3
+Refining:MigEveryTime	=	1
+Refining:RefAll	=	2
+Refining:RefineStrategy	=	1
+Refining:dx	=	5
+Refining:dy	=	1
+Refining:dz	=	1
+
+-----------------------------------------------------------------------------
+ * Erstelle das initiale Gitter ... 
+-----------------------------------------------------------------------------
+ * Verteile Multigrid und verfeinere 2 Mal regulär
+     Der Balancierungsquotient lautet: 0.0282132
+-----------------------------------------------------------------------------
+ - Writing multigrid into: output/0_MG_MIG_0.mg (for proc 0)
+ * Numeriere die Unbekannten, teile diese dem PMG mit, Schreibe Infos ... 
+   - Index1: 2555, Index2: 16926, XfemIdx: 2755 Unbekannte (akkumuliert)
+-----------------------------------------------------------------------------
+ * Teste ExchangeCL
+   - Timemeasurement for creating Exchange lists (and create numbering) for Index 1...
+   - Kreiere einzelne Exchange-Listen ... 
+     + 1. Exchange-Listen ... 
+     + 2. Exchange-Listen ... 
+    --> Schreibe in Datei: output/0_Exchange_0.mg  
+    --> Schreibe in Datei: output/0_Exchange_1.mg  
+    --> Schreibe in Datei: output/0_Exchange_2.mg  
+  Größe der Nachrichten zwischen den Prozessoren
+  Für Index 1:
+Message Size between procs (in kb)
+	     0      1      2      3 
+      0  0.000  0.688  0.117  0.594
+      1  0.688  0.000  0.508  0.328
+      2  0.117  0.508  0.000  0.789
+      3  0.594  0.328  0.789  0.000
+  Für Index 2:
+Message Size between procs (in kb)
+	     0      1      2      3 
+      0  0.000  2.461  0.352  2.086
+      1  2.461  0.000  1.758  1.117
+      2  0.352  1.758  0.000  2.820
+      3  2.086  1.117  2.820  0.000
+  Für XFEM-Index:
+Message Size between procs (in kb)
+	     0      1      2      3 
+      0  0.000  0.758  0.117  0.633
+      1  0.758  0.000  0.531  0.383
+      2  0.117  0.531  0.000  0.859
+      3  0.633  0.383  0.859  0.000
+   - Checke auf Richtigkeit (2 Mal) ... 
+     + Setze die GID als Werte auf die Knoten, Edges und Tetras
+     + Tausche die Werte aus
+     + Checke ausgetauschten Werte ...
+    --> OK !
+   - Checke die Berechnung von Sysnums auf anderen Prozessoren:
+    --> OK !
+-----------------------------------------------------------------------------
+ * Teste ExchangeBlockCL
+   - Kreiere eine Block-Exchange Klasse ... 
+   - Checke auf Richtigkeit (2 Mal) ... 
+     + Setze die GID als Werte auf die Knoten, Edges und Tetras
+     + Tausche die Werte aus
+     + Checke ausgetauschten Werte ...
+   - Checke for equality of the classes ... 
+    --> OK !
+-----------------------------------------------------------------------------
+ * Checke Paralleles InnereProduct ... 
+ - Global sum of the local squared distance of the accumulated vectors:
+   * old interface vs. new interface: 0.000000
+   * old interface vs. blocked:       0.000000
+   * new interface vs. blocked:       0.000000
+
+ - Differences of inner products (on distributed vectors):
+   * old interface vs. new interface: -0.000000
+   * old interface vs. blocked:       0.000000
+   * new interface vs. blocked:       0.000000
+
+ - Differences of norm (on distributed vectors):
+   * new interface vs. blocked:       0.000000
+
+ - Differences of inner products (on one distributed and one accumulated vector):
+   * new interface vs. blocked:       0.000000
+
+ - Differences of norm (on accumulated vectors):
+   * new interface vs. blocked:       0.000000
+
+-----------------------------------------------------------------------------

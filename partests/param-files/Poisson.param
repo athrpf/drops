@@ -14,13 +14,13 @@ Brick{
   BasicRefX   = 5			# number of basic refines in x direction
   BasicRefY   = 5			# number of basic refines in y direction
   BasicRefZ   = 5           # number of basic refines in z direction
-  dim         = 1.0 1.0 1.0 # dimension of the brick 
+  dim         = 1.0 1.0 1.0 # dimension of the brick
   orig        = 0.0 0.0 0.0 # origin of the brick
 }
 
 # refine strategy
 Refining {
-  RefAll      = 5       # regular refinement or number of adaptive steps
+  RefAll      = 3       # regular refinement or number of adaptive steps
   MarkDrop    = 0       # mark droplet once if non adaptive, if 0 then mark not else marke once. If adaptive mark tetras around drop
   MarkCorner  = 0       # mark corner
   Adpativ     = 0       # to be adaptive or not
@@ -34,7 +34,7 @@ LoadBalancing{
 
 # choose one solver of the pool of solvers
 Solver {
-  Solver      = 2      # solver of Poisson problem: 0 CG, 1 PCG, 2 PGMRes, 3 PGCR, 4 QMR, 5 PQMR, 6 BiCGStab
+  Solver      = 0      # solver of Poisson problem: 0 CG, 1 PCG, 2 PGMRes, 3 PGCR, 4 QMR, 5 PQMR, 6 BiCGStab
   Precond     = 1      # preconditioner for solver (if preconditioned): 0 Dummy, 1 Jac0, 2 SSOR0, 3 BiCGStab (for QMR only Jac0 or Dummy)
   Relax       = 1      # relaxiation parameter for the preconditioner
   PCTol       = 0.001  # tolerance of BiCGStab as preconditioner
@@ -56,6 +56,7 @@ Misc{
   PrintSize     = 0  # display distribution of elements
   CheckMG       = 0  # check the parallel multigrid
   PrintUnknowns = 1  # display number of unknowns
+  PrintTime     = 0  # display timing information
 }
 
 #ensight

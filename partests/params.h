@@ -203,6 +203,7 @@ class ParamParPoissonCL : public ParamBrickCL
     int printSize;                              ///< print information about the multigrid
     int printUnknowns;                          ///< print information about number of unknowns
     int check;                                  ///< check multigrid for sanity
+    int poisson_printTime;                      ///< print timing information
   //@}
   /// \name Ensight
   //@{

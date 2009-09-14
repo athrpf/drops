@@ -5,14 +5,13 @@
 # variables:
 
 DIR = partests
-EXEC = TestRefPar TestExchangePar TestMGSerPar TestInterpolPar \
-       TestGMRESPar \
-       TestPoissonPar TestStokesPar TestInstatStokesPar \
-       TestMzellePar TestMzelleAdaptPar MzelleNMRParamEst TestBrickflowPar \
-       TestFilmPar
+EXEC = TestRefPar TestExchangePar TestPoissonPar TestInterpolPar TestSedPar
+#       TestStokesPar TestInstatStokesPar \
+#       TestMzellePar TestMzelleAdaptPar MzelleNMRParamEst TestBrickflowPar \
+#       TestFilmPar
        
 # compile errors; not converted to Ensight6OutCL:       TestLevelsetPar
-# out of date: TestSedPar TestNavStokesPar TestRefSedPar TwoPhaseFlowPar
+# out of date: TestSedPar TestNavStokesPar TwoPhaseFlowPar
 
 DELETE = $(EXEC)
 CPP = $(wildcard *.cpp)
@@ -45,12 +44,12 @@ TestExchangePar: \
    ../partests/params.o ../levelset/levelset.o ../num/discretize.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-TestMGSerPar: \
+TestPoissonPar: \
    $(PAR_OBJ) \
-   ../partests/TestMGSerPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
+   ../partests/TestPoissonPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
    ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
-   ../num/fe.o ../num/interfacePatch.o ../num/unknowns.o ../out/output.o \
-   ../out/vtkOut.o ../partests/params.o ../levelset/lsetparams.o 
+   ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
+   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestInterpolPar: \
@@ -63,37 +62,48 @@ TestInterpolPar: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 TestSedPar: \
-   $(PAR_OBJ) \
-   ../partests/TestSedPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
-    ../geom/builder.o ../misc/utils.o ../levelset/levelset.o ../levelset/lsetparams.o \
-    ../misc/params.o ../misc/problem.o ../num/discretize.o ../num/unknowns.o \
-    ../num/fe.o ../num/interfacePatch.o ../out/output.o ../out/ensightOut.o \
-    ../out/vtkOut.o ../partests/params.o ../stokes/instatstokes2phase.o ../levelset/surfacetension.o
+    ../partests/TestSedPar.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
+    ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../misc/xfem.o \
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
+    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
+    ../num/interfacePatch.o ../out/vtkOut.o ../surfactant/ifacetransp.o ../levelset/surfacetension.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-TestGMRESPar: \
-   $(PAR_OBJ) \
-   ../partests/TestGMRESPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
-   ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
-   ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
-	$(CXX) -o $@ $^ $(LFLAGS)
+# perform tests
+###############
 
-TestLevelsetPar: \
-   $(PAR_OBJ) \
-   ../partests/TestLevelsetPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
-   ../geom/builder.o ../misc/utils.o ../misc/problem.o \
-   ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../levelset/fastmarch.o ../out/ensightOut.o
-	$(CXX) -o $@ $^ $(LFLAGS)
+test_all: test_exchange test_poisson test_ref test_interpol test_sed
+	echo "All tests performed"
 
-TestPoissonPar: \
-   $(PAR_OBJ) \
-   ../partests/TestPoissonPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../geom/topo.o \
-   ../geom/builder.o ../misc/utils.o ../misc/problem.o ../misc/params.o \
-   ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
-   ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/lsetparams.o ../levelset/surfacetension.o
-	$(CXX) -o $@ $^ $(LFLAGS)
+test_exchange: TestExchangePar
+	echo "Testing ExchangeCL ..."
+	$(ARCH_RUN) -np 4 ./TestExchangePar param-files/Exchange.param > ex_tmp.txt
+	diff ex_tmp.txt ref-out/Exchange_P004.txt ; rm -f ex_tmp.txt
+
+test_poisson: TestPoissonPar
+	echo "Testing Poisson ..."
+	$(ARCH_RUN) -np 4 ./TestPoissonPar param-files/Poisson.param > poisson_tmp.txt
+	diff poisson_tmp.txt ref-out/Poisson_P004.txt ; rm -f poisson_tmp.txt
+
+test_ref: TestRefPar
+	echo "Testing Refinement ... "
+	$(ARCH_RUN) -np 4 ./TestRefPar param-files/Ref.param > ref_tmp.txt
+	diff ref_tmp.txt ref-out/Ref_P004.txt ; rm -f ref_tmp.txt
+
+test_interpol: TestInterpolPar
+	echo "Testing Interpolation ... "
+	$(ARCH_RUN) -np 4 ./TestInterpolPar > interpol_tmp.txt
+	diff interpol_tmp.txt ref-out/Interpol_P004.txt  ; rm -f interpol_tmp.txt
+
+test_sed: TestSedPar
+	echo "Testing sedimenting droplet ..."
+	$(ARCH_RUN) -np 4 ./TestSedPar param-files/Sed.param | sed -re "s/(.* )([0-9\.]+)( seconds| sec\.)/\1XXX\3/" > sed_tmp.txt
+	diff sed_tmp.txt ref-out/Sed_P004.txt ; rm -f sed_tmp.txt
+
+
+# deprecated:
+#############
 
 TestStokesPar: \
    $(PAR_OBJ) \
@@ -169,23 +179,6 @@ TestFilmPar: \
    ../num/unknowns.o ../num/discretize.o ../num/fe.o ../num/interfacePatch.o \
    ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
-
-#TestRefSedPar: \
-#   $(PAR_OBJ) \
-#   ../partests/TestRefSedPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../misc/utils.o\
-#   ../geom/topo.o ../geom/builder.o ../misc/params.o ../levelset/lsetparams.o ../partests/params.o \
-#   ../num/unknowns.o ../misc/problem.o ../out/output.o ../out/vtkOut.o
-#	$(CXX) -o $@ $^ $(LFLAGS)
-
-#TwoPhaseFlowPar: \
-#   $(PAR_OBJ) \
-#   ../partests/TwoPhaseFlowPar.o ../geom/simplex.o ../geom/multigrid.o ../geom/boundary.o ../misc/utils.o \
-#   ../num/unknowns.o ../geom/topo.o ../geom/builder.o ../misc/problem.o ../num/discretize.o\
-#   ../levelset/fastmarch.o ../levelset/lsetparams.o ../partests/params.o ../misc/params.o \
-#   ../levelset/levelset.o ../num/fe.o ../stokes/instatstokes2phase.o ../out/ensightOut.o \
-#   ../out/vtkOut.o ../levelset/surfacetension.o
-#	$(CXX) -o $@ $^ $(LFLAGS)
-
 
 # include common rules:
 include ../Make.common

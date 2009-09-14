@@ -73,6 +73,8 @@ class EllipsoidCL
         return std::abs( avgRad)*d.norm() - avgRad;
     }
     static double GetVolume() { return 4./3.*M_PI*Radius_[0]*Radius_[1]*Radius_[2]; }
+    static Point3DCL& GetCenter() { return Mitte_; }
+    static Point3DCL& GetRadius() { return Radius_; }
 };
 
 Point3DCL EllipsoidCL::Mitte_;
@@ -305,6 +307,7 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
         bnddata = new StokesBndDataCL(6, bc, bfun);
         delete mgb;
     }
+    std::cout << "Generated MG of " << mgp->GetLastLevel() << " levels." << std::endl;
 }
 
 /// \brief Display a detailed list of unknowns

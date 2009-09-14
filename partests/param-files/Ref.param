@@ -15,16 +15,16 @@ Refining {
   InitCond    = 0                   # 0 create brick, 1 read serialized Tetra
   Refined     = 0                   # refinement rufe in the case of InitCond==1
   MarkAll     = 1                   # in the case of InitCond==1 number of levels of serialized tetra
-  MarkDrop    = 2
-  MarkCorner  = 2
+  MarkDrop    = 1
+  MarkCorner  = 1
   MarkingProc = -1                  # -1 all procs should mark
   Strategy    = 0                   # 0 do refs like specified above, 1 Interpolrefs, 2 Read from file, 3 (RefAll, Unrefall)
 }
 
 Coarsening{
  CoarseDrop       = 1
- CoarseAll        = 1
- UnMarkingProc    = 1
+ CoarseAll        = 2
+ UnMarkingProc    = -1
 }
 
 LoadBalancing{
@@ -37,7 +37,7 @@ Misc{
  PrintSize        = 1
  PrintPMG         = 0
  PrintGEO         = 0
- PrintTime        = 1   # display time-information
+ PrintTime        = 0   # display time-information
  CheckAfterRef    = 1   # Check multigrid after refinements
  CheckAfterMig    = 1   # Check multigrid after migrations
  CheckDDD         = 0   # Check for DDD-GCC (Global Consistency Check)

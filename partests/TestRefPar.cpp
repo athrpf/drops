@@ -383,7 +383,8 @@ int main(int argc, char* argv[])
 {
     DROPS::ProcInitCL procinit(&argc, &argv);
     DROPS::ParMultiGridInitCL pmginit;
-    DROPS::ParTimerCL::TestBandwidth(std::cout);
+    if (C.printTime)
+        DROPS::ParTimerCL::TestBandwidth(std::cout);
     try
     {
         const char line[] = "----------------------------------------------------------------------------------";
@@ -657,7 +658,8 @@ int main(int argc, char* argv[])
         if (me==master)
             cout << dline<< endl;
 
-        Times.Print(cout);
+        if (C.printTime)
+            Times.Print(cout);
         if (me==master)
             cout << "Moved Multinodes for refinement: " << movedRefNodes << endl
                     << "Moded Multinodes for coarsening: " << movedCoarseNodes << endl

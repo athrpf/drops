@@ -292,7 +292,14 @@ class ProcCL
     template<typename T>
     static std::valarray<T> Gather(const std::valarray<T>& myData, int proc) {
         std::valarray<T> allData(Size()*myData.size());
-        Gather(Addr(myData), Addr(allData), myData.size(), proc);;
+        Gather(Addr(myData), Addr(allData), myData.size(), proc);
+        return allData;
+    }
+
+    template<typename T>
+    static std::vector<T> Gather(const T& myData, int proc) {
+        std::vector<T> allData( Size());
+        Gather( &myData, Addr(allData), 1, proc);
         return allData;
     }
     //@}

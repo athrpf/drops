@@ -1,592 +1,596 @@
-//**************************************************************************
-// File:    TestSedPar.cpp                                                 *
-// Content: Test case for simple sedimentation                             *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:                                                                   *
-// Begin:   25. Januar 2006                                                *
-//**************************************************************************
-/// \author Oliver Fortmeier
-/// \file TestSedPar.cpp
-/// \brief Test case for simple sedimentation
+/// \file
+/// \brief flow in measurement cell or brick
+/// \author Sven Gross, Joerg Grande, Patrick Esser, IGPM
 
-// include parallel computing!
-#include "parallel/parallel.h"
-#include "parallel/parmultigrid.h"
-#include "parallel/loadbal.h"
-#include "parallel/partime.h"
-#include "parallel/exchange.h"
-#include <ddd.h>
-
- // include geometric computing
 #include "geom/multigrid.h"
 #include "geom/builder.h"
-
- // include numeric computing!
-#include "num/parsolver.h"
-#include "num/parprecond.h"
-#include "num/stokessolver.h"
-#include "num/parstokessolver.h"
+#include "navstokes/instatnavstokes2phase.h"
 #include "stokes/integrTime.h"
-#include "levelset/adaptriang.h"
-#include "levelset/surfacetension.h"
-
- // include in- and output
-#include "partests/params.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
 #include "out/vtkOut.h"
-
- // include problem class
-#include "navstokes/instatnavstokes2phase.h"
 #include "levelset/coupling.h"
+#include "levelset/params.h"
+#include "levelset/adaptriang.h"
+#include "levelset/mzelle_hdr.h"
+#include "levelset/surfacetension.h"
+#include "poisson/transport2phase.h"
+#include "surfactant/ifacetransp.h"
 
- // include standards
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <stdlib.h>
-
-//#define SAMPLE
-#ifdef __SUNPRO_CC
-#  include <math.h>     // for pi
-#  ifdef SAMPLE
-#    include <collectorAPI.h>
-#  endif
+#include "num/stokessolverfactory.h"
+#ifndef _PAR
+#include "num/stokessolver.h"
+#else
+#include "num/parstokessolver.h"
+#include "parallel/loadbal.h"
+#include "parallel/parmultigrid.h"
 #endif
+#include <fstream>
+#include <sstream>
 
 
-enum TimePart{
-    T_create_pmg,
-    T_disc_init,
-    T_create_ex,
-    T_solve_NS_init
-};
-
-DROPS::TimeStoreCL Times(4);
-DROPS::Point3DCL   dim_of_brick;
-
-void SetDescriber()
-{
-    Times.SetDescriber(T_create_pmg,    "Initialization of parallel multigrid");
-    Times.SetDescriber(T_disc_init,     "Discretizing Stokes/Curv for initial velocities");
-    Times.SetDescriber(T_create_ex,     "Create ExchangeCL");
-    Times.SetDescriber(T_solve_NS_init, "Solving NavStokes for initial velocities");
-    Times.SetCounterDescriber("Moved MultiNodes");
-}
-
-DROPS::ParParamMesszelleNsCL C;
-
-const char line[] ="------------------------------------------------------------";
-
-/****************************************************************************
-* P R I N T  M U L T I G R I D  I N  A S C I I  F I L E                     *
-****************************************************************************/
+DROPS::ParamMesszelleNsCL C;
+// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
+//                        -div u = 0
+//                             u = u0, t=t0
 
 
-bool CheckParMultiGrid(DROPS::ParMultiGridCL& pmg)
-{
-    char dat[30];
-    std::sprintf(dat,"output/sane%i.chk",DROPS::ProcCL::MyRank());
-    std::ofstream check(dat);
-    bool pmg_sane = pmg.IsSane(check),
-    mg_sane  = pmg.GetMG().IsSane(check);
-    check.close();
-    return DROPS::Check(pmg_sane && mg_sane);
-}
-
-/// \brief Display number of unknowns
-void DisplayNumUnknowns(const DROPS::MultiGridCL& MG, const DROPS::VecDescCL& x)
-/// accumulated unknowns: accumulation of the unknowns of all processors. Some unknowns
-///   are counted multiple due to the overlapping of edges and vertices
-/// global unknowns: all unknowns are counted just once
-{
-    const DROPS::Ulint acc_num_unk = DROPS::GlobalSum(x.Data.size()),
-                       glo_num_unk = x.RowIdx->GetGlobalNumUnknowns(MG);
-    const DROPS::Uint  idx=x.RowIdx->GetIdx();
-
-    if (DROPS::ProcCL::IamMaster())
-        std::cout << "  + Number of DOF of index "<<idx<<" (accumulated/global):  "
-                  <<acc_num_unk<< "/" <<glo_num_unk<< std::endl;
-}
-
-class ZeroFlowCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-      { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
-    const double SurfTens;
-    const DROPS::Point3DCL g;
-
-    ZeroFlowCL( const DROPS::ParamMesszelleCL& C)
-      : rho( DROPS::JumpCL( C.rhoD, C.rhoF ), DROPS::H_sm, C.sm_eps),
-        mu(  DROPS::JumpCL( C.muD,  C.muF),   DROPS::H_sm, C.sm_eps),
-        SurfTens( C.sigma), g( C.g)    {}
-};
-
-DROPS::SVectorCL<3> Null( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(0.); }
-
-DROPS::SVectorCL<3> One( const DROPS::Point3DCL&, double)
-{ return DROPS::SVectorCL<3>(1.); }
-
-
-DROPS::SVectorCL<3> Inflow( const DROPS::Point3DCL& p, double)
+//brickflow.cpp + brick_transp.cpp + brick_ns_adap.cpp
+DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
 {
     DROPS::SVectorCL<3> ret(0.);
-    const double x = (p[0])*((p[0])-dim_of_brick[0]),
-                 z = (p[2])*((p[2])-dim_of_brick[2]);
+    const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
+                 z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
 
-    ret[1]= x * z + 1.;
-    ret[0]=1.; ret[2]=1.;
+    ret[1]= x * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
     return ret;
 }
 
-// droplet
-double DistanceFct1( const DROPS::Point3DCL& p)
+//microchannel (eindhoven)
+DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
 {
-    DROPS::Point3DCL d= C.Mitte-p;
-    const double avgRad = cbrt(C.Radius[0]*C.Radius[1]* C.Radius[2]);
-    d/= C.Radius/avgRad;
-    return d.norm()-avgRad;
+    DROPS::SVectorCL<3> ret(0.);
+    const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
+                 z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
+
+    ret[0]= y * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
+    return ret;
 }
 
-double sigma;
-double sigmaf (const DROPS::Point3DCL&, double) { return sigma; }
-
-namespace DROPS{
-
-double offset=0;
-double MovingDroplet(const Point3DCL& p)
+//mzelle_ns_adap.cpp + mzelle_instat.cpp
+DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
 {
-    Point3DCL Mitte=C.Mitte; Mitte[1]+=offset;
-    Point3DCL d=Mitte-p;
-    const double avgRad = cbrt(C.Radius[0]*C.Radius[1]* C.Radius[2]);
-    d/= C.Radius/avgRad;
-    return d.norm()-avgRad;
+    DROPS::SVectorCL<3> ret(0.);
+    const double s2= C.exp_RadInlet*C.exp_RadInlet,
+                 r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
+    ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
+    return ret;
 }
 
-double Pressure1(const Point3DCL& p, double=0.)
+typedef DROPS::BndDataCL<> cBndDataCL;
+typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
+const DROPS::BndCondT c_bc[6]= {
+    DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC,
+    DROPS::OutflowBC, DROPS::OutflowBC, DROPS::OutflowBC
+};
+const c_bnd_val_fun c_bfun[6]= {0, 0, 0, 0, 0, 0};
+
+double Initialcneg (const DROPS::Point3DCL& , double)
 {
-    return p[1]/0.03;
+    return C.trp_IniCNeg;
 }
 
-double Pressure2(const Point3DCL& p, double=0.)
+double Initialcpos (const DROPS::Point3DCL& , double)
 {
-    return Pressure1( p) - 100;
+    return C.trp_IniCPos;
 }
 
-Point3DCL Velocity(const Point3DCL& p, double=0.)
+// Initial data and rhs for surfactant transport
+const double a( -13./8.*std::sqrt( 35./M_PI));
+double surf_rhs (const DROPS::Point3DCL& p, double)
 {
-    return Inflow(p,0);
+    return a*(3.*p[0]*p[0]*p[1] - p[1]*p[1]*p[1]);
+}
+double surf_sol (const DROPS::Point3DCL& p, double)
+{
+    return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));
 }
 
-void InitPr(VecDescCL& pr, const MultiGridCL& mg, double (*f)(const Point3DCL&, double))
+namespace DROPS // for Strategy
 {
-    VectorCL& lsg= pr.Data;
-    Uint lvl     = pr.GetLevel(),
-         idx     = pr.RowIdx->GetIdx();
-
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(mg).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(mg).GetTriangVertexEnd(lvl);
-         sit != send; ++sit)
-        if (sit->Unknowns.Exist(idx))
-            lsg[sit->Unknowns(idx)]=f(sit->GetCoord(),0);
-}
-
-/// \brief Check interolated values and give (more or less usefull) information about the interpolation
-template<class Coeff>
-  void CheckInterPol(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
-{
-    std::valarray<double> dist_vals(-1., 10);
-    std::valarray<double> global_dist_vals(-1., 10);
-    double &vel_dist_vert = dist_vals[0], &abs_vel_dist_vert = dist_vals[1],
-           &vel_dist_edge = dist_vals[2], &abs_vel_dist_edge = dist_vals[3],
-           &pr_dist       = dist_vals[4], &abs_pr_dist       = dist_vals[5],
-           &lset_dist_vert= dist_vals[6], &abs_lset_dist_vert= dist_vals[7],
-           &lset_dist_edge= dist_vals[8], &abs_lset_dist_edge= dist_vals[9];
-    double orig_pr_vert=-1., comp_pr_vert=-2.,
-           orig_lset_vert=-1., comp_lset_vert=-2., orig_lset_edge=-1., comp_lset_edge=-2.,
-           dist, min;
-    Point3DCL orig_vel_vert, orig_vel_edge, comp_vel_vert, comp_vel_edge;
-
-    char dat[30];
-    std::sprintf(dat,"output/%i_difference.diff",DROPS::ProcCL::MyRank());
-    static std::ofstream check(dat);
-    static int time=0;
-
-    typename InstatNavierStokes2PhaseP2P1CL<Coeff>::const_DiscPrSolCL  funP=Stokes.GetPrSolution();
-    typename InstatNavierStokes2PhaseP2P1CL<Coeff>::const_DiscVelSolCL funV=Stokes.GetVelSolution();
-    LevelsetP2CL::const_DiscSolCL                                      funL=lset.GetSolution();
-
-    const Uint pr_idx  = funP.GetSolution()->RowIdx->GetIdx();
-    const Uint vel_idx = funV.GetSolution()->RowIdx->GetIdx();
-    const Uint lset_idx= funL.GetSolution()->RowIdx->GetIdx();
-
-    const VertexCL *lset_vert=0, *pr_vert=0, *vel_vert=0;
-    const EdgeCL   *lset_edge=0, *vel_edge=0;
-
-    const MultiGridCL& mg=funP.GetMG();
-
-    for (MultiGridCL::const_TriangVertexIteratorCL sit(mg.GetTriangVertexBegin()); sit!=mg.GetTriangVertexEnd(); ++sit){
-        if (sit->Unknowns.Exist() && sit->Unknowns.Exist(pr_idx)){
-            min  = std::min(funP.val(*sit), Pressure(sit->GetCoord()));
-            dist =    std::fabs(funP.val(*sit)-Pressure(sit->GetCoord()))
-                    / (min==0 ? 1. : min);
-            if (dist>pr_dist){
-                orig_pr_vert= Pressure(sit->GetCoord());
-                comp_pr_vert= funP.val(*sit);
-                pr_dist     = dist;
-                abs_pr_dist = std::fabs(comp_pr_vert-Pressure(sit->GetCoord()));
-                pr_vert     = &*sit;
-            }
-        }
-        if (sit->Unknowns.Exist() && sit->Unknowns.Exist(vel_idx)){
-            min  = std::min(funV.val(*sit).norm(),Velocity(sit->GetCoord()).norm());
-            dist =    (funV.val(*sit)-Velocity(sit->GetCoord())).norm()
-                    / (min==0 ? 1. : min);
-            if (dist>abs_vel_dist_vert){
-                orig_vel_vert    = Velocity(sit->GetCoord());
-                comp_vel_vert    = funV.val(*sit);
-                vel_dist_vert    = dist;
-                abs_vel_dist_vert= (comp_vel_vert-orig_vel_vert).norm();
-                vel_vert         = &*sit;
-            }
-        }
-        if (sit->Unknowns.Exist() && sit->Unknowns.Exist(lset_idx)){
-            min  =    std::min(funL.val(*sit),MovingDroplet(sit->GetCoord()));
-            dist =    std::fabs(funL.val(*sit)-MovingDroplet(sit->GetCoord()))
-                    / (min==0 ? 1. : min);
-            if (dist>lset_dist_vert) {
-                orig_lset_vert    = MovingDroplet(sit->GetCoord());
-                comp_lset_vert    = funL.val(*sit);
-                lset_dist_vert    = dist;
-                abs_lset_dist_vert= std::fabs(comp_lset_vert-orig_lset_vert);
-                lset_vert         = &*sit;
-            }
-        }
-    }
-
-
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit(mg.GetTriangEdgeBegin()); sit!=mg.GetTriangEdgeEnd(); ++sit){
-
-        if (sit->Unknowns.Exist() && sit->Unknowns.Exist(vel_idx)){
-            min  =   std::min(funV.val(*sit).norm(),Velocity(GetBaryCenter(*sit)).norm());
-            dist =    (funV.val(*sit)-Velocity(GetBaryCenter(*sit))).norm()
-                    / (min==0 ? 1. : min);
-            if (dist>abs_vel_dist_edge){
-                orig_vel_edge    = Velocity(GetBaryCenter(*sit));
-                comp_vel_edge    = funV.val(*sit);
-                vel_dist_edge    = dist;
-                abs_vel_dist_edge= (comp_vel_edge-orig_vel_edge).norm();
-                vel_edge         = &*sit;
-            }
-        }
-        if (sit->Unknowns.Exist() && sit->Unknowns.Exist(lset_idx)){
-            min  =    std::min(funL.val(*sit),MovingDroplet(GetBaryCenter(*sit)));
-            dist =    std::fabs(funL.val(*sit)-MovingDroplet(GetBaryCenter(*sit)))
-                    / (min==0 ? 1. : min);
-            if (dist>lset_dist_edge) {
-                orig_lset_edge    = MovingDroplet(GetBaryCenter(*sit));
-                comp_lset_edge    = funL.val(*sit);
-                lset_dist_edge    = dist;
-                abs_lset_dist_edge= std::fabs(comp_lset_edge-orig_lset_edge);
-                lset_edge         = &*sit;
-            }
-        }
-    }
-
-     GlobalMax(Addr(dist_vals), Addr(global_dist_vals), dist_vals.size(), ProcCL::Master());
-
-     if (ProcCL::IamMaster())
-         std::cout  << "Diferences (at time "<<time<<"):"
-                    << "\npr            : "<< std::setw(10) << pr_dist        << ", absolut: "<<abs_pr_dist
-                    << "\nvel (Vertex)  : "<< std::setw(10) << vel_dist_vert  << ", absolut: "<<abs_vel_dist_vert
-                    << "\nvel (Edge)    : "<< std::setw(10) << vel_dist_edge  << ", absolut: "<<abs_vel_dist_edge
-                    << "\nlset (Vertex) : "<< std::setw(10) << lset_dist_vert << ", absolut: "<<abs_lset_dist_vert
-                    << "\nlset (Edge)   : "<< std::setw(10) << lset_dist_edge << ", absolut: "<<abs_lset_dist_edge
-                    << std::endl<<std::endl;
-
-     check  << "["<<ProcCL::MyRank()<<"] Diferences (at time "<<time++<<"):"
-            << "\npr            : "<< std::setw(10) << pr_dist << " (" << std::setw(10) << std::fabs(comp_pr_vert-orig_pr_vert) << ')'
-            << " on vertex "<< std::setw(8) <<pr_vert->GetGID()<<", "<<pr_vert->GetCoord()
-            << ": "<<comp_pr_vert<<" instead of "<<orig_pr_vert
-
-            << "\nvel (Vertex)  : "<< std::setw(10) << vel_dist_vert << " (" << std::setw(10) << (comp_vel_vert-orig_vel_vert).norm() << ')'
-            << " on vertex "<< std::setw(8) <<vel_vert->GetGID()<<", "<<vel_vert->GetCoord()
-            << ": "<<comp_vel_vert<<" instead of "<<orig_vel_vert
-
-            << "\nvel (Edge)    : "<< std::setw(10) << vel_dist_edge << " (" << std::setw(10) << (comp_vel_edge-orig_vel_edge).norm() << ')'
-            << " on Edge   "<< std::setw(8) <<vel_edge->GetGID()<<", "<<GetBaryCenter(*vel_edge)
-            << ": "<<comp_vel_edge<<" instead of "<<orig_vel_edge
-
-            << "\nlset (Vertex) : "<< std::setw(10)<< lset_dist_vert << " (" << std::setw(10) << std::fabs(comp_lset_vert-orig_lset_vert) << ')'
-            << " on vertex "<< std::setw(8) <<lset_vert->GetGID()<<", "<<lset_vert->GetCoord()
-            << ": "<<comp_lset_vert<<" instead of "<<orig_lset_vert
-
-            << "\nlset (Edge)   : "<< std::setw(10)<< lset_dist_edge << " (" << std::setw(10) << std::fabs(comp_lset_edge-orig_lset_edge) << ')'
-            << " on Edge   "<< std::setw(8) <<lset_edge->GetGID()<<", "<<GetBaryCenter(*lset_edge)
-            << ": "<<comp_lset_edge<<" instead of "<<orig_lset_edge
-            << std::endl<<std::endl;
-
-}
-
 
 template<class Coeff>
-  void InitProblemWithDrop(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset)
+void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
 {
-    // Init velocity by a known function: Velocity
-    Stokes.InitVel( &Stokes.v, Velocity);
-    offset=0;
-    MultiGridCL& mg= Stokes.GetMG();
-    lset.Init(MovingDroplet);
-    IdxDescCL p1Idx( P1_FE);
-    p1Idx.CreateNumbering( mg.GetLastLevel(), mg, 0, &lset);
-    VecDescCL p1(p1Idx), p2(p1Idx);
-    InitPr( p1, mg, Pressure1);
-    InitPr( p2, mg, Pressure2);
-    P1toP1X( *Stokes.p.RowIdx, Stokes.p.Data, p1Idx, p1, p2, lset, mg);
+    std::string path( "matrices/");
+    std::ostringstream suffix;
+    suffix << std::setfill( '0') << std::setw( 4) << i << ".txt";
+    WriteToFile( Stokes.A.Data.GetFinest(),   path + "A"   + suffix.str(), "A");
+    WriteToFile( Stokes.B.Data.GetFinest(),   path + "B"   + suffix.str(), "B");
+    WriteToFile( Stokes.M.Data.GetFinest(),   path + "M"   + suffix.str(), "M");
+    WriteToFile( Stokes.prA.Data.GetFinest(), path + "prA" + suffix.str(), "prA");
+    WriteToFile( Stokes.prM.Data.GetFinest(), path + "prM" + suffix.str(), "prM");
+    WriteToFile( Stokes.N.Data.GetFinest(),   path + "N"   + suffix.str(), "N");
+
+    WriteToFile( Stokes.v.Data, path + "v" + suffix.str(), "v");
+    WriteToFile( Stokes.p.Data, path + "p" + suffix.str(), "p");
 }
 
-template<typename Coeff>
-  void SolveCoupledNS(InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
-                      AdapTriangCL& adap)
+template< class StokesProblemT, class LevelSetSolverT>
+TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
+    NSSolverBaseCL<StokesProblemT>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C, LevelsetModifyCL& lsetmod)
 {
-    // type of the problem
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
-    const MultiGridCL& mg=Stokes.GetMG();
-
-    // output
-    const bool adaptive=true;
-    typedef Ensight2PhaseOutCL<StokesProblemT, LevelsetP2CL> EnsightT;
-    typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKT;
-    EnsightT ensight( mg, lset.Phi.RowIdx, Stokes, lset, C.ensDir, C.ensCase, C.geomName, adaptive,
-                      (C.ensight? C.num_steps/C.ensight+1 : 0), C.binary, C.masterOut);
-    VTKT     vtk    ( mg, Stokes, lset, (C.vtk ? C.num_steps/C.vtk+1 : 0),
-                      std::string(C.vtkDir + "/" + C.vtkName), C.vtkBinary, true);
-
-    if (C.ensight)
-        ensight.write();
-    if (C.vtk)
-        vtk.write();
-
-    for (int step= 1; step<=C.num_steps; ++step)
+    if (C.tm_NumSteps == 0) return 0;
+    switch (C.tm_Scheme)
     {
-#ifdef __SUNPRO_CC
-# ifdef SAMPLE
-        char sample[25];
-        std::sprintf(sample,"sample_of_step_%i",step);
-        collector_sample(sample);
-# endif
+        case 1 :
+            return (new LinThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Stab));
+        break;
+        case 3 :
+            std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
+        case 2 :
+            return (new RecThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 4 :
+            return (new OperatorSplitting2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, C.stk_InnerIter, C.stk_InnerTol, C.ns_Nonlinear));
+        break;
+        case 5 :
+            return (new CrankNicolsonScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 6 :
+            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false));
+        break;
+        case 7 :
+            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true));
+        break;
+        case 8 :
+            return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 11 :
+            return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 12 :
+            return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 13 :
+            return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        case 14 :
+            return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
+        break;
+        default : throw DROPSErrCL("Unknown TimeDiscMethod");
+    }
+}
+
+template <class Coeff>
+void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
+                       NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL<Coeff> >& solver)
+{
+#ifndef _PAR
+    TimerCL time;
+#else
+    ParTimerCL time;
+#endif
+    double duration;
+    time.Reset();
+    VelVecDescCL cplM, cplN;
+    VecDescCL curv;
+    cplM.SetIdx( &Stokes.vel_idx);
+    cplN.SetIdx( &Stokes.vel_idx);
+    curv.SetIdx( &Stokes.vel_idx);
+    Stokes.SetIdx();
+    Stokes.SetLevelSet( lset);
+    lset.AccumulateBndIntegral( curv);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.t);
+    Stokes.SetupPrStiff( &Stokes.prA, lset);
+    Stokes.SetupPrMass ( &Stokes.prM, lset);
+    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
+    time.Stop();
+    duration = time.GetTime();
+    std::cout << "Discretizing took "<< duration << " sec.\n";
+    time.Reset();
+    Stokes.b.Data += curv.Data;
+    solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v, Stokes.p.Data, Stokes.b.Data, cplN, Stokes.c.Data, 1.0);
+    time.Stop();
+    duration = time.GetTime();
+    std::cout << "Solving (Navier-)Stokes took "<<  duration << " sec.\n";
+    std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
+}
+
+// For a two-level MG-solver: P2P1 -- P2P1X; canonical prolongations
+void MakeP1P1XProlongation (size_t NumUnknownsVel, size_t NumUnknownsPr, size_t NumUnknownsPrP1,
+    MatrixCL& PVel, MatrixCL& PPr)
+{
+    // finest level
+    //P2-Prolongation (Id)
+    PVel= MatrixCL( std::valarray<double>(  1.0, NumUnknownsVel));
+    //P1-P1X-Prolongation
+    VectorCL diag( 0., NumUnknownsPr);
+    diag[std::slice(0, NumUnknownsPrP1, 1)]= 1.;
+    PPr= MatrixCL( diag);
+}
+
+template<class Coeff>
+void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
+// flow control
+{
+    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+
+    MultiGridCL& MG= Stokes.GetMG();
+    sigma= Stokes.GetCoeff().SurfTens;
+    eps= C.sft_JumpWidth;    lambda= C.sft_RelPos;    sigma_dirt_fac= C.sft_DirtFactor;
+    instat_scalar_fun_ptr sigmap  = 0;
+    instat_vector_fun_ptr gsigmap = 0;
+    if (C.sft_VarTension)
+    {
+        sigmap  = &sigma_step;
+        gsigmap = &gsigma_step;
+    }
+    else
+    {
+        sigmap  = &sigmaf;
+        gsigmap = &gsigma;
+    }
+    SurfaceTensionCL sf( sigmap, gsigmap);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
+
+    LevelsetRepairCL lsetrepair( lset);
+    adap.push_back( &lsetrepair);
+    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    adap.push_back( &velrepair);
+    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    adap.push_back( &prrepair);
+
+    IdxDescCL* lidx= &lset.idx;
+    MLIdxDescCL* vidx= &Stokes.vel_idx;
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
+
+    lset.CreateNumbering( MG.GetLastLevel(), lidx);
+    lset.Phi.SetIdx( lidx);
+    if (C.sft_VarTension)
+        lset.SetSurfaceForce( SF_ImprovedLBVar);
+    else
+        lset.SetSurfaceForce( SF_ImprovedLB);
+
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().VelMGUsed(C))
+        Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
+    if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
+        Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
+    Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
+    Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
+    // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceding CreateNumberings
+//     Stokes.SetNumVelLvl ( 2);
+//     Stokes.SetNumPrLvl  ( 2);
+//     Stokes.vel_idx.GetCoarsest().CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
+//     Stokes.vel_idx.GetFinest().  CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Vel);
+//     Stokes.pr_idx.GetCoarsest(). GetXidx().SetBound( 1e99);
+//     Stokes.pr_idx.GetCoarsest(). CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
+//     Stokes.pr_idx.GetFinest().   CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
+
+    Stokes.SetIdx();
+    Stokes.v.SetIdx  ( vidx);
+    Stokes.p.SetIdx  ( pidx);
+    Stokes.InitVel( &Stokes.v, ZeroVel);
+    switch (C.dmc_InitialCond)
+    {
+#ifndef _PAR
+      case -10: // read from ensight-file [deprecated]
+      {
+        std::cout << "[DEPRECATED] read from ensight-file [DEPRECATED]\n";
+        ReadEnsightP2SolCL reader( MG);
+        reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( C.dmc_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
+        if (Stokes.UsesXFEM()) {
+            VecDescCL pneg( pidx), ppos( pidx);
+            reader.ReadScalar( C.dmc_InitialFile+".prNeg", pneg, Stokes.GetBndData().Pr);
+            reader.ReadScalar( C.dmc_InitialFile+".prPos", ppos, Stokes.GetBndData().Pr);
+            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
+        }
+        else
+            reader.ReadScalar( C.dmc_InitialFile+".pr", Stokes.p, Stokes.GetBndData().Pr);
+      } break;
+#endif
+      case -1: // read from file
+      {
+        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset");
+        ReadFEFromFile( Stokes.v, MG, C.dmc_InitialFile+"velocity");
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
+        ReadFEFromFile( Stokes.p, MG, C.dmc_InitialFile+"pressure", false, &lset.Phi); // pass also level set, as p may be extended
+      } break;
+      case 0: // zero initial condition
+          lset.Init( EllipsoidCL::DistanceFct);
+        break;
+      case 1: // stationary flow
+      {
+        lset.Init( EllipsoidCL::DistanceFct);
+#ifdef _PAR
+        ParJac0CL jacpc( Stokes.vel_idx.GetFinest());
+        typedef ParPCGSolverCL<ParJac0CL> PCGSolverT;
+        typedef SolverAsPreCL<PCGSolverT> PCGPcT;
+        PCGSolverT PCGSolver(200, 1e-2, Stokes.vel_idx.GetFinest(), jacpc, /*rel*/ true, /*acc*/ true);
+        PCGPcT     apc(PCGSolver);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(),
+                                                                           C.stk_OuterIter, C.stk_OuterTol, 0.6, 50, &std::cout);
+#else
+        SSORPcCL ssorpc;
+        PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
+        typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
+        PCGPcT apc( PCGsolver);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.stk_OuterIter, C.stk_OuterTol, 0.6, 50);
+#endif
+        NSSolverBaseCL<StokesProblemT> stokessolver( Stokes, inexactuzawasolver);
+        SolveStatProblem( Stokes, lset, stokessolver);
+      } break;
+      case  2: //flow without droplet
+          lset.Init( &One);
+      break;
+      default : throw DROPSErrCL("Unknown initial condition");
+    }
+
+    DisplayDetailedGeom( MG);
+    DisplayUnks(Stokes, lset, MG);
+
+    const double Vol= EllipsoidCL::GetVolume();
+    std::cout << "initial volume: " << lset.GetVolume()/Vol << std::endl;
+    double dphi= lset.AdjustVolume( Vol, 1e-9);
+    std::cout << "initial volume correction is " << dphi << std::endl;
+    lset.Phi.Data+= dphi;
+    std::cout << "new initial volume: " << lset.GetVolume()/Vol << std::endl;
+
+    cBndDataCL Bnd_c( 6, c_bc, c_bfun);
+    double D[2] = {C.trp_DiffPos, C.trp_DiffNeg};
+    TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.trp_Theta, D, C.trp_H, &Stokes.v, lset,
+        /*t*/ 0., C.tm_StepSize, C.trp_Iter, C.trp_Tol);
+    TransportRepairCL transprepair(massTransp, MG);
+    if (C.trp_DoTransp)
+    {
+        adap.push_back(&transprepair);
+        MLIdxDescCL* cidx= &massTransp.idx;
+        massTransp.CreateNumbering( MG.GetLastLevel(), cidx);
+        massTransp.ct.SetIdx( cidx);
+        if (C.dmc_InitialCond != -1)
+            massTransp.Init( &Initialcneg, &Initialcpos);
+        else
+        {
+            ReadFEFromFile( massTransp.ct, MG, C.dmc_InitialFile+"concentrationTransf");
+        }
+        massTransp.Update();
+        std::cout << massTransp.c.Data.size() << " concentration unknowns,\n";
+    }
+
+    /// \todo rhs beruecksichtigen
+    SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    InterfaceP1RepairCL surf_repair( MG, lset.Phi, surfTransp.ic);
+    if (C.surf_DoTransp)
+    {
+        adap.push_back( &surf_repair);
+        surfTransp.idx.CreateNumbering( MG.GetLastLevel(), MG, &lset.Phi);
+        std::cout << "Surfactant transport: NumUnknowns: " << surfTransp.idx.NumUnknowns() << std::endl;
+        surfTransp.ic.SetIdx( &surfTransp.idx);
+        surfTransp.Init( &surf_sol);
+    }
+
+    // Stokes-Solver
+    StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
+    StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
+//     StokesSolverAsPreCL pc (*stokessolver1, 1);
+//     GCRSolverCL<StokesSolverAsPreCL> gcr(pc, C.stk_OuterIter, C.stk_OuterIter, C.stk_OuterTol, /*rel*/ false);
+//     BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> >* stokessolver =
+//             new BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> > (gcr);
+
+    // Navier-Stokes-Solver
+    NSSolverBaseCL<StokesProblemT>* navstokessolver = 0;
+    if (C.ns_Nonlinear==0.0)
+        navstokessolver = new NSSolverBaseCL<StokesProblemT>(Stokes, *stokessolver);
+    else
+        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
+
+    // Level-Set-Solver
+#ifndef _PAR
+    SSORPcCL ssorpc;
+    GMResSolverCL<SSORPcCL>* gm = new GMResSolverCL<SSORPcCL>( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
+#else
+    ParJac0CL jacparpc( *lidx);
+    ParPreGMResSolverCL<ParJac0CL>* gm = new ParPreGMResSolverCL<ParJac0CL>
+           (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
 
-        ParTimerCL time;
-        if (ProcCL::IamMaster())
-            std::cout << "=================================================================================== Schritt " << step << ":\n"
-                      << "==> Solving coupled Levelset-Navier-Stokes problem ....\n"
-                      << " Idx for vel  "<<Stokes.v.RowIdx->GetIdx()
-                      << "\n Idx for pr   "<<Stokes.p.RowIdx->GetIdx()
-                      << "\n Idx for lset "<<lset.Phi.RowIdx->GetIdx()<<std::endl;
-        DisplayNumUnknowns(adap.GetMG(), Stokes.v);
-        DisplayNumUnknowns(adap.GetMG(), Stokes.p);
-        DisplayNumUnknowns(adap.GetMG(), lset.Phi);
+    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
 
-        offset+=C.Anstroem;
-        lset.Init(MovingDroplet);
-        Stokes.UpdateXNumbering( &Stokes.pr_idx, lset);
-        Stokes.UpdatePressure  ( &Stokes.p);
-        double dummy1, dummy2;
-        Point3DCL dummy3, dummy4, dummy5;
-        Point3DCL bary;
+    // Time discretisation + coupling
+    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
+    if (C.tm_NumSteps != 0) timedisc->SetTimeStep( C.tm_StepSize);
 
-        lset.GetInfo( dummy1, dummy2, bary, dummy3, Stokes.GetVelSolution(), dummy4, dummy5);
-        IF_MASTER
-                std::cout << "Position of the drop "<<bary[1]<<std::endl;
+    if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {
+        stokessolverfactory.SetMatrixA( &navstokessolver->GetAN()->GetFinest());
+            //for Stokes-MGM
+        stokessolverfactory.SetMatrices( &navstokessolver->GetAN()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
+                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+    }
+    else {
+        stokessolverfactory.SetMatrixA( &timedisc->GetUpperLeftBlock()->GetFinest());
+            //for Stokes-MGM
+        stokessolverfactory.SetMatrices( &timedisc->GetUpperLeftBlock()->GetCoarsest(), &Stokes.B.Data.GetCoarsest(),
+                                         &Stokes.M.Data.GetCoarsest(), &Stokes.prM.Data.GetCoarsest(), &Stokes.pr_idx.GetCoarsest());
+    }
 
+    UpdateProlongationCL PVel( Stokes.GetMG(), stokessolverfactory.GetPVel(), &Stokes.vel_idx, &Stokes.vel_idx);
+    adap.push_back( &PVel);
+    UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
+    adap.push_back( &PPr);
+    // For a two-level MG-solver: P2P1 -- P2P1X;
+//     MakeP1P1XProlongation ( Stokes.vel_idx.NumUnknowns(), Stokes.pr_idx.NumUnknowns(),
+//         Stokes.pr_idx.GetFinest().GetXidx().GetNumUnknownsStdFE(),
+//         stokessolverfactory.GetPVel()->GetFinest(), stokessolverfactory.GetPPr()->GetFinest());
 
-        if (ProcCL::IamMaster())
-            std::cout << "==> Adaptive Refinement of MultiGrid"<<std::endl;
+    std::ofstream* infofile = 0;
+    IF_MASTER {
+        infofile = new std::ofstream ((C.ens_EnsCase+".info").c_str());
+    }
+    IFInfo.Init(infofile);
+    IFInfo.WriteHeader();
 
-        adap.UpdateTriang( lset);
-        if (C.ensight && step%C.ensight==0)
-            ensight.write();
-        if (C.vtk && step%C.vtk==0)
-            vtk.write();
+    if (C.tm_NumSteps == 0)
+        SolveStatProblem( Stokes, lset, *navstokessolver);
 
-        time.Stop();
-        double duration=time.GetMaxTime();
-        CheckInterPol(Stokes, lset);
-        int cplmem=GlobalSum(DDD_InfoCplMemory());
-        Uint numdistobj=GlobalSum(Stokes.GetMG().GetNumDistributedObjects());
-        if (ProcCL::IamMaster()){
-             std::cout << "Memory for couplings: "<<cplmem<<"\nnumber of distributed objects "<<numdistobj<<'\n'
-                       << "--> Step "<<step<<" took "<<duration<<" sec."<<std::endl;
+    // for serialization of geometry and numerical data
+    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.trp_DoTransp ? &massTransp : 0, C.rst_Outputfile, C.rst_Overwrite);
+
+    // Initialize Ensight6 output
+    std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
+    Ensight6OutCL ensight( C.ens_EnsCase + ".case", (C.ens_EnsightOut ? C.tm_NumSteps/C.ens_EnsightOut+1 : 0), C.ens_Binary, C.ens_MasterOut);
+    ensight.Register( make_Ensight6Geom      ( MG, MG.GetLastLevel(),   C.ens_GeomName,      ensf + ".geo", true));
+    ensight.Register( make_Ensight6Scalar    ( lset.GetSolution(),      "Levelset",      ensf + ".scl", true));
+    ensight.Register( make_Ensight6Scalar    ( Stokes.GetPrSolution(),  "Pressure",      ensf + ".pr",  true));
+    ensight.Register( make_Ensight6Vector    ( Stokes.GetVelSolution(), "Velocity",      ensf + ".vel", true));
+    ensight.Register( make_Ensight6Scalar    ( ScalarFunAsP2EvalCL( sigmap, 0., &MG, MG.GetLastLevel()),
+                                                                        "Surfaceforce",  ensf + ".sf",  true));
+    if (C.trp_DoTransp) {
+        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution(),"Concentration", ensf + ".c",   true));
+        ensight.Register( make_Ensight6Scalar( massTransp.GetSolution( massTransp.ct),
+                                                                        "TransConc",     ensf + ".ct",  true));
+    }
+    if (C.surf_DoTransp) {
+        ensight.Register( make_Ensight6IfaceScalar( MG, surfTransp.ic,  "InterfaceSol",  ensf + ".sur", true));
+    }
+
+#ifndef _PAR
+    if (Stokes.UsesXFEM())
+        ensight.Register( make_Ensight6P1XScalar( MG, lset.Phi, Stokes.p, "XPressure",   ensf + ".pr", true));
+#endif
+
+    // writer for vtk-format
+    typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
+    VTKWriterT vtkwriter( adap.GetMG(), Stokes, lset,  (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
+                          std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+
+    if (C.ens_EnsightOut)
+        ensight.Write( 0.);
+    if (C.vtk_VTKOut)
+        vtkwriter.write();
+
+    for (int step= 1; step<=C.tm_NumSteps; ++step)
+    {
+        std::cout << "============================================================ step " << step << std::endl;
+
+        IFInfo.Update( lset, Stokes.GetVelSolution());
+        IFInfo.Write(Stokes.t);
+        if (C.surf_DoTransp) surfTransp.InitOld();
+        //timedisc->DoStep( C.cpl_Iter);
+        Point3DCL newCenter= EllipsoidCL::GetCenter(); newCenter[1]+= C.exp_InflowVel;
+        EllipsoidCL::Init( newCenter, EllipsoidCL::GetRadius());
+        lset.Init( EllipsoidCL::DistanceFct);
+
+        if (C.trp_DoTransp) massTransp.DoStep( step*C.tm_StepSize);
+        if (C.surf_DoTransp) {
+            surfTransp.DoStep( step*C.tm_StepSize);
+            BndDataCL<> ifbnd( 0);
+            std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, make_P1Eval(  MG, ifbnd, surfTransp.ic, step*C.tm_StepSize)) << '\n';
         }
+
+        // WriteMatrices( Stokes, step);
+
+        // grid modification
+        bool doGridMod= C.ref_Freq && step%C.ref_Freq == 0;
+        if (doGridMod) {
+            adap.UpdateTriang( lset);
+            if (adap.WasModified()) {
+//                timedisc->Update();
+                if (C.trp_DoTransp) massTransp.Update();
+                if (C.rst_Serialization)
+                    ser.Write();
+            }
+        }
+
+        if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)
+            ensight.Write( Stokes.t);
+        if (C.vtk_VTKOut && step%C.vtk_VTKOut==0)
+            vtkwriter.write();
     }
+    IFInfo.Update( lset, Stokes.GetVelSolution());
+    IFInfo.Write(Stokes.t);
+    std::cout << std::endl;
+    delete timedisc;
+    delete navstokessolver;
+    delete stokessolver;
+    if (infofile) delete infofile;
+//     delete stokessolver1;
 }
 
-template<class Coeff>
-  void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
-{
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
-    MultiGridCL& mg= pmg.GetMG();
-    sigma= Stokes.GetCoeff().SurfTens;
-
-    ParTimerCL time;
-    SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( mg, sf, C.lset_theta, C.lset_SD, -1, C.lset_iter, C.lset_tol, C.CurvDiff, C.NarrowBand);
-    lset.SetSurfaceForce( SF_ImprovedLB);
-
-    AdapTriangCL adapt( pmg, lb, C.ref_width, 0, C.ref_flevel);
-
-    MLIdxDescCL *vidx= &Stokes.vel_idx,
-                *pidx= &Stokes.pr_idx;
-    IdxDescCL   *lidx= &lset.idx;
-    VecDescCL *v   = &Stokes.v,
-              *p   = &Stokes.p,
-              *l   = &lset.Phi;
-
-    int cplmem;
-    Uint numdistobj;
-    double dur;
-
-    offset=0;
-    time.Reset();
-    adapt.MakeInitialTriang(::DistanceFct1);
-    time.Stop();
-    dur=time.GetTime();
-    cplmem=GlobalSum(DDD_InfoCplMemory());
-    numdistobj=GlobalSum(mg.GetNumDistributedObjects());
-    if (ProcCL::IamMaster()){
-            std::cout << "Memory for couplings: "<<cplmem<<"\nnumber of distributed objects "<<numdistobj<<'\n'
-                    << "--> Step 0 took "<<dur<<" sec."<<std::endl;
-    }
-
-    LevelsetRepairCL lsetrepair( lset, pmg);
-    adapt.push_back( &lsetrepair);
-    VelocityRepairCL<StokesProblemT> velrepair( Stokes, pmg);
-    adapt.push_back( &velrepair);
-    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset, pmg);
-    adapt.push_back( &prrepair);
-
-    // Init levelset
-    lset.CreateNumbering( mg.GetLastLevel(), lidx);
-    l->SetIdx( lidx);
-    lset.Init(MovingDroplet);
-
-    Stokes.CreateNumberingVel( mg.GetLastLevel(), vidx);
-    Stokes.CreateNumberingPr ( mg.GetLastLevel(), pidx, 0, &lset);
-
-    if (DROPS::ProcCL::IamMaster())
-        std::cout << " - Distribution of elements of the multigrid of level "<<mg.GetLastLevel()<<"\n";
-    mg.SizeInfo(std::cout);
-
-    // Tell matrices and vectors about the numbering
-    v->SetIdx( vidx);               p->SetIdx( pidx);
-    Stokes.b.SetIdx( vidx);         Stokes.c.SetIdx( pidx);
-    Stokes.A.SetIdx(vidx, vidx);    Stokes.B.SetIdx(pidx, vidx);
-    Stokes.M.SetIdx(vidx, vidx);    Stokes.N.SetIdx(vidx, vidx);
-    Stokes.prM.SetIdx( pidx, pidx); Stokes.prA.SetIdx( pidx, pidx);
-
-    //Setup initial problem
-    if (ProcCL::IamMaster())
-        std::cout << "=================================================================================== Init:\n"
-                    << "==> Initialize Problem\n";
-
-    InitProblemWithDrop(Stokes, lset);
-    SolveCoupledNS(Stokes, lset, adapt);
-}
 } // end of namespace DROPS
-
 
 int main (int argc, char** argv)
 {
-  DROPS::ProcInitCL procinit(&argc, &argv);
-  DROPS::ParMultiGridInitCL pmginit;
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+#endif
   try
   {
+#ifdef _PAR
+    DROPS::ParMultiGridInitCL pmginit;
+#endif
+    std::ifstream param;
     if (argc!=2)
     {
-        IF_MASTER
-          std::cout << "You have to specify one parameter:\n\t"
-                    << argv[0] << " <param_file>" << std::endl;
-        return 1;
+        std::cout << "Using default parameter file: risingdroplet.param\n";
+        param.open( "risingdroplet.param");
     }
-    std::ifstream param( argv[1]);
+    else
+        param.open( argv[1]);
     if (!param)
     {
-        IF_MASTER
-          std::cout << "error while opening parameter file\n";
+        std::cerr << "error while opening parameter file\n";
         return 1;
     }
     param >> C;
     param.close();
-    IF_MASTER
-      std::cout << C << std::endl;
+    std::cout << C << std::endl;
 
-    DROPS::ParTimerCL alltime;
-    SetDescriber();
-    DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
-//     DDD_SetOption(OPT_INFO_XFER, XFER_SHOW_MSGSALL);
-
-    typedef ZeroFlowCL                                    CoeffT;
+    typedef DROPS::ZeroFlowCL                             CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
-    int nx, ny, nz;
-    std::string mesh( C.meshfile), delim("x@");
-    size_t idx;
-    while ((idx= mesh.find_first_of( delim)) != std::string::npos )
-        mesh[idx]= ' ';
-    std::istringstream brick_info( mesh);
-    brick_info >> dim_of_brick[0] >> dim_of_brick[1] >> dim_of_brick[2] >> nx >> ny >> nz;
-    if (!brick_info)
-    {
-        std::cout << "error while reading geometry information: " << mesh << "\n";
-        return 1;
-    }
+    DROPS::MultiGridCL* mg= 0;
+    DROPS::StokesBndDataCL* bnddata= 0;
 
-    C.r_inlet= dim_of_brick[0]/2;
-    DROPS::Point3DCL orig, px, py, pz;
-    px[0]= dim_of_brick[0]; py[1]= dim_of_brick[1]; pz[2]= dim_of_brick[2];
+    CreateGeom(mg, bnddata, C.dmc_GeomType == 0 ? InflowCell : (C.dmc_BoundaryType == 4 ? InflowChannel : InflowBrick),
+               C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
 
-    DROPS::ParTimerCL time;
-    DROPS::MGBuilderCL * mgb;
-    if (DROPS::ProcCL::IamMaster())
-        mgb = new DROPS::BrickBuilderCL(orig, px, py, pz, nx, ny, nz);
-    else
-        mgb = new DROPS::EmptyBrickBuilderCL(orig, px, py, pz);
+    DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
+    DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_RefineStrategy : -1));
+    // If we read the Multigrid, it shouldn't be modified;
+    // otherwise the pde-solutions from the ensight files might not fit.
+    if (C.rst_Inputfile == "none")
+        adap.MakeInitialTriang( DROPS::EllipsoidCL::DistanceFct);
 
-    const bool bc[6]=
-      {false, false, true, false, false, false};    // Rohr
-    const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-      { &One, &One, &One, &Inflow, &One, &One};
-//      { &Null, &Null, &Null, &Inflow, &Null, &Null};
+    std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
+#ifdef _PAR
+    if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
+        std::cout << "As far as I can tell the ParMultigridCl is sane\n";
+#endif
+    MyStokesCL prob( *mg, DROPS::ZeroFlowCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
-    DROPS::MultiGridCL mg(*mgb);
-    pmg.AttachTo(mg);
+    Strategy( prob, adap);    // do all the stuff
 
-    DROPS::LoadBalHandlerCL lb(mg);
-    lb.DoInitDistribution(DROPS::ProcCL::Master());
-    switch (C.refineStrategy){
-        case 0 : lb.SetStrategy(DROPS::NoMig);     break;
-        case 1 : lb.SetStrategy(DROPS::Adaptive);  break;
-        case 2 : lb.SetStrategy(DROPS::Recursive); break;
-        case 3 : lb.SetStrategy(DROPS::Identity);  break;
-    }
-
-    const DROPS::BoundaryCL& bnd= mg.GetBnd();
-    const DROPS::BndIdxT num_bnd= bnd.GetNumBndSeg();
-
-    MyStokesCL prob(mg, ZeroFlowCL(C), DROPS::StokesBndDataCL( num_bnd, bc, bnd_fun), DROPS::P1X_FE /*default omit_bound*/);
-    Strategy( prob, pmg, lb);    // do all the stuff
-
-    alltime.Stop();
-    Times.SetOverall(alltime.GetMaxTime());
-    Times.Print(std::cout);
+    delete mg;
+    delete bnddata;
+    return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }
-  return 0;
 }
 

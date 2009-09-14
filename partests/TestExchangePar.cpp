@@ -985,7 +985,8 @@ int main (int argc, char** argv)
 
         alltime.Stop();
         Times.SetOverall(alltime.GetMaxTime());
-        Times.Print(cout);
+        if (C.timeMeas)
+            Times.Print(cout);
         return 0;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }

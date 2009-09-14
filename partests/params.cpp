@@ -141,6 +141,7 @@ void ParamParPoissonCL::RegisterParams()
     rp_.RegInt( printSize,     "PrintSize");
     rp_.RegInt( check,         "CheckMG");
     rp_.RegInt( printUnknowns, "PrintUnknowns");
+    rp_.RegInt( poisson_printTime, "PrintTime");
     rp_.EndGroup();
 
     rp_.BeginGroup( "Ensight");

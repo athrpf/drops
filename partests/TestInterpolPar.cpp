@@ -50,7 +50,8 @@ const DROPS::Uint refineStrategy=2; // 0 no loadbalancing, 1 adaptive repart, 2 
 const int steps=4;
 const double dx=3., dy=6., dz=3.;
 const char line[] ="------------------------------------------------------------";
-const bool writefiles=false, printNumSimplices=false, printEnsight=true;
+const bool writefiles=false, printNumSimplices=false, printEnsight=false;
+const bool printTime=false;
 
 enum TimePart{
     T_refine,
@@ -610,7 +611,7 @@ void Strategy(ParMultiGridCL& pmg, LoadBalHandlerCL& lb)
 
         timer.Stop();
         double duration= timer.GetMaxTime();
-        if (ProcCL::IamMaster())
+        if (printTime)
             std::cout << "Step "<<ref<<" took "<<duration<<" sec"<<std::endl;
     }
 }
@@ -684,7 +685,8 @@ int main (int argc, char** argv)
 
     alltime.Stop();
     Times.SetOverall(alltime.GetMaxTime());
-    Times.Print(std::cout);
+    if (printTime)
+        Times.Print(std::cout);
 
     return 0;
   }

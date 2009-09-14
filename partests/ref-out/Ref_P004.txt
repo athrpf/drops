@@ -1,0 +1,207 @@
+DimX=2, DimY=2, DimZ=1
+#=============================================
+#    DROPS parameter file
+#=============================================
+
+Brick:BasicRefX	=	4
+Brick:BasicRefY	=	4
+Brick:BasicRefZ	=	4
+Brick:dim	=	1 1 1 
+Brick:orig	=	0 0 0 
+Coarsening:CoarseAll	=	2
+Coarsening:CoarseDrop	=	1
+Coarsening:UnMarkingProc	=	-1
+LoadBalancing:CoarseStrategy	=	2
+LoadBalancing:MiddleMig	=	0
+LoadBalancing:RefineStrategy	=	1
+Misc:CheckAfterMig	=	1
+Misc:CheckAfterRef	=	1
+Misc:CheckDDD	=	0
+Misc:InitPrefix	=	./geometry/
+Misc:PrintGEO	=	0
+Misc:PrintPMG	=	0
+Misc:PrintSize	=	1
+Misc:PrintTime	=	0
+Refining:InitCond	=	0
+Refining:MarkAll	=	1
+Refining:MarkCorner	=	1
+Refining:MarkDrop	=	1
+Refining:MarkingProc	=	-1
+Refining:Refined	=	0
+Refining:Strategy	=	0
+
+==================================================================================
+ + Erstelle initiale Grid (Wuerfel der Laenge 1) auf Prozessor 0: ...
+/ Structure of DDD--object 'Vertex', id 1, 88 byte
+|--------------------------------------------------------------
+|    0     8    local data
+|    8    24    global data
+|   32    17    local data
+|   49     7    gap (local data)
+|   56    16    ddd-header
+|   80     8    local data
+\--------------------------------------------------------------
+/ Structure of DDD--object 'Edge', id 2, 72 byte
+|--------------------------------------------------------------
+|    0    24    obj pointer (refs Vertex)
+|   24     4    global data
+|   28     5    local data
+|   33     7    gap (local data)
+|   40    16    ddd-header
+\--------------------------------------------------------------
+/ Structure of DDD--object 'Face', id 3, 72 byte
+|--------------------------------------------------------------
+|    0    32    gap (local data)
+|   32     2    global data
+|   34     1    local data
+|   35     5    gap (local data)
+|   40    16    ddd-header
+\--------------------------------------------------------------
+/ Structure of DDD--object 'Tetraeder', id 4, 168 byte
+|--------------------------------------------------------------
+|    0     8    gap (local data)
+|    8     4    global data
+|   12     4    gap (local data)
+|   16    16    ddd-header
+|   32    32    obj pointer (refs Vertex)
+|   64    48    obj pointer (refs Edge)
+|  112    32    obj pointer (refs Face)
+|  144     8    obj pointer (refs Tetraeder)
+|  152     8    gap (local data)
+|  160     8    local data
+\--------------------------------------------------------------
+/ Structure of data--object 'Scalar-Unknown-Transfer-Type', id 5, 16 byte
+|--------------------------------------------------------------
+|    0     4    global data
+|    4     4    gap (local data)
+|    8     8    global data
+\--------------------------------------------------------------
+/ Structure of data--object 'Vector-Unknown-Transfer-Type', id 6, 32 byte
+|--------------------------------------------------------------
+|    0     4    global data
+|    4     4    gap (local data)
+|    8    24    global data
+\--------------------------------------------------------------
+/ Structure of data--object 'Boundary-Points', id 7, 24 byte
+|--------------------------------------------------------------
+|    0     2    global data
+|    2     6    gap (local data)
+|    8    16    global data
+\--------------------------------------------------------------
+/ Structure of data--object 'Tetraeder-Pointer', id 8, 8 byte
+|--------------------------------------------------------------
+|    0     8    obj pointer (refs Tetraeder)
+\--------------------------------------------------------------
+  - Erstelle dualen reduzierten Graphen ...
+  - Berechne eine Graphpartitionierung ...
+  - Migration ...
+  - Verteilung der Elemente:
+     On Proc 0 are: 46 Verts, 182 Edges, 232 Faces, 95 Tetras
+     On Proc 1 are: 0 Verts, 46 Edges, 182 Faces, 232 Tetras
+     On Proc 2 are: 95 Verts, 0 Edges, 46 Faces, 182 Tetras
+     On Proc 3 are: 232 Verts, 95 Edges, 0 Faces, 44 Tetras
+  Accumulated: 373 Verts, 323 Edges, 460 Faces, 553 Tetras
+Memory used for geometry: 0.2 MB (15.3% verts, 10.8% edges, 15.4% faces, 58.4% tetras)
+  - Check des parallelen MultiGrids ... OK
+==================================================================================
+ Verfeinere das Gitter nun 1 mal global, 1 mal in der Mitte um den Tropfen
+ und 1 mal um der Ecke (0,0,0)
+ Es wird die Strategie AdaptiveRefine verwendet. Es markiert der Prozessor -1
+==================================================================================
+ + Refine 0 : all ...
+  - Check des parallelen MultiGrids ... OK
+   DDD-GCC (Global Consistency Check)
+   DDD-GCC ready (0 errors)
+  - Erstelle Graphen ... 
+  - Erstelle Partitionen ... 
+  - Migration ... 
+  - Verteilung der Elemente:
+     On Proc 0 are: 228 Verts, 1337 Edges, 1920 Faces, 855 Tetras
+     On Proc 1 are: 95 Verts, 228 Edges, 1337 Faces, 1920 Tetras
+     On Proc 2 are: 855 Verts, 95 Edges, 228 Faces, 1337 Tetras
+     On Proc 3 are: 1920 Verts, 855 Edges, 95 Faces, 224 Tetras
+  Accumulated: 3098 Verts, 2515 Edges, 3580 Faces, 4336 Tetras
+Memory used for geometry: 1.6 MB (15.9% verts, 10.6% edges, 15.1% faces, 58.4% tetras)
+  - Check des parallelen MultiGrids ... OK
+----------------------------------------------------------------------------------
+ + Refine 1 : drop ...
+  - Check des parallelen MultiGrids ... OK
+   DDD-GCC (Global Consistency Check)
+   DDD-GCC ready (0 errors)
+  - Erstelle Graphen ... 
+  - Erstelle Partitionen ... 
+  - Migration ... 
+  - Verteilung der Elemente:
+     On Proc 0 are: 242 Verts, 1425 Edges, 2066 Faces, 927 Tetras
+     On Proc 1 are: 116 Verts, 240 Edges, 1407 Faces, 2025 Tetras
+     On Proc 2 are: 903 Verts, 107 Edges, 247 Faces, 1459 Tetras
+     On Proc 3 are: 2128 Verts, 959 Edges, 128 Faces, 236 Tetras
+  Accumulated: 3389 Verts, 2731 Edges, 3848 Faces, 4647 Tetras
+Memory used for geometry: 1.8 MB (16.2% verts, 10.7% edges, 15.0% faces, 58.2% tetras)
+  - Check des parallelen MultiGrids ... OK
+----------------------------------------------------------------------------------
+ + Refine 2 : corner ...
+  - Check des parallelen MultiGrids ... OK
+   DDD-GCC (Global Consistency Check)
+   DDD-GCC ready (0 errors)
+  - Erstelle Graphen ... 
+  - Erstelle Partitionen ... 
+  - Migration ... 
+  - Verteilung der Elemente:
+     On Proc 0 are: 286 Verts, 1672 Edges, 2435 Faces, 1094 Tetras
+     On Proc 1 are: 151 Verts, 274 Edges, 1635 Faces, 2414 Tetras
+     On Proc 2 are: 1098 Verts, 186 Edges, 283 Faces, 1661 Tetras
+     On Proc 3 are: 2420 Verts, 1088 Edges, 176 Faces, 258 Tetras
+  Accumulated: 3955 Verts, 3220 Edges, 4529 Faces, 5427 Tetras
+Memory used for geometry: 2.1 MB (16.2% verts, 10.8% edges, 15.2% faces, 57.9% tetras)
+  - Check des parallelen MultiGrids ... OK
+==================================================================================
+ Vergroebere nun das Gitter zunaechst 1 mal um den Tropfen herum und dann 2 ueberall
+ Es wird die Strategie PartKWay verwendet. Es markiert der Prozessor -1
+==================================================================================
+ + Coarse drop (0) ... 
+  - Check des parallelen MultiGrids ... OK
+  - Erstelle Graphen ... 
+  - Erstelle Partitionen ... 
+  - Migration ... 
+  - Verteilung der Elemente:
+     On Proc 0 are: 300 Verts, 1768 Edges, 2562 Faces, 1147 Tetras
+     On Proc 1 are: 202 Verts, 326 Edges, 1839 Faces, 2636 Tetras
+     On Proc 2 are: 1177 Verts, 260 Edges, 314 Faces, 1826 Tetras
+     On Proc 3 are: 2603 Verts, 1152 Edges, 192 Faces, 277 Tetras
+  Accumulated: 4282 Verts, 3506 Edges, 4907 Faces, 5886 Tetras
+Memory used for geometry: 2.2 MB (16.2% verts, 10.8% edges, 15.2% faces, 57.8% tetras)
+  - Check des parallelen MultiGrids ... OK
+----------------------------------------------------------------------------------
+ + Coarse all (1) ... 
+  - Check des parallelen MultiGrids ... OK
+  - Erstelle Graphen ... 
+  - Erstelle Partitionen ... 
+  - Migration ... 
+  - Verteilung der Elemente:
+     On Proc 0 are: 90 Verts, 455 Edges, 644 Faces, 283 Tetras
+     On Proc 1 are: 58 Verts, 84 Edges, 429 Faces, 609 Tetras
+     On Proc 2 are: 267 Verts, 45 Edges, 125 Faces, 541 Tetras
+     On Proc 3 are: 711 Verts, 298 Edges, 71 Faces, 92 Tetras
+  Accumulated: 1126 Verts, 882 Edges, 1269 Faces, 1525 Tetras
+Memory used for geometry: 0.6 MB (16.4% verts, 10.5% edges, 15.1% faces, 57.9% tetras)
+  - Check des parallelen MultiGrids ... OK
+----------------------------------------------------------------------------------
+ + Coarse all (2) ... 
+  - Check des parallelen MultiGrids ... OK
+  - Erstelle Graphen ... 
+  - Erstelle Partitionen ... 
+  - Migration ... 
+  - Verteilung der Elemente:
+     On Proc 0 are: 46 Verts, 181 Edges, 232 Faces, 96 Tetras
+     On Proc 1 are: 0 Verts, 48 Edges, 186 Faces, 235 Tetras
+     On Proc 2 are: 96 Verts, 0 Edges, 48 Faces, 187 Tetras
+     On Proc 3 are: 236 Verts, 96 Edges, 0 Faces, 47 Tetras
+  Accumulated: 378 Verts, 325 Edges, 466 Faces, 565 Tetras
+Memory used for geometry: 0.2 MB (15.2% verts, 10.7% edges, 15.4% faces, 58.7% tetras)
+  - Check des parallelen MultiGrids ... OK
+==================================================================================
+Moved Multinodes for refinement: 92
+Moded Multinodes for coarsening: 1031
+==================================================================================
+Shuting down ...

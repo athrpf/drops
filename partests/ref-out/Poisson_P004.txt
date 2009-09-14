@@ -1,0 +1,72 @@
+DimX=2, DimY=2, DimZ=1
+#=============================================
+#    DROPS parameter file
+#=============================================
+
+Brick:BasicRefX	=	5
+Brick:BasicRefY	=	5
+Brick:BasicRefZ	=	5
+Brick:dim	=	1 1 1 
+Brick:orig	=	0 0 0 
+Ensight:EnsCase	=	Poisson
+Ensight:EnsDir	=	ensight_par
+Ensight:GeomName	=	Wuerfel
+Ensight:VarName	=	Temperatur
+Ensight:ensight	=	0
+LoadBalancing:RefineStrategy	=	1
+LoadBalancing:TransferUnknowns	=	1
+Misc:CheckMG	=	0
+Misc:PrintGEO	=	0
+Misc:PrintMG	=	0
+Misc:PrintSize	=	0
+Misc:PrintTime	=	0
+Misc:PrintUnknowns	=	1
+Poisson:nu	=	1
+Refining:Adpativ	=	0
+Refining:MarkCorner	=	0
+Refining:MarkDrop	=	0
+Refining:RefAll	=	3
+Solver:Accur	=	1
+Solver:Iteration	=	1000
+Solver:Modified	=	1
+Solver:PCIter	=	200
+Solver:PCTol	=	0.001
+Solver:PreCondMeth	=	1
+Solver:Precond	=	1
+Solver:Relative	=	0
+Solver:Relax	=	1
+Solver:Restart	=	50
+Solver:Solver	=	0
+Solver:Tol	=	1e-10
+Solver:UseMGS	=	0
+
+----------------------------------------------------------------------------------
+ Create initial grid and distribution ... 
+ Refine (0) regular ...
+ Refine (1) regular ...
+ Refine (2) regular ...
+ Number of unknowns (accumulated): 62492
+ Number of real unknowns:          59319
+ - Proc 0: 15520 unknowns
+ - Proc 1: 15456 unknowns
+ - Proc 2: 15768 unknowns
+ - Proc 3: 15748 unknowns
+----------------------------------------------------------------------------------
+ Discretize ... 
+----------------------------------------------------------------------------------
+ Solve the linear system with CG method: iter=1000, tol=1e-10
+ using accur version for inner products
+ using modificated version
+ using standard Gramm-Schmidt for orthogonalization
+ - Iterations:  105
+ - Residuum:    9.95156e-11
+ - real Resid:  9.92598e-11
+ - Norm(b):     0.0474079
+----------------------------------------------------------------------------------
+ Check the solution ... 
+Abweichung von der tatsaechlichen Loesung:
+  2-Norm= 3.30263
+w-2-Norm= 0.0135601
+max-Norm= 0.0357493
+ L2-Norm= 0.164676
+----------------------------------------------------------------------------------
