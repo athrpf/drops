@@ -134,7 +134,7 @@ Ensight {
 
 #VTK output
 VTK{
-  VTKOut        = 1
+  VTKOut        = 0
   VTKDir        = vtk
   VTKName       = sed
   Binary        = 0

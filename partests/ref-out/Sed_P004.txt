@@ -93,34 +93,35 @@ Transp:Tol	=	1e-10
 VTK:Binary	=	0
 VTK:VTKDir	=	vtk
 VTK:VTKName	=	sed
-VTK:VTKOut	=	1
+VTK:VTKOut	=	0
 
 Generated MG of 0 levels.
 MakeInitialTriang: 4 refinements in XXX seconds
 last level: 2
-     On Proc 0 are: 442 Verts, 2751 Edges, 4362 Faces, 2064 Tetras
-     On Proc 1 are: 357 Verts, 465 Edges, 3014 Faces, 4849 Tetras
-     On Proc 2 are: 2319 Verts, 653 Edges, 529 Faces, 2778 Tetras
-     On Proc 3 are: 4105 Verts, 1858 Edges, 83 Faces, 432 Tetras
-  Accumulated: 7223 Verts, 5727 Edges, 7988 Faces, 10123 Tetras
-Memory used for geometry: 3.8 MB (16.1% verts, 10.5% edges, 14.6% faces, 58.8% tetras)
+     On Proc 0 are: 397 Verts, 2608 Edges, 4222 Faces, 2028 Tetras
+     On Proc 1 are: 360 Verts, 485 Edges, 3097 Faces, 4955 Tetras
+     On Proc 2 are: 2365 Verts, 683 Edges, 513 Faces, 2744 Tetras
+     On Proc 3 are: 4100 Verts, 1872 Edges, 96 Faces, 440 Tetras
+  Accumulated: 7222 Verts, 5648 Edges, 7928 Faces, 10167 Tetras
+Memory used for geometry: 3.8 MB (16.1% verts, 10.3% edges, 14.5% faces, 59.1% tetras)
 As far as I can tell the MultigridCL is sane.
+Cannot open file output/sane0.chk to write sanity check output. Using std::cout
 As far as I can tell the ParMultigridCl is sane
 Detailed information about the parallel multigrid:
 #(master tetras on finest level):    6818
-#(all Faces on finest level):        14684
-#(distributed Faces on fines level): 1302
-Ratio between max/min Tetra: 1.06543 max Ratio DistFace/AllFace: 12.0055
+#(all Faces on finest level):        14564
+#(distributed Faces on fines level): 1062
+Ratio between max/min Tetra: 1.06475 max Ratio DistFace/AllFace: 9.17874
   Proc  #Tetra  #Faces  #DistFaces  %DistFaces
-     0    1707    3665         440     12.0055
-     1    1666    3524         340     9.64813
-     2    1775    3939         183     4.64585
-     3    1670    3556         339     9.53318
+     0    1668    3519         323     9.17874
+     1    1682    3569         310     8.68591
+     2    1776    3919         165     4.21026
+     3    1692    3557         264     7.42198
   + Number of DOF
             global     accum       max       min     ratio  |     max_acc   min_acc ratio_acc
-    pr        1380      1758       528       392   1.34694  |         118        44   2.68182
-    vel      25410     29316      8172      5991   1.36405  |        1289       446   2.89013
-    scl       9975     11379      3219      2641   1.21886  |         454       179   2.53631
+    pr        1377      1692       510       386   1.32124  |          87        37   2.35135
+    vel      25401     28605      7563      6012   1.25798  |         946       416   2.27404
+    scl       9972     11125      3162      2627   1.20365  |         334       156   2.14103
 
 initial volume: 0.992126
 initial volume correction is -0.000655965
@@ -130,46 +131,46 @@ Discretizing took XXX sec.
 ============================================================ step 1
 UpdateTriang: 4 refinements/interpolations in XXX seconds
 last level: 2
-     On Proc 0 are: 421 Verts, 2639 Edges, 4214 Faces, 2005 Tetras
-     On Proc 1 are: 346 Verts, 451 Edges, 2922 Faces, 4694 Tetras
-     On Proc 2 are: 2239 Verts, 648 Edges, 494 Faces, 2614 Tetras
-     On Proc 3 are: 3901 Verts, 1782 Edges, 71 Faces, 419 Tetras
-  Accumulated: 6907 Verts, 5520 Edges, 7701 Faces, 9732 Tetras
-Memory used for geometry: 3.6 MB (16.1% verts, 10.5% edges, 14.7% faces, 58.8% tetras)
+     On Proc 0 are: 399 Verts, 2558 Edges, 4111 Faces, 1966 Tetras
+     On Proc 1 are: 355 Verts, 468 Edges, 2987 Faces, 4782 Tetras
+     On Proc 2 are: 2281 Verts, 672 Edges, 515 Faces, 2701 Tetras
+     On Proc 3 are: 3981 Verts, 1801 Edges, 70 Faces, 436 Tetras
+  Accumulated: 7016 Verts, 5499 Edges, 7683 Faces, 9885 Tetras
+Memory used for geometry: 3.7 MB (16.1% verts, 10.3% edges, 14.5% faces, 59.1% tetras)
 ============================================================ step 2
 UpdateTriang: 4 refinements/interpolations in XXX seconds
 last level: 2
-     On Proc 0 are: 402 Verts, 2595 Edges, 4203 Faces, 2018 Tetras
-     On Proc 1 are: 344 Verts, 484 Edges, 3135 Faces, 5004 Tetras
-     On Proc 2 are: 2366 Verts, 672 Edges, 501 Faces, 2690 Tetras
-     On Proc 3 are: 4039 Verts, 1853 Edges, 77 Faces, 414 Tetras
-  Accumulated: 7151 Verts, 5604 Edges, 7916 Faces, 10126 Tetras
-Memory used for geometry: 3.7 MB (16.1% verts, 10.3% edges, 14.6% faces, 59.0% tetras)
+     On Proc 0 are: 407 Verts, 2672 Edges, 4311 Faces, 2058 Tetras
+     On Proc 1 are: 362 Verts, 482 Edges, 3075 Faces, 4886 Tetras
+     On Proc 2 are: 2307 Verts, 633 Edges, 541 Faces, 2793 Tetras
+     On Proc 3 are: 4091 Verts, 1847 Edges, 99 Faces, 450 Tetras
+  Accumulated: 7167 Verts, 5634 Edges, 8026 Faces, 10187 Tetras
+Memory used for geometry: 3.8 MB (16.0% verts, 10.3% edges, 14.7% faces, 59.0% tetras)
 ============================================================ step 3
 UpdateTriang: 4 refinements/interpolations in XXX seconds
 last level: 2
-     On Proc 0 are: 422 Verts, 2712 Edges, 4375 Faces, 2095 Tetras
-     On Proc 1 are: 355 Verts, 499 Edges, 3213 Faces, 5120 Tetras
-     On Proc 2 are: 2423 Verts, 697 Edges, 513 Faces, 2768 Tetras
-     On Proc 3 are: 4162 Verts, 1911 Edges, 87 Faces, 422 Tetras
-  Accumulated: 7362 Verts, 5819 Edges, 8188 Faces, 10405 Tetras
-Memory used for geometry: 3.8 MB (16.1% verts, 10.4% edges, 14.6% faces, 58.8% tetras)
+     On Proc 0 are: 416 Verts, 2735 Edges, 4417 Faces, 2116 Tetras
+     On Proc 1 are: 380 Verts, 488 Edges, 3123 Faces, 4979 Tetras
+     On Proc 2 are: 2358 Verts, 636 Edges, 559 Faces, 2898 Tetras
+     On Proc 3 are: 4237 Verts, 1909 Edges, 108 Faces, 455 Tetras
+  Accumulated: 7391 Verts, 5768 Edges, 8207 Faces, 10448 Tetras
+Memory used for geometry: 3.9 MB (16.1% verts, 10.3% edges, 14.6% faces, 59.0% tetras)
 ============================================================ step 4
 UpdateTriang: 4 refinements/interpolations in XXX seconds
 last level: 2
-     On Proc 0 are: 417 Verts, 2672 Edges, 4290 Faces, 2051 Tetras
-     On Proc 1 are: 347 Verts, 497 Edges, 3198 Faces, 5080 Tetras
-     On Proc 2 are: 2404 Verts, 700 Edges, 498 Faces, 2669 Tetras
-     On Proc 3 are: 4003 Verts, 1835 Edges, 82 Faces, 426 Tetras
-  Accumulated: 7171 Verts, 5704 Edges, 8068 Faces, 10226 Tetras
-Memory used for geometry: 3.8 MB (16.0% verts, 10.4% edges, 14.7% faces, 58.9% tetras)
+     On Proc 0 are: 448 Verts, 2820 Edges, 4435 Faces, 2081 Tetras
+     On Proc 1 are: 397 Verts, 494 Edges, 3124 Faces, 4906 Tetras
+     On Proc 2 are: 2300 Verts, 622 Edges, 524 Faces, 2727 Tetras
+     On Proc 3 are: 4032 Verts, 1833 Edges, 84 Faces, 467 Tetras
+  Accumulated: 7177 Verts, 5769 Edges, 8167 Faces, 10181 Tetras
+Memory used for geometry: 3.8 MB (15.9% verts, 10.5% edges, 14.8% faces, 58.7% tetras)
 ============================================================ step 5
 UpdateTriang: 4 refinements/interpolations in XXX seconds
 last level: 2
-     On Proc 0 are: 401 Verts, 2593 Edges, 4173 Faces, 1995 Tetras
-     On Proc 1 are: 338 Verts, 498 Edges, 3136 Faces, 4943 Tetras
-     On Proc 2 are: 2332 Verts, 744 Edges, 559 Faces, 2822 Tetras
-     On Proc 3 are: 4072 Verts, 1820 Edges, 109 Faces, 391 Tetras
-  Accumulated: 7143 Verts, 5655 Edges, 7977 Faces, 10151 Tetras
-Memory used for geometry: 3.7 MB (16.1% verts, 10.4% edges, 14.7% faces, 58.8% tetras)
+     On Proc 0 are: 427 Verts, 2707 Edges, 4291 Faces, 2016 Tetras
+     On Proc 1 are: 405 Verts, 459 Edges, 2929 Faces, 4666 Tetras
+     On Proc 2 are: 2215 Verts, 595 Edges, 527 Faces, 2710 Tetras
+     On Proc 3 are: 3983 Verts, 1796 Edges, 78 Faces, 421 Tetras
+  Accumulated: 7030 Verts, 5557 Edges, 7825 Faces, 9813 Tetras
+Memory used for geometry: 3.6 MB (16.2% verts, 10.5% edges, 14.7% faces, 58.6% tetras)
 
