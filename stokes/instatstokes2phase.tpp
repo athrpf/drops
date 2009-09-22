@@ -710,7 +710,7 @@ void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_pr
                 Vol_p+= cut.quad( ones, absdet, true);  // integrate on positive part
                 Vol_n+= cut.quad( ones, absdet, false); // integrate on negative part
             }
-            IntRhoInv= Vol_p*rho_inv_p + Vol_n*rho_inv_n;                    
+            IntRhoInv= Vol_p*rho_inv_p + Vol_n*rho_inv_n;
         }
         for(int i=0; i<4; ++i)
         {
@@ -773,8 +773,8 @@ void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_p
                 Vol_p+= cut.quad( ones, absdet, true);  // integrate on positive part
                 Vol_n+= cut.quad( ones, absdet, false); // integrate on negative part
             }
-            IntRhoInv_p= Vol_p*rho_inv_p;                    
-            IntRhoInv=   Vol_p*rho_inv_p + Vol_n*rho_inv_n;                    
+            IntRhoInv_p= Vol_p*rho_inv_p;
+            IntRhoInv=   Vol_p*rho_inv_p + Vol_n*rho_inv_n;
         }
 
         // compute local matrices
@@ -1685,7 +1685,7 @@ template<class StokesT>
         // swap index and data
         p1xrepair_->GetExt()->RowIdx->swap( loc_xpr_idx);
         p1xrepair_->GetExt()->Data.resize( loc_xpr.Data.size());
-        p1xrepair_->GetExt()->Data= loc_xpr.Data.size();
+        p1xrepair_->GetExt()->Data= loc_xpr.Data;
         // delete this numbering
         loc_xpr_idx.DeleteNumbering( stokes_.GetMG());
     }
