@@ -17,6 +17,9 @@ DELETE = $(EXEC)
 CPP = $(wildcard *.cpp)
 OBJ = $(CPP:%.cpp=%.o)
 
+# include common rules:
+include ../Make.common
+
 # rules:
 
 default:
@@ -182,6 +185,4 @@ TestFilmPar: \
    ../out/output.o ../out/ensightOut.o ../partests/params.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-# include common rules:
-include ../Make.common
 
