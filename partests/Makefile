@@ -23,10 +23,12 @@ default:
 
 all: $(EXEC)
 
-PAR_OBJ = ../parallel/parallel.o ../parallel/parmultigrid.o \
+PAR_OBJ_ = ../parallel/parallel.o ../parallel/parmultigrid.o \
           ../parallel/partime.o ../parallel/addeddata.o ../parallel/loadbal.o \
           ../parallel/exchange.o ../parallel/memmgr_std.o ../parallel/parmgserialization.o \
           ../parallel/logger.o
+
+PAR_OBJ = $(if $(PAR_BUILD),$(PAR_OBJ_),)
 
 TestRefPar: \
    $(PAR_OBJ) \
