@@ -579,8 +579,10 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
     IdxT Numb[10];
     bool IsOnDirBnd[10];
 
+#ifndef _PAR
     std::cout << "entering SetupSystem: " << ColIdx.NumUnknowns()
               << " unknowns, " << std::endl;
+#endif
 
 // fill value part of matrices
     SMatrixCL<3,5> Grad[10], GradRef[10];  // jeweils Werte des Gradienten in 5 Stuetzstellen
@@ -662,7 +664,9 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
                 }
             }
     }
+#ifndef _PAR
     std::cout << "done: value part fill" << std::endl;
+#endif
 
     A.Build();
 }
@@ -718,6 +722,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
            }
         }
     }
+
     size_t dataSize= lsg.Data.size();
 #ifdef _PAR
     // not completely correct, but nearly ...
@@ -727,10 +732,10 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
     dataSize= ProcCL::GlobalSum(dataSize);
 #endif
 
-    std::cout << "  2-Norm= " << std::sqrt(norm2)                 << std::endl
-              << "w-2-Norm= " << std::sqrt(norm2/dataSize)        << std::endl
-              << "max-Norm= " << maxdiff                          << std::endl
-              << " L2-Norm= " << std::sqrt(L2)                    << std::endl;
+    std::cout << "  2-Norm= " << std::sqrt(norm2)          << std::endl
+              << "w-2-Norm= " << std::sqrt(norm2/dataSize) << std::endl
+              << "max-Norm= " << maxdiff                   << std::endl
+              << " L2-Norm= " << std::sqrt(L2)             << std::endl;
     return L2;
 }
 
