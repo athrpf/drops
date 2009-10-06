@@ -31,9 +31,9 @@ void P1XtoP1 (const IdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, 
         if (extIdx[nr]==NoIdx) continue;
 
         if (InterfacePatchCL::Sign( lset.Data[it->Unknowns(lsidxnum)]) == 1)
-            negPart[p1nr]-= p1x[extIdx[nr]];
+            negPart[p1nr]= p1x[nr] - p1x[extIdx[nr]];
         else
-            posPart[p1nr]+= p1x[extIdx[nr]];
+            posPart[p1nr]= p1x[nr] + p1x[extIdx[nr]];
     }
 }
 
@@ -64,7 +64,7 @@ void P1toP1X (const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const 
         if (!it->Unknowns.Exist( idxnum)) continue;
         const IdxT p1nr= it->Unknowns(p1idxnum);
         if (extIdx[nr]==NoIdx) continue;
-        p1x[extIdx[nr]]+= (posPart[p1nr] - negPart[p1nr]);
+        p1x[extIdx[nr]]= (posPart[p1nr] - negPart[p1nr]);
     }
 }
 
