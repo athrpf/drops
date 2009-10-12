@@ -135,7 +135,7 @@ class ISNonlinearPreCL
     MatrixCL&  A_;
     MatrixCL&  M_;
     double     kA_, kM_;
-    mutable    SolverT& solver_;
+    SolverT&   solver_;
 
   public:
     ISNonlinearPreCL(SolverT& solver, MatrixCL& A_pr, MatrixCL& M_pr,
@@ -217,7 +217,7 @@ class ISMGPreCL
     DROPS::Uint iter_prM_;
     double kA_, kM_;
     mutable std::vector<DROPS::VectorCL> ones_;
-    
+
     void MaybeInitOnes() const;
 
   public:
@@ -232,7 +232,7 @@ class ISMGPreCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& /*A*/, Vec& p, const Vec& c) const;
-    
+
     MLMatrixCL* GetProlongation() { return &P_; }
 };
 
