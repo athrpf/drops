@@ -63,15 +63,15 @@ void InterfacePatchCL::Init( const TetraCL& t, const LocalP2CL<double>& ls, doub
 }
 
 // Init for SubtetraT
-void InterfacePatchCL::Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation) 
+void InterfacePatchCL::Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation)
 {
 	st_ = st;
     ch_= -1;
-    
+
     for (int v=0; v<10; ++v)
-    { 
+    {
     	BaryCoordCL tempBaryCoord_ = v<4 ? st[v] : BaryCenter(st[VertOfEdge(v-4,0)],st[VertOfEdge(v-4,1)]);
-    	PhiLoc_[v] =ls( tempBaryCoord_) + translation; 
+    	PhiLoc_[v] =ls( tempBaryCoord_) + translation;
     // collect data on all DoF
         Coord_[v]= GetCoordMatrix(t)* tempBaryCoord_;
         sign_[v]= Sign(PhiLoc_[v]);
@@ -106,7 +106,7 @@ BaryCoordCL InterfacePatchCL::MultiplyBaryCoord(const BaryCoordCL& Tetrak_ )
 
  return TetrakBary_;
 }
-bool InterfacePatchCL::ComputeForChild( Uint ch) 
+bool InterfacePatchCL::ComputeForChild( Uint ch)
 {
     const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
     ch_= ch;
@@ -192,9 +192,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
     if (EqualToFace()) // interface is shared by two tetras
         sqrtDetATA_/= 2;
 
-    return true; // computed patch of child;
-    
-    // if Init for Sub TatraT has been used, coordinates must be transformed
+    // if Init for Sub TetraT has been used, coordinates must be transformed
     if (barysubtetra_ == true)
     {
         for (int k=0 ; k<intersec_; ++k)
@@ -202,6 +200,7 @@ bool InterfacePatchCL::ComputeForChild( Uint ch)
             Bary_[k] = MultiplyBaryCoord(Bary_[k]);
         }
     }
+    return true; // computed patch of child;
 }
 
 
@@ -477,10 +476,10 @@ void InterfacePatchCL::ComputeSubTets()
             }
         } //intersec_==4 Ende
     } //Ende der Schleife ueber die Kinder
-    
+
     // if Init for SubTetraT has bee unsed, coordinates must be transformed
      if (barysubtetra_ == true)
-     {	
+     {
          for (Uint k=0 ; k<posTetras.size(); ++k)
          {
              posTetras[k] = MultiplySubTetra(posTetras[k]);
