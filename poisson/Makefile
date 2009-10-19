@@ -7,7 +7,7 @@
 DIR = poisson
 
 EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep drops_neumann \
-       MGdropsP2 ipfilm
+       MGdropsP2 ipfilm drops_statP2
 
 DELETE = $(EXEC)
 
@@ -15,6 +15,14 @@ CPP = $(wildcard *.cpp)
 
 OBJ = $(CPP:%.cpp=%.o)
 
+# include common rules:
+include ../Make.common
+
+PAR_OBJ_ = ../parallel/parallel.o ../parallel/parmultigrid.o \
+           ../parallel/partime.o ../parallel/addeddata.o ../parallel/loadbal.o \
+           ../parallel/exchange.o ../parallel/memmgr_std.o
+
+PAR_OBJ = $(if $(PAR_BUILD),$(PAR_OBJ_),)
 
 # rules
 
@@ -86,6 +94,15 @@ ipfilm: \
     ../num/fe.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
+drops_statP2:\
+    ../poisson/drops_statP2.o ../geom/boundary.o ../geom/builder.o \
+    ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
+    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o \
+    $(PAR_OBJ)
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+
 matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/interfacePatch.o \
     ../poisson/instatpoisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
@@ -101,6 +118,3 @@ clean: matlab/clean
 
 matlab/clean:
 	cd matlab && $(MAKE) clean
-
-# include common rules:
-include ../Make.common
