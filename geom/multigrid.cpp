@@ -847,11 +847,11 @@ void MultiGridCL::SizeInfo(std::ostream& os)
     }
 }
 
-void MultiGridCL::ElemInfo(std::ostream& os, int Level)
+void MultiGridCL::ElemInfo(std::ostream& os, int Level) const
 {
     double hmax= -1, hmin= 1e99,
            rmax= -1, rmin= 1e99;
-    DROPS_FOR_TRIANG_TETRA( (*this), Level, It) {
+    DROPS_FOR_TRIANG_CONST_TETRA( (*this), Level, It) {
         double loc_max= -1, loc_min= 1e99;
         for (Uint i=0; i<3; ++i)
         {
