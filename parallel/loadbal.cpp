@@ -231,19 +231,37 @@ std::set<IdxT> LoadBalCL::UnkOnTetra(const TetraCL& t) const
     if (idx_.empty())
         return unknowns;
 
+    IdxT maxUnk=1;
+    for (Uint i=0; i<idx_.size(); ++i)
+        maxUnk= std::max( idx_[i]->NumUnknowns(), maxUnk);
+
     for (Uint i=0; i<idx_.size(); ++i)
     {
         Uint index=idx_[i]->GetIdx();
-        if (idx_[i]->NumUnknownsVertex()>0)
-            for (TetraCL::const_VertexPIterator it(t.GetVertBegin()), end(t.GetVertEnd()); it!=end; ++it)
-                if ((*it)->Unknowns.Exist() && (*it)->Unknowns.Exist(index))
+        if (idx_[i]->NumUnknownsVertex()>0){
+            for (TetraCL::const_VertexPIterator it(t.GetVertBegin()), end(t.GetVertEnd()); it!=end; ++it){
+                if ((*it)->Unknowns.Exist() && (*it)->Unknowns.Exist(index)){
+                    const IdxT dof= (*it)->Unknowns(index);
                     for (Uint j=0; j<idx_[i]->NumUnknownsVertex(); ++j)
-                        unknowns.insert((*it)->Unknowns(index)+j);
-        if (idx_[i]->NumUnknownsEdge()>0)
-            for (TetraCL::const_EdgePIterator it(t.GetEdgesBegin()), end(t.GetEdgesEnd()); it!=end; ++it)
-                if ((*it)->Unknowns.Exist() && (*it)->Unknowns.Exist(index))
-                    for (Uint j=0; j<idx_[i]->NumUnknownsVertex(); ++j)
-                        unknowns.insert((*it)->Unknowns(index)+j);
+                        unknowns.insert(dof+j+i*maxUnk);
+                    if ( idx_[i]->IsExtended() )
+                        for (Uint j=0; j<idx_[i]->NumUnknownsVertex(); ++j)
+                            unknowns.insert(idx_[i]->GetXidx()[dof]+j+i*maxUnk);
+                }
+            }
+        }
+        if (idx_[i]->NumUnknownsEdge()>0){
+            for (TetraCL::const_EdgePIterator it(t.GetEdgesBegin()), end(t.GetEdgesEnd()); it!=end; ++it){
+                if ((*it)->Unknowns.Exist() && (*it)->Unknowns.Exist(index)){
+                    const IdxT dof= (*it)->Unknowns(index);
+                    for (Uint j=0; j<idx_[i]->NumUnknownsEdge(); ++j)
+                        unknowns.insert(dof+j+i*maxUnk);
+                    if ( idx_[i]->IsExtended() )
+                        for (Uint j=0; j<idx_[i]->NumUnknownsEdge(); ++j)
+                            unknowns.insert(idx_[i]->GetXidx()[dof]+j+i*maxUnk);
+                }
+            }
+        }
     }
     return unknowns;
 }

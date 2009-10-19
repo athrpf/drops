@@ -126,7 +126,7 @@ class LoadBalCL
     typedef std::set<idxtype>       GraphNeighborCT;        // Set of neighbors of a node
 
     MultiGridCL    *mg_;                                    // Pointer to the multigrid
-    std::vector<IdxDescCL*> idx_;                           // information about unknowns
+    std::vector<const IdxDescCL*> idx_;                           // information about unknowns
     Uint static    TriangLevel_;                            // Triangulationlevel, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
     IndexArray     xadj_,                                   // Startingindex in the array _adjncy, where node[i] writes its neighbors
                    adjncy_,                                 // Adjacencies of the nodes
@@ -176,7 +176,8 @@ class LoadBalCL
     float GetQuality()         const { return ubvec_; }     ///< Get quality-parameter
     void  SetQuality(float ub)       { ubvec_=ub;}          ///< Set quality-parameter
 
-    void  Append(IdxDescCL* id) { idx_.push_back(id); }     ///< Set information about unknown typ
+    void  Append(const IdxDescCL* id) { idx_.push_back(id); useUnkInfo_=true; }     ///< Set information about unknown type
+    void  RemoveIdx() {idx_.clear(); useUnkInfo_=false;}
 
     ///\name for debug purpose
     //{@
