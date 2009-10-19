@@ -299,7 +299,7 @@ template <typename Mat, typename Vec, typename PC1, typename PC2, typename ExVCL
             // fall through
             case APC_OTHER:
                 innertol= innerred; // GMRES can do relative tolerances.
-                ParModGMRES( *asc, z, c, exP, Spc, /*restart*/ inneriter, inneriter, innertol, /*relative errors*/ true, useAcc);
+                ParModGMRES( *asc, z, c, exP, Spc, /*restart*/ inneriter, inneriter, innertol, /*relative errors*/ true, useAcc, /*use MGS*/false, LeftPreconditioning);
                 break;
         }
         if (apcmeth != APC_SYM_LINEAR) {

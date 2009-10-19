@@ -84,13 +84,13 @@ bool ParAccurPreGS_GMRES(const Mat& A, Vec& x, const Vec& b, const ExCL& ExX, Pr
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParGMRES(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
               int m, int& max_iter, double& tol, bool measure_relative_tol=true, bool useAcc=true,
-              PreMethGMRES method=RightPreconditioning);
+              PreMethGMRES method=LeftPreconditioning);
 
 // Preconditioned GMRES with modifications for better scalability.
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParModGMRES(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, PreCon& M,
                  int m, int& max_iter, double& tol, bool measure_relative_tol=true, bool useAcc=true,
-                 bool useMGS=false, PreMethGMRES method=RightPreconditioning);
+                 bool useMGS=false, PreMethGMRES method=LeftPreconditioning);
 
 // BiCGSTAB
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
