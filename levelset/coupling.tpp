@@ -631,40 +631,34 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep(
 #ifdef _PAR
     const bool useAccur=true;
     ExchangeCL& ExVel  = Stokes_.v.RowIdx->GetEx();
-    ExchangeCL& ExLset = LvlSet_.Phi.RowIdx->GetEx();
 #endif
-    double res_u = 0.0, res_phi = 0.0, res = 0.0;
+    double res_u = 0.0;
     for (int i=0; i<maxFPiter; ++i)
     {
         std::cout << "~~~~~~~~~~~~~~~~ FP-Iter " << i+1 << '\n';
         const VectorCL v( Stokes_.v.Data);
-        const VectorCL phi( LvlSet_.Phi.Data);
         EvalLsetNavStokesEquations();
         if (solver_.GetIter()==0 && lsetsolver_.GetResid()<lsetsolver_.GetTol()) // no change of vel -> no change of Phi
         {
             std::cout << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
-        Stokes_.v.Data   = v   - Stokes_.v.Data;
-        LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
+        Stokes_.v.Data = v - Stokes_.v.Data;
 
         // quasi newton method: relax computes the update vector
-        relax.Update( Stokes_.v, LvlSet_.Phi);
+        relax.Update( Stokes_.v);
 
 #ifndef _PAR
         res_u   = dot( Stokes_.v.Data, Stokes_.M.Data*Stokes_.v.Data);
-        res_phi = dot( LvlSet_.Phi.Data, LvlSet_.E*LvlSet_.Phi.Data);
 #else
         res_u   = ExVel.ParDot( Stokes_.v.Data, true, Stokes_.M.Data*Stokes_.v.Data, true, useAccur);
-        res_phi = ExLset.ParDot( LvlSet_.Phi.Data, true, LvlSet_.E*LvlSet_.Phi.Data, true, useAccur);
 #endif
-        res = std::sqrt( res_u + res_phi);
 
-        std::cout << "residual: " << res << " residual of u, phi: " << std::sqrt( res_u)
-                  << ", " << std::sqrt( res_phi) << std::endl;
-        Stokes_.v.Data   = v   - Stokes_.v.Data;
-        LvlSet_.Phi.Data = phi - LvlSet_.Phi.Data;
-        if (res < tol_) {
+        std::cout << "residual of u: " << std::sqrt( res_u) << std::endl;
+
+        Stokes_.v.Data = v - Stokes_.v.Data;
+
+        if (res_u < tol_) {
             std::cout << "Convergence after " << i+1 << " fixed point iterations!" << std::endl;
             break;
         }
@@ -1231,53 +1225,45 @@ void CrankNicolsonScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update(
     step_= 1;
 }
 
-inline void cplDeltaSquaredPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
+inline void cplDeltaSquaredPolicyCL::Update( VecDescCL& v)
 {
     if (firststep_) {
         const size_t vsize = v.Data.size();
-        const size_t phisize = phi.Data.size();
         v_old_.resize   ( vsize);
-        phi_old_.resize ( phisize);
         v_diff_.resize  ( vsize);
-        phi_diff_.resize( phisize);
-        v_old_= v.Data; phi_old_= phi.Data;
+        v_old_= v.Data;
         firststep_ = false;
         if (output_)
             (*output_) << "omega: " << omega_ << std::endl;
         return;
     }
-    v_diff_=  v.Data - v_old_; phi_diff_= phi.Data - phi_old_;
+    v_diff_=  v.Data - v_old_;
 #ifndef _PAR
-    omega_*= -(dot( v_diff_, v_old_) + dot( phi_diff_, phi_old_))
-            / (norm_sq( v_diff_) + norm_sq( phi_diff_));
+    omega_*= -dot( v_diff_, v_old_) / norm_sq( v_diff_);
 #else
     const bool useAccur=true;
     ExchangeCL& ExVel  = v.RowIdx->GetEx();
-    ExchangeCL& ExLset = phi.RowIdx->GetEx();
-    omega_*=-(ExVel.ParDot( v_diff_, true, v_old_, true, useAccur)
-            + ExLset.ParDot( phi_diff_, true, phi_old_, true, useAccur))
-            / (ExVel.Norm_sq( v_diff_, true, useAccur) + ExLset.Norm_sq( phi_diff_, true, useAccur));
+    omega_*=-ExVel.ParDot( v_diff_, true, v_old_, true, useAccur) / ExVel.Norm_sq( v_diff_, true, useAccur);
 #endif
     if (output_)
         (*output_) << "omega: " << omega_ << std::endl;
-    v_old_= v.Data; phi_old_= phi.Data;
+    v_old_= v.Data;
     v.Data   *= omega_;
-    phi.Data *= omega_;
 }
 
-inline void cplBroydenPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
+
+inline void cplBroydenPolicyCL::Update( VecDescCL& v)
 {
     F1_.push_back( v.Data);
-    F2_.push_back( phi.Data);
 #ifndef _PAR
-    sigma_ = norm_sq( v.Data) + norm_sq( phi.Data);
+    sigma_ = norm_sq( v.Data);
 #else
     const bool useAccur=true;
     ExchangeCL& ExVel  = v.RowIdx->GetEx();
-    ExchangeCL& ExLset = phi.RowIdx->GetEx();
-    sigma_ = ExVel.Norm_sq( v.Data, true, useAccur) + ExLset.Norm_sq( phi.Data, true, useAccur);
+    sigma_ = ExVel.Norm_sq( v.Data, true, useAccur);
 #endif
 
+    (*output_) << "sigma = " << sigma_ << std::endl;
     if (sigma_ < tol_*tol_) {
         if (output_)
             (*output_) << "Solution found" << std::endl;
@@ -1293,7 +1279,6 @@ inline void cplBroydenPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
     // at this point: F1_.size() >= 2
     const size_t pos = F1_.size() - 2;
     deltaF1_.push_back( VectorCL( F1_.back() - F1_[pos]));
-    deltaF2_.push_back( VectorCL( F2_.back() - F2_[pos]));
 
     const double theta = std::sqrt(sigma_/sigma0_);
     if (theta >= thetamax_) {
@@ -1304,41 +1289,37 @@ inline void cplBroydenPolicyCL::Update( VecDescCL& v, VecDescCL& phi)
     sigma0_ = sigma_;
 
     VectorCL w1( deltaF1_.back());
-    VectorCL w2( deltaF2_.back());
 #ifndef _PAR
-    gamma_.push_back( norm_sq( w1) + norm_sq( w2));
+    gamma_.push_back( norm_sq( w1));
 #else
-    gamma_.push_back( ExVel.Norm_sq( w1, true, useAccur) + ExLset.Norm_sq( w2, true, useAccur));
+    gamma_.push_back( ExVel.Norm_sq( w1, true, useAccur));
 #endif
 
     kappa_ /= (1.0-2.0*theta);
-
-    if (kappa_ >= kappamax_){
+    (*output_) << "kappa = " << kappa_ << std::endl;
+    if (std::fabs(kappa_) >= kappamax_){
         if (output_)
             (*output_) << "ill-conditioned update: kappa = "<< kappa_ << std::endl;
         //return;
     }
 
-    VectorCL v1( F1_.back()), v2( F2_.back());
+    VectorCL v1( F1_.back());
 #ifndef _PAR
-    const double factor = 1.0 - ( dot( w1, v1) + dot( w2, v2)) / gamma_.back();
+    const double factor = 1.0 - ( dot( w1, v1)) / gamma_.back();
 #else
-    const double factor = 1.0 - ( ExVel.ParDot( w1, true, v1, true, useAccur) + ExLset.ParDot( w2, true, v2, true, useAccur)) / gamma_.back();
+    const double factor = 1.0 - ( ExVel.ParDot( w1, true, v1, true, useAccur)) / gamma_.back();
 #endif
     v1*= factor;
-    v2*= factor;
 
     for (int j=deltaF1_.size()-2; j>=0; --j) {
 #ifndef _PAR
-        const double beta = ( dot (deltaF1_[j], v1) + dot( deltaF2_[j], v2)) / gamma_[j];
+        const double beta = ( dot (deltaF1_[j], v1))/ gamma_[j];
 #else
-        const double beta = ( ExVel.ParDot (deltaF1_[j], true, v1, true, useAccur) + ExLset.ParDot( deltaF2_[j], true, v2, true, useAccur)) / gamma_[j];
+        const double beta = ( ExVel.ParDot (deltaF1_[j], true, v1, true, useAccur)) / gamma_[j];
 #endif
         v1 -= beta*F1_[j+1];
-        v2 -= beta*F2_[j+1];
     }
     v.Data   = v1;
-    phi.Data = v2;
 }
 
 

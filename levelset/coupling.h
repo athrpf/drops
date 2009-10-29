@@ -180,8 +180,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 class cplDeltaSquaredPolicyCL
 {
   private:
-    VectorCL v_old_,  phi_old_,
-             v_diff_, phi_diff_;
+    VectorCL v_old_, v_diff_;
     double   omega_;
     bool     firststep_;
     std::ostream* output_;
@@ -190,7 +189,7 @@ class cplDeltaSquaredPolicyCL
     cplDeltaSquaredPolicyCL( std::ostream* output = 0) :
         omega_( 1.0), firststep_( true), output_( output) {}
 
-    inline void Update( VecDescCL& v, VecDescCL& phi);
+    inline void Update( VecDescCL& v);
 };
 
 /// \brief Always uses 1 as relaxation factor in RecThetaScheme2PhaseCL
@@ -201,7 +200,7 @@ class cplFixedPolicyCL
 
   public:
     cplFixedPolicyCL (std::ostream* output = 0) : output_( output) {}
-    inline void Update (const VecDescCL&, const VecDescCL&) {}
+    inline void Update (const VecDescCL&) {}
 };
 
 /// \brief Broyden method for nonlinear system (velocity - levelset)
@@ -227,7 +226,7 @@ class cplBroydenPolicyCL
   public:
     cplBroydenPolicyCL (std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), sigma_( -1.), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
 
-    inline void Update( VecDescCL&, VecDescCL&);
+    inline void Update( VecDescCL&);
 };
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
