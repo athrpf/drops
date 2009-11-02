@@ -644,7 +644,7 @@ void LevelsetP2CL::SetupSmoothSystem( MatrixCL& M, MatrixCL& A) const
     SparseMatBuilderCL<double> Mb(&M, num_unks, num_unks);
     SparseMatBuilderCL<double> Ab(&A, num_unks, num_unks);
 
-    Quad2CL<Point3DCL> Grad[10], GradRef[10], w_loc;
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3>     T;
     P2DiscCL::GetGradientsOnRef( GradRef);
 
