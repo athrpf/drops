@@ -159,12 +159,12 @@ private:
     const double Vol_;
 
     int    step_;
-    bool   reparam_;
+    bool   per_, reparam_;
 
 public:
-    LevelsetModifyCL( int rpm_Freq, int rpm_Method, double rpm_MaxGrad, double rpm_MinGrad, int lvs_VolCorrection, double Vol) :
+    LevelsetModifyCL( int rpm_Freq, int rpm_Method, double rpm_MaxGrad, double rpm_MinGrad, int lvs_VolCorrection, double Vol, bool periodic=false) :
         rpm_Freq_( rpm_Freq), rpm_Method_( rpm_Method), rpm_MaxGrad_( rpm_MaxGrad),
-        rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0), reparam_(true) {}
+        rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0), per_(periodic), reparam_(true) {}
 
 
     double maybeModify( LevelsetP2CL& lset) {
@@ -192,7 +192,7 @@ public:
         // reparam levelset function
         if (doReparam) {
             std::cout << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-            lset.ReparamFastMarching( rpm_Method_, false, false, rpm_Method_==3);
+            lset.ReparamFastMarching( rpm_Method_, per_, false, rpm_Method_==3);
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
             reparam_ = false;
