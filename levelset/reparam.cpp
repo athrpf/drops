@@ -178,10 +178,10 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
 
     // Initialize Ensight6 output
     std::string ensf( "ensight/rep");
-    Ensight6OutCL ensight( "rep.case", num_steps + 1);
+    Ensight6OutCL ensight( "rep.case", num_steps + 2);
     ensight.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), "Cube",     ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),    "Levelset", ensf + ".scl", true));
-    ensight.Write();
+    ensight.Write( 0.);
 
     TimerCL time;
     time.Start();
