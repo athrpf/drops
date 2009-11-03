@@ -27,13 +27,12 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
         {
             const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
             const Point3DCL b= Coord_[  Nr  ] - Coord_[upd[0]];
-            const double bary= inner_prod(a,b)/a.norm_sq();
-            if (bary>=0 && bary<=1)
-            {
-                const Point3DCL lotfuss= (1-bary)*Coord_[upd[0]] + bary*Coord_[upd[1]];
-                const double y= (1-bary)*v_->Data[upd[0]] + bary*v_->Data[upd[1]];
-                val= y + (lotfuss - Coord_[Nr]).norm();
-            }
+            double bary= inner_prod(a,b)/a.norm_sq();
+
+            Normalize(bary);
+            const Point3DCL lotfuss= (1-bary)*Coord_[upd[0]] + bary*Coord_[upd[1]];
+            const double y= (1-bary)*v_->Data[upd[0]] + bary*v_->Data[upd[1]];
+            val= y + (lotfuss - Coord_[Nr]).norm();
         }
         break;
 
@@ -42,14 +41,12 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
             const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
             const Point3DCL b= Coord_[upd[2]] - Coord_[upd[0]];
             const Point3DCL c= Coord_[  Nr  ] - Coord_[upd[0]];
-            const double bary1= inner_prod(a,c)/a.norm_sq(),
-                         bary2= inner_prod(b,c)/b.norm_sq();
-            if (bary1>=0 && bary2>=0 && bary1+bary2<=1)
-            {
-                const Point3DCL lotfuss= (1-bary1-bary2)*Coord_[upd[0]] + bary1*Coord_[upd[1]] + bary2*Coord_[upd[2]];
-                const double y= (1-bary1-bary2)*v_->Data[upd[0]] + bary1*v_->Data[upd[1]] + bary2*v_->Data[upd[2]];
-                val= y + (lotfuss - Coord_[Nr]).norm();
-            }
+            double bary1= inner_prod(a,c)/a.norm_sq(),
+                   bary2= inner_prod(b,c)/b.norm_sq();
+            Normalize(bary1, bary2);
+            const Point3DCL lotfuss= (1-bary1-bary2)*Coord_[upd[0]] + bary1*Coord_[upd[1]] + bary2*Coord_[upd[2]];
+            const double y= (1-bary1-bary2)*v_->Data[upd[0]] + bary1*v_->Data[upd[1]] + bary2*v_->Data[upd[2]];
+            val= y + (lotfuss - Coord_[Nr]).norm();
         }
     }
 
@@ -73,13 +70,12 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
         {
             const Point3DCL a= coord[1] - coord[0];
             const Point3DCL b= GlobalCoord_[Nr] - coord[0];
-            const double bary= inner_prod(a,b)/a.norm_sq();
-            if (bary>=0 && bary<=1)
-            {
-                const Point3DCL lotfuss= (1-bary)*coord[0] + bary*coord[1];
-                const double y= (1-bary)*GlobalV_[upd[0]] + bary*GlobalV_[upd[1]];
-                val= y + (lotfuss - GlobalCoord_[Nr]).norm();
-            }
+            double bary= inner_prod(a,b)/a.norm_sq();
+
+            Normalize(bary);
+            const Point3DCL lotfuss= (1-bary)*coord[0] + bary*coord[1];
+            const double y= (1-bary)*GlobalV_[upd[0]] + bary*GlobalV_[upd[1]];
+            val= y + (lotfuss - GlobalCoord_[Nr]).norm();
         }
         break;
 
@@ -88,14 +84,12 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
             const Point3DCL a= coord[1] - coord[0];
             const Point3DCL b= coord[2] - coord[0];
             const Point3DCL c= GlobalCoord_[Nr] - coord[0];
-            const double bary1= inner_prod(a,c)/a.norm_sq(),
-                         bary2= inner_prod(b,c)/b.norm_sq();
-            if (bary1>=0 && bary2>=0 && bary1+bary2<=1)
-            {
-                const Point3DCL lotfuss= (1-bary1-bary2)*coord[0] + bary1*coord[1] + bary2*coord[2];
-                const double y= (1-bary1-bary2)*GlobalV_[upd[0]] + bary1*GlobalV_[upd[1]] + bary2*GlobalV_[upd[2]];
-                val= y + (lotfuss - GlobalCoord_[Nr]).norm();
-            }
+            double bary1= inner_prod(a,c)/a.norm_sq(),
+                   bary2= inner_prod(b,c)/b.norm_sq();
+            Normalize(bary1, bary2);
+            const Point3DCL lotfuss= (1-bary1-bary2)*coord[0] + bary1*coord[1] + bary2*coord[2];
+            const double y= (1-bary1-bary2)*GlobalV_[upd[0]] + bary1*GlobalV_[upd[1]] + bary2*GlobalV_[upd[2]];
+            val= y + (lotfuss - GlobalCoord_[Nr]).norm();
         }
     }
 
@@ -104,9 +98,12 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
 #endif
 
 
-void FastMarchCL::InitZero( bool ModifyZero)
+void FastMarchCL::InitZero( bool ModifyZero, int method)
 /// \param[in] ModifyZero If this flag is set, the values around the zero level of the levelset function are new computed. Otherwise
 ///                       the old values are kept.
+/// \param[in] method     Determines the method used to compute the distance to the zero level:
+///                       scaling by averaged gradient (\a method=0) or projection of the points onto zero level (\a method=1).
+///                       By experience, gradient scaling yields a smoother interface.
 {
     Comment("Init zero\n", DebugParallelNumC);
     // Knoten an der Phasengrenze als Finished markieren
@@ -116,6 +113,13 @@ void FastMarchCL::InitZero( bool ModifyZero)
     int        sign[10];
     int        num_sign[3]; // - 0 +
     IdxT       Numb[10];
+    const bool scaling= method==0;
+    VectorCL   sumNormGradPhi, sumVol;
+
+    if (scaling) {
+        sumNormGradPhi.resize( size_);
+        sumVol.resize( size_);
+    }
 
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
@@ -182,25 +186,48 @@ void FastMarchCL::InitZero( bool ModifyZero)
 
             // ab hier gilt intersec && ModifyZero == true
 
-            Point3DCL Schnitt[4];
-            int num= 0;
-            // Berechnung der Schnittpunkte mit den Kanten des Tetra
-            for (int vert= 0; vert<4; ++vert)
-                if (sign[data.Vertices[vert]]==0)
-                    Schnitt[num++]= Coord_[Numb[data.Vertices[vert]]];
+            if (scaling) {
+                // compute gradient of level set (as P1 FE on child => const gradient on child)
+                SMatrixCL<3,4> p1grad;
+                double det;
+                Point3DCL pt[4];
+                SVectorCL<4> ls;
+                for (int v= 0; v < 4; ++v) {
+                    pt[v]= Coord_ [Numb[data.Vertices[v]]];
+                    ls[v]= PhiLoc[data.Vertices[v]];
+                }
+                P1DiscCL::GetGradients( p1grad, det, pt);
+                const Point3DCL n( p1grad*ls);
+                const double absdet= std::abs(det),
+                        normgrad= n.norm();
 
-            for (int edge= 0; edge<6 && num<4; ++edge)
-            {
-                const Ubyte v1= data.Vertices[ VertOfEdge( edge, 0)],
-                            v2= data.Vertices[ VertOfEdge( edge, 1)];
-                if (sign[v1]*sign[v2] == -1) // Vorzeichenwechsel auf edge
-                {
-                    const IdxT Nr1= Numb[v1],
-                               Nr2= Numb[v2];
-                    const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
-                    Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
+                for (int v= 0; v < 4; ++v) {
+                    const IdxT MapNr= Map(Numb[data.Vertices[v]]);
+                    sumNormGradPhi[MapNr]+= normgrad*absdet;
+                    sumVol[MapNr]+= absdet;
+                    Typ_[MapNr]= Finished;
                 }
             }
+            else { // compute distance by projections on interface
+                Point3DCL Schnitt[4];
+                int num= 0;
+                // Berechnung der Schnittpunkte mit den Kanten des Tetra
+                for (int vert= 0; vert<4; ++vert)
+                    if (sign[data.Vertices[vert]]==0)
+                        Schnitt[num++]= Coord_[Numb[data.Vertices[vert]]];
+
+                for (int edge= 0; edge<6 && num<4; ++edge)
+                {
+                    const Ubyte v1= data.Vertices[ VertOfEdge( edge, 0)],
+                                v2= data.Vertices[ VertOfEdge( edge, 1)];
+                    if (sign[v1]*sign[v2] == -1) // Vorzeichenwechsel auf edge
+                    {
+                        const IdxT Nr1= Numb[v1],
+                                   Nr2= Numb[v2];
+                        const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
+                        Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
+                    }
+                }
 /*
 fil << "geom {OFF " << num << " 1 0\n";
 for (int i=0; i<num; ++i)
@@ -215,45 +242,57 @@ else
     fil << "4 0 1 3 2";
 fil << "\n}\n";
 */
-            if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
+                if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
 
-            for (int repeat=0; repeat<num-2; ++repeat)
-            { // fuer num==4 (Schnitt ABDC ist viereckig)
-              // zwei Dreiecke ABC + DBC betrachten
-                if (repeat) Schnitt[0]= Schnitt[3];
+                for (int repeat=0; repeat<num-2; ++repeat)
+                { // fuer num==4 (Schnitt ABDC ist viereckig)
+                  // zwei Dreiecke ABC + DBC betrachten
+                    if (repeat) Schnitt[0]= Schnitt[3];
 
-                const Point3DCL a= Schnitt[1] - Schnitt[0],
-                                b= Schnitt[2] - Schnitt[0];
+                    const Point3DCL a= Schnitt[1] - Schnitt[0],
+                                    b= Schnitt[2] - Schnitt[0];
 
-                for (int vert=0; vert<4; ++vert)
-                {
-                    if (sign[data.Vertices[vert]]==0) continue;
-
-                    const IdxT Nr= Numb[data.Vertices[vert]];
-                    const Point3DCL Crd= Coord_[Nr],
-                                    c=   Crd - Schnitt[0];
-                    double dist= std::min( c.norm(), (Crd-Schnitt[1]).norm());
-                    dist= std::min( dist, (Crd-Schnitt[2]).norm());
-
-                    const double bary1= inner_prod(a,c)/a.norm_sq(),
-                                 bary2= inner_prod(b,c)/b.norm_sq();
-                    if (bary1>=0 && bary2>=0 && bary1+bary2<=1)
+                    for (int vert=0; vert<4; ++vert)
                     {
-                       const Point3DCL lotfuss= (1-bary1-bary2)*Schnitt[0] + bary1*Schnitt[1] + bary2*Schnitt[2];
-                       dist= std::min( dist, (lotfuss - Crd).norm());
-                    }
+                        if (sign[data.Vertices[vert]]==0) continue;
 
-                    if (Typ_[Nr] != Finished)
-                    {
-                        Typ_[Nr]= Finished;
-                        v_->Data[Nr]= dist;
-                    }
-                    else{
-                        v_->Data[Nr]= std::min( dist, v_->Data[Nr]);
+                        const IdxT Nr= Numb[data.Vertices[vert]];
+                        const Point3DCL Crd= Coord_[Nr],
+                                        c=   Crd - Schnitt[0];
+                        double dist= std::min( c.norm(), (Crd-Schnitt[1]).norm());
+                        dist= std::min( dist, (Crd-Schnitt[2]).norm());
+
+                        double bary1= inner_prod(a,c)/a.norm_sq(),
+                               bary2= inner_prod(b,c)/b.norm_sq();
+                        Normalize(bary1, bary2);
+                        const Point3DCL lotfuss= (1-bary1-bary2)*Schnitt[0] + bary1*Schnitt[1] + bary2*Schnitt[2];
+                        dist= std::min( dist, (lotfuss - Crd).norm());
+
+                        if (Typ_[Nr] != Finished)
+                        {
+                            Typ_[Nr]= Finished;
+                            v_->Data[Nr]= dist;
+                        }
+                        else{
+                            v_->Data[Nr]= std::min( dist, v_->Data[Nr]);
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (ModifyZero && scaling) {
+#ifdef _PAR
+        // accumulate sums
+        ex_->Accumulate( sumNormGradPhi);
+        ex_->Accumulate( sumVol);
+#endif
+        for (IdxT i=0; i<size_; ++i)
+            if (Typ_[i]==Finished) { // dof at interface
+                const double scale= sumNormGradPhi[i]/sumVol[i]; // average norm
+                v_->Data[i]= std::abs( Old_[i])/scale;
+            }
     }
 //fil << "}\n";
 }
@@ -426,7 +465,7 @@ void FastMarchCL::Update( const IdxT NrI)
 void FastMarchCL::Reparam( bool ModifyZero)
 {
     TimerCL time;
-    InitZero( ModifyZero);
+    InitZero( ModifyZero, 0);
     InitClose();
 
     IdxT next;
@@ -464,7 +503,7 @@ void FastMarchCL::Reparam( bool ModifyZero)
     CreateGlobNumb();
 
     // Init Zero-Level of levelset function
-    InitZero(ModifyZero);
+    InitZero(ModifyZero, 0);
 
     // tell other procs about finished-marked DoF's
     DistributeFinished();
@@ -1129,13 +1168,12 @@ double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
         {
             const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
             const Point3DCL b= Coord_[  Nr  ] - Coord_[upd[0]];
-            const double bary= inner_prod(a,b)/a.norm_sq();
-            if (bary>=0 && bary<=1)
-            {
-                const Point3DCL lotfuss= (1-bary)*Coord_[upd[0]] + bary*Coord_[upd[1]];
-                const double y= (1-bary)*v_->Data[Map(upd[0])] + bary*v_->Data[Map(upd[1])];
-                val= y + (lotfuss - Coord_[Nr]).norm();
-            }
+            double bary= inner_prod(a,b)/a.norm_sq();
+
+            Normalize(bary);
+            const Point3DCL lotfuss= (1-bary)*Coord_[upd[0]] + bary*Coord_[upd[1]];
+            const double y= (1-bary)*v_->Data[Map(upd[0])] + bary*v_->Data[Map(upd[1])];
+            val= y + (lotfuss - Coord_[Nr]).norm();
         }
         break;
 
@@ -1144,26 +1182,30 @@ double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
             const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
             const Point3DCL b= Coord_[upd[2]] - Coord_[upd[0]];
             const Point3DCL c= Coord_[  Nr  ] - Coord_[upd[0]];
-            const double bary1= inner_prod(a,c)/a.norm_sq(),
-                         bary2= inner_prod(b,c)/b.norm_sq();
-            if (bary1>=0 && bary2>=0 && bary1+bary2<=1)
-            {
-                const Point3DCL lotfuss= (1-bary1-bary2)*Coord_[upd[0]] + bary1*Coord_[upd[1]] + bary2*Coord_[upd[2]];
-                const double y= (1-bary1-bary2)*v_->Data[Map(upd[0])] + bary1*v_->Data[Map(upd[1])] + bary2*v_->Data[Map(upd[2])];
-                val= y + (lotfuss - Coord_[Nr]).norm();
-            }
+            double bary1= inner_prod(a,c)/a.norm_sq(),
+                   bary2= inner_prod(b,c)/b.norm_sq();
+            Normalize(bary1, bary2);
+            const Point3DCL lotfuss= (1-bary1-bary2)*Coord_[upd[0]] + bary1*Coord_[upd[1]] + bary2*Coord_[upd[2]];
+            const double y= (1-bary1-bary2)*v_->Data[Map(upd[0])] + bary1*v_->Data[Map(upd[1])] + bary2*v_->Data[Map(upd[2])];
+            val= y + (lotfuss - Coord_[Nr]).norm();
         }
     }
 
     return val;
 }
 
-void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
+
+void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero, int method)
+/// \param[in] bnd        Boundary (to determine periodic boundaries and matching function)
+/// \param[in] ModifyZero If this flag is set, the values around the zero level of the levelset function are new computed. Otherwise
+///                       the old values are kept.
+/// \param[in] method     Determines the method used to compute the distance to the zero level:
+///                       scaling by averaged gradient (\a method=0) or projection of the points onto zero level (\a method=1).
+///                       By experience, gradient scaling yields a smoother interface.
 {
 #ifdef _PAR
     throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
 #endif
-
     // Knoten an der Phasengrenze als Finished markieren
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
     const Uint idx= v_->RowIdx->GetIdx(),
@@ -1171,6 +1213,13 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
     int        sign[10];
     int        num_sign[3]; // - 0 +
     IdxT       Numb[10];
+    const bool scaling= method==0;
+    VectorCL   sumNormGradPhi, sumVol;
+
+    if (scaling) {
+        sumNormGradPhi.resize( size_);
+        sumVol.resize( size_);
+    }
 
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
@@ -1274,25 +1323,48 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero)
 
             // ab hier gilt intersec && ModifyZero == true
 
-            Point3DCL Schnitt[4];
-            int num= 0;
-            // Berechnung der Schnittpunkte mit den Kanten des Tetra
-            for (int vert= 0; vert<4; ++vert)
-                if (sign[data.Vertices[vert]]==0)
-                    Schnitt[num++]= Coord_[Numb[data.Vertices[vert]]];
+            if (scaling) {
+                // compute gradient of level set (as P1 FE on child => const gradient on child)
+                SMatrixCL<3,4> p1grad;
+                double det;
+                Point3DCL pt[4];
+                SVectorCL<4> ls;
+                for (int v= 0; v < 4; ++v) {
+                    pt[v]= Coord_ [Numb[data.Vertices[v]]];
+                    ls[v]= PhiLoc[data.Vertices[v]];
+                }
+                P1DiscCL::GetGradients( p1grad, det, pt);
+                const Point3DCL n( p1grad*ls);
+                const double absdet= std::abs(det),
+                        normgrad= n.norm();
 
-            for (int edge= 0; edge<6 && num<4; ++edge)
-            {
-                const Ubyte v1= data.Vertices[ VertOfEdge( edge, 0)],
-                            v2= data.Vertices[ VertOfEdge( edge, 1)];
-                if (sign[v1]*sign[v2] == -1) // Vorzeichenwechsel auf edge
-                {
-                    const IdxT Nr1= Numb[v1],
-                               Nr2= Numb[v2];
-                    const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
-                    Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
+                for (int v= 0; v < 4; ++v) {
+                    const IdxT MapNr= Map(Numb[data.Vertices[v]]);
+                    sumNormGradPhi[MapNr]+= normgrad*absdet;
+                    sumVol[MapNr]+= absdet;
+                    Typ_[MapNr]= Finished;
                 }
             }
+            else { // compute distance by projections on interface
+                Point3DCL Schnitt[4];
+                int num= 0;
+                // Berechnung der Schnittpunkte mit den Kanten des Tetra
+                for (int vert= 0; vert<4; ++vert)
+                    if (sign[data.Vertices[vert]]==0)
+                        Schnitt[num++]= Coord_[Numb[data.Vertices[vert]]];
+
+                for (int edge= 0; edge<6 && num<4; ++edge)
+                {
+                    const Ubyte v1= data.Vertices[ VertOfEdge( edge, 0)],
+                                v2= data.Vertices[ VertOfEdge( edge, 1)];
+                    if (sign[v1]*sign[v2] == -1) // Vorzeichenwechsel auf edge
+                    {
+                        const IdxT Nr1= Numb[v1],
+                                   Nr2= Numb[v2];
+                        const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
+                        Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
+                    }
+                }
 /*
 fil << "geom {OFF " << num << " 1 0\n";
 for (int i=0; i<num; ++i)
@@ -1307,45 +1379,57 @@ else
     fil << "4 0 1 3 2";
 fil << "\n}\n";
 */
-            if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
+                if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
 
-            for (int repeat=0; repeat<num-2; ++repeat)
-            { // fuer num==4 (Schnitt ABDC ist viereckig)
-              // zwei Dreiecke ABC + DBC betrachten
-                if (repeat) Schnitt[0]= Schnitt[3];
+                for (int repeat=0; repeat<num-2; ++repeat)
+                { // fuer num==4 (Schnitt ABDC ist viereckig)
+                  // zwei Dreiecke ABC + DBC betrachten
+                    if (repeat) Schnitt[0]= Schnitt[3];
 
-                const Point3DCL a= Schnitt[1] - Schnitt[0],
-                                b= Schnitt[2] - Schnitt[0];
+                    const Point3DCL a= Schnitt[1] - Schnitt[0],
+                                    b= Schnitt[2] - Schnitt[0];
 
-                for (int vert=0; vert<4; ++vert)
-                {
-                    if (sign[data.Vertices[vert]]==0) continue;
-
-                    const IdxT Nr= Numb[data.Vertices[vert]],
-                               MapNr= Map(Nr);
-                    const Point3DCL Crd= Coord_[Nr],
-                                    c=   Crd - Schnitt[0];
-                    double dist= std::min( c.norm(), (Crd-Schnitt[1]).norm());
-                    dist= std::min( dist, (Crd-Schnitt[2]).norm());
-
-                    const double bary1= inner_prod(a,c)/a.norm_sq(),
-                                 bary2= inner_prod(b,c)/b.norm_sq();
-                    if (bary1>=0 && bary2>=0 && bary1+bary2<=1)
+                    for (int vert=0; vert<4; ++vert)
                     {
-                       const Point3DCL lotfuss= (1-bary1-bary2)*Schnitt[0] + bary1*Schnitt[1] + bary2*Schnitt[2];
-                       dist= std::min( dist, (lotfuss - Crd).norm());
-                    }
+                        if (sign[data.Vertices[vert]]==0) continue;
 
-                    if (Typ_[MapNr] != Finished)
-                    {
-                        Typ_[MapNr]= Finished;
-                        v_->Data[MapNr]= dist;
+                        const IdxT Nr= Numb[data.Vertices[vert]],
+                                   MapNr= Map(Nr);
+                        const Point3DCL Crd= Coord_[Nr],
+                                        c=   Crd - Schnitt[0];
+                        double dist= std::min( c.norm(), (Crd-Schnitt[1]).norm());
+                        dist= std::min( dist, (Crd-Schnitt[2]).norm());
+
+                        double bary1= inner_prod(a,c)/a.norm_sq(),
+                               bary2= inner_prod(b,c)/b.norm_sq();
+                        Normalize(bary1, bary2);
+                        const Point3DCL lotfuss= (1-bary1-bary2)*Schnitt[0] + bary1*Schnitt[1] + bary2*Schnitt[2];
+                        dist= std::min( dist, (lotfuss - Crd).norm());
+
+                        if (Typ_[MapNr] != Finished)
+                        {
+                            Typ_[MapNr]= Finished;
+                            v_->Data[MapNr]= dist;
+                        }
+                        else
+                            v_->Data[MapNr]= std::min( dist, v_->Data[MapNr]);
                     }
-                    else
-                        v_->Data[MapNr]= std::min( dist, v_->Data[MapNr]);
                 }
             }
         }
+    }
+
+    if (ModifyZero && scaling) {
+#ifdef _PAR
+        // accumulate sums
+        ex_->Accumulate( sumNormGradPhi);
+        ex_->Accumulate( sumVol);
+#endif
+        for (IdxT i=0; i<size_; ++i)
+            if (Typ_[i]==Finished) { // dof at interface
+                const double scale= sumNormGradPhi[i]/sumVol[i]; // average norm
+                v_->Data[i]= std::abs( Old_[i])/scale;
+            }
     }
 //fil << "}\n";
     // delete memory allocated for augmIdx
@@ -1440,7 +1524,7 @@ void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero)
     throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
 #endif
 
-    InitZeroPer( bnd, ModifyZero);
+    InitZeroPer( bnd, ModifyZero, 0);
     InitClosePer();
 
     IdxT next;

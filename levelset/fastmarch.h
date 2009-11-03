@@ -81,6 +81,8 @@ class FastMarchCL
     IdxT   FindTrial() const;                           // Find vert with minimal value in Close_
     void   Update( const IdxT);                         // Update value on a vert and put this vert into Close_
     double CompValueProj( IdxT, int num, const IdxT upd[3]) const;
+    inline void Normalize( double& b) const;                 // Normalize b onto unit interval [0,1]
+    inline void Normalize( double& b1, double& b2) const;    // Normalize (b1,b2) onto unit triangle
     /// \brief Store all vertices and values around the zero level of the levelset function
     void InitZeroSet(VectorCL&, VectorCL&);
     /// \brief Approximate Distance to zero level
@@ -106,7 +108,7 @@ class FastMarchCL
 #endif
 
     /// \brief Finds the zero level of the levelset function and handle verts around it.
-    void InitZero( bool ModifyZero= true);
+    void InitZero( bool ModifyZero= true, int method= 0);
     /// \brief Restore signs of the levelset function according to old signs.
     void RestoreSigns();
     /// \brief Reparametrization of the levelset function with the fast marching algorithm.
@@ -118,7 +120,7 @@ class FastMarchCL
 
     /// \name variants for periodic boundaries
     //@{
-    void InitZeroPer( const BndDataCL<>&, bool ModifyZero= true);
+    void InitZeroPer( const BndDataCL<>&, bool ModifyZero= true, int method= 0);
     void ReparamPer( const BndDataCL<>&, bool ModifyZero= true);
     //@}
 
@@ -147,6 +149,22 @@ class FastMarchCL
     void DistributeZeroLevel();                                 ///< Distribute all DoF marked as Finished to all procs
 #endif
 };
+
+inline void FastMarchCL::Normalize( double& b) const 
+// Normalize b onto unit interval [0,1]
+{ 
+    if (b<0) b=0; 
+    else if (b>1) b=1; 
+}
+
+inline void FastMarchCL::Normalize( double& b1, double& b2) const
+// Normalize (b1,b2) onto unit triangle 
+{ 
+    Normalize(b1); Normalize(b2); // now (b1,b2) is in unit square 
+    const double a=(b1+b2-1)/2.; 
+    if (a>0) { b1-=a; b2-=a; } // projection on diagonal y = -x
+}
+
 
 #ifdef _PAR
 // Declaration of wrapper for gathering
