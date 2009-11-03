@@ -1834,6 +1834,7 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 // Krylov-methods as preconditioner.
 // Needed for, e.g., InexactUzawa.
 //=============================================================================
+/// Wrapper to use a solver as preconditioner. Needed for, e.g., inexact Uzawa.
 template <class SolverT>
 class SolverAsPreCL
 {
@@ -1844,7 +1845,10 @@ class SolverAsPreCL
   public:
     SolverAsPreCL( SolverT& solver, std::ostream* output= 0)
         : solver_( solver), output_( output) {}
-
+    /// return solver object
+    SolverT& GetSolver()             { return solver_; }
+    /// return solver object
+    const SolverT& GetSolver() const { return solver_; }
 #ifdef _PAR
     /// \brief Check if return preconditioned vectors are accumulated after calling Apply
     bool RetAcc() const   { return true; }
