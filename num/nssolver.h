@@ -261,7 +261,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     const bool useAccur=true;
 #endif
     double res0= 1.;
-
+    int oseenIter= 0;
     _iter= 0;
     for(;;++_iter) { // ever
         NS_.SetupNonlinear(&NS_.N, &v, &cplN);
@@ -291,7 +291,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         solver_.SetTol( outer_tol);
         w= 0.0; q= 0.0;
         solver_.Solve( AN_->GetFinest(), B, w, q, d, e); // solver_ should use a relative termination criterion.
-
+        oseenIter+= solver_.GetIter();
+        
         // calculate step length omega:
         relax.Update( NS_, A,  B, v, p, b, cplN, c, w,  q, alpha);
 
@@ -302,6 +303,9 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         v.Data-= omega*w;
         p     -= omega*q;
     }
+    IF_MASTER
+  
+      std::cout << "overall iterations of Oseen solver:\t" << oseenIter << std::endl;    
 }
 
 template<class NavStokesT, class RelaxationPolicyT>
@@ -321,6 +325,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
     const bool useAccur=true;
 #endif
     double res0= 1.;
+    int oseenIter= 0;
 
     _iter= 0;
     for(;;++_iter) { // ever
@@ -349,6 +354,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         w= 0.0; q= 0.0;
         solver_.SetTol( outer_tol);
         solver_.Solve( *AN_, B, w, q, d, e); // solver_ should use a relative termination criterion.
+        oseenIter+= solver_.GetIter();
 
         // calculate step length omega:
         relax.Update( NS_, A.GetFinest(),  B.GetFinest(), v, p, b, cplN, c, w,  q, alpha);
@@ -360,6 +366,8 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         v.Data-= omega*w;
         p     -= omega*q;
     }
+    IF_MASTER
+      std::cout << "overall iterations of Oseen solver:\t" << oseenIter << std::endl;    
 }
 
 }    // end of namespace DROPS
