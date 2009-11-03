@@ -510,15 +510,18 @@ int ExtIdxDescCL::HandlerScatterUpdateXNumb( DDD_OBJ objp, void* buf)
 void ExtIdxDescCL::Old2New(VecDescCL* v)
 {
     VectorCL tmp( v->Data);
+    // set v to zero vector with appropriate length
     v->SetIdx( v->RowIdx);
+    // copy standard FE part
+    const IdxT nStd= GetNumUnknownsStdFE();
 #if defined(__SUNPRO_CC) || defined(DROPS_WIN)
-    for (size_t i=0; i<Xidx_.size(); ++i)
+    for (size_t i=0; i<nStd; ++i)
         v->Data[i] = tmp[i];
 #else
-    v->Data[std::slice( 0, Xidx_.size(), 1)]= tmp[std::slice( 0, Xidx_.size(), 1)];
+    v->Data[std::slice( 0, nStd, 1)]= tmp[std::slice( 0, nStd, 1)];
 #endif
 
-    if (Xidx_.size() != Xidx_old_.size()) {
+    if (Xidx_.size() != Xidx_old_.size()) { // standard FE index changed (e.g., grid changed)
 #ifndef _PAR
           std::cout << "ExtIdxDescCL::Old2New: Xidx: " << Xidx_.size()
                     << "\tXidx_old: " << Xidx_old_.size()
@@ -527,11 +530,12 @@ void ExtIdxDescCL::Old2New(VecDescCL* v)
         return;
     }
 
+    // treat extended part
     IdxT ni= 0, di=0, ri= 0, ci= 0;
     for (size_t i= 0; i < Xidx_.size(); ++i) {
         if ( Xidx_old_[i] == NoIdx && Xidx_[i] != NoIdx) ++ni;
         if ( Xidx_old_[i] != NoIdx && Xidx_[i] == NoIdx) ++di;
-        if ( Xidx_old_[i] != NoIdx && Xidx_[i] != NoIdx) {
+        if ( Xidx_old_[i] != NoIdx && Xidx_[i] != NoIdx) { // extended dof was also extended before
             if ( Xidx_old_[i] != Xidx_[i])
                 ++ri;
             v->Data[Xidx_[i]]= tmp[Xidx_old_[i]];
