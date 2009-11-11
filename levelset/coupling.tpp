@@ -1264,7 +1264,8 @@ inline void cplBroydenPolicyCL::Update( VecDescCL& v)
     sigma_ = ExVel.Norm_sq( v.Data, true, useAccur);
 #endif
 
-    (*output_) << "sigma = " << sigma_ << std::endl;
+    if (output_)
+        (*output_) << "sigma = " << sigma_ << std::endl;
     if (sigma_ < tol_*tol_) {
         if (output_)
             (*output_) << "Solution found" << std::endl;
