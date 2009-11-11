@@ -801,6 +801,7 @@ SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SpaceTimeDisc
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),  stk_theta_( stk_theta), ls_theta_( ls_theta),
     implicitpressure_( implicitpressure), Mold_( 0), Eold_( 0)
 {
+    stab_ *= stk_theta_;
     Update();
 }
 

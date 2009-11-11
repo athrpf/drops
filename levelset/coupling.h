@@ -349,6 +349,7 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
     using base_::LB_;
     using base_::lsetmod_;
     using base_::alpha_;
+    using base_::stab_;
 
     void ComputeDots ();
     VectorCL oldv_,     // old velocity
