@@ -649,12 +649,12 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep(
         relax.Update( Stokes_.v);
 
 #ifndef _PAR
-        res_u   = dot( Stokes_.v.Data, Stokes_.M.Data*Stokes_.v.Data);
+        res_u   = std::sqrt( dot( Stokes_.v.Data, Stokes_.M.Data*Stokes_.v.Data));
 #else
-        res_u   = ExVel.ParDot( Stokes_.v.Data, true, Stokes_.M.Data*Stokes_.v.Data, true, useAccur);
+        res_u   = std::sqrt( ExVel.ParDot( Stokes_.v.Data, true, Stokes_.M.Data*Stokes_.v.Data, true, useAccur));
 #endif
 
-        std::cout << "residual of u: " << std::sqrt( res_u) << std::endl;
+        std::cout << "residual of u: " << res_u << std::endl;
 
         Stokes_.v.Data = v - Stokes_.v.Data;
 
@@ -1298,7 +1298,9 @@ inline void cplBroydenPolicyCL::Update( VecDescCL& v)
 #endif
 
     kappa_ /= (1.0-2.0*theta);
-    (*output_) << "kappa = " << kappa_ << std::endl;
+
+    if (output_)
+        (*output_) << "kappa = " << kappa_ << std::endl;
     if (std::fabs(kappa_) >= kappamax_){
         if (output_)
             (*output_) << "ill-conditioned update: kappa = "<< kappa_ << std::endl;
