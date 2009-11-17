@@ -483,6 +483,13 @@ MakePoint3D(double a, double b, double c)
     return ret;
 }
 
+inline Point2DCL
+MakePoint2D(double a, double b)
+{
+    Point2DCL ret( Uninitialized);
+    ret[0]= a; ret[1]= b;
+    return ret;
+}
 
 template <Uint _Rows, Uint _Cols>
 class SMatrixCL : public SVectorCL<_Rows*_Cols>
@@ -501,6 +508,7 @@ class SMatrixCL : public SVectorCL<_Rows*_Cols>
     double  operator() (int row, int col) const { return (*this)[row*_Cols+col]; }
 
     SVectorCL<_Rows> col( int) const;
+    void             col( int, const SVectorCL<_Rows>&);
 
 // Zuweisung & Co.
     SMatrixCL& operator+=(const SMatrixCL&);                // Matrix=Matrix+Matrix'
@@ -521,6 +529,14 @@ SMatrixCL<_Rows, _Cols>::col (int c) const
     for (Uint i= 0; i != _Rows; ++i, c+= _Cols)
         ret[i]= (*this)[c];
     return ret;
+}
+
+template<Uint _Rows, Uint _Cols>
+void
+SMatrixCL<_Rows,_Cols>::col (int c, const SVectorCL<_Rows>& v)
+{
+    for (Uint i= 0; i != _Rows; ++i)
+        (*this)( i, c)= v[i];
 }
 
 template<Uint _Rows, Uint _Cols>
@@ -648,6 +664,17 @@ GramMatrix(const SMatrixCL<_Rows, _Cols>& m)
 }
 
 template<Uint _Rows, Uint _Cols>
+SVectorCL<_Cols>
+transp_mul(const SMatrixCL<_Rows, _Cols>& m, const SVectorCL<_Rows>& v)
+{
+    SVectorCL<_Cols> ret(0.0);
+    for (Uint col=0; col!=_Cols; ++col)
+        for (Uint i=0; i!=_Rows; ++i)
+                ret[col]+= m( i, col)*v[i];
+    return ret;
+}
+
+template<Uint _Rows, Uint _Cols>
 SVectorCL<_Rows>
 operator*(const SMatrixCL<_Rows, _Cols>& m, const SVectorCL<_Cols>& v)
 {
@@ -690,13 +717,14 @@ std::ostream& operator << (std::ostream& os, const SMatrixCL<_Rows, _Cols>& m)
 /// \brief A QR-factored, quadratic matrix, A=QR.
 ///
 /// This allows for fast application of A^{-1} and A.
-template <Uint Rows_>
+/// A can have more rows than columns. In this case, the least-squares-solution is computed.
+template <Uint Rows_, Uint Cols_= Rows_>
 class QRDecompCL
 {
   private:
-    SMatrixCL<Rows_,Rows_> a_;
-    double d_[Rows_]; ///< The diagonal of R
-    double beta_[Rows_]; ///< The reflections are R_j= I + beta_j*a_[j:Rows_-1][j]
+    SMatrixCL<Rows_,Cols_> a_;
+    double d_[Cols_]; ///< The diagonal of R
+    double beta_[Cols_]; ///< The reflections are R_j= I + beta_j*a_[j:Rows_-1][j]
 
   public:
     QRDecompCL () : a_( Uninitialized) {}
@@ -704,12 +732,12 @@ class QRDecompCL
       QRDecompCL (MatT m)
         : a_( m) { prepare_solve (); }
 
-    SMatrixCL<Rows_,Rows_>&       GetMatrix ()       { return a_; }
-    const SMatrixCL<Rows_,Rows_>& GetMatrix () const { return a_; }
+    SMatrixCL<Rows_,Cols_>&       GetMatrix ()       { return a_; }
+    const SMatrixCL<Rows_,Cols_>& GetMatrix () const { return a_; }
 
     void prepare_solve (); ///< Computes the factorization.
 
-    ///@{ Call only after prepare_solve; solves are inplace.
+    ///@{ Call only after prepare_solve; solves are inplace. For least-squares, the first Cols_ entries are the least squares solution, the remaining components of b are the residual-vector.
     void Solve (SVectorCL<Rows_>& b) const;
     template <template<class> class SVecCont>
     void Solve (SVecCont<SVectorCL<Rows_> >& b) const;
@@ -718,13 +746,13 @@ class QRDecompCL
     ///@}
 };
 
-template <Uint Rows_>
+template <Uint Rows_, Uint Cols_>
   void
-  QRDecompCL<Rows_>::prepare_solve ()
+  QRDecompCL<Rows_, Cols_>::prepare_solve ()
 {
     // inplace Householder
     double sigma, sp;
-    for (Uint j= 0; j < Rows_; ++j) {
+    for (Uint j= 0; j < Cols_; ++j) {
         sigma = 0.;
         for(Uint i= j; i < Rows_; ++i)
             sigma+= std::pow( a_(i, j), 2);
@@ -733,7 +761,7 @@ template <Uint Rows_>
         d_[j]= (a_(j, j) < 0 ? 1. : -1.) * std::sqrt( sigma);
         beta_[j]= 1./(d_[j]*a_(j, j) - sigma);
         a_(j, j)-= d_[j];
-        for(Uint k= j + 1; k < Rows_; ++k) { // Apply reflection in column j
+        for(Uint k= j + 1; k < Cols_; ++k) { // Apply reflection in column j
             sp= 0.;
             for(Uint i= j; i < Rows_; ++i)
                 sp+= a_(i, j) * a_(i, k);
@@ -744,12 +772,12 @@ template <Uint Rows_>
     }
 }
 
-template <Uint Rows_>
+template <Uint Rows_, Uint Cols_>
   void
-  QRDecompCL<Rows_>::Solve (SVectorCL<Rows_>& b) const
+  QRDecompCL<Rows_, Cols_>::Solve (SVectorCL<Rows_>& b) const
 {
     double sp;
-    for(Uint j= 0; j < Rows_; ++j) { // Apply reflection in column j
+    for(Uint j= 0; j < Cols_; ++j) { // Apply reflection in column j
         sp= 0.;
         for(Uint i= j; i < Rows_; ++i)
             sp+= a_(i, j) * b[i];
@@ -757,26 +785,26 @@ template <Uint Rows_>
         for(Uint i= j; i < Rows_; ++i)
             b[i]+= a_(i, j)*sp;
     }
-    for (Uint i= Rows_ - 1; i < Rows_; --i) { // backsolve
-        for (Uint j= i + 1; j < Rows_; ++j)
+    for (Uint i= Cols_ - 1; i < Cols_; --i) { // backsolve
+        for (Uint j= i + 1; j < Cols_; ++j)
             b[i]-= a_(i, j)*b[j];
         b[i]/= d_[i];
     }
 }
 
-template <Uint Rows_>
+template <Uint Rows_, Uint Cols_>
   template <template<class> class SVecCont>
   void
-  QRDecompCL<Rows_>::Solve (SVecCont<SVectorCL<Rows_> >& b) const
+  QRDecompCL<Rows_, Cols_>::Solve (SVecCont<SVectorCL<Rows_> >& b) const
 {
     for (Uint i= 0; i < b.size(); ++i)
         Solve( b[i]);
 }
 
-template <Uint Rows_>
+template <Uint Rows_, Uint Cols_>
   template <Uint Size>
     void
-    QRDecompCL<Rows_>::Solve (SArrayCL<SVectorCL<Rows_>, Size>& b) const
+    QRDecompCL<Rows_, Cols_>::Solve (SArrayCL<SVectorCL<Rows_>, Size>& b) const
 {
     for (Uint i= 0; i < Size; ++i)
         Solve( b[i]);
