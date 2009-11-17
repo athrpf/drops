@@ -4,6 +4,10 @@
 const double dat[]= { 0., 1., 1., 2. };
 const double dat2[]= { 1., 0. };
 
+const double dat3[]= { -9./2., -4., 3., -3., 1., 2. };
+const double dat4[]= { -7., -2., -9. };
+
+
 using namespace DROPS;
 
 int Test1()
@@ -29,6 +33,13 @@ int Test2()
     SVectorCL<2> r( dat2 + 0);
     qr.Solve( r);
     std::cout << r << std::endl;
+
+    std::cout << "Least squares: solution should be (0.4 0.4) with residual 11. Drops says:" << std::endl;
+    QRDecompCL<3,2> qrls ( dat3 + 0);
+    SVectorCL<3> rls( dat4 + 0);
+    qrls.Solve( rls);
+    std::cout << rls << std::endl;
+
     return 0;
 }
 
