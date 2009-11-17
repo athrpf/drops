@@ -490,7 +490,7 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 }
 
 
-void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl, bool euklid)
+void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl, bool euklid, int method)
 /** \param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
  *  \param OnlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
  *  \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
@@ -508,7 +508,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
             fm.InitZeroPer( Bnd_, ModifyZero);
         }
         else
-            fm.InitZero( ModifyZero);
+            fm.InitZero( ModifyZero, method);
         fm.RestoreSigns();
     }
     else if (Periodic) {
@@ -520,7 +520,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
     else
     {
         if (!euklid)
-            fm.Reparam( ModifyZero);
+            fm.Reparam( ModifyZero, method);
         else {
             fm.ReparamEuklid( ModifyZero);
         }

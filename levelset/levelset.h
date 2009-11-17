@@ -90,7 +90,7 @@ class LevelsetP2CL
     template<class DiscVelSolT>
     void SetupSystem( const DiscVelSolT&);
     /// Reparametrization by Fast Marching method (recommended).
-    void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false, bool euklid= false);
+    void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false, bool euklid= false, int method= 0);
 
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
