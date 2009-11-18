@@ -33,16 +33,16 @@ Old( DROPS::MultiGridCL& mg)
                  "\niterator:\n";
 
     Uint tmp= 0;
-    DROPS_FOR_TRIANG_VERTEX( mg, /*default level*/, it) {
+    DROPS_FOR_TRIANG_VERTEX( mg, /*default level*/ -1, it) {
         tmp+= it->GetId().GetIdent();
     }
-    DROPS_FOR_TRIANG_EDGE( mg, /*default level*/, it) {
+    DROPS_FOR_TRIANG_EDGE( mg, /*default level*/ -1, it) {
         ++tmp;
     }
-    DROPS_FOR_TRIANG_FACE( mg, /*default level*/, it) {
+    DROPS_FOR_TRIANG_FACE( mg, /*default level*/-1, it) {
         ++tmp;
     }
-    DROPS_FOR_TRIANG_TETRA( mg, /*default level*/, it) {
+    DROPS_FOR_TRIANG_TETRA( mg, /*default level*/-1, it) {
         tmp+= it->GetId().GetIdent();
     }
     return tmp;
