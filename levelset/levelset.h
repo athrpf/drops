@@ -53,7 +53,6 @@ class LevelsetP2CL
     SurfaceForceT       SF_;
 
     SurfaceTensionCL&   sf_;      ///< data for surface tension
-    void SetupReparamSystem( MatrixCL&, MatrixCL&, const VectorCL&, VectorCL&) const;
     void SetupSmoothSystem ( MatrixCL&, MatrixCL&)                             const;
     void SmoothPhi( VectorCL& SmPhi, double diff)                              const;
 
