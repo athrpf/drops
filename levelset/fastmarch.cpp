@@ -394,7 +394,7 @@ void FastMarchCL::InitZero( bool ModifyZero, int method)
     Old_= v_->Data;
     VecDescCL oldv( *v_);
 
-    v_->Data= 1.; // Make the sign unique; only for testing
+    // v_->Data= 1.; // Make the sign uniform; *only* for testing
 
     if (method == 2) {
         std::cout << "Method 2" << std::endl;
@@ -722,28 +722,28 @@ void FastMarchCL::Reparam( bool ModifyZero, int method)
 {
     TimerCL time;
     InitZero( ModifyZero, method);
-//     InitClose();
-// 
-//     IdxT next;
-// 
-//     while ((next= FindTrial()) != NoIdx)
-//     {
-//         Close_.erase( next);
-//         Typ_[next]= Finished;
-// 
-//         std::set<IdxT> neighVerts;
-//         for (Uint n=0; n<neigh_[next].size(); ++n)
-//         { // collect all neighboring verts in neighVerts
-//             for (Uint i=0; i<4; ++i)
-//                 neighVerts.insert( neigh_[next][n][i]);
-//         }
-//         for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
-//             it!=end; ++it)
-//         { // update all neighboring verts, mark as Close
-//             Update( *it);
-//         }
-//         neigh_[next].clear(); // will not be needed anymore
-//     }
+    InitClose();
+
+    IdxT next;
+
+    while ((next= FindTrial()) != NoIdx)
+    {
+        Close_.erase( next);
+        Typ_[next]= Finished;
+
+        std::set<IdxT> neighVerts;
+        for (Uint n=0; n<neigh_[next].size(); ++n)
+        { // collect all neighboring verts in neighVerts
+            for (Uint i=0; i<4; ++i)
+                neighVerts.insert( neigh_[next][n][i]);
+        }
+        for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
+            it!=end; ++it)
+        { // update all neighboring verts, mark as Close
+            Update( *it);
+        }
+        neigh_[next].clear(); // will not be needed anymore
+    }
 
     RestoreSigns();
     time.Stop();
