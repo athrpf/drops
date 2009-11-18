@@ -10,7 +10,7 @@ EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
         mass quad5 downwind quad5_2D interfaceP1FE serialization xfem \
-        directsolver f_Gamma neq splitboundary
+        directsolver f_Gamma neq splitboundary reparam_init
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -191,6 +191,14 @@ neq: \
 splitboundary: \
     ../tests/splitboundary.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+reparam_init: \
+    ../tests/reparam_init.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
+    ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o \
+    ../misc/problem.o ../levelset/levelset.o ../num/fe.o \
+    ../misc/utils.o ../num/discretize.o ../num/interfacePatch.o \
+    ../levelset/fastmarch.o ../levelset/surfacetension.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:

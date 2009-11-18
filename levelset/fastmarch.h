@@ -113,7 +113,7 @@ class FastMarchCL
     void RestoreSigns();
     /// \brief Reparametrization of the levelset function with the fast marching algorithm.
     /// This function also calls InitZero and RestoreSigns.
-    void Reparam( bool ModifyZero= true);
+    void Reparam( bool ModifyZero= true, int method= 0);
 
     /// \brief Reparametrize with Euclidian distance to vertices around the zero level
     void ReparamEuklid( bool ModifyZero=true);

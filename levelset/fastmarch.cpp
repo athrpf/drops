@@ -6,11 +6,18 @@
 //**************************************************************************
 
 #include "levelset/fastmarch.h"
+#include "num/solver.h"
 #include <fstream>
 #include <cstring>
 #ifdef _OPENMP
 #  include <omp.h>
 #endif
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+#    include <tr1/unordered_map>
+#else
+#    include <map>
+#endif
+#include <set>
 
 
 namespace DROPS
@@ -98,12 +105,252 @@ double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
 #endif
 
 
+/// \brief The class provides, for each tetra, that is cut by the interface, a set of all levelset-unknowns, that are at most two tetras away. Only levelset-unknowns are considered, that belong to a tetra that is cut by the interface.
+///
+/// Consider the graph with level-set-unkowns at the interface as vertices. The edges of the graph are tetras.
+/// The class computes, for each vertex, the set of vertices that are at most two edges away.
+/// The algorithm is breadth-first search. This mapping is inverted to provide the desired map.
+/// The work is done in the constructor. The resulting map can be accessed via operator().
+///
+/// The parallelization of this class probably involves a lot of work.
+class TetraNeighborCL
+{
+  public:
+    typedef std::set<IdxT> IdxSetT;
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+    typedef std::tr1::unordered_map<const TetraCL*, IdxSetT> TetraToIdxMapT;
+#else
+    typedef std::map<const TetraCL*, IdxSetT> TetraToIdxMapT;
+#endif
+
+  private:
+    typedef std::set<const TetraCL*> TetraSetT;
+    typedef std::vector<TetraSetT>   IdxToTetraMapT;
+
+    IdxToTetraMapT idx_to_tetra_; ///< Used to accumulate the reverse of the desired mapping; cleared at the end of the constructor.
+    TetraToIdxMapT tetra_to_idx_; ///< A set of levelset-un knowns for each tetra, that is cut by the interface.
+
+    /// 
+    /// \brief Updates the neighborhood information: traverse all outgoing edges (=tetras) of idx and add them to their end-vertices.
+    void insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint ls_idx, const IdxToTetraMapT& idx_to_tetra);
+    /// \brief Traverse the edges of the graph and update the vertex-neighborhoods.
+    void ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls);
+    /// \brief Reverse the map produced by ComputeNeighborTetras().
+    void ComputeIdxToTetraMap ();
+
+  public:
+    TetraNeighborCL (const MultiGridCL& mg, const VecDescCL& ls)
+    {
+        ComputeNeighborTetras ( mg, ls);
+        ComputeIdxToTetraMap ();
+        idx_to_tetra_.clear();
+    }
+
+    /// \brief Accessor to the map from levelset-unknowns to tetras.
+    TetraToIdxMapT& operator() () { return tetra_to_idx_; }
+};
+
+void TetraNeighborCL::insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint ls_idx,
+    const IdxToTetraMapT& idx_to_tetra)
+{
+    IdxT idx_j;
+    for (Uint j= 0; j < 4; ++j) {
+        idx_j= t.GetVertex( j)->Unknowns( ls_idx);
+        idx_to_tetra_[idx].insert( idx_to_tetra[idx_j].begin(), idx_to_tetra[idx_j].end());
+    }
+    for (Uint j= 0; j < 6; ++j) {
+        idx_j= t.GetEdge( j)->Unknowns( ls_idx);
+        idx_to_tetra_[idx].insert( idx_to_tetra[idx_j].begin(), idx_to_tetra[idx_j].end());
+    }
+}
+
+void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls)
+{
+    const DROPS::Uint lvl= ls.GetLevel();
+    const Uint ls_idx= ls.RowIdx->GetIdx();
+
+    DROPS::InterfacePatchCL patch;
+    IdxToTetraMapT idx_to_tetra1( ls.Data.size());
+    idx_to_tetra_.resize( ls.Data.size());
+
+    // Record for each index, which tetras are immediate neighbors. Do this only around the interface.
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        patch.Init( *it, ls);
+        if (!patch.Intersects()) continue;
+
+        for (Uint i= 0; i < 4; ++i)
+            idx_to_tetra1[it->GetVertex( i)->Unknowns( ls_idx)].insert( &*it);
+        for (Uint i= 0; i < 6; ++i)
+            idx_to_tetra1[it->GetEdge( i)->Unknowns( ls_idx)].insert( &*it);
+    }
+
+    // Record now also the neighbors of neighbors. Do this only, if the idx belongs to a tetra that is cut by the interface.
+    IdxT idx;
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        for (Uint i= 0; i < 4; ++i) {
+            idx= it->GetVertex( i)->Unknowns( ls_idx);
+            if (idx_to_tetra1[idx].empty()) continue; // The vertex has no tetra on an interface.
+            insert_neighbor_tetras( idx, *it, ls_idx, idx_to_tetra1);
+        }
+        for (Uint i= 0; i < 6; ++i) {
+            idx= it->GetEdge( i)->Unknowns( ls_idx);
+            if (idx_to_tetra1[idx].empty()) continue; // The edge has no tetra on an interface.
+            insert_neighbor_tetras( idx, *it, ls_idx, idx_to_tetra1);
+        }
+    }  
+}
+
+void TetraNeighborCL::ComputeIdxToTetraMap ()
+{
+    for (size_t idx= 0; idx < idx_to_tetra_.size(); ++idx)
+        for (TetraSetT::iterator sit= idx_to_tetra_[idx].begin(); sit != idx_to_tetra_[idx].end(); ++sit)
+            tetra_to_idx_[*sit].insert( idx);
+}
+
+/// \brief Computes the distance d from a point p to the triangle tri_.
+///
+/// The latter is given via the world coordinates of its vertices in the constructor.
+///
+/// The base point l is the point in tri with distance d from p. Although currently not used,
+/// the code to compute l is tested and functional. l is given in barycentric coordinates with respect to tri.
+class ExactDistanceInitCL
+{
+  private:
+    /// \brief Computes the distance d of a point p to the line through v0, v1.  If the base l is not in the segment [v0, v1], returns false.
+    static bool dist (const Point3DCL& v0, const Point3DCL& v1, const Point3DCL& p, double& d /*, Point2DCL& l*/);
+
+    const Point3DCL* tri_; ///< The current triangle to which distances are computed; *no* copies of the points.
+    QRDecompCL<3,2> qr_;
+
+  public:
+    ExactDistanceInitCL (const Point3DCL tri[3]);
+
+    /// \brief Computes the distance d from a point p to the triangle tri_. The latter is given via the world coordinates of its vertices.
+    void dist (/*const Point3DCL tri[3],*/ const Point3DCL& p, double& d /*, SVectorCL<3>& l*/);
+
+    /// \brief Simple tests to check the correctness of local distance computations manually.
+    static void Test ();
+};
+
+ExactDistanceInitCL::ExactDistanceInitCL (const Point3DCL tri[3])
+    : tri_( tri)
+{
+    SMatrixCL<3,2> M( Uninitialized);
+    M.col( 0, tri[1] - tri[0]);
+    M.col( 1, tri[2] - tri[0]);
+    qr_.GetMatrix()= M;
+    qr_.prepare_solve();
+}
+
+void ExactDistanceInitCL::Test ()
+{
+    Point3DCL tri[3];
+    tri[0]= std_basis<3>( 0);
+    tri[1]= std_basis<3>( 1);
+//    tri[2]= std_basis<3>( 2);
+    tri[2]= tri[1]+1e-5*std_basis<3>( 2);
+    ExactDistanceInitCL dist_to_tri( tri);
+
+    Point3DCL p= std_basis<3>( 3);
+    p[0]= .5;
+    p[1]= -1e5;
+//    p= -p;
+    double d;
+    Point3DCL l;
+    dist_to_tri.dist( /*tri,*/ p, d /*, l*/);
+    std::cerr.precision( 20);
+    std::cerr << "p: " << p << " d: " << d << std::endl; // << " l: " << l << std::endl;
+}
+
+bool ExactDistanceInitCL::dist (const Point3DCL& v0, const Point3DCL& v1, const Point3DCL& p, double& d /*, Point2DCL& l*/)
+{
+    const double ll= inner_prod( v1 - v0, p - v0)/(v1 - v0).norm_sq();
+    if (ll >= 0. && 1. - ll >= 0.) {
+        d= ((1. - ll)*v0 + ll*v1 - p).norm(); // l= MakePoint2D( 1. - ll, ll);
+        return true;
+    }
+    return false;
+}
+
+void ExactDistanceInitCL::dist (/*const Point3DCL tri[3],*/ const Point3DCL& p, double& d /*, SVectorCL<3>& l*/)
+{
+//     SMatrixCL<3,2> M;
+//     M.col( 0, tri[1] - tri[0]);
+//     M.col( 1, tri[2] - tri[0]);
+//     QRDecompCL<3, 2> qr( M);*/
+    Point3DCL ll( p - tri_[0]);
+    qr_.Solve( ll); // The first two components are the least-squares-solution, the last is the residual.
+
+    if (ll[0] >= 0. && ll[1] >= 0. && 1. - ll[0] - ll[1] >= 0.) {
+        d= std::fabs( ll[2]); // l= MakePoint3D( 1. - ll[0] - ll[1], ll[0], ll[1]);
+        return;
+    }
+
+    // Compute the distance to the three boundary segments.
+    double tmpd;
+    // Point2DCL ll2;
+    if (ll[1] < 0. && ExactDistanceInitCL::dist( tri_[0], tri_[1], p, tmpd /*, ll2*/)) {
+        d= tmpd; // l= MakePoint3D( ll2[0], ll2[1], 0.);
+        return;
+    }
+    if (ll[0] < 0. && ExactDistanceInitCL::dist( tri_[0], tri_[2], p, tmpd /*, ll2*/)) {
+        d= tmpd; // l= MakePoint3D( ll2[0], 0., ll2[1]);
+        return;
+    }
+    if (1. - ll[0] - ll[1] < 0. && ExactDistanceInitCL::dist( tri_[1], tri_[2], p, tmpd /*, ll2*/)) {
+        d= tmpd; // l= MakePoint3D( 0., ll2[0], ll2[1]);
+        return;
+    }
+
+    // Compute the distance to the vertices.
+    d= std::min( (p - tri_[0]).norm(), std::min( (p - tri_[1]).norm(), (p - tri_[2]).norm()));
+}
+
+/// \brief Computes the distance-function of the levelset of ls to the neighboring vertices of the triangulation. The result is stored in d. The neighbors are determined via TetraNeighborCL.
+///
+/// Note, that the correctness of this method depends on the geometry of the tetras. If the tetra-neighborhood of a vertex
+/// contains tetras of very different size, the distance can be of by O(h) without noticing.
+void InitZero_ExactDistance (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+    VecDescCL& d, const VectorBaseCL<Point3DCL>& coord, VectorBaseCL<byte>& typ)
+{
+    DROPS::InterfacePatchCL patch;
+    double dd;
+
+    TetraNeighborCL tetra_to_idx( mg, ls);
+    for (TetraNeighborCL::TetraToIdxMapT::iterator it= tetra_to_idx().begin(); it != tetra_to_idx().end(); ++it) {
+        const TetraCL* t( it->first);
+        patch.Init( *t, ls);
+        for (int ch= 0; ch < 8; ++ch) {
+            if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
+
+            TetraNeighborCL::IdxSetT& idxset= it->second;
+            for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
+                ExactDistanceInitCL dist_to_tri( &patch.GetPoint( tri));
+                for (TetraNeighborCL::IdxSetT::iterator sit= idxset.begin(); sit != idxset.end(); ++sit) {
+                    dist_to_tri.dist( coord[*sit], dd);
+                    if (typ[*sit] != FastMarchCL::Finished) {
+                        d.Data[*sit]= dd;
+                        typ[*sit]= FastMarchCL::Finished;
+                    }
+                    else
+                        d.Data[*sit]= std::min( d.Data[*sit], dd);
+                }
+            }
+        }
+    }
+}
+
+
 void FastMarchCL::InitZero( bool ModifyZero, int method)
 /// \param[in] ModifyZero If this flag is set, the values around the zero level of the levelset function are new computed. Otherwise
 ///                       the old values are kept.
 /// \param[in] method     Determines the method used to compute the distance to the zero level:
-///                       scaling by averaged gradient (\a method=0) or projection of the points onto zero level (\a method=1).
+///                       scaling by averaged gradient (\a method=0), projection of the points onto zero level (\a method=1),
+///                       computing the exact distance to the piecewise-linear interface (\a method=2).
 ///                       By experience, gradient scaling yields a smoother interface.
+///                       Computing the exact distance leads to a movement of the interface in O(h^2). This is quasi-optimal.
+///                       Due to the need of a larger neighborhood of the interface (TetraNeighborCL) it can consume quite a
+///                       lot of memory.
 {
     Comment("Init zero\n", DebugParallelNumC);
     // Knoten an der Phasengrenze als Finished markieren
@@ -147,6 +394,14 @@ void FastMarchCL::InitZero( bool ModifyZero, int method)
     Old_= v_->Data;
     VecDescCL oldv( *v_);
 
+    v_->Data= 1.; // Make the sign unique; only for testing
+
+    if (method == 2) {
+        std::cout << "Method 2" << std::endl;
+        InitZero_ExactDistance( MG_, oldv, *v_, Coord_, Typ_);
+        return;
+    }
+
     LocalP2CL<> PhiLoc;
 
     for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
@@ -156,7 +411,8 @@ void FastMarchCL::InitZero( bool ModifyZero, int method)
         { // collect data on all DoF
             Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(idx)
                          : it->GetEdge(v-4)->Unknowns(idx);
-            sign[v]= std::abs(Old_[Numb[v]])<1e-8 ? 0 : (Old_[Numb[v]]>0 ? 1 : -1);
+//            sign[v]= std::abs(Old_[Numb[v]])<1e-8 ? 0 : (Old_[Numb[v]]>0 ? 1 : -1);
+            sign[v]= Old_[Numb[v]] == 0. ? 0 : (Old_[Numb[v]] > 0. ? 1 : -1);
             if (sign[v]==0)
                 Typ_[Numb[v]]= Finished;
         }
@@ -462,39 +718,39 @@ void FastMarchCL::Update( const IdxT NrI)
 #endif
 
 #ifndef _PAR
-void FastMarchCL::Reparam( bool ModifyZero)
+void FastMarchCL::Reparam( bool ModifyZero, int method)
 {
     TimerCL time;
-    InitZero( ModifyZero, 0);
-    InitClose();
-
-    IdxT next;
-
-    while ((next= FindTrial()) != NoIdx)
-    {
-        Close_.erase( next);
-        Typ_[next]= Finished;
-
-        std::set<IdxT> neighVerts;
-        for (Uint n=0; n<neigh_[next].size(); ++n)
-        { // collect all neighboring verts in neighVerts
-            for (Uint i=0; i<4; ++i)
-                neighVerts.insert( neigh_[next][n][i]);
-        }
-        for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
-            it!=end; ++it)
-        { // update all neighboring verts, mark as Close
-            Update( *it);
-        }
-        neigh_[next].clear(); // will not be needed anymore
-    }
+    InitZero( ModifyZero, method);
+//     InitClose();
+// 
+//     IdxT next;
+// 
+//     while ((next= FindTrial()) != NoIdx)
+//     {
+//         Close_.erase( next);
+//         Typ_[next]= Finished;
+// 
+//         std::set<IdxT> neighVerts;
+//         for (Uint n=0; n<neigh_[next].size(); ++n)
+//         { // collect all neighboring verts in neighVerts
+//             for (Uint i=0; i<4; ++i)
+//                 neighVerts.insert( neigh_[next][n][i]);
+//         }
+//         for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
+//             it!=end; ++it)
+//         { // update all neighboring verts, mark as Close
+//             Update( *it);
+//         }
+//         neigh_[next].clear(); // will not be needed anymore
+//     }
 
     RestoreSigns();
     time.Stop();
     std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
 }
 #else
-void FastMarchCL::Reparam( bool ModifyZero)
+void FastMarchCL::Reparam( bool ModifyZero, int method)
 {
     ParTimerCL time;
     Comment("Reparametrization\n", DebugParallelNumC);
@@ -503,7 +759,7 @@ void FastMarchCL::Reparam( bool ModifyZero)
     CreateGlobNumb();
 
     // Init Zero-Level of levelset function
-    InitZero(ModifyZero, 0);
+    InitZero(ModifyZero, method);
 
     // tell other procs about finished-marked DoF's
     DistributeFinished();
