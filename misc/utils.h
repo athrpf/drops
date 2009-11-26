@@ -621,6 +621,9 @@ public:
     void Recover() const { std::cout.rdbuf(bout_); std::cerr.rdbuf(berr_); std::clog.rdbuf(blog_); }
 };
 
+/// \brief Reversal of the byte order (change from little to big endian decoding)
+void reverseByteOrder(int size,char field[]);
+
 } // end of namespace DROPS
 
 #ifdef _PAR

@@ -71,4 +71,15 @@ int DeleteFile(std::string file)
 #endif
 }
 
+void reverseByteOrder(int size,char field[])
+{
+    std::vector<char> temp(size);
+    for(int i=0;i<size;++i)
+        temp[i]= field[i];
+
+    for(int i=0;i<size;++i)
+        field[(size-1)-i] = temp[i];
+}
+
+
 } // end of namespace DROPS

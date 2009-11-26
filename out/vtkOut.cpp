@@ -251,6 +251,7 @@ void VTKOutCL::WriteCoords()
             if (binary_){
                 for (int j=0; j<3; ++j){
                     sFlo.f = coords_[3*i+j];
+                    reverseByteOrder(sizeof(float),sFlo.s);
                     file_.write( sFlo.s, sizeof(float));
                 }
             }
@@ -393,11 +394,24 @@ void VTKOutCL::WriteTetra()
         // Write out connectivities
         for (Uint i=0; i<numTetras_; ++i){
             if (binary_){
-#ifdef _PAR
+
+#ifndef _PAR
                 sInt.i = 4;
+                reverseByteOrder(sizeof(int),sInt.s);
+                file_.write( sInt.s, sizeof(int));
+                for (int j=0; j<4; ++j){
+                    sInt.i= tetras_[4*i+j];
+                    reverseByteOrder(sizeof(int),sInt.s);
+                    file_.write( sInt.s, sizeof(int));
+                }
+
+#else
+                sInt.i = 4;
+                reverseByteOrder(sizeof(int),sInt.s);
                 file_.write( sInt.s, sizeof(int));
                 for (int j=0; j<4; ++j){
                     sInt.i= (int)GIDAddrMap_[tetras_[4*i+j]];
+                    reverseByteOrder(sizeof(int),sInt.s);
                     file_.write( sInt.s, sizeof(int));
                 }
 #endif
@@ -423,12 +437,14 @@ void VTKOutCL::WriteTetra()
 
         const int tetraType= 10;
         sInt.i = tetraType;
+        reverseByteOrder(sizeof(int),sInt.s);
         for (Uint i=0; i<numTetras_; ++i){
             if (binary_)
                 file_.write( sInt.s, sizeof(int));
             else
                 file_ << tetraType << '\n';
         }
+
         if (binary_)
             file_ << '\n';
     }
@@ -447,12 +463,19 @@ void VTKOutCL::WriteDistribution()
             for (Uint t=procOffset_[p]; t<procOffset_[p+1]; ++t){
                 sInt.i= p;
                 if (binary_)
+                {
+                    reverseByteOrder(sizeof(int),sInt.s);
                     file_.write( sInt.s, sizeof(int));
+                }
                 else
                     file_ << p << '\n';
                 tmp_counter++;
             }
         }
+
+        if (binary_)
+            file_ << '\n';
+
         Assert(tmp_counter==numTetras_, DROPSErrCL("VTKOutCL::WriteDistribution: Wrong number of tetrahedra"), DebugOutPutC);
     }
 }
@@ -525,11 +548,13 @@ void VTKOutCL::WriteValues(const VectorBaseCL<float>& allData, const std::string
             throw DROPSErrCL("VTKOutCL::WriteScalar: Only scalar and vector valued functions!");
 
         // Write values
-        showInt sInt;
+
+        showFloat sFlo;
         for (Uint i=0; i<allData.size(); ++i){
             if (binary_){
-                sInt.i= (int)allData[i];
-                file_.write( sInt.s, sizeof(int));
+                sFlo.f= allData[i];
+                reverseByteOrder(sizeof(float),sFlo.s);
+                file_.write( sFlo.s, sizeof(float));
             }
             else{
                 file_ << allData[i] << ' ';
