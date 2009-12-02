@@ -54,6 +54,36 @@ class BrickBuilderCL : public MGBuilderCL
     build(MultiGridCL*) const;
 };
 
+/// \brief Class for building a brick with a hole
+class CavityBuilderCL : public MGBuilderCL
+{
+  private:
+    const Point3DCL _orig;
+    const Point3DCL _e1;
+    const Point3DCL _e2;
+    const Point3DCL _e3;
+    const Uint _n1;
+    const Uint _n2;
+    const Uint _n3;
+    const SArrayCL<Uint, 3> cavityorigin_;
+    const SArrayCL<Uint, 3> cavity_;
+    // for vertices:
+    Uint v_idx(Uint i, Uint j, Uint k)         const { return i*(_n2+1)*(_n1+1) + j*(_n1+1) + k; }
+    // for tetras:
+    Uint t_idx(Uint i, Uint j, Uint k, Uint l) const { return i*_n2*_n1*6 + j*_n1*6 + k*6 + l; }
+
+  protected:
+    /// \brief build boundary
+    void buildBoundary(MultiGridCL* mgp) const;
+
+  public:
+    CavityBuilderCL(const Point3DCL&, const Point3DCL&, const Point3DCL&, const Point3DCL&, Uint, Uint, Uint, SArrayCL<Uint, 3> cavityorigin, SArrayCL<Uint, 3> cavity);
+
+    /// \brief Build a triangulation of a brick
+    virtual void
+    build(MultiGridCL*) const;
+};
+
 
 /// \brief Class for setting up data structures of a multigrid of a brick shaped
 ///        domain
@@ -74,6 +104,21 @@ class EmptyBrickBuilderCL : public BrickBuilderCL
     EmptyBrickBuilderCL( const Point3DCL& orig, const Point3DCL& e1,
                          const Point3DCL& e2, const Point3DCL& e3, Uint Level=1)
       : base_( orig, e1, e2, e3, 0, 0, 0), _numLevel( Level) {}
+
+    /// \brief Build level views and boundary information
+    virtual void build( MultiGridCL*) const;
+};
+
+class EmptyCavityBuilderCL : public CavityBuilderCL
+{
+  private:
+    typedef CavityBuilderCL base_;
+    Uint _numLevel;
+
+  public:
+    EmptyCavityBuilderCL( const Point3DCL& orig, const Point3DCL& e1,
+                         const Point3DCL& e2, const Point3DCL& e3, Uint Level, SArrayCL<Uint, 3>, SArrayCL<Uint, 3>)
+      : base_( orig, e1, e2, e3, 0, 0, 0, SArrayCL<Uint, 3>(0u), SArrayCL<Uint, 3>(0u)), _numLevel( Level) {}
 
     /// \brief Build level views and boundary information
     virtual void build( MultiGridCL*) const;

@@ -142,6 +142,189 @@ void BrickBuilderCL::build (MultiGridCL* mgp) const
     std::for_each( va.begin(), va.end(), std::mem_fun( &VertexCL::DestroyRecycleBin ) );
 }
 
+/// \brief Creates a MultigridCL of a brick shaped domain
+CavityBuilderCL::CavityBuilderCL(const Point3DCL& origin,
+                               const Point3DCL& e1,
+                               const Point3DCL& e2,
+                               const Point3DCL& e3,
+                               Uint n1, Uint n2, Uint n3, SArrayCL<Uint, 3> cavityorigin, SArrayCL<Uint, 3> cavity)
+    :_orig(origin), _e1(e1), _e2(e2), _e3(e3), _n1(n1), _n2(n2), _n3(n3), cavityorigin_(cavityorigin), cavity_(cavity)
+/** The brick has the shape given by the parameter
+    \param origin origin of the brick
+    \param e1     first basis
+    \param e2     second basis
+    \param e3     third basis
+    \param n1     refinement of basis 1
+    \param n2     refinement of basis 2
+    \param n3     refinement of basis 3
+*/
+{}
+
+// build the boundary of a brick shaped domain
+void CavityBuilderCL::buildBoundary (MultiGridCL* mgp) const
+{
+    BoundaryCL::SegPtrCont& Bnd= GetBnd(mgp);
+
+    Bnd.push_back( new AffineSquareCL(_orig,     _orig    +_e2, _orig    +_e3) ); // e2-e3-plane
+    Bnd.push_back( new AffineSquareCL(_orig+_e1, _orig+_e1+_e2, _orig+_e1+_e3) ); // e2-e3-plane
+    Bnd.push_back( new AffineSquareCL(_orig,     _orig    +_e1, _orig    +_e3) ); // e1-e3-plane
+    Bnd.push_back( new AffineSquareCL(_orig+_e2, _orig+_e2+_e1, _orig+_e2+_e3) ); // e1-e3-plane
+    Bnd.push_back( new AffineSquareCL(_orig,     _orig    +_e1, _orig    +_e2) ); // e1-e2-plane
+    Bnd.push_back( new AffineSquareCL(_orig+_e3, _orig+_e3+_e1, _orig+_e3+_e2) ); // e1-e2-plane
+
+    //origin of the cavity
+    Point3DCL orig_c(_orig + (_e1*cavityorigin_[0])/_n1 + (_e2*cavityorigin_[1])/_n2 + (_e3*cavityorigin_[2])/_n3);
+    Point3DCL e1_c((_e1 * cavity_[0])/_n1), e2_c((_e2 * cavity_[1])/_n2), e3_c((_e3 * cavity_[2])/_n3);
+
+    Bnd.push_back( new AffineSquareCL(orig_c,      orig_c     +e2_c, orig_c     +e3_c) ); // e2-e3-plane
+    Bnd.push_back( new AffineSquareCL(orig_c+e1_c, orig_c+e1_c+e2_c, orig_c+e1_c+e3_c) ); // e2-e3-plane
+    Bnd.push_back( new AffineSquareCL(orig_c,      orig_c     +e1_c, orig_c     +e3_c) ); // e1-e3-plane
+    Bnd.push_back( new AffineSquareCL(orig_c+e2_c, orig_c+e2_c+e1_c, orig_c+e2_c+e3_c) ); // e1-e3-plane
+    Bnd.push_back( new AffineSquareCL(orig_c,      orig_c     +e1_c, orig_c     +e2_c) ); // e1-e2-plane
+    Bnd.push_back( new AffineSquareCL(orig_c+e3_c, orig_c+e3_c+e1_c, orig_c+e3_c+e2_c) ); // e1-e2-plane
+}
+
+void CavityBuilderCL::build (MultiGridCL* mgp) const
+{
+    // Check, if the parallelepiped spanned by e1,e2,e3 is degenerated
+
+    AppendLevel(mgp);
+
+    // Create boundary
+    buildBoundary(mgp);
+
+    // Create vertices
+    MultiGridCL::VertexLevelCont& verts= GetVertices(mgp)[0];
+    std::vector<VertexCL*> va( (_n3+1)*(_n2+1)*(_n1+1) );
+    const Point3DCL off1= 1.0/static_cast<double>(_n1) * _e1;
+    const Point3DCL off2= 1.0/static_cast<double>(_n2) * _e2;
+    const Point3DCL off3= 1.0/static_cast<double>(_n3) * _e3;
+    Point2DCL e1_2D(0.0);
+    Point2DCL e2_2D(0.0);
+    e2_2D[1]= e1_2D[0]= 1.0;
+
+    for (Uint i3=0; i3<=_n3; ++i3)
+        for (Uint i2=0; i2<=_n2; ++i2)
+            for (Uint i1=0; i1<=_n1; ++i1)
+            {
+                if ((i1>cavityorigin_[0] && i1<cavityorigin_[0]+cavity_[0]) &&
+                    (i2>cavityorigin_[1] && i2<cavityorigin_[1]+cavity_[1]) &&
+                    (i3>cavityorigin_[2] && i3<cavityorigin_[2]+cavity_[2])) { //strictly in the cavity
+                    continue;
+                }
+                verts.push_back( VertexCL(_orig + static_cast<double>(i1)*off1
+                                                + static_cast<double>(i2)*off2
+                                                + static_cast<double>(i3)*off3, 0) );
+                va[v_idx(i3,i2,i1)]= &verts.back();
+                if (i1 == 0)    // y-z-plane
+                    verts.back().AddBnd( BndPointCL(0, static_cast<double>(i2)/static_cast<double>(_n2)*e1_2D
+                                                      +static_cast<double>(i3)/static_cast<double>(_n3)*e2_2D) );
+                if (i1 == _n1)    // y-z-plane
+                    verts.back().AddBnd( BndPointCL(1, static_cast<double>(i2)/static_cast<double>(_n2)*e1_2D
+                                                      +static_cast<double>(i3)/static_cast<double>(_n3)*e2_2D) );
+                if (i2 == 0)    // x-z-plane
+                    verts.back().AddBnd( BndPointCL(2, static_cast<double>(i1)/static_cast<double>(_n1)*e1_2D
+                                                      +static_cast<double>(i3)/static_cast<double>(_n3)*e2_2D) );
+                if (i2 == _n2)    // x-z-plane
+                    verts.back().AddBnd( BndPointCL(3, static_cast<double>(i1)/static_cast<double>(_n1)*e1_2D
+                                                      +static_cast<double>(i3)/static_cast<double>(_n3)*e2_2D) );
+                if (i3 == 0)    // x-y-plane
+                    verts.back().AddBnd( BndPointCL(4, static_cast<double>(i1)/static_cast<double>(_n1)*e1_2D
+                                                      +static_cast<double>(i2)/static_cast<double>(_n2)*e2_2D) );
+                if (i3 == _n3)    // x-y-plane
+                    verts.back().AddBnd( BndPointCL(5, static_cast<double>(i1)/static_cast<double>(_n1)*e1_2D
+                                                      +static_cast<double>(i2)/static_cast<double>(_n2)*e2_2D) );
+
+                //cavity boundary
+                if ((i1 == cavityorigin_[0])    // y-z-plane
+                    && (i2>=cavityorigin_[1] && i2<=cavityorigin_[1]+cavity_[1])
+                    && (i3>=cavityorigin_[2] && i3<=cavityorigin_[2]+cavity_[2]))
+                    verts.back().AddBnd( BndPointCL(6, static_cast<double>(i2-cavityorigin_[1])/static_cast<double>(cavity_[1])*e1_2D
+                                                      +static_cast<double>(i3-cavityorigin_[2])/static_cast<double>(cavity_[2])*e2_2D) );
+                if ((i1 == cavityorigin_[0]+cavity_[0])    // y-z-plane
+                    && (i2>=cavityorigin_[1] && i2<=cavityorigin_[1]+cavity_[1])
+                    && (i3>=cavityorigin_[2] && i3<=cavityorigin_[2]+cavity_[2]))
+                    verts.back().AddBnd( BndPointCL(7, static_cast<double>(i2-cavityorigin_[1])/static_cast<double>(cavity_[1])*e1_2D
+                                                      +static_cast<double>(i3-cavityorigin_[2])/static_cast<double>(cavity_[2])*e2_2D) );
+                if ((i2 == cavityorigin_[1])    // x-z-plane
+                    && (i1>=cavityorigin_[0] && i1<=cavityorigin_[0]+cavity_[0])
+                    && (i3>=cavityorigin_[2] && i3<=cavityorigin_[2]+cavity_[2]))
+                    verts.back().AddBnd( BndPointCL(8, static_cast<double>(i1-cavityorigin_[0])/static_cast<double>(cavity_[0])*e1_2D
+                                                      +static_cast<double>(i3-cavityorigin_[2])/static_cast<double>(cavity_[2])*e2_2D) );
+                if ((i2 == cavityorigin_[1]+cavity_[1])    // x-z-plane
+                    && (i1>=cavityorigin_[0] && i1<=cavityorigin_[0]+cavity_[0])
+                    && (i3>=cavityorigin_[2] && i3<=cavityorigin_[2]+cavity_[2]))
+                    verts.back().AddBnd( BndPointCL(9, static_cast<double>(i1-cavityorigin_[0])/static_cast<double>(cavity_[0])*e1_2D
+                                                      +static_cast<double>(i3-cavityorigin_[2])/static_cast<double>(cavity_[2])*e2_2D) );
+                if ((i3 == cavityorigin_[2])    // x-y-plane
+                        && (i1>=cavityorigin_[0] && i1<=cavityorigin_[0]+cavity_[0])
+                        && (i2>=cavityorigin_[1] && i2<=cavityorigin_[1]+cavity_[1]))
+
+                    verts.back().AddBnd( BndPointCL(10, static_cast<double>(i1-cavityorigin_[0])/static_cast<double>(cavity_[0])*e1_2D
+                                                       +static_cast<double>(i2-cavityorigin_[1])/static_cast<double>(cavity_[1])*e2_2D) );
+                if ((i3 == cavityorigin_[2]+cavity_[2])    // x-y-plane
+                        && (i1>=cavityorigin_[0] && i1<=cavityorigin_[0]+cavity_[0])
+                        && (i2>=cavityorigin_[1] && i2<=cavityorigin_[1]+cavity_[1]))
+                    verts.back().AddBnd( BndPointCL(11, static_cast<double>(i1-cavityorigin_[0])/static_cast<double>(cavity_[0])*e1_2D
+                                                       +static_cast<double>(i2-cavityorigin_[1])/static_cast<double>(cavity_[1])*e2_2D) );
+
+                if ( verts.back().IsOnBoundary() ) verts.back().BndSort();
+            }
+
+    // Create edges by calling BuildEdges() an BuildFaces() for every new tetrahedron;
+    // this will search for all the ones needed and add missing edges automatically;
+    // Create tetras
+    MultiGridCL::EdgeLevelCont& edges= GetEdges(mgp)[0];
+    MultiGridCL::FaceLevelCont& faces= GetFaces(mgp)[0];
+    MultiGridCL::TetraLevelCont& tetras= GetTetras(mgp)[0];
+    std::vector<TetraCL*> ta(_n3*_n2*_n1*6);
+
+    for (Uint i3=0; i3<_n3; ++i3)
+        for (Uint i2=0; i2<_n2; ++i2)
+            for (Uint i1=0; i1<_n1; ++i1)
+            {   // Add tetrahedrons in one mini-brick; less-than ordering of indices of e_i used
+                if ((i1>=cavityorigin_[0] && i1<cavityorigin_[0]+cavity_[0]) &&
+                    (i2>=cavityorigin_[1] && i2<cavityorigin_[1]+cavity_[1]) &&
+                    (i3>=cavityorigin_[2] && i3<cavityorigin_[2]+cavity_[2])) { //strictly in the cavity
+                    continue;
+                }
+                tetras.push_back( TetraCL(va[v_idx(i3,i2,i1)], va[v_idx(i3,i2,i1+1)], va[v_idx(i3,i2+1,i1+1)], va[v_idx(i3+1,i2+1,i1+1)], 0) );
+                ta[t_idx(i3,i2,i1,0)]= &tetras.back();
+                tetras.back().BuildEdges(edges);
+                tetras.back().BuildAndLinkFaces(faces);
+                tetras.push_back( TetraCL(va[v_idx(i3,i2,i1)], va[v_idx(i3,i2,i1+1)], va[v_idx(i3+1,i2,i1+1)], va[v_idx(i3+1,i2+1,i1+1)], 0) );
+                ta[t_idx(i3,i2,i1,1)]= &tetras.back();
+                tetras.back().BuildEdges(edges);
+                tetras.back().BuildAndLinkFaces(faces);
+                tetras.push_back( TetraCL(va[v_idx(i3,i2,i1)], va[v_idx(i3,i2+1,i1)], va[v_idx(i3,i2+1,i1+1)], va[v_idx(i3+1,i2+1,i1+1)], 0) );
+                ta[t_idx(i3,i2,i1,2)]= &tetras.back();
+                tetras.back().BuildEdges(edges);
+                tetras.back().BuildAndLinkFaces(faces);
+                tetras.push_back( TetraCL(va[v_idx(i3,i2,i1)], va[v_idx(i3,i2+1,i1)], va[v_idx(i3+1,i2+1,i1)], va[v_idx(i3+1,i2+1,i1+1)], 0) );
+                ta[t_idx(i3,i2,i1,3)]= &tetras.back();
+                tetras.back().BuildEdges(edges);
+                tetras.back().BuildAndLinkFaces(faces);
+                tetras.push_back( TetraCL(va[v_idx(i3,i2,i1)], va[v_idx(i3+1,i2,i1)], va[v_idx(i3+1,i2,i1+1)], va[v_idx(i3+1,i2+1,i1+1)], 0) );
+                ta[t_idx(i3,i2,i1,4)]= &tetras.back();
+                tetras.back().BuildEdges(edges);
+                tetras.back().BuildAndLinkFaces(faces);
+                tetras.push_back( TetraCL(va[v_idx(i3,i2,i1)], va[v_idx(i3+1,i2,i1)], va[v_idx(i3+1,i2+1,i1)], va[v_idx(i3+1,i2+1,i1+1)], 0) );
+                ta[t_idx(i3,i2,i1,5)]= &tetras.back();
+                tetras.back().BuildEdges(edges);
+                tetras.back().BuildAndLinkFaces(faces);
+            }
+    std::for_each( verts.begin(), verts.end(), std::mem_fun_ref( &VertexCL::DestroyRecycleBin ) );
+}
+
+void EmptyCavityBuilderCL::build( MultiGridCL* mgp) const
+{
+    for (Uint i= 0; i<_numLevel; ++i)
+        AppendLevel( mgp);
+
+    // Create boundary
+    base_::buildBoundary(mgp);
+}
+
 void EmptyBrickBuilderCL::build( MultiGridCL* mgp) const
 {
     for (Uint i= 0; i<_numLevel; ++i)
