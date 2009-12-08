@@ -307,6 +307,45 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
         bnddata = new StokesBndDataCL(6, bc, bfun);
         delete mgb;
     }
+    if (GeomType == 2) {
+        int nx, ny, nz;
+        double dx, dy, dz;
+        int cnx, cny, cnz;
+        Uint cdx, cdy, cdz;
+        std::string mesh( meshfile_name), delim("x@");
+        size_t idx;
+        while ((idx= mesh.find_first_of( delim)) != std::string::npos )
+            mesh[idx]= ' ';
+        std::istringstream brick_info( mesh);
+        brick_info >> dx >> dy >> dz >> nx >> ny >> nz >> cdx >> cdy >> cdz >> cnx >> cny >> cnz;
+        if (!brick_info)
+            throw DROPSErrCL("error while reading geometry information: " + mesh);
+        r_inlet= dx/2;
+        Point3DCL orig, px, py, pz;
+        px[0]= dx; py[1]= dy; pz[2]= dz;
+
+        CavityBuilderCL *mgb = 0;
+        SArrayCL<Uint, 3> corg, cav;
+        corg[0]= cdx; corg[1]= cdy; corg[2]= cdz;
+        cav[0]= cnx; cav[1]= cny; cav[2]= cnz;
+        IF_MASTER
+            mgb = new CavityBuilderCL( orig, px, py, pz, nx, ny, nz, corg, cav);
+        IF_NOT_MASTER
+            mgb = new EmptyCavityBuilderCL(orig, px, py, pz, 1, corg, cav);
+
+        if (deserialization_file == "none")
+            mgp= new MultiGridCL( *mgb);
+        else {
+            FileBuilderCL filebuilder( deserialization_file, mgb);
+            mgp= new MultiGridCL( filebuilder);
+        }
+        BndCondT bc[12]= { Nat0BC, Nat0BC, Nat0BC, Nat0BC, Nat0BC, Nat0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC };
+        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[12]=
+            { &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel };
+        bnddata = new StokesBndDataCL(12, bc, bfun);
+        delete mgb;
+    }
+
     std::cout << "Generated MG of " << mgp->GetLastLevel() << " levels." << std::endl;
 }
 
