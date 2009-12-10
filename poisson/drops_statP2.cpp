@@ -7,7 +7,7 @@
 /// \author Oliver Fortmeier
 /// \file drops_statP2.cpp
 /// \brief Solver for Poisson problem with P2 functions
-/** We solve \f$ -\Delta u = f \text{ in } \Omega:=[0,1]^3 \f$ for the given
+/** We solve \f$ -\Delta u = f\;\mbox{in}\; \Omega:=[0,1]^3 \f$ for the given
     solution \f$ u(x,y,z):= 64 \cdot xyz (1-x) (1-y) (1-z) \f$, i.e. homogeneous
     Dirichlet conditions are used. A uniform tetrahedral grid is applied as
     a triangulation of \f$ \Omega \f$. GMRES is used as a linear solver for the
