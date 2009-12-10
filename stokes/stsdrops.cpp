@@ -1,3 +1,27 @@
+/// \file stsdrops.cpp
+/// \brief stokes-problem
+/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen:
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 #include "geom/multigrid.h"
 #include "out/output.h"
 #include "out/ensightOut.h"
@@ -1022,7 +1046,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
     NS.SetNumPrLvl   ( mg.GetNumLevel());
     M_pr.Data.resize ( mg.GetNumLevel());
     MG_pr.Data.resize( mg.GetNumLevel());
-    
+
     NS.CreateNumberingVel( mg.GetLastLevel(), vidx1);
     v1->SetIdx( vidx1);
     NS.CreateNumberingPr ( mg.GetLastLevel(), pidx1);
@@ -1040,7 +1064,7 @@ Strategy(DROPS::StokesP2P1CL<Coeff>& NS,
 //    SetupPoissonPressure( mg, A_pr);
 //    ISPreCL ispc( A_pr.Data, M_pr.Data, kA, kM, 1.0);
     SetupPoissonPressureMG( NS, MG_pr);
-    
+
     ISMGPreCL ispc( MG_pr.Data, M_pr.Data, kA, kM, 1);
 //    statsolver= new PSchur_PCG_CL( M_pr.Data, stokes_maxiter, stokes_tol,
 //                                   poi_maxiter, poi_tol);

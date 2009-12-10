@@ -1,6 +1,5 @@
 /// \file container.h
-/// \brief simple array in STL style
-/// \brief level-based array
+/// \brief simple array in STL style, level-based array
 /// \author LNM RWTH Aachen: Joerg Grande, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 
 /*
