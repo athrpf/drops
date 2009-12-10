@@ -1,9 +1,26 @@
-//**************************************************************************
-// File:    fastmarch.cpp                                                  *
-// Content: fast marching method for reparametrization                     *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-//**************************************************************************
+/// \file fastmarch.cpp
+/// \brief fast marching method for reparametrization
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #include "levelset/fastmarch.h"
 #include "num/solver.h"
@@ -130,7 +147,7 @@ class TetraNeighborCL
     IdxToTetraMapT idx_to_tetra_; ///< Used to accumulate the reverse of the desired mapping; cleared at the end of the constructor.
     TetraToIdxMapT tetra_to_idx_; ///< A set of levelset-un knowns for each tetra, that is cut by the interface.
 
-    /// 
+    ///
     /// \brief Updates the neighborhood information: traverse all outgoing edges (=tetras) of idx and add them to their end-vertices.
     void insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint ls_idx, const IdxToTetraMapT& idx_to_tetra);
     /// \brief Traverse the edges of the graph and update the vertex-neighborhoods.
@@ -197,7 +214,7 @@ void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDes
             if (idx_to_tetra1[idx].empty()) continue; // The edge has no tetra on an interface.
             insert_neighbor_tetras( idx, *it, ls_idx, idx_to_tetra1);
         }
-    }  
+    }
 }
 
 void TetraNeighborCL::ComputeIdxToTetraMap ()

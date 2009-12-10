@@ -1,9 +1,26 @@
-//**************************************************************************
-// File:    levelset.cpp                                                   *
-// Content: levelset equation for two phase flow problems                  *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, RZ RWTH Aachen                               *
-//**************************************************************************
+/// \file levelset.cpp
+/// \brief levelset equation for two phase flow problems
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #include "levelset/levelset.h"
 #include "levelset/fastmarch.h"
@@ -335,7 +352,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         n+= patch.GetPhi(v)*Grad[v];
     }
     for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
-   
+
     Quad5_2DCL<> qsigma, // surface tension
                  q1,                   // Term 1
                  q2_3,                 // Term 2 minus Term 3
@@ -344,7 +361,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
                           qsigmaPhPhte,                    // for Term 1
                           qgradsigma;   // for Term 2
     sf.ComputeSF(t, p, qsigma, qgradsigma);
-    Quad5_2DCL<Point3DCL> qPhgradsigma( qgradsigma);  
+    Quad5_2DCL<Point3DCL> qPhgradsigma( qgradsigma);
 
     qPhgradsigma.apply( patch, &InterfacePatchCL::ApplyProj);
 
@@ -532,7 +549,7 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     VecDescCL SmPhi= Phi;
     if (curvDiff_>0)
         SmoothPhi( SmPhi.Data, curvDiff_);
-        
+
     switch (SF_)
     {
       case SF_LB:
