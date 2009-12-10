@@ -1,13 +1,29 @@
-//**************************************************************************
-// File:    parmgserializationcl.h                                         *
-// Content: Definition of Class ParMGSerializationCL                       *
-// Author:  Oliver Fortmeier, SC RWTH Aachen                               *
-//          Timo Henrich, SC RWTH Aachen
-// Version: 0.1                                                            *
-// History: begin - November, 12 2007                                      *
-//**************************************************************************
-#ifndef DROPS_PARSERIAL_H
-#define DROPS_PARSERIAL_H
+/// \file parmgserialization.h
+/// \brief serialize geometry and DOF in a file
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier, Timo Henrich
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
+#ifndef DROPS_PARMGSERIALIZATION_H
+#define DROPS_PARMGSERIALIZATION_H
 
 #include "geom/multigrid.h"
 #include "num/bndData.h"

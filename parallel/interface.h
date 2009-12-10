@@ -1,16 +1,27 @@
-//**************************************************************************
-// File:    interface.h                                                    *
-// Content: Classes that handle DDD-Interfaces                             *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:    September, 19th 2007                                           *
-//          - AllSimplexIFCL added                                         *
-// Begin:   Februar, 8th 2006                                              *
-//**************************************************************************
-/// \author Oliver Fortmeier
 /// \file interface.h
-/// \brief Classes for handling DDD-Interfaces
+/// \brief Classes that handle DDD-Interfaces
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 #ifndef DROPS_INTERFACE_H
 #define DROPS_INTERFACE_H
 

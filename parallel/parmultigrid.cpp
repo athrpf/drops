@@ -1,17 +1,6 @@
-//****************************************************************************
-// File:    parmultigrid.cpp                                                 *
-// Content: Class that constitute the parallel multigrid                      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen      *
-//          Oliver Fortmeier, RZ RWTH Aachen                                 *
-// Version: 0.1                                                              *
-// Date:                                                                     *
-// Begin:   November, 14th, 2005                                             *
-//****************************************************************************
-/// \author Oliver Fortmeier
 /// \file parmultigrid.cpp
-
-#ifndef _DROPS_PARMULTIGRID_
-#define _DROPS_PARMULTIGRID_
+/// \brief handling of a parallel multigrid
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 
 #include "parallel/parallel.h"
 #include "parallel/parmultigrid.h"
@@ -2547,5 +2536,3 @@ bool CheckParMultiGrid(const ParMultiGridCL& pmg)
 }
 
 } // end of namespace DROPS
-
-#endif

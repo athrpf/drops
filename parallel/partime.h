@@ -1,14 +1,26 @@
-/***************************************************************************
-*  File:    partime.h                                                      *
-*  Content: This class implements a parallel time-stamping                 *
-*  Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-*           Oliver Fortmeier, RZ RWTH Aachen                               *
-*  begin:           10.11.2005                                             *
-*  last modified:   10.11.2005                                             *
-***************************************************************************/
-/// \author Oliver Fortmeier
 /// \file partime.h
-/// \brief Parallel time-stamping
+/// \brief parallel time-stamping
+/// \author LNM RWTH Aachen: SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #include "parallel/parallel.h"
 #include "misc/utils.h"
@@ -18,8 +30,9 @@
 #include <string>
 #include <iomanip>
 
-#ifndef _PARTIMERCL_H_
-#define _PARTIMERCL_H_
+#ifndef DROPS_PARTIMER_H
+#define DROPS_PARTIMER_H
+
 namespace DROPS{
 
 /****************************************************************************

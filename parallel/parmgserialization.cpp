@@ -1,11 +1,26 @@
-//**************************************************************************
-// File:    parmgserializationcl.cpp                                       *
-// Content: Declarations of Class ParMGSerializationCL                     *
-// Author:  Joerg Peters, Volker Reichelt, Patrick Esser, IGPM RWTH Aachen *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// History: begin - November, 12 2007                                      *
-//**************************************************************************
+/// \file parmgserialization.cpp
+/// \brief serialize geometry and DOF in a file
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier, Timo Henrich
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 /*******************************************************************
 *   P A R  M G  S E R I A L I Z A T I O N   C L                    *

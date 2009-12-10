@@ -1,26 +1,32 @@
-//**************************************************************************
-// File:    exchange.h                                                     *
-// Content: Class that handles the accumulation of the unknowns            *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:    May, 23th 2006                                                 *
-//          - ExchangeBlockCL added                                        *
-//          August, 25th 2006                                              *
-//          - Sysnums on ohter procs are computed                          *
-//          September, 7th 2006                                            *
-//          - Inner products and norms can be computed on accumulated vecs *
-// Begin:   March, 08th 2006                                               *
-//**************************************************************************
-/// \author Oliver Fortmeier
 /// \file exchange.h
-/// \brief Exchange numerical Data and perform inner products
-///
-///          These classes do not use the DDD-Interfaces. After the lists   *
-///          are created no geometric datas are needed to do the            *
-///          accumulation in opposite to the DDD-Interface. And this class  *
-///          split the send and the recieve, so other work can be done      *
-///          between these commands.                                        *
+/// \brief handling of a parallel distributed vectors and distributed matrices
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
+/// These classes do not use the DDD-Interfaces. After the lists
+/// are created no geometric datas are needed to do the
+/// accumulation in opposite to the DDD-Interface. And this class
+/// split the send and the recieve, so other work can be done
+/// between these commands.
 
 #ifndef DROPS_EXCHANGE_H
 #define DROPS_EXCHANGE_H

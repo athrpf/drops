@@ -1,14 +1,29 @@
-// **************************************************************************
-// File:    parfastmarch.h                                                  *
-// Content: Classes for performing a parallel fastmarching algorithm        *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen     *
-//          Oliver Fortmeier, RZ RWTH Aachen                                *
-// Version: 0.1                                                             *
-// Date:                                                                    *
-// Begin:   August  21th, 2006                                              *
-// **************************************************************************
-/// \author Oliver Fortmeier
 /// \file parfastmarch.cpp
+/// \brief parallel version of fast marching method (line by line parallelization)
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
+/// This method is, from a performance point of view, not good. So, this
+/// file may become deprecated.
 
 #include "parallel/parfastmarch.h"
 
