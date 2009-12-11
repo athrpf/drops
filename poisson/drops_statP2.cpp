@@ -1,12 +1,27 @@
-//**************************************************************************
-// File:    drops_statP2.cpp                                               *
-// Content: Solver for Poisson problem with P2 functions                   *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, Eva Loch at IGPM    *
-//          Oliver Fortmeier at SC RWTH Aachen                             *
-//**************************************************************************
-/// \author Oliver Fortmeier
 /// \file drops_statP2.cpp
 /// \brief Solver for Poisson problem with P2 functions
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 /** We solve \f$ -\Delta u = f\;\mbox{in}\; \Omega:=[0,1]^3 \f$ for the given
     solution \f$ u(x,y,z):= 64 \cdot xyz (1-x) (1-y) (1-z) \f$, i.e. homogeneous
     Dirichlet conditions are used. A uniform tetrahedral grid is applied as

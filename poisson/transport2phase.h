@@ -1,13 +1,26 @@
-/// \file
-/// \brief Classes that constitute a 2-phase-transport-problem.
+/// \file transport2phase.h
+/// \brief Classes that constitute a 2-phase-transport-problem
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Hieu Nguyen, Marcus Soemers, Volker Reichelt; SC RWTH Aachen:
 
-//**************************************************************************
-// File:    transport2phase.h                                              *
-// Content: classes that constitute the transport-problem                  *
-// Author:  Joerg Grande, Sven Gross, Maxim Larin, Hieu Nguyen, IGPM RWTH Aachen*
-// Version: 0.1                                                            *
-// History: begin - August 2007                                            *
-//**************************************************************************
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #ifndef DROPS_TRANSPORT2PHASE_H
 #define DROPS_TRANSPORT2PHASE_H
@@ -58,13 +71,13 @@ class TransportP1CL
 
     GSPcCL                  pc_;
     GMResSolverCL<GSPcCL>   gm_;
-    
+
     void SetupInstatSystem (MatrixCL& matA, VecDescCL* cplA,
                         MatrixCL& matM, VecDescCL* cplM, MatrixCL& matC, VecDescCL* cplC,
                         IdxDescCL& RowIdx, const double time) const;
 
   public:
-    TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, const VelBndDataT& Bnd_v, 
+    TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, const VelBndDataT& Bnd_v,
         double theta, double D[2], double H, VecDescCL* v, LevelsetP2CL& lset,
         double t, double dt, int iter= 1000, double tol= 1e-7)
     : idx( P1_FE), MG_( mg), H_( H), theta_( theta), dt_( dt), t_( t), Bnd_( Bnd),
@@ -91,7 +104,7 @@ class TransportP1CL
     void SetupLocalSystem (const TetraCL&, double[4][4], double[4][4], double[4][4], const double,
         const LocalP2CL<>[4], const LocalP2CL<>[4][4], const Quad5CL<>[4]) const;
     void SetupInstatSystem ( MLMatDescCL&, VecDescCL&, MLMatDescCL&, VecDescCL&, MLMatDescCL&, VecDescCL&, const double) const;
-    
+
     /// perform one time step
     void DoStep( double new_t);
 

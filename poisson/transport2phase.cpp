@@ -1,5 +1,26 @@
-/// \file
-/// \brief Classes that constitute a 2-phase-transport-problem.
+/// \file transport2phase.cpp
+/// \brief Classes that constitute a 2-phase-transport-problem
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Marcus Soemers, Volker Reichelt; SC RWTH Aachen:
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #include "poisson/transport2phase.h"
 
@@ -29,7 +50,7 @@ void TransportP1CL::SetTimeStep (double dt, double theta)
 
 
 void TransportP1CL::SetupLocalSystem (const TetraCL& t,
-    double coupM[4][4], double coupA[4][4], double coupC[4][4], const double time, 
+    double coupM[4][4], double coupA[4][4], double coupC[4][4], const double time,
     const LocalP2CL<> p2[4], const LocalP2CL<> pipj[4][4], const Quad5CL<> p[4]) const
 {
     static LocalP2CL<> one( 1.);
@@ -60,7 +81,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
             coupM[i][i]= coeff_h*P1DiscCL::GetMass( i, i)*absdet;
             coupA[i][i]= coeff_h*coeff_d*GTG( i, i)/6.0*absdet;
             coupC[i][i]= coeff_h*Quad5CL<>( dot( u_loc, Quad5CL<Point3DCL>( G.col( i)))*p[i]).quad( absdet);
-        } 
+        }
     }
     else {
         const LocalP2CL<Point3DCL> u_loc( t, u, t_);
