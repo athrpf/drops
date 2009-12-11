@@ -1,15 +1,26 @@
-//**************************************************************************
-// File:    TestExchangePar.cpp                                            *
-// Content: Testprogram für den Austausch von Werten                       *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, RZ RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Begin:   March, 08th 2006                                               *
-// mod:     0.2 Test of ExchangeBlockCL (29th May 2006)                    *
-//**************************************************************************
-/// \author Oliver Fortmeier
 /// \file TestExchangePar.cpp
-/// \brief Testing the parallel exchange of numerical data for accumulations
+/// \brief testing the parallel exchange of numerical data for accumulations
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
  // include parallel computing!
 #include "parallel/parallel.h"

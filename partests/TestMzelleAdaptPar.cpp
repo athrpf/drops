@@ -1,15 +1,26 @@
-//**************************************************************************
-// File:    TestMzelleAdaptPar.cpp                                         *
-// Content: parallel solver for a simple 2-phase problem                   *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:                                                                   *
-// Begin:   25. Januar 2006                                                *
-//**************************************************************************
-/// \author Oliver Fortmeier
 /// \file TestMzelleAdaptPar.cpp
-/// \brief Droplet in the meassurement devive
+/// \brief Testing parallel solvers for the two-phase flow in the measurement cell with adaptive refinements
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 // include std header for two-phase flows
 #include "partests/two_phase_hdr.h"
