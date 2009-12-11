@@ -1,16 +1,27 @@
-//**************************************************************************
-// File:    parprecond.h                                                    *
-// Content: parallel preconditioners                                       *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:                                                                   *
-// Begin:   March, 27th 2006                                               *
-//**************************************************************************
-/// \author Oliver Fortmeier
 /// \file parprecond.h
-/// \brief Parallel preconditioners
-///
+/// \brief parallel preconditioners
+/// \author LNM RWTH Aachen: Sven Gross, Joerg Peters, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 /// One important difference between parallel and seriell preconditioners is
 /// that some parallel preconditioners need the accumulated diag of the matrix.
 /// So the use 'SetDiag(const Vec& diag_acc)' or 'SetDiag(const Mat& A, const ExchangeCL& ex)'

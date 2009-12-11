@@ -1,15 +1,29 @@
-//**************************************************************************
-// File:    multigrid.h                                                    *
-// Content: Classes that constitute the multigrid                          *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, Eva IGPM RWTH Aachen*
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.7                                                            *
-// Date:    August, 1st, 2001                                              *
-// Begin:   August, 3rd, 2000                                              *
-//**************************************************************************
+/// \file multigrid.h
+/// \brief classes that constitute the multigrid
+/// \author LNM RWTH Aachen: Sven Gross, Eva Loch, Joerg Peters, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 
-// TODO: Use information hiding, access control and const-qualification more
-//       extensively to avoid accidental changes of the multigrid structure.
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
+/// TODO: Use information hiding, access control and const-qualification more
+///       extensively to avoid accidental changes of the multigrid structure.
 
 #ifndef DROPS_MULTIGRID_H
 #define DROPS_MULTIGRID_H

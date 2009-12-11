@@ -1,6 +1,26 @@
-/// \file
+/// \file stokessolverfactory.h
 /// \brief creates several standard Stokes-solver
-/// \author Sven Gross, Joerg Grande, Patrick Esser, IGPM
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross; SC RWTH Aachen:
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #ifndef _PAR
 #include "num/stokessolver.h"
@@ -278,7 +298,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         bbtispc_    ( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), kA_, kM_, C_.stk_PcSTol, C_.stk_PcSTol /* enable regularization: , 0.707*/),
         mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(),Stokes_.pr_idx.GetFinest(), C_.stk_PcSTol /* enable regularization: , 0.707*/),
         vankaschurpc_( &Stokes.pr_idx), isprepc_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
-        ismgpre_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_), 
+        ismgpre_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
         // preconditioner for A
         smoother_( 1.0), coarsesolversymm_( SSORPc_, 500, 1e-6, true),
         MGSolversymm_ ( smoother_, coarsesolversymm_, C_.stk_PcAIter, C_.stk_PcATol, false),
@@ -361,7 +381,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         if (C_.stk_StokesMethod%100 == 7)
             throw DROPSErrCL("ISMGPreCL not implemented for P1X-elements");
     }
-    
+
     StokesSolverBaseCL* stokessolver = 0;
     switch (C_.stk_StokesMethod)
     {
@@ -372,7 +392,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGMinCommOseenPcT> >   ( GCRMGMinComm_);
         break;
         case 10103 :
-            stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGISPreOseenPcT> >     ( GCRMGISPre_); 
+            stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockMGISPreOseenPcT> >     ( GCRMGISPre_);
         break;
         case 10401 :
             stokessolver = new BlockMatrixSolverCL<GCRSolverCL<LBlockGMResBBTOseenPcT> >    ( GCRGMResBBT_);
