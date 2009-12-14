@@ -1,11 +1,26 @@
-//**************************************************************************
-// File:    ipfilm.cpp                                                     *
-// Content: poisson with convection + interface for matlab                 *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
-//          IGPM RWTH Aachen                                               *
-// Version: 0.1                                                            *
-// History: begin - Nov, 19 2002                                           *
-//**************************************************************************
+/// \file ipfilm.cpp
+/// \brief poisson with convection + interface for matlab
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Marcus Soemers, Volker Reichelt; SC RWTH Aachen:
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #include "mex.h"
 
@@ -115,13 +130,13 @@ class MatlabConnectCL
       { return T_in[GetNumOnBnd<0>(p) + GetNum(t)*Nyz]; };
     double GetRhs( const DROPS::Point3DCL& p, double t) const
       { return F[GetNum(p) + GetNum(t)*Nxyz]; };
-  	
+
   	template<class P1EvalT>
   	void SetSol3D( const P1EvalT& sol, double t)
   	{
   		const int num= (GetNum( t)-1)*Nxyz; // omit initial time step in output
   		double *out= T3D+num;
-  		
+
   		DROPS_FOR_TRIANG_CONST_VERTEX( sol.GetMG(), sol.GetLevel(), sit)
   		{
   			out[GetNum( sit->GetCoord())]= sol.val( *sit);
@@ -140,7 +155,7 @@ class MatlabConnectCL
             mexErrMsgTxt("Input T_in must be a double matrix.");
 	    if(mxGetPi(prhs[2])!=NULL)
 	  	    mexErrMsgTxt("Input F must be a double matrix.");
- 	
+
 	 	// Check the dimensions of the input matrices.
 	 	if (mxGetM(prhs[0]) != Nxyz || mxGetN(prhs[0])!= 1)
 	 	    mexErrMsgTxt("Input T0 has wrong dimensions.");
@@ -148,16 +163,16 @@ class MatlabConnectCL
 	 	    mexErrMsgTxt("Input T_in has wrong dimensions.");
 	 	if (mxGetM(prhs[2]) != Nxyz || mxGetN(prhs[2])!= P.nt+1)
 	 	    mexErrMsgTxt("Input F has wrong dimensions.");
- 	
+
 	 	// Get the matrix input arguments.
 	 	T0=   mxGetPr(prhs[0]);
 	 	T_in= mxGetPr(prhs[1]);
 	 	F=    mxGetPr(prhs[2]);
-	 	
+
 	 	// Allocate memory for output arguments.
 	 	plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);
 	 	plhs[1] = mxCreateDoubleMatrix(Nxyz, P.nt, mxREAL); // w/o initial time step
-	 	
+
 	 	// Set the output pointer to the output arguments.
 	 	MaxIter = mxGetPr(plhs[0]);
 	 	T3D =     mxGetPr(plhs[1]);

@@ -1,11 +1,26 @@
-//**************************************************************************
-// File:    ipdrops.cpp                                                    *
-// Content: program with interface for matlab                              *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
-//          IGPM RWTH Aachen                                               *
-// Version: 0.1                                                            *
-// History: begin - Nov, 19 2002                                           *
-//**************************************************************************
+/// \file ipdrops.cpp
+/// \brief program with interface for matlab
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Marcus Soemers, Volker Reichelt; SC RWTH Aachen:
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
 #include "mex.h"
 
@@ -27,7 +42,7 @@ extern void _main();
 class PoissonCoeffCL
 {
   private:
-    static int _Flag;	
+    static int _Flag;
 
   public:
     PoissonCoeffCL(int Flag) { _Flag= Flag; }
@@ -63,7 +78,7 @@ class MatConnect
     static double* _T0;
     static double _DeltaT, _XLen, _YLen, _ZLen, _SpIncrX, _SpIncrY, _SpIncrZ, _CutPos;
     static int _MeshRefX, _MeshRefY, _MeshRefZ, _Count, _FacePtsYZ;
-	
+
   public:
     MatConnect(double DeltaT,
       double xl, double yl, double zl,
