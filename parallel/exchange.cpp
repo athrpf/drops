@@ -695,6 +695,12 @@ void ExchangeBlockCL::AttachTo(const IdxDescCL& idx)
 {
     idxDesc_.push_back(&idx);
     SendRecvReq_.push_back( ExchangeCL::RequestCT( 2*idxDesc_.back()->GetEx().GetNumNeighs()));
+    Update();
+}
+
+void ExchangeBlockCL::Update()
+/** Update the blockOffset_, where the sizes of the block vectors can be found*/
+{
     blockOffset_.resize(idxDesc_.size()+1);
     // fill block offsets
     blockOffset_[0]=0;

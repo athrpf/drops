@@ -369,6 +369,9 @@ class ExchangeBlockCL
     /// \brief Ask for an ExchangeCL
     const ExchangeCL& GetEx( size_t i) const { return idxDesc_[i]->GetEx(); }
 
+    /// \brief Update of datastructure, i.e. blockoffset_
+    void Update();
+
     /// \brief Perform an inner product without global reduction of the sum
     inline double LocDot    (const VectorCL&, bool, const VectorCL&, bool, bool useAccur=true, VectorCL* x_acc=0, VectorCL* y_acc=0) const;
     /// \brief Perform an inner product with global reduction of the sum

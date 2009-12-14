@@ -257,7 +257,7 @@ class ProcCL
         { return ProcCL::GlobalOp(myData, proc, MPI_SUM_Operation); }
     template<typename T>
     static void GlobalSum(const T* myData, T* allData, int cnt, int proc=-1)
-        { return ProcCL::GlobalOp(myData, allData, cnt, proc, MPI_SUM_Operation); }
+        { ProcCL::GlobalOp(myData, allData, cnt, proc, MPI_SUM_Operation); }
     template<typename T>
     static  std::valarray<T> GlobalSum(const std::valarray<T>& myData, int proc=-1)
         { return ProcCL::GlobalOp(myData, proc, MPI_SUM_Operation); }
