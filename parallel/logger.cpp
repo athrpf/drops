@@ -1,5 +1,5 @@
 /// \file logger.cpp
-/// \brief log certain values like e.g. timespan measured during discretization etc.
+/// \brief log certain values like e.g. timespan measured during discretization and integer values etc.
 /// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier, Timo Henrich
 
 /*
