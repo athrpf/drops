@@ -273,6 +273,7 @@ inline void ParJacNEG0CL::MySetDiag(const MatrixCL& A, const ExchangeCL& RowEx, 
         for (size_t nz = Aacc.row_beg(i); nz < Aacc.row_beg(i + 1); ++nz)
             base_::diag_[i] += Aacc.val(nz) * A.val(nz);
     RowEx.Accumulate(base_::diag_);
+    mat_version_= A.Version();
 }
 
 /// \brief (Specialization) SetDiag for CompositeMatrixBaseCL<MatrixCL, MatrixCL>

@@ -286,6 +286,7 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
 #ifndef _PAR
         solver_.Solve( M, x, rhs);
 #else
+        exBlock_.Update();
         solver_.Solve( M, x, rhs, exBlock_);
 #endif
         v= x[std::slice( 0, M.num_cols( 0), 1)];
@@ -303,6 +304,7 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
 #ifndef _PAR
         solver_.Solve( M, x, rhs);
 #else
+        exBlock_.Update();
         solver_.Solve( M, x, rhs, exBlock_);
 #endif
         v= x[std::slice( 0, M.num_cols( 0), 1)];

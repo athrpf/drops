@@ -127,6 +127,10 @@ template <typename Mat, typename Vec, typename Lanczos, typename ExCL>
 bool ParQMR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Lanczos lan,
             int& max_iter, double& tol, bool measure_relative_tol);
 
+// Preconditioned GCR
+template <typename Mat, typename Vec, typename PreCon, typename ExCL>
+bool ParGCR(const Mat& A, Vec& x, const Vec& b, const ExCL& ExX, PreCon& M,
+    int m, int& max_iter, double& tol, bool measure_relative_tol= true, std::ostream* output=0);
 
 
 //***************************************************************************
@@ -155,11 +159,13 @@ class ParSolverBaseCL : public SolverBaseCL
     ParSolverBaseCL(int maxiter, double tol, bool rel= false, bool acc= true, std::ostream* output=0)
       : SolverBaseCL(maxiter, tol, rel, output), idx_(0), acc_(acc) {}
 
-    /// \brief Aks for ExchangeCL
+    /// \brief Ask for ExchangeCL
     const ExchangeCL& GetEx() const {
         Assert(idx_, DROPSErrCL("ParSolverBaseCL::GetEx: Index not set, do you want to use an ExchangeBlockCL?"), DebugParallelNumC);
         return idx_->GetEx();
     }
+
+
     bool              Accurate()          const { return acc_; }              ///< Check if accurate version of inner products and norms are used
     void              SetAccurate(bool a)       { acc_= a; }                  ///< Set to accurate version
 };
@@ -384,6 +390,9 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
     {
         base::_res  = base::_tol;
         base::_iter = base::_maxiter;
+        ParGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::output_);
+        return;
+
         if (mod_){
             if (base::Accurate())
                 ParModAccurPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::output_);
@@ -403,14 +412,7 @@ class ParPreGCRSolverCL : public ParPreSolverBaseCL<PC>
     {
         base::_res  = base::_tol;
         base::_iter = base::_maxiter;
-        if (mod_){
-            if (base::Accurate())
-                ParModAccurPGCR(A, x, b, ex, base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::output_);
-            else
-                ParModPGCR(A, x, b, base::GetEx(), base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError());
-        }
-        else
-            ParPGCR(A, x, b, ex, base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::Accurate());
+        ParGCR(A, x, b, ex, base::GetPC(), trunc_, base::_iter, base::_res, base::GetRelError(), base::output_);
     }
 
 };
@@ -1663,6 +1665,139 @@ bool ParQMR(const Mat& A, Vec& x_acc, const Vec& b, const ExCL& ExX, Lanczos lan
     tol = std::sqrt(norm_r);
     return false;
 }
+
+template <typename Mat, typename Vec, typename PreCon, typename ExCL>
+bool ParGCRMod(const Mat& A, Vec& x, const Vec& b, const ExCL& ExX, PreCon& M,
+    int m, int& max_iter, double& tol, bool measure_relative_tol= true, std::ostream* output=0)
+/** For more details about this implementation, see "Iterative Methods for Sparse Linear
+    Systems" 2nd edition, Yousef Saad, p. 196
+*/
+{
+    const size_t N= x.size();
+    const bool useAccur= true;
+    if (M.NeedDiag())
+        M.SetDiag(A);
+
+    m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
+    if (m<max_iter)
+        throw DROPSErrCL("ParGCR: Not truncation strategy implemented for parallel GCR");
+
+    Vec r( b-A*x), r_acc( r), Ar( N), Ar_acc( N);
+    Vec &x_acc= x;
+    std::valarray<double> beta( m),
+        gamma( 3), gamma_glob( 3),  // computing alpha and resid
+        tau( 2*m), tau_glob( 2*m);  // computing beta
+    std::vector<Vec> p_acc( m, Vec(N)), Ap_acc( m, Vec(N));
+    double resid, alpha;
+
+    resid     = ExX.Norm( r, false, useAccur, &r_acc);
+    p_acc[0]  = r_acc;
+    Ap_acc[0] = ExX.GetAccumulate( Vec(A*p_acc[0]));
+
+    for ( int j=0; j<max_iter; ++j){
+        // compute alpha and resid
+        gamma[0]= ExX.LocDot(     r_acc,     true, Ap_acc[j], true, useAccur);
+        gamma[1]= ExX.LocDot(     Ap_acc[j], true, Ap_acc[j], true, useAccur);
+        gamma[2]= ExX.LocNorm_sq( r_acc,     true, useAccur);
+        gamma_glob=ProcCL::GlobalSum( gamma);
+        alpha= gamma_glob[0]/gamma_glob[1];
+        resid= gamma_glob[2];
+        if (j%1==0 && output) (*output) << "GCR: j " << j <<": resid "<<resid << std::endl;
+        if (resid<tol){
+            tol= resid;
+            max_iter= j;
+            return true;
+        }
+
+        // Update of x and r
+        x_acc += alpha*p_acc[j];
+        r_acc += -alpha*Ap_acc[j];
+
+        // compute orthogonalization
+        Ar_acc= ExX.GetAccumulate( (Vec)(A*r_acc));
+        for ( int i=0; i<=j; ++i){
+            tau[ 2*i+0]= ExX.LocDot( Ar_acc,    true, Ap_acc[i], true, useAccur);
+            tau[ 2*i+1]= ExX.LocDot( Ap_acc[i], true, Ap_acc[i], true, useAccur);
+        }
+        ProcCL::GlobalSum( Addr(tau), Addr(tau_glob), 2*(j+1));
+        for ( int i=0; i<=j; ++i) beta[i]= -tau_glob[2*i]/tau_glob[2*i+1];
+
+        // compute next p and Ap
+        p_acc[j+1]= r_acc;
+        for ( int i=0; i<=j; ++i) p_acc[j+1]+= beta[i]*p_acc[i];
+        Ap_acc[j+1]= Ar_acc;
+        for ( int i=0; i<=j; ++i) Ap_acc[j+1]+= beta[i]*Ap_acc[i];
+    }
+    return false;
+}
+
+template <typename Mat, typename Vec, typename PreCon, typename ExCL>
+bool ParGCR(const Mat& A, Vec& x, const Vec& b, const ExCL& ExX, PreCon& M,
+    int m, int& max_iter, double& tol, bool measure_relative_tol= true, std::ostream* output=0)
+{
+    if (M.NeedDiag())
+        M.SetDiag(A);
+
+    m= (m <= max_iter) ? m : max_iter; // m > max_iter only wastes memory.
+
+    Vec r( b - A*x);
+    Vec sn( b.size()), vn( b.size());
+    std::vector<Vec> s, v;
+    std::vector<double> a( m);
+
+    double normb= ExX.Norm( b, false);
+    if (normb == 0.0 || measure_relative_tol == false) normb= 1.0;
+    double resid= ExX.Norm( r, false)/normb;
+    for (int k= 0; k < max_iter; ++k) {
+        if (k%1==0 && output)
+            (*output) << "GCR: k: " << k << "\tresidual: " << resid << std::endl;
+        if (resid < tol) {
+            tol= resid;
+            max_iter= k;
+            return true;
+        }
+        M.Apply( A, sn, r);
+        if (!M.RetAcc())
+            vn=A*ExX.GetAccumulate(sn);
+        else
+            vn= A*sn;
+        for (int i= 0; i < k && i < m; ++i) {
+            const double alpha= ExX.ParDot( vn, false, v[i], false);
+            a[i]= alpha;
+            vn-= alpha*v[i];
+            sn-= alpha*s[i];
+        }
+        const double beta= ExX.Norm( vn, false);
+        vn/= beta;
+        sn/= beta;
+        const double gamma= ExX.ParDot( r, false, vn, false);
+        if (!M.RetAcc())
+            x+= gamma*ExX.GetAccumulate(sn);
+        else
+            x+= gamma*sn;
+        r-= gamma*vn;
+        resid= ExX.Norm( r, false)/normb;
+        if (k < m) {
+            s.push_back( sn);
+            v.push_back( vn);
+        }
+        else {
+            throw DROPSErrCL("ParGCR: Sorry, truncation not implemented");
+            int min_idx= 0;
+            double a_min= std::fabs( a[0]); // m >= 1, thus this access is valid.
+            for (int i= 1; i < k && i < m; ++i)
+                if ( std::fabs( a[i]) < a_min) {
+                    min_idx= i;
+                    a_min= std::fabs( a[i]);
+                }
+            s[min_idx]= sn;
+            v[min_idx]= vn;
+        }
+    }
+    tol= resid;
+    return false;
+}
+
 
 } // end of namespace DROPS
 
