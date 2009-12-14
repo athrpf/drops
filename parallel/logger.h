@@ -1,5 +1,5 @@
 /// \file logger.h
-/// \brief log certain values like e.g. timespan measured during discretization etc.
+/// \brief log certain values like e.g. timespan measured during discretization etc. and moved nodes
 /// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier, Timo Henrich
 
 /*
