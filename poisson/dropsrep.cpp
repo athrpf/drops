@@ -1,4 +1,4 @@
-/// \file dropsrep.spp
+/// \file dropsrep.cpp
 /// \brief Solver for Poisson problem with P1 functions
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 

@@ -1,4 +1,4 @@
-/// \file brick_trans.cpp
+/// \file brick_transp.cpp
 /// \brief two-phase flow in square pipe with transport
 /// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt
 
