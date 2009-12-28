@@ -1,4 +1,4 @@
-/// \file surfacetension.cpp
+/// \file twophasedrops.cpp
 /// \brief flow in measurement cell or brick
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross; SC RWTH Aachen: Oliver Fortmeier
 
