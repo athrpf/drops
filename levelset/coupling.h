@@ -280,6 +280,7 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     bool           withProj_;
     double         stab_;
     double         alpha_;
+    bool           relative_;
 
     virtual void InitStep();
     virtual void CommitStep();
@@ -294,7 +295,7 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
   public:
     CoupledTimeDisc2PhaseBaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver,
                                  LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol,
-                                 double nonlinear= 1., bool withProjection= false, double stab= 0.0);
+                                 double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
     ~CoupledTimeDisc2PhaseBaseCL();
 
     void DoStep( int maxFPiter= -1);
@@ -340,7 +341,7 @@ class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lset
   public:
     MidPointTimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double nonlinear = 1.0,
-                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
+                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false, bool relative= true);
     ~MidPointTimeDisc2PhaseCL() {}
 
     void Update();
@@ -394,7 +395,7 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
   public:
     SpaceTimeDiscTheta2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
-                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
+                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false, bool relative= true);
     ~SpaceTimeDiscTheta2PhaseCL();
 
     void Update();
@@ -444,7 +445,7 @@ class EulerBackwardScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, L
   public:
     EulerBackwardScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                         double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
+                         double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
     ~EulerBackwardScheme2PhaseCL();
 
     void Update();
@@ -514,7 +515,7 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
     		             StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
     		             double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0);
+                         bool withProjection= false, double stab= 0.0, bool relative= true);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
@@ -530,11 +531,11 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
     void Update();
 };
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplDeltaSquaredPolicyCL>
-class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class CrankNicolsonScheme2PhaseCL: public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
 {
   private:
-    typedef RecThetaScheme2PhaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT> base_;
     using base_::Stokes_;
     using base_::LvlSet_;
     using base_::mat_;
@@ -545,7 +546,7 @@ class CrankNicolsonScheme2PhaseCL: public RecThetaScheme2PhaseCL<StokesT, LsetSo
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
     		             NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-    		             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
+    		             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
     ~CrankNicolsonScheme2PhaseCL();
 
     void DoStep( int maxFPiter= -1);
@@ -569,8 +570,8 @@ class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxatio
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
     	                       NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-    	                       double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
+    	                       double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1, bool relative= true)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab, relative), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -633,8 +634,8 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxati
   public:
     Frac2StepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
+                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1, bool relative= true)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab, relative), step_((step >= 0) ? step%2 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt2_; }
     double GetSubTheta()    const { return theta_[step_]; }
