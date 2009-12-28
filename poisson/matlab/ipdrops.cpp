@@ -24,7 +24,7 @@
 
 #include "mex.h"
 
-#include "../instatpoisson.h"
+#include "../poisson.h"
 #include "../../num/solver.h"
 #include "../integrTime.h"
 #include "../../out/output.h"
@@ -321,10 +321,10 @@ void MarkBndTetrahedra(MultiGridCL& mg, Uint maxLevel, double xl)
 
 
 template<class Coeff>
-void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2D,
+void Strategy(PoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2D,
   double nu, double dt, int time_steps, double theta, double cgtol, int cgiter, MatConnect* MatCon)
 {
-  typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
+  typedef PoissonP1CL<Coeff> MyPoissonCL;
 
   MLIdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
@@ -371,7 +371,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, double* CGMaxIter, double* sol2
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler
   // theta=0.5 -> Crank-Nicholson
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, PCG_SsorCL>
+  InstatPoissonThetaSchemeCL<PoissonP1CL<Coeff>, PCG_SsorCL>
     ThetaScheme(Poisson, pcg_solver, theta);
   ThetaScheme.SetTimeStep(dt, nu);
 
@@ -427,7 +427,7 @@ void ipdrops(double* CGMaxIter, double* sol2D, double* T0, double* S1,
     e2[1]= yl;
     e3[2]= zl;
 
-    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL>
+    typedef DROPS::PoissonP1CL<PoissonCoeffCL>
       InstatPoissonOnBrickCL;
     typedef InstatPoissonOnBrickCL MyPoissonCL;
 
@@ -478,17 +478,17 @@ void ipdrops(double* CGMaxIter, double* sol2D, double* T0, double* S1,
 
     const bool isneumann[6]= { true, true, true, true, true, true };
     /*
-    const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &MatConnect::getBndVal<0>, &MatConnect::getBndVal<1>,
         &MatConnect::getBndVal<2>, &MatConnect::getBndVal<3>,
         &MatConnect::getBndVal<4>, &MatConnect::getBndVal<5> };
     */
-    const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &MatConnect::getBndVal<0>, &MatConnect::getBndVal<1>,
         &DROPS::getIsolatedBndVal, &DROPS::getIsolatedBndVal,
         &DROPS::getIsolatedBndVal, &DROPS::getIsolatedBndVal };
 
-    DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
+    DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(iFlag), bdata);
     DROPS::MultiGridCL& mg = prob.GetMG();
 

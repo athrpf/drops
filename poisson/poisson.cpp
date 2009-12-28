@@ -28,6 +28,9 @@
 namespace DROPS
 {
 
+instat_scalar_fun_ptr StripTimeCL::_func= NULL;
+double                StripTimeCL::_t= 0;
+
 //===================================================
 //
 //                   Error estimators

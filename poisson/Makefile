@@ -7,7 +7,7 @@
 DIR = poisson
 
 EXEC = drops MGdrops testdrops dropsrep ipdrops ipdropsrep drops_neumann \
-       MGdropsP2 ipfilm drops_statP2
+       MGdropsP2 ipfilm drops_statP2 poissonP1
 
 DELETE = $(EXEC)
 
@@ -77,7 +77,7 @@ ipdrops: \
 ipdropsAD: \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdropsAD.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/interfacePatch.o \
-    ../poisson/instatpoisson.o ../misc/problem.o ../misc/utils.o \
+    ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
     ../num/fe.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -94,23 +94,31 @@ ipfilm: \
     ../num/fe.o ../num/discretize.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-drops_statP2:\
-    ../poisson/drops_statP2.o ../geom/boundary.o ../geom/builder.o \
+poissonP1:\
+    ../poisson/poissonP1.o ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
-    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o \
-    $(PAR_OBJ)
+    ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
+    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../misc/xfem.o\
+    ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o
 	$(CXX) -o $@ $^ $(LFLAGS)
-
+	
+drops_statP2:\
+    ../poisson/drops_statP2.o ../geom/boundary.o ../geom/builder.o\
+    ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
+    ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
+    ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../misc/xfem.o\
+    ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o \
+	$(PAR_OBJ)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/interfacePatch.o \
-    ../poisson/instatpoisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
+    ../poisson/poisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
 	$(CXX) $(CXXFLAGS) matlab/ipdrops.cpp -o $@ $^ $(LFLAGS)
 
 matlab/ipfilm: ../geom/boundary.o ../geom/builder.o ../num/interfacePatch.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
-    ../poisson/instatpoisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
+    ../poisson/poisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
 	$(CXX) $(CXXFLAGS) matlab/ipfilm.cpp -o $@ $^ $(LFLAGS)
 
 

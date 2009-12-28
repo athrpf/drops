@@ -1750,25 +1750,6 @@ template <class Coeff>
     return err_sq;
 }
 
-namespace // anonymous namespace
-{
-    typedef std::pair<const TetraCL*, double> Err_PairT;
-    typedef std::vector<Err_PairT> Err_ContCL;
-
-    struct AccErrCL :public std::binary_function<double, const Err_PairT, double>
-    {
-        double operator() (double init, const Err_PairT& ep) const
-            { return init + ep.second;}
-    };
-
-    struct Err_Pair_GTCL :public std::binary_function<const Err_PairT, const Err_PairT, bool>
-    {
-        bool operator() (const Err_PairT& ep0, const Err_PairT& ep1)
-        { return ep0.second > ep1.second; }
-    };
-
-} // end of anonymous namespace
-
 template <class _TetraEst, class _ProblemCL>
 void StokesDoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const const_DiscPrSolCL& pr, const const_DiscVelSolCL& vel)
 {

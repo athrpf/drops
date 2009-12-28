@@ -39,11 +39,32 @@ namespace DROPS
 
 typedef BndSegDataCL<> PoissonBndSegDataCL;
 typedef BndDataCL<> PoissonBndDataCL;
+typedef double  (*instat_scalar_fun_ptr)( const Point3DCL&, double);
+typedef double  (*scalar_fun_scalar_ptr)( const Point3DCL&);
 
+class StripTimeCL
+// converts time dependent function to one, that is time independent.
+// i.e.:  scalar_instat_fun_ptr  -->  scalar_fun_ptr
+// useful where one wants to use all the stuff written for the stationary problems
+{
+  private:
+    static instat_scalar_fun_ptr _func;
+    static double                _t;
+  public:
+    StripTimeCL( instat_scalar_fun_ptr func, double t)
+      { _func= func; _t= t; }
+    void SetTime( double t) { _t= t; }
+
+    static double GetFunc( const Point3DCL& x)
+      { return _func( x, _t); }
+};
 
 template <class Coeff>
 class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 {
+  private:
+    bool adjoint_;
+
   public:
     typedef ProblemCL<Coeff, PoissonBndDataCL> _base;
     typedef typename _base::BndDataCL          BndDataCL;
@@ -58,13 +79,25 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
+    double    t;        // time
+
     MLIdxDescCL idx;
     VecDescCL   x;
     VecDescCL   b;
     MLMatDescCL A;
+    MLMatDescCL M;
+    MLMatDescCL U;
 
-    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), idx( P1_FE)
+    PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
+        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE)
+    {
+#ifdef _PAR
+        throw DROPSErrCL("This class has not been parallelized yet, sorry");
+#endif
+    }
+
+    PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
+        : _base( mg, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE)
     {
 #ifdef _PAR
         throw DROPSErrCL("This class has not been parallelized yet, sorry");
@@ -79,9 +112,30 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     // set up matrices and rhs
     void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
-    // check computed solution etc.
+
+    ///  \brief set up matrices (M is time independent)
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double tA) const;
+    /// \brief set up matrix and couplings with bnd unknowns for convection term
+    void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
+
+    /// \brief Setup time dependent parts
+    ///
+    /// couplings with bnd unknowns, coefficient f(t)
+    /// If the function is called with the same vector for some arguments,
+    /// the vector will contain the sum of the results after the call
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
+    /// \brief Setup special source term including the gradient of a given P1 function
+    void SetupGradSrc( VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t= 0.) const;
+
+    /// \brief Set initial value
+    void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
+
+    /// \brief check computed solution etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
     double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
+
     void GetDiscError   ( const MLMatDescCL&, instat_scalar_fun_ptr) const;
     void GetDiscError   ( scalar_fun_ptr Lsg) const { GetDiscError(A, Lsg); }
 
@@ -121,7 +175,8 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
                 const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE) {}
-
+    PoissonP2CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
+        : _base( mg, coeff, bdata), idx( P2_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData, match); }

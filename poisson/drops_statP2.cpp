@@ -1,6 +1,6 @@
 /// \file drops_statP2.cpp
 /// \brief Solver for Poisson problem with P2 functions
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -43,13 +43,19 @@
 
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
-#include "geom/builder.h"               // construuct the initial multigrid
+#include "geom/builder.h"               // construct the initial multigrid
+#include "out/output.h"
+#include "levelset/mzelle_hdr.h"
 
  // include numeric computing!
 #include "num/fe.h"
 #include "num/solver.h"
+#include "num/MGsolver.h"
+#include "poisson/integrTime.h"
+#include "num/poissonsolverfactory.h"
 
  // include problem class
+#include "poisson/params.h"
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "num/bndData.h"
 
@@ -58,6 +64,8 @@
 #include <iomanip>
 #include <fstream>
 #include <stdlib.h>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -67,18 +75,19 @@ const char line[] ="------------------------------------------------------------
 /** The coefficients of the Poisson problem are:
     \f$ - \alpha \cdot \Delta u + Vel.(\nabla u) +q \cdot u = f \f$
 */
+
+template<class ParamsT>
 class PoissonCoeffCL
 {
   public:
+    PoissonCoeffCL(ParamsT&) {}
     /// \brief Reaction
     static double q(const DROPS::Point3DCL&, double){
         return 0.0;
     }
     /// \brief Convection
-    static DROPS::Point3DCL Vel(const DROPS::Point3DCL, double){
-        DROPS::Point3DCL ret; //ret[0]=1.; ret[1]=1.; ret[2]=1.;
-        return ret;
-    }
+    static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
+         { return DROPS::Point3DCL(0.); } // no convection
     /// \brief Right-hand side
     static double f(const DROPS::Point3DCL& p, double= 0.0){
         return 128*(p[1]*p[2]*(1.-p[1])*(1.-p[2])
@@ -89,72 +98,18 @@ class PoissonCoeffCL
     static double alpha(const DROPS::Point3DCL&, double=0.0){
         return 1.;
     }
+    /// \brief Solution
+    static double Solution( const DROPS::Point3DCL& p, double=0.0){
+        return 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
+    }
 };
 
-/// \brief Solution of the Poisson problem on the unit cube
-inline double Solution( const DROPS::Point3DCL& p, double=0.0){
-    return 64*p[0]*p[1]*p[2]*(1.-p[0])*(1.-p[1])*(1.-p[2]);
-}
 
 namespace DROPS
 {
-/// \brief Solve a linear equation system by GMRES and Jacobi as preconditioner
-template <typename Mat, typename Vec>
-void Solve(const Mat &A, Vec &x, const Vec &b, __UNUSED__ const IdxDescCL& idx)
-{
-    // parameter for solver:
-    const int    restart =  100;
-    const int    maxiter = 1000;
-    const double tol     = 1e-10;
-    const bool   relative= false;
 
-#ifndef _PAR
-    // time measurement
-    TimerCL timer;
-
-    // type of preconditioner and solver
-    typedef JACPcCL                 PrecondT;
-    typedef GMResSolverCL<PrecondT> SolverT;
-
-    // preconditioner and solver
-    PrecondT pc;
-    SolverT solver( pc, restart, maxiter, tol, relative);
-#else
-    // time measurement
-    ParTimerCL timer;
-
-    // type of preconditioner and solver
-    typedef ParJac0CL                     PrecondT;
-    typedef ParPreGMResSolverCL<PrecondT> SolverT;
-
-    // preconditioner and solver
-    PrecondT pc( idx);
-    SolverT solver( restart, maxiter, tol, idx, pc, relative);
-#endif
-
-    std::cout << " o Solving system with Jacobi-GMRes:\n"
-              << "   - maxiter   " << maxiter << '\n'
-              << "   - tolerance " << tol     << '\n'
-              << "   - restart   " << restart << std::endl;
-
-    // Solve the linear equation system
-    timer.Reset();
-    solver.Solve( A, x, b);
-    timer.Stop();
-
-    double realresid;
-#ifndef _PAR
-    realresid= norm( VectorCL(A*x-b));
-#else
-    realresid= idx.GetEx().Norm( VectorCL(A*x-b),false);
-#endif
-
-    std::cout << " o Solved system with:\n"
-              << "   - time          " << timer.GetTime()   << " s\n"
-              << "   - iterations    " << solver.GetIter()  << '\n'
-              << "   - residuum      " << solver.GetResid() << '\n'
-              << "   - real residuum " << realresid         << std::endl;
-}
+typedef ParamPoissonProblemCL Params;
+Params C;
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
 template<class CoeffCL>
@@ -176,6 +131,8 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     timer.Reset();
 
     Poisson.idx.SetFE( P2_FE);                                  // set quadratic finite elements
+    if ( PoissonSolverFactoryHelperCL<Params>().MGUsed(C))
+        Poisson.SetNumLvl ( mg.GetNumLevel());
     Poisson.CreateNumbering( mg.GetLastLevel(), &Poisson.idx);  // number vertices and edges
     Poisson.b.SetIdx( &Poisson.idx);                            // tell b about numbering
     Poisson.x.SetIdx( &Poisson.idx);                            // tell x about numbering
@@ -204,7 +161,6 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     for (size_t i=0; i<UnkOnProc.size(); ++i)
         std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
 
-
     // discretize (setup linear equation system)
     // -------------------------------------------------------------------------
     std::cout << line << "Discretize (setup linear equation system) ...\n";
@@ -218,17 +174,33 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     // solve the linear equation system
     // -------------------------------------------------------------------------
     std::cout << line << "Solve the linear equation system ...\n";
-    Solve( Poisson.A.Data.GetFinest(), Poisson.x.Data, Poisson.b.Data, Poisson.idx.GetFinest());
 
+    // type of preconditioner and solver
+    PoissonSolverFactoryCL< Params> factory( C, Poisson.idx);
+    PoissonSolverBaseCL* solver = factory.CreatePoissonSolver();
 
-    // check the result
-    // -------------------------------------------------------------------------
-    std::cout << line << "Check result against known solution ...\n";
+    if ( factory.GetProlongation() != 0)
+        SetupP2ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
 
-    timer.Reset();
-    Poisson.CheckSolution( Poisson.x, Solution);
-    timer.Stop();
-    std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+    // Solve the linear equation system
+    solver->Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
+    double realresid;
+#ifndef _PAR
+    realresid= norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
+#else
+    realresid= Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data),false);
+#endif
+    std::cout << " o Solved system with:\n"
+              << "   - time          " << timer.GetTime()   << " s\n"
+              << "   - iterations    " << solver->GetIter()  << '\n'
+              << "   - residuum      " << solver->GetResid() << '\n'
+			  << "   - real residuum " << realresid         << std::endl;
+    if (C.pos_SolutionIsKnown) {
+    	std::cout << line << "Check result against known solution ...\n";
+    	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+    }
+
+    delete solver;
 }
 
 } // end of namespace DROPS
@@ -241,16 +213,22 @@ int main (int argc, char** argv)
 #endif
     try
     {
-        if (argc!=5){
-            std::cout << "Usage " << argv[0] << " <ref x> <ref y> <ref z> <refinement>\n"
-                      << " with\n"
-                      << " o ref x: spatial resulotion in x direction\n"
-                      << " o ref y: spatial resulotion in y direction\n"
-                      << " o ref z: spatial resulotion in z direction\n"
-                      << " o refinement: number of regular refinements of each tetrahedron\n\n"
-                      << "Ending program" << std::endl;
-            return 0;
-        }
+        std::ifstream param;
+    	if (argc!=2)
+    	{
+    	   std::cout << "Using default parameter file: drops.param\n";
+    	   param.open( "drops.param");
+    	}
+    	else
+    	   param.open( argv[1]);
+    	if (!param)
+    	{
+    	   std::cerr << "error while opening parameter file\n";
+    	   return 1;
+    	}
+    	param >> DROPS::C;
+    	param.close();
+    	std::cout << DROPS::C << std::endl;
 
         // time measurement
 #ifndef _PAR
@@ -259,78 +237,68 @@ int main (int argc, char** argv)
         DROPS::ParTimerCL timer;
 #endif
 
-        // parameter for geometry
-        const int refX  = atoi( argv[1]),
-                  refY  = atoi( argv[2]),
-                  refZ  = atoi( argv[3]),
-                  refAll= atoi( argv[4]);
-        DROPS::Point3DCL orig, e1, e2, e3;  // origin and orientation of unit cube
-        e1[0]= e2[1]= e3[2]= 1.0;
-
         // set up data structure to represent a poisson problem
         // ---------------------------------------------------------------------
         std::cout << line << "Set up data structure to represent a Poisson problem ...\n";
         timer.Reset();
 
-        // create builder for geometry
-        DROPS::MGBuilderCL * mgb;
-#ifdef _PAR
-        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
-        if ( !DROPS::ProcCL::IamMaster())
-            mgb = new DROPS::EmptyBrickBuilderCL( orig, e1, e2, e3);
-#endif
-        IF_MASTER
-            mgb = new DROPS::BrickBuilderCL( orig, e1, e2, e3, refX, refY, refZ);
+        //create geometry
+        DROPS::MultiGridCL* mg= 0;
+        DROPS::PoissonBndDataCL* bdata = 0;
 
-        // boundary conditions
-        DROPS::BndCondT bndcond[6] = { DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC,
-                                       DROPS::Dir0BC, DROPS::Dir0BC, DROPS::Dir0BC };
-        // boundary function
-        DROPS::BndDataCL<>::bnd_val_fun bndfunc[6] = { DROPS::Zero, DROPS::Zero, DROPS::Zero,
-                                               DROPS::Zero, DROPS::Zero, DROPS::Zero};
-        // boundary data ( = condition & function)
-        DROPS::PoissonBndDataCL bdata( 6, bndcond, bndfunc);
+        //only for measuring cell, not used here
+        double r = 1;
+        std::string serfile = "none";
+
+        // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
+        DROPS::CreateGeomPoisson (mg, bdata, &PoissonCoeffCL<DROPS::Params>::Solution, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
 
         // Setup the problem
-        DROPS::PoissonP2CL<PoissonCoeffCL> prob( *mgb, PoissonCoeffCL(), bdata);
-        DROPS::MultiGridCL& mg= prob.GetMG();
-
+        DROPS::PoissonP2CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(DROPS::C), *bdata);
 #ifdef _PAR
         // Set parallel data structures
-        pmg.AttachTo( mg);                                  // handling of parallel multigrid
-        DROPS::LoadBalHandlerCL lb( mg);                    // loadbalancing
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+        pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+        DROPS::LoadBalHandlerCL lb( *mg);                    // loadbalancing
         lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
         lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
 #endif
-
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << refAll << " times regulary ...\n";
+        std::cout << "Refine the grid " << DROPS::C.dmc_InitialCond << " times regulary ...\n";
         timer.Reset();
 
         // Create new tetrahedra
-        for ( int ref=1; ref<=refAll; ++ref){
+        for ( int ref=1; ref<=DROPS::C.dmc_InitialCond; ++ref){
             std::cout << " refine (" << ref << ")\n";
-            DROPS::MarkAll( mg);
-            mg.Refine();
+            DROPS::MarkAll( *mg);
+            mg->Refine();
         }
-
         // do loadbalancing
 #ifdef _PAR
         lb.DoMigration();
 #endif
         timer.Stop();
-        std::cout << " o time " << timer.GetTime() << " s\n"
-                  << " o distribution of elements" << '\n';
-        mg.SizeInfo(cout);
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        mg->SizeInfo(cout);
 
         // Solve the problem
-        // ---------------------------------------------------------------------
         DROPS::Strategy( prob);
+        std::cout << DROPS::SanityMGOutCL(*mg) << std::endl;
 
+        // maple/geomview-output
+//        DROPS::RBColorMapperCL colormap;
+//        std::ofstream maple("maple.txt");
+//        DROPS::Point3DCL e3(0.0); e3[2]= 1.0;
+//        maple << DROPS::MapleMGOutCL(*mg, -1, false, true, DROPS::PlaneCL(e3, 0.6)) << std::endl;
+//        std::ofstream fil("geom.off");
+//        fil << DROPS::GeomSolOutCL<DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> >::DiscSolCL>( *mg, prob.GetSolution(), &colormap, -1, false, 0.0, prob.x.Data.min(), prob.x.Data.max()) << std::endl;
+//        std::cout << DROPS::GeomMGOutCL(*mg, -1, true) << std::endl;
+        delete mg;
+        delete bdata;
         return 0;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }

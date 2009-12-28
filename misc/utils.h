@@ -645,7 +645,29 @@ public:
 /// \brief Reversal of the byte order (change from little to big endian decoding)
 void reverseByteOrder(int size,char field[]);
 
+
+//@{ used by error marker
+class TetraCL;
+typedef std::pair<const TetraCL*, double> Err_PairT;
+typedef std::vector<Err_PairT> Err_ContCL;
+
+struct AccErrCL :public std::binary_function<double, const Err_PairT, double>
+{
+    double operator() (double init, const Err_PairT& ep) const
+        { return init + ep.second;}
+};
+
+struct Err_Pair_GTCL :public std::binary_function<const Err_PairT, const Err_PairT, bool>
+{
+    bool operator() (const Err_PairT& ep0, const Err_PairT& ep1)
+    { return ep0.second > ep1.second; }
+};
+//@}
+
+
 } // end of namespace DROPS
+
+
 
 #ifdef _PAR
 #  ifndef _MPICXX_INTERFACE

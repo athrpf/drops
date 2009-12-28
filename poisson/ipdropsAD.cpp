@@ -22,16 +22,7 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-//**************************************************************************
-// File:    ipdropsAD.cpp                                                  *
-// Content: ipdrops, test case for AD                                      *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, Marcus Soemers      *
-//          IGPM RWTH Aachen                                               *
-// Version: 0.1                                                            *
-// History: begin - May, 02 2006                                           *
-//**************************************************************************
-
-#include "poisson/instatpoisson.h"
+#include "poisson/poisson.h"
 #include "num/solver.h"
 #include "poisson/integrTime.h"
 #include "out/output.h"
@@ -98,7 +89,7 @@ class MatConnect
     typedef std::pair<double, d_pair> cmp_key;
     typedef std::map<cmp_key, double*> node_map;
     typedef node_map::const_iterator ci;
-    typedef DROPS::InstatPoissonBndDataCL::bnd_val_fun BndFuncT;
+    typedef DROPS::PoissonBndDataCL::bnd_val_fun BndFuncT;
 
     node_map _NodeMap;
     static const DROPS::VectorCL* _BndData[6];
@@ -358,9 +349,9 @@ namespace DROPS // for Strategy
 double getIsolatedBndVal(const Point3DCL&, double) { return 0.0; }
 
 template<class Coeff>
-void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConnect& MatCon)
+void Strategy(PoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConnect& MatCon)
 {
-  typedef InstatPoissonP1CL<Coeff> MyPoissonCL;
+  typedef PoissonP1CL<Coeff> MyPoissonCL;
 
   MLIdxDescCL& idx= Poisson.idx;
   VecDescCL& x= Poisson.x;
@@ -371,7 +362,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConn
   VecDescCL cplA;
   VecDescCL cplM;
 
-  idx.Set(1, 0, 0, 0);
+  idx.SetFE( P1_FE);
 
   MultiGridCL& MG= Poisson.GetMG();
 
@@ -384,7 +375,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConn
   cplA.SetIdx(&idx);
   cplM.SetIdx(&idx);
 
-  printf("Anzahl der Unbekannten: %d\n", x.Data.size());
+  std::cout << "Anzahl der Unbekannten: " << x.Data.size() << std::endl;
 //  printf("Theta: %g\n", C.theta);
 //  printf("Toleranz CG: %g\n", C.cgtol);
 //  printf("max. Anzahl CG-Iterationen: %d\n", C.cgiter);
@@ -407,7 +398,7 @@ void Strategy(InstatPoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConn
   // Zeitdiskretisierung mit one-step-theta-scheme
   // theta=1 -> impl. Euler
   // theta=0.5 -> Crank-Nicholson
-  InstatPoissonThetaSchemeCL<InstatPoissonP1CL<Coeff>, PCG_SsorCL>
+  InstatPoissonThetaSchemeCL<PoissonP1CL<Coeff>, PCG_SsorCL>
     ThetaScheme(Poisson, pcg_solver, C.theta);
   ThetaScheme.SetTimeStep(C.dt, C.nu);
   MatCon.setNodeMap(x, MG);
@@ -458,9 +449,8 @@ void ipdrops(DROPS::VectorCL& sol2D, MatConnect& MatCon)
     e2[1]= C.yl;
     e3[2]= C.zl;
 
-    typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL>
-      InstatPoissonOnBrickCL;
-    typedef InstatPoissonOnBrickCL MyPoissonCL;
+    typedef DROPS::PoissonP1CL<PoissonCoeffCL> PoissonOnBrickCL;
+    typedef PoissonOnBrickCL MyPoissonCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, C.nx, C.ny, C.nz);
 
@@ -469,12 +459,12 @@ void ipdrops(DROPS::VectorCL& sol2D, MatConnect& MatCon)
 
     // Randdaten
     const bool isneumann[6]= { true, true, true, true, true, true };
-    const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+    const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
       { &MatConnect::getBndVal<0>, &MatConnect::getBndVal<1>,
         &DROPS::getIsolatedBndVal, &DROPS::getIsolatedBndVal,
         &DROPS::getIsolatedBndVal, &DROPS::getIsolatedBndVal };
 
-    DROPS::InstatPoissonBndDataCL bdata(6, isneumann, bnd_fun);
+    DROPS::PoissonBndDataCL bdata(6, isneumann, bnd_fun);
     MyPoissonCL prob(brick, PoissonCoeffCL(), bdata);
 
     // mg.SizeInfo();
