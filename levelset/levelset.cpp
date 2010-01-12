@@ -522,7 +522,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
 #ifdef _PAR
             throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No periodic boundary for parallel fast marching implemented");
 #endif
-            fm.InitZeroPer( Bnd_, ModifyZero);
+            fm.InitZeroPer( Bnd_, ModifyZero, method);
         }
         else
             fm.InitZero( ModifyZero, method);
@@ -532,7 +532,7 @@ void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool Onl
 #ifdef _PAR
             throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No periodic boundary for parallel fast marching implemented");
 #endif
-        fm.ReparamPer( Bnd_, ModifyZero);
+        fm.ReparamPer( Bnd_, ModifyZero, method);
     }
     else
     {
