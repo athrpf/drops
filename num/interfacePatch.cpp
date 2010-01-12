@@ -497,7 +497,7 @@ void InterfacePatchCL::ComputeSubTets()
         } //intersec_==4 Ende
     } //Ende der Schleife ueber die Kinder
 
-    // if Init for SubTetraT has bee unsed, coordinates must be transformed
+    // if Init for SubTetraT has been used, coordinates must be transformed
      if (barysubtetra_ == true)
      {
          for (Uint k=0 ; k<posTetras.size(); ++k)
