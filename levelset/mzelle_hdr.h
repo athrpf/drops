@@ -146,22 +146,24 @@ class InterfaceInfoCL
 
   public:
     Point3DCL bary, vel, min, max;
-    double maxGrad, Vol, h_min, h_max;
+    double maxGrad, Vol, h_min, h_max, surfArea, sphericity;
 
 
     template<class DiscVelSolT>
     void Update (const LevelsetP2CL& ls, const DiscVelSolT& u) {
-        ls.GetInfo( maxGrad, Vol, bary, vel, u, min, max);
+        ls.GetInfo( maxGrad, Vol, bary, vel, u, min, max, surfArea);
         std::pair<double, double> h= h_interface( ls.GetMG().GetTriangEdgeBegin( ls.Phi.RowIdx->TriangLevel()), ls.GetMG().GetTriangEdgeEnd( ls.Phi.RowIdx->TriangLevel()), ls.Phi);
         h_min= h.first; h_max= h.second;
+        // sphericity is the ratio of surface area of a sphere of same volume and surface area of the approximative interface
+        sphericity= std::pow(6*Vol, 2./3.)*std::pow(M_PI, 1./3.)/surfArea;
     }
     void WriteHeader() {
         if (file_)
-          (*file_) << "# time maxGradPhi volume bary_drop min_drop max_drop vel_drop h_min h_max" << std::endl;
+          (*file_) << "# time maxGradPhi volume bary_drop min_drop max_drop vel_drop h_min h_max surfArea sphericity" << std::endl;
     }
     void Write (double time) {
         if (file_)
-          (*file_) << time << " " << maxGrad << " " << Vol << " " << bary << " " << min << " " << max << " " << vel << " " << h_min << " " << h_max << std::endl;
+          (*file_) << time << " " << maxGrad << " " << Vol << " " << bary << " " << min << " " << max << " " << vel << " " << h_min << " " << h_max << " " << surfArea << " " << sphericity << std::endl;
     }
     /// \brief Set file for writing
     void Init(std::ofstream* file) { file_= file; }

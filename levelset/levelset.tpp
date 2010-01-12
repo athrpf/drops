@@ -30,7 +30,7 @@ namespace DROPS
 {
 
 template<class DiscVelSolT>
-void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& velsol, Point3DCL& minCoord, Point3DCL& maxCoord) const
+void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& velsol, Point3DCL& minCoord, Point3DCL& maxCoord, double& surfArea) const
 /**
  * - \p maxGradPhi is the maximal 2-norm of the gradient of the level set function. This can be used as an indicator to decide
  *   whether a reparametrization should be applied.
@@ -39,6 +39,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
  * - \p vel is the velocity of the barycenter of the droplet.
  * - The entries of \p minCoord store the minimal x, y and z coordinates of the approximative interface, respectively.
  * - The entries of \p maxCoord store the maximal x, y and z coordinates of the approximative interface, respectively.
+ * - \p surfArea is the surface area of the approximative interface
  */
 {
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
@@ -49,6 +50,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     P2DiscCL::GetGradientsOnRef( GradRef);
     maxGradPhi= -1.;
     Volume= 0.;
+    surfArea= 0.;
     bary[0]= bary[1]= bary[2]= 0;
     vel[0]= vel[1]= vel[2]= 0;
     minCoord[0]= minCoord[1]= minCoord[2]= 1e99;
@@ -90,6 +92,8 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
             // find minimal/maximal coordinates of interface
             if (!patch.ComputeForChild(ch)) // no patch for this child
                 continue;
+            for (Uint tri=0; tri<patch.GetNumTriangles(); ++tri)
+                surfArea+= patch.GetFuncDet(tri);
             for (Uint i=0; i<patch.GetNumPoints(); ++i)
             {
                 const Point3DCL p= patch.GetPoint(i);
@@ -115,6 +119,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
 
     bary/= Volume;
     vel/= Volume;
+    surfArea*= 0.5;
 }
 
 template<class DiscVelSolT>
@@ -167,7 +172,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
 
 //        double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
 //        const double limit= 1e-3;
-//       for(int i=0; i<Quad5DataCL::NumNodesC; ++i)
+//        for(int i=0; i<Quad5DataCL::NumNodesC; ++i)
 //            maxV = std::max( maxV, u_loc[i].norm());
 //        maxV= std::max( maxV, limit/h_T); // no scaling for extremely small velocities
         double maxV= 1; // no scaling
