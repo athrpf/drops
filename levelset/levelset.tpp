@@ -92,7 +92,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
             // find minimal/maximal coordinates of interface
             if (!patch.ComputeForChild(ch)) // no patch for this child
                 continue;
-            for (Uint tri=0; tri<patch.GetNumTriangles(); ++tri)
+            for (int tri=0; tri<patch.GetNumTriangles(); ++tri)
                 surfArea+= patch.GetFuncDet(tri);
             for (Uint i=0; i<patch.GetNumPoints(); ++i)
             {
