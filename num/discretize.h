@@ -804,6 +804,7 @@ class P1DiscCL
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
     static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const Point3DCL pt[4]);
+    static inline void   GetGradients( Point3DCL H[4], const SMatrixCL<3,3>& T);
     static void GetP1Basis( Quad5_2DCL<> p1[4], const BaryCoordCL* const p);
 };
 
@@ -1150,6 +1151,12 @@ inline void P1DiscCL::GetGradients( Point3DCL H[4], double& det, const TetraCL& 
     H[3][2]= (M[0][0]*M[1][1] - M[1][0]*M[0][1])/det;
     // in H[1:3][0:2] steht jetzt die Adjunkte von M ...
     H[0]= -H[1]-H[2]-H[3];
+}
+
+inline void P1DiscCL::GetGradients( Point3DCL H[4], const SMatrixCL<3,3>& T)
+{
+    for(Uint i=0; i<4; ++i)
+        H[i]= T*FE_P1CL::DHRef( i);
 }
 
 inline void P1DiscCL::GetGradients (SMatrixCL<3,4>& H, double& det, const Point3DCL pt[4])
