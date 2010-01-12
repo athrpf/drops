@@ -369,6 +369,9 @@ void FastMarchCL::InitZero( bool ModifyZero, int method)
 ///                       Due to the need of a larger neighborhood of the interface (TetraNeighborCL) it can consume quite a
 ///                       lot of memory.
 {
+    if (method<0 || method>2)
+        throw DROPSErrCL("FastMarchCL::InitZero: unknown method");
+
     Comment("Init zero\n", DebugParallelNumC);
     // Knoten an der Phasengrenze als Finished markieren
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
@@ -1481,6 +1484,9 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero, int meth
 #endif
     // Knoten an der Phasengrenze als Finished markieren
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
+    if (method<0 || method>1)
+        throw DROPSErrCL("FastMarchCL::InitZeroPer: unknown method");
+        
     const Uint idx= v_->RowIdx->GetIdx(),
                lvl= v_->GetLevel();
     int        sign[10];
@@ -1791,13 +1797,13 @@ void FastMarchCL::UpdatePer( const IdxT NrI)
 }
 
 
-void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero)
+void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero, int method)
 {
 #ifdef _PAR
     throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
 #endif
 
-    InitZeroPer( bnd, ModifyZero, 0);
+    InitZeroPer( bnd, ModifyZero, method);
     InitClosePer();
 
     IdxT next;

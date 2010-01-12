@@ -139,7 +139,7 @@ class FastMarchCL
     /// \name variants for periodic boundaries
     //@{
     void InitZeroPer( const BndDataCL<>&, bool ModifyZero= true, int method= 0);
-    void ReparamPer( const BndDataCL<>&, bool ModifyZero= true);
+    void ReparamPer(  const BndDataCL<>&, bool ModifyZero= true, int method= 0);
     //@}
 
 #ifdef _PAR
