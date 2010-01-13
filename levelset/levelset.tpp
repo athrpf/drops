@@ -111,6 +111,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     const Point3DCL local_bary(bary), local_vel(vel), local_minCoord(minCoord), local_maxCoord(maxCoord);
     maxGradPhi= ProcCL::GlobalMax(maxGradPhi);
     Volume    = ProcCL::GlobalSum(Volume);
+    surfArea  = ProcCL::GlobalSum(surfArea);
     ProcCL::GlobalSum(Addr(local_bary), Addr(bary), 3);
     ProcCL::GlobalSum(Addr(local_vel), Addr(vel), 3);
     ProcCL::GlobalMin(Addr(local_minCoord), Addr(minCoord), 3);
