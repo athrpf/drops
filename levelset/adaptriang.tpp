@@ -36,10 +36,11 @@ void AdapTriangCL::MakeInitialTriang( DistFctT& Dist)
 
     time.Reset();
     time.Start();
-    const Uint min_ref_num= f_level_ - c_level_;
+    const Uint min_ref_num= f_level_;
     Uint i;
-    for (i=0; i<2*min_ref_num; ++i)
-        ModifyGridStep( Dist);
+    bool modified= true;
+    for (i=0; i<2*min_ref_num && modified; ++i)
+        modified=ModifyGridStep( Dist);
 
     time.Stop();
     const double duration=time.GetTime();
