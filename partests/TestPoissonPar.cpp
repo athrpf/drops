@@ -41,7 +41,7 @@
 #include "num/fe.h"
 
  // include problem class
-#include "poisson/instatpoisson.h"      // setting up the Poisson problem
+#include "poisson/poisson.h"      // setting up the Poisson problem
 
  // include misc
 #include "out/output.h"                 // output in geomview or other formats
@@ -463,11 +463,11 @@ void Solve(const Mat &A, Vec &x, const Vec &b, const IdxDescCL& idx)
 *   4. Check the solution                                                   *
 ****************************************************************************/
 template<class PoissonCoeffCL>
-void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
+void Strategy(PoissonP1CL<PoissonCoeffCL>& Poisson)
 {
     ParTimerCL time; double duration;
 
-    typedef InstatPoissonP1CL<PoissonCoeffCL> MyPoissonCL;
+    typedef PoissonP1CL<PoissonCoeffCL> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();
 
@@ -585,11 +585,11 @@ void Strategy(InstatPoissonP1CL<PoissonCoeffCL>& Poisson)
 ****************************************************************************/
 /// \brief Solve the Poisson equation by an adaptive strategy
 template<class PoissonCoeffCL>
-void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridCL &pmg, LoadBalHandlerCL &lb)
+void Strategy_Adaptive(PoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridCL &pmg, LoadBalHandlerCL &lb)
 {
     ParTimerCL time;                                                        // time stamping
 
-    typedef InstatPoissonP1CL<PoissonCoeffCL> MyPoissonCL;
+    typedef PoissonP1CL<PoissonCoeffCL> MyPoissonCL;
 
     MultiGridCL& MG= Poisson.GetMG();                                       // MultiGrid
     const typename MyPoissonCL::BndDataCL& BndData= Poisson.GetBndData();   // Boundary-Values
@@ -725,7 +725,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
             if (ProcCL::IamMaster())
                 std::cout << " - Interpolating old index ("<<old_idx->GetIdx()<<") to the new one ("<<new_idx->GetIdx()<<") ...\n";
 
-            P1EvalCL<double, const InstatPoissonBndDataCL, const VecDescCL>  oldDesc(new_x, &BndData, &MG);
+            P1EvalCL<double, const PoissonBndDataCL, const VecDescCL>  oldDesc(new_x, &BndData, &MG);
 
             time.Reset();
             RepairAfterRefineP1 (oldDesc, *new_x);
@@ -750,7 +750,7 @@ void Strategy_Adaptive(InstatPoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridC
                 ensight = new Ensight6OutCL( C.EnsCase + ".case", 7, false);
                 ensight->Register( make_Ensight6Geom  ( MG, new_idx->GetFinest().TriangLevel(), C.geomName, ensf + ".geo", true));
                 ensight->Register( make_Ensight6Scalar( Poisson.GetSolution(),              C.varName,  ensf + ".tmp", true));
-                P1EvalCL<double, const InstatPoissonBndDataCL, const VecDescCL>  ensSol(new_x, &BndData, &MG);
+                P1EvalCL<double, const PoissonBndDataCL, const VecDescCL>  ensSol(new_x, &BndData, &MG);
                 ensight->Register( make_Ensight6Scalar( ensSol, "Interpolation",  ensf + ".interpol", true));
                 ensight->SetMasterOut();
 
@@ -920,8 +920,8 @@ int main (int argc, char** argv)
 
         DROPS::ParTimerCL time, alltime;
 
-        typedef DROPS::InstatPoissonP1CL<PoissonCoeffCL> PoissonOnBCL;
-        typedef PoissonOnBCL                             MyPoissonCL;
+        typedef DROPS::PoissonP1CL<PoissonCoeffCL> PoissonOnBCL;
+        typedef PoissonOnBCL                       MyPoissonCL;
 
         // Init of the parallel structurs.
         DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
@@ -933,9 +933,9 @@ int main (int argc, char** argv)
         // just Dirichlet boundarys
         const bool IsNeumann[6]=
             {false, false, false, false, false, false};
-        const DROPS::InstatPoissonBndDataCL::bnd_val_fun bnd_fun[6]=
+        const DROPS::PoissonBndDataCL::bnd_val_fun bnd_fun[6]=
             { &Null, &Null, &Null, &Null, &Null, &Null};
-        DROPS::InstatPoissonBndDataCL bdata(6, IsNeumann, bnd_fun);
+        DROPS::PoissonBndDataCL bdata(6, IsNeumann, bnd_fun);
 
         if (ProcCL::IamMaster()){
             std::cout << line << std::endl
