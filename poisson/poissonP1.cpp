@@ -35,7 +35,7 @@
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
 #include "out/output.h"
-#include "levelset/mzelle_hdr.h"
+#include "geom/geomselect.h"
 
  // include numeric computing!
 #include "num/fe.h"

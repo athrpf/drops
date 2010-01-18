@@ -396,6 +396,12 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
 #endif
 };
 
+/// merges two p1-VectorCL into a p1x-VectorCL
+void P1toP1X ( const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const VectorCL& posPart, const VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg );
+
+/// splits a p1x-VectorCL into two p1-VectorCL
+void P1XtoP1 ( const IdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg );
+
 inline void
 GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)
 /// Copies P1-unknown-indices from idx on s into Numb; assumes that all

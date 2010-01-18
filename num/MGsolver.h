@@ -26,7 +26,6 @@
 #define DROPS_MGSOLVER_H
 
 #include "misc/problem.h"
-#include "misc/xfem.h"
 #include "num/solver.h"
 
 #include <list>

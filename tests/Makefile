@@ -38,7 +38,8 @@ check_%:
 
 reftest: \
     ../tests/reftest.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
-    ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o
+    ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o ../misc/problem.o \
+    ../num/interfacePatch.o ../num/fe.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ip1test: \
@@ -87,7 +88,7 @@ minres: \
 meshreader: \
     ../tests/meshreader.o ../geom/simplex.o ../geom/multigrid.o ../geom/topo.o \
     ../num/unknowns.o ../geom/builder.o ../geom/boundary.o ../misc/utils.o \
-    ../out/output.o
+    ../out/output.o ../misc/problem.o ../num/interfacePatch.o ../num/fe.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 restrictp2: \
@@ -118,7 +119,7 @@ globallist: \
 
 serialization: \
     ../tests/serialization.o  ../misc/utils.o  ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
-    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../out/output.o
+    ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../out/output.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 triang: \
@@ -173,14 +174,14 @@ xfem: \
     ../tests/xfem.o ../misc/utils.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../geom/boundary.o ../geom/topo.o ../num/unknowns.o ../misc/problem.o ../num/interfacePatch.o \
     ../num/fe.o ../num/discretize.o ../levelset/levelset.o ../levelset/fastmarch.o \
-    ../stokes/instatstokes2phase.o ../out/ensightOut.o ../misc/xfem.o ../levelset/surfacetension.o
+    ../stokes/instatstokes2phase.o ../out/ensightOut.o ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 f_Gamma: \
     ../tests/f_Gamma.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../num/interfacePatch.o \
-    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../misc/xfem.o \
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
     ../levelset/surfacetension.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -190,7 +191,7 @@ neq: \
 
 splitboundary: \
     ../tests/splitboundary.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
-    ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o
+    ../num/unknowns.o ../misc/utils.o ../geom/topo.o ../out/output.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 reparam_init: \

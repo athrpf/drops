@@ -297,6 +297,12 @@ class MapleSolOutCL: public MGOutCL
     std::ostream& put(std::ostream&) const;
 };
 
+/// \brief Write finite element function, stored in \a v, in a file, named \a filename
+void WriteFEToFile( const VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary=false, const VecDescCL* lsetp=0);
+
+/// Read a serialized finite element function from a file
+/// \pre CreateNumbering of v.RowIdx must have been called before
+void ReadFEFromFile( VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary=false, const VecDescCL* lsetp=0);
 
 //=====================================================
 //              inline definitions

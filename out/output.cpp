@@ -331,4 +331,52 @@ MapleMGOutCL::put(std::ostream& os) const
 }
 
 
+/// \brief Write finite element function, stored in \a v, in a file, named \a filename
+void WriteFEToFile( const VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary, const VecDescCL* lsetp)
+{
+    if (!v.RowIdx->IsExtended()) {
+#ifdef _PAR
+        ProcCL::AppendProcNum( filename);
+#endif
+        std::ofstream file( filename.c_str());
+        if (!file) throw DROPSErrCL("WriteFEToFile: Cannot open file "+filename+" for writing");
+        v.Write( file, binary);
+    }
+    else { // extended FE
+        IdxDescCL p1( P1_FE);
+        p1.CreateNumbering( v.RowIdx->TriangLevel(), mg, *v.RowIdx);
+        VecDescCL vpos(&p1), vneg(&p1);
+        P1XtoP1 ( *v.RowIdx, v.Data, p1, vpos.Data, vneg.Data, *lsetp, mg);
+        WriteFEToFile(vneg, mg, filename + "Neg");
+        WriteFEToFile(vpos, mg, filename + "Pos");
+        p1.DeleteNumbering(mg);
+    }
+}
+
+/// Read a serialized finite element function from a file
+/// \pre CreateNumbering of v.RowIdx must have been called before
+void ReadFEFromFile( VecDescCL& v, MultiGridCL& mg, std::string filename, bool binary, const VecDescCL* lsetp)
+{
+    if (!v.RowIdx->IsExtended()) {
+
+        std::cout << "Read FE "<<filename<<std::endl;
+#ifdef _PAR
+        ProcCL::AppendProcNum( filename);
+#endif
+        std::ifstream file( filename.c_str());
+        if (!file) throw DROPSErrCL("ReadFEFromFile: Cannot open file "+filename);
+        v.Read( file, binary);
+    }
+    else { // extended FE
+        IdxDescCL p1( P1_FE);
+        p1.CreateNumbering( v.RowIdx->TriangLevel(), mg, *v.RowIdx);
+        VecDescCL vpos(&p1), vneg(&p1);
+        ReadFEFromFile(vneg, mg, filename + "Neg");
+        ReadFEFromFile(vpos, mg, filename + "Pos");
+        P1toP1X ( *v.RowIdx, v.Data, p1, vpos.Data, vneg.Data, *lsetp, mg);
+        p1.DeleteNumbering(mg);
+    }
+}
+
+
 } // end of namespace DROPS

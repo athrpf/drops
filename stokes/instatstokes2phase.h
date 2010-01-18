@@ -31,7 +31,6 @@
 #include "levelset/levelset.h"
 #include "levelset/mgobserve.h"
 #include "num/MGsolver.h"
-#include "misc/xfem.h"
 
 namespace DROPS
 {
