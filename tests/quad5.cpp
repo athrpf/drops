@@ -1,3 +1,27 @@
+/// \file quad5.cpp
+/// \brief tests 3D quadrature of order 5
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 #include "misc/utils.h"
 #include "num/spmat.h"
 #include "geom/multigrid.h"
@@ -259,7 +283,7 @@ void TestTransform()
     for (Uint i=0; i<4; ++i)
         M[i][i]=2.;
     M[0][0]=1.; M[1][0]= M[2][0]= M[3][0]= -1.;
-    
+
 /*    M[1][1]=1.;
     M[1][2]=2.;
     M[2][2]=3.;

@@ -1,3 +1,27 @@
+/// \file downwind.cpp
+/// \brief tests implementation of downwind numbering by reverse_cuthill_mckee
+/// \author LNM RWTH Aachen: Joerg Grande; SC RWTH Aachen:
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 #include "num/spmat.h"
 #include "misc/problem.h"
 #include <iostream>
@@ -54,7 +78,7 @@ sort_row_entries (MatrixCL& M)
         for (size_t i= M.row_beg( r), j= 0; i < M.row_beg( r + 1); ++i, ++j) {
             M.raw_col()[i]= pv[j].second;
             M.raw_val()[i]= pv[j].first;
-        }        
+        }
     }
 }
 
@@ -227,7 +251,7 @@ void TestPermutation()
     mb( 2, 2)= 9.0;
     mb.Build();
     MatrixCL m2( m), m3( m);
-    
+
     std::cout << "Matrix:\n" << m << '\n' << "Permutation:\n";
     seq_out( p.begin(), p.end(), std::cout);
 
@@ -241,7 +265,7 @@ void TestPermutation()
     m3.permute_rows( p);
     std::cout << "Columns and rows permuted:\n" << m3 << '\n';
 
-    
+
     print_frobeniusnorm( M);
     M.permute_rows( p);
     std::cout << "M, rows permuted:\n" << M << '\n';

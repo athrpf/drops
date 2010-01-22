@@ -1,19 +1,26 @@
-//**************************************************************************
-// File:    TestGMRESSer.cpp                                               *
-// Content: Sequential solver for Poisson problems                         *
-// Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-//          Oliver Fortmeier, SC RWTH Aachen                               *
-// Version: 0.1                                                            *
-// Date:                                                                   *
-// Begin:   10. December 2007                                              *
-//**************************************************************************
-// test different setting and solvers for different multigrids for         *
-// parallel solving of Poisson problems                                    *
-//**************************************************************************
-/// \author Oliver Fortmeier
-/// \file TestPoissonSer.cpp
+/// \file  TestGMRESSer.cpp
 /// \brief Testing sequential solving of the Poisson problem
+/// \author LNM RWTH Aachen: Patrick Esser, Sven Gross, Joerg Peters, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
 
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor

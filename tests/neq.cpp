@@ -1,3 +1,27 @@
+/// \file neq.cpps
+/// \brief  Used to test/implement CG for the normal equations and the NEGSPcCL.
+/// \author LNM RWTH Aachen: Joerg Grande; SC RWTH Aachen: Oliver Fortmeier
+
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
 #include "misc/utils.h"
 #include "num/spmat.h"
 #include "num/solver.h"
@@ -49,7 +73,7 @@ int main ()
     //PCGSolverCL<SPcT> solver( spc, 200, 1e-6, true);
     PCGNESolverCL<SPcT> solver( spc, 400, 1e-6, true);
     //GCRSolverCL<SPcT> solver( spc, 500, 500, 1e-6, true, &std::cout);
-  
+
     VectorCL x( M.num_cols());
     TimerCL t;
     solver.Solve( m, x, b);
