@@ -44,6 +44,10 @@ MultiGridCL::MultiGridCL (const MGBuilderCL& Builder)
 {
     Builder.build(this);
     FinalizeModify();
+#ifdef _PAR
+    ParMultiGridCL::AttachTo( *this);
+    ParMultiGridCL::MarkSimplicesForUnknowns();
+#endif
 }
 
 
