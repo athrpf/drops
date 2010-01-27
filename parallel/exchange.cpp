@@ -590,7 +590,7 @@ bool ExchangeCL::IsAcc(const VectorCL& vec) const
         req[2*proc_pos+1]= ProcCL::Isend(sendval_buf[proc_pos], count, it->first, tag_+1);
     }
 
-    // recieve and check
+    // receive and check
     for (ProcNumCT::iterator proc(neigh.begin()), end(neigh.end()); proc!=end; ++proc){
         ProcCL::StatusT stat;
         ProcCL::Probe(*proc, tag_, stat);
