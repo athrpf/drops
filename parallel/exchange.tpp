@@ -1175,46 +1175,30 @@ std::vector<VectorCL> ExchangeCL::GetAccumulate (const std::vector<VectorCL>& x)
 
 /// \brief Calculate the square of the euclidian-norm and accumulates the vector
 double ExchangeCL::Norm_sq_Acc(VectorCL &r_acc, const VectorCL &r) const
+    /// Abbrev. to call Norm(const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0)
     /// \param[out] r_acc accumulated form of r (can be uninitialized)
     /// \param[in]  r local distributed vecot
     /// \return       r^T * r
 {
-    r_acc=r;
-
-    double norm_sq = ParDotAcc(r_acc,r);
-    DROPS_Check_Norm(norm_sq,"ExchangeCL::Norm_sq_Acc: negative squared norm because of accumulation!");
-    return norm_sq;
+    return Norm(r, false, true, &r_acc);
 }
 
 /// \brief Calculate the square of the euclidian-norm of a vector
 double ExchangeCL::Norm_sq(const VectorCL &r) const
+    /// Abbrev. to call Norm_sq(const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0)
     /// \param[in] r distributed form of a vector
     /// \return      squared euclidian norm of the vector r
 {
-    VectorCL r_acc(r);
-
-    double norm_sq = ParDotAcc(r_acc,r);
-    DROPS_Check_Norm(norm_sq,"ExchangeCL::Norm_sq_Acc: negative squared norm because of accumulation!");
-    return norm_sq;
+    return Norm_sq( r, false, true);
 }
 
 /// \brief Returns the euclidian-norm of a vector
 double ExchangeCL::Norm(const VectorCL &r) const
+    /// Abbrev. to call Norm(const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0)
     /// \param[in] r distributed form of a vector
     /// \return      euclidian norm of the vector r
 {
-    VectorCL r_acc(r);
-
-    double norm_sq = ParDotAcc(r_acc,r);
-
-    if (norm_sq<0.){
-        std::cout << "["<<ProcCL::MyRank()<<"] In function ExchangeCL::Norm (1 arg):\n Norm of vector smaller than zero: "
-                  << "squared value "<<norm_sq<<std::endl;
-        throw DROPSErrCL("ExchangeCL::Norm: negative squared norm because of accumulation!");
-    }
-    DROPS_Check_Norm(norm_sq,"ExchangeCL::Norm: negative squared norm because of accumulation!");
-
-    return std::sqrt(norm_sq);
+    return Norm(r, false, true);
 }
 
 // -------------------------------------
