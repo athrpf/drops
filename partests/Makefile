@@ -71,7 +71,7 @@ TestSedPar: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../geom/geomselect.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
-    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
+    ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o ../levelset/twophaseutils.o\
     ../num/interfacePatch.o ../out/vtkOut.o ../surfactant/ifacetransp.o ../levelset/surfacetension.o ../geom/simplex.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 

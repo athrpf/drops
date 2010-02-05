@@ -33,6 +33,8 @@
 #include "poisson/transport2phase.h"
 #include "poisson/poisson.h"
 #include "geom/geomselect.h"
+#include "num/nssolver.h"
+#include "levelset/coupling.h"
 
 namespace DROPS
 {
@@ -226,153 +228,167 @@ SVectorCL<3> Null( const Point3DCL&, double) { return SVectorCL<3>(0.); }
 double       One ( const Point3DCL&)         { return 1.; }
 
 
-/// \brief Display a detailed list of unknowns
-template <typename StokesT, typename LevelsetT>
-  void DisplayUnks(const StokesT& Stokes, const LevelsetT& levelset, __UNUSED__ const MultiGridCL& MG)
-/** This functions write information about unknowns on the display. These
-    informations are for the level-set-, pressure- and velocity-DOF:
-    - global DOF
-    - accumulated DOF
-    - max and min DOF on a single processor (and the ratio)
-    - max and min number of distributed DOF on a processor (and the ratio to the remaining DOF)
-*/
+/// \brief factory for the time discretization schemes
+template< class StokesProblemT, class LevelSetSolverT>
+TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
+    NSSolverBaseCL<StokesProblemT>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C, LevelsetModifyCL& lsetmod, bool relative_criterion = true)
 {
-#ifndef _PAR
-    std::cout << Stokes.p.Data.size() << " pressure unknowns,\n";
-    std::cout << Stokes.v.Data.size() << " velocity unknowns,\n";
-    std::cout << levelset.Phi.Data.size() << " levelset unknowns.\n";
-#else
-    const MLIdxDescCL* vidx = &Stokes.vel_idx,
-                     * pidx = &Stokes.pr_idx;
-    const IdxDescCL*   lidx = &levelset.idx;
-    const ExchangeCL& ExV = Stokes.vel_idx.GetEx(),
-                    & ExP = Stokes.pr_idx.GetEx(),
-                    & ExL = levelset.idx.GetEx();
-
-    // local number on unknowns
-    Ulint Psize      = pidx->NumUnknowns();
-    Ulint Vsize      = vidx->NumUnknowns();
-    Ulint Lsize      = lidx->NumUnknowns();
-
-    // global number of unknowns
-    Ulint GPsize     = pidx->GetGlobalNumUnknowns(MG);
-    Ulint GVsize     = vidx->GetGlobalNumUnknowns(MG);
-    Ulint GLsize     = lidx->GetGlobalNumUnknowns(MG);
-
-    // accumulated size of unknwons
-    Ulint Psize_acc = ProcCL::GlobalSum(Psize);
-    Ulint Vsize_acc = ProcCL::GlobalSum(Vsize);
-    Ulint Lsize_acc = ProcCL::GlobalSum(Lsize);
-
-    // maximal and minimal number of unknowns
-    Ulint P_min= ProcCL::GlobalMin(Psize); Ulint P_max= ProcCL::GlobalMax(Psize);
-    Ulint V_min= ProcCL::GlobalMin(Vsize); Ulint V_max= ProcCL::GlobalMax(Vsize);
-    Ulint L_min= ProcCL::GlobalMin(Lsize); Ulint L_max= ProcCL::GlobalMax(Lsize);
-
-    // ratios between maximal number of unknowns/proc and minimal number
-    double P_ratio   = (double)P_max/(double)P_min;
-    double V_ratio   = (double)V_max/(double)V_min;
-    double L_ratio   = (double)L_max/(double)L_min;
-
-    // number on boundaries
-    Ulint P_accmax= ProcCL::GlobalMax(ExP.AccDistIndex.size()), P_accmin= ProcCL::GlobalMin(ExP.AccDistIndex.size());
-    Ulint V_accmax= ProcCL::GlobalMax(ExV.AccDistIndex.size()), V_accmin= ProcCL::GlobalMin(ExV.AccDistIndex.size());
-    Ulint L_accmax= ProcCL::GlobalMax(ExL.AccDistIndex.size()), L_accmin= ProcCL::GlobalMin(ExL.AccDistIndex.size());
-
-    // ratio of these unknowns
-    double P_accratio= (double)P_accmax / (double)P_accmin;
-    double V_accratio= (double)V_accmax / (double)V_accmin;
-    double L_accratio= (double)L_accmax / (double)L_accmin;
-
-    // output on screen
-    if (ProcCL::IamMaster()){
-        std::cout << "  + Number of DOF\n        "
-                  << std::setw(10)<<"global"<<std::setw(10)<<"accum"<<std::setw(10)
-                  << "max"<<std::setw(10)<<"min"<<std::setw(10)<<"ratio"<<"  |  "
-                  << std::setw(10)<<"max_acc" <<std::setw(10)<<"min_acc"<<std::setw(10)<<"ratio_acc"<<std::endl;
-
-        std::cout << "    "<<"pr  "
-                  << std::setw(10)<<GPsize<<std::setw(10)<<Psize_acc<<std::setw(10)<<P_max
-                  << std::setw(10)<<P_min<< std::setw(10)<<P_ratio<<"  |  "
-                  << std::setw(10)<<P_accmax<<std::setw(10)<<P_accmin<<std::setw(10)<<P_accratio<<std::endl;
-
-        std::cout << "    "<<"vel "
-                  << std::setw(10)<<GVsize<<std::setw(10)<<Vsize_acc<<std::setw(10)<<V_max
-                  << std::setw(10)<<V_min<< std::setw(10)<<V_ratio<<"  |  "
-                  << std::setw(10)<<V_accmax<<std::setw(10)<<V_accmin<<std::setw(10)<<V_accratio<<std::endl;
-
-        std::cout << "    "<<"scl "
-                  << std::setw(10)<<GLsize<<std::setw(10)<<Lsize_acc<<std::setw(10)<<L_max
-                  << std::setw(10)<<L_min<< std::setw(10)<<L_ratio<<"  |  "
-                  << std::setw(10)<<L_accmax<<std::setw(10)<<L_accmin<<std::setw(10)<<L_accratio<<std::endl;
-
-        std::cout << std::endl;
+    if (C.tm_NumSteps == 0) return 0;
+    switch (C.tm_Scheme)
+    {
+        case 1 :
+            return (new LinThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Stab));
+        break;
+        case 3 :
+            std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
+        case 2 :
+            return (new RecThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 4 :
+            return (new OperatorSplitting2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, C.stk_InnerIter, C.stk_InnerTol, C.ns_Nonlinear));
+        break;
+        case 6 :
+            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false, relative_criterion));
+        break;
+        case 7 :
+            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true, relative_criterion));
+        break;
+        case 8 :
+            return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 9 :
+            return (new CrankNicolsonScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 10 :
+            return (new CrankNicolsonScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT>
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 11 :
+            return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 12 :
+            return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 13 :
+            return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        case 14 :
+            return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+        break;
+        default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }
-#endif
 }
 
-void DisplayDetailedGeom(MultiGridCL& mg)
+template <class StokesT>
+void SolveStatProblem( StokesT& Stokes, LevelsetP2CL& lset,
+                       NSSolverBaseCL<StokesT >& solver)
 {
 #ifndef _PAR
-    mg.SizeInfo( std::cout);
+    TimerCL time;
 #else
-    const Uint level=mg.GetLastLevel();
-    Uint *numTetrasAllProc=0;
-    Uint *numFacesAllProc=0;
-    Uint *numDistFaceAllProc=0;
-    if (ProcCL::IamMaster()){
-        numTetrasAllProc  = new Uint[ProcCL::Size()];
-        numFacesAllProc   = new Uint[ProcCL::Size()];
-        numDistFaceAllProc= new Uint[ProcCL::Size()];
-    }
-    // Gather information about distribution on master processor
-    ProcCL::Gather(mg.GetNumTriangTetra(level),      numTetrasAllProc,   ProcCL::Master());
-    ProcCL::Gather(mg.GetNumTriangFace(level),       numFacesAllProc,    ProcCL::Master());
-    ProcCL::Gather(mg.GetNumDistributedFaces(level), numDistFaceAllProc, ProcCL::Master());
-
-    // Display information
-    if (ProcCL::IamMaster()){
-        double ratioTetra       =  (double)*std::max_element(numTetrasAllProc,   numTetrasAllProc+ProcCL::Size())
-                                  /(double)*std::min_element(numTetrasAllProc,   numTetrasAllProc+ProcCL::Size());
-        Uint allTetra    =  std::accumulate(numTetrasAllProc, numTetrasAllProc+ProcCL::Size(), 0),
-                    allFace     =  std::accumulate(numFacesAllProc, numFacesAllProc+ProcCL::Size(), 0),
-                    allDistFace =  std::accumulate(numDistFaceAllProc, numDistFaceAllProc+ProcCL::Size(), 0);
-        double      *ratioDistFace=new double[ProcCL::Size()];
-
-        // global information
-        std::cout << "Detailed information about the parallel multigrid:\n"
-                  << "#(master tetras on finest level):    "<<allTetra<<'\n'
-                  << "#(all Faces on finest level):        "<<allFace<<'\n'
-                  << "#(distributed Faces on fines level): "<<allDistFace<<'\n';
-
-        // local information for all processors
-        for (int i=0; i<ProcCL::Size(); ++i)
-            ratioDistFace[i]= ((double)numDistFaceAllProc[i]/(double)numFacesAllProc[i]*100.);
-
-        double maxRatio= *std::max_element(ratioDistFace, ratioDistFace+ProcCL::Size());
-        std::cout << "Ratio between max/min Tetra: "<<ratioTetra
-                  <<" max Ratio DistFace/AllFace: "<<maxRatio<<std::endl;
-
-        std::cout << std::setw(6)  <<  "Proc"
-                  << std::setw(8)  << "#Tetra"
-                  << std::setw(8)  << "#Faces"
-                  << std::setw(12) << "#DistFaces"
-                  << std::setw(12) << "%DistFaces"
-                  << '\n';
-        for (int i=0; i<ProcCL::Size(); ++i)
-            std::cout << std::setw(6)  << i
-                      << std::setw(8)  << numTetrasAllProc[i]
-                      << std::setw(8)  << numFacesAllProc[i]
-                      << std::setw(12) << numDistFaceAllProc[i]
-                      << std::setw(12) << ratioDistFace[i] << std::endl;
-
-        // free memory
-        if (numTetrasAllProc)   delete[] numTetrasAllProc;
-        if (numFacesAllProc)    delete[] numFacesAllProc;
-        if (numDistFaceAllProc) delete[] numDistFaceAllProc;
-        if (ratioDistFace)      delete[] ratioDistFace;
-    }
+    ParTimerCL time;
 #endif
+    double duration;
+    time.Reset();
+    VelVecDescCL cplM, cplN;
+    VecDescCL curv;
+    cplM.SetIdx( &Stokes.vel_idx);
+    cplN.SetIdx( &Stokes.vel_idx);
+    curv.SetIdx( &Stokes.vel_idx);
+    Stokes.SetIdx();
+    Stokes.SetLevelSet( lset);
+    lset.AccumulateBndIntegral( curv);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.t);
+    Stokes.SetupPrStiff( &Stokes.prA, lset);
+    Stokes.SetupPrMass ( &Stokes.prM, lset);
+    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
+    time.Stop();
+    duration = time.GetTime();
+    std::cout << "Discretizing took "<< duration << " sec.\n";
+    time.Reset();
+    Stokes.b.Data += curv.Data;
+    solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v, Stokes.p.Data, Stokes.b.Data, cplN, Stokes.c.Data, 1.0);
+    time.Stop();
+    duration = time.GetTime();
+    std::cout << "Solving (Navier-)Stokes took "<<  duration << " sec.\n";
+    std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
+}
+
+template <typename StokesT>
+void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, const ParamMesszelleNsCL& C)
+{
+    MLIdxDescCL* pidx= &Stokes.pr_idx;
+    switch (C.dmc_InitialCond)
+    {
+#ifndef _PAR
+      case -10: // read from ensight-file [deprecated]
+      {
+        std::cout << "[DEPRECATED] read from ensight-file [DEPRECATED]\n";
+        ReadEnsightP2SolCL reader( MG);
+        reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
+        reader.ReadVector( C.dmc_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
+        if (Stokes.UsesXFEM()) {
+            VecDescCL pneg( pidx), ppos( pidx);
+            reader.ReadScalar( C.dmc_InitialFile+".prNeg", pneg, Stokes.GetBndData().Pr);
+            reader.ReadScalar( C.dmc_InitialFile+".prPos", ppos, Stokes.GetBndData().Pr);
+            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
+        }
+        else
+            reader.ReadScalar( C.dmc_InitialFile+".pr", Stokes.p, Stokes.GetBndData().Pr);
+      } break;
+#endif
+      case -1: // read from file
+      {
+        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset");
+        ReadFEFromFile( Stokes.v, MG, C.dmc_InitialFile+"velocity");
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
+        ReadFEFromFile( Stokes.p, MG, C.dmc_InitialFile+"pressure", false, &lset.Phi); // pass also level set, as p may be extended
+      } break;
+      case 0: // zero initial condition
+          lset.Init( EllipsoidCL::DistanceFct);
+        break;
+      case 1: // stationary flow
+      {
+        lset.Init( EllipsoidCL::DistanceFct);
+#ifdef _PAR
+        ParJac0CL jacpc( Stokes.vel_idx.GetFinest());
+        typedef ParPCGSolverCL<ParJac0CL> PCGSolverT;
+        typedef SolverAsPreCL<PCGSolverT> PCGPcT;
+        PCGSolverT PCGSolver(200, 1e-2, Stokes.vel_idx.GetFinest(), jacpc, /*rel*/ true, /*acc*/ true);
+        PCGPcT     apc(PCGSolver);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(),
+                                                                           C.stk_OuterIter, C.stk_OuterTol, 0.6, 50, &std::cout);
+#else
+        SSORPcCL ssorpc;
+        PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
+        typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
+        PCGPcT apc( PCGsolver);
+        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
+        InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.stk_OuterIter, C.stk_OuterTol, 0.6, 50);
+#endif
+        NSSolverBaseCL<StokesT> stokessolver( Stokes, inexactuzawasolver);
+        SolveStatProblem( Stokes, lset, stokessolver);
+      } break;
+      case  2: //flow without droplet
+          lset.Init( &One);
+      break;
+      default : throw DROPSErrCL("Unknown initial condition");
+    }
 }
 
 /// \brief Class for serializing a two-phase flow problem, i.e., storing

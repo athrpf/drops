@@ -36,6 +36,7 @@
 #include "levelset/surfacetension.h"
 #include "poisson/transport2phase.h"
 #include "surfactant/ifacetransp.h"
+#include "levelset/twophaseutils.h"
 
 #include "num/stokessolverfactory.h"
 #ifndef _PAR
@@ -55,7 +56,9 @@ DROPS::ParamMesszelleNsCL C;
 //                             u = u0, t=t0
 
 
-//brickflow.cpp + brick_transp.cpp + brick_ns_adap.cpp
+/// \name Inflow condition
+//@{
+///brickflow.cpp + brick_transp.cpp + brick_ns_adap.cpp
 DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -66,7 +69,7 @@ DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
     return ret;
 }
 
-//microchannel (eindhoven)
+///microchannel (eindhoven)
 DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -77,7 +80,7 @@ DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
     return ret;
 }
 
-//mzelle_ns_adap.cpp + mzelle_instat.cpp
+///mzelle_ns_adap.cpp + mzelle_instat.cpp
 DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
 {
     DROPS::SVectorCL<3> ret(0.);
@@ -86,7 +89,10 @@ DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
     ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
     return ret;
 }
+//@}
 
+/// \name Initial data for transport equation
+//@{
 typedef DROPS::BndDataCL<> cBndDataCL;
 typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
 const DROPS::BndCondT c_bc[6]= {
@@ -104,8 +110,10 @@ double Initialcpos (const DROPS::Point3DCL& , double)
 {
     return C.trp_IniCPos;
 }
+//@}
 
-// Initial data and rhs for surfactant transport
+/// \name Initial data and rhs for surfactant transport
+//@{
 const double a( -13./8.*std::sqrt( 35./M_PI));
 double surf_rhs (const DROPS::Point3DCL& p, double)
 {
@@ -115,135 +123,10 @@ double surf_sol (const DROPS::Point3DCL& p, double)
 {
     return 1. + std::sin( atan2( p[0] - C.exp_PosDrop[0], p[2] - C.exp_PosDrop[2]));
 }
+//@}
 
 namespace DROPS // for Strategy
 {
-
-template<class Coeff>
-void WriteMatrices (InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, int i)
-{
-    std::string path( "matrices/");
-    std::ostringstream suffix;
-    suffix << std::setfill( '0') << std::setw( 4) << i << ".txt";
-    WriteToFile( Stokes.A.Data.GetFinest(),   path + "A"   + suffix.str(), "A");
-    WriteToFile( Stokes.B.Data.GetFinest(),   path + "B"   + suffix.str(), "B");
-    WriteToFile( Stokes.M.Data.GetFinest(),   path + "M"   + suffix.str(), "M");
-    WriteToFile( Stokes.prA.Data.GetFinest(), path + "prA" + suffix.str(), "prA");
-    WriteToFile( Stokes.prM.Data.GetFinest(), path + "prM" + suffix.str(), "prM");
-    WriteToFile( Stokes.N.Data.GetFinest(),   path + "N"   + suffix.str(), "N");
-
-    WriteToFile( Stokes.v.Data, path + "v" + suffix.str(), "v");
-    WriteToFile( Stokes.p.Data, path + "p" + suffix.str(), "p");
-}
-
-template< class StokesProblemT, class LevelSetSolverT>
-TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
-    NSSolverBaseCL<StokesProblemT>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C, LevelsetModifyCL& lsetmod)
-{
-    if (C.tm_NumSteps == 0) return 0;
-    switch (C.tm_Scheme)
-    {
-        case 1 :
-            return (new LinThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Stab));
-        break;
-        case 3 :
-            std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
-        case 2 :
-            return (new RecThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 4 :
-            return (new OperatorSplitting2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, C.stk_InnerIter, C.stk_InnerTol, C.ns_Nonlinear));
-        break;
-        case 6 :
-            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false));
-        break;
-        case 7 :
-            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true));
-        break;
-        case 8 :
-            return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 9 :
-            return (new CrankNicolsonScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 10 :
-            return (new CrankNicolsonScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT>
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 11 :
-            return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 12 :
-            return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 13 :
-            return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        case 14 :
-            return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
-        break;
-        default : throw DROPSErrCL("Unknown TimeDiscMethod");
-    }
-}
-
-template <class Coeff>
-void SolveStatProblem( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, LevelsetP2CL& lset,
-                       NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL<Coeff> >& solver)
-{
-#ifndef _PAR
-    TimerCL time;
-#else
-    ParTimerCL time;
-#endif
-    double duration;
-    time.Reset();
-    VelVecDescCL cplM, cplN;
-    VecDescCL curv;
-    cplM.SetIdx( &Stokes.vel_idx);
-    cplN.SetIdx( &Stokes.vel_idx);
-    curv.SetIdx( &Stokes.vel_idx);
-    Stokes.SetIdx();
-    Stokes.SetLevelSet( lset);
-    lset.AccumulateBndIntegral( curv);
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.t);
-    Stokes.SetupPrStiff( &Stokes.prA, lset);
-    Stokes.SetupPrMass ( &Stokes.prM, lset);
-    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
-    time.Stop();
-    duration = time.GetTime();
-    std::cout << "Discretizing took "<< duration << " sec.\n";
-    time.Reset();
-    Stokes.b.Data += curv.Data;
-    solver.Solve( Stokes.A.Data, Stokes.B.Data, Stokes.v, Stokes.p.Data, Stokes.b.Data, cplN, Stokes.c.Data, 1.0);
-    time.Stop();
-    duration = time.GetTime();
-    std::cout << "Solving (Navier-)Stokes took "<<  duration << " sec.\n";
-    std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
-}
-
-// For a two-level MG-solver: P2P1 -- P2P1X; canonical prolongations
-void MakeP1P1XProlongation (size_t NumUnknownsVel, size_t NumUnknownsPr, size_t NumUnknownsPrP1,
-    MatrixCL& PVel, MatrixCL& PPr)
-{
-    // finest level
-    //P2-Prolongation (Id)
-    PVel= MatrixCL( std::valarray<double>(  1.0, NumUnknownsVel));
-    //P1-P1X-Prolongation
-    VectorCL diag( 0., NumUnknownsPr);
-    diag[std::slice(0, NumUnknownsPrP1, 1)]= 1.;
-    PPr= MatrixCL( diag);
-}
 
 template<class Coeff>
 void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
@@ -252,6 +135,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
+
+    // initialization of surface tension
     sigma= Stokes.GetCoeff().SurfTens;
     eps= C.sft_JumpWidth;    lambda= C.sft_RelPos;    sigma_dirt_fac= C.sft_DirtFactor;
     instat_scalar_fun_ptr sigmap  = 0;
@@ -267,6 +152,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         gsigmap = &gsigma;
     }
     SurfaceTensionCL sf( sigmap, gsigmap);
+
+
     LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
 
     LevelsetRepairCL lsetrepair( lset);
@@ -306,67 +193,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     Stokes.v.SetIdx  ( vidx);
     Stokes.p.SetIdx  ( pidx);
     Stokes.InitVel( &Stokes.v, ZeroVel);
-    switch (C.dmc_InitialCond)
-    {
-#ifndef _PAR
-      case -10: // read from ensight-file [deprecated]
-      {
-        std::cout << "[DEPRECATED] read from ensight-file [DEPRECATED]\n";
-        ReadEnsightP2SolCL reader( MG);
-        reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
-        reader.ReadVector( C.dmc_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
-        Stokes.UpdateXNumbering( pidx, lset);
-        Stokes.p.SetIdx( pidx);
-        if (Stokes.UsesXFEM()) {
-            VecDescCL pneg( pidx), ppos( pidx);
-            reader.ReadScalar( C.dmc_InitialFile+".prNeg", pneg, Stokes.GetBndData().Pr);
-            reader.ReadScalar( C.dmc_InitialFile+".prPos", ppos, Stokes.GetBndData().Pr);
-            P1toP1X ( pidx->GetFinest(), Stokes.p.Data, pidx->GetFinest(), ppos.Data, pneg.Data, lset.Phi, MG);
-        }
-        else
-            reader.ReadScalar( C.dmc_InitialFile+".pr", Stokes.p, Stokes.GetBndData().Pr);
-      } break;
-#endif
-      case -1: // read from file
-      {
-        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset");
-        ReadFEFromFile( Stokes.v, MG, C.dmc_InitialFile+"velocity");
-        Stokes.UpdateXNumbering( pidx, lset);
-        Stokes.p.SetIdx( pidx);
-        ReadFEFromFile( Stokes.p, MG, C.dmc_InitialFile+"pressure", false, &lset.Phi); // pass also level set, as p may be extended
-      } break;
-      case 0: // zero initial condition
-          lset.Init( EllipsoidCL::DistanceFct);
-        break;
-      case 1: // stationary flow
-      {
-        lset.Init( EllipsoidCL::DistanceFct);
-#ifdef _PAR
-        ParJac0CL jacpc( Stokes.vel_idx.GetFinest());
-        typedef ParPCGSolverCL<ParJac0CL> PCGSolverT;
-        typedef SolverAsPreCL<PCGSolverT> PCGPcT;
-        PCGSolverT PCGSolver(200, 1e-2, Stokes.vel_idx.GetFinest(), jacpc, /*rel*/ true, /*acc*/ true);
-        PCGPcT     apc(PCGSolver);
-        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), Stokes.vel_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
-        ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, Stokes.vel_idx.GetFinest(), Stokes.pr_idx.GetFinest(),
-                                                                           C.stk_OuterIter, C.stk_OuterTol, 0.6, 50, &std::cout);
-#else
-        SSORPcCL ssorpc;
-        PCG_SsorCL PCGsolver( ssorpc, 200, 1e-2, true);
-        typedef SolverAsPreCL<PCG_SsorCL> PCGPcT;
-        PCGPcT apc( PCGsolver);
-        ISBBTPreCL bbtispc( &Stokes.B.Data.GetFinest(), &Stokes.prM.Data.GetFinest(), &Stokes.M.Data.GetFinest(), Stokes.pr_idx.GetFinest(), 0.0, 1.0, 1e-4, 1e-4);
-        InexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM> inexactuzawasolver( apc, bbtispc, C.stk_OuterIter, C.stk_OuterTol, 0.6, 50);
-#endif
-        NSSolverBaseCL<StokesProblemT> stokessolver( Stokes, inexactuzawasolver);
-        SolveStatProblem( Stokes, lset, stokessolver);
-      } break;
-      case  2: //flow without droplet
-          lset.Init( &One);
-      break;
-      default : throw DROPSErrCL("Unknown initial condition");
-    }
-
+    SetInitialConditions( Stokes, lset, MG, C);
     DisplayDetailedGeom( MG);
     DisplayUnks(Stokes, lset, MG);
 
@@ -534,8 +361,6 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             if (adap.WasModified()) {
                 timedisc->Update();
                 if (C.trp_DoTransp) massTransp.Update();
-                if (C.rst_Serialization)
-                    ser.Write();
             }
         }
 
@@ -543,6 +368,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
             ensight.Write( Stokes.t);
         if (C.vtk_VTKOut && step%C.vtk_VTKOut==0)
             vtkwriter.write();
+        if (C.rst_Serialization && step%C.rst_Serialization==0)
+            ser.Write();
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
     IFInfo.Write(Stokes.t);
