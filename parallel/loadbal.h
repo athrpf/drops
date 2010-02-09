@@ -28,7 +28,6 @@
 #include <parmetis.h>
 #include <metis.h>
 // #include "parallel/metispartioner.h"
-#include <ddd.h>
 
 #include "parallel/partime.h"
 #include "parallel/parmultigrid.h"
@@ -153,7 +152,7 @@ class LoadBalCL
     int            movedMultiNodes_;                        // number of multinodes, that are moved by last migration
     static idxtype myfirstVert_;                            // first vertex on this proc (static for HandlerGather!)
     bool           geom_;                                   // flag, that indicates, if the geometrical datas should be used
-    static DDD_IF  FaceIF_;                                 // Interface, for compute the adjacencies over Proc-Boundaries
+    static IFT FaceIF_;                                 // Interface, for compute the adjacencies over Proc-Boundaries
     bool           useUnkInfo_;                             // Use information about unknowns for load balancing
 
 
@@ -204,8 +203,8 @@ class LoadBalCL
 
     /// \name handler for DDD as public, so a wrapper can be used
     //{@
-    static int HandlerGather( DDD_OBJ, void*);              // gather the LoadBalNr of sending proc
-    static int HandlerScatter( DDD_OBJ, void*);             // scatter the LoadBalNr of revieving proc
+    static int HandlerGather( OBJT, void*);              // gather the LoadBalNr of sending proc
+    static int HandlerScatter( OBJT, void*);             // scatter the LoadBalNr of revieving proc
     //@}
 
 };
@@ -339,7 +338,7 @@ int LoadBalCL::GetNumAllVerts() const
            DROPSErrCL("LoadBalCL::GetNumAllVerts: Graph has not been set up"),
            DebugLoadBalC);
 
-    return vtxdist_[DDD_InfoProcs()];
+    return vtxdist_[DynamicDataInterfaceCL::InfoProcs()];
 }
 
 /// \brief Get the number of local stored adjacencies

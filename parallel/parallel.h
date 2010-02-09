@@ -29,7 +29,8 @@
 #include <valarray>
 #include <string>
 #include "misc/utils.h"
-#include <ddd.h>
+#include "parallel/distributeddatatypes.h"
+
 
 namespace DROPS
 {
@@ -37,11 +38,11 @@ namespace DROPS
 /***************************************************************************
 *   C A S T I N G   O F   D D D - P O I N T E R S                          *
 ***************************************************************************/
-template<typename T> T ddd_cast (DDD_OBJ p)
+template<typename T> T ddd_cast (OBJT p)
   { return reinterpret_cast<T>(p); }
 
-template<typename T> DDD_OBJ ddd_cast (T* p)
-  { return reinterpret_cast<DDD_OBJ>(p); }
+template<typename T> OBJT ddd_cast (T* p)
+  { return reinterpret_cast<OBJT>(p); }
 
 
 /***************************************************************************

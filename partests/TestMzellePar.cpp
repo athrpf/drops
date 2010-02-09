@@ -28,7 +28,6 @@
 #include "parallel/loadbal.h"
 #include "parallel/partime.h"
 #include "parallel/exchange.h"
-#include <ddd.h>
 
  // include geometric computing
 #include "geom/multigrid.h"

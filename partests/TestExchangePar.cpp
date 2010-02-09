@@ -29,7 +29,6 @@
 #include "parallel/partime.h"
 #include "parallel/exchange.h"
 #include "partests/params.h"
-#include <ddd.h>
 
  // include geometric computing
 #include "geom/multigrid.h"
@@ -234,10 +233,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x1.RowIdx->GetIdx()) )
         {
             bool local_check = true;
-            const DDD_HDR vert= sit->GetHdr();
+            const HDRT vert= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof= sit->Unknowns(x1.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(vert); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
             for (Uint i=0; i<x1.RowIdx->NumUnknownsVertex(); ++i)
@@ -254,10 +253,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
         {
             bool local_check = true;
-            const DDD_HDR vert= sit->GetHdr();
+            const HDRT vert= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof=  sit->Unknowns(x2.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(vert); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
             for (Uint i=0; i<x2.RowIdx->NumUnknownsVertex(); ++i)
@@ -275,10 +274,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && x3.RowIdx && sit->Unknowns.Exist(x3.RowIdx->GetIdx()) )
         {
             bool local_check = true, local_xcheck= true;
-            const DDD_HDR vert= sit->GetHdr();
+            const HDRT vert= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof= sit->Unknowns(x3.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(vert); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(vert); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
             for (Uint i=0; i<x3.RowIdx->NumUnknownsVertex(); ++i)
@@ -311,10 +310,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x1.RowIdx->GetIdx()) )
         {
             bool local_check = true;
-            const DDD_HDR edge= sit->GetHdr();
+            const HDRT edge= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof= sit->Unknowns(x1.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(edge); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(edge); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
             for (Uint i=0; i<x1.RowIdx->NumUnknownsEdge(); ++i)
@@ -331,10 +330,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
         {
             bool local_check = true;
-            const DDD_HDR edge= sit->GetHdr();
+            const HDRT edge= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof= sit->Unknowns(x2.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(edge); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(edge); *procList!=-1; procList+=2)
                 if (procList[1]==PrioHasUnk)
                     ++num_shared;
             for (Uint i=0; i<x2.RowIdx->NumUnknownsEdge(); ++i)
@@ -355,10 +354,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x1.RowIdx->GetIdx()) )
         {
             bool local_check = true;
-            const DDD_HDR tetra= sit->GetHdr();
+            const HDRT tetra= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof= sit->Unknowns(x1.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(tetra); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(tetra); *procList!=-1; procList+=2)
                 if (procList[1]==PrioMaster)
                     ++num_shared;
             for (Uint i=0; i<x1.RowIdx->NumUnknownsTetra(); ++i)
@@ -375,10 +374,10 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
         if ( sit->Unknowns.Exist() && sit->Unknowns.Exist(x2.RowIdx->GetIdx()) )
         {
             bool local_check = true;
-            const DDD_HDR tetra= sit->GetHdr();
+            const HDRT tetra= sit->GetHdr();
             int num_shared = 0;
             const IdxT dof= sit->Unknowns(x2.RowIdx->GetIdx());
-            for (int *procList = DDD_InfoProcList(tetra); *procList!=-1; procList+=2)
+            for (int *procList = DynamicDataInterfaceExtraCL::InfoProcList(tetra); *procList!=-1; procList+=2)
                 if (procList[1]==PrioMaster)
                     ++num_shared;
             for (Uint i=0; i<x3.RowIdx->NumUnknownsTetra(); ++i)

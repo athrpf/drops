@@ -546,7 +546,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
 #ifdef _PAR
     // communicate extended dofs on vertices
     current_Idx_= Idx;
-    DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(),  // exchange datas over distributed vertices
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(),  // exchange datas over distributed vertices
                    sizeof(bool),                    // number of datas to be exchanged
                    HandlerGatherUpdateXNumbC,       // how to gather datas
                    HandlerScatterUpdateXNumbC       // how to scatter datas
@@ -564,7 +564,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
 #ifdef _PAR
 IdxDescCL* ExtIdxDescCL::current_Idx_= 0;
 
-int ExtIdxDescCL::HandlerGatherUpdateXNumb( DDD_OBJ objp, void* buf)
+int ExtIdxDescCL::HandlerGatherUpdateXNumb( OBJT objp, void* buf)
 {
     VertexCL* const sp= ddd_cast<VertexCL*>(objp);
     bool* buffer= static_cast<bool*>(buf);
@@ -575,7 +575,7 @@ int ExtIdxDescCL::HandlerGatherUpdateXNumb( DDD_OBJ objp, void* buf)
     return 0;
 }
 
-int ExtIdxDescCL::HandlerScatterUpdateXNumb( DDD_OBJ objp, void* buf)
+int ExtIdxDescCL::HandlerScatterUpdateXNumb( OBJT objp, void* buf)
 {
     VertexCL* const sp= ddd_cast<VertexCL*>(objp);
     bool RemoteExtended= *static_cast<bool*>(buf);

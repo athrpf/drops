@@ -39,6 +39,7 @@
 #include "num/fe.h"
 
 #ifdef _PAR
+#  include "parallel/distributeddatatypes.h"
 #  include <deque>
 #  include <queue>
 #  include "parallel/parallel.h"

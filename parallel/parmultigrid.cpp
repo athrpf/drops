@@ -5,7 +5,6 @@
 #include "parallel/parallel.h"
 #include "parallel/parmultigrid.h"
 #include "num/solver.h"
-#include <ddd.h>
 #include <iostream>
 #include <limits>
 #include <iomanip>
@@ -19,14 +18,14 @@ namespace DROPS
 *****************************************************************************
 * initial assignment of the static members of ParMultiGridCL                *
 ****************************************************************************/
-DDD_IF  ParMultiGridCL::_EdgeIF =0;
-DDD_IF  ParMultiGridCL::_TetraIF=0;
-DDD_IF  ParMultiGridCL::_FaceIF =0;
-DDD_IF ParMultiGridCL::NotMasterIF_=0;
-DDD_IF ParMultiGridCL::_GhToMaTetra_IF=0;
+IFT ParMultiGridCL::_EdgeIF =0;
+IFT ParMultiGridCL::_TetraIF=0;
+IFT ParMultiGridCL::_FaceIF =0;
+IFT ParMultiGridCL::NotMasterIF_=0;
+IFT ParMultiGridCL::_GhToMaTetra_IF=0;
 
-DDD_TYPE ParMultiGridCL::_BndPtT         =0;        // DDD_TYPE "0" means invalide (see. ddd/typemgr)
-DDD_TYPE ParMultiGridCL::_ChildPtrT      =0;
+TypeT ParMultiGridCL::_BndPtT         =0;        // TypeT "0" means invalide (see. ddd/typemgr)
+TypeT ParMultiGridCL::_ChildPtrT      =0;
 
 MultiGridCL*    ParMultiGridCL::_mg       =0;
 MG_VertexContT* ParMultiGridCL::_VertCont =0;
@@ -61,61 +60,61 @@ ParMultiGridCL* ParMultiGridCL::instance_ = 0;
 ****************************************************************************/
 extern "C" void DeleteObjC(void* buffer, size_t size, int ddd_type) {ParMultiGridCL::DeleteObj(buffer,size,ddd_type);}
 
-extern "C" void HandlerVDeleteC(DDD_OBJ obj) {ParMultiGridCL::HandlerDelete<VertexCL>(obj);}
-extern "C" void HandlerEDeleteC(DDD_OBJ obj) {ParMultiGridCL::HandlerDelete<EdgeCL>(obj);}
-extern "C" void HandlerFDeleteC(DDD_OBJ obj) {ParMultiGridCL::HandlerDelete<FaceCL>(obj);}
-extern "C" void HandlerTDeleteC(DDD_OBJ obj) {ParMultiGridCL::HandlerDelete<TetraCL>(obj);}
+extern "C" void HandlerVDeleteC(OBJT obj) {ParMultiGridCL::HandlerDelete<VertexCL>(obj);}
+extern "C" void HandlerEDeleteC(OBJT obj) {ParMultiGridCL::HandlerDelete<EdgeCL>(obj);}
+extern "C" void HandlerFDeleteC(OBJT obj) {ParMultiGridCL::HandlerDelete<FaceCL>(obj);}
+extern "C" void HandlerTDeleteC(OBJT obj) {ParMultiGridCL::HandlerDelete<TetraCL>(obj);}
 
-extern "C" DDD_OBJ HandlerVConstructorC(size_t s, DDD_PRIO p, DDD_ATTR l) {return ParMultiGridCL::HandlerVConstructor(s,p,l);}
-extern "C" DDD_OBJ HandlerEConstructorC(size_t s, DDD_PRIO p, DDD_ATTR l) {return ParMultiGridCL::HandlerEConstructor(s,p,l);}
-extern "C" DDD_OBJ HandlerFConstructorC(size_t s, DDD_PRIO p, DDD_ATTR l) {return ParMultiGridCL::HandlerFConstructor(s,p,l);}
-extern "C" DDD_OBJ HandlerTConstructorC(size_t s, DDD_PRIO p, DDD_ATTR l) {return ParMultiGridCL::HandlerTConstructor(s,p,l);}
+extern "C" OBJT HandlerVConstructorC(size_t s, PrioT p, ATTRT l) {return ParMultiGridCL::HandlerVConstructor(s,p,l);}
+extern "C" OBJT HandlerEConstructorC(size_t s, PrioT p, ATTRT l) {return ParMultiGridCL::HandlerEConstructor(s,p,l);}
+extern "C" OBJT HandlerFConstructorC(size_t s, PrioT p, ATTRT l) {return ParMultiGridCL::HandlerFConstructor(s,p,l);}
+extern "C" OBJT HandlerTConstructorC(size_t s, PrioT p, ATTRT l) {return ParMultiGridCL::HandlerTConstructor(s,p,l);}
 
-extern "C" void HandlerVXferC( DDD_OBJ o, DDD_PROC to, DDD_PRIO p) {ParMultiGridCL::HandlerVXfer(o,to,p);}
-extern "C" void HandlerEXferC( DDD_OBJ o, DDD_PROC to, DDD_PRIO p) {ParMultiGridCL::HandlerEXfer(o,to,p);}
-extern "C" void HandlerFXferC( DDD_OBJ o, DDD_PROC to, DDD_PRIO p) {ParMultiGridCL::HandlerFXfer(o,to,p);}
-extern "C" void HandlerTXferC( DDD_OBJ o, DDD_PROC to, DDD_PRIO p) {ParMultiGridCL::HandlerTXfer(o,to,p);}
+extern "C" void HandlerVXferC( OBJT o, PROCT to, PrioT p) {ParMultiGridCL::HandlerVXfer(o,to,p);}
+extern "C" void HandlerEXferC( OBJT o, PROCT to, PrioT p) {ParMultiGridCL::HandlerEXfer(o,to,p);}
+extern "C" void HandlerFXferC( OBJT o, PROCT to, PrioT p) {ParMultiGridCL::HandlerFXfer(o,to,p);}
+extern "C" void HandlerTXferC( OBJT o, PROCT to, PrioT p) {ParMultiGridCL::HandlerTXfer(o,to,p);}
 
-extern "C" void HandlerVGatherC(DDD_OBJ o, int i, DDD_TYPE t, void* d) {ParMultiGridCL::HandlerVGather(o,i,t,d);}
-extern "C" void HandlerEGatherC(DDD_OBJ o, int i, DDD_TYPE t, void* d) {ParMultiGridCL::HandlerEGather( o,i,t,d);}
-extern "C" void HandlerTGatherC(DDD_OBJ o, int i, DDD_TYPE t, void* d) {ParMultiGridCL::HandlerTGather( o,i,t,d);}
+extern "C" void HandlerVGatherC(OBJT o, int i, TypeT t, void* d) {ParMultiGridCL::HandlerVGather(o,i,t,d);}
+extern "C" void HandlerEGatherC(OBJT o, int i, TypeT t, void* d) {ParMultiGridCL::HandlerEGather( o,i,t,d);}
+extern "C" void HandlerTGatherC(OBJT o, int i, TypeT t, void* d) {ParMultiGridCL::HandlerTGather( o,i,t,d);}
 
-extern "C" void HandlerVScatterC(DDD_OBJ o, int i, DDD_TYPE t, void* d, int n) {ParMultiGridCL::HandlerVScatter(o,i,t,d,n);}
-extern "C" void HandlerEScatterC(DDD_OBJ o, int i, DDD_TYPE t, void* d, int n) {ParMultiGridCL::HandlerEScatter(o,i,t,d,n);}
-extern "C" void HandlerTScatterC(DDD_OBJ o, int i, DDD_TYPE t, void* d, int n) {ParMultiGridCL::HandlerTScatter(o,i,t,d,n);}
+extern "C" void HandlerVScatterC(OBJT o, int i, TypeT t, void* d, int n) {ParMultiGridCL::HandlerVScatter(o,i,t,d,n);}
+extern "C" void HandlerEScatterC(OBJT o, int i, TypeT t, void* d, int n) {ParMultiGridCL::HandlerEScatter(o,i,t,d,n);}
+extern "C" void HandlerTScatterC(OBJT o, int i, TypeT t, void* d, int n) {ParMultiGridCL::HandlerTScatter(o,i,t,d,n);}
 
-extern "C" void HandlerTUpdateC(DDD_OBJ o)              {ParMultiGridCL::HandlerTUpdate(o);}
-extern "C" void HandlerTObjMkConsC( DDD_OBJ o, int i)   {ParMultiGridCL::HandlerTObjMkCons(o,i);}
-extern "C" void HandlerTSetPrioC(DDD_OBJ o, DDD_PRIO p) {ParMultiGridCL::HandlerTSetPrio(o,p);}
+extern "C" void HandlerTUpdateC(OBJT o)              {ParMultiGridCL::HandlerTUpdate(o);}
+extern "C" void HandlerTObjMkConsC( OBJT o, int i)   {ParMultiGridCL::HandlerTObjMkCons(o,i);}
+extern "C" void HandlerTSetPrioC(OBJT o, PrioT p) {ParMultiGridCL::HandlerTSetPrio(o,p);}
 
-extern "C" int GatherEdgeMFRC(DDD_OBJ o, void* d) {return ParMultiGridCL::GatherEdgeMFR(o,d);}
-extern "C" int ScatterEdgeMFRC(DDD_OBJ o, void* d) {return ParMultiGridCL::ScatterEdgeMFR(o,d);}
+extern "C" int GatherEdgeMFRC(OBJT o, void* d) {return ParMultiGridCL::GatherEdgeMFR(o,d);}
+extern "C" int ScatterEdgeMFRC(OBJT o, void* d) {return ParMultiGridCL::ScatterEdgeMFR(o,d);}
 
-extern "C" int GatherTetraRestrictMarksC( DDD_OBJ o, void* b) {return ParMultiGridCL::GatherTetraRestrictMarks(o,b);}
-extern "C" int ScatterTetraRestrictMarksC(DDD_OBJ o, void* b) {return ParMultiGridCL::ScatterTetraRestrictMarks(o,b);}
+extern "C" int GatherTetraRestrictMarksC( OBJT o, void* b) {return ParMultiGridCL::GatherTetraRestrictMarks(o,b);}
+extern "C" int ScatterTetraRestrictMarksC(OBJT o, void* b) {return ParMultiGridCL::ScatterTetraRestrictMarks(o,b);}
 
-extern "C" int ExecGhostRescueC(         DDD_OBJ o) {return ParMultiGridCL::ExecGhostRescue(o);}
-extern "C" int ExecGhVertRescueC(        DDD_OBJ o) {return ParMultiGridCL::ExecGhVertRescue(o);}
-extern "C" int ExecHasGhostC(            DDD_OBJ o) {return ParMultiGridCL::ExecHasGhost(o);}
-extern "C" int ExecAdaptVGhostMidVertexC(DDD_OBJ o) {return ParMultiGridCL::ExecAdaptVGhostMidVertex(o);}
+extern "C" int ExecGhostRescueC(         OBJT o) {return ParMultiGridCL::ExecGhostRescue(o);}
+extern "C" int ExecGhVertRescueC(        OBJT o) {return ParMultiGridCL::ExecGhVertRescue(o);}
+extern "C" int ExecHasGhostC(            OBJT o) {return ParMultiGridCL::ExecHasGhost(o);}
+extern "C" int ExecAdaptVGhostMidVertexC(OBJT o) {return ParMultiGridCL::ExecAdaptVGhostMidVertex(o);}
 
-extern "C" int GatherEdgeSaneC( DDD_OBJ o, void* d, DDD_PROC p, DDD_ATTR a) {return ParMultiGridCL::GatherEdgeSane(o,d,p,a);}
-extern "C" int ScatterEdgeSaneC(DDD_OBJ o, void* d, DDD_PROC p, DDD_ATTR a) {return ParMultiGridCL::ScatterEdgeSane(o,d,p,a);}
-extern "C" int GatherFaceSaneC( DDD_OBJ o, void* d, DDD_PROC p, DDD_ATTR a) {return ParMultiGridCL::GatherFaceSane(o,d,p,a);}
-extern "C" int ScatterFaceSaneC(DDD_OBJ o, void* d, DDD_PROC p, DDD_ATTR a) {return ParMultiGridCL::ScatterFaceSane(o,d,p,a);}
+extern "C" int GatherEdgeSaneC( OBJT o, void* d, PROCT p, ATTRT a) {return ParMultiGridCL::GatherEdgeSane(o,d,p,a);}
+extern "C" int ScatterEdgeSaneC(OBJT o, void* d, PROCT p, ATTRT a) {return ParMultiGridCL::ScatterEdgeSane(o,d,p,a);}
+extern "C" int GatherFaceSaneC( OBJT o, void* d, PROCT p, ATTRT a) {return ParMultiGridCL::GatherFaceSane(o,d,p,a);}
+extern "C" int ScatterFaceSaneC(OBJT o, void* d, PROCT p, ATTRT a) {return ParMultiGridCL::ScatterFaceSane(o,d,p,a);}
 
-extern "C" int GatherUnknownsRefC (DDD_OBJ o, void* b) { return ParMultiGridCL::GatherUnknownsRef(o,b); }
-extern "C" int ScatterUnknownsRefC(DDD_OBJ o, void* b) { return ParMultiGridCL::ScatterUnknownsRef(o,b); }
+extern "C" int GatherUnknownsRefC (OBJT o, void* b) { return ParMultiGridCL::GatherUnknownsRef(o,b); }
+extern "C" int ScatterUnknownsRefC(OBJT o, void* b) { return ParMultiGridCL::ScatterUnknownsRef(o,b); }
 
-extern "C" int GatherUnknownsMigVC (DDD_OBJ o, void* b) { return ParMultiGridCL::GatherUnknownsMigV(o,b); }
-extern "C" int ScatterUnknownsMigVC(DDD_OBJ o, void* b) { return ParMultiGridCL::ScatterUnknownsMigV(o,b); }
-extern "C" int GatherUnknownsMigEC (DDD_OBJ o, void* b) { return ParMultiGridCL::GatherUnknownsMigE(o,b); }
-extern "C" int ScatterUnknownsMigEC(DDD_OBJ o, void* b) { return ParMultiGridCL::ScatterUnknownsMigE(o,b); }
+extern "C" int GatherUnknownsMigVC (OBJT o, void* b) { return ParMultiGridCL::GatherUnknownsMigV(o,b); }
+extern "C" int ScatterUnknownsMigVC(OBJT o, void* b) { return ParMultiGridCL::ScatterUnknownsMigV(o,b); }
+extern "C" int GatherUnknownsMigEC (OBJT o, void* b) { return ParMultiGridCL::GatherUnknownsMigE(o,b); }
+extern "C" int ScatterUnknownsMigEC(OBJT o, void* b) { return ParMultiGridCL::ScatterUnknownsMigE(o,b); }
 
-extern "C" int GatherInterpolValuesVC (DDD_OBJ o, void* b) { return ParMultiGridCL::GatherInterpolValues<VertexCL>(o,b); }
-extern "C" int ScatterInterpolValuesVC(DDD_OBJ o, void* b) { return ParMultiGridCL::ScatterInterpolValues<VertexCL>(o,b); }
-extern "C" int GatherInterpolValuesEC (DDD_OBJ o, void* b) { return ParMultiGridCL::GatherInterpolValues<EdgeCL>(o,b); }
-extern "C" int ScatterInterpolValuesEC(DDD_OBJ o, void* b) { return ParMultiGridCL::ScatterInterpolValues<EdgeCL>(o,b); }
+extern "C" int GatherInterpolValuesVC (OBJT o, void* b) { return ParMultiGridCL::GatherInterpolValues<VertexCL>(o,b); }
+extern "C" int ScatterInterpolValuesVC(OBJT o, void* b) { return ParMultiGridCL::ScatterInterpolValues<VertexCL>(o,b); }
+extern "C" int GatherInterpolValuesEC (OBJT o, void* b) { return ParMultiGridCL::GatherInterpolValues<EdgeCL>(o,b); }
+extern "C" int ScatterInterpolValuesEC(OBJT o, void* b) { return ParMultiGridCL::ScatterInterpolValues<EdgeCL>(o,b); }
 
 
 /****************************************************************************
@@ -265,7 +264,7 @@ void ParMultiGridCL::HandleUnknownsAfterRefine(/*const std::vector<VecDescCL*> &
     _RecvBuf.resize(numKnownUnknowns);
 
     // Transfer the unknowns to the right processor
-    DDD_IFOneway( _GhToMaTetra_IF,                               // transfer unknowns from killed ghost-tetra to corresponding master tetra
+    DynamicDataInterfaceCL::IFOneway( _GhToMaTetra_IF,                               // transfer unknowns from killed ghost-tetra to corresponding master tetra
                   IF_FORWARD,                                    // transfer in one direction
                   NumberOfUnknownsOnTetra()*sizeof(TransferUnkT),// number of (double+bool) values
                   &GatherUnknownsRefC, &ScatterUnknownsRefC);    // handler for gather and scatter
@@ -286,10 +285,10 @@ void ParMultiGridCL::HandleUnknownsAfterRefine(/*const std::vector<VecDescCL*> &
     {
         std::list<MultiGridCL::TetraIterator>::iterator end(_mg->toDelGhosts_.end());
         // unsubscribe them from the DDD-System
-        DDD_XferBegin();
+        DynamicDataInterfaceCL::XferBegin();
         for (std::list<MultiGridCL::TetraIterator>::iterator it(_mg->toDelGhosts_.begin()); it!=end; ++it)
             (*it)->XferDelete();
-        DDD_XferEnd();
+        DynamicDataInterfaceCL::XferEnd();
 
         // physically delete them
         for (std::list<MultiGridCL::TetraIterator>::iterator it(_mg->toDelGhosts_.begin()); it!=end; ++it)
@@ -387,7 +386,7 @@ void ParMultiGridCL::CompleteRepair(VecDescCL* newVec)
 
     if (newVec->RowIdx->NumUnknownsVertex()){
         _actualVec=newVec;             // gather and scatter functions has to know about the index and values
-        DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(),                              // exchange datas over distributed vertices
+        DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(),                              // exchange datas over distributed vertices
                     _actualVec->RowIdx->NumUnknownsVertex() * sizeof(TransferUnkT), // number of datas to be exchanged
                     GatherInterpolValuesVC,                                         // how to gather datas
                     ScatterInterpolValuesVC                                         // how to scatter datas
@@ -397,7 +396,7 @@ void ParMultiGridCL::CompleteRepair(VecDescCL* newVec)
 
     if (newVec->RowIdx->NumUnknownsEdge()){
         _actualVec=newVec;
-        DDD_IFExchange(InterfaceCL<EdgeCL>::GetIF(),
+        DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(),
                     _actualVec->RowIdx->NumUnknownsEdge() * sizeof(TransferUnkT),
                     GatherInterpolValuesEC,
                     ScatterInterpolValuesEC
@@ -582,7 +581,7 @@ void ParMultiGridCL::EnlargeRecieveBuffer()
 }
 
 /// \brief Gather unknowns on ghost tetras for sending these to master the tetra
-int ParMultiGridCL::GatherUnknownsRef (DDD_OBJ obj, void* buf)
+int ParMultiGridCL::GatherUnknownsRef (OBJT obj, void* buf)
 /** Get all values on a ghost tetrahedron, that will be deleted, and put these values into the
     given buffer.
 */
@@ -657,7 +656,7 @@ int ParMultiGridCL::GatherUnknownsRef (DDD_OBJ obj, void* buf)
 }
 
 /// \brief Scatter unknowns on master tetras, which have been send from killed ghost tetra
-int ParMultiGridCL::ScatterUnknownsRef(DDD_OBJ obj, void* buf)
+int ParMultiGridCL::ScatterUnknownsRef(OBJT obj, void* buf)
 /** This procedure puts all unknowns that can live on subsimplices or the tetrahedron itselfe
     into a recieve buffer, if the unknowns are not known so far
 */
@@ -767,7 +766,7 @@ int ParMultiGridCL::ScatterUnknownsRef(DDD_OBJ obj, void* buf)
     return 0;
 }
 
-int ParMultiGridCL::GatherUnknownsMigV (DDD_OBJ obj, void* buf)
+int ParMultiGridCL::GatherUnknownsMigV (OBJT obj, void* buf)
 {
     VertexCL* const sp= ddd_cast<VertexCL*>(obj);
     TransferUnkT* buffer = static_cast<TransferUnkT*>(buf);
@@ -798,7 +797,7 @@ int ParMultiGridCL::GatherUnknownsMigV (DDD_OBJ obj, void* buf)
     return 0;
 }
 
-int ParMultiGridCL::ScatterUnknownsMigV(DDD_OBJ obj, void* buf)
+int ParMultiGridCL::ScatterUnknownsMigV(OBJT obj, void* buf)
 {
     VertexCL* const sp= ddd_cast<VertexCL*>(obj);
     TransferUnkT* buffer = static_cast<TransferUnkT*>(buf);
@@ -830,7 +829,7 @@ int ParMultiGridCL::ScatterUnknownsMigV(DDD_OBJ obj, void* buf)
     return 0;
 }
 
-int ParMultiGridCL::GatherUnknownsMigE (DDD_OBJ obj, void* buf)
+int ParMultiGridCL::GatherUnknownsMigE (OBJT obj, void* buf)
 {
     EdgeCL* const sp= ddd_cast<EdgeCL*>(obj);
     TransferUnkT* buffer = static_cast<TransferUnkT*>(buf);
@@ -863,7 +862,7 @@ int ParMultiGridCL::GatherUnknownsMigE (DDD_OBJ obj, void* buf)
     return 0;
 }
 
-int ParMultiGridCL::ScatterUnknownsMigE(DDD_OBJ obj, void* buf)
+int ParMultiGridCL::ScatterUnknownsMigE(OBJT obj, void* buf)
 {
     EdgeCL* const sp= ddd_cast<EdgeCL*>(obj);
     TransferUnkT* buffer = static_cast<TransferUnkT*>(buf);
@@ -947,7 +946,7 @@ void ParMultiGridCL::XferStart(int Level)
     _level = (Level==-1) ? _mg->GetLastLevel() : Level;
 
     Comment("- Starting Xfer"<<std::endl, DebugParallelC);
-    DDD_XferBegin();
+    DynamicDataInterfaceCL::XferBegin();
 }
 
 /// \brief End the transfer phase by sending simplices, delete unused simplices and eventually rescue unknowns
@@ -955,7 +954,7 @@ void ParMultiGridCL::XferStart(int Level)
 void ParMultiGridCL::XferEnd()
 {
     Assert(TransferMode && _level!=-1, DROPSErrCL("ParMultiGridCL: XferEnd: Not in Transfer-Mode"), DebugParallelC);
-    DDD_XferEnd();
+    DynamicDataInterfaceCL::XferEnd();
 
     // All Tetraeders, that are marked for removement, should be removed now!
     // All Subsimplices are marked for removement
@@ -967,7 +966,7 @@ void ParMultiGridCL::XferEnd()
         for_each( _mg->GetFacesBegin(l), _mg->GetFacesEnd(l), std::mem_fun_ref( &FaceCL::SetRemoveMark ) );
     }
 
-    DDD_XferBegin();        // for removement/priochange of subsimplices
+    DynamicDataInterfaceCL::XferBegin();        // for removement/priochange of subsimplices
 
     Comment("  * Rescue HasGhosts"<<std::endl,DebugParallelC);
     TreatHasGhosts();       // mark subs of HasGhosts as VGhost, rescue subs
@@ -1001,7 +1000,7 @@ void ParMultiGridCL::XferEnd()
         }
     }
 
-    DDD_XferEnd();
+    DynamicDataInterfaceCL::XferEnd();
 
     // Adapt midvertex pointers on VGhost-Edges
     Comment("  * Adapting Midvertex on VGhost-Edges"<<std::endl,DebugParallelC);
@@ -1014,12 +1013,12 @@ void ParMultiGridCL::XferEnd()
     // Rescue unknowns on edges, that are deleted and midvertex stays on processor
     if (VecDescRecv()){
         Comment("  * Send unknowns "<<std::endl,DebugParallelC);
-        DDD_IFExchange(AllSimplexIFCL<VertexCL>::GetIF(),               // exchange datas over distributed vertices
+        DynamicDataInterfaceCL::IFExchange(AllSimplexIFCL<VertexCL>::GetIF(),               // exchange datas over distributed vertices
                        NumberOfUnknownsOnVertex()* sizeof(TransferUnkT),// number of datas to be exchanged
                        GatherUnknownsMigVC,                             // how to gather datas
                        ScatterUnknownsMigVC                             // how to scatter datas
                       );
-        DDD_IFExchange(AllSimplexIFCL<EdgeCL>::GetIF(),                 // exchange datas over distributed vertices
+        DynamicDataInterfaceCL::IFExchange(AllSimplexIFCL<EdgeCL>::GetIF(),                 // exchange datas over distributed vertices
                        NumberOfUnknownsOnEdge()* sizeof(TransferUnkT),  // number of datas to be exchanged
                        GatherUnknownsMigEC,                             // how to gather datas
                        ScatterUnknownsMigEC                             // how to scatter datas
@@ -1098,8 +1097,8 @@ bool ParMultiGridCL::IsSane(std::ostream& os, int Level)
 
         Comment("Checking inter-processor dependencies on level " << Level << std::endl, DebugParallelC);
 
-        DDD_IFAOnewayX( _EdgeIF, Level, IF_FORWARD, 2*sizeof(DDD_GID), &GatherEdgeSaneC, &ScatterEdgeSaneC);
-        DDD_IFAOnewayX( _FaceIF, Level, IF_FORWARD, 6*sizeof(DDD_GID), &GatherFaceSaneC, &ScatterFaceSaneC);
+        DynamicDataInterfaceCL::IFAOnewayX( _EdgeIF, Level, IF_FORWARD, 2*sizeof(GIDT), &GatherEdgeSaneC, &ScatterEdgeSaneC);
+        DynamicDataInterfaceCL::IFAOnewayX( _FaceIF, Level, IF_FORWARD, 6*sizeof(GIDT), &GatherFaceSaneC, &ScatterFaceSaneC);
 
         sane= sane && _sane;
     }
@@ -1108,9 +1107,9 @@ bool ParMultiGridCL::IsSane(std::ostream& os, int Level)
 
 /** Checking if the edges have the same both vertices on all procs that share this edge,
     collect the gids */
-int ParMultiGridCL::GatherEdgeSane( DDD_OBJ obj, void* data, DDD_PROC, DDD_ATTR)
+int ParMultiGridCL::GatherEdgeSane( OBJT obj, void* data, PROCT, ATTRT)
 {
-    DDD_GID* vert= static_cast<DDD_GID*>(data);
+	GIDT* vert= static_cast<GIDT*>(data);
     EdgeCL* ep= ddd_cast<EdgeCL*>(obj);
     vert[0]= ep->GetVertex(0)->GetGID();
     vert[1]= ep->GetVertex(1)->GetGID();
@@ -1119,9 +1118,9 @@ int ParMultiGridCL::GatherEdgeSane( DDD_OBJ obj, void* data, DDD_PROC, DDD_ATTR)
 
 /** Checking if the edges have the same both vertices on all procs that share this edge,
     recieve the gids */
-int ParMultiGridCL::ScatterEdgeSane( DDD_OBJ obj, void* data, DDD_PROC proc, DDD_ATTR)
+int ParMultiGridCL::ScatterEdgeSane( OBJT obj, void* data, PROCT proc, ATTRT)
 {
-    DDD_GID* vert= static_cast<DDD_GID*>(data);
+	GIDT* vert= static_cast<GIDT*>(data);
     EdgeCL* ep= ddd_cast<EdgeCL*>(obj);
     if (vert[0]!=ep->GetVertex(0)->GetGID() || vert[1]!=ep->GetVertex(1)->GetGID())
     {
@@ -1135,9 +1134,9 @@ int ParMultiGridCL::ScatterEdgeSane( DDD_OBJ obj, void* data, DDD_PROC proc, DDD
 
 /** Checking if the faces have the same three vertices and three edges on all procs that share this edge
     collect information */
-int ParMultiGridCL::GatherFaceSane( DDD_OBJ obj, void* data, DDD_PROC, DDD_ATTR)
+int ParMultiGridCL::GatherFaceSane( OBJT obj, void* data, PROCT, ATTRT)
 {
-    DDD_GID* vertedge= static_cast<DDD_GID*>(data);
+	GIDT* vertedge= static_cast<GIDT*>(data);
     FaceCL* fp= ddd_cast<FaceCL*>(obj);
     vertedge[0]= fp->GetVertex(0)->GetGID();
     vertedge[1]= fp->GetVertex(1)->GetGID();
@@ -1150,9 +1149,9 @@ int ParMultiGridCL::GatherFaceSane( DDD_OBJ obj, void* data, DDD_PROC, DDD_ATTR)
 
 /** Checking if the faces have the same three vertices and three edges on all procs that share this edge
     recieve information */
-int ParMultiGridCL::ScatterFaceSane( DDD_OBJ obj, void* data, DDD_PROC proc, DDD_ATTR)
+int ParMultiGridCL::ScatterFaceSane( OBJT obj, void* data, PROCT proc, ATTRT)
 {
-    DDD_GID* ve= static_cast<DDD_GID*>(data);
+	GIDT* ve= static_cast<GIDT*>(data);
     FaceCL* fp= ddd_cast<FaceCL*>(obj);
     if (ve[0]!=fp->GetVertex(0)->GetGID() || ve[1]!=fp->GetVertex(1)->GetGID() || ve[2]!=fp->GetVertex(2)->GetGID())
     {
@@ -1185,9 +1184,9 @@ int ParMultiGridCL::ScatterFaceSane( DDD_OBJ obj, void* data, DDD_PROC proc, DDD
 void ParMultiGridCL::AccumulateMFR( int Level)
 {
     if (Level==-1)
-        DDD_IFOneway( _EdgeIF, IF_FORWARD, sizeof(short int), &GatherEdgeMFRC, &ScatterEdgeMFRC);
+    	DynamicDataInterfaceCL::IFOneway( _EdgeIF, IF_FORWARD, sizeof(short int), &GatherEdgeMFRC, &ScatterEdgeMFRC);
     else
-        DDD_IFAOneway( _EdgeIF, Level, IF_FORWARD, sizeof(short int), &GatherEdgeMFRC, &ScatterEdgeMFRC);
+    	DynamicDataInterfaceCL::IFAOneway( _EdgeIF, Level, IF_FORWARD, sizeof(short int), &GatherEdgeMFRC, &ScatterEdgeMFRC);
 
     for (TetraPCT::iterator it(ToHandleTetra_.begin()); it!=ToHandleTetra_.end(); ++it)
         for (TetraCL::const_EdgePIterator epiter((*it)->GetEdgesBegin()); epiter!=(*it)->GetEdgesEnd(); ++epiter)
@@ -1197,7 +1196,7 @@ void ParMultiGridCL::AccumulateMFR( int Level)
 }
 
 /** Set AccMFR to MFR and put this information into the message */
-int ParMultiGridCL::GatherEdgeMFR( DDD_OBJ obj, void* buf)
+int ParMultiGridCL::GatherEdgeMFR( OBJT obj, void* buf)
 {
     EdgeCL* const ep= ddd_cast<EdgeCL*>(obj);
     short int* buffer= static_cast<short int*>(buf);
@@ -1211,7 +1210,7 @@ int ParMultiGridCL::GatherEdgeMFR( DDD_OBJ obj, void* buf)
 }
 
 /** increase value of AccMFR */
-int ParMultiGridCL::ScatterEdgeMFR( DDD_OBJ obj, void* buf)
+int ParMultiGridCL::ScatterEdgeMFR( OBJT obj, void* buf)
 {
     EdgeCL* ep=ddd_cast<EdgeCL*>(obj);
 
@@ -1227,11 +1226,11 @@ int ParMultiGridCL::ScatterEdgeMFR( DDD_OBJ obj, void* buf)
 /** Interface-function (TetraIF) calls Gather- and ScatterTetraRestrictMarks */
 void ParMultiGridCL::CommunicateRefMarks( Uint Level)
 {
-    DDD_IFAOneway( _TetraIF, Level, IF_FORWARD, sizeof(bool), &GatherTetraRestrictMarksC, &ScatterTetraRestrictMarksC);
+	DynamicDataInterfaceCL::IFAOneway( _TetraIF, Level, IF_FORWARD, sizeof(bool), &GatherTetraRestrictMarksC, &ScatterTetraRestrictMarksC);
 }
 
 /** Put flag, if the Tetra is marked for Refinement into message */
-int ParMultiGridCL::GatherTetraRestrictMarks( DDD_OBJ obj, void* buf)
+int ParMultiGridCL::GatherTetraRestrictMarks( OBJT obj, void* buf)
 {
     TetraCL* const tp = ddd_cast<TetraCL*>(obj);
     *static_cast<bool*>(buf)= tp->IsMarkedForRegRef();
@@ -1240,7 +1239,7 @@ int ParMultiGridCL::GatherTetraRestrictMarks( DDD_OBJ obj, void* buf)
 }
 
 /** Recieve, if the tetra is marked for refinement on an other proc and increas or decrease the MFR on all edges*/
-int ParMultiGridCL::ScatterTetraRestrictMarks( DDD_OBJ obj, void* buf)
+int ParMultiGridCL::ScatterTetraRestrictMarks( OBJT obj, void* buf)
 // Hole Arbeit nach, die in TetraCL::RestrictMarks nicht verrichtet werden konnte.
 {
     bool MarkForRegRef= *static_cast<bool*>(buf);
@@ -1277,13 +1276,13 @@ int ParMultiGridCL::ScatterTetraRestrictMarks( DDD_OBJ obj, void* buf)
 void ParMultiGridCL::TreatGhosts( int Level)
 {
     if (Level==-1)
-        DDD_IFExecLocal( _TetraIF, &ExecGhostRescueC);
+    	DynamicDataInterfaceCL::IFExecLocal( _TetraIF, &ExecGhostRescueC);
     else
-        DDD_IFAExecLocal( _TetraIF, Level, &ExecGhostRescueC);
+    	DynamicDataInterfaceCL::IFAExecLocal( _TetraIF, Level, &ExecGhostRescueC);
 }
 
 /** Set Prio for all subsimplices on PrioGhost and removes their Remove-Mark*/
-int ParMultiGridCL::ExecGhostRescue( DDD_OBJ obj)
+int ParMultiGridCL::ExecGhostRescue( OBJT obj)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     if (!tp->IsGhost() ) return 1;
@@ -1310,11 +1309,11 @@ void ParMultiGridCL::RescueGhostVerts( Uint Level)
 {
     // Vertices on  <level> can only owned by ghost tetras on  <Level> to <LastLevel-1>.
     for (Uint lvl= Level, maxLevel= _mg->GetLastLevel(); lvl<maxLevel; ++lvl)
-        DDD_IFAExecLocal( _TetraIF, lvl, &ExecGhVertRescueC);
+    	DynamicDataInterfaceCL::IFAExecLocal( _TetraIF, lvl, &ExecGhVertRescueC);
 }
 
 /** Rescue vertices of ghost tetras */
-int ParMultiGridCL::ExecGhVertRescue( DDD_OBJ obj)
+int ParMultiGridCL::ExecGhVertRescue( OBJT obj)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     if (!tp->IsGhost()) return 1;
@@ -1331,13 +1330,13 @@ int ParMultiGridCL::ExecGhVertRescue( DDD_OBJ obj)
 void ParMultiGridCL::TreatHasGhosts( int Level)
 {
     if (Level==-1)
-        DDD_IFExecLocal( _TetraIF, &ExecHasGhostC);
+    	DynamicDataInterfaceCL::IFExecLocal( _TetraIF, &ExecHasGhostC);
     else
-        DDD_IFAExecLocal( _TetraIF, Level, &ExecHasGhostC);
+    	DynamicDataInterfaceCL::IFAExecLocal( _TetraIF, Level, &ExecHasGhostC);
 }
 
 /** Set prio for all subsimpilces to PrioVGhost and delete the pointers to children */
-int ParMultiGridCL::ExecHasGhost( DDD_OBJ obj)
+int ParMultiGridCL::ExecHasGhost( OBJT obj)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     if (!tp->HasGhost() ) return 1;
@@ -1365,13 +1364,13 @@ int ParMultiGridCL::ExecHasGhost( DDD_OBJ obj)
 void ParMultiGridCL::AdaptMidVertex( int Level)
 {
     if (Level==-1)
-        DDD_IFExecLocal( _EdgeIF, &ExecAdaptVGhostMidVertexC);
+    	DynamicDataInterfaceCL::IFExecLocal( _EdgeIF, &ExecAdaptVGhostMidVertexC);
     else
-        DDD_IFAExecLocal( _EdgeIF, Level, &ExecAdaptVGhostMidVertexC);
+    	DynamicDataInterfaceCL::IFAExecLocal( _EdgeIF, Level, &ExecAdaptVGhostMidVertexC);
 }
 
 /** Delete MidVertex of PrioVGhost Kanten*/
-int ParMultiGridCL::ExecAdaptVGhostMidVertex( DDD_OBJ obj)
+int ParMultiGridCL::ExecAdaptVGhostMidVertex( OBJT obj)
 {
     EdgeCL* const ep= ddd_cast<EdgeCL*>(obj);
 
@@ -1388,7 +1387,7 @@ int ParMultiGridCL::ExecAdaptVGhostMidVertex( DDD_OBJ obj)
 /** This uses TreatHasGhosts(), TreatGhosts() and RescueSubs() */
 void ParMultiGridCL::AdaptPrioOnSubs()
 {
-    DDD_XferBegin();  // for removement/priochange of subsimplices
+	DynamicDataInterfaceCL::XferBegin();  // for removement/priochange of subsimplices
     TreatHasGhosts(); // mark subs of HasGhosts as VGhost, rescue subs
     TreatGhosts();    // rescue subs of Ghosts, mark as Ghost
     for (Uint level=0; level<=_mg->GetLastLevel(); ++level)
@@ -1398,7 +1397,7 @@ void ParMultiGridCL::AdaptPrioOnSubs()
                 RescueSubs(*sit);
         //for_each( _mg->GetTetrasBegin(level), _mg->GetTetrasEnd(level), RescueSubs);
     }
-    DDD_XferEnd();
+    DynamicDataInterfaceCL::XferEnd();
 }
 
 /// \brief Rescue all subsimplices and set prios to PrioMaster
@@ -1421,7 +1420,7 @@ void ParMultiGridCL::RescueSubs( TetraCL& t)
 
 void ParMultiGridCL::MarkSimplicesForUnknowns(int lvl)
 {
-    DDD_XferBegin();
+	DynamicDataInterfaceCL::XferBegin();
     for (MultiGridCL::TriangTetraIteratorCL  tit(_mg->GetTriangTetraBegin(lvl)), tend(_mg->GetTriangTetraEnd(lvl));
          tit!=tend; ++tit)
     {
@@ -1442,7 +1441,7 @@ void ParMultiGridCL::MarkSimplicesForUnknowns(int lvl)
             PrioChange( *it, PrioHasUnk);
         }
     }
-    DDD_XferEnd();
+    DynamicDataInterfaceCL::XferEnd();
 }
 
 /// \brief Destroy unknowns on non-master vertices, edges and tetras if there are information about them
@@ -1468,19 +1467,19 @@ void ParMultiGridCL::DeleteUnksOnGhosts(int Level)
 /*    if (_VecDescRecv){
         if (Level==-1)
         {
-            DDD_IFExecLocal(NotMasterIF_, &ExecDestroyUnksVC);
-            DDD_IFExecLocal(NotMasterIF_, &ExecDestroyUnksEC);
+            DynamicDataInterfaceCL::IFExecLocal(NotMasterIF_, &ExecDestroyUnksVC);
+            DynamicDataInterfaceCL::IFExecLocal(NotMasterIF_, &ExecDestroyUnksEC);
         }
         else
         {
-            DDD_IFAExecLocal(NotMasterIF_, Level, &ExecDestroyUnksVC);
-            DDD_IFAExecLocal(NotMasterIF_, Level, &ExecDestroyUnksEC);
+            DynamicDataInterfaceCL::IFAExecLocal(NotMasterIF_, Level, &ExecDestroyUnksVC);
+            DynamicDataInterfaceCL::IFAExecLocal(NotMasterIF_, Level, &ExecDestroyUnksEC);
         }
     }*/
 }
 
 template<class SimplexT>
-  int ParMultiGridCL::DestroyUnksOnSimplex(DDD_OBJ obj)
+  int ParMultiGridCL::DestroyUnksOnSimplex(OBJT obj)
 {
     SimplexT *sp= ddd_cast<SimplexT*>(obj);
 
@@ -1502,57 +1501,57 @@ template<class SimplexT>
 /// \brief Identify a vertex by parent edge
 void ParMultiGridCL::IdentifyVertex( const EdgeCL* Parent)
 {
-    DDD_HDR parhdr= const_cast<DDD_HDR>( Parent->GetHdr()),
-    hdr= const_cast<DDD_HDR>( Parent->GetMidVertex()->GetHdr());
-    for( int* proclist= DDD_InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
+	HDRT parhdr= const_cast<HDRT>( Parent->GetHdr()),
+    hdr= const_cast<HDRT>( Parent->GetMidVertex()->GetHdr());
+    for( int* proclist= DynamicDataInterfaceExtraCL::InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
         if (proclist[1]!=PrioVGhost)
         {
-            DDD_IdentifyObject( hdr, *proclist, parhdr);
+        	DynamicDataInterfaceCL::IdentifyObject( hdr, *proclist, parhdr);
         }
 }
 
 /// \brief Identify an edge by parent edge
 void ParMultiGridCL::IdentifyEdge( EdgeCL* Me, const EdgeCL* Parent, Uint nr)
 {
-    DDD_HDR parhdr= const_cast<DDD_HDR>( Parent->GetHdr());
-    for( int* proclist= DDD_InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
+	HDRT parhdr= const_cast<HDRT>( Parent->GetHdr());
+    for( int* proclist= DynamicDataInterfaceExtraCL::InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
         if (proclist[1]!=PrioVGhost)
         {
-            DDD_IdentifyObject( Me->GetHdr(), *proclist, parhdr);
-            DDD_IdentifyNumber( Me->GetHdr(), *proclist, nr);
+        	DynamicDataInterfaceCL::IdentifyObject( Me->GetHdr(), *proclist, parhdr);
+        	DynamicDataInterfaceCL::IdentifyNumber( Me->GetHdr(), *proclist, nr);
         }
 }
 
 /// \brief Identify an edge by parent face and two vertices
 void ParMultiGridCL::IdentifyEdge( EdgeCL* Me, const FaceCL* Parent, const VertexCL* vp0, const VertexCL* vp1)
 {
-    DDD_HDR parhdr= const_cast<DDD_HDR>( Parent->GetHdr()),
-    hdr0= const_cast<DDD_HDR>( vp0->GetHdr()),
-    hdr1= const_cast<DDD_HDR>( vp1->GetHdr());
-    for( int* proclist= DDD_InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
+	HDRT parhdr= const_cast<HDRT>( Parent->GetHdr()),
+    hdr0= const_cast<HDRT>( vp0->GetHdr()),
+    hdr1= const_cast<HDRT>( vp1->GetHdr());
+    for( int* proclist= DynamicDataInterfaceExtraCL::InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
         if (proclist[1]!=PrioVGhost)
         {
-            DDD_IdentifyObject( Me->GetHdr(), *proclist, hdr0);
-            DDD_IdentifyObject( Me->GetHdr(), *proclist, hdr1);
+        	DynamicDataInterfaceCL::IdentifyObject( Me->GetHdr(), *proclist, hdr0);
+        	DynamicDataInterfaceCL::IdentifyObject( Me->GetHdr(), *proclist, hdr1);
         }
 }
 
 /// \brief Identify a face with parent face and a number
 void ParMultiGridCL::IdentifyFace( FaceCL* Me, const FaceCL* Parent, Uint nr)
 {
-    DDD_HDR parhdr= const_cast<DDD_HDR>( Parent->GetHdr());
-    for( int* proclist= DDD_InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
+	HDRT parhdr= const_cast<HDRT>( Parent->GetHdr());
+    for( int* proclist= DynamicDataInterfaceExtraCL::InfoProcList( parhdr)+2; *proclist!=-1; proclist+= 2)
         if (proclist[1]!=PrioVGhost)
         {
-            DDD_IdentifyObject( Me->GetHdr(), *proclist, parhdr);
-            DDD_IdentifyNumber( Me->GetHdr(), *proclist, nr);
+        	DynamicDataInterfaceCL::IdentifyObject( Me->GetHdr(), *proclist, parhdr);
+        	DynamicDataInterfaceCL::IdentifyNumber( Me->GetHdr(), *proclist, nr);
         }
 }
 
 /****************************************************************************
 * D E C L A R E A L L                                                            *
 *****************************************************************************
-*   This procedure declares the DDD_TYPEs: Vertex, Edge, Face, Tetra,        *
+*   This procedure declares the TypeTs: Vertex, Edge, Face, Tetra,        *
 *   AddedScal, AddedVec, BndPtr, ChildPtr                                        *
 ****************************************************************************/
 /// \brief Declare all DDD-Types
@@ -1572,7 +1571,7 @@ void ParMultiGridCL::DeclareAll()
 /****************************************************************************
 * D E F I N E A L L                                                             *
 *****************************************************************************
-*   This procedure defines the DDD_TYPEs: Vertex, Edge, Face, Tetra,         *
+*   This procedure defines the TypeTs: Vertex, Edge, Face, Tetra,         *
 *   AddedScal, AddedVec, BndPtr, ChildPtr                                        *
 ****************************************************************************/
 /// \brief Define all DDD-Types
@@ -1599,13 +1598,13 @@ void ParMultiGridCL::DefineAll()
 /// \brief Initialize all Interfaces
 void ParMultiGridCL::InitIF()
 {
-    DDD_TYPE  O[4];
+	TypeT  O[4];
     O[0]= VertexCL::GetType();
     O[1]= EdgeCL::GetType();
     O[2]= TetraCL::GetType();
     O[3]= FaceCL::GetType();
 
-    DDD_PRIO  A[5], B[4];   // arrays of priorities
+    PrioT  A[5], B[4];   // arrays of priorities
 
     A[0]= B[0] = PrioHasUnk;
     A[1]= B[1] = PrioMaster;
@@ -1615,27 +1614,27 @@ void ParMultiGridCL::InitIF()
 
     // interface of edges
     Assert(!_EdgeIF, DROPSErrCL("ParMultiGridCL: InitIF: EdgeIF allready declared"), DebugParallelC);
-    _EdgeIF = DDD_IFDefine(1, O+1, 4, A, 4, B);               // Master, VGhost, Ghost -> Master, VGhost, Ghost
-    DDD_IFSetName( _EdgeIF, (char*)"Edge-IF for AccumulateMFR");
+    _EdgeIF = DynamicDataInterfaceCL::IFDefine(1, O+1, 4, A, 4, B);               // Master, VGhost, Ghost -> Master, VGhost, Ghost
+    DynamicDataInterfaceCL::IFSetName( _EdgeIF, (char*)"Edge-IF for AccumulateMFR");
 
     // interface of faces
     Assert(!_FaceIF, DROPSErrCL("ParMultiGridCL: InitIF: FaceIF allready declared"), DebugParallelC);
-    _FaceIF = DDD_IFDefine(1, O+3, 2, A, 2, B);               // Master Face -> Master Face
-    DDD_IFSetName( _FaceIF, (char*)"Face-IF for Sanity Check");
+    _FaceIF = DynamicDataInterfaceCL::IFDefine(1, O+3, 2, A, 2, B);               // Master Face -> Master Face
+    DynamicDataInterfaceCL::IFSetName( _FaceIF, (char*)"Face-IF for Sanity Check");
 
     // interface of tetras
     Assert(!_TetraIF, DROPSErrCL("ParMultiGridCL: InitIF: TetraIF allready declared"), DebugParallelC);
-    _TetraIF = DDD_IFDefine(1, O+2, 1, A+3, 2, B);    // Ghost Tetra -> Master Tetra
-    DDD_IFSetName( _TetraIF, (char*)"Tetra-IF for RestrictMarks");
+    _TetraIF = DynamicDataInterfaceCL::IFDefine(1, O+2, 1, A+3, 2, B);    // Ghost Tetra -> Master Tetra
+    DynamicDataInterfaceCL::IFSetName( _TetraIF, (char*)"Tetra-IF for RestrictMarks");
 
     // interface of not master vertices, edges and tetras
     Assert(!NotMasterIF_, DROPSErrCL("ParMultiGridCL: InitIF: NotMasterV_IF allready declared"), DebugParallelC);
-    NotMasterIF_= DDD_IFDefine(3, O, 2, A+2, 2, B+2);   // PrioVGhost, PrioGhost -> PrioVGhost, PrioGhost
-    DDD_IFSetName( NotMasterIF_, (char*)"non master Vertex, Edge, Tetrahedron-IF");
+    NotMasterIF_= DynamicDataInterfaceCL::IFDefine(3, O, 2, A+2, 2, B+2);   // PrioVGhost, PrioGhost -> PrioVGhost, PrioGhost
+    DynamicDataInterfaceCL::IFSetName( NotMasterIF_, (char*)"non master Vertex, Edge, Tetrahedron-IF");
 
     // Ghost tetras to master-tetras
-    _GhToMaTetra_IF= DDD_IFDefine(1, O+2, 1, A+4, 2, B);    // PrioKilledGhost -> PrioMaster
-    DDD_IFSetName( _GhToMaTetra_IF, (char*)"Killed Ghost to Master Interface");
+    _GhToMaTetra_IF= DynamicDataInterfaceCL::IFDefine(1, O+2, 1, A+4, 2, B);    // PrioKilledGhost -> PrioMaster
+    DynamicDataInterfaceCL::IFSetName( _GhToMaTetra_IF, (char*)"Killed Ghost to Master Interface");
 
     // Init the Interfaces for numerical accumulations!
     InterfaceCL<VertexCL>::InitIF();
@@ -1652,42 +1651,42 @@ void ParMultiGridCL::InitIF()
 * proc. XferStart() and XferEnd() have to call before and after respectively*
 ****************************************************************************/
 /// \brief Send a Vertex
-void ParMultiGridCL::VXfer(VertexCL &v, DDD_PROC dest, DDD_PRIO prio, bool del)
+void ParMultiGridCL::VXfer(VertexCL &v, PROCT dest, PrioT prio, bool del)
 {
     // Set the removement-mark before calling the transfer command, because this mark is checked, whether additional data is send too!
     if (del) v.SetRemoveMark();
-    const DDD_HDR hdr= const_cast<DDD_HDR>(&v._dddH);
-    DDD_XferCopyObj( hdr, dest, prio);
+    const HDRT hdr= const_cast<HDRT>(&v._dddH);
+    DynamicDataInterfaceCL::XferCopyObj( hdr, dest, prio);
 }
 
 /// \brief Send a Edge
-void ParMultiGridCL::EXfer(EdgeCL &e, DDD_PROC dest, DDD_PRIO prio, bool del)
+void ParMultiGridCL::EXfer(EdgeCL &e, PROCT dest, PrioT prio, bool del)
 {
     if (del)
         e.SetRemoveMark();
 
-    const DDD_HDR hdr= const_cast<DDD_HDR>(&e._dddH);
-    DDD_XferCopyObj( hdr, dest, prio);
+    const HDRT hdr= const_cast<HDRT>(&e._dddH);
+    DynamicDataInterfaceCL::XferCopyObj( hdr, dest, prio);
 
 }
 
 /// \brief Send a Face
-void ParMultiGridCL::FXfer(FaceCL &f, DDD_PROC dest, DDD_PRIO prio, bool del)
+void ParMultiGridCL::FXfer(FaceCL &f, PROCT dest, PrioT prio, bool del)
 {
     if (del)
         f.SetRemoveMark();
 
-    const DDD_HDR hdr= const_cast<DDD_HDR>(&f._dddH);
-    DDD_XferCopyObj(hdr, dest, prio);
+    const HDRT hdr= const_cast<HDRT>(&f._dddH);
+    DynamicDataInterfaceCL::XferCopyObj(hdr, dest, prio);
     // del richtig berücksichtigen!
 }
 
 /// \brief Send a Tetra
-void ParMultiGridCL::TXfer(TetraCL &t, DDD_PROC dest, DDD_PRIO prio, bool del)
+void ParMultiGridCL::TXfer(TetraCL &t, PROCT dest, PrioT prio, bool del)
 {
-    const DDD_HDR hdr= const_cast<DDD_HDR>(&t._dddH);
+    const HDRT hdr= const_cast<HDRT>(&t._dddH);
 
-    DDD_XferCopyObj( hdr, dest, prio);
+    DynamicDataInterfaceCL::XferCopyObj( hdr, dest, prio);
 
     if (del)  // not Ma->Gh-Copy
     {
@@ -1711,38 +1710,38 @@ void ParMultiGridCL::TXfer(TetraCL &t, DDD_PROC dest, DDD_PRIO prio, bool del)
 /// \brief Handle delete of an object
 /** Set the remove mark and desctuct the DDD-Hdr. The real delete of the object is done within
     the code.*/
-template<class SimplexT> void ParMultiGridCL::HandlerDelete( DDD_OBJ obj)
+template<class SimplexT> void ParMultiGridCL::HandlerDelete( OBJT obj)
 {
     SimplexT* const sp= ddd_cast<SimplexT*>(obj);
     sp->SetRemoveMark();
     //  Ich denke, dass man hier den Hdr_Destructor nicht braucht, da er automatisch von DDD aufgerufen wird
     // ---> Doch, den braucht man ganz ganz unbedingt! (siehe Hdr_Destructor bei DDD!)
-    DDD_HdrDestructor( &sp->_dddH);
+    DynamicDataInterfaceCL::HdrDestructor( &sp->_dddH);
     AllComment("  * Simplex with GID "<<sp->GetGID()<<" deleted on proc "<<ProcCL::MyRank()<<std::endl,DebugParallelHardC);
 }
 
 //  Construct an object by DDD
 //-----------------------------
 /// \brief Construct a vertex and return it as a DDD-Object
-DDD_OBJ ParMultiGridCL::HandlerVConstructor( size_t, DDD_PRIO, DDD_ATTR level){
+OBJT ParMultiGridCL::HandlerVConstructor( size_t, PrioT, ATTRT level){
     (*_VertCont)[level].push_back( VertexCL());
     return ddd_cast(&(*_VertCont)[level].back());
 }
 
 /// \brief Construct a edge and return it as a DDD-Object
-DDD_OBJ ParMultiGridCL::HandlerEConstructor( size_t, DDD_PRIO, DDD_ATTR level){
+OBJT ParMultiGridCL::HandlerEConstructor( size_t, PrioT, ATTRT level){
     (*_EdgeCont)[level].push_back( EdgeCL());
     return ddd_cast(&(*_EdgeCont)[level].back());
 }
 
 /// \brief Construct a face and return it as a DDD-Object
-DDD_OBJ ParMultiGridCL::HandlerFConstructor( size_t, DDD_PRIO, DDD_ATTR level){
+OBJT ParMultiGridCL::HandlerFConstructor( size_t, PrioT, ATTRT level){
     (*_FaceCont)[level].push_back( FaceCL());
     return ddd_cast(&(*_FaceCont)[level].back());
 }
 
 /// \brief Construct a tera and return it as a DDD-Object
-DDD_OBJ ParMultiGridCL::HandlerTConstructor( size_t, DDD_PRIO, DDD_ATTR level){
+OBJT ParMultiGridCL::HandlerTConstructor( size_t, PrioT, ATTRT level){
     (*_TetraCont)[level].push_back( TetraCL());
     return ddd_cast(&(*_TetraCont)[level].back());
 }
@@ -1753,7 +1752,7 @@ DDD_OBJ ParMultiGridCL::HandlerTConstructor( size_t, DDD_PRIO, DDD_ATTR level){
 /** Check if numerical data have to be transfered too. If this case happens, tell DDD that additional
     data will be transfered. Than DDD calls the Gather and Scatter functions <p>
     The Recylce-Bin is also destroyed and boundary information are send too*/
-void ParMultiGridCL::HandlerVXfer( DDD_OBJ obj, __UNUSED__ DDD_PROC proc, __UNUSED__ DDD_PRIO prio)
+void ParMultiGridCL::HandlerVXfer( OBJT obj, __UNUSED__ PROCT proc, __UNUSED__ PrioT prio)
 {
     VertexCL* const vp= ddd_cast<VertexCL*>(obj);
     int numSendScalUnk= 0,
@@ -1763,7 +1762,7 @@ void ParMultiGridCL::HandlerVXfer( DDD_OBJ obj, __UNUSED__ DDD_PROC proc, __UNUS
 
     // if there are bondary-information, then send them too!
     if (vp->IsOnBoundary() )
-        DDD_XferAddData( vp->_BndVerts->size(), _BndPtT);
+    	DynamicDataInterfaceCL::XferAddData( vp->_BndVerts->size(), _BndPtT);
 
     // if there this ParMultiGridCL knowns about unknowns, ther are unknwons on this vertex and this vertex is marked for removement, count the unknowns and give this Information to DDD!
     if (VecDescRecv() && vp->Unknowns.Exist())
@@ -1780,8 +1779,8 @@ void ParMultiGridCL::HandlerVXfer( DDD_OBJ obj, __UNUSED__ DDD_PROC proc, __UNUS
                     ++numSendVecUnk;
             }
         }
-        DDD_XferAddData( numSendScalUnk, AddedScalCL::_dddT );
-        DDD_XferAddData( numSendVecUnk,  AddedVecCL::_dddT  );
+        DynamicDataInterfaceCL::XferAddData( numSendScalUnk, AddedScalCL::_dddT );
+        DynamicDataInterfaceCL::XferAddData( numSendVecUnk,  AddedVecCL::_dddT  );
     }
 
     AllComment("  * Vertex with GID " << vp->GetGID() << " from " << ProcCL::MyRank() << " to " << proc << " "
@@ -1793,7 +1792,7 @@ void ParMultiGridCL::HandlerVXfer( DDD_OBJ obj, __UNUSED__ DDD_PROC proc, __UNUS
 /// \brief transfer an edge
 /** Check if numerical data have to be transfered too. If this case happens, tell DDD that additional
     data will be transfered. Than DDD calls the Gather and Scatter functions <p>*/
-void ParMultiGridCL::HandlerEXfer(DDD_OBJ obj, __UNUSED__ DDD_PROC proc, DDD_PRIO)
+void ParMultiGridCL::HandlerEXfer(OBJT obj, __UNUSED__ PROCT proc, PrioT)
 {
     EdgeCL* const ep= ddd_cast<EdgeCL*>(obj);
 
@@ -1817,8 +1816,8 @@ void ParMultiGridCL::HandlerEXfer(DDD_OBJ obj, __UNUSED__ DDD_PROC proc, DDD_PRI
                             ++numSendVecUnk;
             }
         }
-        DDD_XferAddData( numSendScalUnk, AddedScalCL::_dddT );
-        DDD_XferAddData( numSendVecUnk,  AddedVecCL::_dddT  );
+        DynamicDataInterfaceCL::XferAddData( numSendScalUnk, AddedScalCL::_dddT );
+        DynamicDataInterfaceCL::XferAddData( numSendVecUnk,  AddedVecCL::_dddT  );
     }
 
     AllComment("  * Edge with GID " << ep->GetGID() << " from " << ProcCL::MyRank() << " to " << proc << " "
@@ -1828,7 +1827,7 @@ void ParMultiGridCL::HandlerEXfer(DDD_OBJ obj, __UNUSED__ DDD_PROC proc, DDD_PRI
 
 /// \brief transfer a face
 /** Nothing is done. <p>*/
-void ParMultiGridCL::HandlerFXfer(__UNUSED__ DDD_OBJ obj, __UNUSED__ DDD_PROC proc, DDD_PRIO)
+void ParMultiGridCL::HandlerFXfer(__UNUSED__ OBJT obj, __UNUSED__ PROCT proc, PrioT)
 {
     AllComment("  * Face with GID " << ddd_cast<FaceCL*>(obj)->GetGID() << " from " << ProcCL::MyRank() << " to " << proc << std::endl, DebugParallelHardC);
 }
@@ -1836,13 +1835,13 @@ void ParMultiGridCL::HandlerFXfer(__UNUSED__ DDD_OBJ obj, __UNUSED__ DDD_PROC pr
 /// \brief transfer a tetra
 /** Transfer a tetraeder with all subsimplices. Also pointer to childern are transfered and
     if neccessary numerical data.*/
-void ParMultiGridCL::HandlerTXfer(DDD_OBJ obj, DDD_PROC proc, DDD_PRIO prio)
+void ParMultiGridCL::HandlerTXfer(OBJT obj, PROCT proc, PrioT prio)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     int numChilds=0;
     if (tp->_Children && !tp->HasGhost() )
     {
-        DDD_XferAddData( tp->GetRefData().ChildNum, _ChildPtrT);
+    	DynamicDataInterfaceCL::XferAddData( tp->GetRefData().ChildNum, _ChildPtrT);
         numChilds = tp->GetRefData().ChildNum;
     }
 
@@ -1865,17 +1864,17 @@ void ParMultiGridCL::HandlerTXfer(DDD_OBJ obj, DDD_PROC proc, DDD_PRIO prio)
                     ++numSendVecUnk;
             }
         }
-        DDD_XferAddData( numSendScalUnk, AddedScalCL::_dddT );
-        DDD_XferAddData( numSendVecUnk,  AddedVecCL::_dddT  );
+        DynamicDataInterfaceCL::XferAddData( numSendScalUnk, AddedScalCL::_dddT );
+        DynamicDataInterfaceCL::XferAddData( numSendVecUnk,  AddedVecCL::_dddT  );
     }
 
     // all subsimplices and of the tetra are transferred too.
     for (Uint i=0; i<NumVertsC; ++i)
-        DDD_XferCopyObj( tp->_Vertices[i]->GetHdr(), proc, prio);
+    	DynamicDataInterfaceCL::XferCopyObj( tp->_Vertices[i]->GetHdr(), proc, prio);
     for (Uint i=0; i<NumEdgesC; ++i)
-        DDD_XferCopyObj( tp->_Edges[i]->GetHdr(), proc, prio);
+    	DynamicDataInterfaceCL::XferCopyObj( tp->_Edges[i]->GetHdr(), proc, prio);
     for (Uint i=0; i<NumFacesC; ++i)
-        DDD_XferCopyObj( tp->_Faces[i]->GetHdr(), proc, prio);
+    	DynamicDataInterfaceCL::XferCopyObj( tp->_Faces[i]->GetHdr(), proc, prio);
 
     AllComment("  * Tetra with GID " << tp->GetGID() << " from " << ProcCL::MyRank() << " to " << proc
             << " with " << numSendScalUnk << " scalar unknowns,"
@@ -1890,7 +1889,7 @@ void ParMultiGridCL::HandlerTXfer(DDD_OBJ obj, DDD_PROC proc, DDD_PRIO prio)
 /** These procedures put additional data to a message or recieve this data.
     This data might be geometrical or numerical, like boundary-information or children-information,
     or the numerical values onto the simplex. */
-void ParMultiGridCL::HandlerVGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* buf)
+void ParMultiGridCL::HandlerVGather( OBJT obj, int cnt, TypeT type, void* buf)
 {
     VertexCL* const vp= ddd_cast<VertexCL*>(obj);
     Assert(type==AddedScalCL::GetType() || type==AddedVecCL::GetType() || type==_BndPtT,
@@ -1912,7 +1911,7 @@ void ParMultiGridCL::HandlerVGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* 
         SendUnknowns(vp,type,buf,cnt);
 }
 
-void ParMultiGridCL::HandlerVScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void* buf, int /*newness*/)
+void ParMultiGridCL::HandlerVScatter( OBJT obj, int cnt, TypeT type, void* buf, int /*newness*/)
 {
     VertexCL* const vp= ddd_cast<VertexCL*>(obj);
     Assert(type==AddedScalCL::GetType() || type==AddedVecCL::GetType() || type==_BndPtT ,
@@ -1933,7 +1932,7 @@ void ParMultiGridCL::HandlerVScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void*
         RecvUnknowns(vp,type,buf,cnt);
 }
 
-void ParMultiGridCL::HandlerEGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* buf)
+void ParMultiGridCL::HandlerEGather( OBJT obj, int cnt, TypeT type, void* buf)
 {
     EdgeCL* const ep= ddd_cast<EdgeCL*>(obj);
 
@@ -1943,7 +1942,7 @@ void ParMultiGridCL::HandlerEGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* 
         SendUnknowns(ep,type,buf,cnt);
 }
 
-void ParMultiGridCL::HandlerEScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void* buf, int /*newness*/)
+void ParMultiGridCL::HandlerEScatter( OBJT obj, int cnt, TypeT type, void* buf, int /*newness*/)
 {
     EdgeCL* const ep= ddd_cast<EdgeCL*>(obj);
     Assert(type==AddedScalCL::GetType() || type==AddedVecCL::GetType(),
@@ -1955,7 +1954,7 @@ void ParMultiGridCL::HandlerEScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void*
 
 /// \brief Collect additional data for a tetra transfer
 /** The additional data may be pointer to children or numerical data within a migration.*/
-void ParMultiGridCL::HandlerTGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* buf)
+void ParMultiGridCL::HandlerTGather( OBJT obj, int cnt, TypeT type, void* buf)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     Assert(type==_ChildPtrT || type==AddedScalCL::GetType() || type==AddedVecCL::GetType(),
@@ -1980,7 +1979,7 @@ void ParMultiGridCL::HandlerTGather( DDD_OBJ obj, int cnt, DDD_TYPE type, void* 
 }
 
 /// \brief Recieve additional data for a tetra transfer
-void ParMultiGridCL::HandlerTScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void* buf, int newness)
+void ParMultiGridCL::HandlerTScatter( OBJT obj, int cnt, TypeT type, void* buf, int newness)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     Assert(type==_ChildPtrT || type==AddedScalCL::GetType() || type==AddedVecCL::GetType(),
@@ -2019,7 +2018,7 @@ void ParMultiGridCL::HandlerTScatter( DDD_OBJ obj, int cnt, DDD_TYPE type, void*
 /** If a tetra is regular refined and the priority is master and the tetraeder is made on this proc within the actual
     transfer mode, then this tetra increas MFR and set AccMFR to MFR.
     XferEnd() will accumulate the MFRs.*/
-void ParMultiGridCL::HandlerTObjMkCons( DDD_OBJ obj, int newness)
+void ParMultiGridCL::HandlerTObjMkCons( OBJT obj, int newness)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
 
@@ -2042,10 +2041,10 @@ void ParMultiGridCL::HandlerTObjMkCons( DDD_OBJ obj, int newness)
     If Prio changes from Ghost to Master, the MFR-Counter on Edges must be increased.
     The accumulated MFR will be set correct within AccumulateMFR().
 */
-void ParMultiGridCL::HandlerTSetPrio( DDD_OBJ obj, DDD_PRIO prio)
+void ParMultiGridCL::HandlerTSetPrio( OBJT obj, PrioT prio)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
-    Assert(!(prio==PrioGhost && tp->IsMaster() && !DDD_InfoIsLocal( tp->GetHdr() )),
+    Assert(!(prio==PrioGhost && tp->IsMaster() && !DynamicDataInterfaceExtraCL::InfoIsLocal( tp->GetHdr() )),
              DROPSErrCL("HandlerSetPrio: illegal prio for T"),
              DebugParallelC
           );
@@ -2065,7 +2064,7 @@ void ParMultiGridCL::HandlerTSetPrio( DDD_OBJ obj, DDD_PRIO prio)
 //-----------------------------
 /// \brief Update tetra after recieving
 /** link tetra tho faces and set prio to ghost, if no parent is found*/
-void ParMultiGridCL::HandlerTUpdate( DDD_OBJ obj)
+void ParMultiGridCL::HandlerTUpdate( OBJT obj)
 {
     TetraCL* const tp= ddd_cast<TetraCL*>(obj);
     // link tetra to his faces
@@ -2120,44 +2119,44 @@ void ParMultiGridCL::DeleteObj(void * /* buffer*/, size_t /*size*/, int ddd_typ)
 void ParMultiGridCL::SetAllHandler()
 {
     // How to construct Simplices
-    DDD_SetHandlerCONSTRUCTOR (VertexCL::GetType(), &HandlerVConstructorC);
-    DDD_SetHandlerCONSTRUCTOR (EdgeCL::GetType(),   &HandlerEConstructorC);
-    DDD_SetHandlerCONSTRUCTOR (FaceCL::GetType(),   &HandlerFConstructorC);
-    DDD_SetHandlerCONSTRUCTOR (TetraCL::GetType(),  &HandlerTConstructorC);
+	DynamicDataInterfaceCL::SetHandlerCONSTRUCTOR (VertexCL::GetType(), &HandlerVConstructorC);
+	DynamicDataInterfaceCL::SetHandlerCONSTRUCTOR (EdgeCL::GetType(),   &HandlerEConstructorC);
+	DynamicDataInterfaceCL::SetHandlerCONSTRUCTOR (FaceCL::GetType(),   &HandlerFConstructorC);
+	DynamicDataInterfaceCL::SetHandlerCONSTRUCTOR (TetraCL::GetType(),  &HandlerTConstructorC);
 
     // How to delete Simplices
-    DDD_SetHandlerDELETE(VertexCL::GetType(), &HandlerVDeleteC);
-    DDD_SetHandlerDELETE(EdgeCL::GetType(),   &HandlerEDeleteC);
-    DDD_SetHandlerDELETE(FaceCL::GetType(),   &HandlerFDeleteC);
-    DDD_SetHandlerDELETE(TetraCL::GetType(),  &HandlerTDeleteC);
+	DynamicDataInterfaceCL::SetHandlerDELETE(VertexCL::GetType(), &HandlerVDeleteC);
+	DynamicDataInterfaceCL::SetHandlerDELETE(EdgeCL::GetType(),   &HandlerEDeleteC);
+	DynamicDataInterfaceCL::SetHandlerDELETE(FaceCL::GetType(),   &HandlerFDeleteC);
+	DynamicDataInterfaceCL::SetHandlerDELETE(TetraCL::GetType(),  &HandlerTDeleteC);
 
-//  DDD_SetHandlerXFERDELETE(VertexCL::GetType(), &HandlerVDeleteC);
-//  DDD_SetHandlerXFERDELETE(EdgeCL::GetType(),   &HandlerEDeleteC);
-//  DDD_SetHandlerXFERDELETE(FaceCL::GetType(),   &HandlerFDeleteC);
-//  DDD_SetHandlerXFERDELETE(TetraCL::GetType(),  &HandlerTDeleteC);
+//  DynamicDataInterfaceCL::SetHandlerXFERDELETE(VertexCL::GetType(), &HandlerVDeleteC);
+//  DynamicDataInterfaceCL::SetHandlerXFERDELETE(EdgeCL::GetType(),   &HandlerEDeleteC);
+//  DynamicDataInterfaceCL::SetHandlerXFERDELETE(FaceCL::GetType(),   &HandlerFDeleteC);
+//  DynamicDataInterfaceCL::SetHandlerXFERDELETE(TetraCL::GetType(),  &HandlerTDeleteC);
 
 
 
     // How to transfer simplices
-    DDD_SetHandlerXFERCOPY (VertexCL::GetType(), &HandlerVXferC);
-    DDD_SetHandlerXFERCOPY (EdgeCL::GetType(),   &HandlerEXferC);
-    DDD_SetHandlerXFERCOPY (FaceCL::GetType(),   &HandlerFXferC);
-    DDD_SetHandlerXFERCOPY (TetraCL::GetType(),  &HandlerTXferC);
+	DynamicDataInterfaceCL::SetHandlerXFERCOPY (VertexCL::GetType(), &HandlerVXferC);
+	DynamicDataInterfaceCL::SetHandlerXFERCOPY (EdgeCL::GetType(),   &HandlerEXferC);
+	DynamicDataInterfaceCL::SetHandlerXFERCOPY (FaceCL::GetType(),   &HandlerFXferC);
+	DynamicDataInterfaceCL::SetHandlerXFERCOPY (TetraCL::GetType(),  &HandlerTXferC);
 
     // How to pack data to a transfer of a simplex
-    DDD_SetHandlerXFERGATHER(VertexCL::GetType(), &HandlerVGatherC);
-    DDD_SetHandlerXFERGATHER(EdgeCL::GetType(),   &HandlerEGatherC);
-    DDD_SetHandlerXFERGATHER(TetraCL::GetType(),  &HandlerTGatherC);
+	DynamicDataInterfaceCL::SetHandlerXFERGATHER(VertexCL::GetType(), &HandlerVGatherC);
+	DynamicDataInterfaceCL::SetHandlerXFERGATHER(EdgeCL::GetType(),   &HandlerEGatherC);
+	DynamicDataInterfaceCL::SetHandlerXFERGATHER(TetraCL::GetType(),  &HandlerTGatherC);
 
     // How to unpack data from a transfer of a simplex
-    DDD_SetHandlerXFERSCATTER(VertexCL::GetType(), &HandlerVScatterC);
-    DDD_SetHandlerXFERSCATTER(EdgeCL::GetType(),   &HandlerEScatterC);
-    DDD_SetHandlerXFERSCATTER(TetraCL::GetType(),  &HandlerTScatterC);
+	DynamicDataInterfaceCL::SetHandlerXFERSCATTER(VertexCL::GetType(), &HandlerVScatterC);
+	DynamicDataInterfaceCL::SetHandlerXFERSCATTER(EdgeCL::GetType(),   &HandlerEScatterC);
+	DynamicDataInterfaceCL::SetHandlerXFERSCATTER(TetraCL::GetType(),  &HandlerTScatterC);
 
     // How to handle Tetra right after the transfer!
-    DDD_SetHandlerUPDATE     (TetraCL::GetType(), &HandlerTUpdateC);
-    DDD_SetHandlerOBJMKCONS  (TetraCL::GetType(), &HandlerTObjMkConsC);
-    DDD_SetHandlerSETPRIORITY(TetraCL::GetType(), &HandlerTSetPrioC);
+	DynamicDataInterfaceCL::SetHandlerUPDATE     (TetraCL::GetType(), &HandlerTUpdateC);
+	DynamicDataInterfaceCL::SetHandlerOBJMKCONS  (TetraCL::GetType(), &HandlerTObjMkConsC);
+	DynamicDataInterfaceCL::SetHandlerSETPRIORITY(TetraCL::GetType(), &HandlerTSetPrioC);
 
     Comment("- All Handlers are set" << std::endl, DebugParallelC);
 }
@@ -2179,7 +2178,7 @@ MultiGridCL& ParMultiGridCL::GetMG()
 ****************************************************************************/
 /// \brief Show an simplex by GID
 /** Search on proc (or all procs) for a simplex of given GID and show DebugInfo*/
-void ParMultiGridCL::Show( DDD_GID gid, char *mesg, int proc)
+void ParMultiGridCL::Show( GIDT gid, char *mesg, int proc)
 {
     for (Uint l= 0; l<= _mg->GetLastLevel(); ++l)
     {
@@ -2191,13 +2190,13 @@ void ParMultiGridCL::Show( DDD_GID gid, char *mesg, int proc)
 
     if (proc != -1 && proc == ProcCL::MyRank() )
     {
-        DDD_HDR hdr= DDD_SearchHdr( gid);
+    	HDRT hdr= DynamicDataInterfaceCL::SearchHdr( gid);
         if (!hdr)
         {
             std::cerr << "...stored only locally." << std::endl;
             return;
         }
-        for( int* proclist= DDD_InfoProcList( hdr); *proclist!=-1; proclist+= 2)
+        for( int* proclist= DynamicDataInterfaceExtraCL::InfoProcList( hdr); *proclist!=-1; proclist+= 2)
             std::cerr << "...stored on proc " << *proclist << " with prio " << PrioToString((Uint)proclist[1]) << std::endl;
     }
 }
@@ -2282,38 +2281,38 @@ double ParMultiGridCL::GetBalance()
 /// \brief Display all types that are defined and declared
 void ParMultiGridCL::ShowTypes() const
 {
-    DDD_TypeDisplay(VertexCL::GetType());
-    DDD_TypeDisplay(EdgeCL::GetType());
-    DDD_TypeDisplay(FaceCL::GetType());
-    DDD_TypeDisplay(TetraCL::GetType());
-    DDD_TypeDisplay(AddedScalCL::GetType());
-    DDD_TypeDisplay(AddedVecCL::GetType());
-    DDD_TypeDisplay(_BndPtT);
-    DDD_TypeDisplay(_ChildPtrT);
+	DynamicDataInterfaceCL::TypeDisplay(VertexCL::GetType());
+	DynamicDataInterfaceCL::TypeDisplay(EdgeCL::GetType());
+	DynamicDataInterfaceCL::TypeDisplay(FaceCL::GetType());
+	DynamicDataInterfaceCL::TypeDisplay(TetraCL::GetType());
+	DynamicDataInterfaceCL::TypeDisplay(AddedScalCL::GetType());
+	DynamicDataInterfaceCL::TypeDisplay(AddedVecCL::GetType());
+	DynamicDataInterfaceCL::TypeDisplay(_BndPtT);
+	DynamicDataInterfaceCL::TypeDisplay(_ChildPtrT);
 }
 
 /// \brief Display all interfaces used by ParMultiGridCL
 ///
-/// Show all interfaces, that the DDD-System knows. This procedure uses the DDD-function DDD_IFDisplayAll
+/// Show all interfaces, that the DDD-System knows. This procedure uses the DDD-function DynamicDataInterfaceCL::IFDisplayAll
 void ParMultiGridCL::ShowInterfaces() const
 {
-    DDD_IFDisplayAll();
+	DynamicDataInterfaceCL::IFDisplayAll();
 }
 
 /// \brief DDD-Consisty-Check
 void ParMultiGridCL::ConsCheck()
 {
-    DDD_ConsCheck();
+	DynamicDataInterfaceCL::ConsCheck();
 }
 
 void ParMultiGridCL::ShowTetraIF()
 {
-    DDD_IFDisplay(_TetraIF);
+	DynamicDataInterfaceCL::IFDisplay(_TetraIF);
 }
 
 void ParMultiGridCL::ShowEdgeIF()
 {
-    DDD_IFDisplay(_EdgeIF);
+	DynamicDataInterfaceCL::IFDisplay(_EdgeIF);
 }
 
 /// \brief Display the handled VecDescCL
@@ -2344,49 +2343,49 @@ size_t ParMultiGridCL::GetRecvBufferSize()
 ****************************************************************************/
 void VertexCL::Declare(){
     Assert(!_dddT, DROPSErrCL("VertexCL: Declare: Type allready declared"), DebugParallelC);
-    _dddT = DDD_TypeDeclare((char*)"Vertex");
+    _dddT = DynamicDataInterfaceCL::TypeDeclare((char*)"Vertex");
 }
 
 void EdgeCL::Declare(){
     Assert(!_dddT, DROPSErrCL("EdgeCL: Declare: Type allready declared"), DebugParallelC);
-    _dddT = DDD_TypeDeclare((char*)"Edge");
+    _dddT = DynamicDataInterfaceCL::TypeDeclare((char*)"Edge");
 }
 
 void FaceCL::Declare(){
     Assert(!_dddT, DROPSErrCL("FaceCL: Declare: Type allready declared"), DebugParallelC);
-    _dddT = DDD_TypeDeclare((char*)"Face");
+    _dddT = DynamicDataInterfaceCL::TypeDeclare((char*)"Face");
 }
 
 void TetraCL::Declare(){
     Assert(!_dddT, DROPSErrCL("TetaCL: Declare: Type allready declared"), DebugParallelC);
-    _dddT = DDD_TypeDeclare((char*)"Tetraeder");
+    _dddT = DynamicDataInterfaceCL::TypeDeclare((char*)"Tetraeder");
 }
 
 void ParMultiGridCL::DeclareBndPtT(){
     Assert(!_BndPtT, DROPSErrCL("ParMultiGridCL: Declare: BndPtT-Type allready declared"), DebugParallelC);
-    _BndPtT = DDD_TypeDeclare((char*)"Boundary-Points");
+    _BndPtT = DynamicDataInterfaceCL::TypeDeclare((char*)"Boundary-Points");
 }
 
 void ParMultiGridCL::DeclareChildPtrT(){
     Assert(!_ChildPtrT, DROPSErrCL("ParMultiGridCL: Declare: ChildPtrT-Type allready declared"), DebugParallelC);
-    _ChildPtrT = DDD_TypeDeclare((char*)"Tetraeder-Pointer");
+    _ChildPtrT = DynamicDataInterfaceCL::TypeDeclare((char*)"Tetraeder-Pointer");
 }
 
 void AddedScalCL::Declare(){
     Assert(!_dddT, DROPSErrCL("AddedDataCL: Declare: Type allready declared"), DebugParallelC);
-    _dddT = DDD_TypeDeclare((char*)"Scalar-Unknown-Transfer-Type");
+    _dddT = DynamicDataInterfaceCL::TypeDeclare((char*)"Scalar-Unknown-Transfer-Type");
 }
 
 void AddedVecCL::Declare(){
     Assert(!_dddT, DROPSErrCL("AddedDataCL: Declare: Type allready declared"), DebugParallelC);
-    _dddT = DDD_TypeDeclare((char*)"Vector-Unknown-Transfer-Type");
+    _dddT = DynamicDataInterfaceCL::TypeDeclare((char*)"Vector-Unknown-Transfer-Type");
 }
 
 
 void VertexCL::Define()
 {
     VertexCL* v = 0;                                                // example VertexCL for telling DDD some information on this class
-    DDD_TypeDefine( _dddT, v,                                       // type and an example
+    DynamicDataInterfaceCL::TypeDefineVertex( _dddT, v,                                       // type and an example
                     EL_LDATA,  &v->_Id, sizeof(v->_Id),
                     EL_GDATA,  &v->_Coord, sizeof(v->_Coord),
                     EL_LDATA,  &v->_BndVerts, sizeof(v->_BndVerts),
@@ -2403,7 +2402,7 @@ void VertexCL::Define()
 void EdgeCL::Define()
 {
     EdgeCL* e =0;
-    DDD_TypeDefine( _dddT, e,
+    DynamicDataInterfaceCL::TypeDefineEdge( _dddT, e,
                     EL_DDDHDR, &e->_dddH,
                     EL_OBJPTR, &e->_Vertices, sizeof(e->_Vertices), VertexCL::GetType(),
                     EL_OBJPTR, &e->_MidVertex, sizeof(e->_MidVertex), VertexCL::GetType(),
@@ -2421,7 +2420,7 @@ void EdgeCL::Define()
 void FaceCL::Define()
 {
     FaceCL* f=0;
-    DDD_TypeDefine( _dddT, f,
+    DynamicDataInterfaceCL::TypeDefineFace( _dddT, f,
                     EL_DDDHDR, &f->_dddH,
                     EL_GDATA,  &f->_Bnd, sizeof(f->_Bnd),
                     EL_LDATA,  &f->_RemoveMark, sizeof(f->_RemoveMark),
@@ -2437,7 +2436,7 @@ void FaceCL::Define()
 void TetraCL::Define()
 {
     TetraCL* t=0;
-    DDD_TypeDefine( _dddT, t,
+    DynamicDataInterfaceCL::TypeDefineTetra( _dddT, t,
                     EL_DDDHDR, &t->_dddH,
                     EL_GDATA,  &t->_RefRule, sizeof(t->_RefRule),
                     EL_GDATA,  &t->_RefMark, sizeof(t->_RefMark),
@@ -2454,7 +2453,7 @@ void TetraCL::Define()
 void ParMultiGridCL::DefineBndPtT()
 {
     BndPointCL* b=0;
-    DDD_TypeDefine( _BndPtT, b,
+    DynamicDataInterfaceCL::TypeDefineBndPtT( _BndPtT, b,
                     EL_GDATA,  &b->_BndIdx,  sizeof(b->_BndIdx),        // The Index and
                     EL_GDATA,  &b->_Coord2D, sizeof(b->_Coord2D),       // Coordinate of the Boundary-Point shopuld be submittet
                     EL_END,    b+1);
@@ -2463,7 +2462,7 @@ void ParMultiGridCL::DefineBndPtT()
 void ParMultiGridCL::DefineChildPtrT()
 {
     TetraCL** chp=0;
-    DDD_TypeDefine( _ChildPtrT, chp,
+    DynamicDataInterfaceCL::TypeDefineChildPtrT( _ChildPtrT, chp,
                     EL_OBJPTR, &*chp, sizeof(*chp), TetraCL::GetType(),
                     EL_END,    chp+1);
     //delete chp;
@@ -2472,7 +2471,7 @@ void ParMultiGridCL::DefineChildPtrT()
 void AddedScalCL::Define()
 {
     AddedScalCL *add=0;
-    DDD_TypeDefine( _dddT, add,
+    DynamicDataInterfaceCL::TypeDefineAddedScal( _dddT, add,
                     EL_GDATA, &add->idxVecDesc_, sizeof(add->idxVecDesc_),
                     EL_GDATA, &add->data_, sizeof(add->data_),
                     EL_END,   add+1);
@@ -2481,7 +2480,7 @@ void AddedScalCL::Define()
 void AddedVecCL::Define()
 {
     AddedVecCL *add=0;
-    DDD_TypeDefine( _dddT, add,
+    DynamicDataInterfaceCL::TypeDefineAddedVec( _dddT, add,
                     EL_GDATA, &add->idxVecDesc_, sizeof(add->idxVecDesc_),
                     EL_GDATA, &add->data_, sizeof(add->data_),
                     EL_END,   add+1);

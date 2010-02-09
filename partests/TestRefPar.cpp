@@ -29,7 +29,6 @@
 #include "parallel/metispartioner.h"
 #include "parallel/loadbal.h"
 #include "parallel/parmgserialization.h"
-#include <ddd.h>
 
 // geometry Header-Files
 #include "geom/builder.h"
@@ -565,7 +564,7 @@ int main(int argc, char* argv[])
             if (C.checkRef)
                 CheckParMultiGrid(pmg,REF,master);
 
-            DDD_ConsCheck();
+            DynamicDataInterfaceCL::ConsCheck();
             DoMigration(pmg, LoadBal,C.refineStrategy);
             movedRefNodes += LoadBal.GetMovedMultiNodes();
 

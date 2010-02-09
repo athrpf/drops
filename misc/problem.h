@@ -173,17 +173,17 @@ class ExtIdxDescCL
     void Old2New( VecDescCL* );
 #ifdef _PAR
     /// \brief Gather xdof information on a vertex (for DDD)
-    static int HandlerGatherUpdateXNumb ( DDD_OBJ objp, void* buf);
+    static int HandlerGatherUpdateXNumb ( OBJT objp, void* buf);
     /// \brief Scatter xdof information on a vertex (for DDD)
-    static int HandlerScatterUpdateXNumb( DDD_OBJ objp, void* buf);
+    static int HandlerScatterUpdateXNumb( OBJT objp, void* buf);
 #endif
 };
 
 #ifdef _PAR
 /// \name Wrapper for gathering and scattering data for ExtIdxDescCL::UpdateXNumbering
 //@{
-extern "C" inline int HandlerGatherUpdateXNumbC (DDD_OBJ objp, void* buf) { return ExtIdxDescCL::HandlerGatherUpdateXNumb ( objp, buf); }
-extern "C" inline int HandlerScatterUpdateXNumbC(DDD_OBJ objp, void* buf) { return ExtIdxDescCL::HandlerScatterUpdateXNumb( objp, buf); }
+extern "C" inline int HandlerGatherUpdateXNumbC (OBJT objp, void* buf) { return ExtIdxDescCL::HandlerGatherUpdateXNumb ( objp, buf); }
+extern "C" inline int HandlerScatterUpdateXNumbC(OBJT objp, void* buf) { return ExtIdxDescCL::HandlerScatterUpdateXNumb( objp, buf); }
 //@}
 class ExchangeCL;
 #endif

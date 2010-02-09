@@ -23,7 +23,7 @@
 */
 
 #include "parallel/parallel.h"
-#include <ddd.h>
+#include "parallel/pardistributeddata.h"
 #include <limits>
 #include "misc/utils.h"
 
@@ -74,9 +74,9 @@ ProcCL::ProcCL(int* argc, char*** argv)
 {
     Assert(size_==0, DROPSErrCL("ProcCL instanciated multiple times"), DebugParallelC);
 
-    DDD_Init(argc, argv);               // DDD Initialisieren und die Informationen beziehen
-    my_rank_ = DDD_InfoMe();
-    size_    = DDD_InfoProcs();
+    DynamicDataInterfaceCL::Init(argc, argv);               // DDD Initialisieren und die Informationen beziehen
+    my_rank_ = DynamicDataInterfaceCL::InfoMe();
+    size_    = DynamicDataInterfaceCL::InfoProcs();
     procDigits_= 1;
     int procs  = Size();
     while( procs>9){
@@ -88,7 +88,7 @@ ProcCL::ProcCL(int* argc, char*** argv)
 
 ProcCL::~ProcCL()
 {
-    DDD_Exit();             // Logoff from DDD
+	DynamicDataInterfaceCL::Exit();             // Logoff from DDD
     size_=0;                // Now, this class can be initialized again...
     RecoverStdOstreams();
     delete mute_;

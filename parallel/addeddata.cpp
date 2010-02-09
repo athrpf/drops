@@ -26,7 +26,7 @@
 
 namespace DROPS{
 
-DDD_TYPE AddedScalCL::_dddT = 0;
-DDD_TYPE AddedVecCL::_dddT  = 0;
+TypeT AddedScalCL::_dddT = 0;
+TypeT AddedVecCL::_dddT  = 0;
 
 } // end of namespace DROPS

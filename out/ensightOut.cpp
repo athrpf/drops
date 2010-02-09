@@ -317,7 +317,7 @@ void Ensight6OutCL::putGeom (MultiGridCL& mg, int lvl, std::string geoName)
     // number of vertices and edges written by this proc (= number of vals)
     const IdxT locNumUnknowns = GetExclusiveVerts(mg, PrioHasUnk, lvl) + GetExclusiveEdges(mg, PrioHasUnk, lvl);
     const IdxT globNumUnknowns = ProcCL::GlobalSum(locNumUnknowns);                         // global number of vertices
-    DDD_GID *myGID   = new DDD_GID[locNumUnknowns];                                         // array of gids of exclusive vertices, owned by thiss proc
+    GIDT *myGID   = new GIDT[locNumUnknowns];                                         // array of gids of exclusive vertices, owned by thiss proc
     double *myCoord = new double[3*locNumUnknowns];                                         // and the corresponding coords
 
     nodes_ = locNumUnknowns;
@@ -416,15 +416,15 @@ void Ensight6OutCL::putGeom (MultiGridCL& mg, int lvl, std::string geoName)
         for (int p=0; p<ProcCL::Size(); ++p)                                            // print the gids with coords of all procs into the file
         {                                                                               // it is important that the information of proc 0 are print first, then of proc 1 and so on ( because of the ordering of the printed vals)
             IdxT numUnk;                                                                // number of exclusive verts of the other proc
-            DDD_GID *Gids=0;                                                            // receive-buffer for gids
+            GIDT *Gids=0;                                                            // receive-buffer for gids
             double *coord=0;                                                            // receive-biffer for coords
             if (p!=me)  // ==> p!=master
             {                                                                           // receive gids and coords
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, tag_, stat);
-                numUnk = ProcCL::GetCount<DDD_GID>(stat);
+                numUnk = ProcCL::GetCount<GIDT>(stat);
 
-                Gids  = new DDD_GID[numUnk];
+                Gids  = new GIDT[numUnk];
                 coord = new double[3*numUnk];
                 ProcCL::Recv(Gids, numUnk, p, tag_);
                 ProcCL::Recv(coord, 3*numUnk, p, tag_+1);
@@ -497,7 +497,7 @@ void Ensight6OutCL::putGeom (MultiGridCL& mg, int lvl, std::string geoName)
         Uint numTetras=std::distance(mg.GetTriangTetraBegin(lvl),mg.GetTriangTetraEnd(lvl));
         Uint numAllTetra= ProcCL::GlobalSum(numTetras, master);
         Uint numMaxTetra= ProcCL::GlobalMax(numTetras, master);
-        DDD_GID *tetras= new DDD_GID[8*numTetras*4];          // regrefine*numTetra*vertices
+        GIDT *tetras= new GIDT[8*numTetras*4];          // regrefine*numTetra*vertices
         Uint pos=0;
 
         for (MultiGridCL::TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl),    // for all tetras
@@ -549,7 +549,7 @@ void Ensight6OutCL::putGeom (MultiGridCL& mg, int lvl, std::string geoName)
                       << std::setw(8) << (8*numAllTetra)<<std::endl;
             }
             // this is the master proc. He has to write all information!
-            DDD_GID *Gids= new DDD_GID[8*numMaxTetra*4];  // storage for all gids of one proc
+            GIDT *Gids= new GIDT[8*numMaxTetra*4];  // storage for all gids of one proc
             Uint numGids;                                 // number of all gids
 
             // for each process write out his tetras
@@ -559,7 +559,7 @@ void Ensight6OutCL::putGeom (MultiGridCL& mg, int lvl, std::string geoName)
                 {
                     ProcCL::StatusT stat;
                     ProcCL::Probe(p, tag_, stat);
-                    numGids = (Uint)ProcCL::GetCount<DDD_GID>(stat);
+                    numGids = (Uint)ProcCL::GetCount<GIDT>(stat);
                     ProcCL::Recv(Gids, numGids, p, tag_);
                 }
                 else

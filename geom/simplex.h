@@ -34,9 +34,11 @@
 #include "geom/topo.h"
 #include "num/unknowns.h"
 
+
+
 #ifdef _PAR
 #  include "parallel/parallel.h"
-#  include <ddd.h>
+#  include "parallel/distributeddatatypes.h"
 #  include <compiler.h>
 #  include <map>
 #  include <parmetis.h>   // for indextype
@@ -158,15 +160,15 @@ class VertexCL
     Uint                     _Level : 8;                                        // in parallel mode, the level is stored in _dddH.attr
 #else
     // parallel
-    static DDD_TYPE          _dddT;                                             // DDD-Type for Verts, for every Vertex the same
-    DDD_HEADER               _dddH;                                             // VertexCL is a distributed DDD-Object
+    static TypeT          _dddT;                                             // DDD-Type for Verts, for every Vertex the same
+    HEADERT               _dddH;                                             // VertexCL is a distributed DDD-Object
 #if DROPSDebugC&DebugSubscribeC
     mutable bool subscribed_;
 #endif
     VertexCL()                                                                  // standard constructor used for DDD to create a vertex
         : _Id(), _Coord(0.), _BndVerts(0), _Bin(0), _RemoveMark(false)
     {
-        DDD_MarkHdrInvalid(&_dddH);                                             // The header will be constructed by DDD
+        MarkHdrInvalid(&_dddH);                                             // The header will be constructed by DDD
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
@@ -229,23 +231,23 @@ class VertexCL
 #else
     Uint                  GetLevel        () const { return _dddH.attr;}                    ///< get level of vertex (=first appearance in the multigrid)
     // parallel functions
-    static DDD_TYPE       GetType         ()       { return _dddT;}                         ///< get DDD-Vertex-Type
-    DDD_PRIO              GetPrio         () const { return _dddH.prio;}                    ///< get priority
-    DDD_GID               GetGID          () const { return _dddH.gid;}                     ///< get global id
-    DDD_HDR               GetHdr          () const { return const_cast<DDD_HDR>(&_dddH);}   ///< get DDD-Hdr of this vertex
+    static TypeT       GetType         ()       { return _dddT;}                         ///< get DDD-Vertex-Type
+    PrioT              GetPrio         () const { return _dddH.prio;}                    ///< get priority
+    GIDT               GetGID          () const { return _dddH.gid;}                     ///< get global id
+    HDRT               GetHdr          () const { return const_cast<HDRT>(&_dddH);}   ///< get DDD-Hdr of this vertex
     bool                  IsMaster        () const { return GetPrio()>=PrioMaster; }        ///< check if vertex is master
     bool                  MayStoreUnk     () const { return GetPrio()==PrioHasUnk; }        ///< check for ability of storing unknowns due to priority
-    bool                  IsLocal         () const { return DDD_InfoIsLocal(GetHdr());}     ///< check if vertex is local
+    bool                  IsLocal         () const { return DynamicDataInterfaceExtraCL::InfoIsLocal(GetHdr());}     ///< check if vertex is local
     int                   GetNumDist      () const;                                         ///< get number of procs on which the vertex is stored
     bool                  IsExclusive     ( Priority prio=PrioMaster ) const;               ///< check if vertex is exclusive
-    int *                 GetProcList     () const { return DDD_InfoProcList(GetHdr());}    ///< get list of procs and prios of this vertex
+    int *                 GetProcList     () const { return DynamicDataInterfaceExtraCL::InfoProcList(GetHdr());}    ///< get list of procs and prios of this vertex
     void                  XferDelete      ()                                                ///< tell DDD vertex will be deleted
-        { DDD_XferDeleteObj(&_dddH);
+        { DynamicDataInterfaceExtraCL::XferDeleteObj(&_dddH);
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
         }
-    void                  SetPrio(DDD_PRIO p)      { _dddH.prio=p;}                         ///< set priority of this vertex (danger: no notification to DDD, use PrioChange!)
+    void                  SetPrio(PrioT p)      { _dddH.prio=p;}                         ///< set priority of this vertex (danger: no notification to DDD, use PrioChange!)
 #endif
     const Point3DCL&      GetCoord        () const { return _Coord; }                       ///< get coordinate of this vertex
     bool                  IsOnBoundary    () const { return _BndVerts; }                    ///< check if this vertex lies on domain boundary
@@ -297,8 +299,8 @@ class EdgeCL
     Uint                   _Level : 8;                                              // level of the edge (according to owning tetras)
 #else
     // parallel
-    static DDD_TYPE        _dddT;                                                   // DDD-Type of edges
-    DDD_HEADER             _dddH;                                                   // DDD-Header
+    static TypeT        _dddT;                                                   // DDD-Type of edges
+    HEADERT             _dddH;                                                   // DDD-Header
     mutable short int      _AccMFR;                                                 // accumulated MFR over all procs
 #if DROPSDebugC
     mutable bool subscribed_;
@@ -307,7 +309,7 @@ class EdgeCL
     EdgeCL() : _Vertices(static_cast<VertexCL*>(0)), _MidVertex(0), _Bnd(NoBndC),   // standard constructor used for DDD to create an edge
                _MFR(0), _RemoveMark(false), _AccMFR(0)
     {
-        DDD_MarkHdrInvalid(&_dddH);                                                 // The header will be constructed by DDD
+        MarkHdrInvalid(&_dddH);                                                 // The header will be constructed by DDD
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
@@ -371,23 +373,23 @@ class EdgeCL
     Uint                  GetLevel        () const { return _Level; }                       ///< return level (stored within the class)
 #else
     Uint                  GetLevel        () const { return _dddH.attr;}                    ///< return level (stored within the DDD-Header)
-    static DDD_TYPE       GetType         ()       { return _dddT;}                         ///< return DDD-type of edges
-    DDD_PRIO              GetPrio         () const { return _dddH.prio;}                    ///< return priority of this edge
-    DDD_GID               GetGID          () const { return _dddH.gid;}                     ///< return global id of this edge
-    DDD_HDR               GetHdr          () const { return const_cast<DDD_HDR>(&_dddH);}   ///< return DDD-Hdr of this edge
+    static TypeT       GetType         ()       { return _dddT;}                         ///< return DDD-type of edges
+    PrioT              GetPrio         () const { return _dddH.prio;}                    ///< return priority of this edge
+    GIDT               GetGID          () const { return _dddH.gid;}                     ///< return global id of this edge
+    HDRT               GetHdr          () const { return const_cast<HDRT>(&_dddH);}   ///< return DDD-Hdr of this edge
     bool                  IsMaster        () const { return GetPrio()>=PrioMaster; }        ///< check if edge is master
     bool                  MayStoreUnk     () const { return GetPrio()==PrioHasUnk; }        ///< check for ability of storing unknowns due to priority
-    bool                  IsLocal         () const { return DDD_InfoIsLocal(GetHdr());}     ///< check if this edge is just stored on this proc
+    bool                  IsLocal         () const { return DynamicDataInterfaceExtraCL::InfoIsLocal(GetHdr());}     ///< check if this edge is just stored on this proc
     int                   GetNumDist      () const;                                         ///< get number of procs on which the edge is stored
-    int *                 GetProcList     () const { return DDD_InfoProcList(GetHdr());}    ///< get list of procs and prios of this edge
+    int *                 GetProcList     () const { return DynamicDataInterfaceExtraCL::InfoProcList(GetHdr());}    ///< get list of procs and prios of this edge
     bool                  IsExclusive     ( Priority prio=PrioMaster ) const;               ///< check if edge is exclusive
     void                  XferDelete      ()                                                ///< tell DDD that this edge will be deleted
-    { DDD_XferDeleteObj(&_dddH);
+    { DynamicDataInterfaceExtraCL::XferDeleteObj(&_dddH);
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
         }
-    void SetPrio                (DDD_PRIO p)       { _dddH.prio=p;}                         ///< set priority of this edge (no notification to DDD, use PrioChange instead!)
+    void SetPrio                (PrioT p)       { _dddH.prio=p;}                         ///< set priority of this edge (no notification to DDD, use PrioChange instead!)
 
 #endif
     const VertexCL* GetVertex     (Uint i)             const { return _Vertices[i]; }       ///< get pointer to the "left" or the "right" vertex
@@ -433,8 +435,8 @@ class FaceCL
 #ifndef _PAR
     Uint                       _Level : 8;                               // level of the face (=level according to tetras) (in parallel stored in _dddH.attr)
 #else
-    static DDD_TYPE            _dddT;                                    // DDD-type of faces
-    DDD_HEADER                 _dddH;                                    // DDD-Header of the distributed face
+    static TypeT            _dddT;                                    // DDD-type of faces
+    HEADERT                 _dddH;                                    // DDD-Header of the distributed face
 #if DROPSDebugC&DebugSubscribeC
     mutable bool subscribed_;
 #endif
@@ -443,7 +445,7 @@ class FaceCL
     FaceCL() : _Neighbors(static_cast<const TetraCL*>(0)), _Bnd(NoBndC), // standard constructor used for DDD to create an edge
                _RemoveMark(false), _lbNoNeigh(-1)
     {
-        DDD_MarkHdrInvalid(&_dddH);                                      // the header will be constructed by DDD
+        MarkHdrInvalid(&_dddH);                                      // the header will be constructed by DDD
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
@@ -491,26 +493,26 @@ class FaceCL
     Uint            GetLevel       () const { return _Level; }                          ///< get level of the face (stored within the class)
 #else
     Uint            GetLevel       () const { return _dddH.attr;}                       ///< get level of the face (stored within the DDD-Header)
-    static DDD_TYPE GetType        ()       { return _dddT;}                            ///< get DDD-type of the faces
-    DDD_PRIO        GetPrio        () const { return _dddH.prio;}                       ///< get priority of the face
-    DDD_GID         GetGID         () const { return _dddH.gid;}                        ///< get global id of the face
-    DDD_HDR         GetHdr         () const { return const_cast<DDD_HDR>(&_dddH);}      ///< get DDD-Hdr of the face
+    static TypeT GetType        ()       { return _dddT;}                            ///< get DDD-type of the faces
+    PrioT        GetPrio        () const { return _dddH.prio;}                       ///< get priority of the face
+    GIDT         GetGID         () const { return _dddH.gid;}                        ///< get global id of the face
+    HDRT         GetHdr         () const { return const_cast<HDRT>(&_dddH);}      ///< get DDD-Hdr of the face
     bool            IsGhost        () const { return GetPrio()<PrioMaster; }            ///< check if face is ghost
     bool            IsMaster       () const { return GetPrio()>=PrioMaster; }           ///< check if face is master
     bool            MayStoreUnk    () const { return GetPrio()==PrioHasUnk; }           ///< check for ability of storing unknowns due to priority
-    bool            IsLocal        () const { return DDD_InfoIsLocal(GetHdr());}        ///< check if this face is just stored on this proc
+    bool            IsLocal        () const { return DynamicDataInterfaceExtraCL::InfoIsLocal(GetHdr());}        ///< check if this face is just stored on this proc
     int             GetNumDist     () const;                                            ///< get number of procs on which the face is stored
-    int *           GetProcList    () const { return DDD_InfoProcList(GetHdr());}       ///< get list of procs and prios of this face
+    int *           GetProcList    () const { return DynamicDataInterfaceExtraCL::InfoProcList(GetHdr());}       ///< get list of procs and prios of this face
     bool            IsOnProcBnd    () const;                                            ///< check if face lies between two procs
-    DDD_PROC        GetNeighborProc() const                                             ///< get neighbor proc over the face
-        {return*(DDD_InfoProcList(const_cast<DDD_HDR>(&_dddH))+2);}
+    PROCT        GetNeighborProc() const                                             ///< get neighbor proc over the face
+        {return*(DynamicDataInterfaceExtraCL::InfoProcList(const_cast<HDRT>(&_dddH))+2);}
     void            XferDelete     ()                                                   ///< tell DDD that this face will be deleted
-        {DDD_XferDeleteObj(&_dddH);
+        {DynamicDataInterfaceExtraCL::XferDeleteObj(&_dddH);
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
         }
-    void            SetPrio  (DDD_PRIO p)   { _dddH.prio=p;}                            ///< set priority of this face (DANGER: no notification to DDD, use PrioChange instead!)
+    void            SetPrio  (PrioT p)   { _dddH.prio=p;}                            ///< set priority of this face (DANGER: no notification to DDD, use PrioChange instead!)
     idxtype         GetLbNeigh     () const { return _lbNoNeigh;}                       ///< get loadbalance-number of neighbor tetra, if this tetra is stored on a different proc
     void            SetLbNeigh (idxtype no) { _lbNoNeigh=no;}                           ///< set loadbalance-number
 #endif
@@ -587,8 +589,8 @@ class TetraCL
     Uint          _Level : 8;
 #else
     idxtype                  _lbNr;                                     // number of this Tetra used for LoadBalance with parmetis (typedef in parmetis.h), initialized with -1 as no number
-    static DDD_TYPE          _dddT;                                     // DDD-Type for Tetras, for every Tetra the same
-    DDD_HEADER               _dddH;                                     // DDD-Header
+    static TypeT          _dddT;                                     // DDD-Type for Tetras, for every Tetra the same
+    HEADERT               _dddH;                                     // DDD-Header
 # if DROPSDebugC&DebugSubscribeC
     mutable bool subscribed_;
 # endif
@@ -608,7 +610,7 @@ class TetraCL
                 _Edges(static_cast<EdgeCL*>(0)),_Faces(static_cast<FaceCL*>(0)),
                 _Parent(0), _Children(0)
     {
-        DDD_MarkHdrInvalid(&_dddH);                                     // the header will be constructed by DDD
+        MarkHdrInvalid(&_dddH);                                     // the header will be constructed by DDD
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
@@ -672,31 +674,31 @@ class TetraCL
 #ifndef _PAR
     Uint GetLevel() const { return _Level; }                                     ///< return level of tetra
 #else
-    static DDD_TYPE GetType() { return _dddT;}
+    static TypeT GetType() { return _dddT;}
     bool IsProcBnd (Uint face) const { return _Faces[face]->IsOnProcBnd(); }     ///< check if face of tetra is on processor-boundary
 
     Uint    GetLevel   () const { return _dddH.attr;}                            ///< return level of tetra (stored within DDD-Header)
-    DDD_PRIO GetPrio    () const { return _dddH.prio;}                            ///< get priority of the tetra
-    DDD_GID GetGID     () const { return _dddH.gid;}                             ///< get global id of the tetra
-    DDD_HDR GetHdr     () const { return const_cast<DDD_HDR>( &_dddH); }         ///< get Hdr of the tetra (const)
-    DDD_HDR GetHdr     ()       { return &_dddH; }                               ///< get Hdr of the tetra
+    PrioT GetPrio    () const { return _dddH.prio;}                            ///< get priority of the tetra
+    GIDT GetGID     () const { return _dddH.gid;}                             ///< get global id of the tetra
+    HDRT GetHdr     () const { return const_cast<HDRT>( &_dddH); }         ///< get Hdr of the tetra (const)
+    HDRT GetHdr     ()       { return &_dddH; }                               ///< get Hdr of the tetra
     idxtype GetLbNr    () const { return _lbNr;}                                 ///< get number for load balance
     bool    IsGhost    () const { return GetPrio()<PrioMaster; }                 ///< check if tetra is ghost
     bool    IsMaster   () const { return GetPrio()>=PrioMaster; }                ///< check if tetra is master
     bool    MayStoreUnk() const { return GetPrio()==PrioMaster; }                ///< check for ability of storing unknowns due to priority
     bool    HasGhost   () const;                                                 ///< check if tetra has a ghost-copy somewhere
     bool    HasLbNr    () const { return _lbNr>=0;}                              ///< check if this tetra got a number for load balance
-    bool    IsLocal    () const { return DDD_InfoIsLocal(GetHdr());}             ///< check if this tetra is just stored on this proc
+    bool    IsLocal    () const { return DynamicDataInterfaceExtraCL::InfoIsLocal(GetHdr());}             ///< check if this tetra is just stored on this proc
     int     GetNumDist () const;                                                 ///< get number of procs on which the tetra is stored
-    int *   GetProcList() const { return DDD_InfoProcList(GetHdr());}            ///< get list of procs and prios of this tetra
+    int *   GetProcList() const { return DynamicDataInterfaceExtraCL::InfoProcList(GetHdr());}            ///< get list of procs and prios of this tetra
     bool    IsExclusive( Priority prio=PrioMaster ) const;                       ///< check if tetra is exclusive
 
-    void SetPrio(DDD_PRIO p)     { _dddH.prio=p;}                                ///< set priority of this face (no notification to DDD, use PrioChange instead!)
+    void SetPrio(PrioT p)     { _dddH.prio=p;}                                ///< set priority of this face (no notification to DDD, use PrioChange instead!)
     void SetLbNr(idxtype nr)     { _lbNr=nr;}                                    ///< set the number for load balance
     void DelLbNr()               { _lbNr=-1;}                                    ///< clear the number for load balance
 
     void XferDelete()                                                            ///< tell DDD that this tetra will be deleted
-        { DDD_XferDeleteObj(&_dddH);
+        { DynamicDataInterfaceExtraCL::XferDeleteObj(&_dddH);
 #if DROPSDebugC&DebugSubscribeC
         subscribed_=false;
 #endif
@@ -844,7 +846,7 @@ inline VertexCL::VertexCL (const Point3DCL& Coord, Uint FirstLevel, IdCL<VertexC
 inline VertexCL::VertexCL (const Point3DCL& Coord, Uint FirstLevel, IdCL<VertexCL> id)
     : _Id(id), _Coord(Coord), _BndVerts(0), _Bin(0),_RemoveMark(false)/*, ProcSysNum(0)*/
 {
-    DDD_HdrConstructor(&_dddH, _dddT, PrioMaster, FirstLevel);
+	DynamicDataInterfaceExtraCL::HdrConstructor(&_dddH, _dddT, PrioMaster, FirstLevel);
 #if DROPSDebugC&DebugSubscribeC
     subscribed_=true;
 #endif
@@ -865,7 +867,7 @@ inline VertexCL::VertexCL (const VertexCL& v)
       _Bin(v._Bin ? new RecycleBinCL(*v._Bin) : 0),
       _RemoveMark(v._RemoveMark), Unknowns(v.Unknowns)/*, ProcSysNum(0)*/
 {
-    DDD_HdrConstructorMove(&_dddH, const_cast<DDD_HEADER*>( &v._dddH));     // The Header of the Objekt has to be moved
+	DynamicDataInterfaceExtraCL::HdrConstructorMove(&_dddH, const_cast<HEADERT*>( &v._dddH));     // The Header of the Objekt has to be moved
 #if DROPSDebugC&DebugSubscribeC
     v.subscribed_=false;
     subscribed_=true;
@@ -947,7 +949,7 @@ inline EdgeCL::EdgeCL (VertexCL* vp0, VertexCL* vp1, Uint Level, BndIdxT bnd0, B
 {
     _Vertices[0]= vp0; _Vertices[1]= vp1;
     _Bnd[0]= bnd0; _Bnd[1]= bnd1;
-    DDD_HdrConstructor(&_dddH, _dddT, PrioMaster, Level);
+    DynamicDataInterfaceExtraCL::HdrConstructor(&_dddH, _dddT, PrioMaster, Level);
 #if DROPSDebugC&DebugSubscribeC
     subscribed_=true;
 #endif
@@ -966,7 +968,7 @@ inline EdgeCL::EdgeCL (const EdgeCL& e)
       _MFR(e._MFR), _localMFR(e._localMFR), _RemoveMark(e._RemoveMark), _AccMFR(e._AccMFR),
       Unknowns(e.Unknowns)/*, ProcSysNum(0)*/
 {
-    DDD_HdrConstructorMove(&_dddH, const_cast<DDD_HEADER*>( &e._dddH));
+	DynamicDataInterfaceExtraCL::HdrConstructorMove(&_dddH, const_cast<HEADERT*>( &e._dddH));
 #if DROPSDebugC&DebugSubscribeC
     e.subscribed_=false;
     subscribed_=true;
@@ -1015,7 +1017,7 @@ inline FaceCL::FaceCL (Uint Level, BndIdxT bnd)
 inline FaceCL::FaceCL (Uint Level, BndIdxT bnd)
     : _Bnd(bnd), _RemoveMark(false), _lbNoNeigh(-1)
 {
-    DDD_HdrConstructor(&_dddH, _dddT, PrioMaster, Level);
+	DynamicDataInterfaceExtraCL::HdrConstructor(&_dddH, _dddT, PrioMaster, Level);
 #if DROPSDebugC&DebugSubscribeC
     subscribed_=true;
 #endif
@@ -1031,7 +1033,7 @@ inline FaceCL::FaceCL (const FaceCL& f)
     : _Neighbors(f._Neighbors), _Bnd(f._Bnd),
       _RemoveMark(f._RemoveMark), _lbNoNeigh(-1), Unknowns(f.Unknowns)
 {
-    DDD_HdrConstructorMove(&_dddH, const_cast<DDD_HEADER*>( &f._dddH));
+	DynamicDataInterfaceExtraCL::HdrConstructorMove(&_dddH, const_cast<HEADERT*>( &f._dddH));
 #if DROPSDebugC&DebugSubscribeC
     f.subscribed_=false;
     subscribed_=true;
@@ -1113,7 +1115,7 @@ inline TetraCL::TetraCL (VertexCL* vp0, VertexCL* vp1, VertexCL* vp2, VertexCL* 
 {
     _Vertices[0] = vp0; _Vertices[1] = vp1;
     _Vertices[2] = vp2; _Vertices[3] = vp3;
-    DDD_HdrConstructor(&_dddH, _dddT, PrioMaster, Parent==0 ? 0 : Parent->GetLevel()+1);
+    DynamicDataInterfaceExtraCL::HdrConstructor(&_dddH, _dddT, PrioMaster, Parent==0 ? 0 : Parent->GetLevel()+1);
 #if DROPSDebugC&DebugSubscribeC
     subscribed_=true;
 #endif
@@ -1126,7 +1128,7 @@ inline TetraCL::TetraCL (VertexCL* vp0, VertexCL* vp1, VertexCL* vp2, VertexCL* 
     Assert(!Parent && Parent->GetLevel()!=lvl-1, DROPSErrCL("TetraCL::TetraCL: Parent and given level does not match"), DebugRefineEasyC);
     _Vertices[0] = vp0; _Vertices[1] = vp1;
     _Vertices[2] = vp2; _Vertices[3] = vp3;
-    DDD_HdrConstructor(&_dddH, _dddT, PrioMaster, lvl);
+    DynamicDataInterfaceExtraCL::HdrConstructor(&_dddH, _dddT, PrioMaster, lvl);
 #if DROPSDebugC&DebugSubscribeC
     subscribed_=true;
 #endif
@@ -1150,7 +1152,7 @@ inline TetraCL::TetraCL (const TetraCL& T)
       _Children(T._Children ? new SArrayCL<TetraCL*,MaxChildrenC> (*T._Children) : 0),
       Unknowns(T.Unknowns)/*, ProcSysNum(0)*/
 {
-    DDD_HdrConstructorMove(&_dddH, const_cast<DDD_HEADER*>( &T._dddH));
+	DynamicDataInterfaceExtraCL::HdrConstructorMove(&_dddH, const_cast<HEADERT*>( &T._dddH));
 #if DROPSDebugC&DebugSubscribeC
     T.subscribed_=false;
     subscribed_=true;
@@ -1244,7 +1246,7 @@ inline bool TetraCL::HasGhost () const
 {
     if (IsGhost())
         return false;
-    if (DDD_InfoIsLocal(GetHdr()))
+    if (DynamicDataInterfaceExtraCL::InfoIsLocal(GetHdr()))
         return false;
     else{
         // Check if prio on other proc is ghost

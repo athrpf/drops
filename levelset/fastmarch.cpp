@@ -951,7 +951,7 @@ std::vector<IdxT>  FastMarchCL::locNumb_     = std::vector<IdxT>();
 // Definition of Gather and Scatter-functions
 //--------------------------------------------
 template<typename SimplexT>
-  int FastMarchCL::HandlerFinishedGather(DDD_OBJ objp, void* buf)
+  int FastMarchCL::HandlerFinishedGather(OBJT objp, void* buf)
 /** On sender-side collect typ and value of distributed DoF*/
 {
     SimplexT* const sp= ddd_cast<SimplexT*>(objp);              // pointer to simplex
@@ -969,7 +969,7 @@ template<typename SimplexT>
 }
 
 template<typename SimplexT>
-  int FastMarchCL::HandlerFinishedScatter(DDD_OBJ objp, void* buf)
+  int FastMarchCL::HandlerFinishedScatter(OBJT objp, void* buf)
 /** On receiver side, update value and mark of finished DoFs*/
 {
     SimplexT* const sp= ddd_cast<SimplexT*>(objp);
@@ -996,7 +996,7 @@ template<typename SimplexT>
 }
 
 template<typename SimplexT>
-  int FastMarchCL::HandlerGlobDOFGather(DDD_OBJ objp, void* buf)
+  int FastMarchCL::HandlerGlobDOFGather(OBJT objp, void* buf)
 /** On sender side collect global number of dof on simplex (if not there send NoIdx)*/
 {
     SimplexT* const sp= ddd_cast<SimplexT*>(objp);
@@ -1007,7 +1007,7 @@ template<typename SimplexT>
 }
 
 template<typename SimplexT>
-  int FastMarchCL::HandlerGlobDOFScatter(DDD_OBJ objp, void* buf)
+  int FastMarchCL::HandlerGlobDOFScatter(OBJT objp, void* buf)
 /** On recieved side collect global number of dof on simplex if sender has send a number*/
 {
     SimplexT* const sp= ddd_cast<SimplexT*>(objp);
@@ -1023,29 +1023,29 @@ template<typename SimplexT>
 
 
 // Definition of the wrappers
-extern "C" int HandlerFinishedGatherVertexC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerFinishedGatherVertexC(OBJT objp, void* buf){
     return FastMarchCL::HandlerFinishedGather<VertexCL>(objp,buf);
 }
-extern "C" int HandlerFinishedGatherEdgeC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerFinishedGatherEdgeC(OBJT objp, void* buf){
     return FastMarchCL::HandlerFinishedGather<EdgeCL>(objp,buf);
 }
-extern "C" int HandlerFinishedScatterVertexC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerFinishedScatterVertexC(OBJT objp, void* buf){
     return FastMarchCL::HandlerFinishedScatter<VertexCL>(objp,buf);
 }
-extern "C" int HandlerFinishedScatterEdgeC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerFinishedScatterEdgeC(OBJT objp, void* buf){
     return FastMarchCL::HandlerFinishedScatter<EdgeCL>(objp,buf);
 }
 
-extern "C" int HandlerGlobDOFGatherVertexC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerGlobDOFGatherVertexC(OBJT objp, void* buf){
     return FastMarchCL::HandlerGlobDOFGather<VertexCL>(objp, buf);
 }
-extern "C" int HandlerGlobDOFGatherEdgeC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerGlobDOFGatherEdgeC(OBJT objp, void* buf){
     return FastMarchCL::HandlerGlobDOFGather<EdgeCL>(objp, buf);
 }
-extern "C" int HandlerGlobDOFScatterVertexC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerGlobDOFScatterVertexC(OBJT objp, void* buf){
     return FastMarchCL::HandlerGlobDOFScatter<VertexCL>(objp,buf);
 }
-extern "C" int HandlerGlobDOFScatterEdgeC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerGlobDOFScatterEdgeC(OBJT objp, void* buf){
     return FastMarchCL::HandlerGlobDOFScatter<EdgeCL>(objp,buf);
 }
 
@@ -1061,9 +1061,9 @@ void FastMarchCL::DistributeFinished()
     tmpTyp_= Typ_;
     tmpv_  =v_->Data;
 
-    DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(),  sizeof(CoupMarkValST),
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(),  sizeof(CoupMarkValST),
                    HandlerFinishedGatherVertexC,   HandlerFinishedScatterVertexC );
-    DDD_IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(CoupMarkValST),
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(CoupMarkValST),
                    HandlerFinishedGatherEdgeC,   HandlerFinishedScatterEdgeC );
 }
 
@@ -1149,9 +1149,9 @@ void FastMarchCL::CreateGlobNumb()
     }
 
     // Collect global
-    DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(), sizeof(IdxT),
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(), sizeof(IdxT),
                    HandlerGlobDOFGatherVertexC,    HandlerGlobDOFScatterVertexC );
-    DDD_IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(IdxT),
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(IdxT),
                    HandlerGlobDOFGatherEdgeC,    HandlerGlobDOFScatterEdgeC );
 
 
@@ -1486,7 +1486,7 @@ void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero, int meth
     // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
     if (method<0 || method>1)
         throw DROPSErrCL("FastMarchCL::InitZeroPer: unknown method");
-        
+
     const Uint idx= v_->RowIdx->GetIdx(),
                lvl= v_->GetLevel();
     int        sign[10];

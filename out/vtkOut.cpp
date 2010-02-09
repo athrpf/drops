@@ -156,7 +156,7 @@ void VTKOutCL::GatherCoord()
 #endif
 
 #ifdef _PAR
-void VTKOutCL::GatherCoord(VectorBaseCL<DDD_GID>& gidList, VectorBaseCL<float>& coordList)
+void VTKOutCL::GatherCoord(VectorBaseCL<GIDT>& gidList, VectorBaseCL<float>& coordList)
 /** This function only exists for the parallel version of DROPS. In sequential
     call this function without any arguments. <p>
     Iterate over all master tetrahedra and gather gids and coordinats.
@@ -204,7 +204,7 @@ void VTKOutCL::GatherCoord(VectorBaseCL<DDD_GID>& gidList, VectorBaseCL<float>& 
 }
 
 
-void VTKOutCL::CommunicateCoords(const VectorBaseCL<DDD_GID>& gidList, const VectorBaseCL<float>& coordList)
+void VTKOutCL::CommunicateCoords(const VectorBaseCL<GIDT>& gidList, const VectorBaseCL<float>& coordList)
 /** <p> In sequential mode: Copy local list into global list and use the
     index-describer to map vertices/edges to an id.</p>
     <p> In parallel mode: Send coordinates and gids of exclusive vertices and
@@ -229,7 +229,7 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<DDD_GID>& gidList, const Vec
 
         // Create memory
         coords_.resize(3*numPoints_);
-        DDD_GID *recvGID= new DDD_GID[maxPoints];
+        GIDT *recvGID= new GIDT[maxPoints];
 
         // Recieve Coords and GIDs from all processes
         int recievePos= 0, recieved=0, counter=0;
@@ -239,7 +239,7 @@ void VTKOutCL::CommunicateCoords(const VectorBaseCL<DDD_GID>& gidList, const Vec
                  // Get number of recieved gids and coord
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, tag_, stat);
-                recieved = ProcCL::GetCount<DDD_GID>(stat);
+                recieved = ProcCL::GetCount<GIDT>(stat);
 
                 // Recieve GIDs and Coords
                 ProcCL::Recv(recvGID, recieved, p, tag_);
@@ -333,7 +333,7 @@ void VTKOutCL::GatherTetra()
 
 #else           // _PAR
 
-void VTKOutCL::GatherTetra(VectorBaseCL<DDD_GID>& locConnectList) const
+void VTKOutCL::GatherTetra(VectorBaseCL<GIDT>& locConnectList) const
 /** Gather connectivities of local tetras in a field. This function is only
     present in the parallel version of DROPS.
 \param locConnectList List of local connectivities*/
@@ -367,7 +367,7 @@ void VTKOutCL::GatherTetra(VectorBaseCL<DDD_GID>& locConnectList) const
     Assert(pos==4*numTetra, DROPSErrCL("VTKOutCL::GatherTetra: Mismatching number of tetras"), ~0);
 }
 
-void VTKOutCL::CommunicateTetra(const VectorBaseCL<DDD_GID>& locConnectList)
+void VTKOutCL::CommunicateTetra(const VectorBaseCL<GIDT>& locConnectList)
 /** Send all local connectivities to master or copy in sequiental mode.*/
 {
     // get number of tetras
@@ -392,7 +392,7 @@ void VTKOutCL::CommunicateTetra(const VectorBaseCL<DDD_GID>& locConnectList)
                 // Get number of recieved tetras
                 ProcCL::StatusT stat;
                 ProcCL::Probe(p, tag_+2, stat);
-                recieved = ProcCL::GetCount<DDD_GID>(stat);
+                recieved = ProcCL::GetCount<GIDT>(stat);
                 // Recieve tetras
                 ProcCL::Recv(Addr(tetras_)+recievePos, recieved, p, tag_+2);
                 // increment next free position
@@ -619,12 +619,12 @@ void VTKOutCL::PutGeom(double time, __UNUSED__  bool writeDistribution)
         Clear();
 
         // Collect Coords and GIDs as well as tetra information
-        VectorBaseCL<DDD_GID>  locGidList;
+        VectorBaseCL<GIDT>  locGidList;
         VectorBaseCL<float> locCoordList;
         GatherCoord( locGidList, locCoordList);
         CommunicateCoords( locGidList, locCoordList);
 
-        VectorBaseCL<DDD_GID> locConnectList;
+        VectorBaseCL<GIDT> locConnectList;
         GatherTetra( locConnectList);
         CommunicateTetra( locConnectList);
 

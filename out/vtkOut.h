@@ -64,9 +64,9 @@ class VTKOutCL
     typedef std::map<const EdgeCL*, Uint>     edgeAddressMapT;
     typedef VectorBaseCL<Uint>              TetraVecT;
 #else
-    typedef std::map < DDD_GID, Uint > GIDMapT;     // map GID to number
+    typedef std::map < GIDT, Uint > GIDMapT;     // map GID to number
     typedef std::vector< Uint >        ProcOffsetCT;// position in tetras_ where all tetras of a processor are lying
-    typedef VectorBaseCL<DDD_GID>      TetraVecT;
+    typedef VectorBaseCL<GIDT>      TetraVecT;
 #endif
 
     const MultiGridCL& mg_;                         // reference to the multigrid
@@ -120,9 +120,9 @@ class VTKOutCL
     void GatherCoord();
 #else
     /// Gather coordinates and (g)ids
-    void GatherCoord( VectorBaseCL<DDD_GID>&, VectorBaseCL<float>&);
+    void GatherCoord( VectorBaseCL<GIDT>&, VectorBaseCL<float>&);
     /// Communicate coords to master
-    void CommunicateCoords(const VectorBaseCL<DDD_GID>&, const VectorBaseCL<float>&);
+    void CommunicateCoords(const VectorBaseCL<GIDT>&, const VectorBaseCL<float>&);
 #endif
     /// Write coordinates into a vtk legacy file
     void WriteCoords();
@@ -135,9 +135,9 @@ class VTKOutCL
     void GatherTetra();
 #else
     /// Gather tetras
-    void GatherTetra( VectorBaseCL<DDD_GID>&) const;
+    void GatherTetra( VectorBaseCL<GIDT>&) const;
     /// Communicate tetras
-    void CommunicateTetra(const VectorBaseCL<DDD_GID>&);
+    void CommunicateTetra(const VectorBaseCL<GIDT>&);
     /// Write out the distribution of tetrahedra as CELL_DATA
     void WriteDistribution();
 #endif

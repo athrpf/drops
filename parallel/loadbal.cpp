@@ -33,7 +33,7 @@ namespace DROPS{
 ****************************************************************************/
 // static initialisation
 Uint    LoadBalCL::TriangLevel_ = 0;
-DDD_IF  LoadBalCL::FaceIF_      = 0;
+IFT LoadBalCL::FaceIF_      = 0;
 idxtype LoadBalCL::myfirstVert_ = 0;
 
 
@@ -42,8 +42,8 @@ idxtype LoadBalCL::myfirstVert_ = 0;
 *****************************************************************************
 * Converts C++ functions to C functions, so DDD can use them correctly      *
 ****************************************************************************/
-extern "C" int HandlerScatterC( DDD_OBJ o, void *d) {return LoadBalCL::HandlerScatter(o,d);}
-extern "C" int HandlerGatherC ( DDD_OBJ o, void *d) {return LoadBalCL::HandlerGather(o,d);}
+extern "C" int HandlerScatterC( OBJT o, void *d) {return LoadBalCL::HandlerScatter(o,d);}
+extern "C" int HandlerGatherC ( OBJT o, void *d) {return LoadBalCL::HandlerGather(o,d);}
 
 
 /// \brief Constructor
@@ -86,8 +86,8 @@ void LoadBalCL::InitIF()
     soll, m�ssen auch LB-Nummern auf Ghosts versendet werden!
 */
 {
-    DDD_TYPE  O[8];
-    DDD_PRIO  A[3], B[3];
+    TypeT  O[8];
+    PrioT  A[3], B[3];
     /* O is an array of object types, A and B are arrays of priorities */
 
     /* interface of faces */
@@ -101,20 +101,20 @@ void LoadBalCL::InitIF()
     // die Lastverteilung von anderen Triangulierungen oder die Lastverteilung
     // fuer Mehrgitterverfahren muessen die Ghosts evtl. beruecksichtigt werden...
 
-    FaceIF_ = DDD_IFDefine(1, O, 2, A, 2, B);
-    DDD_IFSetName( FaceIF_, (char*)"Face-Interface for LB");
+    FaceIF_ = DynamicDataInterfaceCL::IFDefine(1, O, 2, A, 2, B);
+    DynamicDataInterfaceCL::IFSetName( FaceIF_, (char*)"Face-Interface for LB");
 }
 
 
 /// \brief Communicate adjacencies between processors
 void LoadBalCL::CommunicateAdjacency()
 {
-    DDD_IFExchange( FaceIF_, sizeof(idxtype), &HandlerGatherC, &HandlerScatterC);
+	DynamicDataInterfaceCL::IFExchange( FaceIF_, sizeof(idxtype), &HandlerGatherC, &HandlerScatterC);
 }
 
 
 /// \brief Gather adjacency information at processor-boundary
-int LoadBalCL::HandlerGather( DDD_OBJ obj, void *buf)
+int LoadBalCL::HandlerGather( OBJT obj, void *buf)
 /** This function is called by DDD within the CommunicateAdjacency procedure
     \param obj a pointer to a face on a processor boundary
     \param buf buffer, where to place the load balancing number
@@ -143,7 +143,7 @@ int LoadBalCL::HandlerGather( DDD_OBJ obj, void *buf)
 
 
 /// \brief Gather adjacency information at processor-boundary
-int LoadBalCL::HandlerScatter( DDD_OBJ obj, void *buf)
+int LoadBalCL::HandlerScatter( OBJT obj, void *buf)
 /**  Store the recieved load balance number in the FaceCL
     \param obj a pointer to a face on a processor boundary
     \param buf recieved load balancing number
@@ -470,7 +470,7 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     ProcCL::Gather( (int)myVerts_, vtx_rcv, -1);                // communicate the number of nodes
 
     vtxdist_[0]= 0;                                             // proc 0 starts with node 0
-    for (int i=0; i<DDD_InfoProcs(); ++i)
+    for (int i=0; i<DynamicDataInterfaceCL::InfoProcs(); ++i)
         vtxdist_[i+1]= vtxdist_[i] + vtx_rcv[i];                // proc i+1 starts with node \sum_{j=0}^i nodesOnProc(i)
     myfirstVert_= vtxdist_[ProcCL::MyRank()];                   // vtxdist_[i] is starting node of proc i
 
@@ -561,7 +561,7 @@ void LoadBalCL::ParPartKWay()
     int    wgtflag = 3,                 // Weights on vertices and adjacencies are given
            numflag = 0,                 // numbering of verts starts by 0 (C-Style)
            ncon    = 1,                 // one weight per vertex
-           nparts  = DDD_InfoProcs();   // number of subdomains (per proc one)
+           nparts  = DynamicDataInterfaceCL::InfoProcs();   // number of subdomains (per proc one)
     float *tpwgts  = new float[nparts], // weight of partion
            ubvec   = ubvec_;            // imbalace tolerance for eacht vertex weight
     int   *options = new int[1];        // default options
@@ -605,7 +605,7 @@ void LoadBalCL::AdaptRepart(float quality)
     int    wgtflag = 3,                 // Weights on vertices and adjacencies are given
            numflag = 0,                 // numbering of verts starts by 0 (C-Style)
            ncon    = 1,                 // one weight per vertex
-           nparts  = DDD_InfoProcs();   // number of subdomains (per proc one)
+           nparts  = DynamicDataInterfaceCL::InfoProcs();   // number of subdomains (per proc one)
     float *tpwgts  = new float[nparts], // weight of partion
            itr     = quality,           // how much an exchange costs
            ubvec   = ubvec_;            // imbalace tolerance for eacht vertex weight
@@ -643,7 +643,7 @@ void LoadBalCL::SerPartKWay(PartMethod meth)
 
     int    wgtflag    = 3,                  // Weights on vertices and adjacencies are given
            numflag    = 0,                  // numbering of verts starts by 0 (C-Style)
-           nparts     = DDD_InfoProcs(),    // number of subdomains (per proc one)
+           nparts     = DynamicDataInterfaceCL::InfoProcs(),    // number of subdomains (per proc one)
            n          = myVerts_,
            options[5] = {0,0,0,0,0};        // default options
 
@@ -675,7 +675,7 @@ void LoadBalCL::Migrate()
 */
 {
 #if DROPSDebugC
-    DDD_GID observe1 = 207360, observe2=0, observe3=0;
+	GIDT observe1 = 207360, observe2=0, observe3=0;
 #endif
     if (ProcCL::MyRank()==0)
         Comment("- Start Migrating"<<std::endl, DebugLoadBalC);
@@ -684,10 +684,10 @@ void LoadBalCL::Migrate()
 
     movedMultiNodes_=0;
 
-    DDD_PROC dest;
+    PROCT dest;
     for (LbIteratorCL it= GetLbTetraBegin(), end= GetLbTetraEnd(); it!=end; ++it)
     {
-        dest =  static_cast<DDD_PROC>(part_[it->GetLbNr()]);
+        dest =  static_cast<PROCT>(part_[it->GetLbNr()]);
 
         if (dest==me) continue;
         movedMultiNodes_++;
@@ -706,9 +706,9 @@ void LoadBalCL::Migrate()
         }
         else
         { // E2-Xfer
-            DDD_PRIO asPrio=PrioGhost;
+        	PrioT asPrio=PrioGhost;
 
-            for( int* proclist= DDD_InfoProcList( it->GetHdr() ); *proclist!=-1; proclist+= 2){
+            for( int* proclist= DynamicDataInterfaceExtraCL::InfoProcList( it->GetHdr() ); *proclist!=-1; proclist+= 2){
                 if (*proclist==dest){
                     if (proclist[1]>=PrioMaster){
                         asPrio=PrioMaster;

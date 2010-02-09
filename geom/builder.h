@@ -38,6 +38,10 @@
 #include <istream>
 #include <map>
 
+#ifdef _PAR
+#include "parallel/pardistributeddata.h"
+#endif
+
 namespace DROPS
 {
 
@@ -558,9 +562,9 @@ template <typename SimplexT>
 /// the simplex was a distributed object while serialization notify DDD about
 /// the this distributed object
 {
-    DDD_PRIO prio;
+	PrioT prio;
     int numDist, distProc;
-    DDD_GID oldGid;
+    GIDT oldGid;
 
     is >> prio >> numDist;
     s.SetPrio( prio);
@@ -569,7 +573,7 @@ template <typename SimplexT>
         for (int i=0; i<numDist; ++i){
             is >> distProc;
             Assert( distProc!=ProcCL::MyRank(), DROPSErrCL("FileBuilderCL::ReadParInfo: Cannot identify with myself"), DebugParallelC);
-            DDD_IdentifyNumber( s.GetHdr(), distProc, oldGid);
+            DynamicDataInterfaceCL::IdentifyNumber( s.GetHdr(), distProc, oldGid);
         }
     }
 }

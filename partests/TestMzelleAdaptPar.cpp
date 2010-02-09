@@ -33,7 +33,6 @@
 #include "parallel/partime.h"
 #include "parallel/exchange.h"
 #include "parallel/logger.h"
-#include <ddd.h>
 
  // include geometric computing
 #include "geom/multigrid.h"

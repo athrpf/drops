@@ -235,9 +235,9 @@ class ExchangeCL
     /// \name Helper function for DDD, should be private ...
     //@{
     template <typename SimplexT>
-      static int HandlerGatherSysnums(DDD_OBJ objp, void* buf);
+      static int HandlerGatherSysnums(OBJT objp, void* buf);
     template <typename SimplexT>
-      static int HandlerScatterSysnums(DDD_OBJ objp, void* buf);
+      static int HandlerScatterSysnums(OBJT objp, void* buf);
     //@}
     inline Ulint GetNumLocIdx()  const;                                                 // get the number of local sysnums
     inline Ulint GetNumDistIdx() const;                                                 // get the number of distributed sysnums
@@ -304,10 +304,10 @@ class ExchangeCL
 
 /// \name Wrapper for gathering and scattering data to create the ExchangeCL
 //@{
-extern "C" int HandlerGatherSysnumsVertexC(DDD_OBJ, void*);
-extern "C" int HandlerScatterSysnumsVertexC(DDD_OBJ, void*);
-extern "C" int HandlerGatherSysnumsEdgeC(DDD_OBJ, void*);
-extern "C" int HandlerScatterSysnumsEdgeC(DDD_OBJ, void*);
+extern "C" int HandlerGatherSysnumsVertexC(OBJT, void*);
+extern "C" int HandlerScatterSysnumsVertexC(OBJT, void*);
+extern "C" int HandlerGatherSysnumsEdgeC(OBJT, void*);
+extern "C" int HandlerScatterSysnumsEdgeC(OBJT, void*);
 //@}
 
 

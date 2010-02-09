@@ -43,10 +43,10 @@ namespace DROPS
 // static members of parallel environment
 //
 #ifdef _PAR
-DDD_TYPE VertexCL::_dddT =0;
-DDD_TYPE EdgeCL::_dddT=0;
-DDD_TYPE FaceCL::_dddT=0;
-DDD_TYPE TetraCL::_dddT=0;
+TypeT VertexCL::_dddT =0;
+TypeT EdgeCL::_dddT=0;
+TypeT FaceCL::_dddT=0;
+TypeT TetraCL::_dddT=0;
 #endif
 
 //
@@ -863,7 +863,7 @@ void VertexCL::DebugInfo(std::ostream& os) const
     os << "RemoveMark " << IsMarkedForRemovement() << "  ";
 
 #ifdef _PAR
-    os << "OnProc " << DDD_InfoMe() << " Priority: " << PrioToString(GetPrio());
+    os << "OnProc " << DynamicDataInterfaceCL::InfoMe() << " Priority: " << PrioToString(GetPrio());
 #endif
     os << "\n Coord ";
     for (Uint i=0; i<3; ++i) os << _Coord[i] << " ";
@@ -955,7 +955,7 @@ void EdgeCL::DebugInfo (std::ostream& os) const
 #endif
     os << " Level " << GetLevel() << " ";
 #ifdef _PAR
-    os << " OnProc " << DDD_InfoMe() << " Priority: " << PrioToString(GetPrio());
+    os << " OnProc " << DynamicDataInterfaceCL::InfoMe() << " Priority: " << PrioToString(GetPrio());
 #endif
     os << "\n Vertices "
 #ifndef _PAR
@@ -1175,7 +1175,7 @@ Check for:
 #endif
     }
 #ifdef _PAR
-    if ( IsGhost() && DDD_InfoIsLocal( const_cast<DDD_HDR>(&_dddH)) )
+    if ( IsGhost() && DynamicDataInterfaceExtraCL::InfoIsLocal( const_cast<HDRT>(&_dddH)) )
     {
         sane= false;
         os << "Found ghost tetra without master. ";
@@ -1256,7 +1256,7 @@ Check for:
         }
     }
 #ifdef _PAR
-    const DDD_PRIO prio= HasGhost() ? static_cast<DDD_PRIO>(PrioVGhost) : GetPrio();
+    const PrioT prio= HasGhost() ? static_cast<PrioT>(PrioVGhost) : GetPrio();
     for (Uint i= 0; i<NumVertsC; ++i)
         if (GetVertex(i)->GetPrio() < prio)
         {

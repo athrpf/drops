@@ -26,7 +26,6 @@
 #include "parallel/parallel.h"          // proc handling, reduce operations, ...
 #include "parallel/partime.h"           // parallel time-messurement
 #include "parallel/exchange.h"          // transfer of numerical datas
-#include <ddd.h>
 
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor

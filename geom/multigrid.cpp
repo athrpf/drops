@@ -137,7 +137,7 @@ void MultiGridCL::UnrefineGrid (Uint Level)
     std::for_each(_Edges[nextLevel].begin(),    _Edges[nextLevel].end(),    std::mem_fun_ref(&EdgeCL::SetRemoveMark));
     std::for_each(_Faces[nextLevel].begin(),    _Faces[nextLevel].end(),    std::mem_fun_ref(&FaceCL::SetRemoveMark));
 
-    DDD_XferBegin();
+    DynamicDataInterfaceCL::XferBegin();
 
     for (TetraIterator tIt(_Tetras[Level].begin()), tEnd(_Tetras[Level].end()); tIt!=tEnd; )
     {
@@ -260,7 +260,7 @@ void MultiGridCL::UnrefineGrid (Uint Level)
                  std::mem_fun_ref(&VertexCL::XferDelete), std::mem_fun_ref(&VertexCL::IsMarkedForRemovement) );
 
     // now DDD can internally delete references and information!
-    DDD_XferEnd();
+    DynamicDataInterfaceCL::XferEnd();
 
     // kill ghost tetras, that aren't need any more
     if (!withUnknowns_){
@@ -307,7 +307,7 @@ void MultiGridCL::RefineGrid (Uint Level)
     Comment("Refining grid " << Level << std::endl, DebugRefineEasyC);
 
 #ifdef _PAR
-        DDD_IdentifyBegin();    // new simplices must be identified by DDD
+    DynamicDataInterfaceCL::IdentifyBegin();    // new simplices must be identified by DDD
 #endif
 
     const Uint nextLevel(Level+1);
@@ -351,7 +351,7 @@ void MultiGridCL::RefineGrid (Uint Level)
     IncrementVersion();
 
 #ifdef _PAR
-        DDD_IdentifyEnd();
+    DynamicDataInterfaceCL::IdentifyEnd();
 #endif
 
     Comment("Refinement of grid " << Level << " done." << std::endl, DebugRefineEasyC);
@@ -420,11 +420,11 @@ void MultiGridCL::Refine()
             _Faces[l].remove_if( std::mem_fun_ref(&FaceCL::IsMarkedForRemovement) );
         }
         if (killedGhostTetra_){
-            // todo of: Kann man das DDD_XferBegin und DDD_XferEnd aus der for-schleife herausziehen?
-            DDD_XferBegin();
+            // todo of: Kann man das DynamicDataInterfaceCL::XferBegin und DDD_XferEnd aus der for-schleife herausziehen?
+        	DynamicDataInterfaceCL::XferBegin();
             for (std::list<TetraIterator>::iterator it=toDelGhosts_.begin(); it!=toDelGhosts_.end(); ++it)
                 (*it)->XferDelete();
-            DDD_XferEnd();
+            DynamicDataInterfaceCL::XferEnd();
             for (std::list<TetraIterator>::iterator it=toDelGhosts_.begin(); it!=toDelGhosts_.end(); ++it)
                 _Tetras[(*it)->GetLevel()].erase(*it);
             toDelGhosts_.resize(0);

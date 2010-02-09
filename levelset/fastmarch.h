@@ -152,13 +152,13 @@ class FastMarchCL
 
     // handlers for DDD (so they are static)
     template<class SimplexT>
-      static int HandlerFinishedGather(DDD_OBJ, void*);         ///< Gather finished DoF
+      static int HandlerFinishedGather(OBJT, void*);         ///< Gather finished DoF
     template<class SimplexT>
-      static int HandlerFinishedScatter(DDD_OBJ, void*);        ///< Scatter finished DoF
+      static int HandlerFinishedScatter(OBJT, void*);        ///< Scatter finished DoF
     template<class SimplexT>
-      static int HandlerGlobDOFGather(DDD_OBJ, void*);          ///< Gather global number of DoFs
+      static int HandlerGlobDOFGather(OBJT, void*);          ///< Gather global number of DoFs
     template<class SimplexT>
-      static int HandlerGlobDOFScatter(DDD_OBJ, void*);         ///< Scatter global number of DoFs
+      static int HandlerGlobDOFScatter(OBJT, void*);         ///< Scatter global number of DoFs
 
     inline IdxT GetLocNum(IdxT globNum);                        ///< Get local number of a DoF from global number
     inline IdxT GetGlobNum(IdxT locNum);                        ///< Get global number of a local DoF
@@ -188,15 +188,15 @@ inline void FastMarchCL::Normalize( double& b1, double& b2) const
 // Declaration of wrapper for gathering
 // and scattering data for giving these to DDD
 //--------------------------------------------
-extern "C" int HandlerFinishedGatherVertexC(DDD_OBJ objp, void* buf);
-extern "C" int HandlerFinishedGatherEdgeC(DDD_OBJ objp, void* buf);
-extern "C" int HandlerFinishedScatterVertexC(DDD_OBJ objp, void* buf);
-extern "C" int HandlerFinishedScatterEdgeC(DDD_OBJ objp, void* buf);
+extern "C" int HandlerFinishedGatherVertexC(OBJT objp, void* buf);
+extern "C" int HandlerFinishedGatherEdgeC(OBJT objp, void* buf);
+extern "C" int HandlerFinishedScatterVertexC(OBJT objp, void* buf);
+extern "C" int HandlerFinishedScatterEdgeC(OBJT objp, void* buf);
 
-extern "C" int HandlerGlobDOFGatherVertexC(DDD_OBJ objp, void* buf);
-extern "C" int HandlerGlobDOFGatherEdgeC(DDD_OBJ objp, void* buf);
-extern "C" int HandlerGlobDOFScatterVertexC(DDD_OBJ objp, void* buf);
-extern "C" int HandlerGlobDOFScatterEdgeC(DDD_OBJ objp, void* buf);
+extern "C" int HandlerGlobDOFGatherVertexC(OBJT objp, void* buf);
+extern "C" int HandlerGlobDOFGatherEdgeC(OBJT objp, void* buf);
+extern "C" int HandlerGlobDOFScatterVertexC(OBJT objp, void* buf);
+extern "C" int HandlerGlobDOFScatterEdgeC(OBJT objp, void* buf);
 
 // Definition of inline functions
 //--------------------------------------------

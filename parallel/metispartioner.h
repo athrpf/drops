@@ -31,7 +31,6 @@
 #include "parallel/loadbal.h"
 #include <parmetis.h>
 #include <metis.h>
-#include <ddd.h>
 
 #include "parallel/partime.h"
 #include "parallel/parmultigrid.h"
@@ -77,7 +76,7 @@ public:
 * The class constructor
 */
 MetisPartionerCL():
- wgtflag_(3),numflag_(0),ncon_(1),nparts_(DDD_InfoProcs()), ubvec_(1.05)
+ wgtflag_(3),numflag_(0),ncon_(1),nparts_(DynamicDataInterfaceCL::InfoProcs()), ubvec_(1.05)
 {
     tpwgts_ = new float[nparts_],
     options_ = new int[1];

@@ -25,9 +25,9 @@
 #ifndef DROPS_INTERFACE_H
 #define DROPS_INTERFACE_H
 
-#include <ddd.h>
 #include <iostream>
 #include "geom/multigrid.h"
+#include "parallel/pardistributeddata.h"
 
 namespace DROPS{
 
@@ -46,14 +46,14 @@ template <class SimplexT>
 class InterfaceCL
 {
   private:
-    static DDD_IF SimplexIF_;
+    static IFT SimplexIF_;
 
   public:
     InterfaceCL() {}
     ~InterfaceCL() {}
 
     static void InitIF();                   // Init Interface over Master-Simplices
-    static inline DDD_IF GetIF();           // Get Interface over Simplices
+    static inline IFT GetIF();           // Get Interface over Simplices
     static void ShowIF();                   // Display Simplex-Interface
 };
 
@@ -74,22 +74,22 @@ template<typename SimplexT>
 class AllSimplexIFCL
 {
   private:
-    static DDD_IF AllSimplexIF_;
+    static IFT AllSimplexIF_;
 
   public:
     AllSimplexIFCL() {}
     ~AllSimplexIFCL() {}
 
     static void InitIF();                   // Init interface
-    static DDD_IF GetIF();                  // Get Interface
+    static IFT GetIF();                  // Get Interface
     static void ShowIF();                   // Display interface
 };
 
 
 // init of static members
 //------------------------
-template <class SimplexT> DDD_IF InterfaceCL<SimplexT>::SimplexIF_=0;
-template <class SimplexT> DDD_IF AllSimplexIFCL<SimplexT>::AllSimplexIF_=0;
+template <class SimplexT> IFT InterfaceCL<SimplexT>::SimplexIF_=0;
+template <class SimplexT> IFT AllSimplexIFCL<SimplexT>::AllSimplexIF_=0;
 
 
 // template and inline functions
@@ -97,7 +97,7 @@ template <class SimplexT> DDD_IF AllSimplexIFCL<SimplexT>::AllSimplexIF_=0;
 
 /// \brief Get the Interface over Simplices
 template <class SimplexT>
-  DDD_IF InterfaceCL<SimplexT>::GetIF()
+IFT InterfaceCL<SimplexT>::GetIF()
 {
     return SimplexIF_;
 }
@@ -111,17 +111,17 @@ template <class SimplexT>
         std::cout << "=====> InterfaceCL: Allready defined that Interface!" << std::endl;
     }
 
-    DDD_TYPE  O[1];
-    DDD_PRIO  A[1], B[1];
+    TypeT  O[1];
+    PrioT  A[1], B[1];
 
     O[0] = SimplexT::GetType();
     A[0] = PrioHasUnk;// A[1]= PrioVGhost; A[2]= PrioGhost;
     B[0] = PrioHasUnk;// B[1]= PrioVGhost; B[2]= PrioGhost;
 
-    SimplexIF_ = DDD_IFDefine(1, O, 1, A, 1, B); // only Master
+    SimplexIF_ = DynamicDataInterfaceCL::IFDefine(1, O, 1, A, 1, B); // only Master
     char name[40];
     std::sprintf(name, "Assemble IF for Type %d", SimplexT::GetType());
-    DDD_IFSetName( SimplexIF_, name);
+    DynamicDataInterfaceCL::IFSetName( SimplexIF_, name);
 }
 
 
@@ -129,13 +129,13 @@ template <class SimplexT>
 template <class SimplexT>
   void InterfaceCL<SimplexT>::ShowIF()
 {
-    DDD_IFDisplay(SimplexIF_);
+	DynamicDataInterfaceCL::IFDisplay(SimplexIF_);
 }
 
 
 /// \brief Get the Interface over Simplices
 template <class SimplexT>
-  DDD_IF AllSimplexIFCL<SimplexT>::GetIF()
+IFT AllSimplexIFCL<SimplexT>::GetIF()
 {
     Assert(AllSimplexIF_!=0, DROPSErrCL("AllSimplexIFCL::GetIF: Interface not init"), DebugParallelNumC);
     return AllSimplexIF_;
@@ -150,17 +150,17 @@ template <class SimplexT>
         std::cout << "=====> InterfaceCL: Allready defined that Interface!" << std::endl;
     }
 
-    DDD_TYPE  O[1];
-    DDD_PRIO  A[4], B[4];
+    TypeT  O[1];
+    PrioT  A[4], B[4];
 
     O[0] = SimplexT::GetType();
     A[0] = PrioHasUnk; A[1]= PrioMaster; A[2]= PrioGhost; A[3]=PrioVGhost;
     B[0] = PrioHasUnk; B[1]= PrioMaster; B[2]= PrioGhost; B[3]=PrioVGhost;
 
-    AllSimplexIF_ = DDD_IFDefine(1, O, 4, A, 4, B);
+    AllSimplexIF_ = DynamicDataInterfaceCL::IFDefine(1, O, 4, A, 4, B);
     char name[50];
     std::sprintf(name, "All Simplex Interface for type %d", SimplexT::GetType());
-    DDD_IFSetName( AllSimplexIF_, name);
+    DynamicDataInterfaceCL::IFSetName( AllSimplexIF_, name);
 }
 
 
@@ -168,7 +168,7 @@ template <class SimplexT>
 template <class SimplexT>
   void AllSimplexIFCL<SimplexT>::ShowIF()
 {
-    DDD_IFDisplay(AllSimplexIF_);
+	DynamicDataInterfaceCL::IFDisplay(AllSimplexIF_);
 }
 
 

@@ -152,16 +152,16 @@ void ExchangeCL::clear()
 }
 
 // Definition of the wrappers for DDD
-extern "C" int HandlerGatherSysnumsVertexC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerGatherSysnumsVertexC(OBJT objp, void* buf){
     return ExchangeCL::HandlerGatherSysnums<VertexCL>(objp, buf);
 }
-extern "C" int HandlerScatterSysnumsVertexC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerScatterSysnumsVertexC(OBJT objp, void* buf){
     return ExchangeCL::HandlerScatterSysnums<VertexCL>(objp, buf);
 }
-extern "C" int HandlerGatherSysnumsEdgeC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerGatherSysnumsEdgeC(OBJT objp, void* buf){
     return ExchangeCL::HandlerGatherSysnums<EdgeCL>(objp, buf);
 }
-extern "C" int HandlerScatterSysnumsEdgeC(DDD_OBJ objp, void* buf){
+extern "C" int HandlerScatterSysnumsEdgeC(OBJT objp, void* buf){
     return ExchangeCL::HandlerScatterSysnums<EdgeCL>(objp, buf);
 }
 
@@ -207,14 +207,14 @@ void ExchangeCL::TransferSendOrder(bool CreateMap)
     const int buffersize= 6 * maxNeighs_*sizeof(IdxT);
     // if there are unknowns on vertices
     if (RowIdx_->NumUnknownsVertex()>0){
-        DDD_IFExchange(InterfaceCL<VertexCL>::GetIF(),  // exchange datas over distributed vertices
+    	DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(),  // exchange datas over distributed vertices
                        buffersize,                      // number of datas to be exchanged
                        HandlerGatherSysnumsVertexC,     // how to gather datas
                        HandlerScatterSysnumsVertexC     // how to scatter datas
                       );
     }
     if (RowIdx_->NumUnknownsEdge()>0){
-        DDD_IFExchange(InterfaceCL<EdgeCL>::GetIF(),    // exchange datas over distributed edges
+    	DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(),    // exchange datas over distributed edges
                        buffersize,                      // number of datas to be exchanged
                        HandlerGatherSysnumsEdgeC,       // how to gather datas
                        HandlerScatterSysnumsEdgeC       // how to scatter datas

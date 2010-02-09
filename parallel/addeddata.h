@@ -26,7 +26,7 @@
 ///   data the type of the numerical data is submitted too. Maybe it would make more
 ///   sence, to use XferAddDataX!
 
-#include <ddd.h>
+#include "parallel/distributeddatatypes.h"
 #include "misc/utils.h"
 #include "misc/container.h"
 
@@ -43,7 +43,7 @@ namespace DROPS
 class AddedScalCL
 {
   private:
-    static DDD_TYPE _dddT;
+    static TypeT _dddT;
     static void Declare();          // implemented in "parallel/parmultigrid.cpp"
     static void Define();
 
@@ -56,7 +56,7 @@ class AddedScalCL
 
     Uint     GetIdx()  const {return idxVecDesc_;}
     double   GetData() const {return data_;}
-    static DDD_TYPE GetType()       {return _dddT;}
+    static TypeT GetType()       {return _dddT;}
 
     void SetIdx(Uint i) {idxVecDesc_=i;}
     void SetData(double d) {data_=d;}
@@ -67,7 +67,7 @@ class AddedScalCL
 class AddedVecCL
 {
   private:
-    static DDD_TYPE _dddT;
+    static TypeT _dddT;
     static void Declare();      // implemented in "parallel/parmultigrid.cpp"
     static void Define();
 
@@ -80,7 +80,7 @@ class AddedVecCL
 
     Uint       GetIdx()  const {return idxVecDesc_;}
     Point3DCL& GetData()       {return data_;}
-    static DDD_TYPE   GetType()       {return _dddT;}
+    static TypeT   GetType()       {return _dddT;}
 
     void SetIdx(Uint i)              {idxVecDesc_=i;}
     void SetData(const Point3DCL& d) {data_=d;}

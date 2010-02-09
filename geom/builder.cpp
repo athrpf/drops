@@ -1507,9 +1507,9 @@ void EmptyReadMeshBuilderCL::build(MultiGridCL* mgp) const
 template <>
   void FileBuilderCL::ReadParInfo<EdgeCL>(std::istream& is, EdgeCL& s) const
 {
-      DDD_PRIO prio;
+	  PrioT prio;
       int numDist, distProc;
-      DDD_GID oldGid;
+      GIDT oldGid;
       short accMFR;
 
       is >> accMFR >> prio >> numDist;
@@ -1520,7 +1520,7 @@ template <>
           for (int i=0; i<numDist; ++i){
               is >> distProc;
               Assert( distProc!=ProcCL::MyRank(), DROPSErrCL("FileBuilderCL::ReadParInfo: Cannot identify with myself"), DebugParallelC);
-              DDD_IdentifyNumber( s.GetHdr(), distProc, oldGid);
+              DynamicDataInterfaceCL::IdentifyNumber( s.GetHdr(), distProc, oldGid);
           }
       }
 }
@@ -1753,7 +1753,7 @@ void FileBuilderCL::BuildFacesII(MultiGridCL* mgp) const
     BndIdxT bnd;
     bool rmmark;
 #ifdef _PAR
-    DDD_PRIO prio;
+    PrioT prio;
     int numDist, distProc;
     int oldGid;
 #endif
@@ -1813,7 +1813,7 @@ void FileBuilderCL::build(MultiGridCL* mgp) const
     AppendLevel(mgp);
 
 #ifdef _PAR
-    DDD_IdentifyBegin();
+    DynamicDataInterfaceCL::IdentifyBegin();
 #endif
     // Create vertices
     std::cout << "Building Vertices ";
@@ -1849,7 +1849,7 @@ void FileBuilderCL::build(MultiGridCL* mgp) const
     std::cout << "--> success\n";
 
 #ifdef _PAR
-    DDD_IdentifyEnd();
+    DynamicDataInterfaceCL::IdentifyEnd();
 #endif
     PrepareModify(mgp);     // FinalizeModify(mgp); is called in constructor of MultiGridCL
 }
