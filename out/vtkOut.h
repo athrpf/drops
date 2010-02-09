@@ -44,6 +44,8 @@
 namespace DROPS
 {
 
+class VTKVariableCL; //forward declaration
+
 /// \brief Class for writing out results of a simulation in VTK legacy format
 class VTKOutCL
 /** This class writes out data in VTK legacy format. Therefore all data are sent
@@ -73,6 +75,7 @@ class VTKOutCL
     std::string        descstr_;                    // stores description info
     std::string        filename_;                   // filenames
     std::ofstream      file_;                       // actual file where to put data
+    std::map<std::string, VTKVariableCL*> vars_;    ///< The variables stored by varName.
     const bool         binary_;                     // output in binary or ascii format
     bool               geomwritten_;                // flag if geometry has been written
 
@@ -163,16 +166,22 @@ class VTKOutCL
     VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
              const std::string& filename, bool binary);
 
+    /// \brief Register a variable or the geometry for output with Write().
+    ///
+    /// The class takes ownership of the objects, i. e. it destroys them with delete in its destructor.
+    void Register (VTKVariableCL& var);
+    /// Write out all registered objects.
+    void Write (double time, bool writeDistribution=false);
     /// \brief Put geometry into the vtk file
     void PutGeom( double time, bool writeDistribution=false);
 
     /// \brief Write scalar variable into file
     template <typename DiscScalT>
-    void PutScalar( const std::string&, const DiscScalT&);
+    void PutScalar( const DiscScalT&, const std::string&);
 
     /// \brief Write vector-valued variable into file
     template <typename DiscVecT>
-    void PutVector( const std::string&, const DiscVecT&);
+    void PutVector( const DiscVecT&, const std::string&);
 
     /// \brief End output of a file
     void Commit(){
@@ -183,6 +192,73 @@ class VTKOutCL
     /// \brief Clear all internal data
     void Clear();
 };
+
+/// \brief Base-class for the output of a single function in Ensight6 Case format.
+///
+/// 'put' is called for the output of the function at time t. The command objects are stored in VTKOutCL.
+class VTKVariableCL
+{
+  private:
+    std::string varName_;
+
+  public:
+    VTKVariableCL (std::string varName)
+        : varName_( varName) {}
+    virtual ~VTKVariableCL () {}
+
+    std::string varName() const { return varName_; }  ///< Name of the variable in VTK; also used as identifier in VTKOutCL.
+
+    /// \brief Called by VTKOutCL::Write().
+    virtual void put( VTKOutCL&) const= 0;
+};
+
+///\brief Represents a scalar Drops-function (P1 or P2, given as PXEvalCL) as VTK variable.
+template <class DiscScalarT>
+class VTKScalarCL : public VTKVariableCL
+{
+  private:
+    const DiscScalarT f_;
+
+  public:
+    VTKScalarCL( const DiscScalarT& f, std::string varName)
+        : VTKVariableCL( varName), f_( f) {}
+
+    void put( VTKOutCL& cf) const { cf.PutScalar( f_, varName()); }
+};
+
+///\brief Create an VTKScalarCL<> with operator new.
+///
+/// This function does the template parameter deduction for user code.
+template <class DiscScalarT>
+  VTKScalarCL<DiscScalarT>&
+    make_VTKScalar( const DiscScalarT& f, std::string varName)
+{
+    return *new VTKScalarCL<DiscScalarT>( f, varName);
+}
+
+///\brief Represents a vector Drops-function (P1 or P2, given as PXEvalCL) as VTK variable.
+template <class DiscVectorT>
+class VTKVectorCL : public VTKVariableCL
+{
+  private:
+    const DiscVectorT f_;
+
+  public:
+    VTKVectorCL( const DiscVectorT& f, std::string varName)
+        : VTKVariableCL( varName), f_( f) {}
+
+    void put( VTKOutCL& cf) const { cf.PutVector( f_, varName()); }
+};
+
+///\brief Create an VTKVectorCL<> with operator new.
+///
+/// This function does the template parameter deduction for user code.
+template <class DiscVectorT>
+  VTKVectorCL<DiscVectorT>&
+    make_VTKVector( const DiscVectorT& f, std::string varName)
+{
+    return *new VTKVectorCL<DiscVectorT>( f, varName);
+}
 
 //=====================================================
 // Derived classes for easier usage
@@ -237,7 +313,7 @@ class TwoPhaseTransportVTKCL : public TwoPhaseVTKCL<StokesCL, LevelsetCL>
 //=====================================================
 
 template <typename DiscScalT>
-  void VTKOutCL::PutScalar( const std::string& name, const DiscScalT& f)
+  void VTKOutCL::PutScalar( const DiscScalT& f, const std::string& name)
 /** Write values of a scalar valued function into the vtk legacy file
     \param name name of the function
     \param f    function*/
@@ -255,7 +331,7 @@ template <typename DiscScalT>
 }
 
 template <typename  DiscVecT>
-  void VTKOutCL::PutVector( const std::string& name, const DiscVecT& f)
+  void VTKOutCL::PutVector( const DiscVecT& f, const std::string& name)
 /** Write values of a scalar valued function into the vtk legacy file
     \param name name of the function
     \param f    function*/
@@ -322,71 +398,6 @@ template <typename DiscVecT>
             for (int j=0; j<3; ++j)
                 locData[pos++]= (float)f.val( *it, 0.5)[j];
     }
-}
-
-template<typename StokesCL, typename LevelsetCL>
-TwoPhaseVTKCL<StokesCL, LevelsetCL>::TwoPhaseVTKCL (const MultiGridCL& mg, const StokesCL& st, const LevelsetCL& ls,
-  Uint numsteps, const std::string& filename, bool binary, bool writeDistribution)
-/** This constructor init the base class VTKOutCL, in order to write out
-    twophase flows
-\param mg geometry of the given problem
-\param st Stokes (or Nabier-Stokes) problem class
-\param ls levelset function
-\param numsteps number of timesteps, that should be written out
-\param filename prefix of all files
-\param binary    Write out files in binary format. (Does not work)
-\param writeDistribution Write out distribution
-\todo Support of binary output
-*/
-    : base_(mg, "DROPS data", numsteps, filename, binary),
-        stokes_(st), levelset_(ls), writeDist_(writeDistribution) {}
-
-
-template<typename StokesCL, typename LevelsetCL>
-  void TwoPhaseVTKCL<StokesCL, LevelsetCL>::write()
-/** Writes out the geometry information as well as the pressure and velocity of
-    the stokes problem and the level-set function in a VTK legacy format.
-*/
-{
-    base_::PutGeom(stokes_.t, writeDist_);
-    base_::PutVector( "velocity",  stokes_.GetVelSolution() );
-    base_::PutScalar( "pressure",  stokes_.GetPrSolution() );
-    base_::PutScalar( "level-set", levelset_.GetSolution() );
-    base_::Commit();
-}
-
-
-template<typename StokesCL, typename LevelsetCL, typename TransportCL>
-TwoPhaseTransportVTKCL<StokesCL, LevelsetCL, TransportCL>::TwoPhaseTransportVTKCL(
-    const MultiGridCL& mg, const StokesCL& st, const LevelsetCL& ls, const TransportCL& tr,
-    Uint numsteps, const std::string& filename, bool binary)
-/** This consstructor init the base class TwoPhaseVTKCL in order to write out
-    a twophase flow with mass transport.
-\param mg geometry of the given problem
-\param st Stokes (or Nabier-Stokes) problem class
-\param ls levelset function
-\param tr transport
-\param numsteps number of timesteps, that should be written out
-\param filename prefix of all files
-\param binary    Write out files in binary format. (Does not work)
-\todo Support of binary output
-*/
-    : base_(mg, st, ls, numsteps, filename, binary), transport_(tr) {}
-
-
-template<typename StokesCL, typename LevelsetCL, typename TransportCL>
-  void TwoPhaseTransportVTKCL<StokesCL, LevelsetCL, TransportCL>::write()
-/** Writes out the geometry information as well as the pressure and velocity of
-    the stokes problem, the level-set function and the transport solution in a
-    VTK legacy format.
-*/
-{
-    base_::PutGeom(base_::stokes_.t);
-    base_::PutVector( "velocity",  base_::stokes_.GetVelSolution() );
-    base_::PutScalar( "pressure",  base_::stokes_.GetPrSolution() );
-    base_::PutScalar( "level-set", base_::levelset_.GetSolution() );
-    base_::PutScalar( "transport", transport_.GetSolution() );
-    base_::Commit();
 }
 
 } // end of namespace DROPS

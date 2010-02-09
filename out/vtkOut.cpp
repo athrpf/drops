@@ -53,6 +53,23 @@ VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint nums
     while( numsteps>9){ ++decDigits_; numsteps/=10; }
 }
 
+void VTKOutCL::Register (VTKVariableCL& var)
+{
+	if( vars_.find(var.varName()) != vars_.end())
+		std::cout << "Error! Variable name is used twice! No registration of the variable is carried out!" << std::endl;
+	else
+		vars_[var.varName()]= &var;
+}
+
+void VTKOutCL::Write (double time, __UNUSED__  bool writeDistribution)
+{
+	PutGeom(time, writeDistribution);
+	for( std::map<std::string, VTKVariableCL*>::iterator it= vars_.begin(); it != vars_.end(); ++it) {
+    	it->second->put( *this);
+    }
+	Commit();
+}
+
 void VTKOutCL::AppendTimecode( std::string& str) const
 /** Append a timecode to the filename*/
 {

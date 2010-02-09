@@ -327,14 +327,21 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 #endif
 
     // writer for vtk-format
-    typedef TwoPhaseVTKCL<StokesProblemT, LevelsetP2CL> VTKWriterT;
-    VTKWriterT vtkwriter( adap.GetMG(), Stokes, lset,  (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
-                          std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+    VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (C.vtk_VTKOut ? C.tm_NumSteps/C.vtk_VTKOut+1 : 0),
+                std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+
+    vtkwriter.Register( make_VTKVector( Stokes.GetVelSolution(), "velocity") );
+    vtkwriter.Register( make_VTKScalar( Stokes.GetPrSolution(), "pressure") );
+    vtkwriter.Register( make_VTKScalar( lset.GetSolution(), "level-set") );
+
+    if (C.trp_DoTransp) {
+        vtkwriter.Register( make_VTKScalar( massTransp.GetSolution(), "massTransport") );
+    }
 
     if (C.ens_EnsightOut)
         ensight.Write( 0.);
     if (C.vtk_VTKOut)
-        vtkwriter.write();
+        vtkwriter.Write(Stokes.t);
 
     for (int step= 1; step<=C.tm_NumSteps; ++step)
     {
@@ -367,7 +374,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)
             ensight.Write( Stokes.t);
         if (C.vtk_VTKOut && step%C.vtk_VTKOut==0)
-            vtkwriter.write();
+            vtkwriter.Write(Stokes.t);
         if (C.rst_Serialization && step%C.rst_Serialization==0)
             ser.Write();
     }
