@@ -70,38 +70,38 @@ void DynamicDataInterfaceCL::XferEnd()
 }
 
 /// \brief Exchanges data via an interface
-void DynamicDataInterfaceCL::IFExchange(IFT interface, size_t n, ComProcPtrT a, ComProcPtrT b)
+void DynamicDataInterfaceCL::IFExchange(IFT interf, size_t n, ComProcPtrT a, ComProcPtrT b)
 {
   //Call of the DDD function
-    DDD_IFExchange(interface, n, a, b);
+    DDD_IFExchange(interf, n, a, b);
 }
 
 /// \brief
-void DynamicDataInterfaceCL::IFAOnewayX(IFT interface, ATTRT attribute, IF_DIRT direction, size_t n, ComProcXPtrT a,ComProcXPtrT b)
+void DynamicDataInterfaceCL::IFAOnewayX(IFT interf, ATTRT attribute, IF_DIRT direction, size_t n, ComProcXPtrT a,ComProcXPtrT b)
 {
     //Call of the DDD function
-    DDD_IFAOnewayX(interface, attribute, direction, n, a, b);
+    DDD_IFAOnewayX(interf, attribute, direction, n, a, b);
 }
 
 /// \brief Transfer one way
-void DynamicDataInterfaceCL::IFOneway(IFT interface, IF_DIRT direction, size_t n, ComProcPtrT a,ComProcPtrT b)
+void DynamicDataInterfaceCL::IFOneway(IFT interf, IF_DIRT direction, size_t n, ComProcPtrT a,ComProcPtrT b)
 {
     //Call of the DDD function
-    DDD_IFOneway(interface, direction, n, a, b);
+    DDD_IFOneway(interf, direction, n, a, b);
 }
 
 /// \brief
-void DynamicDataInterfaceCL::IFAOneway(IFT interface,ATTRT attribute,IF_DIRT direction,size_t n, ComProcPtrT a,ComProcPtrT b)
+void DynamicDataInterfaceCL::IFAOneway(IFT interf,ATTRT attribute,IF_DIRT direction,size_t n, ComProcPtrT a,ComProcPtrT b)
 {
     //Call of the DDD function
-    DDD_IFAOneway(interface, attribute, direction, n, a, b);
+    DDD_IFAOneway(interf, attribute, direction, n, a, b);
 }
 
 /// \brief
-void DynamicDataInterfaceCL::IFAExecLocal(IFT interface, ATTRT attribute, ExecProcPtrT exec)
+void DynamicDataInterfaceCL::IFAExecLocal(IFT interf, ATTRT attribute, ExecProcPtrT exec)
 {
     //Call of the DDD function
-    DDD_IFAExecLocal(interface, attribute, exec);
+    DDD_IFAExecLocal(interf, attribute, exec);
 }
 
 /// \brief Indentifying object which are created by different processes
@@ -134,10 +134,10 @@ void DynamicDataInterfaceCL::IdentifyObject(HDRT ob1, PROCT process, HDRT ob2)
 }
 
 /// \brief
-void DynamicDataInterfaceCL::IFExecLocal (IFT interface, ExecProcPtrT exec)
+void DynamicDataInterfaceCL::IFExecLocal (IFT interf, ExecProcPtrT exec)
 {
     //Call of the DDD function
-    DDD_IFExecLocal(interface, exec);
+    DDD_IFExecLocal(interf, exec);
 }
 
 /// \brief
@@ -182,10 +182,10 @@ IFT DynamicDataInterfaceCL::IFDefine (int n1, TypeT tip[], int n2, PrioT priorit
 }
 
   /// \brief Allows to define a textual description for interfaces
-void DynamicDataInterfaceCL::IFSetName (IFT interface, char * s)
+void DynamicDataInterfaceCL::IFSetName (IFT interf, char * s)
 {
     //Call of the DDD function
-    DDD_IFSetName(interface,s);
+    DDD_IFSetName(interf,s);
 }
 
   /// \brief Transfer-command for copying a local DDD object to another processor.
@@ -342,7 +342,7 @@ int DynamicDataInterfaceCL::ConsCheck (void)
 }
 
   /// \brief Display overview of single DDD interface.
-void DynamicDataInterfaceCL::IFDisplay (IFT interface)
+void DynamicDataInterfaceCL::IFDisplay (IFT interf)
 {
     /**
         This function displays an overview table for one DDD-interface,
@@ -356,7 +356,7 @@ void DynamicDataInterfaceCL::IFDisplay (IFT interface)
         the number of exchange relations and the neighbor processor number.
         */
     //Call of the DDD function
-    DDD_IFDisplay (interface);
+    DDD_IFDisplay (interf);
 }
     /// \brief these are the calling of the variable number of arguements function DDD_TypeDefine
 void DynamicDataInterfaceCL::TypeDefineAddedVec(DDD_TYPE& t, DROPS::AddedVecCL*& a, DDD_ELEM_TYPE b, DROPS::Uint* c, long unsigned int d, DDD_ELEM_TYPE e, DROPS::Point3DCL* f, long unsigned int g, DDD_ELEM_TYPE h, DROPS::AddedVecCL*i)
