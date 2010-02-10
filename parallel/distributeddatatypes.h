@@ -56,15 +56,15 @@ namespace DROPS
     typedef DDD_PROC PROCT;                      ///< process numbers
     typedef DDD_PRIO PrioT;                      ///< priority
     typedef DDD_OBJ OBJT;                        ///< pointer to an object
-    typedef HandlerCONSTRUCTOR HandlrContrctrT;  ///< handler how to construct an object
-    typedef HandlerDELETE HandlrDltT;            ///< Function type
-    typedef HandlerXFERCOPY HandlerXfrcpT;       ///< Function type
-    typedef HandlerXFERGATHER HandlerXfrGthrT;   ///< Function type
-    typedef HandlerXFERSCATTER HandlerXfrSctrT;  ///< Function type
-    typedef HandlerUPDATE HandlerUpdtT;          ///< Function type
-    typedef HandlerOBJMKCONS HandlerObjMkConsT;  ///< Function type
-    typedef HandlerSETPRIORITY HandlerSetPrioT;  ///< Function type
-    typedef HandlerXFERDELETE HandlerXferDltT;   ///< Function type
+    typedef HandlerCONSTRUCTOR HandlrContrctrT;  ///< Handler how to construct an object
+    typedef HandlerDELETE HandlrDltT;            ///< Handler how to delete an object
+    typedef HandlerXFERCOPY HandlerXfrcpT;       ///< Handler how to transfer and copy an object
+    typedef HandlerXFERGATHER HandlerXfrGthrT;   ///< Handler how to transfer and gather an object
+    typedef HandlerXFERSCATTER HandlerXfrSctrT;  ///< Handler how to transfer and scatter an object
+    typedef HandlerUPDATE HandlerUpdtT;          ///< Handler how to update an object
+    typedef HandlerOBJMKCONS HandlerObjMkConsT;  ///< Handler how to make constant an object
+    typedef HandlerSETPRIORITY HandlerSetPrioT;  ///< Handler how to set the priority
+    typedef HandlerXFERDELETE HandlerXferDltT;   ///< Hanler how to transfer and delete an object
 #define MarkHdrInvalid(DDD_HDR) DDD_MarkHdrInvalid(DDD_HDR); ///< Macro definition of the creator of the header
 #endif
 
@@ -74,15 +74,19 @@ namespace DROPS
 class DynamicDataInterfaceExtraCL
 {
   public:
-    /// \brief
+
     static int InfoIsLocal (HDRT);
-    /// \brief
+
+    /// \brief Return list of couplings of certain object
     static int * InfoProcList (DDD_HDR);
-    /// \brief
+
+    /// \brief Initiate object's \ddd{header}.
     static void HdrConstructor (DDD_HDR, DDD_TYPE, DDD_PRIO, DDD_ATTR);
-    /// \brief
+
+    /// \brief Create DDD_HDR copy inside local memory simultaneously destruct original DDD_HDR
     static void HdrConstructorMove (DDD_HDR, DDD_HDR);
-    /// \brief
+
+    /// \brief Transfer-command for deleting a local DDD object.
     static void XferDeleteObj (DDD_HDR);
 };
 }
