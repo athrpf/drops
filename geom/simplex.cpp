@@ -308,6 +308,17 @@ World2BaryCoordCL::World2BaryCoordCL (const TetraCL& t)
     qr_.prepare_solve();
 }
 
+World2BaryCoordCL::World2BaryCoordCL(const Point3DCL* coordVerts)
+{
+    SMatrixCL<4,4>& m= qr_.GetMatrix();
+    for (Uint v= 0; v < 4; ++v) {
+        const Point3DCL& p= coordVerts[v];
+        for (Uint i= 0; i < 3; ++i) m( i, v)= p[i];
+    }
+    for (Uint j= 0; j < 4; ++j) m( 3, j)= 1.;
+    qr_.prepare_solve();
+}
+
 BaryCoordCL World2BaryCoordCL::operator() (const Point3DCL& p) const
 {
     BaryCoordCL r( MakeBaryCoord( p[0], p[1], p[2], 1.));

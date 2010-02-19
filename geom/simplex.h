@@ -795,6 +795,7 @@ class World2BaryCoordCL
 
   public:
     World2BaryCoordCL (const TetraCL& t);
+    World2BaryCoordCL (const Point3DCL* coordVerts);
     BaryCoordCL operator() (const Point3DCL& p) const;
 };
 
