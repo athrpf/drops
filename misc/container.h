@@ -754,6 +754,11 @@ class QRDecompCL
     template <Uint Size>
     void Solve (SArrayCL<SVectorCL<Rows_>, Size>& b) const;
     ///@}
+
+    ///@{ Serialize and Deserialize a QR decomposition
+    void Serialize(double*) const;
+    void Deserialize(const double*);
+    ///@}
 };
 
 template <Uint Rows_, Uint Cols_>
@@ -818,6 +823,25 @@ template <Uint Rows_, Uint Cols_>
 {
     for (Uint i= 0; i < Size; ++i)
         Solve( b[i]);
+}
+
+/** Put the values of a_, d_ and beta_ in buffer. Note that buffer must be of size
+    (Rows_+2)*Cols_
+ */
+template <Uint Rows_, Uint Cols_>
+  void QRDecompCL<Rows_, Cols_>::Serialize(double* buffer) const
+{
+    std::copy( a_.begin(), a_.end(), buffer);
+    std::copy( d_, d_+Cols_, buffer+a_.size());
+    std::copy( beta_, beta_+Cols_, buffer+a_.size()+Cols_);
+}
+
+template <Uint Rows_, Uint Cols_>
+  void QRDecompCL<Rows_, Cols_>::Deserialize( const double* buffer)
+{
+    std::copy( buffer, buffer+a_.size(), a_.begin());
+    std::copy( buffer+a_.size(), buffer+a_.size()+Cols_, d_);
+    std::copy(buffer+a_.size()+Cols_, buffer+a_.size()+Cols_+Cols_, beta_);
 }
 
 //**************************************************************************
