@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include <valarray>
+#include <map>
 #if defined(DROPS_WIN)
 #  include <windows.h>
 #  undef max
@@ -45,6 +46,9 @@
 #  include <sys/types.h>
 #endif
 #include <cmath>
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+#    include <tr1/unordered_map>
+#endif
 
 #ifndef M_PI
 # ifdef DROPS_WIN
@@ -664,6 +668,31 @@ struct Err_Pair_GTCL :public std::binary_function<const Err_PairT, const Err_Pai
 };
 //@}
 
+/// \brief Transforms a std::map into a vector of pairs
+/** This can be used to parallelize a loop over all
+    elements in a map.
+*/
+template <typename T1, typename T2>
+std::vector<std::pair<T1,T2> > Map2Vec( const std::map<T1,T2>& Map)
+{
+    std::vector<std::pair<T1,T2> > vec(Map.size());
+    size_t pos=0;
+    for ( typename std::map<T1,T2>::const_iterator it=Map.begin(); it!=Map.end(); ++it, pos++)
+        vec[pos]= std::pair<T1,T2>(it->first, it->second);
+    return vec;
+}
+
+#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+template <typename T1, typename T2>
+std::vector<std::pair<T1,T2> > Map2Vec( const std::tr1::unordered_map<T1,T2>& Map)
+{
+    std::vector<std::pair<T1,T2> > vec(Map.size());
+    size_t pos=0;
+    for ( typename std::tr1::unordered_map<T1,T2>::const_iterator it=Map.begin(); it!=Map.end(); ++it, pos++)
+        vec[pos]= std::pair<T1,T2>(it->first, it->second);
+    return vec;
+}
+#endif
 
 } // end of namespace DROPS
 
