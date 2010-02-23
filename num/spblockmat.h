@@ -239,6 +239,41 @@ template <typename Mat, typename Vec>
     return A.GetTranspose()*x;
 }
 
+
+//*****************************************************************************
+//
+/// \brief adapter: 2x2-Blockmatrix: ( A & B \\ C & D) to Matrix
+//
+//*****************************************************************************
+template <typename Mat>
+Mat BuildMatrix( BlockMatrixBaseCL<Mat>& A)
+{
+    size_t rows = A.num_rows(), cols = A.num_cols();
+    Mat ret;
+    SparseMatBuilderCL<typename Mat::value_type> B(&ret, rows, cols);
+
+    for (int block = 0; block <4; ++block) {
+        if (!A.GetBlock(block)) continue;
+        size_t row_shift = 0, col_shift = 0;
+        switch (block) {
+            case 0 : { row_shift = 0;             col_shift = 0;             } break;
+            case 1 : { row_shift = 0;             col_shift = A.num_cols(0); } break;
+            case 2 : { row_shift = A.num_rows(0); col_shift = 0;             } break;
+            case 3 : { row_shift = A.num_rows(0); col_shift = A.num_cols(0); } break;
+            default: throw DROPSErrCL("wrong block number");
+        }
+        for (size_t row = 0; row < A.GetBlock(block)->num_rows(); ++row)
+            for (size_t nz = A.GetBlock(block)->row_beg(row); nz < A.GetBlock(block)->row_beg(row+1); ++ nz)
+                if (A.GetOperation(block) == MUL)
+                    B(row+row_shift, A.GetBlock(block)->col_ind(nz)+col_shift) = A.GetBlock(block)->val(nz);
+                else
+                    B(A.GetBlock(block)->col_ind(nz)+row_shift, row+col_shift) = A.GetBlock(block)->val(nz);
+    }
+
+    B.Build();
+    return ret;
+}
+
 //*****************************************************************************
 //
 ///  \brief Composition of 2 matrices
