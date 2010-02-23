@@ -724,7 +724,7 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
         maxNorm= normGrad.max();
         minNorm= normGrad.min();
         if (maxNorm > maxGradPhi) maxGradPhi= maxNorm;
-        if (minNorm < minGradPhi) minGradPhi= minNorm;
+        if (minNorm < minGradPhi && patch.Intersects()) minGradPhi= minNorm;
     }
 #ifdef _PAR
     maxGradPhi= ProcCL::GlobalMax( maxNorm= maxGradPhi);
