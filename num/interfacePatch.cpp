@@ -116,7 +116,7 @@ bool InterfacePatchCL::ComputeVerticesOfCut( Uint ch, bool compute_PQRS)
     // Warn in case of 3D-interface.
     if (num_sign_[1] == 4)
     {
-        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
+        throw DROPSErrCL("WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!");
         return false;
     }
     // first come the zero-vertices of the child ch_...
