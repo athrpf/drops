@@ -63,7 +63,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
     const double absdet= std::fabs( det);
     const SMatrixCL<4,4> GTG( GramMatrix( G));
 
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     cut.Init( t, lset_.Phi);
     if (!cut.Intersects()) {
         const Quad5CL<Point3DCL> u_loc( t, u, t_);

@@ -29,7 +29,7 @@ using namespace DROPS;
 
 void ComputeIntOnCuts( const TetraCL& t, const VecDescCL& ls, const LocalP2CL<>& f, double absdet, VectorCL& quadPos, VectorCL& quadNeg)
 {
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     cut.Init( t, ls);
     if (!cut.Intersects()) // kein Beitrag
     { std::cout << "No cut on tetra...\n"; }

@@ -746,9 +746,10 @@ class QRDecompCL
     const SMatrixCL<Rows_,Cols_>& GetMatrix () const { return a_; }
 
     void prepare_solve (); ///< Computes the factorization.
-
+    double Determinant_R();
     ///@{ Call only after prepare_solve; solves are inplace. For least-squares, the first Cols_ entries are the least squares solution, the remaining components of b are the residual-vector.
     void Solve (SVectorCL<Rows_>& b) const;
+    void Solve (size_t n, SVectorCL<Rows_>* b) const;
     template <template<class> class SVecCont>
     void Solve (SVecCont<SVectorCL<Rows_> >& b) const;
     template <Uint Size>
@@ -760,6 +761,17 @@ class QRDecompCL
     void Deserialize(const double*);
     ///@}
 };
+
+template <Uint Rows_, Uint Cols_>
+  double
+  QRDecompCL<Rows_, Cols_>::Determinant_R ()
+{
+	  double tmp= 1.0;
+	  for(Uint i= 0; i < Cols_; ++i)
+		  tmp *= d_[i];
+	  return tmp;
+}
+
 
 template <Uint Rows_, Uint Cols_>
   void
@@ -785,6 +797,14 @@ template <Uint Rows_, Uint Cols_>
                 a_(i, k)+= a_(i, j)*sp;
         }
     }
+}
+
+template <Uint Rows_, Uint Cols_>
+ void
+ QRDecompCL<Rows_, Cols_>::Solve (size_t n, SVectorCL<Rows_>* b) const
+{
+    for (Uint i= 0; i < n; ++i)
+        Solve( b[i]);
 }
 
 template <Uint Rows_, Uint Cols_>

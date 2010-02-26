@@ -69,20 +69,20 @@ Point3DCL sphere_dist_grad (const Point3DCL& p, double)
 double facet_sup_norm(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
 {
     const DROPS::Uint lvl= ls.GetLevel();
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
 
     double maxn= 0.;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-	if (!patch.Intersects()) continue; // We are not at the phase boundary.
+    	triangle.Init( *it, ls);
+	if (!triangle.Intersects()) continue; // We are not at the phase boundary.
 
 	for (int ch= 0; ch < 8; ++ch) {
-	    if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
+	    if (!triangle.ComputeForChild( ch)) continue; // Child ch has no intersection
 
-	    for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
-                const Point3DCL n= patch.GetNormal();
-                const Point3DCL bary= 1./3.*(patch.GetPoint( tri) + patch.GetPoint( tri + 1) + patch.GetPoint( tri + 2));
+	    for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri) {
+                const Point3DCL n= triangle.GetNormal();
+                const Point3DCL bary= 1./3.*(triangle.GetPoint( tri) + triangle.GetPoint( tri + 1) + triangle.GetPoint( tri + 2));
 		const Point3DCL ng= sphere_dist_grad( bary, 0.);
                 maxn= std::max( maxn, (n -ng).norm());
 	    }
@@ -94,17 +94,17 @@ double facet_sup_norm(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
 double dist_to_sphere(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
 {
     const DROPS::Uint lvl= ls.GetLevel();
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
 
     double dd= 0.;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-	if (patch.Intersects()) { // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+	if (triangle.Intersects()) { // We are at the phase boundary.
 	    for (int ch= 0; ch < 8; ++ch) {
-	        patch.ComputeForChild( ch);
-		for (Uint tript= 0; tript < patch.GetNumPoints(); ++tript) {
-		    dd= std::max( dd, std::fabs( sphere_dist( patch.GetPoint( tript), 0.)));
+	    	triangle.ComputeForChild( ch);
+		for (Uint tript= 0; tript < triangle.GetNumPoints(); ++tript) {
+		    dd= std::max( dd, std::fabs( sphere_dist( triangle.GetPoint( tript), 0.)));
 		}
             }
 	}
@@ -117,17 +117,17 @@ double vertex_sup_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls
     const DiscP2FunType& f)
 {
     const DROPS::Uint lvl= ls.GetLevel();
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
 
     double dd=  0.;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-	if (patch.Intersects()) { // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+	if (triangle.Intersects()) { // We are at the phase boundary.
 	    for (int ch= 0; ch < 8; ++ch) {
-	        patch.ComputeForChild( ch);
-		for (Uint tript= 0; tript < patch.GetNumPoints(); ++tript) {
-		        dd= std::max( dd, std::fabs( f.val( *it, patch.GetBary( tript))));
+	    	triangle.ComputeForChild( ch);
+		for (Uint tript= 0; tript < triangle.GetNumPoints(); ++tript) {
+		        dd= std::max( dd, std::fabs( f.val( *it, triangle.GetBary( tript))));
 		}
             }
 	}

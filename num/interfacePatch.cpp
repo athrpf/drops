@@ -1,6 +1,6 @@
 /// \file interfacePatch.cpp
 /// \brief Computes 2D patches and 3D cuts of tetrahedra and interface
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Martin Horsky, Eva Loch; SC RWTH Aachen:
 
 /*
  * This file is part of DROPS.
@@ -33,8 +33,8 @@ namespace DROPS
 
 const double InterfacePatchCL::approxZero_= 2.*std::numeric_limits<double>::epsilon();
 const bool   InterfacePatchCL::LinearEdgeIntersection = true;
-BaryCoordCL  InterfacePatchCL::AllEdgeBaryCenter_[10][10];
-BaryCoordCL  InterfacePatchCL::BaryDoF_[10];
+BaryCoordCL   InterfacePatchCL::AllEdgeBaryCenter_[10][10];
+BaryCoordCL   InterfacePatchCL::BaryDoF_[10];
 
 InterfacePatchCL::InterfacePatchCL()
   : RegRef_( GetRefRule( RegRefRuleC)), intersec_(0), ch_(-1)
@@ -74,7 +74,7 @@ void InterfacePatchCL::Init( const TetraCL& t, const LocalP2CL<double>& ls, doub
 
  SMatrixCL<3,4> GetCoordMatrix( const TetraCL& t)
 {
-   SMatrixCL<3,4> V;
+   SMatrixCL<3,4> V(Uninitialized);
    for (int i = 0; i<3; ++i)
        for(int j=0; j<4; ++j)
            V(i,j)= t.GetVertex(j)->GetCoord()[i];
@@ -99,176 +99,39 @@ void InterfacePatchCL::Init( const TetraCL& t, const SubTetraT& st, const LocalP
     barysubtetra_ = true;
 }
 
-// multiplication of SubTetraT with st
-InterfacePatchCL::SubTetraT InterfacePatchCL::MultiplySubTetra(const InterfacePatchCL::SubTetraT & Tetrak_ )
+bool InterfacePatchCL::ComputeVerticesOfCut( Uint ch, bool compute_PQRS)
 {
- SubTetraT TetrakBary_;
- for (int i = 0; i <4; ++i)
-  {
-	 for (int j = 0; j <4; ++j)
-	 {
-		 {
-			 TetrakBary_[i] += (st_[j]*Tetrak_[i][j]);
-		 }
-	 }
-  }
- return TetrakBary_;
-}
-
-BaryCoordCL InterfacePatchCL::MultiplyBaryCoord(const BaryCoordCL& Tetrak_ )
-{
- BaryCoordCL TetrakBary_;
-
-	 for (int j = 0; j <4; ++j)
-	 {
-	     TetrakBary_ += (st_[j]*Tetrak_[j]);
-	 }
-
- return TetrakBary_;
-}
-bool InterfacePatchCL::ComputeForChild( Uint ch)
-{
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
+    const ChildDataCL& data= GetChildData( RegRef_.Children[ch]);
     ch_= ch;
+    // Compute the sign of the levelset-function in the vertices of ch_.
     num_sign_[0]= num_sign_[1]= num_sign_[2]= 0;
-    for (int vert= 0; vert<4; ++vert)
-        ++num_sign_[ sign_[data.Vertices[vert]] + 1];
-
-    intersec_= 0;
-    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) {// no change of sign on child
-        numchildtriangles_= 0;
-        return false;
-    }
-    if (num_sign_[1]==4)
-    {
-        std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
-        numchildtriangles_= 0;
-        return false;
-    }
-
-    // erst werden die Nullknoten in PQRS gespeichert...
-    for (int vert= 0; vert<4; ++vert)
-    {
-        const int v= data.Vertices[vert];
-        if (sign_[v]==0)
-        {
-            Bary_[intersec_]= BaryDoF_[v];
-            PQRS_[intersec_++]= Coord_[v];
-        }
-    }
-    // ...dann die echten Schnittpunkte auf den Kanten mit Vorzeichenwechsel
-    for (int edge= 0; edge<6; ++edge)
-    {
-        const int v0= data.Vertices[ VertOfEdge( edge, 0)],
-                  v1= data.Vertices[ VertOfEdge( edge, 1)];
-        if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
-        {
-            const double lambda= EdgeIntersection( v0,  v1, PhiLoc_);
-            Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
-            // bary-coords of tetra, not of subtetra!
-            PQRS_[intersec_++]= (1-lambda) * Coord_[v0] + lambda * Coord_[v1];
-        }
-    }
-    if (intersec_<3) { // Nullstellenmenge vom Mass 0!
-        numchildtriangles_= 0;
-        return false;
-    }
-
-    SMatrixCL<3,2> A;    // A = [ Q-P | R-P ]
-    A(0,0)= PQRS_[1][0]-PQRS_[0][0];    A(0,1)= PQRS_[2][0]-PQRS_[0][0];
-    A(1,0)= PQRS_[1][1]-PQRS_[0][1];    A(1,1)= PQRS_[2][1]-PQRS_[0][1];
-    A(2,0)= PQRS_[1][2]-PQRS_[0][2];    A(2,1)= PQRS_[2][2]-PQRS_[0][2];
-    SMatrixCL<2,2> ATA;
-    ATA(0,0)=           A(0,0)*A(0,0)+A(1,0)*A(1,0)+A(2,0)*A(2,0);
-    ATA(0,1)= ATA(1,0)= A(0,0)*A(0,1)+A(1,0)*A(1,1)+A(2,0)*A(2,1);
-    ATA(1,1)=           A(0,1)*A(0,1)+A(1,1)*A(1,1)+A(2,1)*A(2,1);
-    const double detATA= ATA(0,0)*ATA(1,1) - ATA(1,0)*ATA(1,0);
-    sqrtDetATA_= std::sqrt( detATA);
-
-    Point2DCL AT_i, tmp;
-    for (int i=0; i<3; ++i)
-    {
-        // berechne B = A * (ATA)^-1 * AT
-        AT_i[0]= A(i,0); AT_i[1]= A(i,1);
-        Solve2x2( detATA, ATA, tmp, AT_i);
-        B_[i]= A*tmp;
-    }
-
-    if (intersec_==4) // 4 intersections --> a+b != 1
-    { // berechne a, b
-        // Loese (Q-P)a + (R-P)b = S-P  --> lin. AGP, loese ATA * [a,b]T = AT(S-P)
-        Point3DCL PS= PQRS_[3] - PQRS_[0];
-        tmp[0]= A(0,0)*PS[0] + A(1,0)*PS[1] + A(2,0)*PS[2];
-        tmp[1]= A(0,1)*PS[0] + A(1,1)*PS[1] + A(2,1)*PS[2];
-        Solve2x2( detATA, ATA, ab_, tmp);
-        //if (ab_[0]<0 || ab_[1]<0)
-        //    std::cout<<"LevelsetP2CL::AccumulateBndIntegral: a or b negative"<<std::endl;
-        // a,b>=0 muss erfuellt sein, da wegen edge+oppEdge==5 die Punkte P und S sich automatisch gegenueber liegen muessten...
-        numchildtriangles_= 2;
-    }
-    else
-        numchildtriangles_= 1;
-
-    if (EqualToFace()) // interface is shared by two tetras
-        sqrtDetATA_/= 2;
-
-    // if Init for Sub TetraT has been used, coordinates must be transformed
-    if (barysubtetra_ == true)
-    {
-        for (int k=0 ; k<intersec_; ++k)
-        {
-            Bary_[k] = MultiplyBaryCoord(Bary_[k]);
-        }
-    }
-    return true; // computed patch of child;
-}
-
-
-Point3DCL InterfacePatchCL::GetNormal() const
-{
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
-    SMatrixCL<3,4> p1grad;
-    double det; // dummy
-    Point3DCL pt[4];
-    SVectorCL<4> ls;
-    for (int v= 0; v < 4; ++v) {
-        pt[v]= Coord_ [data.Vertices[v]];
-        ls[v]= PhiLoc_[data.Vertices[v]];
-    }
-    P1DiscCL::GetGradients( p1grad, det, pt);
-    const Point3DCL n( p1grad*ls);
-    return n/n.norm();
-}
-
-
-bool InterfacePatchCL::ComputeCutForChild( Uint ch)
-{
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch]);
-    ch_= ch;
-    num_sign_[0]= num_sign_[1]= num_sign_[2]= 0;
-    for (int vert= 0; vert<4; ++vert)
+    for (int vert= 0; vert < 4; ++vert)
         ++num_sign_[ sign_[data.Vertices[vert]] + 1];
 
     intersec_= innersec_= 0;
-    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3) // no change of sign on child and no patch on a face
+    // Return, if there is no change of sign on child and no patch on a face.
+    if (num_sign_[0]*num_sign_[2]==0 && num_sign_[1]<3){
         return false;
-    if (num_sign_[1]==4)
+    }
+    // Warn in case of 3D-interface.
+    if (num_sign_[1] == 4)
     {
         std::cerr << "WARNING: InterfacePatchCL: found 3-dim. zero level set, grid is too coarse!" << std::endl;
         return false;
     }
-
-    // erst werden die Nullknoten in PQRS gespeichert...
+    // first come the zero-vertices of the child ch_...
     for (int vert= 0; vert<4; ++vert)
     {
         const int v= data.Vertices[vert];
-        if (sign_[v]==0)
+        if (sign_[v] == 0)
         {
             Bary_[intersec_]= BaryDoF_[v];
+            if (compute_PQRS)
+            	PQRS_[intersec_]= Coord_[v];
             Edge_[intersec_++]= -1;
         }
     }
-    // ...dann die echten Schnittpunkte auf den Kanten mit Vorzeichenwechsel
+    // ...then the real intersections on the edges with a change of sign.
     for (int edge= 0; edge<6; ++edge)
     {
         const int v0= data.Vertices[ VertOfEdge( edge, 0)],
@@ -276,14 +139,20 @@ bool InterfacePatchCL::ComputeCutForChild( Uint ch)
         if (sign_[v0]*sign_[v1]<0) // different sign -> 0-level intersects this edge
         {
             const double lambda= EdgeIntersection( v0,  v1, PhiLoc_);
-            Bary_[intersec_]= (1-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
+            Bary_[intersec_]= (1.-lambda)*BaryDoF_[v0] + lambda * BaryDoF_[v1];
+            if (compute_PQRS)
+            	PQRS_[intersec_]= (1.-lambda) * Coord_[v0] + lambda * Coord_[v1];
             Edge_[intersec_++]= edge;
             innersec_++;
         }
     }
-    if (intersec_<3) return false; // Nullstellenmenge vom Mass 0!
 
-    return true; // computed cut of child;
+    // zero-level of measure 0.
+    if (intersec_<3){
+    	return false;
+	}
+    // computed cut of child;
+    return true;
 }
 
 void InterfacePatchCL::DebugInfo( std::ostream& os, bool InfoForChild) const
@@ -326,7 +195,22 @@ void InterfacePatchCL::WriteGeom( std::ostream& os) const
     os << "\n}\n";
 }
 
-void InterfacePatchCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos)
+// multiplication of SubTetraT with st
+InterfacePatchCL::SubTetraT InterfaceTetraCL::MultiplySubTetra(const InterfacePatchCL::SubTetraT & Tetrak_ )
+{
+    SubTetraT TetrakBary_;
+    for (int i = 0; i <4; ++i)
+        for (int j = 0; j <4; ++j)
+            TetrakBary_[i] += (st_[j]*Tetrak_[i][j]);
+    return TetrakBary_;
+}
+
+bool InterfaceTetraCL::ComputeCutForChild( Uint ch)
+{
+	return ComputeVerticesOfCut( ch);
+}
+
+void InterfaceTetraCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos)
 {
     if (pos)
         posTetras.push_back(BaryCoords);
@@ -334,7 +218,7 @@ void InterfacePatchCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos)
         negTetras.push_back(BaryCoords);
 }
 
-void InterfacePatchCL::ComputeSubTets()
+void InterfaceTetraCL::ComputeSubTets()
 {
     posTetras.clear();
     negTetras.clear();
@@ -476,9 +360,10 @@ void InterfacePatchCL::ComputeSubTets()
             int vertAB[2]; // cut mit VZ==part = ABPQRS
 
             //erst werden die "negativen" Kinder in die Liste hinzugefuegt, dann die "positiven"
-            for (int signAB = -1; signAB<=1; signAB+=2) {
-                for (int i=0, k=0; i<4 && k<2; ++i)
+            for (int signAB = -1; signAB<=1; signAB+=2) { int k = 0;
+                for (int i=0; i<4 && k<2; ++i)
                     if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
+                if (k<2) {std::cerr << "FRANK" << k << "\n " ; }
                 // connectivity AP automatisch erfuellt, check for connectivity AR
                 const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
                 // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
@@ -486,7 +371,7 @@ void InterfacePatchCL::ComputeSubTets()
                 BaryCoords[0]= BaryDoF_[data.Vertices[vertAB[0]]];
                 BaryCoords[1]= BaryDoF_[data.Vertices[vertAB[1]]];
                 BaryCoords[2]= Bary_[0];    BaryCoords[3]= Bary_[AR ? 2 : 1];
-                InsertSubTetra( BaryCoords, signAB!=-1);
+                InsertSubTetra( BaryCoords, signAB!=-	1);
                 // QBPR    (bzw. RBPQ)
                 BaryCoords[0]=Bary_[AR ? 1 : 2];
                 InsertSubTetra( BaryCoords, signAB!=-1);
@@ -509,6 +394,73 @@ void InterfacePatchCL::ComputeSubTets()
              negTetras[k] = MultiplySubTetra(negTetras[k]);
          }
      }
+}
+
+BaryCoordCL InterfaceTriangleCL::MultiplyBaryCoord(const BaryCoordCL& Tetrak_ )
+{
+    BaryCoordCL TetrakBary_;
+    for (int j = 0; j <4; ++j)
+        TetrakBary_ += (st_[j]*Tetrak_[j]);
+    return TetrakBary_;
+}
+
+bool InterfaceTriangleCL::ComputeForChild( Uint ch)
+{
+    const bool iscut= ComputeVerticesOfCut( ch, /*compute_PQRS*/ true);
+    if (!iscut) { // no change of sign on child
+        numtriangles_= 0;
+        return false;
+    }
+
+    // Compute DetA_.
+    SMatrixCL<3,2> A( Uninitialized); // A = [ Q-P | R-P ]
+    A.col( 0, PQRS_[1] - PQRS_[0]);
+    A.col( 1, PQRS_[2] - PQRS_[0]);
+    QRDecompCL<3, 2> qr( A);
+    DetA_= std::fabs( qr.Determinant_R());
+
+    // Compute B = A * (ATA)^-1 * AT.
+    std::memset( B_, 0, 9*sizeof( double));
+    B_[0][0]= B_[1][1]= B_[2][2]= 1.;
+    qr.Solve( 3, B_); // The first two components of each column are the least-squares-solution, the last is the residual.
+    for (int i= 0; i < 3; ++i)
+        B_[i]= A.col( 0)*B_[i][0] + A.col( 1)*B_[i][1];
+
+    if (intersec_ == 4) // 4 intersections --> a+b != 1
+    {   // Solve |(Q-P)a + (R-P)b - (S-P)| --> min; lin. least-squares problem (consistent in exact arithmetic!)
+
+        Point3DCL PS= PQRS_[3] - PQRS_[0];
+        qr.Solve( PS);
+        ab_[0]= PS[0]; ab_[1]= PS[1];
+        numtriangles_= 2;
+    }
+    else
+        numtriangles_= 1;
+
+    if (EqualToFace()) // interface is shared by two tetras
+        DetA_/= 2.;
+
+    // if Init for Sub TetraT has been used, coordinates must be transformed
+    if (barysubtetra_ == true)
+        for (int k=0 ; k<intersec_; ++k)
+            Bary_[k] = MultiplyBaryCoord(Bary_[k]);
+    return true; // computed patch of child;
+}
+
+Point3DCL InterfaceTriangleCL::GetNormal() const
+{
+    const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
+    SMatrixCL<3,4> p1grad;
+    double det; // dummy
+    Point3DCL pt[4];
+    SVectorCL<4> ls;
+    for (int v= 0; v < 4; ++v) {
+        pt[v]= Coord_ [data.Vertices[v]];
+        ls[v]= PhiLoc_[data.Vertices[v]];
+    }
+    P1DiscCL::GetGradients( p1grad, det, pt);
+    const Point3DCL n( p1grad*ls);
+    return n/n.norm();
 }
 
 } // end of namespace DROPS

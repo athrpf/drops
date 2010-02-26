@@ -304,7 +304,7 @@ void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
 ///
 /// This function allocates memory for the Unknown-indices in system
 /// idx on all vertices belonging to tetras between begin and end which
-/// are cut by the zero level of lset. If InterfacePatchCL::IntersectsInterior() ist true,
+/// are cut by the zero level of lset. If InterfacePatchCL::IntersectsInterior() is true,
 /// all vertices are numbered, if only InterfacePatchCL::Intersects() is true, only the
 /// vertices with InterfacePatchCL::GetSign(vertex) == 0 are numbered. The other vertices in
 /// such tetrahedra obtain NoIdx as number, but they are not counted as unknowns.
@@ -335,7 +335,7 @@ void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
         vit->Unknowns.Invalidate(idx);
     }
     // then create numbering of vertices at the interface
-    InterfacePatchCL p;
+    InterfaceTriangleCL p;
     for (MultiGridCL::TriangTetraIteratorCL it= begin; it != end; ++it) {
         p.Init( *it, ls);
         if (!p.Intersects()) continue;
@@ -491,7 +491,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
     IdxT extIdx= NumberingChanged ? Idx->NumUnknowns() : Xidx_.size();
     Xidx_old_.assign( extIdx, NoIdx);
     Xidx_.swap( Xidx_old_);
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
 
     LocalP2CL<> hat_sq[4]; // values of phi_i*phi_i
 

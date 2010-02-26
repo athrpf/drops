@@ -222,7 +222,7 @@ int main (int argc, char** argv)
     // Setup the right hand side
     IdxT Numb[4];
     double absdet;
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     Quad5CL<> qf;
 
     DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {

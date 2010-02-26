@@ -48,7 +48,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
     double det;
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
     P2DiscCL::GetGradientsOnRef( GradRef);
 
     const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
@@ -58,7 +58,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
     {
         GetTrafoTr( T, det, *it);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-        patch.Init( *it, SmPhi);
+        triangle.Init( *it, SmPhi);
 
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
@@ -68,7 +68,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
 
         for (int ch=0; ch<8; ++ch)
         {
-            if (!patch.ComputeForChild(ch)) // no patch for this child
+            if (!triangle.ComputeForChild(ch)) // no patch for this child
                 continue;
 
 //patch.WriteGeom( fil);
@@ -77,25 +77,25 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
             for (int i=0; i<3; ++i)
             {
                 // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= patch.GetBary(i);
-                BarySQR+= patch.GetBary(i+1);
+                BaryPQR+= triangle.GetBary(i);
+                BarySQR+= triangle.GetBary(i+1);
             }
             BaryPQR/= 3; BarySQR/= 3;
 
             Point3DCL n; // senkrecht auf PQ, PR, nach aussen gerichtet...
-            cross_product( n, patch.GetPoint(1)-patch.GetPoint(0), patch.GetPoint(2)-patch.GetPoint(0));
+            cross_product( n, triangle.GetPoint(1)-triangle.GetPoint(0), triangle.GetPoint(2)-triangle.GetPoint(0));
             n/= n.norm();
 
             const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            const int find_sign= patch.GetNumSign( 1) ? 1 : -1;
+            const int find_sign= triangle.GetNumSign( 1) ? 1 : -1;
             Point3DCL pos_dir;
             for (Uint i=0; i<4; ++i) // compute vector with positive direction
             {
                 const Uint vert= data.Vertices[i];
-                if (patch.GetSign(vert)==find_sign)
+                if (triangle.GetSign(vert)==find_sign)
                 {
                     const Point3DCL signedPoint= vert<4 ? it->GetVertex(vert)->GetCoord() : GetBaryCenter( *it->GetEdge(vert-4));
-                    pos_dir= signedPoint - patch.GetPoint(0);
+                    pos_dir= signedPoint - triangle.GetPoint(0);
                     if (find_sign == -1) pos_dir= -pos_dir;
                     break;
                 }
@@ -107,27 +107,27 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
             {
                 if (Numb[v]==NoIdx) continue;
 
-                for (Uint k=0; k<patch.GetNumPoints(); ++k)
+                for (Uint k=0; k<triangle.GetNumPoints(); ++k)
                     // Werte der Hutfunktion in P,Q,R,S
-                    val_hat[k]= FE_P2CL::H(v,patch.GetBary(k));
+                    val_hat[k]= FE_P2CL::H(v,triangle.GetBary(k));
 
                 double v_Bary= FE_P2CL::H(v,BaryPQR),
                     sum_v= 0;
                 for (int k=0; k<3; ++k)
                      sum_v+= val_hat[k];
 
-                if (patch.IsQuadrilateral())
+                if (triangle.IsQuadrilateral())
                 {
                     double sum_vSQR= 0;
                     for (int k=1; k<4; ++k)
                         sum_vSQR+= val_hat[k];
-                    sum_v+= patch.GetAreaFrac() * sum_vSQR;
-                    v_Bary+= patch.GetAreaFrac() * FE_P2CL::H(v,BarySQR);
+                    sum_v+= triangle.GetAreaFrac() * sum_vSQR;
+                    v_Bary+= triangle.GetAreaFrac() * FE_P2CL::H(v,BarySQR);
                 }
 
                 // Quadraturformel auf Dreieck, exakt bis zum Grad 2
                 const double int_v= (1./12)*sum_v + 0.75 * v_Bary;
-                const double C= sigma*patch.GetFuncDet()/2;
+                const double C= sigma*triangle.GetAbsDet()/2;
                 for (int i=0; i<3; ++i)
                     f.Data[Numb[v]+i]-= C * int_v*n[i];
             }
@@ -149,7 +149,7 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
     double det;
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
 
@@ -165,11 +165,11 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
             Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
         }
 
-        patch.Init( *it, SmPhi);
+        triangle.Init( *it, SmPhi);
 
         for (int ch=0; ch<8; ++ch)
         {
-            if (!patch.ComputeForChild(ch)) // no patch for this child
+            if (!triangle.ComputeForChild(ch)) // no patch for this child
                 continue;
 
 //patch.WriteGeom( fil);
@@ -178,11 +178,11 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
             for (int i=0; i<3; ++i)
             {
                 // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-                BaryPQR+= patch.GetBary(i);
-                BarySQR+= patch.GetBary(i+1);
+                BaryPQR+= triangle.GetBary(i);
+                BarySQR+= triangle.GetBary(i+1);
             }
 
-            const double C= patch.GetFuncDet()/6*sigma;  // 1/6 for quad. rule
+            const double C= triangle.GetAbsDet()/6*sigma;  // 1/6 for quad. rule
 
             for (int v=0; v<10; ++v)
             {
@@ -194,14 +194,14 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
 
                 Point3DCL gr= gradv( BaryPQR); // gr= grad v(P) + grad v(Q) + grad v(R)
 
-                if (patch.IsQuadrilateral())
-                    gr+= patch.GetAreaFrac() * gradv( BarySQR);
+                if (triangle.IsQuadrilateral())
+                    gr+= triangle.GetAreaFrac() * gradv( BarySQR);
                 // nun gilt:
                 // gr = [grad v(P)+...] + (a+b-1)[grad v(S)+...]
 
                 for (int i=0; i<3; ++i)
                 {
-                    const double val= inner_prod( gr, patch.GetGradId(i));
+                    const double val= inner_prod( gr, triangle.GetGradId(i));
                     f.Data[Numb[v]+i]-= C *val;
                 }
             }
@@ -223,7 +223,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
   Quad2CL<Point3DCL> Grad[10], GradRef[10];
   SMatrixCL<3,3> T;
   double det;
-  InterfacePatchCL patch;
+  InterfaceTriangleCL triangle;
 
   P2DiscCL::GetGradientsOnRef( GradRef);
 
@@ -234,18 +234,18 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
     P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
     LocalP1CL<Point3DCL> n;
 
-    patch.Init( *it, SmPhi);
+    triangle.Init( *it, SmPhi);
     for (int v=0; v<10; ++v)
     { // collect data on all DoF
       const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
       Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
       for (int k=0; k<4; ++k)
-        n[k]+= patch.GetPhi(v)*Grad[v][k];
+        n[k]+= triangle.GetPhi(v)*Grad[v][k];
     }
 
     for (int ch=0; ch<8; ++ch)
     {
-      if (!patch.ComputeForChild(ch)) // no patch for this child
+      if (!triangle.ComputeForChild(ch)) // no patch for this child
         continue;
 
 //patch.WriteGeom( fil);
@@ -253,8 +253,8 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
       for (int i=0; i<3; ++i)
       {
                 // addiere baryzentrische Koordinaten von P,Q,R bzw. S,Q,R
-        BaryPQR+= patch.GetBary(i);
-        BarySQR+= patch.GetBary(i+1);
+        BaryPQR+= triangle.GetBary(i);
+        BarySQR+= triangle.GetBary(i+1);
       }
       BaryPQR/= 3.;    BarySQR/= 3.;
 
@@ -262,14 +262,14 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
       GridFunctionCL<ProjT> GradId( ProjT(), 6);  // values in P, Q, R, S, BaryPQR, BarySQR
       for (int p=0; p<6; ++p)
       {
-        Point3DCL np= n( p<4 ? patch.GetBary(p) : p==4 ? BaryPQR : BarySQR);
+        Point3DCL np= n( p<4 ? triangle.GetBary(p) : p==4 ? BaryPQR : BarySQR);
         if (np.norm()>1e-8) np/= np.norm();
         for (int i=0; i<3; ++i)
-          GradId[p][i]= patch.ApplyProj( std_basis<3>(i+1) - np[i]*np);
+          GradId[p][i]= triangle.ApplyProj( std_basis<3>(i+1) - np[i]*np);
 //                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
       }
 
-      const double C= patch.GetFuncDet()*sigma/2.;
+      const double C= triangle.GetAbsDet()*sigma/2.;
 
       for (int v=0; v<10; ++v)
       {
@@ -284,13 +284,13 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
           double intSum= 0; // sum of the integrand in PQR, SQR
           for (int k=0; k<3; ++k)
           {
-            intSum+= inner_prod( GradId[k][i], gradv(patch.GetBary(k)));
-            if (patch.IsQuadrilateral())
-              intSum+= patch.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(patch.GetBary(k+1)));
+            intSum+= inner_prod( GradId[k][i], gradv(triangle.GetBary(k)));
+            if (triangle.IsQuadrilateral())
+              intSum+= triangle.GetAreaFrac() * inner_prod( GradId[k+1][i], gradv(triangle.GetBary(k+1)));
           }
           double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
-          if (patch.IsQuadrilateral())
-            intBary+= patch.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
+          if (triangle.IsQuadrilateral())
+            intBary+= triangle.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
           f.Data[Numb[v]+i]-= C *(intSum/12. + 0.75*intBary);
         }
       }
@@ -300,7 +300,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
 }
 
 void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
-                                        const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
+                                        const InterfaceTriangleCL&  triangle, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
                                         instat_scalar_fun_ptr sigma, const Quad5_2DCL<Point3DCL> e[3],
                                         double det, VectorCL& f)
 {
@@ -310,7 +310,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     for (int v=0; v<10; ++v)
     {
         Grad[v].assign( Grad_f[v], p);
-        n+= patch.GetPhi(v)*Grad[v];
+        n+= triangle.GetPhi(v)*Grad[v];
     }
     for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
@@ -323,7 +323,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     for (int i= 0; i < 3; ++i)
     {
         qPhPhte= (e[i] - dot(e[i],n)*n);
-        qPhPhte.apply( patch, &InterfacePatchCL::ApplyProj);
+        qPhPhte.apply( triangle, &InterfaceTriangleCL::ApplyProj);
         qsigmaPhPhte= qsigma*qPhPhte;
         for (int v= 0; v < 10; ++v)
         {
@@ -334,12 +334,12 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
 }
 
 void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * const p,
-    const InterfacePatchCL&  patch, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
+    const InterfaceTriangleCL&  triangle, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
     const Quad5_2DCL<Point3DCL> e[3], double det, VectorCL& f, SurfaceTensionCL& sf)
 {
     if ((sf.GetGradSigma() == 0) && sf.GetInputMethod() == Sigma_X)
     {
-        SF_ImprovedLaplBeltramiOnTriangle( t, p, patch, Grad_f, Numb, sf.GetSigma(), e, det, f);
+        SF_ImprovedLaplBeltramiOnTriangle( t, p, triangle, Grad_f, Numb, sf.GetSigma(), e, det, f);
         return;
     }
     static Quad5_2DCL<>          p2[10];   // P2-Hat-Functions...
@@ -349,7 +349,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     for (int v=0; v<10; ++v)
     {
         Grad[v].assign( Grad_f[v], p);
-        n+= patch.GetPhi(v)*Grad[v];
+        n+= triangle.GetPhi(v)*Grad[v];
     }
     for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
@@ -363,12 +363,12 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     sf.ComputeSF(t, p, qsigma, qgradsigma);
     Quad5_2DCL<Point3DCL> qPhgradsigma( qgradsigma);
 
-    qPhgradsigma.apply( patch, &InterfacePatchCL::ApplyProj);
+    qPhgradsigma.apply( triangle, &InterfaceTriangleCL::ApplyProj);
 
     for (int i= 0; i < 3; ++i)
     {
         qPhPhte= (e[i] - dot(e[i],n)*n);
-        qPhPhte.apply( patch, &InterfacePatchCL::ApplyProj);
+        qPhPhte.apply( triangle, &InterfaceTriangleCL::ApplyProj);
 
         qsigmaPhPhte= qsigma*qPhPhte;
         qgradsigmaPhPhte_m_Phgradsigmae= dot( qPhPhte, qgradsigma) - dot( qPhgradsigma, e[i]);
@@ -396,7 +396,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, Vec
 
     SMatrixCL<3,3> T;
     double det;
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     Quad5_2DCL<Point3DCL> e[3];
     for (int i= 0; i<3; ++i)
@@ -404,7 +404,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, Vec
 
     DROPS_FOR_TRIANG_CONST_TETRA( MG, /*default level*/-1, it)
     {
-        patch.Init( *it, SmPhi);
+    	triangle.Init( *it, SmPhi);
 
         for (int v= 0; v < 10; ++v)
         { // collect data on all DoF
@@ -416,10 +416,10 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, Vec
 
         for (int ch= 0; ch < 8; ++ch)
         {
-            patch.ComputeForChild( ch);
-            for (int t= 0; t < patch.GetNumTriangles(); ++t)
-                SF_ImprovedLaplBeltramiOnTriangle( *it, &patch.GetBary( t),
-                    patch, Grad,  Numb, e, patch.GetFuncDet( t), f.Data, sf);
+        	triangle.ComputeForChild( ch);
+            for (int t= 0; t < triangle.GetNumTriangles(); ++t)
+                SF_ImprovedLaplBeltramiOnTriangle( *it, &triangle.GetBary( t),
+                		triangle, Grad,  Numb, e, triangle.GetAbsDet( t), f.Data, sf);
         } // Ende der for-Schleife ueber die Kinder
     }
 }
@@ -568,7 +568,7 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
 double LevelsetP2CL::GetVolume( double translation) const
 {
     SMatrixCL<3,3> T;
-    InterfacePatchCL patch;
+    InterfaceTetraCL tetra;
     double det, absdet, Volume= 0.;
     LocalP2CL<double> ones( 1.);
 
@@ -576,11 +576,11 @@ double LevelsetP2CL::GetVolume( double translation) const
         it!=end; ++it) {
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);
-        patch.Init( *it, Phi, translation);
+        tetra.Init( *it, Phi, translation);
         for (int ch= 0; ch < 8; ++ch) {
             // compute volume
-            patch.ComputeCutForChild( ch);
-            Volume+= patch.quad( ones, absdet, false);
+            tetra.ComputeCutForChild( ch);
+            Volume+= tetra.quad( ones, absdet, false);
         }
     }
 #ifdef _PAR

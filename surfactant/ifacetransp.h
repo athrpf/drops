@@ -9,16 +9,16 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * DROPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
@@ -111,13 +111,13 @@ double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
 {
     double d( 0.);
     const DROPS::Uint lvl = ls.GetLevel();
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
     DROPS::Quad5_2DCL<> qdiscsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, patch, tri) {
-            qdiscsol.assign(  *it, &patch.GetBary( tri), discsol);
-            d+= qdiscsol.quad( patch.GetFuncDet( tri));
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, triangle, tri) {
+            qdiscsol.assign(  *it, &triangle.GetBary( tri), discsol);
+            d+= qdiscsol.quad( triangle.GetAbsDet( tri));
         }
         DROPS_FOR_TETRA_INTERFACE_END
     }
@@ -241,7 +241,7 @@ class Ensight6IfaceScalarCL : public Ensight6VariableCL
   public:
     Ensight6IfaceScalarCL (MultiGridCL& mg, const VecDescCL& u, std::string varName, std::string fileName, bool timedep= false)
         : Ensight6VariableCL( varName, fileName, timedep), u_( u), mg_( mg) {}
- 
+
     void Describe (Ensight6OutCL& cf) const { cf.DescribeVariable( this->varName(), true); }
     void put      (Ensight6OutCL& cf) const;
 };

@@ -1,6 +1,6 @@
 /// \file interfacePatch.tpp
 /// \brief Computes 2D patches and 3D cuts of tetrahedra and interface
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Martin Horsky; SC RWTH Aachen:
 
 /*
  * This file is part of DROPS.
@@ -9,22 +9,21 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * DROPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
 namespace DROPS
 {
-
 inline double
 InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, LocalP2CL<> & philoc)
 {
@@ -47,24 +46,7 @@ InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, LocalP2CL<> & philoc)
 }
 
 template<class ValueT>
-ValueT InterfacePatchCL::quad2D( const LocalP2CL<ValueT>& f, Uint tri) const
-{
-    const BaryCoordCL* const Vert= &GetBary(tri); // array of the 3 vertices of triangle i in barycentric coords
-    BaryCoordCL Bary;                             // barycenter in barycentric coords
-    double sum= 0;
-
-    for (int i=0; i<3; ++i)
-    {
-        Bary+= Vert[i];
-        sum+= f(Vert[i]);
-    }
-    Bary/= 3.;
-
-    return (0.375*f(Bary) + sum/24.)*GetFuncDet( tri);
-}
-
-template<class ValueT>
-ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool part /*, bool debug*/)
+ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool part /*bool debug*/)
 {
     const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
     typedef BaryCoordCL* BaryPtrT;
@@ -113,7 +95,7 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
 //if (debug) std::cout <<"Fall 4: 2x 5-Flaechner\t";
         int vertAB[2], // cut mit VZ==part = ABPQRS
             signAB= part ? 1 : -1;
-        for (int i=0, k=0; i<4 && k<2; ++i)
+            for (int i=0, k=0; i<4 && k<2; ++i)
             if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
         // connectivity AP automatisch erfuellt, check for connectivity AR
         const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
@@ -136,13 +118,12 @@ ValueT InterfacePatchCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
         BaryPtr[2]= &Bary_[3];
 //if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
-
         return absdet*integral;
     }
 }
 
 template<class ValueT>
-void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>& f, double absdet)
+void InterfaceTetraCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>& f, double absdet)
 {
     const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
     typedef BaryCoordCL* BaryPtrT;
@@ -201,9 +182,8 @@ void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
         // connectivity AP automatisch erfuellt, check for connectivity AR
         const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
 //if (debug) if (!AR) std::cout << "\nAR not connected!\n";
-
-//if (debug) std::cout << "vertA = " << vertAB[0] << "\tvertB = " << vertAB[1] << std::endl;
-//if (debug) std::cout << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cout << Edge_[i] << "\t"; std::cout << std::endl;
+ //std::cout << "vertA = " << vertAB[0] << "\tvertB = " << vertAB[1] << std::endl;
+ //std::cout << "PQRS on edges\t"; for (int i=0; i<4; ++i) std::cout << Edge_[i] << "\t"; std::cout << std::endl;
         // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
         // ABPR    (bzw. ABPQ)
         BaryPtr[0]= &BaryDoF_[data.Vertices[vertAB[0]]];
@@ -219,9 +199,25 @@ void InterfacePatchCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
         BaryPtr[2]= &Bary_[3];
 //if (debug) { const double volFrac= VolFrac(BaryPtr); std::cout << "volFrac = " << volFrac << " = 1 / " << 1/volFrac << std::endl; }
         integral+= P1DiscCL::Quad( f, BaryPtr)*VolFrac(BaryPtr);
-
         int_pos= absdet*integral;    int_neg= quadChild - int_pos;
     }
+}
+
+template<class ValueT>
+ValueT InterfaceTriangleCL::quad2D( const LocalP2CL<ValueT>& f, Uint tri) const
+{
+    const BaryCoordCL* const Vert= &GetBary(tri); // array of the 3 vertices of triangle i in barycentric coords
+    BaryCoordCL Bary;                             // barycenter in barycentric coords
+    double sum= 0;
+
+    for (int i=0; i<3; ++i)
+    {
+        Bary+= Vert[i];
+        sum+= f(Vert[i]);
+    }
+    Bary/= 3.;
+
+    return (0.375*f(Bary) + sum/24.)*GetAbsDet( tri);
 }
 
 template <class It>

@@ -144,7 +144,7 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
         return;
     }
     IdxT prNumb[4];
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     double L2= 0, L1= 0;
     const Uint lvl= p.RowIdx->TriangLevel();
     for (MultiGridCL::const_TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(lvl),
@@ -392,7 +392,7 @@ void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
 
     // Initialize Ensight6 output
     std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
-    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps + 1);
+    Ensight6OutCL ensight( C.ens_EnsCase + ".case", C.tm_NumSteps + 1, C.ens_Binary, C.ens_MasterOut);
     ensight.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), C.ens_GeomName,           ensf + ".geo"));
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),             "Levelset",  ensf + ".scl"));
     ensight.Register( make_Ensight6Scalar( Stokes.GetPrSolution( new_pr),  "Pressure",  ensf + ".pr"));

@@ -156,20 +156,20 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
     Quad5_2DCL<double> q[4];
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, it) {
-        patch.Init( *it, ls);
+    	triangle.Init( *it, ls);
 
         GetLocalNumbP1NoBnd( Numb, *it, *matM->RowIdx);
         for (int ch= 0; ch < 8; ++ch) {
-            if (!patch.ComputeForChild( ch)) // no patch for this child
+            if (!triangle.ComputeForChild( ch)) // no patch for this child
                 continue;
 
-            det= patch.GetFuncDet();
-            SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &patch.GetBary( 0), det);
-            if (patch.IsQuadrilateral()) {
-                det*= patch.GetAreaFrac();
-                SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &patch.GetBary( 1), det);
+            det= triangle.GetAbsDet();
+            SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &triangle.GetBary( 0), det);
+            if (triangle.IsQuadrilateral()) {
+                det*= triangle.GetAreaFrac();
+                SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &triangle.GetBary( 1), det);
             }
         }
     }
@@ -178,17 +178,17 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
 
 void SetupInterfaceMassP1OnTriangleNew (const LocalP2CL<> q[4],
     MatrixBuilderCL& M, const IdxT Numb[4],
-    const InterfacePatchCL& patch, Uint tri)
+    const InterfaceTriangleCL& triangle, Uint tri)
 {
     LocalP2CL<> m;
 
     double tmp;
     for (int i= 0; i < 4; ++i) {
         m= q[i]*q[i];
-        M( Numb[i], Numb[i])+= patch.quad2D( m, tri);
+        M( Numb[i], Numb[i])+= triangle.quad2D( m, tri);
         for(int j= 0; j < i; ++j) {
             m= (q[j]*q[i]);
-            tmp= patch.quad2D( m, tri);
+            tmp= triangle.quad2D( m, tri);
             M( Numb[i], Numb[j])+= tmp;
             M( Numb[j], Numb[i])+= tmp;
         }
@@ -209,17 +209,17 @@ void SetupInterfaceMassP1New (const MultiGridCL& MG, MatDescCL* matM, const VecD
     for (int i= 0; i < 4; ++i)
         q[i].assign( p1[i]);
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, it) {
-        patch.Init( *it, ls);
+    	triangle.Init( *it, ls);
 
         GetLocalNumbP1NoBnd( Numb, *it, *matM->RowIdx);
         for (int ch= 0; ch < 8; ++ch) {
-            if (!patch.ComputeForChild( ch)) // no patch for this child
+            if (!triangle.ComputeForChild( ch)) // no patch for this child
                 continue;
 
-            for (int tri=0; tri<patch.GetNumTriangles(); ++tri)
-                SetupInterfaceMassP1OnTriangleNew( q, M, Numb, patch, tri);
+            for (int tri=0; tri<triangle.GetNumTriangles(); ++tri)
+                SetupInterfaceMassP1OnTriangleNew( q, M, Numb, triangle, tri);
         }
     }
     M.Build();

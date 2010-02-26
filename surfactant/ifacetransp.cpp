@@ -9,16 +9,16 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * DROPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
@@ -94,35 +94,35 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
     Quad5_2DCL<double> q[4], m;
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, it) {
-        patch.Init( *it, ls);
+        triangle.Init( *it, ls);
 
         GetLocalNumbP1NoBnd( Numb, *it, *matM->RowIdx);
         for (int ch= 0; ch < 8; ++ch) {
-            if (!patch.ComputeForChild( ch)) // no patch for this child
+            if (!triangle.ComputeForChild( ch)) // no patch for this child
                 continue;
 
-            det= patch.GetFuncDet();
-            SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &patch.GetBary( 0), det);
-            if (patch.IsQuadrilateral()) {
-                det*= patch.GetAreaFrac();
-                SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &patch.GetBary( 1), det);
+            det= triangle.GetAbsDet();
+            SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &triangle.GetBary( 0), det);
+            if (triangle.IsQuadrilateral()) {
+                det*= triangle.GetAreaFrac();
+                SetupInterfaceMassP1OnTriangle( p1, q, M, Numb, &triangle.GetBary( 1), det);
             }
         }
    }
     M.Build();
 }
 
-void SetupLBP1OnTriangle (InterfacePatchCL& patch, int tri, Point3DCL grad[4], double coup[4][4])
+void SetupLBP1OnTriangle (InterfaceTriangleCL& triangle, int tri, Point3DCL grad[4], double coup[4][4])
 {
     Point3DCL surfgrad[4];
     for (int i= 0; i < 4; ++i)
-        surfgrad[i]= patch.ApplyProj( grad[i]);
+        surfgrad[i]= triangle.ApplyProj( grad[i]);
     for (int i= 0; i < 4; ++i)
         for (int j= 0; j <= i; ++j) {
             const double cLB= /*area of reference-triangle*/0.5*
-                inner_prod( surfgrad[i], surfgrad[j])*patch.GetFuncDet( tri);
+                inner_prod( surfgrad[i], surfgrad[j])*triangle.GetAbsDet( tri);
             coup[j][i]+= cLB;
             coup[i][j]= coup[j][i];
         }
@@ -144,20 +144,20 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, doub
     double coup[4][4];
     double dummy;
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (patch.Intersects()) { // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
             GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
             P1DiscCL::GetGradients( grad, dummy, *it);
             std::memset( coup, 0, 4*4*sizeof( double));
 
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri)
-                    SetupLBP1OnTriangle( patch, tri, grad, coup);
+            	triangle.ComputeForChild( ch);
+                for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
+                    SetupLBP1OnTriangle( triangle, tri, grad, coup);
             }
 
             for(int i= 0; i < 4; ++i) {// assemble row Numb[i]
@@ -257,20 +257,20 @@ void SetupMixedMassP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& l
     Quad5_2DCL<double> qp1[4];
 
     double coup[4][4];
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (!patch.Intersects()) continue; // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+        if (!triangle.Intersects()) continue; // We are at the phase boundary.
 
         GetLocalNumbP1NoBnd( rownum, *it, *mat->RowIdx);
         GetLocalNumbP1NoBnd( colnum, *it, *mat->ColIdx);
         std::memset( coup, 0, 4*4*sizeof( double));
 
         for (int ch= 0; ch < 8; ++ch) {
-            patch.ComputeForChild( ch);
-            for (int tri= 0; tri < patch.GetNumTriangles(); ++tri)
-                SetupMixedMassP1OnTriangle ( &patch.GetBary( tri), patch.GetFuncDet( tri), p1, qp1, coup);
+        	triangle.ComputeForChild( ch);
+            for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
+                SetupMixedMassP1OnTriangle ( &triangle.GetBary( tri), triangle.GetAbsDet( tri), p1, qp1, coup);
         }
 
         for(int i= 0; i < 4; ++i) {// assemble row Numb[i]
@@ -299,18 +299,18 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
     p1[0][0]= p1[1][1]= p1[2][2]= p1[3][3]= 1.; // P1-Basis-Functions
     Quad5_2DCL<double> q[4], m;
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (patch.Intersects()) { // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( num, *it, *v->RowIdx);
 
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri)
+            	triangle.ComputeForChild( ch);
+                for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
                     SetupInterfaceRhsP1OnTriangle( p1, q, v->Data, num,
-                        *it, &patch.GetBary( tri), patch.GetFuncDet( tri), f);
+                        *it, &triangle.GetBary( tri), triangle.GetAbsDet( tri), f);
             }
         }
     }

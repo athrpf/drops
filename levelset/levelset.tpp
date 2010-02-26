@@ -45,8 +45,9 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
     SMatrixCL<3,3> T;
     double det, absdet;
-    InterfacePatchCL patch;
-
+    InterfaceTetraCL tetra;  
+    InterfaceTriangleCL triangle;
+    
     P2DiscCL::GetGradientsOnRef( GradRef);
     maxGradPhi= -1.;
     Volume= 0.;
@@ -65,13 +66,14 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
         absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
 
-        patch.Init( *it, Phi);
+        tetra.Init( *it, Phi);
+        triangle.Init( *it, Phi);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;
         for (int v=0; v<10; ++v) // init gradPhi, Coord
         {
-            gradPhi+= patch.GetPhi(v)*Grad[v];
+            gradPhi+= tetra.GetPhi(v)*Grad[v];
             Coord[v]= v<4 ? it->GetVertex(v)->GetCoord() : GetBaryCenter( *it->GetEdge(v-4));
         }
         Vel.assign( *it, velsol);
@@ -84,19 +86,19 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
         for (int ch=0; ch<8; ++ch)
         {
             // compute volume, barycenter and velocity
-            patch.ComputeCutForChild(ch);
-            Volume+= patch.quad( ones, absdet, false);
-            bary+= patch.quad( Coord, absdet, false);
-            vel+= patch.quad( Vel, absdet, false);
+            tetra.ComputeCutForChild(ch);
+            Volume+= tetra.quad( ones, absdet, false);
+            bary+= tetra.quad( Coord, absdet, false);
+            vel+= tetra.quad( Vel, absdet, false);
 
             // find minimal/maximal coordinates of interface
-            if (!patch.ComputeForChild(ch)) // no patch for this child
+            if (!triangle.ComputeForChild(ch)) // no patch for this child
                 continue;
-            for (int tri=0; tri<patch.GetNumTriangles(); ++tri)
-                surfArea+= patch.GetFuncDet(tri);
-            for (Uint i=0; i<patch.GetNumPoints(); ++i)
+            for (int tri=0; tri<triangle.GetNumTriangles(); ++tri)
+                surfArea+= triangle.GetAbsDet(tri);
+            for (Uint i=0; i<triangle.GetNumPoints(); ++i)
             {
-                const Point3DCL p= patch.GetPoint(i);
+                const Point3DCL p= triangle.GetPoint(i);
                 for (int j=0; j<3; ++j)
                 {
                     if (p[j] < minCoord[j]) minCoord[j]= p[j];

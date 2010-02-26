@@ -107,7 +107,7 @@ void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, c
     double coup[4], coupT2[4];
 
     double integralp;
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     bool sign[4];
 
     // The 4 squares of the P1-shape-functions

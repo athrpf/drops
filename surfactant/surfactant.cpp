@@ -9,16 +9,16 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * DROPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
@@ -100,18 +100,18 @@ double L2_error (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
 {
     double d( 0.);
     const DROPS::Uint lvl = ls.GetLevel();
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
     DROPS::Quad5_2DCL<> qsol, qdiscsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (patch.Intersects()) { // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
-                    qsol.assign( *it, &patch.GetBary( tri), extsol, t);
-                    qdiscsol.assign(  *it, &patch.GetBary( tri), discsol);
-                    d+= DROPS::Quad5_2DCL<>( std::pow( qdiscsol - qsol, 2)).quad( patch.GetFuncDet( tri));
+            	triangle.ComputeForChild( ch);
+                for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri) {
+                    qsol.assign( *it, &triangle.GetBary( tri), extsol, t);
+                    qdiscsol.assign(  *it, &triangle.GetBary( tri), discsol);
+                    d+= DROPS::Quad5_2DCL<>( std::pow( qdiscsol - qsol, 2)).quad( triangle.GetAbsDet( tri));
                 }
             }
         }
@@ -124,17 +124,17 @@ double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
 {
     double d( 0.);
     const DROPS::Uint lvl = ls.GetLevel();
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
     DROPS::Quad5_2DCL<> qsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (patch.Intersects()) { // We are at the phase boundary.
+    	triangle.Init( *it, ls);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
-                    qsol.assign( *it, &patch.GetBary( tri), extsol, t);
-                    d+= DROPS::Quad5_2DCL<>( qsol*qsol).quad( patch.GetFuncDet( tri));
+            	triangle.ComputeForChild( ch);
+                for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri) {
+                    qsol.assign( *it, &triangle.GetBary( tri), extsol, t);
+                    d+= DROPS::Quad5_2DCL<>( qsol*qsol).quad( triangle.GetAbsDet( tri));
                 }
             }
         }

@@ -9,16 +9,16 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * DROPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
@@ -48,11 +48,11 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
     double coup[4][4];
     double dummy;
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (patch.Intersects()) { // We are at the phase boundary.
+        triangle.Init( *it, ls);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
             GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
             P1DiscCL::GetGradients( grad, dummy, *it);
@@ -60,9 +60,9 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
             std::memset( coup, 0, 4*4*sizeof( double));
 
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri)
-                    SetupConvectionP1OnTriangle( &patch.GetBary( tri), patch.GetFuncDet( tri),
+                triangle.ComputeForChild( ch);
+                for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
+                    SetupConvectionP1OnTriangle( &triangle.GetBary( tri), triangle.GetAbsDet( tri),
                         p1, qp1, u_loc, grad, coup);
             }
 
@@ -103,11 +103,11 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
     double coup[4][4];
     double dummy;
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
-        if (patch.Intersects()) { // We are at the phase boundary.
+        triangle.Init( *it, ls);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
             GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
             GetTrafoTr( T, dummy, *it);
@@ -116,10 +116,10 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
             std::memset( coup, 0, 4*4*sizeof( double));
 
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri)
-                    SetupMassDivP1OnTriangle( &patch.GetBary( tri), patch.GetFuncDet( tri),
-                        p1, qp1, u_loc, gradp2, patch.GetNormal(), coup);
+                triangle.ComputeForChild( ch);
+                 for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
+                    SetupMassDivP1OnTriangle( &triangle.GetBary( tri), triangle.GetAbsDet( tri),
+                        p1, qp1, u_loc, gradp2, triangle.GetNormal(), coup);
             }
 
             for(int i= 0; i < 4; ++i) {// assemble row Numb[i]

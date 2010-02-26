@@ -330,19 +330,19 @@ void ExactDistanceInitCL::dist (/*const Point3DCL tri[3],*/ const Point3DCL& p, 
 void InitZero_ExactDistance (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     VecDescCL& d, const VectorBaseCL<Point3DCL>& coord, VectorBaseCL<byte>& typ)
 {
-    DROPS::InterfacePatchCL patch;
+    DROPS::InterfaceTriangleCL triangle;
     double dd;
 
     TetraNeighborCL tetra_to_idx( mg, ls);
     for (TetraNeighborCL::TetraToIdxMapT::iterator it= tetra_to_idx().begin(); it != tetra_to_idx().end(); ++it) {
         const TetraCL* t( it->first);
-        patch.Init( *t, ls);
+        triangle.Init( *t, ls);
         for (int ch= 0; ch < 8; ++ch) {
-            if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
+            if (!triangle.ComputeForChild( ch)) continue; // Child ch has no intersection
 
             TetraNeighborCL::IdxSetT& idxset= it->second;
-            for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
-                ExactDistanceInitCL dist_to_tri( &patch.GetPoint( tri));
+            for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri) {
+                ExactDistanceInitCL dist_to_tri( &triangle.GetPoint( tri));
                 for (TetraNeighborCL::IdxSetT::iterator sit= idxset.begin(); sit != idxset.end(); ++sit) {
                     dist_to_tri.dist( coord[*sit], dd);
                     if (typ[*sit] != FastMarchCL::Finished) {

@@ -139,7 +139,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
     SMatrixCL<3,3> T;
     double det, absdet;
     Point3DCL tmp;
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     LocalP2CL<> loc_phi;
 
     P2DiscCL::GetGradientsOnRef( GradRef);
@@ -372,8 +372,8 @@ void SetupRhs2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataC
     SMatrixCL<3,3> T;
     double det, absdet;
     Point3DCL tmp;
-    InterfacePatchCL cut;
-
+    InterfaceTetraCL cut;
+   
     P2DiscCL::GetGradientsOnRef( GradRef);
     for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
          send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
@@ -523,7 +523,7 @@ void SetupPrMass_P1(const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& matM, 
     const double nu_inv_p= 1./Coeff.mu( 1.0),
                  nu_inv_n= 1./Coeff.mu( -1.0);
     double integralp, integraln;
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     LocalP2CL<> pipj[4][4];
     for(int i= 0; i < 4; ++i) {
         for(int j= 0; j < i; ++j) {
@@ -588,7 +588,7 @@ void SetupPrMass_P1X(const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& matM,
     const double nu_inv_p= 1./Coeff.mu( 1.0),
                  nu_inv_n= 1./Coeff.mu( -1.0);
     double integralp, integraln;
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
     bool sign[4];
 
     // The 16 products of the P1-shape-functions
@@ -713,7 +713,7 @@ void SetupPrStiff_P1( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_pr
                  rho_inv_n= 1./Coeff.rho(-1.);
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     LocalP2CL<> loc_phi, ones( 1.);
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
          send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit)
@@ -765,7 +765,7 @@ void SetupPrStiff_P1X( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_p
     double absdet;
     IdxT UnknownIdx[4];
     bool sign[4];
-    InterfacePatchCL cut;
+    InterfaceTetraCL cut;
 
     const double rho_inv_p= 1./Coeff.rho(1.),
                  rho_inv_n= 1./Coeff.rho(-1.);
@@ -1036,7 +1036,7 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
     P2DiscCL::GetGradientsOnRef( GradRef);
     P2DiscCL::GetGradientsOnRef( GradRefLP1);
 
-    InterfacePatchCL patch;
+    InterfaceTetraCL tetra;
     BaryCoordCL* nodes;
     LocalP2CL<>p2[10];
     double intpos, intneg;
@@ -1057,11 +1057,11 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
         // and save it n.
         n.assign( *sit, RowIdx, _BndData.Vel);
         loc_phi.assign( *sit, ls, t);
-        patch.Init( *sit, loc_phi);
-        const bool nocut= !patch.Intersects();
+        tetra.Init( *sit, loc_phi);
+        const bool nocut= !tetra.Intersects();
         if (nocut) {
-            const double mu_const= patch.GetSign( 0) == 1 ? mu_p : mu_n;
-            const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
+            const double mu_const= tetra.GetSign( 0) == 1 ? mu_p : mu_n;
+            const double rho_const= tetra.GetSign( 0) == 1 ? rho_p : rho_n;
 
             P2DiscCL::GetGradients( Grad, GradRef, T);
             // compute all couplings between HatFunctions on edges and verts
@@ -1103,19 +1103,19 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
 
             double Vol_p= 0;
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeCutForChild( ch);
-                Vol_p+= patch.quad( ones, absdet, true);
+                tetra.ComputeCutForChild( ch);
+                Vol_p+= tetra.quad( ones, absdet, true);
                 for (int i=0; i<10; ++i) {
                     // init phi_i =  i-th P2 hat function
                     phi_i[i]= 1.; phi_i[i==0 ? 9 : i-1]= 0.;
-                    patch.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
+                    tetra.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
                     rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
                 }
             }
-            patch.ComputeSubTets();
-            for (Uint k=0; k<patch.GetNumTetra(); ++k)
+            tetra.ComputeSubTets();
+            for (Uint k=0; k<tetra.GetNumTetra(); ++k)
             {
-                nodes = Quad5CL<>::TransformNodes(patch.GetTetra(k));
+                nodes = Quad5CL<>::TransformNodes(tetra.GetTetra(k));
                 for (Uint j=0; j<10; ++j)
                     q[j][k].assign(p2[j], nodes);
                 delete[] nodes;
@@ -1125,11 +1125,11 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
                     // M
                     intpos = 0.;
                     intneg = 0.;
-                    for (Uint k=0; k<patch.GetNumTetra(); k++)
-                        if (k<patch.GetNumNegTetra())
-                            intneg += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                    for (Uint k=0; k<tetra.GetNumTetra(); k++)
+                        if (k<tetra.GetNumNegTetra())
+                            intneg += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(tetra.GetTetra(k)));
                         else
-                            intpos += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                            intpos += Quad5CL<>(q[i][k]*q[j][k]).quad(absdet*VolFrac(tetra.GetTetra(k)));
                     coupM[i][j]= rho_p*intpos + rho_n*intneg;
                     coupM[j][i]= rho_p*intpos + rho_n*intneg;
 
@@ -1143,13 +1143,13 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
                         }
 
                     for (int ch= 0; ch < 8; ++ch) {
-                        patch.ComputeCutForChild( ch);
-                        patch.quadBothParts( cAp, cAn, aij, absdet);  // integrate on positive and negative part
+                        tetra.ComputeCutForChild( ch);
+                        tetra.quadBothParts( cAp, cAn, aij, absdet);  // integrate on positive and negative part
                         const double cA= cAp*mu_p + cAn*mu_n;
                         coupA[j][i]+= cA;
                         for (int k= 0; k < 3; ++k)
                             for (int l= 0; l < 3; ++l) {
-                                patch.quadBothParts( cAkp, cAkn, akreuz[k][l], absdet);  // integrate on positive and negative part
+                                tetra.quadBothParts( cAkp, cAkn, akreuz[k][l], absdet);  // integrate on positive and negative part
                                 const double cAk= cAkp*mu_p + cAkn*mu_n;
                                 coupAk[i][j][k][l]+= cAk;
                             }
@@ -1250,7 +1250,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
     Point3DCL tmp;
 
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    InterfacePatchCL patch;
+    InterfaceTetraCL tetra;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -1263,10 +1263,10 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, *b->RowIdx, _BndData.Vel);
-        patch.Init( *sit, lset.Phi);
-        const bool nocut= !patch.Intersects();
+        tetra.Init( *sit, lset.Phi);
+        const bool nocut= !tetra.Intersects();
         if (nocut) {
-            const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
+            const double rho_const= tetra.GetSign( 0) == 1 ? rho_p : rho_n;
 
             // compute all couplings between HatFunctions on edges and verts
             for (int i=0; i<10; ++i)
@@ -1278,11 +1278,11 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
             // compute all couplings between HatFunctions on edges and verts
             std::memset( rho_phi, 0, 10*sizeof( double));
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeCutForChild( ch);
+                tetra.ComputeCutForChild( ch);
                 for (int i=0; i<10; ++i) {
                     // init phi_i =  i-th P2 hat function
                     phi_i[i]= 1.; phi_i[i==0 ? 9 : i-1]= 0.;
-                    patch.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
+                    tetra.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
                     rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
                 }
             }
@@ -1330,15 +1330,15 @@ void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDa
 
     P2DiscCL::GetGradientsOnRef( GradRefLP1);
 
-    InterfacePatchCL patch;
+    InterfaceTriangleCL triangle;
     LocalP2CL<> loc_phi;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
-        patch.Init( *sit, loc_phi);
-        if (patch.Intersects()) { // We are at the phase boundary.
+        triangle.Init( *sit, loc_phi);
+        if (triangle.Intersects()) { // We are at the phase boundary.
             n.assign( *sit, RowIdx, _BndData.Vel);
             GetTrafoTr( T, det, *sit);
             absdet= std::fabs( det);
@@ -1348,18 +1348,18 @@ void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDa
                 GradLP2[i].assign( GradLP1[i]);
 
             for (int ch= 0; ch < 8; ++ch) {
-                patch.ComputeForChild( ch);
-                for (int tri= 0; tri < patch.GetNumTriangles(); ++ tri) {
+                triangle.ComputeForChild( ch);
+                for (int tri= 0; tri < triangle.GetNumTriangles(); ++ tri) {
                     surfTension= _Coeff.SurfTens;
                     for (int i= 0; i < 10; ++i) {
-                        surfGrad[i].assign( GradLP1[i], &patch.GetBary( tri));
-                        surfGrad[i].apply( patch, &InterfacePatchCL::ApplyProj);
+                        surfGrad[i].assign( GradLP1[i], &triangle.GetBary( tri));
+                        surfGrad[i].apply( triangle, &InterfaceTriangleCL::ApplyProj);
                     }
                     for (int i=0; i<10; ++i)
                         for (int j=0; j<=i; ++j) {
                             // Laplace-Beltrami... Stabilization
                             LB= surfTension*dot( surfGrad[i], surfGrad[j]);
-                            const double cLB= LB.quad( patch.GetFuncDet( tri));
+                            const double cLB= LB.quad( triangle.GetAbsDet( tri));
                             coupA[j][i]+= cLB;
                             coupA[i][j]= coupA[j][i];
                         }
@@ -1485,7 +1485,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupBdotv (VecDescCL* Bdotv, const VelVec
 
     SMatrixCL<3,3> T;
     double det;
-    InterfacePatchCL cut;
+    InterfaceTriangleCL cut;
     const ExtIdxDescCL& p_xidx= Bdotv->RowIdx->GetXidx();
 
     DROPS_FOR_TRIANG_TETRA( _MG, lvl, sit) {
@@ -1521,7 +1521,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupBdotv (VecDescCL* Bdotv, const VelVec
                     q2.assign( lp1[pr], p);
                     q2*= q1;
                     // n is the outer normal of {lset <= 0}; we need the outer normal of supp(pr-hat-function)\cap \Gamma).
-                    Bdotv->Data[xidx]-= (cut.GetSign( pr) > 0 ? -1. : 1.)*q2.quad( cut.GetFuncDet( t));
+                    Bdotv->Data[xidx]-= (cut.GetSign( pr) > 0 ? -1. : 1.)*q2.quad( cut.GetAbsDet( t));
                 }
             }
         }

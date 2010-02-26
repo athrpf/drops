@@ -1,6 +1,6 @@
 /// \file interfacePatch.h
 /// \brief Computes 2D patches and 3D cuts of tetrahedra and interface
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch; SC RWTH Aachen:
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Martin Horsky, Eva Loch; SC RWTH Aachen:
 
 /*
  * This file is part of DROPS.
@@ -42,53 +42,81 @@ class InterfacePatchCL
   public:
     typedef SArrayCL<BaryCoordCL,4> SubTetraT;
 
-  private:
-    static const double approxZero_;
-    static const bool   LinearEdgeIntersection;
+  protected:
     const RefRuleCL RegRef_;
-    int             sign_[10], num_sign_[3];  // 0/1/2 = -/0/+
-    int             intersec_, ch_, Edge_[4], innersec_; // intersec_: # of all intersections, innersec_ = # of edge intersections
-    int             numchildtriangles_; // The number of triangles in the intersection of a child with the interface.
-    double          sqrtDetATA_;
-    LocalP2CL<>     PhiLoc_;
-    Point3DCL       PQRS_[4], Coord_[10], B_[3];
-    BaryCoordCL     Bary_[4];
-    static BaryCoordCL BaryDoF_[10], AllEdgeBaryCenter_[10][10];
-    Point2DCL       ab_;
+    int intersec_;                    ///< number of zeros found
+    int ch_;                          ///< number of the child of T (as given to GetChildData(): 0-7: regular children,
+                                      ///< 8: the tetra itself, -1: class uninitialized, -2: use the subtetra st_ (defined below).
+    static BaryCoordCL BaryDoF_[10];  ///< barycentric coordinates of the (P2-) levelset-dofs.
+    int num_sign_[3];                 ///< 0/1/2 = -/0/+
+    int sign_[10];                    ///< sign of the levelset-function in the dofs of T
+    BaryCoordCL Bary_[4];             ///< barycentric coordinates of the zeros with respect to T
+    int Edge_[4];                     ///< number of the cut edges (as in VertOfEdgeAr)
+    Point3DCL PQRS_[4];
+    int innersec_;                    ///< number of edge-intersections
+    bool barysubtetra_;               ///< If true, children of the subtetra st_ of T will be considered.
+                                      ///< The columns of st_ are the barycentric coordinates of the vertices of this subtetra.
+                                      ///< All barycentric coordinates computed by this class are with respect to T
+    SubTetraT st_;        ///< Consider the subtetra st_ of T instead of T itself.
+    LocalP2CL<> PhiLoc_;  ///< levelset-function on T
+    int numtriangles_;    ///< number of triangles in the intersection with the interface (0, 1, 2);
+    Point3DCL Coord_[10]; ///< coordinates of the vertices and edge-barycenters of T
+
+  private:
+    static BaryCoordCL AllEdgeBaryCenter_[10][10]; ///< barycenters of all edges of the reference-tetra.
+                                                    ///< \todo These fields belong into geom/topo.h or a new geom/geom.h.
+    static const double approxZero_;              ///< smaller absolute values of the levelset-function are assumed to be zero.
+    static const bool LinearEdgeIntersection;     ///< if true, compute the zeros of the levelset-function by linear interpolation on the edges.
+                                                    ///< If false, compute the zero of the quadratic levelset-function.
+  public:
+
+      InterfacePatchCL();
+
+      static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
+      inline static double EdgeIntersection (Uint v0, Uint v1, LocalP2CL<>& philoc);            ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
+      void Init( const TetraCL& t, const VecDescCL& ls, double translation= 0.);
+      void Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation= 0.);
+      void Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation);
+
+      /// \name Use after Init
+      /// \remarks The following functions are only valid, if Init(...) was called before! They refer to T. If st_ was given to Init, they refer to the transformation of T.
+      ///@{
+      int GetSign( Uint DoF) const { return sign_[DoF]; }              ///< returns -1/0/1
+      double GetPhi( Uint DoF) const { return PhiLoc_[DoF]; }          ///< returns value of level set function
+      const Point3DCL& GetPoint( Uint i) const { return PQRS_[i]; }
+      bool Intersects() const                                          ///< returns whether patch exists (i.e. interface intersects tetra)
+        { for(int i=1; i<10; ++i) if (sign_[0]!=sign_[i]) return true; return false; }
+      bool IntersectsInterior() const                                  ///<  returns whether patch exists, which is not subset of a face
+        { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
+      bool ComputeVerticesOfCut( Uint ch, bool compute_PQRS= false);   ///< returns true, iff a patch exists for the child ch. If st_ was given to Init, the child of the transformed tetra T will be considered.
+          ///@}
+
+      /// \name Use after ComputeVerticesOfCut
+      /// \remarks The following functions are only valid, if ComputeVerticesOfCut( ch, ...) was called before! They return information on the patch in the child ch.
+      ///@{
+      int                GetNumTriangles() const { return numtriangles_; } ///< returns, how many triangles form the intersection of the child and the interface.
+      bool               IsQuadrilateral() const { return intersec_==4; }
+      bool               EqualToFace() const { return num_sign_[1]>=3; }   ///< returns true, if patch is shared by two tetras
+      Uint               GetNumPoints() const { return intersec_; }
+      const BaryCoordCL& GetBary ( Uint i) const { return Bary_[i]; }      ///< The first three points are the vertices of the triangular patch;
+                                                                           ///< if the patch is quadrilateral, the last three points are the vertices of the second triangle.
+                                                                           ///< The barycentric coordinates are with respect to T, even if a transformation of T was applied.
+      int                GetNumSign ( int sign)const { return num_sign_[sign+1]; } ///< returns number of child points with given sign, where sign is in {-1, 0, 1}
+
+      void               WriteGeom( std::ostream&) const;                          ///< Geomview output for debugging
+      void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
+    ///@}
+};
+
+class InterfaceTetraCL : public InterfacePatchCL
+{
+  private:
     std::vector<SubTetraT> posTetras, negTetras;
-
-    bool barysubtetra_ ;
-    SubTetraT st_;
-
-    inline void Solve2x2( const double det, const SMatrixCL<2,2>& A, SVectorCL<2>& x, const SVectorCL<2>& b)
-        { x[0]= (A(1,1)*b[0]-A(0,1)*b[1])/det;    x[1]= (A(0,0)*b[1]-A(1,0)*b[0])/det; }
     void InsertSubTetra(SubTetraT& BaryCoords, bool pos);
 
-    SubTetraT MultiplySubTetra(const SubTetraT & Tetrak_ );
-    BaryCoordCL MultiplyBaryCoord(const BaryCoordCL& Tetrak_ );
-
   public:
-    InterfacePatchCL();
-
-    static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
-
-    inline static double EdgeIntersection (Uint v0, Uint v1, LocalP2CL<>& philoc); ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
-
-    void Init( const TetraCL& t, const VecDescCL& ls, double translation= 0.);
-    void Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation= 0.);
-    void Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation);
-    /// \name Use after Init
-    /// \remarks The following functions are only valid, if Init(...) was called before!
-    ///@{
-    int    GetSign( Uint DoF)   const { return sign_[DoF]; }   ///< returns -1/0/1
-    double GetPhi( Uint DoF)    const { return PhiLoc_[DoF]; } ///< returns value of level set function
-    bool   Intersects()         const                          ///  returns whether patch exists (i.e. interface intersects tetra)
-      { for(int i=1; i<10; ++i) if (sign_[0]!=sign_[i]) return true; return false; }
-    bool   IntersectsInterior() const                          ///  returns whether patch exists, which is not subset of a face
-      { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
-    bool   ComputeForChild( Uint ch);                          ///< returns true, if a patch exists for this child
-    bool   ComputeCutForChild( Uint ch);                       ///< returns true, if a patch exists for this child
-    void   ComputeSubTets();                                   ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap T\f$ and \f$\{\varphi>0\}\cap T\f$; the regular children of T are triangulated.
+    bool   ComputeCutForChild( Uint ch); ///< returns true, if a patch exists for this child
+    void   ComputeSubTets();             ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap T\f$ and \f$\{\varphi>0\}\cap T\f$; the regular children of T are triangulated.
     ///@}
 
     /// \name Use after ComputeSubTets
@@ -96,49 +124,39 @@ class InterfacePatchCL
     ///@{
     const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];}
     Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of subtetras
-    Uint  GetNumNegTetra()      const {return negTetras.size();}      ///< returns number of tetras with level set function < 0
-    ///@}
-
-    /// \name Use after ComputeForChild
-    /// \remarks The following functions are only valid, if ComputeForChild(...) was called before!
-    ///@{
-    int                GetNumTriangles()     const { return numchildtriangles_; } ///< Returns, how many triangles form the intersection of the child and the interface.
-    bool               IsQuadrilateral()     const { return intersec_==4; }
-    bool               EqualToFace()         const { return num_sign_[1]>=3; }   ///< returns true, if patch is shared by two tetras
-    Uint               GetNumPoints()        const { return intersec_; }
-    const Point3DCL&   GetPoint( Uint i)     const { return PQRS_[i]; }
-    const BaryCoordCL& GetBary ( Uint i)     const { return Bary_[i]; } ///< The first three points are the vertices of the triangular patch; if the patch is quadrilateral, the last three points are the vertices of the second triangle.
-    int                GetNumSign ( int sign)const { return num_sign_[sign+1]; } ///< returns number of child points with given sign, where sign is in {-1, 0, 1}
-    double             GetFuncDet( Uint tri= 0) const { return sqrtDetATA_*(tri==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration for triangle \p tri.
-    double             GetAreaFrac()         const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }
-    template<class ValueT>
-    ValueT quad2D( const LocalP2CL<ValueT>&, Uint tri= 0) const;  ///< integrate on triangle \p tri, quadrature exact up to degree 2
-    const Point3DCL&   GetGradId( Uint i)    const { return B_[i]; }
-          Point3DCL    GetNormal ()          const; ///< Returns the unit normal to the linear approximation of \f$\Gamma\f$, that points from \f$\{\varphi<0\}\f$ to \f$\{\varphi<0\}\f$.
-          Point3DCL    ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
-
-    void               WriteGeom( std::ostream&) const;                          ///< Geomview output for debugging
-    void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
+    Uint  GetNumNegTetra()      const {return negTetras.size();}                    ///< returns number of tetras with level set function < 0
     ///@}
 
     /// \name Use after ComputeCutForChild
     /// \remarks The following functions are only valid, if ComputeCutForChild(...) was called before!
     ///@{
     template<class ValueT>
-    ValueT quad( const LocalP2CL<ValueT>&, double absdet, bool posPart= true);   ///< integrate on pos./neg. part
+    ValueT quad( const LocalP2CL<ValueT>&, double absdet, bool posPart= true); ///< integrate on pos./neg. part
     template<class ValueT>
-    void   quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>&, double absdet);   ///< integrate on pos. and neg. part
+    void   quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>&, double absdet); ///< integrate on pos. and neg. part
+    SubTetraT MultiplySubTetra(const SubTetraT & Tetrak_ );
     ///@}
 };
 
-/// \brief Returns the length of the longest and shortest edge, which is cut by the interface.
-///
-/// \param ls VecDescCL that describes the levelset-function.
-/// \param begin begin-iterator of triangulation-edges
-/// \param end end-iterator of triangulation-edges
-template <class It>
-  std::pair<double, double>
-  h_interface (It begin, It end, const VecDescCL& ls);
+
+class InterfaceTriangleCL : public InterfacePatchCL
+{
+  private:
+    double         DetA_;
+    Point3DCL       B_[3];
+    Point2DCL       ab_;
+
+  public:
+    BaryCoordCL MultiplyBaryCoord(const BaryCoordCL& Tetrak ); ///< compute st_*Tetrak \todo remove this by introducing a column-oriented small matrix class
+    bool ComputeForChild( Uint ch);                            ///< returns true, if a patch exists for this child
+    double GetAbsDet( Uint tri= 0) const { return DetA_*(tri==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration on the triangle \p tri.
+    double GetAreaFrac()   const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }                   ///< Quotient of the areas of the first and the second triangle.
+    template<class ValueT>
+    ValueT quad2D( const LocalP2CL<ValueT>&, Uint tri= 0) const;  ///< integrate on triangle \p tri, quadrature exact up to degree 2
+    const Point3DCL& GetGradId( Uint i) const { return B_[i]; }   ///< Returns the projection of the i-th standard-basis-vector of \f$\mathbb{R}^3\f$ on the patch.
+           Point3DCL  GetNormal () const;                         ///< Returns the unit normal to the linear approximation of \f$\Gamma\f$, that points from \f$\{\varphi<0\}\f$ to \f$\{\varphi<0\}\f$.
+           Point3DCL  ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
+};
 
 } // end of namespace DROPS
 
