@@ -266,6 +266,7 @@ class ExchangeCL
     inline double Norm_sq   (const VectorCL&, bool, bool useAccur=true, VectorCL* r_acc=0) const;
 
     // old interface should be removed
+    /// \todo Remove old interface!
     inline double Norm_sq_Acc(VectorCL&, const VectorCL&) const;                        // x_acc^T * x (accumulates second to first parameter)
     inline double Norm_sq(const VectorCL&) const;                                       // \|x\|_2^2
     inline double Norm(const VectorCL&) const;                                          // returns the euclidian-norm of a vector
