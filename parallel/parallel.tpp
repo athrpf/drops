@@ -96,11 +96,27 @@ template <typename T>
 template <typename T>
   inline void ProcCL::Gather(const T* myData, T* globalData, int size, int root)
 {
-    Assert(proc<Size(), DROPSErrCL("Gather: proc does not exists"), DebugParallelC);
+    Assert(root<Size(), DROPSErrCL("Gather: proc does not exists"), DebugParallelC);
     if (root<0)
         Communicator_.Allgather(myData, size, ProcCL::MPI_TT<T>::dtype, globalData, size, ProcCL::MPI_TT<T>::dtype);
     else
         Communicator_.Gather(myData, size, ProcCL::MPI_TT<T>::dtype, globalData, size, ProcCL::MPI_TT<T>::dtype, root);
+}
+
+template <typename T>
+  inline void ProcCL::Gatherv( const T* myData, int size, T* globalData, const int* recvcount, const int* displs, int root)
+{
+    Assert(root<Size(), DROPSErrCL("ProcCL::Gatherv: proc does not exists"), DebugParallelC);
+    if (root<0)
+        Communicator_.Allgatherv( myData, size, ProcCL::MPI_TT<T>::dtype, globalData, recvcount, displs, ProcCL::MPI_TT<T>::dtype);
+    else
+        Communicator_.Gatherv( myData, size, ProcCL::MPI_TT<T>::dtype, globalData, recvcount, displs, ProcCL::MPI_TT<T>::dtype, root);
+}
+
+template<typename T>
+  inline void ProcCL::Scatterv( const T* sendData, const int* sendcount, const int* displs, T* recvData, int recvcount, int root)
+{
+    Communicator_.Scatterv( sendDatam sendcount, displs, ProcCL::MPI_TT<T>::dtype, recvData, recvcount, ProcCL::MPI_TT<T>::dtype, root);
 }
 
 inline void ProcCL::Probe(int source, int tag, ProcCL::StatusT& status)
@@ -165,7 +181,7 @@ inline void ProcCL::Barrier()
   { Communicator_.Barrier(); }
 
 inline void ProcCL::Abort(int code)
-  { Communicator_.Abort(code); }
+  { MPI::COMM_WORLD.Abort(code); }
 //@}
 
 
@@ -189,6 +205,22 @@ template <typename T>
         MPI_Allgather (const_cast<T*>(myData), size, ProcCL::MPI_TT<T>::dtype, globalData, size, ProcCL::MPI_TT<T>::dtype, Communicator_);
     else
         MPI_Gather(const_cast<T*>(myData), size, ProcCL::MPI_TT<T>::dtype, globalData, size, ProcCL::MPI_TT<T>::dtype, root,Communicator_);
+}
+
+template<typename T>
+  inline void ProcCL::Gatherv( const T* myData, int size, T* globalData, const int* recvcount, const int* displs, int root)
+{
+    Assert(root<Size(), DROPSErrCL("ProcCL::Gatherv: proc does not exists"), DebugParallelC);
+    if (root<0)
+        MPI_Allgatherv( const_cast<T*>(myData), size, ProcCL::MPI_TT<T>::dtype, globalData, const_cast<int*>(recvcount), const_cast<int*>(displs), ProcCL::MPI_TT<T>::dtype, Communicator_);
+    else
+        MPI_Gatherv( const_cast<T*>(myData), size, ProcCL::MPI_TT<T>::dtype, globalData, const_cast<int*>(recvcount), const_cast<int*>(displs), ProcCL::MPI_TT<T>::dtype, root, Communicator_);
+}
+
+template<typename T>
+  inline void ProcCL::Scatterv( const T* sendData, const int* sendcount, const int* displs, T* recvData, int recvcount, int root)
+{
+    MPI_Scatterv( const_cast<T*>(sendData), const_cast<int*>(sendcount), const_cast<int*>(displs), ProcCL::MPI_TT<T>::dtype, recvData, recvcount, ProcCL::MPI_TT<T>::dtype, root, Communicator_);
 }
 
 inline void ProcCL::Probe(int source, int tag, ProcCL::StatusT& status)

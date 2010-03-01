@@ -65,9 +65,9 @@ MuteStdOstreamCL* ProcCL::mute_=0;
     const ProcCL::DatatypeT& ProcCL::MPI_TT<char>::dtype   = MPI_CHAR;
     const ProcCL::DatatypeT& ProcCL::MPI_TT<byte>::dtype   = MPI_CHAR;
     const ProcCL::DatatypeT& ProcCL::MPI_TT<float>::dtype  = MPI_FLOAT;
-#ifdef DROPS_WIN
-    const ProcCL::DatatypeT& ProcCL::MPI_TT<size_t>::dtype = MPI_UNSIGNED;
-#endif
+//#ifdef DROPS_WIN
+//    const ProcCL::DatatypeT& ProcCL::MPI_TT<size_t>::dtype = MPI_UNSIGNED;
+//#endif
 #endif
 
 ProcCL::ProcCL(int* argc, char*** argv)

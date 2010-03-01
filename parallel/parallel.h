@@ -28,6 +28,7 @@
 #include <iostream>
 #include <valarray>
 #include <string>
+#include <numeric>
 #include "misc/utils.h"
 #include "parallel/distributeddatatypes.h"
 
@@ -150,6 +151,12 @@ class ProcCL
       /// \brief MPI-Gather-wrapper or MPI-Allgather-wrapper if root<0 (both data-types are the same)
     template <typename T>
     static inline void Gather(const T*, T*, int, int root);
+      /// \brief MPI-Gatherv-wrapper or MPI-Allgatherv wrapper if root<0 (both data-types are the same)
+    template<typename T>
+    static inline void Gatherv( const T*, int, T*, const int*, const int*, int root);
+      /// \brief MPI-Gatherv-wrapper or MPI-Allgatherv wrapper if root<0 (both data-types are the same)
+    template<typename T>
+    static inline void Scatterv( const T*, const int*, const int*, T*, int, int root=Drops_MasterC);
       /// \brief MPI-Probe-wrapper
     static inline void Probe(int, int, StatusT&);
       /// \brief MPI-Get_count-wrapper
@@ -307,15 +314,33 @@ class ProcCL
         Gather(Addr(myData), Addr(allData), myData.size(), proc);
         return allData;
     }
-
     template<typename T>
     static std::vector<T> Gather(const T& myData, int proc) {
         std::vector<T> allData( Size());
         Gather( &myData, Addr(allData), 1, proc);
         return allData;
     }
+    template<typename T>
+    static std::valarray<T> Gatherv( const std::valarray<T>& myData, int proc=-1)
+    {
+        const std::vector<int> recvc= ProcCL::Gather( (int)myData.size(), -1);      // number of elements per proc
+        std::valarray<T> allData( std::accumulate( recvc.begin(), recvc.end(), 0)); // receive buffer
+        std::vector<int> displ( recvc.size());                                    // displacements
+        displ[0]=0; for ( size_t i=1; i<displ.size(); ++i) displ[i]= displ[i-1]+recvc[i-1];
+        Gatherv( Addr(myData), (int)myData.size(), Addr(allData), Addr( recvc), Addr( displ), proc);
+        return allData;
+    }
+    template<typename T>
+    static std::valarray<T> Gatherv( const std::vector<T>& myData, int proc=-1)
+    {
+        const std::vector<int> recvc= ProcCL::Gather( (int)myData.size(), -1);      // number of elements per proc
+        std::valarray<T> allData( std::accumulate( recvc.begin(), recvc.end(), 0)); // receive buffer
+        std::vector<int> displ( recvc.size());                                    // displacements
+        displ[0]=0; for ( size_t i=1; i<displ.size(); ++i) displ[i]= displ[i-1]+recvc[i-1];
+        Gatherv( Addr(myData), (int)myData.size(), Addr(allData), Addr( recvc), Addr( displ), proc);
+        return allData;
+    }
     //@}
-
 };
 
 /// \brief Manage construction and destruction of ProcCL
@@ -351,8 +376,8 @@ template<> struct ProcCL::MPI_TT<float>
   { static const ProcCL::DatatypeT& dtype; };
 
 #ifdef DROPS_WIN
-template<> struct ProcCL::MPI_TT<size_t>
-  { static const ProcCL::DatatypeT& dtype; };
+//template<> struct ProcCL::MPI_TT<size_t>
+//  { static const ProcCL::DatatypeT& dtype; };
 #endif
 
 } // namespace DROPS
