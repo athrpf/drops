@@ -62,7 +62,7 @@ namespace DROPS
     typedef HandlerXFERGATHER HandlerXfrGthrT;   ///< Handler how to transfer and gather an object
     typedef HandlerXFERSCATTER HandlerXfrSctrT;  ///< Handler how to transfer and scatter an object
     typedef HandlerUPDATE HandlerUpdtT;          ///< Handler how to update an object
-    typedef HandlerOBJMKCONS HandlerObjMkConsT;  ///< Handler how to make constant an object
+    typedef HandlerOBJMKCONS HandlerObjMkConsT;  ///< Handler how to make an object consistant
     typedef HandlerSETPRIORITY HandlerSetPrioT;  ///< Handler how to set the priority
     typedef HandlerXFERDELETE HandlerXferDltT;   ///< Hanler how to transfer and delete an object
 #define MarkHdrInvalid(DDD_HDR) DDD_MarkHdrInvalid(DDD_HDR); ///< Macro definition of the creator of the header

@@ -67,15 +67,19 @@ class DynamicDataInterfaceCL
     /// \brief Transfer one way
     static void IFOneway(IFT,IF_DIRT,size_t, ComProcPtrT,ComProcPtrT);
 
+    /// \brief Transfer one way on a given level (attribute)
     static void IFAOneway(IFT ,ATTRT ,IF_DIRT ,size_t , ComProcPtrT,ComProcPtrT);
 
+    /// \brief Execute a function for all objects in the interface on a given level (attribute)
     static void IFAExecLocal (IFT, ATTRT, ExecProcPtrT);
 
     /// \brief Indentifying object which are created by different processes
     static void IdentifyObject (HDRT, PROCT, HDRT);
 
+    /// \brief Execute a function for all objects in the interface
     static void IFExecLocal (IFT, ExecProcPtrT);
 
+    /// \brief Identify an object by a number
     static void IdentifyNumber (HDRT, PROCT, int);
 
     static IFT IFDefine (int, TypeT *, int, PrioT *, int, PrioT *);
@@ -95,23 +99,34 @@ class DynamicDataInterfaceCL
     /// \brief Creates C++-Objects
     static void SetHandlerCONSTRUCTOR (TypeT, HandlrContrctrT);
 
+    /// \brief Pass a function to the library which is been called to delete an object
     static void SetHandlerDELETE (TypeT , HandlrDltT);
 
+    /// \brief Pass a function to the library which is been called to copy an object
     static void SetHandlerXFERCOPY (TypeT, HandlerXfrcpT);
 
+    /// \brief Pass a function to the library which is been called to gather an object
     static void SetHandlerXFERGATHER (TypeT, HandlerXfrGthrT);
 
+    /// \brief Pass a function to the library which is been called to scatter an object
     static void SetHandlerXFERSCATTER (TypeT, HandlerXfrSctrT);
 
+    /// \brief Pass a function to the library which is been called to update an object
     static void SetHandlerUPDATE (TypeT, HandlerUpdtT);
 
+    /// \brief Pass a function to the library which is been called to make an object consistent
     static void SetHandlerOBJMKCONS (TypeT, HandlerObjMkConsT);
 
+    /// \brief Pass a function to the library which is been called to set the priority of an object
     static void SetHandlerSETPRIORITY (TypeT, HandlerSetPrioT);
+
+    /// \brief Pass a function to the library which is been called to transfer and delete an object
+    static void SetHandlerXFERDELETE (TypeT, HandlerXferDltT);
 
     /// \brief Searching object which are created by different processes
     static HDRT SearchHdr (GIDT);
 
+    /// \brief Get a list of processes owning an object
     static int * InfoProcList (HDRT);
 
     /// \brief Show defined TypeT
@@ -154,13 +169,13 @@ class DynamicDataInterfaceCL
 
     static void TypeDefineVertex(DDD_TYPE&, DROPS::VertexCL*&, DDD_ELEM_TYPE, DROPS::IdCL<DROPS::VertexCL>*, long unsigned int, DDD_ELEM_TYPE, DROPS::Point3DCL*, long unsigned int, DDD_ELEM_TYPE, std::vector<DROPS::BndPointCL, std::allocator<DROPS::BndPointCL> >**, long unsigned int, DDD_ELEM_TYPE, bool*, long unsigned int, DDD_ELEM_TYPE, DDD_HEADER*, DDD_ELEM_TYPE, DROPS::UnknownHandleCL*, long unsigned int, DDD_ELEM_TYPE, DROPS::VertexCL*);
 
-    static void SetHandlerXFERDELETE (TypeT, HandlerXferDltT);
-
+    /// \brief Get number of used processes
     static PROCT InfoProcs (void);
 
-    /// \brief Initialisation of the library.
+    /// \brief Initialization of the library.
     static void Init (int *, char ***);
 
+    /// \brief Get rank of the process
     static PROCT InfoMe (void);
 
     /// \brief Clean-up of the DDD library.
