@@ -1733,7 +1733,7 @@ bool ParGCRMod(const Mat& A, Vec& x, const Vec& b, const ExCL& ExX, PreCon& M,
 
 template <typename Mat, typename Vec, typename PreCon, typename ExCL>
 bool ParGCR(const Mat& A, Vec& x, const Vec& b, const ExCL& ExX, PreCon& M,
-    int m, int& max_iter, double& tol, bool measure_relative_tol= true, std::ostream* output=0)
+    int m, int& max_iter, double& tol, bool measure_relative_tol, std::ostream* output)
 {
     if (M.NeedDiag())
         M.SetDiag(A);
