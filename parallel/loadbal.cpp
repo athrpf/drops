@@ -568,7 +568,7 @@ void LoadBalCL::ParPartKWay()
 
     options[0]=0;
 
-    std::fill(tpwgts, tpwgts+nparts, 1./(float)nparts);
+    std::fill(tpwgts, tpwgts+nparts, (float)1./(float)nparts);
     if (part_==0)
         part_ = new idxtype[myVerts_];
 
@@ -613,7 +613,7 @@ void LoadBalCL::AdaptRepart(float quality)
 //     options[0]=1; options[1]=3; options[2]=15, options[3]=1;    // display times within parmetis
     options[0]=0;                                               // no options for parmetis
 
-    std::fill(tpwgts, tpwgts+nparts, 1./(float)nparts);
+    std::fill(tpwgts, tpwgts+nparts, (float)1/(float)nparts);
     if (part_==0)
         part_ = new idxtype[myVerts_];
 
