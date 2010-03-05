@@ -507,41 +507,13 @@ bool LevelsetP2CL::Intersects( const TetraCL& t) const
 }
 
 
-void LevelsetP2CL::ReparamFastMarching( bool ModifyZero, bool Periodic, bool OnlyZeroLvl, bool euklid, int method)
-/** \param ModifyZero: If true, the zero level is moved inside the elements intersecting the interface. If false, the zero level is kept fixed.
- *  \param OnlyZeroLvl: If true, only the first step of the algorithm is performed, i.e. the reparametrization only takes place locally at the interface.
- *  \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
- *  \param euklid: Use Euclidian method for reparametrization, should be used in parallel.
- */
+void LevelsetP2CL::Reparam( int method, bool Periodic)
+/** \param method How to perform the reparametrization (see description of ReparamFactoryCL for details)
+    \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
+*/
 {
-    FastMarchCL fm( MG_, Phi);
-
-    if (OnlyZeroLvl)
-    {
-        if (Periodic) {
-#ifdef _PAR
-            throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No periodic boundary for parallel fast marching implemented");
-#endif
-            fm.InitZeroPer( Bnd_, ModifyZero, method);
-        }
-        else
-            fm.InitZero( ModifyZero, method);
-        fm.RestoreSigns();
-    }
-    else if (Periodic) {
-#ifdef _PAR
-            throw DROPSErrCL("LevelsetP2CL::ReparamFastMarching: No periodic boundary for parallel fast marching implemented");
-#endif
-        fm.ReparamPer( Bnd_, ModifyZero, method);
-    }
-    else
-    {
-        if (!euklid)
-            fm.Reparam( ModifyZero, method);
-        else {
-            fm.ReparamEuklid( ModifyZero);
-        }
-    }
+    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( MG_, Phi, method, Periodic);
+    reparam->Perform();
 }
 
 void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const

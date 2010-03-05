@@ -195,7 +195,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
 
         if (C.rpm_Freq && step%C.rpm_Freq==0)
         {
-            lset.ReparamFastMarching( C.rpm_Method);
+            lset.Reparam( C.rpm_Method);
             curv.Clear();
             lset.AccumulateBndIntegral( curv);
 

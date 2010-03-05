@@ -796,6 +796,9 @@ public:
     val(const TetraCL& s, double v1, double v2, double v3) const;
     inline DataT
     val(const TetraCL& s, const BaryCoordCL&) const;
+    template<class _Cont>
+      inline static Data
+      val(const _Cont&, const BaryCoordCL&);
 };
 
 

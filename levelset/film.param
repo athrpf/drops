@@ -50,7 +50,7 @@ Coupling {
 # re-initialization of levelset function
 Reparam {
   Freq		=	100 # 0 = no reparametrization
-  Method	=	1	# 0/1 = fast marching without/with modification of zero
+  Method    = 03    # see ReparamFactorCL for documentation
 }
 
 # adaptive refinement

@@ -182,6 +182,55 @@ template <typename T>
         v[p[i]]= w[i];
 }
 
+/// \brief Use Kahan's algorithm to sum up elements 
+/** This algorithm accumulates the error made by the floting point 
+    arithmetics and addes this error to the sum.
+    \param first iterator to the first element
+    \param end   iterator behind the last element
+    \param init  initiali value of the sum
+    \return init + sum_{i=first}^end *i
+*/
+template <typename T, typename Iterator>
+inline T KahanSumm( Iterator first, const Iterator& end, const T init=(T)0)
+{
+    T sum= init, c=T(0), t, y;
+    while(first!=end){
+        y  = *first++ - c;
+        t  = sum + y;
+        c  = (t-sum)-y;
+        sum= t;
+    }
+    return sum;
+}
+
+/// \brief Use Kahan's algorithm to perform an inner product
+template <typename T, typename Iterator>
+inline T KahanInnerProd( Iterator first1, const Iterator& end1, Iterator first2, const T init=(T)0)
+{
+    T sum= init, c=T(0), t, y;
+    while(first1!=end1){
+        y  = (*first1++)*(*first2++) - c;
+        t  = sum + y;
+        c  = (t-sum)-y;
+        sum= t;
+    }
+    return sum;
+}
+
+/// \brief Use Kahan's algorithm to perform an inner product on given indices
+template <typename T, typename Cont, typename Iterator>
+inline T KahanInnerProd( const Cont& a, const Cont&b, Iterator firstIdx, const Iterator& endIdx, const T init=(T)0)
+{
+    T sum= init, c=T(0), t, y;
+    while(firstIdx!=endIdx){
+        y  = a[*firstIdx]*b[*firstIdx] - c;
+        ++firstIdx;
+        t  = sum + y;
+        c  = (t-sum)-y;
+        sum= t;
+    }
+    return sum;
+}
 
 //*****************************************************************************
 //

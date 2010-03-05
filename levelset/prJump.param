@@ -53,7 +53,7 @@ NavStokes {
 
 # re-initialization of levelset function
 Reparam {
-  Method	=	1
+  Method    = 03    # see ReparamFactorCL for documentation
   Freq		=	0	# 0 = no reparametrization
   MinGrad	=	0.1     # no effect
   MaxGrad	=	10	# no effect

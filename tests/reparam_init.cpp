@@ -226,7 +226,7 @@ int main ()
     lset_rep.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset_rep.Phi.SetIdx( &lset_rep.idx);
     lset_rep.Init( &sphere2_stat);
-    lset_rep.ReparamFastMarching( true, false, false, false, 2);
+    lset_rep.Reparam( 3, false);
     ensight.Register( make_Ensight6Scalar( lset_rep.GetSolution(),  "Reparam",     ensf + "_reparam.scl"));
     ensight.Write();
 

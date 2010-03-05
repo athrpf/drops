@@ -203,7 +203,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
 
     TimerCL time;
     time.Start();
-    lset.ReparamFastMarching();
+    lset.Reparam();
     time.Stop();
     std::cout << time.GetTime() << " sec for Fast Marching\n";
     ensight.Write( dt/2);

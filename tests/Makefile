@@ -10,13 +10,23 @@ EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
         mass quad5 downwind quad5_2D interfaceP1FE serialization xfem \
-        directsolver f_Gamma neq splitboundary reparam_init
+        directsolver f_Gamma neq splitboundary reparam_init reparam
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
 CPP = $(wildcard *.cpp)
 
 OBJ = $(CPP:%.cpp=%.o)
+
+# include common rules:
+include ../Make.common
+
+PAR_OBJ_ = ../parallel/parallel.o ../parallel/parmultigrid.o \
+           ../parallel/partime.o ../parallel/addeddata.o ../parallel/loadbal.o \
+           ../parallel/exchange.o ../parallel/memmgr_std.o ../parallel/parmgserialization.o \
+           ../parallel/logger.o ../parallel/parddd.o
+
+PAR_OBJ = $(if $(PAR_BUILD),$(PAR_OBJ_),)
 
 TESTNAME = drivencavity-adaptiv-schur drivencavity-adaptiv-uzawa \
     navierstokes-stationaer-uniform \
@@ -202,8 +212,13 @@ reparam_init: \
     ../levelset/fastmarch.o ../levelset/surfacetension.o ../out/ensightOut.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-# include common rules:
-include ../Make.common
+reparam: \
+    ../tests/reparam.o ../levelset/fastmarch.o ../levelset/levelset.o \
+    ../geom/simplex.o ../geom/multigrid.o ../geom/builder.o ../geom/topo.o ../geom/boundary.o \
+    ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o \
+    ../num/fe.o ../out/ensightOut.o ../num/interfacePatch.o ../levelset/surfacetension.o \
+    ../levelset/params.o ../misc/params.o ../levelset/lsetparams.o ../out/vtkOut.o $(PAR_OBJ)
+	$(CXX) -o $@ $^ $(LFLAGS)
 
 ../tests/directsolver.o:
 ifneq ($(DSOLVER_CXXFLAGS),)

@@ -550,6 +550,18 @@ template<class Data, class _BndData, class _VD>
 }
 
 template<class Data, class _BndData, class _VD>
+  template<class _Cont>
+    inline Data
+    P2EvalCL<Data, _BndData, _VD>::val(const _Cont& c, const BaryCoordCL& p)
+{
+    return  c[0] * FE_P2CL::H0( p) + c[1] * FE_P2CL::H1( p)
+          + c[2] * FE_P2CL::H2( p) + c[3] * FE_P2CL::H3( p)
+          + c[4] * FE_P2CL::H4( p) + c[5] * FE_P2CL::H5( p)
+          + c[6] * FE_P2CL::H6( p) + c[7] * FE_P2CL::H7( p)
+          + c[8] * FE_P2CL::H8( p) + c[9] * FE_P2CL::H9( p);
+}
+
+template<class Data, class _BndData, class _VD>
 inline bool P2EvalCL<Data, _BndData, _VD>::UnknownsMissing(const TetraCL& t) const
 {
     const Uint idx= _sol->RowIdx->GetIdx();

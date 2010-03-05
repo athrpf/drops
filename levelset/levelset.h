@@ -107,8 +107,8 @@ class LevelsetP2CL
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     template<class DiscVelSolT>
     void SetupSystem( const DiscVelSolT&);
-    /// Reparametrization by Fast Marching method (recommended).
-    void ReparamFastMarching( bool ModifyZero= true, bool Periodic= false, bool OnlyZeroLvl= false, bool euklid= false, int method= 0);
+    /// Reparametrization of the level set function.
+    void Reparam( int method=03, bool Periodic= false);
 
     /// tests whether level set function changes its sign on tetra \p t.
     bool   Intersects( const TetraCL&) const;
@@ -210,7 +210,7 @@ public:
         // reparam levelset function
         if (doReparam) {
             std::cout << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-            lset.ReparamFastMarching( rpm_Method_, per_, false, rpm_Method_==3);
+            lset.Reparam( rpm_Method_, per_);
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
             reparam_ = false;

@@ -1,5 +1,5 @@
 /// \file fastmarch.cpp
-/// \brief fast marching method for reparametrization
+/// \brief reparametrization methods
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 
 /*
@@ -35,92 +35,143 @@
 #    include <map>
 #endif
 #include <set>
-
+#ifdef MINPACK
+#  include <minpack.h>
+#endif
 
 namespace DROPS
 {
+#define COUNTMEM
 
-#ifndef _PAR
-double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
+// R E P A R A M  D A T A  C L
+//----------------------------
+
+ReparamDataCL::~ReparamDataCL()
 {
-    double val= 1e99;
+    for (size_t i=0; i<perpFoot.size(); ++i)
+        if ( perpFoot[i]!=0)
+            delete perpFoot[i];
+}
 
-    switch (num)
-    {
-        case 2: // Projektion auf Edge
-        {
-            const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
-            const Point3DCL b= Coord_[  Nr  ] - Coord_[upd[0]];
-            double bary= inner_prod(a,b)/a.norm_sq();
+/** Initializes the data structures augmIdx_ and map_.*/
+void ReparamDataCL::InitPerMap()
+{
+    if (!per)
+        return;
 
-            Normalize(bary);
-            const Point3DCL lotfuss= (1-bary)*Coord_[upd[0]] + bary*Coord_[upd[1]];
-            const double y= (1-bary)*v_->Data[upd[0]] + bary*v_->Data[upd[1]];
-            val= y + (lotfuss - Coord_[Nr]).norm();
+    const int    lvl     = phi.GetLevel();
+    augmIdx= new IdxDescCL( P2_FE, *bnd);
+    augmIdx->CreateNumbering( lvl, mg);
+    const Uint   augm_idx= augmIdx->GetIdx();
+    const Uint   idx     = phi.RowIdx->GetIdx();
+    const size_t size    = phi.Data.size();      // number of DOF for lset
+    const size_t sizeAugm= augmIdx->NumUnknowns();
+
+    std::vector<bool> ini( size, false);
+    IdxT k= 0;
+    map.resize( sizeAugm-size);
+
+    DROPS_FOR_TRIANG_VERTEX( mg, lvl, it){
+        const IdxT Nr= it->Unknowns( idx);
+        if (ini[Nr]){
+            it->Unknowns( augm_idx)= size + k;
+            map[k++]= Nr;
         }
-        break;
-
-        case 3: // Projektion auf Face
-        {
-            const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
-            const Point3DCL b= Coord_[upd[2]] - Coord_[upd[0]];
-            const Point3DCL c= Coord_[  Nr  ] - Coord_[upd[0]];
-            double bary1= inner_prod(a,c)/a.norm_sq(),
-                   bary2= inner_prod(b,c)/b.norm_sq();
-            Normalize(bary1, bary2);
-            const Point3DCL lotfuss= (1-bary1-bary2)*Coord_[upd[0]] + bary1*Coord_[upd[1]] + bary2*Coord_[upd[2]];
-            const double y= (1-bary1-bary2)*v_->Data[upd[0]] + bary1*v_->Data[upd[1]] + bary2*v_->Data[upd[2]];
-            val= y + (lotfuss - Coord_[Nr]).norm();
+        else{ // touched for the first time
+            ini[Nr]= true;
+            it->Unknowns( augm_idx)= Nr;
         }
     }
-
-    return val;
-}
-#else
-double FastMarchCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
-{
-    double val= 1e99;
-    if (num<2)
-        return val;
-
-    std::valarray<Point3DCL> coord(3);
-    coord[0]=GlobalCoord_[upd[0]];
-    coord[1]=GlobalCoord_[upd[1]];
-    if (num>2)
-        coord[2]=GlobalCoord_[upd[2]];
-    switch (num)
-    {
-        case 2: // Projektion auf Edge
-        {
-            const Point3DCL a= coord[1] - coord[0];
-            const Point3DCL b= GlobalCoord_[Nr] - coord[0];
-            double bary= inner_prod(a,b)/a.norm_sq();
-
-            Normalize(bary);
-            const Point3DCL lotfuss= (1-bary)*coord[0] + bary*coord[1];
-            const double y= (1-bary)*GlobalV_[upd[0]] + bary*GlobalV_[upd[1]];
-            val= y + (lotfuss - GlobalCoord_[Nr]).norm();
+    DROPS_FOR_TRIANG_EDGE( mg, lvl, it){
+        const IdxT Nr= it->Unknowns( idx);
+        if (ini[Nr]){
+            it->Unknowns( augm_idx)= size + k;
+            map[k++]= Nr;
         }
-        break;
-
-        case 3: // Projektion auf Face
-        {
-            const Point3DCL a= coord[1] - coord[0];
-            const Point3DCL b= coord[2] - coord[0];
-            const Point3DCL c= GlobalCoord_[Nr] - coord[0];
-            double bary1= inner_prod(a,c)/a.norm_sq(),
-                   bary2= inner_prod(b,c)/b.norm_sq();
-            Normalize(bary1, bary2);
-            const Point3DCL lotfuss= (1-bary1-bary2)*coord[0] + bary1*coord[1] + bary2*coord[2];
-            const double y= (1-bary1-bary2)*GlobalV_[upd[0]] + bary1*GlobalV_[upd[1]] + bary2*GlobalV_[upd[2]];
-            val= y + (lotfuss - GlobalCoord_[Nr]).norm();
+        else{ // touched for the first time
+            ini[Nr]= true;
+            it->Unknowns( augm_idx)= Nr;
         }
     }
-
-    return val;
 }
-#endif
 
+
+/** Iterate over all vertices and edges of the finest triangulation and put their
+    coordinates (or barycenter) in coord_.
+    \pre for periodic boundaries InitPerMap has to be called first
+*/
+void ReparamDataCL::InitCoord()
+{
+    const size_t coord_size= per ? augmIdx->NumUnknowns() : phi.Data.size();
+    const Uint idx         = per ? augmIdx->GetIdx()      : phi.RowIdx->GetIdx();
+    const int lvl= phi.GetLevel();
+    coord.resize( coord_size);
+
+
+#pragma omp parallel for
+    for ( int i=0; i<std::distance(mg.GetTriangVertexBegin(lvl), mg.GetTriangVertexEnd(lvl)); ++i ){
+        MultiGridCL::TriangVertexIteratorCL it= mg.GetTriangVertexBegin(lvl)+i;
+        coord[ it->Unknowns( idx)]= it->GetCoord();
+    }
+#pragma omp parallel for
+    for ( int i=0; i<std::distance(mg.GetTriangEdgeBegin(lvl), mg.GetTriangEdgeEnd(lvl)); ++i ){
+        MultiGridCL::TriangEdgeIteratorCL it= mg.GetTriangEdgeBegin(lvl)+i;
+        coord[ it->Unknowns( idx)]= GetBaryCenter( *it);
+    }
+}
+
+// I N I T  Z E R O  C L
+//----------------------
+
+/** Free all memory, especially free memory of created augmented index*/
+InitZeroCL::~InitZeroCL()
+{
+    if ( data_.augmIdx){
+        data_.augmIdx->DeleteNumbering( data_.mg);
+        delete data_.augmIdx;
+        data_.augmIdx= 0;
+    }
+}
+
+// I N I T  Z E R O  N O  M O D  C L
+//----------------------------------
+
+/** Iterate over all tetrahedra and check, if a child is intersected by the zero level
+    of the level set function
+*/
+void InitZeroNoModCL::Perform()
+{
+    InterfaceTriangleCL patch;                              // check for intersection
+    LocalNumbP2CL       n;                                  // local numbering of dof
+    const RefRuleCL    RegRef= GetRefRule( RegRefRuleC);    // determine regular children
+    const int lvl= base::data_.phi.GetLevel();
+
+#pragma omp parallel for
+    for ( int i=0; i<std::distance(data_.mg.GetTriangTetraBegin(lvl), data_.mg.GetTriangTetraEnd(lvl)); ++i ){
+        MultiGridCL::TriangTetraIteratorCL it= data_.mg.GetTriangTetraBegin(lvl)+i;
+        patch.Init( *it, base::data_.phi);
+        if ( patch.Intersects()){                                       // tetra (*it) is intersected
+            n.assign( *it, *base::data_.phi.RowIdx, BndDataCL<>(0));    // create local numbering
+            for (Uint ch= 0; ch<MaxChildrenC; ++ch) {
+                if (patch.ComputeForChild( ch)){                        // Child ch has an intersection
+                    const ChildDataCL data= GetChildData( RegRef.Children[ch]);
+                    // mark all vertices as finished
+                    for ( int vert=0; vert<4; ++vert){
+                        IdxT dof= data_.Map( n.num[ data.Vertices[vert]]);
+#pragma omp critical
+{
+                        base::data_.typ[ dof]= data_.Finished;
+                        base::data_.phi.Data[ dof]= std::abs(base::data_.phi.Data[ dof]);
+}
+                    }
+                }
+            }
+        }
+    }
+}
+
+// I N I T  Z E R O  E X A C T  C L
+//---------------------------------
 
 /// \brief The class provides, for each tetra, that is cut by the interface, a set of all levelset-unknowns, that are at most two tetras away. Only levelset-unknowns are considered, that belong to a tetra that is cut by the interface.
 ///
@@ -139,6 +190,7 @@ class TetraNeighborCL
 #else
     typedef std::map<const TetraCL*, IdxSetT> TetraToIdxMapT;
 #endif
+    typedef std::vector<std::pair<const TetraCL*, IdxSetT> > TetraToIdxVecT;
 
   private:
     typedef std::set<const TetraCL*> TetraSetT;
@@ -165,6 +217,9 @@ class TetraNeighborCL
 
     /// \brief Accessor to the map from levelset-unknowns to tetras.
     TetraToIdxMapT& operator() () { return tetra_to_idx_; }
+
+    /// \brief Accessor to the map tetra_to_idx_ as a vector (used for OpenMP purpose)
+    TetraToIdxVecT GetTetraToIdxAsVector() { return Map2Vec(tetra_to_idx_); }
 };
 
 void TetraNeighborCL::insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint ls_idx,
@@ -323,844 +378,794 @@ void ExactDistanceInitCL::dist (/*const Point3DCL tri[3],*/ const Point3DCL& p, 
     d= std::min( (p - tri_[0]).norm(), std::min( (p - tri_[1]).norm(), (p - tri_[2]).norm()));
 }
 
-/// \brief Computes the distance-function of the levelset of ls to the neighboring vertices of the triangulation. The result is stored in d. The neighbors are determined via TetraNeighborCL.
-///
-/// Note, that the correctness of this method depends on the geometry of the tetras. If the tetra-neighborhood of a vertex
-/// contains tetras of very different size, the distance can be of by O(h) without noticing.
-void InitZero_ExactDistance (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
-    VecDescCL& d, const VectorBaseCL<Point3DCL>& coord, VectorBaseCL<byte>& typ)
-{
-    DROPS::InterfaceTriangleCL triangle;
-    double dd;
+// I N I T  Z E R O  E X A C T  C L
+//---------------------------------
 
-    TetraNeighborCL tetra_to_idx( mg, ls);
-    for (TetraNeighborCL::TetraToIdxMapT::iterator it= tetra_to_idx().begin(); it != tetra_to_idx().end(); ++it) {
+/** Copy corners of the triangle and compute QR decomposition*/
+InitZeroExactCL::DistanceTriangCL::DistanceTriangCL(const Point3DCL tri[3])
+{
+    std::copy( tri, tri+3, tri_);
+    SMatrixCL<3,2> M( Uninitialized);
+    M.col( 0, tri[1] - tri[0]);
+    M.col( 1, tri[2] - tri[0]);
+    qr_.GetMatrix()= M;
+    qr_.prepare_solve();
+}
+
+/** Take data from the buffer to initialize this class
+    The buffer must contain 9 doubles for tri_ and 10
+    doubles for qr_
+*/
+InitZeroExactCL::DistanceTriangCL::DistanceTriangCL(const double* buff)
+{
+    for ( int t=0; t<3; ++t) for ( int d=0; d<3; ++d)
+        tri_[t][d]= buff[t*3+d];
+    qr_.Deserialize( buff+9);
+}
+
+
+bool InitZeroExactCL::DistanceTriangCL::dist (const Point3DCL& v0, const Point3DCL& v1, const Point3DCL& p, double& d, Point2DCL*)
+{
+    const double ll= inner_prod( v1 - v0, p - v0)/(v1 - v0).norm_sq();
+    if (ll >= 0. && 1. - ll >= 0.) {
+        d= ((1. - ll)*v0 + ll*v1 - p).norm(); // l= MakePoint2D( 1. - ll, ll);
+        return true;
+    }
+    return false;
+}
+
+
+/** Compute the distance of point p to the triangle. If a pointer l is given,
+    the corresponding perpednicular foot is given here on return.
+    \param p       point, to which the distance is computed
+    \param locPerp location of the perpendicular foot. 2 : inside triangle,
+                   1 : on boundary segment, 0 : corner of triangle
+    \param l       perpendicular foot
+*/
+double InitZeroExactCL::DistanceTriangCL::dist( const Point3DCL& p, byte* locPerp, Point3DCL* l)
+{
+    Point3DCL ll( p - tri_[0]);
+    qr_.Solve( ll); // The first two components are the least-squares-solution, the last is the residual.
+
+    // ll is located in triangle
+    if (ll[0] >= 0. && ll[1] >= 0. && 1. - ll[0] - ll[1] >= 0.) {
+        if ( l!=0){
+            *l= MakePoint3D( 1. - ll[0] - ll[1], ll[0], ll[1]);
+            *locPerp= 2;
+        }
+        return std::fabs( ll[2]);
+    }
+
+    // Compute the distance to the three boundary segments.
+    double tmpd;
+    Point2DCL* ll2= (l==0) ? 0 : new Point2DCL;
+    // Point2DCL ll2;
+    if (ll[1] < 0. && dist( tri_[0], tri_[1], p, tmpd, ll2)) {
+        if ( l!=0){
+            *l= MakePoint3D( (*ll2)[0], (*ll2)[1], 0.);
+            *locPerp= 1;
+        }
+        return tmpd;
+    }
+    if (ll[0] < 0. && dist( tri_[0], tri_[2], p, tmpd, ll2)) {
+        if ( l!=0){
+            *l= MakePoint3D( (*ll2)[0], 0., (*ll2)[1]);
+            *locPerp= 1;
+        }
+        return  tmpd;
+    }
+    if (1. - ll[0] - ll[1] < 0. && dist( tri_[1], tri_[2], p, tmpd, ll2)) {
+        if ( l!=0){
+            *l= MakePoint3D( 0., (*ll2)[0], (*ll2)[1]);
+            *locPerp= 1;
+        }
+        return tmpd;
+    }
+
+    // Compute the distance to the vertices.
+    if ( l!=0) *locPerp= 0;
+    return std::min( (p - tri_[0]).norm(), std::min( (p - tri_[1]).norm(), (p - tri_[2]).norm()));
+}
+
+/** Collect all neighbor and neighbor-neighbor tetras of a level set dof*/
+void InitZeroExactCL::InitDofToTetra()
+{
+    const Uint lvl= data_.phi.GetLevel();
+    const Uint idx= data_.phi.RowIdx->GetIdx();
+    const MultiGridCL& mg= data_.mg;
+
+    DROPS::InterfacePatchCL patch;
+    DofToTetraMapT dof_to_tetra1( data_.phi.Data.size());
+    dofToTetra_.resize( data_.phi.Data.size());
+
+    // Record for each index, which tetras are immediate neighbors. Do this only around the interface.
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        patch.Init( *it, data_.phi);
+        if (!patch.Intersects()) continue;
+
+        for (Uint i= 0; i < 4; ++i)
+            dof_to_tetra1[it->GetVertex( i)->Unknowns( idx)].insert( &*it);
+        for (Uint i= 0; i < 6; ++i)
+            dof_to_tetra1[it->GetEdge( i)->Unknowns( idx)].insert( &*it);
+    }
+
+    // Record now also the neighbors of neighbors. Do this only, if the idx belongs to a tetra that is cut by the interface.
+    IdxT dof;
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        for (Uint i= 0; i<10; ++i) {
+            dof= (i<4) ? it->GetVertex( i)->Unknowns( idx) : it->GetEdge( i-4)->Unknowns( idx);
+            if (dof_to_tetra1[dof].empty()) continue; // The vertex/edge has no tetra on an interface.
+            insert_neighbor_tetras( dof, *it, idx, dof_to_tetra1);
+        }
+    }
+}
+
+/** Put all neighbors of dof into the intersected tetra set, too */
+void InitZeroExactCL::insert_neighbor_tetras (IdxT dof, const TetraCL& t, Uint idx,
+    const DofToTetraMapT& dof_to_tetra)
+{
+    for (Uint j=0; j<10; ++j) {
+        const IdxT dofJ=(j<4) ? t.GetVertex( j)->Unknowns( idx) : t.GetEdge( j-4)->Unknowns( idx);
+        dofToTetra_[dof].insert( dof_to_tetra[dofJ].begin(), dof_to_tetra[dofJ].end());
+    }
+}
+
+inline bool operator < (const InitZeroExactCL::DistTriangIndexHelperCL& a, const InitZeroExactCL::DistTriangIndexHelperCL& b)
+{
+    if ( a.tetra<b.tetra)
+        return true;
+    else if ( a.tetra==b.tetra){
+        if ( a.childNum<b.childNum)
+            return true;
+        else if ( a.childNum==b.childNum){
+            if ( a.triangNum<b.triangNum)
+                return true;
+        }
+    }
+    return false;
+}
+
+inline bool operator == (const InitZeroExactCL::DistTriangIndexHelperCL& a, const InitZeroExactCL::DistTriangIndexHelperCL& b)
+{
+    return (a.tetra==b.tetra && a.childNum==b.childNum && a.triangNum==b.triangNum);
+}
+
+/** Determine all triangles representing the interface */
+void InitZeroExactCL::BuildDistTriang()
+{
+    const MultiGridCL&  mg= data_.mg;
+    const Uint          lvl= data_.phi.GetLevel();
+    InterfaceTriangleCL patch;
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it){
+        patch.Init( *it, data_.phi);
+        if ( !patch.Intersects()) continue;
+        for ( int ch=0; ch<8; ++ch){
+            if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
+            for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
+                distTriangPos_[ DistTriangIndexHelperCL(&(*it), ch, tri)]= distTriang_.size();
+                distTriang_.push_back( DistanceTriangCL(&patch.GetPoint( tri)));
+            }
+        }
+    }
+}
+
+/** Assign each dof located in the vicinity of the interface the position
+    of close triangles in distTriang_. */
+void InitZeroExactCL::AssociateTriangles()
+{
+    const RefRuleCL     RegRef= GetRefRule( RegRefRuleC);  // determine regular children
+    InterfaceTriangleCL patch;
+    dofToDistTriang_.resize( data_.phi.Data.size());
+
+    for ( size_t dof=0; dof<dofToTetra_.size(); ++dof){
+        for ( TetraSetT::const_iterator it= dofToTetra_[dof].begin(); it!=dofToTetra_[dof].end(); ++it){
+            patch.Init( **it, data_.phi);
+            Assert( patch.Intersects(), DROPSErrCL("InitZeroExactCL::AssociateTriangles: Tetra is not intersected"), DebugNumericC);
+            for ( int ch=0; ch<8; ++ch){
+                if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
+                for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
+                    const size_t posOfDistTriang= distTriangPos_[ DistTriangIndexHelperCL(&(**it), ch, tri)];
+                    dofToDistTriang_[dof].push_back( posOfDistTriang);
+                }
+            }
+        }
+    }
+}
+
+void InitZeroExactCL::DisplayMem() const
+{
+    const size_t memPerDistTriang= 9+10;
+    const size_t memPerDistHelper= 8+4+4;
+    const size_t memPerTriangPos= 3*8+memPerDistHelper+8;
+    const size_t memPerTetraInSet= 4*8;
+
+    size_t memDofToTetra=0, memDofToDist=0;
+
+    for ( size_t i=0; i<dofToTetra_.size(); ++i)
+        memDofToTetra += memPerTetraInSet*dofToTetra_[i].size();
+    for ( size_t i=0; i<dofToDistTriang_.size(); ++i)
+        memDofToDist+= 8*dofToDistTriang_[i].size();
+
+    const size_t memByte=   distTriang_.size()*memPerDistTriang     // all distance Triangles
+                          + distTriangPos_.size()*memPerTriangPos   // find position of triangle
+                          + memDofToTetra                           // dof -> {intersected tera}
+                          + memDofToDist;                           // dof -> {distance Triangles}
+    double mem=(double)memByte/1024/1024;
+#ifdef _PAR
+    mem= ProcCL::GlobalMax(mem);
+#endif
+    std::cout << " * Add. Memory for ExactDistance: " <<mem<< " MB\n";
+}
+
+void InitZeroExactCL::DetermineDistances()
+{
+#ifdef COUNTMEM
+    DisplayMem();
+#endif
+#pragma omp parallel
+{
+    Point3DCL *perp   = data_.UsePerp() ? new Point3DCL() : 0;
+    byte      *locPerp= data_.UsePerp() ? new byte() : 0;
+    double distance, newDistance;
+#pragma omp for
+    for (int dof=0; dof<(int)data_.phi.Data.size(); ++dof){
+        if ( !dofToDistTriang_[dof].empty()){
+            distance= std::numeric_limits<double>::max();
+            for ( size_t posTri=0; posTri<dofToDistTriang_[dof].size(); ++posTri){
+                newDistance= distTriang_[ dofToDistTriang_[dof][posTri]].dist( data_.coord[dof], locPerp, perp);
+                if ( newDistance<distance){
+                    if ( data_.UsePerp() && *locPerp==2)
+                        data_.UpdatePerp( dof, distance, *perp);
+                    distance= newDistance;
+                }
+            }
+            if ( data_.typ[dof] != ReparamDataCL::Finished) {
+                data_.phi.Data[dof]= distance;
+                data_.typ[dof]= ReparamDataCL::Finished;
+            }
+            else{
+                data_.phi.Data[dof]= std::min( data_.phi.Data[dof], distance);
+            }
+        }
+    }
+    if (perp)    delete perp;    perp=0;
+    if (locPerp) delete locPerp; locPerp=0;
+}
+}
+
+void InitZeroExactCL::Clean()
+{
+    distTriang_.clear();
+    distTriangPos_.clear();
+    dofToTetra_.clear();
+    dofToDistTriang_.clear();
+}
+
+/** Note, that the correctness of this method depends on the geometry of the tetras. If
+    the tetra-neighborhood of a vertex contains tetras of very different size, the
+    distance can be of by O(h) without noticing.
+*/
+void InitZeroExactCL::Perform()
+{
+#ifdef _PAR
+    InitDofToTetra();
+    BuildDistTriang();
+    AssociateTriangles();
+    DetermineDistances();
+#else
+    // This is the implementation of J. grande, which is much faster for the sequential version
+    VecDescCL oldv( data_.phi);
+    InterfaceTriangleCL patch;
+    double dd;
+    TetraNeighborCL tetra_to_idx( data_.mg, oldv);
+    for (TetraNeighborCL::TetraToIdxMapT::iterator it= tetra_to_idx().begin(); it!=tetra_to_idx().end(); ++it) {
         const TetraCL* t( it->first);
-        triangle.Init( *t, ls);
+        patch.Init( *t, oldv);
         for (int ch= 0; ch < 8; ++ch) {
-            if (!triangle.ComputeForChild( ch)) continue; // Child ch has no intersection
+            if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
 
             TetraNeighborCL::IdxSetT& idxset= it->second;
-            for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri) {
-                ExactDistanceInitCL dist_to_tri( &triangle.GetPoint( tri));
-                for (TetraNeighborCL::IdxSetT::iterator sit= idxset.begin(); sit != idxset.end(); ++sit) {
-                    dist_to_tri.dist( coord[*sit], dd);
-                    if (typ[*sit] != FastMarchCL::Finished) {
-                        d.Data[*sit]= dd;
-                        typ[*sit]= FastMarchCL::Finished;
+            for (int tri= 0; tri < patch.GetNumTriangles(); ++tri) {
+                ExactDistanceInitCL dist_to_tri( &patch.GetPoint( tri));
+                for (TetraNeighborCL::IdxSetT::iterator sit= idxset.begin(); sit!=idxset.end(); ++sit) {
+                    dist_to_tri.dist( data_.coord[*sit], dd);
+                    if ( data_.typ[*sit] != ReparamDataCL::Finished) {
+                        data_.phi.Data[*sit]= dd;
+                        data_.typ[*sit]= ReparamDataCL::Finished;
                     }
                     else
-                        d.Data[*sit]= std::min( d.Data[*sit], dd);
+                        data_.phi.Data[*sit]= std::min( data_.phi.Data[*sit], dd);
                 }
             }
         }
     }
+#endif
+    Clean();
+}
+
+// P A R  I N I T  Z E R O  E X A C T  C L
+//----------------------------------------
+
+#ifdef _PAR
+
+ReparamDataCL*                            ParInitZeroExactCL::actualData_     = 0;
+ParInitZeroExactCL::ToSendDistTriangMapT* ParInitZeroExactCL::toSend_         = 0;
+InitZeroExactCL::DofToDistTriangT*        ParInitZeroExactCL::distTriangs_    = 0;
+std::map<int, size_t>*                    ParInitZeroExactCL::actualOffset_   = 0;
+size_t                                    ParInitZeroExactCL::maxTriangsPerDOF_=0;
+
+extern "C" int ExecGatherDistTriangVertexC(OBJT objp){
+    return ParInitZeroExactCL::ExecGatherDistTriang<VertexCL>(objp);
+}
+extern "C" int ExecGatherDistTriangEdgeC(OBJT objp){
+    return ParInitZeroExactCL::ExecGatherDistTriang<EdgeCL>(objp);
+}
+extern "C" int HandlerDistTriangGatherPosVertexC(OBJT objp, void* buf){
+    return ParInitZeroExactCL::HandlerDistTriangGatherPos<VertexCL>(objp, buf);
+}
+extern "C" int HandlerDistTriangGatherPosEdgeC(OBJT objp, void* buf){
+    return ParInitZeroExactCL::HandlerDistTriangGatherPos<EdgeCL>(objp, buf);
+}
+extern "C" int HandlerDistTriangScatterPosVertexC(OBJT objp, void* buf){
+    return ParInitZeroExactCL::HandlerDistTriangScatterPos<VertexCL>(objp, buf);
+}
+extern "C" int HandlerDistTriangScatterPosEdgeC(OBJT objp, void* buf){
+    return ParInitZeroExactCL::HandlerDistTriangScatterPos<EdgeCL>(objp, buf);
+}
+
+/** Use the DDD Handler  ExecGatherDistTriang, but we do not distinguish between
+    neighbor processes to to lag of DDD functions to whom the data are communicated
+ */
+void ParInitZeroExactCL::GatherDistTriang()
+{
+    actualData_= &data_; toSend_= &toSendDistTriang_; distTriangs_= &dofToDistTriang_;
+    maxTriangsPerDOF_=0;
+    DynamicDataInterfaceCL::IFExecLocal( InterfaceCL<VertexCL>::GetIF(), &ExecGatherDistTriangVertexC);
+    DynamicDataInterfaceCL::IFExecLocal( InterfaceCL<EdgeCL>::GetIF(),   &ExecGatherDistTriangEdgeC);
+    actualData_= 0; toSend_= 0; distTriangs_= 0;
+}
+
+void ParInitZeroExactCL::CommunicateDistTriang()
+{
+    // fill send buffer
+    const size_t dPerDistTriang= 3*3+10;
+    VectorCL sendBuf( toSendDistTriang_.size()*dPerDistTriang);
+    size_t i=0;
+    for ( ToSendDistTriangMapT::const_iterator it=toSendDistTriang_.begin(); it!=toSendDistTriang_.end(); ++it, ++i){
+        // Put tri_ into the buffer
+        for ( int t=0; t<3; ++t) for ( int d=0; d<3; ++d)
+                sendBuf[ i*dPerDistTriang+t*3+d]= distTriang_[*it].GetTri(t)[d];
+        // Put QR decomposition into the buffer
+        distTriang_[*it].GetQR().Serialize( Addr(sendBuf)+i*dPerDistTriang+9);
+    }
+    // send data to neighbors
+    const ExchangeCL::ProcNumCT neighs= data_.phi.RowIdx->GetEx().GetNeighbors();
+    std::vector<ProcCL::RequestT> req( data_.phi.RowIdx->GetEx().GetNumNeighs());
+    size_t pos=0;
+    for ( ExchangeCL::ProcNumCT::const_iterator it= neighs.begin(); it!=neighs.end(); ++it, ++pos){
+        req[pos]= ProcCL::Isend( sendBuf, *it, 1501);
+    }
+    // receive data from neighbors
+    ProcCL::StatusT stat;
+    pos=0;
+    VectorCL recvBuf;
+    size_t receivedElements=0;
+    for ( ExchangeCL::ProcNumCT::const_iterator it= neighs.begin(); it!=neighs.end(); ++it, ++pos){
+        ProcCL::Probe(*it, 1501, stat);
+        const int numData= ProcCL::GetCount<GIDT>(stat);
+        recvBuf.resize( numData);
+        ProcCL::Recv( recvBuf, *it, 1501);
+        offset_[*it]= receivedElements;
+        receivedElements+= numData/dPerDistTriang;
+        // Handle Data
+        for ( size_t i=0; i<numData/dPerDistTriang; ++i){
+            distTriang_.push_back( InitZeroExactCL::DistanceTriangCL(Addr(recvBuf)+i*dPerDistTriang));
+        }
+    }
+    ProcCL::WaitAll( req);
+}
+
+void ParInitZeroExactCL::AssociateTrianglesOnProcBnd()
+{
+    actualData_= &data_; toSend_=&toSendDistTriang_;
+    distTriangs_=&dofToDistTriang_; actualOffset_= &offset_;
+    maxTriangsPerDOF_= ProcCL::GlobalMax( maxTriangsPerDOF_);
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(), (maxTriangsPerDOF_+2)*sizeof(IdxT),
+                   HandlerDistTriangGatherPosVertexC, HandlerDistTriangScatterPosVertexC);
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), (maxTriangsPerDOF_+2)*sizeof(IdxT),
+                   HandlerDistTriangGatherPosEdgeC, HandlerDistTriangScatterPosEdgeC);
+    actualData_=0; toSend_=0;
+    distTriangs_=0; actualOffset_=0;
+}
+
+/** Call of base::Clean as well*/
+void ParInitZeroExactCL::Clean()
+{
+    base::Clean();
+    toSendDistTriang_.clear();
+    offset_.clear();
+}
+
+void ParInitZeroExactCL::DisplayMem()
+{
+    const size_t memPerSendDist= 3*8+8, memPerOffset=3*8+4+8;
+    const size_t memByte=toSendDistTriang_.size()*memPerSendDist + offset_.size()*memPerOffset;
+    const double mem= ProcCL::GlobalMax((double)memByte)/1024/1024;
+    std::cout << " * Add. memory for parallel implementation of ExactDistance: " << mem << " MB" << std::endl;
+}
+
+void ParInitZeroExactCL::Perform()
+{
+    // same as sequential
+    base::InitDofToTetra();
+    base::BuildDistTriang();
+    base::AssociateTriangles();
+
+    // communication:
+    GatherDistTriang();
+    CommunicateDistTriang();
+    AssociateTrianglesOnProcBnd();
+
+    // determine distances
+    DetermineDistances();
+
+#ifdef COUNTMEM
+    DisplayMem();
+#endif
+
+    Clean();
+}
+
+#endif
+
+// I N I T  Z E R O  P 2  C L
+//---------------------------
+
+InitZeroP2CL::RepTetra* InitZeroP2CL::actualTetra_= 0;
+Uint*                   InitZeroP2CL::actualVert_ = 0;
+
+void InitZeroP2CL::BuildRepTetra()
+{
+    const MultiGridCL& mg= data_.mg;
+    const Uint         lvl= data_.phi.GetLevel();
+    LocalP1CL<Point3DCL> Gref[10];
+    InterfacePatchCL patch;
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it){
+        patch.Init( *it, data_.phi);
+        if ( patch.Intersects()){
+            storePosOfTetra_[&*it]= tetras_.size();
+            tetras_.push_back( RepTetra(*it, Gref, data_));
+        }
+    }
+}
+
+/** Assign each dof located in the vicinity of the interface the position
+    of close tetras in tetras_. */
+void InitZeroP2CL::AssociateTetras()
+{
+    dofToRepTetra_.resize( data_.phi.Data.size());
+    for ( size_t dof=0; dof<base::dofToTetra_.size(); ++dof){
+        for ( base::TetraSetT::const_iterator it= base::dofToTetra_[dof].begin(); it!=base::dofToTetra_[dof].end(); ++it){
+            dofToRepTetra_[dof].push_back( storePosOfTetra_[*it]);
+        }
+    }
+}
+
+void InitZeroP2CL::Clean() {}
+void InitZeroP2CL::DisplayMem() const {}
+
+void InitZeroP2CL::DetermineDistances()
+{
+#ifdef MINPACK
+    const int n=4, lwa= (4*(3*4+13))/2;
+    int info=0;
+    double x[4], f[4], tol=1e-8, *wa= new double[lwa];
+    for (size_t dof=0; dof<dofToRepTetra_.size(); ++dof){
+        for ( size_t tetra=0; tetra<dofToRepTetra_[dof].size(); ++tetra){
+            actualTetra_= &( tetras_[dofToRepTetra_[dof][tetra]]);
+            std::copy( actualTetra_->baryCenter.begin(), actualTetra_->baryCenter.end(), x);
+            x[3]= ( actualTetra_->baryCenter-data_.coord[dof]).norm();
+            info=0;
+            hybrd1_( self::f_P2, &n, x, f, &tol, &info, wa, &lwa);
+            const Point3DCL p( x, x+3);
+            if ( info!=1){
+                std::cerr << "Warning InitZeroP2CL::DetermineDistances: MINPACK info " << info
+                          << ", tol " << tol << ", p " << p << ", f(p,lambda)= "
+                          << f[0] << ' ' << f[1] << ' ' << f[2] << ' ' << f[3] << std::endl;
+            }
+            BaryCoordCL pbary( actualTetra_->w2b(p)); // barycentric coordinates of p
+            const bool perpInsideTetra= ( pbary[0]>=-DoubleEpsC && pbary[1]>=-DoubleEpsC && pbary[2]>=-DoubleEpsC && pbary[3]>=-DoubleEpsC);
+            double newDist = perpInsideTetra ? (p-data_.coord[ dof]).norm() : data_.phi.Data[ dof];
+
+            if (!perpInsideTetra){
+
+            }
+
+        }
+    }
+    actualTetra_= 0;
+#else
+    throw DROPSErrCL("InitZeroP2CL::DetermineDistances: Cannot use MINPACK");
+#endif
 }
 
 
-void FastMarchCL::InitZero( bool ModifyZero, int method)
-/// \param[in] ModifyZero If this flag is set, the values around the zero level of the levelset function are new computed. Otherwise
-///                       the old values are kept.
-/// \param[in] method     Determines the method used to compute the distance to the zero level:
-///                       scaling by averaged gradient (\a method=0), projection of the points onto zero level (\a method=1),
-///                       computing the exact distance to the piecewise-linear interface (\a method=2).
-///                       By experience, gradient scaling yields a smoother interface.
-///                       Computing the exact distance leads to a movement of the interface in O(h^2). This is quasi-optimal.
-///                       Due to the need of a larger neighborhood of the interface (TetraNeighborCL) it can consume quite a
-///                       lot of memory.
+void InitZeroP2CL::f_P2(const int *, const double *x, double *fvec, int *)
 {
-    if (method<0 || method>2)
-        throw DROPSErrCL("FastMarchCL::InitZero: unknown method");
+    const Point3DCL p( x, x+3);                 // actual point p (given by optimizer)
+    Point3DCL Gphi;                             // gradient of phi at point p
+    const double lambda= x[3];                  // value of lambda (given by optimizer)
+    BaryCoordCL pbary= actualTetra_->w2b(p);    // barycentric coordinates of p
 
-    Comment("Init zero\n", DebugParallelNumC);
-    // Knoten an der Phasengrenze als Finished markieren
-    // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
-    const Uint idx= v_->RowIdx->GetIdx();
+    // Compute gradient of phi at point p
+    for ( Uint i=0; i<10; ++i)
+        Gphi += actualTetra_->valPhi[i]*actualTetra_->G[i](pbary);
 
-    int        sign[10];
-    int        num_sign[3]; // - 0 +
-    IdxT       Numb[10];
-    const bool scaling= method==0;
-    VectorCL   sumNormGradPhi, sumVol;
+    // Compute f
+    fvec[0]= lambda*Gphi[0] + p[0] - actualTetra_->coord[ *actualVert_][0];
+    fvec[1]= lambda*Gphi[1] + p[1] - actualTetra_->coord[ *actualVert_][1];
+    fvec[2]= lambda*Gphi[2] + p[2] - actualTetra_->coord[ *actualVert_][2];
+    fvec[3]= P2EvalT::val( actualTetra_->valPhi, pbary);
+}
 
-    if (scaling) {
-        sumNormGradPhi.resize( size_);
-        sumVol.resize( size_);
-    }
+void InitZeroP2CL::Perform()
+{
+    base::InitDofToTetra();
 
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
+}
 
+// F A S T M A R C H I N G  C L
+//-----------------------------
+
+/** Iterate over all tetrahedra and store a child tetrahedra representation of each vertex*/
+void FastmarchingCL::InitNeigh()
+{
+    neigh_.resize( data_.phi.Data.size());
+    const Uint lvl= data_.phi.GetLevel();
+    const Uint idx= data_.per ? data_.augmIdx->GetIdx() : data_.phi.RowIdx->GetIdx();
     const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
-
-    // init Coord_
-    Coord_.resize( size_);
-
-#ifdef _PAR
-    Typ_.resize(size_, Far);
-    tmpTyp_.resize(size_, Far);
-    tmpv_.resize(size_);
-#endif
-
-    for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(), end=MG_.GetTriangVertexEnd();
-        it!=end; ++it)
-        Coord_[it->Unknowns(idx)]= it->GetCoord();
-    for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(), end=MG_.GetTriangEdgeEnd();
-        it!=end; ++it)
-        Coord_[it->Unknowns(idx)]= GetBaryCenter( *it);
-
-    // store copy of v_.Data in Old_
-    Old_.resize( size_);
-    Old_= v_->Data;
-    VecDescCL oldv( *v_);
-
-    // v_->Data= 1.; // Make the sign uniform; *only* for testing
-
-    if (method == 2) {
-        std::cout << "Method 2" << std::endl;
-        InitZero_ExactDistance( MG_, oldv, *v_, Coord_, Typ_);
-        return;
-    }
-
-    LocalP2CL<> PhiLoc;
-
-    for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
-        it!=end; ++it)
-    {
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(idx)
-                         : it->GetEdge(v-4)->Unknowns(idx);
-//            sign[v]= std::abs(Old_[Numb[v]])<1e-8 ? 0 : (Old_[Numb[v]]>0 ? 1 : -1);
-            sign[v]= Old_[Numb[v]] == 0. ? 0 : (Old_[Numb[v]] > 0. ? 1 : -1);
-            if (sign[v]==0)
-                Typ_[Numb[v]]= Finished;
-        }
-        PhiLoc.assign( *it, oldv, NoBndDataCL<>());
-
-        for (int ch=0; ch<8; ++ch)
-        {
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            num_sign[0]= num_sign[1]= num_sign[2]= 0;
-            for (int vert= 0; vert<4; ++vert)
-                ++num_sign[ sign[data.Vertices[vert]] + 1];
-
-            const bool intersec= (num_sign[0]*num_sign[2]!=0); // Vorzeichenwechsel
-
-            if (!intersec) continue;
-
-            if (!ModifyZero)
-            {
-                for (int vert= 0; vert<4; ++vert)
-                {
-                    const IdxT Nr= Numb[data.Vertices[vert]];
-                    Typ_[Nr]= Finished;
-                    v_->Data[Nr]= std::abs( Old_[Nr]);
-                }
-                continue;
-            }
-
-            // ab hier gilt intersec && ModifyZero == true
-
-            if (scaling) {
-                // compute gradient of level set (as P1 FE on child => const gradient on child)
-                SMatrixCL<3,4> p1grad;
-                double det;
-                Point3DCL pt[4];
-                SVectorCL<4> ls;
-                for (int v= 0; v < 4; ++v) {
-                    pt[v]= Coord_ [Numb[data.Vertices[v]]];
-                    ls[v]= PhiLoc[data.Vertices[v]];
-                }
-                P1DiscCL::GetGradients( p1grad, det, pt);
-                const Point3DCL n( p1grad*ls);
-                const double absdet= std::abs(det),
-                        normgrad= n.norm();
-
-                for (int v= 0; v < 4; ++v) {
-                    const IdxT MapNr= Map(Numb[data.Vertices[v]]);
-                    sumNormGradPhi[MapNr]+= normgrad*absdet;
-                    sumVol[MapNr]+= absdet;
-                    Typ_[MapNr]= Finished;
-                }
-            }
-            else { // compute distance by projections on interface
-                Point3DCL Schnitt[4];
-                int num= 0;
-                // Berechnung der Schnittpunkte mit den Kanten des Tetra
-                for (int vert= 0; vert<4; ++vert)
-                    if (sign[data.Vertices[vert]]==0)
-                        Schnitt[num++]= Coord_[Numb[data.Vertices[vert]]];
-
-                for (int edge= 0; edge<6 && num<4; ++edge)
-                {
-                    const Ubyte v1= data.Vertices[ VertOfEdge( edge, 0)],
-                                v2= data.Vertices[ VertOfEdge( edge, 1)];
-                    if (sign[v1]*sign[v2] == -1) // Vorzeichenwechsel auf edge
-                    {
-                        const IdxT Nr1= Numb[v1],
-                                   Nr2= Numb[v2];
-                        const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
-                        Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
-                    }
-                }
-/*
-fil << "geom {OFF " << num << " 1 0\n";
-for (int i=0; i<num; ++i)
-{
-    for (int j=0; j<3; ++j)
-        fil << Schnitt[i][j] << ' ';
-    fil << '\n';
-}
-if (num==3)
-    fil << "3 0 1 2";
-else
-    fil << "4 0 1 3 2";
-fil << "\n}\n";
-*/
-                if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
-
-                for (int repeat=0; repeat<num-2; ++repeat)
-                { // fuer num==4 (Schnitt ABDC ist viereckig)
-                  // zwei Dreiecke ABC + DBC betrachten
-                    if (repeat) Schnitt[0]= Schnitt[3];
-
-                    const Point3DCL a= Schnitt[1] - Schnitt[0],
-                                    b= Schnitt[2] - Schnitt[0];
-
-                    for (int vert=0; vert<4; ++vert)
-                    {
-                        if (sign[data.Vertices[vert]]==0) continue;
-
-                        const IdxT Nr= Numb[data.Vertices[vert]];
-                        const Point3DCL Crd= Coord_[Nr],
-                                        c=   Crd - Schnitt[0];
-                        double dist= std::min( c.norm(), (Crd-Schnitt[1]).norm());
-                        dist= std::min( dist, (Crd-Schnitt[2]).norm());
-
-                        double bary1= inner_prod(a,c)/a.norm_sq(),
-                               bary2= inner_prod(b,c)/b.norm_sq();
-                        Normalize(bary1, bary2);
-                        const Point3DCL lotfuss= (1-bary1-bary2)*Schnitt[0] + bary1*Schnitt[1] + bary2*Schnitt[2];
-                        dist= std::min( dist, (lotfuss - Crd).norm());
-
-                        if (Typ_[Nr] != Finished)
-                        {
-                            Typ_[Nr]= Finished;
-                            v_->Data[Nr]= dist;
-                        }
-                        else{
-                            v_->Data[Nr]= std::min( dist, v_->Data[Nr]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (ModifyZero && scaling) {
-#ifdef _PAR
-        // accumulate sums
-        ex_->Accumulate( sumNormGradPhi);
-        ex_->Accumulate( sumVol);
-#endif
-        for (IdxT i=0; i<size_; ++i)
-            if (Typ_[i]==Finished) { // dof at interface
-                const double scale= sumNormGradPhi[i]/sumVol[i]; // average norm
-                v_->Data[i]= std::abs( Old_[i])/scale;
-            }
-    }
-//fil << "}\n";
-}
-
-#ifndef _PAR
-void FastMarchCL::InitClose()
-{
-    // an Finished angrenzende Knoten mit Close markieren und dort v_ updaten
-    const Uint idx= v_->RowIdx->GetIdx();
-
-    neigh_.resize( size_);
-
     IdxT Numb[10];
 
-    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
-
-    for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
-        it!=end; ++it)
-    {
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
+    DROPS_FOR_TRIANG_TETRA( base::data_.mg, lvl, it){
+        for ( int v=0; v<10; ++v){ // collect data on all DoF
             if (v<4)
                 Numb[v]= it->GetVertex(v)->Unknowns(idx);
             else
                 Numb[v]= it->GetEdge(v-4)->Unknowns(idx);
         }
-
-        for (int ch=0; ch<8; ++ch)
-        {
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
+        for ( Uint ch=0; ch<MaxChildrenC; ++ch){
+            const ChildDataCL chdata= GetChildData( RegRef.Children[ch]);
+            // build tetra
             ReprTetraT t;
-            bool ContainsFinished= false;
-            for (int vert= 0; vert<4; ++vert)
-            {
-                const IdxT Nr= Numb[ data.Vertices[vert]];
-                t[vert]= Nr;
-                if (Typ_[Nr] == Finished)
-                    ContainsFinished= true;
-            }
-
-            if (ContainsFinished)
-                for (int vert= 0; vert<4; ++vert)
-                    Update( t[vert]);
-
-            // init neigh_
-            for (int vert= 0; vert<4; ++vert)
-                neigh_[t[vert]].push_back( t);
+            for ( Uint vert=0; vert<NumVertsC; ++vert)
+                t[vert]= Numb[ chdata.Vertices[vert]];
+            // store tetra
+            for ( Uint vert=0; vert<NumVertsC; ++vert)
+                neigh_[ base::data_.Map( t[vert])].push_back( t);
         }
     }
 }
-#else
-void FastMarchCL::InitClose()
-/** Init Close is only done by master-process. All DoF that have finished neighbor DoF
-    are marked as close and the values are updated */
+
+/** Iterate over all vertices and edges and check if a dof is marked as finished.
+    If so, put all neighbor dof in the close set.
+    \pre InitNeigh has to be called
+*/
+void FastmarchingCL::InitClose()
 {
-    Comment("Init close\n", DebugParallelNumC);
-    if (!ProcCL::IamMaster())
+    std::set<IdxT> closeVerts;
+    for (size_t dof=0; dof<data_.typ.size(); ++dof){
+        if ( data_.typ[dof] == data_.Finished)
+            for (Uint n = 0; n < neigh_[dof].size(); ++n)
+                for (int j = 0; j < 4; ++j)
+                    closeVerts.insert( neigh_[dof][n][j]);
+    }
+    std::set<IdxT>::const_iterator closeit;
+    for ( closeit=closeVerts.begin(); closeit!=closeVerts.end(); ++closeit){
+        Update( *closeit);
+    }
+#if DROPSDebugC&DebugNumC
+    // Check if all values are >0
+    for (size_t i=0; i<data_.phi.Data.size(); ++i){
+        Assert(data_.phi.Data[i]>=0, DropsErrCL("FastmarchingCL::InitClose: Values must be greater than zero"), ~0);
+    }
+#endif
+}
+
+/** Iterate over all neighbors of NrI and check if distance has changed. If a neighbor
+    is not in the close set, put this dof in this set. If NrI is already marked as finished
+    then do nothing
+    \param NrI dof to be updated
+*/
+void FastmarchingCL::Update( const IdxT NrI)
+{
+    const IdxT MapNrI = data_.Map(NrI);
+
+    // Update all vertices that are not Finished
+    if ( data_.typ[MapNrI] == data_.Finished)
         return;
 
-    for (IdxT i=0; i<GlobNeigh_.size(); ++i)
-    {
-        bool ContainsFinished= false;
-        for (Uint n=0; n<GlobNeigh_[i].size(); ++n)
-        {
-            // Check if a finished vert lies in tetra
-            for (int vert= 0; vert<4; ++vert)
-                if (GlobalTyp_[ GlobNeigh_[i][n][vert] ] == Finished)
-                    ContainsFinished= true;
-
-            // If contains finihed, update neighs
-            if (ContainsFinished)
-                for (int vert= 0; vert<4; ++vert)
-                    Update( GlobNeigh_[i][n][vert] );
-        }
-    }
-}
-#endif
-
-IdxT FastMarchCL::FindTrial() const
-{
-    double min= 1e99;
-    IdxT min_idx= NoIdx;
-
-    for (std::set<IdxT>::const_iterator it= Close_.begin(), end= Close_.end(); it!=end; ++it)
-    {
-#ifndef _PAR
-        if (v_->Data[*it]<=min)
-        {
-            min= v_->Data[*it];
-            min_idx= *it;
-        }
-#else
-        if(GlobalV_[*it]<=min)
-        {
-            min= GlobalV_[*it];
-            min_idx= *it;
-        }
-#endif
-    }
-    return min_idx;
-}
-
-#ifndef _PAR
-void FastMarchCL::Update( const IdxT NrI)
-{
-    // Update all vertices that are not Finished
-    if (Typ_[NrI] == Finished) return;
-
     IdxT upd[3];
-    double minval= Typ_[NrI]==Close ? v_->Data[NrI] : 1e99;
+    double minval = ( data_.typ[MapNrI] == data_.Close) ? data_.phi.Data[MapNrI] : 1e99;
 
-    for (Uint n=0; n<neigh_[NrI].size(); ++n)
-    {
-        int num= 0;
-        for (int j=0; j<4; ++j)
-        {
-            const IdxT NrJ= neigh_[NrI][n][j];
-            if (Typ_[NrJ] == Finished)
-            {
-                upd[num++]= NrJ;
-                minval= std::min( minval, v_->Data[NrJ] + (Coord_[NrJ]-Coord_[NrI]).norm());
+    // Update all neighbor vertices
+    for ( Uint n = 0; n < neigh_[MapNrI].size(); ++n) {
+        int num = 0;
+        for ( int j = 0; j < 4; ++j) {
+            const IdxT NrJ   = neigh_[MapNrI][n][j];
+            const IdxT MapNrJ= data_.Map( NrJ);
+            if ( data_.typ[MapNrJ] == data_.Finished) {
+                upd[num++] = NrJ;
+                minval = std::min(minval,
+                        data_.phi.Data[ MapNrJ]+(data_.coord[NrJ]-data_.coord[NrI]).norm());
             }
         }
-
-        minval= std::min( minval, CompValueProj( NrI, num, upd));
+        minval = std::min(minval, CompValueProj(NrI, num, upd));
     }
 
-    v_->Data[NrI]= minval;
-    if (Typ_[NrI] != Close)
-    {
-        Close_.insert( NrI);
-        Typ_[NrI]= Close;
+    data_.phi.Data[MapNrI] = minval;
+    if (data_.typ[MapNrI] != data_.Close) {
+        close_.insert( DistIdxT( minval, MapNrI));
+        data_.typ[MapNrI] = data_.Close;
     }
 }
-#else
-void FastMarchCL::Update( const IdxT NrI)
+
+/** Compute the projection to an edge or an face
+    \param Nr the dof to be computed
+    \param num number of intersection points (2: edge, 3: face)
+    \param upd corners of edge/face
+    \return distance of Nr to edge/face
+*/
+double FastmarchingCL::CompValueProj( IdxT Nr, int num, const IdxT upd[3]) const
 {
-    // Update all vertices that are not Finished
-    if (GlobalTyp_[NrI] == Finished) return;
-
-    IdxT upd[3];
-    double minval= GlobalTyp_[NrI]==Close ? GlobalV_[NrI] : 1e99;
-
-    for (Uint n=0; n<GlobNeigh_[NrI].size(); ++n)
-    {
-        int num= 0;
-        for (int j=0; j<4; ++j)
-        {
-            const IdxT NrJ= GlobNeigh_[NrI][n][j];
-            Assert(NrJ<globsize_, DROPSErrCL("FastMarchCL::Update: DoF-Number to big!"), DebugParallelNumC);
-            if (GlobalTyp_[NrJ] == Finished)
-            {
-                upd[num++]= NrJ;
-                minval= std::min( minval, GlobalV_[NrJ] + (GlobalCoord_[NrJ]-GlobalCoord_[NrI]).norm());
-            }
-        }
-        minval= std::min( minval, CompValueProj( NrI, num, upd));
-    }
-
-    GlobalV_[NrI]= minval;
-    if (GlobalTyp_[NrI] != Close)
-    {
-        Close_.insert( NrI);
-        GlobalTyp_[NrI]= Close;
-    }
-}
+#ifdef _PAR
+    if (data_.per)
+        throw DROPSErrCL("FastmarchingCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
 #endif
+    double val= 1e99;
+    VectorBaseCL<Point3DCL>& coord_=data_.coord;
 
-#ifndef _PAR
-void FastMarchCL::Reparam( bool ModifyZero, int method)
+    switch (num){
+        case 2:{ // projection on edge
+            const Point3DCL a= coord_[upd[1]] - coord_[upd[0]];
+            const Point3DCL b= coord_[  Nr  ] - coord_[upd[0]];
+            double bary= inner_prod(a,b)/a.norm_sq();
+
+            data_.Normalize(bary);
+            const Point3DCL lotfuss= (1-bary)*coord_[upd[0]] + bary*coord_[upd[1]];
+            const double y= (1-bary)*data_.phi.Data[ data_.Map(upd[0])] + bary*data_.phi.Data[ data_.Map(upd[1])];
+            val= y + (lotfuss - coord_[Nr]).norm();
+        }
+        break;
+
+        case 3:{ // projection of face
+            const Point3DCL a= coord_[upd[1]] - coord_[upd[0]];
+            const Point3DCL b= coord_[upd[2]] - coord_[upd[0]];
+            const Point3DCL c= coord_[  Nr  ] - coord_[upd[0]];
+            double bary1= inner_prod(a,c)/a.norm_sq(),
+                   bary2= inner_prod(b,c)/b.norm_sq();
+            data_.Normalize(bary1, bary2);
+            const Point3DCL lotfuss= (1-bary1-bary2)*coord_[upd[0]] + bary1*coord_[upd[1]] + bary2*coord_[upd[2]];
+            const double y= (1-bary1-bary2)*data_.phi.Data[data_.Map(upd[0])]
+                   + bary1*data_.phi.Data[data_.Map(upd[1])]+bary2*data_.phi.Data[data_.Map(upd[2])];
+            val= y + (lotfuss - coord_[Nr]).norm();
+        }
+    }
+    return val;
+}
+
+/** While some vertices are still marked as Close, determine the distance of these
+    vertices by the FMM
+*/
+void FastmarchingCL::DetermineDistances()
 {
-    TimerCL time;
-    InitZero( ModifyZero, method);
-    InitClose();
-
+#ifdef COUNTMEM
+    size_t elemClose=0, memPerClose=28;
+    size_t elemRepTetra=0, memPerTetra=4*8;
+    for ( size_t i=0; i<neigh_.size(); ++i)
+        elemRepTetra+= neigh_[i].size();
+#endif
     IdxT next;
 
-    while ((next= FindTrial()) != NoIdx)
-    {
-        Close_.erase( next);
-        Typ_[next]= Finished;
+    while ( !close_.empty()) {
+#ifdef COUNTMEM
+        elemClose= std::max( elemClose, close_.size());
+#endif
+        // remark: next < size_   =>   Map not needed for next
+        next= close_.GetNearest().second;
+        data_.typ[next] = data_.Finished;
 
         std::set<IdxT> neighVerts;
-        for (Uint n=0; n<neigh_[next].size(); ++n)
-        { // collect all neighboring verts in neighVerts
-            for (Uint i=0; i<4; ++i)
-                neighVerts.insert( neigh_[next][n][i]);
+        for ( Uint n = 0; n < neigh_[next].size(); ++n) { // collect all neighboring verts in neighVerts
+            for ( Uint i = 0; i < 4; ++i)
+                neighVerts.insert(neigh_[next][n][i]);
         }
-        for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
-            it!=end; ++it)
-        { // update all neighboring verts, mark as Close
+        for (std::set<IdxT>::const_iterator it = neighVerts.begin(), end = neighVerts.end(); it != end; ++it) { // update all neighboring verts, mark as Close
             Update( *it);
         }
         neigh_[next].clear(); // will not be needed anymore
     }
 
-    RestoreSigns();
-    time.Stop();
-    std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
+#ifdef COUNTMEM
+    usedMem_=  elemClose*memPerClose                // elements in close
+             + elemRepTetra*memPerTetra             // tetrahedra to represent neighbors
+             + (8+3*8+1)* data_.phi.Data.size();   // value of phi + coord + type
+    const double mem= (double)usedMem_/1024/1024;
+    std::cout << " * Used memory for Fastmarching: " << mem << " MB" << std::endl;
+#endif
 }
-#else
-void FastMarchCL::Reparam( bool ModifyZero, int method)
+
+/** Apply the FMM to a level set function*/
+void FastmarchingCL::Perform()
 {
-    ParTimerCL time;
-    Comment("Reparametrization\n", DebugParallelNumC);
-
-    // Create global numbering, for neighborhood
-    CreateGlobNumb();
-
-    // Init Zero-Level of levelset function
-    InitZero(ModifyZero, method);
-
-    // tell other procs about finished-marked DoF's
-    DistributeFinished();
-
-    // Init local neighborhood
-    InitLocNeigh();
-
-    // Collect information on master-proc
-    Collect();
-
-    if (!ProcCL::IamMaster())
-        v_->Data=0.;
-    else
-    {
-        InitClose();
-        IdxT next;
-
-        while ((next= FindTrial()) != NoIdx)
-        {
-            Close_.erase( next);
-            GlobalTyp_[next]= Finished;
-            std::set<IdxT> neighVerts;
-
-            // collect all neighboring verts in neighVerts
-            for (Uint n=0; n<GlobNeigh_[next].size(); ++n)
-                for (Uint i=0; i<4; ++i)
-                    neighVerts.insert( GlobNeigh_[next][n][i]);
-
-            // update all neighboring verts, mark as Close
-            for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end(); it!=end; ++it)
-                Update( *it);
-
-            GlobNeigh_[next].clear();
-        }
-    }
-    // Distribute result from master proc to other procs
-    Distribute();
-
-    // result is not accumulated so far
-    ex_->Accumulate(v_->Data);
-
-    // Assign old signs
-    RestoreSigns();
-    CleanUp();
-    time.Stop();
-    std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
-}
-#endif
-
-void FastMarchCL::ReparamEuklid( bool ModifyZero)
-{
-#ifndef _PAR
-    TimerCL time;
-#else
-    ParTimerCL time;
-#endif
-    Comment("Reparametrization\n", DebugParallelNumC);
-
-     // Init Zero-Level of levelset function
-    InitZero(ModifyZero);
-#ifndef _PAR
-    InitZeroSet(CoordZeroLevel_, ValueZeroLevel_);
-#else
-    // tell other procs about finished-marked DoF's
-    DistributeFinished();
-
-    // Distribute zerolevel
-    DistributeZeroLevel();
-#endif
-
-    Comment("Calculate Euclidian distance\n", DebugParallelNumC);
-#ifdef _OPENMP
-#pragma omp parallel
-#endif
-{
-#ifdef _OPENMP
-#pragma omp master
-    {
-        std::cout << "   * Using "<<omp_get_num_threads()<<" thread(s) to compute distance ..." << std::endl;
-    }
-#endif
-
-#ifdef _OPENMP
-#pragma omp for
-#endif
-    for(int i=0; i<(int)size_; ++i)
-        if (Typ_[i]!=Finished)
-            v_->Data[i]=MinDist(i);
-
-    RestoreSigns();
-}
-    time.Stop();
-    std::cout << " reparametrization took " <<time.GetTime() << " s" << std::endl;
-}
-
-void FastMarchCL::RestoreSigns()
-{ // restore signs of v_
-#ifdef _OPENMP
-#pragma omp master
-    std::cout << "   * Using "<<omp_get_num_threads()<<" thread(s) to restore signs ..." << std::endl;
-#endif
-
-#ifdef _OPENMP
-#pragma omp for schedule( static)
-#endif
-    for (int i=0; i<(int)Old_.size(); ++i){
-        if (Old_[i]<0){
-            v_->Data[i]*= -1;
-        }
-    }
-}
-
-void FastMarchCL::InitZeroSet(VectorCL& CoordZeroLevel, VectorCL& ValueZeroLevel)
-{
-    size_t NumFinished=0;
-    for (IdxT i=0; i<size_; ++i)
-        if (Typ_[i]==Finished){
 #ifdef _PAR
-            if (v_->RowIdx->GetEx().IsExclusive(i))
+    if (data_.per)
+        throw DROPSErrCL("FastmarchingCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
 #endif
-                ++NumFinished;
-        }
+    InitNeigh();
+    InitClose();
+    DetermineDistances();
+}
 
-    CoordZeroLevel.resize( 3*NumFinished);
-    ValueZeroLevel.resize( NumFinished);
-    IdxT pos1=0, pos2=0;
-    for (IdxT i=0; i<size_; ++i){
-        if (Typ_[i]==Finished){
 #ifdef _PAR
-            if (v_->RowIdx->GetEx().IsExclusive(i))
-#endif
-            {
-                for (int j=0; j<3; ++j)
-                    CoordZeroLevel[pos1++]=Coord_[i][j];
-                ValueZeroLevel[pos2++]=v_->Data[i];
-            }
-        }
-    }
-}
 
-double FastMarchCL::MinDist(IdxT nr)
-{
-    double min=1e99;
-    for (IdxT i=0; i<ValueZeroLevel_.size(); ++i)
-    {
-        double dist=  (MakePoint3D( CoordZeroLevel_[3*i+0], CoordZeroLevel_[3*i+1], CoordZeroLevel_[3*i+2])-Coord_[nr]).norm()
-                    + ValueZeroLevel_[i];
-        min = std::min(min, dist);
-    }
-    Assert(min!=1e99, DROPSErrCL("FastMarchCL::MinDist: No minimal distance found"), DebugParallelNumC);
-    return min;
-}
-
-// ------------------------------------------
-// only parallel functions
-// ------------------------------------------
-#ifdef _PAR
-// Init of the static variables
-//--------------------------------------------
-VectorBaseCL<byte> FastMarchCL::tmpTyp_      = VectorBaseCL<byte>();
-VectorBaseCL<byte> FastMarchCL::Typ_         = VectorBaseCL<byte>();
-VecDescCL*         FastMarchCL::v_           = 0;
-VectorCL           FastMarchCL::tmpv_        = VectorCL();
-IdxT               FastMarchCL::offset_      = 0;
-VectorBaseCL<IdxT> FastMarchCL::allExclusive_= VectorBaseCL<IdxT>();
-std::vector<IdxT>  FastMarchCL::globNumb_    = std::vector<IdxT>();
-std::vector<IdxT>  FastMarchCL::locNumb_     = std::vector<IdxT>();
-
-// Definition of Gather and Scatter-functions
-//--------------------------------------------
-template<typename SimplexT>
-  int FastMarchCL::HandlerFinishedGather(OBJT objp, void* buf)
-/** On sender-side collect typ and value of distributed DoF*/
-{
-    SimplexT* const sp= ddd_cast<SimplexT*>(objp);              // pointer to simplex
-    CoupMarkValST* buffer = static_cast<CoupMarkValST*>(buf);   // pointer to coupling of mark and value
-
-    if (!sp->Unknowns.Exist() || !sp->Unknowns.Exist(v_->RowIdx->GetIdx()))
-        return 1;
-
-    Uint Nr= sp->Unknowns(v_->RowIdx->GetIdx());                // number of DoF
-
-    buffer->mark= tmpTyp_[Nr];                              // set typ
-    buffer->val=  tmpv_[Nr];                                // set value
-
-    return 0;
-}
-
-template<typename SimplexT>
-  int FastMarchCL::HandlerFinishedScatter(OBJT objp, void* buf)
-/** On receiver side, update value and mark of finished DoFs*/
-{
-    SimplexT* const sp= ddd_cast<SimplexT*>(objp);
-    CoupMarkValST* buffer = static_cast<CoupMarkValST*>(buf);
-
-    if (!sp->Unknowns.Exist() || !sp->Unknowns.Exist(v_->RowIdx->GetIdx()))
-        return 1;
-
-    Uint Nr= sp->Unknowns(v_->RowIdx->GetIdx());
-
-    // if a finished dof is transfered
-    if (buffer->mark==Finished)
-    {
-        // if dof is marked before transfer as finished or within transfer phase
-        if (tmpTyp_[Nr]==Finished || Typ_[Nr]==Finished)
-            v_->Data[Nr] = std::min(v_->Data[Nr], buffer->val);
-        else
-            v_->Data[Nr] = buffer->val;
-        // set dof as finished
-        Typ_[Nr]=Finished;
-    }
-
-    return 0;
-}
-
-template<typename SimplexT>
-  int FastMarchCL::HandlerGlobDOFGather(OBJT objp, void* buf)
-/** On sender side collect global number of dof on simplex (if not there send NoIdx)*/
-{
-    SimplexT* const sp= ddd_cast<SimplexT*>(objp);
-    IdxT* buffer = static_cast<IdxT*>(buf);
-    if (sp->Unknowns.Exist() && sp->Unknowns.Exist(v_->RowIdx->GetIdx()))
-        *buffer= globNumb_[sp->Unknowns(v_->RowIdx->GetIdx())];      // may be NoIdx if simplex is not exclusive
-    return 0;
-}
-
-template<typename SimplexT>
-  int FastMarchCL::HandlerGlobDOFScatter(OBJT objp, void* buf)
-/** On recieved side collect global number of dof on simplex if sender has send a number*/
-{
-    SimplexT* const sp= ddd_cast<SimplexT*>(objp);
-    const IdxT* buffer = static_cast<IdxT*>(buf);
-    if (*buffer!=NoIdx){
-        if (sp->Unknowns.Exist() && sp->Unknowns.Exist(v_->RowIdx->GetIdx())){
-            Assert(globNumb_[sp->Unknowns(v_->RowIdx->GetIdx())]==NoIdx, DROPSErrCL("FastMarchCL::HandlerGlobDOFScatter: Two exclusive simplices found!"), DebugParallelNumC);
-            globNumb_[sp->Unknowns(v_->RowIdx->GetIdx())]= *buffer;
-        }
-    }
-    return 0;
-}
+// F A S T M A R C H I N G  O N  M A S T E R  C L
+//-----------------------------------------------
+ReparamDataCL*    FastmarchingOnMasterCL::actualData_= 0;
+std::vector<IdxT> FastmarchingOnMasterCL::globNumb_  = std::vector<IdxT>();
+std::vector<IdxT> FastmarchingOnMasterCL::locNumb_   = std::vector<IdxT>();
 
 
-// Definition of the wrappers
-extern "C" int HandlerFinishedGatherVertexC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerFinishedGather<VertexCL>(objp,buf);
-}
-extern "C" int HandlerFinishedGatherEdgeC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerFinishedGather<EdgeCL>(objp,buf);
-}
-extern "C" int HandlerFinishedScatterVertexC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerFinishedScatter<VertexCL>(objp,buf);
-}
-extern "C" int HandlerFinishedScatterEdgeC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerFinishedScatter<EdgeCL>(objp,buf);
-}
-
-extern "C" int HandlerGlobDOFGatherVertexC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerGlobDOFGather<VertexCL>(objp, buf);
-}
-extern "C" int HandlerGlobDOFGatherEdgeC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerGlobDOFGather<EdgeCL>(objp, buf);
-}
-extern "C" int HandlerGlobDOFScatterVertexC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerGlobDOFScatter<VertexCL>(objp,buf);
-}
-extern "C" int HandlerGlobDOFScatterEdgeC(OBJT objp, void* buf){
-    return FastMarchCL::HandlerGlobDOFScatter<EdgeCL>(objp,buf);
-}
-
-/// \brief Distribute "Finished"-marks and values on these DoF
-void FastMarchCL::DistributeFinished()
-/// this function uses the DDD-Interfaces of master vertices and edges
-{
-    Comment("Distribute Finished\n", DebugParallelNumC);
-    // copy data of typ
-//     Assert(tmpTyp_.size()!=size_, DROPSErrCL("FastMarchCL::DistributeFinished: tmpType hast not the right length!"), DebugParallelNumC);
-    tmpTyp_.resize(size_);
-    tmpv_.resize(size_);
-    tmpTyp_= Typ_;
-    tmpv_  =v_->Data;
-
-    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(),  sizeof(CoupMarkValST),
-                   HandlerFinishedGatherVertexC,   HandlerFinishedScatterVertexC );
-    DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(CoupMarkValST),
-                   HandlerFinishedGatherEdgeC,   HandlerFinishedScatterEdgeC );
-}
-
-/// \brief Init local neighborhood
-void FastMarchCL::InitLocNeigh()
-{
-    Comment("Init local neighborhood\n", DebugParallelNumC);
-    const Uint idx= v_->RowIdx->GetIdx();
-//     neigh_.resize( size_);
-    IdxT Numb[10];
-    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
-
-    // init neigh local
-    for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(), end=MG_.GetTriangTetraEnd();
-         it!=end; ++it)
-    {
-        // collect data on all DoF
-        for (int v=0; v<10; ++v)
-        {
-            if (v<4)
-                Numb[v]= GetGlobNum( it->GetVertex(v)->Unknowns(idx) );
-            else
-                Numb[v]= GetGlobNum( it->GetEdge(v-4)->Unknowns(idx) );
-        }
-
-        for (int ch=0; ch<8; ++ch)
-        {
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            ReprTetraT t;
-            for (int vert= 0; vert<4; ++vert)
-            {
-                const IdxT Nr= Numb[ data.Vertices[vert]];
-                t[vert]= Nr;
-            }
-            TetraList_.push_back(t);
-        }
-    }
-}
-
-/// \brief Create mapping from DoF to global number
-void FastMarchCL::CreateGlobNumb()
+/** Create the mapping local -> global and global -> local dof*/
+void FastmarchingOnMasterCL::CreateGlobNumb()
 {
     Comment("Create global numbering\n", DebugParallelNumC);
-    const IdxT numDoF= v_->RowIdx->NumUnknowns();
-    const IdxT idx   = v_->RowIdx->GetIdx();
-    IdxT numExclusiveDoF=0;
-    allExclusive_.resize(ProcCL::Size());
-    globNumb_.resize(0);            // if this list allready exists, delete and init new
-    globNumb_.resize(numDoF,NoIdx);
-    exclusive_.resize(0);           // if this list allready exists, delete and init new
-    exclusive_.resize(numDoF, true);
+    const IdxT numDoF   = data_.phi.RowIdx->NumUnknowns();
+    const IdxT idx      = data_.phi.RowIdx->GetIdx();
+    const Uint lvl      = data_.phi.GetLevel();
+    IdxT numExclusiveDoF= 0;
+    globNumb_.resize(0); globNumb_.resize(numDoF, NoIdx);
+    size_= numDoF;
 
-    // If owning an exclusive DoF, put them into list, otherwise write NoIdx
-    for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(), end=MG_.GetTriangVertexEnd(); it!=end; ++it)
-    {
-        if (it->IsExclusive(PrioHasUnk)){
-            globNumb_[it->Unknowns(idx)] = numExclusiveDoF++;
+    // If owning an exclusive DoF, put them into list, otherwise this dof is NoIdx
+    DROPS_FOR_TRIANG_VERTEX( data_.mg, lvl, it){
+        if ( it->IsExclusive(PrioHasUnk)){
+            globNumb_[ it->Unknowns(idx)] = numExclusiveDoF++;
         }
     }
-    for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(), end=MG_.GetTriangEdgeEnd(); it!=end; ++it)
-    {
-        if (it->IsExclusive(PrioHasUnk)){
-            globNumb_[it->Unknowns(idx)] = numExclusiveDoF++;
+    DROPS_FOR_TRIANG_EDGE( data_.mg, lvl, it){
+        if ( it->IsExclusive(PrioHasUnk)){
+            globNumb_[ it->Unknowns(idx)] = numExclusiveDoF++;
         }
     }
-    locNumb_.resize(numExclusiveDoF, NoIdx);
+    locNumb_.resize( numExclusiveDoF, NoIdx);
 
-    // Get offset
-    ProcCL::Gather(numExclusiveDoF, Addr(allExclusive_), -1);
-    allOffset_.resize(ProcCL::Size()+1);
+    // Get offset for each process
+    exclusive_.resize( ProcCL::Size());
+    ProcCL::Gather( (int)numExclusiveDoF, Addr( exclusive_), -1);
+    offset_.resize(ProcCL::Size()+1);
     for (int i=0; i<ProcCL::Size(); ++i)
-        allOffset_[i+1]  = allOffset_[i] + allExclusive_[i];
-    globsize_=allOffset_[ProcCL::Size()];
-    offset_=allOffset_[ProcCL::MyRank()];
+        offset_[i+1]  = offset_[i] + exclusive_[i];
 
-
-    // Append offset and calculate not exclusive dof
+    // Append offset to each global number (so it is unique)
     for (IdxT i=0; i<numDoF; ++i){
         if (globNumb_[i]!=NoIdx)
-            globNumb_[i] += offset_;
-        else
-            exclusive_[i]=false;
+            globNumb_[i] += offset_[ ProcCL::MyRank()];
     }
 
-    // Collect global
+    // Now, get global numbers of distributed DOF not stored on this process
+    actualData_= &data_;        // make data static accessible, so DDD can access it
     DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(), sizeof(IdxT),
-                   HandlerGlobDOFGatherVertexC,    HandlerGlobDOFScatterVertexC );
+                   HandlerGlobDOFGatherVertexC, HandlerGlobDOFScatterVertexC );
     DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(IdxT),
-                   HandlerGlobDOFGatherEdgeC,    HandlerGlobDOFScatterEdgeC );
-
+                   HandlerGlobDOFGatherEdgeC, HandlerGlobDOFScatterEdgeC );
+    actualData_= 0;
 
     // in debug mode, check if everything is right
 #if DROPSDebugC&DebugParallelNumC
-    for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(), end=MG_.GetTriangVertexEnd(); it!=end; ++it)
+    DROPS_FOR_TRIANG_VERTEX( data_.mg, lvl, it)
         if (globNumb_[ it->Unknowns(idx) ]==NoIdx)
             it->DebugInfo(std::cout);
-    for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(), end=MG_.GetTriangEdgeEnd(); it!=end; ++it)
+    DROPS_FOR_TRIANG_EDGE( data_.mg, lvl, it)
         if (globNumb_[ it->Unknowns(idx) ]==NoIdx)
             it->DebugInfo(std::cout);
 
@@ -1168,668 +1173,537 @@ void FastMarchCL::CreateGlobNumb()
         if (globNumb_[i]==NoIdx)
             throw DROPSErrCL("FastMarchCL::CreateGlobNumb: Not all local DoF numbers mapped on global DoF number");
 
-    IdxT numExc=0;
-    for (IdxT i=0; i<numDoF; ++i)
-        if (IsExclusive(i))
-            ++numExc;
-    if (numExc!= allExclusive_[ProcCL::MyRank()])
-        throw DROPSErrCL("FastMarchCL::CreateGlobNumb: number of exclusive DoF does not match!");
-
     IdxT maxEntry=*std::max_element(globNumb_.begin(), globNumb_.end());
-    if (maxEntry>globsize_){
-        std::cout << "["<<ProcCL::MyRank()<<"] max entry is "<<maxEntry<<" and globalsize_ is "<<globsize_<<std::endl;
+    if (maxEntry>(IdxT)offset_[ProcCL::Size()]){
+        std::cerr << "["<<ProcCL::MyRank()<<"] max entry is "<<maxEntry<<" but there are only "
+                  << offset_[ProcCL::Size()] << " global dof!" << std::endl;
         throw DROPSErrCL("FastMarchCL::CreateGlobNumb: max entry in globNumb is bigger than global size");
     }
 #endif
 }
 
-/// \brief Collect all information on master proc
-void FastMarchCL::Collect()
-{
-    Comment("Collect\n", DebugParallelNumC);
-    const int TypTag= 5001, CoordTag=5002 , DataTag=5003, NeighTag=5004;
-
-    if (ProcCL::IamMaster())
-    {
-        IdxT allDoF=0;
-        IdxT maxExclusiveDoF=0;
-
-        for (int i=0; i<ProcCL::Size(); ++i)
-        {
-            allDoF          += allExclusive_[i];
-            maxExclusiveDoF  = std::max(maxExclusiveDoF, allExclusive_[i]);
-        }
-
-        // allocate mem for algorithm
-        GlobNeigh_.resize(allDoF);
-        GlobalTyp_.resize(allDoF);
-        GlobalCoord_.resize(allDoF);
-        GlobalV_.resize(allDoF);
-
-        VectorCL recvCoord(3*maxExclusiveDoF);
-
-        ProcCL::StatusT stat;
-        for (int p=0; p<ProcCL::Size(); ++p)
-        {
-            if (p!=ProcCL::Master()){
-                // recieve types
-                ProcCL::Probe(p, TypTag, stat);
-                IdxT count = ProcCL::GetCount<byte>(stat);
-                ProcCL::Recv(Addr(GlobalTyp_)+allOffset_[p], count, p, TypTag);
-
-                // recieve Coord
-                ProcCL::Recv(Addr(recvCoord), 3*count, p, CoordTag);
-                for (IdxT i=0; i<count; ++i)
-                    for (int j=0; j<3; ++j)
-                       GlobalCoord_[i+allOffset_[p]][j]=recvCoord[3*i+j];
-
-                // recieve Data
-                ProcCL::Recv(Addr(GlobalV_)+allOffset_[p], count, p, DataTag);
-
-                // recieve neighborhood
-                ProcCL::Probe(p, NeighTag, stat);
-                count = ProcCL::GetCount<IdxT>(stat);
-
-                // allocate mem for recieving
-                VectorBaseCL<IdxT> neighs(count);
-                ProcCL::Recv(Addr(neighs), count, p, NeighTag);
-
-                Assert(count%4==0, DROPSErrCL("FastMarchCL::Collect: Number of DoF for tetra representation is not a multiple of 4!"), DebugParallelNumC);
-                for (IdxT i=0; i<count; )
-                {
-                    // Create Tetra
-                    ReprTetraT t;
-                    for (int vert=0; vert<4; ++vert)
-                        t[vert]= neighs[i++];
-                    // Put Tetra in neighborhood list
-                    for (int vert=0; vert<4; ++vert)
-                        GlobNeigh_[ t[vert] ].push_back(t);
-                }
-            }
-            else
-            {
-                // Copy all data:
-                IdxT j=0;
-                for (IdxT i=0; i<size_; ++i)
-                {
-                    if (!IsExclusive(i)) continue;
-                    locNumb_[j++]=i;
-
-                    const IdxT pos=GetGlobNum(i);//allOffset_[p]+i;
-                    // Typ
-                    GlobalTyp_[pos]= Typ_[i];
-                    // Coord
-                    for (int j=0; j<3; ++j)
-                        GlobalCoord_[pos][j]= Coord_[i][j];
-                    // Data
-                    GlobalV_[pos]= v_->Data[i];
-                }
-                // Copy all neigh-tetras
-                for (VertexNeighT::const_iterator it(TetraList_.begin()), end(TetraList_.end()); it!=end; ++it)
-                    for (int vert=0; vert<4; ++vert)
-                        GlobNeigh_[ (*it)[vert] ].push_back(*it);
-
-
-//                 for (IdxT i=0; i<TetraList_.size(); ++i)
-//                     for (int vert=0; vert<4; ++vert)
-//                         GlobNeigh_[ TetraList_[i][vert] ].push_back(TetraList_[i]);
-            }
-        }
-    }
-    else    // not master
-    {
-        const int me=ProcCL::MyRank();
-        const IdxT myExclusive=allExclusive_[me];
-        VectorBaseCL<ProcCL::RequestT> req(4);
-
-        // Typ
-        VectorBaseCL<byte> sendTypBuf(myExclusive);
-        IdxT j=0;
-        for (IdxT i=0; i<size_; ++i)
-            if (IsExclusive(i)){
-                sendTypBuf[j]= Typ_[i];
-                locNumb_[j++]=i;                // rember the sequence of sending dofs
-            }
-        Assert(j==myExclusive, DROPSErrCL("FastMarchCL::Collect: Not the right number of types"), DebugParallelNumC);
-        req[0]= ProcCL::Isend(Addr(sendTypBuf), myExclusive, ProcCL::Master(), TypTag);
-
-        // Coord
-        VectorBaseCL<double> sendCoordBuf(3*myExclusive);
-        j=0;
-        for (IdxT i=0; i<size_; ++i){
-            if (IsExclusive(i)){
-                for (int pos=0; pos<3; ++pos){
-                    sendCoordBuf[3*j+pos]= Coord_[i][pos];
-                }
-                ++j;
-            }
-        }
-        Assert(j==myExclusive, DROPSErrCL("FastMarchCL::Collect: Not the right number of coords"), DebugParallelNumC);
-        req[1]= ProcCL::Isend(Addr(sendCoordBuf), 3*myExclusive, ProcCL::Master(), CoordTag);
-
-        // Data
-        VectorBaseCL<double> sendDataBuf(myExclusive);
-        j=0;
-        for (IdxT i=0; i<size_; ++i)
-            if (IsExclusive(i))
-                sendDataBuf[j++]= v_->Data[i];
-        Assert(j==myExclusive, DROPSErrCL("FastMarchCL::Collect: Not the right number of datas"), DebugParallelNumC);
-        req[2]= ProcCL::Isend(Addr(sendDataBuf), myExclusive, ProcCL::Master(), DataTag);
-
-        // neighborhood
-        IdxT numTetra=TetraList_.size();
-        VectorBaseCL<IdxT> sendNeighBuf(4*numTetra);
-
-        j=0;
-        for (VertexNeighT::const_iterator it(TetraList_.begin()), end(TetraList_.end()); it!=end; ++it)
-            for (int vert=0; vert<4; ++vert)
-                sendNeighBuf[j++]= (*it)[vert];
-
-//         for (IdxT i=0; i<numTetra; ++i)
-//             for (int vert=0; vert<4; ++vert)
-//                 sendNeighBuf[j++]= TetraList_[i][vert];
-        Assert(j==4*numTetra, DROPSErrCL("FastMarchCL::Collect: Not the right number of tetras"), DebugParallelNumC);
-        req[3]= ProcCL::Isend(Addr(sendNeighBuf), 4*numTetra, ProcCL::Master(), NeighTag);
-
-        // Wait until all sends are complete, so that the buffer can deallocate
-        ProcCL::WaitAll(4,Addr(req));
-    }
+extern "C" int HandlerGlobDOFGatherVertexC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerGlobDOFGather<VertexCL>(objp, buf);
+}
+extern "C" int HandlerGlobDOFGatherEdgeC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerGlobDOFGather<EdgeCL>(objp, buf);
+}
+extern "C" int HandlerGlobDOFScatterVertexC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerGlobDOFScatter<VertexCL>(objp,buf);
+}
+extern "C" int HandlerGlobDOFScatterEdgeC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerGlobDOFScatter<EdgeCL>(objp,buf);
 }
 
-void FastMarchCL::Distribute()
+/** this function uses the DDD-Interfaces of master vertices and edges */
+void FastmarchingOnMasterCL::DistributeFinished()
 {
-    Comment("Distribute\n", DebugParallelNumC);
-    const int DataTag=5003;
-    if (ProcCL::IamMaster())
-    {
-        VectorBaseCL<ProcCL::RequestT> req(ProcCL::Size()-1);
-        int req_pos=0;
-        for (int p=0; p<ProcCL::Size(); ++p)
-        {
-            if (p!=ProcCL::MyRank())
-                req[req_pos++]= ProcCL::Isend(Addr(GlobalV_)+allOffset_[p], allExclusive_[p], p, DataTag);
-        }
-        // copy data
-        for (IdxT i=0; i<size_; ++i)
-            v_->Data[i] = GlobalV_[GetGlobNum(i)];
-        ProcCL::WaitAll(ProcCL::Size()-1, Addr(req));
-    }
-    else
-    {
-        ProcCL::StatusT stat;
-        ProcCL::Probe(ProcCL::Master(), DataTag, stat);
-        __UNUSED__ IdxT mpi_count= ProcCL::GetCount<IdxT>(stat);
-        const IdxT count=allExclusive_[ProcCL::MyRank()];
-        Assert(mpi_count==count, DROPSErrCL("FastMarchCL::Distribute: Not enough data recieved"), DebugParallelNumC);
-        VectorCL recvBuf(count);
+    Comment("Distribute Finished\n", DebugParallelNumC);
 
-        ProcCL::Recv(Addr(recvBuf), count, ProcCL::Master(), DataTag);
-        for (IdxT i=0; i<count; ++i)
-            v_->Data[locNumb_[i]] = recvBuf[i];
-    }
+    actualData_= &data_;
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(),  sizeof(CoupMarkValST),
+                   HandlerFinishedGatherVertexC,   HandlerFinishedScatterVertexC );
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(CoupMarkValST),
+                   HandlerFinishedGatherEdgeC,   HandlerFinishedScatterEdgeC );
+    actualData_=0 ;
 }
 
-void FastMarchCL::DistributeZeroLevel()
-{
-    VectorCL myCoordZeroLevel, myValueZeroLevel;
-    InitZeroSet(myCoordZeroLevel, myValueZeroLevel);
-
-    IdxT LocNumFinished=myValueZeroLevel.size(), GlobNumFinished=0;
-    VectorBaseCL<IdxT> allFinished(ProcCL::Size());
-
-    ProcCL::Gather(LocNumFinished, Addr(allFinished),-1);
-    for (int p=0; p<ProcCL::Size(); ++p)
-        GlobNumFinished+=allFinished[p];
-
-    std::cout << " Euklidian FastMarching: global finished dofs " << GlobNumFinished
-              << ", used memory " << (4*GlobNumFinished/1024) << " kB" << std::endl;
-
-    CoordZeroLevel_.resize( 3*GlobNumFinished);
-    ValueZeroLevel_.resize( GlobNumFinished);
-
-    size_t pos1=0, pos2=0;
-    for (int p=0; p<ProcCL::Size(); ++p)
-    {
-        if (p==ProcCL::MyRank())
-        {
-            ProcCL::Bcast(Addr(myCoordZeroLevel), 3*allFinished[p], p);
-            ProcCL::Bcast(Addr(myValueZeroLevel),   allFinished[p], p);
-            std::memcpy(&(CoordZeroLevel_[pos1]), Addr(myCoordZeroLevel), 3*allFinished[p]*sizeof(double));
-            std::memcpy(&(ValueZeroLevel_[pos2]), Addr(myValueZeroLevel),   allFinished[p]*sizeof(double));
-        }
-        else
-        {
-            ProcCL::Bcast(&(CoordZeroLevel_[pos1]), 3*allFinished[p], p);
-            ProcCL::Bcast(&(ValueZeroLevel_[pos2]),   allFinished[p], p);
-        }
-        pos1 += 3*allFinished[p];
-        pos2 +=   allFinished[p];
-    }
+extern "C" int HandlerFinishedGatherVertexC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerFinishedGather<VertexCL>(objp,buf);
+}
+extern "C" int HandlerFinishedGatherEdgeC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerFinishedGather<EdgeCL>(objp,buf);
+}
+extern "C" int HandlerFinishedScatterVertexC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerFinishedScatter<VertexCL>(objp,buf);
+}
+extern "C" int HandlerFinishedScatterEdgeC(OBJT objp, void* buf){
+    return FastmarchingOnMasterCL::HandlerFinishedScatter<EdgeCL>(objp,buf);
 }
 
-void FastMarchCL::CleanUp()
-{
-    Comment("Cleaning up\n", DebugParallelNumC);
-    Assert(Close_.empty(), DROPSErrCL("FastMarchCL::CleanUp: Close set is not empty"), DebugParallelNumC);
-    neigh_.resize(0);
-    TetraList_.clear();
-    GlobalV_.resize(0);
-    allOffset_.resize(0);
-    GlobNeigh_.resize(0);
-    GlobalTyp_.resize(0);
-    GlobalCoord_.resize(0);
-    tmpv_.resize(0);
-    Typ_.resize(0);
-    tmpTyp_.resize(0);
-    allExclusive_.resize(0);
-    globNumb_.resize(0);
-    locNumb_.resize(0);
-    exclusive_.resize(0);
-}
-#endif      // end of parallel functions
-
-// ===============================================================
-//              variants for periodic boundaries
-// ===============================================================
-double FastMarchCL::CompValueProjPer( IdxT Nr, int num, const IdxT upd[3]) const
-{
-#ifdef _PAR
-    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
-#endif
-    double val= 1e99;
-
-    switch (num)
-    {
-        case 2: // Projektion auf Edge
-        {
-            const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
-            const Point3DCL b= Coord_[  Nr  ] - Coord_[upd[0]];
-            double bary= inner_prod(a,b)/a.norm_sq();
-
-            Normalize(bary);
-            const Point3DCL lotfuss= (1-bary)*Coord_[upd[0]] + bary*Coord_[upd[1]];
-            const double y= (1-bary)*v_->Data[Map(upd[0])] + bary*v_->Data[Map(upd[1])];
-            val= y + (lotfuss - Coord_[Nr]).norm();
-        }
-        break;
-
-        case 3: // Projektion auf Face
-        {
-            const Point3DCL a= Coord_[upd[1]] - Coord_[upd[0]];
-            const Point3DCL b= Coord_[upd[2]] - Coord_[upd[0]];
-            const Point3DCL c= Coord_[  Nr  ] - Coord_[upd[0]];
-            double bary1= inner_prod(a,c)/a.norm_sq(),
-                   bary2= inner_prod(b,c)/b.norm_sq();
-            Normalize(bary1, bary2);
-            const Point3DCL lotfuss= (1-bary1-bary2)*Coord_[upd[0]] + bary1*Coord_[upd[1]] + bary2*Coord_[upd[2]];
-            const double y= (1-bary1-bary2)*v_->Data[Map(upd[0])] + bary1*v_->Data[Map(upd[1])] + bary2*v_->Data[Map(upd[2])];
-            val= y + (lotfuss - Coord_[Nr]).norm();
-        }
-    }
-
-    return val;
-}
-
-
-void FastMarchCL::InitZeroPer( const BndDataCL<>& bnd, bool ModifyZero, int method)
-/// \param[in] bnd        Boundary (to determine periodic boundaries and matching function)
-/// \param[in] ModifyZero If this flag is set, the values around the zero level of the levelset function are new computed. Otherwise
-///                       the old values are kept.
-/// \param[in] method     Determines the method used to compute the distance to the zero level:
-///                       scaling by averaged gradient (\a method=0) or projection of the points onto zero level (\a method=1).
-///                       By experience, gradient scaling yields a smoother interface.
-{
-#ifdef _PAR
-    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
-#endif
-    // Knoten an der Phasengrenze als Finished markieren
-    // und Distanz zur Phasengrenze bestimmen (falls ModifyZero)
-    if (method<0 || method>1)
-        throw DROPSErrCL("FastMarchCL::InitZeroPer: unknown method");
-
-    const Uint idx= v_->RowIdx->GetIdx(),
-               lvl= v_->GetLevel();
-    int        sign[10];
-    int        num_sign[3]; // - 0 +
-    IdxT       Numb[10];
-    const bool scaling= method==0;
-    VectorCL   sumNormGradPhi, sumVol;
-
-    if (scaling) {
-        sumNormGradPhi.resize( size_);
-        sumVol.resize( size_);
-    }
-
-//std::ofstream fil("surf.off");
-//fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
-
-    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
-    IdxDescCL  augmIdx( P2_FE, bnd);
-    augmIdx.CreateNumbering( lvl, MG_);
-    const Uint augm_idx= augmIdx.GetIdx();
-
-    // init Coord_, map_ and augmIdx
-    std::vector<bool> ini( size_, false);
-    IdxT k= 0;
-    Coord_.resize( augmIdx.NumUnknowns());
-    map_.resize( augmIdx.NumUnknowns() - size_);
-    for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl), end=MG_.GetTriangVertexEnd(lvl);
-        it!=end; ++it)
-    {
-        const IdxT Nr= it->Unknowns(idx);
-        if (ini[Nr])
-        {
-            it->Unknowns(augm_idx)= size_ + k;
-            map_[k++]= Nr;
-        }
-        else // touched for the first time
-        {
-            ini[Nr]= true;
-            it->Unknowns(augm_idx)= Nr;
-        }
-        Coord_[it->Unknowns(augm_idx)]= it->GetCoord();
-    }
-    for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(lvl), end=MG_.GetTriangEdgeEnd(lvl);
-        it!=end; ++it)
-    {
-        const IdxT Nr= it->Unknowns(idx);
-        if (ini[Nr])
-        {
-            it->Unknowns(augm_idx)= size_ + k;
-            map_[k++]= Nr;
-        }
-        else // touched for the first time
-        {
-            ini[Nr]= true;
-            it->Unknowns(augm_idx)= Nr;
-        }
-        Coord_[it->Unknowns(augm_idx)]= GetBaryCenter( *it);
-    }
-    ini.clear();
-
-    // store copy of v_.Data in Old_
-    Old_.resize( size_);
-    Old_= v_->Data;
-
-    VecDescCL oldv( *v_);
-    LocalP2CL<> PhiLoc;
-
-    neigh_.resize( size_);
-
-    for (MultiGridCL::TriangTetraIteratorCL it=MG_.GetTriangTetraBegin(lvl), end=MG_.GetTriangTetraEnd(lvl);
-        it!=end; ++it)
-    {
-        for (int v=0; v<10; ++v)
-        { // collect data on all DoF
-            Numb[v]= v<4 ? it->GetVertex(v)->Unknowns(augm_idx)
-                         : it->GetEdge(v-4)->Unknowns(augm_idx);
-            const IdxT MapNr= Map(Numb[v]);
-            sign[v]= std::abs(Old_[MapNr])<1e-8 ? 0 : (Old_[MapNr]>0 ? 1 : -1);
-            if (sign[v]==0)
-                Typ_[MapNr]= Finished;
-        }
-        PhiLoc.assign( *it, oldv, NoBndDataCL<>());
-
-        for (int ch=0; ch<8; ++ch)
-        {
-            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
-            // init num_sign, neigh_
-            ReprTetraT t;
-            num_sign[0]= num_sign[1]= num_sign[2]= 0;
-            for (int vert= 0; vert<4; ++vert)
-            {
-                const Uint v= data.Vertices[vert];
-                t[vert]= Numb[v];
-                ++num_sign[ sign[v] + 1];
-            }
-            for (int vert= 0; vert<4; ++vert)
-                neigh_[Map(t[vert])].push_back( t);
-
-            const bool intersec= (num_sign[0]*num_sign[2]!=0); // Vorzeichenwechsel
-
-            if (!intersec) continue;
-
-            if (!ModifyZero)
-            {
-                for (int vert= 0; vert<4; ++vert)
-                {
-                    const IdxT MapNr= Map(Numb[data.Vertices[vert]]);
-                    Typ_[MapNr]= Finished;
-                    v_->Data[MapNr]= std::abs( Old_[MapNr]);
-                }
-                continue;
-            }
-
-            // ab hier gilt intersec && ModifyZero == true
-
-            if (scaling) {
-                // compute gradient of level set (as P1 FE on child => const gradient on child)
-                SMatrixCL<3,4> p1grad;
-                double det;
-                Point3DCL pt[4];
-                SVectorCL<4> ls;
-                for (int v= 0; v < 4; ++v) {
-                    pt[v]= Coord_ [Numb[data.Vertices[v]]];
-                    ls[v]= PhiLoc[data.Vertices[v]];
-                }
-                P1DiscCL::GetGradients( p1grad, det, pt);
-                const Point3DCL n( p1grad*ls);
-                const double absdet= std::abs(det),
-                        normgrad= n.norm();
-
-                for (int v= 0; v < 4; ++v) {
-                    const IdxT MapNr= Map(Numb[data.Vertices[v]]);
-                    sumNormGradPhi[MapNr]+= normgrad*absdet;
-                    sumVol[MapNr]+= absdet;
-                    Typ_[MapNr]= Finished;
-                }
-            }
-            else { // compute distance by projections on interface
-                Point3DCL Schnitt[4];
-                int num= 0;
-                // Berechnung der Schnittpunkte mit den Kanten des Tetra
-                for (int vert= 0; vert<4; ++vert)
-                    if (sign[data.Vertices[vert]]==0)
-                        Schnitt[num++]= Coord_[Numb[data.Vertices[vert]]];
-
-                for (int edge= 0; edge<6 && num<4; ++edge)
-                {
-                    const Ubyte v1= data.Vertices[ VertOfEdge( edge, 0)],
-                                v2= data.Vertices[ VertOfEdge( edge, 1)];
-                    if (sign[v1]*sign[v2] == -1) // Vorzeichenwechsel auf edge
-                    {
-                        const IdxT Nr1= Numb[v1],
-                                   Nr2= Numb[v2];
-                        const double bary= InterfacePatchCL::EdgeIntersection( v1,v2, PhiLoc);
-                        Schnitt[num++]= (1-bary)*Coord_[Nr1] + bary*Coord_[Nr2];
-                    }
-                }
-/*
-fil << "geom {OFF " << num << " 1 0\n";
-for (int i=0; i<num; ++i)
-{
-    for (int j=0; j<3; ++j)
-        fil << Schnitt[i][j] << ' ';
-    fil << '\n';
-}
-if (num==3)
-    fil << "3 0 1 2";
-else
-    fil << "4 0 1 3 2";
-fil << "\n}\n";
+/** Get all local data of types, coordinates, values and tetrahedra
+    Here, as well, the mapping "send/receive element -> local number"
+    is created
+    \pre Global numbering must exists, i.e., CreateGlobalNumb() has
+         to be called first
 */
-                if (num<3) throw DROPSErrCL("FastMarchCL::InitZero: intersection missing");
-
-                for (int repeat=0; repeat<num-2; ++repeat)
-                { // fuer num==4 (Schnitt ABDC ist viereckig)
-                  // zwei Dreiecke ABC + DBC betrachten
-                    if (repeat) Schnitt[0]= Schnitt[3];
-
-                    const Point3DCL a= Schnitt[1] - Schnitt[0],
-                                    b= Schnitt[2] - Schnitt[0];
-
-                    for (int vert=0; vert<4; ++vert)
-                    {
-                        if (sign[data.Vertices[vert]]==0) continue;
-
-                        const IdxT Nr= Numb[data.Vertices[vert]],
-                                   MapNr= Map(Nr);
-                        const Point3DCL Crd= Coord_[Nr],
-                                        c=   Crd - Schnitt[0];
-                        double dist= std::min( c.norm(), (Crd-Schnitt[1]).norm());
-                        dist= std::min( dist, (Crd-Schnitt[2]).norm());
-
-                        double bary1= inner_prod(a,c)/a.norm_sq(),
-                               bary2= inner_prod(b,c)/b.norm_sq();
-                        Normalize(bary1, bary2);
-                        const Point3DCL lotfuss= (1-bary1-bary2)*Schnitt[0] + bary1*Schnitt[1] + bary2*Schnitt[2];
-                        dist= std::min( dist, (lotfuss - Crd).norm());
-
-                        if (Typ_[MapNr] != Finished)
-                        {
-                            Typ_[MapNr]= Finished;
-                            v_->Data[MapNr]= dist;
-                        }
-                        else
-                            v_->Data[MapNr]= std::min( dist, v_->Data[MapNr]);
-                    }
-                }
-            }
-        }
-    }
-
-    if (ModifyZero && scaling) {
-#ifdef _PAR
-        // accumulate sums
-        ex_->Accumulate( sumNormGradPhi);
-        ex_->Accumulate( sumVol);
-#endif
-        for (IdxT i=0; i<size_; ++i)
-            if (Typ_[i]==Finished) { // dof at interface
-                const double scale= sumNormGradPhi[i]/sumVol[i]; // average norm
-                v_->Data[i]= std::abs( Old_[i])/scale;
-            }
-    }
-//fil << "}\n";
-    // delete memory allocated for augmIdx
-    DeleteNumbOnSimplex( augm_idx, MG_.GetAllVertexBegin(lvl), MG_.GetAllVertexEnd(lvl) );
-    DeleteNumbOnSimplex( augm_idx, MG_.GetAllEdgeBegin(lvl), MG_.GetAllEdgeEnd(lvl) );
-}
-
-void FastMarchCL::InitClosePer()
+void FastmarchingOnMasterCL::CollectLocalData(std::vector<byte>& typ, std::vector<double>& coord, std::vector<double>& values, std::vector<IdxT>& tetraList) const
 {
-#ifdef _PAR
-    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
-#endif
-    // an Finished angrenzende Knoten mit Close markieren und dort v_ updaten
-    const Uint idx= v_->RowIdx->GetIdx(),
-               lvl= v_->GetLevel();
+    const Uint idx= data_.phi.RowIdx->GetIdx();
+    const Uint lvl= data_.phi.GetLevel();
 
-TimerCL tim;
-tim.Start();
-    std::set<IdxT> neighVerts;
-    for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl), end=MG_.GetTriangVertexEnd(lvl);
-        it!=end; ++it)
-    {
-        const IdxT Nr= it->Unknowns(idx);
-        if (Typ_[Nr] == Finished)
-        {
-            for (Uint n=0; n<neigh_[Nr].size(); ++n)
-                for (int j=0; j<4; ++j)
-                    neighVerts.insert( neigh_[Nr][n][j]);
+    // collect all types, coordinates and values on exclusive vertices
+    // and edges, and as well, create mapping the mapping localNumb_ for
+    // later receiving
+    typ.clear();
+    coord.clear();
+    values.clear();
+    locNumb_.clear();
+    DROPS_FOR_TRIANG_VERTEX( data_.mg, lvl, it){
+        if ( it->IsExclusive(PrioHasUnk)){
+            const IdxT dof= it->Unknowns(idx);
+            typ.push_back( data_.typ[ dof]);
+            for ( int i=0; i<3; ++i)
+                coord.push_back( data_.coord[ dof][i]);
+            values.push_back( data_.phi.Data[ dof]);
+            locNumb_.push_back( dof);
         }
     }
-    for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(lvl), end=MG_.GetTriangEdgeEnd(lvl);
-        it!=end; ++it)
-    {
-        const IdxT Nr= it->Unknowns(idx);
-        if (Typ_[Nr] == Finished)
-        {
-            for (Uint n=0; n<neigh_[Nr].size(); ++n)
-                for (int j=0; j<4; ++j)
-                    neighVerts.insert( neigh_[Nr][n][j]);
+    DROPS_FOR_TRIANG_EDGE( data_.mg, lvl, it){
+        if ( it->IsExclusive(PrioHasUnk)){
+            const IdxT dof= it->Unknowns(idx);
+            typ.push_back( data_.typ[ dof]);
+            for ( int i=0; i<3; ++i)
+                coord.push_back( data_.coord[ dof][i]);
+            values.push_back( data_.phi.Data[ dof]);
+            locNumb_.push_back( dof);
         }
     }
 
-    for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
-        it!=end; ++it)
-    { // update all neighboring verts, mark as Close
-        UpdatePer( *it);
+    // collect all tetrahedra
+    tetraList.clear();
+    IdxT Numb[10];
+    const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
+    DROPS_FOR_TRIANG_TETRA( data_.mg, lvl, it){
+        for ( int v=0; v<10; ++v){
+            if (v<4)
+                Numb[v]= globNumb_[ it->GetVertex(v)->Unknowns(idx)];
+            else
+                Numb[v]= globNumb_[ it->GetEdge(v-4)->Unknowns(idx)];
+        }
+        for ( Uint ch=0; ch<MaxChildrenC; ++ch){
+            const ChildDataCL data= GetChildData( RegRef.Children[ch]);
+            for ( Uint vert= 0; vert<NumVertsC; ++vert)
+                tetraList.push_back( Numb[ data.Vertices[vert]]);
+        }
     }
 }
 
-
-void FastMarchCL::UpdatePer( const IdxT NrI)
+/** At first, collect all local data such as values, types and tetrahedra.
+    Afterwards, send these data to the master process, who is responsible
+    for performing the FMM.
+    The master process puts the received data into the member data_. This
+    function also initializes the neighbor sets.
+*/
+void FastmarchingOnMasterCL::Collect()
 {
-#ifdef _PAR
-    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
-#endif
+    // Get local data
+    std::vector<byte>   localTyp;
+    std::vector<double> localCoord;
+    std::vector<double> localValues;
+    std::vector<IdxT>   localTetraList;
+    CollectLocalData(localTyp, localCoord, localValues, localTetraList);
 
-    const IdxT MapNrI= Map(NrI);
-    // Update all vertices that are not Finished
-    if (Typ_[MapNrI] == Finished) return;
+    // Gather all data at master process
+    std::valarray<byte>   types    = ProcCL::Gatherv( localTyp,       master_);
+    std::valarray<double> coord    = ProcCL::Gatherv( localCoord,     master_);
+    std::valarray<double> values   = ProcCL::Gatherv( localValues,    master_);
+    std::valarray<IdxT>   tetraList= ProcCL::Gatherv( localTetraList, master_);
 
-    IdxT upd[3];
-    double minval= Typ_[MapNrI]==Close ? v_->Data[MapNrI] : 1e99;
+    Assert( types.size()    ==  values.size(), DROPSErrCL("FastmarchingOnMasterCL::Collect: types size does not match"), DebugParallelNumC);
+    Assert( coord.size()    ==3*values.size(), DROPSErrCL("FastmarchingOnMasterCL::Collect: coord size does not match"), DebugParallelNumC);
 
-    for (Uint n=0; n<neigh_[MapNrI].size(); ++n)
-    {
-        int num= 0;
-        for (int j=0; j<4; ++j)
-        {
-            const IdxT NrJ= neigh_[MapNrI][n][j];
-            if (Typ_[Map(NrJ)] == Finished)
-            {
-                upd[num++]= NrJ;
-                minval= std::min( minval, v_->Data[Map(NrJ)] + (Coord_[NrJ]-Coord_[NrI]).norm());
-            }
+    if ( ProcCL::MyRank()==master_){
+        // Transform data on master, i.e., put collected data into the member data_
+        data_.phi.Data.resize( values.size());
+        std::copy( Addr(values), Addr(values)+values.size(), Addr(data_.phi.Data));
+
+        data_.typ.resize( types.size());
+        std::copy( Addr(types), Addr(types)+types.size(), Addr(data_.typ));
+
+        data_.coord.resize( values.size());
+        for ( size_t i=0; i<data_.coord.size(); ++i) for ( int j=0; j<3; ++j)
+            data_.coord[i][j]= coord[i*3+j];
+
+        // Initialize list of neighbors
+        base::neigh_.resize(0); base::neigh_.resize( values.size());
+        for ( size_t t=0; t<tetraList.size(); t+=4){
+            ReprTetraT tetra;
+            for (int i=0; i<4; ++i)
+                tetra[i]= tetraList[t+i];
+            for (int i=0; i<4; ++i)
+                base::neigh_[ tetra[i]].push_back(tetra);
         }
-
-        minval= std::min( minval, CompValueProjPer( NrI, num, upd));
-    }
-
-    v_->Data[MapNrI]= minval;
-    if (Typ_[MapNrI] != Close)
-    {
-        Close_.insert( MapNrI);
-        Typ_[MapNrI]= Close;
     }
 }
 
-
-void FastMarchCL::ReparamPer( const BndDataCL<>& bnd, bool ModifyZero, int method)
+/** After the master has performed the FMM, the values of the level set
+    has to be send back to all other processes.
+*/
+void FastmarchingOnMasterCL::Distribute()
 {
+    // Send values back
+    VectorCL recvBuf( exclusive_[ProcCL::MyRank()]);
+    ProcCL::Scatterv( Addr(data_.phi.Data), Addr(exclusive_), Addr(offset_), Addr(recvBuf), size_, master_);
+
+    // Put data back into data_.phi.Data
+    data_.phi.Data.resize( size_);
+    data_.phi.Data= 0.;
+    for ( size_t i=0; i<recvBuf.size(); ++i)
+        data_.phi.Data[ locNumb_[i]]=recvBuf[i];
+
+    // Data on distributed DOF has just been send to one process, so accumulate the vector
+    data_.phi.RowIdx->GetEx().Accumulate( data_.phi.Data);
+}
+
+/** Free memory of static members*/
+void FastmarchingOnMasterCL::CleanUp()
+{
+    actualData_= 0;
+    globNumb_.clear();
+    locNumb_.clear();
+}
+
+void FastmarchingOnMasterCL::Perform()
+{
+    DistributeFinished();
+    CreateGlobNumb();
+    Collect();
+    if (ProcCL::MyRank()==master_){
+        base::InitClose();
+        base::DetermineDistances();
+    }
+    Distribute();
+    CleanUp();
+}
+#endif      // of _PAR
+
+// D I R E C T  D I S T A N C E  C L
+//----------------------------------
+
+void DirectDistanceCL::InitFrontVector()
+/** Count number of frontier vertices and perpendiculart feet, put
+    the coordinates into the the vector front_ and the value on
+    these points into the vector vals_
+*/
+{
+    // Count number of frontier vertices and perpendiccular feet
+    Uint numFront= 0;
+    for ( size_t i=0; i<data_.typ.size(); ++i)
+        if ( data_.typ[i]==ReparamDataCL::Finished)
+            ++numFront;
+    for ( size_t i=0; i<data_.perpFoot.size() && data_.UsePerp(); ++i)
+        if ( data_.perpFoot[i]!=0)
+            ++numFront;
+
+    // Put all frontier vertices and perpendicular feet into a single array
+    // and store distance of each frontier vertex
+    front_.resize(0); front_.resize( 3*numFront);
+    vals_.resize(0);  vals_.resize( numFront);
+    size_t pos=0;
+    size_t posDist=0;
+    for ( size_t i=0; i<data_.typ.size(); ++i){
+        if ( data_.typ[i]==ReparamDataCL::Finished){
+            for ( int j=0; j<3; ++j){
+                front_[ pos++]= data_.coord[i][j];
+            }
+            vals_[ posDist++]= data_.phi.Data[i];
+        }
+    }
+    for ( size_t i=0; i<data_.perpFoot.size() && data_.UsePerp(); ++i){
+        if ( data_.perpFoot[i]!=0){
+            for ( int j=0; j<3; ++j){
+                front_[ pos++]= (*data_.perpFoot[i])[j];
+            }
+            // we do not need to set distance to 0, because std::valarray is initialized by 0
+        }
+    }
+#ifndef _PAR
+    Uint numLsetUnk=data_.phi.Data.size();
+    std::cout << " * Lset unk " << numLsetUnk
+              << ", frontier " << posDist
+              << ", perpFoot " << (numFront-posDist) << std::endl;
+#endif
+}
+
+void DirectDistanceCL::BuildKDTree()
+/** Take the elements out of front_ and build a kd-tree representing this set
+    \pre InitFrontVector has to be called
+ */
+{
+    kdTree_= new KDTreeCL<double>( Addr(front_), front_.size()/3, 3, true);
+}
+
+void DirectDistanceCL::DetermineDistances()
+/** Iterate over all off-site vertices and assign shortest distance to a
+    frontier vertex or perpendicular foot to phi
+*/
+{
+#pragma omp parallel for
+    for ( int dof=0; dof<(int)data_.phi.Data.size(); ++dof) {
+        if ( data_.typ[dof]!=ReparamDataCL::Finished && data_.typ[dof]!=ReparamDataCL::Handled) {
+            double newPhi= std::numeric_limits<double>::max();
+            KDTreeResultVectorCL<double> e;
+            std::vector<double> qv( data_.coord[dof].begin(), data_.coord[dof].end());
+            kdTree_->GetNNearest( qv, numNeigh_, e);
+            // check for smallest distance in neighbor vertices
+            for ( int n=0; n<(int)e.size(); ++n) {
+                newPhi= std::min( newPhi, std::sqrt( e[n].Distance)+vals_[ e[n].Index]);
+            }
+#pragma omp critical
+            data_.phi.Data[dof]= newPhi;
+        }
+    }
+}
+
+void DirectDistanceCL::DisplayMemory()
+{
+    const size_t memFront= front_.size()*8, memVals= vals_.size()*8;
+    const size_t memPerKDInterval=2*8;
+    const size_t memPerKDNode= 4+3*8+2*4+2*memPerKDInterval+2*8;
+    const size_t memKDTree= front_.size()*(8+memPerKDNode);
+    const size_t memData= (8+3*8+1)* data_.phi.Data.size();
+    const size_t memByte= memData+memFront+memVals+memKDTree;
+    const double mem=double(memByte)/1024/1024;
+    std::cout << " * Memory by Direct Distance " << mem << " MB.\n";
+}
+
+void DirectDistanceCL::Perform()
+/** Perform all steps that are necessary to determine the value of the level set
+    function on off-site vertices.
+*/
+{
+    InitFrontVector();
+    BuildKDTree();
+    DetermineDistances();
+    DisplayMemory();
+    delete kdTree_; kdTree_=0;
+}
+
+// P A R  D I R E C T  D I S T A N C E  C L
+//-----------------------------------------
+
 #ifdef _PAR
-    throw DROPSErrCL("FastMarchCL: Sorry, Periodic boundary conditions are not yet supported by the parallel version");
+ParDirectDistanceCL::MultiFrontT ParDirectDistanceCL::onProc_=
+    std::map<IdxT, std::list<ParDirectDistanceCL::TransferST> >();
+ReparamDataCL* ParDirectDistanceCL::actualData_=0;
+
+extern "C" int HandlerFrontierGatherVertexC(OBJT objp, void* buf){
+    return ParDirectDistanceCL::HandlerFrontierGather<VertexCL>(objp,buf);
+}
+extern "C" int HandlerFrontierGatherEdgeC(OBJT objp, void* buf){
+    return ParDirectDistanceCL::HandlerFrontierGather<EdgeCL>(objp,buf);
+}
+extern "C" int HandlerFrontierScatterVertexC(OBJT objp, void* buf){
+    return ParDirectDistanceCL::HandlerFrontierScatter<VertexCL>(objp,buf);
+}
+extern "C" int HandlerFrontierScatterEdgeC(OBJT objp, void* buf){
+    return ParDirectDistanceCL::HandlerFrontierScatter<EdgeCL>(objp,buf);
+}
+
+void ParDirectDistanceCL::CommunicateFrontierSetOnProcBnd()
+{
+    actualData_=&data_;
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<VertexCL>::GetIF(), sizeof(TransferST),
+            HandlerFrontierGatherVertexC, HandlerFrontierScatterVertexC );
+    DynamicDataInterfaceCL::IFExchange(InterfaceCL<EdgeCL>::GetIF(), sizeof(TransferST),
+            HandlerFrontierGatherEdgeC, HandlerFrontierScatterEdgeC );
+    actualData_=0;
+
+    for ( MultiFrontT::iterator it=onProc_.begin(); it!=onProc_.end(); ++it){
+        const IdxT dof= it->first;
+
+        // Put own value into map
+        TransferST tmp;
+        tmp.value= data_.typ[dof]==ReparamDataCL::Finished ? data_.phi.Data[dof] : std::numeric_limits<double>::max();;
+        tmp.procID= ProcCL::MyRank();
+        tmp.perp= data_.perpFoot[ dof] ? *data_.perpFoot[dof] : Point3DCL(std::numeric_limits<double>::max());
+        it->second.push_front( tmp);
+
+        // search for process determined the smallest value of phi
+        double minval= std::numeric_limits<double>::max();
+        MultiFrontT::mapped_type::const_iterator minProc;
+        for ( MultiFrontT::mapped_type::const_iterator pit= it->second.begin(); pit!=it->second.end(); ++pit){
+            if ( pit->value<=minval){
+                minval= pit->value;
+                minProc= pit;
+            }
+        }
+
+        data_.phi.Data[ dof]= minProc->value;
+        if ( minProc->perp[0]<std::numeric_limits<double>::max()){
+            if (data_.perpFoot[dof])
+                *data_.perpFoot[dof]= minProc->perp;
+            else
+                data_.perpFoot[dof]= new Point3DCL( minProc->perp);
+        }
+        else{
+            if (data_.perpFoot[dof]){
+                delete data_.perpFoot[dof]; data_.perpFoot[dof]=0;
+            }
+        }
+        data_.typ[dof]= minProc->procID==ProcCL::MyRank() ? ReparamDataCL::Finished : ReparamDataCL::Handled;
+    }
+}
+
+void ParDirectDistanceCL::GatherFrontier()
+/** Call of MPI function Allgatherv
+    \pre To gather the frontier and vertices and perpendicular feet, this information must
+    be collected by calling base::InitFrontVector
+*/
+{
+    //call MPI_Allgatherv to gather values and frontier vertices
+    VectorCL allVals ( ProcCL::Gatherv( base::vals_,  -1)),
+             allFront( ProcCL::Gatherv( base::front_, -1));
+
+    // local sets are not need any more ...
+    base::vals_.resize( allVals.size()); vals_=allVals;
+    base::front_.resize( allFront.size()); front_=allFront;
+
+    Uint numLsetUnk= ProcCL::GlobalSum(data_.phi.Data.size());
+    std::cout << " * Lset unk " << numLsetUnk
+              << ", frontier and perpendicular feet " << vals_.size() << std::endl;
+}
+
+void ParDirectDistanceCL::CleanUp()
+{
+    onProc_.clear();
+    actualData_=0;
+}
+
+void ParDirectDistanceCL::Perform()
+{
+    base::InitFrontVector();
+    CommunicateFrontierSetOnProcBnd();
+    GatherFrontier();
+    base::BuildKDTree();
+    base::DetermineDistances();
+    delete kdTree_; kdTree_=0;
+}
 #endif
 
-    InitZeroPer( bnd, ModifyZero, method);
-    InitClosePer();
+// R E P A R A M  C L
+//-------------------
 
-    IdxT next;
+/** Pass all necessary information to reparametrization class
+    \param mg       multi grid
+    \param phi      values of level set function
+    \param periodic periodic boundaries are used
+    \param bnd      boundary conditions for periodic boundaries
+*/
+ReparamCL::ReparamCL( MultiGridCL& mg, VecDescCL& phi, bool gatherPerp, bool periodic, const BndDataCL<>* bnd)
+  : data_( mg, phi, gatherPerp, periodic, bnd)
+{ }
 
-    while ((next= FindTrial()) != NoIdx)
-    {
-        // remark: next < size_   =>   Map not needed for next
-        Close_.erase( next);
-        Typ_[next]= Finished;
+/** Clean everything up*/
+ReparamCL::~ReparamCL()
+{
+    if (initZero_)
+        delete initZero_;
+    initZero_=0;
+    if (propagate_)
+        delete propagate_;
+    propagate_=0;
+}
 
-        std::set<IdxT> neighVerts;
-        for (Uint n=0; n<neigh_[next].size(); ++n)
-        { // collect all neighboring verts in neighVerts
-            for (Uint i=0; i<4; ++i)
-                neighVerts.insert( neigh_[next][n][i]);
+/** Assign each dof the sign stored in old*/
+void ReparamCL::RestoreSigns()
+{
+#pragma omp parallel for schedule(static)
+    for ( int i=0; i<(int)data_.old.size(); ++i){
+        if ( data_.old[i]<0){
+            data_.phi.Data[i]*= -1.;
         }
-        for (std::set<IdxT>::const_iterator it= neighVerts.begin(), end= neighVerts.end();
-            it!=end; ++it)
-        { // update all neighboring verts, mark as Close
-            UpdatePer( *it);
-        }
-        neigh_[next].clear(); // will not be needed anymore
     }
+}
 
+void ReparamCL::Perform()
+{
+    std::cout << "Reparametrize level set function\n";
+#pragma omp parallel
+{
+    int numThreads=1;
+#ifdef _OPENMP
+    numThreads= omp_get_num_threads();
+#endif
+#pragma omp master
+    std::cout << " * Using "<<numThreads<<" thread(s)" << std::endl;
+}
+#ifdef _PAR
+    ParTimerCL timer, alltimer;
+#else
+    TimerCL timer, alltimer;
+#endif
+
+    timer.Reset();
+    initZero_->Perform();
+    timer.Stop();
+    std::cout << " * Init frontier set by " << initZero_->GetName() << " took " << timer.GetTime() << " sec." << std::endl;
+
+    timer.Reset();
+    propagate_->Perform();
+    timer.Stop();
+    std::cout << " * Propagation by " << propagate_->GetName() << "took " << timer.GetTime() << " sec." << std::endl;
     RestoreSigns();
+
+    alltimer.Stop();
+    std::cout << " * Re-parametrization took " << alltimer.GetTime() << " sec." << std::endl;
 }
 
+// R E P A R A M  F A C T O R Y  C L
+//----------------------------------
 
+
+/** Construct the reparametrization class. For method the following arguments are valid
+    \param mg       multi grid
+    \param phi      values of level set function
+    \param method   used methods to reparametrize a level set function
+    \param periodic periodic boundaries are used
+    \param bnd      boundary conditions for periodic boundaries
+    \return pointer to a reparametrization class
+*/
+std::auto_ptr<ReparamCL> ReparamFactoryCL::GetReparam( MultiGridCL& mg,
+        VecDescCL& phi, int method, bool periodic, const BndDataCL<>* bnd)
+{
+    int initMethod= method%10;
+    int propMethod= method/10;
+    std::auto_ptr<ReparamCL> reparam(new ReparamCL(mg, phi, propMethod==1, periodic, bnd));
+    switch (initMethod) {
+        case 0: {
+            reparam->initZero_ = new InitZeroNoModCL( reparam->data_);
+            break;
+        }
+        case 1: {
+            reparam->initZero_ = new InitZeroP1CL<1>( reparam->data_);
+            break;
+        }
+        case 2: {
+            reparam->initZero_ = new InitZeroP1CL<0>( reparam->data_);
+            break;
+        }
+        case 3: {
+#ifdef _PAR
+            reparam->initZero_ = new ParInitZeroExactCL( reparam->data_);
+#else
+            reparam->initZero_ = new InitZeroExactCL( reparam->data_);
+#endif
+            break;
+        }
+        default: {
+            throw DROPSErrCL("ReparamFactoryCL::GetReparam: Unknown method for InitZero");
+        }
+    }
+    switch (propMethod) {
+        case 0: {
+#ifdef _PAR
+            reparam->propagate_ = new FastmarchingOnMasterCL( reparam->data_);
+#else
+            reparam->propagate_ = new FastmarchingCL( reparam->data_);
+#endif
+            break;
+        }
+        case 1: {
+#ifdef _PAR
+            reparam->propagate_ = new ParDirectDistanceCL( reparam->data_);
+#else
+            reparam->propagate_ = new DirectDistanceCL( reparam->data_);
+#endif
+            break;
+        }
+        default: {
+            throw DROPSErrCL("ReparamFactoryCL::GetReparam: Unknown method for Propagate");
+        }
+    }
+    return reparam;
+}
 } // end of namespace DROPS

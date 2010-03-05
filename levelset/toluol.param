@@ -54,7 +54,7 @@ Coupling {
 # re-initialization of levelset function
 Reparam {
   Freq		=	10	# 0 = no reparametrization
-  Method	=	1	# 0/1 = fast marching without/with modification of zero
+  Method    = 	03  # see ReparamFactorCL for documentation
   MinGrad	=	0.1	# minimal allowed norm of the gradient of phi
   MaxGrad	=	10	# maximal allowed norm of the gradient of phi
   NarrowBand    =       -1.0    # Narrow-Band method, if euclidian reparametrization is used
