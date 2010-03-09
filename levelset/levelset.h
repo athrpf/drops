@@ -106,7 +106,7 @@ class LevelsetP2CL
 
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     template<class DiscVelSolT>
-    void SetupSystem( const DiscVelSolT&);
+    void SetupSystem( const DiscVelSolT&, const double);
     /// Reparametrization of the level set function.
     void Reparam( int method=03, bool Periodic= false);
 

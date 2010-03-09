@@ -114,7 +114,7 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::SolveLsNs()
     time.Reset();
 
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     L_->LinComb( 1./dt_, LvlSet_.E, ls_theta_, LvlSet_.H);
     ls_rhs_= (1./dt_)*(LvlSet_.E*LvlSet_.Phi.Data) - (1.-ls_theta_)*(LvlSet_.H*LvlSet_.Phi.Data);
 
@@ -240,7 +240,7 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::Update()
 
     // Diskretisierung
     LvlSet_.AccumulateBndIntegral( *old_curv_);
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
     time.Stop();
@@ -320,7 +320,7 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoStokesFPIter()
     time.Start();
     const double fracdt_= stk_theta_*dt_;
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     L_->LinComb( 1./fracdt_, LvlSet_.E, alpha_, LvlSet_.H);
     time.Stop();
     std::cout << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
@@ -372,7 +372,7 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoNonlinearFPIter()
     time.Reset();
     time.Start();
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     L_->LinComb( 1./fracdt_, LvlSet_.E, 1.-alpha_, LvlSet_.H);
     time.Stop();
     std::cout << "Discretizing Levelset took "<<time.GetTime()<<" sec.\n";
@@ -484,7 +484,7 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::Update()
     Stokes_.SetIdx();
 
     // Diskretisierung
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, b_, old_cplA_, old_cplM_, LvlSet_, Stokes_.t);
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
@@ -807,7 +807,7 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevel
     const VectorCL tmpv( Stokes_.v.Data);
     Stokes_.v.Data = 0.5 * VectorCL( Stokes_.v.Data + oldv_);
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     Stokes_.v.Data = tmpv;
 
     L_->LinComb( 2./dt_, LvlSet_.E, 1.0, LvlSet_.H);
@@ -897,7 +897,7 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 
     // Diskretisierung
     LvlSet_.AccumulateBndIntegral( *old_curv_);
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, old_b_, old_cplM_, LvlSet_, Stokes_.t);
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
@@ -941,7 +941,7 @@ template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
 
     L_->LinComb( ls_theta_/dt_, LvlSet_.E, (1.0-ls_theta_)/dt_, *Eold_, ls_theta_, LvlSet_.H);
     ls_rhs_ = (1.0 - ls_theta_) * fixed_ls_rhs_ + (ls_theta_/dt_) * (LvlSet_.E * oldphi_);
@@ -1016,7 +1016,7 @@ template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
 
     L_->LinComb( 1./dt_, LvlSet_.E, 1.0, LvlSet_.H);
     ls_rhs_ = LvlSet_.E * fixed_ls_rhs_;
@@ -1121,7 +1121,7 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 
     // Diskretisierung
     LvlSet_.AccumulateBndIntegral( *old_curv_);
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution() );
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
     Stokes_.SetupSystem1( &Stokes_.A, &Stokes_.M, old_b_, old_b_, old_cplM_, LvlSet_, Stokes_.t);
     Stokes_.SetupSystem2( &Stokes_.B, &Stokes_.c, LvlSet_, Stokes_.t);
     Stokes_.SetupNonlinear( &Stokes_.N, &Stokes_.v, old_cplN_, LvlSet_, Stokes_.t);
@@ -1199,7 +1199,7 @@ template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
-    LvlSet_.SetupSystem( Stokes_.GetVelSolution());
+    LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
 
     L_->LinComb( 1./dt_, LvlSet_.E, ls_theta_, LvlSet_.H);
     ls_rhs_ = LvlSet_.E * fixed_ls_rhs_;

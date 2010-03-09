@@ -221,7 +221,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     VecDescCL v( &vidx);
     InitVel( mg, &v, Bnd_v, u_func, 0.);
 
-    lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, 0.));
+    lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, 0.), C.tm_StepSize);
 
     SurfactantcGP1CL timedisc( mg, Bnd_v, C.surf_Theta, C.surf_Visc, &v, lset.Phi, /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
 
@@ -287,7 +287,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
                 LSInit( mg, lset.Phi, &sphere_2move, step*C.tm_StepSize);
                 timedisc.Update();
 
-                lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*C.tm_StepSize));
+                lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*C.tm_StepSize), C.tm_StepSize);
             }
             std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.lvs_VolCorr) {

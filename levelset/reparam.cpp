@@ -192,7 +192,7 @@ void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
         case 2:  lset.Init( Phi2); break;
         default: lset.Init( DistFct);
     }
-    lset.SetupSystem( prob.GetVelSolution() );
+    lset.SetupSystem( prob.GetVelSolution(), dt);
 
     // Initialize Ensight6 output
     std::string ensf( "ensight/rep");

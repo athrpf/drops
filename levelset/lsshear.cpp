@@ -169,7 +169,7 @@ void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
     std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;
 
     Stokes.InitVel( v, ZeroVel);
-    lset.SetupSystem( Stokes.GetVelSolution() );
+    lset.SetupSystem( Stokes.GetVelSolution(), delta_t);
 
     Uint meth;
     std::cout << "\nwhich method? 0=Uzawa, 1=Schur > "; std::cin >> meth;

@@ -126,7 +126,7 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
 }
 
 template<class DiscVelSolT>
-void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
+void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
 /**Sets up the stiffness matrices: <br>
    E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i ) <br>
    H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i ) <br>
@@ -174,7 +174,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel)
             u_Grad[i]= dot( u_loc, Grad[i]);
 
         double maxV = 0.; // scaling of SD parameter (cf. master thesis of Rodolphe Prignitz)
-        const double limit= (h_T*h_T)/dt_;
+        const double limit= (h_T*h_T)/dt;
         //const double limit= 1e-3;
         for(int i=0; i<Quad5DataCL::NumNodesC; ++i)
             maxV = std::max( maxV, u_loc[i].norm());
