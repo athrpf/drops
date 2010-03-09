@@ -43,15 +43,15 @@ namespace DROPS {
 class DirectNonSymmSolverCL {
 
 private:
-    double Info_ [UMFPACK_INFO],        ///< stores status-infos
-           Control_ [UMFPACK_CONTROL];  ///< control parameters for UMFPACK
-    void   *Symbolic_,                  ///< stores symbolic factorization
-           *Numeric_;                   ///< stores numeric factorization
-    int    *Apt,                        ///< matrix A row indices
-           *Ait;                        ///< matrix A column pointer
-    double *Axt;                        ///< matrix A nonzeros
-    Uint   num_rows_,                   ///< # rows
-           num_cols_;                   ///< # columns
+    double  Info_ [UMFPACK_INFO],        ///< stores status-infos
+            Control_ [UMFPACK_CONTROL];  ///< control parameters for UMFPACK
+    void    *Symbolic_,                  ///< stores symbolic factorization
+            *Numeric_;                   ///< stores numeric factorization
+    UF_long *Apt,                        ///< matrix A row indices
+            *Ait;                        ///< matrix A column pointer
+    double  *Axt;                        ///< matrix A nonzeros
+    size_t  num_rows_,                   ///< # rows
+            num_cols_;                   ///< # columns
 
 public:
 
@@ -60,16 +60,16 @@ DirectNonSymmSolverCL(const MatrixCL& A)
 : Apt(0), Ait(0), Axt(0)
 {
     // get the default control parameters
-    umfpack_di_defaults(Control_);
+    umfpack_dl_defaults(Control_);
 
     // change the default print level, uncomment the following line for verbose output
     //Control_ [UMFPACK_PRL] = 6;
 
     // print the license agreement
-    umfpack_di_report_status (Control_, UMFPACK_OK);
+    umfpack_dl_report_status (Control_, UMFPACK_OK);
 
     // print the control parameters
-    umfpack_di_report_control (Control_);
+    umfpack_dl_report_control (Control_);
 
     Update(A);
 }
@@ -79,88 +79,75 @@ DirectNonSymmSolverCL(const MatrixCL& A)
     delete [] Apt;
     delete [] Ait;
     delete [] Axt;
-    umfpack_di_free_symbolic (&Symbolic_);
-    umfpack_di_free_numeric (&Numeric_);
+    umfpack_dl_free_symbolic (&Symbolic_);
+    umfpack_dl_free_numeric (&Numeric_);
 }
 /// delete stored matrix and store/factorize the matrix A
 void Update(const MatrixCL& A)
 {
     int status;
 
-    // DROPS: CCS, UMFPACK CRS
-    int* Ap    = new int[A.num_rows()+1];
-    int* Ai    = new int[A.num_nonzeros()];
-    double* Ax = new double[A.num_nonzeros()];
-
-    std::copy(A.raw_col(), A.raw_col()+A.num_nonzeros(), Ai);
-    std::copy(A.raw_row(), A.raw_row()+A.num_rows()+1  , Ap);
-    std::copy(A.raw_val(), A.raw_val()+A.num_nonzeros(), Ax);
-
     delete [] Apt;
     delete [] Ait;
     delete [] Axt;
 
-    Apt = new int    [A.num_rows()+1];
-    Ait = new int    [A.num_nonzeros()];
-    Axt = new double [A.num_nonzeros()];
+    Apt = new UF_long [A.num_rows()+1];
+    Ait = new UF_long [A.num_nonzeros()];
+    Axt = new double  [A.num_nonzeros()];
 
-    status = umfpack_di_transpose(A.num_cols(), A.num_rows(), Ap, Ai, Ax, 0, 0, Apt, Ait, Axt);
-    if (status < 0)
-    {
-        umfpack_di_report_info (Control_, Info_);
-        umfpack_di_report_status (Control_, status);
-        throw DROPSErrCL("umfpack_di_transpose failed") ;
-    }
+    std::copy(A.raw_col(), A.raw_col()+A.num_nonzeros(), Ait);
+    std::copy(A.raw_row(), A.raw_row()+A.num_rows()+1  , Apt);
+    std::copy(A.raw_val(), A.raw_val()+A.num_nonzeros(), Axt);
 
-    delete [] Ap;
-    delete [] Ai;
-    delete [] Ax;
-
-    umfpack_di_report_matrix (A.num_rows(), A.num_cols(), Apt, Ait, Axt, 1, Control_);
+    //print the matrix
+    umfpack_dl_report_matrix (A.num_rows(), A.num_cols(), Apt, Ait, Axt, 1, Control_);
 
     // symbolic factorization
-    status = umfpack_di_symbolic (A.num_rows(), A.num_cols(), Apt, Ait, Axt, &Symbolic_, Control_, Info_) ;
+    status = umfpack_dl_symbolic (A.num_rows(), A.num_cols(), Apt, Ait, Axt, &Symbolic_, Control_, Info_) ;
     if (status < 0)
     {
-        umfpack_di_report_info (Control_, Info_);
-        umfpack_di_report_status (Control_, status);
-        throw DROPSErrCL("umfpack_di_symbolic failed");
+        Control_ [UMFPACK_PRL] = 6;
+        umfpack_dl_report_info   (Control_, Info_);
+        umfpack_dl_report_status (Control_, status);
+        throw DROPSErrCL("umfpack_dl_symbolic failed");
     }
 
     //print the symbolic factorization
-    umfpack_di_report_symbolic (Symbolic_, Control_);
+    umfpack_dl_report_symbolic (Symbolic_, Control_);
 
     // numeric factorization
-    status = umfpack_di_numeric (Apt, Ait, Axt, Symbolic_, &Numeric_, Control_, Info_);
+    status = umfpack_dl_numeric (Apt, Ait, Axt, Symbolic_, &Numeric_, Control_, Info_);
     if (status < 0)
     {
-        umfpack_di_report_info (Control_, Info_);
-        umfpack_di_report_status (Control_, status);
-        throw DROPSErrCL("umfpack_di_numeric failed") ;
+        Control_ [UMFPACK_PRL] = 6;
+        umfpack_dl_report_info   (Control_, Info_);
+        umfpack_dl_report_status (Control_, status);
+        throw DROPSErrCL("umfpack_dl_numeric failed") ;
     }
 
     // print the numeric factorization
-    umfpack_di_report_numeric (Numeric_, Control_);
+    umfpack_dl_report_numeric (Numeric_, Control_);
 
     num_cols_ = A.num_cols();
     num_rows_ = A.num_rows();
 }
 
-/// solve Ax=b
+/// solve Ax=b, NOTE: DROPS::CRS, UMFPACK: CCS
 void Solve(const MatrixCL, VectorCL &x, const VectorCL& b)
 {
     int status;
-    if (b.size() != num_rows_)
+    if (b.size() != num_cols_)
         throw DROPSErrCL("DirectNonSymmSolverCL::Solve: incompatible dimensions");
 
-    status = umfpack_di_solve (UMFPACK_A, Apt, Ait, Axt, Addr(x), Addr(b), Numeric_, Control_, Info_);
-    umfpack_di_report_info (Control_, Info_);
-    umfpack_di_report_status (Control_, status);
+    status = umfpack_dl_solve (UMFPACK_At, Apt, Ait, Axt, Addr(x), Addr(b), Numeric_, Control_, Info_);
     if (status < 0)
     {
-        throw DROPSErrCL("umfpack_di_solve failed");
+        Control_ [UMFPACK_PRL] = 6;
+        umfpack_dl_report_info   (Control_, Info_);
+        umfpack_dl_report_status (Control_, status);
+        throw DROPSErrCL("umfpack_dl_solve failed");
     }
-    umfpack_di_report_vector (num_cols_, Addr(x), Control_);
+    umfpack_dl_report_vector (num_rows_, Addr(x), Control_);
 }
 };
 
