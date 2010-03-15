@@ -360,10 +360,14 @@ void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, 
       } break;
       case 0: // zero initial condition
           lset.Init( EllipsoidCL::DistanceFct);
+          Stokes.UpdateXNumbering( pidx, lset);
+          Stokes.p.SetIdx( pidx);
         break;
       case 1: // stationary flow
       {
         lset.Init( EllipsoidCL::DistanceFct);
+        Stokes.UpdateXNumbering( pidx, lset);
+        Stokes.p.SetIdx( pidx);
 #ifdef _PAR
         ParJac0CL jacpc( Stokes.vel_idx.GetFinest());
         typedef ParPCGSolverCL<ParJac0CL> PCGSolverT;
@@ -386,6 +390,8 @@ void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, 
       } break;
       case  2: //flow without droplet
           lset.Init( &One);
+          Stokes.UpdateXNumbering( pidx, lset);
+          Stokes.p.SetIdx( pidx);
       break;
       default : throw DROPSErrCL("Unknown initial condition");
     }
