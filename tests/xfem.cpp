@@ -247,7 +247,7 @@ int main (int argc, char** argv)
                     intneg += Quad5CL<>(qphi*qf).quad(absdet*VolFrac(cut.GetTetra(k)));
                 else
                     intpos += Quad5CL<>(qphi*qf).quad(absdet*VolFrac(cut.GetTetra(k)));
-                delete nodes;
+                delete[] nodes;
             }
             intp1+= intpos + intneg;
             if (have_xidx)
@@ -268,7 +268,7 @@ int main (int argc, char** argv)
             nodes = qf.TransformNodes(cut.GetTetra(i));
             qf.assign( *sit, cut.GetNumNegTetra()>i ? &f1sq : &f2sq, 0.0, nodes);
             intval += qf.quad(absdet*std::fabs( VolFrac(cut.GetTetra(i))));
-            delete nodes;
+            delete[] nodes;
         }
     }
 

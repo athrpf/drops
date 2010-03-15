@@ -300,6 +300,7 @@ void TestTransform()
         intval+= qf.quad( absdet);
     }
     std::cout << "Integral: " << intval << '\n';
+    delete[] nodes;
 }
 
 
