@@ -7,11 +7,11 @@
 Poisson {
 	PcIter 			= 1
 	PcTol  			= 0.1
-	Iter   			= 100
+	Iter   			= 200
 	Restart			= 100		# only valid when using GMRES
 	RelativeErr		= 0			# 1 = true, 0 = false
 	Tol    			= 1.0e-10
-	Method 			= 302		# PCG + SSOR
+	Method 			= 302		# GMRES and Jacobi
 	SmoothingSteps 	= 1
 	NumLvl 			= -1
 	Relax 			= 1.0

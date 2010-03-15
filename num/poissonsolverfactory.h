@@ -78,6 +78,7 @@ class PoissonSolverCL : public PoissonSolverBaseCL
     bool   GetRelError() const { return solver_.GetRelError(); }
 };
 
+/// \brief Create a Poisson-Solver (Design-Pattern: Factory class)
 #ifndef _PAR
 template <class ParamsT, class ProlongationT= MLMatrixCL>
 class PoissonSolverFactoryCL
@@ -193,12 +194,23 @@ class PoissonSolverFactoryCL
 	MLIdxDescCL & idx_;
     ParamsT& C_;
 
-// generic preconditioners
+    // generic preconditioners
     ParJac0CL  JACPc_;
+    ParDummyPcCL DummyPC_;
 
-     //JAC-GMRes
-    typedef ParPreGMResSolverCL<ParJac0CL> GMResSolverT;
-    GMResSolverT GMResSolver_;
+    //JAC-PCG
+    typedef ParPCGSolverCL<ParJac0CL> JacPCGSolverT;
+    JacPCGSolverT JacPCGSolver_;
+    //CG without precondition
+    typedef ParCGSolverCL CGSolverT;
+    CGSolverT CGSolver_;
+
+    //JAC-GMRes
+    typedef ParPreGMResSolverCL<ParJac0CL> JacGMResSolverT;
+    JacGMResSolverT JacGMResSolver_;
+    //Dummy-GMRes
+    typedef ParPreGMResSolverCL<ParDummyPcCL> DummyGMResSolverT;
+    DummyGMResSolverT DummyGMResSolver_;
 
   public:
     PoissonSolverFactoryCL( ParamsT& C, MLIdxDescCL& idx);
@@ -213,8 +225,11 @@ class PoissonSolverFactoryCL
 template <class ParamsT, class ProlongationT>
 PoissonSolverFactoryCL<ParamsT, ProlongationT>::
     PoissonSolverFactoryCL(ParamsT& C, MLIdxDescCL& idx)
-    : idx_(idx), C_( C), JACPc_( idx_.GetFinest(), C_.pos_Relax),
-        GMResSolver_( C_.pos_Restart, C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), JACPc_, C_.pos_RelativeErr)
+    : idx_(idx), C_( C), JACPc_( idx_.GetFinest(), C_.pos_Relax), DummyPC_(idx_.GetFinest()),
+      JacPCGSolver_( C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), JACPc_, C_.pos_RelativeErr),
+      CGSolver_( C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), C_.pos_RelativeErr),
+      JacGMResSolver_( C_.pos_Restart, C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), JACPc_, C_.pos_RelativeErr),
+      DummyGMResSolver_( C_.pos_Restart, C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), DummyPC_, C_.pos_RelativeErr)
         {}
 
 template <class ParamsT, class ProlongationT>
@@ -223,7 +238,10 @@ PoissonSolverBaseCL* PoissonSolverFactoryCL<ParamsT, ProlongationT>::CreatePoiss
     PoissonSolverBaseCL* poissonsolver = 0;
     switch (C_.pos_Method)
     {
-		case  302 : poissonsolver = new PoissonSolverCL<GMResSolverT>( GMResSolver_);  break;
+        case 200 : poissonsolver = new PoissonSolverCL<CGSolverT>( CGSolver_); break;
+        case 202 : poissonsolver = new PoissonSolverCL<JacPCGSolverT>( JacPCGSolver_); break;
+        case 300 : poissonsolver = new PoissonSolverCL<DummyGMResSolverT>( DummyGMResSolver_); break;
+		case 302 : poissonsolver = new PoissonSolverCL<JacGMResSolverT>( JacGMResSolver_);  break;
         default: throw DROPSErrCL("PoissonSolverFactoryCL: Unknown Poisson solver");
     }
     return poissonsolver;
