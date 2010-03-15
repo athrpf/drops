@@ -152,6 +152,14 @@ class BndCondCL
     inline bool IsOnPerBnd( const VertexCL&) const;
     inline bool IsOnPerBnd( const EdgeCL&)   const;
     inline bool IsOnPerBnd( const FaceCL&)   const;
+
+    /// \name boundary segment
+    /// Returns boundary segment with superior boundary condition of sub-simplex
+    /// \{
+    template<class SimplexT>
+    inline const BndCondInfoCL& GetBndSeg( const SimplexT& s) const;
+    const BndCondInfoCL& GetBndSeg( BndIdxT idx) const { return BndCond_[idx]; }
+    /// \}
 };
 
 
@@ -341,6 +349,16 @@ inline BndCondT BndCondCL::GetBC( const VertexCL& v, BndIdxT& bidx) const
         }
     return bc;
 }
+
+template<class SimplexT>
+inline const BndCondInfoCL& BndCondCL::GetBndSeg( const SimplexT& s) const
+/// Returns boundary segment with superior boundary condition of sub-simplex \a s
+{
+    BndIdxT  bidx;
+    GetBC( s, bidx);
+    return BndCond_[bidx];
+}
+
 
 template<class BndValT>
 inline typename BndDataCL<BndValT>::BndSegT BndDataCL<BndValT>::GetBndSeg( const VertexCL& v) const
