@@ -207,12 +207,15 @@ bool InterfaceTetraCL::ComputeCutForChild( Uint ch)
 	return ComputeVerticesOfCut( ch);
 }
 
-void InterfaceTetraCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos)
+void InterfaceTetraCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child)
 {
-    if (pos)
+    if (pos) {
         posTetras.push_back(BaryCoords);
-    else
+        posChildIdx.push_back(child);
+    } else {
         negTetras.push_back(BaryCoords);
+        negChildIdx.push_back(child);
+    }
 }
 
 void InterfaceTetraCL::ComputeSubTets()
@@ -227,7 +230,7 @@ void InterfaceTetraCL::ComputeSubTets()
     {
         for (Uint i=0; i<4; ++i)
             BaryCoords[i] = BaryDoF_[i];
-        InsertSubTetra( BaryCoords, sign_[0]==1);
+        InsertSubTetra( BaryCoords, sign_[0]==1, ~0 /*child idx undefined*/);
         return;
     }
 
@@ -243,7 +246,7 @@ void InterfaceTetraCL::ComputeSubTets()
             //std::cout << "cuts = Child + empty set: " << num_sign_[2] <<"\n";
             for (Uint i=0; i<4; ++i)
                 BaryCoords[i]=BaryDoF_[data.Vertices[i]];
-            InsertSubTetra( BaryCoords, num_sign_[2]>0);
+            InsertSubTetra( BaryCoords, num_sign_[2]>0, ch);
         }
         if (intersec_==3)
             switch (innersec_)
@@ -257,7 +260,7 @@ void InterfaceTetraCL::ComputeSubTets()
                     {
                         if (sign_[data.Vertices[i]]==0) continue;
                         BaryCoords[3]= BaryDoF_[data.Vertices[i]];
-                        InsertSubTetra( BaryCoords, sign_[data.Vertices[i]]==1);
+                        InsertSubTetra( BaryCoords, sign_[data.Vertices[i]]==1, ch);
                     }
                 } break;
                 case 2 : // cuts = Tetra + Pyramide mit 4eckiger Grundflaeche
@@ -272,7 +275,7 @@ void InterfaceTetraCL::ComputeSubTets()
                     for (int i=0; vertB==-1 && i<4; ++i)
                         if (sign_[data.Vertices[i]]==signB) vertB= i;
                     BaryCoords[3]= BaryDoF_[data.Vertices[vertB]];
-                    InsertSubTetra( BaryCoords, signB==1);
+                    InsertSubTetra( BaryCoords, signB==1, ch);
 
                     // pyramid = 2 tetras: ACDP + APQD
                     //                                     connectivity:     P-------Q
@@ -285,7 +288,7 @@ void InterfaceTetraCL::ComputeSubTets()
                     for (int i=0; i<4; ++i)
                         if (i!=vertB) BaryCoords[z++]= BaryDoF_[data.Vertices[i]];
                     BaryCoords[3]= Bary_[1];
-                    InsertSubTetra( BaryCoords, signB!=1);
+                    InsertSubTetra( BaryCoords, signB!=1, ch);
 
                     for (int i=0; i<3; ++i)
                         BaryCoords[i]= Bary_[i];
@@ -298,7 +301,7 @@ void InterfaceTetraCL::ComputeSubTets()
                              vertD= i;
                     }
                     BaryCoords[3]= BaryDoF_[data.Vertices[vertD]];
-                    InsertSubTetra( BaryCoords, signB!=1);
+                    InsertSubTetra( BaryCoords, signB!=1, ch);
                 } break;
                 case 3 : // cuts = Tetra + Tetra-Stumpf
                 {
@@ -311,7 +314,7 @@ void InterfaceTetraCL::ComputeSubTets()
                         BaryCoords[i]= Bary_[i];
                     BaryCoords[3]= BaryDoF_[data.Vertices[vertA]];
 
-                    InsertSubTetra( BaryCoords, signA==1);
+                    InsertSubTetra( BaryCoords, signA==1, ch);
                     //                                     connectivity:     R---------D
                     //                                                      /|        /|
                     //                                                     Q-|-------C |
@@ -328,23 +331,23 @@ void InterfaceTetraCL::ComputeSubTets()
                     BaryCoords[2] = Bary_[0];
                     BaryCoords[3] = Bary_[2];
                     if ( signA!=1 && Edge_[1]!=-1)
-                        posTetras.push_back(BaryCoords);
-                    else
-                        if (Edge_[1]!=-1) negTetras.push_back(BaryCoords);
+                        InsertSubTetra(BaryCoords, true, ch);
+                    else if (Edge_[1]!=-1)
+                        InsertSubTetra(BaryCoords, false, ch);
 
                     // BCPR
                     BaryCoords[0] = BaryDoF_[data.Vertices[vertBCD[0]]];
                     if ( signA!=1 && Edge_[0]!=-1)
-                        posTetras.push_back(BaryCoords);
-                    else
-                        if (Edge_[0]!=-1) negTetras.push_back(BaryCoords);
+                        InsertSubTetra(BaryCoords, true, ch);
+                    else if (Edge_[0]!=-1)
+                        InsertSubTetra(BaryCoords, false, ch);
 
                     // BCDR
                     BaryCoords[2] = BaryDoF_[data.Vertices[vertBCD[2]]];
                     if ( signA!=1 && Edge_[2]!=-1)
-                        posTetras.push_back(BaryCoords);
-                    else
-                        if (Edge_[2]!=-1) negTetras.push_back(BaryCoords);
+                        InsertSubTetra(BaryCoords, true, ch);
+                    else if (Edge_[2]!=-1)
+                        InsertSubTetra(BaryCoords, false, ch);
                 } break;
             }
         if (intersec_==4)
@@ -368,13 +371,13 @@ void InterfaceTetraCL::ComputeSubTets()
                 BaryCoords[0]= BaryDoF_[data.Vertices[vertAB[0]]];
                 BaryCoords[1]= BaryDoF_[data.Vertices[vertAB[1]]];
                 BaryCoords[2]= Bary_[0];    BaryCoords[3]= Bary_[AR ? 2 : 1];
-                InsertSubTetra( BaryCoords, signAB!=-	1);
+                InsertSubTetra( BaryCoords, signAB!=-1, ch);
                 // QBPR    (bzw. RBPQ)
                 BaryCoords[0]=Bary_[AR ? 1 : 2];
-                InsertSubTetra( BaryCoords, signAB!=-1);
+                InsertSubTetra( BaryCoords, signAB!=-1, ch);
                 // QBSR    (bzw. RBSQ)
                 BaryCoords[2]=Bary_[3];
-                InsertSubTetra( BaryCoords, signAB!=-1);
+                InsertSubTetra( BaryCoords, signAB!=-1, ch);
             }
         } //intersec_==4 Ende
     } //Ende der Schleife ueber die Kinder

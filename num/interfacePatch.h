@@ -112,7 +112,8 @@ class InterfaceTetraCL : public InterfacePatchCL
 {
   private:
     std::vector<SubTetraT> posTetras, negTetras;
-    void InsertSubTetra(SubTetraT& BaryCoords, bool pos);
+    std::vector<Uint>      posChildIdx, negChildIdx;
+    void InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child);
 
   public:
     bool   ComputeCutForChild( Uint ch); ///< returns true, if a patch exists for this child
@@ -122,8 +123,9 @@ class InterfaceTetraCL : public InterfacePatchCL
     /// \name Use after ComputeSubTets
     /// \remarks The following functions are only valid, if ComputeSubTets() was called before!
     ///@{
-    const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];}
-    Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of subtetras
+    const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];}         ///< returns sub tetra with index \a i
+    const Uint GetChildIdx    (Uint i)  const { return i < negChildIdx.size() ? negChildIdx[i] : posChildIdx[i-negChildIdx.size()];} ///< returns index of child containing sub tetra \a i
+    Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of sub tetras
     Uint  GetNumNegTetra()      const {return negTetras.size();}                    ///< returns number of tetras with level set function < 0
     ///@}
 
