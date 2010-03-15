@@ -210,6 +210,59 @@ template<class T>
     return FE_P2CL::val( *this, p);
 }
 
+template<class T>
+void ExtendP1onChild( const LocalP2CL<T>& isoP2, int child, LocalP2CL<T>& P1onParent)
+{
+    static const int childOrder[8]= { 0, 1, 4, 7, 5, 6, 3, 2};
+    const Uint ch= childOrder[child];
+    // children ordered such that
+    // A) children 0,...,3 located at corners of parent, parent vertex ch is also a child vertex
+    // B) children 4,...,7 located inside parent forming an octahedron, one face is on parent face ch-4
+    // Note: data can be looked up in topo.h/cpp
+
+    // first step: compute values on parent's vertices
+    if (ch<4) // case A
+    {
+        const Uint pv= ch; // parent vertex which is also vertex of child
+
+        P1onParent[pv]= isoP2[pv]; // copy value for vertex pv
+        // 1D interpolation along the 3 edges starting at parent vertex pv
+        for (Uint v=0; v<4; ++v)
+            if (v != pv)
+                P1onParent[v]= 2*isoP2[EdgeByVert(v,pv)+4] - isoP2[pv];
+    }
+    else // case B
+    {
+        const Uint pf= ch - 4; // parent face containing one of the child's faces
+        // parent face contains 3 vertices of child, remaining fourth vertex is located on parent's edge pe (= edge 1, 4, 1, 4).
+        const Uint ev= (pf + 2) % 4; // parent vertex in face pf which is located on parent edge pe (= vertex 2, 3, 0, 1)
+
+        // 2D interpolation on parent face
+        for (Uint i=0; i<3; ++i) {
+            const Uint fv= VertOfFace(pf,i);
+            P1onParent[fv]= 0.;
+            for (Uint j=0; j<3; ++j) {
+                const Uint fe= EdgeOfFace(pf,j);
+                const T val= isoP2[fe+4];
+                if (fv == VertOfEdge(fe,0))
+                    P1onParent[fv]+= val;
+                else if (fv == VertOfEdge(fe,1))
+                    P1onParent[fv]+= val;
+                else // vert fv is opposite to edge fe in face pf
+                    P1onParent[fv]-= val;
+             }
+        }
+
+        // 1D interpolation along edge pe whose midvertex is remaining 4th vertex of child
+        P1onParent[OppVert(pf)]= 2*isoP2[EdgeByVert(OppVert(pf),ev)+4] - P1onParent[ev];
+    }
+
+    // second step: linear interpolation of edge values
+    for (Uint e=0; e<6; ++e)
+        P1onParent[e+4]= 0.5*(isoP2[VertOfEdge(e,0)] + isoP2[VertOfEdge(e,1)]);
+}
+
+
 
 //**************************************************************************
 // Class: Quad2CL                                                          *

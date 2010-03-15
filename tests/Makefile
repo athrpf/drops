@@ -10,7 +10,8 @@ EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         tetrabuildertest sbuffer minres meshreader restrictp2 vectest \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
         mass quad5 downwind quad5_2D interfaceP1FE serialization xfem \
-        directsolver f_Gamma neq splitboundary reparam_init reparam
+        directsolver f_Gamma neq splitboundary reparam_init reparam \
+        extendP1onChild
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -197,6 +198,11 @@ f_Gamma: \
 
 neq: \
     ../tests/neq.o ../misc/utils.o
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+extendP1onChild: \
+	../tests/extendP1onChild.o ../num/discretize.o ../misc/utils.o ../geom/topo.o ../num/fe.o ../misc/problem.o \
+	../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../num/interfacePatch.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 splitboundary: \

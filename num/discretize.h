@@ -323,6 +323,14 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 };
 
 
+/// \brief Extends/Interpolates P1 function on regular child to P1 function on parent.
+///
+/// \param isoP2 data interpreted as isoP2 function (i.e., P1 on each child) to be extended
+/// \param child index 0,..,7 of regular child
+/// \param P1onParent after function call, contains interpolated P1 values on whole parent extended from child \a ch
+template<class T>
+void ExtendP1onChild( const LocalP2CL<T>& isoP2, int child, LocalP2CL<T>& P1onParent);
+
 // ===================================
 //        Quadrature formulas
 // ===================================
