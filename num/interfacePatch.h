@@ -124,7 +124,7 @@ class InterfaceTetraCL : public InterfacePatchCL
     /// \remarks The following functions are only valid, if ComputeSubTets() was called before!
     ///@{
     const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];}         ///< returns sub tetra with index \a i
-    const Uint GetChildIdx    (Uint i)  const { return i < negChildIdx.size() ? negChildIdx[i] : posChildIdx[i-negChildIdx.size()];} ///< returns index of child containing sub tetra \a i
+    Uint  GetChildIdx         (Uint i)  const { return i < negChildIdx.size() ? negChildIdx[i] : posChildIdx[i-negChildIdx.size()];} ///< returns index of child containing sub tetra \a i
     Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of sub tetras
     Uint  GetNumNegTetra()      const {return negTetras.size();}                    ///< returns number of tetras with level set function < 0
     ///@}
