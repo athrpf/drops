@@ -130,7 +130,8 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::SolveLsNs()
     duration=time.GetTime();
     std::cout << "Solving Levelset took " << duration << " sec.\n";
 
-    lsetmod_.maybeModify( LvlSet_);
+    lsetmod_.maybeDoVolCorr( LvlSet_);
+    lsetmod_.maybeDoReparam( LvlSet_);
 
     time.Reset();
 
@@ -581,7 +582,7 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLse
     duration=time.GetTime();
     std::cout << "Solving Levelset took " << duration << " sec.\n";
 
-    dphi_ = lsetmod_.maybeModify( LvlSet_);
+    dphi_ = lsetmod_.maybeDoVolCorr( LvlSet_);
 
     time.Reset();
     time.Start();
@@ -640,6 +641,7 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitS
     std::swap( cplM_, old_cplM_);
     std::swap( cplN_, old_cplN_);
     std::swap( curv_, old_curv_);
+    lsetmod_.maybeDoReparam( LvlSet_);
 }
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>

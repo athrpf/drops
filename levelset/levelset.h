@@ -164,7 +164,7 @@ class LevelsetRepairCL : public MGObserverCL
     void post_refine_sequence () {}
 };
 
-/// \brief volume correction and reparametrisation of level set function phi
+/// \brief volume correction and reparametrization of level set function phi
 class LevelsetModifyCL
 {
 private:
@@ -182,15 +182,12 @@ private:
 public:
     LevelsetModifyCL( int rpm_Freq, int rpm_Method, double rpm_MaxGrad, double rpm_MinGrad, int lvs_VolCorrection, double Vol, bool periodic=false) :
         rpm_Freq_( rpm_Freq), rpm_Method_( rpm_Method), rpm_MaxGrad_( rpm_MaxGrad),
-        rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0), per_(periodic), reparam_(true) {}
+        rpm_MinGrad_( rpm_MinGrad), lvs_VolCorrection_( lvs_VolCorrection), Vol_( Vol), step_( 0), per_(periodic) {}
 
 
-    double maybeModify( LevelsetP2CL& lset) {
+    void maybeDoReparam( LevelsetP2CL& lset) {
         bool doReparam= reparam_ && rpm_Freq_ && step_%rpm_Freq_ == 0;
         bool doVolCorr= lvs_VolCorrection_ && step_%lvs_VolCorrection_ == 0;
-        double dphi = 0.0;
-
-        if (! (doReparam || doVolCorr)) return dphi;
 
         double lsetmaxGradPhi, lsetminGradPhi;
 
@@ -199,22 +196,27 @@ public:
             doReparam = (lsetmaxGradPhi > rpm_MaxGrad_ || lsetminGradPhi < rpm_MinGrad_);
         }
 
-        // volume correction before reparam
-        if (lvs_VolCorrection_ && doReparam) {
-            dphi= lset.AdjustVolume( Vol_, 1e-9);
-            std::cout << "volume correction is " << dphi << std::endl;
-            lset.Phi.Data+= dphi;
-            std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
-        }
-
         // reparam levelset function
         if (doReparam) {
             std::cout << "before reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
             lset.Reparam( rpm_Method_, per_);
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-            reparam_ = false;
         }
+
+        if (doVolCorr) {
+            double dphi= lset.AdjustVolume( Vol_, 1e-9);
+            std::cout << "volume correction is " << dphi << std::endl;
+            lset.Phi.Data+= dphi;
+            std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
+        }
+    }
+
+    double maybeDoVolCorr( LevelsetP2CL& lset) {
+        bool doVolCorr= lvs_VolCorrection_ && step_%lvs_VolCorrection_ == 0;
+        double dphi = 0.0;
+
+        if (!doVolCorr) return dphi;
 
         if (doVolCorr) {
             dphi= lset.AdjustVolume( Vol_, 1e-9);
@@ -224,9 +226,9 @@ public:
         }
         return dphi;
     }
+
     void init() {
         step_++;
-        reparam_ = true;
     }
 };
 
