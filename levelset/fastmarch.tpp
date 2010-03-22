@@ -197,8 +197,14 @@ void InitZeroP1CL<scale>::Perform()
     if (scale==1) {
 #ifdef _PAR
         // accumulate sums
-        data_.augmIdx->GetEx().Accumulate( sumNormGradPhi_);
-        data_.augmIdx->GetEx().Accumulate( sumVol_);
+        if (data_.per) {
+            data_.augmIdx->GetEx().Accumulate( sumNormGradPhi_);
+            data_.augmIdx->GetEx().Accumulate( sumVol_);
+        }
+        else {
+            data_.phi.RowIdx->GetEx().Accumulate( sumNormGradPhi_);
+            data_.phi.RowIdx->GetEx().Accumulate( sumVol_);
+        }
 #endif
 #pragma omp parallel for
         for (int i=0; i<(int)data_.phi.Data.size(); ++i){
