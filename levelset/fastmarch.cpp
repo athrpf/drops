@@ -1633,7 +1633,7 @@ void ReparamCL::Perform()
     timer.Reset();
     propagate_->Perform();
     timer.Stop();
-    std::cout << " * Propagation by " << propagate_->GetName() << "took " << timer.GetTime() << " sec." << std::endl;
+    std::cout << " * Propagation by " << propagate_->GetName() << " took " << timer.GetTime() << " sec." << std::endl;
     RestoreSigns();
 
     alltimer.Stop();
