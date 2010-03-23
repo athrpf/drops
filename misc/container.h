@@ -753,8 +753,6 @@ class QRDecompCL
     void Solve (SVecCont<SVectorCL<Rows_> >& b) const;
     template <Uint Size>
     void Solve (SArrayCL<SVectorCL<Rows_>, Size>& b) const;
-    void Solve (size_t n, SVectorCL<Rows_>* b) const;
-
 
     double Determinant_R () const; ///< Computes the determinant of R (stable). For Rows_ > Cols_, the determinant of the upper Cols_ x Cols_ block of R is returned.
     ///@}
