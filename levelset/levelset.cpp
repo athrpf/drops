@@ -607,7 +607,9 @@ void LevelsetP2CL::SmoothPhi( VectorCL& SmPhi, double diff) const
     pcg.Solve( C, SmPhi, M*Phi.Data);
     __UNUSED__ double inf_norm= supnorm( SmPhi-Phi.Data);
 #else
-    ParCGSolverCL cg( 500, 1e-10, idx);
+    ParJac0CL  JACPc (idx);
+    typedef ParPCGSolverCL<ParJac0CL> JacPCGSolverT;
+    JacPCGSolverT cg( 500, 1e-10, idx, JACPc);
     cg.Solve( C, SmPhi, M*Phi.Data);
     __UNUSED__ const double inf_norm= ProcCL::GlobalMax(supnorm( SmPhi-Phi.Data));
 #endif
