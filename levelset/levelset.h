@@ -177,7 +177,7 @@ private:
     const double Vol_;
 
     int    step_;
-    bool   per_, reparam_;
+    bool   per_;
 
 public:
     LevelsetModifyCL( int rpm_Freq, int rpm_Method, double rpm_MaxGrad, double rpm_MinGrad, int lvs_VolCorrection, double Vol, bool periodic=false) :
@@ -186,7 +186,7 @@ public:
 
 
     void maybeDoReparam( LevelsetP2CL& lset) {
-        bool doReparam= reparam_ && rpm_Freq_ && step_%rpm_Freq_ == 0;
+        bool doReparam= rpm_Freq_ && step_%rpm_Freq_ == 0;
         bool doVolCorr= lvs_VolCorrection_ && step_%lvs_VolCorrection_ == 0;
 
         double lsetmaxGradPhi, lsetminGradPhi;
