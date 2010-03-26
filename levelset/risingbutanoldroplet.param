@@ -45,7 +45,7 @@ Levelset {
 Coupling {
   Tol           = 1e-10     # for recthetascheme
   Iter          = 10        # -1 = till convergence
-  Stab          = 0.        # laplace beltrami stabilization
+  Stab          = 1.0       # laplace beltrami stabilization
   Projection    = 0         # only thetascheme: 1 = Perform a projection step before FP
 }
 
