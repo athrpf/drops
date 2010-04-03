@@ -202,13 +202,13 @@ public:
             lset.Reparam( rpm_Method_, per_);
             lset.GetMaxMinGradPhi( lsetmaxGradPhi, lsetminGradPhi);
             std::cout << "after  reparametrization: minGradPhi " << lsetminGradPhi << "\tmaxGradPhi " << lsetmaxGradPhi << '\n';
-        }
-
-        if (doVolCorr) {
-            double dphi= lset.AdjustVolume( Vol_, 1e-9);
-            std::cout << "volume correction is " << dphi << std::endl;
-            lset.Phi.Data+= dphi;
-            std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
+            // volume correction after reparametrization
+            if (doVolCorr) {
+                double dphi= lset.AdjustVolume( Vol_, 1e-9);
+                std::cout << "volume correction is " << dphi << std::endl;
+                lset.Phi.Data+= dphi;
+                std::cout << "new rel. volume: " << lset.GetVolume()/Vol_ << std::endl;
+            }
         }
     }
 
