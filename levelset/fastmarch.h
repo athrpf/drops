@@ -289,7 +289,7 @@ class ParInitZeroExactCL : public InitZeroExactCL
     /// \brief Clean up memory
     void Clean();
     /// \brief Show memory
-    void DisplayMem();
+    void DisplayMem() const;
 
     /// \name Handler for DDD
     //@{
@@ -532,7 +532,7 @@ class DirectDistanceCL : public PropagateCL
     /// \brief Determine unsigned distances by the direct computing of distances
     virtual void Perform();
     /// \brief Show memory
-    void DisplayMemory();
+    void DisplayMem() const;
 };
 
 #ifdef _PAR

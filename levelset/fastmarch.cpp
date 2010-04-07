@@ -786,7 +786,7 @@ void ParInitZeroExactCL::Clean()
     offset_.clear();
 }
 
-void ParInitZeroExactCL::DisplayMem()
+void ParInitZeroExactCL::DisplayMem() const
 {
     const size_t memPerSendDist= 3*8+8, memPerOffset=3*8+4+8;
     const size_t memByte=toSendDistTriang_.size()*memPerSendDist + offset_.size()*memPerOffset;
@@ -1446,7 +1446,7 @@ void DirectDistanceCL::DetermineDistances()
     }
 }
 
-void DirectDistanceCL::DisplayMemory()
+void DirectDistanceCL::DisplayMem() const
 {
     const size_t memFront= front_.size()*8, memVals= vals_.size()*8;
     const size_t memPerKDInterval=2*8;
@@ -1466,7 +1466,7 @@ void DirectDistanceCL::Perform()
     InitFrontVector();
     BuildKDTree();
     DetermineDistances();
-    DisplayMemory();
+    DisplayMem();
     delete kdTree_; kdTree_=0;
 }
 
