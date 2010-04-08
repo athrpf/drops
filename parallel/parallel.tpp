@@ -326,6 +326,13 @@ template <typename T>
     return GetCount<T>(status);
 }
 
+inline int ProcCL::GetMessageLength(int source, int tag, DatatypeT& type)
+{
+    StatusT status;
+    Probe(source, tag, status);
+    return GetCount(status, type);
+}
+
 inline void ProcCL::WaitAll(std::valarray<ProcCL::RequestT>& reqs)
   { WaitAll((int)reqs.size(), Addr(reqs)); }
 

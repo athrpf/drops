@@ -34,6 +34,11 @@
 #ifndef POISSONSOLVERFACTORY_H_
 #define POISSONSOLVERFACTORY_H_
 
+#include "num/solver.h"
+#ifdef _HYPRE
+#include "num/hypre.h"
+#endif
+
 namespace DROPS
 {
 
@@ -212,6 +217,12 @@ class PoissonSolverFactoryCL
     typedef ParPreGMResSolverCL<ParDummyPcCL> DummyGMResSolverT;
     DummyGMResSolverT DummyGMResSolver_;
 
+#ifdef _HYPRE
+     //Algebraic MG solver
+    typedef HypreAMGSolverCL AMGSolverT;
+    AMGSolverT   hypreAMG_;
+#endif
+
   public:
     PoissonSolverFactoryCL( ParamsT& C, MLIdxDescCL& idx);
     ~PoissonSolverFactoryCL() {}
@@ -230,6 +241,9 @@ PoissonSolverFactoryCL<ParamsT, ProlongationT>::
       CGSolver_( C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), C_.pos_RelativeErr),
       JacGMResSolver_( C_.pos_Restart, C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), JACPc_, C_.pos_RelativeErr),
       DummyGMResSolver_( C_.pos_Restart, C_.pos_Iter, C_.pos_Tol, idx_.GetFinest(), DummyPC_, C_.pos_RelativeErr)
+#ifdef _HYPRE
+      , hypreAMG_( idx.GetFinest(), C_.pos_Iter, C_.pos_Tol)
+#endif
         {}
 
 template <class ParamsT, class ProlongationT>
@@ -242,6 +256,12 @@ PoissonSolverBaseCL* PoissonSolverFactoryCL<ParamsT, ProlongationT>::CreatePoiss
         case 202 : poissonsolver = new PoissonSolverCL<JacPCGSolverT>( JacPCGSolver_); break;
         case 300 : poissonsolver = new PoissonSolverCL<DummyGMResSolverT>( DummyGMResSolver_); break;
 		case 302 : poissonsolver = new PoissonSolverCL<JacGMResSolverT>( JacGMResSolver_);  break;
+        case 400 : 
+#ifdef _HYPRE
+            poissonsolver = new PoissonSolverCL<AMGSolverT>(   hypreAMG_); break;
+#else
+            throw DROPSErrCL("PoissonSolverFactoryCL::CreatePoissonSolver: Hypre not found, see the Wiki system for help"); break;
+#endif
         default: throw DROPSErrCL("PoissonSolverFactoryCL: Unknown Poisson solver");
     }
     return poissonsolver;

@@ -48,7 +48,7 @@ drops_statP2:\
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
     ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o \
-	$(PAR_OBJ)
+    ../num/hypre.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \

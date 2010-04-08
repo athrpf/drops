@@ -64,15 +64,16 @@ class ExchangeDataSendCL
   protected:
     int                     toProc_;                                            // handle communication among "me" and "toProc_"
     ProcCL::DatatypeT       SendType_;                                          // type for sending
+    ProcCL::DatatypeT       intSendType_;                                       // type for sending index arrays
     int                     count_;                                             // number of elements to send
 #ifdef DebugParallelNumC
     Ulint                   SendTypeSize_;                                      // how big the transfered vector must be at least
 #endif
 
-    // Set processor, that receive data
+    // Set processor, that receives data
     void SetToProc(const int proc) { toProc_= proc; }
     // Create MPI-Datatype for sending
-    void CreateDataType(const int count, const int blocklength[], const int array_of_displacements[]);
+    void CreateDataType(const int count, const int blocklength[], const int array_of_displacements[]); 
 
   public:
     ExchangeDataSendCL(int proc);
@@ -83,8 +84,8 @@ class ExchangeDataSendCL
     /// \brief Get rank of neighbor processor
     inline int GetProc() const { return toProc_; }
     // Send data to "toProc_" (nonblocking, asynchronous)
-    template <typename VectorT>
-    inline ProcCL::RequestT Isend(const VectorT&, int tag, Ulint offset) const;
+    template <typename T>
+    inline ProcCL::RequestT Isend(const std::valarray<T>&, int tag, Ulint offset) const;
 };
 
 /****************************************************************************
@@ -119,9 +120,11 @@ class ExchangeDataCL : public ExchangeDataSendCL
     // Get number of received elements
     inline size_t GetNumRecvEntries() const;
     // Receive data (nonblocking)
-    inline ProcCL::RequestT Irecv(int tag, VectorCL& recvBuf, Ulint offset) const;
+    template<typename T>
+    inline ProcCL::RequestT Irecv(int tag, VectorBaseCL<T>& recvBuf, Ulint offset) const;
     // add data from "toProc_"
-    inline void Accumulate(VectorCL&, Ulint offsetV, VectorCL& recvBuf, Ulint offsetRecv) const;
+    template<typename T>
+    inline void Accumulate(VectorBaseCL<T>&, Ulint offsetV, VectorBaseCL<T>& recvBuf, Ulint offsetRecv) const;
 
     // print, where to store received unknowns
     void DebugInfo(std::ostream&) const;
@@ -172,6 +175,7 @@ class ExchangeCL
     CommListCT        ExList_;          // Storage for all ExchangeData-Classes
     MappingIdxCT      MappingIdx_;      // maps local idx to external idx according to proc
     SysnumProcCT      SysProc_;         // procs that owns a sysnum
+    ProcNumCT         Neighs_;          // neighbors
     mutable RequestCT SendRecvReq_;     // standard request handle for non-blocking sending and receiving
 
       // types for creating the ExchangeCL
@@ -205,6 +209,7 @@ class ExchangeCL
     Ulint vecSize_;        // check, how long the vector for accumulation must be (cannot prevent all errors)
     Uint  numNeighs_;      // number of neighbors
     Ulint numAllRecvUnk_;  // size, that the receive buffer must has at least
+    Ulint numExclusive_;   // number of exclusive unknowns
     bool  created_;        // Flag for checking if the lists are created
     bool  mapCreated_;     // Flag if the mapping: (external idx) -> (my idx) is created
     bool  accIdxCreated_;  // Flag if AccDistIdx has been created
@@ -242,6 +247,7 @@ class ExchangeCL
     inline Ulint GetNumLocIdx()  const;                                                 // get the number of local sysnums
     inline Ulint GetNumDistIdx() const;                                                 // get the number of distributed sysnums
     inline Ulint GetNumDistAccIdx() const;                                              // get number of distributed sysnums, this proc is exclusively responsible for
+    inline Ulint GetNumExclusive() const;                                               // get number of exclusive sysnums
     inline Ulint GetNum() const;                                                        // get the size of vector, that can be accumulated
     inline Ulint GetNumReceiveElements() const;                                         // get number of elements, that should be received (i.e. size of the receive buffer)
     inline bool  Created() const;                                                       // check if the list has been created
@@ -249,11 +255,16 @@ class ExchangeCL
     inline bool  AccIdxCreated() const;                                                 // check if index for accumulated inner products are set
 
     // start sending and receiving
+    template<typename T>
+    inline void   InitCommunication(const VectorBaseCL<T>&, RequestCT&, VectorBaseCL<T>& recvBuf, int tag=-1, Ulint offset=0) const;
     inline void   InitCommunication(const VectorCL&, RequestCT&, int tag=-1, Ulint offset=0, VectorCL* recvBuf=0) const;
     // finish communication and accumulate vector
+    template<typename T>
+    inline void   AccFromAllProc(VectorBaseCL<T>&, RequestCT&, VectorBaseCL<T>& recvBuf, Ulint offset=0) const;
     inline void   AccFromAllProc(VectorCL&, RequestCT&, Ulint offset=0, VectorCL* recvBuf=0) const;
 
-    inline void                  Accumulate(VectorCL&) const;                           // Accumulate the Vector
+    template<typename T>
+    inline void                  Accumulate(VectorBaseCL<T>&) const;                    // Accumulate the Vector
     inline VectorCL              GetAccumulate (const VectorCL&) const;                 // Return accumulated Vector
     inline std::vector<VectorCL> GetAccumulate (const std::vector<VectorCL>&) const;    // Return accumulated vectors
 
@@ -288,12 +299,13 @@ class ExchangeCL
     inline IdxT      GetExternalIdxFromProc(IdxT, ProcNumT) const;                      // Get index of a distributed index on another proc
     inline bool      IsDist(IdxT) const;                                                // Check if a sysnum is distributed
     inline bool      IsOnProc(IdxT,ProcNumT);                                           // Check if a sysnum can be found on another proc
-    inline ProcNumCT GetProcs(IdxT) const;                                              // Get list of procs that owns a sysnum (except local proc)
+    inline const ProcNumCT& GetProcs(IdxT) const;                                       // Get list of procs that owns a sysnum (except local proc)
     inline Uint      GetNumProcs(IdxT) const;                                           // Get number of procs, that owns a sysnum
     inline bool      IsExclusive(IdxT) const;                                           // Is a sysnum on the calling processor exclusive (i.e. this proc has the smallest proc id)
+    inline int       GetExclusiveProc(IdxT) const;                                      // Get process that is responsible for the dof
 
-    inline ProcNumCT GetNeighbors() const;                                              // Get procs that shares at least one unknown with this proc
-    inline Uint      GetNumNeighs() const;                                              // Get number of neighbor processes
+    inline const ProcNumCT& GetNeighbors() const;                                       // Get procs that shares at least one unknown with this proc
+    inline Uint             GetNumNeighs() const;                                       // Get number of neighbor processes
 
       // Debugging and information
     void DebugInfo(std::ostream&) const;                                                // Debug Info

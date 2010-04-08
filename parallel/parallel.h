@@ -211,6 +211,7 @@ class ProcCL
     static inline int GetCount(StatusT&);
     template <typename T>
     static inline int GetMessageLength(int, int);
+    static inline int GetMessageLength(int, int, DatatypeT&);
       /// \brief MPI-Waitall-wrapper for all requests in a valarray
     static inline void WaitAll(std::valarray<RequestT>&);
       /// \brief MPI-Waitall-wrapper for all requests in a vector
@@ -305,7 +306,7 @@ class ProcCL
     /// \name Gather operations
     //@{
     template<typename T>
-    static void Gather(T myData, T* allData, int proc)
+    static void Gather(T myData, T* allData, int proc=-1)
         { Gather(&myData, allData, 1, proc); }
 
     template<typename T>
@@ -375,10 +376,8 @@ template<> struct ProcCL::MPI_TT<byte>
 template<> struct ProcCL::MPI_TT<float>
   { static const ProcCL::DatatypeT& dtype; };
 
-#ifdef DROPS_WIN
-//template<> struct ProcCL::MPI_TT<size_t>
-//  { static const ProcCL::DatatypeT& dtype; };
-#endif
+template<> struct ProcCL::MPI_TT<short int>
+  { static const ProcCL::DatatypeT& dtype; };
 
 } // namespace DROPS
 

@@ -65,6 +65,9 @@ clean_DDD:
 clean_ParMetis:
 	cd $(PARMETIS_HOME) && gmake clean && cd $(DROPS_ROOT)
 
+clean_HYPRE:
+	cd $(HYPRE_HOME) && gmake clean && cd $(DROPS_ROOT)
+
 topo:
 	cd ./geom && $(MAKE) topo.cpp
 	@echo "--> topo.cpp generated!"
@@ -91,6 +94,9 @@ DDD:
 ParMetis:
 	cd $(PARMETIS_HOME) && gmake clean && \
 	gmake COPTIONS="$(OPTFLAGS)" CC="$(ARCH_CC)" LD="$(ARCH_CC)"
+
+HYPRE:	
+	cd $(HYPRE_HOME) && gmake install
 
 .PHONY: all clean distclean distclean_dox default dep deldepend doc stat topo check
 

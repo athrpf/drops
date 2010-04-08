@@ -37,21 +37,22 @@ namespace DROPS{
 // --------------------------------------------
 
 ExchangeDataSendCL::ExchangeDataSendCL(int proc)
-  : toProc_(proc), SendType_(MPI_DATATYPE_NULL), count_(-1) {}
+  : toProc_(proc), SendType_(MPI_DATATYPE_NULL), intSendType_(MPI_DATATYPE_NULL), count_(-1) {}
 
 ExchangeDataSendCL::ExchangeDataSendCL()
-  : toProc_(-1), SendType_(MPI_DATATYPE_NULL), count_(-1) {}
+  : toProc_(-1), SendType_(MPI_DATATYPE_NULL), intSendType_(MPI_DATATYPE_NULL), count_(-1) {}
 
 ExchangeDataSendCL::ExchangeDataSendCL(const ExchangeDataSendCL& ex)
-  : toProc_(ex.toProc_), SendType_(ex.SendType_), count_(ex.count_) {}
+  : toProc_(ex.toProc_), SendType_(ex.SendType_), intSendType_(ex.intSendType_), count_(ex.count_) {}
 
 ExchangeDataSendCL::~ExchangeDataSendCL()
 {
-    if (SendType_!=ProcCL::NullDataType)
+    if (SendType_!=ProcCL::NullDataType) {
         ProcCL::Free(SendType_);
+        ProcCL::Free(intSendType_);
+    }
 }
 
-/// \brief Create Datatype for sending
 void ExchangeDataSendCL::CreateDataType(const int count,
         const int blocklength[], const int array_of_displacements[])
 /** This function creates a MPI datatype that is reposible for gathering
@@ -61,14 +62,50 @@ void ExchangeDataSendCL::CreateDataType(const int count,
     \param array_of_displacements position of the elements
 */
 {
-    if (SendType_!=ProcCL::NullDataType)
+    if (SendType_!=ProcCL::NullDataType) {
         ProcCL::Free(SendType_);
+        ProcCL::Free(intSendType_);
+    }
     SendType_ = ProcCL::CreateIndexed<double>(count, blocklength, array_of_displacements);
+    intSendType_ = ProcCL::CreateIndexed<int>(count, blocklength, array_of_displacements);
     ProcCL::Commit(SendType_);
+    ProcCL::Commit(intSendType_);
 #ifdef DebugParallelNumC
     SendTypeSize_= array_of_displacements[count-1] + blocklength[count-1];
 #endif
     count_= count;
+}
+
+/// \brief Send double data
+template <>
+ProcCL::RequestT ExchangeDataSendCL::Isend<>(const std::valarray<double>& v, int tag, Ulint offset) const
+/** This procedure send the data with a non-blocking non-synchronous MPI Send. Since this
+    procedure is used to send vector-entries as well as non-zero-elements of a matrix, the
+    type VectorT is a template parameter.
+    \param v      vector, that contains elements for sending (local data)
+    \param tag    used tag for communication
+    \param offset start element of the vector
+    \pre v has to be big enough
+*/
+{
+    Assert(v.size()>=SendTypeSize_+offset, DROPSErrCL("ExchangeDataCL::Isend: Vector is not long enough for transfer!"), DebugParallelNumC);
+    return ProcCL::Isend(Addr(v)+offset, 1, SendType_, toProc_, tag);
+}
+
+/// \brief Send int data
+template <>
+ProcCL::RequestT ExchangeDataSendCL::Isend<>(const std::valarray<int>& v, int tag, Ulint offset) const
+/** This procedure send the data with a non-blocking non-synchronous MPI Send. Since this
+    procedure is used to send vector-entries as well as non-zero-elements of a matrix, the
+    type VectorT is a template parameter.
+    \param v      vector, that contains elements for sending (local data)
+    \param tag    used tag for communication
+    \param offset start element of the vector
+    \pre v has to be big enough
+*/
+{
+    Assert(v.size()>=SendTypeSize_+offset, DROPSErrCL("ExchangeDataCL::Isend: Vector is not long enough for transfer!"), DebugParallelNumC);
+    return ProcCL::Isend(Addr(v)+offset, 1, intSendType_, toProc_, tag);
 }
 
 // ------------------------------------
@@ -136,6 +173,7 @@ ExchangeCL::~ExchangeCL()
 void ExchangeCL::clear()
 {
     ExList_.clear();
+    Neighs_.clear();
     LocalIndex.resize(0);
     DistrIndex.resize(0);
     numLocalIdx_=0;
@@ -348,6 +386,13 @@ void ExchangeCL::CreateIndices(IdxDescCL *RowIdx, const VectorBaseCL<bool>& Dist
             }
         }
 
+        // Zaehlen der exclusiven dof
+        numExclusive_=0;
+        for ( Ulint i=0; i<RowIdx->NumUnknowns(); ++i){
+            if ( IsExclusive( i))
+                ++numExclusive_;
+        }
+
         // Warten bis alle MPI-Sends abgeschlossen ist, damit die Felder geloescht werden koennen
         ProcCL::WaitAll(req);
 
@@ -389,6 +434,8 @@ void ExchangeCL::CreateList(const MultiGridCL& mg, IdxDescCL *RowIdx, bool Creat
         for (Uint i=0; i<numLocalIdx_; ++i)
             LocalIndex[i]=i;
         numNeighs_=0;
+        Neighs_.clear();
+        numExclusive_= vecSize_;
         return;
     }
 
@@ -438,6 +485,9 @@ void ExchangeCL::CreateList(const MultiGridCL& mg, IdxDescCL *RowIdx, bool Creat
     for (CommListCT::iterator it(ExList_.begin()), end(ExList_.end()); it!=end; ++it){
         it->CreateSysnums( RecvSysnums_[it->GetProc()] );
     }
+      // Determine neighbors
+    for (CommListCT::const_iterator it(ExList_.begin()), end(ExList_.end()); it!=end; ++it)
+        Neighs_.push_back(it->toProc_);
 
       // Create the local and distributed indices
     CreateIndices(RowIdx, DistSysnums, CreateAccDist);
@@ -446,7 +496,7 @@ void ExchangeCL::CreateList(const MultiGridCL& mg, IdxDescCL *RowIdx, bool Creat
     created_ = true;
     accIdxCreated_=CreateAccDist;
     vecSize_ = RowIdx->NumUnknowns();
-    numNeighs_= ExList_.size();
+    numNeighs_= ExList_.size();    
 
       // Free memory and reset static members
     SendList_.clear();
@@ -680,6 +730,20 @@ bool ExchangeCL::IsEqual(const ExchangeCL &ex, std::ostream* os) const
             }
     }
     return true;
+}
+
+// template specialization for double, using standard receive buffer
+template<>
+void ExchangeCL::Accumulate<double>(VectorBaseCL<double> &x) const
+{
+    Assert(created_, DROPSErrCL("ExchangeCL::Accumulate: Lists have not been created (Maybe use CreateList before!)\n"), DebugParallelNumC);
+    if (x.size()!=vecSize_)
+        printf ("ExchangeCL::Accumulate: Vector has size %lu, but should be %li; MyRank %i\n", (unsigned long)x.size(), vecSize_, ProcCL::MyRank());
+    Assert(x.size()==vecSize_, DROPSErrCL("ExchangeCL::Accumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
+
+    RequestCT req(ExList_.size());
+    InitCommunication(x, SendRecvReq_);
+    AccFromAllProc(x, SendRecvReq_);
 }
 
 // -------------------------------------

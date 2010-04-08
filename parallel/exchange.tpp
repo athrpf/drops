@@ -28,21 +28,13 @@ namespace DROPS{
 // E X C H A N G E  D A T A  S E N D  C L A S S
 // --------------------------------------------
 
-/// \brief Send data
-template <typename VectorT>
-ProcCL::RequestT ExchangeDataSendCL::Isend(const VectorT& v, int tag, Ulint offset) const
-/** This procedure send the data with a non-blocking non-synchronous MPI Send. Since this
-    procedure is used to send vector-entries as well as non-zero-elements of a matrix, the
-    type VectorT is a template parameter.
-    \param v      vector, that contains elements for sending (local data)
-    \param tag    used tag for communication
-    \param offset start element of the vector
-    \pre v has to be big enough
-*/
-{
-    Assert(v.size()>=SendTypeSize_+offset, DROPSErrCL("ExchangeDataCL::Isend: Vector is not long enough for transfer!"), DebugParallelNumC);
-    return ProcCL::Isend(Addr(v)+offset, 1, SendType_, toProc_, tag);
-}
+/// \brief Send double data
+template <>
+ProcCL::RequestT ExchangeDataSendCL::Isend<>(const std::valarray<double>& v, int tag, Ulint offset) const;
+
+/// \brief Send int data
+template <>
+ProcCL::RequestT ExchangeDataSendCL::Isend<>(const std::valarray<int>& v, int tag, Ulint offset) const;
 
 
 // ------------------------------------
@@ -56,7 +48,8 @@ size_t ExchangeDataCL::GetNumRecvEntries() const
 }
 
 /// \brief Receive data
-ProcCL::RequestT ExchangeDataCL::Irecv(int tag, VectorCL& recvBuf, Ulint offset) const
+template<typename T>
+ProcCL::RequestT ExchangeDataCL::Irecv(int tag, VectorBaseCL<T>& recvBuf, Ulint offset) const
 /** This procedure receives the datas with an non-blocking non-synchronous MPI
     Receive.
     \param tag     used tag for communication
@@ -71,7 +64,8 @@ ProcCL::RequestT ExchangeDataCL::Irecv(int tag, VectorCL& recvBuf, Ulint offset)
 }
 
 /// \brief Add data (call for vectors)
-void ExchangeDataCL::Accumulate(VectorCL& v, Ulint offsetV, VectorCL& recvBuf, Ulint offsetRecv) const
+template<typename T>
+void ExchangeDataCL::Accumulate(VectorBaseCL<T>& v, Ulint offsetV, VectorBaseCL<T>& recvBuf, Ulint offsetRecv) const
 /** This procedure accumulates received data. It assumes, that the data has been
     received.
     \param v          original value, that contains all local unknowns
@@ -252,6 +246,11 @@ Ulint ExchangeCL::GetNumDistAccIdx() const{
     return AccDistIndex.size();
 }
 
+/// \brief Get number of exclusive sysnums
+Ulint ExchangeCL::GetNumExclusive() const{
+    return numExclusive_;
+}
+
 /// \brief get the size of vector, that can be accumulated
 Ulint ExchangeCL::GetNum() const
 {
@@ -301,19 +300,33 @@ void ExchangeCL::InitCommunication(const VectorCL &vec, RequestCT& req, int tag,
     \pre recvBuf must be big enough (if given) or standard receive buffer must be big enough (if not given, default)
 */
 {
+    InitCommunication<double>( vec, req, recvBuf ? *recvBuf : recvBuf_, tag, offset);
+}
+
+/// \brief Start communication
+template<typename T>
+void ExchangeCL::InitCommunication(const VectorBaseCL<T> &vec, RequestCT& req, VectorBaseCL<T>& recvBuf, int tag, Ulint offset) const
+/** This procedure initializes the communication with neighbor processors, i.e.
+    it calls Isend and Irecv to all neighbor processors.
+    \param vec     all entries of vec, that are shared, are send to other procs, that owns this unknown too. Watch out, not to change these entries bevore recieving!
+    \param req     Requests that should be used for sending and receiving
+    \param tag     default -1: the tagused by this function. If tag=-1, then use the default tag=1001
+    \param offset  default 0: For blocked vectors this offset is used to enter a special block
+    \param recvBuf default 0: Buffer for receiving unknowns (default 0: using the standard receive buffer of this class)
+    \pre List has to be created
+    \pre request container has to be the size of (2*number of neighbors)
+    \pre recvBuf must be big enough
+*/
+{
     Assert(created_,
            DROPSErrCL("ExchangeCL::InitCommunication: Lists have not been created (Maybe use CreateList before!\n"),
            DebugParallelNumC);
     Assert(req.size()==2*GetNumNeighs(),
            DROPSErrCL("ExchangeCL::InitCommunication: Request container has wrong length"),
            DebugParallelNumC);
-    Assert((recvBuf==0 && recvBuf_.size()>=numDistrIdx_) || (recvBuf!=0 && recvBuf->size()>=numDistrIdx_),
-           DROPSErrCL("ExchangeCL::InitCommunication: Receive Buffer is not big enough"),
+    Assert(recvBuf.size()>=numDistrIdx_,
+           DROPSErrCL("ExchangeCL::InitCommunication: Receive Buffer too small"),
            DebugParallelNumC);
-
-    // if no receive buffer is explicitly given, use the default one
-    if (!recvBuf)
-        recvBuf= &recvBuf_;
 
     // set tag for sending and receiving
     const int mytag= (tag==-1) ? tag_ : tag;
@@ -324,7 +337,7 @@ void ExchangeCL::InitCommunication(const VectorCL &vec, RequestCT& req, int tag,
     Uint i=0;
     for (; lit!=end; ++lit, ++i){
         req[i]          = lit->Isend(vec, mytag, offset);
-        req[i+num_neigh]= lit->Irecv(mytag, *recvBuf, recvOffsets_[i]);
+        req[i+num_neigh]= lit->Irecv(mytag, recvBuf, recvOffsets_[i]);
     }
 }
 
@@ -337,10 +350,29 @@ void ExchangeCL::AccFromAllProc(VectorCL &vec, RequestCT& req, Ulint offset, Vec
     \param vec     recieve from other procs the values of the shared entries and add them
     \param tag     default -1: the tag used by this function. If tag=-1, then use the default tag=1001
     \param offset  default 0: For blocked vectors this offset is used to enter a special block
-    \param recvBuf default 0: Buffer of received unknowns (default 0: using the standard receive buffer of this class)
+    \param recvBuf Buffer of received unknowns
     \pre List has to be created
     \pre request container has to be the size of (2*number of neighbors)
     \pre recvBuf must be big enough (if given) or standard receive buffer must be big enough (if not given, default)
+*/
+{
+    AccFromAllProc<double>( vec, req, recvBuf ? *recvBuf : recvBuf_, offset);
+}
+
+/// \brief Accumulate the Vector
+template<typename T>
+void ExchangeCL::AccFromAllProc(VectorBaseCL<T> &vec, RequestCT& req, VectorBaseCL<T>& recvBuf, Ulint offset) const
+/** This procedure waits until all (I)sends from this proc into the wild
+    proc-world and all (I)receive operations are finished. Then the accumulation
+    can be performed.
+
+    \param vec     recieve from other procs the values of the shared entries and add them
+    \param tag     default -1: the tag used by this function. If tag=-1, then use the default tag=1001
+    \param offset  default 0: For blocked vectors this offset is used to enter a special block
+    \param recvBuf Buffer of received unknowns
+    \pre List has to be created
+    \pre request container has to be the size of (2*number of neighbors)
+    \pre recvBuf must be big enough
 */
 {
     Assert(created_,
@@ -349,13 +381,9 @@ void ExchangeCL::AccFromAllProc(VectorCL &vec, RequestCT& req, Ulint offset, Vec
     Assert(req.size()==2*GetNumNeighs(),
            DROPSErrCL("ExchangeCL::InitCommunication: Request container has wrong length"),
            DebugParallelNumC);
-    Assert((recvBuf==0 && recvBuf_.size()>=numDistrIdx_) || (recvBuf!=0 && recvBuf->size()>=numDistrIdx_),
-           DROPSErrCL("ExchangeCL::InitCommunication: Receive Buffer is not big enough"),
+    Assert(recvBuf.size()>=numDistrIdx_,
+           DROPSErrCL("ExchangeCL::InitCommunication: Receive Buffer is too small"),
            DebugParallelNumC);
-
-    // if no receive buffer is explicitly given, use the default one
-    if (!recvBuf)
-        recvBuf= &recvBuf_;
 
     // Wait untill all sends and revceives are completed
     ProcCL::WaitAll(req);
@@ -364,7 +392,7 @@ void ExchangeCL::AccFromAllProc(VectorCL &vec, RequestCT& req, Ulint offset, Vec
     CommListCT::const_iterator lit=ExList_.begin(), end=ExList_.end();
     Uint i=0;
     for (; lit!=end; ++lit, ++i)
-        lit->Accumulate(vec, offset, *recvBuf, recvOffsets_[i]);
+        lit->Accumulate(vec, offset, recvBuf, recvOffsets_[i]);
 }
 
 /****************************************************
@@ -789,7 +817,7 @@ bool ExchangeCL::IsOnProc(IdxT i, ProcNumT p)
 }
 
 /// \brief Get list of procs (except local proc) that owns a sysnum
-ExchangeCL::ProcNumCT ExchangeCL::GetProcs(IdxT i) const
+const ExchangeCL::ProcNumCT& ExchangeCL::GetProcs(IdxT i) const
 {
     Assert(mapCreated_,
            DROPSErrCL("ExchangeCL::GetProcs: The mapping: (external idx) -> (my idx) is not created. \nMaybe set flag CreateMapIdx for CreateList()!"),
@@ -815,25 +843,32 @@ bool ExchangeCL::IsExclusive(IdxT i) const
         return true;
     if (!IsDist(i))
         return true;
-    ProcNumCT procs= GetProcs(i);
-    for (ProcNumCT::const_iterator it(procs.begin()); it!=procs.end(); ++it)
+    for (ProcNumCT::const_iterator it(GetProcs(i).begin()); it!=GetProcs(i).end(); ++it)
         if (*it<ProcCL::MyRank())
             return false;
     return true;
 }
 
-/// \brief Get procs that shares at least one unknown with this proc
-ExchangeCL::ProcNumCT ExchangeCL::GetNeighbors() const
+int ExchangeCL::GetExclusiveProc(IdxT i) const
 {
-    ProcNumCT ret;
-    if (ProcCL::Size()==1)
-        return ret;
-    Assert(mapCreated_,
-           DROPSErrCL("ExchangeCL::GetNumProcs: The mapping: (external idx) -> (my idx) is not created. \nMaybe set flag CreateMapIdx for CreateList()!"),
-           DebugParallelNumC);
-    for (CommListCT::const_iterator it(ExList_.begin()), end(ExList_.end()); it!=end; ++it)
-        ret.push_back(it->toProc_);
-    return ret;
+    if ( !IsDist(i))
+        return ProcCL::MyRank();
+    else{
+/*        if (ProcCL::MyRank()==1){
+            ProcNumCT procs= GetProcs(i);
+            for (ProcNumCT::const_iterator it(procs.begin()); it!=procs.end(); ++it)
+                std::cerr << "Procs " << *it << ' ';
+            std::cerr << std::endl;
+        }
+*/
+        return *std::min_element( GetProcs(i).begin(), GetProcs(i).end());
+    }
+}
+
+/// \brief Get procs that shares at least one unknown with this proc
+const ExchangeCL::ProcNumCT& ExchangeCL::GetNeighbors() const
+{
+    return Neighs_;
 }
 
 /// \brief Parallel InnerProduct of two distributed vectors and accumulate of one vector
@@ -1111,7 +1146,8 @@ double ExchangeCL::AccNorm_sq(const VectorCL& r_acc) const
 }
 
 /// \brief Accumulation of a Vector
-void ExchangeCL::Accumulate(VectorCL &x) const
+template<typename T>
+void ExchangeCL::Accumulate(VectorBaseCL<T> &x) const
 {
     Assert(created_, DROPSErrCL("ExchangeCL::Accumulate: Lists have not been created (Maybe use CreateList before!)\n"), DebugParallelNumC);
     if (x.size()!=vecSize_)
@@ -1119,9 +1155,14 @@ void ExchangeCL::Accumulate(VectorCL &x) const
     Assert(x.size()==vecSize_, DROPSErrCL("ExchangeCL::Accumulate: vector length does not fit to the created lists. (Maybe used a wrong IdxDescCL?)"), DebugParallelNumC);
 
     RequestCT req(ExList_.size());
-    InitCommunication(x, SendRecvReq_);
-    AccFromAllProc(x, SendRecvReq_);
+    VectorBaseCL<T> recvBuf( recvBuf_.size());
+    InitCommunication<T>(x, SendRecvReq_, recvBuf);
+    AccFromAllProc<T>(x, SendRecvReq_, recvBuf);
 }
+
+// template specialization for double, using standard receive buffer
+template<>
+void ExchangeCL::Accumulate<double>(VectorBaseCL<double> &x) const;
 
 /// \brief Returns the accumulated form of a vector
 VectorCL ExchangeCL::GetAccumulate (const VectorCL &x) const
