@@ -218,10 +218,12 @@ template<class CoeffCL, class SolverT, class ParamsT>
 void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& param)
 {
 	TimerCL timer;
-	timer.Reset();
+	timer.Start();
 	if ( !param.err_DoErrorEstimate) {
         Poisson.SetupSystem( Poisson.A, Poisson.b);
+        timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
+        timer.Stop();
         double realresid = norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
         std::cout << " o Solved system with:\n"
                   << "   - time          " << timer.GetTime()   << " s\n"
@@ -257,6 +259,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
         old_idx->SetFE( P1_FE);
 
         do{
+            timer.Reset();
             std::cout << DROPS::SanityMGOutCL(MG) << std::endl;
             MG.Refine();
 
@@ -282,7 +285,10 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
 
             Poisson.A.SetIdx( new_idx, new_idx);             // tell A about numbering
             Poisson.SetupSystem( Poisson.A, Poisson.b);
+            timer.Stop();
+            timer.Reset();
             solver.Solve( Poisson.A.Data, new_x->Data, Poisson.b.Data);
+            timer.Stop();
             double realresid = norm( VectorCL(Poisson.A.Data*new_x->Data-Poisson.b.Data));
             std::cout << " o Solved system with:\n"
                       << "   - time          " << timer.GetTime()   << " s\n"

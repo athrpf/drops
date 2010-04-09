@@ -179,11 +179,13 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     PoissonSolverFactoryCL< Params> factory( C, Poisson.idx);
     PoissonSolverBaseCL* solver = factory.CreatePoissonSolver();
 
+    timer.Reset();
     if ( factory.GetProlongation() != 0)
         SetupP2ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
 
     // Solve the linear equation system
     solver->Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
+    timer.Stop();
     double realresid;
 #ifndef _PAR
     realresid= norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
