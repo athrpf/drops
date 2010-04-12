@@ -26,6 +26,9 @@
 #include "num/stokessolver.h"
 #else
 #include "num/parstokessolver.h"
+#ifdef _HYPRE
+#include "num/hypre.h"
+#endif
 #endif
 
 namespace DROPS {
@@ -48,6 +51,7 @@ namespace DROPS {
     <tr><td>  7 </td><td>                   </td><td>                                    </td><td> ISMGPreCL                    </td></tr>
     <tr><td>  8 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
     <tr><td>  9 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
+    <tr><td> 20 </td><td>                   </td><td> HYPRE-AMG                          </td><td>                              </td></tr>
     <tr><td> 30 </td><td> StokesMGM         </td><td> PVankaSmootherCL                   </td><td> PVankaSmootherCL             </td></tr>
     <tr><td> 31 </td><td>                   </td><td> BSSmootherCL                       </td><td> BSSmootherCL                 </td></tr>
     </table>*/
@@ -685,6 +689,16 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
 //GCR solver
     ParPreGCRSolverCL<LBlockGMResBBTOseenPcT> GCRGMResBBT_;
 
+#ifdef _HYPRE
+     //Algebraic MG solver
+    HypreAMGSolverCL hypreAMG_;
+    typedef SolverAsPreCL<HypreAMGSolverCL> AMGPcT;
+    AMGPcT AMGPc_;
+    typedef BlockPreCL<AMGPcT, ISBBTPreCL, LowerBlockPreCL> LBlockAMGBBTOseenPcT;
+    LBlockAMGBBTOseenPcT LBlockAMGBBTOseenPc_;
+    ParPreGCRSolverCL<LBlockAMGBBTOseenPcT> GCRAMGBBT_;
+#endif
+
   public:
     StokesSolverFactoryCL( StokesT& Stokes, ParamsT& C);
     ~StokesSolverFactoryCL() {}
@@ -718,6 +732,11 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
       PCGPc_(PCGSolver_),
       LBlockGMResBBTOseenPc_( GMResPc_, bbtispc_),
       GCRGMResBBT_( C.stk_OuterIter, C.stk_OuterIter, C.stk_OuterTol, LBlockGMResBBTOseenPc_, true, false, true, &std::cout)
+#ifdef _HYPRE
+      , hypreAMG_( Stokes.vel_idx.GetFinest(), C_.stk_PcAIter, C_.stk_PcATol), AMGPc_(hypreAMG_),
+      LBlockAMGBBTOseenPc_( AMGPc_, bbtispc_),
+      GCRAMGBBT_( C.stk_OuterIter, C.stk_OuterIter, C.stk_OuterTol, LBlockAMGBBTOseenPc_, true, false, true, &std::cout)
+#endif
     {}
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
@@ -729,7 +748,7 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
         case 20301 :
             stokessolver = new ParInexactUzawaCL<PCGPcT, ISBBTPreCL, APC_SYM>
                         ( PCGPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
-                          C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                          C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, 500, &std::cout);
         break;
         case 20400 :
             stokessolver = new ParInexactUzawaCL<GMResPcT, ParDummyPcCL, APC_OTHER>
@@ -739,12 +758,23 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
         case 20401 :
             stokessolver = new ParInexactUzawaCL<GMResPcT, ISBBTPreCL, APC_OTHER>
                         ( GMResPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
-                          C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol);
+                          C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, 500, &std::cout);
         break;
         case 10401 :
             stokessolver = new BlockMatrixSolverCL<ParPreGCRSolverCL<LBlockGMResBBTOseenPcT> >
                         ( GCRGMResBBT_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest());
         break;
+#ifdef _HYPRE
+        case 22001 :
+            stokessolver = new ParInexactUzawaCL<AMGPcT, ISBBTPreCL, APC_OTHER>
+                        ( AMGPc_, bbtispc_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest(),
+                          C_.stk_OuterIter, C_.stk_OuterTol, C_.stk_InnerTol, 500, &std::cout);
+        break;
+        case 12001 :
+            stokessolver = new BlockMatrixSolverCL<ParPreGCRSolverCL<LBlockAMGBBTOseenPcT> >
+                        ( GCRAMGBBT_, Stokes_.vel_idx.GetFinest(), Stokes_.pr_idx.GetFinest());
+        break;
+#endif
         default: throw DROPSErrCL("Unknown StokesMethod");
     }
     return stokessolver;

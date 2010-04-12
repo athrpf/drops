@@ -86,6 +86,6 @@ twophasedrops: \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
     ../num/interfacePatch.o ../out/vtkOut.o ../surfactant/ifacetransp.o ../levelset/surfacetension.o \
-    ../geom/geomselect.o  ../levelset/twophaseutils.o  $(PAR_OBJ)
+    ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
