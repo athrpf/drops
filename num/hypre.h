@@ -31,6 +31,7 @@
 #include "num/spmat.h"
 #include "num/solver.h"
 #include "num/parsolver.h"
+#include "num/parprecond.h"
 
 namespace DROPS {
 
@@ -185,10 +186,11 @@ class HypreAMGSolverCL : public SolverBaseCL
 
     /// \brief Initialize the solver
     void Init();
+    ParDummyPcCL dummy_;
 
   public:
     HypreAMGSolverCL( const IdxDescCL& idx, int maxiter= 100, double tol=1e-7)
-        : baseT(maxiter, tol), idx_(idx) { Init(); }
+        : baseT(maxiter, tol), idx_(idx), dummy_(idx_) { Init(); }
     ~HypreAMGSolverCL();
     
     void SetTol( double tol)   { _tol= tol; HYPRE_BoomerAMGSetTol( solver_, tol); }
@@ -201,6 +203,7 @@ class HypreAMGSolverCL : public SolverBaseCL
     void Solve( const HypreMatrixCL& A, HypreVectorCL& x, const HypreVectorCL& b) const;
     void Solve( const MatrixCL& A, VectorCL& x, const VectorCL& b)   { SetupAndSolve(A,x,b,idx_); }
     void Solve( const MLMatrixCL& A, VectorCL& x, const VectorCL& b) { SetupAndSolve(A.GetFinest(),x,b,idx_); }
+    ParDummyPcCL GetPC() { return dummy_; }
     //@}
 };   
 
