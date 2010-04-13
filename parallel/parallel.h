@@ -31,6 +31,9 @@
 #include <numeric>
 #include "misc/utils.h"
 #include "parallel/distributeddatatypes.h"
+#ifdef HAVE_ZOLTAN
+#include <zoltan.h>
+#endif
 
 
 namespace DROPS
@@ -348,7 +351,14 @@ class ProcCL
 class ProcInitCL
 {
   public:
-    ProcInitCL(int* argc, char*** argv) { ProcCL::Instance( argc, argv); }
+    ProcInitCL(int* argc, char*** argv) {
+        ProcCL::Instance( argc, argv);
+#ifdef HAVE_ZOLTAN
+        float ver;
+        if (Zoltan_Initialize( *argc, *argv, &ver)!=ZOLTAN_OK)
+            throw DROPSErrCL("Cannot initialize Zoltan");
+#endif
+    }
     ~ProcInitCL() { if (ProcCL::InstancePtr()) delete ProcCL::InstancePtr(); }
 };
 

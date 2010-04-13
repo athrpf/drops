@@ -22,8 +22,7 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-// "parallele" Header-Files
-#include "parallel/parallel.h"
+// "parallel" Header-Files
 #include "parallel/parmultigrid.h"
 #include "parallel/partime.h"
 #include "parallel/metispartioner.h"
@@ -281,9 +280,7 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
             if (me==0)
                 std::cout << "  - Berechne eine Graphpartitionierung ...\n";
             time.Reset();
-            if (me==proc){
-                lb.SerPartKWay();
-            }
+            lb.PartitionSer(proc);
             time.Stop();
             if (C.printTime){
                 duration = time.GetMaxTime();
@@ -357,13 +354,8 @@ void DoMigration(DROPS::ParMultiGridCL &pmg, DROPS::LoadBalCL &LoadBal, int lb)
 
         if (me==0) cout << "  - Erstelle Partitionen ... \n";
         time.Reset();
-        switch (lb)
-        {
-            case 0 : break;
-            case 1 : LoadBal.AdaptRepart(); break;
-            case 2 : LoadBal.ParPartKWay(); break;
-            default : cout << "ERROR\nEXIT"; exit(0);
-        }
+        LoadBal.PartitionPar();
+
         time.Stop(); duration = time.GetMaxTime();
         Times.AddTime(T_CalcDist, duration);
         if (C.printTime && me==0) std::cout << "       --> "<<duration<<" sec\n";

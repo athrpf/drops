@@ -32,9 +32,9 @@ namespace DROPS{
 * L O A D  B A L  C L A S S                                                 *
 ****************************************************************************/
 // static initialisation
-Uint    LoadBalCL::TriangLevel_ = 0;
-IFT LoadBalCL::FaceIF_      = 0;
-idxtype LoadBalCL::myfirstVert_ = 0;
+Uint     LoadBalCL::TriangLevel_ = 0;
+IFT      LoadBalCL::FaceIF_      = 0;
+idxtype* LoadBalCL::myfirstVert_ = 0;
 
 
 /****************************************************************************
@@ -47,21 +47,15 @@ extern "C" int HandlerGatherC ( OBJT o, void *d) {return LoadBalCL::HandlerGathe
 
 
 /// \brief Constructor
-LoadBalCL::LoadBalCL(MultiGridCL& mg, float ub, int TriLevel) : idx_(), ubvec_(ub), useUnkInfo_(false)
+LoadBalCL::LoadBalCL(MultiGridCL& mg, int TriLevel, PartMethod meth) : idx_(), useUnkInfo_(false)
 /// \param mg       Reference on the multigrid
 /// \param ub       imbalace tolerance for eacht vertex weight, suggestion from parMETIS is 1.05
 /// \param TriLevel level that should be balanced
+/// \param meth     Type of meyhod used for partitioning
 /// \todo (of) estimate good parameter ubvec for parmetis
-{
+{  
+    partitioner_ = PartitionerCL::newPartitioner(metis,1.05,meth);   // Pointer to the partitioner class
     mg_=&mg;
-    xadj_=0;
-    adjncy_=0;
-    vtxdist_=0;
-    part_=0;
-    vwgt_=0;
-    adjwgt_=0;
-    xyz_=0;
-
     if (FaceIF_==0)
         InitIF();
 
@@ -69,7 +63,7 @@ LoadBalCL::LoadBalCL(MultiGridCL& mg, float ub, int TriLevel) : idx_(), ubvec_(u
         TriangLevel_=mg_->GetLastLevel();
     else
         TriangLevel_=TriLevel;
-    movedMultiNodes_=0;
+    partitioner_->GetGraph().movedMultiNodes=0;
 }
 
 
@@ -83,7 +77,7 @@ LoadBalCL::~LoadBalCL()
 /// \brief Init the DDD interface for communicate adjacenies between processors
 void LoadBalCL::InitIF()
 /** \todo (of) Falls nicht nur das letzte Triangulierungslevel balanciert werden
-    soll, m�ssen auch LB-Nummern auf Ghosts versendet werden!
+    soll, mussen auch LB-Nummern auf Ghosts versendet werden!
 */
 {
     TypeT  O[8];
@@ -107,9 +101,11 @@ void LoadBalCL::InitIF()
 
 
 /// \brief Communicate adjacencies between processors
+/// \pre pointer to myfirstvert_ has to be set!
 void LoadBalCL::CommunicateAdjacency()
 {
-	DynamicDataInterfaceCL::IFExchange( FaceIF_, sizeof(idxtype), &HandlerGatherC, &HandlerScatterC);
+    DynamicDataInterfaceCL::IFExchange( FaceIF_, sizeof(idxtype), &HandlerGatherC, &HandlerScatterC);
+    myfirstVert_=0;
 }
 
 
@@ -136,7 +132,7 @@ int LoadBalCL::HandlerGather( OBJT obj, void *buf)
            DebugLoadBalC);
 
     if (tp->HasLbNr())                                     // if the neighbor tetra has a LoadBalance Nr (children are numbered too!)
-        *sendbuf= tp->GetLbNr() + myfirstVert_;            // put the number into the send buffer
+        *sendbuf= tp->GetLbNr() + *myfirstVert_ ;// put the number into the send buffer
 
     return 0;
 }
@@ -217,7 +213,7 @@ void LoadBalCL::CreateNumbering(int TriLevel)
     }
 
     // number of vertices is determined by the counter
-    myVerts_=counter;
+    partitioner_->GetGraph().myVerts=counter;
 }
 
 
@@ -329,8 +325,8 @@ Uint LoadBalCL::AdjUnrefined( TetraCL& t, int& edgecount)
     for (Uint face= 0; face<NumFacesC; ++face){                             // Adjacences are faces
         if (!t.IsBndSeg(face)){                                             // If this face belongs to a domain boundary make nothing
             if (t.GetFace(face)->IsOnProcBnd() ){                           // If this face belongs to a boundary between procs
-                adjwgt_[edgecount]= 1;                                      // set edgeweight to one
-                adjncy_[edgecount++]= t.GetFace(face)->GetLbNeigh();        // put neighbor into adjacenz list
+                partitioner_->GetGraph().adjwgt[edgecount]= 1;                                      // set edgeweight to one
+                partitioner_->GetGraph().adjncy[edgecount++]= t.GetFace(face)->GetLbNeigh();        // put neighbor into adjacenz list
             }
             else{                                                           // Neighbor tetra is on the same proc
                 const TetraCL* const neigh= t.GetNeighbor( face);           // get a pointer to this tetra
@@ -338,8 +334,8 @@ Uint LoadBalCL::AdjUnrefined( TetraCL& t, int& edgecount)
                        DROPSErrCL("LoadBalCL::AdjUnrefined: Tetra without loadbalance-number"),
                        DebugLoadBalC);
                 if (neigh->HasLbNr()){                                      // test if the neighbor is in the LoadBalSet
-                    adjwgt_[edgecount]= 1;                                  // set edgeweight to one
-                    adjncy_[edgecount++]= neigh->GetLbNr()+myfirstVert_;    // put neighbor into the adjacenz list
+                    partitioner_->GetGraph().adjwgt[edgecount]= 1;                                  // set edgeweight to one
+                    partitioner_->GetGraph().adjncy[edgecount++]= neigh->GetLbNr()+ partitioner_->GetGraph().myfirstVert;    // put neighbor into the adjacenz list
                 }
             }
         }
@@ -375,20 +371,20 @@ Uint LoadBalCL::AdjRefined( TetraCL& t, int& edgecount)
                                DebugLoadBalC);
 
                         if (neigh->HasLbNr() )                          // test if this neighbor has a number
-                            ++thisAdj[neigh->GetLbNr() + myfirstVert_]; // put neighbor into the adjazenz map and increase the weight by one
+                            ++thisAdj[neigh->GetLbNr() +  partitioner_->GetGraph().myfirstVert]; // put neighbor into the adjazenz map and increase the weight by one
                     }
                 }
             }
         }
     }
 
-    thisAdj.erase( t.GetLbNr() + myfirstVert_);                         // delete my one number (set into this adjacenclist by children of t, which have the same number as t)
+    thisAdj.erase( t.GetLbNr() + partitioner_->GetGraph().myfirstVert);                         // delete my one number (set into this adjacenclist by children of t, which have the same number as t)
 
     GraphEdgeCT::iterator  it = thisAdj.begin(),                        // start at the first adjacenz
                           end = thisAdj.end();                          // end at the last adjacenz
     for (; it!=end; ++it, ++edgecount){                                 // and put all adjacencies into the list for parMETIS
-        adjncy_[edgecount]= it->first;
-        adjwgt_[edgecount]= it->second;
+        partitioner_->GetGraph().adjncy[edgecount]= it->first;
+        partitioner_->GetGraph().adjwgt[edgecount]= it->second;
     }
 
     return GetWeight(t);
@@ -434,18 +430,18 @@ Uint LoadBalCL::EstimateAdj()
                                    DebugLoadBalC);
 
                             if (neigh->HasLbNr() )
-                                adj.insert( neigh->GetLbNr() + myfirstVert_);
+                                adj.insert( neigh->GetLbNr() +  partitioner_->GetGraph().myfirstVert);
                         }
                     }
                 }
             }
             // no adjacencies with members of my multinode...
-            adj.erase( it->GetLbNr() + myfirstVert_);
+            adj.erase( it->GetLbNr() +  partitioner_->GetGraph().myfirstVert);
             adjCounter+= adj.size();
         }
     }
 
-    myAdjs_ = adjCounter;
+    partitioner_->GetGraph().myAdjs = adjCounter;
     return adjCounter;
 }
 
@@ -457,38 +453,34 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     \todo (of) Create Graph of arbitrary triangulation level
 */
 {
-    Comment("- Setting up dual, reduced graph"<<std::endl,DebugLoadBalC);
+    Comment("- Setting up dual, reduced graph"<<                                // number of vertices on this proc
+        int            partitioner_.GetGraph().myAdjs; std::endl,DebugLoadBalC);
 
-    geom_=geom;
+    partitioner_->GetGraph().geom = geom;                                  //sets the attribute geom of the partitioner_
     TriangLevel_= mg_->GetLastLevel();
 
     CreateNumbering();                                          // Create the numbers of the multinodes and set the number of my verts
 
     // calculate the vtxdist-Array
-    vtxdist_ = new int[ProcCL::Size()+1];                       // parameter for parmetis
+    partitioner_->GetGraph().ResizeVtxDist();
     IndexArray vtx_rcv= new int[ProcCL::Size()];                // recieve buffer for number of nodes on other procs
-    ProcCL::Gather( (int)myVerts_, vtx_rcv, -1);                // communicate the number of nodes
+    ProcCL::Gather( (int)partitioner_->GetGraph().myVerts, vtx_rcv, -1);                // communicate the number of nodes
 
-    vtxdist_[0]= 0;                                             // proc 0 starts with node 0
-    for (int i=0; i<DynamicDataInterfaceCL::InfoProcs(); ++i)
-        vtxdist_[i+1]= vtxdist_[i] + vtx_rcv[i];                // proc i+1 starts with node \sum_{j=0}^i nodesOnProc(i)
-    myfirstVert_= vtxdist_[ProcCL::MyRank()];                   // vtxdist_[i] is starting node of proc i
+    partitioner_->GetGraph().vtxdist[0]= 0;                                             // proc 0 starts with node 0
+    for (int i=0; i<ProcCL::Size(); ++i)
+        partitioner_->GetGraph().vtxdist[i+1]= partitioner_->GetGraph().vtxdist[i] + vtx_rcv[i];// proc i+1 starts with node \sum_{j=0}^i nodesOnProc(i)
+    partitioner_->GetGraph().myfirstVert = partitioner_->GetGraph().vtxdist[ProcCL::MyRank()];     // vtxdist_[i] is starting node of proc i
 
     delete[] vtx_rcv;
 
 
      // Compute Adjacencies
+    myfirstVert_=&(partitioner_->GetGraph().myfirstVert);
     CommunicateAdjacency();                                     // create adjacencies over proc boundaries
     Uint numadj= EstimateAdj();                                 // compute the number of adjacencies on this proc
 
      // Allocate space for the Arrays
-    xadj_   = new idxtype[myVerts_+1];
-    adjncy_ = new idxtype[numadj];
-    vwgt_   = new idxtype[myVerts_];
-    adjwgt_ = new idxtype[numadj];
-    if (geom_)
-        xyz_ = new float[3*myVerts_];
-    part_   = new idxtype[myVerts_];
+    partitioner_->GetGraph().Resize(numadj, partitioner_->GetGraph().myVerts, partitioner_->GetGraph().geom);
 
      // put all nodes and adjacencies into the lists
     LbIteratorCL begin = GetLbTetraBegin(),
@@ -498,17 +490,17 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
 
     for ( LbIteratorCL it= begin; it!=end; ++it)                // iterate through the multinodes of the LoadBalSet
     {
-        xadj_[vertCount] = edgeCount;                           // remember, where node vertCount writes its neighbors
+        partitioner_->GetGraph().xadj[vertCount] = edgeCount;                           // remember, where node vertCount writes its neighbors
         if (it->IsUnrefined() )
-            vwgt_[vertCount] = AdjUnrefined( *it, edgeCount);   // compute adjacencies, number of adjacencies and node-weight for unrefined tetra
+            partitioner_->GetGraph().vwgt[vertCount] = AdjUnrefined( *it, edgeCount);   // compute adjacencies, number of adjacencies and node-weight for unrefined tetra
         else
-            vwgt_[vertCount] = AdjRefined( *it, edgeCount);     // compute adjacencies, number of adjacencies and node-weight for refined tetra
-        if (geom_)                                              // if with geom, compute the barycenter of the tetra
+            partitioner_->GetGraph().vwgt[vertCount] = AdjRefined( *it, edgeCount);     // compute adjacencies, number of adjacencies and node-weight for refined tetra
+        if (partitioner_->GetGraph().geom)                                              // if with geom, compute the barycenter of the tetra
         {
             const Point3DCL coord= GetBaryCenter( *it);
-            xyz_[3*vertCount]  = coord[0];
-            xyz_[3*vertCount+1]= coord[1];
-            xyz_[3*vertCount+2]= coord[2];
+            partitioner_->GetGraph().xyz[3*vertCount]  = coord[0];
+            partitioner_->GetGraph().xyz[3*vertCount+1]= coord[1];
+            partitioner_->GetGraph().xyz[3*vertCount+2]= coord[2];
         }
 
         Assert( edgeCount<=(int)numadj,
@@ -518,10 +510,12 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
         ++vertCount;                                            // go to the next node
     }
 
-    xadj_[vertCount]= edgeCount;
-    Assert( vertCount==myVerts_,
+    partitioner_->GetGraph().xadj[vertCount]= edgeCount;
+    Assert( vertCount==partitioner_.GetGraph().myVerts,
             DROPSErrCL("LoadBalaceCL: CreateDualRedGraph: number of vertices is not correct!"),
             DebugLoadBalC);
+
+    partitioner_->CreateGraph(); //Implement for the other partitioners(not necessary for metis)
 }
 
 
@@ -529,142 +523,8 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
 void LoadBalCL::DeleteGraph()
 /** Free all allocated arrays */
 {
-    if (xadj_!=0)    delete[] xadj_;
-    if (adjncy_!=0)  delete[] adjncy_;
-    if (vtxdist_!=0) delete[] vtxdist_;
-    if (part_!=0)    delete[] part_;
-    if (vwgt_!=0)    delete[] vwgt_;
-    if (adjwgt_!=0)  delete[] adjwgt_;
-    if (xyz_!=0)     delete[] xyz_;
-
-    xadj_=0; adjncy_=0; vtxdist_=0; part_=0;
-    vwgt_=0; adjwgt_=0; xyz_=0;
-    movedMultiNodes_=0;
-}
-
-
-/// \brief Compute a partitioning of the dual reduced graph with ParMetis
-void LoadBalCL::ParPartKWay()
-/** This procedure uses ParMetis in order to compute a partitioning of the dual
-    reduced graph, that has been set up with the member function
-    CreateDualRedGraph. No information about a previous distribution of the
-    vertices among the processors is used.
-    \pre CreateDualRedGraph() must have been called before
-*/
-{
-    Comment("- Start calculate LoadBalanace with ParMETIS"<<std::endl, DebugLoadBalC);
-
-    Assert( xadj_ && adjncy_ && vwgt_ && adjwgt_,
-            DROPSErrCL("LoadBalCL::ParPartKWay: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
-            DebugLoadBalC);
-
-    int    wgtflag = 3,                 // Weights on vertices and adjacencies are given
-           numflag = 0,                 // numbering of verts starts by 0 (C-Style)
-           ncon    = 1,                 // one weight per vertex
-           nparts  = DynamicDataInterfaceCL::InfoProcs();   // number of subdomains (per proc one)
-    float *tpwgts  = new float[nparts], // weight of partion
-           ubvec   = ubvec_;            // imbalace tolerance for eacht vertex weight
-    int   *options = new int[1];        // default options
-
-    options[0]=0;
-
-    std::fill(tpwgts, tpwgts+nparts, (float)1./(float)nparts);
-    if (part_==0)
-        part_ = new idxtype[myVerts_];
-
-    MPI_Comm comm = MPI_COMM_WORLD;
-
-    ParMETIS_V3_PartKway(
-            vtxdist_, xadj_, adjncy_, vwgt_, adjwgt_,
-            &wgtflag, &numflag, &ncon, &nparts,
-            tpwgts, &ubvec,0 /*options*/,
-            &edgecut_, part_, &comm);
-
-    delete[] tpwgts;
-    delete[] options;
-
-}
-
-/// \brief Computes a re-partitioning of a parallel distributed graph
-void LoadBalCL::AdaptRepart(float quality)
-/** This procedure uses ParMetis in order to compute a partitioning of the dual
-    reduced graph, that has been set up with the member function
-    CreateDualRedGraph. The previous distribution of the vertices among the
-    processors is used.
-    \param quality Ratio between communication time to data redistribution time,
-      ParMetis recommends 1000
-    \pre CreateDualRedGraph() must have been called before
-*/
-{
-    Comment("- Start calculate LoadBalanace with ParMETIS-AdaptiveRepart"<<std::endl,DebugLoadBalC);
-
-    Assert( xadj_ && adjncy_ && vwgt_ && adjwgt_,
-            DROPSErrCL("LoadBalCL::AdaptRepart: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
-            DebugLoadBalC);
-
-    int    wgtflag = 3,                 // Weights on vertices and adjacencies are given
-           numflag = 0,                 // numbering of verts starts by 0 (C-Style)
-           ncon    = 1,                 // one weight per vertex
-           nparts  = DynamicDataInterfaceCL::InfoProcs();   // number of subdomains (per proc one)
-    float *tpwgts  = new float[nparts], // weight of partion
-           itr     = quality,           // how much an exchange costs
-           ubvec   = ubvec_;            // imbalace tolerance for eacht vertex weight
-    int   *options = new int[4];        // default options
-//     options[0]=1; options[1]=3; options[2]=15, options[3]=1;    // display times within parmetis
-    options[0]=0;                                               // no options for parmetis
-
-    std::fill(tpwgts, tpwgts+nparts, (float)1/(float)nparts);
-    if (part_==0)
-        part_ = new idxtype[myVerts_];
-
-    MPI_Comm comm = MPI_COMM_WORLD;
-
-    ParMETIS_V3_AdaptiveRepart(
-            vtxdist_, xadj_, adjncy_, vwgt_, vwgt_,
-            adjwgt_, &wgtflag, &numflag, &ncon, &nparts,tpwgts,
-            &ubvec, &itr, options, &edgecut_, part_, &comm);
-
-    delete[] tpwgts;
-    delete[] options;
-}
-
-
-/// \brief Compute serial the partitioning of a given Graph in the CSR-format with metis
-void LoadBalCL::SerPartKWay(PartMethod meth)
-/** Compute the distribution of a graph, that is stored on a single processor in
-    order to get a partitioning of the vertices among the processors.
-    \param meth specifiy the method that should be used
-*/
-{
-    Comment("- Start calculate LoadBalanace with METIS-"<<(meth==KWay ? "Kway" : "Recursive")<<std::endl, DebugLoadBalC);
-
-    if (myVerts_!=GetNumAllVerts())
-        Comment("LoadBalCL: SerPartKWay: This procedure is called by a proc, that does not have all nodes!"<<std::endl, DebugLoadBalC);
-
-    int    wgtflag    = 3,                  // Weights on vertices and adjacencies are given
-           numflag    = 0,                  // numbering of verts starts by 0 (C-Style)
-           nparts     = DynamicDataInterfaceCL::InfoProcs(),    // number of subdomains (per proc one)
-           n          = myVerts_,
-           options[5] = {0,0,0,0,0};        // default options
-
-    if (meth==KWay)
-        METIS_PartGraphKway(      &n, xadj_, adjncy_, vwgt_, adjwgt_, &wgtflag, &numflag,  &nparts, options,&edgecut_, part_);
-    else if (meth==Recursive)
-        METIS_PartGraphRecursive( &n, xadj_, adjncy_, vwgt_, adjwgt_, &wgtflag, &numflag,  &nparts, options,&edgecut_, part_);
-
-    Comment("  * Number of Edgecut: "<<edgecut_<<std::endl, DebugLoadBalC);
-}
-
-/// \brief Leave partition as it is
-void LoadBalCL::IdentityPart()
-{
-    Assert( xadj_ && adjncy_ && vwgt_ && adjwgt_,
-            DROPSErrCL("LoadBalCL::IdentityPart: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
-            DebugLoadBalC);
-
-    if (part_==0)
-        part_=part_ = new idxtype[myVerts_];
-    std::fill(part_, part_+myVerts_, ProcCL::MyRank());
+    partitioner_->GetGraph().Clear();
+    partitioner_->GetGraph().movedMultiNodes=0;
 }
 
 /// \brief Do migration of the tetrahedra
@@ -682,15 +542,15 @@ void LoadBalCL::Migrate()
 
     Uint me = ProcCL::MyRank();
 
-    movedMultiNodes_=0;
+    partitioner_->GetGraph().movedMultiNodes=0;
 
     PROCT dest;
     for (LbIteratorCL it= GetLbTetraBegin(), end= GetLbTetraEnd(); it!=end; ++it)
     {
-        dest =  static_cast<PROCT>(part_[it->GetLbNr()]);
+        dest =  static_cast<PROCT>(partitioner_->GetGraph().part[it->GetLbNr()]);
 
         if (dest==me) continue;
-        movedMultiNodes_++;
+        partitioner_->GetGraph().movedMultiNodes++;
 #if DROPSDebugC
         if ( it->GetGID()==observe1 || it->GetGID()==observe2 || it->GetGID()==observe3)
             std::cout << "["<<ProcCL::MyRank()<<"] ===> Transfer des Tetras mit GID "<<it->GetGID() << " nach " << dest << " als ";
@@ -743,7 +603,7 @@ void LoadBalCL::Migrate()
                 }
                 else
                 { // M2-Xfer
-                    const bool E2Xfer= it.IsInLbSet( **ch) && part_[(*ch)->GetLbNr()]!=static_cast<idxtype>(me);
+                    const bool E2Xfer= it.IsInLbSet( **ch) && partitioner_->GetGraph().part[(*ch)->GetLbNr()]!=static_cast<idxtype>(me);
 
                     ParMultiGridCL::TXfer( **ch, dest, PrioMaster, E2Xfer);
                     if (!E2Xfer)
@@ -762,36 +622,42 @@ void LoadBalCL::Migrate()
         }
     }
 
-    movedMultiNodes_= ProcCL::GlobalSum(movedMultiNodes_);
+    partitioner_->GetGraph().movedMultiNodes= ProcCL::GlobalSum(partitioner_->GetGraph().movedMultiNodes);
 }
 
 
 /// \brief Print the Graph on the ostream
 void LoadBalCL::ShowGraph(std::ostream& os)
 {
+    IndexArray part     = partitioner_->GetGraph().part;
+    IndexArray vwgt     = partitioner_->GetGraph().vwgt;
+    IndexArray xadj     = partitioner_->GetGraph().xadj;
+    IndexArray adjncy   = partitioner_->GetGraph().adjncy;
+    int myVerts         = partitioner_->GetGraph().myVerts;
+    int myAdjs          = partitioner_->GetGraph().myAdjs;
     int counter=0;
-    if (xadj_==0)
+    if (xadj==0)
         os << "No Graph created!"<<std::endl;
     else
     {
 
-        os << "Proc "<<ProcCL::MyRank()<<" stores "<<myVerts_<<" of "<<GetNumAllVerts()
-           << " with "<<myAdjs_<<" adjacencies"<<std::endl
+        os << "Proc "<<ProcCL::MyRank()<<" stores "<<myVerts<<" of "<<GetNumAllVerts()
+           << " with "<<myAdjs<<" adjacencies"<<std::endl
            << "The graph is:" <<std::endl
            << " Node | Weight | Dest | Neighbors"<<std::endl
            << "------+--------+------+--------------------------"<<std::endl;
 
-        for (int i=0; i<myVerts_; ++i)
+        for (int i=0; i<myVerts; ++i)
         {
-            os << std::setw(5) << i << " |" << std::setw(7) << vwgt_[i] << " |";
-            if (part_!=0)
-                os << std::setw(5) << part_[i];
+            os << std::setw(5) << i << " |" << std::setw(7) << vwgt[i] << " |";
+            if (part!=0)
+                os << std::setw(5) << part[i];
             else
                 os << "  X  ";
             os <<" | ";
-            for (int j=xadj_[i]; j<xadj_[i+1]; ++j)
+            for (int j=xadj[i]; j<xadj[i+1]; ++j)
             {
-                os << std::setw(4) <<adjncy_[j] << "  ";
+                os << std::setw(4) <<adjncy[j] << "  ";
                 ++counter;
             }
             os<<std::endl;
@@ -810,15 +676,15 @@ std::ostream& operator << (std::ostream &os ,const LoadBalCL &lb)
     os << "%  Graphfile for METIS               %\n";
     os << "%  created by DROPS of the LoadBalCL %\n";
     os << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
-    os << lb.myVerts_                                               // number of nodes
-       << " " << (lb.myAdjs_/2)                                     // number of "real" adjacencies
+    os << lb.partitioner_->GetGraph().myVerts                                               // number of nodes
+       << " " << (lb.partitioner_->GetGraph().myAdjs/2)                                     // number of "real" adjacencies
        << " 11" <<std::endl;                                        // there are weights onto the nodes and the adjacencies
 
-    for (int i=0; i<lb.myVerts_; ++i)                               // go over all nodes and write the information onto the stream
+    for (int i=0; i<lb.partitioner_->GetGraph().myVerts; ++i)                               // go over all nodes and write the information onto the stream
     {
-        os << lb.vwgt_[i] << " ";                                   // first number in the line is the weight of the node i
-        for (int j=lb.xadj_[i]; j<lb.xadj_[i+1]; ++j)
-            os << lb.adjncy_[j]+1 << " " << lb.adjwgt_[j] << " ";   // then the adjacence with adjacenc weight
+        os << lb.partitioner_->GetGraph().vwgt[i] << " ";                                   // first number in the line is the weight of the node i
+        for (int j=lb.partitioner_->GetGraph().xadj[i]; j<lb.partitioner_->GetGraph().xadj[i+1]; ++j)
+            os << lb.partitioner_->GetGraph().adjncy[j]+1 << " " << lb.partitioner_->GetGraph().adjwgt[j] << " ";   // then the adjacence with adjacenc weight
         os << std::endl;
     }
     return os;
@@ -827,45 +693,50 @@ std::ostream& operator << (std::ostream &os ,const LoadBalCL &lb)
 
 /// \brief Write graph, so that it can be read easily
 void LoadBalCL::PrintGraphInfo(std::ostream& os) const
-{
+{   IndexArray vtxdist = partitioner_->GetGraph().vtxdist;
+    IndexArray xadj    = partitioner_->GetGraph().xadj;
+    IndexArray adjncy  = partitioner_->GetGraph().adjncy;
+    IndexArray adjwgt  = partitioner_->GetGraph().adjwgt;
+    IndexArray vwgt    = partitioner_->GetGraph().vwgt;
+
     const int me=ProcCL::MyRank(), size = ProcCL::Size();
-    const int loc_num_verts=vtxdist_[me+1]-vtxdist_[me],
-              loc_num_edges=xadj_[loc_num_verts];
+    const int loc_num_verts=vtxdist[me+1]-vtxdist[me],
+              loc_num_edges=xadj[loc_num_verts];
 
     // print general information
     os << size << ' ' << loc_num_verts << ' ' << loc_num_edges << std::endl;
 
     // print vtxdist
     for (int i=0; i<=size; ++i){
-        os << vtxdist_[i] << ' ';
+        os << vtxdist[i] << ' ';
         if (i%10==0) os << std::endl;
     }
     os << std::endl;
 
     // print xadj
     for (int i=0; i<=loc_num_verts; ++i){
-        os << xadj_[i] << ' ';
+        os << xadj[i] << ' ';
         if (i%10==0) os << std::endl;
     }
     os << std::endl;
 
     // print adjncy_
     for (int i=0; i<loc_num_edges; ++i){
-        os << adjncy_[i] << ' ';
+        os << adjncy[i] << ' ';
         if (i%10==0) os << std::endl;
     }
     os << std::endl;
 
     // print vwgt
     for (int i=0; i<loc_num_verts; ++i){
-        os << vwgt_[i];
+        os << vwgt[i];
         if (i%10==0) os << std::endl;
     }
     os << std::endl;
 
     // print adjwgt
     for (int i=0; i<loc_num_edges; ++i){
-         os << adjwgt_[i];
+         os << adjwgt[i];
         if (i%10==0) os << std::endl;
     }
     os << std::endl;
@@ -905,7 +776,7 @@ LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, PartM
     // tell ParMultiGridCL about the multigrid
     ParMultiGridCL::AttachTo(*mg_);
     // Create new LoadBalancingCL
-    lb_ = new LoadBalCL(*mg_);
+    lb_ = new LoadBalCL(*mg_,meth);
 
     ParTimerCL timer;
     double duration;
@@ -928,8 +799,8 @@ LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, PartM
         std::cout << "  - Compute Graphpartitioning ...\n";
 
     if (debugMode_) timer.Reset();
-    if (ProcCL::MyRank()==master)
-        lb_->SerPartKWay(meth);
+//    if (ProcCL::MyRank()==master)
+        lb_->PartitionSer(master);
 
     if (debugMode_){
         timer.Stop();
@@ -963,8 +834,8 @@ void LoadBalHandlerCL::DoMigration()
 */
 {
     // Just do a migration if this is wished
-    if (strategy_==NoMig) return;
-    if (ProcCL::Size()==1){
+    if (strategy_ == NoMig) return;
+    if (ProcCL::Size() == 1){
         std::cout << "Skip migration, because only one proc is involved!\n"; return;
     }
 
@@ -991,16 +862,7 @@ void LoadBalHandlerCL::DoMigration()
 
     if (debugMode_) timer.Reset();
 
-    // std::cout<< " *** Partioner " << GetStrategy() << std::endl;
-
-    switch (GetStrategy())
-    {
-        case NoMig     : break;
-        case Adaptive  : lb_->AdaptRepart(); break;
-        case Recursive : lb_->ParPartKWay(); break;
-        case Identity  : lb_->IdentityPart(); break;
-        default        : std::cout << "No such method known for migration strategy ERROR\nEXIT"; std::exit(0);
-    }
+    lb_->PartitionPar();
 
     if (debugMode_){
         timer.Stop();
@@ -1055,11 +917,9 @@ void LoadBalHandlerCL::DoInitDistribution(int)
         std::cout << "  - Create dual reduced graph ...\n";
     lb_->CreateDualRedGraph(true);
 
-    if (debugMode_ && ProcCL::IamMaster())
+    if (debugMode_)
         std::cout << "  - Create graph partition ...\n";
-    if (ProcCL::IamMaster()){
-        lb_->SerPartKWay();
-    }
+    lb_->PartitionSer( ProcCL::Master());
 
     if (debugMode_ && ProcCL::IamMaster())
         std::cout << "  - Migration ...\n";

@@ -25,14 +25,11 @@
 #ifndef DROPS_LOADBAL_H
 #define DROPS_LOADBAL_H
 #include "parallel/parallel.h"
-#include <parmetis.h>
-#include <metis.h>
-// #include "parallel/metispartioner.h"
-
 #include "parallel/partime.h"
 #include "parallel/parmultigrid.h"
 #include "geom/multigrid.h"
 #include "misc/problem.h"
+#include "parallel/partitioner.h"
 #include <map>
 #include <set>
 #include <iostream>
@@ -40,24 +37,14 @@
 
 namespace DROPS{
 
-/// \enum PartMethod Tell, which method should be used to compute graph partition problem
-enum PartMethod{
-    KWay,       ///< Multilevel method
-    Recursive,  ///< bisection
-    Adaptive,   ///< adaptive recomputation of graph partitioning
-    Identity,   ///< Take partition as it is
-    NoMig       ///< No migration!
-};
-
-
 /****************************************************************************
 * L O A D  B A L  I T E R A T O R  C L A S S                                *
 ****************************************************************************/
 /// \brief Class for iterating through the multinodes of this proc to set up a
-/// reduces, dual graph
+/// reduced, dual graph
 ///
-/// For numbering the the tetraes for ParMETIS, we have to go through special
-/// tetraeders. This class helps to touch only the right ones
+/// For numbering the tetrahedra for ParMETIS, we have to go through special
+/// tetrahedra. This class helps to touch only the right ones
 /****************************************************************************
 * L O A D  B A L  I T E R A T O R  C L A S S                                *
 ****************************************************************************/
@@ -89,12 +76,12 @@ class LbIteratorCL
     inline bool IsInLbSet( const TetraCL&) const;     ///< Test if a tetrahedra is in the loadbalancing set see above
 
     // access of the tetraeder
-    TetraCL& operator *  () const { return  *pos_; }  ///< return a referenze onto the tetra, this iterator points to
+    TetraCL& operator *  () const { return  *pos_; }  ///< return a reference onto the tetra, this iterator points to
     TetraCL* operator -> () const { return &*pos_; }  ///< return a pointer to a tetra
 
     // iterate through the elements of the LoadBalance-Set
-    inline LbIteratorCL& operator ++ ();              ///< Go to the next mulitnode tetra (prefix)
-    inline LbIteratorCL  operator ++ (int);           ///< Go to the next mulitnode tetra (suffix)
+    inline LbIteratorCL& operator ++ ();              ///< Go to the next multinode tetra (prefix)
+    inline LbIteratorCL  operator ++ (int);           ///< Go to the next multinode tetra (suffix)
 
     // assignement
     LbIteratorCL& operator = (const LbIteratorCL& it) ///< assignment operator
@@ -114,7 +101,6 @@ class LbIteratorCL
 };
 
 
-
 /****************************************************************************
 * L O A D  B A L  C L A S S                                                 *
 ****************************************************************************/
@@ -129,32 +115,19 @@ class LbIteratorCL
 class LoadBalCL
 {
   public:
-    typedef idxtype* IndexArray;                            ///< tpye of an array of indices
+    typedef idxtype* IndexArray;                            ///< type of an array of indices
 
   private:
     typedef std::map<idxtype, Uint> GraphEdgeCT;            // Type that descriebs an edge of the dual, reduced graph: GraphEdgeCT->first: neibhbor, GraphEdgeCT->second: weight
     typedef std::set<idxtype>       GraphNeighborCT;        // Set of neighbors of a node
 
     MultiGridCL    *mg_;                                    // Pointer to the multigrid
-    std::vector<const IdxDescCL*> idx_;                           // information about unknowns
-    Uint static    TriangLevel_;                            // Triangulationlevel, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
-    IndexArray     xadj_,                                   // Startingindex in the array _adjncy, where node[i] writes its neighbors
-                   adjncy_,                                 // Adjacencies of the nodes
-                   vtxdist_,                                // numbers of nodes, that is stored by all procs
-                   vwgt_,                                   // weight of the Nodes
-                   adjwgt_,                                 // weight of the edges
-                   part_;                                   // resulting array, where each node should be send to
-    float*         xyz_;                                    // geometric information about the nodes (==barymetric Center of the Tetras)
-    float          ubvec_;                                  // quality of graph partitioning
-    int            myVerts_;                                // number of vertices on this proc
-    int            myAdjs_;                                 // number of Adjacencies
-    int            edgecut_;                                // number of edges, that are cut by ParMETIS
-    int            movedMultiNodes_;                        // number of multinodes, that are moved by last migration
-    static idxtype myfirstVert_;                            // first vertex on this proc (static for HandlerGather!)
-    bool           geom_;                                   // flag, that indicates, if the geometrical datas should be used
-    static IFT FaceIF_;                                 // Interface, for compute the adjacencies over Proc-Boundaries
+    PartitionerCL*  partitioner_;
+    std::vector<const IdxDescCL*> idx_;                     // information about unknowns
+    Uint static    TriangLevel_;                            // Triangulation level, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
+    static idxtype* myfirstVert_;                           // first vertex on this proc (static for HandlerGather!)
+    static IFT FaceIF_;                                     // Interface, for compute the adjacencies over Proc-Boundaries
     bool           useUnkInfo_;                             // Use information about unknowns for load balancing
-
 
     void InitIF();                                          // Init the Interfaces
     static void CommunicateAdjacency();                     // Communicate the adjacencies over proc boundaries
@@ -171,20 +144,19 @@ class LoadBalCL
 
 
   public:
-    LoadBalCL(MultiGridCL&, float ub=1.05, int TriLevel=-1);// Constructor
+    LoadBalCL(MultiGridCL&, int TriLevel=-1, PartMethod meth = KWay );// Constructor
     ~LoadBalCL();                                           // Destructor
 
     void CreateDualRedGraph(bool geom=false);               // Create the dual reduced Graph for ParMETIS on the last triangulation level
     void DeleteGraph();                                     // free all arrays
-    void ParPartKWay();                                     // Computes a partitioning of a parallel distributed graph
-    void AdaptRepart(float quality=1000.0);                 // Computes a re-partitioning of a parallel distributed graph
-    void SerPartKWay(PartMethod meth=KWay);                 // Compute a graph-partitioning with metis wit specified method
-    void IdentityPart();                                    // Set distribution to identity => no balancing
+    PartitionerCL* GetPartitioner() { return partitioner_; }//getter for the partitioner_ object
+    void PartitionPar() { partitioner_->PartGraphPar(); }
+    void PartitionSer( int master) { partitioner_->PartGraphSer(master); }
     void Migrate();                                         // do the transfers. Call ParMultiGridCL::XferStart(), XferEnd() befor and after calling this procedure
     void RemoveLbNr();                                      // removes all Lb-numbers
 
-    float GetQuality()         const { return ubvec_; }     ///< Get quality-parameter
-    void  SetQuality(float ub)       { ubvec_=ub;}          ///< Set quality-parameter
+    float GetQuality()         const { return partitioner_->GetGraph().ubvec;}     ///< Get quality-parameter
+    void  SetQuality(float ub)       { partitioner_->GetGraph().ubvec = ub;}          ///< Set quality-parameter
 
     void  Append(const IdxDescCL* id) { idx_.push_back(id); useUnkInfo_=true; }     ///< Set information about unknown type
     void  RemoveIdx() {idx_.clear(); useUnkInfo_=false;}
@@ -300,7 +272,7 @@ bool LbIteratorCL::IsInLbSet(const TetraCL& t) const
 
 
 LbIteratorCL& LbIteratorCL::operator ++ ()
-/** Increase the position, until we reach an element of the LoadBalaceSet or the
+/** Increase the position, until we reach an element of the LoadBalanceSet or the
     end of all tetraeders in the triangulation level _TriLevel
 */
 {
@@ -338,28 +310,28 @@ int LoadBalCL::GetNumAllVerts() const
            DROPSErrCL("LoadBalCL::GetNumAllVerts: Graph has not been set up"),
            DebugLoadBalC);
 
-    return vtxdist_[DynamicDataInterfaceCL::InfoProcs()];
+    return partitioner_->GetGraph().vtxdist[DynamicDataInterfaceCL::InfoProcs()];
 }
 
 /// \brief Get the number of local stored adjacencies
 int LoadBalCL::GetNumLocalAdjacencies() const{
-    return myAdjs_;
+    return partitioner_->GetGraph().myAdjs;
 }
 
 /// \brief Get imbalance tolerance for a vertex
 float LoadBalCL::GetImbalanceTolerance() const{
-    return ubvec_;
+    return partitioner_->GetGraph().ubvec;
 }
 
 /// \brief Number of edges that are cut by the last graph partitioning
 Uint LoadBalCL::GetEdgeCut() const
 {
-    return edgecut_;
+    return partitioner_->GetGraph().edgecut;
 }
 
 /// \brief Number of multinodes that are moved by the last migration
 Uint LoadBalCL::GetMovedMultiNodes() const{
-    return movedMultiNodes_;
+    return partitioner_->GetGraph().movedMultiNodes;
 }
 
 PartMethod LoadBalHandlerCL::GetStrategy() const{

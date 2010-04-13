@@ -1,151 +1,161 @@
-/***************************************************************************
-*  File:    partitioner.h                                                  *
-*  Content: - Interface for partitioners                                   *
-*           - Metis partitioner
-*  Author:  Sven Gross, Joerg Peters, Volker Reichelt, IGPM RWTH Aachen    *
-*           Oliver Fortmeier, RZ RWTH Aachen                               *
-*  begin:           18.09.2009                                             *
-***************************************************************************/
-/// \author Oliver Fortmeier
-/// \file partitioner.h
-/// \brief Interface for all partitioners
+/// \file partitionerclass.h
+/// \brief Header file for the class that implements different types of 
+/// partitioners. Basically each new partitioner used needs a modification on
+/// the input vectors to suit their corresponding interface. (metis is an exception)
+/// \author LNM RWTH Aachen: ; SC RWTH Aachen: Oliver Fortmeier, Alin Bastea
+/// Begin: 18.01.2010
 
-#ifndef _DROPS_PARTITIONER_H
-#define _DROPS_PARTITIONER_H
 
-#include <vector>
-#include "misc/utils.h"
+/*
+ * This file is part of DROPS.
+ *
+ * DROPS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DROPS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with DROPS. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ * Copyright 2009 LNM/SC RWTH Aachen, Germany
+*/
+
+#ifndef DROPS_PARTITIONER_H
+#define DROPS_PARTITIONER_H
+
 #include "parallel/parallel.h"
+#include "parallel/partime.h"
+#include "geom/multigrid.h"
+#include "misc/problem.h"
+#include "misc/utils.h"
+#ifdef _ZOLTAN
+#  include <zoltan.h>
+#endif
+#include <parmetis.h>
+#include <metis.h>
 
 namespace DROPS
 {
+typedef idxtype* IndexArray;        ///< idxtype is defined as Integer
 
-// fwd declaration
-template <typename IdxT> class CSRPartitionerCL;
-
-/// \brief Class for storing parallel graphs in CSR (compressed storage format)
-template <typename IdxT>
-class ParallelCSRGraphCL
-{
-  public:
-    typedef std::vector<IdxT> VectorT;      ///< Vector-type to store data
-
-  private:
-    VectorT adjpointer_;                    ///< pointer to adjacency list
-    VectorT adjacencies_;                   ///< adjacencies
-    VectorT vtxdist_;                       ///< number of stored nodes on all processes
-    VectorT vwgt_;                          ///< weight of nodes
-    VectorT adjwgt_;                        ///< weight of adjacencies
-
-  public:
-    /// \brief Constructor
-    ParallelCSRGraphCL() {}
-    /// \brief Destructor
-    ~ParallelCSRGraphCL() {}
-
-    /// \brief Free memory
-    void Clear(){
-        adjpointer_.clear(); adjacencies_.clear();
-        vtxdist_.clear();
-        vwgt_.clear(); adjwgt_.clear;
-    }
-
-    /// PArtitioner may access all data
-    friend class CSRPartitionerCL<IdxT>;
+/// \enum PartOption tells which partitioner should pe used to compute graph partition problem
+enum PartOption{
+                metis,          ///< Parmetis
+                zoltan,         ///< Zoltan
+                scotch          ///< Scotch
 };
 
-/// \enum PartMethod Various methods to be used to partition a graph
+/// \enum PartMethod tells which method should be used to compute graph partition problem
 enum PartMethod{
     KWay,       ///< Multilevel method
     Recursive,  ///< bisection
-    Adaptive,   ///< adaptive recomputation of graph partitioning
+    Adaptive,   ///< adaptive re-computation of graph partitioning
     Identity,   ///< Take partition as it is
     NoMig       ///< No migration!
 };
 
-/// \brief Base (abstract) class for all derived partitioner
-/** This class stores (parallel) CSR graphs and provides an interface
-    for all partitioners.
- */
-template <typename IdxT>
-class CSRPartitionerCL
+/// \brief structure of the inputs and the outputs of the partitioners
+struct GraphST
 {
-  public:
-    typedef std::vector<int>                  PartitionT;   ///< return type for distribution of a node
-    typedef ParallelCSRGraphCL<IdxT>::VectorT VectorT;      ///< Vector-type to store data
+    IndexArray     xadj,                                        ///< Starting index in the array adjncy, where node[i] writes its neighbors
+                   adjncy,                                      ///< adjacencies of the nodes
+                   vtxdist,                                     ///< number of nodes, that is stored by all procs
+                   vwgt,                                        ///< weight of the Nodes
+                   adjwgt,                                      ///< weight of the edges
+                   part;                                        ///< resulting array, where each node should be send to
+    float          ubvec;                                       ///< quality of graph partitioning
+    float*         xyz;                                         ///< geometric information about the nodes (==barymetric Center of the Tetras)
+    int            myVerts;                                     ///< number of vertices on this proc
+    int            myAdjs;                                      ///< number of Adjacencies
+    int            edgecut;                                     ///< number of edges, that are cut by ParMETIS
+    int            movedMultiNodes;                             ///< number of multinodes, that are moved by last migration
+    bool           geom;                                        ///< flag, that indicates, if the geometrical datas should be used
+    idxtype        myfirstVert;                                 ///< first vertex # on the current proc
+    GraphST():xadj(0), adjncy(0), vtxdist(0), vwgt(0), adjwgt(0), part(0), xyz(0), myVerts(0), myAdjs(0),edgecut(0), movedMultiNodes(0),geom(0), myfirstVert(0){} ///< constructor
+    ~GraphST();                                                 ///< destructor
+    void Resize (int numadj, int myVerts, bool geom);           ///< The next method will allocate memory for most of the arrays in the struct
+    void ResizeVtxDist();
+    void Clear();                                               ///< Liberating the memory used for storing the arrays in the struct
 
-  protected:
-    ParallelCSRGraphCL<IdxT> graph_;          ///< the graph
-    PartitionT               part_;           ///< partitioning of the graph
-    PartMethod               method_;         ///< used method to partition a graph
-
-  public:
-    /// \brief Constructor
-    CSRPartitionerCL() {}
-    /// \brief Destructor
-    virtual ~CSRPartitionerCL() { Clear(); }
-
-    /// \brief Get number of adjacencies
-    size_t GetNumEdges() { return adjacencies_.size(); }
-    /// \brief Get number of vertices
-    size_t GetNumVertices() { return adjpointer_.size(); }
-
-    /// \brief Return used method
-    PartMethod GetMethod() const{ return method_; }
-    /// \brief Set Method, overload this method to perform error checking
-    virtual void SetMethod( const PartMethod&) =0;
-
-    /// \brief Partition a local stored graph
-    virtual const PartitionT& PartSerial() = 0;
-    /// \brief Partition a parallel stored graph
-    virtual const PartitionT& PartParallel()=0;
-    /// \brief Get number of cutted edges
-    virtual size_t GetEdgeCut() const =0;
-
-    /// \name Get constant references on graph data
-    //@{
-    const VectorT& GetAdjPtr()    const { return graph_.adjpointer_; }
-    const VectorT& GetAdj()       const { return graph_.adjacencies_; }
-    const VectorT& GetVtxDist()   const { return graph_.vtxdist_; }
-    const VectorT& GetVtxWeight() const { return graph_.vwgt_; }
-    const VectorT& GetAdjWeight() const { return graph_.adjwgt_; }
-    const PartitionT& GetPart()   const { return part_; }
-    //@}
-
-    /// \name Get references on graph data
-    //@{
-    VectorT& GetAdjPtr()    { return graph_.adjpointer_; }
-    VectorT& GetAdj()       { return graph_.adjacencies_; }
-    VectorT& GetVtxDist()   { return graph_.vtxdist_; }
-    VectorT& GetVtxWeight() { return graph_.vwgt_; }
-    VectorT& GetAdjWeight() { return graph_.adjwgt_; }
-    //@}
-};
-
-
-/// \brief Class that uses Metis and ParMetis to partition a graph
-template <typename IdxT=idxtype>
-class MetisPartitionerCL : public CSRPartitionerCL<IdxT>
-{
-  public:
-    typedef MetisPartotionerCL<IdxT> self;  ///< this class
-    typedef CSRPartitionerCL<IdxT>   base;  ///< base class
-
-  private:
-
-  public:
-    /// \brief Set used method and check, if the method can be performed by Metis
-    void SetMethod(const PartMethod& method) {
-        if (method!=KWay || method!=Recursive || method!=Adaptive || method!=Identity || method!=NoMig){
-            throw DROPSErrCL("MetisPartitionersCL::GetMethod: No such partitioning method known for Metis");
-        }
-        method_= method;
+    int GetProc(int globalid)
+    {
+       int i;
+       for (i=0;i< ProcCL::Size();i++)
+               if ( (globalid>=vtxdist[i]) && (globalid<vtxdist[i+1]) )
+                   return i;
+       throw DROPSErrCL("GraphST::GetProc: Wrong node id");
+       return -1;
     }
-
-    const PartitionT& PartSerial();
 };
 
-}   // end of namespace
+/// \brief Abstract partitioner class. Through the factory design pattern it will be inherited by different
+///  partitioners
+/** All derived class must implement the functions CreateGraph, PartGraphPar, and PartGraphSer */
+class PartitionerCL
+{
+  private:
+    GraphST* allArrays_;                        ///< the input and output arrays
+  public:
+    PartitionerCL();                            ///< Constructor
+    virtual ~PartitionerCL();                   ///< Destructor
+    virtual void CreateGraph() =0;              ///< Create the graph using the input data
+    virtual void PartGraphPar() =0;             ///< Parallel partitioning of the graph (highly used in applications)
+    virtual void PartGraphSer( int master) =0;  ///< First serial partitioning of the graph needed to distribute the
+                                                /// different partitioning components to the processors. (usually used once/application)
+    static PartitionerCL* newPartitioner(PartOption partOption,float quality,PartMethod method); ///< Factory function for the factory design pattern implementation
+    GraphST& GetGraph();                        ///< Getter for the graph structure
+};//end of the abstract class PartitionerCL
 
-#include "parallel/partitioner.tpp"
+/// \brief Derived partitioner class from the PartitionerCL class ===> implements the ParMetis graph partitioner
+class ParMetisCL : public PartitionerCL
+{
+  private:
+    PartMethod meth_;                   ///< attribute used to partition the graph with ParMetis
+    float quality_;                     ///< quality of the Adaptive method partitioning
+  public:
+    ParMetisCL(PartMethod meth,float ubvec, float quality=1000.0);  //< Constructor
+    ~ParMetisCL();                      ///< Implicit Destructor
+    void CreateGraph();                 ///< Method that helps with the protocol communication between DROPS and the partitioner
+    void PartGraphPar();                ///< Implemented virtual method of the abstract parent class PartitionerCL
+    void PartGraphSer( int master);     ///< Implemented virtual method of the abstract parent class PartitionerCL
+};//end of the derived class ParMetisCL
+
+#ifdef _ZOLTAN
+/// \brief Derived partitioner from the Partitioner class ===> implements the Zoltan graph partitioner
+class ZoltanCL : public PartitionerCL
+{
+  private:
+    Zoltan_Struct *zz;
+    PartMethod meth_;// For Zoltan the only possibility is a parallel or a serial partitioning for now
+  public:
+    ZoltanCL(PartMethod meth);               ///< Constructor
+    ~ZoltanCL();                             ///< Destructor
+    /// \brief Returns the total number of vertices on a processor
+    static int get_number_of_vertices(void *, int *);
+    /// \brief Returns the vertices list
+    static void get_vertex_list(void *, int, int, ZOLTAN_ID_PTR, ZOLTAN_ID_PTR, int, float *, int *);
+    /// \ brief Returns the total number of edges
+    static void get_num_edges_list(void *, int , int, int , ZOLTAN_ID_PTR, ZOLTAN_ID_PTR, int *, int *);
+    /// \ brief Returns the list of edges of each processor
+    static void get_edge_list(void *, int , int , int , ZOLTAN_ID_PTR , ZOLTAN_ID_PTR , int *, ZOLTAN_ID_PTR , int *, int , float *, int *);
+    void CreateGraph();                     ///< Method that helps with the protocol communication between DROPS and the partitioner
+    void PartGraphPar();                    ///< Implemented virtual method of the abstract parent class PartitionerCL
+    void PartGraphSer( int master);         ///< Implemented virtual method of the abstract parent class PartitionerCL
+};//end of the derived class ZoltanCL
 #endif
+
+/// \brief Derived partitioner from the Partitioner class ===> implements the Scotch graph partitioner
+class ScotchCL : public PartitionerCL
+{
+  public:
+    ScotchCL() : PartitionerCL(){};                 ///< Constructor
+    ~ScotchCL();                                    ///< Destructor
+};//end of the derived class ScotchCL
+}// end of namespace
+#endif //DROPS_PARTITIONER_H
