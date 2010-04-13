@@ -44,7 +44,9 @@ void GraphST::ResizeVtxDist()
 }
 
 /**This method will allocate memory for most of the arrays in the GraphST structure
- \param numadj number of neighbors
+ \param numadj  number of neighbors
+        myVerts number of verticies
+        geom    flag for geometry
  */
 void GraphST::Resize(int numadj, int myVerts, bool geom)
 {
@@ -102,9 +104,13 @@ GraphST& PartitionerCL::GetGraph()
     return *allArrays_;
 }
 
-/// \brief Factory method that based on the partOption parameter allocates memory for the chosen type of object
-/// (it implements the Factory design pattern)
-PartitionerCL* PartitionerCL::newPartitioner( PartOption partOption, float quality, PartMethod method)
+/**Factory method that based on the partOption parameter allocates memory for the chosen type of object
+  (it implements the Factory design pattern)
+ \param partOption  type of partitioner used
+        quality     quality of the partitioning
+        method      partition method invoked by the partitioner
+ */
+PartitionerCL* PartitionerCL::newPartitioner(PartOption partOption, float quality, PartMethod method)
 {
     PartitionerCL* pa = NULL;
      switch (partOption)
@@ -138,7 +144,11 @@ PartitionerCL* PartitionerCL::newPartitioner( PartOption partOption, float quali
 //Implementation of the methods in the derived class ParMetisCL
 //=================================================================================================
 
-/// \brief Constructor of the derived class ParMetisCL (parent PartitionerCL)
+/** Constructor of the derived class ParMetisCL (parent PartitionerCL)
+ \param ubvec       type of partitioner used
+        quality     quality of the partitioning
+        meth        quality parameter
+ */
 ParMetisCL::ParMetisCL(PartMethod meth, float ubvec, float quality) : PartitionerCL()
 {   meth_=meth;
     GetGraph().ubvec = ubvec;
@@ -158,8 +168,10 @@ void ParMetisCL::CreateGraph()
 
 }
 
-/// \brief Serial partitioning
-void ParMetisCL::PartGraphSer( int master)
+/** Serial partitioning
+ \param master      rank of the master thread
+ */
+void ParMetisCL::PartGraphSer(int master)
 {
     if ( ProcCL::MyRank()!=master)
         return;
@@ -258,7 +270,10 @@ ZoltanCL::~ZoltanCL()
     Zoltan_Destroy(&zz);
 }
 
-/// \brief Querry function required by Zoltan
+/** Querry function required by Zoltan
+ \param data      pointer to the GraphST attribute
+        ierr      zoltan error type
+ */
 int ZoltanCL::get_number_of_vertices(void *data, int *ierr)
 {
     GraphST *graph = (GraphST *)data;
@@ -266,13 +281,19 @@ int ZoltanCL::get_number_of_vertices(void *data, int *ierr)
      return graph->myVerts;
 }
 
-/// \brief Querry function required by Zoltan
+/** Querry function required by Zoltan
+ \param data        pointer to the GraphST attribute
+        globalID    global id of the actual vertex
+        localID     local id of the actual vertex
+        obj_wgts    weights of the vertices
+        ierr        zoltan error type
+ */
 void ZoltanCL::get_vertex_list(void *data, int, int, ZOLTAN_ID_PTR globalID, ZOLTAN_ID_PTR localID, int, float *obj_wgts, int *ierr)
 {
     int i;
     GraphST *graph = (GraphST *)data;
     *ierr = ZOLTAN_OK;
-    // In this example, return the IDs of our verticies, and the weights.
+    // Return the IDs of our verticies, and the weights.
     for (i=0; i<graph->myVerts; i++)
     {
       globalID[i] = i+ graph->myfirstVert;
@@ -281,7 +302,19 @@ void ZoltanCL::get_vertex_list(void *data, int, int, ZOLTAN_ID_PTR globalID, ZOL
     }
 }
 
-/// \brief Querry function required by Zoltan
+/** Querry function required by Zoltan
+ \param data        pointer to the GraphST attribute
+        sizeGID     dimension size of the global id of the actual vertex
+        sizeLID     dimension size of the local id of the actual vertex
+        num_obj     number of vertices
+        localID     local id of the actual vertex
+        num_edges   number of edges in the graph
+        nbor_GID    global id of the neighboring vertices
+        nbor_Proc   processor ot which the neighbor is assigned
+        wgt_dim     dimension size of the weights of the edges
+        ewgts       weights of the edges
+        ierr        Zoltan error type
+ */
 void ZoltanCL::get_edge_list(void *data, int sizeGID, int sizeLID, int num_obj, ZOLTAN_ID_PTR , ZOLTAN_ID_PTR localID, int *num_edges, ZOLTAN_ID_PTR nborGID, int *nborProc, int wgt_dim, float *ewgts, int *ierr)//returns the list of edges of each processor
 {
     int i, j, from, to;
@@ -319,7 +352,14 @@ void ZoltanCL::get_edge_list(void *data, int sizeGID, int sizeLID, int num_obj, 
       }
 }
 
-/// \brief Querry function required by Zoltan
+/** Querry function required by Zoltan
+ \param data        pointer to the GraphST attribute
+        sizeGID     dimension size of the global id of the actual vertex
+        sizeLID     dimension size of the local id of the actual vertex
+        num_obj     number of vertices
+        num_Edges   number of edges
+        ierr        Zoltan error type
+ */
 void ZoltanCL::get_num_edges_list(void *data, int sizeGID, int sizeLID, int num_obj, ZOLTAN_ID_PTR, ZOLTAN_ID_PTR, int *numEdges, int *ierr)// returns the total number of edges
 {
     int i;
