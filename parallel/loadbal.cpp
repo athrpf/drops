@@ -747,9 +747,9 @@ void LoadBalCL::PrintGraphInfo(std::ostream& os) const
 * L O A D  B A L  H A N D L E R  C L A S S                                  *
 ****************************************************************************/
 
-LoadBalHandlerCL::LoadBalHandlerCL(MultiGridCL& mg, float ub) : mg_(&mg)
+LoadBalHandlerCL::LoadBalHandlerCL(MultiGridCL& mg, float /*ub*/) : mg_(&mg)
 {
-    lb_ = new LoadBalCL(mg, ub);
+    lb_ = new LoadBalCL(mg);
     strategy_ = Adaptive;
     xferUnknowns_ = false;
     debugMode_    = false;
