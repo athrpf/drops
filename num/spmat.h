@@ -383,7 +383,7 @@ private:
 public:
     typedef T value_type;
 
-    SparseMatBaseCL () : version_(1) {}
+    SparseMatBaseCL () : _rows(0), _cols(0), version_(1) {}
     SparseMatBaseCL& operator= (const SparseMatBaseCL& m);
     // default copy-ctor, dtor
     SparseMatBaseCL (size_t rows, size_t cols, size_t nz)
@@ -1411,6 +1411,15 @@ template <typename _MatEntry, typename _VecEntry>
 VectorBaseCL<_VecEntry> operator* (const MLSparseMatBaseCL<_MatEntry>& A, const VectorBaseCL<_VecEntry>& x)
 {
     return A.GetFinest()*x;
+}
+
+//Human Readable
+template <typename T>
+std::ostream& operator << (std::ostream& os, const MLSparseMatBaseCL<T>& A)
+{
+	for (typename MLSparseMatBaseCL<T>::const_iterator it=A.begin(); it!=A.end(); ++it)
+		os << *it << std::endl;
+    return os;
 }
 
 //=============================================================================
