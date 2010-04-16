@@ -1,4 +1,4 @@
-/// \file lsetparams.cpp
+/// \file poissonparams.cpp
 /// \brief parameters for two-phase flow problems
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande; SC RWTH Aachen: Oliver Fortmeier
 
