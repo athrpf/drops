@@ -91,7 +91,9 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     VecDescCL    c;
     MLMatDescCL  A,
                  B,
-                 M;
+                 M,
+                 prA,
+                 prM;
 
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
         : _base( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
@@ -113,6 +115,8 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double= 0.0) const;
     /// \brief  Set up only A.
     void SetupStiffnessMatrix(MLMatDescCL*) const;
+    /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
+    void SetupPrStiff(MLMatDescCL* ) const;
     /// \brief  Set up mass-matrix for pressure-unknowns (P1)
     void SetupPrMass(MLMatDescCL*) const;
     /// \brief  Set up mass-matrix for velocity-unknowns (P2) -- needed for MG-Theta-scheme,

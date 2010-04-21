@@ -431,6 +431,57 @@ void StokesP2P1CL<Coeff>::SetupStiffnessMatrix(MLMatDescCL* matA) const
         SetupStiffnessMatrix_P2P1( _MG, _Coeff, _BndData, *itA, *itRow);
 }
 
+template <class CoeffT>
+void SetupPrStiff_P1_Nolst( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_pr, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
+{
+    MatrixBuilderCL A( &A_pr, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
+    const Uint lvl= RowIdx.TriangLevel();
+    const Uint idx= RowIdx.GetIdx();
+    SMatrixCL<3,4> G;
+    double coup[4][4];
+    double det, absdet, IntRhoInv;
+    IdxT UnknownIdx[4];
+
+    const double rho_inv= 1./Coeff.rho;
+
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
+         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit)
+    {
+        P1DiscCL::GetGradients( G,det,*sit);
+        absdet= std::fabs( det);
+
+        IntRhoInv= absdet/6*rho_inv;
+
+        for(int i=0; i<4; ++i)
+        {
+            for(int j=0; j<=i; ++j)
+            {
+                // dot-product of the gradients
+                coup[i][j]= ( G( 0, i)*G( 0, j) + G( 1, i)*G( 1, j) + G( 2, i)*G( 2, j) )*IntRhoInv;
+                coup[j][i]= coup[i][j];
+            }
+            UnknownIdx[i]= sit->GetVertex( i)->Unknowns( idx);
+        }
+        for(int i=0; i<4; ++i)    // assemble row i
+            for(int j=0; j<4;++j)
+                A(UnknownIdx[i], UnknownIdx[j])+= coup[j][i];
+    }
+    A.Build();
+}
+
+template <class Coeff>
+void StokesP2P1CL<Coeff>::SetupPrStiff( MLMatDescCL* A_pr) const
+/// Needed for preconditioning of the Schur complement. Uses natural
+/// boundary conditions for the pressure unknowns.
+{
+    MLMatrixCL::iterator itM = A_pr->Data.begin();
+    MLIdxDescCL::iterator itRowIdx = A_pr->RowIdx->begin();
+    MLIdxDescCL::iterator itColIdx = A_pr->ColIdx->begin();
+    for (size_t lvl=0; lvl < A_pr->Data.size(); ++lvl, ++itM, ++itRowIdx, ++itColIdx)
+        SetupPrStiff_P1_Nolst( _MG, _Coeff, *itM, *itRowIdx, *itColIdx);
+}
+
 //====================================================================
 
 
@@ -1363,6 +1414,8 @@ void StokesP2P1CL<Coeff>::SetNumPrLvl( size_t n)
     match_fun match= _MG.GetBnd().GetMatchFun();
     pr_idx.resize( n, P1_FE,  _BndData.Pr, match);
     B.Data.resize( pr_idx.size());
+    prM.Data.resize( pr_idx.size());
+    prA.Data.resize( pr_idx.size());
 }
 
 //*********************************************************************
