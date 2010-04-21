@@ -72,6 +72,24 @@ class SchurSolverCL : public StokesSolverBaseCL
 };
 
 template <typename PoissonSolverT>
+class SchurNoPcSolverCL : public StokesSolverBaseCL
+{
+  private:
+    PoissonSolverT& _poissonSolver;
+    template <typename Mat, typename Vec>
+    void doSolve( const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c);
+
+  public:
+    SchurNoPcSolverCL (PoissonSolverT& solver, int maxiter, double tol)
+        : StokesSolverBaseCL(maxiter,tol), _poissonSolver(solver) {}
+
+    void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+    void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+};
+
+template <typename PoissonSolverT>
 class PSchurSolverCL : public StokesSolverBaseCL
 {
   private:
@@ -167,6 +185,31 @@ class UzawaSolver2CL : public StokesSolverBaseCL
 
     void Solve( const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c);
+    void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
+                const VectorCL& b, const VectorCL& c);
+};
+
+//! Special UzawaSolver2CL using PoissonSolver.Apply() functions
+template <typename PressurePreT, typename PoissonSolver2T>
+class UzawaSolver2ModifiedCL : public StokesSolverBaseCL
+{
+  private:
+    PressurePreT&    pr_pre_;
+    PoissonSolver2T& poissonSolver2_;
+    MatrixCL& M_;
+    double    tau_;
+
+  public:
+    UzawaSolver2ModifiedCL ( PressurePreT& pre, PoissonSolver2T& solver2,
+                      MatrixCL& M, int maxiter, double tol, double tau= 1.)
+        : StokesSolverBaseCL( maxiter, tol), pr_pre_( pre), poissonSolver2_( solver2),
+          M_( M), tau_( tau) {}
+
+    double GetTau()            const { return tau_; }
+    void   SetTau( double tau)       { tau_= tau; }
+
+    void Solve( const MatrixCL& , const MatrixCL& , VectorCL& , VectorCL& ,
+                    const VectorCL& , const VectorCL& ){};
     void Solve( const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p,
                 const VectorCL& b, const VectorCL& c);
 };
@@ -485,6 +528,44 @@ VectorCL operator*(const SchurComplMatrixCL<PoissonSolverT, Mat>& M, const Vecto
     return M.B_*x;
 }
 
+//=============================================================================
+//  SchurComplNoPcMatrixCL
+//=============================================================================
+template<typename>
+class SchurComplNoPcMatrixCL;
+
+template<typename Mat>
+VectorCL operator*(const SchurComplNoPcMatrixCL<Mat>&, const VectorCL&);
+
+template<typename Mat>
+class SchurComplNoPcMatrixCL
+{
+  private:
+    const Mat& _matA;
+    const Mat&       _matB;
+    double    _tol;
+
+  public:
+    SchurComplNoPcMatrixCL( const Mat& A, const Mat& B, double tol)
+        : _matA(A), _matB(B), _tol(tol) {}
+    friend VectorCL operator*<>( const SchurComplNoPcMatrixCL& M, const VectorCL& v);
+};
+
+template<typename Mat>
+VectorCL operator* (const SchurComplNoPcMatrixCL<Mat>& M, const VectorCL& v)
+{
+    double tol= M._tol;
+    int maxiter= 1000;
+    VectorCL x( M._matA.num_cols());
+
+    CG(M._matA, x, transp_mul(M._matB, v), maxiter, tol);
+    if (maxiter > 990)
+        Comment(     "VectorCL operator* (const SchurComplNoPcMatrixCL& M, const VectorCL& v): "
+                  << "Needed more than 990 iterations! tol: " << tol << std::endl,
+                  DebugNumericC);
+//    std::cout << "Inner iteration took " << maxiter << " steps, residuum is " << tol << std::endl;
+    return M._matB*x;
+}
 
 //=============================================================================
 // ApproximateSchurComplMatrixCL
@@ -634,6 +715,49 @@ void UzawaSolver2CL<PoissonSolverT, PoissonSolver2T>::Solve(
     doSolve( A, B, v, p, b, c);
 }
 
+template <class PoissonSolverT, class PoissonSolver2T>
+void UzawaSolver2ModifiedCL<PoissonSolverT, PoissonSolver2T>::Solve(
+    const MLMatrixCL& A, const MLMatrixCL& B,
+    VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+{
+    VectorCL v_corr( v.size()),
+             p_corr( p.size()),
+             res1( v.size()),
+             res2( p.size());
+    double tol= _tol;
+    tol*= tol;
+    Uint output= 50;//max_iter/20;  // nur 20 Ausgaben pro Lauf
+
+    double res1_norm= 0., res2_norm= 0.;
+    for( _iter=0; _iter<_maxiter; ++_iter) {
+        z_xpay(res2, B*v, -1.0, c);
+        res2_norm= norm_sq( res2);
+        pr_pre_.Apply( M_, p_corr, res2);
+//        p+= _tau * p_corr;
+        axpy(tau_, p_corr, p);
+//        res1= A*v + transp_mul(B,p) - b;
+        z_xpaypby2( res1, A*v, 1.0, transp_mul( B, p), -1.0, b);
+        res1_norm= norm_sq( res1);
+        if (res1_norm + res2_norm < tol) {
+            _res= std::sqrt( res1_norm + res2_norm);
+            return;
+        }
+        if( (_iter%output)==0)
+            std::cout << "step " << _iter << ": norm of 1st eq= " << std::sqrt( res1_norm)
+                      << ", norm of 2nd eq= " << std::sqrt( res2_norm) << std::endl;
+
+        poissonSolver2_.Apply( A, v_corr, res1);
+        //std::cout << v_corr << std::endl;
+        //std::cin >> oo;
+//        poissonSolver2_.SetTol( std::sqrt( res1_norm)/20.0);
+//        poissonSolver2_.Solve( A, v_corr, res1);
+//        std::cout << "velocity: iterations: " << poissonSolver2_.GetIter()
+//                  << "\tresidual: " << poissonSolver2_.GetResid() << std::endl;
+        v-= v_corr;
+    }
+    _res= std::sqrt( res1_norm + res2_norm );
+}
+///////////SchurSolverCL Methods
 template <class PoissonSolverT>
 template <typename Mat, typename Vec>
 void SchurSolverCL<PoissonSolverT>::doSolve(
@@ -682,6 +806,57 @@ void SchurSolverCL<PoissonSolverT>::Solve(
 {
     doSolve( A, B, v, p, b, c);
 }
+
+//////////////////SchurNoPcSolverCl Methods
+template <class PoissonSolverT>
+template <typename Mat, typename Vec>
+void SchurNoPcSolverCL<PoissonSolverT>::doSolve(
+    const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c)
+// solve:       S*p = B*(A^-1)*b - c   with SchurCompl. S = B A^(-1) BT
+//              A*u = b - BT*p
+{
+    Vec _tmp;
+    Vec rhs(-c);
+    if (_tmp.size() != v.size())
+        _tmp.resize( v.size());
+    _poissonSolver.Solve( A, _tmp, b);
+    std::cout << "iterations: " << _poissonSolver.GetIter()
+              << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
+    rhs+= B*_tmp;
+
+    std::cout << "rhs has been set! Now solving pressure..." << std::endl;
+    int iter= _maxiter;
+    double tol= _tol;
+    CG( SchurComplNoPcMatrixCL<Mat>( A, B, _poissonSolver.GetTol()), p, rhs, iter, tol);
+    std::cout << "iterations: " << iter << "\tresidual: " << tol << std::endl;
+    std::cout << "pressure has been solved! Now solving velocities..." << std::endl;
+
+    _poissonSolver.Solve( A, v, Vec(b - transp_mul(B, p)));
+    std::cout << "Iterationen: " << _poissonSolver.GetIter()
+              << "\tresidual: " << _poissonSolver.GetResid() << std::endl;
+
+    _iter= iter+_poissonSolver.GetIter();
+    _res= tol + _poissonSolver.GetResid();
+/* std::cout << "Real residuals are: "
+          << norm( A*v+transp_mul(B, p)-b) << ", "
+          << norm( B*v-c) << std::endl; */
+    std::cout << "-----------------------------------------------------" << std::endl;
+}
+
+template <class PoissonSolverT>
+void SchurNoPcSolverCL<PoissonSolverT>::Solve(
+    const MatrixCL& A, const MatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+{
+    doSolve( A, B, v, p, b, c);
+}
+
+template <class PoissonSolverT>
+void SchurNoPcSolverCL<PoissonSolverT>::Solve(
+    const MLMatrixCL& A, const MLMatrixCL& B, VectorCL& v, VectorCL& p, const VectorCL& b, const VectorCL& c)
+{
+    doSolve( A, B, v, p, b, c);
+}
+
 
 template <typename Mat, typename Vec>
 inline void Uzawa_IPCG_CL::doSolve(
