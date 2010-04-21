@@ -389,6 +389,16 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
                 bfun[1]= &ZeroVel;
                 bfun[0]= inflow;
             } break;
+            case 5 : // predefined velocity over all boundaries
+            {
+            	bc[0] = bc[1] = bc[2] = bc[3] = bc[4] = bc[5] = DirBC;
+				bfun[0] = bfun[1] = bfun[2] = bfun[3] = bfun[4] = bfun[5] = inflow;
+            } break;
+            case 6 : //driven cavity
+            {
+            	bc[5] = DirBC;
+            	bfun[5] = inflow;
+            }break;
             default: throw DROPSErrCL("Unknown boundary data type");
         }
         bnddata = new StokesBndDataCL(6, bc, bfun);
