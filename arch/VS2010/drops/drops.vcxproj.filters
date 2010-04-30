@@ -1,0 +1,594 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="geom">
+      <UniqueIdentifier>{8d53561e-fe21-4415-ae32-7a5b0d07a03f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="levelset">
+      <UniqueIdentifier>{ac3a3ac4-4301-4be5-bc94-b3c9350822d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="misc">
+      <UniqueIdentifier>{299e81d1-2e2f-4660-a839-bcb4fe55cd37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="navstokes">
+      <UniqueIdentifier>{4792d981-2c98-4936-af02-48deb58adb4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="levelset\param-files">
+      <UniqueIdentifier>{5f8dddd8-a098-4aac-bec9-9dd91af1cb77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="target">
+      <UniqueIdentifier>{4c74c47f-19de-4d0b-9db6-049417d013d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="num">
+      <UniqueIdentifier>{cc28f97a-ae98-4a0f-a687-beb1e959f804}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out">
+      <UniqueIdentifier>{f7384340-f381-4d86-9a8d-ca5c4e38b314}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="parallel">
+      <UniqueIdentifier>{1e0113ae-be87-48c8-8007-7c5c59f7c5b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="surfactant">
+      <UniqueIdentifier>{e10a1e09-b4f6-4fee-b92e-43907a0ff454}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="partests">
+      <UniqueIdentifier>{de86a8c0-1756-4467-8604-ec287fd4daa4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="poisson">
+      <UniqueIdentifier>{8b40622e-641d-4633-ad0a-10c7722b0963}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stokes">
+      <UniqueIdentifier>{1f72181f-a6fb-48cf-9854-d23a1d1f3e64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="poisson\param-files">
+      <UniqueIdentifier>{8837f1ff-92ae-4305-b9b8-ab4efa1f936c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stokes\param-files">
+      <UniqueIdentifier>{312704aa-2d64-419a-a42e-ce761aa65ff9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="surfactant\param-files">
+      <UniqueIdentifier>{1a1b53c4-3d2a-442f-9a25-c7796d4476e6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\geom\boundary.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\builder.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\geomselect.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\multigrid.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\simplex.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\topo.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\triang.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\geom\maketopo.cpp">
+      <Filter>geom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\fastmarch.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\levelset.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\lsetparams.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\params.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\surfacetension.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\twophaseutils.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\film.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\lsshear.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\reparam.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\surfTens.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\KDtree.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\params.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\problem.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\utils.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\xfem.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\misc\compensight.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\navstokes\insadrops.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\navstokes\insdrops.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\navstokes\nsdrops_begehung.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\navstokes\nsdrops.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\discretize.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\fe.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\hypre.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\interfacePatch.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\MGsolver.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\quad.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\stokessolver.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\num\unknowns.cpp">
+      <Filter>num</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\out\ensightOut.cpp">
+      <Filter>out</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\out\output.cpp">
+      <Filter>out</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\out\vtkOut.cpp">
+      <Filter>out</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\exchange.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\loadbal.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\logger.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\memmgr_std.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\metispartioner.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\parallel.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\parddd.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\parfastmarch.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\parmgserialization.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\parmultigrid.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\partime.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\partitioner.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\parallel\addeddata.cpp">
+      <Filter>parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\poisson\poisson.cpp">
+      <Filter>poisson</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\poisson\poissonparams.cpp">
+      <Filter>poisson</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\poisson\transport2phase.cpp">
+      <Filter>poisson</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\poisson\drops_statP2.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\poisson\ipdropsAD.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\poisson\poissonP1.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\stokes\instatstokes2phase.cpp">
+      <Filter>stokes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\stokes\integrTime.cpp">
+      <Filter>stokes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\stokes\stokesparams.cpp">
+      <Filter>stokes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\stokes\sdropsP2.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\stokes\sdrops.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\surfactant\ifacetransp.cpp">
+      <Filter>surfactant</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\surfactant\params.cpp">
+      <Filter>surfactant</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\surfactant\surfacenorms.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\surfactant\surfactant.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\twophasedrops.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\prJump.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\brick_transp.cpp">
+      <Filter>target</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\geom\boundary.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\builder.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\geomselect.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\multigrid.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\simplex.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geom\topo.h">
+      <Filter>geom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\adaptriang.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\coupling.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\fastmarch.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\levelset.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\mgobserve.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\mzelle_hdr.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\params.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\surfacetension.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\levelset\twophaseutils.h">
+      <Filter>levelset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\container.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\KDtree.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\params.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\problem.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\utils.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\misc\xfem.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\navstokes\instatnavstokes2phase.h">
+      <Filter>navstokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\navstokes\integrTime.h">
+      <Filter>navstokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\navstokes\navstokes.h">
+      <Filter>navstokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\bndData.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\directsolver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\discretize.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\fe.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\hypre.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\interfacePatch.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\MGsolver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\nssolver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\parlanczos.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\parprecond.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\parsolver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\parstokessolver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\poissonsolverfactory.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\solver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\spblockmat.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\spmat.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\stokessolver.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\stokessolverfactory.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\num\unknowns.h">
+      <Filter>num</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\out\ensightOut.h">
+      <Filter>out</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\out\gridOut.h">
+      <Filter>out</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\out\output.h">
+      <Filter>out</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\out\vtkOut.h">
+      <Filter>out</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\exchange.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\interface.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\loadbal.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\logger.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\metispartioner.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\parallel.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\pardistributeddata.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\parfastmarch.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\parmgserialization.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\parmultigrid.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\partime.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\partitioner.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\addeddata.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\parallel\distributeddatatypes.h">
+      <Filter>parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\poisson\integrTime.h">
+      <Filter>poisson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\poisson\params.h">
+      <Filter>poisson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\poisson\poisson.h">
+      <Filter>poisson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\poisson\transport2phase.h">
+      <Filter>poisson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\stokes\instatstokes2phase.h">
+      <Filter>stokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\stokes\integrTime.h">
+      <Filter>stokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\stokes\params.h">
+      <Filter>stokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\stokes\stokes.h">
+      <Filter>stokes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\surfactant\ifacetransp.h">
+      <Filter>surfactant</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\surfactant\params.h">
+      <Filter>surfactant</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\levelset\brick_transp.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\butanol.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\eindhoven.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\film.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\mzi.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\prJump.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\risingbutanoldroplet.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\risingdroplet.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\tc2.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\toluol.param">
+      <Filter>levelset\param-files</Filter>
+    </None>
+    <None Include="..\..\..\levelset\adaptriang.tpp">
+      <Filter>levelset</Filter>
+    </None>
+    <None Include="..\..\..\levelset\coupling.tpp">
+      <Filter>levelset</Filter>
+    </None>
+    <None Include="..\..\..\levelset\fastmarch.tpp">
+      <Filter>levelset</Filter>
+    </None>
+    <None Include="..\..\..\levelset\levelset.tpp">
+      <Filter>levelset</Filter>
+    </None>
+    <None Include="..\..\..\misc\KDtree.tpp">
+      <Filter>misc</Filter>
+    </None>
+    <None Include="..\..\..\navstokes\instatnavstokes2phase.tpp">
+      <Filter>navstokes</Filter>
+    </None>
+    <None Include="..\..\..\navstokes\navstokes.tpp">
+      <Filter>navstokes</Filter>
+    </None>
+    <None Include="..\..\..\num\discretize.tpp">
+      <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\num\fe.tpp">
+      <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\num\interfacePatch.tpp">
+      <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\num\MGsolver.tpp">
+      <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\num\parlanczos.tpp">
+      <Filter>num</Filter>
+    </None>
+    <None Include="..\..\..\parallel\exchange.tpp">
+      <Filter>parallel</Filter>
+    </None>
+    <None Include="..\..\..\parallel\parallel.tpp">
+      <Filter>parallel</Filter>
+    </None>
+    <None Include="..\..\..\parallel\parfastmarch.tpp">
+      <Filter>parallel</Filter>
+    </None>
+    <None Include="..\..\..\parallel\parmultigrid.tpp">
+      <Filter>parallel</Filter>
+    </None>
+    <None Include="..\..\..\parallel\partitioner.tpp">
+      <Filter>parallel</Filter>
+    </None>
+    <None Include="..\..\..\poisson\drops.param">
+      <Filter>poisson\param-files</Filter>
+    </None>
+    <None Include="..\..\..\poisson\ipdrops.param">
+      <Filter>poisson\param-files</Filter>
+    </None>
+    <None Include="..\..\..\poisson\ipfilm.param">
+      <Filter>poisson\param-files</Filter>
+    </None>
+    <None Include="..\..\..\poisson\poisson.tpp">
+      <Filter>poisson</Filter>
+    </None>
+    <None Include="..\..\..\stokes\stokes.param">
+      <Filter>stokes\param-files</Filter>
+    </None>
+    <None Include="..\..\..\stokes\instatstokes2phase.tpp">
+      <Filter>stokes</Filter>
+    </None>
+    <None Include="..\..\..\stokes\stokes.tpp">
+      <Filter>stokes</Filter>
+    </None>
+    <None Include="..\..\..\surfactant\surfactant.param">
+      <Filter>surfactant\param-files</Filter>
+    </None>
+    <None Include="..\..\..\surfactant\ifacetransp.tpp">
+      <Filter>surfactant</Filter>
+    </None>
+  </ItemGroup>
+</Project>
