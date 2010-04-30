@@ -702,13 +702,16 @@ std::vector<std::pair<T1,T2> > Map2Vec( const std::tr1::unordered_map<T1,T2>& Ma
 #  ifndef _MPICXX_INTERFACE
 #    define MPICH_SKIP_MPICXX
 #  endif
-#  pragma GCC system_header  // Suppress warnings from mpi.h
+#  ifndef DROPS_WIN
+#    pragma GCC system_header  // Suppress warnings from mpi.h
+#  endif
 #  include <mpi.h>
 #  ifdef _HYPRE
 #    include <HYPRE.h>
 #    include <HYPRE_IJ_mv.h>
 #    include <HYPRE_parcsr_ls.h>
 #  endif
+
 #endif
 
 #endif

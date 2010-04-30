@@ -223,7 +223,7 @@ void ParMetisCL::PartGraphPar()
         options[0]=0;                                               // no options for parmetis
 
         if ((meth_ == KWay) || (meth_ == Adaptive))
-            std::fill(tpwgts, tpwgts+nparts, 1./(float)nparts);
+            std::fill(tpwgts, tpwgts+nparts, 1.f/(float)nparts);
         if (GetGraph().part == 0)
             GetGraph().part = new idxtype[GetGraph().myVerts];
         if (meth_ == Identity)

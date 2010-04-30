@@ -29,6 +29,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include "misc/utils.h"
 #include "geom/boundary.h"
 #include "geom/topo.h"

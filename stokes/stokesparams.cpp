@@ -46,6 +46,7 @@ void ParamStokesExperimentalDataCL::RegisterParams()
     rp_.EndGroup();
 }
 
+#ifndef DROPS_WIN
 void ParamErrCL::RegisterParams()
 {
 	rp_.BeginGroup("Err");
@@ -58,6 +59,7 @@ void ParamErrCL::RegisterParams()
     rp_.RegInt( err_NumRef,             "NumRef");
 	rp_.EndGroup();
 }
+#endif
 
 void ParamMiscCL::RegisterParams()
 {

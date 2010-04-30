@@ -397,7 +397,7 @@ class ParCGPreCL
 
     inline bool RetAcc() const {return true;}
     inline bool NeedDiag() const {return false;}
-    void SetDiag(VectorCL */*diag*/) {}
+    void SetDiag(VectorCL * /*diag*/) {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat& A, Vec &x, const Vec& b) const
@@ -426,7 +426,7 @@ class ParGMResPreCL
 
     inline bool RetAcc() const {return true;}
     inline bool NeedDiag() const {return false;}
-    void SetDiag(VectorCL */*diag*/) {}
+    void SetDiag(VectorCL * /*diag*/) {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat& A, Vec &x, const Vec& b) const

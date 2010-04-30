@@ -237,8 +237,8 @@ inline void ProcCL::Wait(RequestT& req){
     MPI_Wait(&req, &tmpStat);
 }
 
-inline void ProcCL::WaitAll(int count, RequestT* req){
-    std::valarray<StatusT> tmpStat(count);
+inline void ProcCL::WaitAll(int count, RequestT* req){    
+    std::valarray<StatusT> tmpStat(StatusT(), count);
     MPI_Waitall(count, req, Addr(tmpStat));
 }
 
