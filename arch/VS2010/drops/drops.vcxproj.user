@@ -32,4 +32,38 @@
     <LocalDebuggerWorkingDirectory>$(SolutionDir)..\..\levelset</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">
+    <LocalDebuggerWorkingDirectory>$(SolutionDir)..\..\levelset</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">
+    <LocalDebuggerWorkingDirectory>$(SolutionDir)..\..\levelset</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <MpiDebuggerSchedulerNode>localhost/3</MpiDebuggerSchedulerNode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <MpiDebuggerWorkingDirectory>$(SolutionDir)..\..\levelset</MpiDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <MpiDebuggerApplicationCommand>
+    </MpiDebuggerApplicationCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <MpiDebuggerMpiExecCommand>
+    </MpiDebuggerMpiExecCommand>
+    <DebuggerFlavor>MpiClusterDebugger</DebuggerFlavor>
+    <MpiDebuggerApplicationArguments>risingbutanoldroplet.param</MpiDebuggerApplicationArguments>
+    <MpiDebuggerAdditionalMpiExecArguments>-wdir $(SolutionDir)..\..\levelset</MpiDebuggerAdditionalMpiExecArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <MpiDebuggerSchedulerNode>localhost/2</MpiDebuggerSchedulerNode>
+    <DebuggerFlavor>MpiClusterDebugger</DebuggerFlavor>
+    <MpiDebuggerApplicationCommand>
+    </MpiDebuggerApplicationCommand>
+    <MpiDebuggerWorkingDirectory>$(SolutionDir)..\..\levelset</MpiDebuggerWorkingDirectory>
+    <MpiDebuggerApplicationArguments>risingbutanoldroplet.param</MpiDebuggerApplicationArguments>
+    <MpiDebuggerAdditionalMpiExecArguments>-wdir $(SolutionDir)..\..\levelset</MpiDebuggerAdditionalMpiExecArguments>
+  </PropertyGroup>
 </Project>
