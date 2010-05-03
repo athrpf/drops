@@ -27,6 +27,7 @@
 
 #include "misc/params.h"
 #include "levelset/params.h"
+#include "poisson/params.h"
 
 namespace DROPS
 {
@@ -90,29 +91,6 @@ class ParamMiscCL : public virtual ParamBaseCL
       ParamMiscCL()                        { RegisterParams(); }
       ParamMiscCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 
-};
-
-/// \brief Parameter class for error estimator
-class ParamErrCL : public virtual ParamBaseCL
-{
-  protected:
-	void RegisterParams();
-
-  public:
-  /// \name error estimator
-  //@{
-    int    		err_DoErrorEstimate;
-    double 		err_RelReduction;
-    double 		err_MinRatio;
-    double 		err_Threshold;
-    double 		err_Meas;
-    int    		err_DoMark;
-    int    		err_NumRef;
-  //@}
-
-  public:
-      ParamErrCL()                        { RegisterParams(); }
-      ParamErrCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the poisson case

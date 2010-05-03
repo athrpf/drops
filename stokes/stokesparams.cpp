@@ -46,21 +46,6 @@ void ParamStokesExperimentalDataCL::RegisterParams()
     rp_.EndGroup();
 }
 
-#ifndef DROPS_WIN
-void ParamErrCL::RegisterParams()
-{
-	rp_.BeginGroup("Err");
-	rp_.RegInt( err_DoErrorEstimate,    "DoErrorEstimate");
-	rp_.RegDouble( err_RelReduction,    "RelReduction");
-	rp_.RegDouble( err_MinRatio,        "MinRatio");
-	rp_.RegDouble( err_Threshold,       "Threshold");
-	rp_.RegDouble( err_Meas,            "Meas");
-    rp_.RegInt( err_DoMark,             "DoMark");
-    rp_.RegInt( err_NumRef,             "NumRef");
-	rp_.EndGroup();
-}
-#endif
-
 void ParamMiscCL::RegisterParams()
 {
 	rp_.BeginGroup("Misc");
