@@ -1,5 +1,5 @@
 /// \file poissonsolverfactory.h
-/// \brief Solver for Poisson problem with P2 functions
+/// \brief Solver for Poisson problems functions
 /// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Eva Loch, Volker Reichelt, Marcus Soemers, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
@@ -22,14 +22,6 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-/** We solve \f$ -\Delta u = f\;\mbox{in}\; \Omega:=[0,1]^3 \f$ for the given
-    solution \f$ u(x,y,z):= 64 \cdot xyz (1-x) (1-y) (1-z) \f$, i.e. homogeneous
-    Dirichlet conditions are used. A uniform tetrahedral grid is applied as
-    a triangulation of \f$ \Omega \f$. GMRES is used as a linear solver for the
-    discretized linear equation system. Note, that CG-type methods can be used
-    as well because the resulting linear equation system is s.p.d. However,
-    since this program acts as a base performance test, GMRES is used here.
-*/
 
 #ifndef POISSONSOLVERFACTORY_H_
 #define POISSONSOLVERFACTORY_H_
@@ -84,6 +76,19 @@ class PoissonSolverCL : public PoissonSolverBaseCL
 };
 
 /// \brief Create a Poisson-Solver (Design-Pattern: Factory class)
+/// Construction of a Poisson solver, e.g. CG and SSOR preconditioner: 2*100 + 3. Note: Not all combinations are implemented!
+/**
+    <table border="3">
+    <tr><th> no </th><th> Poisson-Solver-Type </th><th> Type of PC/smoother  </th></tr>
+    <tr><td>  0 </td><td>                     </td><td> DummyPc              </td></tr>
+    <tr><td>  1 </td><td> MultiGrid V-cycle   </td><td>                      </td></tr>
+    <tr><td>  2 </td><td> Preconditioned CG   </td><td> JOR                  </td></tr>
+    <tr><td>  3 </td><td> GMRes               </td><td> SSOR                 </td></tr>
+    <tr><td>  4 </td><td> Hypre-AMG           </td><td> GS                   </td></tr>
+    <tr><td>  5 </td><td>                     </td><td> SGS                  </td></tr>
+    <tr><td>  6 </td><td>                     </td><td> SOR                  </td></tr>
+    <tr><td>  7 </td><td>                     </td><td>                      </td></tr>
+    </table>*/
 #ifndef _PAR
 template <class ParamsT, class ProlongationT= MLMatrixCL>
 class PoissonSolverFactoryCL
