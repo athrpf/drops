@@ -22,14 +22,6 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-/** We solve \f$ -\Delta u = f\;\mbox{in}\; \Omega:=[0,1]^3 \f$ for the given
-    solution \f$ u(x,y,z):= 64 \cdot xyz (1-x) (1-y) (1-z) \f$, i.e. homogeneous
-    Dirichlet conditions are used. A uniform tetrahedral grid is applied as
-    a triangulation of \f$ \Omega \f$. GMRES is used as a linear solver for the
-    discretized linear equation system. Note, that CG-type methods can be used
-    as well because the resulting linear equation system is s.p.d. However,
-    since this program acts as a base performance test, GMRES is used here.
-*/
 
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
