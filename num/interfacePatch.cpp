@@ -202,6 +202,29 @@ InterfacePatchCL::SubTetraT InterfaceTetraCL::MultiplySubTetra(const InterfacePa
     return TetrakBary_;
 }
 
+/** For each of the eight regular children, count the number positiv-, negativ- 
+    and zero-valued vertices and decide by this information if a change of
+    sign occurs on that child tetrahedra. Afterwards return the number of intersected 
+    child tetrahedra.
+    \return number of intersected sub-tetrahedra
+*/
+int InterfacePatchCL::GetNumIntersectedSubTetras() const
+{
+    ChildDataCL data;
+    int intersectedSubTetra=0;
+    int num_sign[3];
+    for ( int ch=0; ch<8; ++ch){
+        data  = GetChildData (RegRef_.Children[ch]);
+        num_sign[0]= num_sign[1]= num_sign[2]= 0;
+        for ( int vert=0; vert<4; ++vert){
+            ++num_sign[ sign_[data.Vertices[vert]]+1];
+        }
+        if ( num_sign[1]>=0 || num_sign[0]*num_sign[2]>0)
+            intersectedSubTetra++;
+    }
+    return intersectedSubTetra;
+}
+
 bool InterfaceTetraCL::ComputeCutForChild( Uint ch)
 {
 	return ComputeVerticesOfCut( ch);
