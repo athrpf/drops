@@ -24,6 +24,7 @@
 
 #include "parallel/loadbal.h"
 #include "parallel/parallel.h"
+#include "num/interfacePatch.h"
 #include <iomanip>
 
 namespace DROPS{
@@ -47,7 +48,7 @@ extern "C" int HandlerGatherC ( OBJT o, void *d) {return LoadBalCL::HandlerGathe
 
 
 /// \brief Constructor
-LoadBalCL::LoadBalCL(MultiGridCL& mg, int TriLevel, PartMethod meth) : idx_(), useUnkInfo_(false)
+LoadBalCL::LoadBalCL(MultiGridCL& mg, int TriLevel, PartMethod meth) : idx_(), lset_(0), useUnkInfo_(false)
 /// \param mg       Reference on the multigrid
 /// \param ub       imbalace tolerance for eacht vertex weight, suggestion from parMETIS is 1.05
 /// \param TriLevel level that should be balanced
@@ -273,53 +274,65 @@ std::set<IdxT> LoadBalCL::UnkOnTetra(const TetraCL& t) const
     return unknowns;
 }
 
-
-/// \brief Compute weight of a tetra
-Uint LoadBalCL::GetWeight(const TetraCL& t) const
-/** This function computes weights of a tetraeder that is a multinode in the
-    graph. Therefore we distinguish between two cases: information about
-    unknowns are given or not.
-    \param t the tetraeder
+/** Put the weight of a vertex in the array vwgt of the graph structure at
+    the index wgtpos. The weight is computed by the number of children or
+    set to 1 if no children exists. Afterwards, this wgtpos is increased by 1.
+    \param t parent tetrahedron
+    \param wgtpos  in: where to put the weight in the array vwgt,
+                  out: where to put the next weight in the array vwgt
 */
+void LoadBalCL::GetWeightRef( const TetraCL& t, size_t& wgtpos)
 {
-    // No information about unknowns are given
-    if (idx_.empty() || !useUnkInfo_)
-    {
-        if (t.IsUnrefined())
-            return 1;
-        else
-            return t.GetRefData().ChildNum;
+    if (t.IsUnrefined()){
+        GetPartitioner()->GetGraph().vwgt[wgtpos++]= 1;
     }
-    else
-    {
-        std::set<IdxT> all_unknowns;
-        if (t.IsUnrefined())
-            all_unknowns= UnkOnTetra(t);
-        else {
-            TetraCL::const_ChildPIterator ch    (t.GetChildBegin()),            // iterator through the children
-                                          chend ( t.GetChildEnd() );            // last child
-
-            for (; /*ch && */ch!=chend; ++ch){
-                if ((*ch)->IsInTriang(TriangLevel_)){                           // if this child is the triangulation, that should be balanced
-                    std::set<IdxT> tetra_unks= UnkOnTetra(t);
-                    std::insert_iterator< std::set<IdxT> > inserter(all_unknowns, all_unknowns.begin());
-                    std::set_union(all_unknowns.begin(), all_unknowns.end(),
-                                   tetra_unks.begin(), tetra_unks.end(),
-                                   inserter);
-                }
-            }
-        }
-        return all_unknowns.size();
+    else{
+        GetPartitioner()->GetGraph().vwgt[wgtpos++]= t.GetRefData().ChildNum;
     }
 }
 
+/** Put the weight of a vertex in the array vwgt of the graph structure at
+    the index wgtpos. The weight consists of two constrains. The first one is 
+    computed by GetWeightRef and the second one by the number of subtetrahedra 
+    intersected by the interface of the level set function. Afterwards, this 
+    wgtpos is increased by 2.
+    \param t parent tetrahedron
+    \param wgtpos  in: where to put the weight in the array vwgt,
+                  out: where to put the next weight in the array vwgt
+*/
+void LoadBalCL::GetWeightLset( const TetraCL& t, size_t& wgtpos)
+{
+    GetWeightRef( t, wgtpos);
+    InterfacePatchCL patch;                              // check for intersection
+    if ( t.IsUnrefined()){
+        if (CheckForLsetUnk(t)){
+            patch.Init( t, *lset_);
+            GetPartitioner()->GetGraph().vwgt[wgtpos++]= patch.GetNumIntersectedSubTetras();
+        }
+        else{
+            GetPartitioner()->GetGraph().vwgt[wgtpos++]= 0;
+        }
+    }
+    else{
+        int numItersectedSub=0;
+        for ( TetraCL::const_ChildPIterator it=t.GetChildBegin(); it!=t.GetChildEnd(); ++it){
+            if (CheckForLsetUnk(**it)){
+                patch.Init( **it, *lset_);
+                numItersectedSub += patch.GetNumIntersectedSubTetras();
+            }
+        }
+        GetPartitioner()->GetGraph().vwgt[wgtpos++]= numItersectedSub;
+    }
+}
 
 /// \brief Estimate adjacencies of an unrefined tetra
-Uint LoadBalCL::AdjUnrefined( TetraCL& t, int& edgecount)
+void LoadBalCL::AdjUnrefined( TetraCL& t, int& edgecount, size_t& vwgpos)
 /** Put the adjacenzies into adjncy_ and estimate the weight of the node, assoziated with the tetra
     if the tetraeder is unrefined
     \param t the tetraeder
     \param edgecount IN/OUT: smallest unused edgenumber
+    \param vwgpos  IN: where to put the vertex weight in the array vwgt of the graph structure
+                  OUT: next position where to put the weight of a vertex
 */
 {
     for (Uint face= 0; face<NumFacesC; ++face){                             // Adjacences are faces
@@ -341,16 +354,23 @@ Uint LoadBalCL::AdjUnrefined( TetraCL& t, int& edgecount)
         }
     }
 
-    return GetWeight(t);
+    // Compute weight of the vertex
+    if ( lset_)
+        GetWeightLset(t, vwgpos);
+    else
+        GetWeightRef( t, vwgpos);
+
 }
 
 
 /// \brief Estimate adjacencies of an refined tetra
-Uint LoadBalCL::AdjRefined( TetraCL& t, int& edgecount)
+void LoadBalCL::AdjRefined( TetraCL& t, int& edgecount, size_t& vwgpos)
 /** Put the adjacenzies into adjncy_ and estimate the weight of the node, assoziated with the tetra
     if the tetraeder is unrefined
     \param t the tetraeder
     \param edgecount IN/OUT: smallest unused edgenumber
+    \param vwgpos  IN: where to put the vertex weight in the array vwgt of the graph structure
+                  OUT: next position where to put the weight of a vertex
 */
 {
     GraphEdgeCT thisAdj;                                                // store adjacencies of this tetraeder-node
@@ -387,12 +407,17 @@ Uint LoadBalCL::AdjRefined( TetraCL& t, int& edgecount)
         partitioner_->GetGraph().adjwgt[edgecount]= it->second;
     }
 
-    return GetWeight(t);
+    // Compute weight of the vertex
+    if ( lset_)
+        GetWeightLset(t, vwgpos);
+    else
+        GetWeightRef( t, vwgpos);
 }
 
 
 /// \brief Compute the number of adjacencies on this proc
 Uint LoadBalCL::EstimateAdj()
+/// \return number of adjacencies
 {
     GraphNeighborCT adj;                                                // Set of neighbors of actual multinode
     Uint adjCounter = 0;                                                // counter of all adjacencies
@@ -453,22 +478,21 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     \todo (of) Create Graph of arbitrary triangulation level
 */
 {
-    Comment("- Setting up dual, reduced graph"<<                                // number of vertices on this proc
-        int            partitioner_.GetGraph().myAdjs; std::endl,DebugLoadBalC);
+    Comment("- Setting up dual, reduced graph with " << partitioner_->GetGraph().myAdjs<< " edges " << std::endl, DebugLoadBalC);
 
-    partitioner_->GetGraph().geom = geom;                                  //sets the attribute geom of the partitioner_
+    partitioner_->GetGraph().geom = geom;                                       // sets the attribute geom of the partitioner_
     TriangLevel_= mg_->GetLastLevel();
 
-    CreateNumbering();                                          // Create the numbers of the multinodes and set the number of my verts
+    CreateNumbering();                                                          // Create the numbers of the multinodes and set the number of my verts
 
     // calculate the vtxdist-Array
     partitioner_->GetGraph().ResizeVtxDist();
-    IndexArray vtx_rcv= new int[ProcCL::Size()];                // recieve buffer for number of nodes on other procs
-    ProcCL::Gather( (int)partitioner_->GetGraph().myVerts, vtx_rcv, -1);                // communicate the number of nodes
+    IndexArray vtx_rcv= new int[ProcCL::Size()];                                // receive buffer for number of nodes on other procs
+    ProcCL::Gather( (int)partitioner_->GetGraph().myVerts, vtx_rcv, -1);        // communicate the number of nodes
 
-    partitioner_->GetGraph().vtxdist[0]= 0;                                             // proc 0 starts with node 0
+    partitioner_->GetGraph().vtxdist[0]= 0;                                     // proc 0 starts with node 0
     for (int i=0; i<ProcCL::Size(); ++i)
-        partitioner_->GetGraph().vtxdist[i+1]= partitioner_->GetGraph().vtxdist[i] + vtx_rcv[i];// proc i+1 starts with node \sum_{j=0}^i nodesOnProc(i)
+        partitioner_->GetGraph().vtxdist[i+1]= partitioner_->GetGraph().vtxdist[i] + vtx_rcv[i];    // proc i+1 starts with node \sum_{j=0}^i nodesOnProc(i)
     partitioner_->GetGraph().myfirstVert = partitioner_->GetGraph().vtxdist[ProcCL::MyRank()];     // vtxdist_[i] is starting node of proc i
 
     delete[] vtx_rcv;
@@ -480,22 +504,22 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     Uint numadj= EstimateAdj();                                 // compute the number of adjacencies on this proc
 
      // Allocate space for the Arrays
-    partitioner_->GetGraph().Resize(numadj, partitioner_->GetGraph().myVerts, partitioner_->GetGraph().geom);
+    partitioner_->GetGraph().Resize(numadj, partitioner_->GetGraph().myVerts, partitioner_->GetGraph().geom,  (lset_==0) ? 1 : 2);
 
      // put all nodes and adjacencies into the lists
     LbIteratorCL begin = GetLbTetraBegin(),
                    end = GetLbTetraEnd();
     idxtype vertCount=0,                                        // number of actual node
             edgeCount=0;                                        // number of actual edge
-
+    size_t vwgtcount=0;                                         // counter where to put the weight of a vertex
     for ( LbIteratorCL it= begin; it!=end; ++it)                // iterate through the multinodes of the LoadBalSet
     {
-        partitioner_->GetGraph().xadj[vertCount] = edgeCount;                           // remember, where node vertCount writes its neighbors
+        partitioner_->GetGraph().xadj[vertCount] = edgeCount;   // remember, where node vertCount writes its neighbors
         if (it->IsUnrefined() )
-            partitioner_->GetGraph().vwgt[vertCount] = AdjUnrefined( *it, edgeCount);   // compute adjacencies, number of adjacencies and node-weight for unrefined tetra
+            AdjUnrefined( *it, edgeCount, vwgtcount);           // compute adjacencies, number of adjacencies and node-weight for unrefined tetra
         else
-            partitioner_->GetGraph().vwgt[vertCount] = AdjRefined( *it, edgeCount);     // compute adjacencies, number of adjacencies and node-weight for refined tetra
-        if (partitioner_->GetGraph().geom)                                              // if with geom, compute the barycenter of the tetra
+            AdjRefined( *it, edgeCount, vwgtcount);             // compute adjacencies, number of adjacencies and node-weight for refined tetra
+        if (partitioner_->GetGraph().geom)                      // if with geom, compute the barycenter of the tetra
         {
             const Point3DCL coord= GetBaryCenter( *it);
             partitioner_->GetGraph().xyz[3*vertCount]  = coord[0];
@@ -511,8 +535,11 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     }
 
     partitioner_->GetGraph().xadj[vertCount]= edgeCount;
-    Assert( vertCount==partitioner_.GetGraph().myVerts,
+    Assert( vertCount==partitioner_->GetGraph().myVerts,
             DROPSErrCL("LoadBalaceCL: CreateDualRedGraph: number of vertices is not correct!"),
+            DebugLoadBalC);
+    Assert( (partitioner_->GetGraph().ncon)*vertCount== (int)vwgtcount, 
+            DROPSErrCL("LoadBalaceCL: CreateDualRedGraph: Number of vertex weights does not match"), 
             DebugLoadBalC);
 
     partitioner_->CreateGraph(); //Implement for the other partitioners(not necessary for metis)
@@ -541,7 +568,6 @@ void LoadBalCL::Migrate()
         Comment("- Start Migrating"<<std::endl, DebugLoadBalC);
 
     Uint me = ProcCL::MyRank();
-
     partitioner_->GetGraph().movedMultiNodes=0;
 
     PROCT dest;

@@ -105,6 +105,8 @@ class InterfacePatchCL
 
       void               WriteGeom( std::ostream&) const;                          ///< Geomview output for debugging
       void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
+
+      int                GetNumIntersectedSubTetras() const;
     ///@}
 };
 

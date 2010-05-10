@@ -43,21 +43,28 @@ void GraphST::ResizeVtxDist()
     vtxdist = new int[ProcCL::Size()+1];
 }
 
-/**This method will allocate memory for most of the arrays in the GraphST structure
- \param numadj  number of neighbors
-        myVerts number of verticies
-        geom    flag for geometry
+/**This method will allocate memory for the arrays:
+   xadj, adjncy, vwgt, adjwgt, and part
+   Additionally, the values for number of adjacenies and vertices as well as the parameters geom and ncon are set.
+   \param numadj  number of neighbors
+   \param myVerts number of verticies
+   \param geom    flag for geometry
+   \param ncon    number of weight conditions per vertex
  */
-void GraphST::Resize(int numadj, int myVerts, bool geom)
+void GraphST::Resize(int numadj, int numverts, bool hasgeom, int numncon)
 {
+    myVerts= numverts;
+    myAdjs= numadj;
+    geom= hasgeom;
+    ncon= numncon;
     if (xadj!=0) delete[] xadj;
     xadj = new idxtype[myVerts+1];
     if (adjncy!=0) delete[] adjncy;
-    adjncy = new idxtype[numadj];
+    adjncy = new idxtype[myAdjs];
     if (vwgt!=0) delete[] vwgt;
-    vwgt = new idxtype[myVerts];
+    vwgt = new idxtype[myVerts*ncon];
     if (adjwgt!=0) delete[] adjwgt;
-    adjwgt = new idxtype[numadj];
+    adjwgt = new idxtype[myAdjs];
     if (geom)
     {
         if (xyz!=0) delete[] xyz;
@@ -66,6 +73,7 @@ void GraphST::Resize(int numadj, int myVerts, bool geom)
     if (part!=0) delete[] part;
     part = new idxtype[myVerts];
 }
+
 /// \brief This method will liberate the memory used for storing the arrays in the structure
 void GraphST::Clear()
 {
@@ -178,80 +186,94 @@ void ParMetisCL::PartGraphSer(int master)
     
     Comment("- Start calculate LoadBalanace with METIS-"<<(meth_ == KWay ? "Kway" : "Recursive")<<std::endl, DebugLoadBalC);
 
+    TimerCL timer; timer.Reset();
     if (GetGraph().myVerts != GetGraph().vtxdist[DynamicDataInterfaceCL::InfoProcs()])
         Comment("LoadBalCL: PartGraphSer: This procedure is called by a proc, that does not have all nodes!"<<std::endl, DebugLoadBalC);
 
     int    wgtflag    = 3,                                      ///< Weights on vertices and adjacencies are given
            numflag    = 0,                                      ///< Numbering of verts starts by 0 (C-Style)
-           nparts     = DynamicDataInterfaceCL::InfoProcs(),    ///< Number of subdomains (per proc one)
-           n          = GetGraph().myVerts,
+           nparts     = ProcCL::Size(),                         ///< Number of subdomains (per proc one)
+           n          = GetGraph().myVerts,                     ///< Number of vertices
            options[5] = {0,0,0,0,0};                            ///< Default options
-    //Depending on the method chosen KWay or Recursive the appropriate parmetis function is called
-    if (meth_ == KWay)
-        METIS_PartGraphKway(      &n, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options,&GetGraph().edgecut, GetGraph().part);
-    else if (meth_==Recursive)
-        METIS_PartGraphRecursive( &n, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options,&GetGraph().edgecut,GetGraph().part);
-
-    Comment("  * Number of Edgecut: "<<edgecut_<<std::endl, DebugLoadBalC);
+    // Depending on the method chosen KWay or Recursive the appropriate metis function is called
+    // if number of balance conditions is not equal to 1 use the multi constrained versions
+    if ( GetGraph().ncon==1){
+        if (meth_ == KWay)
+            METIS_PartGraphKway(      &n, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options,&GetGraph().edgecut, GetGraph().part);
+        else if (meth_==Recursive)
+            METIS_PartGraphRecursive( &n, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options,&GetGraph().edgecut, GetGraph().part);
+    }
+    else{
+        if (GetGraph().ncon>15) 
+            throw DROPSErrCL("ParMetisCL::PartGraphSer: Too many constrains are given");
+        wgtflag = 1;    // weights on vertices have to be provided, so this is the flag for specifying additional weights on edges
+        if (meth_ == KWay){
+            std::valarray<float> ubvec( GetGraph().ubvec, GetGraph().ncon);
+            METIS_mCPartGraphKway(      &n, &GetGraph().ncon, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, Addr(ubvec), options, &GetGraph().edgecut, GetGraph().part);
+        }
+        else if (meth_==Recursive){
+            METIS_mCPartGraphRecursive( &n, &GetGraph().ncon, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options, &GetGraph().edgecut,GetGraph().part);
+        }
+    }
+    Comment("  * Number of Edgecut: "<<GetGraph().edgecut<<std::endl, DebugLoadBalC);
+    std::cout << " Serial graph partitioning leads to an edgecut of " << GetGraph().edgecut << " and took " << timer.GetTime() << " sec." << std::endl;
 }
 
 /// \brief Parallel partitioning
 void ParMetisCL::PartGraphPar()
-    /** This procedure uses ParMetis in order to compute a partitioning of the dual
-        reduced graph, that has been set up with the member function
-        CreateDualRedGraph. The previous distribution of the vertices among the
-        processors is used.
-        \pre CreateDualRedGraph() must have been called before
-    */
-    {
+/** This procedure uses ParMetis in order to compute a partitioning of the dual
+    reduced graph, that has been set up with the member function
+    CreateDualRedGraph. The previous distribution of the vertices among the
+    processors is used.
+    \pre Setup of the graph
+*/
+{
         
-        Comment("- Start calculate LoadBalanace with ParMETIS-"<<(meth_ == Adaptive ? "AdaptiveRepart")<<(meth_ == KWay ? "KWay")<<(meth_ == Identity ? "Identity")<<std::endl,DebugLoadBalC);
+    Comment("- Start calculate LoadBalanace with ParMETIS-"<<(meth_ == Adaptive ? "AdaptiveRepart" : (meth_ == KWay ? "KWay" : "Identity"))<<std::endl,
+            DebugLoadBalC);
 
-        Assert( GetGraph().xadj && GetGraph().adjncy_ && GetGraph().vwgt && GetGraph().adjwgt,
-                DROPSErrCL("LoadBalCL::PartGraphPar: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
-                DebugLoadBalC);
+    Assert( GetGraph().xadj && GetGraph().adjncy && GetGraph().vwgt && GetGraph().adjwgt,
+            DROPSErrCL("ParMetisCL::PartGraphPar: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
+            DebugLoadBalC);
 
-        int    wgtflag = 3,                 // Weights on vertices and adjacencies are given
-               numflag = 0,                 // numbering of verts starts by 0 (C-Style)
-               ncon    = 1,                 // one weight per vertex
-               nparts  = DynamicDataInterfaceCL::InfoProcs();   // number of subdomains (per proc one)
-        float *tpwgts  = new float[nparts], // weight of partition
-               itr     = quality_,          // how much an exchange costs
-               ubvec   = GetGraph().ubvec;  // imbalace tolerance for eacht vertex weight
-        int* options = new int[4];
-    //     options[0]=1; options[1]=3; options[2]=15, options[3]=1;    // display times within parmetis
-        options[0]=0;                                               // no options for parmetis
+    int    wgtflag = 3,                 // Weights on vertices and adjacencies are given
+           numflag = 0,                 // numbering of verts starts by 0 (C-Style)
+           nparts  = ProcCL::Size(),    // number of subdomains (per proc one)
+           options[5] = {0,0,0,0,0};    // default options and no debug information
+    float  itr     = quality_;          // how much an exchange costs
+    std::valarray<float> ubvec( GetGraph().ubvec, GetGraph().ncon); // allowed inbalance
+    std::valarray<float> tpwgts( 1.f/(float)nparts, GetGraph().ncon*ProcCL::Size());
 
-        if ((meth_ == KWay) || (meth_ == Adaptive))
-            std::fill(tpwgts, tpwgts+nparts, 1.f/(float)nparts);
-        if (GetGraph().part == 0)
-            GetGraph().part = new idxtype[GetGraph().myVerts];
-        if (meth_ == Identity)
-            std::fill(GetGraph().part, GetGraph().part+GetGraph().myVerts, ProcCL::MyRank());
+    if (GetGraph().part == 0)
+        GetGraph().part = new idxtype[GetGraph().myVerts];
+    if (meth_ == Identity)
+        std::fill(GetGraph().part, GetGraph().part+GetGraph().myVerts, ProcCL::MyRank());
 
-        MPI_Comm comm = MPI_COMM_WORLD;
-        //Depending on the method choosen Adaptive, KWay or Identity the apropiate parmetis function is called
-        switch (meth_)
-        {       
-            case Adaptive:
+    MPI_Comm comm = MPI_COMM_WORLD;
+    //Depending on the method choosen Adaptive, KWay or Identity the apropiate parmetis function is called
+    switch (meth_)
+    {       
+        case Adaptive:
             ParMETIS_V3_AdaptiveRepart(
                     GetGraph().vtxdist, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().vwgt,
-                    GetGraph().adjwgt, &wgtflag, &numflag, &ncon, &nparts,tpwgts,
-                    &ubvec, &itr, options, &GetGraph().edgecut, GetGraph().part, &comm);break;
-            case KWay:
+                    GetGraph().adjwgt, &wgtflag, &numflag, &GetGraph().ncon, &nparts, Addr(tpwgts),
+                    Addr(ubvec), &itr, options, &GetGraph().edgecut, GetGraph().part, &comm);
+            break;
+        case KWay:
             ParMETIS_V3_PartKway(
-            GetGraph().vtxdist, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt,
-            &wgtflag, &numflag, &ncon, &nparts,
-            tpwgts, &ubvec,0 /*options*/,
-            &GetGraph().edgecut, GetGraph().part, &comm);break;
-            case Identity:break;
-            case Recursive:break;
-            case NoMig:break;
-        }
-
-        if ((meth_ == KWay) || (meth_ == Adaptive))
-        delete[] tpwgts;
-        delete[] options;
+                    GetGraph().vtxdist, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt,
+                    &wgtflag, &numflag, &GetGraph().ncon, &nparts, Addr(tpwgts), Addr(ubvec), options,
+                    &GetGraph().edgecut, GetGraph().part, &comm);
+            break;
+        case Identity:
+            break;
+        case Recursive:
+            break;
+        case NoMig:
+            break;
+        default:
+            throw DROPSErrCL("ParMetisCL::PartGraphPar: Unknown partitioning method");
+    }
 }
 //end of the implementations of the methods in the derived class ParMetisCL (parent PartitionerCL)
 //================================================================================================
@@ -455,7 +477,7 @@ void ZoltanCL::PartGraphPar()
 {
     Comment("- Start calculate LoadBalanace with Zoltan-Repartition"<<std::endl,DebugLoadBalC);
 
-    Assert( GetGraph().xadj && GetGraph().adjncy_ && GetGraph().vwgt && GetGraph().adjwgt,
+    Assert( GetGraph().xadj && GetGraph().adjncy && GetGraph().vwgt && GetGraph().adjwgt,
             DROPSErrCL("LoadBalCL::PartGraphPar: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
             DebugLoadBalC);
     int i;

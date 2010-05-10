@@ -115,19 +115,20 @@ class LbIteratorCL
 class LoadBalCL
 {
   public:
-    typedef idxtype* IndexArray;                            ///< type of an array of indices
+    typedef void (*weight_function)(const TetraCL&, size_t&, const int);
 
   private:
     typedef std::map<idxtype, Uint> GraphEdgeCT;            // Type that descriebs an edge of the dual, reduced graph: GraphEdgeCT->first: neibhbor, GraphEdgeCT->second: weight
     typedef std::set<idxtype>       GraphNeighborCT;        // Set of neighbors of a node
 
-    MultiGridCL    *mg_;                                    // Pointer to the multigrid
-    PartitionerCL*  partitioner_;
+    MultiGridCL                   *mg_;                     // Pointer to the multigrid
+    PartitionerCL*                partitioner_;             // Pointer to a graph partitioner
     std::vector<const IdxDescCL*> idx_;                     // information about unknowns
-    Uint static    TriangLevel_;                            // Triangulation level, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
-    static idxtype* myfirstVert_;                           // first vertex on this proc (static for HandlerGather!)
-    static IFT FaceIF_;                                     // Interface, for compute the adjacencies over Proc-Boundaries
-    bool           useUnkInfo_;                             // Use information about unknowns for load balancing
+    const VecDescCL*              lset_;                    // Eventually use information about interface for loadbalancing
+    Uint static                   TriangLevel_;             // Triangulation level, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
+    static idxtype*               myfirstVert_;             // first vertex on this proc (static for HandlerGather!)
+    static IFT                    FaceIF_;                  // Interface, for compute the adjacencies over Proc-Boundaries
+    bool                          useUnkInfo_;              // Use information about unknowns for load balancing
 
     void InitIF();                                          // Init the Interfaces
     static void CommunicateAdjacency();                     // Communicate the adjacencies over proc boundaries
@@ -138,10 +139,23 @@ class LoadBalCL
 
     Uint EstimateAdj();                                     // compute the number of adjacencies on this proc
     std::set<IdxT> UnkOnTetra(const TetraCL&) const;        // get set of unknowns on a tetra
-    Uint GetWeight(const TetraCL&) const;                   // get wheight on a tetra
-    Uint AdjUnrefined( TetraCL&, int&);                     // Set up adjacenzies and weights for a unrefined tetra of LoadBalSet
-    Uint AdjRefined  ( TetraCL&, int&);                     // Set up adjacenzies and weights for a refined tetra of LoadBalSet
+    void AdjUnrefined( TetraCL&, int&, size_t&);            // Set up adjacenzies and weights for a unrefined tetra of LoadBalSet
+    void AdjRefined  ( TetraCL&, int&, size_t&);            // Set up adjacenzies and weights for a refined tetra of LoadBalSet
 
+    bool CheckForLsetUnk( const TetraCL& t) const{
+        const Uint idx= lset_->RowIdx->GetIdx();
+        for ( TetraCL::const_VertexPIterator sit=t.GetVertBegin(); sit!=t.GetVertEnd(); ++sit){
+            if ( !(*sit)->Unknowns.Exist(idx))
+                return false;
+        }
+        for ( TetraCL::const_EdgePIterator sit= t.GetEdgesBegin(); sit!=t.GetEdgesEnd(); ++sit){
+            if ( !(*sit)->Unknowns.Exist(idx))
+                return false;
+        }
+        return true;
+    }
+    void GetWeightRef( const TetraCL&, size_t& wgtpos);
+    void GetWeightLset( const TetraCL&, size_t& wgtpos);
 
   public:
     LoadBalCL(MultiGridCL&, int TriLevel=-1, PartMethod meth = KWay );// Constructor
@@ -160,6 +174,9 @@ class LoadBalCL
 
     void  Append(const IdxDescCL* id) { idx_.push_back(id); useUnkInfo_=true; }     ///< Set information about unknown type
     void  RemoveIdx() {idx_.clear(); useUnkInfo_=false;}
+
+    void SetLset( const VecDescCL& lset) { lset_=&lset; }
+    void RemoveLset() { lset_=0; } 
 
     ///\name for debug purpose
     //{@
@@ -210,6 +227,7 @@ class LoadBalHandlerCL
     LoadBalHandlerCL(const MGBuilderCL&, int master, PartMethod meth=KWay, bool geom=true, bool debug=false);
     /// \brief Destructor, that frees the memory of the LoadBalCL
     ~LoadBalHandlerCL();
+    void SetLset( const VecDescCL& lset) { lb_->SetLset(lset); }
 
     /// \brief Do a complete migration
     void DoMigration();
@@ -306,7 +324,7 @@ LbIteratorCL LbIteratorCL::operator ++ (int)
 /// \brief Get the number of all nodes, that this class has numbered
 int LoadBalCL::GetNumAllVerts() const
 {
-    Assert(vtxdist_,
+    Assert( partitioner_->GetGraph().vtxdist,
            DROPSErrCL("LoadBalCL::GetNumAllVerts: Graph has not been set up"),
            DebugLoadBalC);
 

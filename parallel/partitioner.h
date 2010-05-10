@@ -70,29 +70,36 @@ struct GraphST
                    adjwgt,                                      ///< weight of the edges
                    part;                                        ///< resulting array, where each node should be send to
     float          ubvec;                                       ///< quality of graph partitioning
-    float*         xyz;                                         ///< geometric information about the nodes (==barymetric Center of the Tetras)
+    float*         xyz;                                         ///< geometric information about the nodes (==barycenter of the Tetras)
     int            myVerts;                                     ///< number of vertices on this proc
     int            myAdjs;                                      ///< number of Adjacencies
     int            edgecut;                                     ///< number of edges, that are cut by ParMETIS
     int            movedMultiNodes;                             ///< number of multinodes, that are moved by last migration
     bool           geom;                                        ///< flag, that indicates, if the geometrical datas should be used
     idxtype        myfirstVert;                                 ///< first vertex # on the current proc
-    GraphST():xadj(0), adjncy(0), vtxdist(0), vwgt(0), adjwgt(0), part(0), xyz(0), myVerts(0), myAdjs(0),edgecut(0), movedMultiNodes(0),geom(0), myfirstVert(0){} ///< constructor
+    int            ncon;                                        ///< number of balance conditions, i.e., number of weights per vertex
+
+    GraphST()                                                   ///< Constructor generates an non-initialized graph
+        : xadj(0), adjncy(0), vtxdist(0), vwgt(0), adjwgt(0), part(0), 
+          xyz(0), myVerts(0), myAdjs(0),edgecut(0), movedMultiNodes(0),
+          geom(0), myfirstVert(0), ncon(1) {} ///< constructor
     ~GraphST();                                                 ///< destructor
-    void Resize (int numadj, int myVerts, bool geom);           ///< The next method will allocate memory for most of the arrays in the struct
+    void Resize (int numadj, int numverts, bool hasgeom, int numncon); ///< The method will allocate memory for most of the arrays in the struct
     void ResizeVtxDist();
     void Clear();                                               ///< Liberating the memory used for storing the arrays in the struct
 
-    int GetProc(int globalid)
-    {
-       int i;
-       for (i=0;i< ProcCL::Size();i++)
-               if ( (globalid>=vtxdist[i]) && (globalid<vtxdist[i+1]) )
-                   return i;
-       throw DROPSErrCL("GraphST::GetProc: Wrong node id");
-       return -1;
-    }
+    inline int GetProc(idxtype);                                ///< Get the process storing a given vertex
 };
+
+inline int GraphST::GetProc(idxtype globalid)
+{
+    int i;
+    for (i=0;i< ProcCL::Size();i++)
+        if ( (globalid>=vtxdist[i]) && (globalid<vtxdist[i+1]) )
+            return i;
+    throw DROPSErrCL("GraphST::GetProc: Wrong node id");
+    return -1;
+}
 
 /// \brief Abstract partitioner class. Through the factory design pattern it will be inherited by different
 ///  partitioners
