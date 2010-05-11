@@ -441,7 +441,8 @@ public:
         { IncrementVersion(); _rows=rows; _cols=cols; _rowbeg.resize(rows+1); _colind.resize(nz); _val.resize(nz); }
     void clear() { resize(0,0,0); }
 
-    VectorBaseCL<T> GetDiag() const;
+    VectorBaseCL<T> GetDiag()       const;
+    VectorBaseCL<T> GetLumpedDiag() const;
 
     void permute_rows (const PermutationT&);
     void permute_columns (const PermutationT&);
@@ -493,6 +494,21 @@ VectorBaseCL<T> SparseMatBaseCL<T>::GetDiag() const
     VectorBaseCL<T> diag(n);
     for (size_t i=0; i<n; ++i)
         diag[i] = (*this)(i,i);
+    return diag;
+}
+
+template <typename T>
+VectorBaseCL<T> SparseMatBaseCL<T>::GetLumpedDiag() const
+{
+    const size_t n=num_rows(),
+        nnz=num_nonzeros();
+    Assert(n==num_cols(), "SparseMatBaseCL::GetLumpedDiag: no square Matrix", DebugParallelC);
+    VectorBaseCL<T> diag(n);
+    for (size_t r= 0, nz= 0; nz < nnz; ++r)
+        for (; nz < _rowbeg[ r + 1]; ++nz) {
+            const double v= _val[nz];
+            diag[r]+= std::abs(v);
+        }
     return diag;
 }
 
