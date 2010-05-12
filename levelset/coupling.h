@@ -249,7 +249,7 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     ~CoupledTimeDisc2PhaseBaseCL();
 
     void DoStep( int maxFPiter= -1);
-    void SetRelative( bool rel) { relative_ = rel; }
+    void SetRelative( bool rel) { relative_ = rel; solver_.SetRelError( rel); }
 
     virtual void Update();
 };
