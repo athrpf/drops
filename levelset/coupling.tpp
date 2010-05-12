@@ -1216,8 +1216,10 @@ template< template<class, class, class> class BaseMethod, class StokesT, class L
 CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::CrankNicolsonScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double nonlinear, bool withProjection, double stab, bool relative)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab, relative), step_(1)
-{}
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab, false), step_(1)
+{
+    base_::SetRelative( relative);
+}
 
 template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
 CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::~CrankNicolsonScheme2PhaseCL()

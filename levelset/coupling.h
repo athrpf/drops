@@ -193,61 +193,11 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
     void Update();
 };
 
-/// \brief Compute the relaxation factor in RecThetaScheme2PhaseCL by Aitken's delta-squared method.
-///
-/// This vector version of classical delta-squared convergence-acceleration computes the
-/// relaxation factor in span{ (v, phi)^T}.
-class cplDeltaSquaredPolicyCL
-{
-  private:
-    VectorCL v_old_, v_diff_;
-    double   omega_;
-    bool     firststep_;
-    std::ostream* output_;
 
-  public:
-    cplDeltaSquaredPolicyCL( std::ostream* output = 0) :
-        omega_( 1.0), firststep_( true), output_( output) {}
-
-    inline void Update( VecDescCL& v);
-};
-
-/// \brief Always uses 1 as relaxation factor in RecThetaScheme2PhaseCL
-class cplFixedPolicyCL
-{
-  private:
-    std::ostream* output_;
-
-  public:
-    cplFixedPolicyCL (std::ostream* output = 0) : output_( output) {}
-    inline void Update (const VecDescCL&) {}
-};
-
-/// \brief Broyden method for nonlinear system (velocity - levelset)
-///
-/// Deuflhard: Newton Methods for Nonlinear Problems,
-/// Affine Invariance and Adaptive Algorithms, pp 81-90
-class cplBroydenPolicyCL
-{
-  private:
-    double thetamax_;
-    double kappamax_;
-    double sigma0_, sigma_;
-    double kappa_;
-    bool   firststep_;
-    double tol_;
-    std::ostream* output_;
-
-    typedef std::vector<VectorCL> VecValueT;
-
-    VecValueT F1_, F2_, deltaF1_, deltaF2_;
-    std::vector<double> gamma_;
-
-  public:
-    cplBroydenPolicyCL (std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), sigma_( -1.), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
-
-    inline void Update( VecDescCL&);
-};
+//forward declarations
+class cplDeltaSquaredPolicyCL;
+class cplFixedPolicyCL;
+class cplBroydenPolicyCL;
 
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
 class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
@@ -299,6 +249,7 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     ~CoupledTimeDisc2PhaseBaseCL();
 
     void DoStep( int maxFPiter= -1);
+    void SetRelative( bool rel) { relative_ = rel; }
 
     virtual void Update();
 };
@@ -678,6 +629,63 @@ const double Frac2StepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, Relaxatio
 template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
 const double Frac2StepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::theta_[2]
   = { 1.0, 1.0 - std::sqrt( 0.5) };
+
+/// \brief Compute the relaxation factor in RecThetaScheme2PhaseCL by Aitken's delta-squared method.
+///
+/// This vector version of classical delta-squared convergence-acceleration computes the
+/// relaxation factor in span{ (v, phi)^T}.
+class cplDeltaSquaredPolicyCL
+{
+  private:
+    VectorCL v_old_, v_diff_;
+    double   omega_;
+    bool     firststep_;
+    std::ostream* output_;
+
+  public:
+    cplDeltaSquaredPolicyCL( std::ostream* output = 0) :
+        omega_( 1.0), firststep_( true), output_( output) {}
+
+    inline void Update( VecDescCL& v);
+};
+
+/// \brief Always uses 1 as relaxation factor in RecThetaScheme2PhaseCL
+class cplFixedPolicyCL
+{
+  private:
+    std::ostream* output_;
+
+  public:
+    cplFixedPolicyCL (std::ostream* output = 0) : output_( output) {}
+    inline void Update (const VecDescCL&) {}
+};
+
+/// \brief Broyden method for nonlinear system (velocity - levelset)
+///
+/// Deuflhard: Newton Methods for Nonlinear Problems,
+/// Affine Invariance and Adaptive Algorithms, pp 81-90
+class cplBroydenPolicyCL
+{
+  private:
+    double thetamax_;
+    double kappamax_;
+    double sigma0_, sigma_;
+    double kappa_;
+    bool   firststep_;
+    double tol_;
+    std::ostream* output_;
+
+    typedef std::vector<VectorCL> VecValueT;
+
+    VecValueT F1_, F2_, deltaF1_, deltaF2_;
+    std::vector<double> gamma_;
+
+  public:
+    cplBroydenPolicyCL (std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), sigma_( -1.), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
+
+    inline void Update( VecDescCL&);
+};
+
 
 } // end of namespace DROPS
 
