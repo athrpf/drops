@@ -64,7 +64,7 @@ class ParamVTKCL : public virtual ParamBaseCL
     int    vtk_VTKOut;                           ///< VTK output
     string vtk_VTKDir;                           ///< local directory for vtk files
     string vtk_VTKName;                          ///< name of vtk files
-    int    vtk_Binary;                           ///< write out ensight files in binary format
+    int    vtk_Binary;                           ///< write out VTK files in binary format
   //@}
 
   public:
@@ -122,9 +122,9 @@ class ParamMGSerCL : public virtual ParamBaseCL
   /// \name (de-)serialization of a multigrid
   //@{
     int    rst_Serialization;                 ///< Perform serialization
-    int    rst_Overwrite;                     ///< Overwrite old output-files or create new for every step.
+    int    rst_Overwrite;                     ///< Overwrite old output-files or create new for every step
 
-    string rst_Outputfile,                    ///< writes multigrid to serialisation files, special value "none" to ignore
+    string rst_Outputfile,                    ///< writes multigrid to serialisation files
            rst_Inputfile;                     ///< reads multigrid from deserialization files, special value "none" to ignore
   //@}
 
@@ -184,11 +184,11 @@ class ParamStokesCL : public virtual ParamBaseCL
   public:
   /// \name parameter for the Stokes equation
   //@{
-    int    stk_StokesMethod;                      ///< solver for the Stokes problems
-    double stk_InnerTol,                          ///< tolerance for Stokes solver
-           stk_OuterTol;
-    int    stk_InnerIter,                         ///< max. number of iterations for Stokes solver
-           stk_OuterIter;
+    int    stk_StokesMethod;                      ///< see num/stokessolverfactory.h for details
+    double stk_InnerTol,                          ///< inner reduction/tolerance for InexactUzawa
+           stk_OuterTol;                          ///< stopping criterion for the outer iteration
+    int    stk_InnerIter,                         ///< max number of iterations of the inner solver
+           stk_OuterIter;                         ///< max number of iterations of the outer solver
     int    stk_PcAIter;                           ///< max. number of iterations for the preconditionier
     double stk_PcATol,                            ///< tolerance for the preconditioner of A-block
            stk_PcSTol;                            ///< tolerance for the preconditioner of Schur complement
@@ -208,7 +208,7 @@ class ParamAdaptRefCL : public virtual ParamBaseCL
     void RegisterParams();
 
   public:
-  /// \name reparametrize level-set function
+  /// \name parameter for the adaptive refinement
   //@{
     int    ref_Freq;               ///< number of timesteps before adaptive refinement
     int    ref_FinestLevel;        ///< finest level in the near of the phase boundary
@@ -252,7 +252,7 @@ class ParamTimeDiscCL : public virtual ParamBaseCL
   //@{
     double tm_StepSize;                            ///< time step size
     int    tm_NumSteps;                            ///< number of timesteps
-    int    tm_Scheme;                              ///< 1=lintheta-scheme, 2=rectheta-scheme, 3=theta-scheme, 4=operator splitting, 5=crank-nicolson-scheme
+    int    tm_Scheme;                              ///< time integration scheme, see mzelle_hdr.h::CreateTimeDisc(...) for details
   //@}
   public:
     ParamTimeDiscCL()                        { RegisterParams(); }
@@ -400,7 +400,7 @@ class ParamSurfactantTransportCL : public virtual ParamBaseCL
   public:
   ///\name Surfactant Transport
   //@{
-    int    surf_DoTransp;  ///< surfactant transport on (1) or off (0) 0.5=CrankNicholson
+    int    surf_DoTransp;  ///< surfactant transport on (1) or off (0)
     double surf_Theta;     ///< 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
     int    surf_Iter;      ///< iterations of solver for surfactant equation
     double surf_Tol;       ///< tolerance of solver for surfactant equation
