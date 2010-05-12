@@ -1,172 +1,167 @@
 #=============================================================
-#    DROPS parameter file
+#    DROPS parameter file for prJump
 #    simulation of two-phase flow:
 #    study effect of pressure jump for different FE spaces
 #=============================================================
 
 # time stepping
 Time {
-  NumSteps	=	0
-  StepSize	=	1e-4
-  Scheme        =       0       # no effect
+    NumSteps      = 0         # no effect
+    StepSize      = 0         # no effect
+    Scheme        = 0         # no effect
 }
 
 # flow solver
 Stokes {
-  StokesMethod	=	20304
-  InnerIter	=	1000
-  OuterIter	=	100
-  InnerTol	=	0.6
-  OuterTol	=	1e-6
-  PcAIter	=       100
-  PcATol	=	1e-2
-  PcSTol	=	1e-2
-  XFEMStab      =       1e-1
-  Theta         =       1       # no effect
+    StokesMethod  = 20303     # see num/stokessolverfactory.h for details
+    InnerIter     = 1000      # max number of iterations of the inner solver
+    OuterIter     = 100       # max number of iterations of the outer solver
+    InnerTol      = 0.6       # inner reduction/tolerance for InexactUzawa
+    OuterTol      = 1e-6      # stopping criterion for the outer iteration
+    PcAIter       = 100       # V-cycles multigrid, iter pc for A block
+    PcATol        = 1e-2      # abs. resid for multigrid, otherwise rel. resid
+    PcSTol        = 1e-2      # resid for schur complememt preconditioner
+    XFEMStab      = 0.1       # threshold for discarding ext. dofs parameter, default 0.1
+    Theta         = 1         # no direct effect, scaling factor of the preconditioner
+}
 
+NavStokes {
+    Nonlinear     = 0         # no effect
+    Tol           = 0         # no effect
+    Iter          = 0         # no effect
+    Reduction     = 0         # no effect
 }
 
 # levelset solver
 Levelset {
-  Tol		=	1e-14
-  Iter		=	10000
-  SD		=	0
-  CurvDiff	=	-5e-9
-  VolCorrection	=	0
-  Theta         =       1       # no effect
-
+    Tol           = 0         # no effect
+    Iter          = 0         # no effect
+    SD            = 0         # no effect
+    CurvDiff      = 0         # no effect
+    VolCorrection = 0         # no effect
+    Theta         = 0         # no effect
 }
 
 Coupling {
-  Tol 		= 	1
-  Iter 		= 	-1 	# = till convergence
-  Stab		=	0.0     # Laplace-Beltrami-Stabilization
-  Projection	=	0	# 1 = Perform a projection step before FP
-}
-
-NavStokes {
-  Nonlinear	=	0
-  Tol           =       5e-10
-  Iter          =       20
-  Reduction     =       0.1
+    Tol           = 0         # no effect  
+    Iter          = 0         # no effect  
+    Stab          = 0         # no effect  
+    Projection    = 0         # no effect  
 }
 
 # re-initialization of levelset function
 Reparam {
-  Method    = 03    # see ReparamFactorCL for documentation
-  Freq		=	0	# 0 = no reparametrization
-  MinGrad	=	0.1     # no effect
-  MaxGrad	=	10	# no effect
-  NarrowBand    =       -1.0    # Narrow-Band method, if euclidian reparametrization is used
-}
-
-# material data, all units are SI
-Mat {
-  DensDrop	=	1
-  ViscDrop	=	1
-  DensFluid	=	1
-  ViscFluid	=	1
-  SmoothZone	=	1e-5
-}
-
-# experimental conditions
-Exp {
-# Gamma 1
-#  RadDrop = 0 0 0
-#  PosDrop = 0 0 -1
-
-#  Gamma 2
-#  RadDrop = 0 0 0
-#  PosDrop = 0 -1 -1
-
-#  static Bubble
-  RadDrop	= 0.6666666 0.6666666 0.6666666
-  PosDrop	= 0 0 0
-
-  Gravity	=	0	0	0
-
-  FlowDir	=	1	# no effect
-
-  InflowVel	=	-0.14	# no effect
-  RadInlet	=	3.5e-3	# no effect
-  InflowFreq	=	0	# no effect
-  InflowAmpl	=	0	# no effect
+    Freq          = 0         # no effect
+    Method        = 0         # no effect
+    MinGrad       = 0         # no effect
+    MaxGrad       = 0         # no effect
+    NarrowBand    = 0         # no effect
 }
 
 # adaptive refinement
 AdaptRef {
-  Freq		=	0	# no effect
-  FinestLevel	=	2
-  CoarsestLevel =       0
-  Width		=	1e-8
-  RefineStrategy=  1
+    Freq          = 0         # no effect
+    FinestLevel   = 2         # finest level in the near of the phase boundary
+    CoarsestLevel = 0         # coarsest level in the near of the phase boundary
+    Width         = 1.0e-8    # domain of refinement
+    RefineStrategy= 0         # no effect
+}
+
+# material data, all units are SI
+Mat {
+    DensDrop      = 1
+    ViscDrop      = 1
+    DensFluid     = 1
+    ViscFluid     = 1
+    SmoothZone    = 1e-5
+}
+
+# experimental conditions
+Exp {
+    # Gamma 1
+    #  RadDrop    = 0 0 0
+    #  PosDrop    = 0 0 -1
+    
+    #  Gamma 2
+    #  RadDrop    = 0 0 0
+    #  PosDrop    = 0 -1 -1
+    
+    #  static Bubble
+    RadDrop       = 0.6666666 0.6666666 0.6666666  # radii of the ellipsoidal droplet
+    PosDrop       = 0 0 0                          # position of the droplet
+    Gravity       = 0 0 0                          # no effect
+    FlowDir       = 0                              # no effect 
+    InflowVel     = 0                              # no effect
+    RadInlet      = 0                              # no effect
+    InflowFreq    = 0                              # no effect
+    InflowAmpl    = 0                              # no effect
 }
 
 # surface tension
 SurfTens {
-  VarTension	=	0	# no effect
-  SurfTension	=	1
-  JumpWidth	=	5e-4    # no effect
-  RelPos	=	1.5	# no effect
-  DirtFactor	=	0.8	# no effect
+    VarTension    = 0         # no effect
+    SurfTension   = 0         # no effect
+    JumpWidth     = 0         # no effect
+    RelPos        = 0         # no effect
+    DirtFactor    = 0         # no effect
 }
 
 # mass transport
 Transp {
-  DoTransp	=	1	# no effect
-  Theta		=	0.5	# no effect
-  Iter		=	200	# no effect
-  Tol		=	1e-10	# no effect
-  DiffPos	=	5e-3	# no effect
-  DiffNeg	=	1e-2	# no effect
-  H		=	0.5	# no effect
-  IniCPos	=	0.1	# no effect
-  IniCNeg	=	5	# no effect
-  NitschePenalty        = 0     # no effect
-  NitscheXFEMStab       = 0     # no effect
+    DoTransp      = 0         # no effect
+    Theta         = 0         # no effect
+    Iter          = 0         # no effect
+    Tol           = 0         # no effect
+    DiffPos       = 0         # no effect
+    DiffNeg       = 0         # no effect
+    H             = 0         # no effect
+    IniCPos       = 0         # no effect
+    IniCNeg       = 0         # no effect
+    NitschePenalty  =  0      # no effect
+    NitscheXFEMStab =  0      # no effect
 }
 
 # surfactant transport
 SurfTransp {
-  DoTransp      = 0         # no effect
-  Theta         = 0.5       # no effect
-  Iter          = 1000      # no effect
-  Tol           = 1e-10     # no effect
-  OmitBound     = -1.       # no effect
-  Visc          = 1e-5      # no effect
+    DoTransp      = 0         # no effect
+    Theta         = 0         # no effect
+    Iter          = 0         # no effect
+    Tol           = 0         # no effect
+    OmitBound     = 0         # no effect
+    Visc          = 0         # no effect
 }
 
 # Ensight settings
 Ensight {
-  EnsightOut    =       1
-  EnsCase       =       prJump
-  EnsDir        =       ensight
-  Binary        =       1
-  MasterOut     =       1
-  GeomName      =       Cube
+    EnsightOut    = 1         # Ensight output
+    EnsCase       = prJump    # name of Ensight case
+    EnsDir        = ensight   # local directory for Ensight files
+    Binary        = 0         # 1 = binary output, 0 = ascii output
+    MasterOut     = 1         # only master writes out ensight files
+    GeomName      = Cube      # name for the geometry
 }
 
 #VTK output
 VTK{
-  VTKOut        = 0
-  VTKDir        = vtk
-  VTKName       = prJump
-  Binary        = 0
+    VTKOut        = 0         # no effect
+    VTKDir        = 0         # no effect
+    VTKName       = 0         # no effect
+    Binary        = 0         # no effect
+}
+
+# Write out results, read in for restart
+Restart {
+    Serialization = 0         # no effect
+    Overwrite     = 0         # no effect
+    Inputfile     = 0         # no effect
+    Outputfile    = 0         # no effect
 }
 
 # domain, bnd/ini conditions
 DomainCond {
-  InitialCond   =       1       # 0=zero, 1/2=flow with/without drop, -1=read from file
-  GeomType      =       0       # no effect
-  InitialFile   =       xxx
-  MeshFile      =       4       # num subdivisions of cube
-  BoundaryType  =       0       # no effect
-}
-
-# restart computation
-Restart {
-  Inputfile     =       none    # no effect
-  Outputfile    =       none    # no effect
-  Overwrite     =       1       # no effect
-  Serialization =       1       # no effect
+    InitialCond   = 1         # 1=solve stationary problem for initial velocities, 2=solve initial velocities for given pressure field
+    GeomType      = 0         # no effect
+    InitialFile   = 0         # no effect
+    MeshFile      = 4         # number of subdivisions
+    BoundaryType  = 0         # no effect
 }
