@@ -264,6 +264,7 @@ OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::OperatorSplitting2PhaseCL
     cplA_( new VelVecDescCL), old_cplA_( new VelVecDescCL),
     alpha_( (1.0 - 2.0*stk_theta_)/(1.0 - stk_theta_))
 {
+    throw DROPSErrCL("OperatorSplitting2PhaseCL: Not correctly implemented, yet");
 #ifdef _PAR
     throw DROPSErrCL("OperatorSplitting2PhaseCL: Not parallelized, yet, sorry");
 #endif
@@ -717,7 +718,7 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update(
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MidPointTimeDisc2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-            double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure, bool relative)
+            double tol, double nonlinear, bool withProjection, double stab, bool relative, bool implicitpressure)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab, relative),
     implicitpressure_( implicitpressure)
 {
@@ -823,7 +824,7 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevel
 template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
 SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SpaceTimeDiscTheta2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-            double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool implicitpressure, bool relative)
+            double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool relative, bool implicitpressure)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab, relative),  stk_theta_( stk_theta), ls_theta_( ls_theta),
     implicitpressure_( implicitpressure), Mold_( 0), Eold_( 0)
 {
@@ -1216,10 +1217,8 @@ template< template<class, class, class> class BaseMethod, class StokesT, class L
 CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::CrankNicolsonScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double nonlinear, bool withProjection, double stab, bool relative)
-  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab, false), step_(1)
-{
-    base_::SetRelative( relative);
-}
+  : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab, relative), step_(1)
+{}
 
 template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
 CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::~CrankNicolsonScheme2PhaseCL()

@@ -213,8 +213,8 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     using base_::curv_;    using base_::old_curv_;
     using base_::rhs_;
     using base_::ls_rhs_;
-    using base_::mat_;      // NavStokes Operator
-    using base_::L_;        // Levelset Operator
+    using base_::mat_;      // Navier-Stokes operator
+    using base_::L_;        // level set operator
     using base_::dt_;
     using base_::nonlinear_;
     using base_::cplLB_;
@@ -292,7 +292,7 @@ class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lset
   public:
     MidPointTimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double nonlinear = 1.0,
-                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false, bool relative= true);
+                              bool withProjection =  false, double stab = 0.0, bool relative= true, bool implicitpressure = false);
     ~MidPointTimeDisc2PhaseCL() {}
 
     void Update();
@@ -346,7 +346,7 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
   public:
     SpaceTimeDiscTheta2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
-                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false, bool relative= true);
+                              bool withProjection =  false, double stab = 0.0, bool relative= true, bool implicitpressure = false);
     ~SpaceTimeDiscTheta2PhaseCL();
 
     void Update();
