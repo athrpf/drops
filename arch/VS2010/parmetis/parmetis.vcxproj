@@ -300,7 +300,6 @@
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\lmatch.c" />
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\match.c" />
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mdiffusion.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mdrivers.c" />
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\memory.c" />
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mesh.c" />
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mmetis.c" />

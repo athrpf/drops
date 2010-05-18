@@ -102,9 +102,6 @@
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mdiffusion.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mdrivers.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
