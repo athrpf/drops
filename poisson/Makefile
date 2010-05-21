@@ -39,7 +39,8 @@ poissonP1:\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
-    ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o
+    ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o\
+    $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 	
 drops_statP2:\

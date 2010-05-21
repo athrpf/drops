@@ -89,20 +89,10 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL U;
 
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE)
-    {
-#ifdef _PAR
-        throw DROPSErrCL("This class has not been parallelized yet, sorry");
-#endif
-    }
+        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
 
     PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : _base( mg, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE)
-    {
-#ifdef _PAR
-        throw DROPSErrCL("This class has not been parallelized yet, sorry");
-#endif
-    }
+        : _base( mg, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, _MG, _BndData, match); }

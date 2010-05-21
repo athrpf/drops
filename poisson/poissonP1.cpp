@@ -52,6 +52,17 @@
 //include output
 #include "out/ensightOut.h"
 
+// include parallel computing!
+#ifdef _PAR
+#include "parallel/parallel.h"          // proc handling, reduce operations, ...
+#include "parallel/partime.h"           // parallel time-messurement
+#include "parallel/parmultigrid.h"      // handle multigrid over different procs
+#include "parallel/loadbal.h"           // distribute multigrid
+#include "num/parsolver.h"              // various parallel solvers
+#include "num/parprecond.h"             // various parallel preconditioners
+#endif
+
+
 using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
@@ -209,14 +220,27 @@ double Heat(const DROPS::Point3DCL&, double) { return C.exp_Heat/C.exp_Lambda*1e
 template<class CoeffCL, class SolverT, class ParamsT>
 void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& param)
 {
-	TimerCL timer;
-	timer.Start();
-	if ( !param.err_DoErrorEstimate) {
+    // time measurements
+#ifndef _PAR
+    TimerCL timer;
+    const bool doErrorEstimate= param.err_DoErrorEstimate;
+#else
+    const bool doErrorEstimate= false;
+    if (param.err_DoErrorEstimate)
+        std::cout << "Skipping Error-Estimation ..." << std::endl;
+    ParTimerCL timer;
+#endif
+
+	if ( !doErrorEstimate) {
         Poisson.SetupSystem( Poisson.A, Poisson.b);
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
         timer.Stop();
+#ifndef _PAR
         double realresid = norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data));
+#else
+        double realresid = Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data), false);
+#endif
         std::cout << " o Solved system with:\n"
                   << "   - time          " << timer.GetTime()   << " s\n"
                   << "   - iterations    " << solver.GetIter()  << '\n'
@@ -314,8 +338,12 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
 template<class CoeffCL>
 void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 {
-    // time measurement
+    // time measurements
+#ifndef _PAR
     TimerCL timer;
+#else
+    ParTimerCL timer;
+#endif
 
     // the triangulation
     MultiGridCL& mg= Poisson.GetMG();
@@ -341,7 +369,22 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     // display problem size
     // -------------------------------------------------------------------------
-    std::cout << line << "Problem size\no number of unknowns             " << Poisson.x.Data.size() << std::endl;
+    std::cout << line << "Problem size\n";
+#ifdef _PAR
+    std::vector<size_t> UnkOnProc= ProcCL::Gather( Poisson.x.Data.size(), 0);
+    const IdxT numUnk   = Poisson.idx.GetGlobalNumUnknowns( mg),
+               numAccUnk= std::accumulate(UnkOnProc.begin(), UnkOnProc.end(), 0);
+#else
+    std::vector<size_t> UnkOnProc( 1);
+    UnkOnProc[0]  = Poisson.x.Data.size();
+    IdxT numUnk   = Poisson.x.Data.size(),
+         numAccUnk= Poisson.x.Data.size();
+#endif
+    std::cout << " o number of unknowns             " << numUnk    << '\n'
+              << " o number of accumulated unknowns " << numAccUnk << '\n'
+              << " o number of unknowns on proc\n";
+    for (size_t i=0; i<UnkOnProc.size(); ++i)
+        std::cout << " - Proc " << i << ": " << UnkOnProc[i]<< '\n';
 
     // discretize (setup linear equation system)
     // -------------------------------------------------------------------------
@@ -410,8 +453,19 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
 int main (int argc, char** argv)
 {
+#ifdef _PAR
+    DROPS::ProcInitCL procinit(&argc, &argv);
+    DROPS::ParMultiGridInitCL pmginit;
+#endif
     try
     {
+    // time measurements
+#ifndef _PAR
+        DROPS::TimerCL timer;
+#else
+        DROPS::ParTimerCL timer;
+#endif
+
         std::ifstream param;
     	if (argc!=2)
     	{
@@ -428,9 +482,6 @@ int main (int argc, char** argv)
     	param >> DROPS::C;
     	param.close();
     	std::cout << DROPS::C << std::endl;
-
-        // time measurement
-        DROPS::TimerCL timer;
 
         // set up data structure to represent a poisson problem
         // ---------------------------------------------------------------------
@@ -450,7 +501,14 @@ int main (int argc, char** argv)
 
         // Setup the problem
         DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(DROPS::C), *bdata);
-
+#ifdef _PAR
+        // Set parallel data structures
+        DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
+        pmg.AttachTo( *mg);                                  // handling of parallel multigrid
+        DROPS::LoadBalHandlerCL lb( *mg);                    // loadbalancing
+        lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
+        lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
+#endif
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -465,6 +523,10 @@ int main (int argc, char** argv)
             DROPS::MarkAll( *mg);
             mg->Refine();
         }
+        // do loadbalancing
+#ifdef _PAR
+        lb.DoMigration();
+#endif
 
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;

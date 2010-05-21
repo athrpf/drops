@@ -477,8 +477,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 
     const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
 
-    IF_MASTER
-        std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+    std::cout << "Difference to exact solution:" << std::endl;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
@@ -495,6 +494,9 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
         sum+= 2./15. * diff*diff;
         L2+= sum*absdet;
     }
+#ifdef _PAR
+    L2= ProcCL::GlobalSum(L2);
+#endif
     L2= std::sqrt(L2);
 
     for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
@@ -512,7 +514,11 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
     }
 
     int Lsize = lsg.Data.size();
-    L2= std::sqrt(L2);
+#ifdef _PAR
+    Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(_MG);
+    norm2   = ProcCL::GlobalSum(norm2, Drops_MasterC);
+    maxdiff = ProcCL::GlobalMax(maxdiff, Drops_MasterC);
+#endif
 
     std::cout << "  2-Norm= " << std::sqrt(norm2)
               << "\nw-2-Norm= " << std::sqrt(norm2/Lsize)
@@ -532,7 +538,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
 
   const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);
 
-  std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+  std::cout << "Difference to exact solution:" << std::endl;
 
   for (MultiGridCL::const_TriangTetraIteratorCL
     sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
@@ -552,6 +558,9 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
     sum+= 2./15. * diff*diff;
     L2+= sum*absdet;
   }
+#ifdef _PAR
+  L2= ProcCL::GlobalSum(L2);
+#endif
   L2= std::sqrt(L2);
 
   for (MultiGridCL::const_TriangVertexIteratorCL
@@ -576,7 +585,6 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   int Lsize = lsg.Data.size();
 #ifdef _PAR
   Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(_MG);
-  L2      = ProcCL::GlobalSum(L2, Drops_MasterC);
   norm2   = ProcCL::GlobalSum(norm2, Drops_MasterC);
   maxdiff = ProcCL::GlobalMax(maxdiff, Drops_MasterC);
 #endif
