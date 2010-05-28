@@ -100,7 +100,7 @@ Exp {
 # surface tension
 SurfTens {
     VarTension    = 0         # no effect
-    SurfTension   = 0         # no effect
+    SurfTension   = 1         # surface tension coefficient
     JumpWidth     = 0         # no effect
     RelPos        = 0         # no effect
     DirtFactor    = 0         # no effect
