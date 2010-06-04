@@ -272,19 +272,19 @@ TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, Levelse
         break;
         case 11 :
             return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1, relative_criterion));
         break;
         case 12 :
             return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1, relative_criterion));
         break;
         case 13 :
             return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1, relative_criterion));
         break;
         case 14 :
             return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
-                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, relative_criterion));
+                        (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1, relative_criterion));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");
     }

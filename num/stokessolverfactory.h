@@ -287,6 +287,9 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     ProlongationPT*   GetPPr();
     /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
+    
+    /// Returns a pointer to the used preconditioner for the instationary schur complement
+    SchurPreBaseCL* GetSchurPreBaseCLPtr();
 
     PVankaSmootherCL&      GetVankaSmoother () { return vankasmoother; }
     VankaSchurPreCL&       GetVankaSchurPc ()  { return vankaschurpc_; }
@@ -601,6 +604,17 @@ ProlongationVelT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prol
 }
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
+SchurPreBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetSchurPreBaseCLPtr()
+{
+    switch ( SPc_) {
+        case  1 : return &bbtispc_;
+        case  3 : return &isprepc_;
+        case  7 : return &ismgpre_;
+    }
+    return 0;
+}
+
+template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
 ProlongationPT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetPPr()
 {
     switch ( APc_) {
@@ -713,6 +727,8 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     ProlongationPT*   GetPPr()  { return 0; }
     /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
+    /// Returns a pointer to the schur complement preconditioner
+    SchurPreBaseCL* GetSchurPreBaseCLPtr() { return &bbtispc_; }
 };
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>

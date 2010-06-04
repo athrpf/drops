@@ -266,6 +266,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     // Time discretisation + coupling
     TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
+    timedisc->SetSchurPreBaseCLPointer( stokessolverfactory.GetSchurPreBaseCLPtr() );
     if (C.tm_NumSteps != 0) timedisc->SetTimeStep( C.tm_StepSize);
 
     if (C.ns_Nonlinear!=0.0 || C.tm_NumSteps == 0) {

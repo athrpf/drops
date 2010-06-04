@@ -60,6 +60,8 @@ class TimeDisc2PhaseCL
     VecDescCL    cplLB_;
     MLMatDescCL  LB_;
 
+    SchurPreBaseCL* ispc_;             // pointer to preconditioner for the schur complement
+
   public:
     TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double nonlinear=1.);
     virtual ~TimeDisc2PhaseCL();
@@ -83,6 +85,8 @@ class TimeDisc2PhaseCL
 
     // update after grid has changed
     virtual void Update() = 0;
+    
+    void SetSchurPreBaseCLPointer( SchurPreBaseCL* ptr) { ispc_ = ptr; }
 };
 
 template <class StokesT, class LsetSolverT>
@@ -117,9 +121,9 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 
   public:
     LinThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-    		                StokesSolverT& solver, LsetSolverT& lsetsolver,
-    		                LevelsetModifyCL& lsetmod, double stk_theta= 0.5, double ls_theta = 0.5,
-                            double nonlinear= 1., bool implicitCurv= false);
+                                StokesSolverT& solver, LsetSolverT& lsetsolver,
+                                LevelsetModifyCL& lsetmod, double stk_theta= 0.5, double ls_theta = 0.5,
+                                double nonlinear= 1., bool implicitCurv= false);
     ~LinThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites base-class-method
@@ -177,7 +181,7 @@ class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
 
   public:
     OperatorSplitting2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-    		StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear= 1);
+                                StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear= 1);
     ~OperatorSplitting2PhaseCL();
 
     void SetTimeStep( double dt) { base_::SetTimeStep(dt); }
@@ -356,6 +360,8 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
     }
     void SetTimeStep (double dt, double theta) { // for the fractional-step-method
         base_::SetTimeStep( dt);
+        if (base_::ispc_)
+            base_::ispc_->SetWeights(1.0/dt, theta);
         stk_theta_= theta;
         ls_theta_ = theta;
     }
@@ -464,9 +470,9 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
 
   public:
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-    		             StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-    		             double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
-                         bool withProjection= false, double stab= 0.0, bool relative= true);
+                             StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
+                             double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
+                             bool withProjection= false, double stab= 0.0, bool relative= true);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
@@ -474,6 +480,8 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
     }
     void SetTimeStep (double dt, double theta) { // for the fractional-step-method
         base_::SetTimeStep( dt);
+        if (base_::ispc_)
+            base_::ispc_->SetWeights(1.0/dt, theta);
         stab_ *= theta/stk_theta_;
         stk_theta_= theta;
         ls_theta_ = theta;
@@ -496,8 +504,8 @@ class CrankNicolsonScheme2PhaseCL: public BaseMethod<StokesT, LsetSolverT, Relax
 
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-    		             NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-    		             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
+                             NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
+                             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
     ~CrankNicolsonScheme2PhaseCL();
 
     void DoStep( int maxFPiter= -1);
@@ -520,8 +528,8 @@ class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxatio
 
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
-    	                       NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-    	                       double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1, bool relative= true)
+                               NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
+                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1, bool relative= true)
         : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab, relative), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
@@ -646,7 +654,7 @@ class cplDeltaSquaredPolicyCL
     cplDeltaSquaredPolicyCL( std::ostream* output = 0) :
         omega_( 1.0), firststep_( true), output_( output) {}
 
-    inline void Update( VecDescCL& v);
+    void Update( VecDescCL& v);
 };
 
 /// \brief Always uses 1 as relaxation factor in RecThetaScheme2PhaseCL
@@ -657,7 +665,7 @@ class cplFixedPolicyCL
 
   public:
     cplFixedPolicyCL (std::ostream* output = 0) : output_( output) {}
-    inline void Update (const VecDescCL&) {}
+    void Update (const VecDescCL&) {}
 };
 
 /// \brief Broyden method for nonlinear system (velocity - levelset)
@@ -683,7 +691,7 @@ class cplBroydenPolicyCL
   public:
     cplBroydenPolicyCL (std::ostream* output = 0) : thetamax_( 0.45), kappamax_(10000), sigma_( -1.), kappa_( 1.0), firststep_( true), tol_( 1e-99), output_( output) {}
 
-    inline void Update( VecDescCL&);
+    void Update( VecDescCL&);
 };
 
 

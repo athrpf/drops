@@ -40,7 +40,7 @@ lsshear: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
     ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o \
-    ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o
+    ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 surfTens: \
@@ -49,7 +49,7 @@ surfTens: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/MGsolver.o \
-    ../num/interfacePatch.o ../levelset/surfacetension.o
+    ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 prJump: \
@@ -58,7 +58,7 @@ prJump: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o \
     ../num/fe.o  ../out/ensightOut.o ../stokes/integrTime.o ../num/interfacePatch.o \
-    ../levelset/surfacetension.o
+    ../levelset/surfacetension.o ../levelset/coupling.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 film: \
@@ -67,7 +67,7 @@ film: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/interfacePatch.o \
-    ../levelset/surfacetension.o
+    ../levelset/surfacetension.o ../levelset/coupling.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 brick_transp: \
@@ -86,6 +86,6 @@ twophasedrops: \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
     ../num/interfacePatch.o ../out/vtkOut.o ../surfactant/ifacetransp.o ../levelset/surfacetension.o \
-    ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o $(PAR_OBJ)
+    ../geom/geomselect.o  ../levelset/twophaseutils.o ../num/hypre.o ../levelset/coupling.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 

@@ -260,7 +260,7 @@ PoissonSolverBaseCL* PoissonSolverFactoryCL<ParamsT, ProlongationT>::CreatePoiss
         case 200 : poissonsolver = new PoissonSolverCL<CGSolverT>( CGSolver_); break;
         case 202 : poissonsolver = new PoissonSolverCL<JacPCGSolverT>( JacPCGSolver_); break;
         case 300 : poissonsolver = new PoissonSolverCL<DummyGMResSolverT>( DummyGMResSolver_); break;
-		case 302 : poissonsolver = new PoissonSolverCL<JacGMResSolverT>( JacGMResSolver_);  break;
+        case 302 : poissonsolver = new PoissonSolverCL<JacGMResSolverT>( JacGMResSolver_);  break;
         case 400 : 
 #ifdef _HYPRE
             poissonsolver = new PoissonSolverCL<AMGSolverT>(   hypreAMG_); break;

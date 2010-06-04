@@ -181,6 +181,18 @@ template < template<class, class> class BaseMethod, class StokesT, class SolverT
 const double StokesFracStepSchemeCL<BaseMethod, StokesT, SolverT>::theta_[3]
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
 
+
+class SchurPreBaseCL
+{
+  protected:
+    double kA_,   ///< scaling factor for pressure stiffness matrix or equivalent
+           kM_;   ///< scaling factor for pressure mass matrix
+           
+  public:
+    SchurPreBaseCL( double kA, double kM) : kA_( kA), kM_( kM) {}
+    void SetWeights( double kA, double kM) { kA_ = kA; kM_ = kM; }
+};
+
 //**************************************************************************
 // Preconditioner for the instationary Stokes-equations.
 // cf. "Iterative Techniques For Time Dependent Stokes Problems",
@@ -196,21 +208,20 @@ const double StokesFracStepSchemeCL<BaseMethod, StokesT, SolverT>::theta_[3]
 // A_ is the pressure-Poisson-Matrix for natural boundary-conditions, M_ the
 // pressure-mass-matrix.
 //**************************************************************************
-class ISPreCL
+class ISPreCL : public SchurPreBaseCL
 {
   private:
     MatrixCL& A_;
     MatrixCL& M_;
-    double    kA_, kM_;
     SSORPcCL  ssor_;
 
   public:
     ISPreCL( MatrixCL& A_pr, MatrixCL& M_pr,
         double kA= 0., double kM= 1., double om= 1.)
-        : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM), ssor_( om)  {}
+        : SchurPreBaseCL( kA, kM), A_( A_pr), M_( M_pr), ssor_( om)  {}
     ISPreCL( MLMatrixCL& A_pr, MLMatrixCL& M_pr,
              double kA= 0., double kM= 1., double om= 1.)
-    : A_( A_pr.GetFinest()), M_( M_pr.GetFinest()), kA_( kA), kM_( kM), ssor_( om)  {}
+    : SchurPreBaseCL( kA, kM), A_( A_pr.GetFinest()), M_( M_pr.GetFinest()), ssor_( om)  {}
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
@@ -225,18 +236,17 @@ class ISPreCL
 //**************************************************************************
 #ifndef _PAR
 template <class SolverT>
-class ISNonlinearPreCL
+class ISNonlinearPreCL : public SchurPreBaseCL
 {
   private:
     MatrixCL&  A_;
     MatrixCL&  M_;
-    double     kA_, kM_;
     SolverT&   solver_;
 
   public:
     ISNonlinearPreCL(SolverT& solver, MatrixCL& A_pr, MatrixCL& M_pr,
         double kA= 0., double kM= 1.)
-        : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM),
+        : SchurPreBaseCL( kA, kM), A_( A_pr), M_( M_pr),
           solver_( solver)  {}
 
     template <typename Mat, typename Vec>
@@ -244,12 +254,11 @@ class ISNonlinearPreCL
 };
 #else
 template <typename ASolverT, typename MSolverT>
-class ISNonlinearPreCL
+class ISNonlinearPreCL : public SchurPreBaseCL
 {
   private:
     MatrixCL&  A_;
     MatrixCL&  M_;
-    double     kA_, kM_;
     mutable    ASolverT& Asolver_;
     mutable    MSolverT& Msolver_;
     mutable typename ASolverT::PrecondT PcA_;
@@ -258,7 +267,7 @@ class ISNonlinearPreCL
   public:
     ISNonlinearPreCL(ASolverT& Asolver, MSolverT& Msolver, MatrixCL& A_pr, MatrixCL& M_pr,
         double kA= 0., double kM= 1.)
-        : A_( A_pr), M_( M_pr), kA_( kA), kM_( kM),
+        : SchurPreBaseCL( kA, kM), A_( A_pr), M_( M_pr),
           Asolver_(Asolver), Msolver_(Msolver), PcA_(Asolver_.GetPC()), PcM_(Msolver_.GetPC())  {}
 
     /// \brief Apply preconditioner
@@ -296,7 +305,7 @@ class ISNonlinearPreCL
 // preconditioner uses multigrid-solvers.
 //
 //**************************************************************************
-class ISMGPreCL
+class ISMGPreCL : public SchurPreBaseCL
 {
   private:
     const Uint sm; // how many smoothing steps?
@@ -311,7 +320,6 @@ class ISMGPreCL
     DROPS::MLMatrixCL  P_;
     DROPS::Uint iter_prA_;
     DROPS::Uint iter_prM_;
-    double kA_, kM_;
     mutable std::vector<DROPS::VectorCL> ones_;
 
     void MaybeInitOnes() const;
@@ -320,9 +328,8 @@ class ISMGPreCL
     ISMGPreCL(DROPS::MLMatrixCL& A_pr, DROPS::MLMatrixCL& M_pr,
                     double kA, double kM, DROPS::Uint iter_prA=1,
                     DROPS::Uint iter_prM = 1)
-        : sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
-          Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM),
-          kA_( kA), kM_( kM), ones_(0)
+        : SchurPreBaseCL( kA, kM), sm( 1), lvl( -1), omega( 1.0), smoother( omega), solver( directpc, 200, 1e-12),
+          Apr_( A_pr), Mpr_( M_pr), iter_prA_( iter_prA), iter_prM_( iter_prM), ones_(0)
     {}
 
     template <typename Mat, typename Vec>
@@ -341,7 +348,7 @@ class ISMGPreCL
 // Problem with Application to Generalized Stokes Interface Equations",
 // Olshanskii, Peters, Reusken, 2005
 //**************************************************************************
-class ISBBTPreCL
+class ISBBTPreCL : public SchurPreBaseCL
 {
   private:
     const MatrixCL*  B_;
@@ -349,7 +356,6 @@ class ISBBTPreCL
     mutable size_t Bversion_;
     const MatrixCL*  M_, *Mvel_;
 
-    double     kA_, kM_;
     double     tolA_, tolM_;                                    ///< tolerances of the solvers
     mutable VectorCL Dprsqrtinv_;                               ///< diag(M)^{-1/2}
 #ifndef _PAR
@@ -378,17 +384,17 @@ class ISBBTPreCL
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
         const IdxDescCL& pr_idx,
         double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2, double regularize= 0.)
-        : B_( B), Bs_( 0), Bversion_( 0),
-          M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
+        : SchurPreBaseCL( kA, kM), B_( B), Bs_( 0), Bversion_( 0),
+          M_( M_pr), Mvel_( Mvel), tolA_(tolA), tolM_(tolM),
           solver_( spc_, 500, tolA_, /*relative*/ true),
           solver2_( jacpc_, 500, tolM_, /*relative*/ true),
           pr_idx_( &pr_idx), regularize_( regularize) {}
 
     ISBBTPreCL (const ISBBTPreCL& pc)
-        : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
+        : SchurPreBaseCL( pc.kA_, pc.kM_), B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_),
           M_( pc.M_), Mvel_( pc.Mvel_),
-          kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
+          tolA_(pc.tolA_), tolM_(pc.tolM_),
           Dprsqrtinv_( pc.Dprsqrtinv_),
           spc_( pc.spc_),
           solver_( spc_, 500, tolA_, /*relative*/ true),
@@ -398,18 +404,18 @@ class ISBBTPreCL
     ISBBTPreCL (const MatrixCL* B, const MatrixCL* M_pr, const MatrixCL* Mvel,
         const IdxDescCL& pr_idx, const IdxDescCL& vel_idx,
         double kA= 0., double kM= 1., double tolA= 1e-2, double tolM= 1e-2, double regularize= 0.)
-        : B_( B), Bs_( 0), Bversion_( 0),
-          M_( M_pr), Mvel_( Mvel), kA_( kA), kM_( kM), tolA_(tolA), tolM_(tolM),
+        : SchurPreBaseCL( kA, kM), B_( B), Bs_( 0), Bversion_( 0),
+          M_( M_pr), Mvel_( Mvel), tolA_(tolA), tolM_(tolM),
           BBT_( 0, TRANSP_MUL, 0, MUL, vel_idx, pr_idx),
           PCsolver1_( pr_idx), PCsolver2_(pr_idx),
           solver_( 800, tolA_, pr_idx, PCsolver1_, /*relative*/ true, /*accure*/ true),
           solver2_( 500, tolM_, pr_idx, PCsolver2_, /*relative*/ true),
           vel_idx_( &vel_idx), pr_idx_( &pr_idx), regularize_( regularize) {}
     ISBBTPreCL (const ISBBTPreCL& pc)
-        : B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
+        : SchurPreBaseCL( pc.kA_, pc.kM_), B_( pc.B_), Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Bversion_( pc.Bversion_),
           M_( pc.M_), Mvel_( pc.Mvel_),
-          kA_( pc.kA_), kM_( pc.kM_), tolA_(pc.tolA_), tolM_(pc.tolM_),
+          tolA_(pc.tolA_), tolM_(pc.tolM_),
           Dprsqrtinv_( pc.Dprsqrtinv_),
           BBT_( Bs_, TRANSP_MUL, Bs_, MUL, *pc.vel_idx_, *pc.pr_idx_),
           PCsolver1_( *pc.pr_idx_), PCsolver2_( *pc.pr_idx_),
