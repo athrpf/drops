@@ -101,11 +101,33 @@ inline void ReparamDataCL::Normalize( double& b) const
 }
 
 inline void ReparamDataCL::Normalize( double& b1, double& b2) const
-/// Normalize (b1,b2) onto unit triangle
+/// Normalize (b1,b2) onto unit triangle.
+/// If the barycentric coordinates b1, b2, 1-b1-b2 are non-negative, the point lies within the unit triangle.
+/// Otherwise, the nearest point on the triangle's boundary is computed.
 {
-    Normalize(b1); Normalize(b2); // now (b1,b2) is in unit square
-    const double a=(b1+b2-1)/2.;
-    if (a>0) { b1-=a; b2-=a; } // projection on diagonal y = -x
+    const double a=(1-b1-b2)/2., c=b1-b2;
+    if (b1>=0 && b2>=0 && a>=0) // point lies within triangle
+        return;
+    // check whether nearest point is one of the triangle's vertices
+    if (b1<=0 && b2<=0) {
+        b1=b2=0; return;
+    }
+    if (b1>=1 && c>=1) {
+        b1=1; b2=0; return;
+    }
+    if (b2>=1 && c<=-1) {
+        b1=0; b2=1; return;
+    }
+    // nearest point lies on one of the triangle's edges
+    if (b2<0) { // project on edge b2=0
+        b2=0; return;
+    }
+    if (b1<0) { // project on edge b1=0
+        b1=0; return;
+    }
+    if (a<0) {  // project on edge b2 = 1 - b1
+        b1+=a; b2+=a; return;
+    }
 }
 
 /// \brief Base class to determine distance to the discrete interface \f$\Gamma_\phi\f$ to vertices close to the zero level of level set function
