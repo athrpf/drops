@@ -25,7 +25,7 @@
 namespace DROPS
 {
 inline double
-InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, LocalP2CL<> & philoc)
+InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, const LocalP2CL<> & philoc)
 {
     if (LinearEdgeIntersection) return philoc[v0]/(philoc[v0]-philoc[v1]);
     else {

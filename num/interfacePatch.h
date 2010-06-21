@@ -73,7 +73,7 @@ class InterfacePatchCL
       InterfacePatchCL();
 
       static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
-      inline static double EdgeIntersection (Uint v0, Uint v1, LocalP2CL<>& philoc);            ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
+      inline static double EdgeIntersection (Uint v0, Uint v1, const LocalP2CL<>& philoc);            ///< Compute the root of the LS-Function restricted to the edge (v0,v1) as barycentric coordinate on this edge.
       void Init( const TetraCL& t, const VecDescCL& ls, double translation= 0.);
       void Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation= 0.);
       void Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation);
