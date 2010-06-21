@@ -464,8 +464,8 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 #else
         solver_.Solve( BBT_, p, VectorCL( Dprsqrtinv_*c));
 #endif
-//         IF_MASTER
-//             std::cout << "ISBBTPreCL p: iterations: " << solver_.GetIter()
+//        IF_MASTER
+//            std::cout << "ISBBTPreCL p: iterations: " << solver_.GetIter()
 //                       << "\tresidual: " <<  solver_.GetResid();
         if (solver_.GetIter() == solver_.GetMaxIter()){
           IF_MASTER
@@ -477,8 +477,8 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
     if (kM_ != 0.0) {
         Vec p2_( c.size());
         solver2_.Solve( *M_, p2_, c);
-//         IF_MASTER
-//             std::cout << "\t p2: iterations: " << solver2_.GetIter()
+//        IF_MASTER
+//            std::cout << "\tISBBTPreCL p2: iterations: " << solver2_.GetIter()
 //                       << "\tresidual: " <<  solver2_.GetResid()
 //                       << '\n';
         if (solver2_.GetIter() == solver2_.GetMaxIter()){
@@ -541,7 +541,7 @@ class MinCommPreCL
     template <typename Mat, typename Vec>
     void Apply (const Mat&, Vec& x, const Vec& b) const;
 
-    void SetMatrixA  (const MatrixCL* A) { A_= A; }
+    void SetMatrixA  (const MatrixCL* A) { A_= A; Aversion_= 0; }
     void SetMatrices (const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M,
                       const IdxDescCL* pr_idx) {
         A_= A;
