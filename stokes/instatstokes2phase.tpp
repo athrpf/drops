@@ -125,6 +125,15 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const CoeffT&, const StokesBndDat
     mB.Build();
 }
 
+inline void ComputePgradV( LocalP2CL<Point3DCL>& PgradV, Uint pr, const Quad2CL<Point3DCL>& gradV)
+{
+    PgradV= Point3DCL();
+    PgradV[pr]= gradV[pr];
+    for (Uint vert=0; vert<4; ++vert)
+        if (vert!=pr)
+            PgradV[EdgeByVert(pr,vert)+4]= 0.25*(gradV[pr]+gradV[vert]);
+}
+
 template <class CoeffT>
 void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2 / P1X FEs (X=extended) for vel/pr
@@ -176,16 +185,13 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
             // compute the integrals
             // I = \int_{T_+} grad v_vel p_pr dx  -  C \int_{T}grad v_vel p_pr dx,
             // where C= (sign Phi_pr==1) \in {0,1} and T_+ = T \cap \Omega_2 (positive part)
-            LocalP2CL<Point3DCL> gradv_p;
+            LocalP2CL<Point3DCL> PgradV;
             const IdxT xidx= Xidx[prNumb[pr]];
             if (xidx==NoIdx) continue;
 
             for(int vel=0; vel<10; ++vel)
             {
-                gradv_p[pr]= Grad[vel][pr];
-                for (int vert=0; vert<4; ++vert)
-                    if (vert!=pr)
-                        gradv_p[EdgeByVert(pr,vert)+4]= 0.25*(Grad[vel][pr]+Grad[vel][vert]);
+                ComputePgradV( PgradV, pr, Grad[vel]);
 
                 Point3DCL integral;
                 const bool is_pos= cut.GetSign(pr)==1;
@@ -193,7 +199,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
                 for (int ch=0; ch<8; ++ch)
                 {
                     cut.ComputeCutForChild(ch);
-                    integral+= cut.quad( gradv_p, absdet, !is_pos); // integrate on other part
+                    integral+= cut.quad( PgradV, absdet, !is_pos); // integrate on other part
                 }
 
                 // for C=0 we have I = -\int_{T_-} grad v_vel p_pr dx
@@ -213,6 +219,219 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDa
                             : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
                     c->Data[ xidx]+= inner_prod( integral, tmp);
                 }
+            }
+        }
+    }
+    mB.Build();
+}
+
+template <class CoeffT>
+void SetupSystem2_P2RP1X( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
+// P2X / P1X FEs (X=extended) for vel/pr
+{
+    const ExtIdxDescCL& Xidx=    RowIdx->GetXidx();
+    const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
+    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    if (c != 0) c->Clear();
+    const Uint lvl= RowIdx->TriangLevel();
+    IdxT prNumb[4];
+    LocalNumbP2CL n;
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], gradVx;
+    LocalP2CL<> velR_p[4][8], velR_n[4][8];
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    Point3DCL tmp;
+    InterfaceTetraCL cut;
+    LocalP2CL<> loc_phi;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
+         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        absdet= std::fabs( det);
+        n.assign( *sit, *ColIdx, BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
+        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
+        for(int vel=0; vel<10; ++vel) {
+            if (n.WithUnknowns( vel))
+                for(int pr=0; pr<4; ++pr) {
+                    tmp= Grad[vel].quadP1( pr, absdet);
+                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
+                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
+                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                }
+            else if (c != 0) { // put coupling on rhs
+                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                        : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                for(int pr=0; pr<4; ++pr)
+                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
+            }
+        }
+
+        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<>());
+        cut.Init( *sit, loc_phi);
+        if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
+
+        P2RidgeDiscCL::GetExtBasisOnChildren( velR_p, velR_n, loc_phi);
+        for(int pr=0; pr<4; ++pr) {
+            // compute the integrals
+            // I = \int_{T_+} grad v_vel p_pr dx  -  C \int_{T}grad v_vel p_pr dx,
+            // where C= (sign Phi_pr==1) \in {0,1} and T_+ = T \cap \Omega_2 (positive part)
+            LocalP2CL<Point3DCL> PgradV;
+            const IdxT xidx= Xidx[prNumb[pr]];
+            if (xidx==NoIdx) continue;
+
+            for(int vel=0; vel<14; ++vel)
+            {
+                const IdxT stdvidx= vel<10 ? n.num[vel] : n.num[vel-10],
+                        xvidx= vel<4 && stdvidx!=NoIdx ? velXidx[stdvidx] : NoIdx,
+                        vidx= vel<10 ? stdvidx : xvidx;
+                if (vel>=10 && xvidx==NoIdx) continue; // no extended vel dof
+
+                Point3DCL int_Px_gradV, int_P_gradV;
+                const bool is_pos= cut.GetSign(pr)==1;
+
+                if (vel<10) { // standard P2 FE
+                    ComputePgradV( PgradV, pr, Grad[vel]);
+                    for (int ch=0; ch<8; ++ch)
+                    {
+                        cut.ComputeCutForChild(ch);
+                        int_Px_gradV+= cut.quad( PgradV, absdet, !is_pos); // integrate on other part
+                    }
+                    // for C=1 (<=> is_pos) we have I = -\int_{T_-} grad v_vel p_pr dx
+                    if (is_pos) int_Px_gradV= -int_Px_gradV;
+                } else { // ridge enrichment for vel
+                    Point3DCL intNeg, intPos;
+                    for (int ch=0; ch<8; ++ch)
+                    {
+                        cut.ComputeCutForChild(ch);
+                        // integrate on pos. part
+                        P2DiscCL::GetFuncGradient( gradVx, velR_p[vel-10][ch], Grad);
+                        ComputePgradV( PgradV, pr, gradVx);
+                        intPos+= cut.quad( PgradV, absdet, true);
+                        // integrate on neg. part
+                        P2DiscCL::GetFuncGradient( gradVx, velR_n[vel-10][ch], Grad);
+                        ComputePgradV( PgradV, pr, gradVx);
+                        intNeg+= cut.quad( PgradV, absdet, false);
+                    }
+                    int_P_gradV= intPos + intNeg;
+                    // for C=1 (<=> is_pos) we have I = -\int_{T_-} grad v_vel p_pr dx
+                    int_Px_gradV= is_pos ? -intNeg : intPos;
+                }
+
+                if (n.WithUnknowns( vel))
+                {
+                    mB( xidx, vidx)  -=  int_Px_gradV[0];
+                    mB( xidx, vidx+1)-=  int_Px_gradV[1];
+                    mB( xidx, vidx+2)-=  int_Px_gradV[2];
+                    if (vel>=10) { // extended vel: write also entry for p_gradVx
+                        const IdxT pidx= prNumb[pr];
+                        mB( pidx, vidx)  -=  int_P_gradV[0];
+                        mB( pidx, vidx+1)-=  int_P_gradV[1];
+                        mB( pidx, vidx+2)-=  int_P_gradV[2];
+                    }
+                }
+                else if (c != 0 && vel<10)
+                { // put coupling on rhs
+                    typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                    bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                    tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                            : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                    c->Data[ xidx]+= inner_prod( int_Px_gradV, tmp);
+                }
+            }
+        }
+    }
+    mB.Build();
+}
+
+template <class CoeffT>
+void SetupSystem2_P2RP1( const MultiGridCL& MG, const CoeffT&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
+// P2X / P1 FEs (X=extended) for vel/pr
+{
+    const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
+    MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
+    if (c != 0) c->Clear();
+    const Uint lvl= RowIdx->TriangLevel();
+    IdxT prNumb[4];
+    LocalNumbP2CL n;
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], gradVx;
+    LocalP2CL<> velR_p[4][8], velR_n[4][8];
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    Point3DCL tmp;
+    InterfaceTetraCL cut;
+    LocalP2CL<> loc_phi;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit= MG.GetTriangTetraBegin( lvl),
+         send= MG.GetTriangTetraEnd( lvl); sit != send; ++sit) {
+        GetTrafoTr( T, det, *sit);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+        absdet= std::fabs( det);
+        n.assign( *sit, *ColIdx, BndData.Vel);
+        GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
+        // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
+        for(int vel=0; vel<10; ++vel) {
+            if (n.WithUnknowns( vel))
+                for(int pr=0; pr<4; ++pr) {
+                    tmp= Grad[vel].quadP1( pr, absdet);
+                    mB( prNumb[pr], n.num[vel])  -=  tmp[0];
+                    mB( prNumb[pr], n.num[vel]+1)-=  tmp[1];
+                    mB( prNumb[pr], n.num[vel]+2)-=  tmp[2];
+                }
+            else if (c != 0) { // put coupling on rhs
+                typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[vel]).GetBndFun();
+                tmp= vel<4 ? bf( sit->GetVertex( vel)->GetCoord(), t)
+                        : bf( GetBaryCenter( *sit->GetEdge( vel-4)), t);
+                for(int pr=0; pr<4; ++pr)
+                    c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
+            }
+        }
+
+        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<>());
+        cut.Init( *sit, loc_phi);
+        if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
+
+        P2RidgeDiscCL::GetExtBasisOnChildren( velR_p, velR_n, loc_phi);
+        for(int pr=0; pr<4; ++pr) {
+            // compute the integrals
+            // I = \int_{T_+} grad v_vel p_pr dx  -  C \int_{T}grad v_vel p_pr dx,
+            // where C= (sign Phi_pr==1) \in {0,1} and T_+ = T \cap \Omega_2 (positive part)
+            LocalP2CL<Point3DCL> PgradV;
+
+            for(int xvel=0; xvel<4; ++xvel)
+            {
+                const IdxT stdvidx= n.num[xvel],
+                    xvidx= stdvidx!=NoIdx ? velXidx[stdvidx] : NoIdx;
+                if (xvidx==NoIdx) continue; // no extended vel dof
+
+                Point3DCL int_P_gradV;
+
+                Point3DCL intNeg, intPos;
+                for (int ch=0; ch<8; ++ch)
+                {
+                    cut.ComputeCutForChild(ch);
+                    // integrate on pos. part
+                    P2DiscCL::GetFuncGradient( gradVx, velR_p[xvel][ch], Grad);
+                    ComputePgradV( PgradV, pr, gradVx);
+                    intPos+= cut.quad( PgradV, absdet, true);
+                    // integrate on neg. part
+                    P2DiscCL::GetFuncGradient( gradVx, velR_n[xvel][ch], Grad);
+                    ComputePgradV( PgradV, pr, gradVx);
+                    intNeg+= cut.quad( PgradV, absdet, false);
+                }
+                int_P_gradV= intPos + intNeg;
+
+                // extended vel: write entry for p_gradVx
+                const IdxT pidx= prNumb[pr];
+                mB( pidx, xvidx)  -=  int_P_gradV[0];
+                mB( pidx, xvidx+1)-=  int_P_gradV[1];
+                mB( pidx, xvidx+2)-=  int_P_gradV[2];
             }
         }
     }
@@ -898,9 +1117,9 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const CoeffT& Coeff, MatrixCL& A_p
 // Create numbering
 // ----------------
 template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match)
+void InstatStokes2PhaseP2P1CL<Coeff>::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
 {
-    idx->CreateNumbering( level, _MG, _BndData.Vel, match);
+    idx->CreateNumbering( level, _MG, _BndData.Vel, match, lsetp ? &(lsetp->Phi) : 0);
 }
 
 template <class Coeff>
@@ -1218,6 +1437,305 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stokes
 #endif
 }
 
+template <class CoeffT>
+void SetupSystem1_P2R( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, MatrixCL& M,
+                         VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
+/// Set up matrices A, M and rhs b (depending on phase bnd)
+{
+    const IdxT num_unks_vel= RowIdx.NumUnknowns();
+    const ExtIdxDescCL xidx= RowIdx.GetXidx();
+
+    MatrixBuilderCL mA( &A, num_unks_vel, num_unks_vel),
+                    mM( &M, num_unks_vel, num_unks_vel);
+    if (b != 0)
+    {
+        b->Clear();
+        cplM->Clear();
+        cplA->Clear();
+    }
+
+    const Uint lvl = RowIdx.TriangLevel();
+
+    LocalNumbP2CL n;
+    IdxT num[14];
+#ifndef _PAR
+    std::cout << "entering SetupSystem1: " << num_unks_vel << " vels. ";
+#endif
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10], rhs;
+    LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10], gradxLP1;
+    LocalP2CL<Point3DCL> GradLP2[10];
+    Quad2CL<double> Ones( 1.), kreuzterm;
+    const double mu_p= _Coeff.mu( 1.0),
+                 mu_n= _Coeff.mu( -1.0),
+                 rho_p= _Coeff.rho( 1.0),
+                 rho_n= _Coeff.rho( -1.0);
+
+    SMatrixCL<3,3> T;
+
+    double coupA[14][14], coupAk[14][14][3][3],
+           coupM[14][14], rho_phi[14];
+    double det, absdet, cAp, cAn, cAkp, cAkn, intHat_p, intHat_n;
+    Point3DCL tmp, intRhs[14];
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    LocalP2CL<> aij_n, aij_p, akreuz_n[3][3], akreuz_p[3][3], phi_i, ones( 1.);
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    P2DiscCL::GetGradientsOnRef( GradRefLP1);
+
+    InterfaceTetraCL patch;
+    BaryCoordCL* nodes;
+    LocalP2CL<> p1[4], p2[10]; // 4 P1 and 10 P2 basis functions
+    LocalP2CL<> Fabs_p, Fabs_n; // enrichment function on pos./neg. part (to be interpreted as isoP2 function)
+    double intpos, intneg;
+    for (int k=0; k<10; ++k) {
+        p2[k][k]=1.;
+        if (k<4)
+            p1[k][k]=1.;
+        else { // set corresponding edge value of p1 hat functions of corresponding vertices
+            p1[VertOfEdge(k-4,0)][k]= 0.5;
+            p1[VertOfEdge(k-4,1)][k]= 0.5;
+        }
+    }
+    Quad5CL<> q[10][48], qx_p[4][48], qx_n[4][48]; // quadrature for basis functions (there exist maximally 8*6=48 SubTetras)
+    LocalP2CL<> loc_phi;
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = _MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        absdet= std::fabs( det);
+
+        rhs.assign( *sit, _Coeff.f, t);
+
+        // collect some information about the edges and verts of the tetra
+        // and save it n.
+        n.assign( *sit, RowIdx, _BndData.Vel);
+        loc_phi.assign( *sit, ls, t);
+        patch.Init( *sit, loc_phi);
+        const bool nocut= !patch.Intersects();
+        if (nocut) {
+            const double mu_const= patch.GetSign( 0) == 1 ? mu_p : mu_n;
+            const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
+
+            P2DiscCL::GetGradients( Grad, GradRef, T);
+            // compute all couplings between HatFunctions on edges and verts
+            for (int i=0; i<10; ++i)
+            {
+                rho_phi[i]= rho_const*Ones.quadP2( i, absdet);
+                intRhs[i]= rhs.quadP2(i, absdet);
+                for (int j=0; j<=i; ++j)
+                {
+                    // dot-product of the gradients
+                    const double cA= mu_const*Quad2CL<>(dot( Grad[i], Grad[j])).quad( absdet);
+                    coupA[i][j]= cA;
+                    coupA[j][i]= cA;
+                    // kreuzterm
+                    for (int k= 0; k < 3; ++k)
+                        for (int l= 0; l < 3; ++l) {
+                            // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
+                            for (size_t m=0; m<kreuzterm.size();  ++m)
+                                kreuzterm[m]= Grad[i][m][l] * Grad[j][m][k];
+
+                            coupAk[i][j][k][l]= mu_const*kreuzterm.quad( absdet);
+                            coupAk[j][i][l][k]= coupAk[i][j][k][l];
+                        }
+                    // As we are not at the phase-boundary this is exact:
+                    const double cM= rho_const*P2DiscCL::GetMass( j, i)*absdet;
+                    coupM[i][j]= cM;
+                    coupM[j][i]= cM;
+                }
+            }
+        }
+        else { // We are at the phase boundary.
+            // compute all couplings between HatFunctions on edges and verts
+            std::memset( coupA, 0, 14*14*sizeof( double));
+            std::memset( coupAk, 0, 14*14*3*3*sizeof( double));
+            std::memset( rho_phi, 0, 14*sizeof( double));
+            P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
+            for (int i=0; i<10; ++i)
+                GradLP2[i].assign( GradLP1[i]);
+
+            double Vol_p= 0;
+            LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
+            P2RidgeDiscCL::GetExtBasisOnChildren(p1abs_p, p1abs_n, loc_phi);
+            for (int ch= 0; ch < 8; ++ch) {
+                patch.ComputeCutForChild( ch);
+                Vol_p+= patch.quad( ones, absdet, true);
+
+                LocalP2CL<Point3DCL> gradx_n[4], gradx_p[4]; // gradients of extended basis functions
+                for (int i=0; i<4; ++i) { // init gradients of extended basis functions
+                    P2DiscCL::GetFuncGradient( gradxLP1, p1abs_p[i][ch], GradLP1);
+                    gradx_p[i].assign(gradxLP1);
+                    P2DiscCL::GetFuncGradient( gradxLP1, p1abs_n[i][ch], GradLP1);
+                    gradx_n[i].assign(gradxLP1);
+                }
+                for (int i=0; i<10; ++i) {
+                    patch.quadBothParts( intHat_p, intHat_n, p2[i], absdet);
+                    rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
+                }
+                for (int i=0; i<4; ++i) {
+                    intHat_p= patch.quad( p1abs_p[i][ch], absdet, true);
+                    intHat_n= patch.quad( p1abs_n[i][ch], absdet, false);
+                    rho_phi[i+10]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_abs
+                }
+                // compute coupA, coupAk
+                for (int i=0; i<14; ++i) {
+                    LocalP2CL<Point3DCL> &gradi_n= i<10 ? GradLP2[i] : gradx_n[i-10],
+                                         &gradi_p= i<10 ? GradLP2[i] : gradx_p[i-10];
+                    for (int j=0; j<=i; ++j) {
+                        LocalP2CL<Point3DCL> &gradj_n= j<10 ? GradLP2[j] : gradx_n[j-10],
+                                             &gradj_p= j<10 ? GradLP2[j] : gradx_p[j-10];
+                        aij_n= dot( gradi_n, gradj_n);
+                        aij_p= dot( gradi_p, gradj_p);
+                        for (int k= 0; k < 3; ++k)
+                            for (int l= 0; l < 3; ++l) {
+                                // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
+                                for (size_t m= 0; m < /* #Components of akreuz[k][l] */ 10;  ++m) {
+                                    akreuz_n[k][l][m]= gradi_n[m][l] * gradj_n[m][k];
+                                    akreuz_p[k][l][m]= gradi_p[m][l] * gradj_p[m][k];
+                                }
+                            }
+
+                        // integrate aij on positive and negative part
+                        cAp= patch.quad( aij_p, absdet, true);
+                        cAn= patch.quad( aij_n, absdet, false);
+                        const double cA= cAp*mu_p + cAn*mu_n;
+                        coupA[i][j]+= cA;
+                        for (int k= 0; k < 3; ++k)
+                            for (int l= 0; l < 3; ++l) {
+                                // integrate akreuz on positive and negative part
+                                cAkp= patch.quad( akreuz_p[k][l], absdet, true);
+                                cAkn= patch.quad( akreuz_n[k][l], absdet, false);
+                                const double cAk= cAkp*mu_p + cAkn*mu_n;
+                                coupAk[i][j][k][l]+= cAk;
+                            }
+                    }
+                }
+            } // child loop
+
+            // compute coupM
+            patch.ComputeSubTets();
+            for (Uint k=0; k<patch.GetNumTetra(); ++k)
+            { // init quadrature objects for basis functions
+                nodes = Quad5CL<>::TransformNodes(patch.GetTetra(k));
+                const int ch= patch.GetChildIdx(k);
+                for (Uint j=0; j<10; ++j)  // standard FE
+                    q[j][k].assign(p2[j], nodes);
+                for (Uint j=0; j<4; ++j) { // extended FE
+                    qx_p[j][k].assign(p1abs_p[j][ch], nodes);
+                    qx_n[j][k].assign(p1abs_n[j][ch], nodes);
+                }
+                delete[] nodes;
+            }
+            for (int i=0; i<14; ++i) {
+                Quad5CL<> *qi_n= i<10 ? q[i] : qx_n[i-10],
+                          *qi_p= i<10 ? q[i] : qx_p[i-10];
+                for (int j=0; j<=i; ++j) {
+                    // M
+                    intpos = 0.;
+                    intneg = 0.;
+                    Quad5CL<> *qj_n= j<10 ? q[j] : qx_n[j-10],
+                              *qj_p= j<10 ? q[j] : qx_p[j-10];
+                    for (Uint k=0; k<patch.GetNumTetra(); k++)
+                        if (k<patch.GetNumNegTetra())
+                            intneg += Quad5CL<>(qi_n[k]*qj_n[k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                        else
+                            intpos += Quad5CL<>(qi_p[k]*qj_p[k]).quad(absdet*VolFrac(patch.GetTetra(k)));
+                    coupM[i][j]= rho_p*intpos + rho_n*intneg;
+                }
+                if (b != 0) {
+                    if (i<10)
+                        intRhs[i]= rhs.quadP2(i, absdet);
+                    else {
+                        intRhs[i]= Point3DCL();
+                        for (Uint k=0; k<patch.GetNumTetra(); k++) {
+                            nodes= Quad5CL<>::TransformNodes(patch.GetTetra(k));
+                            Quad5CL<Point3DCL> rhs5( *sit, _Coeff.f, t, nodes);
+
+                            if (k<patch.GetNumNegTetra())
+                                intRhs[i] += Quad5CL<Point3DCL>(qi_n[k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
+                            else
+                                intRhs[i] += Quad5CL<Point3DCL>(qi_p[k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
+                            delete[] nodes;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (int i=0; i<14; ++i) {
+            // collect local numbering
+            num[i]= i<10 ? (n.WithUnknowns(i) ? n.num[i] : NoIdx) // standard FE part
+                         : (nocut || !n.WithUnknowns(i-10) ? NoIdx : xidx[n.num[i-10]]);      // extended FE part
+            // copy computed entries, as local stiffness matrices coupA, coupAk, coupM are symmetric
+            for (int j=0; j<i; ++j) {
+                coupA[j][i]= coupA[i][j];
+                coupM[j][i]= coupM[i][j];
+                for (int k= 0; k < 3; ++k)
+                    for (int l= 0; l < 3; ++l)
+                        coupAk[j][i][l][k]= coupAk[i][j][k][l];
+            }
+        }
+
+        for(int i=0; i<14; ++i) {   // assemble row Numb[i]
+            const IdxT numi= num[i];
+            if (numi != NoIdx)  // dof i exists
+            {
+                for(int j=0; j<14; ++j)
+                {
+                    if (num[j] != NoIdx) // dof j exists
+                    {
+                        const IdxT numj= num[j];
+                        mA( numi,   numj  )+= coupA[j][i];
+                        mA( numi+1, numj+1)+= coupA[j][i];
+                        mA( numi+2, numj+2)+= coupA[j][i];
+                        for (int k=0; k<3; ++k)
+                            for (int l=0; l<3; ++l)
+                                mA( numi+k, numj+l)+= coupAk[i][j][k][l];
+                        mM( numi,   numj  )+= coupM[j][i];
+                        mM( numi+1, numj+1)+= coupM[j][i];
+                        mM( numi+2, numj+2)+= coupM[j][i];
+                    }
+                    else if (b != 0 && j<10) // put coupling on rhs
+                    /// \todo Interpolation of boundary data w.r.t. extended dofs not clear
+                    {
+                        typedef typename StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                        bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                        tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
+                                : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
+                        const double cA= coupA[j][i],
+                                    cM= coupM[j][i];
+                        for (int k=0; k<3; ++k)
+                        {
+                            cplA->Data[numi+k]-= cA*tmp[k];
+                            for (int l=0; l<3; ++l)
+                                cplA->Data[numi+k]-= coupAk[i][j][k][l]*tmp[l];
+                        }
+                        cplM->Data[numi  ]-= cM*tmp[0];
+                        cplM->Data[numi+1]-= cM*tmp[1];
+                        cplM->Data[numi+2]-= cM*tmp[2];
+                    }
+                }
+                if (b != 0)
+                {
+                    tmp= intRhs[i] + rho_phi[i]*_Coeff.g;
+                    b->Data[numi  ]+= tmp[0];
+                    b->Data[numi+1]+= tmp[1];
+                    b->Data[numi+2]+= tmp[2];
+                }
+            }
+        }
+    }
+
+    mA.Build();
+    mM.Build();
+#ifndef _PAR
+    std::cout << A.num_nonzeros() << " nonzeros in A, "
+              << M.num_nonzeros() << " nonzeros in M! " << std::endl;
+#endif
+}
+
 template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, double t) const
 {
@@ -1225,12 +1743,16 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1( MLMatDescCL* A, MLMatDescCL*
     MLMatrixCL::iterator itM = M->Data.begin();
     MLIdxDescCL::iterator it = A->RowIdx->begin();
     for (size_t lvl=0; lvl < A->Data.size(); ++lvl, ++itA, ++itM, ++it)
-        SetupSystem1_P2( _MG, _Coeff, _BndData, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
+        if (it->GetFE()==vecP2_FE)
+            SetupSystem1_P2 ( _MG, _Coeff, _BndData, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
+        else if (it->GetFE()==vecP2R_FE)
+            SetupSystem1_P2R( _MG, _Coeff, _BndData, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
+        else
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1 not implemented for this FE type");
 }
 
-template <class Coeff>
-void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const
-/// Set up rhs b (depending on phase bnd)
+template<class CoeffT>
+void SetupRhs1_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, VecDescCL* b, const LevelsetP2CL& lset, double t)
 {
     const Uint lvl = b->GetLevel();
 
@@ -1298,6 +1820,155 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2C
             }
     }
 }
+
+template<class CoeffT>
+void SetupRhs1_P2R( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, VecDescCL* b, const LevelsetP2CL& lset, double t)
+/// \todo proper implementation missing, yet
+{
+    throw DROPSErrCL("SetupRhs1_P2R(...) is buggy, aborting.");
+    const Uint lvl = b->GetLevel();
+
+    b->Clear();
+
+    LocalNumbP2CL n;
+    const IdxDescCL& RowIdx= *b->RowIdx;
+    const ExtIdxDescCL xidx= RowIdx.GetXidx();
+
+    Quad2CL<Point3DCL> rhs;
+    Quad2CL<double> Ones( 1.), kreuzterm;
+    const double rho_p= _Coeff.rho( 1.0),
+                 rho_n= _Coeff.rho( -1.0);
+
+    SMatrixCL<3,3> T;
+
+    double rho_phi[14];
+    double det, absdet, intHat_p, intHat_n;
+    Point3DCL tmp;
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+    LocalP2CL<> phi_i;
+
+    InterfaceTetraCL patch;
+    BaryCoordCL* nodes;
+    LocalP2CL<> p1[4], p2[10]; // 4 P1 and 10 P2 basis functions
+    LocalP2CL<> Fabs_p, Fabs_n; // enrichment function on pos./neg. part (to be interpreted as isoP2 function)
+    Quad5CL<> qx_p[4][48], qx_n[4][48]; // quadrature for basis functions (there exist maximally 8*6=48 SubTetras)
+    LocalP2CL<> loc_phi;
+
+    for (int k=0; k<10; ++k) {
+        p2[k][k]=1.;
+        if (k<4)
+            p1[k][k]=1.;
+        else { // set corresponding edge value of p1 hat functions of corresponding vertices
+            p1[VertOfEdge(k-4,0)][k]= 0.5;
+            p1[VertOfEdge(k-4,1)][k]= 0.5;
+        }
+    }
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = _MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        absdet= std::fabs( det);
+
+        rhs.assign( *sit, _Coeff.f, t);
+
+        // collect some information about the edges and verts of the tetra
+        // and save it n.
+        n.assign( *sit, RowIdx, _BndData.Vel);
+
+        loc_phi.assign( *sit, ls, t);
+        patch.Init( *sit, loc_phi);
+        const bool nocut= !patch.Intersects();
+        if (nocut) {
+            const double rho_const= patch.GetSign( 0) == 1 ? rho_p : rho_n;
+
+            for(int i=0; i<10; ++i)    // init rho_phi
+                rho_phi[i]= rho_const*Ones.quadP2( i, absdet);
+        }
+        else { // We are at the phase boundary.
+            for (int i= 0; i < 10; ++i) {
+                // init enrichment function (to be interpreted as isoP2 function)
+                Fabs_p[i]= patch.GetSign(i)== 1 ? 0 : -2*loc_phi[i];
+                Fabs_n[i]= patch.GetSign(i)==-1 ? 0 :  2*loc_phi[i];
+            }
+
+            LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
+            for (int ch= 0; ch < 8; ++ch) {
+                patch.ComputeCutForChild( ch);
+                LocalP2CL<> extFabs_p, extFabs_n; // extension of enrichment function from child to parent
+                // extend P1 values on child (as Fabs has to be interpreted as isoP2 function) to whole parent
+                ExtendP1onChild( Fabs_p, ch, extFabs_p);
+                ExtendP1onChild( Fabs_n, ch, extFabs_n);
+                for (int i=0; i<4; ++i) { // init extended basis functions and its gradients
+                    p1abs_p[i][ch]= p1[i]*extFabs_p;
+                    p1abs_n[i][ch]= p1[i]*extFabs_n;
+                }
+                for (int i=0; i<10; ++i) {
+                    // init phi_i =  i-th P2 hat function
+                    phi_i[i]= 1.; phi_i[i==0 ? 9 : i-1]= 0.;
+                    patch.quadBothParts( intHat_p, intHat_n, phi_i, absdet);
+                    rho_phi[i]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_i
+                }
+                for (int i=0; i<4; ++i) {
+                    intHat_p= patch.quad( p1abs_p[i][ch], absdet, true);
+                    intHat_n= patch.quad( p1abs_n[i][ch], absdet, false);
+                    rho_phi[i+10]+= rho_p*intHat_p + rho_n*intHat_n; // \int rho*phi_abs
+                }
+            }
+            patch.ComputeSubTets();
+            for (Uint k=0; k<patch.GetNumTetra(); ++k)
+            { // init quadrature objects for basis functions
+                nodes = Quad5CL<>::TransformNodes(patch.GetTetra(k));
+                const int ch= patch.GetChildIdx(k);
+                for (Uint j=0; j<4; ++j) { // extended FE
+                    qx_p[j][k].assign(p1abs_p[j][ch], nodes);
+                    qx_n[j][k].assign(p1abs_n[j][ch], nodes);
+                }
+                delete[] nodes;
+            }
+        }
+
+        for(int i=0; i<10; ++i)    // assemble row Numb[i]
+            if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
+            {
+                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
+                b->Data[n.num[i]  ]+= tmp[0];
+                b->Data[n.num[i]+1]+= tmp[1];
+                b->Data[n.num[i]+2]+= tmp[2];
+
+                if (i<4 && !nocut) // extended dof
+                {
+                    Point3DCL intRhs;
+                    for (Uint k=0; k<patch.GetNumTetra(); k++) {
+                        nodes= Quad5CL<Point3DCL>::TransformNodes(patch.GetTetra(k));
+                        Quad5CL<Point3DCL> rhs5( *sit, _Coeff.f, t, nodes);
+                        if (k<patch.GetNumNegTetra())
+                            intRhs += Quad5CL<Point3DCL>(qx_n[i][k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
+                        else
+                            intRhs += Quad5CL<Point3DCL>(qx_p[i][k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
+                        delete[] nodes;
+                    }
+
+                    tmp= intRhs + rho_phi[i+10]*_Coeff.g;
+                    const IdxT xnum= xidx[n.num[i]];
+                    b->Data[xnum  ]+= tmp[0];
+                    b->Data[xnum+1]+= tmp[1];
+                    b->Data[xnum+2]+= tmp[2];
+                }
+            }
+    }
+}
+
+template <class Coeff>
+void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const
+/// Set up rhs b (depending on phase bnd)
+{
+    if (vel_idx.GetFinest().GetFE()==vecP2_FE)
+        SetupRhs1_P2 ( _MG, _Coeff, _BndData, b, lset, t);
+    else
+        SetupRhs1_P2R( _MG, _Coeff, _BndData, b, lset, t);
+}
+
 
 template <class CoeffT>
 void SetupLB_P2( const MultiGridCL& _MG, const CoeffT& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
@@ -1426,19 +2097,32 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2( MLMatDescCL* B, VecDescCL* c
         std::cout << "entering SetupSystem2: " << itRow->NumUnknowns() << " prs, " << itCol->NumUnknowns() << " vels. ";
 #endif
         VecDescCL* rhsPtr= itB==B->Data.GetFinestIter() ? c : 0; // setup rhs only on finest level
-        switch (GetPrFE())
-        {
-            case P0_FE:
-                SetupSystem2_P2P0 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
-            case P1_FE:
-                SetupSystem2_P2P1 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
-            case P1X_FE:
-                SetupSystem2_P2P1X( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
-            case P1D_FE:
-                SetupSystem2_P2P1D( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
-            default:
-                throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
-        }
+        if (itCol->GetFE()==vecP2_FE)
+            switch (GetPrFE())
+            {
+                case P0_FE:
+                    SetupSystem2_P2P0 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+                case P1_FE:
+                    SetupSystem2_P2P1 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+                case P1X_FE:
+                    SetupSystem2_P2P1X( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
+                case P1D_FE:
+                    SetupSystem2_P2P1D( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+                default:
+                    throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
+            }
+        else if (itCol->GetFE()==vecP2R_FE)
+            switch (GetPrFE())
+            {
+                case P1_FE:
+                    SetupSystem2_P2RP1 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
+                case P1X_FE:
+                    SetupSystem2_P2RP1X( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
+                default:
+                    throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
+            }
+        else
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
 #ifndef _PAR
         std::cout << itB->num_nonzeros() << " nonzeros in B!" << std::endl;
 #endif
@@ -1449,19 +2133,32 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset, double t) const
 // Set up rhs c
 {
-    switch (GetPrFE())
-    {
-      case P0_FE:
-        SetupRhs2_P2P0( _MG, _Coeff, _BndData, c, t); break;
-      case P1_FE:
-        SetupRhs2_P2P1( _MG, _Coeff, _BndData, c, t); break;
-      case P1X_FE:
-        SetupRhs2_P2P1X( _MG, _Coeff, _BndData, c, lset, t); break;
-      case P1D_FE:
-        SetupRhs2_P2P1D( _MG, _Coeff, _BndData, c, t); break;
-      default:
+    if (vel_idx.GetFinest().GetFE()==vecP2_FE)
+        switch (GetPrFE())
+        {
+          case P0_FE:
+            SetupRhs2_P2P0( _MG, _Coeff, _BndData, c, t); break;
+          case P1_FE:
+            SetupRhs2_P2P1( _MG, _Coeff, _BndData, c, t); break;
+          case P1X_FE:
+            SetupRhs2_P2P1X( _MG, _Coeff, _BndData, c, lset, t); break;
+          case P1D_FE:
+            SetupRhs2_P2P1D( _MG, _Coeff, _BndData, c, t); break;
+          default:
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2 not implemented for this FE type");
+        }
+    else if (vel_idx.GetFinest().GetFE()==vecP2R_FE)
+        switch (GetPrFE())
+        {
+//          case P1_FE:
+//            SetupRhs2_P2RP1( _MG, _Coeff, _BndData, c, t); break;
+//          case P1X_FE:
+//            SetupRhs2_P2RP1X( _MG, _Coeff, _BndData, c, lset, t); break;
+          default:
+            throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2 not implemented for this FE type");
+        }
+    else
         throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2 not implemented for this FE type");
-    }
 }
 
 template <class Coeff>
@@ -1552,7 +2249,8 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetNumVelLvl( size_t n)
         throw DROPSErrCL("Multilevel not implemented in parallel DROPS yet, sorry");
 #endif
     match_fun match= _MG.GetBnd().GetMatchFun();
-    vel_idx.resize( n, vecP2_FE, _BndData.Vel, match);
+    const double bound = vel_idx.GetFinest().GetXidx().GetBound();
+    vel_idx.resize( n, GetVelFE(), _BndData.Vel, match, bound);
     A.Data.resize   (vel_idx.size());
     M.Data.resize   (vel_idx.size());
 }
@@ -1565,7 +2263,7 @@ void InstatStokes2PhaseP2P1CL<Coeff>::SetNumPrLvl( size_t n)
         throw DROPSErrCL("Multilevel not implemented in parallel DROPS yet, sorry");
 #endif
     match_fun match= _MG.GetBnd().GetMatchFun();
-    const double bound = this->GetXidx().GetBound();
+    const double bound = pr_idx.GetFinest().GetXidx().GetBound();
     pr_idx.resize( n, GetPrFE(),  _BndData.Pr, match, bound);
     B.Data.resize   (pr_idx.size());
     prM.Data.resize (pr_idx.size());
@@ -1600,6 +2298,69 @@ void InstatStokes2PhaseP2P1CL<Coeff>::GetPrOnPart( VecDescCL& p_part, const Leve
             pp[nr]-= p.Data[Xidx[nr]];
     }
 }
+
+
+template <class Coeff>
+double InstatStokes2PhaseP2P1CL<Coeff>::GetCFLTimeRestriction( LevelsetP2CL& lset)
+{
+    const Uint lvl= p.RowIdx->TriangLevel();
+    const MultiGridCL& mg= this->GetMG();
+    const_DiscVelSolCL vel= GetVelSolution();
+    LocalP2CL<Point3DCL> velLoc;
+    LocalNumbP2CL curvNumb;
+    VecDescCL curv( &vel_idx);
+    lset.AccumulateBndIntegral( curv);
+
+    double convMax= -1, viscMax= -1., gravMax= -1, stMax= -1;
+    const double rho_min= std::min( _Coeff.rho(-1.), _Coeff.rho(1.)),
+            nu_max= std::max( _Coeff.mu(-1.)/_Coeff.rho(-1.), _Coeff.mu(1.)/_Coeff.rho(1.));
+
+    for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl),
+        end= mg.GetTriangTetraEnd(lvl); it != end; ++it)
+    {
+        velLoc.assign( *it, vel);
+        curvNumb.assign( *it, *curv.RowIdx, _BndData.Vel);
+
+        // compute average curvature
+        double tauKappa= 0., visc= 0.,
+            h_min=1e99;
+        for (int i=0; i<10; ++i)
+            if (curvNumb.WithUnknowns(i))
+                tauKappa+= curv.Data[curvNumb.num[i]];
+
+        tauKappa/= it->GetVolume();
+
+        for ( TetraCL::const_EdgePIterator ed= it->GetEdgesBegin(), eend= it->GetEdgesEnd(); ed!=eend; ++ed)
+        {
+            const Point3DCL dir= (*ed)->GetVertex(0)->GetCoord() - (*ed)->GetVertex(1)->GetCoord();
+            const double length= norm(dir);
+            if (length < h_min) h_min= length;
+            visc+= 1./length/length;
+
+            const double grav= std::sqrt(std::abs( inner_prod( _Coeff.g, dir)/length/length));
+            if (grav > gravMax) gravMax= grav;
+
+            for (int i=0; i<10; ++i) {
+                const double conv= std::abs( inner_prod( velLoc[i], dir)/length/length);
+                if (conv > convMax) convMax= conv;
+            }
+        }
+
+        visc*= nu_max;
+        if (visc > viscMax) viscMax= visc;
+
+        const double st= std::sqrt(std::abs(tauKappa)/rho_min/h_min/h_min);
+        if (st > stMax) stMax= st;
+    }
+    
+    const double dtMax= 2./(convMax + viscMax + std::sqrt( (convMax+viscMax)*(convMax+viscMax) + 4*gravMax*gravMax + 4*stMax*stMax));
+
+    std::cout << "CFL factors: conv= " << convMax << "\tvisc = " << viscMax << "\tgrav = " << gravMax << "\tst = " << stMax
+        << " \n\t dt < " << dtMax << std::endl;
+
+    return dtMax;
+}
+
 
 //*****************************************************************************
 //                               VelocityRepairCL

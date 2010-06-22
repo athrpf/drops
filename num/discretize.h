@@ -217,6 +217,12 @@ dot(const Point3DCL& a, const GridFunctionCL<Point3DCL>& b)
     return ret;
 }
 
+inline void ExtractComponent( const GridFunctionCL<Point3DCL>& src, GridFunctionCL<double>& target, int comp)
+{
+    Assert( target.size()==src.size(), DROPSErrCL("extractComponent: GridFunctionCL objects have different sizes"), DebugNumericC);
+    for (size_t i= 0; i<src.size(); ++i)
+        target[i]= src[i][comp];
+}
 
 //**************************************************************************
 // Class:   LocalP1CL                                                      *
@@ -868,6 +874,10 @@ class P2DiscCL
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
     static void GetGradient( Quad5CL<Point3DCL> &G, Quad5CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
     { for (int j=0; j<Quad5DataCL::NumNodesC; ++j) G[j]= T*GRef[j]; }
+    /// compute gradient of a function provided as LocalP2CL<double> object
+    template<class GradT>
+    static void GetFuncGradient( GradT& gradF, const LocalP2CL<>& F, const GradT G[10])
+    { gradF= F[0]*G[0]; for (int i=1; i<10; ++i) gradF+= F[i]*G[i]; }
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 1
     static inline SVectorCL<3> Quad( const TetraCL& tetra, instat_vector_fun_ptr, Uint, double= 0.0);
     // cubatur formula for int f(x)*phi_i dx, exact up to degree 2
@@ -875,6 +885,20 @@ class P2DiscCL
     static inline valT Quad( valT f[10], int i);
     // returns int phi_i phi_j dx
     static inline double GetMass( int i, int j);
+};
+
+class P2RidgeDiscCL
+/// \brief contains helper functions for the XFEM discretization based on ridge enrichment.
+///
+/// The P2 ridge XFEM space is the direct sum of the  P2 FE space and P1*F_R (extended part)
+/// with the ridge function \f$ F_R = \sum |\phi_i| v_i - |\phi|\f$
+/// as defined in Moes et al., Comput. Methods Appl. Mech Engrg. 192 (2003), pp. 3163-3177,
+/// where \f$\phi=\sum \phi_i v_i\f$ is the level set function,
+{
+  public:
+    static void GetEnrichmentFunction( LocalP2CL<>& ridgeFunc_p,    LocalP2CL<>& ridgeFunc_n,    const LocalP2CL<>& lset);
+    static void GetExtBasisOnChildren( LocalP2CL<> p1ridge_p[4][8], LocalP2CL<> p1ridge_n[4][8], const LocalP2CL<>& lset);
+    static void GetExtBasisPointwise ( LocalP2CL<> p1ridge_p[4],    LocalP2CL<> p1ridge_n[4],    const LocalP2CL<>& lset);
 };
 
 

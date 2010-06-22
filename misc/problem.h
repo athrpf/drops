@@ -49,9 +49,9 @@ enum FiniteElementT
 /// - values >= 128 are used for vector-valued FE,
 ///   the difference to the scalar FE counterpart should be 128
 {
-    P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,  // for scalars
-    P1D_FE=4, P1X_FE=5, P1IF_FE=6,
-    vecP2_FE=130, vecP1Bubble_FE=131,          // for vectors
+    P0_FE=0, P1_FE=1, P2_FE=2, P1Bubble_FE=3,         // for scalars
+    P1D_FE=4, P1X_FE=5, P1IF_FE=6, P2R_FE=7,
+    vecP2_FE=130, vecP1Bubble_FE=131, vecP2R_FE=135 , // for vectors
     UnknownFE_=-1
 };
 
@@ -84,7 +84,9 @@ class FE_InfoCL
             case P1Bubble_FE:    NumUnknownsVertex_= NumUnknownsTetra_= 1; break;
             case vecP1Bubble_FE: NumUnknownsVertex_= NumUnknownsTetra_= 3; break;
             case P1D_FE:         NumUnknownsFace_= 1; break;
+            case P2R_FE:
             case P2_FE:          NumUnknownsVertex_= NumUnknownsEdge_= 1; break;
+            case vecP2R_FE:
             case vecP2_FE:       NumUnknownsVertex_= NumUnknownsEdge_= 3; break;
             default:             throw DROPSErrCL("FE_InfoCL: unknown FE type");
         }
@@ -92,8 +94,10 @@ class FE_InfoCL
 
     /// \brief Return enum code corresponding to FE-type
     FiniteElementT GetFE() const { return fe_; }
+    /// \brief Returns true for scalar FEM, false for vector-valued FEM
+    bool IsScalar() const { return fe_ < 128; }
     /// \brief Returns true for XFEM
-    bool IsExtended() const { return fe_==P1X_FE; }
+    bool IsExtended() const { return fe_==P1X_FE || fe_==P2R_FE || fe_==vecP2R_FE; }
     /// \brief Returns true for interface FE
     bool IsOnInterface() const { return fe_==P1IF_FE; }
 
@@ -142,11 +146,12 @@ class ExtIdxDescCL
     double       omit_bound_; ///< constant for stabilization of XFEM, controls omission of extended DoFs
     ExtendedIdxT Xidx_;       ///< vector entries store index of extended DoF (or NoIdx if FE node is not extended)
     ExtendedIdxT Xidx_old_;   ///< old extended index, used by member function Old2New(...)
+    const VecDescCL* lset_;
 #ifdef _PAR
     static IdxDescCL* current_Idx_;  ///< for DDD handlers
 #endif
 
-    ExtIdxDescCL( double omit_bound= 1./32. ) : omit_bound_( omit_bound ) {}
+    ExtIdxDescCL( double omit_bound= 1./32. ) : omit_bound_( omit_bound ), lset_(0) {}
 
     /// \brief Update numbering of extended DoFs and return dimension of XFEM space (= # DoF + # extended DoF)
     ///
@@ -171,6 +176,8 @@ class ExtIdxDescCL
 
     /// \brief Replace vector entries to account for different numbering of extended DoFs after call of UpdateXNumbering(...)
     void Old2New( VecDescCL* );
+
+    const VecDescCL& GetLevelset() const { return *lset_; }
 #ifdef _PAR
     /// \brief Gather xdof information on a vertex (for DDD)
     static int HandlerGatherUpdateXNumb ( OBJT objp, void* buf);
@@ -401,6 +408,9 @@ void P1toP1X ( const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const
 
 /// splits a p1x-VectorCL into two p1-VectorCL
 void P1XtoP1 ( const IdxDescCL& xidx, const VectorCL& p1x, const IdxDescCL& idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const MultiGridCL& mg );
+
+/// extracts component from vector valued FE vector
+void ExtractComponent( const VectorCL& vecFE, VectorCL& scalarFE, Uint comp, Uint stride=3);
 
 inline void
 GetLocalNumbP1NoBnd(IdxT* Numb, const TetraCL& s, const IdxDescCL& idx)

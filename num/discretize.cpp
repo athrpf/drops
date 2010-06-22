@@ -23,6 +23,7 @@
 */
 
 #include "num/discretize.h"
+#include "num/interfacePatch.h"
 #include "num/fe.h"
 
 namespace DROPS
@@ -254,6 +255,84 @@ void P1DiscCL::GetP1Basis( Quad5_2DCL<> p1[4], const BaryCoordCL* const p)
         p1[1][j]= FE_P1CL::H1( Node);
         p1[2][j]= FE_P1CL::H2( Node);
         p1[3][j]= FE_P1CL::H3( Node);
+    }
+}
+
+void P2RidgeDiscCL::GetEnrichmentFunction( LocalP2CL<>& ridgeFunc_p, LocalP2CL<>& ridgeFunc_n, const LocalP2CL<>& lset)
+/// initialize ridge enrichment function (to be interpreted as isoP2 function = P1 on child)
+{
+    for (int v=0; v<4; ++v) {
+        const double absval= std::abs(lset[v]);
+        ridgeFunc_p[v]= InterfacePatchCL::Sign(lset[v])== 1 ? 0 : 2*absval;
+        ridgeFunc_n[v]= InterfacePatchCL::Sign(lset[v])==-1 ? 0 : 2*absval;
+    }
+
+    for (int e=0; e<6; ++e) { // linear interpolation of edge values
+        const double linInterpolAbs= 0.5*(std::abs(lset[VertOfEdge(e,0)]) + std::abs(lset[VertOfEdge(e,1)]));
+        ridgeFunc_p[e+4]= linInterpolAbs - lset[e+4];
+        ridgeFunc_n[e+4]= linInterpolAbs + lset[e+4];
+    }
+}
+
+void P2RidgeDiscCL::GetExtBasisOnChildren( LocalP2CL<> p1ridge_p[4][8], LocalP2CL<> p1ridge_n[4][8], const LocalP2CL<>& lset)
+/// returns extended basis functions per child on pos./neg. part (P2 on child)
+{
+    LocalP2CL<> Fabs_p, Fabs_n;       // enrichment function
+    LocalP2CL<> extFabs_p, extFabs_n; // extension of enrichment function from child to parent
+    GetEnrichmentFunction( Fabs_p, Fabs_n, lset);
+    for (int ch= 0; ch < 8; ++ch) {
+        // extend P1 values on child (as Fabs has to be interpreted as isoP2 function) to whole parent
+        ExtendP1onChild( Fabs_p, ch, extFabs_p);
+        ExtendP1onChild( Fabs_n, ch, extFabs_n);
+        for (int i=0; i<4; ++i) { // init extended basis functions: p1r = p1 * Fabs
+            LocalP2CL<> &p1r_p= p1ridge_p[i][ch],
+                        &p1r_n= p1ridge_n[i][ch];
+            // p1_i[i] == 1
+            p1r_p[i]= extFabs_p[i];
+            p1r_n[i]= extFabs_n[i];
+            // p1_i == 0 on opposite face
+            const Ubyte oppFace= OppFace(i);
+            for (Ubyte j=0; j<3; ++j) {
+                const Ubyte vf= VertOfFace(oppFace,j),
+                            ef= EdgeOfFace(oppFace,j) + 4;
+                p1r_p[vf]= 0;
+                p1r_p[ef]= 0;
+                p1r_n[vf]= 0;
+                p1r_n[ef]= 0;
+                // p1_i == 0.5 on edges connecting vert i with opposite face
+                const Ubyte e= EdgeByVert(i,vf) + 4;
+                p1r_p[e]= 0.5*extFabs_p[e];
+                p1r_n[e]= 0.5*extFabs_n[e];
+            }
+        }
+    }
+}
+
+void P2RidgeDiscCL::GetExtBasisPointwise( LocalP2CL<> p1ridge_p[4], LocalP2CL<> p1ridge_n[4], const LocalP2CL<>& lset)
+/// returns extended basis functions on pos./neg. part (to be interpreted pointwise in P2 degrees of freedom)
+{
+    LocalP2CL<> Fabs_p, Fabs_n;       // enrichment function
+    GetEnrichmentFunction( Fabs_p, Fabs_n, lset);
+    for (int i=0; i<4; ++i) { // init extended basis functions: p1r = p1 * Fabs
+        LocalP2CL<> &p1r_p= p1ridge_p[i],
+                    &p1r_n= p1ridge_n[i];
+        // p1_i[i] == 1
+        p1r_p[i]= Fabs_p[i];
+        p1r_n[i]= Fabs_n[i];
+        // p1_i == 0 on opposite face
+        const Ubyte oppFace= OppFace(i);
+        for (Ubyte j=0; j<3; ++j) {
+            const Ubyte vf= VertOfFace(oppFace,j),
+                        ef= EdgeOfFace(oppFace,j) + 4;
+            p1r_p[vf]= 0;
+            p1r_p[ef]= 0;
+            p1r_n[vf]= 0;
+            p1r_n[ef]= 0;
+            // p1_i == 0.5 on edges connecting vert i with opposite face
+            const Ubyte e= EdgeByVert(i,vf) + 4;
+            p1r_p[e]= 0.5*Fabs_p[e];
+            p1r_n[e]= 0.5*Fabs_n[e];
+        }
     }
 }
 

@@ -80,7 +80,7 @@ void P1XRepairCL::operator() ()
 }
 
 
-void SetupMassDiag_P1(const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const BndDataCL<>& bnd)
+void SetupMassDiag_P1(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd)
 {
     M.resize( RowIdx.NumUnknowns());
 
@@ -96,8 +96,8 @@ void SetupMassDiag_P1(const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, con
     }
 }
 
-void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const VecDescCL& lset,
-                        const BndDataCL<>& bnd)
+void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset,
+                        const BndCondCL& bnd)
 {
     const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
     M.resize( RowIdx.NumUnknowns());
@@ -156,7 +156,7 @@ void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, c
     }
 }
 
-void SetupMassDiag_vecP2(const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, const BndDataCL<Point3DCL>& bnd)
+void SetupMassDiag_vecP2(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd)
 {
     M.resize( RowIdx.NumUnknowns());
 
@@ -175,5 +175,21 @@ void SetupMassDiag_vecP2(const MultiGridCL& MG, VectorCL& M, IdxDescCL& RowIdx, 
             }
     }
 }
+
+void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd, const VecDescCL* lsetp)
+{
+    switch(RowIdx.GetFE())
+    {
+    case P1_FE:
+        SetupMassDiag_P1( MG, M, RowIdx, bnd); break;
+    case P1X_FE:
+        SetupMassDiag_P1X( MG, M, RowIdx, *lsetp, bnd); break;
+    case vecP2_FE:
+        SetupMassDiag_vecP2( MG, M, RowIdx, bnd); break;
+    default:
+        throw DROPSErrCL("SetupMassDiag not implemented for this FE type");
+    }
+}
+
 
 } // end of namespace DROPS

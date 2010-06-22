@@ -23,6 +23,7 @@
 */
 
 #include "levelset/twophaseutils.h"
+#include "num/discretize.h"
 
 namespace DROPS {
 
@@ -101,6 +102,105 @@ void MakeP1P1XProlongation (size_t NumUnknownsVel, size_t NumUnknownsPr, size_t 
     VectorCL diag( 0., NumUnknownsPr);
     diag[std::slice(0, NumUnknownsPrP1, 1)]= 1.;
     PPr= MatrixCL( diag);
+}
+
+void ComputeErrorsP2R( const instat_vector_fun_ptr uPos, const instat_vector_fun_ptr uNeg, const VecDescCL& u_h, const BndDataCL<Point3DCL>& bnd, Point3DCL& L2, Point3DCL& H1, const LevelsetP2CL& lset, double t)
+{
+    const IdxDescCL& idx= *u_h.RowIdx;
+    const ExtIdxDescCL& extIdx= idx.GetXidx();
+    const int lvl= idx.TriangLevel();
+    const MultiGridCL& MG= lset.GetMG();
+
+    LocalP2CL<Point3DCL> u_p, u_n, uh, diff, diff_p, diff_n;
+    Quad5CL<Point3DCL> u5_p, u5_n, diff5;
+    LocalP1CL<Point3DCL> gdiff, gdiff_p, gdiff_n;
+    LocalP2CL<Point3DCL> gdiffLP2;
+    LocalP1CL<Point3DCL> Grad[10], GradRef[10];
+    LocalP2CL<> loc_phi;
+    LocalP2CL<> p1r_p[4][8], p1r_n[4][8];    // extended basis functions per child
+    LocalP2CL<Point3DCL> ext_p[8], ext_n[8]; // extended part per child
+    BaryCoordCL *nodes;
+    double det, absdet;
+    Point3DCL xval;
+    SMatrixCL<3,3> T;
+    LocalNumbP1CL numb; // std P1 numbering
+    IdxT xnr[4];        // extended numbering
+    InterfaceTetraCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+
+    L2= H1= Point3DCL();
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        absdet= std::fabs( det);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+
+        loc_phi.assign( *sit, ls, t);
+        patch.Init( *sit, loc_phi);
+        const bool nocut= !patch.Intersects();
+        if (nocut) {
+            if (patch.GetSign( 0) == 1) { // pos. part
+                u_p.assign(  *sit, uPos, t);
+                u5_p.assign(  *sit, uPos, t);
+                uh.assign( *sit, u_h, bnd, t);
+                diff= u_p - uh;
+                diff5= u5_p - Quad5CL<Point3DCL>(uh);
+            } else { // neg. part
+                u_n.assign(  *sit, uNeg, t);
+                u5_n.assign( *sit, uNeg, t);
+                uh.assign( *sit, u_h, bnd, t);
+                diff= u_n - uh;
+                diff5= u5_n - Quad5CL<Point3DCL>(uh);
+            }
+            L2+= Quad5CL<Point3DCL>(diff5*diff5).quad( absdet);
+
+            AccumulateH1( H1, diff, Grad, absdet);
+        }
+        else { // We are at the phase boundary.
+            u_p.assign( *sit, uPos, t);
+            u_n.assign( *sit, uNeg, t);
+            uh.assign( *sit, u_h, bnd, t);
+            diff_p= u_p - uh;
+            diff_n= u_n - uh;
+            // compute extended part
+            P2RidgeDiscCL::GetExtBasisOnChildren( p1r_p, p1r_n, loc_phi);
+            numb.assign( *sit, idx, idx.GetBndInfo());
+            for (int v=0; v<4; ++v) {
+                xnr[v]= numb.num[v]!=NoIdx ? extIdx[numb.num[v]] : NoIdx;
+            }
+            for (int ch=0; ch<8; ++ch) {
+                ext_p[ch]= Point3DCL();
+                ext_n[ch]= Point3DCL();
+                for (int v=0; v<4; ++v)
+                    if (xnr[v] != NoIdx) {
+                        for (int k=0; k<3; ++k)
+                            xval[k]= u_h.Data[xnr[v]+k];
+                        ext_p[ch]+= xval * p1r_p[v][ch];
+                        ext_n[ch]+= xval * p1r_n[v][ch];
+                    }
+            }
+            // compute L2 norm
+            patch.ComputeSubTets();
+            for (Uint k=0; k<patch.GetNumTetra(); ++k)
+            { // init quadrature objects for integrals on sub tetras
+                nodes = Quad5CL<Point3DCL>::TransformNodes(patch.GetTetra(k));
+                const int ch= patch.GetChildIdx(k);
+                Quad5CL<Point3DCL> diff5cut( k<patch.GetNumNegTetra() ? LocalP2CL<Point3DCL>(diff_n - ext_n[ch])
+                                                                      : LocalP2CL<Point3DCL>(diff_p - ext_p[ch]), nodes);
+                L2+= Quad5CL<Point3DCL>( diff5cut*diff5cut).quad(absdet*VolFrac(patch.GetTetra(k)));
+                delete[] nodes;
+            }
+
+            AccumulateH1( H1, diff_p, diff_n, ext_p, ext_n, patch, Grad, absdet);
+        }
+    }
+    H1+= L2;
+    L2= sqrt( L2);
+    H1= sqrt( H1);
 }
 
 

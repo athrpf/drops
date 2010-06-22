@@ -30,6 +30,7 @@
 #include <fstream>
 #include <iomanip>
 #include "misc/problem.h"
+#include "levelset/levelset.h"
 #ifdef _PAR
 #include "parallel/exchange.h"
 #endif
@@ -146,6 +147,175 @@ void WriteMatrices (StokesT& Stokes, int i)
 void MakeP1P1XProlongation (size_t NumUnknownsVel, size_t NumUnknownsPr, size_t NumUnknownsPrP1,
     MatrixCL& PVel, MatrixCL& PPr);
 
+/// For given exact solution u and discrete P2 solution uh on positive and negative subdomains, computes L2 and H1 errors || u - u_h ||
+template<class ValT, class DiscSolT>
+void ComputeErrorsP2(  ValT (*uPos)(const Point3DCL&, double), ValT (*uNeg)(const Point3DCL&, double), const DiscSolT& uhPos, const DiscSolT& uhNeg, ValT& L2, ValT& H1, const LevelsetP2CL& lset, double t);
+
+void ComputeErrorsP2R( const instat_vector_fun_ptr uPos, const instat_vector_fun_ptr uNeg, const VecDescCL& uh, const BndDataCL<Point3DCL>& bnd, Point3DCL& L2, Point3DCL& H1, const LevelsetP2CL& lset, double t=0.);
+
+// ================ inline/template definitions ==================
+
+
+
+inline void AccumulateH1( double& H1, const LocalP2CL<>& diff, const LocalP1CL<Point3DCL> Grad[10], double absdet)
+{
+    LocalP1CL<Point3DCL> gdiff;
+    LocalP2CL<Point3DCL> gdiffLP2;
+    P2DiscCL::GetFuncGradient( gdiff, diff, Grad);
+    gdiffLP2.assign( gdiff);
+    H1+= Quad5CL<>(LocalP2CL<>(dot(gdiffLP2, gdiffLP2))).quad( absdet);
+}
+
+inline void AccumulateH1( Point3DCL& H1, const LocalP2CL<Point3DCL>& diff, const LocalP1CL<Point3DCL> Grad[10], double absdet)
+{
+    LocalP2CL<> diff_comp; // components of diff
+    LocalP1CL<Point3DCL> gdiff;
+    LocalP2CL<Point3DCL> gdiffLP2;
+    for (int k=0; k<3; ++k) {
+        ExtractComponent( diff, diff_comp, k);
+        P2DiscCL::GetFuncGradient( gdiff, diff_comp, Grad);
+        gdiffLP2.assign( gdiff);
+        H1[k]+= Quad5CL<>(LocalP2CL<>(dot(gdiffLP2, gdiffLP2))).quad( absdet);
+    }
+}
+
+inline void AccumulateH1( double& H1, const LocalP2CL<>& diff_p, const LocalP2CL<>& diff_n, InterfaceTetraCL& patch, const LocalP1CL<Point3DCL> Grad[10], double absdet)
+{
+    LocalP1CL<Point3DCL> gdiff_p, gdiff_n;
+    LocalP2CL<Point3DCL> gdiffLP2;
+
+    P2DiscCL::GetFuncGradient( gdiff_p, diff_p, Grad);
+    P2DiscCL::GetFuncGradient( gdiff_n, diff_n, Grad);
+    for (int ch= 0; ch < 8; ++ch) {
+        patch.ComputeCutForChild( ch);
+        gdiffLP2.assign( gdiff_p);
+        H1+= patch.quad( LocalP2CL<>(dot( gdiffLP2, gdiffLP2)), absdet, true);
+        gdiffLP2.assign( gdiff_n);
+        H1+= patch.quad( LocalP2CL<>(dot( gdiffLP2, gdiffLP2)), absdet, false);
+    }
+}
+
+inline void AccumulateH1( Point3DCL& H1, const LocalP2CL<Point3DCL>& diff_p, const LocalP2CL<Point3DCL>& diff_n, InterfaceTetraCL& patch, const LocalP1CL<Point3DCL> Grad[10], double absdet)
+{
+    LocalP2CL<> diff_comp; // components of diff
+    LocalP1CL<Point3DCL> gdiff_p[3], gdiff_n[3];
+    LocalP2CL<Point3DCL> gdiffLP2;
+    for (int k=0; k<3; ++k) {
+        ExtractComponent( diff_p, diff_comp, k);
+        P2DiscCL::GetFuncGradient( gdiff_p[k], diff_comp, Grad);
+        ExtractComponent( diff_n, diff_comp, k);
+        P2DiscCL::GetFuncGradient( gdiff_n[k], diff_comp, Grad);
+    }
+    for (int ch= 0; ch < 8; ++ch) {
+        patch.ComputeCutForChild( ch);
+        for (int k=0; k<3; ++k) {
+            gdiffLP2.assign( gdiff_p[k]);
+            H1[k]+= patch.quad( LocalP2CL<>(dot( gdiffLP2, gdiffLP2)), absdet, true);
+            gdiffLP2.assign( gdiff_n[k]);
+            H1[k]+= patch.quad( LocalP2CL<>(dot( gdiffLP2, gdiffLP2)), absdet, false);
+        }
+    }
+}
+
+inline void AccumulateH1( Point3DCL& H1, const LocalP2CL<Point3DCL>& diff_p, const LocalP2CL<Point3DCL>& diff_n, const LocalP2CL<Point3DCL> ext_p[8], const LocalP2CL<Point3DCL> ext_n[8],
+                          InterfaceTetraCL& patch, const LocalP1CL<Point3DCL> Grad[10], double absdet)
+{
+    LocalP2CL<> comp; // component
+    LocalP1CL<Point3DCL> gdiff_p[3], gdiff_n[3], gext;
+    LocalP2CL<Point3DCL> gdiffLP2;
+    for (int k=0; k<3; ++k) {
+        ExtractComponent( diff_p, comp, k);
+        P2DiscCL::GetFuncGradient( gdiff_p[k], comp, Grad);
+        ExtractComponent( diff_n, comp, k);
+        P2DiscCL::GetFuncGradient( gdiff_n[k], comp, Grad);
+    }
+    for (int ch= 0; ch < 8; ++ch) {
+        patch.ComputeCutForChild( ch);
+        for (int k=0; k<3; ++k) {
+            ExtractComponent( ext_p[ch], comp, k);
+            P2DiscCL::GetFuncGradient( gext, comp, Grad);
+            gdiffLP2.assign( LocalP1CL<Point3DCL>(gdiff_p[k] - gext));
+            H1[k]+= patch.quad( LocalP2CL<>(dot( gdiffLP2, gdiffLP2)), absdet, true);
+
+            ExtractComponent( ext_n[ch], comp, k);
+            P2DiscCL::GetFuncGradient( gext, comp, Grad);
+            gdiffLP2.assign(  LocalP1CL<Point3DCL>(gdiff_n[k] - gext));
+            H1[k]+= patch.quad( LocalP2CL<>(dot( gdiffLP2, gdiffLP2)), absdet, false);
+        }
+    }
+}
+
+template<class ValT, class DiscSolT>
+void ComputeErrorsP2(  ValT (*uPos)(const Point3DCL&, double), ValT (*uNeg)(const Point3DCL&, double), const DiscSolT& uhPos, const DiscSolT& uhNeg, ValT& L2, ValT& H1, const LevelsetP2CL& lset, double t)
+{
+    const int lvl= uhPos.GetLevel();
+    const MultiGridCL& MG= lset.GetMG();
+    LocalP2CL<ValT> u_p, u_n, uh_p, uh_n, diff, diff_p, diff_n;
+    Quad5CL<ValT> u5_p, u5_n, diff5;
+    LocalP1CL<Point3DCL> Grad[10], GradRef[10];
+    LocalP2CL<> loc_phi;
+    BaryCoordCL *nodes;
+    double det, absdet;
+    SMatrixCL<3,3> T;
+    InterfaceTetraCL patch;
+
+    P2DiscCL::GetGradientsOnRef( GradRef);
+    LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
+
+    L2= H1= ValT();
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = MG.GetTriangTetraBegin(lvl), send=MG.GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        GetTrafoTr( T, det, *sit);
+        absdet= std::fabs( det);
+        P2DiscCL::GetGradients( Grad, GradRef, T);
+
+        loc_phi.assign( *sit, ls, t);
+        patch.Init( *sit, loc_phi);
+        const bool nocut= !patch.Intersects();
+        if (nocut) {
+            if (patch.GetSign( 0) == 1) { // pos. part
+                u_p.assign(  *sit, uPos, t);
+                u5_p.assign(  *sit, uPos, t);
+                uh_p.assign( *sit, uhPos, t);
+                diff= u_p - uh_p;
+                diff5= u5_p - Quad5CL<ValT>(uh_p);
+            } else { // neg. part
+                u_n.assign(  *sit, uNeg, t);
+                u5_n.assign( *sit, uNeg, t);
+                uh_n.assign( *sit, uhNeg, t);
+                diff= u_n - uh_n;
+                diff5= u5_n - Quad5CL<ValT>(uh_n);
+            }
+            L2+= Quad5CL<ValT>(diff5*diff5).quad( absdet);
+
+            AccumulateH1( H1, diff, Grad, absdet);
+        }
+        else { // We are at the phase boundary.
+            u_p.assign( *sit, uPos, t);
+            u_n.assign( *sit, uNeg, t);
+            uh_p.assign( *sit, uhPos, t);
+            uh_n.assign( *sit, uhNeg, t);
+            diff_p= u_p - uh_p;
+            diff_n= u_n - uh_n;
+            // compute L2 norm
+            patch.ComputeSubTets();
+            for (Uint k=0; k<patch.GetNumTetra(); ++k)
+            { // init quadrature objects for integrals on sub tetras
+                nodes = Quad5CL<ValT>::TransformNodes(patch.GetTetra(k));
+                Quad5CL<ValT> diff5cut( k<patch.GetNumNegTetra() ? diff_n : diff_p, nodes);
+                L2+= Quad5CL<ValT>( diff5cut*diff5cut).quad(absdet*VolFrac(patch.GetTetra(k)));
+                delete[] nodes;
+            }
+
+            AccumulateH1( H1, diff_p, diff_n, patch, Grad, absdet);
+        }
+    }
+    H1+= L2;
+    L2= sqrt( L2);
+    H1= sqrt( H1);
+}
 
 } //end of namespace DROPS
 

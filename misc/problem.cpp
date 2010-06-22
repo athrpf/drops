@@ -285,6 +285,12 @@ void P1toP1X (const IdxDescCL& xidx, VectorCL& p1x, const IdxDescCL& idx, const 
     }
 }
 
+void ExtractComponent( const VectorCL& vecFE, VectorCL& scalarFE, Uint comp, Uint stride)
+{
+    Assert( vecFE.size()==scalarFE.size()*stride, DROPSErrCL("ExtractComponent: vector sizes do not match"), DebugNumericC);
+    for (size_t i=0, s=scalarFE.size(); i<s; ++i)
+        scalarFE[i]= vecFE[i*stride+comp];
+}
 
 void CreateNumbOnTetra( const Uint idx, IdxT& counter, Uint stride,
                         const MultiGridCL::TriangTetraIteratorCL& begin,
@@ -487,12 +493,13 @@ void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
 IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, bool NumberingChanged)
 {
     const Uint sysnum= Idx->GetIdx(),
-        level= Idx->TriangLevel();
+        level= Idx->TriangLevel(),
+        stride= Idx->IsScalar() ? 1: 3; // scalar or vector-valued FE
     IdxT extIdx= NumberingChanged ? Idx->NumUnknowns() : Xidx_.size();
     Xidx_old_.assign( extIdx, NoIdx);
     Xidx_.swap( Xidx_old_);
+    lset_= &lset;
     InterfaceTetraCL cut;
-
     LocalP2CL<> hat_sq[4]; // values of phi_i*phi_i
 
     for (int i=0; i<4; ++i) //initialize hat_ii
@@ -529,7 +536,8 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
                     if (!it->GetVertex(i)->Unknowns.Exist( sysnum)) continue;
                     const IdxT nr= it->GetVertex(i)->Unknowns(sysnum);
                     if (Xidx_[nr]==NoIdx) // not extended yet
-                        Xidx_[nr]= extIdx++;
+                        for (Uint k=0; k<stride; ++k)
+                            Xidx_[nr+k]= extIdx++;
                 }
             else
                 for (Uint i=0; i<4; ++i)
@@ -539,7 +547,8 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
                     if (!it->GetVertex(i)->Unknowns.Exist( sysnum)) continue;
                     const IdxT nr= it->GetVertex(i)->Unknowns(sysnum);
                     if (Xidx_[nr]==NoIdx) // not extended yet
-                        Xidx_[nr]= extIdx++;
+                        for (Uint k=0; k<stride; ++k)
+                            Xidx_[nr+k]= extIdx++;
                 }
         }
     }
