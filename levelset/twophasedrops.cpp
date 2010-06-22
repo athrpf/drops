@@ -339,6 +339,10 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         vtkwriter.Register( make_VTKScalar( massTransp.GetSolution(), "massTransport") );
     }
 
+    if (C.surf_DoTransp) {
+        vtkwriter.Register( make_VTKIfaceScalar( MG, surfTransp.ic,  "InterfaceSol"));
+    }
+
     if (C.ens_EnsightOut)
         ensight.Write( 0.);
     if (C.vtk_VTKOut)

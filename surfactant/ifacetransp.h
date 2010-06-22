@@ -29,6 +29,7 @@
 #include "num/interfacePatch.h"
 #include "levelset/mgobserve.h"
 #include "out/ensightOut.h"
+#include "out/vtkOut.h"
 
 #ifndef DROPS_IFACETRANSP_H
 #define DROPS_IFACETRANSP_H
@@ -248,13 +249,39 @@ class Ensight6IfaceScalarCL : public Ensight6VariableCL
 
 ///\brief Create an Ensight6IfaceP1ScalarCL with operator new.
 ///
-/// This is just for uniform code; the analoguous functions for scalars and vectors are more useful
+/// This is just for uniform code; the analogous functions for scalars and vectors are more useful
 /// because they help to avoid template parameters in user code.
 inline Ensight6IfaceScalarCL&
 make_Ensight6IfaceScalar (MultiGridCL& mg, const VecDescCL& u,
     std::string varName, std::string fileName, bool timedep= false)
 {
     return *new Ensight6IfaceScalarCL( mg, u, varName, fileName, timedep);
+}
+
+///\brief Represents a scalar P1 function on the interface as VTK variable by extension to the
+///       whole domain.
+class VTKIfaceScalarCL : public VTKVariableCL
+{
+  private:
+    const VecDescCL&   u_;
+    MultiGridCL&       mg_;
+
+  public:
+    VTKIfaceScalarCL (MultiGridCL& mg, const VecDescCL& u, std::string varName)
+        : VTKVariableCL( varName), u_( u), mg_( mg) {}
+
+    void put      (VTKOutCL& cf) const;
+};
+
+///\brief Create an VTKIfaceP1ScalarCL with operator new.
+///
+/// This is just for uniform code; the analogous functions for scalars and vectors are more useful
+/// because they help to avoid template parameters in user code.
+inline VTKIfaceScalarCL&
+make_VTKIfaceScalar (MultiGridCL& mg, const VecDescCL& u,
+    std::string varName)
+{
+    return *new VTKIfaceScalarCL( mg, u, varName);
 }
 
 } // end of namespace DROPS
