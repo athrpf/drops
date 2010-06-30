@@ -1963,10 +1963,13 @@ template <class Coeff>
 void InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset, double t) const
 /// Set up rhs b (depending on phase bnd)
 {
-    if (vel_idx.GetFinest().GetFE()==vecP2_FE)
+	const FiniteElementT fe= b->RowIdx->GetFE();
+    if (fe==vecP2_FE)
         SetupRhs1_P2 ( _MG, _Coeff, _BndData, b, lset, t);
-    else
+    else if (fe==vecP2R_FE)
         SetupRhs1_P2R( _MG, _Coeff, _BndData, b, lset, t);
+    else
+        throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1 not implemented for this FE type");
 }
 
 
