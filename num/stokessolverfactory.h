@@ -56,6 +56,22 @@ namespace DROPS {
     <tr><td> 31 </td><td>                   </td><td> BSSmootherCL                       </td><td> BSSmootherCL                 </td></tr>
     </table>*/
 
+/// codes for Oseen solvers
+enum OseenSolverE {
+    GCR_OS= 1, iUzawa_OS= 2, PMinRes_OS= 3, GMRes_OS= 4, GMResR_OS= 5, StokesMGM_OS= 30
+};
+
+/// codes for velocity preconditioners (also including smoothers for the StokesMGM_OS)
+enum APcE {
+    MG_APC= 1, MGsymm_APC= 2, PCG_APC= 3, GMRes_APC= 4, BiCGStab_APC= 5, Vanka_APC= 6, AMG_APC= 20, // preconditioners 
+    PVanka_SM= 30, BraessSarazin_SM= 31                                                             // smoothers, nevertheless listed here
+};
+
+/// codes for the pressure Schur complement preconditioners
+enum SPcE {
+    ISBBT_SPC= 1, MinComm_SPC= 2, ISPre_SPC= 3, ISMG_SPC= 7, VankaSchur_SPC= 4, Vanka_SPC=6
+}; 
+
 template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
 class StokesSolverFactoryBaseCL
 {
@@ -91,16 +107,19 @@ template <class ParamsT>
 class StokesSolverFactoryHelperCL
 {
   public:
+    int GetOseenSolver( const ParamsT& C) const { return (C.stk_StokesMethod / 10000) % 100; }
+    int GetAPc( const ParamsT& C) const { return (C.stk_StokesMethod / 100) % 100; }
+    int GetSPc( const ParamsT& C) const { return C.stk_StokesMethod % 100; }
     bool VelMGUsed ( const ParamsT& C) const
     {
-        const int APc = (C.stk_StokesMethod / 100) % 100;
-        return (( APc == 1) || (APc == 2) || (APc == 30) || (APc == 31));
+        const int APc = GetAPc( C);
+        return (( APc == MG_APC) || (APc == MGsymm_APC) || (APc == PVanka_SM) || (APc == BraessSarazin_SM));
     }
     bool PrMGUsed  ( const ParamsT& C) const
     {
-        const int APc = (C.stk_StokesMethod / 100) % 100,
-            SPc = C.stk_StokesMethod % 100;
-        return (( APc == 30) || ( APc == 31) || (SPc == 7));
+        const int APc = GetAPc( C),
+            SPc = GetSPc( C);
+        return (( APc == PVanka_SM) || ( APc == BraessSarazin_SM) || (SPc == ISMG_SPC));
     }
 };
 
@@ -383,9 +402,9 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
 {
     if (Stokes_.UsesXFEM())
     { // check whether solver is well-defined for XFEM
-        if (C_.stk_StokesMethod/10000 == 30)
+        if (OseenSolver_ == StokesMGM_OS)
             throw DROPSErrCL("StokesMGM not implemented for P1X-elements");
-        if (C_.stk_StokesMethod%100 == 7)
+        if (SPc_ == ISMG_SPC)
             throw DROPSErrCL("ISMGPreCL not implemented for P1X-elements");
     }
 
@@ -582,11 +601,11 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
 void StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
     SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
-    if ( APc_ == 30 || APc_ == 31) { //  Vanka or Braess Sarazin smoother
+    if ( APc_ == PVanka_SM || APc_ == BraessSarazin_SM) { //  Vanka or Braess Sarazin smoother
         mincommispc_.SetMatrices(A, B, Mvel, M, pr_idx);
         bbtispc_.SetMatrices(B, Mvel, M, pr_idx);
     }
-    if ( SPc_ == 4) {              // VankaSchur
+    if ( SPc_ == VankaSchur_SPC) {              // VankaSchur
         vankaschurpc_.SetAB(A, B);
     }
 }
@@ -595,10 +614,10 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
 ProlongationVelT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetPVel()
 {
     switch ( APc_) {
-        case  1 : return MGSolver_.GetProlongation();     break;  // general MG
-        case  2 : return MGSolversymm_.GetProlongation(); break;  // symm. MG
-        case 30 : return (C_.ns_Nonlinear == 0 ? mgvankasolversymm_->GetPVel() :  mgvankasolver_->GetPVel()); break;
-        case 31 : return (C_.ns_Nonlinear == 0 ? mgbssolversymm_->GetPVel()    :  mgbssolver_->GetPVel());    break;
+        case MG_APC           : return MGSolver_.GetProlongation();     break;  // general MG
+        case MGsymm_APC       : return MGSolversymm_.GetProlongation(); break;  // symm. MG
+        case PVanka_SM        : return (C_.ns_Nonlinear == 0 ? mgvankasolversymm_->GetPVel() :  mgvankasolver_->GetPVel()); break;
+        case BraessSarazin_SM : return (C_.ns_Nonlinear == 0 ? mgbssolversymm_->GetPVel()    :  mgbssolver_->GetPVel());    break;
     }
     return 0;
 }
@@ -607,9 +626,9 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
 SchurPreBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetSchurPreBaseCLPtr()
 {
     switch ( SPc_) {
-        case  1 : return &bbtispc_;
-        case  3 : return &isprepc_;
-        case  7 : return &ismgpre_;
+        case ISBBT_SPC : return &bbtispc_;
+        case ISPre_SPC : return &isprepc_;
+        case ISMG_SPC  : return &ismgpre_;
     }
     return 0;
 }
@@ -618,10 +637,10 @@ template <class StokesT, class ParamsT, class ProlongationVelT, class Prolongati
 ProlongationPT* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::GetPPr()
 {
     switch ( APc_) {
-        case 30 : return (C_.ns_Nonlinear == 0 ? mgvankasolversymm_->GetPPr() :  mgvankasolver_->GetPPr()); break;
-        case 31 : return (C_.ns_Nonlinear == 0 ? mgbssolversymm_->GetPPr()    :  mgbssolver_->GetPPr());    break;
+        case PVanka_SM        : return (C_.ns_Nonlinear == 0 ? mgvankasolversymm_->GetPPr() :  mgvankasolver_->GetPPr()); break;
+        case BraessSarazin_SM : return (C_.ns_Nonlinear == 0 ? mgbssolversymm_->GetPPr()    :  mgbssolver_->GetPPr());    break;
     }
-    if (SPc_ == 7 ) // ISMGPreCL
+    if (SPc_ == ISMG_SPC )
         return ismgpre_.GetProlongation();
     return 0;
 }
