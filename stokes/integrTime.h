@@ -181,15 +181,15 @@ template < template<class, class> class BaseMethod, class StokesT, class SolverT
 const double StokesFracStepSchemeCL<BaseMethod, StokesT, SolverT>::theta_[3]
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
 
-
-class SchurPreBaseCL
+/// base class for Schur complement preconditioners
+class SchurPreBaseCL: public PreBaseCL
 {
   protected:
     double kA_,   ///< scaling factor for pressure stiffness matrix or equivalent
            kM_;   ///< scaling factor for pressure mass matrix
            
   public:
-    SchurPreBaseCL( double kA, double kM) : kA_( kA), kM_( kM) {}
+    SchurPreBaseCL( double kA, double kM, std::ostream* output=0) : PreBaseCL( output), kA_( kA), kM_( kM) {}
     void SetWeights( double kA, double kM) { kA_ = kA; kM_ = kM; }
 };
 
@@ -225,6 +225,8 @@ class ISPreCL : public SchurPreBaseCL
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 };
 
 
@@ -251,6 +253,8 @@ class ISNonlinearPreCL : public SchurPreBaseCL
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 };
 #else
 template <typename ASolverT, typename MSolverT>
@@ -273,6 +277,8 @@ class ISNonlinearPreCL : public SchurPreBaseCL
     /// \brief Apply preconditioner
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 
     /// \brief preconditionied vector is accumulated after "Apply"
     inline bool RetAcc() const {
@@ -335,6 +341,8 @@ class ISMGPreCL : public SchurPreBaseCL
     template <typename Mat, typename Vec>
     void
     Apply(const Mat& /*A*/, Vec& p, const Vec& c) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 
     MLMatrixCL* GetProlongation() { return &P_; }
 };
@@ -441,6 +449,8 @@ class ISBBTPreCL : public SchurPreBaseCL
 
     template <typename Mat, typename Vec>
     void Apply(const Mat&, Vec& p, const Vec& c) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 
     void SetMatrices (const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
         B_= B;
@@ -540,6 +550,8 @@ class MinCommPreCL
 
     template <typename Mat, typename Vec>
     void Apply (const Mat&, Vec& x, const Vec& b) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 
     void SetMatrixA  (const MatrixCL* A) { A_= A; Aversion_= 0; }
     void SetMatrices (const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M,

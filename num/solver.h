@@ -1531,6 +1531,26 @@ class SolverBaseCL
 
 };
 
+/// \brief base class for "expensive" preconditioners.
+///
+/// Preconditioner base class for Schur complement preconditioners (see SchurPreBaseCL)
+/// and SolverAsPreCL, as those are computational expensive compared to the additional virtual function call.
+/// Anyway, Jacobi and Gauss-Seidel type preconditioners are not derived from this class to avoid the virtual function overhead.
+class PreBaseCL
+{
+  protected:
+    mutable std::ostream* output_;
+    
+    PreBaseCL( std::ostream* output= 0)
+      : output_( output) {}
+    virtual ~PreBaseCL() {}
+    
+  public:
+    virtual void Apply( const MatrixCL& A,   VectorCL& x, const VectorCL& b) const = 0;
+    virtual void Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const = 0;
+};
+
+
 
 // Bare CG solver
 class CGSolverCL : public SolverBaseCL
@@ -1853,15 +1873,14 @@ typedef PCGSolverCL<SSORDiagPcCL> PCG_SsorDiagCL;
 //=============================================================================
 /// Wrapper to use a solver as preconditioner. Needed for, e.g., inexact Uzawa.
 template <class SolverT>
-class SolverAsPreCL
+class SolverAsPreCL: public PreBaseCL
 {
   private:
     SolverT& solver_;
-    mutable std::ostream* output_;
 
   public:
     SolverAsPreCL( SolverT& solver, std::ostream* output= 0)
-        : solver_( solver), output_( output) {}
+        : PreBaseCL( output), solver_( solver) {}
     /// return solver object
     SolverT& GetSolver()             { return solver_; }
     /// return solver object
@@ -1892,6 +1911,8 @@ class SolverAsPreCL
             *output_ << "SolverAsPreCL: iterations: " << solver_.GetIter()
                      << "\trelative residual: " << solver_.GetResid() << std::endl;
     }
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 };
 
 
