@@ -923,7 +923,8 @@ SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
 
     const size_t numzero= std::count( Addr( v), Addr( v) + v.size(), 0.),
                  nnz= v.size() - numzero;
-    size_t       zerocount= 0;
+    size_t       zerocount= 0,
+                 shift= 1;
     IncrementVersion();
     _cols+= c <= _cols ? 1 : c - _cols + 1;
     // These will become the new data-arrays of the matrix.
@@ -934,30 +935,33 @@ SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
     T*      newvbeg= Addr( val);
 
     for (size_t row= 0; row < num_rows(); ++row) {
-        if (v[row] == 0.) { // Skip zero-rows of v.
-            ++zerocount;
-            continue;
-        }
-
         // Column indices: Copy the entries up to column c.
         rowbeg[row]= newcbeg - Addr( colind);
         const size_t* cbeg= GetFirstCol( row);
         const size_t* cend= GetFirstCol( row + 1);
         const size_t *cpos= std::lower_bound( cbeg, cend, c);
-        for( ; cpos != cend && *cpos < c; ++cpos) ; // empty for-statement body
         newcbeg= std::copy( cbeg, cpos, newcbeg);
-        // Insert c.
-        *newcbeg++= c;
-        // Copy the rest of the row and shift column indices by 1.
-        for( const size_t* p= cpos; p != cend; ++p, ++newcbeg)
-            *newcbeg= *p + 1;
-
-        // Same as above for the val-array; no index shifting here.
+        // Same for the val-array.
         const T* vbeg= GetFirstVal( row);
         const T* vend= GetFirstVal( row + 1);
         const T* vpos= vbeg + (cpos - cbeg);
         newvbeg= std::copy( vbeg, vpos, newvbeg);
-        *newvbeg++= v[row];
+
+        // Insert c and the vector-entry.
+        if ( v[row] != 0.) {
+            *newcbeg++= c;
+            *newvbeg++= v[row];
+            shift= 1;
+        }
+        else {
+            ++zerocount;
+            shift= 0;
+        }
+
+        // Copy the rest of the row and shift column indices by shift.
+        for( const size_t* p= cpos; p != cend; ++p, ++newcbeg)
+            *newcbeg= *p + shift;
+        // The same for the val-array; no index shifting here.
         newvbeg= std::copy( vpos, vend, newvbeg);
     }
     if (zerocount != numzero)
@@ -973,6 +977,7 @@ SparseMatBaseCL<T>::insert_col (size_t c, const VectorBaseCL<T>& v)
     _val.resize( val.size());
     _val= val;
 }
+
 
 /// \brief Compute the transpose matrix of M explicitly.
 /// This could be handled more memory-efficient by exploiting
