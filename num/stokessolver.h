@@ -360,7 +360,7 @@ struct UpperBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
     static void
-    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+    Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc2.Apply( /*dummy*/ B, p, c);
         Vec b2( b);
         b2-= transp_mul( B, p);
@@ -373,7 +373,7 @@ struct DiagBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
     static void
-    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+    Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc1.Apply( A, v, b);
         pc2.Apply( /*dummy*/ B, p, c);
    }
@@ -384,7 +384,7 @@ struct LowerBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
     static void
-    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+    Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc1.Apply( A, v, b);
         Vec c2( c);
 #ifdef _PAR
@@ -1606,7 +1606,7 @@ class VankaPreCL
 /// Vertex-based multiplikative Schwartz-method. The implementation is based on the Vanka-smoother class for
 /// Stokes-multigrid in Drops. The effect of Apply is one smoother-iteration with 0 as starting value. The
 /// right-hand side for the momentum equations is set to 0. Thus, the action of the Schur-complement is approximated.
-class VankaSchurPreCL
+class VankaSchurPreCL: public SchurPreBaseCL
 {
   private:
     PVankaSmootherCL smoother_;
@@ -1621,7 +1621,7 @@ class VankaSchurPreCL
 
   public:
     VankaSchurPreCL (const MLIdxDescCL* idx= 0)
-        : smoother_( 0, 1., idx), BVersion_( 0), M( 0, MUL, 0, TRANSP_MUL, 0, MUL) {}
+        : SchurPreBaseCL( 0, 0), smoother_( 0, 1., idx), BVersion_( 0), M( 0, MUL, 0, TRANSP_MUL, 0, MUL) {}
 
     void Setidx (const MLIdxDescCL* idx)   { smoother_.Setidx( idx); }
     void SetAB   (const MatrixCL* A, const MatrixCL* B) { M.SetBlock( 0, A); M.SetBlock( 1, B); M.SetBlock( 2, B); }

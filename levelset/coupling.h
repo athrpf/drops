@@ -86,7 +86,7 @@ class TimeDisc2PhaseCL
     // update after grid has changed
     virtual void Update() = 0;
     
-    void SetSchurPreBaseCLPointer( SchurPreBaseCL* ptr) { ispc_ = ptr; }
+    void SetSchurPrePtr( SchurPreBaseCL* ptr) { ispc_ = ptr; }
 };
 
 template <class StokesT, class LsetSolverT>

@@ -181,6 +181,10 @@ template < template<class, class> class BaseMethod, class StokesT, class SolverT
 const double StokesFracStepSchemeCL<BaseMethod, StokesT, SolverT>::theta_[3]
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
 
+/// fwd decl from num/stokessolver.h
+template<typename, typename>
+class ApproximateSchurComplMatrixCL;
+
 /// base class for Schur complement preconditioners
 class SchurPreBaseCL: public PreBaseCL
 {
@@ -190,7 +194,14 @@ class SchurPreBaseCL: public PreBaseCL
            
   public:
     SchurPreBaseCL( double kA, double kM, std::ostream* output=0) : PreBaseCL( output), kA_( kA), kM_( kM) {}
+    virtual ~SchurPreBaseCL() {}
     void SetWeights( double kA, double kM) { kA_ = kA; kM_ = kM; }
+
+    virtual void Apply( const MatrixCL& A,   VectorCL& x, const VectorCL& b) const = 0;
+    virtual void Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const = 0;
+    // dummy Apply routine for inexact Uzawa. The matrix parameter in the Apply is not used, anyway. 
+    template<typename PcT, typename Mat>
+    void Apply( const ApproximateSchurComplMatrixCL<PcT, Mat>&, VectorCL& x, const VectorCL& b) const { const MatrixCL dummy; Apply( dummy, x, b); }    
 };
 
 //**************************************************************************
@@ -507,7 +518,7 @@ void ISBBTPreCL::Apply(const Mat&, Vec& p, const Vec& c) const
 // with P1X-elements.
 //**************************************************************************
 #ifndef _PAR
-class MinCommPreCL
+class MinCommPreCL : public SchurPreBaseCL
 {
   private:
     const MatrixCL* A_, *B_, *Mvel_, *M_;
@@ -527,14 +538,14 @@ class MinCommPreCL
   public:
     MinCommPreCL (const MatrixCL* A, MatrixCL* B, MatrixCL* Mvel, MatrixCL* M_pr, const IdxDescCL& pr_idx,
                   double tol=1e-2, double regularize= 0.0)
-        : A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
+        : SchurPreBaseCL( 0, 0), A_( A), B_( B), Mvel_( Mvel), M_( M_pr), Bs_( 0),
           Aversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0),
           tol_(tol),
           spc_( /*symmetric GS*/ true), solver_( spc_, 200, tol_, /*relative*/ true),
           pr_idx_( &pr_idx), regularize_( regularize) {}
 
     MinCommPreCL (const MinCommPreCL & pc)
-        : A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
+        : SchurPreBaseCL( pc.kA_, pc.kM_), A_( pc.A_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
           Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
           Aversion_( pc.Aversion_), Bversion_( pc.Bversion_), Mvelversion_( pc.Mvelversion_),
           Mversion_( pc.Mversion_),
