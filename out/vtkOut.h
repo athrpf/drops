@@ -165,7 +165,8 @@ class VTKOutCL
     /// \brief Constructor of this class
     VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
              const std::string& filename, bool binary);
-
+    ~VTKOutCL();
+    
     /// \brief Register a variable or the geometry for output with Write().
     ///
     /// The class takes ownership of the objects, i. e. it destroys them with delete in its destructor.

@@ -53,6 +53,12 @@ VTKOutCL::VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint nums
     while( numsteps>9){ ++decDigits_; numsteps/=10; }
 }
 
+VTKOutCL::~VTKOutCL ()
+{
+    for (std::map<std::string,VTKVariableCL*>::iterator it= vars_.begin(); it != vars_.end(); ++it)
+        delete it->second;
+}
+
 void VTKOutCL::Register (VTKVariableCL& var)
 {
 	if( vars_.find(var.varName()) != vars_.end())
