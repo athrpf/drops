@@ -670,7 +670,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     /// Returns a stokes solver with specifications from ParamsT C
     StokesSolverBaseCL* CreateStokesSolver();
     /// Returns a pointer to the schur complement preconditioner
-    SchurPreBaseCL* GetSchurPreBaseCLPtr() { return &bbtispc_; }
+    SchurPreBaseCL* GetSchurPrePtr() { return &bbtispc_; }
 };
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
