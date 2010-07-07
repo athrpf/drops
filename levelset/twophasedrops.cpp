@@ -423,7 +423,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::ZeroFlowCL                             CoeffT;
+    typedef DROPS::TwoPhaseFlowCL                         CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::MultiGridCL* mg= 0;
@@ -443,7 +443,7 @@ int main (int argc, char** argv)
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
-    MyStokesCL prob( *mg, DROPS::ZeroFlowCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
+    MyStokesCL prob( *mg, DROPS::TwoPhaseFlowCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
     Strategy( prob, adap);    // do all the stuff
 

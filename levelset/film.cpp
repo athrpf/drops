@@ -40,43 +40,6 @@
 
 DROPS::ParamFilmCL C;
 
-// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
-//                        -div u = 0
-//                             u = u0, t=t0
-
-
-class ZeroFlowCL
-{
-// \Omega_1 = Film,    \Omega_2 = Gasphase
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
-    const double SurfTens;
-    const DROPS::Point3DCL g;
-
-    ZeroFlowCL( const DROPS::ParamFilmCL& C)
-      : rho( DROPS::JumpCL( C.mat_DensFluid, C.mat_DensGas), DROPS::H_sm, C.mat_SmoothZone),
-        mu(  DROPS::JumpCL( C.mat_ViscFluid, C.mat_ViscGas), DROPS::H_sm, C.mat_SmoothZone),
-        SurfTens( C.mat_SurfTension), g( C.exp_Gravity)    {}
-};
-
-class DimLessCoeffCL
-{
-// \Omega_1 = Film,    \Omega_2 = Gasphase
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
-    const double SurfTens;
-    const DROPS::Point3DCL g;
-
-    DimLessCoeffCL( const DROPS::ParamFilmCL& C)
-      : rho( DROPS::JumpCL( 1., C.mat_DensGas/C.mat_DensFluid), DROPS::H_sm, C.mat_SmoothZone),
-        mu ( DROPS::JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid), DROPS::H_sm, C.mat_SmoothZone),
-        SurfTens( C.mat_SurfTension/C.mat_DensFluid), g( C.exp_Gravity)    {}
-};
-
 
 DROPS::Point3DCL Inflow( const DROPS::Point3DCL& p, double t)
 {
@@ -384,7 +347,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef ZeroFlowCL                                    CoeffT;
+    typedef DROPS::TwoPhaseFlowCL                         CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;

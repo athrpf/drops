@@ -30,6 +30,7 @@
 #include "stokes/stokes.h"
 #include "levelset/levelset.h"
 #include "levelset/mgobserve.h"
+#include "levelset/params.h"
 #include "num/MGsolver.h"
 
 namespace DROPS
@@ -72,6 +73,38 @@ void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx,
                     const BndCondCL& bnd= BndCondCL( 0), const VecDescCL* lsetp=0);
 
 
+		    
+// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
+//                        -div u = 0
+//                             u = u0, t=t0
+
+/// \brief Parameter class describing a twophase flow
+class TwoPhaseFlowCL
+{
+// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
+  public:
+    static Point3DCL f(const Point3DCL&, double)
+        { Point3DCL ret(0.0); return ret; }
+    const SmoothedJumpCL rho, mu;
+    const double SurfTens;
+    const Point3DCL g;
+
+    TwoPhaseFlowCL( const ParamMesszelleNsCL& C, bool dimless = false)
+      : rho( dimless ? JumpCL( 1., C.mat_DensFluid/C.mat_DensDrop)
+                     : JumpCL( C.mat_DensDrop, C.mat_DensFluid), H_sm, C.mat_SmoothZone),
+        mu(  dimless ? JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop)
+                     : JumpCL( C.mat_ViscDrop, C.mat_ViscFluid), H_sm, C.mat_SmoothZone),
+        SurfTens( dimless ? C.sft_SurfTension/C.mat_DensDrop : C.sft_SurfTension),
+        g( C.exp_Gravity)    {}
+        
+    TwoPhaseFlowCL( const ParamFilmCL& C, bool dimless = false)
+      : rho( dimless ? JumpCL( 1., C.mat_DensGas/C.mat_DensFluid)
+                     : JumpCL( C.mat_DensFluid, C.mat_DensGas), H_sm, C.mat_SmoothZone),
+        mu(  dimless ? JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid)
+                     : JumpCL( C.mat_ViscFluid, C.mat_ViscGas), H_sm, C.mat_SmoothZone),
+        SurfTens( dimless ? C.mat_SurfTension/C.mat_DensFluid : C.mat_SurfTension),
+        g( C.exp_Gravity)    {}
+};
 
 /// problem class for instationary two-pase Stokes flow
 

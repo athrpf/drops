@@ -39,43 +39,6 @@
 namespace DROPS
 {
 
-// rho*du/dt - mu*laplace u + Dp = f + rho*g - okn
-//                        -div u = 0
-//                             u = u0, t=t0
-
-/// \brief Parameter class describing a zero flow
-class ZeroFlowCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static Point3DCL f(const Point3DCL&, double)
-        { Point3DCL ret(0.0); return ret; }
-    const SmoothedJumpCL rho, mu;
-    const double SurfTens;
-    const Point3DCL g;
-
-    ZeroFlowCL( const ParamMesszelleNsCL& C)
-      : rho( JumpCL( C.mat_DensDrop, C.mat_DensFluid ), H_sm, C.mat_SmoothZone),
-        mu(  JumpCL( C.mat_ViscDrop,  C.mat_ViscFluid),   H_sm, C.mat_SmoothZone),
-        SurfTens( C.sft_SurfTension), g( C.exp_Gravity)    {}
-};
-
-class DimLessCoeffCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static Point3DCL f(const Point3DCL&, double)
-        { Point3DCL ret(0.0); return ret; }
-    const SmoothedJumpCL rho, mu;
-    const double SurfTens;
-    const Point3DCL g;
-
-    DimLessCoeffCL( const ParamMesszelleNsCL& C)
-      : rho( JumpCL( 1., C.mat_DensFluid/C.mat_DensDrop ), H_sm, C.mat_SmoothZone),
-        mu ( JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop),    H_sm, C.mat_SmoothZone),
-        SurfTens( C.sft_SurfTension/C.mat_DensDrop), g( C.exp_Gravity)    {}
-};
-
 class EllipsoidCL
 {
   private:
