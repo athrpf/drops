@@ -234,7 +234,6 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     bool           withProj_;
     double         stab_;
     double         alpha_;
-    bool           relative_;
 
     virtual void InitStep();
     virtual void CommitStep();
@@ -249,11 +248,10 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
   public:
     CoupledTimeDisc2PhaseBaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver,
                                  LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol,
-                                 double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
+                                 double nonlinear= 1., bool withProjection= false, double stab= 0.0);
     ~CoupledTimeDisc2PhaseBaseCL();
 
     void DoStep( int maxFPiter= -1);
-    void SetRelative( bool rel) { relative_ = rel; solver_.SetRelError( rel); }
 
     virtual void Update();
 };
@@ -296,7 +294,7 @@ class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lset
   public:
     MidPointTimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double nonlinear = 1.0,
-                              bool withProjection =  false, double stab = 0.0, bool relative= true, bool implicitpressure = false);
+                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
     ~MidPointTimeDisc2PhaseCL() {}
 
     void Update();
@@ -350,7 +348,7 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
   public:
     SpaceTimeDiscTheta2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver,
                               LevelsetModifyCL& lsetmod, double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear = 1.0,
-                              bool withProjection =  false, double stab = 0.0, bool relative= true, bool implicitpressure = false);
+                              bool withProjection =  false, double stab = 0.0, bool implicitpressure = false);
     ~SpaceTimeDiscTheta2PhaseCL();
 
     void Update();
@@ -402,7 +400,7 @@ class EulerBackwardScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, L
   public:
     EulerBackwardScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                          StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                         double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
+                         double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
     ~EulerBackwardScheme2PhaseCL();
 
     void Update();
@@ -472,7 +470,7 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
     RecThetaScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                              StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
                              double tol, double stk_theta= 0.5, double ls_theta = 0.5, double nonlinear= 1.,
-                             bool withProjection= false, double stab= 0.0, bool relative= true);
+                             bool withProjection= false, double stab= 0.0);
     ~RecThetaScheme2PhaseCL();
 
     void SetTimeStep (double dt) { // overwrites baseclass-version
@@ -505,7 +503,7 @@ class CrankNicolsonScheme2PhaseCL: public BaseMethod<StokesT, LsetSolverT, Relax
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                              NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, bool relative= true);
+                             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
     ~CrankNicolsonScheme2PhaseCL();
 
     void DoStep( int maxFPiter= -1);
@@ -529,8 +527,8 @@ class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxatio
   public:
     FracStepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1, bool relative= true)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab, relative), step_((step >= 0) ? step%3 : 0) {}
+                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%3 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt3_; }
     double GetSubTheta()    const { return theta_[step_]; }
@@ -593,8 +591,8 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxati
   public:
     Frac2StepScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                                NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1, bool relative= true)
-        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab, relative), step_((step >= 0) ? step%2 : 0) {}
+                               double tol, double nonlinear= 1, bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 0.5, 0.5, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
 
     double GetSubTimeStep() const { return facdt_[step_]*dt2_; }
     double GetSubTheta()    const { return theta_[step_]; }
