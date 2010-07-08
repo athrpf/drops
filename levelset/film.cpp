@@ -347,7 +347,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::TwoPhaseFlowCL                         CoeffT;
+    typedef DROPS::TwoPhaseFlowCoeffCL                    CoeffT;
     typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;

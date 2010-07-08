@@ -434,7 +434,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::InstatStokes2PhaseP2P1CL<DROPS::TwoPhaseFlowCL>    MyStokesCL;
+    typedef DROPS::InstatStokes2PhaseP2P1CL<DROPS::TwoPhaseFlowCoeffCL>    MyStokesCL;
 
     const double L= 1; // Vol= 8*L*L*L;
     DROPS::Point3DCL orig(-L), e1, e2, e3;
@@ -448,7 +448,7 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
-    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
+    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
                     C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
     DROPS::MultiGridCL& mg = prob.GetMG();

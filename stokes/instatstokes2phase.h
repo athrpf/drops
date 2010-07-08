@@ -79,7 +79,7 @@ void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx,
 //                             u = u0, t=t0
 
 /// \brief Parameter class describing a twophase flow
-class TwoPhaseFlowCL
+class TwoPhaseFlowCoeffCL
 {
 // \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
   public:
@@ -89,7 +89,7 @@ class TwoPhaseFlowCL
     const double SurfTens;
     const Point3DCL g;
 
-    TwoPhaseFlowCL( const ParamMesszelleNsCL& C, bool dimless = false)
+    TwoPhaseFlowCoeffCL( const ParamMesszelleNsCL& C, bool dimless = false)
       : rho( dimless ? JumpCL( 1., C.mat_DensFluid/C.mat_DensDrop)
                      : JumpCL( C.mat_DensDrop, C.mat_DensFluid), H_sm, C.mat_SmoothZone),
         mu(  dimless ? JumpCL( 1., C.mat_ViscFluid/C.mat_ViscDrop)
@@ -97,7 +97,7 @@ class TwoPhaseFlowCL
         SurfTens( dimless ? C.sft_SurfTension/C.mat_DensDrop : C.sft_SurfTension),
         g( C.exp_Gravity)    {}
         
-    TwoPhaseFlowCL( const ParamFilmCL& C, bool dimless = false)
+    TwoPhaseFlowCoeffCL( const ParamFilmCL& C, bool dimless = false)
       : rho( dimless ? JumpCL( 1., C.mat_DensGas/C.mat_DensFluid)
                      : JumpCL( C.mat_DensFluid, C.mat_DensGas), H_sm, C.mat_SmoothZone),
         mu(  dimless ? JumpCL( 1., C.mat_ViscGas/C.mat_ViscFluid)
