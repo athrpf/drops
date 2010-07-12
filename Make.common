@@ -6,6 +6,7 @@ DROPS_ROOT = ..
 
 
 all: $(EXEC)
+	$(MAKE) $(EXEC)
 	@echo "--> Made all executables in $(DIR)!"
 
 strip:

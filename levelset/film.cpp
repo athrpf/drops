@@ -222,9 +222,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     LsetSolverT* gm = new LsetSolverT( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
 #else
     typedef ParPreGMResSolverCL<ParJac0CL> LsetSolverT;
-    ParJac0CL jacparpc( lidx);
-    LsetSolverT gm = new LsetSolverT
-           (/*restart*/100, iter, tol, idx, pc_,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
+    ParJac0CL jacparpc( *lidx);
+    LsetSolverT *gm = new LsetSolverT
+           (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
     LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 10.0, /*rpm_MinGrad*/ 0.1, C.lvs_VolCorrection, Vol);
 
@@ -251,7 +251,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     UpdateProlongationCL PPr ( Stokes.GetMG(), stokessolverfactory.GetPPr(), &Stokes.pr_idx, &Stokes.pr_idx);
     adap.push_back( &PPr);
 
-    stokessolverfactory.GetVankaSmoother().SetRelaxation( 0.8);
+//    stokessolverfactory.GetVankaSmoother().SetRelaxation( 0.8);
 
     bool secondSerial= false;
     for (int step= 1; step<=C.tm_NumSteps; ++step)
