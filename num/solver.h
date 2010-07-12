@@ -463,7 +463,10 @@ class DiagPcCL
 
     template <typename Mat, typename Vec>
     void Apply (const Mat&, Vec& x, const Vec& b) const
-    { x= D_*b; }
+    { 
+        Assert( D_.size()==b.size(), DROPSErrCL("DiagPcCL: incompatible dimensions"), DebugNumericC);
+        x= D_*b;
+    }
 };
 
 

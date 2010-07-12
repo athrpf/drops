@@ -443,6 +443,7 @@ public:
 
     VectorBaseCL<T> GetDiag()       const;
     VectorBaseCL<T> GetLumpedDiag() const;
+    VectorBaseCL<T> GetSchurDiag( const VectorBaseCL<T>& W) const; ///< returns diagonal of B W B^T
 
     void permute_rows (const PermutationT&);
     void permute_columns (const PermutationT&);
@@ -511,6 +512,21 @@ VectorBaseCL<T> SparseMatBaseCL<T>::GetLumpedDiag() const
         }
     return diag;
 }
+
+template <typename T>
+VectorBaseCL<T> SparseMatBaseCL<T>::GetSchurDiag( const VectorBaseCL<T>& W) const
+{
+    const size_t n=num_rows(),
+        nnz=num_nonzeros();
+    VectorBaseCL<T> diag(n);
+    for (size_t r= 0, nz= 0; nz < nnz; ++r)
+        for (; nz < _rowbeg[ r + 1]; ++nz) {
+            const double v= _val[nz];
+            diag[r]+= v*v*W[_colind[nz]];
+        }
+    return diag;
+}
+
 
 template <typename T>
   void

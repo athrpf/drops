@@ -23,6 +23,8 @@
 */
 
 #include "stokes/integrTime.h"
+#include "stokes/instatstokes2phase.h"
+#include "num/stokessolver.h"
 
 namespace DROPS
 {
@@ -114,6 +116,45 @@ void MinCommPreCL::Update() const
 
     if (regularize_ != 0.)
         Regularize( *Bs_, *pr_idx_, Dprsqrt, spc_, regularize_);
+}
+
+
+void BDinvBTPreCL::Update() const
+{
+    std::cout << "BDinvBTPreCL::Update: old/new versions: " << Lversion_  << '/' << L_->Version()
+        << '\t' << Bversion_ << '/' << B_->Version() << '\t' << Mversion_ << '/' << M_->Version()
+        << '\t' << Mvelversion_ << '/' << Mvel_->Version() << '\n';
+    delete Bs_;
+    Bs_= new MatrixCL( *B_);
+    Lversion_= L_->Version();
+    Bversion_= B_->Version();
+    Mversion_= M_->Version();
+    Mvelversion_= Mvel_->Version();
+
+    Dvelinv_.resize( Mvel_->num_rows());
+    if (lumped_)
+        Dvelinv_= 1.0/LumpInRows(*Mvel_);
+    else
+        Dvelinv_= 1.0/L_->GetDiag();
+    // note: Dvelinv_ has negative entries for P2-FE (hence, CGNE cannot be used for solving), however, B Dvelinv_ B^T has only positive diagonal entries
+    VectorCL Dprsqrt( std::sqrt( M_->GetDiag()));
+    Dprsqrtinv_.resize( M_->num_rows());
+    Dprsqrtinv_= 1.0/Dprsqrt;
+
+    ScaleRows( *Bs_, Dprsqrtinv_);
+    DSchurinv_.resize( Dprsqrt.size());    
+    DSchurinv_= 1.0/Bs_->GetSchurDiag(Dvelinv_);
+    delete BDinvBT_;
+    BDinvBT_= new AppSchurComplMatrixT( *L_, diagVelPc_, *Bs_);
+    
+    if (regularize_ != 0.)
+        Regularize( *Bs_, *pr_idx_, Dprsqrt, spc_, regularize_);
+}
+
+BDinvBTPreCL::~BDinvBTPreCL() 
+{
+    delete Bs_;
+    delete BDinvBT_;
 }
 #endif
 

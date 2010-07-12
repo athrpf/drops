@@ -564,7 +564,7 @@ class MinCommPreCL : public SchurPreBaseCL
     void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
     void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
 
-    void SetMatrixA  (const MatrixCL* A) { A_= A; Aversion_= 0; }
+    void SetMatrixA  (const MatrixCL* A) { A_= A; }
     void SetMatrices (const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M,
                       const IdxDescCL* pr_idx) {
         A_= A;
@@ -597,6 +597,101 @@ template <typename Mat, typename Vec>
         std::cout << "MinCommPreCL::Apply: 2nd BBT-solve: " << solver_.GetIter()
                   << '\t' << solver_.GetResid() << '\n';
     x= Dprsqrtinv_*t;
+}
+
+//**************************************************************************
+// Preconditioner for the instationary (Navier-) Stokes-equations.
+// It uses the approximate Schur complement B diag(L)^{-1} B^T
+// with L the upper left block of the saddle point system, and can be used
+// with P1X-elements.
+//**************************************************************************
+class BDinvBTPreCL: public SchurPreBaseCL
+{
+  private:
+    const MatrixCL* L_, *B_, *Mvel_, *M_;
+    mutable MatrixCL* Bs_;
+    mutable size_t Lversion_, Bversion_, Mvelversion_, Mversion_;
+    mutable VectorCL Dprsqrtinv_, Dvelinv_, DSchurinv_;
+    double  tol_;
+    mutable DiagPcCL diagVelPc_, diagSchurPc_;
+    typedef ApproximateSchurComplMatrixCL<DiagPcCL,MatrixCL> AppSchurComplMatrixT;
+    mutable AppSchurComplMatrixT *BDinvBT_;
+
+    typedef NEGSPcCL SPcT_;
+    SPcT_ spc_;
+    mutable PCGNESolverCL<SPcT_> neSolver_;
+    mutable PCGSolverCL<DiagPcCL> solver_;
+    const IdxDescCL* pr_idx_;                                   ///< Used to determine, how to represent the kernel of BB^T in case of pure Dirichlet-BCs.
+    double regularize_;
+    bool lumped_;
+
+    void Update () const;
+
+  public:
+    BDinvBTPreCL (const MatrixCL* L, MatrixCL* B, MatrixCL* M_vel, MatrixCL* M_pr, const IdxDescCL& pr_idx,
+                  double tol=1e-2, double regularize= 0.0)
+        : SchurPreBaseCL( 0, 0), L_( L), B_( B), Mvel_( M_vel), M_( M_pr), Bs_( 0),
+          Lversion_( 0), Bversion_( 0), Mvelversion_( 0), Mversion_( 0), tol_(tol),
+          diagVelPc_(Dvelinv_), diagSchurPc_(DSchurinv_), BDinvBT_(0),
+          spc_( /*symmetric GS*/ true), neSolver_( spc_, 200, tol_, /*relative*/ true), solver_( diagSchurPc_, 200, tol_, /*relative*/ true),
+          pr_idx_( &pr_idx), regularize_( regularize), lumped_(false) {}
+
+    BDinvBTPreCL (const BDinvBTPreCL & pc)
+        : SchurPreBaseCL( pc.kA_, pc.kM_), L_( pc.L_), B_( pc.B_), Mvel_( pc.Mvel_), M_( pc.M_),
+          Bs_( pc.Bs_ == 0 ? 0 : new MatrixCL( *pc.Bs_)),
+          Lversion_( pc.Lversion_), Bversion_( pc.Bversion_), Mversion_( pc.Mversion_),
+          Dprsqrtinv_( pc.Dprsqrtinv_), Dvelinv_( pc.Dvelinv_), DSchurinv_( pc.DSchurinv_), tol_(pc.tol_),
+          diagVelPc_( Dvelinv_), diagSchurPc_( DSchurinv_), BDinvBT_(0),
+          spc_( pc.spc_), neSolver_( spc_, 200, tol_, /*relative*/ true), solver_( diagSchurPc_, 200, tol_, /*relative*/ true),
+          pr_idx_( pc.pr_idx_), regularize_( pc.regularize_), lumped_( pc.lumped_) {}
+
+    BDinvBTPreCL& operator= (const BDinvBTPreCL&) {
+        throw DROPSErrCL( "BDinvBTPreCL::operator= is not permitted.\n");
+    }
+
+    ~BDinvBTPreCL ();
+
+    template <typename Mat, typename Vec>
+    void Apply (const Mat&, Vec& x, const Vec& b) const;
+    void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+    void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
+
+    void SetMatrixA  (const MatrixCL* L) { L_= L; }
+    void SetMatrices (const MatrixCL* L, const MatrixCL* B, const MatrixCL* M_vel, const MatrixCL* M_pr,
+                      const IdxDescCL* pr_idx) {
+        L_= L;
+        B_= B;
+        Mvel_= M_vel;
+        M_= M_pr;
+        pr_idx_= pr_idx;
+        Lversion_ = Bversion_ = Mvelversion_= Mversion_ = 0;
+    }
+    /// Returns true, if the lumped diag of the velocity mass matrix is used, and false, if the diagonal of the velocity convection-diffusion-reaction matrix is considered.
+    bool UsesMassLumping() const { return lumped_; }
+    /// For lump==true, the lumped diag of the velocity mass matrix is used. Otherwise the diagonal of the velocity convection-diffusion-reaction matrix is considered.
+    void SetMassLumping( bool lump) { lumped_= lump; }
+    /// If lumping is switched on, the lumped diag of the velocity mass matrix is returned. Otherwise the diagonal of the velocity convection-diffusion-reaction matrix is returned.
+    VectorCL GetVelDiag() const { 
+        if ((L_->Version() != Lversion_) || (Mvel_->Version() != Mvelversion_))
+            Update();
+        return VectorCL(1.0/Dvelinv_); 
+    }
+};
+
+template <typename Mat, typename Vec>
+  void
+  BDinvBTPreCL::Apply (const Mat&, Vec& x, const Vec& b) const
+{
+    if ((L_->Version() != Lversion_) || (Mvel_->Version() != Mvelversion_) || (M_->Version() != Mversion_) || (B_->Version() != Bversion_))
+        Update();
+
+    Vec y( b.size());
+//    solver_.Solve( *Bs_, y, Vec( Dprsqrtinv_*b));
+    solver_.Solve( *BDinvBT_, y, Vec( Dprsqrtinv_*b));
+    if (solver_.GetIter() == solver_.GetMaxIter())
+        std::cout << "BDinvBTPreCL::Apply: BLBT-solve: " << solver_.GetIter()
+                  << '\t' << solver_.GetResid() << '\n';
+    x= Dprsqrtinv_*y;
 }
 #endif
 

@@ -362,6 +362,7 @@ struct UpperBlockPreCL
     static void
     Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc2.Apply( /*dummy*/ B, p, c);
+        p*= -1.;
         Vec b2( b);
         b2-= transp_mul( B, p);
         pc1.Apply( A, v, b2);
@@ -376,6 +377,7 @@ struct DiagBlockPreCL
     Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc1.Apply( A, v, b);
         pc2.Apply( /*dummy*/ B, p, c);
+        p*= -1.;
    }
 };
 
@@ -386,12 +388,32 @@ struct LowerBlockPreCL
     static void
     Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
         pc1.Apply( A, v, b);
-        Vec c2( c);
 #ifdef _PAR
         Assert(pc1.RetAcc(), DROPSErrCL("LowerBlockPreCL::Apply: Accumulation is missing"), DebugParallelNumC);
 #endif
-        c2-= B*v;
+        Vec c2( B*v - c);
         pc2.Apply( /*dummy*/ B, p, c2);
+    }
+};
+
+// SIMPLER type preconditioning strategy in BlockPreCL
+struct SIMPLERBlockPreCL
+{
+    template <class PC1T, class PC2T, class Mat, class Vec>
+    static void
+    Apply (PC1T& pc1, PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+        Vec D( pc2.GetVelDiag()), dp(p);
+        
+        // find some initial pressure for the SIMPLER preconditioner (initial p=0 would result in SIMPLE)
+        pc2.Apply( B, p, Vec(B*Vec(b/D) - c));
+        // from here on it's the SIMPLE preconditioner
+        pc1.Apply( A, v, Vec(b - transp_mul( B, p)));
+#ifdef _PAR
+        Assert(pc1.RetAcc(), DROPSErrCL("SIMPLERBlockPreCL::Apply: Accumulation is missing"), DebugParallelNumC);
+#endif
+        pc2.Apply( /*dummy*/ B, dp, Vec(B*v - c));
+        v-= transp_mul( B, dp)/D;
+        p+= dp;
    }
 };
 

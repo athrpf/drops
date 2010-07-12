@@ -33,29 +33,6 @@
 
 namespace DROPS {
 
-/*******************************************************************
-*   S t o k e s S o l v e r F a c t o r y B a s e   C L            *
-*******************************************************************/
-/// \brief Creates a StokesSolverCL* and manages the preconditioner.
-/// Interface for all Stokes solver factories.
-/// Construction of an Oseen solver, e.g. Inexact Uzawa with GMRes and BBT preconditioner: 2*10000 + 4*100 + 2. Note: Not all combinations are implemented!
-/**
-    <table border="3">
-    <tr><th> no </th><th> Oseen-Solver-Type </th><th> Type of Preconditioner for A-Block </th><th> Type of Preconditioner for S </th></tr>
-    <tr><td>  1 </td><td> GCR               </td><td> MultiGrid V-cycle                  </td><td> ISBBTPreCL                   </td></tr>
-    <tr><td>  2 </td><td> Inexact Uzawa     </td><td> symm. Multigrid V-cycle            </td><td> MinCommPreCL                 </td></tr>
-    <tr><td>  3 </td><td> MinRes            </td><td> PCG                                </td><td> ISPreCL                      </td></tr>
-    <tr><td>  4 </td><td> GMRes             </td><td> GMRes                              </td><td> VankaSchurPreCL              </td></tr>
-    <tr><td>  5 </td><td> GMResR            </td><td> BiCGStab                           </td><td>                              </td></tr>
-    <tr><td>  6 </td><td>                   </td><td> VankaPre                           </td><td> VankaPre                     </td></tr>
-    <tr><td>  7 </td><td>                   </td><td>                                    </td><td> ISMGPreCL                    </td></tr>
-    <tr><td>  8 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
-    <tr><td>  9 </td><td>                   </td><td>                                    </td><td>                              </td></tr>
-    <tr><td> 20 </td><td>                   </td><td> HYPRE-AMG                          </td><td>                              </td></tr>
-    <tr><td> 30 </td><td> StokesMGM         </td><td> PVankaSmootherCL                   </td><td> PVankaSmootherCL             </td></tr>
-    <tr><td> 31 </td><td>                   </td><td> BSSmootherCL                       </td><td> BSSmootherCL                 </td></tr>
-    </table>*/
-
 /// codes for Oseen solvers
 enum OseenSolverE {
     GCR_OS= 1, iUzawa_OS= 2, MinRes_OS= 3, GMRes_OS= 4, GMResR_OS= 5, StokesMGM_OS= 30
@@ -69,9 +46,10 @@ enum APcE {
 
 /// codes for the pressure Schur complement preconditioners
 enum SPcE {
-    ISBBT_SPC= 1, MinComm_SPC= 2, ISPre_SPC= 3, ISMG_SPC= 7, VankaSchur_SPC= 4, VankaBlock_SPC=6
+    ISBBT_SPC= 1, MinComm_SPC= 2, ISPre_SPC= 3, ISMG_SPC= 7, BDinvBT_SPC= 5, SIMPLER_SPC=8, MSIMPLER_SPC=9, VankaSchur_SPC= 4, VankaBlock_SPC=6
 }; 
 
+/// collects some information on the different Oseen solvers and preconditioners
 struct StokesSolverInfoCL
 {
     static std::string GetOseenSolverName( int solver) {
@@ -105,6 +83,9 @@ struct StokesSolverInfoCL
             case MinComm_SPC:      return "MinComm (minimal commutator)";
             case ISPre_SPC:        return "ISPre (Cahouet-Chabard)";
             case ISMG_SPC:         return "ISMGPre (multigrid Cahouet-Chabard)";
+            case BDinvBT_SPC:      return "B D^-1 B^T";
+            case SIMPLER_SPC:      return "SIMPLER";
+            case MSIMPLER_SPC:     return "MSIMPLER";
             case VankaSchur_SPC:   return "Vanka Schur";
             case VankaBlock_SPC:   return "block Vanka";
             case PVanka_SM:        return "Vanka smoother";
@@ -112,10 +93,32 @@ struct StokesSolverInfoCL
             default:               return "unknown";
         }
     }
-    static bool IsBlockPre( int pre) { return pre==VankaBlock_APC; }
+    static bool IsBlockPre( int pre) { return pre==VankaBlock_APC || pre==SIMPLER_SPC || pre==MSIMPLER_SPC; }
     static bool IsSmoother( int pre) { return pre==PVanka_SM || pre==BraessSarazin_SM; }
 };
 
+/*******************************************************************
+*   S t o k e s S o l v e r F a c t o r y B a s e   C L            *
+*******************************************************************/
+/// \brief Creates a StokesSolverCL* and manages the preconditioner.
+/// Interface for all Stokes solver factories.
+/// Construction of an Oseen solver, e.g. Inexact Uzawa with GMRes and BBT preconditioner: 2*10000 + 4*100 + 2. Note: Not all combinations are implemented!
+/**
+    <table border="3">
+    <tr><th> no </th><th> Oseen-Solver-Type </th><th> Type of Preconditioner for A-Block </th><th> Type of Preconditioner for S </th></tr>
+    <tr><td>  1 </td><td> GCR               </td><td> MultiGrid V-cycle                  </td><td> ISBBTPreCL                   </td></tr>
+    <tr><td>  2 </td><td> Inexact Uzawa     </td><td> symm. Multigrid V-cycle            </td><td> MinCommPreCL                 </td></tr>
+    <tr><td>  3 </td><td> MinRes            </td><td> PCG                                </td><td> ISPreCL                      </td></tr>
+    <tr><td>  4 </td><td> GMRes             </td><td> GMRes                              </td><td> VankaSchurPreCL              </td></tr>
+    <tr><td>  5 </td><td> GMResR            </td><td> BiCGStab                           </td><td> BD^{-1}BT                    </td></tr>
+    <tr><td>  6 </td><td>                   </td><td> VankaPre                           </td><td> VankaPre                     </td></tr>
+    <tr><td>  7 </td><td>                   </td><td>                                    </td><td> ISMGPreCL                    </td></tr>
+    <tr><td>  8 </td><td>                   </td><td>                                    </td><td> SIMPLER                      </td></tr>
+    <tr><td>  9 </td><td>                   </td><td>                                    </td><td> MSIMPLER                     </td></tr>
+    <tr><td> 20 </td><td>                   </td><td> HYPRE-AMG                          </td><td>                              </td></tr>
+    <tr><td> 30 </td><td> StokesMGM         </td><td> PVankaSmootherCL                   </td><td> PVankaSmootherCL             </td></tr>
+    <tr><td> 31 </td><td>                   </td><td> BSSmootherCL                       </td><td> BSSmootherCL                 </td></tr>
+    </table>*/
 template <class StokesT, class ParamsT, class ProlongationVelT= MLMatrixCL, class ProlongationPT= MLMatrixCL>
 class StokesSolverFactoryBaseCL
 {
@@ -194,6 +197,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     SchurPreBaseCL  *spc_;
     ISBBTPreCL      bbtispc_;
     MinCommPreCL    mincommispc_;
+    BDinvBTPreCL    bdinvbtispc_;
     VankaSchurPreCL vankaschurpc_;
     ISPreCL         isprepc_;
     ISMGPreCL       ismgpre_;
@@ -232,18 +236,22 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     PCGPcT PCGPc_;
 
 // Block PC for Oseen problem
-    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, DiagBlockPreCL>  DiagBlockPcT;
-    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, LowerBlockPreCL> LowerBlockPcT;
+    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, DiagBlockPreCL>     DiagBlockPcT;
+    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, LowerBlockPreCL>    LowerBlockPcT;
+    typedef BlockPreCL<PreBaseCL, BDinvBTPreCL, SIMPLERBlockPreCL>    SIMPLERBlockPcT;
 
-    DiagBlockPcT  *DBlock_;
-    LowerBlockPcT *LBlock_;
-    VankaPreCL    vankapc_;
+    DiagBlockPcT    *DBlock_;
+    LowerBlockPcT   *LBlock_;
+    SIMPLERBlockPcT *SBlock_;
+    VankaPreCL      vankapc_;
 
 //GCR solver
-    typedef GCRSolverCL<LowerBlockPcT> GCR_LBlockT;
-    typedef GCRSolverCL<VankaPreCL>    GCR_VankaT;
+    typedef GCRSolverCL<LowerBlockPcT>   GCR_LBlockT;
+    typedef GCRSolverCL<SIMPLERBlockPcT> GCR_SBlockT;
+    typedef GCRSolverCL<VankaPreCL>      GCR_VankaT;
 
     GCR_LBlockT *GCRLBlock_;
+    GCR_SBlockT *GCRSBlock_;
     GCR_VankaT  *GCRVanka_;
 
 //GMRes solver
@@ -296,7 +304,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     // checks, whether the combination of Oseen solver, A and S preconditioner is valid.
     bool ValidSolverCombination( std::ostream* os= 0) const;
     /// Set the A-block in the minimal commutator
-    void       SetMatrixA ( const MatrixCL* A) { mincommispc_.SetMatrixA(A); }
+    void       SetMatrixA ( const MatrixCL* A) { mincommispc_.SetMatrixA(A); bdinvbtispc_.SetMatrixA(A); }
     /// Set all matrices in Schur complement preconditioner (only for StokesMGM)
     void       SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx);
     /// Returns pointer to prolongation for velocity
@@ -324,6 +332,7 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         // schur complement preconditioner
         bbtispc_    ( &Stokes_.B.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), Stokes_.pr_idx.GetFinest(), kA_, kM_, C_.stk_PcSTol, C_.stk_PcSTol /* enable regularization: , 0.707*/),
         mincommispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(),Stokes_.pr_idx.GetFinest(), C_.stk_PcSTol /* enable regularization: , 0.707*/),
+        bdinvbtispc_( 0, &Stokes_.B.Data.GetFinest(), &Stokes_.M.Data.GetFinest(), &Stokes_.prM.Data.GetFinest(),Stokes_.pr_idx.GetFinest(), C_.stk_PcSTol /* enable regularization: , 0.707*/),
         vankaschurpc_( &Stokes.pr_idx), isprepc_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
         ismgpre_( Stokes.prA.Data, Stokes.prM.Data, kA_, kM_),
         // preconditioner for A
@@ -336,10 +345,10 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         BiCGStabSolver_( JACPc_, C_.stk_PcAIter, C_.stk_PcATol, /*rel*/ true),BiCGStabPc_( BiCGStabSolver_),
         PCGSolver_( SSORPc_, C_.stk_PcAIter, C_.stk_PcATol, true), PCGPc_( PCGSolver_),
         // block precondtioner
-        DBlock_(0), LBlock_(0),
+        DBlock_(0), LBlock_(0), SBlock_(0),
         vankapc_( &Stokes.pr_idx),
         // GCR solver
-        GCRLBlock_(0), GCRVanka_(0),
+        GCRLBlock_(0), GCRSBlock_(0), GCRVanka_(0),
         // GMRes solver
         GMResLBlock_(0),  GMResVanka_(0),
         GMResRLBlock_(0), GMResRVanka_(0),
@@ -364,8 +373,8 @@ StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
     delete MinRes_; delete lanczos_;
     delete GMResRVanka_; delete GMResRLBlock_;
     delete GMResVanka_; delete GMResLBlock_;
-    delete GCRVanka_; delete GCRLBlock_;
-    delete LBlock_; delete DBlock_;
+    delete GCRVanka_; delete GCRLBlock_; delete GCRSBlock_;
+    delete SBlock_; delete LBlock_; delete DBlock_;
 }
 
 template <class StokesT, class ParamsT, class ProlongationVelT, class ProlongationPT>
@@ -388,7 +397,7 @@ bool StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
         msg= "block preconditioner not allowed for inexact Uzawa";
     else if (OseenSolver_==MinRes_OS && (StokesSolverInfoCL::IsBlockPre(APc_) || StokesSolverInfoCL::IsBlockPre(SPc_) ))
         msg= "MinRes requires diagonal block preconditioner";
-    else if ((StokesSolverInfoCL::IsBlockPre(APc_) || StokesSolverInfoCL::IsBlockPre(SPc_)) && APc_!=SPc_)
+    else if ((StokesSolverInfoCL::IsBlockPre(APc_) || StokesSolverInfoCL::IsBlockPre(SPc_)) && APc_!=SPc_ && SPc_!=SIMPLER_SPC && SPc_!=MSIMPLER_SPC)
         msg= "block preconditioner should be the same for vel and pr part";
     else // all tests passed successfully
         ok= true;
@@ -427,6 +436,9 @@ SchurPreBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Prolon
         case MinComm_SPC:    return &mincommispc_;
         case ISPre_SPC:      return &isprepc_;
         case ISMG_SPC:       return &ismgpre_;
+        case SIMPLER_SPC:
+        case MSIMPLER_SPC:
+        case BDinvBT_SPC:    return &bdinvbtispc_;
         case VankaSchur_SPC: return &vankaschurpc_;
         default:             return 0;
     }
@@ -447,7 +459,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         if (SPc_ == ISMG_SPC)
             throw DROPSErrCL("ISMGPreCL not implemented for P1X-elements");
     }
-    
+
     StokesSolverBaseCL* stokessolver = 0;
     
     switch (OseenSolver_) {
@@ -471,6 +483,11 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             if (APc_==VankaBlock_APC) {
                 GCRVanka_= new GCR_VankaT( vankapc_,  C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false);
                 stokessolver= new BlockMatrixSolverCL<GCR_VankaT> ( *GCRVanka_);
+            } else if (SPc_==SIMPLER_SPC || SPc_==MSIMPLER_SPC) {
+                bdinvbtispc_.SetMassLumping( SPc_==MSIMPLER_SPC);
+                SBlock_= new SIMPLERBlockPcT( *apc_, bdinvbtispc_);
+                GCRSBlock_= new GCR_SBlockT( *SBlock_,  C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false);
+                stokessolver= new BlockMatrixSolverCL<GCR_SBlockT>( *GCRSBlock_);      
             } else {
                 LBlock_= new LowerBlockPcT( *apc_, *spc_);
                 GCRLBlock_= new GCR_LBlockT( *LBlock_,  C_.stk_OuterIter, C_.stk_OuterIter, C_.stk_OuterTol, /*rel*/ false);
@@ -512,7 +529,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
                     mgvankasolver_ = new StokesMGSolverCL<PVankaSmootherCL, ProlongationVelT, ProlongationPT>
                                ( Stokes_.prM.Data, vankasmoother_, coarse_blockgcrsolver_, C_.stk_OuterIter, C_.stk_OuterTol, false, 2);
                 stokessolver = mgvankasolver_;
-            } 
+            }
             else if (APc_==BraessSarazin_SM) {
                 if (C_.ns_Nonlinear==0.0) // Stokes
                     mgbssolver_ = new StokesMGSolverCL<BSSmootherCL, ProlongationVelT, ProlongationPT>
@@ -528,7 +545,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
         default: throw DROPSErrCL("StokesSolverFactoryCL: Unknown Oseen solver");
     }
     if (stokessolver==0)
-        throw DROPSErrCL("StokesSolverFactoryCL: Unknown Oseen solver");
+        throw DROPSErrCL("StokesSolverFactoryCL: Sorry, this solver combination is not implemented, yet");
     return stokessolver;
 }
 
@@ -537,6 +554,7 @@ void StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, ProlongationPT>::
     SetMatrices( const MatrixCL* A, const MatrixCL* B, const MatrixCL* Mvel, const MatrixCL* M, const IdxDescCL* pr_idx) {
     if ( APc_ == PVanka_SM || APc_ == BraessSarazin_SM) { //  Vanka or Braess Sarazin smoother
         mincommispc_.SetMatrices(A, B, Mvel, M, pr_idx);
+        bdinvbtispc_.SetMatrices(A, B, Mvel, M, pr_idx);
         bbtispc_.SetMatrices(B, Mvel, M, pr_idx);
     }
     if ( SPc_ == VankaSchur_SPC) {              // VankaSchur
