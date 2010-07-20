@@ -1543,14 +1543,22 @@ class PreBaseCL
 {
   protected:
     mutable std::ostream* output_;
+    mutable Uint iter_;
     
     PreBaseCL( std::ostream* output= 0)
-      : output_( output) {}
+      : output_( output), iter_(0) {}
     virtual ~PreBaseCL() {}
     
+    void AddIter( int iter) const { iter_+= iter; }
+
   public:
     virtual void Apply( const MatrixCL& A,   VectorCL& x, const VectorCL& b) const = 0;
     virtual void Apply( const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const = 0;
+
+    /// reset iteration counter
+    void ResetIter()    const { iter_= 0; }
+    /// return total number of iterations
+    Uint GetTotalIter() const { return iter_; }
 };
 
 
@@ -1913,6 +1921,7 @@ class SolverAsPreCL: public PreBaseCL
           IF_MASTER
             *output_ << "SolverAsPreCL: iterations: " << solver_.GetIter()
                      << "\trelative residual: " << solver_.GetResid() << std::endl;
+        AddIter( solver_.GetIter());
     }
     void Apply(const MatrixCL& A,   VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
     void Apply(const MLMatrixCL& A, VectorCL& x, const VectorCL& b) const { Apply<>( A, x, b); }
