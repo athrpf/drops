@@ -72,6 +72,11 @@ void SetupMassDiag_vecP2 (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& R
 void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx,
                     const BndCondCL& bnd= BndCondCL( 0), const VecDescCL* lsetp=0);
 
+/// \brief Compute the unscaled lumped \f$L_2(\Omega)\f$-mass-matrix, i.e., M = diag( \f$\int_\Omega v_i dx\f$).
+void SetupLumpedMass (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx,
+                    const BndCondCL& bnd= BndCondCL( 0), const VecDescCL* lsetp=0);
+
+
 
 		    
 // rho*du/dt - mu*laplace u + Dp = f + rho*g - okn

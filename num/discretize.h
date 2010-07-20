@@ -814,6 +814,8 @@ class P1DiscCL
     static inline double norm_L2_sq(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
     // returns int phi_i*phi_j dx
     static inline double GetMass( int i, int j) { return i!=j ? 1./120. : 1./60.; }
+    // returns int phi_i dx
+    static inline double GetLumpedMass( int) { return 1./24.; }
     // the gradient of hat function i is in column i of H
     static inline void   GetGradients( SMatrixCL<3,4>& H, double& det, const TetraCL& t);
     static inline void   GetGradients( Point3DCL H[4],    double& det, const TetraCL& t);
@@ -885,6 +887,8 @@ class P2DiscCL
     static inline valT Quad( valT f[10], int i);
     // returns int phi_i phi_j dx
     static inline double GetMass( int i, int j);
+    // returns int phi_i dx
+    static inline double GetLumpedMass( int i) { return i<4 ? -1./120. : 1./30.; }
 };
 
 class P2RidgeDiscCL

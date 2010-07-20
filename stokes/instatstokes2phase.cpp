@@ -192,4 +192,171 @@ void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx,
 }
 
 
+
+void SetupLumpedMass_P1(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd)
+{
+    M.resize( RowIdx.NumUnknowns());
+
+    const Uint lvl= RowIdx.TriangLevel();
+    LocalNumbP1CL Numb;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
+        const double absdet= sit->GetVolume()*6.;
+        Numb.assign( *sit, RowIdx, bnd);
+        for(int i=0; i<4; ++i)
+            if (Numb.WithUnknowns( i))
+                M[Numb.num[i]]+= P1DiscCL::GetLumpedMass( i)*absdet;
+    }
+}
+
+void SetupLumpedMass_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset, const BndCondCL& bnd)
+{
+    const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
+    M.resize( RowIdx.NumUnknowns());
+
+    const Uint lvl= RowIdx.TriangLevel();
+    LocalNumbP1CL Numb;
+    double coup[4], coupT2[4];
+
+    double integralp;
+    InterfaceTetraCL cut;
+    bool sign[4];
+
+    // The 4 P1-shape-functions
+    LocalP2CL<> pi[4];
+    for(int i= 0; i < 4; ++i) {
+        pi[i][i]= 1.;
+        for (int vert= 0; vert < 3; ++vert)
+            pi[i][EdgeByVert( i, VertOfFace( i, vert)) + 4]= 0.5;
+    }
+
+    LocalP2CL<> loc_phi;
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
+        const double absdet= sit->GetVolume()*6.;
+        loc_phi.assign( *sit, lset, BndDataCL<> ( 0));
+        cut.Init( *sit, loc_phi);
+        const bool nocut= !cut.Intersects();
+        Numb.assign( *sit, RowIdx, bnd);
+        if (nocut) {
+            for(int i= 0; i < 4; ++i)
+                if ( Numb.WithUnknowns( i))
+                    M[Numb.num[i]]+= P1DiscCL::GetMass( i, i)*absdet;
+        }
+        else { // extended basis functions have only support on tetra intersecting Gamma!
+            for(int i=0; i<4; ++i) {
+                sign[i]= cut.GetSign(i) == 1;
+                // compute the integrals
+                // \int_{T_2} p_i dx,    where T_2 = T \cap \Omega_2
+                integralp= 0.;
+                for (int ch= 0; ch < 8; ++ch) {
+                    cut.ComputeCutForChild( ch);
+                    integralp+= cut.quad( pi[i], absdet, true);  // integrate on positive part
+                }
+                coup[i]= P1DiscCL::GetLumpedMass( i)*absdet;
+                coupT2[i]= integralp;
+            }
+
+            // write values into matrix
+            for(int i=0; i<4; ++i) {
+                if (!Numb.WithUnknowns( i)) continue;
+                M[Numb.num[i]]+= coup[i];
+                const IdxT xidx_i= Xidx[Numb.num[i]];
+                if (xidx_i!=NoIdx)
+                    M[xidx_i]+= coupT2[i]*(1 - 2*sign[i]) + sign[i]*coup[i];
+            }
+        }
+    }
+}
+
+void SetupLumpedMass_vecP2(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd)
+{
+    M.resize( RowIdx.NumUnknowns());
+
+    const Uint lvl= RowIdx.TriangLevel();
+    LocalNumbP2CL Numb;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
+        const double absdet= sit->GetVolume()*6.;
+        Numb.assign( *sit, RowIdx, bnd);
+        for(int i=0; i<10; ++i)
+            if (Numb.WithUnknowns( i)) {
+                const double contrib= P2DiscCL::GetLumpedMass( i)*absdet;
+                M[Numb.num[i]  ]+= contrib;
+                M[Numb.num[i]+1]+= contrib;
+                M[Numb.num[i]+2]+= contrib;
+            }
+    }
+}
+
+void SetupLumpedMass_vecP2R (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset, const BndCondCL& bnd)
+{
+    const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
+    M.resize( RowIdx.NumUnknowns());
+
+    const Uint lvl= RowIdx.TriangLevel();
+    LocalNumbP2CL Numb;
+    double contribExt[4];
+
+    InterfaceTetraCL cut;
+    LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
+    LocalP2CL<> loc_phi;
+    DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
+        const double absdet= sit->GetVolume()*6.;
+        loc_phi.assign( *sit, lset, BndDataCL<> ( 0));
+        cut.Init( *sit, loc_phi);
+        Numb.assign( *sit, RowIdx, bnd);
+        // write standard FE values into matrix
+        for(int i=0; i<10; ++i)
+            if (Numb.WithUnknowns( i)) {
+                const double contrib= P2DiscCL::GetLumpedMass( i)*absdet;
+                M[Numb.num[i]  ]+= contrib;
+                M[Numb.num[i]+1]+= contrib;
+                M[Numb.num[i]+2]+= contrib;
+            }
+
+        if (cut.Intersects()) { // extended basis functions have only support on tetra intersecting Gamma!
+            P2RidgeDiscCL::GetExtBasisOnChildren(p1abs_p, p1abs_n, loc_phi);
+            for(int i=0; i<4; ++i)
+                contribExt[i]= 0;
+            // compute integrals    int_T v_i^R dx
+            for (int ch= 0; ch < 8; ++ch) {
+                cut.ComputeCutForChild( ch);
+                for(int i=0; i<4; ++i) {
+                    contribExt[i]+= cut.quad( p1abs_p[i][ch], absdet, true);   // integrate on positive part
+                    contribExt[i]+= cut.quad( p1abs_n[i][ch], absdet, false);  // integrate on negative part
+                }
+            }
+
+            // write extended values into matrix
+            for(int i=0; i<4; ++i) {
+                if (!Numb.WithUnknowns( i)) continue;
+                const IdxT xidx_i= Xidx[Numb.num[i]];
+                if (xidx_i!=NoIdx) {
+                    M[xidx_i  ]+= contribExt[i];
+                    M[xidx_i+1]+= contribExt[i];
+                    M[xidx_i+2]+= contribExt[i];
+                }
+            }
+        }
+    }
+}
+
+void SetupLumpedMass (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd, const VecDescCL* lsetp)
+{
+    switch(RowIdx.GetFE())
+    {
+    case P1_FE:
+        SetupLumpedMass_P1( MG, M, RowIdx, bnd); break;
+    case P1X_FE:
+        SetupLumpedMass_P1X( MG, M, RowIdx, *lsetp, bnd); break;
+    case vecP2_FE:
+        SetupLumpedMass_vecP2( MG, M, RowIdx, bnd); break;
+    case vecP2R_FE:
+        SetupLumpedMass_vecP2R( MG, M, RowIdx, *lsetp, bnd); break;
+    default:
+        throw DROPSErrCL("SetupLumpedMass not implemented for this FE type");
+    }
+}
+
+
 } // end of namespace DROPS
