@@ -1487,6 +1487,7 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stoke
     BaryCoordCL* nodes;
     LocalP2CL<> p1[4], p2[10]; // 4 P1 and 10 P2 basis functions
     LocalP2CL<> Fabs_p, Fabs_n; // enrichment function on pos./neg. part (to be interpreted as isoP2 function)
+    LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
     double intpos, intneg;
     for (int k=0; k<10; ++k) {
         p2[k][k]=1.;
@@ -1557,7 +1558,6 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const CoeffT& _Coeff, const Stoke
                 GradLP2[i].assign( GradLP1[i]);
 
             double Vol_p= 0;
-            LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
             P2RidgeDiscCL::GetExtBasisOnChildren(p1abs_p, p1abs_n, loc_phi);
             for (int ch= 0; ch < 8; ++ch) {
                 patch.ComputeCutForChild( ch);
