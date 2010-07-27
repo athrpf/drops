@@ -800,37 +800,38 @@ void MultiGridCL::SizeInfo(std::ostream& os)
        << numTetras << " Tetras"
        << std::endl;
 #else
-    int  elems[5],
+    int  elems[9],
         *recvbuf=0;
-
     if (ProcCL::IamMaster())
-        recvbuf = new int[5*ProcCL::Size()];
+        recvbuf = new int[9*ProcCL::Size()];
 
-    elems[0] = GetVertices().size(); elems[1]=GetEdges().size();
-    elems[2] = GetFaces().size();    elems[3]=GetTetras().size();
-    elems[4] = elems[3] - std::distance( GetTriangTetraBegin(), GetTriangTetraEnd());
+    elems[0]= GetTriangVertex().size(); elems[1]= GetTriangEdge().size();
+    elems[2]= GetTriangFace().size();   elems[3]= GetTriangTetra().size();
+    elems[4] = GetVertices().size();    elems[5]=GetEdges().size();
+    elems[6] = GetFaces().size();       elems[7]=GetTetras().size();
+    elems[8] = elems[7] - std::distance( GetTriangTetraBegin(), GetTriangTetraEnd());
 
-    ProcCL::Gather(elems, recvbuf, 5, ProcCL::Master());
+    ProcCL::Gather(elems, recvbuf, 9, ProcCL::Master());
 
     Uint numVerts=0, numEdges=0, numFaces=0, numTetras=0, numTetrasRef=0;
     if (ProcCL::IamMaster()){
         for (int i=0; i<ProcCL::Size(); ++i){
-            numVerts  += recvbuf[i*4+0];
-            numEdges  += recvbuf[i*4+1];
-            numFaces  += recvbuf[i*4+2];
-            numTetras += recvbuf[i*4+3];
-            numTetrasRef += recvbuf[i*4+4];
+            numVerts  += recvbuf[i*9+4];
+            numEdges  += recvbuf[i*9+5];
+            numFaces  += recvbuf[i*9+6];
+            numTetras += recvbuf[i*9+7];
+            numTetrasRef += recvbuf[i*9+8];
         }
-
+        os << "    On level " << GetLastLevel() << " there are:\n";
         for (int i=0; i<ProcCL::Size(); ++i){
             os << "     On Proc "<<i<<" are: "
-               << recvbuf[i*4+0] << " Verts, "
-               << recvbuf[i*4+1] << " Edges, "
-               << recvbuf[i*4+2] << " Faces, "
-               << recvbuf[i*4+3] << " Tetras"
+               << recvbuf[i*9+0] << " Verts, "
+               << recvbuf[i*9+1] << " Edges, "
+               << recvbuf[i*9+2] << " Faces, "
+               << recvbuf[i*9+3] << " Tetras"
                << '\n';
         }
-        os << "  Accumulated: "
+        os << "  Accumulated (over all processes and levels): "
            << numVerts << " Verts, "
            << numEdges << " Edges, "
            << numFaces << " Faces, "
