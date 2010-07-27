@@ -263,7 +263,7 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
         }
         pmg.AttachTo(*mg);
 
-        LoadBalCL lb(*mg);
+        LoadBalCL lb(*mg, metis);
         if (size>1)
         {
             lb.DeleteGraph();
@@ -327,7 +327,7 @@ void CreateInitGrid(DROPS::ParMultiGridCL& pmg,  int proc)
 
         pmg.AttachTo(*mg);
 
-        LoadBalHandlerCL lb(*mg);
+        LoadBalHandlerCL lb(*mg, DROPS::metis);
         lb.DoInitDistribution();
     }
 
@@ -423,7 +423,7 @@ int main(int argc, char* argv[])
         CreateInitGrid(pmg, master);
 
         DROPS::MultiGridCL &mg = pmg.GetMG();
-        DROPS::LoadBalCL LoadBal(mg);
+        DROPS::LoadBalCL LoadBal(mg, metis);
 
         if (C.printSize){
             if (me==master) cout << "  - Verteilung der Elemente:\n";

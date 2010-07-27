@@ -8,7 +8,6 @@
 Time {
   NumSteps	=	500
   StepSize	=	1e-4
-  Theta         =	0.5	# Crank-Nicholson
   Scheme        =       0       # no effect
 }
 
@@ -23,6 +22,7 @@ Stokes {
   PcATol	=	1e-2    # no effect
   PcSTol	=	1e-4    # no effect
   XFEMStab      =       1e-1
+  Theta         = 0.5         # 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
 }
 
 NavStokes {
@@ -39,6 +39,7 @@ Levelset {
   SD		=	0.1
   CurvDiff	=	0
   VolCorrection	=	5
+  Theta         = 1         # 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
 }
 
 Coupling {
@@ -61,8 +62,10 @@ Reparam {
 AdaptRef {
   Freq		=	0
   FinestLevel	=	2
+  CoarsestLevel = 0         # coarsest level in the near of the phase boundary
   Width		=	1e-3
-  RefineStrategy=  1
+  LoadBalStrategy= 1	# 0 - No Migration, 1 - Adaptive, 2 - Recursive
+  Partitioner    = 1	# 1 - Metis, 2 - Zoltan, 3 - Scotch
 }
 
 # material data, all units are SI
@@ -113,6 +116,17 @@ Transp {
   NitscheXFEMStab =       0.1   # no effect
 }
 
+# surfactant transport
+SurfTransp {
+    DoTransp      = 0         # surfactant transport on (1) or off (0)
+    Theta         = 0.5       # 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
+    Iter          = 1000      # iterations of solver for surfactant equation
+    Tol           = 1e-10     # tolerance of solver for surfactant equation
+    OmitBound     = -1.       # omit dof with small mass on the interface, -1 = keeps all dof
+    Visc          = 1e-5      # interfacial diffusion coefficient
+}
+
+
 # Ensight settings
 Ensight {
   EnsightOut    =       1
@@ -146,4 +160,5 @@ Restart {
   Outputfile    =       none    # no effect
   Overwrite     =       1
   Serialization =       0
+  Binary        =       0		# no effect
 }

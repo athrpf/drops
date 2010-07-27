@@ -79,6 +79,7 @@ void ParamMGSerCL::RegisterParams()
     rp_.RegString( rst_Inputfile,     "Inputfile");
     rp_.RegInt(    rst_Serialization, "Serialization");
     rp_.RegInt(    rst_Overwrite,     "Overwrite");
+    rp_.RegInt(    rst_binary,        "Binary");
     rp_.EndGroup();
 }
 
@@ -111,7 +112,8 @@ void ParamAdaptRefCL::RegisterParams()
     rp_.RegInt(    ref_FinestLevel,    "FinestLevel");
     rp_.RegInt(    ref_CoarsestLevel,  "CoarsestLevel");
     rp_.RegDouble( ref_Width,          "Width");
-    rp_.RegInt(    ref_RefineStrategy, "RefineStrategy" );
+    rp_.RegInt(    ref_LoadBalStrategy,"LoadBalStrategy" );
+    rp_.RegInt(    ref_Partitioner,    "Partitioner");
     rp_.EndGroup();
 }
 
@@ -304,6 +306,8 @@ void ParamFilmCL::RegisterParams()
     rp_.RegInt(    ref_FinestLevel,  "FinestLevel");
     rp_.RegInt(    ref_CoarsestLevel,"CoarsestLevel");
     rp_.RegDouble( ref_Width,        "Width");
+    rp_.RegInt(    ref_LoadBalStrategy,"LoadBalStrategy" );
+    rp_.RegInt(    ref_Partitioner,    "Partitioner");
     rp_.EndGroup();
 
     rp_.BeginGroup("Mat");

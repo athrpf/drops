@@ -653,7 +653,7 @@ int main (int argc, char** argv)
     DROPS::MultiGridCL mg(*mgb);
     pmg.AttachTo(mg);
 
-    DROPS::LoadBalHandlerCL lb(mg);
+    DROPS::LoadBalHandlerCL lb(mg, DROPS::metis);
     lb.DoInitDistribution(DROPS::ProcCL::Master());
     switch (refineStrategy){
         case 0 : lb.SetStrategy(DROPS::NoMig);     break;

@@ -64,7 +64,8 @@ AdaptRef {
   FinestLevel   = 2         # finest level used in refinement strategy
   CoarsestLevel = 0
   Width         = 1e-6
-  RefineStrategy= 1         # algorithm to determine the load balancing graph for refinement
+  LoadBalStrategy= 1	# 0 - No Migration, 1 - Adaptive, 2 - Recursive
+  Partitioner    = 1	# 1 - Metis, 2 - Zoltan, 3 - Scotch
 }
 
 # material data, all units are SI
@@ -146,6 +147,7 @@ Restart {
   Overwrite     = 2
   Inputfile     = none
   Outputfile    = ./geometry/eindhoven
+  Binary        = 0		# no effect
 }
 
 # domain, bnd/ini conditions

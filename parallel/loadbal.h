@@ -116,10 +116,19 @@ class LoadBalCL
 {
   public:
     typedef void (*weight_function)(const TetraCL&, size_t&, const int);
+    struct UnkST                                            ///< Storing information about one dof
+    { 
+        Uint idx;                                           ///< index type, e.g. velocity
+        IdxT dof;                                           ///< system number, position in vector
+        size_t numUnk;                                      ///< number of unknowns, e.g. 3 for velocity
+        UnkST( Uint idx_, IdxT dof_, size_t numUnk_) 
+            : idx(idx_), dof(dof_), numUnk(numUnk_) {}
+    };
 
   private:
     typedef std::map<idxtype, Uint> GraphEdgeCT;            // Type that descriebs an edge of the dual, reduced graph: GraphEdgeCT->first: neibhbor, GraphEdgeCT->second: weight
     typedef std::set<idxtype>       GraphNeighborCT;        // Set of neighbors of a node
+    typedef std::set<UnkST> UnkWghtListT;                   ///< List of UnkST
 
     MultiGridCL                   *mg_;                     // Pointer to the multigrid
     PartitionerCL*                partitioner_;             // Pointer to a graph partitioner
@@ -128,7 +137,7 @@ class LoadBalCL
     Uint static                   TriangLevel_;             // Triangulation level, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
     static idxtype*               myfirstVert_;             // first vertex on this proc (static for HandlerGather!)
     static IFT                    FaceIF_;                  // Interface, for compute the adjacencies over Proc-Boundaries
-    bool                          useUnkInfo_;              // Use information about unknowns for load balancing
+    int                           weightFct_;               // which weighting function should be used
 
     void InitIF();                                          // Init the Interfaces
     static void CommunicateAdjacency();                     // Communicate the adjacencies over proc boundaries
@@ -142,38 +151,33 @@ class LoadBalCL
     void AdjUnrefined( TetraCL&, int&, size_t&);            // Set up adjacenzies and weights for a unrefined tetra of LoadBalSet
     void AdjRefined  ( TetraCL&, int&, size_t&);            // Set up adjacenzies and weights for a refined tetra of LoadBalSet
 
-    bool CheckForLsetUnk( const TetraCL& t) const{
-        const Uint idx= lset_->RowIdx->GetIdx();
-        for ( TetraCL::const_VertexPIterator sit=t.GetVertBegin(); sit!=t.GetVertEnd(); ++sit){
-            if ( !(*sit)->Unknowns.Exist(idx))
-                return false;
-        }
-        for ( TetraCL::const_EdgePIterator sit= t.GetEdgesBegin(); sit!=t.GetEdgesEnd(); ++sit){
-            if ( !(*sit)->Unknowns.Exist(idx))
-                return false;
-        }
-        return true;
-    }
-    void GetWeightRef( const TetraCL&, size_t& wgtpos);
-    void GetWeightLset( const TetraCL&, size_t& wgtpos);
+    inline bool CheckForLsetUnk( const TetraCL& t) const;       // Check if level set unknowns are available on a tetrahedron (and its subs)
+    void GetWeightRef( const TetraCL&, size_t& wgtpos);         // Weighting function by determining number of children
+    void GetWeightLset( const TetraCL&, size_t& wgtpos);        // Weighting function by determining number of intersected subs
+    template <typename SimplexT> 
+    void UnkOnSimplex(const SimplexT& s, UnkWghtListT& list, const IdxDescCL* idxDesc) const;   // number of dof on a single vertex/edge
+    void UnkOnSingleTetra( const TetraCL&, UnkWghtListT& ) const;                               // number of dof on a single tetrahedron
+    void GetWeightUnk( const TetraCL&, size_t& wgtpos);         // Weighting function by determining number of degrees of freedom
 
   public:
-    LoadBalCL(MultiGridCL&, int TriLevel=-1, PartMethod meth = KWay );// Constructor
+    LoadBalCL(MultiGridCL&, int partitioner, int TriLevel=-1, PartMethod meth = KWay, int weightFct=1);// Constructor
     ~LoadBalCL();                                           // Destructor
 
     void CreateDualRedGraph(bool geom=false);               // Create the dual reduced Graph for ParMETIS on the last triangulation level
     void DeleteGraph();                                     // free all arrays
     PartitionerCL* GetPartitioner() { return partitioner_; }//getter for the partitioner_ object
-    void PartitionPar() { partitioner_->PartGraphPar(); }
+    void PartitionPar() { partitioner_->PartGraphPar();  }
     void PartitionSer( int master) { partitioner_->PartGraphSer(master); }
     void Migrate();                                         // do the transfers. Call ParMultiGridCL::XferStart(), XferEnd() befor and after calling this procedure
     void RemoveLbNr();                                      // removes all Lb-numbers
 
-    float GetQuality()         const { return partitioner_->GetGraph().ubvec;}     ///< Get quality-parameter
-    void  SetQuality(float ub)       { partitioner_->GetGraph().ubvec = ub;}          ///< Set quality-parameter
+    float GetQuality()         const { return partitioner_->GetGraph().ubvec;}  ///< Get quality-parameter
+    void  SetQuality(float ub)       { partitioner_->GetGraph().ubvec = ub;}    ///< Set quality-parameter
 
-    void  Append(const IdxDescCL* id) { idx_.push_back(id); useUnkInfo_=true; }     ///< Set information about unknown type
-    void  RemoveIdx() {idx_.clear(); useUnkInfo_=false;}
+    void  Append(const IdxDescCL* id) { if (id!=0) idx_.push_back(id); }        ///< Set information about unknown type
+    void  RemoveIdx() { idx_.clear(); }                                         ///< Remove information about unknown type
+    void  SetWeightFnct( int wfc) { weightFct_=wfc; }                           ///< Set weighting function
+    int   GetWeightFnct() const { return weightFct_; }                          ///< Get weighting function
 
     void SetLset( const VecDescCL& lset) { lset_=&lset; }
     void RemoveLset() { lset_=0; } 
@@ -222,12 +226,11 @@ class LoadBalHandlerCL
 
   public:
     /// \brief Constructor
-    LoadBalHandlerCL(MultiGridCL& mg, float ub=1.00);
+    LoadBalHandlerCL(MultiGridCL& mg, Partitioner part, float ub=1.00);
     /// \brief Constructor that creates a distributed multigrid
-    LoadBalHandlerCL(const MGBuilderCL&, int master, PartMethod meth=KWay, bool geom=true, bool debug=false);
+    LoadBalHandlerCL(const MGBuilderCL&, int master, Partitioner part, PartMethod meth=KWay, bool geom=true, bool debug=false);
     /// \brief Destructor, that frees the memory of the LoadBalCL
     ~LoadBalHandlerCL();
-    void SetLset( const VecDescCL& lset) { lb_->SetLset(lset); }
 
     /// \brief Do a complete migration
     void DoMigration();
@@ -240,6 +243,7 @@ class LoadBalHandlerCL
     inline void         SetStrategy(PartMethod);          ///< Set the strategy that is used for the graph-partitioning
     inline bool         GetXferUnknowns()       const;    ///< Returns if unknowns are transfered too within the migration
     inline void         SetXferUnknowns(bool);            ///< Set flag for transfering unknwons (Recursive or Adaptive)
+    void SetLset( const VecDescCL& lset) { lb_->SetLset(lset); }    ///< Set a pointer to the level set function, so the number of intersected subs is used for load balancing
     inline bool         GetDebugMode()          const;    ///< Returns if information about each step should be displayed
     inline void         SetDebugMode(bool);               ///< turn off or on the DebugMode
     inline MultiGridCL& GetMG();                          ///< Get a reference on the MultiGridCL
@@ -352,13 +356,53 @@ Uint LoadBalCL::GetMovedMultiNodes() const{
     return partitioner_->GetGraph().movedMultiNodes;
 }
 
-PartMethod LoadBalHandlerCL::GetStrategy() const{
-    return strategy_;
+/// \brief Check if level set unknowns exists on all vertices and edges of a tetrahedron
+bool LoadBalCL::CheckForLsetUnk( const TetraCL& t) const
+{
+    const Uint idx= lset_->RowIdx->GetIdx();
+    for ( TetraCL::const_VertexPIterator sit=t.GetVertBegin(); sit!=t.GetVertEnd(); ++sit){
+        if ( !(*sit)->Unknowns.Exist(idx))
+            return false;
+    }
+    for ( TetraCL::const_EdgePIterator sit= t.GetEdgesBegin(); sit!=t.GetEdgesEnd(); ++sit){
+        if ( !(*sit)->Unknowns.Exist(idx))
+            return false;
+    }
+    return true;
+}
+
+/// \brief Put all unknowns on a vertex or edge into a list of dofs
+template <typename SimplexT>
+void LoadBalCL::UnkOnSimplex( const SimplexT& s, UnkWghtListT& list, const IdxDescCL* idxDesc) const
+{
+    const IdxT idx   = idxDesc->GetIdx();
+    const Uint numUnk= idxDesc->GetNumUnknownsOnSimplex<SimplexT>();
+    if ( s.Unknowns.Exist(idx)){
+        const IdxT dof= s.Unknowns(idx);
+        list.insert( UnkST(idx, dof, numUnk));
+        if ( idxDesc->IsExtended() && idxDesc->GetXidx()[dof]!=NoIdx){
+//           std::cout << "Using an extended index ("<<idxDesc->GetXidx()[dof]<<") as weight" << std::endl;
+           list.insert( UnkST( idx, idxDesc->GetXidx()[dof], numUnk));
+        }
+    }
+}
+
+/// \brief Compare two UnkST
+inline bool operator< (const LoadBalCL::UnkST& a, const LoadBalCL::UnkST& b)
+{
+    if ( a.idx<b.idx)       return true;
+    if ( a.dof<b.idx)       return true;
+    if ( a.numUnk<b.numUnk) return true;
+    return false;
 }
 
 
 // LoadBalHandlerCL
 //=================
+
+PartMethod LoadBalHandlerCL::GetStrategy() const{
+    return strategy_;
+}
 
 void LoadBalHandlerCL::SetStrategy(PartMethod meth)
 /// \param[in] meth Methode that is used for computing the graph-partitioning with ParMetis. If meth==Adaptive, then

@@ -953,7 +953,7 @@ int main (int argc, char** argv)
         pmg.AttachTo(mg);
 
         // Init the LoadBalHandler (create an MultiGridCL and distribute the multigrid)
-        DROPS::LoadBalHandlerCL lb(mg);
+        DROPS::LoadBalHandlerCL lb(mg, DROPS::metis);
         lb.DoInitDistribution(ProcCL::Master());
         lb.SetXferUnknowns(true);
         switch (C.refineStrategy){

@@ -33,27 +33,32 @@
 # include "parallel/parallel.h"
 # include "parallel/parmultigrid.h"
 # include "parallel/loadbal.h"
+# include "parallel/partitioner.h"
 # include "parallel/logger.h"
 #endif
 
 namespace DROPS
 {
 
+/// \brief Adaptive triangulation based on position of the interface provided by the levelset function
 class AdapTriangCL
 {
   private:
     MultiGridCL& mg_;
 #ifdef _PAR
-    ParMultiGridCL*  pmg_;
-    LoadBalHandlerCL lb_;
+    ParMultiGridCL*  pmg_;                                  ///< Reference to the parallel multigrid
+    LoadBalHandlerCL lb_;                                   ///< Reference to the load balancing class
 #endif
-    double width_;
-    int c_level_, f_level_;
-    bool modified_;
 
-    typedef std::vector<MGObserverCL*> ObserverContT;       // type for observing the multigird dependent FE functions
-    ObserverContT observer_;                                // handler for manipulate FE-functions to due grid changes
+    double width_;                                          ///< width of the refined grid
+    int c_level_, f_level_;                                 ///< coarsest and finest level of the grid
+    bool modified_;                                         ///< flag if the grid has been modified
 
+    typedef std::vector<MGObserverCL*> ObserverContT;       ///< type for observing the multigird dependent FE functions
+    ObserverContT observer_;                                ///< handler for manipulate FE-functions to due grid changes
+
+    /// \name Evaluate a function on a simplex
+    //@{
     template <class DistFctT>
     double GetValue( const DistFctT& dist, const VertexCL& v) { return dist.val( v); }
     template <class DistFctT>
@@ -63,16 +68,11 @@ class AdapTriangCL
     double GetValue( scalar_fun_ptr dist, const VertexCL& v)  { return dist( v.GetCoord() ); }
     double GetValue( scalar_fun_ptr dist, const EdgeCL& e)    { return dist( GetBaryCenter( e) ); }
     double GetValue( scalar_fun_ptr dist, const TetraCL& t)   { return dist( GetBaryCenter( t) ); }
+    //@}
 
-#ifndef _PAR
-    template <class DistFctT>
-    bool ModifyGridStep( DistFctT&);
-#else
+    /// \brief On step of the grid change
     template <class DistFctT>
     bool ModifyGridStep( DistFctT&, bool lb=true);
-#endif
-    // One step of grid change; returns true if modifications were necessary,
-    // false, if nothing changed.
 
     /// \name Call handlers (MGObserverCL) to manipulate FE-functions
     // @{
@@ -84,8 +84,11 @@ class AdapTriangCL
 #else
         if (!observer_.empty()){
             pmg_->DeleteVecDesc();
-            for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs)
-              (*obs)->pre_refine();
+            for (ObserverContT::iterator obs= observer_.begin(); obs != observer_.end(); ++obs){
+                (*obs)->pre_refine();
+                if ( GetLb().GetLB().GetWeightFnct()&2)
+                    GetLb().GetLB().Append( (*obs)->GetIdxDesc());
+            }
         }
 #endif
     }
@@ -99,6 +102,7 @@ class AdapTriangCL
             pmg_->DelAllUnkRecv();
             pmg_->DeleteRecvBuffer();
         }
+        GetLb().GetLB().RemoveIdx();
 #endif
     }
 
@@ -116,21 +120,21 @@ class AdapTriangCL
     //@}
 
   public:
-    AdapTriangCL(  MultiGridCL& mg, double width, int c_level, int f_level, __UNUSED__ int refineStrategy = 1)
+    AdapTriangCL(  MultiGridCL& mg, double width, int c_level, int f_level, __UNUSED__ int lbStrategy = 1, __UNUSED__ int partitioner=1)
       : mg_( mg),
 #ifdef _PAR
-      pmg_( ParMultiGridCL::InstancePtr()), lb_( mg_),
+      pmg_( ParMultiGridCL::InstancePtr()), lb_( mg_, Partitioner(partitioner)),
 #endif
       width_(width), c_level_(c_level), f_level_(f_level), modified_(false)
       {
         Assert( 0<=c_level && c_level<=f_level, "AdapTriangCL: Levels are cheesy.\n", ~0);
 #ifdef _PAR
         pmg_->AttachTo( mg_);
-        if (refineStrategy>=0)
+        if (lbStrategy>=0)
             lb_.DoInitDistribution( ProcCL::Master());
         else
-            refineStrategy*=-1;
-        switch ( refineStrategy) {
+            lbStrategy*=-1;
+        switch ( lbStrategy) {
             case 0 : lb_.SetStrategy( NoMig);     break;
             case 1 : lb_.SetStrategy( Adaptive);  break;
             case 2 : lb_.SetStrategy( Recursive); break;

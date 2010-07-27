@@ -40,30 +40,22 @@ void AdapTriangCL::MakeInitialTriang( DistFctT& Dist)
     Uint i;
     bool modified= true;
     for (i=0; i<2*min_ref_num && modified; ++i)
-        modified=ModifyGridStep( Dist);
+        modified=ModifyGridStep( Dist, true);
 
     time.Stop();
     const double duration=time.GetTime();
 
-    IF_MASTER{
-        std::cout << "MakeInitialTriang: " << i
-                  << " refinements in " << duration << " seconds\n"
-                  << "last level: " << mg_.GetLastLevel() << '\n';
-#ifdef _PAR
-        DROPS_LOGGER_SETVALUE("MakeInitialTriang",duration);
-#endif
-    }
+    std::cout << "MakeInitialTriang: " << i
+                << " refinements in " << duration << " seconds\n"
+                << "last level: " << mg_.GetLastLevel() << '\n';
     mg_.SizeInfo( std::cout);
 }
 
-#ifndef _PAR
-template <class DistFctT>
-  bool AdapTriangCL::ModifyGridStep( DistFctT& Dist)
-#else
 template <class DistFctT>
   bool AdapTriangCL::ModifyGridStep( DistFctT& Dist, bool lb)
-#endif
-/** One step of grid change; returns true if modifications were necessary,
+/** One step of grid change 
+    \param lb Do a load-balancing?
+    \return true if modifications were necessary,
     false, if nothing changed. */
 {
     bool modified= false;
@@ -104,7 +96,7 @@ template <class DistFctT>
 #ifdef _PAR
     modified= ProcCL::GlobalOr(modified);
 #endif
-    if (modified) {
+    if (modified || lb) {
         notify_pre_refine();
         mg_.Refine();
 #ifdef _PAR
@@ -142,27 +134,22 @@ void AdapTriangCL::UpdateTriang (const LevelsetP2CL& lset)
 
     notify_pre_refine_sequence();
     for (i= 0; i < 2*min_ref_num; ++i) {
-#ifndef _PAR
-        if (!ModifyGridStep( sol))
+        if (!ModifyGridStep(sol, true)){
             break;
-#else
-        if (!ModifyGridStep(sol, i==2*min_ref_num-1))
-            break;
-#endif
+        }
         modified_= true;
     }
     notify_post_refine_sequence();
 
     time.Stop();
     duration= time.GetTime();
-    IF_MASTER{
-        std::cout << "UpdateTriang: " << i
-                  << " refinements/interpolations in " << duration << " seconds\n"
-                  << "last level: " << mg_.GetLastLevel() << '\n';
+    std::cout << "UpdateTriang: " << i
+              << " refinements/interpolations in " << duration << " seconds\n"
+              << "last level: " << mg_.GetLastLevel() << '\n';
 #ifdef _PAR
-        DROPS_LOGGER_SETVALUE("UpdateTriang",duration);
+    std::cout << "Last partitioning by " << lb_.GetLB().GetPartitioner()->GetName() 
+              << " took " << lb_.GetLB().GetPartitioner()->GetTime() << " seconds\n";
 #endif
-    }
     mg_.SizeInfo( std::cout);
 }
 

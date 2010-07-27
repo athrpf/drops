@@ -90,7 +90,8 @@ AdaptRef {
   FinestLevel	=	2	# num of refinements
   CoarsestLevel =       0
   Width		=	4.9e-4
-  RefineStrategy=       1
+  LoadBalStrategy= 1	      # 0 - No Migration, 1 - Adaptive, 2 - Recursive
+  Partitioner    = 1        # 1 - Metis, 2 - Zoltan, 3 - Scotch
 }
 
 # surface tension
@@ -149,4 +150,5 @@ Restart {
   Outputfile    =       none
   Overwrite     =       1
   Serialization =       1
+  Binary        = 0              # no effect
 }

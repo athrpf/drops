@@ -64,7 +64,8 @@ AdaptRef {
     FinestLevel   = 2         # finest level in the near of the phase boundary
     CoarsestLevel = 0         # coarsest level in the near of the phase boundary
     Width         = 1.0e-8    # domain of refinement
-    RefineStrategy= 0         # no effect
+    LoadBalStrategy= 1        # 0 - No Migration, 1 - Adaptive, 2 - Recursive
+    Partitioner    = 1        # 1 - Metis, 2 - Zoltan, 3 - Scotch
 }
 
 # material data, all units are SI
@@ -155,6 +156,7 @@ Restart {
     Overwrite     = 0         # no effect
     Inputfile     = 0         # no effect
     Outputfile    = 0         # no effect
+    Binary        = 0         # no effect
 }
 
 # domain, bnd/ini conditions

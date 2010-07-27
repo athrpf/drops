@@ -123,6 +123,7 @@ class ParamMGSerCL : public virtual ParamBaseCL
   //@{
     int    rst_Serialization;                 ///< Perform serialization
     int    rst_Overwrite;                     ///< Overwrite old output-files or create new for every step
+    int    rst_binary;                        ///< Binary or ASCII mode
 
     string rst_Outputfile,                    ///< writes multigrid to serialisation files
            rst_Inputfile;                     ///< reads multigrid from deserialization files, special value "none" to ignore
@@ -214,7 +215,8 @@ class ParamAdaptRefCL : public virtual ParamBaseCL
     int    ref_FinestLevel;        ///< finest level in the near of the phase boundary
     int    ref_CoarsestLevel;      ///< coarsest level in the near of the phase boundary
     double ref_Width;              ///< domain of refinement
-    int    ref_RefineStrategy;     ///< algorithm to determine the load balancing graph for refinement
+    int    ref_Partitioner;        ///< switching between partitioners
+    int    ref_LoadBalStrategy;    ///< algorithm to determine the load balancing graph for refinement
   //@}
 
   public:
@@ -525,6 +527,9 @@ class ParamFilmCL: public ParamBaseCL
     int    ref_FinestLevel, ref_Freq,               // Parameter fuer
            ref_CoarsestLevel;
     double ref_Width;                               // adaptive Verfeinerung
+    int ref_LoadBalStrategy;                        // Load balancing strategy
+    int ref_Partitioner;                            // partitioner
+
 
     int    rpm_Freq, rpm_Method;                    // Parameter fuer Reparametrisierung
 

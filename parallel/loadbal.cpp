@@ -48,14 +48,19 @@ extern "C" int HandlerGatherC ( OBJT o, void *d) {return LoadBalCL::HandlerGathe
 
 
 /// \brief Constructor
-LoadBalCL::LoadBalCL(MultiGridCL& mg, int TriLevel, PartMethod meth) : idx_(), lset_(0), useUnkInfo_(false)
-/// \param mg       Reference on the multigrid
-/// \param ub       imbalace tolerance for eacht vertex weight, suggestion from parMETIS is 1.05
-/// \param TriLevel level that should be balanced
-/// \param meth     Type of meyhod used for partitioning
+LoadBalCL::LoadBalCL(MultiGridCL& mg, int partitioner, int TriLevel, PartMethod meth, int weightFct) : idx_(), lset_(0), weightFct_(weightFct)
+/// \param mg          Reference on the multigrid
+/// \param partitioner Choose a partitioner: 1 - Metis, 2 - Zoltan, 3 - Scotch
+/// \param TriLevel    level that should be balanced
+/// \param meth        Type of method used for partitioning
+/// \param weightFct   Which information for weighting the dual reduced graph should be used. This parameter
+///                    is a binary representation (b2 b1 b0) of the three methods:
+///                    b0 : use information about children
+///                    b1 : use information about unknowns
+///                    b2 : use information about intersected subs
 /// \todo (of) estimate good parameter ubvec for parmetis
-{  
-    partitioner_ = PartitionerCL::newPartitioner(metis,1.05,meth);   // Pointer to the partitioner class
+{
+    partitioner_ = PartitionerCL::newPartitioner( Partitioner(partitioner), 1.05, meth);   // Pointer to the partitioner class
     mg_=&mg;
     if (FaceIF_==0)
         InitIF();
@@ -228,52 +233,6 @@ void LoadBalCL::RemoveLbNr()
     }
 }
 
-
-/// \brief Inserts the indices of unknowns into a set and returns this set.
-std::set<IdxT> LoadBalCL::UnkOnTetra(const TetraCL& t) const
-/** This is used for alternative weights on tetras
-    \param t the tetraeder
-*/
-{
-    std::set<IdxT> unknowns;
-    if (idx_.empty())
-        return unknowns;
-
-    IdxT maxUnk=1;
-    for (Uint i=0; i<idx_.size(); ++i)
-        maxUnk= std::max( idx_[i]->NumUnknowns(), maxUnk);
-
-    for (Uint i=0; i<idx_.size(); ++i)
-    {
-        Uint index=idx_[i]->GetIdx();
-        if (idx_[i]->NumUnknownsVertex()>0){
-            for (TetraCL::const_VertexPIterator it(t.GetVertBegin()), end(t.GetVertEnd()); it!=end; ++it){
-                if ((*it)->Unknowns.Exist() && (*it)->Unknowns.Exist(index)){
-                    const IdxT dof= (*it)->Unknowns(index);
-                    for (Uint j=0; j<idx_[i]->NumUnknownsVertex(); ++j)
-                        unknowns.insert(dof+j+i*maxUnk);
-                    if ( idx_[i]->IsExtended() )
-                        for (Uint j=0; j<idx_[i]->NumUnknownsVertex(); ++j)
-                            unknowns.insert(idx_[i]->GetXidx()[dof]+j+i*maxUnk);
-                }
-            }
-        }
-        if (idx_[i]->NumUnknownsEdge()>0){
-            for (TetraCL::const_EdgePIterator it(t.GetEdgesBegin()), end(t.GetEdgesEnd()); it!=end; ++it){
-                if ((*it)->Unknowns.Exist() && (*it)->Unknowns.Exist(index)){
-                    const IdxT dof= (*it)->Unknowns(index);
-                    for (Uint j=0; j<idx_[i]->NumUnknownsEdge(); ++j)
-                        unknowns.insert(dof+j+i*maxUnk);
-                    if ( idx_[i]->IsExtended() )
-                        for (Uint j=0; j<idx_[i]->NumUnknownsEdge(); ++j)
-                            unknowns.insert(idx_[i]->GetXidx()[dof]+j+i*maxUnk);
-                }
-            }
-        }
-    }
-    return unknowns;
-}
-
 /** Put the weight of a vertex in the array vwgt of the graph structure at
     the index wgtpos. The weight is computed by the number of children or
     set to 1 if no children exists. Afterwards, this wgtpos is increased by 1.
@@ -291,10 +250,49 @@ void LoadBalCL::GetWeightRef( const TetraCL& t, size_t& wgtpos)
     }
 }
 
+/** Helper function for determining the weights by unknowns
+    \param t tetrahedron of the finest level
+    \param list list of unknowns
+*/
+void LoadBalCL::UnkOnSingleTetra( const TetraCL& t, LoadBalCL::UnkWghtListT& list) const
+{
+    for ( size_t i=0; i<idx_.size(); ++i){
+        for ( TetraCL::const_VertexPIterator it=t.GetVertBegin(); it!=t.GetVertEnd(); ++it)
+            UnkOnSimplex( **it, list, idx_[i]);
+        for ( TetraCL::const_EdgePIterator it=t.GetEdgesBegin(); it!=t.GetEdgesEnd(); ++it)
+            UnkOnSimplex( **it, list, idx_[i]);
+    }
+}
+
+/** Determine weight of a vertx by counting the number of unknowns
+    \param t parent tetrahedron
+    \param wgtpos  in: where to put the weight in the array vwgt,
+                  out: where to put the next weight in the array vwgt
+*/
+void LoadBalCL::GetWeightUnk( const TetraCL& t, size_t& wgtpos)
+{
+    UnkWghtListT unklist;
+    // Collect information
+    if ( t.IsUnrefined()){
+        UnkOnSingleTetra(t, unklist);
+    }
+    else{
+        for ( TetraCL::const_ChildPIterator it=t.GetChildBegin(); it!=t.GetChildEnd(); ++it)
+            UnkOnSingleTetra( **it, unklist);
+    }
+    // Count number of dof on tetra
+    int numUnks=0;
+    for ( UnkWghtListT::const_iterator it= unklist.begin(); it!=unklist.end(); ++it){
+        numUnks += it->numUnk;
+    }
+    GetPartitioner()->GetGraph().vwgt[wgtpos++]= numUnks;
+}
+
+
 /** Put the weight of a vertex in the array vwgt of the graph structure at
-    the index wgtpos. The weight consists of two constrains. The first one is 
-    computed by GetWeightRef and the second one by the number of subtetrahedra 
-    intersected by the interface of the level set function. Afterwards, this 
+    the index wgtpos. The weight consists of two constrains. The first one is
+    computed by GetWeightRef and the second one by the number of subtetrahedra
+    intersected by the interface of the level set function. Afterwards, this
     wgtpos is increased by 2.
     \param t parent tetrahedron
     \param wgtpos  in: where to put the weight in the array vwgt,
@@ -302,7 +300,6 @@ void LoadBalCL::GetWeightRef( const TetraCL& t, size_t& wgtpos)
 */
 void LoadBalCL::GetWeightLset( const TetraCL& t, size_t& wgtpos)
 {
-    GetWeightRef( t, wgtpos);
     InterfacePatchCL patch;                              // check for intersection
     if ( t.IsUnrefined()){
         if (CheckForLsetUnk(t)){
@@ -355,11 +352,20 @@ void LoadBalCL::AdjUnrefined( TetraCL& t, int& edgecount, size_t& vwgpos)
     }
 
     // Compute weight of the vertex
-    if ( lset_)
-        GetWeightLset(t, vwgpos);
-    else
+    if ( weightFct_&1)
         GetWeightRef( t, vwgpos);
-
+    if ( weightFct_&2){
+        if ( idx_.empty())
+            std::cout << "No information about unknowns is known to LoadBalCL.\nNo information of unknowns is considered for load balancing" << std::endl;
+        else
+            GetWeightUnk(t, vwgpos);
+    }
+    if ( weightFct_&4){
+        if ( lset_==0)
+            std::cout << "No information about level set is known to LoadBalCL.\nNo information of level set is considered for load balancing" << std::endl;
+        else
+            GetWeightLset( t, vwgpos);
+    }
 }
 
 
@@ -408,10 +414,20 @@ void LoadBalCL::AdjRefined( TetraCL& t, int& edgecount, size_t& vwgpos)
     }
 
     // Compute weight of the vertex
-    if ( lset_)
-        GetWeightLset(t, vwgpos);
-    else
+    if ( weightFct_&1)
         GetWeightRef( t, vwgpos);
+    if ( weightFct_&2){
+        if ( idx_.empty())
+            std::cout << "No information about unknowns is known to LoadBalCL.\nNo information of unknowns is considered for load balancing" << std::endl;
+        else
+            GetWeightUnk(t, vwgpos);
+    }
+    if ( weightFct_&4){
+        if ( lset_==0)
+            std::cout << "No information about level set is known to LoadBalCL.\nNo information of level set is considered for load balancing" << std::endl;
+        else
+            GetWeightLset( t, vwgpos);
+    }
 }
 
 
@@ -503,8 +519,13 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     CommunicateAdjacency();                                     // create adjacencies over proc boundaries
     Uint numadj= EstimateAdj();                                 // compute the number of adjacencies on this proc
 
+     // Number of conditions per vertex
+    int ncon=0;
+    if ( weightFct_&1 || weightFct_==0) ++ncon;
+    if ( weightFct_&2 && !idx_.empty()) ++ncon;
+    if ( weightFct_&4 && lset_!=0)      ++ncon;
      // Allocate space for the Arrays
-    partitioner_->GetGraph().Resize(numadj, partitioner_->GetGraph().myVerts, partitioner_->GetGraph().geom,  (lset_==0) ? 1 : 2);
+    partitioner_->GetGraph().Resize(numadj, partitioner_->GetGraph().myVerts, partitioner_->GetGraph().geom,  ncon);
 
      // put all nodes and adjacencies into the lists
     LbIteratorCL begin = GetLbTetraBegin(),
@@ -538,8 +559,8 @@ void LoadBalCL::CreateDualRedGraph(bool geom)
     Assert( vertCount==partitioner_->GetGraph().myVerts,
             DROPSErrCL("LoadBalaceCL: CreateDualRedGraph: number of vertices is not correct!"),
             DebugLoadBalC);
-    Assert( (partitioner_->GetGraph().ncon)*vertCount== (int)vwgtcount, 
-            DROPSErrCL("LoadBalaceCL: CreateDualRedGraph: Number of vertex weights does not match"), 
+    Assert( (partitioner_->GetGraph().ncon)*vertCount== (int)vwgtcount,
+            DROPSErrCL("LoadBalaceCL: CreateDualRedGraph: Number of vertex weights does not match"),
             DebugLoadBalC);
 
     partitioner_->CreateGraph(); //Implement for the other partitioners(not necessary for metis)
@@ -666,7 +687,6 @@ void LoadBalCL::ShowGraph(std::ostream& os)
         os << "No Graph created!"<<std::endl;
     else
     {
-
         os << "Proc "<<ProcCL::MyRank()<<" stores "<<myVerts<<" of "<<GetNumAllVerts()
            << " with "<<myAdjs<<" adjacencies"<<std::endl
            << "The graph is:" <<std::endl
@@ -773,9 +793,9 @@ void LoadBalCL::PrintGraphInfo(std::ostream& os) const
 * L O A D  B A L  H A N D L E R  C L A S S                                  *
 ****************************************************************************/
 
-LoadBalHandlerCL::LoadBalHandlerCL(MultiGridCL& mg, float /*ub*/) : mg_(&mg)
+LoadBalHandlerCL::LoadBalHandlerCL(MultiGridCL& mg, Partitioner part, float /*ub*/) : mg_(&mg)
 {
-    lb_ = new LoadBalCL(mg);
+    lb_ = new LoadBalCL(mg, part);
     strategy_ = Adaptive;
     xferUnknowns_ = false;
     debugMode_    = false;
@@ -786,7 +806,7 @@ LoadBalHandlerCL::~LoadBalHandlerCL()
     if (lb_) delete lb_; lb_=0;
 }
 
-LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, PartMethod meth, bool geom, bool debug)
+LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, Partitioner part, PartMethod meth, bool geom, bool debug)
 /// \param[in] builder Builder that creates a multigrid
 /// \param[in] master  The master creates the whole multigrid, the other procs creates an empty multigrid
 /// \param[in] meth    Methode that is used to compute the graph-partitioning
@@ -802,7 +822,7 @@ LoadBalHandlerCL::LoadBalHandlerCL(const MGBuilderCL &builder, int master, PartM
     // tell ParMultiGridCL about the multigrid
     ParMultiGridCL::AttachTo(*mg_);
     // Create new LoadBalancingCL
-    lb_ = new LoadBalCL(*mg_,meth);
+    lb_ = new LoadBalCL(*mg_, part, -1, meth);
 
     ParTimerCL timer;
     double duration;

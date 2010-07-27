@@ -418,7 +418,8 @@ int main (int argc, char** argv)
                C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
 
     DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
-    DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_RefineStrategy : -1));
+    std::cout << "Taking Partitioner: " << C.ref_Partitioner << std::endl;
+    DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_LoadBalStrategy : -C.ref_LoadBalStrategy), C.ref_Partitioner);
     // If we read the Multigrid, it shouldn't be modified;
     // otherwise the pde-solutions from the ensight files might not fit.
     if (C.rst_Inputfile == "none")

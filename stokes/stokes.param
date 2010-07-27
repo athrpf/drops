@@ -69,7 +69,8 @@ AdaptRef {
   FinestLevel   =       2
   CoarsestLevel =       0
   Width         =       0.1
-  RefineStrategy=       1
+  LoadBalStrategy=      1         # 0 - No Migration, 1 - Adaptive, 2 - Recursive
+  Partitioner    =      1         # 1 - Metis, 2 - Zoltan, 3 - Scotch
 }
 
 

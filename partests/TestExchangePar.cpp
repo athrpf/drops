@@ -117,7 +117,7 @@ void DoRefinement(DROPS::ParMultiGridCL &pmg)
     if (DROPS::ProcCL::IamMaster())
         std::cout <<line<<std::endl<< " * Verteile Multigrid und verfeinere " <<C.refall<< " Mal regulär" << std::endl;
     DROPS::MultiGridCL &mg =pmg.GetMG();
-    DROPS::LoadBalHandlerCL lb(mg);
+    DROPS::LoadBalHandlerCL lb(mg, DROPS::metis);
     lb.DoInitDistribution(DROPS::ProcCL::Master());
     ::Times.IncCounter(lb.GetMovedMultiNodes());
     switch (C.refineStrategy){

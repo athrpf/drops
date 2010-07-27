@@ -30,7 +30,7 @@ namespace DROPS
 
 //Implementation of the methods of the GraphST structure
 //========================================================
-/// \brief Destructor of the GraphST structure
+/** Clear memory reserved for all arrays*/
 GraphST::~GraphST()
 {
     Clear();
@@ -95,7 +95,8 @@ void GraphST::Clear()
 //===========================================================================================
 
 /// \brief Constructor of the base partitioner class (allocates memory for the structure attribute)
-PartitionerCL::PartitionerCL()
+PartitionerCL::PartitionerCL( PartMethod meth)
+    : time_(0), meth_(meth)
 {
     allArrays_ = new GraphST();
 }
@@ -114,24 +115,24 @@ GraphST& PartitionerCL::GetGraph()
 
 /**Factory method that based on the partOption parameter allocates memory for the chosen type of object
   (it implements the Factory design pattern)
- \param partOption  type of partitioner used
+ \param partitioner type of partitioner used( 0 - Metis, 1 - Zoltan, 2 - Scotch)
         quality     quality of the partitioning
         method      partition method invoked by the partitioner
  */
-PartitionerCL* PartitionerCL::newPartitioner(PartOption partOption, float quality, PartMethod method)
+PartitionerCL* PartitionerCL::newPartitioner(Partitioner partitioner, float quality, PartMethod method)
 {
     PartitionerCL* pa = NULL;
-     switch (partOption)
+     switch (partitioner)
      {
          case metis:
          {
-             pa = new ParMetisCL(method, quality);
+             pa = new ParMetisCL( method, quality);
              break;
          }
          case zoltan:
          {
 #ifdef _ZOLTAN
-             pa = new ZoltanCL(method);
+             pa = new ZoltanCL( method);
 #else
              throw DROPSErrCL("PartitionerCL::newPartitioner: Zoltan library is not included");
 #endif
@@ -139,15 +140,23 @@ PartitionerCL* PartitionerCL::newPartitioner(PartOption partOption, float qualit
          }
          case scotch:
          {
-             /*pa = new ScotchCL();*/
+#ifdef _SCOTCH
+             pa = new ScotchCL( method);
+#else
+             throw DROPSErrCL("PartitionerCL::newPartitioner: Scotch library is not included");
+#endif
              break;
          }
      }
      return pa;
 }
 
-//End of the implementations of the methods in the abstract class PartitionerCL
-//============================================================================================
+/** Use own processor rank as destination*/
+void PartitionerCL::ApplyIdentity()
+{
+    std::fill(GetGraph().part, GetGraph().part+GetGraph().myVerts, ProcCL::MyRank());
+}
+
 
 //Implementation of the methods in the derived class ParMetisCL
 //=================================================================================================
@@ -157,23 +166,10 @@ PartitionerCL* PartitionerCL::newPartitioner(PartOption partOption, float qualit
         quality     quality of the partitioning
         meth        quality parameter
  */
-ParMetisCL::ParMetisCL(PartMethod meth, float ubvec, float quality) : PartitionerCL()
-{   meth_=meth;
+ParMetisCL::ParMetisCL(PartMethod meth, float ubvec, float quality) : PartitionerCL(meth)
+{
     GetGraph().ubvec = ubvec;
     quality_ = quality;
-}
-
-/// \brief Destructor of the derived class ParMetisCL (parent PartitionerCL)
-ParMetisCL::~ParMetisCL()
-{
-
-}
-
-/// \brief For ParMetis partitioner the next function has no real value but it must be implemented for
-/// other types of partitioners (as a manipulation of the inputs)
-void ParMetisCL::CreateGraph()
-{
-
 }
 
 /** Serial partitioning
@@ -183,10 +179,9 @@ void ParMetisCL::PartGraphSer(int master)
 {
     if ( ProcCL::MyRank()!=master)
         return;
-    
+
     Comment("- Start calculate LoadBalanace with METIS-"<<(meth_ == KWay ? "Kway" : "Recursive")<<std::endl, DebugLoadBalC);
 
-    TimerCL timer; timer.Reset();
     if (GetGraph().myVerts != GetGraph().vtxdist[DynamicDataInterfaceCL::InfoProcs()])
         Comment("LoadBalCL: PartGraphSer: This procedure is called by a proc, that does not have all nodes!"<<std::endl, DebugLoadBalC);
 
@@ -195,19 +190,20 @@ void ParMetisCL::PartGraphSer(int master)
            nparts     = ProcCL::Size(),                         ///< Number of subdomains (per proc one)
            n          = GetGraph().myVerts,                     ///< Number of vertices
            options[5] = {0,0,0,0,0};                            ///< Default options
+    TimerCL timer; timer.Reset();
     // Depending on the method chosen KWay or Recursive the appropriate metis function is called
     // if number of balance conditions is not equal to 1 use the multi constrained versions
     if ( GetGraph().ncon==1){
-        if (meth_ == KWay)
+        if (meth_ == KWay || meth_== Identity)
             METIS_PartGraphKway(      &n, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options,&GetGraph().edgecut, GetGraph().part);
         else if (meth_==Recursive)
             METIS_PartGraphRecursive( &n, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options,&GetGraph().edgecut, GetGraph().part);
     }
     else{
-        if (GetGraph().ncon>15) 
+        if (GetGraph().ncon>15)
             throw DROPSErrCL("ParMetisCL::PartGraphSer: Too many constrains are given");
         wgtflag = 1;    // weights on vertices have to be provided, so this is the flag for specifying additional weights on edges
-        if (meth_ == KWay){
+        if (meth_ == KWay || meth_== Identity){
             std::valarray<float> ubvec( GetGraph().ubvec, GetGraph().ncon);
             METIS_mCPartGraphKway(      &n, &GetGraph().ncon, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, Addr(ubvec), options, &GetGraph().edgecut, GetGraph().part);
         }
@@ -215,8 +211,8 @@ void ParMetisCL::PartGraphSer(int master)
             METIS_mCPartGraphRecursive( &n, &GetGraph().ncon, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().adjwgt, &wgtflag, &numflag,  &nparts, options, &GetGraph().edgecut,GetGraph().part);
         }
     }
+    timer.Stop(); time_= timer.GetTime();
     Comment("  * Number of Edgecut: "<<GetGraph().edgecut<<std::endl, DebugLoadBalC);
-    std::cout << " Serial graph partitioning leads to an edgecut of " << GetGraph().edgecut << " and took " << timer.GetTime() << " sec." << std::endl;
 }
 
 /// \brief Parallel partitioning
@@ -228,7 +224,6 @@ void ParMetisCL::PartGraphPar()
     \pre Setup of the graph
 */
 {
-        
     Comment("- Start calculate LoadBalanace with ParMETIS-"<<(meth_ == Adaptive ? "AdaptiveRepart" : (meth_ == KWay ? "KWay" : "Identity"))<<std::endl,
             DebugLoadBalC);
 
@@ -246,13 +241,12 @@ void ParMetisCL::PartGraphPar()
 
     if (GetGraph().part == 0)
         GetGraph().part = new idxtype[GetGraph().myVerts];
-    if (meth_ == Identity)
-        std::fill(GetGraph().part, GetGraph().part+GetGraph().myVerts, ProcCL::MyRank());
 
     MPI_Comm comm = MPI_COMM_WORLD;
     //Depending on the method choosen Adaptive, KWay or Identity the apropiate parmetis function is called
+    ParTimerCL timer; timer.Reset();
     switch (meth_)
-    {       
+    {
         case Adaptive:
             ParMETIS_V3_AdaptiveRepart(
                     GetGraph().vtxdist, GetGraph().xadj, GetGraph().adjncy, GetGraph().vwgt, GetGraph().vwgt,
@@ -266,25 +260,25 @@ void ParMetisCL::PartGraphPar()
                     &GetGraph().edgecut, GetGraph().part, &comm);
             break;
         case Identity:
-            break;
-        case Recursive:
+            ApplyIdentity();
             break;
         case NoMig:
             break;
+        case Recursive: // Fall through
         default:
             throw DROPSErrCL("ParMetisCL::PartGraphPar: Unknown partitioning method");
     }
+    timer.Stop(); time_= timer.GetTime();
 }
-//end of the implementations of the methods in the derived class ParMetisCL (parent PartitionerCL)
-//================================================================================================
+
 
 #ifdef _ZOLTAN
 /// \brief Constructor of the derived class ZoltanCL (parent class PartitionerCL)
-ZoltanCL::ZoltanCL(PartMethod meth):PartitionerCL() //Constructor of the Zoltan partitioner
-    {
-        meth_ = meth;
-        zz = Zoltan_Create(ProcCL::GetComm());
-    }
+ZoltanCL::ZoltanCL( PartMethod meth)
+    : PartitionerCL( meth)
+{
+    zz = Zoltan_Create( ProcCL::GetComm());
+}
 
 /// \brief DEstructor of the derived class ZoltanCL (parent class PartitionerCL)
 ZoltanCL::~ZoltanCL()
@@ -399,15 +393,17 @@ void ZoltanCL::get_num_edges_list(void *data, int sizeGID, int sizeLID, int num_
 /// \brief Method that sets some parameters inside Zoltan so that the communication between drops and the partitioner is correct
 void ZoltanCL::CreateGraph()
 {
+    if ( GetGraph().ncon>1){
+        throw DROPSErrCL("ZoltanCL::CreateGraph: Cannot handle multiple vertex weights by a Zoltan partitioner");
+    }
 
-    Zoltan_Set_Param(zz,"EDGE_WEIGHT_DIM","1");
+    Zoltan_Set_Param(zz, "EDGE_WEIGHT_DIM","1");
     Zoltan_Set_Param(zz, "DEBUG_LEVEL", "0");
     Zoltan_Set_Param(zz, "LB_METHOD", "GRAPH");
     Zoltan_Set_Param(zz, "NUM_GID_ENTRIES", "1");
     Zoltan_Set_Param(zz, "NUM_LID_ENTRIES", "1");
     Zoltan_Set_Param(zz, "OBJ_WEIGHT_DIM", "1");
     Zoltan_Set_Param(zz, "RETURN_LISTS", "ALL");
-
 
     Zoltan_Set_Num_Obj_Fn(zz, get_number_of_vertices, &GetGraph());
     Zoltan_Set_Obj_List_Fn(zz, get_vertex_list,  &GetGraph());
@@ -440,6 +436,7 @@ void ZoltanCL::PartGraphSer( int)
 
     Zoltan_Set_Param(zz, "LB_APPROACH", "PARTITION");//Partition "from scratch," not taking into account the current data distribution;
                                                 //this option is recommended for static load balancing
+    ParTimerCL timer; timer.Reset();
     rc = Zoltan_LB_Partition(zz, /* input (all remaining fields are output) */
           &changes,     /* 1 if partitioning was changed, 0 otherwise */
           &numGidEntries,  /* Number of integers used for a global ID */
@@ -454,22 +451,16 @@ void ZoltanCL::PartGraphSer( int)
           &exportLocalGids,   /* Local IDs of the vertices I must send */
           &exportProcs,    /* Process to which I send each of the vertices */
           &exportToPart);
-
+    timer.Stop(); time_= timer.GetTime();
 
     if (rc != ZOLTAN_OK)
-    {
-      printf("sorry...\n");
-      MPI_Finalize();
-      Zoltan_Destroy(&zz);
-      exit(0);
-    }
+        throw DROPSErrCL("ZoltanCL::PartGraphSer: Zoltan returned an error!");
 
     for (i=0; i < GetGraph().myVerts; i++)
         GetGraph().part[i] = ProcCL::MyRank();
 
     for (i=0; i < numExport; i++)
         GetGraph().part[exportLocalGids[i]] = exportToPart[i];
-
 }
 
 /// \brief Parallel partitioning
@@ -496,31 +487,39 @@ void ZoltanCL::PartGraphPar()
     int *exportToPart;
     int rc;
 
-    Zoltan_Set_Param(zz, "LB_APPROACH", "REPARTITION");//Partition but take into account current data distribution to keep data migration low;
-                                                 //this option is recommended for dynamic load balancing
+    if ( meth_==Adaptive){
+        Zoltan_Set_Param(zz, "LB_APPROACH", "REPARTITION"); //Partition but take into account current data distribution to keep data migration low;
+                                                            //this option is recommended for dynamic load balancing
+    }
+    else {
+        Zoltan_Set_Param(zz, "LB_APPROACH", "PARTITION");
+    }
 
-    rc = Zoltan_LB_Partition(zz, /* input (all remaining fields are output) */
-          &changes,        /* 1 if partitioning was changed, 0 otherwise */
-          &numGidEntries,  /* Number of integers used for a global ID */
-          &numLidEntries,  /* Number of integers used for a local ID */
-          &numImport,      /* Number of vertices to be sent to me */
-          &importGlobalGids,  /* Global IDs of vertices to be sent to me */
-          &importLocalGids,   /* Local IDs of vertices to be sent to me */
-          &importProcs,    /* Process rank for source of each incoming vertex */
-          &importToPart,   /* New partition for each incoming vertex */
-          &numExport,      /* Number of vertices I must send to other processes*/
-          &exportGlobalGids,  /* Global IDs of the vertices I must send */
-          &exportLocalGids,   /* Local IDs of the vertices I must send */
-          &exportProcs,    /* Process to which I send each of the vertices */
-          &exportToPart);
+    ParTimerCL timer; timer.Reset();
+    if ( meth_==Identity){
+        ApplyIdentity();
+    }
+    else if ( meth_!=NoMig){
+        rc = Zoltan_LB_Partition(zz,/* input (all remaining fields are output) */
+                &changes,           /* 1 if partitioning was changed, 0 otherwise */
+                &numGidEntries,     /* Number of integers used for a global ID */
+                &numLidEntries,     /* Number of integers used for a local ID */
+                &numImport,         /* Number of vertices to be sent to me */
+                &importGlobalGids,  /* Global IDs of vertices to be sent to me */
+                &importLocalGids,   /* Local IDs of vertices to be sent to me */
+                &importProcs,       /* Process rank for source of each incoming vertex */
+                &importToPart,      /* New partition for each incoming vertex */
+                &numExport,         /* Number of vertices I must send to other processes*/
+                &exportGlobalGids,  /* Global IDs of the vertices I must send */
+                &exportLocalGids,   /* Local IDs of the vertices I must send */
+                &exportProcs,       /* Process to which I send each of the vertices */
+                &exportToPart);
+    }
+    timer.Stop(); time_= timer.GetTime();
 
     if (rc != ZOLTAN_OK)
-    {
-      printf("sorry...\n");
-      MPI_Finalize();
-      Zoltan_Destroy(&zz);
-      exit(0);
-    }
+        throw DROPSErrCL("ZoltanCL::PartGraphPar: Zoltan returned an error!");
+
     for (i=0; i < GetGraph().myVerts; i++)
         GetGraph().part[i] = ProcCL::MyRank();
 
@@ -528,6 +527,73 @@ void ZoltanCL::PartGraphPar()
         GetGraph().part[exportLocalGids[i]] = exportToPart[i];
 }
 # endif
-//end of the implementations of the methods in the derived class ZoltanCL (parent PartitionerCL)
-//================================================================================================
+
+#ifdef _SCOTCH
+ScotchCL::ScotchCL(PartMethod meth)
+    : PartitionerCL(meth)
+{}
+
+void ScotchCL::CreateGraph()
+{
+    if ( GetGraph().ncon>1){
+        throw DROPSErrCL("ZoltanCL::CreateGraph: Cannot handle multiple vertex weights by a Scotch partitioner");
+    }
+}
+
+void ScotchCL::PartGraphPar()
+{
+    if ( meth_==Identity){
+        ParTimerCL timer; timer.Reset();
+        ApplyIdentity();
+        timer.Stop(); time_= timer.GetTime();
+        return;
+    }
+
+    SCOTCH_Dgraph   graph;
+    SCOTCH_Arch     archdat;
+    SCOTCH_Strat    strategy;
+    SCOTCH_Dmapping mappdat;
+    std::valarray<SCOTCH_Num> velotab( 1, ProcCL::Size());
+
+    SCOTCH_dgraphInit( &graph, ProcCL::GetComm());
+    if ( SCOTCH_dgraphBuild( &graph, 0, GetGraph().myVerts, GetGraph().myVerts, GetGraph().xadj, GetGraph().xadj+1, GetGraph().vwgt, 0, GetGraph().myAdjs, GetGraph().myAdjs, GetGraph().adjncy, 0, GetGraph().adjwgt)!=0)
+        throw DROPSErrCL("ScotchCL::PartGraphPar: Cannot build SCOTCH graph");
+
+    Assert( SCOTCH_dgraphCheck( &graph)==0, DROPSErrCL("ScotchCL::PartGraphPar: Graph is not consistent"), DebugLoadBalC);
+
+    SCOTCH_stratInit( &strategy);
+
+    if ( SCOTCH_archCmpltw (&archdat, ProcCL::Size(), Addr(velotab))!=0)
+        throw DROPSErrCL("ScotchCL::PartGraphPar: Cannot compute ltw");
+    if ( SCOTCH_dgraphMapInit (&graph, &mappdat, &archdat, GetGraph().part)!=0)
+        throw DROPSErrCL("ScotchCL::PartGraphPar: Cannot assign architecture");
+
+    ParTimerCL timer; timer.Reset();
+    SCOTCH_dgraphMapCompute ( &graph, &mappdat, &strategy);
+    timer.Stop(); time_= timer.GetTime();
+
+    SCOTCH_dgraphMapExit ( &graph, &mappdat);
+    SCOTCH_archExit (&archdat);
+    SCOTCH_stratExit( &strategy);
+    SCOTCH_dgraphExit(  &graph);
+}
+
+void ScotchCL::PartGraphSer( int master)
+{
+    if ( ProcCL::MyRank()!=master)
+        return;
+    SCOTCH_Graph graph;
+    SCOTCH_graphInit( &graph);
+    SCOTCH_graphBuild( &graph, 0, GetGraph().myVerts, GetGraph().xadj, GetGraph().xadj+1, GetGraph().vwgt, 0, GetGraph().myAdjs, GetGraph().adjncy, GetGraph().adjwgt);
+    Assert( SCOTCH_graphCheck( &graph)==0, DROPSErrCL("ScotchCL::PartGraphSer: Graph is not consistent"), DebugLoadBalC);
+    SCOTCH_Strat strategy;
+    SCOTCH_stratInit( &strategy);
+    TimerCL timer; timer.Reset();
+    SCOTCH_graphPart( &graph, ProcCL::Size(), &strategy, GetGraph().part);
+    timer.Stop(); time_= timer.GetTime();
+    SCOTCH_stratExit( &strategy);
+    SCOTCH_graphExit( &graph);
+}
+#endif
+
 }//end of namespace

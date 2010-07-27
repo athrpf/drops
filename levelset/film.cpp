@@ -95,6 +95,7 @@ class EnsightIdxRepairCL: public MGObserverCL
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
+    const IdxDescCL* GetIdxDesc() const { return &idx_; }
 };
 
 

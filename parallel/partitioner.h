@@ -37,6 +37,9 @@
 #ifdef _ZOLTAN
 #  include <zoltan.h>
 #endif
+#ifdef _SCOTCH
+#  include <ptscotch.h>
+#endif
 #include <parmetis.h>
 #include <metis.h>
 
@@ -44,23 +47,24 @@ namespace DROPS
 {
 typedef idxtype* IndexArray;        ///< idxtype is defined as Integer
 
-/// \enum PartOption tells which partitioner should pe used to compute graph partition problem
-enum PartOption{
-                metis,          ///< Parmetis
-                zoltan,         ///< Zoltan
-                scotch          ///< Scotch
+/// \enum Partitioner enumeration of available partitioners
+enum Partitioner{
+    metis=1,        ///< Parmetis
+    zoltan=2,       ///< Zoltan
+    scotch=3        ///< Scotch
 };
 
 /// \enum PartMethod tells which method should be used to compute graph partition problem
 enum PartMethod{
-    KWay,       ///< Multilevel method
-    Recursive,  ///< bisection
-    Adaptive,   ///< adaptive re-computation of graph partitioning
-    Identity,   ///< Take partition as it is
-    NoMig       ///< No migration!
+    NoMig=0,        ///< No migration!
+    Adaptive=1,     ///< adaptive re-computation of graph partitioning
+    KWay=2,         ///< Multilevel method
+    Recursive=3,    ///< bisection
+    Identity=4      ///< Take partition as it is
 };
 
 /// \brief structure of the inputs and the outputs of the partitioners
+/// \todo Implement a computation of edgecut
 struct GraphST
 {
     IndexArray     xadj,                                        ///< Starting index in the array adjncy, where node[i] writes its neighbors
@@ -87,7 +91,6 @@ struct GraphST
     void Resize (int numadj, int numverts, bool hasgeom, int numncon); ///< The method will allocate memory for most of the arrays in the struct
     void ResizeVtxDist();
     void Clear();                                               ///< Liberating the memory used for storing the arrays in the struct
-
     inline int GetProc(idxtype);                                ///< Get the process storing a given vertex
 };
 
@@ -108,30 +111,41 @@ class PartitionerCL
 {
   private:
     GraphST* allArrays_;                        ///< the input and output arrays
+
+  protected:
+    double     time_;                           ///< time used for partitioning
+    PartMethod meth_;                           ///< method for partitioning
+    void ApplyIdentity();                       ///< Apply Identity for partitioning
+
   public:
-    PartitionerCL();                            ///< Constructor
+    PartitionerCL( PartMethod meth);            ///< Constructor
     virtual ~PartitionerCL();                   ///< Destructor
-    virtual void CreateGraph() =0;              ///< Create the graph using the input data
+    virtual void CreateGraph() =0;              ///< Create the graph using the input data (and check, if the graph can be hadled by the partitioner)
     virtual void PartGraphPar() =0;             ///< Parallel partitioning of the graph (highly used in applications)
     virtual void PartGraphSer( int master) =0;  ///< First serial partitioning of the graph needed to distribute the
                                                 /// different partitioning components to the processors. (usually used once/application)
-    static PartitionerCL* newPartitioner(PartOption partOption,float quality,PartMethod method); ///< Factory function for the factory design pattern implementation
+    /// \brief Factory function for the factory design pattern implementation
+    static PartitionerCL* newPartitioner( Partitioner partitioner, float quality, PartMethod method);
     GraphST& GetGraph();                        ///< Getter for the graph structure
-};//end of the abstract class PartitionerCL
+    double   GetTime() const { return time_; }  ///< Check, how long the partitioning took
+    virtual std::string GetName() const { return std::string("No name specified"); }
+};
 
 /// \brief Derived partitioner class from the PartitionerCL class ===> implements the ParMetis graph partitioner
 class ParMetisCL : public PartitionerCL
 {
   private:
-    PartMethod meth_;                   ///< attribute used to partition the graph with ParMetis
     float quality_;                     ///< quality of the Adaptive method partitioning
+
   public:
-    ParMetisCL(PartMethod meth,float ubvec, float quality=1000.0);  //< Constructor
-    ~ParMetisCL();                      ///< Implicit Destructor
-    void CreateGraph();                 ///< Method that helps with the protocol communication between DROPS and the partitioner
+    /// \brief Constructor
+    ParMetisCL( PartMethod meth, float ubvec, float quality=1000.0);
+    ~ParMetisCL() {}                    ///< Implicit Destructor
+    void CreateGraph() {}               ///< Method that helps with the protocol communication between DROPS and the partitioner
     void PartGraphPar();                ///< Implemented virtual method of the abstract parent class PartitionerCL
     void PartGraphSer( int master);     ///< Implemented virtual method of the abstract parent class PartitionerCL
-};//end of the derived class ParMetisCL
+    std::string GetName() const { return std::string("METIS"); }
+};
 
 #ifdef _ZOLTAN
 /// \brief Derived partitioner from the Partitioner class ===> implements the Zoltan graph partitioner
@@ -139,10 +153,17 @@ class ZoltanCL : public PartitionerCL
 {
   private:
     Zoltan_Struct *zz;
-    PartMethod meth_;// For Zoltan the only possibility is a parallel or a serial partitioning for now
+
   public:
-    ZoltanCL(PartMethod meth);               ///< Constructor
-    ~ZoltanCL();                             ///< Destructor
+    ZoltanCL(PartMethod meth);              ///< Constructor
+    ~ZoltanCL();                            ///< Destructor
+    void CreateGraph();                     ///< See PartitionerCL for documentation
+    void PartGraphPar();                    ///< See PartitionerCL for documentation
+    void PartGraphSer( int master);         ///< See PartitionerCL for documentation
+    std::string GetName() const { return std::string("ZOLTAN"); }
+
+    /// \name query functions for ZOLTAN
+    //@{
     /// \brief Returns the total number of vertices on a processor
     static int get_number_of_vertices(void *, int *);
     /// \brief Returns the vertices list
@@ -151,18 +172,24 @@ class ZoltanCL : public PartitionerCL
     static void get_num_edges_list(void *, int , int, int , ZOLTAN_ID_PTR, ZOLTAN_ID_PTR, int *, int *);
     /// \ brief Returns the list of edges of each processor
     static void get_edge_list(void *, int , int , int , ZOLTAN_ID_PTR , ZOLTAN_ID_PTR , int *, ZOLTAN_ID_PTR , int *, int , float *, int *);
-    void CreateGraph();                     ///< Method that helps with the protocol communication between DROPS and the partitioner
-    void PartGraphPar();                    ///< Implemented virtual method of the abstract parent class PartitionerCL
-    void PartGraphSer( int master);         ///< Implemented virtual method of the abstract parent class PartitionerCL
-};//end of the derived class ZoltanCL
+    //@}
+};
 #endif
 
+#ifdef _SCOTCH
 /// \brief Derived partitioner from the Partitioner class ===> implements the Scotch graph partitioner
 class ScotchCL : public PartitionerCL
 {
   public:
-    ScotchCL() : PartitionerCL(){};                 ///< Constructor
-    ~ScotchCL();                                    ///< Destructor
-};//end of the derived class ScotchCL
-}// end of namespace
+    ScotchCL(PartMethod meth);              ///< Constructor
+    ~ScotchCL() {}                          ///< Destructor
+    void CreateGraph();                     ///< See PartitionerCL for documentation
+    void PartGraphPar();                    ///< See PartitionerCL for documentation
+    void PartGraphSer( int master);         ///< See PartitionerCL for documentation
+    std::string GetName() const { return std::string("Scotch"); }
+};
+#endif
+
+}       // end of namespace
+
 #endif //DROPS_PARTITIONER_H

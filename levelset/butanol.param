@@ -64,7 +64,8 @@ AdaptRef {
     FinestLevel   = 3         # finest level in the near of the phase boundary
     CoarsestLevel = 0         # coarsest level in the near of the phase boundary
     Width         = 0.25e-3   # domain of refinement
-    RefineStrategy= 1         # algorithm to determine the load balancing graph for refinement
+    LoadBalStrategy= 1        # 0 - No Migration, 1 - Adaptive, 2 - Recursive
+    Partitioner    = 1        # 1 - Metis, 2 - Zoltan, 3 - Scotch
 }
 
 # material data, all units are SI
@@ -146,6 +147,7 @@ Restart {
     Overwrite     = 1              # overwrite old output-files or create new for every step
     Inputfile     = start/data     # reads multigrid from deserialization files, special value "none" to ignore
     Outputfile    = mg/data        # writes multigrid and numerical data to serialisation files
+    Binary        = 0              # no effect
 }
 
 # domain, bnd/ini conditions
