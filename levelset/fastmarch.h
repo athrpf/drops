@@ -352,8 +352,8 @@ class InitZeroP2CL : public InitZeroExactCL
 protected:
     /// \name Data for minimizing the function f_P2
     //@{
-    static RepTetra* actualTetra_;  ///< tetra intersected by interface
-    static Uint*     actualVert_;   ///< vertex in tetra
+    RepTetra* actualTetra_;  ///< tetra intersected by interface
+    Uint      actualDOF_;    ///< determine distance to dof
     //@}
     std::vector<RepTetra>            tetras_;           ///< storing all intersected tetras
     std::map<const TetraCL*, size_t> storePosOfTetra_;  ///< mapping a tetra to store position in tetras_
@@ -377,7 +377,7 @@ public:
     void DisplayMem() const;
 
     /// \brief Nonlinear function for optimizer
-    static void f_P2(const int *, const double *x, double *fvec, int *);
+    static int f_P2(void *this_class, int n, const double *x, double *fvec, int iflag);
 };
 
 

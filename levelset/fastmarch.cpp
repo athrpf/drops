@@ -22,6 +22,8 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
+//#define MINPACK
+
 #include "levelset/fastmarch.h"
 #include "num/solver.h"
 #include <fstream>
@@ -36,7 +38,7 @@
 #endif
 #include <set>
 #ifdef MINPACK
-#  include <minpack.h>
+#  include <cminpack.h>
 #endif
 
 namespace DROPS
@@ -821,9 +823,6 @@ void ParInitZeroExactCL::Perform()
 // I N I T  Z E R O  P 2  C L
 //---------------------------
 
-InitZeroP2CL::RepTetra* InitZeroP2CL::actualTetra_= 0;
-Uint*                   InitZeroP2CL::actualVert_ = 0;
-
 void InitZeroP2CL::BuildRepTetra()
 {
     const MultiGridCL& mg= data_.mg;
@@ -857,16 +856,17 @@ void InitZeroP2CL::DisplayMem() const {}
 void InitZeroP2CL::DetermineDistances()
 {
 #ifdef MINPACK
-    const int n=4, lwa= (4*(3*4+13))/2;
+    const int n=4, lwa=50;
     int info=0;
-    double x[4], f[4], tol=1e-8, *wa= new double[lwa];
+    double x[4], f[4], tol=1e-8, wa[50];
     for (size_t dof=0; dof<dofToRepTetra_.size(); ++dof){
         for ( size_t tetra=0; tetra<dofToRepTetra_[dof].size(); ++tetra){
             actualTetra_= &( tetras_[dofToRepTetra_[dof][tetra]]);
             std::copy( actualTetra_->baryCenter.begin(), actualTetra_->baryCenter.end(), x);
             x[3]= ( actualTetra_->baryCenter-data_.coord[dof]).norm();
-            info=0;
-            hybrd1_( self::f_P2, &n, x, f, &tol, &info, wa, &lwa);
+            actualDOF_= dof;
+            info= hybrd1 ( self::f_P2, this, 4, x, f, tol, wa, lwa);
+
             const Point3DCL p( x, x+3);
             if ( info!=1){
                 std::cerr << "Warning InitZeroP2CL::DetermineDistances: MINPACK info " << info
@@ -890,22 +890,24 @@ void InitZeroP2CL::DetermineDistances()
 }
 
 
-void InitZeroP2CL::f_P2(const int *, const double *x, double *fvec, int *)
+int InitZeroP2CL::f_P2(void *this_class, int, const double *x, double *fvec, int)
 {
-    const Point3DCL p( x, x+3);                 // actual point p (given by optimizer)
-    Point3DCL Gphi;                             // gradient of phi at point p
-    const double lambda= x[3];                  // value of lambda (given by optimizer)
-    BaryCoordCL pbary= actualTetra_->w2b(p);    // barycentric coordinates of p
+    InitZeroP2CL* actual= static_cast<InitZeroP2CL*>(this_class);
+    const Point3DCL p( x, x+3);                         // actual point p (given by optimizer)
+    Point3DCL Gphi;                                     // gradient of phi at point p
+    const double lambda= x[3];                          // value of lambda (given by optimizer)
+    BaryCoordCL pbary= actual->actualTetra_->w2b(p);    // barycentric coordinates of p
 
     // Compute gradient of phi at point p
     for ( Uint i=0; i<10; ++i)
-        Gphi += actualTetra_->valPhi[i]*actualTetra_->G[i](pbary);
+        Gphi += actual->actualTetra_->valPhi[i]*actual->actualTetra_->G[i](pbary);
 
     // Compute f
-    fvec[0]= lambda*Gphi[0] + p[0] - actualTetra_->coord[ *actualVert_][0];
-    fvec[1]= lambda*Gphi[1] + p[1] - actualTetra_->coord[ *actualVert_][1];
-    fvec[2]= lambda*Gphi[2] + p[2] - actualTetra_->coord[ *actualVert_][2];
-    fvec[3]= P2EvalT::val( actualTetra_->valPhi, pbary);
+    fvec[0]= lambda*Gphi[0] + p[0] - actual->data_.coord[actual->actualDOF_][0];
+    fvec[1]= lambda*Gphi[1] + p[1] - actual->data_.coord[actual->actualDOF_][1];
+    fvec[2]= lambda*Gphi[2] + p[2] - actual->data_.coord[actual->actualDOF_][2];
+    fvec[3]= P2EvalT::val( actual->actualTetra_->valPhi, pbary);
+    return 1;
 }
 
 void InitZeroP2CL::Perform()
