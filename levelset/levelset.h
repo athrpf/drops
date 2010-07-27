@@ -162,6 +162,7 @@ class LevelsetRepairCL : public MGObserverCL
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
+    const IdxDescCL* GetIdxDesc() const { return ls_.Phi.RowIdx; }
 };
 
 /// \brief volume correction and reparametrization of level set function phi

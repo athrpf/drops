@@ -250,6 +250,7 @@ class VelocityRepairCL : public MGObserverCL
     void post_refine ();
     void pre_refine_sequence  () {}
     void post_refine_sequence ();
+    const IdxDescCL* GetIdxDesc() const { return stokes_.v.RowIdx; }
 };
 
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function stokes_.pr.
@@ -274,6 +275,7 @@ class PressureRepairCL : public MGObserverCL
     void post_refine ();
     void pre_refine_sequence  ();
     void post_refine_sequence ();
+    const IdxDescCL* GetIdxDesc() const { return stokes_.p.RowIdx; }
 };
 
 } // end of namespace DROPS

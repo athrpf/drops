@@ -151,6 +151,7 @@ class TransportRepairCL : public MGObserverCL
 
     void pre_refine_sequence  () {}
     void post_refine_sequence () {}
+    const IdxDescCL* GetIdxDesc() const { return c_.c.RowIdx; }
 };
 
 } // end of namespace DROPS

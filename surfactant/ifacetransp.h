@@ -229,6 +229,7 @@ class InterfaceP1RepairCL : public MGObserverCL
 
     void pre_refine_sequence  ();
     void post_refine_sequence ();
+    const IdxDescCL* GetIdxDesc() const { return u_.RowIdx; }
 };
 
 ///\brief Represents a scalar P1 function on the interface as Ensight6 variable by extension to the

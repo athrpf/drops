@@ -1168,6 +1168,7 @@ class UpdateProlongationCL : public MGObserverCL
             }
         }
     }
+    const IdxDescCL* GetIdxDesc() const { return (const IdxDescCL*)0; }
 };
 
 //**************************************************************************

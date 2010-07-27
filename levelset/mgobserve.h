@@ -68,6 +68,8 @@ class MGObserverCL
     virtual void pre_refine_sequence  ()= 0;
     /// Called at the end of AdapTriangCL::UpdateTriang().
     virtual void post_refine_sequence ()= 0;
+    /// Get a pointer to the index describer which can be used for loadbalancing
+    virtual const IdxDescCL* GetIdxDesc() const= 0;
 };
 
 } // end of namespace DROPS
