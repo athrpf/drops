@@ -302,7 +302,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         SolveStatProblem( Stokes, lset, *navstokessolver);
 
     // for serialization of geometry and numerical data
-    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.trp_DoTransp ? &massTransp : 0, C.rst_Outputfile, C.rst_Overwrite);
+    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.trp_DoTransp ? &massTransp : 0, C.rst_Outputfile, C.rst_Overwrite, C.rst_Binary);
 
     // Initialize Ensight6 output
     std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);

@@ -79,7 +79,7 @@ void ParamMGSerCL::RegisterParams()
     rp_.RegString( rst_Inputfile,     "Inputfile");
     rp_.RegInt(    rst_Serialization, "Serialization");
     rp_.RegInt(    rst_Overwrite,     "Overwrite");
-    rp_.RegInt(    rst_binary,        "Binary");
+    rp_.RegInt(    rst_Binary,        "Binary");
     rp_.EndGroup();
 }
 

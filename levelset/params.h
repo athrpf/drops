@@ -123,7 +123,7 @@ class ParamMGSerCL : public virtual ParamBaseCL
   //@{
     int    rst_Serialization;                 ///< Perform serialization
     int    rst_Overwrite;                     ///< Overwrite old output-files or create new for every step
-    int    rst_binary;                        ///< Binary or ASCII mode
+    int    rst_Binary;                        ///< Binary or ASCII mode
 
     string rst_Outputfile,                    ///< writes multigrid to serialisation files
            rst_Inputfile;                     ///< reads multigrid from deserialization files, special value "none" to ignore

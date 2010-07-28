@@ -315,11 +315,11 @@ void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, 
 #endif
       case -1: // read from file
       {
-        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset");
-        ReadFEFromFile( Stokes.v, MG, C.dmc_InitialFile+"velocity");
+        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset", C.rst_Binary);
+        ReadFEFromFile( Stokes.v, MG, C.dmc_InitialFile+"velocity", C.rst_Binary);
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
-        ReadFEFromFile( Stokes.p, MG, C.dmc_InitialFile+"pressure", false, &lset.Phi); // pass also level set, as p may be extended
+        ReadFEFromFile( Stokes.p, MG, C.dmc_InitialFile+"pressure", C.rst_Binary, &lset.Phi); // pass also level set, as p may be extended
       } break;
       case 0: // zero initial condition
           lset.Init( EllipsoidCL::DistanceFct);
@@ -374,6 +374,7 @@ class TwoPhaseStoreCL
     std::string          path_;
     Uint                 numRecoverySteps_;
     Uint                 recoveryStep_;
+    bool                 binary_;
 
     /// \brief Write time info
     void WriteTime( std::string filename)
@@ -391,9 +392,9 @@ class TwoPhaseStoreCL
        *  \param recoverySteps number of backup steps before overwriting files
        *  */
     TwoPhaseStoreCL(MultiGridCL& mg, const StokesT& Stokes, const LevelsetP2CL& lset, const TransportP1CL* transp,
-                    const std::string& path, Uint recoverySteps=2)
+                    const std::string& path, Uint recoverySteps=2, bool binary= false)
       : mg_(mg), Stokes_(Stokes), lset_(lset), transp_(transp), path_(path), numRecoverySteps_(recoverySteps),
-        recoveryStep_(0) {}
+        recoveryStep_(0), binary_( binary) {}
 
     /// \brief Write all information in a file
     void Write()
@@ -410,10 +411,10 @@ class TwoPhaseStoreCL
         ser.WriteMG();
 
         // write numerical data
-        WriteFEToFile(Stokes_.v, mg_, filename.str() + "velocity");
-        WriteFEToFile(lset_.Phi, mg_, filename.str() + "levelset");
-        WriteFEToFile(Stokes_.p, mg_, filename.str() + "pressure", false, &lset_.Phi); // pass also level set, as p may be extended
-        if (transp_) WriteFEToFile(transp_->ct, mg_, filename.str() + "concentrationTransf");
+        WriteFEToFile(Stokes_.v, mg_, filename.str() + "velocity", binary_);
+        WriteFEToFile(lset_.Phi, mg_, filename.str() + "levelset", binary_);
+        WriteFEToFile(Stokes_.p, mg_, filename.str() + "pressure", binary_, &lset_.Phi); // pass also level set, as p may be extended
+        if (transp_) WriteFEToFile(transp_->ct, mg_, filename.str() + "concentrationTransf", binary_);
     }
 };
 
