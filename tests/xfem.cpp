@@ -165,11 +165,6 @@ void P1XOnPart (const VecDescCL& p1x, const ExtIdxDescCL& Xidx, VecDescCL& p_par
     }
 }
 
-class CoeffCL
-{
-  public:
-    double mu (double) const { return 1.0; }
-};
 
 int main (int argc, char** argv)
 {
@@ -217,7 +212,10 @@ int main (int argc, char** argv)
 
     // Setup the mass matrix
     MatDescCL M( &idx, &idx);
-    SetupPrMass_P1X( mg, CoeffCL(), M.Data, idx, lset);
+
+    Point3DCL g(1.0);
+    TwoPhaseFlowCoeffCL coeff( 1, 1, 1, 1, 1, g);
+    SetupPrMass_P1X( mg, coeff, M.Data, idx, lset);
 
     // Setup the right hand side
     IdxT Numb[4];

@@ -42,23 +42,6 @@ const int         FPsteps= -1;
 //                          -div u = 0
 //                               u = u0, t=t0
 
-
-class ShearFlowCL
-{
-// \Omega_1 = Tropfen,    \Omega_2 = umgebendes Fluid
-  public:
-    static DROPS::Point3DCL f(const DROPS::Point3DCL&, double)
-        { DROPS::Point3DCL ret(0.0); return ret; }
-    const DROPS::SmoothedJumpCL rho, mu;
-    const double SurfTens;
-    const DROPS::Point3DCL g;
-
-    ShearFlowCL()
-      : rho( DROPS::JumpCL( 1., 1.), DROPS::H_sm, 0.1),
-        mu(  DROPS::JumpCL( 1., 1.), DROPS::H_sm, 0.1),
-        SurfTens( 0.), g( 0.)    {}
-};
-
 // Randdaten: x=0, x=1, y=0, y=1:  Dirichlet 0
 //            z=0 und x<0.5        Neumann   0   (aus Impl.gruenden: Dir.)
 //            z=0 und x>0.5        Inflow Dirichlet  parabol.
@@ -264,7 +247,7 @@ int main (int argc, char** argv)
     DROPS::Point3DCL e1(0.0), e2(0.0), e3(0.0);
     e1[0]= e2[1]= e3[2]= 1.;
 
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<ShearFlowCL> MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL MyStokesCL;
 
     DROPS::BrickBuilderCL brick(null, e1, e2, e3, sub_div, sub_div, sub_div);
 
@@ -274,7 +257,9 @@ int main (int argc, char** argv)
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel,  &Parabol, &Parabol };
     // parabol. Einstroembedingungen bei z=0 und z=1
 
-    MyStokesCL prob(brick, ShearFlowCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
+    DROPS::TwoPhaseFlowCoeffCL coeff( 1, 1, 1, 1, 0, DROPS::Point3DCL(0.));
+
+    MyStokesCL prob(brick, coeff, DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
     Strategy(prob, inner_iter_tol);
     std::cout << DROPS::SanityMGOutCL(mg) << std::endl;

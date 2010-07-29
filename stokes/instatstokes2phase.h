@@ -109,18 +109,25 @@ class TwoPhaseFlowCoeffCL
                      : JumpCL( C.mat_ViscFluid, C.mat_ViscGas), H_sm, C.mat_SmoothZone),
         SurfTens( dimless ? C.mat_SurfTension/C.mat_DensFluid : C.mat_SurfTension),
         g( C.exp_Gravity)    {}
+
+    TwoPhaseFlowCoeffCL( double rho1, double rho2, double mu1, double mu2, double surftension, Point3DCL gravity, bool dimless = false)
+      : rho( dimless ? JumpCL( 1., rho2/rho1)
+                     : JumpCL( rho1, rho2), H_sm, 0),
+        mu(  dimless ? JumpCL( 1., mu2/mu1)
+                     : JumpCL( mu1, mu2), H_sm, 0),
+        SurfTens( dimless ? surftension/rho1 : surftension),
+        g( gravity)    {}
 };
 
 /// problem class for instationary two-pase Stokes flow
 
-template <class Coeff>
-class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
+
+class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<Coeff, StokesBndDataCL>       _base;
-    typedef InstatStokes2PhaseP2P1CL<Coeff>         _self;
-    typedef typename _base::CoeffCL                 CoeffCL;
-    typedef typename _base::BndDataCL               BndDataCL;
+    typedef ProblemCL<TwoPhaseFlowCoeffCL, StokesBndDataCL>       _base;
+    typedef InstatStokes2PhaseP2P1CL                _self;
+    typedef _base::BndDataCL               BndDataCL;
     using                                           _base::_MG;
     using                                           _base::_Coeff;
     using                                           _base::_BndData;
@@ -147,9 +154,9 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  prM;
 
   public:
-    InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
+    InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
         : _base(mgb, coeff, bdata), vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
-    InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
+    InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
         : _base(mg, coeff, bdata),  vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
 
     /// \name Numbering
@@ -237,14 +244,13 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 /// \brief Observes the MultiGridCL-changes by AdapTriangCL to repair the Function stokes_.v.
 ///
 /// The actual work is done in post_refine().
-template<class StokesT>
 class VelocityRepairCL : public MGObserverCL
 {
   private:
-    StokesT& stokes_;
+    InstatStokes2PhaseP2P1CL& stokes_;
 
   public:
-    VelocityRepairCL (StokesT& stokes)
+    VelocityRepairCL ( InstatStokes2PhaseP2P1CL& stokes)
         : stokes_( stokes) {}
     void pre_refine  ();
     void post_refine ();
@@ -260,16 +266,15 @@ class VelocityRepairCL : public MGObserverCL
 /// post_refine_sequence(). Holding the P1XRepairCL* in an auto_ptr simplifies the use
 /// of heap-memory: No memory is lost, even if successive calls of pre_refine_sequence()
 /// occur without interleaved post_refine_sequence()-calls.
-template<class StokesT>
 class PressureRepairCL : public MGObserverCL
 {
   private:
-    StokesT& stokes_;
+    InstatStokes2PhaseP2P1CL& stokes_;
     std::auto_ptr<P1XRepairCL> p1xrepair_;
     const LevelsetP2CL& ls_;
 
   public:
-    PressureRepairCL (StokesT& stokes, const LevelsetP2CL& ls)
+    PressureRepairCL ( InstatStokes2PhaseP2P1CL& stokes, const LevelsetP2CL& ls)
         : stokes_( stokes), ls_( ls) {}
     void pre_refine  ();
     void post_refine ();

@@ -40,7 +40,7 @@ lsshear: \
     ../levelset/lsshear.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/fastmarch.o \
-    ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o \
+    ../num/fe.o ../out/ensightOut.o ../stokes/instatstokes2phase.o ../navstokes/instatnavstokes2phase.o \
     ../num/MGsolver.o ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
@@ -48,7 +48,7 @@ surfTens: \
     ../levelset/surfTens.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
-    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o \
+    ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../navstokes/instatnavstokes2phase.o \
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/MGsolver.o \
     ../num/interfacePatch.o ../levelset/surfacetension.o ../levelset/coupling.o
 	$(CXX) -o $@ $^ $(LFLAGS)
@@ -65,7 +65,7 @@ prJump: \
 film: \
     ../levelset/film.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../navstokes/instatnavstokes2phase.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../num/interfacePatch.o \
     ../levelset/surfacetension.o ../levelset/coupling.o $(PAR_OBJ)
@@ -77,13 +77,13 @@ brick_transp: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
     ../misc/params.o ../levelset/fastmarch.o ../num/fe.o \
     ../poisson/transport2phase.o ../out/ensightOut.o ../out/vtkOut.o ../num/interfacePatch.o \
-    ../levelset/surfacetension.o
+    ../levelset/surfacetension.o  ../stokes/instatstokes2phase.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 twophasedrops: \
     ../levelset/twophasedrops.o ../geom/boundary.o ../geom/builder.o ../geom/simplex.o ../geom/multigrid.o \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../levelset/levelset.o \
-    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o \
+    ../misc/utils.o ../out/output.o ../num/discretize.o ../levelset/lsetparams.o ../navstokes/instatnavstokes2phase.o \
     ../misc/params.o ../levelset/fastmarch.o ../stokes/instatstokes2phase.o ../num/MGsolver.o\
     ../num/fe.o ../out/ensightOut.o ../stokes/integrTime.o ../poisson/transport2phase.o \
     ../num/interfacePatch.o ../out/vtkOut.o ../surfactant/ifacetransp.o ../levelset/surfacetension.o \

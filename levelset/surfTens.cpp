@@ -81,11 +81,10 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
          {}
 };
 
-template<class Coeff>
-void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes)
+void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes)
 // flow control
 {
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatNavierStokes2PhaseP2P1CL StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
@@ -240,7 +239,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<DROPS::TwoPhaseFlowCoeffCL>    MyStokesCL;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL    MyStokesCL;
 
     const double L= 3e-3;
     DROPS::Point3DCL orig(-L), e1, e2, e3;

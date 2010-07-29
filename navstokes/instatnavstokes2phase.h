@@ -1,4 +1,4 @@
-/// \file
+/// \file instatnavstokes2phase.h
 /// \brief classes that constitute the 2-phase Navier-Stokes problem
 /// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen:
 
@@ -32,43 +32,25 @@
 namespace DROPS
 {
 
-/// problem class for instationary two-pase Navier-Stokes flow
+/// problem class for instationary two-phase Navier-Stokes flow
 
-template <class Coeff>
-class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
+class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL
 {
   private:
-    typedef InstatStokes2PhaseP2P1CL<Coeff>       _base;
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> _self;
+    typedef InstatStokes2PhaseP2P1CL       _base;
+    typedef InstatNavierStokes2PhaseP2P1CL _self;
 
     void SetupNonlinear_P2 (MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset,
         IdxDescCL& RowIdx, double t) const;
 
   public:
-    using _base::GetBndData;
-    using _base::GetMG;
-    using _base::_Coeff;
-    using _base::_MG;
-    using _base::_BndData;
-    using _base::b;
-    using _base::c;
-    using _base::A;
-    using _base::B;
-    using _base::t;
-    using _base::vel_idx;
-
-    typedef Coeff                              CoeffCL;
-    typedef typename _base::BndDataCL          BndDataCL;
-    typedef typename _base::DiscVelSolCL       DiscVelSolCL;
-    typedef typename _base::const_DiscVelSolCL const_DiscVelSolCL;
-
     MLMatDescCL    N;
     const LevelsetP2CL* ls_;
 
-    InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1, FiniteElementT velFE= vecP2_FE)
-        : InstatStokes2PhaseP2P1CL<Coeff>( mgb, coeff, bdata, prFE, XFEMstab, velFE), ls_( 0) {}
-    InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1, FiniteElementT velFE= vecP2_FE)
-        : InstatStokes2PhaseP2P1CL<Coeff>( mg, coeff, bdata, prFE, XFEMstab, velFE), ls_( 0) {}
+    InstatNavierStokes2PhaseP2P1CL(const MGBuilderCL& mgb, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1, FiniteElementT velFE= vecP2_FE)
+        : InstatStokes2PhaseP2P1CL( mgb, coeff, bdata, prFE, XFEMstab, velFE), ls_( 0) {}
+    InstatNavierStokes2PhaseP2P1CL(MultiGridCL& mg, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab= 0.1, FiniteElementT velFE= vecP2_FE)
+        : InstatStokes2PhaseP2P1CL( mg, coeff, bdata, prFE, XFEMstab, velFE), ls_( 0) {}
 
     /// \name Discretization
     //@{
@@ -92,7 +74,5 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL<Coeff>
 };
 
 } // end of namespace DROPS
-
-#include "navstokes/instatnavstokes2phase.tpp"
 
 #endif

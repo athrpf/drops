@@ -120,11 +120,10 @@ double surf_sol (const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
-template<class Coeff>
-void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
+void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
 // flow control
 {
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatNavierStokes2PhaseP2P1CL StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= Stokes.GetCoeff().SurfTens;
@@ -146,9 +145,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
-    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    VelocityRepairCL velrepair( Stokes);
     adap.push_back( &velrepair);
-    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    PressureRepairCL prrepair( Stokes, lset);
     adap.push_back( &prrepair);
 
     IdxDescCL* lidx= &lset.idx;
@@ -408,9 +407,6 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::TwoPhaseFlowCoeffCL                    CoeffT;
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
-
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
 
@@ -430,7 +426,7 @@ int main (int argc, char** argv)
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
-    MyStokesCL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
+    DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
     Strategy( prob, adap);    // do all the stuff
 

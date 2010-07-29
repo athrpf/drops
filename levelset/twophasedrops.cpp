@@ -128,12 +128,9 @@ double surf_sol (const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
-template<class Coeff>
-void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
+void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
 // flow control
 {
-    typedef InstatNavierStokes2PhaseP2P1CL<Coeff> StokesProblemT;
-
     MultiGridCL& MG= Stokes.GetMG();
 
     // initialization of surface tension
@@ -158,9 +155,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
-    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    VelocityRepairCL velrepair( Stokes);
     adap.push_back( &velrepair);
-    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    PressureRepairCL prrepair( Stokes, lset);
     adap.push_back( &prrepair);
 
     IdxDescCL* lidx= &lset.idx;
@@ -238,7 +235,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     }
 
     // Stokes-Solver
-    StokesSolverFactoryCL<StokesProblemT, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
+    StokesSolverFactoryCL<InstatNavierStokes2PhaseP2P1CL, ParamMesszelleNsCL> stokessolverfactory(Stokes, C);
     StokesSolverBaseCL* stokessolver = stokessolverfactory.CreateStokesSolver();
 //     StokesSolverAsPreCL pc (*stokessolver1, 1);
 //     GCRSolverCL<StokesSolverAsPreCL> gcr(pc, C.stk_OuterIter, C.stk_OuterIter, C.stk_OuterTol, /*rel*/ false);
@@ -246,11 +243,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
 //             new BlockMatrixSolverCL<GCRSolverCL<StokesSolverAsPreCL> > (gcr);
 
     // Navier-Stokes-Solver
-    NSSolverBaseCL<StokesProblemT>* navstokessolver = 0;
+    NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL>* navstokessolver = 0;
     if (C.ns_Nonlinear==0.0)
-        navstokessolver = new NSSolverBaseCL<StokesProblemT>(Stokes, *stokessolver);
+        navstokessolver = new NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL>(Stokes, *stokessolver);
     else
-        navstokessolver = new AdaptFixedPtDefectCorrCL<StokesProblemT>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
+        navstokessolver = new AdaptFixedPtDefectCorrCL<InstatNavierStokes2PhaseP2P1CL>(Stokes, *stokessolver, C.ns_Iter, C.ns_Tol, C.ns_Reduction);
 
     // Level-Set-Solver
 #ifndef _PAR
@@ -265,7 +262,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
     LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
 
     // Time discretisation + coupling
-    TimeDisc2PhaseCL<StokesProblemT>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
+    TimeDisc2PhaseCL<InstatNavierStokes2PhaseP2P1CL>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
     timedisc->SetSchurPrePtr( stokessolverfactory.GetSchurPrePtr() );
     if (C.tm_NumSteps != 0) timedisc->SetTimeStep( C.tm_StepSize);
 
@@ -302,7 +299,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap
         SolveStatProblem( Stokes, lset, *navstokessolver);
 
     // for serialization of geometry and numerical data
-    TwoPhaseStoreCL<StokesProblemT> ser(MG, Stokes, lset, C.trp_DoTransp ? &massTransp : 0, C.rst_Outputfile, C.rst_Overwrite, C.rst_Binary);
+    TwoPhaseStoreCL<InstatNavierStokes2PhaseP2P1CL> ser(MG, Stokes, lset, C.trp_DoTransp ? &massTransp : 0, C.rst_Outputfile, C.rst_Overwrite, C.rst_Binary);
 
     // Initialize Ensight6 output
     std::string ensf( C.ens_EnsDir + "/" + C.ens_EnsCase);
@@ -423,9 +420,6 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::TwoPhaseFlowCoeffCL                    CoeffT;
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
-
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
 
@@ -444,7 +438,7 @@ int main (int argc, char** argv)
     if (DROPS::ProcCL::Check( CheckParMultiGrid( adap.GetPMG())))
         std::cout << "As far as I can tell the ParMultigridCl is sane\n";
 #endif
-    MyStokesCL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
+    DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
     Strategy( prob, adap);    // do all the stuff
 

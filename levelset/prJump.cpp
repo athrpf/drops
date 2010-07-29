@@ -238,11 +238,10 @@ void PrintNorm( string name, const VectorCL& v)
         << norm( v) << "\tmax: " << supnorm( v) << std::endl;
 }
 
-template<class Coeff>
-void Strategy( InstatStokes2PhaseP2P1CL<Coeff>& Stokes, AdapTriangCL& adap)
+void Strategy( InstatStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
 // flow control
 {
-    typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatStokes2PhaseP2P1CL StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     sigma= C.sft_SurfTension;
@@ -434,7 +433,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::InstatStokes2PhaseP2P1CL<DROPS::TwoPhaseFlowCoeffCL>    MyStokesCL;
+    typedef DROPS::InstatStokes2PhaseP2P1CL   MyStokesCL;
 
     const double L= 1; // Vol= 8*L*L*L;
     DROPS::Point3DCL orig(-L), e1, e2, e3;

@@ -162,19 +162,18 @@ DROPS::Point3DCL TestFct( const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
-template<class Coeff>
-void ApplyToTestFct( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
+void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes)
 // program for testing the approximation order of
 // the discretization of the surface force term f_Gamma
 // using simple trial functions:
 //     | f_Gamma(v) - f_{Gamma_h}(v) |  =   O(h^p)
 {
-    typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatStokes2PhaseP2P1CL StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     const double curv= 2/C.exp_RadDrop[0];
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, sf, C.lvs_Theta, C.lvs_SD, 0, C.lvs_Iter, C.lvs_Tol, /*CurvDiff*/ -1.);
+    LevelsetP2CL lset( MG, sf, C.lvs_SD, /*CurvDiff*/ -1.);
 //    lset.SetSurfaceForce( SF_Const);
 
     IdxDescCL* lidx= &lset.idx;
@@ -254,14 +253,13 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
     std::cout << "\n\n";
 }
 
-template<class Coeff>
-void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL<Coeff>& Stokes)
+void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes)
 // computation of order of LB discretization, cf. paper
 // S. Gross, A. Reusken: Finite element discretization error analysis of a surface tension force in two-phase incompressible flows,
 // SIAM J. Numer. Anal. 45, 1679--1700 (2007)
 
 {
-    typedef InstatStokes2PhaseP2P1CL<Coeff> StokesProblemT;
+    typedef InstatStokes2PhaseP2P1CL StokesProblemT;
 
     MultiGridCL& MG= Stokes.GetMG();
     // Levelset-Disc.: Crank-Nicholson
@@ -390,7 +388,7 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::InstatStokes2PhaseP2P1CL<ZeroFlowCL>    MyStokesCL;
+    typedef DROPS::InstatStokes2PhaseP2P1CL    MyStokesCL;
 
     int nx, ny, nz;
     double dx, dy, dz;
@@ -413,7 +411,7 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Null, &Null, &Null};
 
-    MyStokesCL prob(builder, ZeroFlowCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
+    MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
 

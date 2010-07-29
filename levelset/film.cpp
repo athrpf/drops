@@ -112,9 +112,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
-    VelocityRepairCL<StokesProblemT> velrepair( Stokes);
+    VelocityRepairCL velrepair( Stokes);
     adap.push_back( &velrepair);
-    PressureRepairCL<StokesProblemT> prrepair( Stokes, lset);
+    PressureRepairCL prrepair( Stokes, lset);
     adap.push_back( &prrepair);
     EnsightIdxRepairCL ensrepair( MG, ens_idx);
     adap.push_back( &ensrepair);
@@ -348,8 +348,8 @@ int main (int argc, char** argv)
     param.close();
     std::cout << C << std::endl;
 
-    typedef DROPS::TwoPhaseFlowCoeffCL                    CoeffT;
-    typedef DROPS::InstatNavierStokes2PhaseP2P1CL<CoeffT> MyStokesCL;
+    typedef DROPS::TwoPhaseFlowCoeffCL            CoeffT;
+    typedef DROPS::InstatNavierStokes2PhaseP2P1CL MyStokesCL;
 
     DROPS::Point3DCL orig, e1, e2, e3;
     orig[2]= -C.mcl_MeshSize[2]/2;

@@ -261,7 +261,7 @@ int main (int argc, char** argv)
         // Set parallel data structures
         DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();
         pmg.AttachTo( *mg);                                  // handling of parallel multigrid
-        DROPS::LoadBalHandlerCL lb( *mg);                    // loadbalancing
+        DROPS::LoadBalHandlerCL lb( *mg, DROPS::metis);                    // loadbalancing
         lb.DoInitDistribution( DROPS::ProcCL::Master());    // distribute initial grid
         lb.SetStrategy( DROPS::Recursive);                  // best distribution of data
 #endif
