@@ -66,7 +66,7 @@ Point3DCL sphere_dist_grad (const Point3DCL& p, double)
 
 
 // Computes the maximum of |n - ng|. n is the normal on the patch, ng is the gradient of the exact distance function in in barycenter of the patch.
-double facet_sup_norm(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
+double facet_sup_norm(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& lsbnd)
 {
     const DROPS::Uint lvl= ls.GetLevel();
     DROPS::InterfaceTriangleCL triangle;
@@ -74,7 +74,7 @@ double facet_sup_norm(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
     double maxn= 0.;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
 	if (!triangle.Intersects()) continue; // We are not at the phase boundary.
 
 	for (int ch= 0; ch < 8; ++ch) {
@@ -91,7 +91,7 @@ double facet_sup_norm(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
     return maxn;
 }
 
-double dist_to_sphere(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
+double dist_to_sphere(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& lsbnd)
 {
     const DROPS::Uint lvl= ls.GetLevel();
     DROPS::InterfaceTriangleCL triangle;
@@ -99,7 +99,7 @@ double dist_to_sphere(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
     double dd= 0.;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
 	if (triangle.Intersects()) { // We are at the phase boundary.
 	    for (int ch= 0; ch < 8; ++ch) {
 	    	triangle.ComputeForChild( ch);
@@ -113,7 +113,7 @@ double dist_to_sphere(const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls)
 }
 
 template<class DiscP2FunType>
-double vertex_sup_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+double vertex_sup_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& lsbnd,
     const DiscP2FunType& f)
 {
     const DROPS::Uint lvl= ls.GetLevel();
@@ -122,7 +122,7 @@ double vertex_sup_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls
     double dd=  0.;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
 	if (triangle.Intersects()) { // We are at the phase boundary.
 	    for (int ch= 0; ch < 8; ++ch) {
 	    	triangle.ComputeForChild( ch);
@@ -193,14 +193,16 @@ int main ()
     // lset contains the quadratic levelset-function of the sphere
     // vd_dist ist the piecewise quadratic interpolation of the signed distance-function of the sphere.
     SurfaceTensionCL sf( /*surface tension*/ &sphere2);
-    LevelsetP2CL lset( mg, sf);
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+    LevelsetP2CL lset( mg, lsbnd, sf);
     lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
 
     lset.Init( &sphere2_stat);
-    BndDataCL<> nobnd( 0);
 
-    LevelsetP2CL lset_d( mg, sf);
+    LevelsetP2CL lset_d( mg, lsbnd, sf);
     lset_d.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset_d.Phi.SetIdx( &lset_d.idx);
     lset_d.Init( &sphere_dist_stat);
@@ -208,10 +210,10 @@ int main ()
     VecDescCL vd_dist( &lset.idx);
     vd_dist.Data= lset_d.Phi.Data;
     std::cout << "sup of (the P2-interpolant of) dist_\\Gamma  on \\Gamma_h: "
-        << vertex_sup_norm( mg, lset.Phi, lset_d.GetSolution()) << std::endl;
-    std::cout << "sup of dist_\\Gamma on \\Gamma_h: " << dist_to_sphere( mg, lset.Phi) << std::endl;
+        << vertex_sup_norm( mg, lset.Phi, lset.GetBndData(), lset_d.GetSolution()) << std::endl;
+    std::cout << "sup of dist_\\Gamma on \\Gamma_h: " << dist_to_sphere( mg, lset.Phi, lset.GetBndData()) << std::endl;
     std::cout << "sup of gradient-difference on \\Gamma_h: "
-        << facet_sup_norm( mg, lset.Phi) << std::endl;
+        << facet_sup_norm( mg, lset.Phi, lset.GetBndData()) << std::endl;
     // CheckSigns ( mg, lset.Phi);
 
 
@@ -222,7 +224,7 @@ int main ()
     ensight.Register( make_Ensight6Scalar( lset.GetSolution(),      "P2_Levelset",  ensf + "_p2.scl"));
     ensight.Register( make_Ensight6Scalar( lset_d.GetSolution(),  "Dist",     ensf + "_dist.scl"));
 
-    LevelsetP2CL lset_rep( mg, sf);
+    LevelsetP2CL lset_rep( mg, lsbnd, sf);
     lset_rep.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset_rep.Phi.SetIdx( &lset_rep.idx);
     lset_rep.Init( &sphere2_stat);
@@ -231,12 +233,12 @@ int main ()
     ensight.Write();
 
     std::cout << "after reparametrization: sup of (the P2-interpolant of) dist_\\Gamma  on \\Gamma_h: "
-        << vertex_sup_norm( mg, lset_rep.Phi, make_P2Eval( mg, nobnd, vd_dist)) << std::endl;
+        << vertex_sup_norm( mg, lset_rep.Phi, lset_rep.GetBndData(), make_P2Eval( mg, lsbnd, vd_dist)) << std::endl;
     std::cout << "after reparametrization: sup of dist_\\Gamma on \\Gamma_h: "
-        << dist_to_sphere( mg, lset_rep.Phi) << std::endl;
+        << dist_to_sphere( mg, lset_rep.Phi, lset_rep.GetBndData()) << std::endl;
 
     std::cout << "sup of gradient-difference on \\Gamma_h: "
-        << facet_sup_norm( mg, lset_rep.Phi) << std::endl;
+        << facet_sup_norm( mg, lset_rep.Phi, lset_rep.GetBndData()) << std::endl;
     // CheckSigns ( mg, lset_rep.Phi, &lset.Phi);
   }
   catch( DROPSErrCL d) {

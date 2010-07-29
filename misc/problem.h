@@ -158,7 +158,7 @@ class ExtIdxDescCL
     /// Has to be called in two situations:
     /// - whenever level set function has changed to account for the moving interface (set \p NumberingChanged=false)
     /// - when numbering of index has changed, i.e. \p CreateNumbering was called before (set \p NumberingChanged=true)
-    IdxT UpdateXNumbering( IdxDescCL*, const MultiGridCL&, const VecDescCL&, bool NumberingChanged= false );
+    IdxT UpdateXNumbering( IdxDescCL*, const MultiGridCL&, const VecDescCL&, const BndDataCL<>* lsetbnd =0, bool NumberingChanged= false );
     /// \brief Delete extended numbering
     void DeleteXNumbering() { Xidx_.resize(0); Xidx_old_.resize(0); }
 
@@ -269,16 +269,16 @@ class IdxDescCL: public FE_InfoCL
     /// \name Numbering
     /// \{
     /// \brief Used to number unknowns.
-    void CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp= 0);
+    void CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp= 0, const BndDataCL<>* lsetbnd =0);
     /// \brief Used to number unknowns and store boundary condition and matching function.
-    void CreateNumbering( Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0)
-    { Bnd_= Bnd; match_= match; CreateNumbering( level, mg, lsetp); }
+    void CreateNumbering( Uint level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0, const BndDataCL<>* lsetbnd =0)
+    { Bnd_= Bnd; match_= match; CreateNumbering( level, mg, lsetp, lsetbnd); }
     /// \brief Used to number unknowns taking boundary condition and matching function from \a baseIdx
-    void CreateNumbering( Uint level, MultiGridCL& mg, const IdxDescCL& baseIdx, const VecDescCL* lsetp= 0)
-    { Bnd_= baseIdx.Bnd_; match_= baseIdx.match_; CreateNumbering( level, mg, lsetp); }
+    void CreateNumbering( Uint level, MultiGridCL& mg, const IdxDescCL& baseIdx, const VecDescCL* lsetp= 0, const BndDataCL<>* lsetbnd =0)
+    { Bnd_= baseIdx.Bnd_; match_= baseIdx.match_; CreateNumbering( level, mg, lsetp, lsetbnd); }
     /// \brief Update numbering of extended DoFs.
     /// Has to be called whenever level set function has changed to account for the moving interface.
-    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset);
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd =0);
     /// \brief Returns true, if XFEM is used and standard DoF \p dof is extended.
     bool IsExtended( IdxT dof) const
     { return IsExtended() ? extIdx_[dof] != NoIdx : false; }
@@ -355,31 +355,31 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
     /// \name Numbering
     /// \{
     /// \brief Used to number unknowns on all levels.
-    void CreateNumbering( size_t f_level, MultiGridCL& mg, const VecDescCL* lsetp= 0)
+    void CreateNumbering( size_t f_level, MultiGridCL& mg, const VecDescCL* lsetp= 0, const BndDataCL<>* lsetbnd=0)
     {
         size_t lvl = ( this->size() <= f_level+1) ? f_level+1 - this->size(): 0;
         for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
         {
-            it->CreateNumbering( lvl, mg, lsetp);
+            it->CreateNumbering( lvl, mg, lsetp, lsetbnd);
             if (lvl < f_level) ++lvl;
         }
     }
     /// \brief Used to number unknowns and store boundary condition and matching function on all levels.
-    void CreateNumbering( size_t f_level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0)
+    void CreateNumbering( size_t f_level, MultiGridCL& mg, const BndCondCL& Bnd, match_fun match= 0, const VecDescCL* lsetp= 0, const BndDataCL<>* lsetbnd =0)
     {
         size_t lvl = ( this->size() <= f_level+1) ? f_level+1 - this->size(): 0;
         for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
         {
-            it->CreateNumbering( lvl, mg, Bnd, match, lsetp);
+            it->CreateNumbering( lvl, mg, Bnd, match, lsetp, lsetbnd);
             if (lvl < f_level) ++lvl;
         }
     }
     /// \brief Update numbering of extended DoFs on all levels.
     /// Has to be called whenever level set function has changed to account for the moving interface.
-    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd =0)
     {
         for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
-            it->UpdateXNumbering( mg, lset);
+            it->UpdateXNumbering( mg, lset, lsetbnd);
     }
     /// \brief Mark unknown-indices as invalid on all levels.
     void DeleteNumbering( MultiGridCL& mg)

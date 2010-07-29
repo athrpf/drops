@@ -84,7 +84,7 @@ double f2sq (const Point3DCL& p, double)
 }
 
 void InitPiecewiseP2 (instat_scalar_fun_ptr fneg, VecDescCL& un,
-    instat_scalar_fun_ptr fpos, VecDescCL& up, MultiGridCL& MG, VecDescCL& Phi)
+    instat_scalar_fun_ptr fpos, VecDescCL& up, MultiGridCL& MG, VecDescCL& Phi, const BndDataCL<>& lsbnd)
 {
     const Uint idx= Phi.RowIdx->GetIdx(),
                unidx= un.RowIdx->GetIdx(),
@@ -123,7 +123,7 @@ void InitPiecewiseP2 (instat_scalar_fun_ptr fneg, VecDescCL& un,
     }
     InterfacePatchCL cut;
     DROPS_FOR_TRIANG_TETRA( MG, MG.GetLastLevel(), it) {
-        cut.Init( *it, Phi);
+        cut.Init( *it, Phi, lsbnd);
         if (cut.Intersects()) {
             for (Uint i= 0; i < 4; ++i) {
                 const VertexCL& v= *it->GetVertex( i);
@@ -191,13 +191,16 @@ int main (int argc, char** argv)
 
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    LevelsetP2CL lset( mg, sf);
+    BndCondT bc[6]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
+    LsetBndDataCL::bnd_val_fun bfun[6]= { 0,0,0,0,0,0};
+    LsetBndDataCL lsbnd( 6, bc, bfun);
+    LevelsetP2CL lset( mg, lsbnd, sf);
     lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( &phasebnd);
 
     IdxDescCL idx( P1X_FE, BndCondCL(0), 0, /*omit_bound=*/ xfemstab);
-    idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
+    idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi, &lset.GetBndData());
     ExtIdxDescCL& extidx= idx.GetXidx();
     std::cout << "P1-Unbekannte: " << extidx.GetNumUnknownsStdFE()
               << " P1X-Unbekannte: " << idx.NumUnknowns() << '\n';
@@ -208,7 +211,7 @@ int main (int argc, char** argv)
     IdxDescCL p2idx( P2_FE);
     p2idx.CreateNumbering( mg.GetLastLevel(), mg);
     VecDescCL uneg( &p2idx), upos( &p2idx);
-    InitPiecewiseP2( f1, uneg, f2, upos, mg, lset.Phi);
+    InitPiecewiseP2( f1, uneg, f2, upos, mg, lset.Phi, lset.GetBndData());
 
     // Setup the mass matrix
     MatDescCL M( &idx, &idx);
@@ -226,7 +229,7 @@ int main (int argc, char** argv)
     DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
         GetLocalNumbP1NoBnd( Numb, *sit, idx);
         absdet= sit->GetVolume()*6.0;
-        cut.Init( *sit, lset.Phi);
+        cut.Init( *sit, lset.Phi, lset.GetBndData());
 
         cut.ComputeSubTets();
         BaryCoordCL* nodes;
@@ -258,7 +261,7 @@ int main (int argc, char** argv)
     double intval=0.;
     DROPS_FOR_TRIANG_TETRA( mg, mg.GetLastLevel(), sit) {
         absdet= sit->GetVolume()*6.0;
-        cut.Init( *sit, lset.Phi);
+        cut.Init( *sit, lset.Phi, lset.GetBndData());
         cut.ComputeSubTets();
         BaryCoordCL* nodes;
         for (Uint i=0; i<cut.GetNumTetra(); i++)

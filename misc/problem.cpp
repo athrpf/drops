@@ -325,7 +325,7 @@ void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
         const MultiGridCL::TriangVertexIteratorCL& vend,
         const MultiGridCL::TriangTetraIteratorCL& begin,
         const MultiGridCL::TriangTetraIteratorCL& end,
-    const VecDescCL& ls, double omit_bound= -1./*default to using all dof*/)
+    const VecDescCL& ls, const BndDataCL<>& lsetbnd, double omit_bound= -1./*default to using all dof*/)
 {
     if (stride == 0) return;
 
@@ -343,7 +343,7 @@ void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
     // then create numbering of vertices at the interface
     InterfaceTriangleCL p;
     for (MultiGridCL::TriangTetraIteratorCL it= begin; it != end; ++it) {
-        p.Init( *it, ls);
+        p.Init( *it, ls, lsetbnd);
         if (!p.Intersects()) continue;
 
         const double h3= it->GetVolume()*6, h= cbrt( h3), h4= h*h3, limit= h4*omit_bound;
@@ -430,7 +430,7 @@ void IdxDescCL::CreateNumbStdFE( Uint level, MultiGridCL& mg)
     }
 }
 
-void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp)
+void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* lsetp, const BndDataCL<>* lsetbnd)
 /// Memory for the Unknown-Indices on TriangLevel level is allocated
 /// and the unknowns are numbered.
 /// If a matching function is specified, numbering on periodic boundaries
@@ -449,7 +449,7 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
         CreateNumbStdFE( level, mg);
         if (IsExtended()) {
             if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for XFEM numbering given");
-            NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, true);
+            NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, lsetbnd, true);
         }
     }
 #ifdef _PAR
@@ -457,10 +457,10 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
 #endif
 }
 
-void IdxDescCL::UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset)
+void IdxDescCL::UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd)
 {
     if (IsExtended()) {
-        NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, false);
+        NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, lsetbnd, false);
 #ifdef _PAR
         ex_->CreateList(mg, this, true, true);
 #endif
@@ -490,7 +490,7 @@ void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
 #endif
 }
 
-IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, bool NumberingChanged)
+IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd, bool NumberingChanged)
 {
     const Uint sysnum= Idx->GetIdx(),
         level= Idx->TriangLevel(),
@@ -516,7 +516,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
         const double h3= it->GetVolume()*6,
             h= cbrt( h3), h5= h*h*h3, // h^5
             limit= h5*omit_bound_;
-        locPhi.assign( *it, lset, NoBndDataCL<>());
+        locPhi.assign( *it, lset, *lsetbnd);
         cut.Init( *it, locPhi);
         SVectorCL<4> loc_int; // stores integrals \int_T p^2 dx, where p = p_i^\Gamma. Extended DoF is omitted
                               // iff this integral falls below a certain bound (omit_bound*h^5) for all tetrahedra T.

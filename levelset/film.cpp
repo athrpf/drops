@@ -401,7 +401,7 @@ int main (int argc, char** argv)
 
     sigma= prob.GetCoeff().SurfTens;
     DROPS::SurfaceTensionCL sf( sigmaf, 0);
-    DROPS::LevelsetP2CL lset( *mgp, DROPS::LevelsetP2CL::BndDataT( 6, bc_ls),
+    DROPS::LevelsetP2CL lset( *mgp, DROPS::LsetBndDataCL( 6, bc_ls),
         sf, C.lvs_SD, C.lvs_CurvDiff);
 
     for (DROPS::BndIdxT i=0, num= bnd.GetNumBndSeg(); i<num; ++i)

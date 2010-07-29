@@ -88,6 +88,12 @@ DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
     return ret;
 }
 
+double InflowLsetCell( const DROPS::Point3DCL& p, double)
+{
+    return DROPS::EllipsoidCL::DistanceFct(p);
+}
+
+
 typedef DROPS::BndDataCL<> cBndDataCL;
 typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
 const DROPS::BndCondT c_bc[6]= {
@@ -120,7 +126,7 @@ double surf_sol (const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
-void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
+void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsetbnd, AdapTriangCL& adap)
 // flow control
 {
     typedef InstatNavierStokes2PhaseP2P1CL StokesProblemT;
@@ -141,7 +147,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
         gsigmap = &gsigma;
     }
     SurfaceTensionCL sf( sigmap, gsigmap);
-    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsetbnd, sf, C.lvs_SD, C.lvs_CurvDiff);
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -346,7 +352,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
         if (C.surf_DoTransp) {
             surfTransp.DoStep( step*C.tm_StepSize);
             BndDataCL<> ifbnd( 0);
-            std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, make_P1Eval(  MG, ifbnd, surfTransp.ic, step*C.tm_StepSize)) << '\n';
+            std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, lset.GetBndData(), make_P1Eval(  MG, ifbnd, surfTransp.ic, step*C.tm_StepSize)) << '\n';
         }
 
         // WriteMatrices( Stokes, step);
@@ -409,9 +415,10 @@ int main (int argc, char** argv)
 
     DROPS::MultiGridCL* mg= 0;
     DROPS::StokesBndDataCL* bnddata= 0;
+    DROPS::LsetBndDataCL* lsetbnddata= 0;
 
-    CreateGeom(mg, bnddata, C.dmc_GeomType == 0 ? InflowCell : (C.dmc_BoundaryType == 4 ? InflowChannel : InflowBrick),
-               C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
+    CreateGeom(mg, bnddata, lsetbnddata, C.dmc_GeomType == 0 ? InflowCell : (C.dmc_BoundaryType == 4 ? InflowChannel : InflowBrick),
+               InflowLsetCell, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
 
     DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
     std::cout << "Taking Partitioner: " << C.ref_Partitioner << std::endl;
@@ -428,9 +435,10 @@ int main (int argc, char** argv)
 #endif
     DROPS::InstatNavierStokes2PhaseP2P1CL prob( *mg, DROPS::TwoPhaseFlowCoeffCL(C), *bnddata, C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
-    Strategy( prob, adap);    // do all the stuff
+    Strategy( prob, *lsetbnddata, adap);    // do all the stuff
 
     delete mg;
+    delete lsetbnddata;
     delete bnddata;
     return 0;
   }

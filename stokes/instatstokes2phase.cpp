@@ -604,7 +604,7 @@ void SetupRhs2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const S
 
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
-        cut.Init( *sit, lset.Phi);
+        cut.Init( *sit, lset.Phi, lset.GetBndData());
         const bool nocut= !cut.Intersects();
 
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
@@ -1115,13 +1115,13 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& Coeff, 
 
 void InstatStokes2PhaseP2P1CL::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
 {
-    idx->CreateNumbering( level, _MG, _BndData.Vel, match, lsetp ? &(lsetp->Phi) : 0);
+    idx->CreateNumbering( level, _MG, _BndData.Vel, match, lsetp ? &(lsetp->Phi) : 0, lsetp ? &(lsetp->GetBndData()) : 0);
 }
 
 
 void InstatStokes2PhaseP2P1CL::CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
 {
-    idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0);
+    idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0, lsetp ? &(lsetp->GetBndData()) : 0);
 }
 
 
@@ -1779,7 +1779,7 @@ void SetupRhs1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, co
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, *b->RowIdx, _BndData.Vel);
-        tetra.Init( *sit, lset.Phi);
+        tetra.Init( *sit, lset.Phi, lset.GetBndData());
         const bool nocut= !tetra.Intersects();
         if (nocut) {
             const double rho_const= tetra.GetSign( 0) == 1 ? rho_p : rho_n;
@@ -2182,7 +2182,7 @@ void InstatStokes2PhaseP2P1CL::SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL*
     const ExtIdxDescCL& p_xidx= Bdotv->RowIdx->GetXidx();
 
     DROPS_FOR_TRIANG_TETRA( _MG, lvl, sit) {
-        cut.Init( *sit, lset.Phi);
+        cut.Init( *sit, lset.Phi, lset.GetBndData());
         if (!cut.Intersects()) continue;
 
         GetLocalNumbP1NoBnd( prNumb, *sit, *Bdotv->RowIdx);

@@ -43,6 +43,8 @@
 
 namespace DROPS
 {
+    
+typedef BndDataCL<double>    LsetBndDataCL;
 
 enum SurfaceForceT
 /// different types of surface forces
@@ -54,12 +56,12 @@ enum SurfaceForceT
 };
 
 class LevelsetP2CL
-/// P2-discretization and solution of the level set equation for two phase flow problems.
+/// P2-discretization and solution of the level set equation for two phase flow problems. Bnd_ will be used to impose boundary data on the inflow boundary.
+/// At the moment setting all boundary conditions to NoBC is the only valid case.
 {
   public:
-    typedef BndDataCL<>    BndDataT;
-    typedef P2EvalCL<double, const BndDataT, VecDescCL>       DiscSolCL;
-    typedef P2EvalCL<double, const BndDataT, const VecDescCL> const_DiscSolCL;
+    typedef P2EvalCL<double, const LsetBndDataCL, VecDescCL>       DiscSolCL;
+    typedef P2EvalCL<double, const LsetBndDataCL, const VecDescCL> const_DiscSolCL;
 
     IdxDescCL             idx;
     VecDescCL             Phi;        ///< level set function
@@ -68,7 +70,7 @@ class LevelsetP2CL
     MultiGridCL&        MG_;
     double              curvDiff_, ///< amount of diffusion in curvature calculation
                         SD_;       ///< streamline diffusion
-    BndDataT            Bnd_;
+    LsetBndDataCL       Bnd_;
     SurfaceForceT       SF_;
 
     SurfaceTensionCL&   sf_;      ///< data for surface tension
@@ -78,13 +80,7 @@ class LevelsetP2CL
   public:
     MatrixCL            E, H;
 
-    LevelsetP2CL( MultiGridCL& mg, SurfaceTensionCL& sf,
-        double SD= 0., double curvDiff= -1., double __UNUSED__ narrowBand=-1.)
-    : idx( P2_FE), MG_( mg), curvDiff_( curvDiff), SD_( SD),
-        Bnd_( BndDataT(mg.GetBnd().GetNumBndSeg())), SF_( SF_ImprovedLB), sf_(sf)
-    {}
-
-    LevelsetP2CL( MultiGridCL& mg, const BndDataT& bnd, SurfaceTensionCL& sf, double SD= 0, double curvDiff= -1)
+    LevelsetP2CL( MultiGridCL& mg, const LsetBndDataCL& bnd, SurfaceTensionCL& sf, double SD= 0, double curvDiff= -1)
     : idx( P2_FE), MG_( mg), curvDiff_( curvDiff), SD_( SD),
         Bnd_( bnd), SF_(SF_ImprovedLB), sf_(sf)
     {}
@@ -92,7 +88,7 @@ class LevelsetP2CL
     const MultiGridCL& GetMG() const { return MG_; }    ///< Get reference on the multigrid
     MultiGridCL& GetMG() { return MG_; }                ///< Get reference on the multigrid
 
-    const BndDataT& GetBndData() const { return Bnd_; }
+    const LsetBndDataCL& GetBndData() const { return Bnd_; }
 
     /// \name Numbering
     ///@{
@@ -106,7 +102,7 @@ class LevelsetP2CL
 
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     template<class DiscVelSolT>
-    void SetupSystem( const DiscVelSolT&, const double);
+    void SetupSystem( const DiscVelSolT&, /*VecDescCL&, VecDescCL&,*/ const double/*, const double t*/);
     /// Reparametrization of the level set function.
     void Reparam( int method=03, bool Periodic= false);
 
@@ -169,10 +165,10 @@ class LevelsetRepairCL : public MGObserverCL
 class LevelsetModifyCL
 {
 private:
-	int    rpm_Freq_,
-	       rpm_Method_;
-	double rpm_MaxGrad_,
-	       rpm_MinGrad_;
+    int    rpm_Freq_,
+           rpm_Method_;
+    double rpm_MaxGrad_,
+           rpm_MinGrad_;
     int    lvs_VolCorrection_;
 
     const double Vol_;

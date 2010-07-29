@@ -47,17 +47,10 @@ InterfacePatchCL::InterfacePatchCL()
             AllEdgeBaryCenter_[i][j]= BaryCenter( BaryDoF_[i], BaryDoF_[j]);
 }
 
-void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls, double translation)
+void InterfacePatchCL::Init( const TetraCL& t, const VecDescCL& ls, const BndDataCL<>& lsetbnd, double translation)
 {
-    const Uint idx_ls= ls.RowIdx->GetIdx();
-    ch_= -1;
-    for (int v=0; v<10; ++v)
-    { // collect data on all DoF
-        Coord_[v]= v<4 ? t.GetVertex(v)->GetCoord() : GetBaryCenter( *t.GetEdge(v-4));
-        PhiLoc_[v]= ls.Data[v<4 ? t.GetVertex(v)->Unknowns(idx_ls) : t.GetEdge(v-4)->Unknowns(idx_ls)] + translation;
-        sign_[v]= Sign(PhiLoc_[v]);
-    }
-    barysubtetra_ = false;
+    LocalP2CL<double> locphi(t, ls, lsetbnd);
+    this->Init(t, locphi, translation);
 }
 
 void InterfacePatchCL::Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation)

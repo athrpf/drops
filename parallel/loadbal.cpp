@@ -303,7 +303,7 @@ void LoadBalCL::GetWeightLset( const TetraCL& t, size_t& wgtpos)
     InterfacePatchCL patch;                              // check for intersection
     if ( t.IsUnrefined()){
         if (CheckForLsetUnk(t)){
-            patch.Init( t, *lset_);
+            patch.Init( t, *lset_, *lsetbnd_);
             GetPartitioner()->GetGraph().vwgt[wgtpos++]= patch.GetNumIntersectedSubTetras();
         }
         else{
@@ -314,7 +314,7 @@ void LoadBalCL::GetWeightLset( const TetraCL& t, size_t& wgtpos)
         int numItersectedSub=0;
         for ( TetraCL::const_ChildPIterator it=t.GetChildBegin(); it!=t.GetChildEnd(); ++it){
             if (CheckForLsetUnk(**it)){
-                patch.Init( **it, *lset_);
+                patch.Init( **it, *lset_, *lsetbnd_);
                 numItersectedSub += patch.GetNumIntersectedSubTetras();
             }
         }

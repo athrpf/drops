@@ -260,10 +260,11 @@ void CheckReparametrization( const LevelsetP2CL& lset, const VectorCL& phiEx)
               << "\nmax and min grad: " << maxGradPhi << ' ' << minGradPhi << std::endl;
 }
 
-void Strategy( DROPS::AdapTriangCL& adap)
+void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
 {
     SurfaceTensionCL sf( sigmaf, gsigma);   // dummy class
-    LevelsetP2CL lset( adap.GetMG(), sf);
+
+    LevelsetP2CL lset( adap.GetMG(), lsbnd, sf);
 
     // writer for vtk-format
     VTKOutCL vtkwriter(adap.GetMG(), "DROPS data", (C.vtk_VTKOut ? 3 : 0),
@@ -306,7 +307,7 @@ void Strategy( DROPS::AdapTriangCL& adap)
     Disturb( lset.Phi.Data);
 
     // Perform re-parametrization
-    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( adap.GetMG(), lset.Phi, C.rpm_Method);
+    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( adap.GetMG(), lset.Phi, C.rpm_Method, /*periodic*/ false, &lset.GetBndData());
     reparam->Perform();
 
 //    FastMarchCL fmm( adap.GetMG(), lset.Phi);
@@ -382,8 +383,11 @@ int main( int argc, char **argv)
         distance_fct distance= C.rpm_Freq>0 ? DROPS::HorizontalSlicesCL::DistanceFct : DROPS::EllipsoidCL::DistanceFct;
         adap.MakeInitialTriang( distance);
 
+        const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+        const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+        DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
 
-        DROPS::Strategy( adap);
+        DROPS::Strategy( adap, lsbnd);
 
 
     } catch (DROPS::DROPSErrCL err) {

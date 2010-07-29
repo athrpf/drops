@@ -28,7 +28,7 @@
 namespace DROPS {
 
 template <class DiscVelSolT>
-void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const DiscVelSolT& u)
+void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const BndDataCL<>& lsetbnd, const DiscVelSolT& u)
 {
     const IdxT num_rows= mat->RowIdx->NumUnknowns();
     const IdxT num_cols= mat->ColIdx->NumUnknowns();
@@ -51,7 +51,7 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
     InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        triangle.Init( *it, ls);
+        triangle.Init( *it, ls, lsetbnd);
         if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
             GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
@@ -81,7 +81,7 @@ void SetupConvectionP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& 
 
 
 template <class DiscVelSolT>
-void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const DiscVelSolT& u)
+void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const BndDataCL<>& lsetbnd, const DiscVelSolT& u)
 {
     const IdxT num_rows= mat->RowIdx->NumUnknowns();
     const IdxT num_cols= mat->ColIdx->NumUnknowns();
@@ -106,7 +106,7 @@ void SetupMassDivP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls,
     InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        triangle.Init( *it, ls);
+        triangle.Init( *it, ls, lsetbnd);
         if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
             GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);

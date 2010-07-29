@@ -134,6 +134,7 @@ class LoadBalCL
     PartitionerCL*                partitioner_;             // Pointer to a graph partitioner
     std::vector<const IdxDescCL*> idx_;                     // information about unknowns
     const VecDescCL*              lset_;                    // Eventually use information about interface for loadbalancing
+    const BndDataCL<>*            lsetbnd_;                 // Eventually use information about interface for loadbalancing
     Uint static                   TriangLevel_;             // Triangulation level, on which the LoadBalance should be made, normaly set to LastTriangLevel (static for HandlerGather)
     static idxtype*               myfirstVert_;             // first vertex on this proc (static for HandlerGather!)
     static IFT                    FaceIF_;                  // Interface, for compute the adjacencies over Proc-Boundaries
@@ -179,7 +180,7 @@ class LoadBalCL
     void  SetWeightFnct( int wfc) { weightFct_=wfc; }                           ///< Set weighting function
     int   GetWeightFnct() const { return weightFct_; }                          ///< Get weighting function
 
-    void SetLset( const VecDescCL& lset) { lset_=&lset; }
+    void SetLset( const VecDescCL& lset, const BndDataCL<>& lsetbnd) { lset_=&lset; lsetbnd_=&lsetbnd;}
     void RemoveLset() { lset_=0; } 
 
     ///\name for debug purpose
@@ -243,7 +244,7 @@ class LoadBalHandlerCL
     inline void         SetStrategy(PartMethod);          ///< Set the strategy that is used for the graph-partitioning
     inline bool         GetXferUnknowns()       const;    ///< Returns if unknowns are transfered too within the migration
     inline void         SetXferUnknowns(bool);            ///< Set flag for transfering unknwons (Recursive or Adaptive)
-    void SetLset( const VecDescCL& lset) { lb_->SetLset(lset); }    ///< Set a pointer to the level set function, so the number of intersected subs is used for load balancing
+    void SetLset( const VecDescCL& lset, const BndDataCL<>& lsetbnd) { lb_->SetLset(lset, lsetbnd);}    ///< Set a pointer to the level set function, so the number of intersected subs is used for load balancing
     inline bool         GetDebugMode()          const;    ///< Returns if information about each step should be displayed
     inline void         SetDebugMode(bool);               ///< turn off or on the DebugMode
     inline MultiGridCL& GetMG();                          ///< Get a reference on the MultiGridCL

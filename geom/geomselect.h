@@ -72,8 +72,10 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
 /// \brief Create geometry of a Mzelle or a brick
 /**
  * @param mgp a pointer of the MultiGridCL object
- * @param bnddata a pointer of the boundary data object
+ * @param bnddata a pointer to boundary data object (stokes)
+ * @param lsetbnddata a pointer to the boundary data object (levelset)
  * @param inflow vector function pointer which is used to construct the boundary description, e.g. inflow velocity
+ * @param lsetinflow scalar function pointer which is used to construct the boundary description for the levelset equation
  * @param meshfile_name name of the gambit-meshfile or list of integers/double which determine the L-/B-/Cavity-/Brick domain, e.g. 1x1x1@2x3x2
  * @param GeomType type of the geometry: 0: GAMBIT mesh, 1: brick, 2: cavity, 3: l-brick, 4: b-brick
  * @param bnd_type type of the boundary: 0: measuring cell, 1: hom. Dirichlet, 2-5: different Neumann conditions, a.t.m. only valid for a brick domain
@@ -81,8 +83,8 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
  * @param BC description of the boundary
  * @param r_inlet inlet radius
  */
-void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
-                 instat_vector_fun_ptr inflow,
+void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata, LsetBndDataCL* &lsetbnddata,
+                 instat_vector_fun_ptr inflow, instat_scalar_fun_ptr lsetinflow,
                  const std::string& meshfile_name,
                  int GeomType, int bnd_type,
                  const std::string& deserialization_file, double& r_inlet);

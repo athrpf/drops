@@ -95,7 +95,7 @@ double sol0t (const DROPS::Point3DCL& p, double t)
 }
 
 template<class DiscP1FunType>
-double L2_error (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+double L2_error (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const BndDataCL<>& lsbnd,
     const DiscP1FunType& discsol, DROPS::instat_scalar_fun_ptr extsol, double t= 0.)
 {
     double d( 0.);
@@ -104,7 +104,7 @@ double L2_error (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     DROPS::Quad5_2DCL<> qsol, qdiscsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
         if (triangle.Intersects()) { // We are at the phase boundary.
             for (int ch= 0; ch < 8; ++ch) {
             	triangle.ComputeForChild( ch);
@@ -119,7 +119,7 @@ double L2_error (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     return std::sqrt( d);
 }
 
-double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const BndDataCL<>& lsbnd,
     DROPS::instat_scalar_fun_ptr extsol, double t= 0.)
 {
     double d( 0.);
@@ -128,7 +128,7 @@ double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     DROPS::Quad5_2DCL<> qsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
         if (triangle.Intersects()) { // We are at the phase boundary.
             for (int ch= 0; ch < 8; ++ch) {
             	triangle.ComputeForChild( ch);
@@ -251,7 +251,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 //              << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, 0.)
 //              << std::endl;
     BndDataCL<> ifbnd( 0);
-    std::cerr << "initial surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, make_P1Eval(  mg, ifbnd, timedisc.ic, 0.)) << '\n';
+    std::cerr << "initial surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic, 0.)) << '\n';
 
     for (int step= 1; step <= C.tm_NumSteps; ++step) {
         std::cout << "======================================================== step " << step << ":\n";
@@ -259,7 +259,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
         timedisc.InitOld();
         LSInit( mg, lset.Phi, &sphere_2move, step*C.tm_StepSize);
         timedisc.DoStep( step*C.tm_StepSize);
-        std::cerr << "surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, make_P1Eval(  mg, ifbnd, timedisc.ic, step*C.tm_StepSize)) << '\n';
+        std::cerr << "surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic, step*C.tm_StepSize)) << '\n';
 
         //lset2.DoStep();
 //        VectorCL rhs( lset2.Phi.Data.size());
@@ -337,7 +337,11 @@ int main (int argc, char* argv[])
 
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    DROPS::LevelsetP2CL lset( mg, sf);
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
+    DROPS::LevelsetP2CL lset( mg, lsbnd, sf);
     lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
     lset.Phi.SetIdx( &lset.idx);
     LinearLSInit( mg, lset.Phi, &sphere_2);
@@ -361,14 +365,14 @@ int main (int argc, char* argv[])
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
     DROPS::MatDescCL M( &ifaceidx, &ifaceidx);
-    DROPS::SetupInterfaceMassP1( mg, &M, lset.Phi);
+    DROPS::SetupInterfaceMassP1( mg, &M, lset.Phi, lset.GetBndData());
     std::cout << "M is set up.\n";
     DROPS::MatDescCL A( &ifaceidx, &ifaceidx);
-    DROPS::SetupLBP1( mg, &A, lset.Phi, C.surf_Visc);
+    DROPS::SetupLBP1( mg, &A, lset.Phi, lset.GetBndData(), C.surf_Visc);
     DROPS::MatrixCL L;
     L.LinComb( 1.0, A.Data, 1.0, M.Data);
     DROPS::VecDescCL b( &ifaceidx);
-    DROPS::SetupInterfaceRhsP1( mg, &b, lset.Phi, rhs0);
+    DROPS::SetupInterfaceRhsP1( mg, &b, lset.Phi, lset.GetBndData(), rhs0);
 
     DROPS::WriteToFile( M.Data, "m_iface.txt", "M");
     DROPS::WriteToFile( A.Data, "a_iface.txt", "A");
@@ -393,7 +397,7 @@ int main (int argc, char* argv[])
     ensight.Register( make_Ensight6Scalar( make_P1Eval( mg, nobnd, xext), "InterfaceSol", ensf + ".sur"));
     ensight.Write();
 
-    double L2_err( L2_error( mg, lset.Phi, make_P1Eval( mg, nobnd, xext), &sol0));
+    double L2_err( L2_error( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, nobnd, xext), &sol0));
     std::cout << "L_2-error: " << L2_err << std::endl;
 
     return 0;

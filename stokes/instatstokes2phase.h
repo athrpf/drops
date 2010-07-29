@@ -167,7 +167,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
     /// \brief Only used for XFEM
     void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset)
         {
-            if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi);
+            if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi, &lset.GetBndData());
         }
     /// \brief Only used for XFEM
     void UpdatePressure( VecDescCL* p)

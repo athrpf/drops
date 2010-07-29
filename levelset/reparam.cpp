@@ -170,12 +170,12 @@ void Reparam( LevelsetP2CL& lset, Uint steps, double dt, double theta, double di
 
 
 template<class ProblemT>
-void Strategy( ProblemT& prob, double dt, int num_steps, double diff, int bsp)
+void Strategy( ProblemT& prob, BndDataCL<>& lsetbnd, double dt, int num_steps, double diff, int bsp)
 {
     MultiGridCL& mg= prob.GetMG();
     // Levelset: sigma= 0, theta= 0.5, SD= 0
     SurfaceTensionCL sf( sigma, 0);
-    LevelsetP2CL lset( mg, sf, 0.5);
+    LevelsetP2CL lset( mg, lsetbnd, sf, 0.5);
 
     IdxDescCL& lidx= lset.idx;
     MLIdxDescCL& vidx= prob.vel_idx;
@@ -250,9 +250,13 @@ int main( int argc, char **argv)
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel };
 
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     MyStokesCL prob(brick, DROPS::DummyStokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
 
-    Strategy( prob, dt, num_steps, diff, bsp);
+    Strategy( prob, lsbnd, dt, num_steps, diff, bsp);
 
     return 0;
   } catch(DROPS::DROPSErrCL err) { err.handle(); }

@@ -64,7 +64,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
     const SMatrixCL<4,4> GTG( GramMatrix( G));
 
     InterfaceTetraCL cut;
-    cut.Init( t, lset_.Phi);
+    cut.Init( t, lset_.Phi, lset_.GetBndData());
     if (!cut.Intersects()) {
         const Quad5CL<Point3DCL> u_loc( t, u, t_);
         const double coeff_d = cut.GetSign( 0) == 1 ? D_[0] : D_[1];

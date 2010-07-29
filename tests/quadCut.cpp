@@ -30,7 +30,12 @@ using namespace DROPS;
 void ComputeIntOnCuts( const TetraCL& t, const VecDescCL& ls, const LocalP2CL<>& f, double absdet, VectorCL& quadPos, VectorCL& quadNeg)
 {
     InterfaceTetraCL cut;
-    cut.Init( t, ls);
+
+    BndCondT bc[6]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
+    BndDataCL<>::bnd_val_fun bfun[6]= {0,0,0,0,0,0};
+    BndDataCL<> bnd(6, bc, bfun);
+
+    cut.Init( t, ls, bnd);
     if (!cut.Intersects()) // kein Beitrag
     { std::cout << "No cut on tetra...\n"; }
 

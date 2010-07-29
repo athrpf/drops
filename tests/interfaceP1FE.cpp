@@ -36,7 +36,10 @@ TestSingleTetra()
     MultiGridCL mg( tetra);
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    LevelsetP2CL lset( mg, sf);
+    BndCondT bc[4]= { NoBC, NoBC, NoBC, NoBC };
+    LsetBndDataCL::bnd_val_fun bfun[4]= { 0,0,0,0};
+    LsetBndDataCL lsbnd( 4, bc, bfun);
+    LevelsetP2CL lset( mg, lsbnd, sf);
 
     lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
@@ -44,13 +47,13 @@ TestSingleTetra()
 
     IdxDescCL ifaceidx( P1IF_FE);
     std::cout << "Testing vertex numbering around no interface:" << std::endl;
-    ifaceidx.CreateNumbering( 0, mg, &lset.Phi);
+    ifaceidx.CreateNumbering( 0, mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 
     std::cout << "Testing vertex numbering interface in 1 tetra:" << std::endl;
     lset.Phi.Data[0]= -1.0;
-    ifaceidx.CreateNumbering( 0, mg, &lset.Phi);
+    ifaceidx.CreateNumbering( 0, mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 }
@@ -101,7 +104,10 @@ TestPlaneInCube()
     MultiGridCL mg( brick);
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    LevelsetP2CL lset( mg, sf);
+    BndCondT bc[6]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
+    LsetBndDataCL::bnd_val_fun bfun[6]= { 0,0,0,0,0,0};
+    LsetBndDataCL lsbnd( 6, bc, bfun);
+    LevelsetP2CL lset( mg, lsbnd, sf);
 
     lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
@@ -110,13 +116,13 @@ TestPlaneInCube()
     IdxDescCL ifaceidx( P1IF_FE);
     std::cout << "Testing vertex numbering around planar interface:" << std::endl;
     lset.Init( plane);
-    ifaceidx.CreateNumbering( 0, mg, &lset.Phi);
+    ifaceidx.CreateNumbering( 0, mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 
     std::cout << "Testing vertex numbering around planar interface containing vertices:" << std::endl;
     lset.Init( plane2);
-    ifaceidx.CreateNumbering( 0, mg, &lset.Phi);
+    ifaceidx.CreateNumbering( 0, mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
     ifaceidx.DeleteNumbering( mg);
 }
@@ -143,7 +149,7 @@ void SetupInterfaceMassP1OnTriangle (const LocalP1CL<> p1[4],
     }
 }
 
-void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls)
+void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls, const BndDataCL<>& lsbnd)
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns();
     MatrixBuilderCL M( &matM->Data, num_unks_pr,  num_unks_pr);
@@ -158,7 +164,7 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
 
     InterfaceTriangleCL triangle;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
 
         GetLocalNumbP1NoBnd( Numb, *it, *matM->RowIdx);
         for (int ch= 0; ch < 8; ++ch) {
@@ -195,7 +201,7 @@ void SetupInterfaceMassP1OnTriangleNew (const LocalP2CL<> q[4],
     }
 }
 
-void SetupInterfaceMassP1New (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls)
+void SetupInterfaceMassP1New (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls, const BndDataCL<>& lsbnd)
 {
     const IdxT num_unks_pr=  matM->RowIdx->NumUnknowns();
     MatrixBuilderCL M( &matM->Data, num_unks_pr,  num_unks_pr);
@@ -211,7 +217,7 @@ void SetupInterfaceMassP1New (const MultiGridCL& MG, MatDescCL* matM, const VecD
 
     InterfaceTriangleCL triangle;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsbnd);
 
         GetLocalNumbP1NoBnd( Numb, *it, *matM->RowIdx);
         for (int ch= 0; ch < 8; ++ch) {
@@ -241,18 +247,21 @@ int main ()
     MultiGridCL mg( brick);
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    LevelsetP2CL lset( mg, sf);
+    BndCondT bc[6]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
+    LsetBndDataCL::bnd_val_fun bfun[6]= { 0,0,0,0,0,0};
+    LsetBndDataCL lsbnd( 6, bc, bfun);
+    LevelsetP2CL lset( mg, lsbnd, sf);
 
     lset.idx.CreateNumbering( 0, mg);
     lset.Phi.SetIdx( &lset.idx);
     lset.Init( &sphere_2);
 
     IdxDescCL ifaceidx( P1IF_FE);
-    ifaceidx.CreateNumbering( 0, mg, &lset.Phi);
+    ifaceidx.CreateNumbering( 0, mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
     MatDescCL M( &ifaceidx, &ifaceidx);
-    SetupInterfaceMassP1( mg, &M, lset.Phi);
+    SetupInterfaceMassP1( mg, &M, lset.Phi, lset.GetBndData());
     std::cout << "Writing matrix to m_iface.txt\n";
     std::ofstream fff( "m_iface.txt");
     fff.precision( 18);
@@ -260,7 +269,7 @@ int main ()
     fff.close();
 
     MatDescCL Mnew( &ifaceidx, &ifaceidx);
-    SetupInterfaceMassP1New( mg, &Mnew, lset.Phi);
+    SetupInterfaceMassP1New( mg, &Mnew, lset.Phi, lset.GetBndData());
     std::cout << "Writing new matrix to mnew_iface.txt\n";
     std::ofstream ggg( "mnew_iface.txt");
     ggg.precision( 18);

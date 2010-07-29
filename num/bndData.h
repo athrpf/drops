@@ -99,7 +99,7 @@ class BndSegDataCL: public BndCondInfoCL
     static void CheckValid( BndCondT bc, bnd_val_fun f)
     /// check compatibility of boundary condition \a bc and boundary value function \a f.
     {
-        if ( bc!=Nat0BC && bc!=Dir0BC && bc!=Per1BC && bc!=Per2BC && f==0)
+        if ( bc!=NoBC &&bc!=Nat0BC && bc!=Dir0BC && bc!=Per1BC && bc!=Per2BC && f==0)
            throw DROPSErrCL("BndSegDataCL: no boundary function for non-homogeneous condition specified!");
 #ifdef _PAR
         if ( bc==Per1BC || bc==Per2BC )

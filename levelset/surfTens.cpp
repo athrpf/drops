@@ -81,7 +81,7 @@ class ISPSchur_PCG_CL: public PSchurSolver2CL<PCGSolverCL<SSORPcCL>, PCGSolverCL
          {}
 };
 
-void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes)
+void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbnd)
 // flow control
 {
     typedef InstatNavierStokes2PhaseP2P1CL StokesProblemT;
@@ -90,7 +90,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes)
     // Levelset-Disc.: Crank-Nicholson
     sigma= C.sft_SurfTension;
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, C.lvs_CurvDiff);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -253,6 +253,10 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
@@ -265,7 +269,7 @@ int main (int argc, char** argv)
     }
     std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
 
-    DROPS::Strategy( prob);  // do all the stuff
+    DROPS::Strategy( prob, lsbnd);  // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();

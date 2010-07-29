@@ -151,7 +151,7 @@ void InitZeroNoModCL::Perform()
 #pragma omp parallel for
     for ( int i=0; i<std::distance(data_.mg.GetTriangTetraBegin(lvl), data_.mg.GetTriangTetraEnd(lvl)); ++i ){
         MultiGridCL::TriangTetraIteratorCL it= data_.mg.GetTriangTetraBegin(lvl)+i;
-        patch.Init( *it, base::data_.phi);
+        patch.Init( *it, base::data_.phi, *base::data_.bnd);
         if ( patch.Intersects()){                                       // tetra (*it) is intersected
             n.assign( *it, *base::data_.phi.RowIdx, BndDataCL<>(0));    // create local numbering
             for (Uint ch= 0; ch<MaxChildrenC; ++ch) {
@@ -205,14 +205,14 @@ class TetraNeighborCL
     /// \brief Updates the neighborhood information: traverse all outgoing edges (=tetras) of idx and add them to their end-vertices.
     void insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint ls_idx, const IdxToTetraMapT& idx_to_tetra);
     /// \brief Traverse the edges of the graph and update the vertex-neighborhoods.
-    void ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls);
+    void ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbn);
     /// \brief Reverse the map produced by ComputeNeighborTetras().
     void ComputeIdxToTetraMap ();
 
   public:
-    TetraNeighborCL (const MultiGridCL& mg, const VecDescCL& ls)
+    TetraNeighborCL (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd)
     {
-        ComputeNeighborTetras ( mg, ls);
+        ComputeNeighborTetras ( mg, ls, lsetbnd);
         ComputeIdxToTetraMap ();
         idx_to_tetra_.clear();
     }
@@ -238,7 +238,7 @@ void TetraNeighborCL::insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint
     }
 }
 
-void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls)
+void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd)
 {
     const DROPS::Uint lvl= ls.GetLevel();
     const Uint ls_idx= ls.RowIdx->GetIdx();
@@ -249,7 +249,7 @@ void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDes
 
     // Record for each index, which tetras are immediate neighbors. Do this only around the interface.
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, ls);
+        patch.Init( *it, ls, lsetbnd);
         if (!patch.Intersects()) continue;
 
         for (Uint i= 0; i < 4; ++i)
@@ -482,7 +482,7 @@ void InitZeroExactCL::InitDofToTetra()
 
     // Record for each index, which tetras are immediate neighbors. Do this only around the interface.
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        patch.Init( *it, data_.phi);
+        patch.Init( *it, data_.phi, *data_.bnd);
         if (!patch.Intersects()) continue;
 
         for (Uint i= 0; i < 4; ++i)
@@ -539,7 +539,7 @@ void InitZeroExactCL::BuildDistTriang()
     const Uint          lvl= data_.phi.GetLevel();
     InterfaceTriangleCL patch;
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it){
-        patch.Init( *it, data_.phi);
+        patch.Init( *it, data_.phi, *data_.bnd);
         if ( !patch.Intersects()) continue;
         for ( int ch=0; ch<8; ++ch){
             if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
@@ -561,7 +561,7 @@ void InitZeroExactCL::AssociateTriangles()
 
     for ( size_t dof=0; dof<dofToTetra_.size(); ++dof){
         for ( TetraSetT::const_iterator it= dofToTetra_[dof].begin(); it!=dofToTetra_[dof].end(); ++it){
-            patch.Init( **it, data_.phi);
+            patch.Init( **it, data_.phi, *data_.bnd);
             Assert( patch.Intersects(), DROPSErrCL("InitZeroExactCL::AssociateTriangles: Tetra is not intersected"), DebugNumericC);
             for ( int ch=0; ch<8; ++ch){
                 if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
@@ -659,10 +659,10 @@ void InitZeroExactCL::Perform()
     VecDescCL oldv( data_.phi);
     InterfaceTriangleCL patch;
     double dd;
-    TetraNeighborCL tetra_to_idx( data_.mg, oldv);
+    TetraNeighborCL tetra_to_idx( data_.mg, oldv, *data_.bnd);
     for (TetraNeighborCL::TetraToIdxMapT::iterator it= tetra_to_idx().begin(); it!=tetra_to_idx().end(); ++it) {
         const TetraCL* t( it->first);
-        patch.Init( *t, oldv);
+        patch.Init( *t, oldv, *data_.bnd);
         for (int ch= 0; ch < 8; ++ch) {
             if (!patch.ComputeForChild( ch)) continue; // Child ch has no intersection
 
@@ -830,7 +830,7 @@ void InitZeroP2CL::BuildRepTetra()
     LocalP1CL<Point3DCL> Gref[10];
     InterfacePatchCL patch;
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it){
-        patch.Init( *it, data_.phi);
+        patch.Init( *it, data_.phi, *data_.bnd);
         if ( patch.Intersects()){
             storePosOfTetra_[&*it]= tetras_.size();
             tetras_.push_back( RepTetra(*it, Gref, data_));

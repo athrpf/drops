@@ -1030,12 +1030,13 @@ int main ( int argc, char** argv)
         //create geometry
         DROPS::MultiGridCL* mg= 0;
         DROPS::StokesBndDataCL* bdata = 0;
+        DROPS::LsetBndDataCL* lsetbnddata= 0;
 
         //only for measuring cell, not used here
         double r = 1;
         std::string serfile = "none";
 
-        DROPS::CreateGeom( mg, bdata, &StokesFlowCoeffCL::LsgVel, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
+        DROPS::CreateGeom( mg, bdata, lsetbnddata, &StokesFlowCoeffCL::LsgVel, 0, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
 
         // Setup the problem
         StokesOnBrickCL prob(*mg, StokesFlowCoeffCL( DROPS::C), *bdata);
@@ -1077,6 +1078,7 @@ int main ( int argc, char** argv)
 //      std::cout << DROPS::GeomMGOutCL(*mg, -1, true) << std::endl;
         delete mg;
         delete bdata;
+        delete lsetbnddata;
         return 0;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }

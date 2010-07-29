@@ -391,13 +391,13 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
             } break;
             case 5 : // predefined velocity over all boundaries
             {
-            	bc[0] = bc[1] = bc[2] = bc[3] = bc[4] = bc[5] = DirBC;
-				bfun[0] = bfun[1] = bfun[2] = bfun[3] = bfun[4] = bfun[5] = inflow;
+                bc[0] = bc[1] = bc[2] = bc[3] = bc[4] = bc[5] = DirBC;
+                bfun[0] = bfun[1] = bfun[2] = bfun[3] = bfun[4] = bfun[5] = inflow;
             } break;
             case 6 : //driven cavity
             {
-            	bc[5] = DirBC;
-            	bfun[5] = inflow;
+                bc[5] = DirBC;
+                bfun[5] = inflow;
             }break;
             default: throw DROPSErrCL("Unknown boundary data type");
         }
@@ -411,9 +411,40 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
     }
 }
 
+void BuildLsetBoundaryData( MultiGridCL* &mgp, LsetBndDataCL* &bnddata,
+       __UNUSED__ instat_scalar_fun_ptr inflow, int GeomType, __UNUSED__ int bnd_type, __UNUSED__ std::vector<BndCondT>& BC)
+{
+    if (GeomType == 0) {
+        const BoundaryCL& bnd= mgp->GetBnd();
+        const BndIdxT num_bnd= bnd.GetNumBndSeg();
+
+        BndCondT* bc = new BndCondT[num_bnd];
+        LsetBndDataCL::bnd_val_fun* bnd_fun = new BndDataCL<>::bnd_val_fun[num_bnd];
+        for (BndIdxT i=0; i<num_bnd; ++i)
+        {
+            bc[i]= NoBC;
+            bnd_fun[i]= 0;
+            std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
+        }
+        bnddata = new LsetBndDataCL(num_bnd, bc, bnd_fun);
+        delete[] bc;
+        delete[] bnd_fun;
+    }
+    if (GeomType == 1) {
+        BndCondT bc[6]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
+        LsetBndDataCL::bnd_val_fun bfun[6]= {0,0,0,0,0,0};
+        bnddata = new LsetBndDataCL(6, bc, bfun);
+    }
+    if (GeomType == 2) {
+        BndCondT bc[12]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
+        LsetBndDataCL::bnd_val_fun bfun[12]= {0,0,0,0,0,0,0,0,0,0,0,0};
+        bnddata = new LsetBndDataCL(12, bc, bfun);
+    }
+}
+
 /// \brief Create geometry of a Mzelle or a brick
-void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
-                 instat_vector_fun_ptr inflow,
+void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata, LsetBndDataCL* &lsetbnddata,
+                 instat_vector_fun_ptr inflow, instat_scalar_fun_ptr lsetinflow,
                  const std::string& meshfile_name,
                  int GeomType, int bnd_type,
                  const std::string& deserialization_file, double& r_inlet)
@@ -421,6 +452,7 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
     std::vector<BndCondT> BC;
     BuildDomain( mgp, meshfile_name, GeomType, deserialization_file, r_inlet, BC);
     BuildStokesBoundaryData( mgp, bnddata, inflow, GeomType, bnd_type, BC);
+    BuildLsetBoundaryData( mgp, lsetbnddata, lsetinflow, GeomType, bnd_type, BC);
     std::cout << "Generated MG of " << mgp->GetLastLevel() << " levels." << std::endl;
 }
 

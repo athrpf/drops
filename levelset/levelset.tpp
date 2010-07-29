@@ -66,8 +66,8 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
         absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
 
-        tetra.Init( *it, Phi);
-        triangle.Init( *it, Phi);
+        tetra.Init( *it, Phi, Bnd_);
+        triangle.Init( *it, Phi, Bnd_);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;
@@ -132,6 +132,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
    H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i ) <br>
    where v_i, v_j denote the ansatz functions.
    \remarks call SetupSystem \em before calling SetTimeStep!
+   \todo: implementation of other boundary conditions
 */
 {
     const IdxT num_unks= Phi.RowIdx->NumUnknowns();
@@ -139,7 +140,6 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
 
     SparseMatBuilderCL<double> bE(&E, num_unks, num_unks),
                                bH(&H, num_unks, num_unks);
-    IdxT Numb[10];
 
 #ifndef _PAR
     __UNUSED__ const IdxT allnum_unks= num_unks;
@@ -153,7 +153,8 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
     Quad5CL<double> u_Grad[10]; // fuer u grad v_i
     SMatrixCL<3,3> T;
     double det, absdet, h_T;
-
+    LocalNumbP2CL n;
+    
     P2DiscCL::GetGradientsOnRef( GradRef);
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
@@ -164,9 +165,10 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
         absdet= std::fabs( det);
         h_T= std::pow( absdet, 1./3.);
 
+        
         // save information about the edges and verts of the tetra in Numb
-        GetLocalNumbP2NoBnd( Numb, *sit, *Phi.RowIdx);
-
+        n.assign( *sit, *Phi.RowIdx, Bnd_);
+        
         // save velocities inside tetra for quadrature in u_loc
         u_loc.assign( *sit, vel);
 
@@ -184,11 +186,11 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
             for(int j=0; j<10; ++j)
             {
                 // E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i )
-                bE( Numb[i], Numb[j])+= P2DiscCL::GetMass(i,j) * absdet
+                bE( n.num[i], n.num[j])+= P2DiscCL::GetMass(i,j) * absdet
                                      + u_Grad[i].quadP2(j, absdet)*SD_/maxV*h_T;
 
                 // H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i )
-                bH( Numb[i], Numb[j])+= u_Grad[j].quadP2(i, absdet)
+                bH( n.num[i], n.num[j])+= u_Grad[j].quadP2(i, absdet)
                                      + Quad5CL<>(u_Grad[i]*u_Grad[j]).quad( absdet) * SD_/maxV*h_T;
             }
     }

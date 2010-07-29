@@ -151,7 +151,7 @@ void L2ErrorPr( const VecDescCL& p, const LevelsetP2CL& lset, const MatrixCL& pr
          send= mg.GetTriangTetraEnd(lvl); sit != send; ++sit)
     {
         const double absdet= sit->GetVolume()*6.;
-        cut.Init( *sit, lset.Phi);
+        cut.Init( *sit, lset.Phi, lset.GetBndData());
         const bool nocut= !cut.Intersects();
 
         LocalP2CL<> p0;
@@ -238,7 +238,7 @@ void PrintNorm( string name, const VectorCL& v)
         << norm( v) << "\tmax: " << supnorm( v) << std::endl;
 }
 
-void Strategy( InstatStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
+void Strategy( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbnd, AdapTriangCL& adap)
 // flow control
 {
     typedef InstatStokes2PhaseP2P1CL StokesProblemT;
@@ -247,7 +247,7 @@ void Strategy( InstatStokes2PhaseP2P1CL& Stokes, AdapTriangCL& adap)
     sigma= C.sft_SurfTension;
     SurfaceTensionCL sf( sigmaf, 0);
     // Levelset-Disc.: Crank-Nicholson
-    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, C.lvs_CurvDiff);
 
 //    lset.SetSurfaceForce( SF_LB);
     lset.SetSurfaceForce( SF_ImprovedLB);
@@ -447,6 +447,10 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
 
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun),
                     C.stk_XFEMStab<0 ? DROPS::P1_FE : DROPS::P1X_FE, C.stk_XFEMStab);
 
@@ -457,7 +461,7 @@ int main (int argc, char** argv)
 
     std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
 
-    Strategy( prob, adap);  // do all the stuff
+    Strategy( prob, lsbnd, adap);  // do all the stuff
 
     return 0;
   }

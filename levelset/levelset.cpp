@@ -34,7 +34,7 @@ inline double SmoothedSign( double x, double alpha)
     return x/std::sqrt(x*x+alpha);
 }
 
-void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, double sigma, VecDescCL& f)
 // computes the integral
 //         sigma \int_\Gamma v n ds
 // used by levelset/prJump.cpp for testing FE pressure spaces.
@@ -58,7 +58,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
     {
         GetTrafoTr( T, det, *it);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-        triangle.Init( *it, SmPhi);
+        triangle.Init( *it, SmPhi, lsetbnd);
 
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
@@ -136,7 +136,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma,
 //fil << "}\n";
 }
 
-void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, double sigma, VecDescCL& f)
 // computes the integral
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
@@ -165,7 +165,7 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
             Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
         }
 
-        triangle.Init( *it, SmPhi);
+        triangle.Init( *it, SmPhi, lsetbnd);
 
         for (int ch=0; ch<8; ++ch)
         {
@@ -210,7 +210,7 @@ void SF_LaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigm
 //fil << "}\n";
 }
 
-void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, double sigma, VecDescCL& f)
+void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, double sigma, VecDescCL& f)
 // computes the integral
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
@@ -234,7 +234,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, dou
     P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
     LocalP1CL<Point3DCL> n;
 
-    triangle.Init( *it, SmPhi);
+    triangle.Init( *it, SmPhi, lsetbnd);
     for (int v=0; v<10; ++v)
     { // collect data on all DoF
       const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
@@ -381,7 +381,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     }
 }
 
-void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, VecDescCL& f, SurfaceTensionCL& sf)
+void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndDataCL<>& lsetbnd, VecDescCL& f, SurfaceTensionCL& sf)
 // computes the integral sigma \int_\Gamma \kappa v n ds = sigma
 // \int_\Gamma grad id grad v ds
 {
@@ -404,7 +404,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, Vec
 
     DROPS_FOR_TRIANG_CONST_TETRA( MG, /*default level*/-1, it)
     {
-    	triangle.Init( *it, SmPhi);
+    	triangle.Init( *it, SmPhi, lsetbnd);
 
         for (int v= 0; v < 10; ++v)
         { // collect data on all DoF
@@ -473,16 +473,18 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
-
+    
     for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl),
         end= MG_.GetTriangVertexEnd(lvl); it!=end; ++it)
     {
-        Phi.Data[it->Unknowns(idx)]= phi0( it->GetCoord());
+        if ( it->Unknowns.Exist(idx))
+            Phi.Data[it->Unknowns(idx)]= phi0( it->GetCoord());
     }
     for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(lvl),
         end= MG_.GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
-        Phi.Data[it->Unknowns(idx)]= phi0( GetBaryCenter( *it));
+        if ( it->Unknowns.Exist(idx))
+            Phi.Data[it->Unknowns(idx)]= phi0( GetBaryCenter( *it));
     }
 }
 
@@ -512,7 +514,7 @@ void LevelsetP2CL::Reparam( int method, bool Periodic)
     \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
 */
 {
-    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( MG_, Phi, method, Periodic);
+    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( MG_, Phi, method, Periodic, &Bnd_);
     reparam->Perform();
 }
 
@@ -525,13 +527,13 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     switch (SF_)
     {
       case SF_LB:
-        SF_LaplBeltrami( MG_, SmPhi, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+        SF_LaplBeltrami( MG_, SmPhi, Bnd_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_Const:
-        SF_ConstForce( MG_, SmPhi, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+        SF_ConstForce( MG_, SmPhi, Bnd_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLB:
-        SF_ImprovedLaplBeltrami( MG_, SmPhi, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+        SF_ImprovedLaplBeltrami( MG_, SmPhi, Bnd_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLBVar:
-         SF_ImprovedLaplBeltrami( MG_, SmPhi, f, sf_); break;
+         SF_ImprovedLaplBeltrami( MG_, SmPhi, Bnd_, f, sf_); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
@@ -548,7 +550,7 @@ double LevelsetP2CL::GetVolume( double translation) const
         it!=end; ++it) {
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);
-        tetra.Init( *it, Phi, translation);
+        tetra.Init( *it, Phi, Bnd_, translation);
         for (int ch= 0; ch < 8; ++ch) {
             // compute volume
             tetra.ComputeCutForChild( ch);
@@ -684,7 +686,7 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-        patch.Init( *it, Phi);
+        patch.Init( *it, Phi, Bnd_);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;

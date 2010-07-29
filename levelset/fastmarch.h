@@ -67,7 +67,7 @@ class ReparamDataCL
     // data for periodic boundaries
     bool                     per;         ///< periodic boundaries are used
     IdxDescCL*               augmIdx;     ///< augmented index for periodic boundaries
-    const BndDataCL<>*       bnd;         ///< boundary for periodic data
+    const BndDataCL<>*       bnd;         ///< boundary for level set function
     VectorBaseCL<IdxT>       map;         ///< mapping of periodic boundary conditions
 
   public:

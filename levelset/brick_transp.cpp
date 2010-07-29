@@ -89,10 +89,10 @@ void InitVel (const MultiGridCL& MG, VecDescCL& v, instat_vector_fun_ptr vf)
 
 typedef P2EvalCL<SVectorCL<3>, const VelBndDataCL, const VecDescCL> const_DiscVelSolCL;
 
-void Strategy (MultiGridCL& MG)
+void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
 {
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, sf, C.lvs_SD, C.lvs_CurvDiff);
+    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, C.lvs_CurvDiff);
     IdxDescCL* lidx= &lset.idx;
     lset.CreateNumbering( MG.GetLastLevel(), lidx);
     lset.Phi.SetIdx( lidx);
@@ -166,10 +166,15 @@ int main (int argc, char** argv)
     e1[0]=2*C.exp_RadInlet; e2[1]=1.0; e3[2]= 2*C.exp_RadInlet;
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, 20, 20, 20);
     DROPS::MultiGridCL mg( builder);
+
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     std::cout << DROPS::SanityMGOutCL( mg) << std::endl;
     DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
 
-    Strategy( mg);    // do all the stuff
+    Strategy( mg, lsbnd);    // do all the stuff
 
     return 0;
   }

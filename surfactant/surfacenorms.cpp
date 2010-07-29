@@ -78,7 +78,7 @@ double sol0t (const DROPS::Point3DCL& p, double t)
 }
 
 template <typename DiscP1FunT>
-double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& lsbnd,
     const DiscP1FunT& discsol)
 {
     double d( 0.);
@@ -87,7 +87,7 @@ double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     DROPS::Quad5_2DCL<> qdiscsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, triangle, tri) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, lsbnd, triangle, tri) {
             qdiscsol.assign(  *it, &triangle.GetBary( tri), discsol);
             d+= qdiscsol.quad( triangle.GetAbsDet( tri));
         }
@@ -98,7 +98,7 @@ double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
 
 
 template <typename DiscP1FunT>
-double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& lsbnd,
     const DiscP1FunT& discsol)
 {
     double d( 0.);
@@ -107,7 +107,7 @@ double L2_norm (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     DROPS::Quad5_2DCL<> qdiscsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, triangle, tri) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, lsbnd, triangle, tri) {
             qdiscsol.assign(  *it, &triangle.GetBary( tri), discsol);
             d+= DROPS::Quad5_2DCL<>( qdiscsol*qdiscsol).quad( triangle.GetAbsDet( tri));
         }
@@ -131,7 +131,7 @@ double L2_norm_Omega (const DROPS::MultiGridCL& mg, const DiscP1FunT& discsol)
 }
 
 template <typename DiscP1FunT>
-double L2_err (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
+double L2_err (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& lsbnd,
     const DiscP1FunT& discsol, dist_funT sol, double t)
 {
     double d( 0.);
@@ -140,7 +140,7 @@ double L2_err (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     DROPS::Quad5_2DCL<> qdiscsol, qsol;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, triangle, tri) {
+        DROPS_FOR_TETRA_INTERFACE_BEGIN( *it, ls, lsbnd, triangle, tri) {
             qdiscsol.assign(  *it, &triangle.GetBary( tri), discsol);
             qsol.assign( *it, &triangle.GetBary( tri), sol, t);
             qdiscsol-= qsol;
@@ -216,13 +216,13 @@ void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
     std::cout << " Level: " << l + 2 << ":\n";
     std::cout << "Integral on \\Gamma: ";
     for (int i= 0; i < N - 1; ++i) {
-        std::cout << Integral_Gamma( mg, lset.Phi, make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
+        std::cout << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
     }
     std::cout << "\nL_2 error: ";
     for (int i= 0; i < N - 1; ++i) {
         DV[l][i].Data-=DV[L-1][N - 1].Data;
         // std::cout << norm( DV[i].Data) << ", ";
-        std::cout << L2_norm( mg, lset.Phi, make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
+        std::cout << L2_norm( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
     }
     // std::cout << std::endl;
     // for (int i= 0; i < N - 1; ++i) {
@@ -264,9 +264,13 @@ int main (int argc, char** argv)
     DROPS::AdapTriangCL adap( mg, C.ref_Width, 0, C.ref_FinestLevel);
     adap.MakeInitialTriang( sphere_2);
 
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     DROPS::instat_scalar_fun_ptr sigma (0);
     DROPS::SurfaceTensionCL sf( sigma, 0);
-    DROPS::LevelsetP2CL lset( mg, sf);
+    DROPS::LevelsetP2CL lset( mg, lsbnd, sf);
     lset.idx.CreateNumbering( mg.GetLastLevel(), mg);
     lset.Phi.SetIdx( &lset.idx);
     Strategy( adap, lset);

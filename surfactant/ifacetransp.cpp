@@ -81,7 +81,7 @@ void SetupInterfaceMassP1OnTriangle (const LocalP1CL<> p1[4],
     }
 }
 
-void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls)
+void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDescCL& ls, const BndDataCL<>& lsetbnd)
 {
     const IdxT num_unks=  matM->RowIdx->NumUnknowns();
     MatrixBuilderCL M( &matM->Data, num_unks,  num_unks);
@@ -96,7 +96,7 @@ void SetupInterfaceMassP1 (const MultiGridCL& MG, MatDescCL* matM, const VecDesc
 
     InterfaceTriangleCL triangle;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, it) {
-        triangle.Init( *it, ls);
+        triangle.Init( *it, ls, lsetbnd);
 
         GetLocalNumbP1NoBnd( Numb, *it, *matM->RowIdx);
         for (int ch= 0; ch < 8; ++ch) {
@@ -128,7 +128,7 @@ void SetupLBP1OnTriangle (InterfaceTriangleCL& triangle, int tri, Point3DCL grad
         }
 }
 
-void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, double D)
+void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const BndDataCL<>& lsetbnd, double D)
 {
     const IdxT num_rows= mat->RowIdx->NumUnknowns();
     const IdxT num_cols= mat->ColIdx->NumUnknowns();
@@ -147,7 +147,7 @@ void SetupLBP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, doub
     InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsetbnd);
         if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( numr, *it, *mat->RowIdx);
             GetLocalNumbP1NoBnd( numc, *it, *mat->ColIdx);
@@ -242,7 +242,7 @@ void SetupMixedMassP1OnTriangle (const BaryCoordCL triangle[3], double det,
     }
 }
 
-void SetupMixedMassP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls)
+void SetupMixedMassP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& ls, const BndDataCL<>& lsetbnd)
 {
     const IdxT rows= mat->RowIdx->NumUnknowns(),
                cols= mat->ColIdx->NumUnknowns();
@@ -260,7 +260,7 @@ void SetupMixedMassP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& l
     InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+    	triangle.Init( *it, ls, lsetbnd);
         if (!triangle.Intersects()) continue; // We are at the phase boundary.
 
         GetLocalNumbP1NoBnd( rownum, *it, *mat->RowIdx);
@@ -286,7 +286,7 @@ void SetupMixedMassP1 (const MultiGridCL& mg, MatDescCL* mat, const VecDescCL& l
 }
 
 void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
-    const VecDescCL& ls,instat_scalar_fun_ptr f)
+    const VecDescCL& ls, const BndDataCL<>& lsetbnd, instat_scalar_fun_ptr f)
 {
     const IdxT num_unks= v->RowIdx->NumUnknowns();
     const Uint lvl = v->GetLevel();
@@ -302,12 +302,12 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
     InterfaceTriangleCL triangle;
 
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
-    	triangle.Init( *it, ls);
+        triangle.Init( *it, ls, lsetbnd);
         if (triangle.Intersects()) { // We are at the phase boundary.
             GetLocalNumbP1NoBnd( num, *it, *v->RowIdx);
 
             for (int ch= 0; ch < 8; ++ch) {
-            	triangle.ComputeForChild( ch);
+                triangle.ComputeForChild( ch);
                 for (int tri= 0; tri < triangle.GetNumTriangles(); ++tri)
                     SetupInterfaceRhsP1OnTriangle( p1, q, v->Data, num,
                         *it, &triangle.GetBary( tri), triangle.GetAbsDet( tri), f);
@@ -347,25 +347,25 @@ void SurfactantcGP1CL::Update()
 
     M.Data.clear();
     M.SetIdx( cidx, cidx);
-    DROPS::SetupInterfaceMassP1( MG_, &M, lset_vd_);
+    DROPS::SetupInterfaceMassP1( MG_, &M, lset_vd_, lsetbnd_);
     // std::cout << "M is set up.\n";
     A.Data.clear();
     A.SetIdx( cidx, cidx);
-    DROPS::SetupLBP1( MG_, &A, lset_vd_, D_);
+    DROPS::SetupLBP1( MG_, &A, lset_vd_, lsetbnd_, D_);
     // std::cout << "A is set up.\n";
     C.Data.clear();
     C.SetIdx( cidx, cidx);
-    DROPS::SetupConvectionP1( MG_, &C, lset_vd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    DROPS::SetupConvectionP1( MG_, &C, lset_vd_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
     // std::cout << "C is set up.\n";
     Md.Data.clear();
     Md.SetIdx( cidx, cidx);
-    DROPS::SetupMassDivP1( MG_, &Md, lset_vd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    DROPS::SetupMassDivP1( MG_, &Md, lset_vd_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
     // std::cout << "Md is set up.\n";
 
     if (theta_ != 1.0) {
         M2.Data.clear();
         M2.SetIdx( cidx, cidx);
-        DROPS::SetupInterfaceMassP1( MG_, &M2, oldls_);
+        DROPS::SetupInterfaceMassP1( MG_, &M2, oldls_, lsetbnd_);
         // std::cout << "M2 is set up.\n";
     }
     std::cout << "SurfactantP1CL::Update: Finished\n";
@@ -380,27 +380,27 @@ VectorCL SurfactantcGP1CL::InitStep ()
     ic.SetIdx( &idx);
 
     MatDescCL m( &idx, &oldidx_);
-    DROPS::SetupMixedMassP1( MG_, &m, lset_vd_);
+    DROPS::SetupMixedMassP1( MG_, &m, lset_vd_, lsetbnd_);
     // std::cout << "mixed M on new interface is set up.\n";
     VectorCL rhs( theta_*(m.Data*oldic_));
 
     if (theta_ == 1.0) return rhs;
 
     m.Data.clear();
-    DROPS::SetupMixedMassP1( MG_, &m, oldls_);
+    DROPS::SetupMixedMassP1( MG_, &m, oldls_, lsetbnd_);
     // std::cout << "mixed M on old interface is set up.\n";
     rhs+= (1. - theta_)*(m.Data*oldic_);
 
     m.Data.clear();
-    DROPS::SetupLBP1( MG_, &m, oldls_, D_);
+    DROPS::SetupLBP1( MG_, &m, oldls_, lsetbnd_, D_);
     // std::cout << "mixed A on old interface is set up.\n";
     VectorCL rhs2( m.Data*oldic_);
     m.Data.clear();
-    DROPS::SetupConvectionP1( MG_, &m, oldls_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    DROPS::SetupConvectionP1( MG_, &m, oldls_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
     // std::cout << "mixed C on old interface is set up.\n";
     rhs2+= m.Data*oldic_;
     m.Data.clear();
-    DROPS::SetupMassDivP1( MG_, &m, oldls_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    DROPS::SetupMassDivP1( MG_, &m, oldls_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
     // std::cout << "mixed Md on old interface is set up.\n";
     rhs2+= m.Data*oldic_;
 

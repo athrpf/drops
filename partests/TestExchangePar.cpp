@@ -39,7 +39,7 @@
 #include "levelset/levelset.h"
 #include "levelset/surfacetension.h"
 
-// Standard-Header-Files für Ausgaben
+// Standard-Header-Files fuer Ausgaben
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -53,7 +53,7 @@ DROPS::NoBndDataCL<double> Bnd;                     // Keine Randdaten
 const int REF=0, MIG=1;                             // Unterscheidung, welche Datei geschrieben wird
 DROPS::ParamParExchangeCL C;                        // Parameter aus dem Parameterfile
 DROPS::TimeStoreCL Times(10);                       // Klasse zum Speichern der Zeiten
-enum TimePart{                                      // Aufzählung, welche Zeiten gemessen werden
+enum TimePart{                                      // Aufzaehlung, welche Zeiten gemessen werden
     Refine,
     Ex_Create,
     Ex_Create_Map,
@@ -115,7 +115,7 @@ void DoRefinement(DROPS::ParMultiGridCL &pmg)
 {
     DROPS::ParTimerCL time;
     if (DROPS::ProcCL::IamMaster())
-        std::cout <<line<<std::endl<< " * Verteile Multigrid und verfeinere " <<C.refall<< " Mal regulär" << std::endl;
+        std::cout <<line<<std::endl<< " * Verteile Multigrid und verfeinere " <<C.refall<< " Mal regulaer" << std::endl;
     DROPS::MultiGridCL &mg =pmg.GetMG();
     DROPS::LoadBalHandlerCL lb(mg, DROPS::metis);
     lb.DoInitDistribution(DROPS::ProcCL::Master());
@@ -140,16 +140,16 @@ void DoRefinement(DROPS::ParMultiGridCL &pmg)
     time.Stop(); Times.AddTime(Refine, time.GetMaxTime());
 }
 
-namespace DROPS // für die Strategy und Hilfsfunktionen
+namespace DROPS // fuer die Strategy und Hilfsfunktionen
 {
-/****************************************************************************
-* S E T  N U M                                                              *
-*****************************************************************************
-*   Diese Funktion iteriert über alle Vertices, Edges und Tetras, auf denen *
-*   Unbekannte gesetzt werden können und gibt Simplex zum ersten Index den  *
-*   Wert GID+i und de zweiten Index den Wert 1/100(GID+i)+0.1, damit man    *
-*   nach dem Akkumulieren die Werte checken kann.                           *
-****************************************************************************/
+/*****************************************************************************
+* S E T  N U M                                                               *
+******************************************************************************
+*   Diese Funktion iteriert ueber alle Vertices, Edges und Tetras, auf denen *
+*   Unbekannte gesetzt werden koennen und gibt Simplex zum ersten Index den  *
+*   Wert GID+i und de zweiten Index den Wert 1/100(GID+i)+0.1, damit man     *
+*   nach dem Akkumulieren die Werte checken kann.                            *
+*****************************************************************************/
 void SetNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
 {
     // Setze die GID als Werte auf die Vertices:
@@ -395,20 +395,20 @@ bool CheckNum(MultiGridCL& mg, VecDescCL& x1, VecDescCL& x2, VecDescCL& x3)
     return ProcCL::Check(check);
 }
 
-/****************************************************************************
-* C H E C K  I D X  M A P P I N G                                           *
-*****************************************************************************
-*   Diese Funktion überprüft, ob die ExchangeCL die Indices über Prozessor- *
-*   ränder richtig berechnen kann. Dazu werden einem Prozessor (\p proc)    *
-*   die verteilten Indices zugesendet. Dieser checkt dann, ob er die        *
-*   gleichen berechnet hat.                                                 *
-*****************************************************************************
-*   Hilfsfunktionen                                                         *
-*   - bool IsDist(Simplex,proc): returns if the Simplex has distributed     *
-*     datas.                                                                *
-*   -Uint IsDistNum(Simplex): returns number of procs, that has unknowns    *
-*    on it.                                                                 *
-****************************************************************************/
+/*******************************************************************************
+* C H E C K  I D X  M A P P I N G                                              *
+********************************************************************************
+*   Diese Funktion ueberprueft, ob die ExchangeCL die Indices ueber Prozessor- *
+*   raender richtig berechnen kann. Dazu werden einem Prozessor (\p proc)      *
+*   die verteilten Indices zugesendet. Dieser checkt dann, ob er die           *
+*   gleichen berechnet hat.                                                    *
+********************************************************************************
+*   Hilfsfunktionen                                                            *
+*   - bool IsDist(Simplex,proc): returns if the Simplex has distributed        *
+*     datas.                                                                   *
+*   -Uint IsDistNum(Simplex): returns number of procs, that has unknowns       *
+*    on it.                                                                    *
+*******************************************************************************/
 template<typename SimplexT>
   bool IsDist(const SimplexT& sim, int proc)
 {
@@ -575,11 +575,11 @@ void CreateExchangeCL(MultiGridCL& mg, MLIdxDescCL* idx1, MLIdxDescCL* idx2, MLI
 
     if (C.printMsgSize)
     {
-        if (ProcCL::IamMaster()) std::cout << "  Größe der Nachrichten zwischen den Prozessoren\n  Für Index 1:\n";
+        if (ProcCL::IamMaster()) std::cout << "  Groesse der Nachrichten zwischen den Prozessoren\n  Fuer Index 1:\n";
         idx1->GetEx().SizeInfo(std::cout);
-        if (ProcCL::IamMaster()) std::cout << "  Für Index 2:\n";
+        if (ProcCL::IamMaster()) std::cout << "  Fuer Index 2:\n";
         idx2->GetEx().SizeInfo(std::cout);
-        if (ProcCL::IamMaster()) std::cout << "  Für XFEM-Index:\n";
+        if (ProcCL::IamMaster()) std::cout << "  Fuer XFEM-Index:\n";
         xidx->GetEx().SizeInfo(std::cout);
     }
 }
@@ -703,7 +703,7 @@ bool TestCorrectnessExchangeBlockCL(MultiGridCL& mg, const ExchangeBlockCL& ExBl
         VecDescCL y_acc3; y_acc3.SetIdx(idx1);
         SetNum(mg,y_acc1,y_acc2,y_acc3);
 
-        // Einen großen Vektor für die ExchangeBlockCL erzeugen
+        // Einen grossen Vektor fuer die ExchangeBlockCL erzeugen
         VectorCL y_big(y_acc1.Data.size() + y_acc2.Data.size());
         y_big[std::slice(0,                  y_acc1.Data.size(), 1)] = y_acc1.Data;
         y_big[std::slice(y_acc1.Data.size(), y_acc2.Data.size(), 1)] = y_acc2.Data;
@@ -861,7 +861,7 @@ double DistanceFct( const DROPS::Point3DCL& p)
     P1-, P2- and P1X-FEs to test the ExchangeCL.
     /// \todo BlockExchangeCL testen
 */
-void Strategy(ParMultiGridCL &pmg)
+void Strategy(ParMultiGridCL &pmg, const LsetBndDataCL& lsetbnd)
 {
     ParTimerCL time;
 
@@ -876,7 +876,7 @@ void Strategy(ParMultiGridCL &pmg)
     MLIdxDescCL xfemidx( P1X_FE, 1, BndCondCL(0), 0, 0.1);
     instat_scalar_fun_ptr sigma (0);
     SurfaceTensionCL sf( sigma, 0);
-    LevelsetP2CL lset( mg, sf);
+    LevelsetP2CL lset( mg, lsetbnd, sf);
     lset.CreateNumbering( mg.GetLastLevel(), &lset.idx);
     /// \todo paralleles UpdateXNumbering()
     lset.Phi.SetIdx( &lset.idx);
@@ -888,7 +888,7 @@ void Strategy(ParMultiGridCL &pmg)
     // erzeuge Nummerierung zu diesen Indices
     idx1.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
     idx2.CreateNumbering( mg.GetLastLevel(), mg, Bnd);
-    xfemidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
+    xfemidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi, &lset.GetBndData());
 
     // Setzte Indices auf die Vector-Describer
 //     x1.SetIdx(&idx1);  pmg.AttachTo( 0, &Bnd);
@@ -925,7 +925,7 @@ void Strategy(ParMultiGridCL &pmg)
     if (C.timeMeas)
     {
         if (ProcCL::IamMaster())
-            std::cout << line << std::endl << " * Mache eine Zeitmessungen (" <<C.tests<<" Laeufe) für Innere Produkte ... " << std::endl;
+            std::cout << line << std::endl << " * Mache eine Zeitmessungen (" <<C.tests<<" Laeufe) fuer Innere Produkte ... " << std::endl;
         MakeTimeMeassurments( idx1.GetEx(), &idx1);
     }
 }
@@ -988,7 +988,11 @@ int main (int argc, char** argv)
         if (C.printMG)
             PrintMG(pmg);
 
-        DROPS::Strategy(pmg);
+        const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+        const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+        DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
+        DROPS::Strategy(pmg, lsbnd);
 
         if (DROPS::ProcCL::IamMaster())
             std::cout << line << std::endl;

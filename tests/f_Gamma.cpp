@@ -162,7 +162,7 @@ DROPS::Point3DCL TestFct( const DROPS::Point3DCL& p, double)
 namespace DROPS // for Strategy
 {
 
-void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes)
+void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbnd)
 // program for testing the approximation order of
 // the discretization of the surface force term f_Gamma
 // using simple trial functions:
@@ -173,7 +173,7 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes)
     MultiGridCL& MG= Stokes.GetMG();
     const double curv= 2/C.exp_RadDrop[0];
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, sf, C.lvs_SD, /*CurvDiff*/ -1.);
+    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, /*CurvDiff*/ -1.);
 //    lset.SetSurfaceForce( SF_Const);
 
     IdxDescCL* lidx= &lset.idx;
@@ -253,7 +253,7 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes)
     std::cout << "\n\n";
 }
 
-void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes)
+void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbnd)
 // computation of order of LB discretization, cf. paper
 // S. Gross, A. Reusken: Finite element discretization error analysis of a surface tension force in two-phase incompressible flows,
 // SIAM J. Numer. Anal. 45, 1679--1700 (2007)
@@ -265,7 +265,7 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes)
     // Levelset-Disc.: Crank-Nicholson
     const double curv= 2/C.exp_RadDrop[0];
     SurfaceTensionCL sf( sigmaf, 0);
-    LevelsetP2CL lset( MG, sf, C.lvs_SD, /*CurvDiff*/ -1.);
+    LevelsetP2CL lset( MG, lsbnd, sf, C.lvs_SD, /*CurvDiff*/ -1.);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -411,6 +411,10 @@ int main (int argc, char** argv)
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
         { &Null, &Null, &Null, &Null, &Null, &Null};
 
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     MyStokesCL prob(builder, DROPS::TwoPhaseFlowCoeffCL(C), DROPS::StokesBndDataCL( 6, bc, bnd_fun));
 
     DROPS::MultiGridCL& mg = prob.GetMG();
@@ -425,7 +429,7 @@ int main (int argc, char** argv)
     std::ofstream fil("cube.off");
     fil << out;
     fil.close();
-    Compare_LaplBeltramiSF_ConstSF( prob);
+    Compare_LaplBeltramiSF_ConstSF( prob, lsbnd);
     return 0;
   }
   catch (DROPS::DROPSErrCL err) { err.handle(); }

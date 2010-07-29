@@ -100,12 +100,12 @@ class PSchur_GSPCG_CL: public PSchurSolverCL<PCG_SgsCL>
 };
 
 template<class StokesProblemT>
-void Strategy( StokesProblemT& Stokes, double inner_iter_tol)
+void Strategy( StokesProblemT& Stokes, const BndDataCL<>& lsbnd, double inner_iter_tol)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
     SurfaceTensionCL sf( sigmaf);
-    LevelsetP2CL lset( MG, sf, 0.1);
+    LevelsetP2CL lset( MG, lsbnd, sf, 0.1);
 
     IdxDescCL* lidx= &lset.idx;
     MLIdxDescCL* vidx= &Stokes.vel_idx;
@@ -257,11 +257,15 @@ int main (int argc, char** argv)
         { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel,  &Parabol, &Parabol };
     // parabol. Einstroembedingungen bei z=0 und z=1
 
+    const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
+    const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};
+    DROPS::LsetBndDataCL lsbnd( 6, bcls, bfunls);
+
     DROPS::TwoPhaseFlowCoeffCL coeff( 1, 1, 1, 1, 0, DROPS::Point3DCL(0.));
 
     MyStokesCL prob(brick, coeff, DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = prob.GetMG();
-    Strategy(prob, inner_iter_tol);
+    Strategy(prob, lsbnd, inner_iter_tol);
     std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
