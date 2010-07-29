@@ -491,7 +491,7 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 
 void LevelsetP2CL::CreateNumbering( Uint level, IdxDescCL* idx, match_fun match)
 {
-    idx->CreateNumbering( level, MG_, Bnd_, match);
+    idx->CreateNumbering( level, MG_, BndData_, match);
 }
 
 
@@ -514,7 +514,7 @@ void LevelsetP2CL::Reparam( int method, bool Periodic)
     \param Periodic: If true, a special variant of the algorithm for periodic boundaries is used.
 */
 {
-    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( MG_, Phi, method, Periodic, &Bnd_);
+    std::auto_ptr<ReparamCL> reparam= ReparamFactoryCL::GetReparam( MG_, Phi, method, Periodic, &BndData_);
     reparam->Perform();
 }
 
@@ -527,13 +527,13 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     switch (SF_)
     {
       case SF_LB:
-        SF_LaplBeltrami( MG_, SmPhi, Bnd_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+        SF_LaplBeltrami( MG_, SmPhi, BndData_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_Const:
-        SF_ConstForce( MG_, SmPhi, Bnd_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+        SF_ConstForce( MG_, SmPhi, BndData_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLB:
-        SF_ImprovedLaplBeltrami( MG_, SmPhi, Bnd_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
+        SF_ImprovedLaplBeltrami( MG_, SmPhi, BndData_, sf_.GetSigma()(std_basis<3>(0), 0.), f); break;
       case SF_ImprovedLBVar:
-         SF_ImprovedLaplBeltrami( MG_, SmPhi, Bnd_, f, sf_); break;
+         SF_ImprovedLaplBeltrami( MG_, SmPhi, BndData_, f, sf_); break;
       default:
         throw DROPSErrCL("LevelsetP2CL::AccumulateBndIntegral not implemented for this SurfaceForceT");
     }
@@ -550,7 +550,7 @@ double LevelsetP2CL::GetVolume( double translation) const
         it!=end; ++it) {
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);
-        tetra.Init( *it, Phi, Bnd_, translation);
+        tetra.Init( *it, Phi, BndData_, translation);
         for (int ch= 0; ch < 8; ++ch) {
             // compute volume
             tetra.ComputeCutForChild( ch);
@@ -686,7 +686,7 @@ void LevelsetP2CL::GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) cons
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-        patch.Init( *it, Phi, Bnd_);
+        patch.Init( *it, Phi, BndData_);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;

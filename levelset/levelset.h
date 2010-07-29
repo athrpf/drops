@@ -55,7 +55,12 @@ enum SurfaceForceT
     SF_ImprovedLBVar=3   ///< improved Laplace-Beltrami discretization with variable surface tension
 };
 
-class LevelsetP2CL
+/// not used at the moment
+class LevelsetCoeffCL {
+
+};
+
+class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
 /// P2-discretization and solution of the level set equation for two phase flow problems. Bnd_ will be used to impose boundary data on the inflow boundary.
 /// At the moment setting all boundary conditions to NoBC is the only valid case.
 {
@@ -66,11 +71,16 @@ class LevelsetP2CL
     IdxDescCL             idx;
     VecDescCL             Phi;        ///< level set function
 
+    typedef ProblemCL<LevelsetCoeffCL, LsetBndDataCL> base_;
+    using base_::MG_;
+    using base_::Coeff_;
+    using base_::BndData_;
+    using base_::GetBndData;
+    using base_::GetMG;
+
   private:
-    MultiGridCL&        MG_;
     double              curvDiff_, ///< amount of diffusion in curvature calculation
                         SD_;       ///< streamline diffusion
-    LsetBndDataCL       Bnd_;
     SurfaceForceT       SF_;
 
     SurfaceTensionCL&   sf_;      ///< data for surface tension
@@ -81,14 +91,9 @@ class LevelsetP2CL
     MatrixCL            E, H;
 
     LevelsetP2CL( MultiGridCL& mg, const LsetBndDataCL& bnd, SurfaceTensionCL& sf, double SD= 0, double curvDiff= -1)
-    : idx( P2_FE), MG_( mg), curvDiff_( curvDiff), SD_( SD),
-        Bnd_( bnd), SF_(SF_ImprovedLB), sf_(sf)
+    : base_( mg, LevelsetCoeffCL(), bnd), idx( P2_FE), curvDiff_( curvDiff), SD_( SD),
+        SF_(SF_ImprovedLB), sf_(sf)
     {}
-
-    const MultiGridCL& GetMG() const { return MG_; }    ///< Get reference on the multigrid
-    MultiGridCL& GetMG() { return MG_; }                ///< Get reference on the multigrid
-
-    const LsetBndDataCL& GetBndData() const { return Bnd_; }
 
     /// \name Numbering
     ///@{
@@ -128,9 +133,9 @@ class LevelsetP2CL
     /// \name Evaluate Solution
     ///@{
     const_DiscSolCL GetSolution() const
-        { return const_DiscSolCL( &Phi, &Bnd_, &MG_); }
+        { return const_DiscSolCL( &Phi, &BndData_, &MG_); }
     const_DiscSolCL GetSolution( const VecDescCL& MyPhi) const
-        { return const_DiscSolCL( &MyPhi, &Bnd_, &MG_); }
+        { return const_DiscSolCL( &MyPhi, &BndData_, &MG_); }
     ///@}
 };
 

@@ -66,8 +66,8 @@ void LevelsetP2CL::GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary,
         absdet= std::abs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
 
-        tetra.Init( *it, Phi, Bnd_);
-        triangle.Init( *it, Phi, Bnd_);
+        tetra.Init( *it, Phi, BndData_);
+        triangle.Init( *it, Phi, BndData_);
 
         // compute maximal norm of grad Phi
         Quad2CL<Point3DCL> gradPhi;
@@ -167,7 +167,7 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
 
         
         // save information about the edges and verts of the tetra in Numb
-        n.assign( *sit, *Phi.RowIdx, Bnd_);
+        n.assign( *sit, *Phi.RowIdx, BndData_);
         
         // save velocities inside tetra for quadrature in u_loc
         u_loc.assign( *sit, vel);
