@@ -50,13 +50,13 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2 (MatrixCL& N, const VelVe
     double det, absdet;
     Point3DCL tmp;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    const_DiscVelSolCL u( vel, &_BndData.Vel, &_MG, t);
+    const_DiscVelSolCL u( vel, &BndData_.Vel, &MG_, t);
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     LocalP2CL<> p2Phi;
     LocalP2CL<Point3DCL> p2u;
 
-    for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
@@ -70,11 +70,11 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2 (MatrixCL& N, const VelVe
         p2u.assign(*sit, u, t);
         u_loc.assign(p2u);
 
-        n.assign( *sit, RowIdx, _BndData.Vel);
+        n.assign( *sit, RowIdx, BndData_.Vel);
 
         // rho = rho( Phi)
         rho= Phi;
-        rho.apply( _Coeff.rho);
+        rho.apply( Coeff_.rho);
 
         u_rho= u_loc*rho;
 
@@ -93,8 +93,8 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2 (MatrixCL& N, const VelVe
                     else
                         if (cplN != 0) // put coupling on rhs
                         {
-                            tmp= j < 4 ? _BndData.Vel.GetDirBndValue( *sit->GetVertex( j), t)
-                                    : _BndData.Vel.GetDirBndValue( *sit->GetEdge( j - 4), t);
+                            tmp= j < 4 ? BndData_.Vel.GetDirBndValue( *sit->GetVertex( j), t)
+                                    : BndData_.Vel.GetDirBndValue( *sit->GetEdge( j - 4), t);
                             cplN->Data[n.num[i]    ]-= N_ij*tmp[0];
                             cplN->Data[n.num[i] + 1]-= N_ij*tmp[1];
                             cplN->Data[n.num[i] + 2]-= N_ij*tmp[2];

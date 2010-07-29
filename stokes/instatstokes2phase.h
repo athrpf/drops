@@ -125,14 +125,13 @@ class TwoPhaseFlowCoeffCL
 class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<TwoPhaseFlowCoeffCL, StokesBndDataCL>       _base;
-    typedef InstatStokes2PhaseP2P1CL                _self;
-    typedef _base::BndDataCL               BndDataCL;
-    using                                           _base::_MG;
-    using                                           _base::_Coeff;
-    using                                           _base::_BndData;
-    using                                           _base::GetBndData;
-    using                                           _base::GetMG;
+    typedef ProblemCL<TwoPhaseFlowCoeffCL, StokesBndDataCL>       base_;
+    typedef base_::BndDataCL                                      BndDataCL;
+    using base_::MG_;
+    using base_::Coeff_;
+    using base_::BndData_;
+    using base_::GetBndData;
+    using base_::GetMG;
 
     typedef P1EvalCL<double, const StokesPrBndDataCL, VecDescCL>   DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesVelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -155,9 +154,9 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
 
   public:
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
-        : _base(mgb, coeff, bdata), vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+        : base_(mgb, coeff, bdata), vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
-        : _base(mg, coeff, bdata),  vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+        : base_(mg, coeff, bdata),  vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
 
     /// \name Numbering
     //@{
@@ -167,7 +166,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
     /// \brief Only used for XFEM
     void UpdateXNumbering( MLIdxDescCL* idx, const LevelsetP2CL& lset)
         {
-            if (UsesXFEM()) idx->UpdateXNumbering( _MG, lset.Phi, &lset.GetBndData());
+            if (UsesXFEM()) idx->UpdateXNumbering( MG_, lset.Phi, &lset.GetBndData());
         }
     /// \brief Only used for XFEM
     void UpdatePressure( VecDescCL* p)
@@ -175,7 +174,7 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
             if (UsesXFEM()) p->RowIdx->GetXidx().Old2New( p);
         }
     void DeleteNumbering( MLIdxDescCL* idx)
-        { idx->DeleteNumbering( _MG); }
+        { idx->DeleteNumbering( MG_); }
     //@}
 
     /// \name Discretization

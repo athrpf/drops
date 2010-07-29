@@ -264,9 +264,9 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
 	    VecDescCL* new_x= &Poisson.x;
 	    VecDescCL* old_x= &loc_x;
 
-        DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::_base>
+        DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::base_>
             Estimator( param.err_RelReduction, param.err_MinRatio, param.err_Threshold, param.err_Meas, param.err_DoMark,
-                       &PoissonP1CL<CoeffCL>::ResidualErrEstimator, *static_cast<typename PoissonP1CL<CoeffCL>::_base*>(&Poisson) );
+                       &PoissonP1CL<CoeffCL>::ResidualErrEstimator, *static_cast<typename PoissonP1CL<CoeffCL>::base_*>(&Poisson) );
 
         int step= 0;
         bool new_marks;

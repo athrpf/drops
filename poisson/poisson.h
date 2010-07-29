@@ -66,14 +66,14 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     bool adjoint_;
 
   public:
-    typedef ProblemCL<Coeff, PoissonBndDataCL> _base;
-    typedef typename _base::BndDataCL          BndDataCL;
-    typedef typename _base::CoeffCL            CoeffCL;
-    using                                      _base::_MG;
-    using                                      _base::_Coeff;
-    using                                      _base::_BndData;
-    using                                      _base::GetBndData;
-    using                                      _base::GetMG;
+    typedef ProblemCL<Coeff, PoissonBndDataCL> base_;
+    typedef typename base_::BndDataCL          BndDataCL;
+    typedef typename base_::CoeffCL            CoeffCL;
+    using                                      base_::MG_;
+    using                                      base_::Coeff_;
+    using                                      base_::BndData_;
+    using                                      base_::GetBndData;
+    using                                      base_::GetMG;
 
     typedef P1EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
@@ -89,15 +89,15 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL U;
 
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : _base( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
+        : base_( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
 
     PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : _base( mg, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
+        : base_( mg, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData, match); }
+        { idx->CreateNumbering( level, MG_, BndData_, match); }
     void DeleteNumbering( MLIdxDescCL* idx)
-        { idx->DeleteNumbering( _MG); }
+        { idx->DeleteNumbering( MG_); }
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
@@ -143,14 +143,14 @@ template <class Coeff>
 class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 {
   public:
-    typedef ProblemCL<Coeff, PoissonBndDataCL> _base;
-    typedef typename _base::BndDataCL               BndDataCL;
-    typedef typename _base::CoeffCL                 CoeffCL;
-    using                                           _base::_MG;
-    using                                           _base::_Coeff;
-    using                                           _base::_BndData;
-    using                                           _base::GetBndData;
-    using                                           _base::GetMG;
+    typedef ProblemCL<Coeff, PoissonBndDataCL> base_;
+    typedef typename base_::BndDataCL               BndDataCL;
+    typedef typename base_::CoeffCL                 CoeffCL;
+    using                                           base_::MG_;
+    using                                           base_::Coeff_;
+    using                                           base_::BndData_;
+    using                                           base_::GetBndData;
+    using                                           base_::GetMG;
 
     typedef P2EvalCL<double, const BndDataCL, VecDescCL>       DiscSolCL;
     typedef P2EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
@@ -164,14 +164,14 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
-                const BndDataCL& bdata) : _base(mgb, coeff, bdata), idx(P2_FE) {}
+                const BndDataCL& bdata) : base_(mgb, coeff, bdata), idx(P2_FE) {}
     PoissonP2CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg, coeff, bdata), idx( P2_FE) {}
+        : base_( mg, coeff, bdata), idx( P2_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData, match); }
+        { idx->CreateNumbering( level, MG_, BndData_, match); }
     void DeleteNumbering( MLIdxDescCL* idx)
-        { idx->DeleteNumbering( _MG); }
+        { idx->DeleteNumbering( MG_); }
     void SetNumLvl( size_t n);
 
     // set up matrices and rhs
@@ -217,15 +217,15 @@ class PoissonErrEstCL
         }
     // default assignment-op, copy-ctor, dtor
 
-    template <class _BndData, class _VD>
-      void Init(const P1EvalCL<double, _BndData, _VD>&);
+    template <class BndData_, class _VD>
+      void Init(const P1EvalCL<double, BndData_, _VD>&);
 
     double GetRelRed() { return _RelReduction; }
     void SetRelRed(double newred) { _RelReduction= newred; }
     bool DoesMark() { return _DoMark; }
     void SwitchMark() { _DoMark= _DoMark ? false : true; }
-    template <class _BndData, class _VD>
-      bool Estimate(const P1EvalCL<double, _BndData, const _VD>&);
+    template <class BndData_, class _VD>
+      bool Estimate(const P1EvalCL<double, BndData_, const _VD>&);
 };
 
 
@@ -263,8 +263,8 @@ class DoerflerMarkCL
         }
     // default assignment-op, copy-ctor, dtor
 
-    template <class _BndData, class _VD>
-      void Init(const P1EvalCL<double, _BndData, _VD>&);
+    template <class BndData_, class _VD>
+      void Init(const P1EvalCL<double, BndData_, _VD>&);
 
     double GetRelRed() { return _RelReduction; }
     void   SetRelRed(double newred) { _RelReduction= newred; }
@@ -272,8 +272,8 @@ class DoerflerMarkCL
     void   SetThreshold(double newThreshold) { _Threshold= newThreshold; }
     bool   DoesMark() { return _DoMark; }
     void   SwitchMark() { _DoMark= _DoMark ? false : true; }
-    template <class _BndData, class _VD>
-      bool Estimate(const P1EvalCL<double, _BndData, const _VD>&);
+    template <class BndData_, class _VD>
+      bool Estimate(const P1EvalCL<double, BndData_, const _VD>&);
 };
 
 

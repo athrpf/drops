@@ -37,24 +37,24 @@ template <class Coeff>
 class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 {
   private:
-    typedef StokesP2P1CL<Coeff> _base;
+    typedef StokesP2P1CL<Coeff> base_;
     void SetupNonlinear_P2( MatrixCL&, const VelVecDescCL*, VelVecDescCL*, IdxDescCL&, double, double) const;
 
   public:
-    using                            _base::_MG;
-    using                            _base::_BndData;
-    using                            _base::b;
-    using                            _base::c;
-    using                            _base::A;
-    using                            _base::B;
-    using                            _base::t; // Initialized with 0.0 by base-class.
+    using                            base_::MG_;
+    using                            base_::BndData_;
+    using                            base_::b;
+    using                            base_::c;
+    using                            base_::A;
+    using                            base_::B;
+    using                            base_::t; // Initialized with 0.0 by base-class.
 
     typedef Coeff                     CoeffCL;
-    typedef typename _base::BndDataCL BndDataCL;
-    typedef typename _base::DiscVelSolCL DiscVelSolCL;
-    typedef typename _base::DiscPrSolCL DiscPrSolCL;
-    typedef typename _base::const_DiscVelSolCL const_DiscVelSolCL;
-    typedef typename _base::const_DiscPrSolCL const_DiscPrSolCL;
+    typedef typename base_::BndDataCL BndDataCL;
+    typedef typename base_::DiscVelSolCL DiscVelSolCL;
+    typedef typename base_::DiscPrSolCL DiscPrSolCL;
+    typedef typename base_::const_DiscVelSolCL const_DiscVelSolCL;
+    typedef typename base_::const_DiscPrSolCL const_DiscPrSolCL;
 
     MLMatDescCL  N;
     VelVecDescCL cplN;
@@ -77,7 +77,7 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
     void SetTime (double tt) { t= tt; }
     // in parallel version the error is arisen in the super  class
-    void SetNumVelLvl( size_t n) {_base::SetNumVelLvl(n); N.Data.resize( n);}
+    void SetNumVelLvl( size_t n) {base_::SetNumVelLvl(n); N.Data.resize( n);}
 
     // Check computed solution
     void CheckSolution(const VelVecDescCL*, MLIdxDescCL* idx, const VecDescCL*,

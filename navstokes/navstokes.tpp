@@ -38,8 +38,8 @@ template <class Coeff>
     Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
 #ifdef _PAR
-    ExchangeCL ExVel= GetEx(_base::velocity);
-    ExchangeCL ExPr = GetEx(_base::pressure);
+    ExchangeCL ExVel= GetEx(base_::velocity);
+    ExchangeCL ExPr = GetEx(base_::pressure);
 #endif
 
     VecDescCL rhsN( lsgvel->RowIdx);
@@ -71,13 +71,13 @@ template <class Coeff>
                 << "|| Ax + Nx + BTy - f || = " << norm_res1 << ", max. " << sup_res1 << std::endl
                 << "||      Bx       - g || = " << norm_res2 << ", max. " << sup_res2 << std::endl<<std::endl;
 
-    typename _base::const_DiscVelSolCL vel(lsgvel, &_BndData.Vel, &_MG, t);
+    typename base_::const_DiscVelSolCL vel(lsgvel, &BndData_.Vel, &MG_, t);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
 
 
-    for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double div[5]= {0., 0., 0., 0., 0.};   // Divergenz in den Verts und im BaryCenter
@@ -107,10 +107,10 @@ template <class Coeff>
       std::cout << "|| div x ||_L1 = " << L1_div << '\n'
                 << "|| div x ||_L2 = " << L2_div << '\n' << std::endl;
 
-    for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::TriangVertexIteratorCL sit=MG_.GetTriangVertexBegin(lvl), send=MG_.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
+        if (!BndData_.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
            {
@@ -123,10 +123,10 @@ template <class Coeff>
            }
         }
     }
-    for (MultiGridCL::TriangEdgeIteratorCL sit=_MG.GetTriangEdgeBegin(lvl), send=_MG.GetTriangEdgeEnd(lvl);
+    for (MultiGridCL::TriangEdgeIteratorCL sit=MG_.GetTriangEdgeBegin(lvl), send=MG_.GetTriangEdgeEnd(lvl);
          sit != send; ++sit)
     {
-        if (!_BndData.Vel.IsOnDirBnd(*sit))
+        if (!BndData_.Vel.IsOnDirBnd(*sit))
         {
            for(int i=0; i<3; ++i)
            {
@@ -148,7 +148,7 @@ template <class Coeff>
     norm2= std::sqrt(norm2 / vel_size);
 
     Point3DCL L1_vel(0.0), L2_vel(0.0);
-    for(MultiGridCL::TriangTetraIteratorCL sit= _MG.GetTriangTetraBegin(lvl), send= _MG.GetTriangTetraEnd(lvl);
+    for(MultiGridCL::TriangTetraIteratorCL sit= MG_.GetTriangTetraBegin(lvl), send= MG_.GetTriangTetraEnd(lvl);
         sit != send; ++sit)
     {
         Point3DCL sum(0.0), diff, Diff[10];
@@ -193,8 +193,8 @@ template <class Coeff>
     // Compute the pressure-coefficient in direction of 1/sqrt(meas(Omega)), which eliminates
     // the allowed offset of the pressure by setting it to 0.
     double L1_pr= 0, L2_pr= 0, MW_pr= 0, vol= 0;
-    typename _base::const_DiscPrSolCL pr(lsgpr, &_BndData.Pr, &_MG);
-    for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    typename base_::const_DiscPrSolCL pr(lsgpr, &BndData_.Pr, &MG_);
+    for (MultiGridCL::TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0;
@@ -214,7 +214,7 @@ template <class Coeff>
       std::cout << "\nconstant pressure offset is " << c_pr<<", volume of cube is " << vol<<std::endl;;
 
     VertexCL* maxvert= 0;
-    for (MultiGridCL::TriangVertexIteratorCL sit=_MG.GetTriangVertexBegin(lvl), send=_MG.GetTriangVertexEnd(lvl);
+    for (MultiGridCL::TriangVertexIteratorCL sit=MG_.GetTriangVertexBegin(lvl), send=MG_.GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         diff= std::fabs( c_pr + LsgPr(sit->GetCoord(), t) - pr.val(*sit));
@@ -242,7 +242,7 @@ template <class Coeff>
     std::cout<<std::endl;
 #endif
 
-    for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double sum= 0, sum1= 0;
@@ -283,7 +283,7 @@ template <class Coeff>
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
     MatrixBuilderCL N( &matN, num_unks_vel, num_unks_vel);
 
-    typename _base::const_DiscVelSolCL u( velvec, &_BndData.Vel, &_MG, t);
+    typename base_::const_DiscVelSolCL u( velvec, &BndData_.Vel, &MG_, t);
     VectorCL& b= vecb->Data;
     const Uint lvl    = RowIdx.TriangLevel();
     LocalNumbP2CL n;
@@ -299,8 +299,8 @@ template <class Coeff>
 
     P2DiscCL::GetGradientsOnRef( GradRef);
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>( _MG).GetTriangTetraBegin(lvl),
-                                                 send=const_cast<const MultiGridCL&>( _MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>( MG_).GetTriangTetraBegin(lvl),
+                                                 send=const_cast<const MultiGridCL&>( MG_).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr(T,det,*sit);
@@ -310,7 +310,7 @@ template <class Coeff>
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        n.assign( *sit, RowIdx, _BndData.Vel);
+        n.assign( *sit, RowIdx, BndData_.Vel);
 
         for (int i= 0; i < 10; ++i) // assemble row n.num[i]
             if (n.WithUnknowns( i)) // vert/edge i is not on a Dirichlet boundary
@@ -326,8 +326,8 @@ template <class Coeff>
                     else // coupling with vert/edge j on right-hand-side
                         if (vecb != 0)
                         {
-                            tmp= j<4 ? _BndData.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
-                                    : _BndData.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
+                            tmp= j<4 ? BndData_.Vel.GetDirBndValue(*sit->GetVertex(j), t2)
+                                    : BndData_.Vel.GetDirBndValue(*sit->GetEdge(j-4), t2);
                             b[n.num[i]]-=          N_ij * tmp[0];
                             b[n.num[i]+stride]-=   N_ij * tmp[1];
                             b[n.num[i]+2*stride]-= N_ij * tmp[2];

@@ -37,8 +37,7 @@ namespace DROPS
 class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL
 {
   private:
-    typedef InstatStokes2PhaseP2P1CL       _base;
-    typedef InstatNavierStokes2PhaseP2P1CL _self;
+    typedef InstatStokes2PhaseP2P1CL       base_;
 
     void SetupNonlinear_P2 (MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset,
         IdxDescCL& RowIdx, double t) const;
@@ -68,9 +67,9 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL
     /// \brief Register a Levelset-object for use in SetupNonlinear; this is needed for Navier-Stokes-solvers.
     void SetLevelSet(const LevelsetP2CL& ls) { ls_= &ls; }
     /// Clear all matrices, should be called after grid change to avoid reuse of matrix pattern
-    void ClearMat() { _base::ClearMat(); N.Data.clear(); }
-    void SetIdx()   { _base::SetIdx(); N.SetIdx(&vel_idx, &vel_idx); }
-    void SetNumVelLvl( size_t n) { _base::SetNumVelLvl( n); N.Data.resize (vel_idx.size()); }
+    void ClearMat() { base_::ClearMat(); N.Data.clear(); }
+    void SetIdx()   { base_::SetIdx(); N.SetIdx(&vel_idx, &vel_idx); }
+    void SetNumVelLvl( size_t n) { base_::SetNumVelLvl( n); N.Data.resize (vel_idx.size()); }
 };
 
 } // end of namespace DROPS

@@ -604,24 +604,24 @@ class ProblemCL
     typedef BndData  BndDataCL;
 
   protected:
-    bool         _myMG;
-    MultiGridCL& _MG;         ///< The multigrid.
-    CoeffCL      _Coeff;      ///< Right-hand-side, coefficients of the PDE.
-    BndDataCL    _BndData;    ///< boundary-conditions
+    bool         myMG_;
+    MultiGridCL& MG_;         ///< The multigrid.
+    CoeffCL      Coeff_;      ///< Right-hand-side, coefficients of the PDE.
+    BndDataCL    BndData_;    ///< boundary-conditions
 
   public:
     /// \brief The multigrid constructed from mgbuilder will be destroyed if this variable leaves its scope.
     ProblemCL(const MGBuilderCL& mgbuilder, const CoeffCL& coeff, const BndDataCL& bnddata)
-        : _myMG( true), _MG( *new MultiGridCL( mgbuilder)), _Coeff( coeff), _BndData( bnddata) {}
+        : myMG_( true), MG_( *new MultiGridCL( mgbuilder)), Coeff_( coeff), BndData_( bnddata) {}
     /// \brief The multigrid mg will be left alone if this variable leaves its scope.
     ProblemCL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bnddata)
-        : _myMG( false), _MG( mg), _Coeff( coeff), _BndData( bnddata) {}
-    ~ProblemCL() { if (_myMG) delete &_MG; }
+        : myMG_( false), MG_( mg), Coeff_( coeff), BndData_( bnddata) {}
+    ~ProblemCL() { if (myMG_) delete &MG_; }
 
-    MultiGridCL&       GetMG()            { return _MG; }
-    const MultiGridCL& GetMG()      const { return _MG; }
-    const CoeffCL&     GetCoeff()   const { return _Coeff; }
-    const BndDataCL&   GetBndData() const { return _BndData; }
+    MultiGridCL&       GetMG()            { return MG_; }
+    const MultiGridCL& GetMG()      const { return MG_; }
+    const CoeffCL&     GetCoeff()   const { return Coeff_; }
+    const BndDataCL&   GetBndData() const { return BndData_; }
 };
 
 

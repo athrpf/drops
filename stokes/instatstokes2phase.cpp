@@ -1115,13 +1115,13 @@ void SetupPrStiff_P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& Coeff, 
 
 void InstatStokes2PhaseP2P1CL::CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
 {
-    idx->CreateNumbering( level, _MG, _BndData.Vel, match, lsetp ? &(lsetp->Phi) : 0, lsetp ? &(lsetp->GetBndData()) : 0);
+    idx->CreateNumbering( level, MG_, BndData_.Vel, match, lsetp ? &(lsetp->Phi) : 0, lsetp ? &(lsetp->GetBndData()) : 0);
 }
 
 
 void InstatStokes2PhaseP2P1CL::CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match, const LevelsetP2CL* lsetp)
 {
-    idx->CreateNumbering( level, _MG, _BndData.Pr, match, lsetp ? &(lsetp->Phi) : 0, lsetp ? &(lsetp->GetBndData()) : 0);
+    idx->CreateNumbering( level, MG_, BndData_.Pr, match, lsetp ? &(lsetp->Phi) : 0, lsetp ? &(lsetp->GetBndData()) : 0);
 }
 
 
@@ -1145,13 +1145,13 @@ void InstatStokes2PhaseP2P1CL::SetupPrMass( MLMatDescCL* matM, const LevelsetP2C
         switch (GetPrFE())
         {
         case P0_FE:
-            SetupPrMass_P0( _MG, _Coeff, *itM, *itIdx, lset); break;
+            SetupPrMass_P0( MG_, Coeff_, *itM, *itIdx, lset); break;
         case P1_FE:
-            SetupPrMass_P1( _MG, _Coeff, *itM, *itIdx, lset); break;
+            SetupPrMass_P1( MG_, Coeff_, *itM, *itIdx, lset); break;
         case P1X_FE:
-            SetupPrMass_P1X( _MG, _Coeff, *itM, *itIdx, lset); break;
+            SetupPrMass_P1X( MG_, Coeff_, *itM, *itIdx, lset); break;
         case P1D_FE:
-            SetupPrMass_P1D( _MG, _Coeff, *itM, *itIdx, lset); break;
+            SetupPrMass_P1D( MG_, Coeff_, *itM, *itIdx, lset); break;
         default:
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupPrMass not implemented for this FE type");
         }
@@ -1171,11 +1171,11 @@ void InstatStokes2PhaseP2P1CL::SetupPrStiff( MLMatDescCL* A_pr, const LevelsetP2
         switch (GetPrFE())
         {
         case P1_FE:
-            SetupPrStiff_P1( _MG, _Coeff, *itM, *itRowIdx, *itColIdx, lset); break;
+            SetupPrStiff_P1( MG_, Coeff_, *itM, *itRowIdx, *itColIdx, lset); break;
         case P1X_FE:
-            SetupPrStiff_P1X( _MG, _Coeff, *itM, *itRowIdx, *itColIdx, lset); break;
+            SetupPrStiff_P1X( MG_, Coeff_, *itM, *itRowIdx, *itColIdx, lset); break;
         case P1D_FE:
-            SetupPrStiff_P1D( _MG, _Coeff, *itM, *itRowIdx, *itColIdx, lset); break;
+            SetupPrStiff_P1D( MG_, Coeff_, *itM, *itRowIdx, *itColIdx, lset); break;
         default:
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupPrStiff not implemented for this FE type");
         }
@@ -1189,24 +1189,24 @@ void InstatStokes2PhaseP2P1CL::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr 
     const Uint lvl  = vec->GetLevel(),
                vidx = vec->RowIdx->GetIdx();
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangVertexBegin( lvl),
-         send= const_cast<const MultiGridCL&>( _MG).GetTriangVertexEnd( lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>( MG_).GetTriangVertexBegin( lvl),
+         send= const_cast<const MultiGridCL&>( MG_).GetTriangVertexEnd( lvl);
          sit != send; ++sit) {
-        if (!_BndData.Vel.IsOnDirBnd( *sit))
+        if (!BndData_.Vel.IsOnDirBnd( *sit))
             DoFHelperCL<Point3DCL, VectorCL>::set( lsgvel, sit->Unknowns( vidx),
                 LsgVel(sit->GetCoord(), t0));
     }
-    for (MultiGridCL::const_TriangEdgeIteratorCL sit= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeBegin( lvl),
-         send= const_cast<const MultiGridCL&>( _MG).GetTriangEdgeEnd( lvl);
+    for (MultiGridCL::const_TriangEdgeIteratorCL sit= const_cast<const MultiGridCL&>( MG_).GetTriangEdgeBegin( lvl),
+         send= const_cast<const MultiGridCL&>( MG_).GetTriangEdgeEnd( lvl);
          sit != send; ++sit) {
-        if (!_BndData.Vel.IsOnDirBnd( *sit))
+        if (!BndData_.Vel.IsOnDirBnd( *sit))
             DoFHelperCL<Point3DCL, VectorCL>::set( lsgvel, sit->Unknowns( vidx),
                 LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t0));
     }
 }
 
 
-void SetupSystem1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, MatrixCL& M,
+void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, MatrixCL& M,
                       VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up matrices A, M and rhs b (depending on phase bnd)
 {
@@ -1232,10 +1232,10 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff,
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
     LocalP2CL<Point3DCL> GradLP2[10];
     Quad2CL<double> Ones( 1.), kreuzterm;
-    const double mu_p= _Coeff.mu( 1.0),
-                 mu_n= _Coeff.mu( -1.0),
-                 rho_p= _Coeff.rho( 1.0),
-                 rho_n= _Coeff.rho( -1.0);
+    const double mu_p= Coeff_.mu( 1.0),
+                 mu_n= Coeff_.mu( -1.0),
+                 rho_p= Coeff_.rho( 1.0),
+                 rho_n= Coeff_.rho( -1.0);
 
     SMatrixCL<3,3> T;
 
@@ -1258,17 +1258,17 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff,
     Quad5CL<> q[10][48]; //there exists maximally 8*6=48 SubTetras
     LocalP2CL<> loc_phi;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit = _MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, _Coeff.f, t);
+        rhs.assign( *sit, Coeff_.f, t);
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
-        n.assign( *sit, RowIdx, _BndData.Vel);
+        n.assign( *sit, RowIdx, BndData_.Vel);
         loc_phi.assign( *sit, ls, t);
         tetra.Init( *sit, loc_phi);
         const bool nocut= !tetra.Intersects();
@@ -1397,7 +1397,7 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff,
                     else if (b != 0) // put coupling on rhs
                     {
                         typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                        bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                        bnd_val_fun bf= BndData_.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
                         tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
                                 : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
                         const double cA= coupA[j][i],
@@ -1415,7 +1415,7 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff,
                 }
                 if (b != 0)
                 {
-                    tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
+                    tmp= rhs.quadP2( i, absdet) + rho_phi[i]*Coeff_.g;
                     b->Data[n.num[i]  ]+= tmp[0];
                     b->Data[n.num[i]+1]+= tmp[1];
                     b->Data[n.num[i]+2]+= tmp[2];
@@ -1432,7 +1432,7 @@ void SetupSystem1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff,
 }
 
 
-void SetupSystem1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, MatrixCL& M,
+void SetupSystem1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, MatrixCL& M,
                          VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up matrices A, M and rhs b (depending on phase bnd)
 {
@@ -1460,10 +1460,10 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff
     LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10], gradxLP1;
     LocalP2CL<Point3DCL> GradLP2[10];
     Quad2CL<double> Ones( 1.), kreuzterm;
-    const double mu_p= _Coeff.mu( 1.0),
-                 mu_n= _Coeff.mu( -1.0),
-                 rho_p= _Coeff.rho( 1.0),
-                 rho_n= _Coeff.rho( -1.0);
+    const double mu_p= Coeff_.mu( 1.0),
+                 mu_n= Coeff_.mu( -1.0),
+                 rho_p= Coeff_.rho( 1.0),
+                 rho_n= Coeff_.rho( -1.0);
 
     SMatrixCL<3,3> T;
 
@@ -1495,17 +1495,17 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff
     Quad5CL<> q[10][48], qx_p[4][48], qx_n[4][48]; // quadrature for basis functions (there exist maximally 8*6=48 SubTetras)
     LocalP2CL<> loc_phi;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit = _MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, _Coeff.f, t);
+        rhs.assign( *sit, Coeff_.f, t);
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
-        n.assign( *sit, RowIdx, _BndData.Vel);
+        n.assign( *sit, RowIdx, BndData_.Vel);
         loc_phi.assign( *sit, ls, t);
         patch.Init( *sit, loc_phi);
         const bool nocut= !patch.Intersects();
@@ -1645,7 +1645,7 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff
                         intRhs[i]= Point3DCL();
                         for (Uint k=0; k<patch.GetNumTetra(); k++) {
                             nodes= Quad5CL<>::TransformNodes(patch.GetTetra(k));
-                            Quad5CL<Point3DCL> rhs5( *sit, _Coeff.f, t, nodes);
+                            Quad5CL<Point3DCL> rhs5( *sit, Coeff_.f, t, nodes);
 
                             if (k<patch.GetNumNegTetra())
                                 intRhs[i] += Quad5CL<Point3DCL>(qi_n[k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
@@ -1695,7 +1695,7 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff
                     /// \todo Interpolation of boundary data w.r.t. extended dofs not clear
                     {
                         typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                        bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                        bnd_val_fun bf= BndData_.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
                         tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
                                 : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
                         const double cA= coupA[j][i],
@@ -1713,7 +1713,7 @@ void SetupSystem1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff
                 }
                 if (b != 0)
                 {
-                    tmp= intRhs[i] + rho_phi[i]*_Coeff.g;
+                    tmp= intRhs[i] + rho_phi[i]*Coeff_.g;
                     b->Data[numi  ]+= tmp[0];
                     b->Data[numi+1]+= tmp[1];
                     b->Data[numi+2]+= tmp[2];
@@ -1738,15 +1738,15 @@ void InstatStokes2PhaseP2P1CL::SetupSystem1( MLMatDescCL* A, MLMatDescCL* M, Vec
     MLIdxDescCL::iterator it = A->RowIdx->begin();
     for (size_t lvl=0; lvl < A->Data.size(); ++lvl, ++itA, ++itM, ++it)
         if (it->GetFE()==vecP2_FE)
-            SetupSystem1_P2 ( _MG, _Coeff, _BndData, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
+            SetupSystem1_P2 ( MG_, Coeff_, BndData_, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
         else if (it->GetFE()==vecP2R_FE)
-            SetupSystem1_P2R( _MG, _Coeff, _BndData, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
+            SetupSystem1_P2R( MG_, Coeff_, BndData_, *itA, *itM, lvl == A->Data.size()-1 ? b : 0, cplA, cplM, lset, *it, t);
         else
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem1 not implemented for this FE type");
 }
 
 
-void SetupRhs1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, const StokesBndDataCL& _BndData, VecDescCL* b, const LevelsetP2CL& lset, double t)
+void SetupRhs1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, VecDescCL* b, const LevelsetP2CL& lset, double t)
 {
     const Uint lvl = b->GetLevel();
 
@@ -1759,8 +1759,8 @@ void SetupRhs1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, co
     Quad2CL<double> Ones( 1.);
     LocalP2CL<> phi_i;
 
-    const double rho_p= _Coeff.rho( 1.0),
-                 rho_n= _Coeff.rho( -1.0);
+    const double rho_p= Coeff_.rho( 1.0),
+                 rho_n= Coeff_.rho( -1.0);
     double rho_phi[10];
     double det, absdet, intHat_p, intHat_n;
     Point3DCL tmp;
@@ -1768,17 +1768,17 @@ void SetupRhs1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, co
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
     InterfaceTetraCL tetra;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, _Coeff.f, t);
+        rhs.assign( *sit, Coeff_.f, t);
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
-        n.assign( *sit, *b->RowIdx, _BndData.Vel);
+        n.assign( *sit, *b->RowIdx, BndData_.Vel);
         tetra.Init( *sit, lset.Phi, lset.GetBndData());
         const bool nocut= !tetra.Intersects();
         if (nocut) {
@@ -1807,7 +1807,7 @@ void SetupRhs1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, co
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
             {
-                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
+                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*Coeff_.g;
                 b->Data[n.num[i]  ]+= tmp[0];
                 b->Data[n.num[i]+1]+= tmp[1];
                 b->Data[n.num[i]+2]+= tmp[2];
@@ -1816,7 +1816,7 @@ void SetupRhs1_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, co
 }
 
 
-void SetupRhs1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, const StokesBndDataCL& _BndData, VecDescCL* b, const LevelsetP2CL& lset, double t)
+void SetupRhs1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, VecDescCL* b, const LevelsetP2CL& lset, double t)
 /// \todo proper implementation missing, yet
 {
     throw DROPSErrCL("SetupRhs1_P2R(...) is buggy, aborting.");
@@ -1830,8 +1830,8 @@ void SetupRhs1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, c
 
     Quad2CL<Point3DCL> rhs;
     Quad2CL<double> Ones( 1.), kreuzterm;
-    const double rho_p= _Coeff.rho( 1.0),
-                 rho_n= _Coeff.rho( -1.0);
+    const double rho_p= Coeff_.rho( 1.0),
+                 rho_n= Coeff_.rho( -1.0);
 
     SMatrixCL<3,3> T;
 
@@ -1858,17 +1858,17 @@ void SetupRhs1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, c
         }
     }
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit = _MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         GetTrafoTr( T, det, *sit);
         absdet= std::fabs( det);
 
-        rhs.assign( *sit, _Coeff.f, t);
+        rhs.assign( *sit, Coeff_.f, t);
 
         // collect some information about the edges and verts of the tetra
         // and save it n.
-        n.assign( *sit, RowIdx, _BndData.Vel);
+        n.assign( *sit, RowIdx, BndData_.Vel);
 
         loc_phi.assign( *sit, ls, t);
         patch.Init( *sit, loc_phi);
@@ -1925,7 +1925,7 @@ void SetupRhs1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, c
         for(int i=0; i<10; ++i)    // assemble row Numb[i]
             if (n.WithUnknowns( i))  // vert/edge i is not on a Dirichlet boundary
             {
-                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*_Coeff.g;
+                tmp= rhs.quadP2( i, absdet) + rho_phi[i]*Coeff_.g;
                 b->Data[n.num[i]  ]+= tmp[0];
                 b->Data[n.num[i]+1]+= tmp[1];
                 b->Data[n.num[i]+2]+= tmp[2];
@@ -1935,7 +1935,7 @@ void SetupRhs1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, c
                     Point3DCL intRhs;
                     for (Uint k=0; k<patch.GetNumTetra(); k++) {
                         nodes= Quad5CL<Point3DCL>::TransformNodes(patch.GetTetra(k));
-                        Quad5CL<Point3DCL> rhs5( *sit, _Coeff.f, t, nodes);
+                        Quad5CL<Point3DCL> rhs5( *sit, Coeff_.f, t, nodes);
                         if (k<patch.GetNumNegTetra())
                             intRhs += Quad5CL<Point3DCL>(qx_n[i][k]*rhs5).quad(absdet*VolFrac(patch.GetTetra(k)));
                         else
@@ -1943,7 +1943,7 @@ void SetupRhs1_P2R( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, c
                         delete[] nodes;
                     }
 
-                    tmp= intRhs + rho_phi[i+10]*_Coeff.g;
+                    tmp= intRhs + rho_phi[i+10]*Coeff_.g;
                     const IdxT xnum= xidx[n.num[i]];
                     b->Data[xnum  ]+= tmp[0];
                     b->Data[xnum+1]+= tmp[1];
@@ -1959,15 +1959,15 @@ void InstatStokes2PhaseP2P1CL::SetupRhs1( VecDescCL* b, const LevelsetP2CL& lset
 {
     const FiniteElementT fe= b->RowIdx->GetFE();
     if (fe==vecP2_FE)
-        SetupRhs1_P2 ( _MG, _Coeff, _BndData, b, lset, t);
+        SetupRhs1_P2 ( MG_, Coeff_, BndData_, b, lset, t);
     else if (fe==vecP2R_FE)
-        SetupRhs1_P2R( _MG, _Coeff, _BndData, b, lset, t);
+        SetupRhs1_P2R( MG_, Coeff_, BndData_, b, lset, t);
     else
         throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs1 not implemented for this FE type");
 }
 
 
-void SetupLB_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, const StokesBndDataCL& _BndData, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
+void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, VelVecDescCL* cplA, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up the Laplace-Beltrami-matrix
 {
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
@@ -2000,13 +2000,13 @@ void SetupLB_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, cons
     InterfaceTriangleCL triangle;
     LocalP2CL<> loc_phi;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
         triangle.Init( *sit, loc_phi);
         if (triangle.Intersects()) { // We are at the phase boundary.
-            n.assign( *sit, RowIdx, _BndData.Vel);
+            n.assign( *sit, RowIdx, BndData_.Vel);
             GetTrafoTr( T, det, *sit);
             absdet= std::fabs( det);
             P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
@@ -2017,7 +2017,7 @@ void SetupLB_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, cons
             for (int ch= 0; ch < 8; ++ch) {
                 triangle.ComputeForChild( ch);
                 for (int tri= 0; tri < triangle.GetNumTriangles(); ++ tri) {
-                    surfTension= _Coeff.SurfTens;
+                    surfTension= Coeff_.SurfTens;
                     for (int i= 0; i < 10; ++i) {
                         surfGrad[i].assign( GradLP1[i], &triangle.GetBary( tri));
                         surfGrad[i].apply( triangle, &InterfaceTriangleCL::ApplyProj);
@@ -2047,7 +2047,7 @@ void SetupLB_P2( const MultiGridCL& _MG, const TwoPhaseFlowCoeffCL& _Coeff, cons
                         else if (cplA != 0)  // put coupling on rhs
                         {
                             typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
-                            bnd_val_fun bf= _BndData.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
+                            bnd_val_fun bf= BndData_.Vel.GetBndSeg( n.bndnum[j]).GetBndFun();
                             tmp= j<4 ? bf( sit->GetVertex( j)->GetCoord(), t)
                                     : bf( GetBaryCenter( *sit->GetEdge( j-4)), t);
                             const double cA= coupA[j][i];
@@ -2071,7 +2071,7 @@ void InstatStokes2PhaseP2P1CL::SetupLB (MLMatDescCL* A, VecDescCL* cplA, const L
     MLMatrixCL::iterator  itA = A->Data.begin();
     MLIdxDescCL::iterator it  = A->RowIdx->begin();
     for (size_t lvl=0; lvl < A->RowIdx->size(); ++lvl, ++itA, ++it)
-        SetupLB_P2( _MG,  _Coeff, _BndData, *itA, lvl == A->Data.size()-1 ? cplA : 0, lset, *it, t);
+        SetupLB_P2( MG_,  Coeff_, BndData_, *itA, lvl == A->Data.size()-1 ? cplA : 0, lset, *it, t);
 }
 
 
@@ -2097,13 +2097,13 @@ void InstatStokes2PhaseP2P1CL::SetupSystem2( MLMatDescCL* B, VecDescCL* c, const
             switch (GetPrFE())
             {
                 case P0_FE:
-                    SetupSystem2_P2P0 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+                    SetupSystem2_P2P0 ( MG_, Coeff_, BndData_, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
                 case P1_FE:
-                    SetupSystem2_P2P1 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+                    SetupSystem2_P2P1 ( MG_, Coeff_, BndData_, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
                 case P1X_FE:
-                    SetupSystem2_P2P1X( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
+                    SetupSystem2_P2P1X( MG_, Coeff_, BndData_, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
                 case P1D_FE:
-                    SetupSystem2_P2P1D( _MG, _Coeff, _BndData, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
+                    SetupSystem2_P2P1D( MG_, Coeff_, BndData_, &(*itB), rhsPtr, &(*itRow), &(*itCol), t); break;
                 default:
                     throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
             }
@@ -2111,9 +2111,9 @@ void InstatStokes2PhaseP2P1CL::SetupSystem2( MLMatDescCL* B, VecDescCL* c, const
             switch (GetPrFE())
             {
                 case P1_FE:
-                    SetupSystem2_P2RP1 ( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
+                    SetupSystem2_P2RP1 ( MG_, Coeff_, BndData_, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
                 case P1X_FE:
-                    SetupSystem2_P2RP1X( _MG, _Coeff, _BndData, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
+                    SetupSystem2_P2RP1X( MG_, Coeff_, BndData_, &(*itB), rhsPtr, lset, &(*itRow), &(*itCol), t); break;
                 default:
                     throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupSystem2 not implemented for this FE type");
             }
@@ -2133,13 +2133,13 @@ void InstatStokes2PhaseP2P1CL::SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset
         switch (GetPrFE())
         {
           case P0_FE:
-            SetupRhs2_P2P0( _MG, _Coeff, _BndData, c, t); break;
+            SetupRhs2_P2P0( MG_, Coeff_, BndData_, c, t); break;
           case P1_FE:
-            SetupRhs2_P2P1( _MG, _Coeff, _BndData, c, t); break;
+            SetupRhs2_P2P1( MG_, Coeff_, BndData_, c, t); break;
           case P1X_FE:
-            SetupRhs2_P2P1X( _MG, _Coeff, _BndData, c, lset, t); break;
+            SetupRhs2_P2P1X( MG_, Coeff_, BndData_, c, lset, t); break;
           case P1D_FE:
-            SetupRhs2_P2P1D( _MG, _Coeff, _BndData, c, t); break;
+            SetupRhs2_P2P1D( MG_, Coeff_, BndData_, c, t); break;
           default:
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2 not implemented for this FE type");
         }
@@ -2147,9 +2147,9 @@ void InstatStokes2PhaseP2P1CL::SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset
         switch (GetPrFE())
         {
 //          case P1_FE:
-//            SetupRhs2_P2RP1( _MG, _Coeff, _BndData, c, t); break;
+//            SetupRhs2_P2RP1( MG_, Coeff_, BndData_, c, t); break;
 //          case P1X_FE:
-//            SetupRhs2_P2RP1X( _MG, _Coeff, _BndData, c, lset, t); break;
+//            SetupRhs2_P2RP1X( MG_, Coeff_, BndData_, c, lset, t); break;
           default:
             throw DROPSErrCL("InstatStokes2PhaseP2P1CL<Coeff>::SetupRhs2 not implemented for this FE type");
         }
@@ -2181,7 +2181,7 @@ void InstatStokes2PhaseP2P1CL::SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL*
     InterfaceTriangleCL cut;
     const ExtIdxDescCL& p_xidx= Bdotv->RowIdx->GetXidx();
 
-    DROPS_FOR_TRIANG_TETRA( _MG, lvl, sit) {
+    DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
         cut.Init( *sit, lset.Phi, lset.GetBndData());
         if (!cut.Intersects()) continue;
 
@@ -2244,9 +2244,9 @@ void InstatStokes2PhaseP2P1CL::SetNumVelLvl( size_t n)
     if (n>1)
         throw DROPSErrCL("Multilevel not implemented in parallel DROPS yet, sorry");
 #endif
-    match_fun match= _MG.GetBnd().GetMatchFun();
+    match_fun match= MG_.GetBnd().GetMatchFun();
     const double bound = vel_idx.GetFinest().GetXidx().GetBound();
-    vel_idx.resize( n, GetVelFE(), _BndData.Vel, match, bound);
+    vel_idx.resize( n, GetVelFE(), BndData_.Vel, match, bound);
     A.Data.resize   (vel_idx.size());
     M.Data.resize   (vel_idx.size());
 }
@@ -2258,9 +2258,9 @@ void InstatStokes2PhaseP2P1CL::SetNumPrLvl( size_t n)
     if (n>1)
         throw DROPSErrCL("Multilevel not implemented in parallel DROPS yet, sorry");
 #endif
-    match_fun match= _MG.GetBnd().GetMatchFun();
+    match_fun match= MG_.GetBnd().GetMatchFun();
     const double bound = pr_idx.GetFinest().GetXidx().GetBound();
-    pr_idx.resize( n, GetPrFE(),  _BndData.Pr, match, bound);
+    pr_idx.resize( n, GetPrFE(),  BndData_.Pr, match, bound);
     B.Data.resize   (pr_idx.size());
     prM.Data.resize (pr_idx.size());
     prA.Data.resize (pr_idx.size());
@@ -2307,14 +2307,14 @@ double InstatStokes2PhaseP2P1CL::GetCFLTimeRestriction( LevelsetP2CL& lset)
     lset.AccumulateBndIntegral( curv);
 
     double convMax= -1, viscMax= -1., gravMax= -1, stMax= -1;
-    const double rho_min= std::min( _Coeff.rho(-1.), _Coeff.rho(1.)),
-            nu_max= std::max( _Coeff.mu(-1.)/_Coeff.rho(-1.), _Coeff.mu(1.)/_Coeff.rho(1.));
+    const double rho_min= std::min( Coeff_.rho(-1.), Coeff_.rho(1.)),
+            nu_max= std::max( Coeff_.mu(-1.)/Coeff_.rho(-1.), Coeff_.mu(1.)/Coeff_.rho(1.));
 
     for( MultiGridCL::const_TriangTetraIteratorCL it= mg.GetTriangTetraBegin(lvl),
         end= mg.GetTriangTetraEnd(lvl); it != end; ++it)
     {
         velLoc.assign( *it, vel);
-        curvNumb.assign( *it, *curv.RowIdx, _BndData.Vel);
+        curvNumb.assign( *it, *curv.RowIdx, BndData_.Vel);
 
         // compute average curvature
         double tauKappa= 0., visc= 0.,
@@ -2332,7 +2332,7 @@ double InstatStokes2PhaseP2P1CL::GetCFLTimeRestriction( LevelsetP2CL& lset)
             if (length < h_min) h_min= length;
             visc+= 1./length/length;
 
-            const double grav= std::sqrt(std::abs( inner_prod( _Coeff.g, dir)/length/length));
+            const double grav= std::sqrt(std::abs( inner_prod( Coeff_.g, dir)/length/length));
             if (grav > gravMax) gravMax= grav;
 
             for (int i=0; i<10; ++i) {

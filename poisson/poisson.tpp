@@ -56,7 +56,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 
 
 template<class Coeff>
-void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> _BndData, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
+void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 // Sets up the stiffness matrix and right hand side
 {
     if (b != 0) b->Clear();
@@ -101,16 +101,16 @@ void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> _BndD
                     }
                     else // coupling with vertex j on right-hand-side
                     {
-                        if (b!=0) b->Data[UnknownIdx[i]]-= coup[j][i] * _BndData.GetDirBndValue(*sit->GetVertex(j));
+                        if (b!=0) b->Data[UnknownIdx[i]]-= coup[j][i] * BndData_.GetDirBndValue(*sit->GetVertex(j));
                     }
                 }
                 if (b != 0)
                 {
                     b->Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &Coeff::f, i, 0.0)*absdet;
-                    if ( _BndData.IsOnNatBnd(*sit->GetVertex(i)) )
+                    if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
                         for (int f=0; f < 3; ++f)
                             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
-                                b->Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun() );
+                                b->Data[UnknownIdx[i]]+= Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndSeg(sit->GetBndIdx(FaceOfVert(i,f))).GetBndFun() );
                 }
             }
     }
@@ -125,14 +125,14 @@ void PoissonP1CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA)
-        SetupSystem_P1( _MG, _Coeff, _BndData, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol);
+        SetupSystem_P1( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol);
 }
 
 template<class Coeff>
 void PoissonP1CL<Coeff>::SetNumLvl( size_t n)
 {
-    match_fun match= _MG.GetBnd().GetMatchFun();
-    idx.resize( n, P1_FE, _BndData, match);
+    match_fun match= MG_.GetBnd().GetMatchFun();
+    idx.resize( n, P1_FE, BndData_, match);
     A.Data.resize( idx.size());
     M.Data.resize( idx.size());
     U.Data.resize( idx.size());
@@ -172,8 +172,8 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
   Quad2CL<> rhs, quad_a;
 
   for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
@@ -195,7 +195,7 @@ void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, i
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
       {
         src.Data[UnknownIdx[i]]-= int_a*inner_prod( gradT, G[i]);
-        if ( _BndData.IsOnNatBnd(*sit->GetVertex(i)) )
+        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
             {
@@ -233,18 +233,18 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 
 //  StripTimeCL strip( &Coeff::f, tf);
 
-//  if (_Coeff.SpecialRhs)
-//      _Coeff.ComputeRhs( vf, tf, _MG);
+//  if (Coeff_.SpecialRhs)
+//      Coeff_.ComputeRhs( vf, tf, MG_);
 
   for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
 
-    quad_a.assign( *sit, _Coeff.alpha, tA);
+    quad_a.assign( *sit, Coeff_.alpha, tA);
     const double int_a= quad_a.quad( absdet);
 
     for(int i=0; i<4; ++i)
@@ -263,7 +263,7 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
     for(int j=0; j<4; ++j)
       if (!sit->GetVertex(j)->Unknowns.Exist(idx))  // vertex j is on a Dirichlet boundary
       { // coupling with vertex j on right-hand-side
-        const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), tA);
+        const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), tA);
         for(int i=0; i<4;++i)    // assemble row i
         {
           if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
@@ -274,25 +274,25 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
         }
       }
 
-    rhs.assign( *sit, _Coeff.f, tf);
+    rhs.assign( *sit, Coeff_.f, tf);
     for(int i=0; i<4;++i)    // assemble row i
       if (sit->GetVertex(i)->Unknowns.Exist(idx)) // vertex i is not on a Dirichlet boundary
       {
 //        vf.Data[UnknownIdx[i]]+= P1DiscCL::Quad(*sit, &strip.GetFunc, i)*absdet;
-//        if (!_Coeff.SpecialRhs)
+//        if (!Coeff_.SpecialRhs)
         vf.Data[UnknownIdx[i]]+= rhs.quadP1( i, absdet);
-        if ( _BndData.IsOnNatBnd(*sit->GetVertex(i)) )
+        if ( BndData_.IsOnNatBnd(*sit->GetVertex(i)) )
           for (int f=0; f < 3; ++f)
             if ( sit->IsBndSeg(FaceOfVert(i, f)) )
               vA.Data[UnknownIdx[i]]+=
-                Quad2D(*sit, FaceOfVert(i, f), i, _BndData.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
+                Quad2D(*sit, FaceOfVert(i, f), i, BndData_.GetBndFun( sit->GetBndIdx( FaceOfVert(i,f))), tA);
       }
   }
 }
 
 
 template<class Coeff>
-void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& _Coeff, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double tA)
+void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& Coeff_, MatrixCL& Amat, MatrixCL& Mmat, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double tA)
 /// Sets up the stiffness matrix and the mass matrix
 {
   MatrixBuilderCL A( &Amat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
@@ -315,7 +315,7 @@ void SetupInstatSystem_P1( const MultiGridCL& MG, const Coeff& _Coeff, MatrixCL&
     P1DiscCL::GetGradients(G,det,*sit);
     absdet= std::fabs(det);
 
-    quad_a.assign( *sit, _Coeff.alpha, tA);
+    quad_a.assign( *sit, Coeff_.alpha, tA);
     const double int_a= quad_a.quad( absdet);
 
     for(int i=0; i<4; ++i)
@@ -355,11 +355,11 @@ void PoissonP1CL<Coeff>::SetupInstatSystem( MLMatDescCL& matA, MLMatDescCL& matM
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     MLMatrixCL::iterator  itM    = matM.Data.begin();
     for ( MLMatrixCL::iterator itA= matA.Data.begin(); itA != matA.Data.end(); ++itA, ++itM, ++itRow, ++itCol)
-        SetupInstatSystem_P1( _MG, _Coeff, *itA, *itM, *itRow, *itCol, tA);
+        SetupInstatSystem_P1( MG_, Coeff_, *itA, *itM, *itRow, *itCol, tA);
 }
 
 template<class Coeff>
-void SetupConvection_P1( const MultiGridCL& MG, const Coeff& _Coeff, const BndDataCL<> _BndData,
+void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDataCL<> BndData_,
                          MatrixCL& Umat, VecDescCL* vU, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool adjoint_)
 /// Sets up matrix and couplings with bnd unknowns for convection term
 {
@@ -383,9 +383,9 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& _Coeff, const BndDa
     for(int i=0; i<4; ++i)
     {
       UnknownIdx[i]= sit->GetVertex(i)->Unknowns.Exist(idx) ? sit->GetVertex(i)->Unknowns(idx) : NoIdx;
-      u[i]= _Coeff.Vel( sit->GetVertex(i)->GetCoord(), t);
+      u[i]= Coeff_.Vel( sit->GetVertex(i)->GetCoord(), t);
     }
-    u[4]= _Coeff.Vel( GetBaryCenter( *sit), t);
+    u[4]= Coeff_.Vel( GetBaryCenter( *sit), t);
 
     if (!adjoint_)
     {
@@ -404,7 +404,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& _Coeff, const BndDa
           else // coupling with vertex j on right-hand-side
               if (vU != 0)
               {
-                  const double bndval= _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+                  const double bndval= BndData_.GetDirBndValue(*sit->GetVertex(j), t);
                   for(int i=0; i<4; ++i)    // assemble row i
                   if (UnknownIdx[i] != NoIdx)  // vertex i is not on a Dirichlet boundary
                       vU->Data[ UnknownIdx[i]]-= u_Gradj.quadP1( i, absdet) * bndval;
@@ -425,7 +425,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& _Coeff, const BndDa
             if (UnknownIdx[j] != NoIdx)  // vertex j is not on a Dirichlet boundary
               U( UnknownIdx[i], UnknownIdx[j])+= coupl;
             else // coupling with vertex j on right-hand-side
-              if (vU != 0) vU->Data[ UnknownIdx[i]]-= coupl* _BndData.GetDirBndValue(*sit->GetVertex(j), t);
+              if (vU != 0) vU->Data[ UnknownIdx[i]]-= coupl* BndData_.GetDirBndValue(*sit->GetVertex(j), t);
           }
         }
     }
@@ -440,7 +440,7 @@ void PoissonP1CL<Coeff>::SetupConvection( MLMatDescCL& matU, VecDescCL& vU, doub
     MLIdxDescCL::iterator itRow  = matU.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matU.ColIdx->begin();
     for ( size_t lvl=0; lvl < matU.Data.size(); ++lvl, ++itRow, ++itCol, ++itU)
-        SetupConvection_P1( _MG, _Coeff, _BndData, *itU, (lvl == matU.Data.size()-1) ? &vU : 0, *itRow, *itCol, t, adjoint_);
+        SetupConvection_P1( MG_, Coeff_, BndData_, *itU, (lvl == matU.Data.size()-1) ? &vU : 0, *itRow, *itCol, t, adjoint_);
 }
 
 template <class Coeff>
@@ -450,7 +450,7 @@ void PoissonP1CL<Coeff>::Init( VecDescCL& vec, instat_scalar_fun_ptr func, doubl
          idx= vec.RowIdx->GetIdx();
 
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send= const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit= const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send= const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(idx))
@@ -479,7 +479,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 
     std::cout << "Difference to exact solution:" << std::endl;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double absdet= sit->GetVolume()*6.,
@@ -499,7 +499,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 #endif
     L2= std::sqrt(L2);
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(Idx))
@@ -515,7 +515,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 
     int Lsize = lsg.Data.size();
 #ifdef _PAR
-    Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(_MG);
+    Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(MG_);
     norm2   = ProcCL::GlobalSum(norm2, Drops_MasterC);
     maxdiff = ProcCL::GlobalMax(maxdiff, Drops_MasterC);
 #endif
@@ -541,8 +541,8 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   std::cout << "Difference to exact solution:" << std::endl;
 
   for (MultiGridCL::const_TriangTetraIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl),
-    send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl),
+    send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
     sit != send; ++sit)
   {
     double absdet= sit->GetVolume()*6.,
@@ -564,8 +564,8 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   L2= std::sqrt(L2);
 
   for (MultiGridCL::const_TriangVertexIteratorCL
-    sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl),
-    send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+    sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl),
+    send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
     sit != send; ++sit)
   {
     if (sit->Unknowns.Exist(Idx))
@@ -584,7 +584,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
 
   int Lsize = lsg.Data.size();
 #ifdef _PAR
-  Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(_MG);
+  Lsize   = lsg.RowIdx->GetGlobalNumUnknowns(MG_);
   norm2   = ProcCL::GlobalSum(norm2, Drops_MasterC);
   maxdiff = ProcCL::GlobalMax(maxdiff, Drops_MasterC);
 #endif
@@ -603,7 +603,7 @@ void PoissonP1CL<Coeff>::GetDiscError(const MLMatDescCL& A, instat_scalar_fun_pt
          idx= A.ColIdx->GetIdx();
     VectorCL lsg(A.Data.num_cols());
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(idx))
@@ -626,13 +626,13 @@ bool PoissonP1CL<Coeff>::EstimateError (const VecDescCL& lsg,
     const Uint lvl= lsg.GetLevel();
     Uint num_ref= 0;
     Uint num_un_ref= 0;
-    const Uint num_tetra= std::distance(_MG.GetTriangTetraBegin(lvl), _MG.GetTriangTetraEnd(lvl));
+    const Uint num_tetra= std::distance(MG_.GetTriangTetraBegin(lvl), MG_.GetTriangTetraEnd(lvl));
     const double exp_err= globalerr/0.875; // divident is the volume of the domain
     double localerr;
     double localerr_dist;
 
     globalerr= 0.0;
-    for (MultiGridCL::TriangTetraIteratorCL sit=_MG.GetTriangTetraBegin(lvl), send=_MG.GetTriangTetraEnd(lvl);
+    for (MultiGridCL::TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         localerr= est(*sit, lsg, GetBndData());
@@ -982,7 +982,7 @@ inline double QuadGrad(const SMatrixCL<3,5>* G, int i, int j)
 
 
 template<class Coeff>
-void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _BndData, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
+void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 // Sets up the stiffness matrix and right hand side
 {
     if (b!=0) b->Clear();
@@ -1019,13 +1019,13 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
         // and save it in Numb and IsOnDirBnd
         for(int i=0; i<4; ++i)
         {
-            if(!(IsOnDirBnd[i]= _BndData.IsOnDirBnd( *sit->GetVertex(i))))
+            if(!(IsOnDirBnd[i]= BndData_.IsOnDirBnd( *sit->GetVertex(i))))
                 Numb[i]= sit->GetVertex(i)->Unknowns(idx);
         }
 
         for(int i=0; i<6; ++i)
         {
-            if (!(IsOnDirBnd[i+4]= _BndData.IsOnDirBnd( *sit->GetEdge(i) )))
+            if (!(IsOnDirBnd[i+4]= BndData_.IsOnDirBnd( *sit->GetEdge(i) )))
                 Numb[i+4]= sit->GetEdge(i)->Unknowns(idx);
         }
 
@@ -1053,8 +1053,8 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
                     else // coupling with vert/edge j on right-hand-side
                         if (b!=0)
                         {
-                            tmp= j<4 ? _BndData.GetDirBndValue(*sit->GetVertex(j), 0.0)
-                                    : _BndData.GetDirBndValue(*sit->GetEdge(j-4), 0.0);
+                            tmp= j<4 ? BndData_.GetDirBndValue(*sit->GetVertex(j), 0.0)
+                                    : BndData_.GetDirBndValue(*sit->GetEdge(j-4), 0.0);
                             b->Data[Numb[i]]-=          coup[j][i] * tmp;
                         }
                 }
@@ -1063,8 +1063,8 @@ void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> _Bnd
                     tmp= Quad(*sit, &Coeff::f, i, 0.0)*absdet;
                     b->Data[Numb[i]]+=          tmp;
 
-                    if ( i<4 ? _BndData.IsOnNatBnd(*sit->GetVertex(i))
-                            : _BndData.IsOnNatBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on natural boundary
+                    if ( i<4 ? BndData_.IsOnNatBnd(*sit->GetVertex(i))
+                            : BndData_.IsOnNatBnd(*sit->GetEdge(i-4)) ) // vert/edge i is on natural boundary
                     {
                         Uint face;
                         for (int f=0; f < 3; ++f)
@@ -1093,7 +1093,7 @@ void PoissonP2CL<Coeff>::SetupSystem(MLMatDescCL& matA, VecDescCL& b) const
     MLIdxDescCL::iterator itRow  = matA.RowIdx->begin();
     MLIdxDescCL::iterator itCol  = matA.ColIdx->begin();
     for ( size_t lvl=0; lvl < matA.Data.size(); ++lvl, ++itRow, ++itCol, ++itA)
-        SetupSystem_P2( _MG, _Coeff, _BndData, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol);
+        SetupSystem_P2( MG_, Coeff_, BndData_, *itA, (lvl == matA.Data.size()-1) ? &b : 0, *itRow, *itCol);
 }
 
 /// \todo CheckSolution checks 2-norm and max-norm just on vertices and not on edges
@@ -1108,7 +1108,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 
     std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
 
-    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangTetraEnd(lvl);
+    for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
         double absdet= sit->GetVolume()*6.,
@@ -1124,7 +1124,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
         L2+= sum*absdet;
     }
 
-    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(_MG).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(_MG).GetTriangVertexEnd(lvl);
+    for (MultiGridCL::const_TriangVertexIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangVertexBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangVertexEnd(lvl);
          sit != send; ++sit)
     {
         if (sit->Unknowns.Exist(Idx))
@@ -1161,8 +1161,8 @@ void PoissonP2CL<Coeff>::SetNumLvl( size_t n)
     if (n>1)
         throw DROPSErrCL(" PoissonP2CL<Coeff>::SetNumLvl: Sorry, in parallel version no multi-level is implemented, yet!");
 #endif
-    match_fun match= _MG.GetBnd().GetMatchFun();
-    idx.resize( n, P2_FE, _BndData, match);
+    match_fun match= MG_.GetBnd().GetMatchFun();
+    idx.resize( n, P2_FE, BndData_, match);
     A.Data.resize( idx.size());
 }
 
@@ -1174,8 +1174,8 @@ void PoissonP2CL<Coeff>::SetNumLvl( size_t n)
 
 
 template <class _TetraEst, class _ProblemCL>
-template <class _BndData, class _VD>
-void PoissonErrEstCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData, _VD>& sol)
+template <class BndData_, class _VD>
+void PoissonErrEstCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, BndData_, _VD>& sol)
 {
     MultiGridCL& mg= _Problem.GetMG();
     const Uint lvl= sol.GetLevel();
@@ -1198,8 +1198,8 @@ void PoissonErrEstCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndDat
 }
 
 template <class _TetraEst, class _ProblemCL>
-template <class _BndData, class _VD>
-bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _BndData, const _VD>& sol)
+template <class BndData_, class _VD>
+bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, BndData_, const _VD>& sol)
 {
     const MultiGridCL& mg= _Problem.GetMG();
     const typename _ProblemCL::BndDataCL& bnd= _Problem.GetBndData();
@@ -1252,8 +1252,8 @@ bool PoissonErrEstCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _Bn
 }
 
 template <class _TetraEst, class _ProblemCL>
-template <class _BndData, class _VD>
-void DoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData, _VD>& sol)
+template <class BndData_, class _VD>
+void DoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, BndData_, _VD>& sol)
 {
     MultiGridCL& mg= _Problem.GetMG();
     const Uint lvl= sol.GetLevel();
@@ -1275,8 +1275,8 @@ void DoerflerMarkCL<_TetraEst, _ProblemCL>::Init(const P1EvalCL<double, _BndData
 }
 
 template <class _TetraEst, class _ProblemCL>
-template <class _BndData, class _VD>
-bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, _BndData, const _VD>& sol)
+template <class BndData_, class _VD>
+bool DoerflerMarkCL<_TetraEst, _ProblemCL>::Estimate(const P1EvalCL<double, BndData_, const _VD>& sol)
 {
     Err_ContCL err_est;
     const MultiGridCL& mg= _Problem.GetMG();

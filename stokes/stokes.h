@@ -66,14 +66,14 @@ template <class Coeff>
 class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<Coeff, StokesBndDataCL> _base;
-    typedef typename _base::CoeffCL                 CoeffCL;
-    typedef typename _base::BndDataCL               BndDataCL;
-    using _base::_MG;
-    using _base::_Coeff;
-    using _base::_BndData;
-    using _base::GetBndData;
-    using _base::GetMG;
+    typedef ProblemCL<Coeff, StokesBndDataCL> base_;
+    typedef typename base_::CoeffCL                 CoeffCL;
+    typedef typename base_::BndDataCL               BndDataCL;
+    using base_::MG_;
+    using base_::Coeff_;
+    using base_::BndData_;
+    using base_::GetBndData;
+    using base_::GetMG;
 
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>           DiscPrSolCL;
     typedef P2EvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -96,9 +96,9 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  prM;
 
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
+        : base_( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mg, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
+        : base_( mg, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
 
     /// \name Create and delete numbering of unknowns
     //@{
@@ -106,7 +106,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0);
     void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0);
     void DeleteNumbering( MLIdxDescCL* idx)
-        { idx->DeleteNumbering( _MG); }
+        { idx->DeleteNumbering( MG_); }
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
     //@}
@@ -161,14 +161,14 @@ template <class Coeff>
 class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
 {
   public:
-    typedef ProblemCL<Coeff, StokesBndDataCL> _base;
-    typedef typename _base::CoeffCL           CoeffCL;
-    typedef typename _base::BndDataCL         BndDataCL;
-    using                                     _base::_MG;
-    using                                     _base::_Coeff;
-    using                                     _base::_BndData;
-    using                                     _base::GetBndData;
-    using                                     _base::GetMG;
+    typedef ProblemCL<Coeff, StokesBndDataCL> base_;
+    typedef typename base_::CoeffCL           CoeffCL;
+    typedef typename base_::BndDataCL         BndDataCL;
+    using                                     base_::MG_;
+    using                                     base_::Coeff_;
+    using                                     base_::BndData_;
+    using                                     base_::GetBndData;
+    using                                     base_::GetMG;
 
     typedef P1EvalCL<double, const StokesBndDataCL::PrBndDataCL, VecDescCL>                 DiscPrSolCL;
     typedef P1BubbleEvalCL<SVectorCL<3>, const StokesBndDataCL::VelBndDataCL, VelVecDescCL> DiscVelSolCL;
@@ -187,15 +187,15 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  B;
 
     StokesP1BubbleP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : _base( mgb, coeff, bdata), vel_idx( vecP1Bubble_FE), pr_idx( P1_FE) {}
+        : base_( mgb, coeff, bdata), vel_idx( vecP1Bubble_FE), pr_idx( P1_FE) {}
 
     // Create and delete numbering of unknowns
     void CreateNumberingVel( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Vel, match); }
+        { idx->CreateNumbering( level, MG_, BndData_.Vel, match); }
     void CreateNumberingPr ( Uint level, MLIdxDescCL* idx, match_fun match= 0)
-        { idx->CreateNumbering( level, _MG, _BndData.Pr, match); }
+        { idx->CreateNumbering( level, MG_, BndData_.Pr, match); }
     void DeleteNumbering( MLIdxDescCL* idx)
-        { idx->DeleteNumbering( _MG); }
+        { idx->DeleteNumbering( MG_); }
     void SetNumVelLvl( size_t n);
     void SetNumPrLvl ( size_t n);
 
