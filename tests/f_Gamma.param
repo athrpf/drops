@@ -117,6 +117,17 @@ Transp {
   NitschePenalty=       0
   NitscheXFEMStab=      0
 }
+
+# surfactant transport
+SurfTransp {
+    DoTransp      = 0         # surfactant transport on (1) or off (0)
+    Theta         = 0.5       # 0=FwdEuler, 1=BwdEuler, 0.5=CrankNicholson
+    Iter          = 1000      # iterations of solver for surfactant equation
+    Tol           = 1e-10     # tolerance of solver for surfactant equation
+    OmitBound     = -1.       # omit dof with small mass on the interface, -1 = keeps all dof
+    Visc          = 1e-5      # interfacial diffusion coefficient
+}
+
 # Ensight settings
 Ensight {
   EnsightOut    =       1
