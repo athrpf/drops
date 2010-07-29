@@ -229,7 +229,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
 #endif
     LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 10.0, /*rpm_MinGrad*/ 0.1, C.lvs_VolCorrection, Vol);
 
-    LinThetaScheme2PhaseCL<StokesProblemT, LsetSolverT>
+    LinThetaScheme2PhaseCL<LsetSolverT>
         cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, /*implicitCurv*/ true);
 
     cpl.SetTimeStep( C.tm_StepSize);

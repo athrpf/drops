@@ -171,7 +171,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     GMResSolverCL<SSORPcCL> gm( ssorpc, 100, C.lvs_Iter, C.lvs_Tol);
     LevelsetModifyCL lsetmod( 0, 0, 0, 0, 0, 0);
 
-    LinThetaScheme2PhaseCL<StokesProblemT, LsetSolverT>
+    LinThetaScheme2PhaseCL<LsetSolverT>
         cpl( Stokes, lset, navstokessolver, gm, lsetmod, C.stk_Theta, C.lvs_Theta, 0.);
     cpl.SetTimeStep( C.tm_StepSize);
 

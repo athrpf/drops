@@ -186,7 +186,7 @@ void Strategy( StokesProblemT& Stokes, const BndDataCL<>& lsbnd, double inner_it
         PSchur_GSPCG_CL StokesSolver( prM.Data, 200, outer_tol, 200, inner_iter_tol);
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, StokesSolver);
-        LinThetaScheme2PhaseCL<StokesProblemT, LSetSolver>
+        LinThetaScheme2PhaseCL<LSetSolver>
             cpl( Stokes, lset, dummyFP, gm, lsetmod, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 
@@ -207,7 +207,7 @@ void Strategy( StokesProblemT& Stokes, const BndDataCL<>& lsbnd, double inner_it
         StokesSolverT uzawaSolver( prM.Data, 5000, outer_tol, inner_iter, inner_iter_tol, tau);
         typedef NSSolverBaseCL<StokesProblemT> SolverT;
         SolverT dummyFP( Stokes, uzawaSolver);
-        LinThetaScheme2PhaseCL<StokesProblemT, LSetSolver>
+        LinThetaScheme2PhaseCL<LSetSolver>
             cpl( Stokes, lset, dummyFP, gm, lsetmod, /*theta*/ 0.5, 0.5, /*nonlinear*/ 0.);
         cpl.SetTimeStep( delta_t);
 

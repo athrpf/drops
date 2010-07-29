@@ -192,61 +192,61 @@ double       One ( const Point3DCL&)         { return 1.; }
 
 
 /// \brief factory for the time discretization schemes
-template< class StokesProblemT, class LevelSetSolverT>
-TimeDisc2PhaseCL<StokesProblemT>* CreateTimeDisc(StokesProblemT& Stokes, LevelsetP2CL& lset,
-    NSSolverBaseCL<StokesProblemT>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C, LevelsetModifyCL& lsetmod)
+template<class LevelSetSolverT>
+TimeDisc2PhaseCL* CreateTimeDisc( InstatNavierStokes2PhaseP2P1CL& Stokes, LevelsetP2CL& lset,
+    NSSolverBaseCL<InstatNavierStokes2PhaseP2P1CL>* stokessolver, LevelSetSolverT* lsetsolver, ParamMesszelleNsCL& C, LevelsetModifyCL& lsetmod)
 {
     if (C.tm_NumSteps == 0) return 0;
     switch (C.tm_Scheme)
     {
         case 1 :
-            return (new LinThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+            return (new LinThetaScheme2PhaseCL<LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Stab));
         break;
         case 3 :
             std::cout << "[WARNING] use of ThetaScheme2PhaseCL is deprecated using RecThetaScheme2PhaseCL instead\n";
         case 2 :
-            return (new RecThetaScheme2PhaseCL<StokesProblemT, LevelSetSolverT >
+            return (new RecThetaScheme2PhaseCL<LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         case 4 :
-            return (new OperatorSplitting2PhaseCL<StokesProblemT, LevelSetSolverT>
+            return (new OperatorSplitting2PhaseCL<LevelSetSolverT>
                         (Stokes, lset, stokessolver->GetStokesSolver(), *lsetsolver, lsetmod, C.stk_InnerIter, C.stk_InnerTol, C.ns_Nonlinear));
         break;
         case 6 :
-            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
+            return (new SpaceTimeDiscTheta2PhaseCL<LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, false));
         break;
         case 7 :
-            return (new SpaceTimeDiscTheta2PhaseCL<StokesProblemT, LevelSetSolverT>
+            return (new SpaceTimeDiscTheta2PhaseCL< LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, true));
         break;
         case 8 :
-            return (new EulerBackwardScheme2PhaseCL<StokesProblemT, LevelSetSolverT>
+            return (new EulerBackwardScheme2PhaseCL<LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         case 9 :
-            return (new CrankNicolsonScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT>
+            return (new CrankNicolsonScheme2PhaseCL<RecThetaScheme2PhaseCL, LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         case 10 :
-            return (new CrankNicolsonScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT>
+            return (new CrankNicolsonScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, LevelSetSolverT>
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab));
         break;
         case 11 :
-            return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+            return (new FracStepScheme2PhaseCL<RecThetaScheme2PhaseCL, LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1));
         break;
         case 12 :
-            return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+            return (new FracStepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1));
         break;
         case 13 :
-            return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, StokesProblemT, LevelSetSolverT >
+            return (new Frac2StepScheme2PhaseCL<RecThetaScheme2PhaseCL, LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1));
         break;
         case 14 :
-            return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, StokesProblemT, LevelSetSolverT >
+            return (new Frac2StepScheme2PhaseCL<SpaceTimeDiscTheta2PhaseCL, LevelSetSolverT >
                         (Stokes, lset, *stokessolver, *lsetsolver, lsetmod, C.cpl_Tol, C.ns_Nonlinear, C.cpl_Projection, C.cpl_Stab, -1));
         break;
         default : throw DROPSErrCL("Unknown TimeDiscMethod");

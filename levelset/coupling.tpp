@@ -27,42 +27,13 @@
 namespace DROPS
 {
 
-// ==============================================
-//              TimeDisc2PhaseCL
-// ==============================================
-
-template <class StokesT>
-TimeDisc2PhaseCL<StokesT>::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double nonlinear)
-  : Stokes_( Stokes), LvlSet_( ls), b_( &Stokes.b), old_b_( new VelVecDescCL),
-    cplM_( new VelVecDescCL), old_cplM_( new VelVecDescCL),
-    cplN_( new VelVecDescCL), old_cplN_( new VelVecDescCL),
-    curv_( new VelVecDescCL), old_curv_(new VelVecDescCL),
-    rhs_( Stokes.b.RowIdx->NumUnknowns()), ls_rhs_( ls.Phi.RowIdx->NumUnknowns()),
-    mat_( new MLMatrixCL( Stokes.vel_idx.size())), L_( new MatrixCL()), nonlinear_( nonlinear), lsetmod_( lsetmod)
-{
-    Stokes_.SetLevelSet( ls);
-    LB_.Data.resize( Stokes.vel_idx.size());
-}
-
-template <class StokesT>
-TimeDisc2PhaseCL<StokesT>::~TimeDisc2PhaseCL()
-{
-    delete mat_; delete L_;
-    if (old_b_ == &Stokes_.b)
-        delete b_;
-    else
-        delete old_b_;
-    delete cplM_; delete old_cplM_;
-    delete cplN_; delete old_cplN_;
-    delete curv_; delete old_curv_;
-}
 
 // ==============================================
 //           LinThetaScheme2PhaseCL
 // ==============================================
 
-template <class StokesT, class LsetSolverT>
-LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::LinThetaScheme2PhaseCL
+template <class LsetSolverT>
+LinThetaScheme2PhaseCL<LsetSolverT>::LinThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
                 double stk_theta, double ls_theta, double nonlinear, bool implicitCurv)
   : base_( Stokes, ls, lsetmod, nonlinear), solver_( solver), lsetsolver_( lsetsolver),
@@ -71,14 +42,14 @@ LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::LinThetaScheme2PhaseCL
     Update();
 }
 
-template <class StokesT, class LsetSolverT>
-LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::~LinThetaScheme2PhaseCL()
+template <class LsetSolverT>
+LinThetaScheme2PhaseCL<LsetSolverT>::~LinThetaScheme2PhaseCL()
 {
     delete cplA_;
 }
 
-template <class StokesT, class LsetSolverT>
-void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::SolveLsNs()
+template <class LsetSolverT>
+void LinThetaScheme2PhaseCL<LsetSolverT>::SolveLsNs()
 // solve decoupled level set / Navier-Stokes system
 {
 #ifndef _PAR
@@ -165,8 +136,8 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::SolveLsNs()
               << "\ttime: " << duration << "sec\n";
 }
 
-template <class StokesT, class LsetSolverT>
-void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::CommitStep()
+template <class LsetSolverT>
+void LinThetaScheme2PhaseCL<LsetSolverT>::CommitStep()
 {
     if (Stokes_.UsesXFEM()) { // update XFEM
         Stokes_.UpdateXNumbering( &Stokes_.pr_idx, LvlSet_);
@@ -189,16 +160,16 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::CommitStep()
     std::swap( cplN_, old_cplN_);
 }
 
-template <class StokesT, class LsetSolverT>
-void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::DoStep( int)
+template <class LsetSolverT>
+void LinThetaScheme2PhaseCL<LsetSolverT>::DoStep( int)
 {
     lsetmod_.init();
     SolveLsNs();
     CommitStep();
 }
 
-template <class StokesT, class LsetSolverT>
-void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::Update()
+template <class LsetSolverT>
+void LinThetaScheme2PhaseCL<LsetSolverT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
 #ifndef _PAR
@@ -254,8 +225,8 @@ void LinThetaScheme2PhaseCL<StokesT,LsetSolverT>::Update()
 // ==============================================
 
 
-template <class StokesT, class LsetSolverT>
-OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::OperatorSplitting2PhaseCL
+template <class LsetSolverT>
+OperatorSplitting2PhaseCL<LsetSolverT>::OperatorSplitting2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverBaseCL& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, int gm_iter, double gm_tol, double nonlinear)
 
   : base_( Stokes, ls, lsetmod, nonlinear), solver_(solver), lsetsolver_( lsetsolver),
@@ -272,14 +243,14 @@ OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::OperatorSplitting2PhaseCL
     Update();
 }
 
-template <class StokesT, class LsetSolverT>
-OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::~OperatorSplitting2PhaseCL()
+template <class LsetSolverT>
+OperatorSplitting2PhaseCL<LsetSolverT>::~OperatorSplitting2PhaseCL()
 {
     delete cplA_; delete old_cplA_;
 }
 
-template <class StokesT, class LsetSolverT>
-void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::InitStep( bool StokesStep)
+template <class LsetSolverT>
+void OperatorSplitting2PhaseCL<LsetSolverT>::InitStep( bool StokesStep)
 {
 // compute all terms that don't change during the following FP iterations
 
@@ -312,8 +283,8 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::InitStep( bool StokesStep)
 
 }
 
-template <class StokesT, class LsetSolverT>
-void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoStokesFPIter()
+template <class LsetSolverT>
+void OperatorSplitting2PhaseCL<LsetSolverT>::DoStokesFPIter()
 // perform fixed point iteration: Levelset / Stokes
 // for fractional steps A and C
 {
@@ -364,8 +335,8 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoStokesFPIter()
     std::cout << "Solving Stokes took "<<time.GetTime()<<" sec.\n";
 }
 
-template <class StokesT, class LsetSolverT>
-void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoNonlinearFPIter()
+template <class LsetSolverT>
+void OperatorSplitting2PhaseCL<LsetSolverT>::DoNonlinearFPIter()
 // perform fixed point iteration: Levelset / nonlinear system
 // for fractional step B
 {
@@ -408,16 +379,16 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoNonlinearFPIter()
     std::cout << "Solving nonlinear system took "<<time.GetTime()<<" sec.\n";
 }
 
-template <class StokesT, class LsetSolverT>
-void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::CommitStep()
+template <class LsetSolverT>
+void OperatorSplitting2PhaseCL<LsetSolverT>::CommitStep()
 {
     std::swap( cplM_, old_cplM_);
     std::swap( cplA_, old_cplA_);
     std::swap( cplN_, old_cplN_);
 }
 
-template <class StokesT, class LsetSolverT>
-void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoStep( int maxFPiter)
+template <class LsetSolverT>
+void OperatorSplitting2PhaseCL<LsetSolverT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
         maxFPiter= 99;
@@ -462,8 +433,8 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::DoStep( int maxFPiter)
     CommitStep();
 }
 
-template <class StokesT, class LsetSolverT>
-void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::Update()
+template <class LsetSolverT>
+void OperatorSplitting2PhaseCL<LsetSolverT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
     TimerCL time;
@@ -502,8 +473,8 @@ void OperatorSplitting2PhaseCL<StokesT,LsetSolverT>::Update()
 //            CoupledTimeDisc2PhaseBaseCL
 // ==============================================
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CoupledTimeDisc2PhaseBaseCL
+template <class LsetSolverT, class RelaxationPolicyT>
+CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::CoupledTimeDisc2PhaseBaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod, double tol,
             double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, lsetmod, nonlinear),
@@ -512,12 +483,12 @@ CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CoupledTimeD
     Update();
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~CoupledTimeDisc2PhaseBaseCL()
+template <class LsetSolverT, class RelaxationPolicyT>
+CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::~CoupledTimeDisc2PhaseBaseCL()
 {}
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MaybeStabilize (VectorCL& b)
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::MaybeStabilize (VectorCL& b)
 {
     if (stab_ == 0.0) return;
 
@@ -536,8 +507,8 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MaybeSt
     b+= s*(LB_.Data*Stokes_.v.Data);
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
     lsetmod_.init();
@@ -546,15 +517,15 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitSte
     Stokes_.t+= dt_;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoProjectionStep( const VectorCL& /*rhscurv*/)
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::DoProjectionStep( const VectorCL& /*rhscurv*/)
 // perform preceding projection step
 {
     std::cout << "~~~~~~~~~~~~~~~~ NO Projection step\n";
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLsetNavStokesEquations()
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::EvalLsetNavStokesEquations()
 // perform fixed point iteration
 {
 #ifndef _PAR
@@ -606,8 +577,8 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EvalLse
               << "\ttime: " << duration << "s\n";
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupStokesMatVec()
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::SetupStokesMatVec()
 /// setup matrices A, M, B, prA, prM and vectors b+cplA, cplM, curv, c
 {
     curv_->Clear();
@@ -634,8 +605,8 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupSt
     Stokes_.SetupPrMass ( &Stokes_.prM, LvlSet_);
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     std::swap( b_, old_b_);
     std::swap( cplM_, old_cplM_);
@@ -644,8 +615,8 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitS
     lsetmod_.maybeDoReparam( LvlSet_);
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep( int maxFPiter)
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::DoStep( int maxFPiter)
 {
     if (maxFPiter==-1)
         maxFPiter= 99;
@@ -690,8 +661,8 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::DoStep(
     CommitStep();
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+template <class LsetSolverT, class RelaxationPolicyT>
+void CoupledTimeDisc2PhaseBaseCL<LsetSolverT,RelaxationPolicyT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
 
@@ -714,8 +685,8 @@ void CoupledTimeDisc2PhaseBaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update(
 //            MidPointTimeDisc2PhaseCL
 // ==============================================
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MidPointTimeDisc2PhaseCL
+template <class LsetSolverT, class RelaxationPolicyT>
+MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::MidPointTimeDisc2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double nonlinear, bool withProjection, double stab, bool implicitpressure)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
@@ -730,8 +701,8 @@ MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::MidPointTimeDis
     Update();
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::InitStep()
 {
     base_::InitStep();
     if (implicitpressure_) {       // Just to have a better starting-value for p.
@@ -739,8 +710,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
     }
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     base_::CommitStep();
     oldphi_ = LvlSet_.Phi.Data;
@@ -753,8 +724,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep
     oldv_= Stokes_.v.Data;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+template <class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::Update()
 {
 #ifndef _PAR
     TimerCL time;
@@ -783,8 +754,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
     std::cout << "Discretizing took " << duration << " sec.\n";
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
     const VectorCL tmpphi( LvlSet_.Phi.Data);
     LvlSet_.Phi.Data += oldphi_;
@@ -803,8 +774,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavSt
 
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void MidPointTimeDisc2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     const VectorCL tmpv( Stokes_.v.Data);
     Stokes_.v.Data = 0.5 * VectorCL( Stokes_.v.Data + oldv_);
@@ -820,8 +791,8 @@ void MidPointTimeDisc2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevel
 //            SpaceTimeDiscTheta2PhaseCL
 // ==============================================
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SpaceTimeDiscTheta2PhaseCL
+template <class LsetSolverT, class RelaxationPolicyT>
+SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::SpaceTimeDiscTheta2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab, bool implicitpressure)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),  stk_theta_( stk_theta), ls_theta_( ls_theta),
@@ -831,14 +802,14 @@ SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SpaceTimeDisc
     Update();
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~SpaceTimeDiscTheta2PhaseCL()
+template <class LsetSolverT, class RelaxationPolicyT>
+SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::~SpaceTimeDiscTheta2PhaseCL()
 {
     delete Eold_; delete Mold_;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::InitStep()
 {
     base_::InitStep();
     fixed_ls_rhs_ = (1./dt_) * (LvlSet_.E * oldphi_)    + phidot_;
@@ -847,8 +818,8 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep
         Stokes_.p.Data *= stk_theta_;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     base_::CommitStep();
     VectorCL vdot1( (1./dt_)*(Stokes_.v.Data - oldv_));
@@ -869,8 +840,8 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitSt
     vdot_ /= stk_theta_;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+template <class LsetSolverT, class RelaxationPolicyT>
+void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::Update()
 {
 #ifndef _PAR
     TimerCL time;
@@ -914,8 +885,8 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
     std::cout << "Discretizing took " << duration << " sec.\n";
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots ()
+template <class LsetSolverT, class RelaxationPolicyT>
+void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::ComputeDots ()
 {
     delete Mold_;
     Mold_ = new MLMatrixCL( Stokes_.M.Data);
@@ -929,8 +900,8 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeD
     phidot_ = (-1.0) * (LvlSet_.H * LvlSet_.Phi.Data);
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
     base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
@@ -939,8 +910,8 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNav
     rhs_ = (1.0 - stk_theta_)*fixed_rhs_ + stk_theta_*( (1./dt_) * (Stokes_.M.Data * oldv_) + curv_->Data + b_->Data); /* TODO time-dep DirBC*/
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void SpaceTimeDiscTheta2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
     LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
@@ -953,8 +924,8 @@ void SpaceTimeDiscTheta2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLev
 //            EulerBackwardScheme2PhaseCL
 // ==============================================
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EulerBackwardScheme2PhaseCL
+template <class LsetSolverT, class RelaxationPolicyT>
+EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::EulerBackwardScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab)
@@ -962,12 +933,12 @@ EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::EulerBackwar
     Update();
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~EulerBackwardScheme2PhaseCL()
+template <class LsetSolverT, class RelaxationPolicyT>
+EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::~EulerBackwardScheme2PhaseCL()
 {}
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
     base_::InitStep();
@@ -976,12 +947,12 @@ void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitSte
 }
 
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::CommitStep()
 {}
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+template <class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::Update()
 {
 #ifndef _PAR
     TimerCL time;
@@ -1004,8 +975,8 @@ void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update(
     std::cout << "Discretizing took " << duration << " sec.\n";
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
     base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
@@ -1014,8 +985,8 @@ void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNa
     rhs_ = Stokes_.M.Data * fixed_rhs_ + curv_->Data + b_->Data;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
     LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
@@ -1028,8 +999,8 @@ void EulerBackwardScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLe
 //              RecThetaScheme2PhaseCL
 // ==============================================
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
+template <class LsetSolverT, class RelaxationPolicyT>
+RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::RecThetaScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, StokesSolverT& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double stk_theta, double ls_theta, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, nonlinear, withProjection, stab),
@@ -1049,12 +1020,12 @@ RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::RecThetaScheme2Ph
     Update();
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::~RecThetaScheme2PhaseCL()
+template <class LsetSolverT, class RelaxationPolicyT>
+RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::~RecThetaScheme2PhaseCL()
 {}
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::InitStep()
 // compute all terms that don't change during the following FP iterations
 {
     base_::InitStep();
@@ -1065,8 +1036,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::InitStep()
     Stokes_.p.Data*= stk_theta_; // Just to have a better starting-value for p.
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::CommitStep()
 {
     base_::CommitStep();
 
@@ -1095,8 +1066,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::CommitStep()
 //     }
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::Update()
 {
     MLIdxDescCL* const vidx= &Stokes_.vel_idx;
 #ifndef _PAR
@@ -1142,8 +1113,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::Update()
 }
 
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputePressure ()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::ComputePressure ()
 {
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
@@ -1170,8 +1141,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputePress
     std::cout << "ComputePressure: pressure: iter= " << Ssolver_.GetIter() << "\tres= " << Ssolver_.GetResid() << '\n';
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots ()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::ComputeDots ()
 {
     VectorCL b2( old_b_->Data + old_curv_->Data
         - Stokes_.A.Data*Stokes_.v.Data
@@ -1187,8 +1158,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::ComputeDots 
     std::cout << "ComputeDots: phidot: iter= " << Msolver_.GetIter() << "\tres= " << Msolver_.GetResid() << std::endl;
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupNavStokesSystem()
 {
     base_::SetupStokesMatVec(); // setup all matrices (except N) and rhs
 
@@ -1197,8 +1168,8 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupNavStok
     rhs_ = Stokes_.M.Data * fixed_rhs_ + stk_theta_* curv_->Data + stk_theta_* b_->Data ; /* TODO time-dep DirBC*/
 }
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
+template <class LsetSolverT, class RelaxationPolicyT>
+void RecThetaScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::SetupLevelsetSystem()
 {
     // setup system for levelset eq.
     LvlSet_.SetupSystem( Stokes_.GetVelSolution(), dt_);
@@ -1212,19 +1183,19 @@ void RecThetaScheme2PhaseCL<StokesT,LsetSolverT,RelaxationPolicyT>::SetupLevelse
 //            CrankNicolsonScheme2PhaseCL
 // ==============================================
 
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::CrankNicolsonScheme2PhaseCL
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+CrankNicolsonScheme2PhaseCL<BaseMethod, LsetSolverT,RelaxationPolicyT>::CrankNicolsonScheme2PhaseCL
     ( StokesT& Stokes, LevelsetP2CL& ls, NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
             double tol, double nonlinear, bool withProjection, double stab)
   : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab), step_(1)
 {}
 
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::~CrankNicolsonScheme2PhaseCL()
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+CrankNicolsonScheme2PhaseCL<BaseMethod, LsetSolverT,RelaxationPolicyT>::~CrankNicolsonScheme2PhaseCL()
 {}
 
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolicyT>::DoStep(int maxFPIter)
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+void CrankNicolsonScheme2PhaseCL<BaseMethod, LsetSolverT,RelaxationPolicyT>::DoStep(int maxFPIter)
 {
     switch (step_)
     {
@@ -1247,8 +1218,8 @@ void CrankNicolsonScheme2PhaseCL<BaseMethod, StokesT,LsetSolverT,RelaxationPolic
     base_::DoStep(maxFPIter);
 }
 
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-void CrankNicolsonScheme2PhaseCL<BaseMethod,StokesT,LsetSolverT,RelaxationPolicyT>::Update()
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+void CrankNicolsonScheme2PhaseCL<BaseMethod,LsetSolverT,RelaxationPolicyT>::Update()
 {
     base_::SetTimeStep(tmpdt_, 1.0);
     base_::Update();

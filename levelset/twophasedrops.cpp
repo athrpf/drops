@@ -267,7 +267,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, C.rpm_MaxGrad, C.rpm_MinGrad, C.lvs_VolCorrection, Vol);
 
     // Time discretisation + coupling
-    TimeDisc2PhaseCL<InstatNavierStokes2PhaseP2P1CL>* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
+    TimeDisc2PhaseCL* timedisc= CreateTimeDisc(Stokes, lset, navstokessolver, gm, C, lsetmod);
     timedisc->SetSchurPrePtr( stokessolverfactory.GetSchurPrePtr() );
     if (C.tm_NumSteps != 0) timedisc->SetTimeStep( C.tm_StepSize);
 

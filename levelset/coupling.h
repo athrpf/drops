@@ -25,7 +25,7 @@
 #ifndef DROPS_COUPLING_H
 #define DROPS_COUPLING_H
 
-#include "stokes/stokes.h"
+#include "navstokes/instatnavstokes2phase.h"
 #include "levelset/levelset.h"
 #include "num/MGsolver.h"
 #include "num/nssolver.h"
@@ -37,7 +37,8 @@
 namespace DROPS
 {
 
-template <class StokesT>
+typedef InstatNavierStokes2PhaseP2P1CL StokesT;
+
 class TimeDisc2PhaseCL
 {
   protected:
@@ -89,27 +90,12 @@ class TimeDisc2PhaseCL
     void SetSchurPrePtr( SchurPreBaseCL* ptr) { ispc_ = ptr; }
 };
 
-template <class StokesT, class LsetSolverT>
-class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
+template <class LsetSolverT>
+class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL
 {
   private:
-    typedef TimeDisc2PhaseCL<StokesT> base_;
+    typedef TimeDisc2PhaseCL base_;
     typedef NSSolverBaseCL<StokesT> StokesSolverT;
-    using base_::Stokes_;
-    using base_::LvlSet_;
-    using base_::b_;       using base_::old_b_;
-    using base_::cplM_;    using base_::old_cplM_;
-    using base_::cplN_;    using base_::old_cplN_;
-    using base_::curv_;    using base_::old_curv_;
-    using base_::rhs_;
-    using base_::ls_rhs_;
-    using base_::mat_; // 1./dt*M + stk_theta*A + stab_*_theta*_dt*LB
-    using base_::L_;   // 1./dt*E + ls_theta*H
-    using base_::nonlinear_;
-    using base_::dt_;
-    using base_::cplLB_;
-    using base_::LB_;
-    using base_::lsetmod_;
 
     StokesSolverT& solver_;
     LsetSolverT&   lsetsolver_;
@@ -147,23 +133,11 @@ class LinThetaScheme2PhaseCL: public TimeDisc2PhaseCL<StokesT>
 
 };
 
-template <class StokesT, class LsetSolverT>
-class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL<StokesT>
+template <class LsetSolverT>
+class OperatorSplitting2PhaseCL : public TimeDisc2PhaseCL
 {
   private:
-    typedef TimeDisc2PhaseCL<StokesT> base_;
-    using base_::Stokes_;
-    using base_::LvlSet_;
-    using base_::b_;       using base_::old_b_;
-    using base_::cplM_;    using base_::old_cplM_;
-    using base_::cplN_;    using base_::old_cplN_;
-    using base_::curv_;
-    using base_::rhs_;
-    using base_::ls_rhs_;
-    using base_::mat_; // 1./dt*M + theta*A
-    using base_::L_;
-    using base_::dt_;
-    using base_::nonlinear_;
+    typedef TimeDisc2PhaseCL base_;
 
     StokesSolverBaseCL&     solver_;
     LsetSolverT&            lsetsolver_;
@@ -203,27 +177,12 @@ class cplDeltaSquaredPolicyCL;
 class cplFixedPolicyCL;
 class cplBroydenPolicyCL;
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
+template <class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL
 {
   protected:
-    typedef TimeDisc2PhaseCL<StokesT> base_;
+    typedef TimeDisc2PhaseCL base_;
     typedef NSSolverBaseCL<StokesT> StokesSolverT;
-    using base_::Stokes_;
-    using base_::LvlSet_;
-    using base_::b_;       using base_::old_b_;
-    using base_::cplM_;    using base_::old_cplM_;
-    using base_::cplN_;    using base_::old_cplN_;
-    using base_::curv_;    using base_::old_curv_;
-    using base_::rhs_;
-    using base_::ls_rhs_;
-    using base_::mat_;      // Navier-Stokes operator
-    using base_::L_;        // level set operator
-    using base_::dt_;
-    using base_::nonlinear_;
-    using base_::cplLB_;
-    using base_::LB_;
-    using base_::lsetmod_;
 
     double dphi_;
 
@@ -256,11 +215,11 @@ class CoupledTimeDisc2PhaseBaseCL: public TimeDisc2PhaseCL<StokesT>
     virtual void Update();
 };
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+template <class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT>
 {
   protected:
-    typedef CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT> base_;
     typedef NSSolverBaseCL<StokesT> StokesSolverT;
     using base_::Stokes_;
     using base_::LvlSet_;
@@ -301,11 +260,11 @@ class MidPointTimeDisc2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Lset
 
 };
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+template <class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT>
 {
   protected:
-    typedef CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT> base_;
     typedef NSSolverBaseCL<StokesT> StokesSolverT;
     using base_::Stokes_;
     using base_::LvlSet_;
@@ -365,11 +324,11 @@ class SpaceTimeDiscTheta2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, Ls
     }
 };
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class EulerBackwardScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+template <class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class EulerBackwardScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT>
 {
   protected:
-    typedef CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT> base_;
     typedef NSSolverBaseCL<StokesT> StokesSolverT;
     using base_::Stokes_;
     using base_::LvlSet_;
@@ -406,11 +365,11 @@ class EulerBackwardScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, L
     void Update();
 };
 
-template <class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT>
+template <class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT>
 {
   protected:
-    typedef CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef CoupledTimeDisc2PhaseBaseCL<LsetSolverT, RelaxationPolicyT> base_;
     typedef NSSolverBaseCL<StokesT> StokesSolverT;
     using base_::Stokes_;
     using base_::LvlSet_;
@@ -488,11 +447,11 @@ class RecThetaScheme2PhaseCL: public CoupledTimeDisc2PhaseBaseCL<StokesT, LsetSo
     void Update();
 };
 
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class CrankNicolsonScheme2PhaseCL: public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class CrankNicolsonScheme2PhaseCL: public BaseMethod<LsetSolverT, RelaxationPolicyT>
 {
   private:
-    typedef BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef BaseMethod<LsetSolverT, RelaxationPolicyT> base_;
     using base_::Stokes_;
     using base_::LvlSet_;
     using base_::mat_;
@@ -512,14 +471,14 @@ class CrankNicolsonScheme2PhaseCL: public BaseMethod<StokesT, LsetSolverT, Relax
 };
 
 // Handbook of Numerical Analysis (Ciarlet/Lions), Volume IX: Numerical Methods for Fluids (Part 3) by R. Glowinski
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class FracStepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT>
 {
   private:
     static const double facdt_[3];
     static const double theta_[3];
 
-    typedef BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef BaseMethod<LsetSolverT, RelaxationPolicyT> base_;
 
     double dt3_;
     int step_;
@@ -559,28 +518,28 @@ class FracStepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxatio
     void Update() { base_::Update(); }
 };
 
-template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-const double FracStepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::facdt_[3]
+template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<BaseMethod, LsetSolverT, RelaxationPolicyT>::facdt_[3]
 //  = { 1./3, 1./3, 1./3 };
 //  = { 1./3, 1./3, 1./3 };
   = { 1.0 - std::sqrt( 0.5), std::sqrt( 2.0) - 1.0, 1.0 - std::sqrt( 0.5) };
 
-template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-const double FracStepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::theta_[3]
+template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+const double FracStepScheme2PhaseCL<BaseMethod, LsetSolverT, RelaxationPolicyT>::theta_[3]
 //  = { 1.0, 1.0, 1.0 };
 //  = { 1./3, 5./6, 1./3 };
   = { 2.0 - std::sqrt( 2.0), std::sqrt( 2.0) - 1.0, 2.0 - std::sqrt( 2.0) };
 
 
 // Handbook of Numerical Analysis (Ciarlet/Lions), Volume IX: Numerical Methods for Fluids (Part 3) by R. Glowinski: Remark 10.3
-template< template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
-class Frac2StepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT>
+template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
+class Frac2StepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT>
 {
   private:
     static const double facdt_[2];
     static const double theta_[2];
 
-    typedef BaseMethod<StokesT, LsetSolverT, RelaxationPolicyT> base_;
+    typedef BaseMethod<LsetSolverT, RelaxationPolicyT> base_;
     using base_::oldv_;
     using base_::oldphi_;
     using base_::Stokes_;
@@ -628,12 +587,12 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<StokesT, LsetSolverT, Relaxati
     void Update() { base_::Update(); }
 };
 
-template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-const double Frac2StepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::facdt_[2]
+template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+const double Frac2StepScheme2PhaseCL<BaseMethod, LsetSolverT, RelaxationPolicyT>::facdt_[2]
   = { 1.0 - std::sqrt( 0.5), 1.0 };
 
-template < template<class, class, class> class BaseMethod, class StokesT, class LsetSolverT, class RelaxationPolicyT>
-const double Frac2StepScheme2PhaseCL<BaseMethod, StokesT, LsetSolverT, RelaxationPolicyT>::theta_[2]
+template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+const double Frac2StepScheme2PhaseCL<BaseMethod, LsetSolverT, RelaxationPolicyT>::theta_[2]
   = { 1.0, 1.0 - std::sqrt( 0.5) };
 
 /// \brief Compute the relaxation factor in RecThetaScheme2PhaseCL by Aitken's delta-squared method.

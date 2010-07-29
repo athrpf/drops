@@ -29,6 +29,33 @@
 
 namespace DROPS
 {
+// ==============================================
+//              TimeDisc2PhaseCL
+// ==============================================
+
+TimeDisc2PhaseCL::TimeDisc2PhaseCL (StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double nonlinear)
+  : Stokes_( Stokes), LvlSet_( ls), b_( &Stokes.b), old_b_( new VelVecDescCL),
+    cplM_( new VelVecDescCL), old_cplM_( new VelVecDescCL),
+    cplN_( new VelVecDescCL), old_cplN_( new VelVecDescCL),
+    curv_( new VelVecDescCL), old_curv_(new VelVecDescCL),
+    rhs_( Stokes.b.RowIdx->NumUnknowns()), ls_rhs_( ls.Phi.RowIdx->NumUnknowns()),
+    mat_( new MLMatrixCL( Stokes.vel_idx.size())), L_( new MatrixCL()), nonlinear_( nonlinear), lsetmod_( lsetmod)
+{
+    Stokes_.SetLevelSet( ls);
+    LB_.Data.resize( Stokes.vel_idx.size());
+}
+
+TimeDisc2PhaseCL::~TimeDisc2PhaseCL()
+{
+    delete mat_; delete L_;
+    if (old_b_ == &Stokes_.b)
+        delete b_;
+    else
+        delete old_b_;
+    delete cplM_; delete old_cplM_;
+    delete cplN_; delete old_cplN_;
+    delete curv_; delete old_curv_;
+}
 
 void cplDeltaSquaredPolicyCL::Update( VecDescCL& v)
 {
