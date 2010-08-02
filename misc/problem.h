@@ -158,7 +158,7 @@ class ExtIdxDescCL
     /// Has to be called in two situations:
     /// - whenever level set function has changed to account for the moving interface (set \p NumberingChanged=false)
     /// - when numbering of index has changed, i.e. \p CreateNumbering was called before (set \p NumberingChanged=true)
-    IdxT UpdateXNumbering( IdxDescCL*, const MultiGridCL&, const VecDescCL&, const BndDataCL<>* lsetbnd =0, bool NumberingChanged= false );
+    IdxT UpdateXNumbering( IdxDescCL*, const MultiGridCL&, const VecDescCL&, const BndDataCL<>& lsetbnd, bool NumberingChanged= false );
     /// \brief Delete extended numbering
     void DeleteXNumbering() { Xidx_.resize(0); Xidx_old_.resize(0); }
 
@@ -278,7 +278,7 @@ class IdxDescCL: public FE_InfoCL
     { Bnd_= baseIdx.Bnd_; match_= baseIdx.match_; CreateNumbering( level, mg, lsetp, lsetbnd); }
     /// \brief Update numbering of extended DoFs.
     /// Has to be called whenever level set function has changed to account for the moving interface.
-    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd =0);
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>& lsetbnd);
     /// \brief Returns true, if XFEM is used and standard DoF \p dof is extended.
     bool IsExtended( IdxT dof) const
     { return IsExtended() ? extIdx_[dof] != NoIdx : false; }
@@ -376,7 +376,7 @@ class MLIdxDescCL : public MLDataCL<IdxDescCL>
     }
     /// \brief Update numbering of extended DoFs on all levels.
     /// Has to be called whenever level set function has changed to account for the moving interface.
-    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd =0)
+    void UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>& lsetbnd)
     {
         for (MLIdxDescCL::iterator it = this->begin(); it != this->end(); ++it)
             it->UpdateXNumbering( mg, lset, lsetbnd);

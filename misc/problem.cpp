@@ -449,7 +449,7 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
         CreateNumbStdFE( level, mg);
         if (IsExtended()) {
             if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for XFEM numbering given");
-            NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, lsetbnd, true);
+            NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, *lsetp, *lsetbnd, true);
         }
     }
 #ifdef _PAR
@@ -457,7 +457,7 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
 #endif
 }
 
-void IdxDescCL::UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd)
+void IdxDescCL::UpdateXNumbering( MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>& lsetbnd)
 {
     if (IsExtended()) {
         NumUnknowns_= extIdx_.UpdateXNumbering( this, mg, lset, lsetbnd, false);
@@ -490,7 +490,7 @@ void IdxDescCL::DeleteNumbering(MultiGridCL& MG)
 #endif
 }
 
-IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>* lsetbnd, bool NumberingChanged)
+IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, const VecDescCL& lset, const BndDataCL<>& lsetbnd, bool NumberingChanged)
 {
     const Uint sysnum= Idx->GetIdx(),
         level= Idx->TriangLevel(),
@@ -516,7 +516,7 @@ IdxT ExtIdxDescCL::UpdateXNumbering( IdxDescCL* Idx, const MultiGridCL& mg, cons
         const double h3= it->GetVolume()*6,
             h= cbrt( h3), h5= h*h*h3, // h^5
             limit= h5*omit_bound_;
-        locPhi.assign( *it, lset, *lsetbnd);
+        locPhi.assign( *it, lset, lsetbnd);
         cut.Init( *it, locPhi);
         SVectorCL<4> loc_int; // stores integrals \int_T p^2 dx, where p = p_i^\Gamma. Extended DoF is omitted
                               // iff this integral falls below a certain bound (omit_bound*h^5) for all tetrahedra T.
