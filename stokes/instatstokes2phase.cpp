@@ -176,7 +176,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
             }
         }
 
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<>());
+        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
         for(int pr=0; pr<4; ++pr) {
@@ -269,7 +269,7 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
             }
         }
 
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<>());
+        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
 
@@ -391,7 +391,7 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
             }
         }
 
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<>());
+        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
 
@@ -754,7 +754,7 @@ void SetupPrMass_P1(const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& Coeff, Mat
     LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
+        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         const bool nocut= !cut.Intersects();
         GetLocalNumbP1NoBnd( prNumb, *sit, RowIdx);
@@ -822,7 +822,7 @@ void SetupPrMass_P1X(const MultiGridCL& MG, const TwoPhaseFlowCoeffCL& Coeff, Ma
     LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
+        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         const bool nocut= !cut.Intersects();
         GetLocalNumbP1NoBnd( prNumb, *sit, RowIdx);
@@ -2003,7 +2003,7 @@ void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, cons
     for (MultiGridCL::const_TriangTetraIteratorCL sit=MG_.GetTriangTetraBegin(lvl), send=MG_.GetTriangTetraEnd(lvl);
          sit != send; ++sit)
     {
-        loc_phi.assign( *sit, lset.Phi, NoBndDataCL<> ());
+        loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         triangle.Init( *sit, loc_phi);
         if (triangle.Intersects()) { // We are at the phase boundary.
             n.assign( *sit, RowIdx, BndData_.Vel);
@@ -2428,7 +2428,7 @@ void SetupMassDiag_P1(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowId
 }
 
 void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset,
-                        const BndCondCL& bnd)
+                        const BndDataCL<>& lsetbnd, const BndCondCL& bnd)
 {
     const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
     M.resize( RowIdx.NumUnknowns());
@@ -2452,7 +2452,7 @@ void SetupMassDiag_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& Row
     LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        loc_phi.assign( *sit, lset, BndDataCL<> ( 0));
+        loc_phi.assign( *sit, lset, lsetbnd);
         cut.Init( *sit, loc_phi);
         const bool nocut= !cut.Intersects();
         Numb.assign( *sit, RowIdx, bnd);
@@ -2507,14 +2507,14 @@ void SetupMassDiag_vecP2(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& Ro
     }
 }
 
-void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd, const VecDescCL* lsetp)
+void SetupMassDiag (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd, const VecDescCL* lsetp, const BndDataCL<>* lsetbnd)
 {
     switch(RowIdx.GetFE())
     {
     case P1_FE:
         SetupMassDiag_P1( MG, M, RowIdx, bnd); break;
     case P1X_FE:
-        SetupMassDiag_P1X( MG, M, RowIdx, *lsetp, bnd); break;
+        SetupMassDiag_P1X( MG, M, RowIdx, *lsetp, *lsetbnd, bnd); break;
     case vecP2_FE:
         SetupMassDiag_vecP2( MG, M, RowIdx, bnd); break;
     default:
@@ -2540,7 +2540,7 @@ void SetupLumpedMass_P1(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& Row
     }
 }
 
-void SetupLumpedMass_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset, const BndCondCL& bnd)
+void SetupLumpedMass_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset, const BndDataCL<>& lsetbnd, const BndCondCL& bnd)
 {
     const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
     M.resize( RowIdx.NumUnknowns());
@@ -2564,7 +2564,7 @@ void SetupLumpedMass_P1X (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& R
     LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        loc_phi.assign( *sit, lset, BndDataCL<> ( 0));
+        loc_phi.assign( *sit, lset, lsetbnd);
         cut.Init( *sit, loc_phi);
         const bool nocut= !cut.Intersects();
         Numb.assign( *sit, RowIdx, bnd);
@@ -2619,7 +2619,7 @@ void SetupLumpedMass_vecP2(const MultiGridCL& MG, VectorCL& M, const IdxDescCL& 
     }
 }
 
-void SetupLumpedMass_vecP2R (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset, const BndCondCL& bnd)
+void SetupLumpedMass_vecP2R (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const VecDescCL& lset, const BndDataCL<>& lsetbnd, const BndCondCL& bnd)
 {
     const ExtIdxDescCL& Xidx= RowIdx.GetXidx();
     M.resize( RowIdx.NumUnknowns());
@@ -2633,7 +2633,7 @@ void SetupLumpedMass_vecP2R (const MultiGridCL& MG, VectorCL& M, const IdxDescCL
     LocalP2CL<> loc_phi;
     DROPS_FOR_TRIANG_CONST_TETRA( MG, lvl, sit) {
         const double absdet= sit->GetVolume()*6.;
-        loc_phi.assign( *sit, lset, BndDataCL<> ( 0));
+        loc_phi.assign( *sit, lset, lsetbnd);
         cut.Init( *sit, loc_phi);
         Numb.assign( *sit, RowIdx, bnd);
         // write standard FE values into matrix
@@ -2672,18 +2672,18 @@ void SetupLumpedMass_vecP2R (const MultiGridCL& MG, VectorCL& M, const IdxDescCL
     }
 }
 
-void SetupLumpedMass (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd, const VecDescCL* lsetp)
+void SetupLumpedMass (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowIdx, const BndCondCL& bnd, const VecDescCL* lsetp, const BndDataCL<>* lsetbnd)
 {
     switch(RowIdx.GetFE())
     {
     case P1_FE:
         SetupLumpedMass_P1( MG, M, RowIdx, bnd); break;
     case P1X_FE:
-        SetupLumpedMass_P1X( MG, M, RowIdx, *lsetp, bnd); break;
+        SetupLumpedMass_P1X( MG, M, RowIdx, *lsetp, *lsetbnd, bnd); break;
     case vecP2_FE:
         SetupLumpedMass_vecP2( MG, M, RowIdx, bnd); break;
     case vecP2R_FE:
-        SetupLumpedMass_vecP2R( MG, M, RowIdx, *lsetp, bnd); break;
+        SetupLumpedMass_vecP2R( MG, M, RowIdx, *lsetp, *lsetbnd, bnd); break;
     default:
         throw DROPSErrCL("SetupLumpedMass not implemented for this FE type");
     }
