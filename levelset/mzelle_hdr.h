@@ -254,7 +254,7 @@ TimeDisc2PhaseCL* CreateTimeDisc( InstatNavierStokes2PhaseP2P1CL& Stokes, Levels
 }
 
 template <class StokesT>
-void SolveStatProblem( StokesT& Stokes, LevelsetP2CL& lset,
+void SolveStatProblem( StokesT& Stokes, const LevelsetP2CL& lset,
                        NSSolverBaseCL<StokesT >& solver)
 {
 #ifndef _PAR
@@ -288,8 +288,34 @@ void SolveStatProblem( StokesT& Stokes, LevelsetP2CL& lset,
     std::cout << "iter: " << solver.GetIter() << "\tresid: " << solver.GetResid() << std::endl;
 }
 
+void SetInitialLevelsetConditions( LevelsetP2CL& lset, MultiGridCL& MG, const ParamMesszelleNsCL& C)
+{
+    switch (C.dmc_InitialCond)
+    {
+#ifndef _PAR
+      case -10: // read from ensight-file [deprecated]
+      {
+        std::cout << "[DEPRECATED] read from ensight-file [DEPRECATED]\n";
+        ReadEnsightP2SolCL reader( MG);
+        reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
+      } break;
+#endif
+      case -1: // read from file
+      {
+        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset", C.rst_Binary);
+      } break;
+      case 0: case 1:// zero initial condition // stationary flow
+          lset.Init( EllipsoidCL::DistanceFct);
+        break;
+      case  2: //flow without droplet
+          lset.Init( &One);
+      break;
+      default : throw DROPSErrCL("Unknown initial condition");
+    }
+}
+
 template <typename StokesT>
-void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, const ParamMesszelleNsCL& C)
+void SetInitialConditions(StokesT& Stokes, const LevelsetP2CL& lset, MultiGridCL& MG, const ParamMesszelleNsCL& C)
 {
     MLIdxDescCL* pidx= &Stokes.pr_idx;
     switch (C.dmc_InitialCond)
@@ -299,7 +325,6 @@ void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, 
       {
         std::cout << "[DEPRECATED] read from ensight-file [DEPRECATED]\n";
         ReadEnsightP2SolCL reader( MG);
-        reader.ReadScalar( C.dmc_InitialFile+".scl", lset.Phi, lset.GetBndData());
         reader.ReadVector( C.dmc_InitialFile+".vel", Stokes.v, Stokes.GetBndData().Vel);
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
@@ -315,20 +340,17 @@ void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, 
 #endif
       case -1: // read from file
       {
-        ReadFEFromFile( lset.Phi, MG, C.dmc_InitialFile+"levelset", C.rst_Binary);
         ReadFEFromFile( Stokes.v, MG, C.dmc_InitialFile+"velocity", C.rst_Binary);
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
         ReadFEFromFile( Stokes.p, MG, C.dmc_InitialFile+"pressure", C.rst_Binary, &lset.Phi); // pass also level set, as p may be extended
       } break;
       case 0: // zero initial condition
-          lset.Init( EllipsoidCL::DistanceFct);
           Stokes.UpdateXNumbering( pidx, lset);
           Stokes.p.SetIdx( pidx);
         break;
       case 1: // stationary flow
       {
-        lset.Init( EllipsoidCL::DistanceFct);
         Stokes.UpdateXNumbering( pidx, lset);
         Stokes.p.SetIdx( pidx);
 #ifdef _PAR
@@ -352,7 +374,6 @@ void SetInitialConditions(StokesT& Stokes, LevelsetP2CL& lset, MultiGridCL& MG, 
         SolveStatProblem( Stokes, lset, stokessolver);
       } break;
       case  2: //flow without droplet
-          lset.Init( &One);
           Stokes.UpdateXNumbering( pidx, lset);
           Stokes.p.SetIdx( pidx);
       break;
