@@ -223,7 +223,7 @@ class IdxDescCL: public FE_InfoCL
     /// \brief Number unknowns for standard FE.
     void CreateNumbStdFE( Uint level, MultiGridCL& mg);
     /// \brief Number unknowns on the vertices surrounding an interface.
-    void CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls, double omit_bound= -1./*default to using all dof*/);
+    void CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd, double omit_bound= -1./*default to using all dof*/);
 
   public:
     using FE_InfoCL::IsExtended;

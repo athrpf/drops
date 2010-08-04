@@ -371,7 +371,8 @@ void CreateNumbOnInterfaceVertex (const Uint idx, IdxT& counter, Uint stride,
     }
 }
 
-void IdxDescCL::CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls, double omit_bound)
+void IdxDescCL::CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDescCL& ls,
+                                      const BndDataCL<>& lsetbnd, double omit_bound)
 /// Uses CreateNumbOnInterfaceVertex on the triangulation with level \p level on the multigrid \p mg.
 /// One can only create P1-elements.
 {
@@ -384,7 +385,7 @@ void IdxDescCL::CreateNumbOnInterface(Uint level, MultiGridCL& mg, const VecDesc
     if (NumUnknownsVertex() != 0)
         CreateNumbOnInterfaceVertex( idxnum, NumUnknowns_, NumUnknownsVertex(),
             mg.GetTriangVertexBegin(level), mg.GetTriangVertexEnd(level),
-            mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls, omit_bound);
+            mg.GetTriangTetraBegin( level), mg.GetTriangTetraEnd( level), ls, lsetbnd, omit_bound);
 
     if (NumUnknownsEdge() != 0 || NumUnknownsFace() != 0 || NumUnknownsTetra() != 0)
         throw DROPSErrCL( "CreateNumbOnInterface: Only vertex unknowns are implemented\n" );
