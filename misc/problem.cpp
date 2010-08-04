@@ -444,7 +444,7 @@ void IdxDescCL::CreateNumbering( Uint level, MultiGridCL& mg, const VecDescCL* l
         throw DROPSErrCL("IdxDescCL::CreateNumbering: Check first, if numbering on interface works in parDROPS.");
 #endif
         if (lsetp == 0) throw DROPSErrCL("IdxDescCL::CreateNumbering: no level set function for interface numbering given");
-        CreateNumbOnInterface( level, mg, *lsetp, GetXidx().GetBound());
+        CreateNumbOnInterface( level, mg, *lsetp, *lsetbnd, GetXidx().GetBound());
     }
     else {
         CreateNumbStdFE( level, mg);
