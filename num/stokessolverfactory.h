@@ -236,7 +236,7 @@ class StokesSolverFactoryCL : public StokesSolverFactoryBaseCL<StokesT, ParamsT,
     PCGPcT PCGPc_;
 
 // Block PC for Oseen problem
-    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, DiagBlockPreCL>     DiagBlockPcT;
+    typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, DiagSpdBlockPreCL>  DiagBlockPcT;
     typedef BlockPreCL<PreBaseCL, SchurPreBaseCL, LowerBlockPreCL>    LowerBlockPcT;
     typedef BlockPreCL<PreBaseCL, BDinvBTPreCL, SIMPLERBlockPreCL>    SIMPLERBlockPcT;
 
@@ -477,7 +477,7 @@ StokesSolverBaseCL* StokesSolverFactoryCL<StokesT, ParamsT, ProlongationVelT, Pr
             MinRes_= new MinResT( *lanczos_,  C_.stk_OuterIter, C_.stk_OuterTol, /*relative*/ false);
             stokessolver= new BlockMatrixSolverCL<MinResT>( *MinRes_);
         }      
-            
+        break;
         
         case GCR_OS: {
             if (APc_==VankaBlock_APC) {

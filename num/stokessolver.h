@@ -355,7 +355,7 @@ class BlockMatrixSolverCL: public StokesSolverBaseCL
     }
 };
 
-// Upper block-triangular preconditioning strategy in BlockPreCL
+/// Upper block-triangular preconditioning strategy in BlockPreCL
 struct UpperBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
@@ -369,7 +369,7 @@ struct UpperBlockPreCL
     }
 };
 
-// Block-diagonal preconditioning strategy in BlockPreCL
+/// Block-diagonal preconditioning strategy in BlockPreCL
 struct DiagBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
@@ -381,7 +381,18 @@ struct DiagBlockPreCL
    }
 };
 
-// Lower block-triangular preconditioning strategy in BlockPreCL
+/// Block-diagonal preconditioning strategy in BlockPreCL if an spd preconditioner is required
+struct DiagSpdBlockPreCL
+{
+    template <class PC1T, class PC2T, class Mat, class Vec>
+    static void
+    Apply (const PC1T& pc1, const PC2T& pc2, const Mat& A, const Mat& B, Vec& v, Vec& p, const Vec& b, const Vec& c) {
+        pc1.Apply( A, v, b);
+        pc2.Apply( /*dummy*/ B, p, c);
+   }
+};
+
+/// Lower block-triangular preconditioning strategy in BlockPreCL
 struct LowerBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
@@ -396,7 +407,7 @@ struct LowerBlockPreCL
     }
 };
 
-// SIMPLER type preconditioning strategy in BlockPreCL
+/// SIMPLER type preconditioning strategy in BlockPreCL
 struct SIMPLERBlockPreCL
 {
     template <class PC1T, class PC2T, class Mat, class Vec>
@@ -1660,6 +1671,7 @@ class VankaSchurPreCL: public SchurPreBaseCL
         this->Apply( MatrixCL(), x, rhs);
     }
 };
+
 
 } // end of namespace DROPS
 
