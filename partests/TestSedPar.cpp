@@ -171,6 +171,8 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
         Stokes.SetNumVelLvl ( Stokes.GetMG().GetNumLevel());
     if ( StokesSolverFactoryHelperCL<ParamMesszelleNsCL>().PrMGUsed(C))
         Stokes.SetNumPrLvl  ( Stokes.GetMG().GetNumLevel());
+
+    SetInitialLevelsetConditions( lset, MG, C);
     Stokes.CreateNumberingVel( MG.GetLastLevel(), vidx);
     Stokes.CreateNumberingPr(  MG.GetLastLevel(), pidx, 0, &lset);
     // For a two-level MG-solver: P2P1 -- P2P1X; comment out the preceding CreateNumberings
