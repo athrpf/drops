@@ -223,7 +223,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 
     lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, 0.), C.tm_StepSize);
 
-    SurfactantcGP1CL timedisc( mg, Bnd_v, C.surf_Theta, C.surf_Visc, &v, lset.Phi, /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    SurfactantcGP1CL timedisc( mg, Bnd_v, C.surf_Theta, C.surf_Visc, &v, lset.Phi, lset.GetBndData(), /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
