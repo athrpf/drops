@@ -40,31 +40,39 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndData
 // used by levelset/prJump.cpp for testing FE pressure spaces.
 {
     const Uint idx_f= f.RowIdx->GetIdx();
-    IdxT Numb[10];
+    const bool velXfem= f.RowIdx->IsExtended();
+    IdxT Numb[14];
 
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
-    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    LocalP2CL<> p1abs_p[4][8], p1abs_n[4][8]; // extended basis functions on pos./neg. part, resp., for each of the 8 regular children
+    LocalP2CL<> loc_phi;
     SMatrixCL<3,3> T;
-    double det;
     InterfaceTriangleCL triangle;
-    P2DiscCL::GetGradientsOnRef( GradRef);
 
     const RefRuleCL RegRef= GetRefRule( RegRefRuleC);
 
     for (MultiGridCL::const_TriangTetraIteratorCL it=MG.GetTriangTetraBegin(), end=MG.GetTriangTetraEnd();
         it!=end; ++it)
     {
-        GetTrafoTr( T, det, *it);
-        P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
-        triangle.Init( *it, SmPhi, lsetbnd);
+        loc_phi.assign( *it, SmPhi, lsetbnd);
+        triangle.Init( *it, loc_phi);
+        if (!triangle.Intersects())
+            continue;
 
         for (int v=0; v<10; ++v)
         { // collect data on all DoF
             const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
             Numb[v]= unk.Exist(idx_f) ? unk(idx_f) : NoIdx;
         }
+        for (int xv=0; xv<4; ++xv)
+        { // collect data on all extended DoF
+            Numb[xv+10]= velXfem && Numb[xv]!=NoIdx ? f.RowIdx->GetXidx()[Numb[xv]] : NoIdx;
+        }
+
+        if (velXfem)
+            P2RidgeDiscCL::GetExtBasisOnChildren( p1abs_p, p1abs_n, loc_phi);
 
         for (int ch=0; ch<8; ++ch)
         {
@@ -103,15 +111,15 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndData
             if (inner_prod( n, pos_dir) < 0) n= -n;
 
             double val_hat[4];
-            for (int v=0; v<10; ++v)
+            for (int v=0; v<14; ++v)
             {
                 if (Numb[v]==NoIdx) continue;
 
                 for (Uint k=0; k<triangle.GetNumPoints(); ++k)
-                    // Werte der Hutfunktion in P,Q,R,S
-                    val_hat[k]= FE_P2CL::H(v,triangle.GetBary(k));
+                    // values of basis function in P,Q,R,S. Note: p1abs_p==p1abs_n on \f$Gamma_h\f$
+                    val_hat[k]= v<10 ? FE_P2CL::H(v,triangle.GetBary(k)) : p1abs_p[v-10][ch](triangle.GetBary(k));
 
-                double v_Bary= FE_P2CL::H(v,BaryPQR),
+                double v_Bary= v<10 ? FE_P2CL::H(v,BaryPQR) : p1abs_p[v-10][ch](BaryPQR),
                     sum_v= 0;
                 for (int k=0; k<3; ++k)
                      sum_v+= val_hat[k];
@@ -122,7 +130,7 @@ void SF_ConstForce( const MultiGridCL& MG, const VecDescCL& SmPhi, const BndData
                     for (int k=1; k<4; ++k)
                         sum_vSQR+= val_hat[k];
                     sum_v+= triangle.GetAreaFrac() * sum_vSQR;
-                    v_Bary+= triangle.GetAreaFrac() * FE_P2CL::H(v,BarySQR);
+                    v_Bary+= triangle.GetAreaFrac() * (v<10 ? FE_P2CL::H(v,BarySQR) : p1abs_p[v-10][ch](BarySQR));
                 }
 
                 // Quadraturformel auf Dreieck, exakt bis zum Grad 2

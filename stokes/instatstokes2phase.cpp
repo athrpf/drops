@@ -227,7 +227,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, MatrixCL* B, VecDescCL* c, const LevelsetP2CL& lset, IdxDescCL* RowIdx, IdxDescCL* ColIdx, double t)
 // P2X / P1X FEs (X=extended) for vel/pr
 {
-    const ExtIdxDescCL& Xidx=    RowIdx->GetXidx();
+    const ExtIdxDescCL& prXidx=    RowIdx->GetXidx();
     const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
     if (c != 0) c->Clear();
@@ -251,6 +251,8 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
         n.assign( *sit, *ColIdx, BndData.Vel);
         GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
+
+        // do setup for std FEM part
         for(int vel=0; vel<10; ++vel) {
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
@@ -268,7 +270,7 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
                     c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
             }
         }
-
+        // now handle extended dofs
         loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
@@ -279,13 +281,12 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
             // I = \int_{T_+} grad v_vel p_pr dx  -  C \int_{T}grad v_vel p_pr dx,
             // where C= (sign Phi_pr==1) \in {0,1} and T_+ = T \cap \Omega_2 (positive part)
             LocalP2CL<Point3DCL> PgradV;
-            const IdxT xidx= Xidx[prNumb[pr]];
-            if (xidx==NoIdx) continue;
+            const IdxT xidx= prXidx[prNumb[pr]];
 
-            for(int vel=0; vel<14; ++vel)
+            for(int vel= (xidx!=NoIdx ? 0 : 10); vel<14; ++vel)
             {
                 const IdxT stdvidx= vel<10 ? n.num[vel] : n.num[vel-10],
-                        xvidx= vel<4 && stdvidx!=NoIdx ? velXidx[stdvidx] : NoIdx,
+                        xvidx= (vel>=10 && stdvidx!=NoIdx) ? velXidx[stdvidx] : NoIdx,
                         vidx= vel<10 ? stdvidx : xvidx;
                 if (vel>=10 && xvidx==NoIdx) continue; // no extended vel dof
 
@@ -320,11 +321,13 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
                     int_Px_gradV= is_pos ? -intNeg : intPos;
                 }
 
-                if (n.WithUnknowns( vel))
+                if (vidx!=NoIdx)
                 {
-                    mB( xidx, vidx)  -=  int_Px_gradV[0];
-                    mB( xidx, vidx+1)-=  int_Px_gradV[1];
-                    mB( xidx, vidx+2)-=  int_Px_gradV[2];
+                    if (xidx!=NoIdx) {
+                        mB( xidx, vidx)  -=  int_Px_gradV[0];
+                        mB( xidx, vidx+1)-=  int_Px_gradV[1];
+                        mB( xidx, vidx+2)-=  int_Px_gradV[2];
+                    }
                     if (vel>=10) { // extended vel: write also entry for p_gradVx
                         const IdxT pidx= prNumb[pr];
                         mB( pidx, vidx)  -=  int_P_gradV[0];
@@ -373,6 +376,8 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
         n.assign( *sit, *ColIdx, BndData.Vel);
         GetLocalNumbP1NoBnd( prNumb, *sit, *RowIdx);
         // Setup B:   b(i,j) =  -\int psi_i * div( phi_j)
+
+        // do setup for std FEM part
         for(int vel=0; vel<10; ++vel) {
             if (n.WithUnknowns( vel))
                 for(int pr=0; pr<4; ++pr) {
@@ -390,7 +395,7 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
                     c->Data[ prNumb[pr]]+= inner_prod( Grad[vel].quadP1( pr, absdet), tmp);
             }
         }
-
+        // now handle extended dofs
         loc_phi.assign( *sit, lset.Phi, lset.GetBndData());
         cut.Init( *sit, loc_phi);
         if (!cut.Intersects()) continue; // extended basis functions have only support on tetra intersecting Gamma!
