@@ -213,7 +213,7 @@ template<class T>
 template<class T>
 void ExtendP1onChild( const LocalP2CL<T>& isoP2, int child, LocalP2CL<T>& P1onParent)
 {
-    static const int childOrder[8]= { 0, 1, 4, 7, 5, 6, 3, 2};
+    static const int childOrder[8]= { 0, 1, 7, 6, 2, 4, 5, 3};
     const Uint ch= childOrder[child];
     // children ordered such that
     // A) children 0,...,3 located at corners of parent, parent vertex ch is also a child vertex
@@ -259,7 +259,7 @@ void ExtendP1onChild( const LocalP2CL<T>& isoP2, int child, LocalP2CL<T>& P1onPa
 
     // second step: linear interpolation of edge values
     for (Uint e=0; e<6; ++e)
-        P1onParent[e+4]= 0.5*(isoP2[VertOfEdge(e,0)] + isoP2[VertOfEdge(e,1)]);
+        P1onParent[e+4]= 0.5*(P1onParent[VertOfEdge(e,0)] + P1onParent[VertOfEdge(e,1)]);
 }
 
 
