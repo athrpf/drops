@@ -868,6 +868,7 @@ inline void MakeGradients (SMatrixCL<3,5>* G, const SMatrixCL<3,5>* GRef, const 
 }
 
 
+/// \brief quadratur of order 2 for \f$ \int f\phi_i\phi_j \f$ for quadratic hat functions
 inline double Quad( const TetraCL& s, instat_scalar_fun_ptr f, int i, int j, double t= 0.0)
 {
     double a[5];
