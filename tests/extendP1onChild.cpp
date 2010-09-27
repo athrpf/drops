@@ -41,7 +41,7 @@ int Test1( int seed)
     for (int ch=0; ch<8; ++ch) {
         ExtendP1onChild( P1asP2, ch, extension);
         diff= P1asP2 - extension; // should be zero
-        if (diff.max() > 1e-18) {
+        if (norm(diff) > 1e-18) {
             std::cout << "test 1: maximum difference = " << diff.max() << " when extending on child " << ch << "!\n";
             ++err;
         }
@@ -67,8 +67,10 @@ int Test2( int seed)
         const ChildDataCL child= GetChildData( data.Children[ch]);
         for (int i=0; i<4; ++i) {
             const int v= child.Vertices[i];
-            if (std::abs(p2func[v] - extension[v]) > 1e-18)
+            if (std::abs(p2func[v] - extension[v]) > 1e-18) {
                 std::cout << "test 2: values are not equal for child " << ch << " and dof " << v << ", rel. difference = " << std::abs(p2func[v] - extension[v])/p2func[v] << "!\n";
+                ++err;
+            }
         }
         // check linearity of extension
         LocalP1CL<> p1func;
@@ -76,7 +78,7 @@ int Test2( int seed)
             p1func[i]= extension[i];
         LocalP2CL<> P1asP2( p1func);
         diff= P1asP2 - extension; // should be zero
-        if (diff.max() > 1e-18) {
+        if (norm(diff) > 1e-18) {
             std::cout << "test 2: maximum difference = " << diff.max() << " when extending on child " << ch << "!\n";
             ++err;
         }
