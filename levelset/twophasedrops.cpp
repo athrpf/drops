@@ -231,11 +231,11 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
     /// \todo rhs beruecksichtigen
     SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, lset.GetBndData(), /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
-    InterfaceP1RepairCL surf_repair( MG, lset.Phi, surfTransp.ic);
+    InterfaceP1RepairCL surf_repair( MG, lset.Phi, lset.GetBndData(), surfTransp.ic);
     if (C.surf_DoTransp)
     {
         adap.push_back( &surf_repair);
-        surfTransp.idx.CreateNumbering( MG.GetLastLevel(), MG, &lset.Phi);
+        surfTransp.idx.CreateNumbering( MG.GetLastLevel(), MG, &lset.Phi, &lset.GetBndData());
         std::cout << "Surfactant transport: NumUnknowns: " << surfTransp.idx.NumUnknowns() << std::endl;
         surfTransp.ic.SetIdx( &surfTransp.idx);
         surfTransp.Init( &surf_sol);

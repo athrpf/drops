@@ -217,14 +217,15 @@ class InterfaceP1RepairCL : public MGObserverCL
   private:
     MultiGridCL& mg_;
     const VecDescCL&   lset_vd_;
+    const BndDataCL<>& lset_bnd_;
     VecDescCL&         u_;
 
     IdxDescCL          fullp1idx_;
     VecDescCL          fullu_;
 
   public:
-    InterfaceP1RepairCL (MultiGridCL& mg, const VecDescCL& lset_vd, VecDescCL& u)
-        : mg_( mg), lset_vd_( lset_vd), u_( u), fullp1idx_( P1_FE), fullu_( &fullp1idx_) {}
+    InterfaceP1RepairCL (MultiGridCL& mg, const VecDescCL& lset_vd, const BndDataCL<>& lset_bnd, VecDescCL& u)
+        : mg_( mg), lset_vd_( lset_vd), lset_bnd_( lset_bnd), u_( u), fullp1idx_( P1_FE), fullu_( &fullp1idx_) {}
 
     void pre_refine  () {}
     void post_refine ();

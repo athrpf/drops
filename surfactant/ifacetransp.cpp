@@ -375,7 +375,7 @@ VectorCL SurfactantcGP1CL::InitStep ()
 {
 
     // std::cout << "SurfactantcGP1CL::InitStep:\n";
-    idx.CreateNumbering( oldidx_.TriangLevel(), MG_, &lset_vd_); // InitOld deletes oldidx_ and swaps idx and oldidx_.
+    idx.CreateNumbering( oldidx_.TriangLevel(), MG_, &lset_vd_, &lsetbnd_); // InitOld deletes oldidx_ and swaps idx and oldidx_.
     std::cout << "new NumUnknowns: " << idx.NumUnknowns() << std::endl;
     ic.SetIdx( &idx);
 
@@ -487,7 +487,7 @@ void
 InterfaceP1RepairCL::post_refine_sequence ()
 {
     u_.RowIdx->DeleteNumbering( mg_);
-    u_.RowIdx->CreateNumbering( fullp1idx_.TriangLevel(), mg_, &lset_vd_);
+    u_.RowIdx->CreateNumbering( fullp1idx_.TriangLevel(), mg_, &lset_vd_, &lset_bnd_);
     u_.SetIdx( u_.RowIdx);
 
     Restrict( mg_, fullu_, u_);

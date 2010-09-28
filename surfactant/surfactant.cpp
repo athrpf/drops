@@ -227,13 +227,13 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
-    InterfaceP1RepairCL ic_repair( mg, lset.Phi, timedisc.ic);
+    InterfaceP1RepairCL ic_repair( mg, lset.Phi, lset.GetBndData(), timedisc.ic);
     adap.push_back( &ic_repair);
     LevelsetRepairCL lset2repair( lset2);
     adap.push_back( &lset2repair);
 
     // Init Interface-Sol
-    timedisc.idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
+    timedisc.idx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << timedisc.idx.NumUnknowns() << std::endl;
     timedisc.ic.SetIdx( &timedisc.idx);
     timedisc.Init( &sol0);
@@ -361,7 +361,7 @@ int main (int argc, char* argv[])
 
     DROPS::IdxDescCL ifaceidx( P1IF_FE);
     ifaceidx.GetXidx().SetBound( C.surf_OmitBound);
-    ifaceidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi);
+    ifaceidx.CreateNumbering( mg.GetLastLevel(), mg, &lset.Phi, &lset.GetBndData());
     std::cout << "NumUnknowns: " << ifaceidx.NumUnknowns() << std::endl;
 
     DROPS::MatDescCL M( &ifaceidx, &ifaceidx);

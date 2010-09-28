@@ -192,7 +192,7 @@ void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
 
     if (l == L - 1) continue;
     for (int i= 0; i < N; ++i) {
-        ifrep[l][i]= new InterfaceP1RepairCL( mg, lset.Phi, DV[l][i]);
+        ifrep[l][i]= new InterfaceP1RepairCL( mg, lset.Phi, lset.GetBndData(), DV[l][i]);
         adap.push_back( ifrep[l][i]);
     }
     adap.SetFineLevel( mg.GetLastLevel() + 1);
