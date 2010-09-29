@@ -222,16 +222,18 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, con
 // computes the integral
 //         sigma \int_\Gamma \kappa v n ds = sigma \int_\Gamma grad id grad v ds
 {
-  const Uint  idx_f=     f.RowIdx->GetIdx();
-  IdxT        Numb[10];
-
+  const Uint idx_f=   f.RowIdx->GetIdx();
+  const bool velXfem= f.RowIdx->IsExtended();
+  IdxT       Numb[10];
 //std::ofstream fil("surf.off");
 //fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 
-  Quad2CL<Point3DCL> Grad[10], GradRef[10];
+  LocalP1CL<Point3DCL> Grad[10], GradRef[10];
   SMatrixCL<3,3> T;
   double det;
   InterfaceTriangleCL triangle;
+  LocalP2CL<> velR_p[4][8], velR_n[4][8]; // for P2R basis on children
+  LocalP2CL<> loc_phi;
 
   P2DiscCL::GetGradientsOnRef( GradRef);
 
@@ -242,7 +244,8 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, con
     P2DiscCL::GetGradients( Grad, GradRef, T); // Gradienten auf aktuellem Tetraeder
     LocalP1CL<Point3DCL> n;
 
-    triangle.Init( *it, SmPhi, lsetbnd);
+    loc_phi.assign( *it, SmPhi, lsetbnd);
+    triangle.Init( *it, loc_phi);
     for (int v=0; v<10; ++v)
     { // collect data on all DoF
       const UnknownHandleCL& unk= v<4 ? it->GetVertex(v)->Unknowns : it->GetEdge(v-4)->Unknowns;
@@ -276,16 +279,20 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, con
           GradId[p][i]= triangle.ApplyProj( std_basis<3>(i+1) - np[i]*np);
 //                     GradId[p][i]= std_basis<3>(i+1) - np[i]*np;
       }
-
       const double C= triangle.GetAbsDet()*sigma/2.;
-
-      for (int v=0; v<10; ++v)
+      if (velXfem)
+          P2RidgeDiscCL::GetExtBasisOnChildren( velR_p, velR_n, loc_phi);
+      for (int v=0; v<(velXfem ? 14 : 10); ++v)
       {
-        if (Numb[v]==NoIdx) continue;
+        const IdxT Numbv= v<10 ? Numb[v] : (velXfem && Numb[v-10]!=NoIdx ? f.RowIdx->GetXidx()[Numb[v-10]] : NoIdx);
+        if (Numbv==NoIdx) continue;
 
-        LocalP1CL<Point3DCL> gradv; // gradv = Werte von grad Hutfunktion fuer DoF v in den vier vertices
-        for (int node=0; node<4; ++node)
-          gradv[node]= Grad[v][node];
+        LocalP1CL<Point3DCL> gradv; // gradv = gradient of hat function for dof v
+        if (v<10) // std basis function
+          for (int node=0; node<4; ++node)
+            gradv[node]= Grad[v][node];
+        else // extended basis function: tangential derivative is the same for pos./neg. part, ie., P_h grad(vx_p) == P_h grad(vx_n). W.l.o.g. take pos. part for computation.
+            P2DiscCL::GetFuncGradient( gradv, velR_p[v-10][ch], Grad);
 
         for (int i=0; i<3; ++i)
         {
@@ -299,7 +306,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, con
           double intBary= inner_prod( GradId[4][i], gradv(BaryPQR));
           if (triangle.IsQuadrilateral())
             intBary+= triangle.GetAreaFrac() * inner_prod( GradId[5][i], gradv(BarySQR));
-          f.Data[Numb[v]+i]-= C *(intSum/12. + 0.75*intBary);
+          f.Data[Numbv+i]-= C *(intSum/12. + 0.75*intBary);
         }
       }
     } // Ende der for-Schleife ueber die Kinder
@@ -481,18 +488,18 @@ void LevelsetP2CL::Init( scalar_fun_ptr phi0)
 {
     const Uint lvl= Phi.GetLevel(),
                idx= Phi.RowIdx->GetIdx();
-    
+
     for (MultiGridCL::TriangVertexIteratorCL it= MG_.GetTriangVertexBegin(lvl),
         end= MG_.GetTriangVertexEnd(lvl); it!=end; ++it)
     {
         if ( it->Unknowns.Exist(idx))
-            Phi.Data[it->Unknowns(idx)]= phi0( it->GetCoord());
+        Phi.Data[it->Unknowns(idx)]= phi0( it->GetCoord());
     }
     for (MultiGridCL::TriangEdgeIteratorCL it= MG_.GetTriangEdgeBegin(lvl),
         end= MG_.GetTriangEdgeEnd(lvl); it!=end; ++it)
     {
         if ( it->Unknowns.Exist(idx))
-            Phi.Data[it->Unknowns(idx)]= phi0( GetBaryCenter( *it));
+        Phi.Data[it->Unknowns(idx)]= phi0( GetBaryCenter( *it));
     }
 }
 
