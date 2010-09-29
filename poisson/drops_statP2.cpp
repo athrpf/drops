@@ -44,8 +44,11 @@
  // include geometric computing
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
-#include "out/output.h"
 #include "geom/geomselect.h"
+
+ // include outputs
+#include "out/output.h"
+#include "out/vtkOut.h"
 
  // include numeric computing!
 #include "num/fe.h"
@@ -125,6 +128,10 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     // the triangulation
     MultiGridCL& mg= Poisson.GetMG();
 
+    // writer for vtk-format
+    VTKOutCL vtkwriter(mg, "DROPS data", 1, std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);
+    vtkwriter.Register( make_VTKScalar( Poisson.GetSolution(), "velocity") );
+
     // connection triangulation and vectors
     // -------------------------------------------------------------------------
     std::cout << line << "Connecting triangulation and matrices/vectors ...\n";
@@ -192,6 +199,7 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
 #else
     realresid= Poisson.idx.GetEx().Norm( VectorCL(Poisson.A.Data*Poisson.x.Data-Poisson.b.Data),false);
 #endif
+
     std::cout << " o Solved system with:\n"
               << "   - time          " << timer.GetTime()   << " s\n"
               << "   - iterations    " << solver->GetIter()  << '\n'
@@ -201,6 +209,12 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
     	std::cout << line << "Check result against known solution ...\n";
     	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
     }
+
+    if ( C.vtk_VTKOut){
+        std::cout << line << "Write solution as VTK file" << std::endl;
+        vtkwriter.Write(0.0, false);
+    }
+
 
     delete solver;
 }

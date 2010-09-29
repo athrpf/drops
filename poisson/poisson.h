@@ -180,6 +180,11 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     // check computed solution, etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
     double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+
+    DiscSolCL GetSolution()
+        { return DiscSolCL(&x, &GetBndData(), &GetMG()); }
+    const_DiscSolCL GetSolution() const
+        { return const_DiscSolCL(&x, &GetBndData(), &GetMG()); }
 };
 
 

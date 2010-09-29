@@ -41,7 +41,7 @@ poissonP1:\
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
     ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o\
     ../stokes/instatstokes2phase.o ../levelset/levelset.o ../levelset/fastmarch.o\
-    ../levelset/surfacetension.o \
+    ../levelset/surfacetension.o ../out/vtkOut.o \
     $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 	
@@ -52,7 +52,7 @@ drops_statP2:\
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
     ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o \
     ../stokes/instatstokes2phase.o ../levelset/levelset.o ../levelset/fastmarch.o\
-    ../levelset/surfacetension.o \
+    ../levelset/surfacetension.o ../out/vtkOut.o \
     ../num/hypre.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 

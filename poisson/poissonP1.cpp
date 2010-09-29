@@ -51,6 +51,7 @@
 
 //include output
 #include "out/ensightOut.h"
+#include "out/vtkOut.h"
 
 // include parallel computing!
 #ifdef _PAR
@@ -419,10 +420,20 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     }
 
     Ensight6OutCL  ens(C.ens_EnsCase+".case", C.tm_NumSteps+1, C.ens_Binary, C.ens_MasterOut);
-    const std::string filename= C.ens_EnsDir + "/" + C.ens_EnsCase;
-    ens.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), C.ens_GeomName,       filename + ".geo"));
-    ens.Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
-    ens.Write();
+    if ( C.ens_EnsightOut){
+        const std::string filename= C.ens_EnsDir + "/" + C.ens_EnsCase;
+        ens.Register( make_Ensight6Geom  ( mg, mg.GetLastLevel(), C.ens_GeomName,       filename + ".geo"));
+        ens.Register( make_Ensight6Scalar( Poisson.GetSolution(), "Temperatur", filename + ".tp", true));
+        ens.Write();
+    }
+
+    // writer for vtk-format
+    VTKOutCL vtkwriter(mg, "DROPS data", C.tm_NumSteps/C.vtk_VTKOut+1 , std::string(C.vtk_VTKDir + "/" + C.vtk_VTKName), C.vtk_Binary);    
+
+    if (C.vtk_VTKOut){
+        vtkwriter.Register( make_VTKScalar( Poisson.GetSolution(), "velocity") );
+        vtkwriter.Write( Poisson.t);
+    }
 
     for ( int step = 1; step <= C.tm_NumSteps; ++step) {
         timer.Reset();
@@ -443,7 +454,10 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.t);
         }
 
-        ens.Write( step*C.tm_StepSize);
+        if ( C.vtk_VTKOut && step%C.vtk_VTKOut==0)
+            vtkwriter.Write( Poisson.t);
+        if ( C.ens_EnsightOut && step%C.ens_EnsightOut==0)
+            ens.Write( step*C.tm_StepSize);
     }
 
     delete solver;

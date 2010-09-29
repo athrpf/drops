@@ -131,7 +131,8 @@ class ParamPoissonProblemCL:
         public ParamTimeDiscPoissonCL,
         public ParamExperimentalDataPoissonCL,
         public ParamDomainCondCL,
-        public ParamErrCL
+        public ParamErrCL,
+        public ParamVTKCL
 
 {
   private:
@@ -148,6 +149,7 @@ class ParamPoissonProblemCL:
         ParamExperimentalDataPoissonCL::rp_.ReadParams( file);
         ParamDomainCondCL::rp_.ReadParams( file);
         ParamErrCL::rp_.ReadParams( file);
+        ParamVTKCL::rp_.ReadParams( file);
     }
 };
 } // end of namespace DROPS
