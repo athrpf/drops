@@ -1,5 +1,5 @@
 /// \file topo.cpp
-/// \brief constains automatically generated refinement rules
+/// \brief contains automatically generated refinement rules
 /// \author LNM RWTH Aachen: Sven Gross, Joerg Peters, Volker Reichelt; SC RWTH Aachen:
 
 /*

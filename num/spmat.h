@@ -515,6 +515,7 @@ VectorBaseCL<T> SparseMatBaseCL<T>::GetLumpedDiag() const
 
 template <typename T>
 VectorBaseCL<T> SparseMatBaseCL<T>::GetSchurDiag( const VectorBaseCL<T>& W) const
+/// In parallel, this function may not work as expected
 {
     const size_t n=num_rows(),
         nnz=num_nonzeros();
@@ -780,7 +781,7 @@ template <typename T>
 template <typename T>
   std::valarray<typename SparseMatBaseCL<T>::value_type>
   LumpInRows(const SparseMatBaseCL<T>& M)
-/// In parallel, this function may not work as expected
+/// In parallel, this function returns the distributed form of the lumped diagonal (can be accumulated afterwards)
 {
     std::valarray<typename SparseMatBaseCL<T>::value_type>
         v( M.num_rows());
