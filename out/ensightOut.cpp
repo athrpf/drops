@@ -23,6 +23,7 @@
 */
 
 #include "out/ensightOut.h"
+#include "num/discretize.h"
 
 namespace DROPS{
 
@@ -681,6 +682,15 @@ Ensight6OutCL::Register (Ensight6VariableCL& var)
 {
     vars_[var.varName()]= &var;
     var.Describe( *this);
+}
+
+
+void Ensight6P2RVectorCL::put(Ensight6OutCL&) const
+{
+    if (p2idx_.NumUnknowns() != 0)
+        p2idx_.DeleteNumbering( mg_);
+    p2idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_, *v_.RowIdx);
+    P2RtoP2 ( *v_.RowIdx, v_.Data, p2idx_, vpos_.Data, vneg_.Data, lset_, lsetbnd_, mg_);
 }
 
 

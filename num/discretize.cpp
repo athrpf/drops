@@ -261,16 +261,23 @@ void P1DiscCL::GetP1Basis( Quad5_2DCL<> p1[4], const BaryCoordCL* const p)
 void P2RidgeDiscCL::GetEnrichmentFunction( LocalP2CL<>& ridgeFunc_p, LocalP2CL<>& ridgeFunc_n, const LocalP2CL<>& lset)
 /// initialize ridge enrichment function (to be interpreted as isoP2 function = P1 on child)
 {
+    int sgn[10]; // sign pattern of lset
     for (int v=0; v<4; ++v) {
         const double absval= std::abs(lset[v]);
-        ridgeFunc_p[v]= InterfacePatchCL::Sign(lset[v])== 1 ? 0 : 2*absval;
-        ridgeFunc_n[v]= InterfacePatchCL::Sign(lset[v])==-1 ? 0 : 2*absval;
+        sgn[v]= InterfacePatchCL::Sign(lset[v]);
+        ridgeFunc_p[v]= sgn[v]== 1 ? 0 : 2*absval;
+        ridgeFunc_n[v]= sgn[v]==-1 ? 0 : 2*absval;
     }
 
-    for (int e=0; e<6; ++e) { // linear interpolation of edge values
-        const double linInterpolAbs= 0.5*(std::abs(lset[VertOfEdge(e,0)]) + std::abs(lset[VertOfEdge(e,1)]));
-        ridgeFunc_p[e+4]= linInterpolAbs - lset[e+4];
-        ridgeFunc_n[e+4]= linInterpolAbs + lset[e+4];
+    for (int e=0; e<6; ++e) {
+        sgn[e+4]= InterfacePatchCL::Sign(lset[e+4]);
+        const int v1= VertOfEdge(e,0),
+                  v2= VertOfEdge(e,1);
+        const bool vzw= sgn[v1] != sgn[v2] || sgn[v1] != sgn[e+4]; // change of sign
+        const double eVal= lset[e+4],
+               absModLset= vzw ? std::max( std::abs(eVal), std::max(std::abs(lset[v1]), std::abs(lset[v2]))) : std::abs(eVal);
+        ridgeFunc_p[e+4]= absModLset - eVal;
+        ridgeFunc_n[e+4]= absModLset + eVal;
     }
 }
 
@@ -335,5 +342,60 @@ void P2RidgeDiscCL::GetExtBasisPointwise( LocalP2CL<> p1ridge_p[4], LocalP2CL<> 
         }
     }
 }
+
+void P2RtoP2( const IdxDescCL& p2ridx, const VectorCL& p2r, const IdxDescCL& p2idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const BndDataCL<>& lsetbnd, const MultiGridCL& mg)
+{
+    const ExtIdxDescCL& extIdx= p2ridx.GetXidx();
+    const int lvl= p2ridx.TriangLevel();
+    const int stride= p2ridx.NumUnknownsVertex();
+    const size_t p2unknowns = extIdx.GetNumUnknownsStdFE();
+    if (p2unknowns != p2idx.NumUnknowns())
+        throw DROPSErrCL( "P2RtoP2: inconsistent indices\n");
+
+    LocalP2CL<> loc_phi;
+    LocalP2CL<> Fabs_p, Fabs_n;    // enrichment function
+    LocalP1CL<Point3DCL> linear;   // linear function to be mulitplied with enrichment function
+    LocalP2CL<Point3DCL> ext_p, ext_n, linP2; // extended part which comes additionally to the std part
+    LocalNumbP2CL numb; // std P2 numbering
+    IdxT xnr[4];        // extended numbering
+    InterfaceTetraCL patch;
+
+    negPart.resize(p2unknowns);
+    posPart.resize(p2unknowns);
+    posPart = negPart = p2r[std::slice(0, p2unknowns, 1)]; // copy std part
+
+    for (MultiGridCL::const_TriangTetraIteratorCL sit = mg.GetTriangTetraBegin(lvl), send=mg.GetTriangTetraEnd(lvl);
+         sit != send; ++sit)
+    {
+        loc_phi.assign( *sit, lset, lsetbnd);
+        patch.Init( *sit, loc_phi);
+        if (patch.Intersects()) { // we are at the phase boundary.
+            // compute extended part
+            P2RidgeDiscCL::GetEnrichmentFunction( Fabs_p, Fabs_n, loc_phi);
+            numb.assign( *sit, p2ridx, p2ridx.GetBndInfo());
+            for (int v=0; v<4; ++v) {
+                xnr[v]= numb.num[v]!=NoIdx ? extIdx[numb.num[v]] : NoIdx;
+            }
+            for (int v=0; v<4; ++v)
+                if (xnr[v] != NoIdx) {
+                    for (int k=0; k<stride; ++k)
+                        linear[v][k]= p2r[xnr[v]+k];
+                }
+            linP2.assign( linear);
+            ext_p= Fabs_p*linP2;
+            ext_n= Fabs_n*linP2;
+            // write posPart/negPart
+            for (int i=0; i<10; ++i) {
+                const IdxT nr= numb.num[i];
+                if (nr!=NoIdx)
+                    for (int k=0; k<stride; ++k) {
+                        posPart[nr+k]= p2r[nr+k] + ext_p[i][k];
+                        negPart[nr+k]= p2r[nr+k] + ext_n[i][k];
+                    }
+            }
+        }
+    }
+}
+
 
 } // end of namespace DROPS

@@ -905,6 +905,9 @@ class P2RidgeDiscCL
     static void GetExtBasisPointwise ( LocalP2CL<> p1ridge_p[4],    LocalP2CL<> p1ridge_n[4],    const LocalP2CL<>& lset);
 };
 
+/// splits a p2r-VectorCL into two p2-VectorCL (should work for both P2R_FE and vecP2R_FE)
+void P2RtoP2( const IdxDescCL& p2ridx, const VectorCL& p2r, const IdxDescCL& p2idx, VectorCL& posPart, VectorCL& negPart, const VecDescCL& lset, const BndDataCL<>& lsetbnd, const MultiGridCL& mg);
+
 
 inline double FuncDet2D( const Point3DCL& p, const Point3DCL& q)
 {
