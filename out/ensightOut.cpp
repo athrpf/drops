@@ -684,7 +684,7 @@ Ensight6OutCL::Register (Ensight6VariableCL& var)
     var.Describe( *this);
 }
 
-
+#ifndef _PAR
 void Ensight6P2RVectorCL::put(Ensight6OutCL&) const
 {
     if (p2idx_.NumUnknowns() != 0)
@@ -692,7 +692,7 @@ void Ensight6P2RVectorCL::put(Ensight6OutCL&) const
     p2idx_.CreateNumbering( v_.RowIdx->TriangLevel(), mg_, *v_.RowIdx);
     P2RtoP2 ( *v_.RowIdx, v_.Data, p2idx_, vpos_.Data, vneg_.Data, lset_, lsetbnd_, mg_);
 }
-
+#endif
 
 void ReadEnsightP2SolCL::CheckFile( const std::ifstream& is) const
 {
