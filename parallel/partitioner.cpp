@@ -25,6 +25,31 @@
 
 #include "parallel/partitioner.h"
 
+//Method used to call the CHACO partitioner
+extern "C" {
+int       interface(
+int       nvtxs,		        /* number of vertices in full graph */
+int      *start,		        /* start of edge list for each vertex */
+int      *adjacency,            /* edge list data */
+int      *vwgts,		        /* weights for all vertices */
+float    *ewgts,		        /* weights for all edges */
+float    *x,float *y,float *z,  /* coordinates for inertial method */
+char     *outassignname,	    /* name of assignment output file */
+char     *outfilename,		    /* output file name */
+short    *assignment,		    /* set number of each vtx (length n) */
+int       architecture,	    	/* 0 => hypercube, d => d-dimensional mesh */
+int       ndims_tot,	    	/* total number of cube dimensions to divide */
+int       mesh_dims[3],		    /* dimensions of mesh of processors */
+double   *goal,			        /* desired set sizes for each set */
+int       global_method,    	/* global partitioning algorithm */
+int       local_method,	    	/* local partitioning algorithm */
+int       rqi_flag,	        	/* should I use RQI/Symmlq eigensolver? */
+int       vmax,			        /* how many vertices to coarsen down to? */
+int       ndims,		        /* number of eigenvectors (2^d sets) */
+double    eigtol,	        	/* tolerance on eigenvectors */
+long      seed		        	/* for random graph mutations */);
+}
+
 namespace DROPS
 {
 
@@ -48,8 +73,8 @@ void GraphST::ResizeVtxDist()
    Additionally, the values for number of adjacenies and vertices as well as the parameters geom and ncon are set.
    \param numadj  number of neighbors
    \param myVerts number of verticies
-   \param geom    flag for geometry
-   \param ncon    number of weight conditions per vertex
+   \param hasgeom flag for geometry
+   \param numncon number of weight conditions per vertex
  */
 void GraphST::Resize(int numadj, int numverts, bool hasgeom, int numncon)
 {
@@ -116,8 +141,8 @@ GraphST& PartitionerCL::GetGraph()
 /**Factory method that based on the partOption parameter allocates memory for the chosen type of object
   (it implements the Factory design pattern)
  \param partitioner type of partitioner used( 0 - Metis, 1 - Zoltan, 2 - Scotch)
-        quality     quality of the partitioning
-        method      partition method invoked by the partitioner
+ \param quality     quality of the partitioning
+ \param method      partition method invoked by the partitioner
  */
 PartitionerCL* PartitionerCL::newPartitioner(Partitioner partitioner, float quality, PartMethod method)
 {
@@ -163,8 +188,8 @@ void PartitionerCL::ApplyIdentity()
 
 /** Constructor of the derived class ParMetisCL (parent PartitionerCL)
  \param ubvec       type of partitioner used
-        quality     quality of the partitioning
-        meth        quality parameter
+ \param quality     quality of the partitioning
+ \param meth        quality parameter
  */
 ParMetisCL::ParMetisCL(PartMethod meth, float ubvec, float quality) : PartitionerCL(meth)
 {
@@ -185,11 +210,11 @@ void ParMetisCL::PartGraphSer(int master)
     if (GetGraph().myVerts != GetGraph().vtxdist[DynamicDataInterfaceCL::InfoProcs()])
         Comment("LoadBalCL: PartGraphSer: This procedure is called by a proc, that does not have all nodes!"<<std::endl, DebugLoadBalC);
 
-    int    wgtflag    = 3,                                      ///< Weights on vertices and adjacencies are given
-           numflag    = 0,                                      ///< Numbering of verts starts by 0 (C-Style)
-           nparts     = ProcCL::Size(),                         ///< Number of subdomains (per proc one)
-           n          = GetGraph().myVerts,                     ///< Number of vertices
-           options[5] = {0,0,0,0,0};                            ///< Default options
+    int    wgtflag    = 3,                                      // Weights on vertices and adjacencies are given
+           numflag    = 0,                                      // Numbering of verts starts by 0 (C-Style)
+           nparts     = ProcCL::Size(),                         // Number of subdomains (per proc one)
+           n          = GetGraph().myVerts,                     // Number of vertices
+           options[5] = {0,0,0,0,0};                            // Default options
     TimerCL timer; timer.Reset();
     // Depending on the method chosen KWay or Recursive the appropriate metis function is called
     // if number of balance conditions is not equal to 1 use the multi constrained versions
@@ -280,7 +305,7 @@ ZoltanCL::ZoltanCL( PartMethod meth)
     zz = Zoltan_Create( ProcCL::GetComm());
 }
 
-/// \brief DEstructor of the derived class ZoltanCL (parent class PartitionerCL)
+/// \brief Destructor of the derived class ZoltanCL (parent class PartitionerCL)
 ZoltanCL::~ZoltanCL()
 {
     Zoltan_Destroy(&zz);
@@ -288,7 +313,7 @@ ZoltanCL::~ZoltanCL()
 
 /** Querry function required by Zoltan
  \param data      pointer to the GraphST attribute
-        ierr      zoltan error type
+ \param ierr      zoltan error type
  */
 int ZoltanCL::get_number_of_vertices(void *data, int *ierr)
 {
@@ -299,10 +324,10 @@ int ZoltanCL::get_number_of_vertices(void *data, int *ierr)
 
 /** Querry function required by Zoltan
  \param data        pointer to the GraphST attribute
-        globalID    global id of the actual vertex
-        localID     local id of the actual vertex
-        obj_wgts    weights of the vertices
-        ierr        zoltan error type
+ \param globalID    global id of the actual vertex
+ \param localID     local id of the actual vertex
+ \param obj_wgts    weights of the vertices
+ \param ierr        zoltan error type
  */
 void ZoltanCL::get_vertex_list(void *data, int, int, ZOLTAN_ID_PTR globalID, ZOLTAN_ID_PTR localID, int, float *obj_wgts, int *ierr)
 {
@@ -320,18 +345,18 @@ void ZoltanCL::get_vertex_list(void *data, int, int, ZOLTAN_ID_PTR globalID, ZOL
 
 /** Querry function required by Zoltan
  \param data        pointer to the GraphST attribute
-        sizeGID     dimension size of the global id of the actual vertex
-        sizeLID     dimension size of the local id of the actual vertex
-        num_obj     number of vertices
-        localID     local id of the actual vertex
-        num_edges   number of edges in the graph
-        nbor_GID    global id of the neighboring vertices
-        nbor_Proc   processor ot which the neighbor is assigned
-        wgt_dim     dimension size of the weights of the edges
-        ewgts       weights of the edges
-        ierr        Zoltan error type
+ \param sizeGID     dimension size of the global id of the actual vertex
+ \param sizeLID     dimension size of the local id of the actual vertex
+ \param num_obj     number of vertices
+ \param localID     local id of the actual vertex
+ \param num_edges   number of edges in the graph
+ \param nbor_GID    global id of the neighboring vertices
+ \param nbor_Proc   processor ot which the neighbor is assigned
+ \param wgt_dim     dimension size of the weights of the edges
+ \param ewgts       weights of the edges
+ \param ierr        Zoltan error type
  */
-void ZoltanCL::get_edge_list(void *data, int sizeGID, int sizeLID, int num_obj, ZOLTAN_ID_PTR , ZOLTAN_ID_PTR localID, int *num_edges, ZOLTAN_ID_PTR nborGID, int *nborProc, int wgt_dim, float *ewgts, int *ierr)//returns the list of edges of each processor
+void ZoltanCL::get_edge_list(void *data, int sizeGID, int sizeLID, int num_obj, ZOLTAN_ID_PTR , ZOLTAN_ID_PTR localID, int *num_edges, ZOLTAN_ID_PTR nborGID, int *nborProc, int wgt_dim, float *ewgts, int *ierr)
 {
     int i, j, from, to;
     int *nextNbor, *nextProc;
@@ -370,11 +395,11 @@ void ZoltanCL::get_edge_list(void *data, int sizeGID, int sizeLID, int num_obj, 
 
 /** Querry function required by Zoltan
  \param data        pointer to the GraphST attribute
-        sizeGID     dimension size of the global id of the actual vertex
-        sizeLID     dimension size of the local id of the actual vertex
-        num_obj     number of vertices
-        num_Edges   number of edges
-        ierr        Zoltan error type
+ \param sizeGID     dimension size of the global id of the actual vertex
+ \param sizeLID     dimension size of the local id of the actual vertex
+ \param num_obj     number of vertices
+ \param num_Edges   number of edges
+ \param ierr        Zoltan error type
  */
 void ZoltanCL::get_num_edges_list(void *data, int sizeGID, int sizeLID, int num_obj, ZOLTAN_ID_PTR, ZOLTAN_ID_PTR, int *numEdges, int *ierr)// returns the total number of edges
 {
@@ -419,9 +444,9 @@ void ZoltanCL::PartGraphSer( int)
     if (GetGraph().myVerts != GetGraph().vtxdist[DynamicDataInterfaceCL::InfoProcs()])
         Comment("LoadBalCL: PartGraphSer: This procedure is called by a proc, that does not have all nodes!"<<std::endl, DebugLoadBalC);
     int i;
-    int changes ; // Set to 1 or .TRUE. if the decomposition was changed by the load-balancing method; 0 or .FALSE. otherwise.
-    int numGidEntries; //the number of array entries used to describe a single global ID
-    int numLidEntries; //the number of array entries used to describe a single local ID
+    int changes ;       // Set to 1 or .TRUE. if the decomposition was changed by the load-balancing method; 0 or .FALSE. otherwise.
+    int numGidEntries;  //the number of array entries used to describe a single global ID
+    int numLidEntries;  //the number of array entries used to describe a single local ID
     int numImport;
     ZOLTAN_ID_PTR importGlobalGids;
     ZOLTAN_ID_PTR importLocalGids;
@@ -435,21 +460,21 @@ void ZoltanCL::PartGraphSer( int)
     int rc;
 
     Zoltan_Set_Param(zz, "LB_APPROACH", "PARTITION");//Partition "from scratch," not taking into account the current data distribution;
-                                                //this option is recommended for static load balancing
+                                                     //this option is recommended for static load balancing
     ParTimerCL timer; timer.Reset();
     rc = Zoltan_LB_Partition(zz, /* input (all remaining fields are output) */
-          &changes,     /* 1 if partitioning was changed, 0 otherwise */
-          &numGidEntries,  /* Number of integers used for a global ID */
-          &numLidEntries,  /* Number of integers used for a local ID */
-          &numImport,      /* Number of vertices to be sent to me */
-          &importGlobalGids,  /* Global IDs of vertices to be sent to me */
-          &importLocalGids,   /* Local IDs of vertices to be sent to me */
-          &importProcs,    /* Process rank for source of each incoming vertex */
-          &importToPart,   /* New partition for each incoming vertex */
-          &numExport,      /* Number of vertices I must send to other processes*/
-          &exportGlobalGids,  /* Global IDs of the vertices I must send */
-          &exportLocalGids,   /* Local IDs of the vertices I must send */
-          &exportProcs,    /* Process to which I send each of the vertices */
+          &changes,              /* 1 if partitioning was changed, 0 otherwise */
+          &numGidEntries,        /* Number of integers used for a global ID */
+          &numLidEntries,        /* Number of integers used for a local ID */
+          &numImport,            /* Number of vertices to be sent to me */
+          &importGlobalGids,     /* Global IDs of vertices to be sent to me */
+          &importLocalGids,      /* Local IDs of vertices to be sent to me */
+          &importProcs,          /* Process rank for source of each incoming vertex */
+          &importToPart,         /* New partition for each incoming vertex */
+          &numExport,            /* Number of vertices I must send to other processes*/
+          &exportGlobalGids,     /* Global IDs of the vertices I must send */
+          &exportLocalGids,      /* Local IDs of the vertices I must send */
+          &exportProcs,          /* Process to which I send each of the vertices */
           &exportToPart);
     timer.Stop(); time_= timer.GetTime();
 
@@ -472,7 +497,7 @@ void ZoltanCL::PartGraphPar()
             DROPSErrCL("LoadBalCL::PartGraphPar: Graph has not been set up. Maybe use CreateDualRedGraph before calling this routine"),
             DebugLoadBalC);
     int i;
-    int changes; // Set to 1 or .TRUE. if the decomposition was changed by the load-balancing method; 0 or .FALSE. otherwise.
+    int changes;       // Set to 1 or .TRUE. if the decomposition was changed by the load-balancing method; 0 or .FALSE. otherwise.
     int numGidEntries; //the number of array entries used to describe a single global ID
     int numLidEntries; //the number of array entries used to describe a single local ID
     int numImport;
@@ -485,7 +510,7 @@ void ZoltanCL::PartGraphPar()
     ZOLTAN_ID_PTR exportLocalGids;
     int *exportProcs;
     int *exportToPart;
-    int rc;
+    int rc = 0;
 
     if ( meth_==Adaptive){
         Zoltan_Set_Param(zz, "LB_APPROACH", "REPARTITION"); //Partition but take into account current data distribution to keep data migration low;
@@ -529,10 +554,12 @@ void ZoltanCL::PartGraphPar()
 # endif
 
 #ifdef _SCOTCH
+/// \brief Constructor of the derived class ScotchCL (parent class PartitionerCL)
 ScotchCL::ScotchCL(PartMethod meth)
     : PartitionerCL(meth)
 {}
 
+/// \brief Method that sets some parameters inside Scotch so that the communication between drops and the partitioner is correct
 void ScotchCL::CreateGraph()
 {
     if ( GetGraph().ncon>1){
@@ -540,6 +567,7 @@ void ScotchCL::CreateGraph()
     }
 }
 
+/// \brief Parallel partitioning
 void ScotchCL::PartGraphPar()
 {
     if ( meth_==Identity){
@@ -578,6 +606,7 @@ void ScotchCL::PartGraphPar()
     SCOTCH_dgraphExit(  &graph);
 }
 
+/// \brief Serial partitioning
 void ScotchCL::PartGraphSer( int master)
 {
     if ( ProcCL::MyRank()!=master)
@@ -595,5 +624,4 @@ void ScotchCL::PartGraphSer( int master)
     SCOTCH_graphExit( &graph);
 }
 #endif
-
 }//end of namespace

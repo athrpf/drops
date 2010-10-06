@@ -51,7 +51,7 @@ typedef idxtype* IndexArray;        ///< idxtype is defined as Integer
 enum Partitioner{
     metis=1,        ///< Parmetis
     zoltan=2,       ///< Zoltan
-    scotch=3        ///< Scotch
+    scotch=3       ///< Scotch
 };
 
 /// \enum PartMethod tells which method should be used to compute graph partition problem
@@ -189,7 +189,6 @@ class ScotchCL : public PartitionerCL
     std::string GetName() const { return std::string("Scotch"); }
 };
 #endif
-
 }       // end of namespace
 
 #endif //DROPS_PARTITIONER_H
