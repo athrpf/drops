@@ -92,6 +92,25 @@ void InterfacePatchCL::Init( const TetraCL& t, const SubTetraT& st, const LocalP
     barysubtetra_ = true;
 }
 
+bool InterfacePatchCL::IntersectsChild( Uint ch) const
+{
+    const ChildDataCL& data= GetChildData ( ch);
+    for (int i= 1; i < 4; ++i)
+        if (sign_[data.Vertices[0]] != sign_[data.Vertices[i]])
+            return true;
+    return false;
+}
+
+int InterfacePatchCL::GetNumIntersectedSubTetras() const
+{
+    int intersectedSubTetra= 0;
+    for (int ch=0; ch<8; ++ch) {
+        if (IntersectsChild( ch))
+            intersectedSubTetra++;
+    }
+    return intersectedSubTetra;
+}
+
 bool InterfacePatchCL::ComputeVerticesOfCut( Uint ch, bool compute_PQRS)
 {
     const ChildDataCL& data= GetChildData( ch);
@@ -193,29 +212,6 @@ InterfacePatchCL::SubTetraT InterfaceTetraCL::MultiplySubTetra(const InterfacePa
         for (int j = 0; j <4; ++j)
             TetrakBary_[i] += (st_[j]*Tetrak_[i][j]);
     return TetrakBary_;
-}
-
-/** For each of the eight regular children, count the number positiv-, negativ- 
-    and zero-valued vertices and decide by this information if a change of
-    sign occurs on that child tetrahedra. Afterwards return the number of intersected 
-    child tetrahedra.
-    \return number of intersected sub-tetrahedra
-*/
-int InterfacePatchCL::GetNumIntersectedSubTetras() const
-{
-    ChildDataCL data;
-    int intersectedSubTetra=0;
-    int num_sign[3];
-    for ( int ch=0; ch<8; ++ch){
-        data  = GetChildData ( ch);
-        num_sign[0]= num_sign[1]= num_sign[2]= 0;
-        for ( int vert=0; vert<4; ++vert){
-            ++num_sign[ sign_[data.Vertices[vert]]+1];
-        }
-        if ( num_sign[1]>=0 || num_sign[0]*num_sign[2]>0)
-            intersectedSubTetra++;
-    }
-    return intersectedSubTetra;
 }
 
 bool InterfaceTetraCL::ComputeCutForChild( Uint ch)

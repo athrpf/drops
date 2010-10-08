@@ -84,10 +84,13 @@ class InterfacePatchCL
       int GetSign( Uint DoF) const { return sign_[DoF]; }              ///< returns -1/0/1
       double GetPhi( Uint DoF) const { return PhiLoc_[DoF]; }          ///< returns value of level set function
       const Point3DCL& GetPoint( Uint i) const { return PQRS_[i]; }
-      bool Intersects() const                                          ///< returns whether patch exists (i.e. interface intersects tetra)
+      bool Intersects() const                                          ///< returns whether a patch exists on one of the 8 regular children (i.e. interface intersects tetra)
         { for(int i=1; i<10; ++i) if (sign_[0]!=sign_[i]) return true; return false; }
-      bool IntersectsInterior() const                                  ///<  returns whether patch exists, which is not subset of a face
+      bool IntersectsInterior() const                                  ///<  returns whether patch exists on one of the 8 regular children, which is not subset of a face
         { for(int i=0; i<9; ++i) for (int j=i+1; j<10; ++j) if (sign_[i]*sign_[j]==-1) return true; return false; }
+      bool IntersectsChild( Uint ch) const;                            ///< returns whether a patch exists on an arbitrary child ch.
+      int GetNumIntersectedSubTetras () const; ///< returns the number of intersected regular child tetrahedra
+
       bool ComputeVerticesOfCut( Uint ch, bool compute_PQRS= false);   ///< returns true, iff a patch exists for the child ch. If st_ was given to Init, the child of the transformed tetra T will be considered.
           ///@}
 
@@ -105,8 +108,6 @@ class InterfacePatchCL
 
       void               WriteGeom( std::ostream&) const;                          ///< Geomview output for debugging
       void               DebugInfo( std::ostream&, bool InfoOnChild= false) const;
-
-      int                GetNumIntersectedSubTetras() const;
     ///@}
 };
 
