@@ -205,13 +205,13 @@ void InterfacePatchCL::WriteGeom( std::ostream& os) const
 }
 
 // multiplication of SubTetraT with st
-InterfacePatchCL::SubTetraT InterfaceTetraCL::MultiplySubTetra(const InterfacePatchCL::SubTetraT & Tetrak_ )
+InterfacePatchCL::SubTetraT InterfaceTetraCL::TransformToSubTetra(const InterfacePatchCL::SubTetraT& tetra)
 {
-    SubTetraT TetrakBary_;
-    for (int i = 0; i <4; ++i)
-        for (int j = 0; j <4; ++j)
-            TetrakBary_[i] += (st_[j]*Tetrak_[i][j]);
-    return TetrakBary_;
+    SubTetraT ret;
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            ret[i] += st_[j]*tetra[i][j];
+    return ret;
 }
 
 bool InterfaceTetraCL::ComputeCutForChild( Uint ch)
@@ -221,6 +221,10 @@ bool InterfaceTetraCL::ComputeCutForChild( Uint ch)
 
 void InterfaceTetraCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child)
 {
+    // if Init for SubTetraT has been used, coordinates must be transformed
+    if (barysubtetra_ == true)
+        BaryCoords= TransformToSubTetra(BaryCoords);
+
     if (pos) {
         posTetras.push_back(BaryCoords);
         posChildIdx.push_back(child);
@@ -230,16 +234,167 @@ void InterfaceTetraCL::InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint chil
     }
 }
 
+void InterfaceTetraCL::ComputeSubTets( Uint ch, bool clearTetras)
+{
+    if (clearTetras) {
+        posTetras.clear();
+        negTetras.clear();
+    }
+
+    //std::cout << "Kind " << ch << "\n\n";
+    const ChildDataCL& data= GetChildData( ch);
+    SubTetraT BaryCoords;
+
+    //cuts = Child + empty set
+    if (!ComputeCutForChild(ch) || (intersec_==3 && innersec_==0))
+    {
+        //std::cout << "cuts = Child + empty set: " << num_sign_[2] << "\n";
+        for (Uint i=0; i<4; ++i)
+            BaryCoords[i]=BaryDoF_[data.Vertices[i]];
+        InsertSubTetra( BaryCoords, num_sign_[2]>0, ch);
+        return;
+    }
+    if (intersec_==3)
+        switch (innersec_)
+        {
+            case 1 : // cuts = Tetra + Tetra
+            {
+                //std::cout << "cuts = Tetra + Tetra"<<"\n";
+                for (int i=0; i<3; ++i)
+                    BaryCoords[i]= Bary_[i];
+                for (int i=0; i<4; ++i)
+                {
+                    if (sign_[data.Vertices[i]]==0) continue;
+                    BaryCoords[3]= BaryDoF_[data.Vertices[i]];
+                    InsertSubTetra( BaryCoords, sign_[data.Vertices[i]]==1, ch);
+                }
+            } break;
+            case 2 : // cuts = Tetra + Pyramide mit 4eckiger Grundflaeche
+            {
+                // tetra
+                //std::cout << "cuts = Tetra + Pyramide"<<"\n";
+                for (int i=0; i<3; ++i)
+                    BaryCoords[i]= Bary_[i];
+
+                int vertB= -1;
+                const int signB= num_sign_[0]==1 ? -1 : 1; // sign of vert B occurs only once
+                for (int i=0; vertB==-1 && i<4; ++i)
+                    if (sign_[data.Vertices[i]]==signB) vertB= i;
+                BaryCoords[3]= BaryDoF_[data.Vertices[vertB]];
+                InsertSubTetra( BaryCoords, signB==1, ch);
+
+                // pyramid = 2 tetras: ACDP + APQD
+                //                                     connectivity:     P-------Q
+                //                                                       | \   / |
+                //                                                       |   A   |
+                //                                                       | /   \ |
+                //                                                       C-------D
+                //A,C,D Ecken des Kindtetraeders
+                int z=0;
+                for (int i=0; i<4; ++i)
+                    if (i!=vertB) BaryCoords[z++]= BaryDoF_[data.Vertices[i]];
+                BaryCoords[3]= Bary_[1];
+                InsertSubTetra( BaryCoords, signB!=1, ch);
+
+                for (int i=0; i<3; ++i)
+                    BaryCoords[i]= Bary_[i];
+                int vertD=-1;
+                for (int i=0; vertD==-1 && i<4; ++i)
+                {
+                    if (sign_[data.Vertices[i]]==-signB &&
+                        (i==VertOfEdge(Edge_[2],0) ||
+                         i==VertOfEdge(Edge_[2],1))  )
+                         vertD= i;
+                }
+                BaryCoords[3]= BaryDoF_[data.Vertices[vertD]];
+                InsertSubTetra( BaryCoords, signB!=1, ch);
+            } break;
+            case 3 : // cuts = Tetra + Tetra-Stumpf
+            {
+                //std::cout << "cuts = Tetra + Tetra-Stumpf\n";
+                int vertA= -1;  // cut-Tetra = APQR
+                const int signA= num_sign_[0]==1 ? -1 : 1; // sign of vert A occurs only once
+                for (int i=0; vertA==-1 && i<4; ++i)
+                    if (sign_[data.Vertices[i]]==signA) vertA= i;
+                for (int i=0; i<3; ++i)
+                    BaryCoords[i]= Bary_[i];
+                BaryCoords[3]= BaryDoF_[data.Vertices[vertA]];
+
+                InsertSubTetra( BaryCoords, signA==1, ch);
+                //                                     connectivity:     R---------D
+                //                                                      /|        /|
+                //                                                     Q-|-------C |
+                //                                                      \|        \|
+                //                                                       P---------B
+                //B,C,D Ecken des Kindtetraeders
+                int vertBCD[3];
+                for (Uint i=0; i<3; ++i)
+                    vertBCD[i]= (vertA==VertOfEdge(Edge_[i],0)) ? VertOfEdge(Edge_[i],1) : VertOfEdge(Edge_[i],0);
+
+                // QCPR
+                BaryCoords[0] = Bary_[1];
+                BaryCoords[1] = BaryDoF_[data.Vertices[vertBCD[1]]];
+                BaryCoords[2] = Bary_[0];
+                BaryCoords[3] = Bary_[2];
+                if ( signA!=1 && Edge_[1]!=-1)
+                    InsertSubTetra(BaryCoords, true, ch);
+                else if (Edge_[1]!=-1)
+                    InsertSubTetra(BaryCoords, false, ch);
+
+                // BCPR
+                BaryCoords[0] = BaryDoF_[data.Vertices[vertBCD[0]]];
+                if ( signA!=1 && Edge_[0]!=-1)
+                    InsertSubTetra(BaryCoords, true, ch);
+                else if (Edge_[0]!=-1)
+                    InsertSubTetra(BaryCoords, false, ch);
+
+                // BCDR
+                BaryCoords[2] = BaryDoF_[data.Vertices[vertBCD[2]]];
+                if ( signA!=1 && Edge_[2]!=-1)
+                    InsertSubTetra(BaryCoords, true, ch);
+                else if (Edge_[2]!=-1)
+                    InsertSubTetra(BaryCoords, false, ch);
+            } break;
+        }
+    if (intersec_==4)
+    {   // cuts = 2x 5-Flaechner mit 6 Knoten. connectivity:     R---------S
+        //                                                      /|        /|
+        //                                                     A-|-------B |
+        //                                                      \|        \|
+        //                                                       P---------Q
+        //std::cout << "cuts = 2x 5-Flaechner\n";
+        int vertAB[2]; // cut mit VZ==part = ABPQRS
+
+        //erst werden die "negativen" Kinder in die Liste hinzugefuegt, dann die "positiven"
+        for (int signAB = -1; signAB<=1; signAB+=2) { int k = 0;
+            for (int i=0; i<4 && k<2; ++i)
+                if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
+            // connectivity AP automatisch erfuellt, check for connectivity AR
+            const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
+            // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
+            // ABPR    (bzw. ABPQ)
+            BaryCoords[0]= BaryDoF_[data.Vertices[vertAB[0]]];
+            BaryCoords[1]= BaryDoF_[data.Vertices[vertAB[1]]];
+            BaryCoords[2]= Bary_[0];    BaryCoords[3]= Bary_[AR ? 2 : 1];
+            InsertSubTetra( BaryCoords, signAB!=-1, ch);
+            // QBPR    (bzw. RBPQ)
+            BaryCoords[0]=Bary_[AR ? 1 : 2];
+            InsertSubTetra( BaryCoords, signAB!=-1, ch);
+            // QBSR    (bzw. RBSQ)
+            BaryCoords[2]=Bary_[3];
+            InsertSubTetra( BaryCoords, signAB!=-1, ch);
+        }
+    } //intersec_==4 Ende
+}
+
 void InterfaceTetraCL::ComputeSubTets()
 {
     posTetras.clear();
     negTetras.clear();
 
-    ChildDataCL data;
-    SubTetraT BaryCoords;
-
     if (!Intersects())
     {
+        SubTetraT BaryCoords;
         for (Uint i=0; i<4; ++i)
             BaryCoords[i] = BaryDoF_[i];
         InsertSubTetra( BaryCoords, sign_[0]==1, 8 /*the tetra itself as child*/);
@@ -247,172 +402,16 @@ void InterfaceTetraCL::ComputeSubTets()
     }
 
     // Schleife ueber die Kinder
-    for (Uint ch=0; ch < 8 && Intersects(); ++ch)
-    {
-        //std::cout << "Kind " << ch << "\n \n";
-        data  = GetChildData ( ch);
-
-        //cuts = Child + empty set
-        if (!ComputeCutForChild(ch) || (intersec_==3 && innersec_==0))
-        {
-            //std::cout << "cuts = Child + empty set: " << num_sign_[2] <<"\n";
-            for (Uint i=0; i<4; ++i)
-                BaryCoords[i]=BaryDoF_[data.Vertices[i]];
-            InsertSubTetra( BaryCoords, num_sign_[2]>0, ch);
-        }
-        if (intersec_==3)
-            switch (innersec_)
-            {
-                case 1 : // cuts = Tetra + Tetra
-                {
-                    //std::cout << "cuts = Tetra + Tetra"<<"\n";
-                    for (int i=0; i<3; ++i)
-                        BaryCoords[i]= Bary_[i];
-                    for (int i=0; i<4; ++i)
-                    {
-                        if (sign_[data.Vertices[i]]==0) continue;
-                        BaryCoords[3]= BaryDoF_[data.Vertices[i]];
-                        InsertSubTetra( BaryCoords, sign_[data.Vertices[i]]==1, ch);
-                    }
-                } break;
-                case 2 : // cuts = Tetra + Pyramide mit 4eckiger Grundflaeche
-                {
-                    // tetra
-                    //std::cout << "cuts = Tetra + Pyramide"<<"\n";
-                    for (int i=0; i<3; ++i)
-                        BaryCoords[i]= Bary_[i];
-
-                    int vertB= -1;
-                    const int signB= num_sign_[0]==1 ? -1 : 1; // sign of vert B occurs only once
-                    for (int i=0; vertB==-1 && i<4; ++i)
-                        if (sign_[data.Vertices[i]]==signB) vertB= i;
-                    BaryCoords[3]= BaryDoF_[data.Vertices[vertB]];
-                    InsertSubTetra( BaryCoords, signB==1, ch);
-
-                    // pyramid = 2 tetras: ACDP + APQD
-                    //                                     connectivity:     P-------Q
-                    //                                                       | \   / |
-                    //                                                       |   A   |
-                    //                                                       | /   \ |
-                    //                                                       C-------D
-                    //A,C,D Ecken des Kindtetraeders
-                    int z=0;
-                    for (int i=0; i<4; ++i)
-                        if (i!=vertB) BaryCoords[z++]= BaryDoF_[data.Vertices[i]];
-                    BaryCoords[3]= Bary_[1];
-                    InsertSubTetra( BaryCoords, signB!=1, ch);
-
-                    for (int i=0; i<3; ++i)
-                        BaryCoords[i]= Bary_[i];
-                    int vertD=-1;
-                    for (int i=0; vertD==-1 && i<4; ++i)
-                    {
-                        if (sign_[data.Vertices[i]]==-signB &&
-                            (i==VertOfEdge(Edge_[2],0) ||
-                             i==VertOfEdge(Edge_[2],1))  )
-                             vertD= i;
-                    }
-                    BaryCoords[3]= BaryDoF_[data.Vertices[vertD]];
-                    InsertSubTetra( BaryCoords, signB!=1, ch);
-                } break;
-                case 3 : // cuts = Tetra + Tetra-Stumpf
-                {
-                    //std::cout << "cuts = Tetra + Tetra-Stumpf\n";
-                    int vertA= -1;  // cut-Tetra = APQR
-                    const int signA= num_sign_[0]==1 ? -1 : 1; // sign of vert A occurs only once
-                    for (int i=0; vertA==-1 && i<4; ++i)
-                        if (sign_[data.Vertices[i]]==signA) vertA= i;
-                    for (int i=0; i<3; ++i)
-                        BaryCoords[i]= Bary_[i];
-                    BaryCoords[3]= BaryDoF_[data.Vertices[vertA]];
-
-                    InsertSubTetra( BaryCoords, signA==1, ch);
-                    //                                     connectivity:     R---------D
-                    //                                                      /|        /|
-                    //                                                     Q-|-------C |
-                    //                                                      \|        \|
-                    //                                                       P---------B
-                    //B,C,D Ecken des Kindtetraeders
-                    int vertBCD[3];
-                    for (Uint i=0; i<3; ++i)
-                        vertBCD[i]= (vertA==VertOfEdge(Edge_[i],0)) ? VertOfEdge(Edge_[i],1) : VertOfEdge(Edge_[i],0);
-
-                    // QCPR
-                    BaryCoords[0] = Bary_[1];
-                    BaryCoords[1] = BaryDoF_[data.Vertices[vertBCD[1]]];
-                    BaryCoords[2] = Bary_[0];
-                    BaryCoords[3] = Bary_[2];
-                    if ( signA!=1 && Edge_[1]!=-1)
-                        InsertSubTetra(BaryCoords, true, ch);
-                    else if (Edge_[1]!=-1)
-                        InsertSubTetra(BaryCoords, false, ch);
-
-                    // BCPR
-                    BaryCoords[0] = BaryDoF_[data.Vertices[vertBCD[0]]];
-                    if ( signA!=1 && Edge_[0]!=-1)
-                        InsertSubTetra(BaryCoords, true, ch);
-                    else if (Edge_[0]!=-1)
-                        InsertSubTetra(BaryCoords, false, ch);
-
-                    // BCDR
-                    BaryCoords[2] = BaryDoF_[data.Vertices[vertBCD[2]]];
-                    if ( signA!=1 && Edge_[2]!=-1)
-                        InsertSubTetra(BaryCoords, true, ch);
-                    else if (Edge_[2]!=-1)
-                        InsertSubTetra(BaryCoords, false, ch);
-                } break;
-            }
-        if (intersec_==4)
-        {   // cuts = 2x 5-Flaechner mit 6 Knoten. connectivity:     R---------S
-            //                                                      /|        /|
-            //                                                     A-|-------B |
-            //                                                      \|        \|
-            //                                                       P---------Q
-            //std::cout << "cuts = 2x 5-Flaechner\n";
-            int vertAB[2]; // cut mit VZ==part = ABPQRS
-
-            //erst werden die "negativen" Kinder in die Liste hinzugefuegt, dann die "positiven"
-            for (int signAB = -1; signAB<=1; signAB+=2) { int k = 0;
-                for (int i=0; i<4 && k<2; ++i)
-                    if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
-                // connectivity AP automatisch erfuellt, check for connectivity AR
-                const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
-                // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
-                // ABPR    (bzw. ABPQ)
-                BaryCoords[0]= BaryDoF_[data.Vertices[vertAB[0]]];
-                BaryCoords[1]= BaryDoF_[data.Vertices[vertAB[1]]];
-                BaryCoords[2]= Bary_[0];    BaryCoords[3]= Bary_[AR ? 2 : 1];
-                InsertSubTetra( BaryCoords, signAB!=-1, ch);
-                // QBPR    (bzw. RBPQ)
-                BaryCoords[0]=Bary_[AR ? 1 : 2];
-                InsertSubTetra( BaryCoords, signAB!=-1, ch);
-                // QBSR    (bzw. RBSQ)
-                BaryCoords[2]=Bary_[3];
-                InsertSubTetra( BaryCoords, signAB!=-1, ch);
-            }
-        } //intersec_==4 Ende
-    } //Ende der Schleife ueber die Kinder
-
-    // if Init for SubTetraT has been used, coordinates must be transformed
-     if (barysubtetra_ == true)
-     {
-         for (Uint k=0 ; k<posTetras.size(); ++k)
-         {
-             posTetras[k] = MultiplySubTetra(posTetras[k]);
-         }
-         for (Uint k=0 ; k<negTetras.size(); ++k)
-         {
-             negTetras[k] = MultiplySubTetra(negTetras[k]);
-         }
-     }
+    for (Uint ch= 0; ch < 8; ++ch)
+        ComputeSubTets( ch, /*clearTetras=*/ false);
 }
 
-BaryCoordCL InterfaceTriangleCL::MultiplyBaryCoord(const BaryCoordCL& Tetrak_ )
+BaryCoordCL InterfaceTriangleCL::TransformToSubTetra(const BaryCoordCL& b)
 {
-    BaryCoordCL TetrakBary_;
+    BaryCoordCL ret;
     for (int j = 0; j <4; ++j)
-        TetrakBary_ += (st_[j]*Tetrak_[j]);
-    return TetrakBary_;
+        ret += st_[j]*b[j];
+    return ret;
 }
 
 bool InterfaceTriangleCL::ComputeForChild( Uint ch)
@@ -454,7 +453,7 @@ bool InterfaceTriangleCL::ComputeForChild( Uint ch)
     // if Init for Sub TetraT has been used, coordinates must be transformed
     if (barysubtetra_ == true)
         for (int k=0 ; k<intersec_; ++k)
-            Bary_[k] = MultiplyBaryCoord(Bary_[k]);
+            Bary_[k] = TransformToSubTetra(Bary_[k]);
     return true; // computed patch of child;
 }
 

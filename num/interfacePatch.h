@@ -69,7 +69,6 @@ class InterfacePatchCL
     static const bool LinearEdgeIntersection;     ///< if true, compute the zeros of the levelset-function by linear interpolation on the edges.
                                                     ///< If false, compute the zero of the quadratic levelset-function.
   public:
-
       InterfacePatchCL();
 
       static int Sign( double phi) { return std::abs(phi)<approxZero_ ? 0 : (phi>0 ? 1 : -1); } ///< returns -1/0/1
@@ -116,17 +115,20 @@ class InterfaceTetraCL : public InterfacePatchCL
   private:
     std::vector<SubTetraT> posTetras, negTetras;
     std::vector<Uint>      posChildIdx, negChildIdx;
-    void InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child);
+
+    SubTetraT TransformToSubTetra(const SubTetraT& tetra); ///< Transforms tetra to the subtetra st_ given in InterfacePatchCL: the columns of tetra are interpreted as barycentric coordinates w.r.t. st_, the return values are the barycentric coordinates of these points w. r. t. T.
+    void InsertSubTetra(SubTetraT& BaryCoords, bool pos, Uint child); ///< modifies its first argument, if barysubtetra_ == true, because the transformation to the subtetra st_ is performed here
 
   public:
     bool   ComputeCutForChild( Uint ch); ///< returns true, if a patch exists for this child
-    void   ComputeSubTets();             ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap T\f$ and \f$\{\varphi>0\}\cap T\f$; the regular children of T are triangulated.
+    void   ComputeSubTets( Uint ch, bool clearTetras= true); ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap (\mbox{child ch of }T)\f$ and \f$\{\varphi>0\}\cap (\mbox{child ch of} T)\f$; For ch == 8 this gives the tetrahedralization of T itself. The call with clearTetras == false appends the computed tetras to posTetras and negTetras.
+    void   ComputeSubTets(); ///< Computes a tetrahedralization of \f$\{\varphi<0\}\cap T\f$ and \f$\{\varphi>0\}\cap T\f$; the regular children of T are triangulated.
     ///@}
 
     /// \name Use after ComputeSubTets
     /// \remarks The following functions are only valid, if ComputeSubTets() was called before!
     ///@{
-    const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];}         ///< returns sub tetra with index \a i
+    const SubTetraT& GetTetra (Uint i)  const { return i < negTetras.size() ? negTetras[i] : posTetras[i-negTetras.size()];} ///< returns sub tetra with index \a i
     Uint  GetChildIdx         (Uint i)  const { return i < negChildIdx.size() ? negChildIdx[i] : posChildIdx[i-negChildIdx.size()];} ///< returns index of child containing sub tetra \a i
     Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of sub tetras
     Uint  GetNumNegTetra()      const {return negTetras.size();}                    ///< returns number of tetras with level set function < 0
@@ -139,7 +141,6 @@ class InterfaceTetraCL : public InterfacePatchCL
     ValueT quad( const LocalP2CL<ValueT>&, double absdet, bool posPart= true); ///< integrate on pos./neg. part
     template<class ValueT>
     void   quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>&, double absdet); ///< integrate on pos. and neg. part
-    SubTetraT MultiplySubTetra(const SubTetraT & Tetrak_ );
     ///@}
 };
 
@@ -151,16 +152,17 @@ class InterfaceTriangleCL : public InterfacePatchCL
     Point3DCL       B_[3];
     Point2DCL       ab_;
 
+    BaryCoordCL TransformToSubTetra (const BaryCoordCL& b); ///< compute st_*b \todo remove this by introducing a column-oriented small matrix class
+
   public:
-    BaryCoordCL MultiplyBaryCoord(const BaryCoordCL& Tetrak ); ///< compute st_*Tetrak \todo remove this by introducing a column-oriented small matrix class
     bool ComputeForChild( Uint ch);                            ///< returns true, if a patch exists for this child
     double GetAbsDet( Uint tri= 0) const { return DetA_*(tri==0 ? 1.0 : GetAreaFrac()); } ///< Returns the Determinant for surface integration on the triangle \p tri.
     double GetAreaFrac()   const { return intersec_==4 ? ab_[0]+ab_[1]-1 : 0; }                   ///< Quotient of the areas of the first and the second triangle.
     template<class ValueT>
     ValueT quad2D( const LocalP2CL<ValueT>&, Uint tri= 0) const;  ///< integrate on triangle \p tri, quadrature exact up to degree 2
     const Point3DCL& GetGradId( Uint i) const { return B_[i]; }   ///< Returns the projection of the i-th standard-basis-vector of \f$R^3\f$ on the patch.
-           Point3DCL  GetNormal () const;                         ///< Returns the unit normal to the linear approximation of \f$\Gamma\f$, that points from \f$\{\varphi<0\}\f$ to \f$\{\varphi<0\}\f$.
-           Point3DCL  ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
+    Point3DCL GetNormal () const;                         ///< Returns the unit normal to the linear approximation of \f$\Gamma\f$, that points from \f$\{\varphi<0\}\f$ to \f$\{\varphi<0\}\f$.
+    Point3DCL ApplyProj( const Point3DCL& grad) const { return grad[0]*B_[0] + grad[1]*B_[1] + grad[2]*B_[2]; }
 };
 
 } // end of namespace DROPS
