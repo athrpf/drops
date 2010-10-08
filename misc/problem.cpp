@@ -35,22 +35,6 @@ namespace DROPS
 const Uint        IdxDescCL::InvalidIdx = std::numeric_limits<Uint>::max();
 std::vector<bool> IdxDescCL::IdxFree;
 
-void BndCondInfo( BndCondT bc, std::ostream& os)
-/// \param bc Value of type BndCondT, which shall be described.
-/// \param os Stream, to which the description is written.
-{
-    switch(bc)
-    {
-      case DirBC:  os << "inhom. Dirichlet BC / inflow\n"; break;
-      case Dir0BC: os << "hom. Dirichlet BC / wall\n"; break;
-      case NatBC:  os << "inhom. Natural BC\n"; break;
-      case Nat0BC: os << "hom. Natural BC / outflow\n"; break;
-      case Per1BC: os << "periodic BC\n"; break;
-      case Per2BC: os << "periodic BC, correspondent\n"; break;
-      default:     os << "WARNING! unknown BC\n";
-    }
-}
-
 IdxDescCL::IdxDescCL( FiniteElementT fe, const BndCondCL& bnd, match_fun match, double omit_bound)
     : FE_InfoCL( fe), Idx_( GetFreeIdx()), TriangLevel_( 0), NumUnknowns_( 0), Bnd_(bnd), match_(match),
       extIdx_( omit_bound != -99 ? omit_bound : IsExtended() ? 1./32. : -1.) // default value is 1./32. for XFEM and -1 otherwise

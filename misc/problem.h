@@ -38,9 +38,6 @@
 namespace DROPS
 {
 
-/// Prints a text-message describing the given boundary-condition.
-void BndCondInfo (BndCondT, std::ostream&);
-
 enum FiniteElementT
 /// \brief enum for several FE types
 ///

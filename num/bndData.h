@@ -75,6 +75,27 @@ class BndCondInfoCL
     BndCondT GetBC()        const { return bc_; }
 };
 
+/// Prints a text-message describing the given boundary-condition.
+void inline BndCondInfo (BndCondT bc, std::ostream& os)
+/// \param bc Value of type BndCondT, which shall be described.
+/// \param os Stream, to which the description is written.
+{
+    switch(bc)
+    {
+      case Dir0BC: /* WallBC has the same number */
+                         os << "hom. Dirichlet BC / wall\n"; break;
+      case DirBC:        os << "inhom. Dirichlet BC / inflow\n"; break;
+      case Per1BC:       os << "periodic BC\n"; break;
+      case Per2BC:       os << "periodic BC, correspondent\n"; break;
+      case Nat0BC: /* OutflowBC has the same number */
+                         os << "hom. Natural BC / outflow\n"; break;
+      case NatBC:        os << "inhom. Natural BC\n"; break;
+      case NoBC:         os << "no boundary\n"; break;
+      case UndefinedBC_: os << "WARNING! unknown BC from ReadMeshBuilderCL\n"; break;
+      default:           os << "WARNING! unknown BC\n";
+    }
+}
+
 
 /// \brief Represents the boundary data of a single boundary segment for a certain variable.
 ///
