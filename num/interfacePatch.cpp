@@ -94,7 +94,7 @@ void InterfacePatchCL::Init( const TetraCL& t, const SubTetraT& st, const LocalP
 
 bool InterfacePatchCL::ComputeVerticesOfCut( Uint ch, bool compute_PQRS)
 {
-    const ChildDataCL& data= GetChildData( RegRef_.Children[ch]);
+    const ChildDataCL& data= GetChildData( ch);
     ch_= ch;
     // Compute the sign of the levelset-function in the vertices of ch_.
     num_sign_[0]= num_sign_[1]= num_sign_[2]= 0;
@@ -149,7 +149,7 @@ void InterfacePatchCL::DebugInfo( std::ostream& os, bool InfoForChild) const
 {
     if (InfoForChild)
     {
-        const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
+        const ChildDataCL data= GetChildData( ch_);
         os << "Patch on child " << ch_ << " with " << GetNumPoints() << " intersections:\n";
         for (Uint i=0; i<GetNumPoints(); ++i)
             os << "\tP" << i << " = " << GetPoint(i) << '\n';
@@ -207,7 +207,7 @@ int InterfacePatchCL::GetNumIntersectedSubTetras() const
     int intersectedSubTetra=0;
     int num_sign[3];
     for ( int ch=0; ch<8; ++ch){
-        data  = GetChildData (RegRef_.Children[ch]);
+        data  = GetChildData ( ch);
         num_sign[0]= num_sign[1]= num_sign[2]= 0;
         for ( int vert=0; vert<4; ++vert){
             ++num_sign[ sign_[data.Vertices[vert]]+1];
@@ -246,7 +246,7 @@ void InterfaceTetraCL::ComputeSubTets()
     {
         for (Uint i=0; i<4; ++i)
             BaryCoords[i] = BaryDoF_[i];
-        InsertSubTetra( BaryCoords, sign_[0]==1, ~0 /*child idx undefined*/);
+        InsertSubTetra( BaryCoords, sign_[0]==1, 8 /*the tetra itself as child*/);
         return;
     }
 
@@ -254,7 +254,7 @@ void InterfaceTetraCL::ComputeSubTets()
     for (Uint ch=0; ch < 8 && Intersects(); ++ch)
     {
         //std::cout << "Kind " << ch << "\n \n";
-        data  = GetChildData (RegRef_.Children[ch]);
+        data  = GetChildData ( ch);
 
         //cuts = Child + empty set
         if (!ComputeCutForChild(ch) || (intersec_==3 && innersec_==0))
@@ -379,7 +379,6 @@ void InterfaceTetraCL::ComputeSubTets()
             for (int signAB = -1; signAB<=1; signAB+=2) { int k = 0;
                 for (int i=0; i<4 && k<2; ++i)
                     if (sign_[data.Vertices[i]]==signAB) vertAB[k++]= i;
-                if (k<2) {std::cerr << "FRANK" << k << "\n " ; }
                 // connectivity AP automatisch erfuellt, check for connectivity AR
                 const bool AR= vertAB[0]==VertOfEdge(Edge_[2],0) || vertAB[0]==VertOfEdge(Edge_[2],1);
                 // Integriere ueber Tetras ABPR, QBPR, QBSR    (bzw. mit vertauschten Rollen von Q/R)
@@ -465,7 +464,7 @@ bool InterfaceTriangleCL::ComputeForChild( Uint ch)
 
 Point3DCL InterfaceTriangleCL::GetNormal() const
 {
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
+    const ChildDataCL data= GetChildData( ch_);
     SMatrixCL<3,4> p1grad;
     double det; // dummy
     Point3DCL pt[4];

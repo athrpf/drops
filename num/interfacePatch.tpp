@@ -48,7 +48,7 @@ InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, const LocalP2CL<> & philoc
 template<class ValueT>
 ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool part /*bool debug*/)
 {
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
+    const ChildDataCL data= GetChildData( ch_);
     typedef BaryCoordCL* BaryPtrT;
     BaryPtrT BaryPtr[4];
     if (intersec_<3)
@@ -125,7 +125,7 @@ ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
 template<class ValueT>
 void InterfaceTetraCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>& f, double absdet)
 {
-    const ChildDataCL data= GetChildData( RegRef_.Children[ch_]);
+    const ChildDataCL data= GetChildData( ch_);
     typedef BaryCoordCL* BaryPtrT;
     BaryPtrT BaryPtr[4], chTetra[4];
 
