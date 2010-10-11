@@ -800,6 +800,15 @@ class World2BaryCoordCL
     BaryCoordCL operator() (const Point3DCL& p) const;
 };
 
+/// \brief Collect the faces of the the children of a refined tetra that refine a given face.
+///
+/// If the tetra is unrefined, the given face is returned.
+/// \todo The mapping (refrule, face) -> (list of (child, face of child)) could be
+///     precomputed and put in a table in geom/topo.{h,cpp}
+/// \param p The parent tetra
+/// \param f Face number in the parent (0..3)
+/// \param childfaces Collects the pointers to the child faces that refine face f of p
+void ComputeChildFacesOfFace (const TetraCL& p, Uint f, std::vector<const FaceCL*>& childfaces);
 
 
 //**************************************************************************

@@ -327,6 +327,30 @@ BaryCoordCL World2BaryCoordCL::operator() (const Point3DCL& p) const
 }
 
 
+void ComputeChildFacesOfFace (const TetraCL& p, Uint f, std::vector<const FaceCL*>& childfaces)
+{
+    if (p.IsUnrefined()) {
+        childfaces.push_back( p.GetFace( f));
+        return;
+    }
+    
+    bool done= false; // Used to shortcut the search for child faces, if the child face coincides with the parent face.
+    const RefRuleCL& ref= p.GetRefData();
+    for (Uint c= 0; c < ref.ChildNum && !done; ++c) { // Loop over all children
+        const ChildDataCL& ch= GetChildData( ref.Children[c]);
+        for (Uint i= 0; i < NumFacesC; ++i) {
+            const Uint childFace= ch.Faces[i];
+            if (IsParentFace( childFace)) {
+                done= true;
+                childfaces.push_back( p.GetChild( c)->GetFace( i)); // The child-face is identical to the face f of p.
+            }
+            else if (IsSubFace( childFace) && f == ParentFace( childFace))
+                childfaces.push_back( p.GetChild( c)->GetFace( i)); // This child-face refines the face f of p.
+        }
+    }
+}
+
+
 double TetraCL::GetVolume () const
 {
     Point3DCL v[3];
