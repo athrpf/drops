@@ -100,7 +100,7 @@ class EnsightIdxRepairCL: public MGObserverCL
 
 
 template<class StokesProblemT>
-void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
+void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, bool is_periodic)
 // flow control
 {
     MultiGridCL& MG= Stokes.GetMG();
@@ -227,7 +227,7 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap)
     LsetSolverT *gm = new LsetSolverT
            (/*restart*/100, C.lvs_Iter, C.lvs_Tol, *lidx, jacparpc,/*rel*/true, /*acc*/ true, /*modGS*/false, LeftPreconditioning, /*parmod*/true);
 #endif
-    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 10.0, /*rpm_MinGrad*/ 0.1, C.lvs_VolCorrection, Vol);
+    LevelsetModifyCL lsetmod( C.rpm_Freq, C.rpm_Method, /*rpm_MaxGrad*/ 1.0, /*rpm_MinGrad*/ 1.0, C.lvs_VolCorrection, Vol, /*periodic*/ is_periodic);
 
     LinThetaScheme2PhaseCL<LsetSolverT>
         cpl( Stokes, lset, *navstokessolver, *gm, lsetmod, C.stk_Theta, C.lvs_Theta, C.ns_Nonlinear, /*implicitCurv*/ true);
@@ -372,6 +372,7 @@ int main (int argc, char** argv)
     DROPS::BndCondT bc[6], bc_ls[6];
     DROPS::BoundaryCL::BndTypeCont bndType;
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6];
+    bool is_periodic= false;
 
     for (int i=0; i<6; ++i)
     {
@@ -385,8 +386,10 @@ int main (int argc, char** argv)
             case 'o': case 'O':
                 bc[i]= DROPS::OutflowBC; bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case '1':
+                is_periodic= true;
                 bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per1Bnd); break;
             case '2':
+                is_periodic= true;
                 bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
                 std::cerr << "Unknown bnd condition \"" << C.mcl_BndCond[i] << "\"\n";
@@ -421,7 +424,7 @@ int main (int argc, char** argv)
               << C.mat_DensFluid*C.mat_DensFluid*C.exp_Gravity[0]*std::pow(C.exp_Thickness,3)/C.mat_ViscFluid/C.mat_ViscFluid/3 << std::endl;
     std::cout << "max. inflow velocity at film surface = "
               << C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2 << std::endl;
-    Strategy( prob, lset, adap);  // do all the stuff
+    Strategy( prob, lset, adap, is_periodic);  // do all the stuff
 
     double min= prob.p.Data.min(),
            max= prob.p.Data.max();
