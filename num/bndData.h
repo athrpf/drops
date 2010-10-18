@@ -51,7 +51,7 @@ enum BndCondT
     OutflowBC= 21,               ///< same as Nat0BC, for convenience
     WallBC= 0,                   ///< same as Dir0BC, for convenience
 
-    NoBC= -1,                    ///< interior simplices
+    NoBC= 98,                    ///< interior simplices
     UndefinedBC_= 99,            ///< ReadMeshBuilderCL: error, unknown bc
     MaxBC_= 100                  ///< upper bound for valid bc's
 };
