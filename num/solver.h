@@ -91,7 +91,7 @@ SolveGSstep(const PreDummyCL<PB_JAC>&, const MatrixCL& A, Vec& x, const Vec& b, 
 
     for (size_t i=0, nz=0; i<n; ++i)
     {
-        double aii, sum= b[i];
+        double aii=0, sum= b[i];
         for (const size_t end= A.row_beg(i+1); nz<end; ++nz)
             if (A.col_ind(nz) != i)
                 sum-= A.val(nz)*x[A.col_ind(nz)];
