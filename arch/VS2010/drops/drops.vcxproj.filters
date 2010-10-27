@@ -265,6 +265,12 @@
     <ClCompile Include="..\..\..\levelset\brick_transp.cpp">
       <Filter>target</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\navstokes\instatnavstokes2phase.cpp">
+      <Filter>navstokes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\levelset\coupling.cpp">
+      <Filter>levelset</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\geom\boundary.h">

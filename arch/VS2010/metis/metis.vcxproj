@@ -120,7 +120,7 @@
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;METIS_WIN;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\ParMetis\METISLib;$(SolutionDir)\..\..\..\ParMetis\ParMETISLib;C:\Program Files\Microsoft HPC Pack 2008 SDK\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\..\ParMetis\METISLib;$(SolutionDir)\..\..\..\ParMetis\ParMETISLib;$(CCP_INC)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
