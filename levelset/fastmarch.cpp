@@ -177,7 +177,7 @@ void InitZeroNoModCL::Perform()
 
 /// \brief The class provides, for each tetra, that is cut by the interface, a set of all levelset-unknowns, that are at most two tetras away. Only levelset-unknowns are considered, that belong to a tetra that is cut by the interface.
 ///
-/// Consider the graph with level-set-unkowns at the interface as vertices. The edges of the graph are tetras.
+/// Consider the graph with level-set-unknowns (and their respective periodic unknowns) at the interface as vertices. The edges of the graph are tetras.
 /// The class computes, for each vertex, the set of vertices that are at most two edges away.
 /// The algorithm is breadth-first search. This mapping is inverted to provide the desired map.
 /// The work is done in the constructor. The resulting map can be accessed via operator().
@@ -199,20 +199,20 @@ class TetraNeighborCL
     typedef std::vector<TetraSetT>   IdxToTetraMapT;
 
     IdxToTetraMapT idx_to_tetra_; ///< Used to accumulate the reverse of the desired mapping; cleared at the end of the constructor.
-    TetraToIdxMapT tetra_to_idx_; ///< A set of levelset-un knowns for each tetra, that is cut by the interface.
+    TetraToIdxMapT tetra_to_idx_; ///< A set of levelset-unknowns for each tetra, that is cut by the interface.
 
     ///
     /// \brief Updates the neighborhood information: traverse all outgoing edges (=tetras) of idx and add them to their end-vertices.
     void insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint ls_idx, const IdxToTetraMapT& idx_to_tetra);
     /// \brief Traverse the edges of the graph and update the vertex-neighborhoods.
-    void ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbn);
+    void ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd, const ReparamDataCL::perMapVecT& mapPerDoF);
     /// \brief Reverse the map produced by ComputeNeighborTetras().
     void ComputeIdxToTetraMap ();
 
   public:
-    TetraNeighborCL (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd)
+    TetraNeighborCL (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd, const ReparamDataCL::perMapVecT& mapPerDoF)
     {
-        ComputeNeighborTetras ( mg, ls, lsetbnd);
+        ComputeNeighborTetras ( mg, ls, lsetbnd, mapPerDoF);
         ComputeIdxToTetraMap ();
         idx_to_tetra_.clear();
     }
@@ -238,14 +238,15 @@ void TetraNeighborCL::insert_neighbor_tetras (size_t idx, const TetraCL& t, Uint
     }
 }
 
-void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd)
+void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDescCL& ls, const BndDataCL<>& lsetbnd, const ReparamDataCL::perMapVecT& mapPerDoF)
 {
     const DROPS::Uint lvl= ls.GetLevel();
     const Uint ls_idx= ls.RowIdx->GetIdx();
+    const IdxT ls_size= ls.Data.size();
 
     DROPS::InterfacePatchCL patch;
-    IdxToTetraMapT idx_to_tetra1( ls.Data.size());
-    idx_to_tetra_.resize( ls.Data.size());
+    IdxToTetraMapT idx_to_tetra1( ls_size);
+    idx_to_tetra_.resize( ls_size + mapPerDoF.size());
 
     // Record for each index, which tetras are immediate neighbors. Do this only around the interface.
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
@@ -271,6 +272,13 @@ void TetraNeighborCL::ComputeNeighborTetras (const MultiGridCL& mg, const VecDes
             if (idx_to_tetra1[idx].empty()) continue; // The edge has no tetra on an interface.
             insert_neighbor_tetras( idx, *it, ls_idx, idx_to_tetra1);
         }
+    }
+
+    // for dof's on periodic boundaries the respective entries of idx_to_tetra_ are copied
+    for (size_t i=0, s= mapPerDoF.size(); i<s; ++i) {
+        const IdxT augm_dof= ls_size + i,
+                        dof= mapPerDoF[i];
+        idx_to_tetra_[augm_dof]= idx_to_tetra_[dof];
     }
 }
 
@@ -474,11 +482,12 @@ void InitZeroExactCL::InitDofToTetra()
 {
     const Uint lvl= data_.phi.GetLevel();
     const Uint idx= data_.phi.RowIdx->GetIdx();
+    const IdxT size= data_.phi.Data.size();
     const MultiGridCL& mg= data_.mg;
 
     DROPS::InterfacePatchCL patch;
-    DofToTetraMapT dof_to_tetra1( data_.phi.Data.size());
-    dofToTetra_.resize( data_.phi.Data.size());
+    DofToTetraMapT dof_to_tetra1( size);
+    dofToTetra_.resize( size + data_.map.size());
 
     // Record for each index, which tetras are immediate neighbors. Do this only around the interface.
     DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
@@ -499,6 +508,13 @@ void InitZeroExactCL::InitDofToTetra()
             if (dof_to_tetra1[dof].empty()) continue; // The vertex/edge has no tetra on an interface.
             insert_neighbor_tetras( dof, *it, idx, dof_to_tetra1);
         }
+    }
+
+    // for dof's on periodic boundaries the respective entries of idx_to_tetra_ are copied
+    for (size_t i=0, s= data_.map.size(); i<s; ++i) {
+        const IdxT augm_dof= size + i,
+                        dof= data_.map[i];
+        dofToTetra_[augm_dof]= dofToTetra_[dof];
     }
 }
 
@@ -609,12 +625,14 @@ void InitZeroExactCL::DetermineDistances()
     Point3DCL *perp   = data_.UsePerp() ? new Point3DCL() : 0;
     byte      *locPerp= data_.UsePerp() ? new byte() : 0;
     double distance, newDistance;
+    const int augm_size= data_.per ? data_.augmIdx->NumUnknowns() : data_.phi.Data.size();
 #pragma omp for
-    for (int dof=0; dof<(int)data_.phi.Data.size(); ++dof){
+    for (int augm_dof=0; augm_dof<augm_size; ++augm_dof){
+        const int dof= data_.Map(augm_dof);
         if ( !dofToDistTriang_[dof].empty()){
             distance= std::numeric_limits<double>::max();
             for ( size_t posTri=0; posTri<dofToDistTriang_[dof].size(); ++posTri){
-                newDistance= distTriang_[ dofToDistTriang_[dof][posTri]].dist( data_.coord[dof], locPerp, perp);
+                newDistance= distTriang_[ dofToDistTriang_[dof][posTri]].dist( data_.coord[augm_dof], locPerp, perp);
                 if ( newDistance<distance){
                     if ( data_.UsePerp() && *locPerp==2)
                         data_.UpdatePerp( dof, distance, *perp);
@@ -655,11 +673,11 @@ void InitZeroExactCL::Perform()
     AssociateTriangles();
     DetermineDistances();
 #else
-    // This is the implementation of J. grande, which is much faster for the sequential version
+    // This is the implementation of J. Grande, which is much faster for the sequential version
     VecDescCL oldv( data_.phi);
     InterfaceTriangleCL patch;
     double dd;
-    TetraNeighborCL tetra_to_idx( data_.mg, oldv, *data_.bnd);
+    TetraNeighborCL tetra_to_idx( data_.mg, oldv, *data_.bnd, data_.map);
     for (TetraNeighborCL::TetraToIdxMapT::iterator it= tetra_to_idx().begin(); it!=tetra_to_idx().end(); ++it) {
         const TetraCL* t( it->first);
         patch.Init( *t, oldv, *data_.bnd);
@@ -671,12 +689,13 @@ void InitZeroExactCL::Perform()
                 ExactDistanceInitCL dist_to_tri( &patch.GetPoint( tri));
                 for (TetraNeighborCL::IdxSetT::iterator sit= idxset.begin(); sit!=idxset.end(); ++sit) {
                     dist_to_tri.dist( data_.coord[*sit], dd);
-                    if ( data_.typ[*sit] != ReparamDataCL::Finished) {
-                        data_.phi.Data[*sit]= dd;
-                        data_.typ[*sit]= ReparamDataCL::Finished;
+                    const int dof= data_.Map(*sit);
+                    if ( data_.typ[dof] != ReparamDataCL::Finished) {
+                        data_.phi.Data[dof]= dd;
+                        data_.typ[dof]= ReparamDataCL::Finished;
                     }
                     else
-                        data_.phi.Data[*sit]= std::min( data_.phi.Data[*sit], dd);
+                        data_.phi.Data[dof]= std::min( data_.phi.Data[dof], dd);
                 }
             }
         }

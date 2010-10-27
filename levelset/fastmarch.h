@@ -47,6 +47,7 @@ namespace DROPS
 class ReparamDataCL
 {
   public:
+    typedef VectorBaseCL<IdxT> perMapVecT;
     enum { Finished= 1, Close= 2, Handled=3, Far=0};    ///< types of vertices (Handled is just for parallel)
 
   private:
@@ -68,7 +69,7 @@ class ReparamDataCL
     bool                     per;         ///< periodic boundaries are used
     IdxDescCL*               augmIdx;     ///< augmented index for periodic boundaries
     const BndDataCL<>*       bnd;         ///< boundary for level set function
-    VectorBaseCL<IdxT>       map;         ///< mapping of periodic boundary conditions
+    perMapVecT               map;         ///< mapping of periodic boundary conditions
 
   public:
     // \brief Allocate memory, store references and init coordinates as well as map periodic boundary dofs
@@ -82,7 +83,7 @@ class ReparamDataCL
     ~ReparamDataCL();
 
     /// \brief for periodic boundary conditions, some mapping is necessary
-    inline IdxT Map( IdxT i) const { return i<phi.Data.size() ? i : map[ i-phi.Data.size()]; }
+    inline IdxT Map( IdxT i) const { return !per || i<phi.Data.size() ? i : map[ i-phi.Data.size()]; }
     /// \brief Normalize b onto unit interval [0,1]
     inline void Normalize( double& b) const;
     /// \brief Normalize (b1,b2) onto unit triangle
