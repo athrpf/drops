@@ -62,7 +62,7 @@ class TransportP1CL
     MultiGridCL& MG_;
     double       D_[2],           ///< diffusion constants
                  H_,              ///< jump of concentration at the interface
-                 theta_, dt_, t_; ///< time scheme parameter, time step and time
+                 theta_, dt_;     ///< time scheme parameter and time step
     BndDataT&    Bnd_;            ///< Boundary condition for the concentration
 
     const VelBndDataT&  Bnd_v_;  ///< Boundary condition for the velocity
@@ -79,8 +79,8 @@ class TransportP1CL
   public:
     TransportP1CL( MultiGridCL& mg, BndDataT& Bnd, const VelBndDataT& Bnd_v,
         double theta, double D[2], double H, VecDescCL* v, LevelsetP2CL& lset,
-        double t, double dt, int iter= 1000, double tol= 1e-7)
-    : idx( P1_FE), MG_( mg), H_( H), theta_( theta), dt_( dt), t_( t), Bnd_( Bnd),
+        double dt, int iter= 1000, double tol= 1e-7)
+    : idx( P1_FE), MG_( mg), H_( H), theta_( theta), dt_( dt), Bnd_( Bnd),
         Bnd_v_( Bnd_v), v_( v), lset_( lset), gm_( pc_, 100, iter, tol, true)
     { std::memcpy( D_, D, 2*sizeof( double)); }
 

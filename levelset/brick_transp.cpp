@@ -106,7 +106,7 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     TransportP1CL c( MG, Bnd_c, Bnd_v, /*theta*/ 0.5, D, H, &v, lset,
-        /*t*/ 0., C.tm_StepSize, C.stk_OuterIter, C.stk_OuterTol);
+        C.tm_StepSize, C.stk_OuterIter, C.stk_OuterTol);
     MLIdxDescCL* cidx= &c.idx;
     c.CreateNumbering( MG.GetLastLevel(), cidx);
     c.ct.SetIdx( cidx);

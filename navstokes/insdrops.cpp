@@ -238,20 +238,20 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
             instatsolver(NS, statsolver, theta);
         std::cout << "After constructor." << std::endl;
         double t= 0.;
-        NS.t= 0;
-        for (int timestep=0; t<1.; ++timestep, t+= dt, NS.t+= dt)
+        NS.v.t= 0;
+        for (int timestep=0; t<1.; ++timestep, t+= dt, NS.v.t+= dt)
         {
 //if (timestep==25) return;
             std::cout << "------------------------------------------------------------------"
                       << std::endl << "t: " << t << std::endl;
             NS.SetTime(t+dt); // We have to set the new time!
             if (timestep==0) // Check the initial solution, at least velocities.
-                NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
+                NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
             instatsolver.SetTimeStep(dt);
             std::cout << "Before timestep." << std::endl;
             instatsolver.DoStep(*v1, p1->Data);
             std::cout << "After timestep." << std::endl;
-            NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
+            NS.CheckSolution(v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
         }
         MarkAll(MG);
 

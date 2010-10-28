@@ -522,14 +522,15 @@ class VecDescBaseCL
 
     /// \brief The default-constructor creates an empty vector and sets RowIdx to 0.
     VecDescBaseCL()
-        :RowIdx(0) {}
+        :RowIdx(0), t(0.0) {}
     /// \brief Initialize RowIdx with idx and contruct Data with the given size.
     VecDescBaseCL( IdxDescCL* idx) { SetIdx( idx); }
     VecDescBaseCL( MLIdxDescCL* idx) { SetIdx( &(idx->GetFinest()) ); }
 
 
     IdxDescCL* RowIdx; ///< Pointer to the index-description used for Data.
-    DataType  Data;    ///< The numerical data.
+    DataType   Data;   ///< The numerical data.
+    mutable double t;  ///< time
 
     /// \brief The triangulation-level of the index.
     Uint GetLevel() const { return RowIdx->TriangLevel(); }
@@ -537,7 +538,7 @@ class VecDescBaseCL
     void SetIdx(IdxDescCL*);
     void SetIdx(MLIdxDescCL* idx) {SetIdx( &( idx->GetFinest()) );}
     /// \brief Resize a vector according to RowIdx.
-    void Clear();
+    void Clear( double time);
     /// \brief Empty Data and set RowIdx to 0.
     void Reset();
 
@@ -708,12 +709,13 @@ void VecDescBaseCL<T>::SetIdx(IdxDescCL* idx)
 }
 
 template<class T>
-void VecDescBaseCL<T>::Clear()
+void VecDescBaseCL<T>::Clear( double time)
 /// The vector is resized to size 0 and then resized to the size given
 /// by RowIdx.
 {
     Data.resize(0);
     Data.resize(RowIdx->NumUnknowns());
+    t = time;
 }
 
 template<class T>

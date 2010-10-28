@@ -355,11 +355,11 @@ void SurfactantcGP1CL::Update()
     // std::cout << "A is set up.\n";
     C.Data.clear();
     C.SetIdx( cidx, cidx);
-    DROPS::SetupConvectionP1( MG_, &C, lset_vd_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    DROPS::SetupConvectionP1( MG_, &C, lset_vd_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, *v_));
     // std::cout << "C is set up.\n";
     Md.Data.clear();
     Md.SetIdx( cidx, cidx);
-    DROPS::SetupMassDivP1( MG_, &Md, lset_vd_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, *v_, t_));
+    DROPS::SetupMassDivP1( MG_, &Md, lset_vd_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, *v_));
     // std::cout << "Md is set up.\n";
 
     if (theta_ != 1.0) {
@@ -396,11 +396,11 @@ VectorCL SurfactantcGP1CL::InitStep ()
     // std::cout << "mixed A on old interface is set up.\n";
     VectorCL rhs2( m.Data*oldic_);
     m.Data.clear();
-    DROPS::SetupConvectionP1( MG_, &m, oldls_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    DROPS::SetupConvectionP1( MG_, &m, oldls_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, oldv_));
     // std::cout << "mixed C on old interface is set up.\n";
     rhs2+= m.Data*oldic_;
     m.Data.clear();
-    DROPS::SetupMassDivP1( MG_, &m, oldls_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, oldv_, oldt_));
+    DROPS::SetupMassDivP1( MG_, &m, oldls_, lsetbnd_, make_P2Eval( MG_, Bnd_v_, oldv_));
     // std::cout << "mixed Md on old interface is set up.\n";
     rhs2+= m.Data*oldic_;
 
@@ -431,7 +431,7 @@ void SurfactantcGP1CL::CommitStep ()
 void SurfactantcGP1CL::DoStep (double new_t)
 {
     VectorCL rhs( InitStep());
-    t_= new_t;
+    ic.t= new_t;
     DoStep( rhs);
     CommitStep();
 }
@@ -448,7 +448,7 @@ void SurfactantcGP1CL::InitOld ()
     oldls_.Data= lset_vd_.Data;
     oldv_.SetIdx( v_->RowIdx);
     oldv_.Data= v_->Data;
-    oldt_= t_;
+    oldt_= ic.t;
 }
 
 
@@ -468,7 +468,7 @@ InterfaceP1RepairCL::post_refine ()
 //    Interpolate( sol, oldsol);
     RepairAfterRefineP1( make_P1Eval( mg_, dummy, fullu_), loc_u);
 
-    fullu_.Clear();
+    fullu_.Clear( fullu_.t);
     fullp1idx_.swap( loc_idx);
     loc_idx.DeleteNumbering( mg_);
     fullu_.SetIdx( &fullp1idx_);
@@ -493,7 +493,7 @@ InterfaceP1RepairCL::post_refine_sequence ()
     Restrict( mg_, fullu_, u_);
 
     fullp1idx_.DeleteNumbering( mg_);
-    fullu_.Clear();
+    fullu_.Clear( u_.t);
 }
 
 void

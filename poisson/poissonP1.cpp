@@ -432,7 +432,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     if (C.vtk_VTKOut){
         vtkwriter.Register( make_VTKScalar( Poisson.GetSolution(), "velocity") );
-        vtkwriter.Write( Poisson.t);
+        vtkwriter.Write( Poisson.x.t);
     }
 
     for ( int step = 1; step <= C.tm_NumSteps; ++step) {
@@ -451,11 +451,11 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         // -------------------------------------------------------------------------
         if (C.pos_SolutionIsKnown) {
         	std::cout << line << "Check result against known solution ...\n";
-        	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.t);
+        	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
         }
 
         if ( C.vtk_VTKOut && step%C.vtk_VTKOut==0)
-            vtkwriter.Write( Poisson.t);
+            vtkwriter.Write( Poisson.x.t);
         if ( C.ens_EnsightOut && step%C.ens_EnsightOut==0)
             ens.Write( step*C.tm_StepSize);
     }

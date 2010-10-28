@@ -174,8 +174,10 @@ void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
     const char* lvlstr[]= { "-lvl2/", "-lvl3/", "-lvl4/", "-lvl5/" };
 
   for (int l= 0; l < L; ++l) {
-    for (int i= 0; i < N; ++i)
+    for (int i= 0; i < N; ++i) {
         DV[l][i].SetIdx( &fullidx);
+        DV[l][i].t = 1.0;
+    }
 
     ReadEnsightP2SolCL reader( mg);
     reader.ReadScalar( C.EnsDir + lvlstr[l] + C.EnsCase + ".sur1",   DV[l][0], bnd);
@@ -216,13 +218,13 @@ void Strategy (DROPS::AdapTriangCL& adap, DROPS::LevelsetP2CL& lset)
     std::cout << " Level: " << l + 2 << ":\n";
     std::cout << "Integral on \\Gamma: ";
     for (int i= 0; i < N - 1; ++i) {
-        std::cout << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
+        std::cout << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, bnd, DV[l][i])) << ", ";
     }
     std::cout << "\nL_2 error: ";
     for (int i= 0; i < N - 1; ++i) {
         DV[l][i].Data-=DV[L-1][N - 1].Data;
         // std::cout << norm( DV[i].Data) << ", ";
-        std::cout << L2_norm( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, bnd, DV[l][i], 1.)) << ", ";
+        std::cout << L2_norm( mg, lset.Phi, lset.GetBndData(), make_P1Eval( mg, bnd, DV[l][i])) << ", ";
     }
     // std::cout << std::endl;
     // for (int i= 0; i < N - 1; ++i) {

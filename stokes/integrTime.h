@@ -58,7 +58,7 @@ class TimeDiscStokesCL
         _theta( theta)
         {
             _old_b->SetIdx( _b->RowIdx); _cplM->SetIdx( _b->RowIdx); _old_cplM->SetIdx( _b->RowIdx);
-            _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.t, _old_b, _Stokes.t);
+            _Stokes.SetupInstatRhs( _old_b, &_Stokes.c, _old_cplM, _Stokes.v.t, _old_b, _Stokes.v.t);
         };
 
     virtual ~TimeDiscStokesCL()
@@ -702,8 +702,8 @@ template <typename Mat, typename Vec>
 template <class StokesT, class SolverT>
 void InstatStokesThetaSchemeCL<StokesT,SolverT>::DoStep( VectorCL& v, VectorCL& p)
 {
-    _Stokes.t+= _dt;
-    _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.t, _b, _Stokes.t);
+    _Stokes.v.t+= _dt;
+    _Stokes.SetupInstatRhs( _b, &_Stokes.c, _cplM, _Stokes.v.t, _b, _Stokes.v.t);
 
     _rhs=  _Stokes.A.Data * v;
     _rhs*= (_theta-1.);

@@ -132,9 +132,9 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
         // solve stationary problem for initial velocities
         TimerCL time;
         time.Reset();
-        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
-        curv.Clear();
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.v.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.v.t);
+        curv.Clear(  Stokes.v.t);
         lset.AccumulateBndIntegral( curv);
         time.Stop();
         std::cout << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
@@ -145,7 +145,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
         time.Stop();
         std::cout << "Solving Stokes for initial velocities took "<<time.GetTime()<<" sec.\n";
     }
-    curv.Clear();
+    curv.Clear( Stokes.v.t);
     lset.AccumulateBndIntegral( curv);
 
     // Initialize Ensight6 output
@@ -179,7 +179,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     {
         std::cout << "======================================================== Schritt " << step << ":\n";
         cpl.DoStep( C.cpl_Iter);
-        curv.Clear();
+        curv.Clear( Stokes.v.t);
         lset.AccumulateBndIntegral( curv);
 
         ensight.Write( step*C.tm_StepSize);
@@ -195,7 +195,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
         if (C.rpm_Freq && step%C.rpm_Freq==0)
         {
             lset.Reparam( C.rpm_Method);
-            curv.Clear();
+            curv.Clear( Stokes.v.t);
             lset.AccumulateBndIntegral( curv);
 
             ensight.Write( (step+0.1)*C.tm_StepSize);

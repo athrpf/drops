@@ -31,9 +31,9 @@ template <class Coeff>
   void
   NavierStokesP2P1CL<Coeff>::CheckSolution(
     const VelVecDescCL* lsgvel, MLIdxDescCL* idx, const VecDescCL* lsgpr,
-    instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr,
-    double t)
+    instat_vector_fun_ptr LsgVel, instat_scalar_fun_ptr LsgPr)
 {
+    const double t =  lsgvel->t;
     double diff, maxdiff=0, norm2= 0;
     Uint lvl=lsgvel->GetLevel(),
          vidx=lsgvel->RowIdx->GetIdx();
@@ -71,7 +71,7 @@ template <class Coeff>
                 << "|| Ax + Nx + BTy - f || = " << norm_res1 << ", max. " << sup_res1 << std::endl
                 << "||      Bx       - g || = " << norm_res2 << ", max. " << sup_res2 << std::endl<<std::endl;
 
-    typename base_::const_DiscVelSolCL vel(lsgvel, &BndData_.Vel, &MG_, t);
+    typename base_::const_DiscVelSolCL vel(lsgvel, &BndData_.Vel, &MG_);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -278,12 +278,12 @@ template <class Coeff>
                                                 VelVecDescCL* vecb, IdxDescCL& RowIdx, double t, double t2) const
 // Sets up the approximation of the nonlinear term and the corresponding right hand side.
 {
-    if (vecb != 0) vecb->Clear();
+    if (vecb != 0) vecb->Clear( t2);
 
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
     MatrixBuilderCL N( &matN, num_unks_vel, num_unks_vel);
 
-    typename base_::const_DiscVelSolCL u( velvec, &BndData_.Vel, &MG_, t);
+    typename base_::const_DiscVelSolCL u( velvec, &BndData_.Vel, &MG_);
     VectorCL& b= vecb->Data;
     const Uint lvl    = RowIdx.TriangLevel();
     LocalNumbP2CL n;

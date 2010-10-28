@@ -79,8 +79,6 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     typedef P1EvalCL<double, const BndDataCL, const VecDescCL> const_DiscSolCL;
     typedef double (*est_fun)(const TetraCL&, const VecDescCL&, const BndDataCL&);
 
-    double    t;        // time
-
     MLIdxDescCL idx;
     VecDescCL   x;
     VecDescCL   b;
@@ -89,10 +87,10 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLMatDescCL U;
 
     PoissonP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : base_( mgb, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
+        : base_( mgb, coeff, bdata), adjoint_( adj), idx( P1_FE) {}
 
     PoissonP1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata, bool adj=false)
-        : base_( mg, coeff, bdata), adjoint_( adj), t( 0.), idx( P1_FE) {}
+        : base_( mg, coeff, bdata), adjoint_( adj), idx( P1_FE) {}
     // numbering of unknowns
     void CreateNumbering( Uint level, MLIdxDescCL* idx, match_fun match= 0)
         { idx->CreateNumbering( level, MG_, BndData_, match); }

@@ -107,7 +107,7 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
 
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     template<class DiscVelSolT>
-    void SetupSystem( const DiscVelSolT&, /*VecDescCL&, VecDescCL&,*/ const double/*, const double t*/);
+    void SetupSystem( const DiscVelSolT&, const double);
     /// Reparametrization of the level set function.
     void Reparam( int method=03, bool Periodic= false);
 

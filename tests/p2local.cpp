@@ -112,7 +112,8 @@ void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, fun_ptr f)
 void SetFun(VecDescBaseCL<VectorCL>& vd, MultiGridCL& mg, v_inst_fun_ptr f, double t)
 {
     vd.Data.resize( vd.RowIdx->NumUnknowns());
-    P2EvalCL<Point3DCL, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &theBnd, &mg, t);
+    vd.t = t;
+    P2EvalCL<Point3DCL, BndCL,VecDescBaseCL<VectorCL> > fun( &vd, &theBnd, &mg);
     const Uint lvl= vd.RowIdx->TriangLevel();
     for (MultiGridCL::TriangVertexIteratorCL sit=mg.GetTriangVertexBegin(lvl),
          theend= mg.GetTriangVertexEnd(lvl); sit!=theend; ++sit) {
@@ -278,7 +279,8 @@ double Tests(DROPS::MultiGridCL& mg, VecDescCL& vd0, VecDescCL& vd1)
 
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin(),
          end=mg.GetTriangTetraEnd(); sit != end; ++sit) {
-        f1.assign( *sit, vd0, theVBnd, 0.5);
+        vd0.t = 0.5;
+        f1.assign( *sit, vd0, theVBnd);
         ret+= (c*f1 + f1)[4] + fv( sit->GetVertex( 0)->GetCoord(), 0.1);
         ret-= Point3DCL( f1( bary)[2]);
     }
@@ -359,12 +361,14 @@ int main ()
     idx1.CreateNumbering( 1, mg);
     DROPS::VecDescCL vd5( &idx1);
     SetFun( vd5, mg, f);
-    LocalP2CL<> restr1( *mg.GetTriangTetraBegin( 0), vd5, theBnd, 0.3);
+    vd5.t = 0.3;
+    LocalP2CL<> restr1( *mg.GetTriangTetraBegin( 0), vd5, theBnd);
     double maxdiff= 0.0, maxdiff2= 0.0;
     for (MultiGridCL::TriangTetraIteratorCL sit= mg.GetTriangTetraBegin( 0),
          end=mg.GetTriangTetraEnd( 0); sit != end; ++sit) {
         TetraCL& tet= *sit;
-        restr1.assign( tet, vd5, theBnd, 0.3);
+        vd5.t = 0.3;
+        restr1.assign( tet, vd5, theBnd);
         maxdiff= std::max( maxdiff, std::abs( restr1( bary) - f( tet.GetVertex( 0)->GetCoord()*0.25
             + tet.GetVertex( 1)->GetCoord()*0.25 + tet.GetVertex( 2)->GetCoord()*0.25
             + tet.GetVertex( 3)->GetCoord()*0.25)));

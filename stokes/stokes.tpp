@@ -188,8 +188,8 @@ template <class CoeffT>
 {
     if ( vecA != 0)
     {
-        vecA->Clear();
-        vecB->Clear();
+        vecA->Clear( t);
+        vecB->Clear( t);
     }
 
     const IdxT num_unks_vel= RowIdxA.NumUnknowns();
@@ -658,10 +658,10 @@ void StokesP2P1CL<Coeff>::SetupInstatRhs( VelVecDescCL* vecA, VelVecDescCL* vecB
                                                 VelVecDescCL* vecf, double tf) const
 /// Sets up the couplings with hat fcts on bnd (for matrices A, I) and discretizes the PDE coeff f(t)
 {
-    vecA->Clear();
-    vecB->Clear();
-    vecf->Clear();
-    vecI->Clear();
+    vecA->Clear( tA);
+    vecB->Clear( tA);
+    vecf->Clear( tf);
+    vecI->Clear( tA);
 
 #ifndef _PAR
     __UNUSED__ const IdxT allnum_unks_vel= vecA->RowIdx->NumUnknowns();
@@ -1081,7 +1081,7 @@ template <class Coeff>
     }
 */
 
-    const_DiscVelSolCL vel(lsgvel, &BndData_.Vel, &MG_, t);
+    const_DiscVelSolCL vel(lsgvel, &BndData_.Vel, &MG_);
     double L1_div= 0, L2_div= 0;
     SMatrixCL<3,3> T;
     double det, absdet;
@@ -1515,8 +1515,8 @@ void SetupSystem_P1BubbleP1( const MultiGridCL& MG, const CoeffT& Coeff, const S
 // Sets up the stiffness matrices and right hand sides
     if (vecA != 0)
     {
-        vecA->Clear();
-        vecB->Clear();
+        vecA->Clear( 0.0);
+        vecB->Clear( 0.0);
     }
 
     const IdxT num_unks_vel= RowIdxA.NumUnknowns();

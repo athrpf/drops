@@ -222,7 +222,7 @@ void ApplyToTestFct( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
 //    reflsg[221]= 0;
 //    reflsg[331]= 0;
 
-    f_Gamma.Clear();
+    f_Gamma.Clear( Stokes.v.t);
     lset.AccumulateBndIntegral( f_Gamma);
 
     std::vector<double> errVec, refVec;
@@ -297,12 +297,12 @@ void Compare_LaplBeltramiSF_ConstSF( InstatStokes2PhaseP2P1CL& Stokes, const Lse
 
     Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &Stokes.b, lset, 0.);
 
-    f_LaplBeltrami.Clear();
+    f_LaplBeltrami.Clear( Stokes.v.t);
     lset.SetSurfaceForce( SF_ImprovedLB);
 //     lset.SetSurfaceForce( SF_LB);
     lset.AccumulateBndIntegral( f_LaplBeltrami);
 
-    f_Const.Clear();
+    f_Const.Clear( Stokes.v.t);
     lset.SetSurfaceForce( SF_Const);
     lset.AccumulateBndIntegral( f_Const);
 

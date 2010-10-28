@@ -59,7 +59,7 @@ template<class Coeff>
 void SetupSystem_P1(const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 // Sets up the stiffness matrix and right hand side
 {
-    if (b != 0) b->Clear();
+    if (b != 0) b->Clear( 0.0);
 
     const Uint lvl    = RowIdx.TriangLevel(),
                idx    = RowIdx.GetIdx();
@@ -161,7 +161,7 @@ inline double Quad2D(const TetraCL& t, Uint face, Uint vert, PoissonBndDataCL::b
 template <class Coeff>
 void PoissonP1CL<Coeff>::SetupGradSrc(VecDescCL& src, instat_scalar_fun_ptr T, instat_scalar_fun_ptr dalpha, double t) const
 {
-  src.Clear();
+  src.Clear( t);
   const Uint lvl = src.GetLevel(),
              idx = src.RowIdx->GetIdx();
   Point3DCL G[4];
@@ -214,9 +214,9 @@ void PoissonP1CL<Coeff>::SetupInstatRhs(VecDescCL& vA, VecDescCL& vM, double tA,
 /// Sets up the time dependent right hand sides including couplings
 /// resulting from inhomogeneous dirichlet bnd conditions
 {
-  vA.Clear();
-  vM.Clear();
-  vf.Clear();
+  vA.Clear( tA);
+  vM.Clear( tA);
+  vf.Clear( tf);
 
   const Uint lvl = vA.GetLevel(),
              idx = vA.RowIdx->GetIdx();
@@ -363,7 +363,7 @@ void SetupConvection_P1( const MultiGridCL& MG, const Coeff& Coeff_, const BndDa
                          MatrixCL& Umat, VecDescCL* vU, IdxDescCL& RowIdx, IdxDescCL& ColIdx, double t, bool adjoint_)
 /// Sets up matrix and couplings with bnd unknowns for convection term
 {
-  if (vU != 0) vU->Clear();
+  if (vU != 0) vU->Clear( t);
   MatrixBuilderCL U( &Umat, RowIdx.NumUnknowns(), ColIdx.NumUnknowns());
 
   const Uint lvl = RowIdx.TriangLevel();
@@ -536,7 +536,7 @@ double PoissonP1CL<Coeff>::CheckSolution(const VecDescCL& lsg,
   Uint lvl=lsg.GetLevel(),
        Idx=lsg.RowIdx->GetIdx();
 
-  const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG(), t);
+  const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
 
   std::cout << "Difference to exact solution:" << std::endl;
 
@@ -986,7 +986,7 @@ template<class Coeff>
 void SetupSystem_P2( const MultiGridCL& MG, const Coeff&, const BndDataCL<> BndData_, MatrixCL& Amat, VecDescCL* b, IdxDescCL& RowIdx, IdxDescCL& ColIdx)
 // Sets up the stiffness matrix and right hand side
 {
-    if (b!=0) b->Clear();
+    if (b!=0) b->Clear( 0.0);
 
     const Uint lvl    = RowIdx.TriangLevel(),
                idx    = RowIdx.GetIdx();

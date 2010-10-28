@@ -151,9 +151,9 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
         VelVecDescCL curv( vidx);
         time.Reset();
         Stokes.SetupPrMass(  &Stokes.prM, lset/*, C.mat_ViscFluid, C.mat_ViscGas*/);
-        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
-        curv.Clear();
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.v.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.v.t);
+        curv.Clear( Stokes.v.t);
         lset.AccumulateBndIntegral( curv);
         time.Stop();
         std::cout << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";

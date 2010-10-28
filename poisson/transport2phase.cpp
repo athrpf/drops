@@ -55,7 +55,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
 {
     static LocalP2CL<> one( 1.);
 
-    P2EvalCL<SVectorCL<3>, const VelBndDataT, VecDescCL> u( v_, &Bnd_v_, &MG_, time);
+    P2EvalCL<SVectorCL<3>, const VelBndDataT, VecDescCL> u( v_, &Bnd_v_, &MG_);
 
     double det;
     SMatrixCL<3,4> G;
@@ -66,7 +66,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
     InterfaceTetraCL cut;
     cut.Init( t, lset_.Phi, lset_.GetBndData());
     if (!cut.Intersects()) {
-        const Quad5CL<Point3DCL> u_loc( t, u, t_);
+        const Quad5CL<Point3DCL> u_loc( t, u, time);
         const double coeff_d = cut.GetSign( 0) == 1 ? D_[0] : D_[1];
         const double coeff_h = cut.GetSign( 0) == 1 ? 1. : 1./H_;
         for(int i= 0; i < 4; ++i) {
@@ -84,7 +84,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
         }
     }
     else {
-        const LocalP2CL<Point3DCL> u_loc( t, u, t_);
+        const LocalP2CL<Point3DCL> u_loc( t, u, time);
         LocalP2CL<> convection_interface;
         double iAp, iAn, iMp, iMn, iCp, iCn, integralp, integraln;
         for(int i= 0; i < 4; ++i) {
@@ -211,7 +211,7 @@ void TransportP1CL::Update()
     C.Data.clear();
     C.SetIdx( cidx, cidx);
 
-    SetupInstatSystem( A, oldcplA, M, oldcplM, C, oldcplC, t_);
+    SetupInstatSystem( A, oldcplA, M, oldcplM, C, oldcplC, c.t);
 }
 
 void TransportP1CL::InitStep (VectorCL& rhs)
@@ -224,7 +224,7 @@ void TransportP1CL::InitStep (VectorCL& rhs)
         std::cout << "Inverting M_old: res = " << gm_.GetResid() << ", iter = " << gm_.GetIter() << std::endl;
         rhs1+= rhs2;
     }
-    SetupInstatSystem( A, cplA, M, cplM, C, cplC, t_);
+    SetupInstatSystem( A, cplA, M, cplM, C, cplC, c.t);
     // Todo: Add 1/dt_*M_new(c_{dirichlet,old}), if there are time-dependant Dirichlet-BC.
     rhs= M.Data*rhs1 + /*Todo: add together with the above (1./dt_)*cplM.Data + */ theta_*(cplA.Data + cplC.Data);
 
@@ -255,7 +255,7 @@ void TransportP1CL::CommitStep ()
 void TransportP1CL::DoStep (double new_t)
 {
     VectorCL rhs( c.Data.size());
-    t_= new_t;
+    c.t= new_t;
     InitStep( rhs);
     DoStep( rhs);
     CommitStep();
@@ -298,7 +298,7 @@ TransportRepairCL::post_refine ()
     loc_ct.SetIdx( &loc_cidx);
     RepairAfterRefineP1( c_.GetSolution( ct), loc_ct);
 
-    ct.Clear();
+    ct.Clear( c_.c.t);
     ct.RowIdx->DeleteNumbering( mg_);
     c_.idx.GetFinest().swap( loc_cidx);
     ct.SetIdx( &c_.idx);

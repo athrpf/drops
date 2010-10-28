@@ -146,13 +146,13 @@ void ComputeErrorsP2R( const instat_vector_fun_ptr uPos, const instat_vector_fun
             if (patch.GetSign( 0) == 1) { // pos. part
                 u_p.assign(  *sit, uPos, t);
                 u5_p.assign(  *sit, uPos, t);
-                uh.assign( *sit, u_h, bnd, t);
+                uh.assign( *sit, u_h, bnd);
                 diff= u_p - uh;
                 diff5= u5_p - Quad5CL<Point3DCL>(uh);
             } else { // neg. part
                 u_n.assign(  *sit, uNeg, t);
                 u5_n.assign( *sit, uNeg, t);
-                uh.assign( *sit, u_h, bnd, t);
+                uh.assign( *sit, u_h, bnd);
                 diff= u_n - uh;
                 diff5= u5_n - Quad5CL<Point3DCL>(uh);
             }
@@ -163,7 +163,7 @@ void ComputeErrorsP2R( const instat_vector_fun_ptr uPos, const instat_vector_fun
         else { // We are at the phase boundary.
             u_p.assign( *sit, uPos, t);
             u_n.assign( *sit, uNeg, t);
-            uh.assign( *sit, u_h, bnd, t);
+            uh.assign( *sit, u_h, bnd);
             diff_p= u_p - uh;
             diff_n= u_n - uh;
             // compute extended part

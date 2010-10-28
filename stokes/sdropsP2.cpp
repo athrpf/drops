@@ -201,6 +201,7 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
 
     time.Reset();
     time.Start();
+    double time_v = v1->t, time_p = p1->t;
     MultiGridCL& mg= NS.GetMG();
     IdxDescCL  loc_vidx, loc_pidx;
     IdxDescCL* vidx1= v1->RowIdx;
@@ -231,9 +232,9 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
         }
         v1->SetIdx( vidx1);
         P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
-                  const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
+                  const VelVecDescCL> funv2( v2, &BndData.Vel, &mg);
         RepairAfterRefineP2( funv2, *v1);
-        v2->Clear();
+        v2->Clear( time_v);
         vidx2->DeleteNumbering( mg);
 //P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
 //          VelVecDescCL> funv1( v1, &BndData.Vel, &mg, t);
@@ -245,7 +246,7 @@ UpdateTriangulation(DROPS::StokesP2P1CL<Coeff>& NS,
         p1->SetIdx( pidx1);
         typename StokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( oldfunpr, *p1);
-        p2->Clear();
+        p2->Clear( time_p);
         pidx2->DeleteNumbering( mg);
     }
     // We want the solution to be where v1, p1 point to.
@@ -783,8 +784,8 @@ void SolveStatProblem( StokesProblemT& Stokes, StokesSolverBaseCL& solver, Param
 	              << v1->Data.size() << std::endl;
         if (p2->RowIdx)
         {
-            v1->Clear();
-            p1->Clear();
+            v1->Clear( Stokes.v.t);
+            p1->Clear( Stokes.v.t);
             v2->Reset();
             p2->Reset();
         }
@@ -987,8 +988,8 @@ void Strategy( StokesProblemT& Stokes)
 
     if( StokesFlowCoeffCL::solution_known)
     {
-        Stokes.SetupSystem( &Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c, Stokes.t);
-        Stokes.CheckSolution( &Stokes.v, &Stokes.p, &StokesFlowCoeffCL::LsgVel, &StokesFlowCoeffCL::LsgPr, Stokes.t);
+        Stokes.SetupSystem( &Stokes.A, &Stokes.b, &Stokes.B, &Stokes.c, Stokes.v.t);
+        Stokes.CheckSolution( &Stokes.v, &Stokes.p, &StokesFlowCoeffCL::LsgVel, &StokesFlowCoeffCL::LsgPr, Stokes.v.t);
     }
 
 

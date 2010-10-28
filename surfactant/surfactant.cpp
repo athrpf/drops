@@ -183,6 +183,7 @@ void InitVel ( const MultiGridCL& mg, VecDescCL* vec, BndDataCL<Point3DCL>& Bnd,
             DoFHelperCL<Point3DCL, VectorCL>::set( lsgvel, sit->Unknowns( vidx),
                 LsgVel( (sit->GetVertex(0)->GetCoord() + sit->GetVertex(1)->GetCoord())/2., t));
     }
+    vec->t = t;
 }
 
 void P1Init (instat_scalar_fun_ptr icf, VecDescCL& ic, MultiGridCL& mg, double t)
@@ -221,9 +222,9 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
     VecDescCL v( &vidx);
     InitVel( mg, &v, Bnd_v, u_func, 0.);
 
-    lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, 0.), C.tm_StepSize);
+    lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v), C.tm_StepSize);
 
-    SurfactantcGP1CL timedisc( mg, Bnd_v, C.surf_Theta, C.surf_Visc, &v, lset.Phi, lset.GetBndData(), /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    SurfactantcGP1CL timedisc( mg, Bnd_v, C.surf_Theta, C.surf_Visc, &v, lset.Phi, lset.GetBndData(), C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
 
     LevelsetRepairCL lsetrepair( lset);
     adap.push_back( &lsetrepair);
@@ -251,7 +252,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
 //              << " norm of true solution: " << L2_norm( mg, lset.Phi, &sol0t, 0.)
 //              << std::endl;
     BndDataCL<> ifbnd( 0);
-    std::cerr << "initial surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic, 0.)) << '\n';
+    std::cerr << "initial surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic)) << '\n';
 
     for (int step= 1; step <= C.tm_NumSteps; ++step) {
         std::cout << "======================================================== step " << step << ":\n";
@@ -259,7 +260,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
         timedisc.InitOld();
         LSInit( mg, lset.Phi, &sphere_2move, step*C.tm_StepSize);
         timedisc.DoStep( step*C.tm_StepSize);
-        std::cerr << "surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic, step*C.tm_StepSize)) << '\n';
+        std::cerr << "surfactant on \\Gamma: " << Integral_Gamma( mg, lset.Phi, lset.GetBndData(), make_P1Eval(  mg, ifbnd, timedisc.ic)) << '\n';
 
         //lset2.DoStep();
 //        VectorCL rhs( lset2.Phi.Data.size());
@@ -287,7 +288,7 @@ void Strategy (DROPS::MultiGridCL& mg, DROPS::AdapTriangCL& adap, DROPS::Levelse
                 LSInit( mg, lset.Phi, &sphere_2move, step*C.tm_StepSize);
                 timedisc.Update();
 
-                lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v, step*C.tm_StepSize), C.tm_StepSize);
+                lset2.SetupSystem( make_P2Eval( mg, Bnd_v, v), C.tm_StepSize);
             }
             std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
             if (C.lvs_VolCorr) {

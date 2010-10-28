@@ -205,9 +205,9 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
         }
         v1->SetIdx( vidx1);
         P2EvalCL< SVectorCL<3>, const StokesVelBndDataCL,
-                  const VelVecDescCL> funv2( v2, &BndData.Vel, &mg, t);
+                  const VelVecDescCL> funv2( v2, &BndData.Vel, &mg);
         RepairAfterRefineP2( funv2, *v1);
-        v2->Clear();
+        v2->Clear( t);
         vidx2->DeleteNumbering( mg);
         // Repair pressure
         std::swap( p2, p1);
@@ -216,7 +216,7 @@ UpdateTriangulation(DROPS::NavierStokesP2P1CL<Coeff>& NS,
         p1->SetIdx( pidx1);
         typename NavStokesCL::const_DiscPrSolCL oldfunpr( p2, &BndData.Pr, &mg);
         RepairAfterRefineP1( oldfunpr, *p1);
-        p2->Clear();
+        p2->Clear( t);
         pidx2->DeleteNumbering( mg);
     }
     // We want the solution to be where v1, p1 point to.
@@ -341,7 +341,7 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
     TimerCL time;
     double t= 0.;
     const double dt= 1./num_timestep;
-    NS.t= 0;
+    NS.v.t= 0;
     Uint timestep= 0;
 
     FPDeCo_Uzawa_PCG_CL<NavStokesCL>* statsolver= 0;
@@ -367,7 +367,7 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
     ensight.Register( make_Ensight6Vector    ( NS.GetVelSolution(), "v",      ensf + ".vel", true));
     ensight.Write( 0.);
 
-    for (; timestep<num_timestep; ++timestep, t+= dt, NS.t+= dt) {
+    for (; timestep<num_timestep; ++timestep, t+= dt, NS.v.t+= dt) {
         std::cout << "----------------------------------------------------------------------------"
                   << std::endl << "t: " << t << std::endl;
         if (timestep%(num_timestep/10) == 0) { // modify the grid
@@ -413,14 +413,14 @@ Strategy(DROPS::NavierStokesP2P1CL<Coeff>& NS,
             instatsolver= new InstatNavStokesThetaSchemeCL<NavStokesCL,
                              FPDeCo_Uzawa_PCG_CL<NavStokesCL> >( NS, *statsolver, theta, t);
             if (timestep == 0) // check initial velocities
-                NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t);
+                NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
         }
         NS.SetTime( t+dt); // We have to set the new time!
         instatsolver->SetTimeStep( dt);
         std::cout << "Before timestep." << std::endl;
         instatsolver->DoStep( *v1, p1->Data);
         std::cout << "After timestep." << std::endl;
-        NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr, t+dt);
+        NS.CheckSolution( v1, vidx1, p1, &MyPdeCL::LsgVel, &MyPdeCL::LsgPr);
         ensight.Write( t+dt);
     }
     delete statsolver; statsolver= 0;

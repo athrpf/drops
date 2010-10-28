@@ -145,8 +145,8 @@ void Strategy( StokesProblemT& Stokes, const BndDataCL<>& lsbnd, double inner_it
     prM.SetIdx( pidx, pidx);
     time.Reset();
     time.Start();
-    Stokes.SetupSystem1( A, M, b, b, &cpl_M, lset, Stokes.t);
-    Stokes.SetupSystem2( B, c, lset, Stokes.t);
+    Stokes.SetupSystem1( A, M, b, b, &cpl_M, lset, Stokes.v.t);
+    Stokes.SetupSystem2( B, c, lset, Stokes.v.t);
     Stokes.SetupPrMass( &prM, lset);
     time.Stop();
     std::cout << time.GetTime() << " seconds for setting up all systems!" << std::endl;

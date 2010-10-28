@@ -871,7 +871,7 @@ template <class P1T, class VecDesc>
     typedef typename P1T::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
     typename P1T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG);
-    f.SetTime( old_f.GetTime());
+    vecdesc.t = old_f.GetTime();
     __UNUSED__ Uint counter1= 0;
     Uint counter2= 0;
 
@@ -1326,12 +1326,13 @@ RepairOnChildren( const TetraCL& t,  const P2T& old_f, VecDesc& vecdesc)
     const BndCL* const bnd= old_f.GetBndData();
     const Uint old_idx= old_f.GetSolution()->RowIdx->GetIdx();
     const Uint idx= vecdesc.RowIdx->GetIdx() ;
-    typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &old_f.GetMG(), old_f.GetTime());
+    vecdesc.t = old_f.GetTime();
+    typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &old_f.GetMG());
 #ifdef _PAR
     typedef typename P2T::DataT DataT;
     DataT dof0=DataT(), dof1=DataT();
 #endif
-    f.SetTime( old_f.GetTime());
+    vecdesc.t = old_f.GetTime();
 
     const double edgebary[3][2]= {
           {0.25, 0.25},
@@ -1496,7 +1497,8 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
     const Uint idx= vecdesc.RowIdx->GetIdx();
     typedef typename P2T::BndDataCL BndCL;
     BndCL* const bnd= old_f.GetBndData();
-    typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG, old_f.GetTime());
+    vecdesc.t = old_f.GetTime();
+    typename P2T::modifiable_type f( &vecdesc, old_f.GetBndData(), &MG);
     typedef typename P2T::DataT DataT;
 
     // The first two loops interpolate the values of all vertices (new ones as
@@ -1609,7 +1611,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
 
 
 template <class VecDescT, class BndDataT, class Cont>
-void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t)
+void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c)
 {
     const Uint slvl= s.GetLevel();
     const Uint flvl= vd.GetLevel();
@@ -1623,16 +1625,16 @@ void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont&
     for (Uint i= 0; i<NumVertsC; ++i)
         c[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
                 ? DoFT::get( v, s.GetVertex( i)->Unknowns( idx))
-                : bnd.GetDirBndValue( *s.GetVertex( i), t);
+                : bnd.GetDirBndValue( *s.GetVertex( i), vd.t);
     for (Uint i= 0; i<NumEdgesC; ++i) {
         const EdgeCL& e= *s.GetEdge( i);
         c[i+NumVertsC]= (slvl < flvl && e.IsRefined())
             ? ( !bnd.IsOnDirBnd( *e.GetMidVertex())
                 ? DoFT::get( v, e.GetMidVertex()->Unknowns( idx))
-                : bnd.GetDirBndValue( *e.GetMidVertex(), t))
+                : bnd.GetDirBndValue( *e.GetMidVertex(), vd.t))
             : ( !bnd.IsOnDirBnd( e)
                 ? DoFT::get( v, e.Unknowns( idx))
-                : bnd.GetDirBndValue( e, t));
+                : bnd.GetDirBndValue( e, vd.t));
     }
 }
 

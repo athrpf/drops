@@ -131,7 +131,6 @@ void LevelsetP2CL::SetupSystem( const DiscVelSolT& vel, const double dt)
    E is of mass matrix type:    E_ij = ( v_j       , v_i + SD * u grad v_i ) <br>
    H describes the convection:  H_ij = ( u grad v_j, v_i + SD * u grad v_i ) <br>
    where v_i, v_j denote the ansatz functions.
-   \remarks call SetupSystem \em before calling SetTimeStep!
    \todo: implementation of other boundary conditions
 */
 {

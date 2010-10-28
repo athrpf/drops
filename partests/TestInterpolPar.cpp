@@ -455,20 +455,20 @@ void UpdateTriang(VecDescCL& P1_dir,
 
     // Point 10: Delete old numbering
     // -----------------------------------------------------------------
-    old_u_idx->DeleteNumbering( mg); old_u->Clear();
-    old_v_idx->DeleteNumbering( mg); old_v->Clear();
-    old_w_idx->DeleteNumbering( mg); old_w->Clear();
-    old_x_idx->DeleteNumbering( mg); old_w->Clear();
-    old_z_idx->DeleteNumbering( mg); old_z->Clear();
+    old_u_idx->DeleteNumbering( mg); old_u->Clear(0.0);
+    old_v_idx->DeleteNumbering( mg); old_v->Clear(0.0);
+    old_w_idx->DeleteNumbering( mg); old_w->Clear(0.0);
+    old_x_idx->DeleteNumbering( mg); old_w->Clear(0.0);
+    old_z_idx->DeleteNumbering( mg); old_z->Clear(0.0);
 
 
     // Point 11: Put data into the old vectors
     // -----------------------------------------------------------------
-    P1_dir.RowIdx->swap(*new_u_idx);  P1_dir.Clear(); P1_dir.Data=new_u->Data;
-    P1_neu.RowIdx->swap(*new_v_idx);  P1_neu.Clear(); P1_neu.Data=new_v->Data;
-    P2_dir.RowIdx->swap(*new_w_idx);  P2_dir.Clear(); P2_dir.Data=new_w->Data;
-    P2_neu.RowIdx->swap(*new_x_idx);  P2_neu.Clear(); P2_neu.Data=new_x->Data;
-    P2_mixed.RowIdx->swap(*new_z_idx);  P2_mixed.Clear(); P2_mixed.Data=new_z->Data;
+    P1_dir.RowIdx->swap(*new_u_idx);  P1_dir.Clear(0.0); P1_dir.Data=new_u->Data;
+    P1_neu.RowIdx->swap(*new_v_idx);  P1_neu.Clear(0.0); P1_neu.Data=new_v->Data;
+    P2_dir.RowIdx->swap(*new_w_idx);  P2_dir.Clear(0.0); P2_dir.Data=new_w->Data;
+    P2_neu.RowIdx->swap(*new_x_idx);  P2_neu.Clear(0.0); P2_neu.Data=new_x->Data;
+    P2_mixed.RowIdx->swap(*new_z_idx);  P2_mixed.Clear(0.0); P2_mixed.Data=new_z->Data;
 }
 
 double ZeroS( const Point3DCL&, double){ return 0; }

@@ -138,7 +138,7 @@ inline void
 #ifdef _PAR
     GetPMG().CompleteRepair( &loc_v);
 #endif
-    v.Clear();
+    v.Clear( v.t);
     v.RowIdx->DeleteNumbering( stokes_.GetMG());
 
     stokes_.vel_idx.GetFinest().swap( loc_vidx);
@@ -203,7 +203,7 @@ inline void
         loc_xpr_idx.DeleteNumbering( stokes_.GetMG());
     }
 #endif
-    p.Clear();
+    p.Clear( p.t);
     p.RowIdx->DeleteNumbering( stokes_.GetMG());
     stokes_.pr_idx.GetFinest().swap( loc_pidx);
     p.SetIdx( &stokes_.pr_idx);

@@ -141,7 +141,6 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
   public:
     MLIdxDescCL  vel_idx;  ///< for velocity unknowns
     MLIdxDescCL  pr_idx;   ///< for pressure unknowns
-    double       t;        ///< time
     VelVecDescCL v;        ///< velocity
     VecDescCL    p;        ///< pressure
     VelVecDescCL b;
@@ -154,9 +153,9 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
 
   public:
     InstatStokes2PhaseP2P1CL( const MGBuilderCL& mgb, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
-        : base_(mgb, coeff, bdata), vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+        : base_(mgb, coeff, bdata), vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab) {}
     InstatStokes2PhaseP2P1CL( MultiGridCL& mg, const TwoPhaseFlowCoeffCL& coeff, const BndDataCL& bdata, FiniteElementT prFE= P1_FE, double XFEMstab=0.1, FiniteElementT velFE= vecP2_FE)
-        : base_(mg, coeff, bdata),  vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab), t( 0.) {}
+        : base_(mg, coeff, bdata),  vel_idx(velFE, 1, bdata.Vel, 0, XFEMstab), pr_idx(prFE, 1, bdata.Pr, 0, XFEMstab) {}
 
     /// \name Numbering
     //@{
@@ -231,12 +230,12 @@ class InstatStokes2PhaseP2P1CL : public ProblemCL<TwoPhaseFlowCoeffCL, StokesBnd
     const_DiscPrSolCL GetPrSolution() const
         { return const_DiscPrSolCL( &p, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution() const
-        { return const_DiscVelSolCL( &v, &GetBndData().Vel, &GetMG(), t); }
+        { return const_DiscVelSolCL( &v, &GetBndData().Vel, &GetMG()); }
 
     const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
         { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
-        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
+        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG()); }
     //@}
 };
 

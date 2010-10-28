@@ -252,7 +252,7 @@ class LocalP1CL: public GridFunctionCL<T>
     LocalP1CL(const TetraCL&, instat_fun_ptr , double= 0.0);
     // Initialize from VecDescCL and boundary-data
     template<class BndDataT>
-      LocalP1CL(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
+      LocalP1CL(const TetraCL&, const VecDescCL&, const BndDataT&);
     // Initialize from PiEvalCl
     template <class P1FunT>
       LocalP1CL(const TetraCL&, const P1FunT&, double= 0.0);
@@ -265,7 +265,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP1CL, T, base_type)
     assign(const TetraCL&, instat_fun_ptr, double= 0.0);
     template<class BndDataT>
       inline self_&
-      assign(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
+      assign(const TetraCL&, const VecDescCL&, const BndDataT&);
     template <class P1FunT>
       inline self_&
       assign(const TetraCL&, const P1FunT&, double= 0.0);
@@ -302,7 +302,7 @@ class LocalP2CL: public GridFunctionCL<T>
     LocalP2CL(const TetraCL&, instat_fun_ptr , double= 0.0);
     // Initialize from VecDescCL and boundary-data
     template<class BndDataT>
-      LocalP2CL(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
+      LocalP2CL(const TetraCL&, const VecDescCL&, const BndDataT&);
     // Initialize from PiEvalCL
     template <class P2FunT>
       LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
@@ -317,7 +317,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
     assign(const TetraCL&, instat_fun_ptr, double= 0.0);
     template<class BndDataT>
       inline self_&
-      assign(const TetraCL&, const VecDescCL&, const BndDataT&, double= 0.0);
+      assign(const TetraCL&, const VecDescCL&, const BndDataT&);
     template <class P2FunT>
       inline self_&
       assign(const TetraCL&, const P2FunT&, double= 0.0);

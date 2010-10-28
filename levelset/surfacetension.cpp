@@ -54,7 +54,7 @@ void SurfaceTensionCL::ComputeSF(const TetraCL& t, const BaryCoordCL * const p,
                       }
                       break;
         case Sigma_C: {
-                          LocalP1CL<> p1_c(t, *c_, cBnd_, time_);
+                          LocalP1CL<> p1_c(t, *c_, cBnd_);
                           LocalP2CL<> p2_c(p1_c);
                           Quad5_2DCL<> q5_c(p2_c, p);
                           Point3DCL gradc(0.), G[4];

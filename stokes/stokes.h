@@ -84,7 +84,6 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
 
     MLIdxDescCL  vel_idx;  // for velocity unknowns
     MLIdxDescCL  pr_idx;   // for pressure unknowns
-    double       t;        // time, 0.0 in the stationary case
     VelVecDescCL v;
     VecDescCL    p;
     VelVecDescCL b;
@@ -96,9 +95,9 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
                  prM;
 
     StokesP2P1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)
-        : base_( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0){}
+        : base_( mgb, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE){}
     StokesP2P1CL(MultiGridCL& mg, const CoeffCL& coeff, const BndDataCL& bdata)
-        : base_( mg, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE), t( 0.0) {}
+        : base_( mg, coeff, bdata), vel_idx( vecP2_FE), pr_idx( P1_FE) {}
 
     /// \name Create and delete numbering of unknowns
     //@{
@@ -112,7 +111,7 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     //@}
 
     /// \brief Set up matrices and complete rhs
-    void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double= 0.0) const;
+    void SetupSystem(MLMatDescCL*, VelVecDescCL*, MLMatDescCL*, VelVecDescCL*, double = 0.0) const;
     /// \brief  Set up only A.
     void SetupStiffnessMatrix(MLMatDescCL*) const;
     /// Set up the stiffness matrix for the pressure, scaled by \f$\rho^{-1}\f$.
@@ -145,14 +144,14 @@ class StokesP2P1CL : public ProblemCL<Coeff, StokesBndDataCL>
     //@{
     /// Get solutions as FE-functions
     const_DiscPrSolCL GetPrSolution() const
-        { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG(), t); }
+        { return const_DiscPrSolCL(&p, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution() const
-        { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG(), t); }
+        { return const_DiscVelSolCL(&v, &GetBndData().Vel, &GetMG()); }
 
     const_DiscPrSolCL GetPrSolution( const VecDescCL& pr) const
-        { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG(), t); }
+        { return const_DiscPrSolCL( &pr, &GetBndData().Pr, &GetMG()); }
     const_DiscVelSolCL GetVelSolution( const VelVecDescCL& vel) const
-        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG(), t); }
+        { return const_DiscVelSolCL( &vel, &GetBndData().Vel, &GetMG()); }
     //@}
 };
 
@@ -183,7 +182,7 @@ class StokesP1BubbleP1CL : public ProblemCL<Coeff, StokesBndDataCL>
     VecDescCL    p;
     VelVecDescCL b;
     VecDescCL    c;
-    MLMatDescCL    A,        // Bad, bad comma.
+    MLMatDescCL  A,        // Bad, bad comma.
                  B;
 
     StokesP1BubbleP1CL(const MGBuilderCL& mgb, const CoeffCL& coeff, const BndDataCL& bdata)

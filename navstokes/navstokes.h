@@ -43,11 +43,11 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
   public:
     using                            base_::MG_;
     using                            base_::BndData_;
+    using                            base_::v;
     using                            base_::b;
     using                            base_::c;
     using                            base_::A;
     using                            base_::B;
-    using                            base_::t; // Initialized with 0.0 by base-class.
 
     typedef Coeff                     CoeffCL;
     typedef typename base_::BndDataCL BndDataCL;
@@ -68,20 +68,20 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
     // Set up matrix and rhs for nonlinearity: use time t1 for the velocity in N,
     // t2 for the boundary-data in the velocity unknowns
     void SetupNonlinear(MLMatDescCL*, const VelVecDescCL*, VelVecDescCL*, double, double) const;
-    // Set up matrix for nonlinearity, use time _t
+    // Set up matrix for nonlinearity, use time v.t
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
-    { this->SetupNonlinear(matN, velvec, vecb, t, t); }
+    { this->SetupNonlinear(matN, velvec, vecb, v.t, v.t); }
     void SetupNonlinear(MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, IdxDescCL& RowIdx) const
-    { this->SetupNonlinear_P2( N, vel, cplN, RowIdx, t, t); }
+    { this->SetupNonlinear_P2( N, vel, cplN, RowIdx, v.t, v.t); }
 
     // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
-    void SetTime (double tt) { t= tt; }
+    void SetTime (double tt) { v.t= tt; }
     // in parallel version the error is arisen in the super  class
     void SetNumVelLvl( size_t n) {base_::SetNumVelLvl(n); N.Data.resize( n);}
 
     // Check computed solution
     void CheckSolution(const VelVecDescCL*, MLIdxDescCL* idx, const VecDescCL*,
-        instat_vector_fun_ptr, instat_scalar_fun_ptr, double= 0.0);
+        instat_vector_fun_ptr, instat_scalar_fun_ptr);
 };
 
 

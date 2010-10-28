@@ -272,10 +272,10 @@ void SolveStatProblem( StokesT& Stokes, const LevelsetP2CL& lset,
     Stokes.SetIdx();
     Stokes.SetLevelSet( lset);
     lset.AccumulateBndIntegral( curv);
-    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.t);
+    Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &cplM, lset, Stokes.v.t);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
     Stokes.SetupPrMass ( &Stokes.prM, lset);
-    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
+    Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.v.t);
     time.Stop();
     duration = time.GetTime();
     std::cout << "Discretizing took "<< duration << " sec.\n";
@@ -402,7 +402,7 @@ class TwoPhaseStoreCL
     {
         std::ofstream file( filename.c_str());
         if (!file) throw DROPSErrCL("TwoPhaseStoreCL::WriteTime: Cannot open file "+filename+" for writing");
-        file << Stokes_.t << "\n";
+        file << Stokes_.v.t << "\n";
         file.close();
     }
 

@@ -299,9 +299,9 @@ void Strategy( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbnd, Ada
         // solve initial velocities for given pressure field
         TimerCL time;
         time.Reset();
-        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
-        curv.Clear();
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.v.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.v.t);
+        curv.Clear( Stokes.v.t);
         lset.AccumulateBndIntegral( curv);
         time.Stop();
         std::cout << "Discretizing Stokes/Curv for initial velocities took "<<time.GetTime()<<" sec.\n";
@@ -320,9 +320,9 @@ void Strategy( InstatStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbnd, Ada
         // solve stationary problem for initial velocities
         TimerCL time;
         time.Reset();
-        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.t);
-        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.t);
-        curv.Clear();
+        Stokes.SetupSystem1( &Stokes.A, &Stokes.M, &Stokes.b, &Stokes.b, &curv, lset, Stokes.v.t);
+        Stokes.SetupSystem2( &Stokes.B, &Stokes.c, lset, Stokes.v.t);
+        curv.Clear( Stokes.v.t);
         lset.AccumulateBndIntegral( curv);
         time.Stop();
         std::cout << "Discretizing Stokes/Surf.Force for initial velocities took "<<time.GetTime()<<" sec.\n";

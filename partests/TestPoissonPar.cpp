@@ -735,7 +735,7 @@ void Strategy_Adaptive(PoissonP1CL<PoissonCoeffCL>& Poisson, ParMultiGridCL &pmg
             time.Stop(); Times.AddTime(T_Interpolate, time.GetMaxTime());
 
             Poisson.DeleteNumbering( old_idx );
-            old_x->Clear();
+            old_x->Clear(new_x->t);
 
             if (C.ensight)
                 ensight->Write( step+1);

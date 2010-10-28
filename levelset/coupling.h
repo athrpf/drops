@@ -67,7 +67,7 @@ class TimeDisc2PhaseCL
     TimeDisc2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls, LevelsetModifyCL& lsetmod, double nonlinear=1.);
     virtual ~TimeDisc2PhaseCL();
 
-    double GetTime()           const { return Stokes_.t; }
+    double GetTime()           const { return Stokes_.v.t; }
     double GetTimeStep()       const { return dt_; }
     MLMatrixCL*       GetUpperLeftBlock ()       { return mat_; }
     const MLMatrixCL* GetUpperLeftBlock () const { return mat_; }
@@ -576,11 +576,13 @@ class Frac2StepScheme2PhaseCL : public BaseMethod<LsetSolverT, RelaxationPolicyT
     void DoStep( int maxFPiter= -1) {
         VectorCL v(Stokes_.v.Data);
         VectorCL phi(LvlSet_.Phi.Data);
-        double t(Stokes_.t);
+        double t(Stokes_.v.t);
         DoSubStep( maxFPiter);
         oldv_ = v;
         oldphi_ = phi;
-        Stokes_.t = t;
+        Stokes_.v.t = t;
+        Stokes_.p.t = t;
+        LvlSet_.Phi.t = t;
         DoSubStep( maxFPiter);
     }
 

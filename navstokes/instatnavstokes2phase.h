@@ -57,10 +57,10 @@ class InstatNavierStokes2PhaseP2P1CL : public InstatStokes2PhaseP2P1CL
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN, const LevelsetP2CL& lset, double t) const;
     /// \brief Set up matrix for nonlinearity at the time in the base-class using the registered Levelset-object.
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* vel, VelVecDescCL* cplN) const {
-        this->SetupNonlinear( matN, vel, cplN, *ls_, t);
+        this->SetupNonlinear( matN, vel, cplN, *ls_, vel->t);
     }
     void SetupNonlinear(MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, IdxDescCL& RowIdx) const {
-        this->SetupNonlinear_P2( N, vel, cplN, *ls_, RowIdx, t);
+        this->SetupNonlinear_P2( N, vel, cplN, *ls_, RowIdx, vel->t);
     }
     //@}
 

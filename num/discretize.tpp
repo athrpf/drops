@@ -41,7 +41,7 @@ template<class T>
   template<class BndDataT>
     inline LocalP1CL<T>&
     LocalP1CL<T>::assign(const TetraCL& s,
-        const VecDescCL& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd)
 {
     typedef VecDescCL::DataType VecT;
     typedef DoFHelperCL<value_type, VecT> DoFT;
@@ -50,7 +50,7 @@ template<class T>
     for (Uint i= 0; i< NumVertsC; ++i)
         (*this)[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
             ? DoFT::get( v, s.GetVertex( i)->Unknowns( idx))
-            : bnd.GetDirBndValue( *s.GetVertex( i), t);
+            : bnd.GetDirBndValue( *s.GetVertex( i), vd.t);
     return *this;
 }
 
@@ -85,10 +85,10 @@ template<class T>
 template<class T>
   template<class BndDataT>
     LocalP1CL<T>::LocalP1CL(const TetraCL& s,
-        const VecDescCL& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd)
     : base_type( value_type(), FE_P1CL::NumDoFC)
 {
-    this->assign( s, vd, bnd, t);
+    this->assign( s, vd, bnd);
 }
 
 template<class T>
@@ -117,7 +117,7 @@ template<class T>
   template<class BndDataT>
     inline LocalP2CL<T>&
     LocalP2CL<T>::assign(const TetraCL& s,
-        const VecDescCL& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd)
 {
     typedef VecDescCL::DataType VecT;
     typedef DoFHelperCL<value_type, VecT> DoFT;
@@ -129,11 +129,11 @@ template<class T>
         for (Uint i= 0; i< NumVertsC; ++i)
             (*this)[i]= !bnd.IsOnDirBnd( *s.GetVertex( i))
                 ? DoFT::get( v, s.GetVertex( i)->Unknowns( idx))
-                : bnd.GetDirBndValue( *s.GetVertex( i), t);
+                : bnd.GetDirBndValue( *s.GetVertex( i), vd.t);
         for (Uint i= 0; i< NumEdgesC; ++i)
             (*this)[i+NumVertsC]= !bnd.IsOnDirBnd( *s.GetEdge( i))
                 ? DoFT::get( v, s.GetEdge( i)->Unknowns( idx))
-                : bnd.GetDirBndValue( *s.GetEdge( i), t);
+                : bnd.GetDirBndValue( *s.GetEdge( i), vd.t);
     }
     else {
         if (tlvl < vlvl) RestrictP2( s, vd, bnd, *this);
@@ -190,10 +190,10 @@ template<class T>
 template<class T>
   template<class BndDataT>
     LocalP2CL<T>::LocalP2CL(const TetraCL& s,
-        const VecDescCL& vd, const BndDataT& bnd, double t)
+        const VecDescCL& vd, const BndDataT& bnd)
     : base_type( value_type(), FE_P2CL::NumDoFC)
 {
-    this->assign( s, vd, bnd, t);
+    this->assign( s, vd, bnd);
 }
 
 template<class T>

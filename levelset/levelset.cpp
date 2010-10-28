@@ -759,7 +759,7 @@ LevelsetRepairCL::post_refine ()
     GetPMG().CompleteRepair( &loc_phi);
 #endif
 
-    phi.Clear();
+    phi.Clear( phi.t);
     ls_.DeleteNumbering( phi.RowIdx);
     ls_.idx.swap( loc_lidx);
     phi.SetIdx( &ls_.idx);

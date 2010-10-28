@@ -463,18 +463,17 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
-    mutable double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const VertexCL& s) const {
-        return _bnd->IsOnDirBnd( s) ? _bnd->GetDirBndValue( s, t_)
+        return _bnd->IsOnDirBnd( s) ? _bnd->GetDirBndValue( s, _sol->t)
             : DoFHelperCL<DataT, typename VecDescT::DataType>::get( _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
 
 public:
-    P1EvalCL() :_sol( 0), _bnd( 0), _MG( 0), t_( 0) {}
-    P1EvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG, double t= 0.0)
-        :_sol( sol), _bnd( bnd), _MG( MG), t_( t) {}
+    P1EvalCL() :_sol( 0), _bnd( 0), _MG( 0) {}
+    P1EvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
+        :_sol( sol), _bnd( bnd), _MG( MG) {}
     // default copy-ctor, dtor, assignment-op
     // copying P1EvalCL-objects is safe - it is a flat copy, which is fine,
     // as P1EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
@@ -499,10 +498,10 @@ public:
         { return _sol->GetLevel(); }
     void // set / get the time
     SetTime(double t) const
-        { t_= t; }
+        { _sol->t= t; }
     double
     GetTime() const
-        { return t_; }
+        { return _sol->t; }
 
     // evaluation on vertices
     template<class _Cont>
@@ -543,9 +542,9 @@ public:
 // Create a P1EvalCL without the agonizing template-pain.
 template<class BndData_, class VD_>
   P1EvalCL<typename BndData_::bnd_type, BndData_, VD_>
-    make_P1Eval (const MultiGridCL& mg, BndData_& bnd, VD_& vd, double t= 0.)
+    make_P1Eval (const MultiGridCL& mg, BndData_& bnd, VD_& vd)
 {
-    return P1EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg, t);
+    return P1EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg);
 }
 
 //**************************************************************************
@@ -595,18 +594,17 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
-    mutable double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const FaceCL& s) const {
-        return _bnd->IsOnDirBnd( s) ? _bnd->GetDirBndValue( s, t_)
+        return _bnd->IsOnDirBnd( s) ? _bnd->GetDirBndValue( s, _sol.t)
             : DoFHelperCL<DataT, typename VecDescT::DataType>::get( _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
 
 public:
-    P1DEvalCL() :_sol( 0), _bnd( 0), _MG( 0), t_( 0) {}
-    P1DEvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG, double t= 0.0)
-        :_sol( sol), _bnd( bnd), _MG( MG), t_( t) {}
+    P1DEvalCL() :_sol( 0), _bnd( 0), _MG( 0) {}
+    P1DEvalCL(_VD* sol, _BndData* bnd, const MultiGridCL* MG)
+        :_sol( sol), _bnd( bnd), _MG( MG) {}
     // default copy-ctor, dtor, assignment-op
     // copying P1EvalCL-objects is safe - it is a flat copy, which is fine,
     // as P1EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
@@ -631,10 +629,10 @@ public:
         { return _sol->GetLevel(); }
     void // set / get the time
     SetTime(double t) const
-        { t_= t; }
+        { _sol->t= t; }
     double
     GetTime() const
-        { return t_; }
+        { return _sol->t; }
 
     // evaluation on the tetrahedron
     template<class _Cont>
@@ -649,7 +647,7 @@ public:
       inline Data
       val(const _Cont&, double, double, double) const;
 
-    inline void // set the degree of freedom in this face; fails for Dirichlet-faces
+    inline void // set the degree of freedom in this face; fails for Dirichlet-faces
     SetDoF(const FaceCL&, const DataT&);
 };
 
@@ -701,27 +699,26 @@ protected:
     BndDataCL*         _bnd;
     // the multigrid
     const MultiGridCL* _MG;
-    mutable double t_;
 
     inline DataT // helper-function to evaluate on a vertex; use val() instead
     GetDoF(const VertexCL& s) const
     {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, t_)
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _sol->t)
             : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
             _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
     inline DataT // helper-function to evaluate on an edge; use val() instead
     GetDoF(const EdgeCL& s) const
     {
-        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, t_)
+        return _bnd->IsOnDirBnd(s) ? _bnd->GetDirBndValue(s, _sol->t)
             : DoFHelperCL<DataT,typename VecDescT::DataType>::get(
             _sol->Data, s.Unknowns(_sol->RowIdx->GetIdx()));
     }
 
 public:
-    P2EvalCL() :_sol( 0), _bnd( 0), _MG( 0), t_( 0) {}
-    P2EvalCL(VecDescT* sol, BndDataCL* bnd, const MultiGridCL* MG, double t= 0.0)
-        :_sol( sol), _bnd( bnd), _MG( MG), t_( t) {}
+    P2EvalCL() :_sol( 0), _bnd( 0), _MG( 0){}
+    P2EvalCL(VecDescT* sol, BndDataCL* bnd, const MultiGridCL* MG)
+        :_sol( sol), _bnd( bnd), _MG( MG) {}
     //default copy-ctor, dtor, assignment-op
     // copying P2EvalCL-objects is safe - it is a flat copy, which is fine,
     // as P2EvalCL does not take possession of the pointed to _sol, _bnd and _MG.
@@ -739,8 +736,8 @@ public:
     Uint // Triangulation level of this function
     GetLevel() const { return _sol->GetLevel(); }
     // The time at which boundary data is evaluated.
-    double GetTime() const { return t_; }
-    void SetTime(double t) const { t_= t; }
+    double GetTime() const { return _sol->t; }
+    void SetTime(double t) const { _sol->t= t; }
 
     inline bool UnknownsMissing(const TetraCL& t) const;
     // True, iff the function can be evaluated on the given simplex.
@@ -805,9 +802,9 @@ public:
 // Create a P2EvalCL without the agonizing template-pain.
 template<class BndData_, class VD_>
   P2EvalCL<typename BndData_::bnd_type, BndData_, VD_>
-    make_P2Eval (const MultiGridCL& mg, BndData_& bnd, VD_& vd, double t= 0.)
+    make_P2Eval (const MultiGridCL& mg, BndData_& bnd, VD_& vd)
 {
-    return P2EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg, t);
+    return P2EvalCL<typename BndData_::bnd_type, BndData_, VD_>( &vd, &bnd, &mg);
 }
 
 
@@ -1182,13 +1179,13 @@ class UpdateProlongationCL : public MGObserverCL
 //     by FE_P2CL.                                                         *
 //**************************************************************************
 template <class VecDescT, class BndDataT, class Cont>
-void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c, double t= 0.0);
+void RestrictP2(const TetraCL& s, const VecDescT& vd, const BndDataT& bnd, Cont& c);
 
 
 template <class P2FuncT, class Cont>
-void RestrictP2(const TetraCL& s, const P2FuncT& f, Cont& c, double t= 0.0)
+void RestrictP2(const TetraCL& s, const P2FuncT& f, Cont& c)
 {
-    RestrictP2( s, *f.GetSolution(), *f.GetBndData(), c, t);
+    RestrictP2( s, *f.GetSolution(), *f.GetBndData(), c);
 }
 
 

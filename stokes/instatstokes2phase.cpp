@@ -36,7 +36,7 @@ void SetupSystem2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
 // P2 / P0 FEs for vel/pr
 {
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear();
+    if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     LocalNumbP2CL n;
     Quad2CL<Point3DCL> Grad[10], GradRef[10];
@@ -83,7 +83,7 @@ void SetupSystem2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const
 // P2 / P1 FEs (Taylor-Hood) for vel/pr
 {
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear();
+    if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
@@ -138,7 +138,7 @@ void SetupSystem2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 {
     const ExtIdxDescCL& Xidx= RowIdx->GetXidx();
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear();
+    if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
@@ -230,7 +230,7 @@ void SetupSystem2_P2RP1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, con
     const ExtIdxDescCL& prXidx=    RowIdx->GetXidx();
     const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear();
+    if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
@@ -355,7 +355,7 @@ void SetupSystem2_P2RP1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 {
     const ExtIdxDescCL& velXidx= ColIdx->GetXidx();
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear();
+    if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
@@ -447,7 +447,7 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 // P2 / P1D FEs for vel/pr
 {
     MatrixBuilderCL mB( B, RowIdx->NumUnknowns(), ColIdx->NumUnknowns());
-    if (c != 0) c->Clear();
+    if (c != 0) c->Clear( t);
     const Uint lvl= RowIdx->TriangLevel();
     IdxT prNumb[4];
     LocalNumbP2CL n;
@@ -495,7 +495,7 @@ void SetupSystem2_P2P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, cons
 
 void SetupRhs2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, VecDescCL* c, double t)
 {
-    c->Clear();
+    c->Clear( t);
     const Uint lvl= c->GetLevel();
     const Uint pidx= c->RowIdx->GetIdx();
 
@@ -535,7 +535,7 @@ void SetupRhs2_P2P0( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const St
 
 void SetupRhs2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, VecDescCL* c, double t)
 {
-    c->Clear();
+    c->Clear( t);
 
     const Uint lvl = c->GetLevel();
     const Uint pidx= c->RowIdx->GetIdx();
@@ -583,7 +583,7 @@ void SetupRhs2_P2P1( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const St
 void SetupRhs2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, VecDescCL* c, const LevelsetP2CL& lset, double t)
 // P2 / P1X FEs (X=extended) for vel/pr
 {
-    c->Clear();
+    c->Clear( t);
     const Uint lvl=  c->GetLevel();
     const Uint pidx= c->RowIdx->GetIdx();
     const ExtIdxDescCL& Xidx= c->RowIdx->GetXidx();
@@ -650,7 +650,7 @@ void SetupRhs2_P2P1X( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const S
 
 void SetupRhs2_P2P1D( const MultiGridCL& MG, const TwoPhaseFlowCoeffCL&, const StokesBndDataCL& BndData, VecDescCL* c, double t)
 {
-    c->Clear();
+    c->Clear( t);
 
     const Uint lvl         = c->GetLevel();
     const Uint pidx        = c->RowIdx->GetIdx();
@@ -1191,6 +1191,7 @@ void InstatStokes2PhaseP2P1CL::SetupPrStiff( MLMatDescCL* A_pr, const LevelsetP2
 void InstatStokes2PhaseP2P1CL::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr LsgVel, double t0) const
 {
     VectorCL& lsgvel= vec->Data;
+    vec->t = t0;
     const Uint lvl  = vec->GetLevel(),
                vidx = vec->RowIdx->GetIdx();
 
@@ -1221,9 +1222,9 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
                     mM( &M, num_unks_vel, num_unks_vel);
     if (b != 0)
     {
-        b->Clear();
-        cplM->Clear();
-        cplA->Clear();
+        b->Clear( t);
+        cplM->Clear( t);
+        cplA->Clear( t);
     }
 
     const Uint lvl = RowIdx.TriangLevel();
@@ -1448,9 +1449,9 @@ void SetupSystem1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_
                     mM( &M, num_unks_vel, num_unks_vel);
     if (b != 0)
     {
-        b->Clear();
-        cplM->Clear();
-        cplA->Clear();
+        b->Clear( t);
+        cplM->Clear( t);
+        cplA->Clear( t);
     }
 
     const Uint lvl = RowIdx.TriangLevel();
@@ -1755,7 +1756,7 @@ void SetupRhs1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, co
 {
     const Uint lvl = b->GetLevel();
 
-    b->Clear();
+    b->Clear( t);
 
     LocalNumbP2CL n;
     SMatrixCL<3,3> T;
@@ -1827,7 +1828,7 @@ void SetupRhs1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, c
     throw DROPSErrCL("SetupRhs1_P2R(...) is buggy, aborting.");
     const Uint lvl = b->GetLevel();
 
-    b->Clear();
+    b->Clear( t);
 
     LocalNumbP2CL n;
     const IdxDescCL& RowIdx= *b->RowIdx;
@@ -1978,7 +1979,7 @@ void SetupLB_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, cons
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
     MatrixBuilderCL mA( &A, num_unks_vel, num_unks_vel);
-    if (cplA != 0) cplA->Clear();
+    if (cplA != 0) cplA->Clear( t);
 
     const Uint lvl = RowIdx.TriangLevel();
 
@@ -2166,7 +2167,7 @@ void InstatStokes2PhaseP2P1CL::SetupRhs2( VecDescCL* c, const LevelsetP2CL& lset
 void InstatStokes2PhaseP2P1CL::SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL* vel,
     const LevelsetP2CL& lset, double t) const
 {
-    Bdotv->Clear();
+    Bdotv->Clear( t);
     const Uint lvl= Bdotv->GetLevel();
     IdxT prNumb[4];
 
@@ -2193,7 +2194,7 @@ void InstatStokes2PhaseP2P1CL::SetupBdotv (VecDescCL* Bdotv, const VelVecDescCL*
         GetLocalNumbP1NoBnd( prNumb, *sit, *Bdotv->RowIdx);
         GetTrafoTr( T, det, *sit);
         P2DiscCL::GetGradients( Grad, GradRef, T);
-        loc_u.assign( *sit, *vel, GetBndData().Vel, t);
+        loc_u.assign( *sit, *vel, GetBndData().Vel);
         divu= 0.;
         for (int i= 0; i < 10; ++i) {
             lp2Grad.assign( Grad[i]);

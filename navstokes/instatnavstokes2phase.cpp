@@ -34,7 +34,7 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2 (MatrixCL& N, const VelVe
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
     MatrixBuilderCL mN( &N, num_unks_vel, num_unks_vel);
-    if (cplN != 0) cplN->Clear();
+    if (cplN != 0) cplN->Clear( t);
 
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP2CL n;
@@ -50,7 +50,7 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2 (MatrixCL& N, const VelVe
     double det, absdet;
     Point3DCL tmp;
     LevelsetP2CL::const_DiscSolCL ls= lset.GetSolution();
-    const_DiscVelSolCL u( vel, &BndData_.Vel, &MG_, t);
+    const_DiscVelSolCL u( vel, &BndData_.Vel, &MG_);
 
     P2DiscCL::GetGradientsOnRef( GradRef);
     LocalP2CL<> p2Phi;

@@ -108,7 +108,7 @@ template <class NavStokesT, class SolverT>
 void InstatNavStokesThetaSchemeCL<NavStokesT,SolverT>::DoStep( VecDescCL& v, VectorCL& p)
 {
     // NS_.t contains the new time!
-    NS_.SetupInstatRhs( b_, &NS_.c, cplM_, NS_.t, b_, NS_.t);
+    NS_.SetupInstatRhs( b_, &NS_.c, cplM_, NS_.v.t, b_, NS_.v.t);
     const double alpha= theta_;
     const double beta= (theta_ - 1.);
     rhs_=  alpha*b_->Data

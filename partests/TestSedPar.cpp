@@ -201,8 +201,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     double D[2] = {C.trp_DiffPos, C.trp_DiffNeg};
-    TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.trp_Theta, D, C.trp_H, &Stokes.v, lset,
-        /*t*/ 0., C.tm_StepSize, C.trp_Iter, C.trp_Tol);
+    TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.trp_Theta, D, C.trp_H, &Stokes.v, lset, C.tm_StepSize, C.trp_Iter, C.trp_Tol);
     TransportRepairCL transprepair(massTransp, MG);
     if (C.trp_DoTransp)
     {
@@ -221,7 +220,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
     }
 
     /// \todo rhs beruecksichtigen
-    SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, lset.GetBndData(), /* t */ 0., C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
+    SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, lset.GetBndData(), C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
     InterfaceP1RepairCL surf_repair( MG, lset.Phi, lset.GetBndData(), surfTransp.ic);
     if (C.surf_DoTransp)
     {
@@ -334,16 +333,16 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
     }
 
     if (C.ens_EnsightOut)
-        ensight.Write( 0.);
+        ensight.Write( Stokes.v.t);
     if (C.vtk_VTKOut)
-        vtkwriter.Write(Stokes.t);
+        vtkwriter.Write(Stokes.v.t);
 
     for (int step= 1; step<=C.tm_NumSteps; ++step)
     {
         std::cout << "============================================================ step " << step << std::endl;
 
         IFInfo.Update( lset, Stokes.GetVelSolution());
-        IFInfo.Write(Stokes.t);
+        IFInfo.Write(Stokes.v.t);
         if (C.surf_DoTransp) surfTransp.InitOld();
         //timedisc->DoStep( C.cpl_Iter);
         Point3DCL newCenter= EllipsoidCL::GetCenter(); newCenter[1]+= C.exp_InflowVel;
@@ -354,7 +353,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
         if (C.surf_DoTransp) {
             surfTransp.DoStep( step*C.tm_StepSize);
             BndDataCL<> ifbnd( 0);
-            std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, lset.GetBndData(), make_P1Eval(  MG, ifbnd, surfTransp.ic, step*C.tm_StepSize)) << '\n';
+            std::cout << "surfactant on \\Gamma: " << Integral_Gamma( MG, lset.Phi, lset.GetBndData(), make_P1Eval(  MG, ifbnd, surfTransp.ic)) << '\n';
         }
 
         // WriteMatrices( Stokes, step);
@@ -372,12 +371,12 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
         }
 
         if (C.ens_EnsightOut && step%C.ens_EnsightOut==0)
-            ensight.Write( Stokes.t);
+            ensight.Write( Stokes.v.t);
         if (C.vtk_VTKOut && step%C.vtk_VTKOut==0)
-            vtkwriter.Write(Stokes.t);
+            vtkwriter.Write(Stokes.v.t);
     }
     IFInfo.Update( lset, Stokes.GetVelSolution());
-    IFInfo.Write(Stokes.t);
+    IFInfo.Write(Stokes.v.t);
     std::cout << std::endl;
     delete timedisc;
     delete navstokessolver;
