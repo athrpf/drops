@@ -67,3 +67,12 @@ Err {
     NumRef       		= 6
 	
 }
+
+#VTK output
+VTK{
+    VTKOut        = 1         # VTK output
+    VTKDir        = vtk       # local directory for vtk files
+    VTKName       = brick     # name of vtk files
+    Binary        = 0         # write out VTK files in binary format
+}
+
