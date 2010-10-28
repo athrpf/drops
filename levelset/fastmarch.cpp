@@ -122,6 +122,19 @@ void ReparamDataCL::InitCoord()
     }
 }
 
+/** Each call magnifies perDir.size() by a factor of 3. After appending all directions \f$ d_1,\ldots, d_k\f$,
+ *  perDir will contain all points \f$ x=\sum_{i=1}^k\sum_{\alpha_i\in\{-1,0,+1\}}\alpha_i d_i\f$.
+ */
+void ReparamDataCL::AppendPeriodicDirection( const Point3DCL& dir)
+{
+    const size_t s= perDir.size();  // size of perDir *before* appending direction
+    for (size_t i=0; i<s; ++i) {
+        const Point3DCL d= perDir[i];
+        perDir.push_back( d + dir);
+        perDir.push_back( d - dir);
+    }
+}
+
 // I N I T  Z E R O  C L
 //----------------------
 
@@ -625,7 +638,7 @@ void InitZeroExactCL::DetermineDistances()
     Point3DCL *perp   = data_.UsePerp() ? new Point3DCL() : 0;
     byte      *locPerp= data_.UsePerp() ? new byte() : 0;
     double distance, newDistance;
-    const int augm_size= data_.per ? data_.augmIdx->NumUnknowns() : data_.phi.Data.size();
+    const int augm_size= data_.phi.Data.size() + data_.map.size();
 #pragma omp for
     for (int augm_dof=0; augm_dof<augm_size; ++augm_dof){
         const int dof= data_.Map(augm_dof);
@@ -1393,15 +1406,16 @@ void FastmarchingOnMasterCL::Perform()
 //----------------------------------
 
 void DirectDistanceCL::InitFrontVector()
-/** Count number of frontier vertices and perpendiculart feet, put
+/** Count number of frontier vertices and perpendicular feet, put
     the coordinates into the the vector front_ and the value on
     these points into the vector vals_
 */
 {
-    // Count number of frontier vertices and perpendiccular feet
+    const size_t augm_size= data_.phi.Data.size() + data_.map.size();
+    // Count number of frontier vertices and perpendicular feet
     Uint numFront= 0;
-    for ( size_t i=0; i<data_.typ.size(); ++i)
-        if ( data_.typ[i]==ReparamDataCL::Finished)
+    for ( size_t i=0; i<augm_size; ++i)
+        if ( data_.typ[data_.Map(i)]==ReparamDataCL::Finished)
             ++numFront;
     for ( size_t i=0; i<data_.perpFoot.size() && data_.UsePerp(); ++i)
         if ( data_.perpFoot[i]!=0)
@@ -1413,12 +1427,13 @@ void DirectDistanceCL::InitFrontVector()
     vals_.resize(0);  vals_.resize( numFront);
     size_t pos=0;
     size_t posDist=0;
-    for ( size_t i=0; i<data_.typ.size(); ++i){
-        if ( data_.typ[i]==ReparamDataCL::Finished){
+    for ( size_t i=0; i<augm_size; ++i){
+        const IdxT MapI= data_.Map(i);
+        if ( data_.typ[MapI]==ReparamDataCL::Finished){
             for ( int j=0; j<3; ++j){
                 front_[ pos++]= data_.coord[i][j];
             }
-            vals_[ posDist++]= data_.phi.Data[i];
+            vals_[ posDist++]= data_.phi.Data[MapI];
         }
     }
     for ( size_t i=0; i<data_.perpFoot.size() && data_.UsePerp(); ++i){
@@ -1454,12 +1469,16 @@ void DirectDistanceCL::DetermineDistances()
     for ( int dof=0; dof<(int)data_.phi.Data.size(); ++dof) {
         if ( data_.typ[dof]!=ReparamDataCL::Finished && data_.typ[dof]!=ReparamDataCL::Handled) {
             double newPhi= std::numeric_limits<double>::max();
-            KDTreeResultVectorCL<double> e;
-            std::vector<double> qv( data_.coord[dof].begin(), data_.coord[dof].end());
-            kdTree_->GetNNearest( qv, numNeigh_, e);
-            // check for smallest distance in neighbor vertices
-            for ( int n=0; n<(int)e.size(); ++n) {
-                newPhi= std::min( newPhi, std::sqrt( e[n].Distance)+vals_[ e[n].Index]);
+            const Point3DCL coord= data_.coord[dof];
+            for (ReparamDataCL::perDirSetT::const_iterator dir= data_.perDir.begin(), end= data_.perDir.end(); dir!=end; ++dir) {
+                KDTreeResultVectorCL<double> e;
+                const Point3DCL p= coord + *dir;
+                std::vector<double> qv( p.begin(), p.end());
+                kdTree_->GetNNearest( qv, numNeigh_, e);
+                // check for smallest distance in neighbor vertices
+                for ( int n=0; n<(int)e.size(); ++n) {
+                    newPhi= std::min( newPhi, std::sqrt( e[n].Distance)+vals_[ e[n].Index]);
+                }
             }
 #pragma omp critical
             data_.phi.Data[dof]= newPhi;
@@ -1604,7 +1623,7 @@ void ParDirectDistanceCL::Perform()
 */
 ReparamCL::ReparamCL( MultiGridCL& mg, VecDescCL& phi, bool gatherPerp, bool periodic, const BndDataCL<>* bnd)
   : data_( mg, phi, gatherPerp, periodic, bnd)
-{ }
+{}
 
 /** Clean everything up*/
 ReparamCL::~ReparamCL()
@@ -1674,7 +1693,7 @@ void ReparamCL::Perform()
     \return pointer to a reparametrization class
 */
 std::auto_ptr<ReparamCL> ReparamFactoryCL::GetReparam( MultiGridCL& mg,
-        VecDescCL& phi, int method, bool periodic, const BndDataCL<>* bnd)
+        VecDescCL& phi, int method, bool periodic, const BndDataCL<>* bnd, const ReparamDataCL::perDirSetT* perDirections)
 {
     int initMethod= method%10;
     int propMethod= method/10;
@@ -1716,9 +1735,20 @@ std::auto_ptr<ReparamCL> ReparamFactoryCL::GetReparam( MultiGridCL& mg,
         case 1: {
 #ifdef _PAR
             reparam->propagate_ = new ParDirectDistanceCL( reparam->data_);
+
 #else
             reparam->propagate_ = new DirectDistanceCL( reparam->data_);
 #endif
+            if (periodic) { // check for periodic directions and append them
+                if (perDirections) {
+                    const int s= perDirections->size();
+                    reparam->data_.perDir.reserve( round( std::pow( 3., s)));
+                    for (ReparamDataCL::perDirSetT::const_iterator it= perDirections->begin(), end= perDirections->end(); it!=end; ++it)
+                        reparam->data_.AppendPeriodicDirection( *it);
+                }
+                else
+                    throw DROPSErrCL( "ReparamFactoryCL: periodic directions should be given for direct distances.");
+            }
             break;
         }
         default: {

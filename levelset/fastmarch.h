@@ -47,7 +47,8 @@ namespace DROPS
 class ReparamDataCL
 {
   public:
-    typedef VectorBaseCL<IdxT> perMapVecT;
+    typedef VectorBaseCL<IdxT>     perMapVecT;
+    typedef std::vector<Point3DCL> perDirSetT;
     enum { Finished= 1, Close= 2, Handled=3, Far=0};    ///< types of vertices (Handled is just for parallel)
 
   private:
@@ -70,6 +71,7 @@ class ReparamDataCL
     IdxDescCL*               augmIdx;     ///< augmented index for periodic boundaries
     const BndDataCL<>*       bnd;         ///< boundary for level set function
     perMapVecT               map;         ///< mapping of periodic boundary conditions
+    perDirSetT               perDir;      ///< set of directions to be considered in case of periodic boundaries (only used by DirectDistanceCL)
 
   public:
     // \brief Allocate memory, store references and init coordinates as well as map periodic boundary dofs
@@ -77,11 +79,13 @@ class ReparamDataCL
         : gatherPerp(GatherPerp), mg( MG), phi( Phi), old( phi.Data),
           coord( Phi.Data.size()), typ( Far, Phi.Data.size()), 
           perpFoot( (Point3DCL*)0, GatherPerp ? Phi.Data.size() : 0),
-          per( Periodic), augmIdx( 0), bnd( Bnd), map( 0)
+          per( Periodic), augmIdx( 0), bnd( Bnd), map( 0), perDir( 1, Point3DCL())
     { InitPerMap(); InitCoord(); }
     /// \brief Delete all perpendicular feet
     ~ReparamDataCL();
 
+    /// \brief When using DirectDistanceCL for propagation, a direction has to be appended for each pair of periodic boundaries (Per1BC/Per2BC).
+    void AppendPeriodicDirection( const Point3DCL& dir);
     /// \brief for periodic boundary conditions, some mapping is necessary
     inline IdxT Map( IdxT i) const { return !per || i<phi.Data.size() ? i : map[ i-phi.Data.size()]; }
     /// \brief Normalize b onto unit interval [0,1]
@@ -651,7 +655,7 @@ class ReparamFactoryCL
   public:
     ReparamFactoryCL() {}
     /// \brief Construct a reparametrization class
-    static std::auto_ptr<ReparamCL> GetReparam( MultiGridCL& mg, VecDescCL& phi, int method=03, bool periodic=false, const BndDataCL<>* bnd=0);
+    static std::auto_ptr<ReparamCL> GetReparam( MultiGridCL& mg, VecDescCL& phi, int method=03, bool periodic=false, const BndDataCL<>* bnd=0, const ReparamDataCL::perDirSetT* perDirections= 0);
 };
 
 } // end of namespace DROPS
