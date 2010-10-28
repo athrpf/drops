@@ -1505,7 +1505,7 @@ inline double GetB(Uint pr, Uint vel, const SMatrixCL<3,3>& T, Uint num)
         return .25/6.*(T(num,0)*gradient[0] + T(num,1)*gradient[1] + T(num,2)*gradient[2]);
     }
     // i==4: we have the bubble-function for the velocity
-    return 16./315.*(pr==0 ? T(num,0) + T(num,1) + T(num,2) : -T(num,pr) );
+    return 16./315.*(pr==0 ? T(num,0) + T(num,1) + T(num,2) : -T(num,pr-1) );
 }
 
 template <class CoeffT>
