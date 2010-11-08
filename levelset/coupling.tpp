@@ -953,7 +953,9 @@ void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::InitStep()
 
 template <class LsetSolverT, class RelaxationPolicyT>
 void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::CommitStep()
-{}
+{
+    base_::CommitStep();
+}
 
 template <class LsetSolverT, class RelaxationPolicyT>
 void EulerBackwardScheme2PhaseCL<LsetSolverT,RelaxationPolicyT>::Update()
