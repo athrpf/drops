@@ -50,7 +50,7 @@ void TransportP1CL::SetTimeStep (double dt, double theta)
 
 
 void TransportP1CL::SetupLocalSystem (const TetraCL& t,
-    double coupM[4][4], double coupA[4][4], double coupC[4][4], const double time,
+    double coupM[4][4], double coupA[4][4], double coupC[4][4],
     const LocalP2CL<> p2[4], const LocalP2CL<> pipj[4][4], const Quad5CL<> p[4]) const
 {
     static LocalP2CL<> one( 1.);
@@ -66,7 +66,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
     InterfaceTetraCL cut;
     cut.Init( t, lset_.Phi, lset_.GetBndData());
     if (!cut.Intersects()) {
-        const Quad5CL<Point3DCL> u_loc( t, u, time);
+        const Quad5CL<Point3DCL> u_loc( t, u);
         const double coeff_d = cut.GetSign( 0) == 1 ? D_[0] : D_[1];
         const double coeff_h = cut.GetSign( 0) == 1 ? 1. : 1./H_;
         for(int i= 0; i < 4; ++i) {
@@ -84,7 +84,7 @@ void TransportP1CL::SetupLocalSystem (const TetraCL& t,
         }
     }
     else {
-        const LocalP2CL<Point3DCL> u_loc( t, u, time);
+        const LocalP2CL<Point3DCL> u_loc( t, u);
         LocalP2CL<> convection_interface;
         double iAp, iAn, iMp, iMn, iCp, iCn, integralp, integraln;
         for(int i= 0; i < 4; ++i) {
@@ -152,7 +152,7 @@ void TransportP1CL::SetupInstatSystem (MatrixCL& matA, VecDescCL* cplA,
     }
 
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
-        SetupLocalSystem ( *sit, coupM, coupA, coupC, time, p2, pipj, p);
+        SetupLocalSystem ( *sit, coupM, coupA, coupC, p2, pipj, p);
         n.assign( *sit, RowIdx, Bnd_);
         // write values into matrix
         for(int i= 0; i < 4; ++i)

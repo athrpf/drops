@@ -101,7 +101,7 @@ class TransportP1CL
     /// \remarks call SetupSystem \em before calling SetTimeStep!
     void SetTimeStep( double dt, double theta=-1);
     /// \remarks call SetupSystem \em before calling SetTimeStep!
-    void SetupLocalSystem (const TetraCL&, double[4][4], double[4][4], double[4][4], const double,
+    void SetupLocalSystem (const TetraCL&, double[4][4], double[4][4], double[4][4],
         const LocalP2CL<>[4], const LocalP2CL<>[4][4], const Quad5CL<>[4]) const;
     void SetupInstatSystem ( MLMatDescCL&, VecDescCL&, MLMatDescCL&, VecDescCL&, MLMatDescCL&, VecDescCL&, const double) const;
 

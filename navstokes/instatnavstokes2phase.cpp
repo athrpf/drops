@@ -65,9 +65,9 @@ void InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2 (MatrixCL& N, const VelVe
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
-        p2Phi.assign(*sit, ls, t);
+        p2Phi.assign(*sit, ls);
         Phi.assign( p2Phi);
-        p2u.assign(*sit, u, t);
+        p2u.assign(*sit, u);
         u_loc.assign(p2u);
 
         n.assign( *sit, RowIdx, BndData_.Vel);

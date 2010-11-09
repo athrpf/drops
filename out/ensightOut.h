@@ -458,8 +458,6 @@ void Ensight6OutCL::putScalar (const DiscScalT& v, std::string varName)
     std::ofstream os;
     OpenFile( os, varName);
 
-    v.SetTime( time_);
-
     if(binary_)
     {
         std::strcpy(buffer,"DROPS data file, scalar variable:");
@@ -515,8 +513,6 @@ void Ensight6OutCL::putVector (const DiscVecT& v, std::string varName)
 
     std::ofstream os;
     OpenFile( os, varName);
-
-    v.SetTime( time_);
 
     if(binary_)
     {

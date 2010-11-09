@@ -496,9 +496,6 @@ public:
     Uint
     GetLevel() const // Triangulation level of this function
         { return _sol->GetLevel(); }
-    void // set / get the time
-    SetTime(double t) const
-        { _sol->t= t; }
     double
     GetTime() const
         { return _sol->t; }
@@ -737,7 +734,6 @@ public:
     GetLevel() const { return _sol->GetLevel(); }
     // The time at which boundary data is evaluated.
     double GetTime() const { return _sol->t; }
-    void SetTime(double t) const { _sol->t= t; }
 
     inline bool UnknownsMissing(const TetraCL& t) const;
     // True, iff the function can be evaluated on the given simplex.

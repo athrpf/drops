@@ -271,7 +271,7 @@ void ComputeErrorsP2(  ValT (*uPos)(const Point3DCL&, double), ValT (*uNeg)(cons
         absdet= std::fabs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T);
 
-        loc_phi.assign( *sit, ls, t);
+        loc_phi.assign( *sit, ls);
         patch.Init( *sit, loc_phi);
         const bool nocut= !patch.Intersects();
         if (nocut) {

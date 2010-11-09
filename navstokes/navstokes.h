@@ -38,7 +38,7 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 {
   private:
     typedef StokesP2P1CL<Coeff> base_;
-    void SetupNonlinear_P2( MatrixCL&, const VelVecDescCL*, VelVecDescCL*, IdxDescCL&, double, double) const;
+    void SetupNonlinear_P2( MatrixCL&, const VelVecDescCL*, VelVecDescCL*, IdxDescCL&, double) const;
 
   public:
     using                            base_::MG_;
@@ -67,12 +67,12 @@ class NavierStokesP2P1CL : public StokesP2P1CL<Coeff>
 
     // Set up matrix and rhs for nonlinearity: use time t1 for the velocity in N,
     // t2 for the boundary-data in the velocity unknowns
-    void SetupNonlinear(MLMatDescCL*, const VelVecDescCL*, VelVecDescCL*, double, double) const;
+    void SetupNonlinear(MLMatDescCL*, const VelVecDescCL*, VelVecDescCL*, double) const;
     // Set up matrix for nonlinearity, use time v.t
     void SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* velvec, VelVecDescCL* vecb) const
-    { this->SetupNonlinear(matN, velvec, vecb, v.t, v.t); }
+    { this->SetupNonlinear(matN, velvec, vecb, v.t); }
     void SetupNonlinear(MatrixCL& N, const VelVecDescCL* vel, VelVecDescCL* cplN, IdxDescCL& RowIdx) const
-    { this->SetupNonlinear_P2( N, vel, cplN, RowIdx, v.t, v.t); }
+    { this->SetupNonlinear_P2( N, vel, cplN, RowIdx, v.t); }
 
     // Set time for use with stationary NavStokes-Solvers. This shall be the new time t_old+dt!!!!!!!!!!!!!!!!!!
     void SetTime (double tt) { v.t= tt; }

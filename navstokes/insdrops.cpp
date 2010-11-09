@@ -228,7 +228,7 @@ void Strategy(NavierStokesP2P1CL<Coeff>& NS, int num_ref, double fp_tol, int fp_
         static_cast<Uzawa_PCG_CL&>(statsolver.GetStokesSolver()).SetTau(theta*dt); // Betrachte den Code in num/stokessolver.h: M ist bei zeitabhaqengigen Problemen kein geeigneter Vorkonditionierer.
         time.Reset();
         time.Start();
-        NS.SetupNonlinear(N, v1, cplN, 0., 0.);
+        NS.SetupNonlinear(N, v1, cplN, 0.);
         time.Stop();
         std::cout << "SetupNonlinear: " << time.GetTime() << " seconds" << std::endl;
         NS.SetupInstatRhs( b, c, cplM, 0., b, 0.);

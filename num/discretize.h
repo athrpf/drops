@@ -255,7 +255,7 @@ class LocalP1CL: public GridFunctionCL<T>
       LocalP1CL(const TetraCL&, const VecDescCL&, const BndDataT&);
     // Initialize from PiEvalCl
     template <class P1FunT>
-      LocalP1CL(const TetraCL&, const P1FunT&, double= 0.0);
+      LocalP1CL(const TetraCL&, const P1FunT&);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP1CL, T, base_type)
 
@@ -268,7 +268,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP1CL, T, base_type)
       assign(const TetraCL&, const VecDescCL&, const BndDataT&);
     template <class P1FunT>
       inline self_&
-      assign(const TetraCL&, const P1FunT&, double= 0.0);
+      assign(const TetraCL&, const P1FunT&);
 
     // pointwise evaluation in barycentric coordinates
     inline value_type operator()(const BaryCoordCL&) const;
@@ -305,9 +305,9 @@ class LocalP2CL: public GridFunctionCL<T>
       LocalP2CL(const TetraCL&, const VecDescCL&, const BndDataT&);
     // Initialize from PiEvalCL
     template <class P2FunT>
-      LocalP2CL(const TetraCL&, const P2FunT&, double= 0.0);
+      LocalP2CL(const TetraCL&, const P2FunT&);
     // Initialize from LocalP1CL
-    LocalP2CL(const LocalP1CL<T>&, double= 0.0);
+    LocalP2CL(const LocalP1CL<T>&);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
 
@@ -320,9 +320,9 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(LocalP2CL, T, base_type)
       assign(const TetraCL&, const VecDescCL&, const BndDataT&);
     template <class P2FunT>
       inline self_&
-      assign(const TetraCL&, const P2FunT&, double= 0.0);
+      assign(const TetraCL&, const P2FunT&);
     inline self_&
-    assign(const LocalP1CL<T>&, double= 0.0);
+    assign(const LocalP1CL<T>&);
 
     // pointwise evaluation in barycentric coordinates
     inline value_type operator()(const BaryCoordCL&) const;
@@ -373,7 +373,7 @@ class Quad2CL: public GridFunctionCL<T>
     Quad2CL(const LocalP2CL<value_type>&);
     Quad2CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class PFunT>
-      Quad2CL(const TetraCL&, const PFunT&, double= 0.0);
+      Quad2CL(const TetraCL&, const PFunT&);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
 
@@ -387,7 +387,7 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad2CL, T, base_type)
     assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class P2FunT>
       inline self_&
-      assign(const TetraCL&, const P2FunT&, double= 0.0);
+      assign(const TetraCL&, const P2FunT&);
 
     // Integration:
     // absdet wird als Parameter uebergeben, damit dieser Faktor bei der
@@ -469,9 +469,9 @@ class Quad3CL: public GridFunctionCL<T>
     Quad3CL(const LocalP2CL<value_type>&);
     Quad3CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
-      Quad3CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+      Quad3CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&);
     template <class PFunT>
-      Quad3CL(const TetraCL&, const PFunT&, double= 0.0);
+      Quad3CL(const TetraCL&, const PFunT&);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad3CL, T, base_type)
 
@@ -485,10 +485,10 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad3CL, T, base_type)
     assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
       inline self_&
-      assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+      assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&);
     template <class PFunT>
       inline self_&
-      assign(const TetraCL&, const PFunT&, double= 0.0);
+      assign(const TetraCL&, const PFunT&);
 
     /// M contains the barycentric coordinates of a tetrahedron; the
     /// return-value is a new[]-allocated array of the quadrature-points
@@ -550,9 +550,9 @@ class Quad5CL: public GridFunctionCL<T>
     Quad5CL(const LocalP2CL<value_type>&);
     Quad5CL(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
-      Quad5CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+      Quad5CL(const TetraCL&, const P2EvalCL<T, _BndData, _VD>&);
     template <class PFunT>
-      Quad5CL(const TetraCL&, const PFunT&, double= 0.0);
+      Quad5CL(const TetraCL&, const PFunT&);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
 
@@ -566,10 +566,10 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
     assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
       inline self_&
-      assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+      assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>&);
     template <class PFunT>
       inline self_&
-      assign(const TetraCL&, const PFunT&, double= 0.0);
+      assign(const TetraCL&, const PFunT&);
 
     /// M contains the barycentric coordinates of a tetrahedron; the
     /// return-value is a new[]-allocated array of the quadrature-points
@@ -623,9 +623,9 @@ class Quad5_2DCL: public GridFunctionCL<T>
     Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, instat_fun_ptr, double= 0.0);
     Quad5_2DCL(const LocalP2CL<value_type>&, const BaryCoordCL*const );
     template <class _BndData, class _VD>
-      Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+      Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const P2EvalCL<T, _BndData, _VD>&);
     template <class PFunT>
-      Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const PFunT&, double= 0.0);
+      Quad5_2DCL(const TetraCL&, const BaryCoordCL* const, const PFunT&);
 
 DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
 
@@ -637,10 +637,10 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5_2DCL, T, base_type)
     assign(const LocalP2CL<value_type>&, const BaryCoordCL* const);
     template <class _BndData, class _VD>
         inline self_&
-        assign(const TetraCL& s, const BaryCoordCL* const, const P2EvalCL<T, _BndData, _VD>&, double= 0.0);
+        assign(const TetraCL& s, const BaryCoordCL* const, const P2EvalCL<T, _BndData, _VD>&);
     template <class PFunT>
       inline self_&
-      assign(const TetraCL&, const BaryCoordCL* const, const PFunT&, double= 0.0);
+      assign(const TetraCL&, const BaryCoordCL* const, const PFunT&);
 
     // Calculates the barycentric coordinates of the quadrature points
     // of the triangle given by the 1st argument with respect to the

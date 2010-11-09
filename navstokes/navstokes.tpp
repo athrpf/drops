@@ -44,7 +44,7 @@ template <class Coeff>
 
     VecDescCL rhsN( lsgvel->RowIdx);
     MLMatDescCL myN( idx, idx);
-    SetupNonlinear( &myN, lsgvel, &rhsN, t, t);
+    SetupNonlinear( &myN, lsgvel, &rhsN, t);
     VectorCL res1( A.Data*lsgvel->Data + myN.Data*lsgvel->Data + transp_mul( B.Data, lsgpr->Data)
                  - b.Data - rhsN.Data);
     VectorCL res2( B.Data*lsgvel->Data - c.Data);
@@ -275,7 +275,7 @@ template <class Coeff>
 template <class Coeff>
   void
   NavierStokesP2P1CL<Coeff>::SetupNonlinear_P2( MatrixCL& matN, const VelVecDescCL* velvec,
-                                                VelVecDescCL* vecb, IdxDescCL& RowIdx, double t, double t2) const
+                                                VelVecDescCL* vecb, IdxDescCL& RowIdx, double t2) const
 // Sets up the approximation of the nonlinear term and the corresponding right hand side.
 {
     if (vecb != 0) vecb->Clear( t2);
@@ -306,7 +306,7 @@ template <class Coeff>
         GetTrafoTr(T,det,*sit);
         P2DiscCL::GetGradients(Grad, GradRef, T);
         absdet= std::fabs(det);
-        u_loc.assign( *sit, u, t);
+        u_loc.assign( *sit, u);
 
         // collect some information about the edges and verts of the tetra
         // and save it in Numb and IsOnDirBnd
@@ -340,16 +340,16 @@ template <class Coeff>
 template <class Coeff>
   void
   NavierStokesP2P1CL<Coeff>::SetupNonlinear(MLMatDescCL* matN, const VelVecDescCL* velvec,
-      VelVecDescCL* vecb, double t, double t2) const
+      VelVecDescCL* vecb, double t2) const
 {
     MLIdxDescCL::iterator itRow= matN->RowIdx->begin();
     MLMatrixCL::iterator itN= matN->Data.begin();
     for (size_t lvl=0; lvl < matN->Data.size(); ++lvl, ++itN, ++itRow)
     {
         if (lvl != matN->Data.size()-1)
-            SetupNonlinear_P2( *itN, 0, 0, *itRow, t, t2);
+            SetupNonlinear_P2( *itN, 0, 0, *itRow, t2);
         else
-            SetupNonlinear_P2( *itN, velvec, vecb, *itRow, t, t2);
+            SetupNonlinear_P2( *itN, velvec, vecb, *itRow, t2);
     }
 }
 

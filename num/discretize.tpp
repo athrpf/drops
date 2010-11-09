@@ -57,12 +57,9 @@ template<class T>
 template<class T>
   template<class P1FunT>
     inline LocalP1CL<T>&
-    LocalP1CL<T>::assign(const TetraCL& s, const P1FunT& f, double t)
+    LocalP1CL<T>::assign(const TetraCL& s, const P1FunT& f)
 {
-    const double tmp= f.GetTime();
-    f.SetTime( t);
     f.GetDoF( s, *this);
-    f.SetTime( tmp);
     return *this;
 }
 
@@ -76,10 +73,10 @@ template<class T>
 
 template<class T>
   template <class P1FunT>
-    LocalP1CL<T>::LocalP1CL(const TetraCL& s, const P1FunT& f, double t)
+    LocalP1CL<T>::LocalP1CL(const TetraCL& s, const P1FunT& f)
     : base_type( value_type(), FE_P1CL::NumDoFC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 template<class T>
@@ -145,24 +142,21 @@ template<class T>
 template<class T>
   template<class P2FunT>
     inline LocalP2CL<T>&
-    LocalP2CL<T>::assign(const TetraCL& s, const P2FunT& f, double t)
+    LocalP2CL<T>::assign(const TetraCL& s, const P2FunT& f)
 {
     const Uint tlvl= s.GetLevel();
     const Uint flvl= f.GetLevel();
-    const double tmp= f.GetTime();
-    f.SetTime( t);
     if (tlvl == flvl)
         f.GetDoF( s, *this);
     else
         if (tlvl < flvl) RestrictP2( s, f, *this);
         else throw DROPSErrCL( "LocalP2CL::Assign: Prolongation not implemented.\n");
-    f.SetTime( tmp);
     return *this;
 }
 
 template<class T>
   inline LocalP2CL<T>&
-  LocalP2CL<T>::assign(const LocalP1CL<T>& p1, double)
+  LocalP2CL<T>::assign(const LocalP1CL<T>& p1)
 {
     for (size_t i= 0; i < 4; ++i)
         (*this)[i]= p1[i];
@@ -181,10 +175,10 @@ template<class T>
 
 template<class T>
   template <class P2FunT>
-    LocalP2CL<T>::LocalP2CL(const TetraCL& s, const P2FunT& f, double t)
+    LocalP2CL<T>::LocalP2CL(const TetraCL& s, const P2FunT& f)
     : base_type( value_type(), FE_P2CL::NumDoFC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 template<class T>
@@ -197,10 +191,10 @@ template<class T>
 }
 
 template<class T>
-  LocalP2CL<T>::LocalP2CL (const LocalP1CL<T>& p1, double t)
+  LocalP2CL<T>::LocalP2CL (const LocalP1CL<T>& p1)
     : base_type( value_type(), FE_P2CL::NumDoFC)
 {
-    this->assign( p1, t);
+    this->assign( p1);
 }
 
 template<class T>
@@ -329,14 +323,11 @@ template<class T>
 template<class T>
   template <class P2FunT>
     inline Quad2CL<T>&
-    Quad2CL<T>::assign(const TetraCL& s, const P2FunT& f, double t)
+    Quad2CL<T>::assign(const TetraCL& s, const P2FunT& f)
 {
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     for (Uint i= 0; i<NumNodesC-1; ++i)
         (*this)[i]= f.val( *s.GetVertex( i));
     (*this)[NumNodesC-1]= f.val( s, 0.25, 0.25, 0.25);
-    f.SetTime( oldt);
     return *this;
 }
 
@@ -364,10 +355,10 @@ template<class T>
 
 template<class T>
   template <class PFunT>
-    Quad2CL<T>::Quad2CL(const TetraCL& s, const PFunT& f, double t)
+    Quad2CL<T>::Quad2CL(const TetraCL& s, const PFunT& f)
   : base_type( value_type(), NumNodesC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 
@@ -440,30 +431,24 @@ template<class T>
 template<class T>
   template <class _BndData, class _VD>
       inline Quad3CL<T>&
-      Quad3CL<T>::assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
+      Quad3CL<T>::assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f)
 {
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     value_type dof[10];
     f.GetDoF( s, dof);
     (*this)= T();
     for (size_t i= 0; i < Quad3DataCL::NumNodesC; ++i)
         for (size_t j= 0; j < 10; ++j)
             (*this)[i]+= dof[j]*Quad3DataCL::P2_Val[j][i];
-    f.SetTime( oldt);
     return *this;
 }
 
 template<class T>
   template <class PFunT>
     inline Quad3CL<T>&
-    Quad3CL<T>::assign(const TetraCL& s, const PFunT& f, double t)
+    Quad3CL<T>::assign(const TetraCL& s, const PFunT& f)
 {
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     for (size_t i= 0; i < Quad3DataCL::NumNodesC; ++i)
         (*this)[i]= f.val( s, Quad3DataCL::Node[i]);
-    f.SetTime( oldt);
     return *this;
 }
 
@@ -498,18 +483,18 @@ template<class T>
 
 template<class T>
   template <class _BndData, class _VD>
-    Quad3CL<T>::Quad3CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
+    Quad3CL<T>::Quad3CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f)
     : base_type( value_type(), Quad3DataCL::NumNodesC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 template<class T>
   template <class PFunT>
-    Quad3CL<T>::Quad3CL(const TetraCL& s, const PFunT& f, double t)
+    Quad3CL<T>::Quad3CL(const TetraCL& s, const PFunT& f)
     : base_type( value_type(), Quad3DataCL::NumNodesC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 template<class T>
@@ -575,30 +560,24 @@ template<class T>
 template<class T>
   template <class _BndData, class _VD>
       inline Quad5CL<T>&
-      Quad5CL<T>::assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
+      Quad5CL<T>::assign(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f)
 {
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     value_type dof[10];
     f.GetDoF( s, dof);
     (*this)= T();
     for (size_t i= 0; i < Quad5DataCL::NumNodesC; ++i)
         for (size_t j= 0; j < 10; ++j)
             (*this)[i]+= dof[j]*Quad5DataCL::P2_Val[j][i];
-    f.SetTime( oldt);
     return *this;
 }
 
 template<class T>
   template <class PFunT>
     inline Quad5CL<T>&
-    Quad5CL<T>::assign(const TetraCL& s, const PFunT& f, double t)
+    Quad5CL<T>::assign(const TetraCL& s, const PFunT& f)
 {
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     for (size_t i= 0; i < Quad5DataCL::NumNodesC; ++i)
         (*this)[i]= f.val( s, Quad5DataCL::Node[i]);
-    f.SetTime( oldt);
     return *this;
 }
 
@@ -633,18 +612,18 @@ template<class T>
 
 template<class T>
   template <class _BndData, class _VD>
-    Quad5CL<T>::Quad5CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f, double t)
+    Quad5CL<T>::Quad5CL(const TetraCL& s, const P2EvalCL<T, _BndData, _VD>& f)
     : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 template<class T>
   template <class PFunT>
-    Quad5CL<T>::Quad5CL(const TetraCL& s, const PFunT& f, double t)
+    Quad5CL<T>::Quad5CL(const TetraCL& s, const PFunT& f)
     : base_type( value_type(), Quad5DataCL::NumNodesC)
 {
-    this->assign( s, f, t);
+    this->assign( s, f);
 }
 
 template<class T>
@@ -716,36 +695,30 @@ template<class T>
   template <class _BndData, class _VD>
     inline Quad5_2DCL<T>&
     Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p,
-        const P2EvalCL<T, _BndData, _VD>& f, double t)
+        const P2EvalCL<T, _BndData, _VD>& f)
 {
     BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
     SetInterface( p, NodeInTetra);
     std::valarray<double> P2_Val[10];
     FE_P2CL::ApplyAll( Quad5_2DDataCL::NumNodesC, NodeInTetra, P2_Val);
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     value_type dof[10];
     f.GetDoF( s, dof);
     (*this)= T();
     for (size_t i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
         for (size_t j= 0; j < 10; ++j)
             (*this)[i]+= dof[j]*P2_Val[j][i];
-    f.SetTime( oldt);
     return *this;
 }
 
 template<class T>
   template <class PFunT>
     inline Quad5_2DCL<T>&
-    Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f, double t)
+    Quad5_2DCL<T>::assign(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f)
 {
     BaryCoordCL NodeInTetra[Quad5_2DDataCL::NumNodesC];
     SetInterface( p, NodeInTetra);
-    const double oldt= f.GetTime();
-    f.SetTime( t);
     for (size_t i= 0; i < Quad5_2DDataCL::NumNodesC; ++i)
         (*this)[i]= f.val( s, NodeInTetra[i]);
-    f.SetTime( oldt);
     return *this;
 }
 
@@ -766,18 +739,18 @@ template<class T>
 template<class T>
   template <class _BndData, class _VD>
     Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p,
-        const P2EvalCL<T, _BndData, _VD>& f, double t)
+        const P2EvalCL<T, _BndData, _VD>& f)
     : base_type( value_type(), Quad5_2DDataCL::NumNodesC)
 {
-    this->assign( s, p, f, t);
+    this->assign( s, p, f);
 }
 
 template<class T>
   template <class PFunT>
-    Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f, double t)
+    Quad5_2DCL<T>::Quad5_2DCL(const TetraCL& s, const BaryCoordCL* const p, const PFunT& f)
     : base_type( value_type(), Quad5_2DDataCL::NumNodesC)
 {
-    this->assign( s, p, f, t);
+    this->assign( s, p, f);
 }
 
 

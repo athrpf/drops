@@ -1275,7 +1275,7 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, RowIdx, BndData_.Vel);
-        loc_phi.assign( *sit, ls, t);
+        loc_phi.assign( *sit, ls);
         tetra.Init( *sit, loc_phi);
         const bool nocut= !tetra.Intersects();
         if (nocut) {
@@ -1512,7 +1512,7 @@ void SetupSystem1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_
         // collect some information about the edges and verts of the tetra
         // and save it n.
         n.assign( *sit, RowIdx, BndData_.Vel);
-        loc_phi.assign( *sit, ls, t);
+        loc_phi.assign( *sit, ls);
         patch.Init( *sit, loc_phi);
         const bool nocut= !patch.Intersects();
         if (nocut) {
@@ -1876,7 +1876,7 @@ void SetupRhs1_P2R( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, c
         // and save it n.
         n.assign( *sit, RowIdx, BndData_.Vel);
 
-        loc_phi.assign( *sit, ls, t);
+        loc_phi.assign( *sit, ls);
         patch.Init( *sit, loc_phi);
         const bool nocut= !patch.Intersects();
         if (nocut) {

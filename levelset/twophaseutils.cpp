@@ -139,7 +139,7 @@ void ComputeErrorsP2R( const instat_vector_fun_ptr uPos, const instat_vector_fun
         absdet= std::fabs( det);
         P2DiscCL::GetGradients( Grad, GradRef, T);
 
-        loc_phi.assign( *sit, ls, t);
+        loc_phi.assign( *sit, ls);
         patch.Init( *sit, loc_phi);
         const bool nocut= !patch.Intersects();
         if (nocut) {
