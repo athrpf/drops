@@ -624,9 +624,6 @@ public:
     Uint
     GetLevel() const // Triangulation level of this function
         { return _sol->GetLevel(); }
-    void // set / get the time
-    SetTime(double t) const
-        { _sol->t= t; }
     double
     GetTime() const
         { return _sol->t; }
