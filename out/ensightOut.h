@@ -587,8 +587,6 @@ void Ensight6OutCL::putScalar (const DiscScalT& v, std::string varName)
     std::ofstream os;
     OpenFile( os, varName, /*append proc-code*/ !masterout_);
 
-    v.SetTime( time_);
-
     // parallele Ausgabe
     int cnt=0;
     if(!binary_)
@@ -754,8 +752,6 @@ void Ensight6OutCL::putVector( const DiscVecT& v, std::string varName)
 
     std::ofstream os;
     OpenFile( os, varName, /*append proc-code*/ !masterout_);
-
-    v.SetTime( time_);
 
     if(binary_)
     {
