@@ -274,8 +274,8 @@ class ISNonlinearPreCL : public SchurPreBaseCL
   private:
     MatrixCL&  A_;
     MatrixCL&  M_;
-    mutable    ASolverT& Asolver_;
-    mutable    MSolverT& Msolver_;
+    ASolverT& Asolver_;
+    MSolverT& Msolver_;
     mutable typename ASolverT::PrecondT PcA_;
     mutable typename MSolverT::PrecondT PcM_;
 
