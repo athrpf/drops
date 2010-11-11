@@ -451,24 +451,53 @@ template< template<class, class> class BaseMethod, class LsetSolverT, class Rela
 class CrankNicolsonScheme2PhaseCL: public BaseMethod<LsetSolverT, RelaxationPolicyT>
 {
   private:
+    static const double theta_[3];
+    double facdt_[3];
     typedef BaseMethod<LsetSolverT, RelaxationPolicyT> base_;
-    using base_::Stokes_;
-    using base_::LvlSet_;
-    using base_::mat_;
-    using base_::dt_;
-    double tmpdt_;
+    double dt2_;
     int step_;
 
   public:
     CrankNicolsonScheme2PhaseCL( StokesT& Stokes, LevelsetP2CL& ls,
                              NSSolverBaseCL<StokesT>& solver, LsetSolverT& lsetsolver, LevelsetModifyCL& lsetmod,
-                             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0);
-    ~CrankNicolsonScheme2PhaseCL();
+                             double tol, double nonlinear= 1., bool withProjection= false, double stab= 0.0, int step = -1)
+        : base_( Stokes, ls, solver, lsetsolver, lsetmod, tol, 1.0, 1.0, nonlinear, withProjection, stab), step_((step >= 0) ? step%2 : 0) {}
 
-    void DoStep( int maxFPiter= -1);
-    void Update();
+    ~CrankNicolsonScheme2PhaseCL() {};
+
+    double GetSubTimeStep() const { return facdt_[step_]; }
+    double GetSubTheta()    const { return theta_[step_]; }
+    int    GetSubStep()     const { return step_; }
+
+    void SetTimeStep (double dt) { // overwrites baseclass-version
+        dt2_= dt;
+        facdt_[0] = 0.2*dt2_*dt2_; facdt_[1] = dt2_-0.2*dt2_*dt2_; facdt_[2] = dt2_;
+    }
+
+    void DoSubStep( int maxFPiter= -1) {
+        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Crank Nicolson Method: Substep variant" << step_ << '\n';
+        base_::SetTimeStep( GetSubTimeStep(), GetSubTheta());
+        base_::DoStep( maxFPiter);
+    }
+
+    void DoStep( int maxFPiter= -1) {
+        if (step_ == 0) {
+            DoSubStep( maxFPiter);
+            ++step_;
+            DoSubStep( maxFPiter);
+            ++step_;
+        }
+        else
+            DoSubStep( maxFPiter);
+    }
+
+    void Update() { step_ = 0; base_::Update(); }
 
 };
+
+template < template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT>
+const double CrankNicolsonScheme2PhaseCL<BaseMethod, LsetSolverT, RelaxationPolicyT>::theta_[3]
+  = { 1.0, 0.5, 0.5 };
 
 // Handbook of Numerical Analysis (Ciarlet/Lions), Volume IX: Numerical Methods for Fluids (Part 3) by R. Glowinski
 template< template<class, class> class BaseMethod, class LsetSolverT, class RelaxationPolicyT= cplBroydenPolicyCL>
