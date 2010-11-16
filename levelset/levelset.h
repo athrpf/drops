@@ -118,8 +118,8 @@ class LevelsetP2CL : public ProblemCL< LevelsetCoeffCL, LsetBndDataCL>
     void   GetInfo( double& maxGradPhi, double& Volume, Point3DCL& bary, Point3DCL& vel, const DiscVelSolT& vel_sol, Point3DCL& minCoord, Point3DCL& maxCoord, double& surfArea) const;
     /// returns the maximum and minimum of the gradient of phi
     void   GetMaxMinGradPhi(double& maxGradPhi, double& minGradPhi) const;
-    /// returns approximate volume of domain where level set function is negative.
-    double GetVolume( double translation= 0) const;
+    /// returns approximate volume of domain where level set function is negative. For fine == true the tetrahedra are (implicitly) regularly refined and the integral is computed on the children.
+    double GetVolume( double translation= 0, bool fine= true) const;
     /// volume correction to ensure no loss or gain of mass.
     double AdjustVolume( double vol, double tol, double surf= 0) const;
     /// Set type of surface force.

@@ -554,7 +554,7 @@ void LevelsetP2CL::AccumulateBndIntegral( VecDescCL& f) const
     }
 }
 
-double LevelsetP2CL::GetVolume( double translation) const
+double LevelsetP2CL::GetVolume( double translation, bool fine) const
 {
     SMatrixCL<3,3> T;
     InterfaceTetraCL tetra;
@@ -566,9 +566,15 @@ double LevelsetP2CL::GetVolume( double translation) const
         GetTrafoTr( T, det, *it);
         absdet= std::abs( det);
         tetra.Init( *it, Phi, BndData_, translation);
-        for (int ch= 0; ch < 8; ++ch) {
+        if (fine)
+            for (int ch= 0; ch < 8; ++ch) {
+                // compute volume
+                tetra.ComputeCutForChild( ch);
+                Volume+= tetra.quad( ones, absdet, false);
+            }
+        else {
             // compute volume
-            tetra.ComputeCutForChild( ch);
+            tetra.ComputeCutForChild( 8);
             Volume+= tetra.quad( ones, absdet, false);
         }
     }
