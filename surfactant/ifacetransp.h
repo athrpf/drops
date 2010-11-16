@@ -104,6 +104,14 @@ void SetupInterfaceRhsP1 (const MultiGridCL& mg, VecDescCL* v,
 
 #define DROPS_FOR_TETRA_INTERFACE_END }}
 
+#define DROPS_FOR_TETRA_INTERFACE_COARSE_BEGIN( t, ls, bnd, p, n) \
+    (p).Init( (t), (ls), (bnd)); \
+    if ((p).IntersectsChild( 8)) { /*We are at the phase boundary.*/ \
+        (p).ComputeForChild( 8); \
+        for (int n= 0; n < (p).GetNumTriangles(); ++n) \
+
+#define DROPS_FOR_TETRA_INTERFACE_COARSE_END }
+
 
 /// \brief Short-hand for integral on the interface.
 template <typename DiscP1FunT>
@@ -124,6 +132,35 @@ double Integral_Gamma (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls,
     }
     return d;
 }
+
+/// \brief Short-hand for integral on the interface, computed on the coarse interface.
+template <typename DiscP1FunT>
+double Integral_Gamma_Coarse (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& bnd,
+    const DiscP1FunT& discsol)
+{
+    double d( 0.);
+    const DROPS::Uint lvl = ls.GetLevel();
+    DROPS::InterfaceTriangleCL triangle;
+    DROPS::Quad5_2DCL<> qdiscsol;
+
+    DROPS_FOR_TRIANG_CONST_TETRA( mg, lvl, it) {
+        DROPS_FOR_TETRA_INTERFACE_COARSE_BEGIN( *it, ls, bnd, triangle, tri) {
+            qdiscsol.assign(  *it, &triangle.GetBary( tri), discsol);
+            d+= qdiscsol.quad( triangle.GetAbsDet( tri));
+        }
+        DROPS_FOR_TETRA_INTERFACE_COARSE_END
+    }
+    return d;
+}
+
+/// \brief Short-hand for integral on the interface, h^3-version through interpolation.
+template <typename DiscP1FunT>
+double Integral_Gamma_Extrapolate (const DROPS::MultiGridCL& mg, const DROPS::VecDescCL& ls, const DROPS::BndDataCL<>& bnd,
+    const DiscP1FunT& discsol)
+{
+    return (4.*Integral_Gamma( mg, ls, bnd,discsol) - Integral_Gamma_Coarse( mg, ls, bnd,discsol))/3.;
+}
+
 
 /// \brief P1-discretization and solution of the transport equation on the interface
 class SurfactantcGP1CL
