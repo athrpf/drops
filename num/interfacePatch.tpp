@@ -48,7 +48,7 @@ InterfacePatchCL::EdgeIntersection (Uint v0, Uint v1, const LocalP2CL<> & philoc
 template<class ValueT>
 ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool part /*bool debug*/)
 {
-    const ChildDataCL data= GetChildData( ch_);
+    const ChildDataCL& data= GetChildData( ch_);
     typedef BaryCoordCL* BaryPtrT;
     BaryPtrT BaryPtr[4];
     if (intersec_<3)
@@ -58,7 +58,7 @@ ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
         { // integriere ueber Kind
             for (int i=0; i<4; ++i)
                 BaryPtr[i]= &BaryDoF_[data.Vertices[i]];
-            return P1DiscCL::Quad( f, BaryPtr)*(absdet/8);
+            return P1DiscCL::Quad( f, BaryPtr)*(ch_ < 8 ? 0.125 : 1.)*absdet;
         }
         else
             return ValueT();
@@ -83,7 +83,7 @@ ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
         {
             for (int i=0; i<4; ++i)
                 BaryPtr[i]= &BaryDoF_[data.Vertices[i]];
-            return P1DiscCL::Quad( f, BaryPtr)*(absdet/8) - quadTetra;
+            return P1DiscCL::Quad( f, BaryPtr)*(ch_ < 8 ? 0.125 : 1.)*absdet - quadTetra;
         }
     }
     else // intersec_==4
@@ -125,13 +125,13 @@ ValueT InterfaceTetraCL::quad( const LocalP2CL<ValueT>& f, double absdet, bool p
 template<class ValueT>
 void InterfaceTetraCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const LocalP2CL<ValueT>& f, double absdet)
 {
-    const ChildDataCL data= GetChildData( ch_);
+    const ChildDataCL& data= GetChildData( ch_);
     typedef BaryCoordCL* BaryPtrT;
     BaryPtrT BaryPtr[4], chTetra[4];
 
     for (int i=0; i<4; ++i)
         chTetra[i]= &BaryDoF_[data.Vertices[i]];
-    const ValueT quadChild= P1DiscCL::Quad( f, chTetra)*(absdet/8);
+    const ValueT quadChild= P1DiscCL::Quad( f, chTetra)(ch_ < 8 ? 0.125 : 1.)*absdet;
 
     if (intersec_<3)
     { // cuts = Kind + leere Menge
