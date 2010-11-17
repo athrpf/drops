@@ -131,7 +131,7 @@ void InterfaceTetraCL::quadBothParts( ValueT& int_pos, ValueT& int_neg, const Lo
 
     for (int i=0; i<4; ++i)
         chTetra[i]= &BaryDoF_[data.Vertices[i]];
-    const ValueT quadChild= P1DiscCL::Quad( f, chTetra)(ch_ < 8 ? 0.125 : 1.)*absdet;
+    const ValueT quadChild= P1DiscCL::Quad( f, chTetra)*(ch_ < 8 ? 0.125 : 1.)*absdet;
 
     if (intersec_<3)
     { // cuts = Kind + leere Menge
