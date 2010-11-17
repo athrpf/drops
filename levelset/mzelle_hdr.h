@@ -39,6 +39,22 @@
 namespace DROPS
 {
 
+/// The level set has two disjoint singular points on the p[1]-axis; contained in \f$(-0.3,0.3)\times(-1,1)\times(-0.3,0.3)\f$.
+double zitrus (const Point3DCL& p, double)
+{
+    return 0.2*(std::pow( p[0], 2) + std::pow( p[2], 2)) + std::pow( p[1], 3)*std::pow( p[1] - 1., 3);
+}
+/// The level set is a torus, wrapped around p[2]-axis, that touches itself in the origin; contained in \f$(-1,1)\times(-1,1)\times(-0.5,0.5)\f$.
+double dullo (const Point3DCL& p, double)
+{
+    return std::pow( p.norm_sq(), 2) - (std::pow( p[0], 2) + std::pow( p[1], 2));
+}
+/// The level set is a heart with an inward and an outward cusp on the p[2]-axis; contained in \f$(-1.2,1.2)\times(-0.7,0.7)\times(-1.1,1.3)\f$.
+double suess (const Point3DCL& p, double)
+{
+    return std::pow( std::pow( p[0], 2) + 2.25*std::pow( p[1], 2) + std::pow( p[2], 2) - 1., 3) - std::pow( p[0], 2)*std::pow( p[2], 3) - 9./80.*std::pow( p[1], 2)*std::pow( p[2], 3);
+}
+
 class EllipsoidCL
 {
   private:
