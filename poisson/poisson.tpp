@@ -1107,7 +1107,7 @@ double PoissonP2CL<Coeff>::CheckSolution(const VecDescCL& lsg, instat_scalar_fun
 
     const_DiscSolCL sol(&lsg, &GetBndData(), &GetMG());
 
-    std::cout << "Abweichung von der tatsaechlichen Loesung:" << std::endl;
+    std::cout << "Difference to exact solution" << std::endl;
 
     for (MultiGridCL::const_TriangTetraIteratorCL sit=const_cast<const MultiGridCL&>(MG_).GetTriangTetraBegin(lvl), send=const_cast<const MultiGridCL&>(MG_).GetTriangTetraEnd(lvl);
          sit != send; ++sit)
