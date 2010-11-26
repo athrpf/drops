@@ -143,13 +143,13 @@
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_PAR;WIN32;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\Zoltan_v3.2\src\include;$(SolutionDir)..\..\;$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;$(CCP_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;$(SolutionDir)..\..\..\Zoltan_v3.2\src\include</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir);$(CCP_LIB32)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(MPI_LIB32)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ddd.lib;metis.lib;parmetis.lib;msmpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
@@ -164,13 +164,13 @@
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_PAR;WIN64;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;$(SolutionDir)..\..\..\Zoltan_v3.2\src\include</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(OutDir);C:\Program Files\Microsoft HPC Pack 2008 SDK\Lib\amd64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(MPI_LIB64)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ddd.lib;metis.lib;parmetis.lib;msmpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference />
@@ -199,7 +199,7 @@
       </PrecompiledHeader>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DROPS_WIN;WIN64;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
@@ -217,7 +217,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_PAR;WIN32;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\..\Zoltan_v3.2\src\include;$(SolutionDir)..\..\;$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;$(CCP_INC);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;$(SolutionDir)..\..\..\Zoltan_v3.2\src\include</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <FloatingPointModel>Fast</FloatingPointModel>
       <OmitFramePointers>true</OmitFramePointers>
@@ -228,7 +228,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OutDir);$(CCP_LIB32)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(MPI_LIB32)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ddd.lib;metis.lib;parmetis.lib;msmpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -240,8 +240,8 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_PAR;WIN32;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_PAR;WIN64;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\;$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ddd\include;$(SolutionDir)..\..\..\Zoltan_v3.2\src\include</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <FloatingPointModel>Fast</FloatingPointModel>
       <OmitFramePointers>true</OmitFramePointers>
@@ -251,7 +251,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(OutDir);C:\Program Files\Microsoft HPC Pack 2008 SDK\Lib\amd64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir);$(MPI_LIB64)</AdditionalLibraryDirectories>
       <AdditionalDependencies>ddd.lib;metis.lib;parmetis.lib;msmpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -285,7 +285,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;DROPS_WIN;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DROPS_WIN;WIN64;_HAS_ITERATOR_DEBUGGING=0;_SECURE_SCL=0;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
       <FloatingPointModel>Fast</FloatingPointModel>

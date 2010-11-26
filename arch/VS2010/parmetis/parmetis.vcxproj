@@ -120,7 +120,7 @@
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);PARMETIS_WIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(CCP_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -137,7 +137,7 @@
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);PARMETIS_WIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -188,7 +188,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);PARMETIS_WIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(CCP_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -208,7 +208,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions);PARMETIS_WIN</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Program Files\Microsoft HPC Pack 2008 SDK\Include;$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -272,38 +272,321 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\akwayfm.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ametis.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\backcompat.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\balancemylink.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\coarsen.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\comm.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\csrmatch.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\debug.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\diffutil.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\fpqueue.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\frename.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\gkmetis.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\grsetup.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\iidxsort.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\iintsort.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ikeysort.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ikeyvalsort.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\initbalance.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\initmsection.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\initpart.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kmetis.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kwaybalance.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kwayfm.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kwayrefine.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\lmatch.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\match.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mdiffusion.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\memory.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mesh.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mmetis.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\move.c" />
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\akwayfm.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ametis.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\backcompat.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\balancemylink.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\coarsen.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\comm.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\csrmatch.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\debug.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\diffutil.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\fpqueue.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\frename.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\gkmetis.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\grsetup.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\iidxsort.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\iintsort.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ikeysort.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ikeyvalsort.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\initbalance.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\initmsection.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\initpart.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kmetis.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kwaybalance.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kwayfm.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\kwayrefine.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\lmatch.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\match.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mdiffusion.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\memory.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mesh.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\mmetis.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\move.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\msetup.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -313,23 +596,171 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\node_refine.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ometis.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\order.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\pspases.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\redomylink.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\remap.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\rmetis.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\selectq.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\serial.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\setup.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\stat.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\timer.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\util.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\wave.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\weird.c" />
-    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\xyzpart.c" />
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\node_refine.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\ometis.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\order.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\pspases.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\redomylink.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\remap.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\rmetis.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\selectq.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\serial.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\setup.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\stat.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\timer.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\util.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\wave.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\weird.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\ParMetis\ParMETISLib\xyzpart.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(MPI_INC);$(SolutionDir)..\..\..\ParMetis\ParMETISLib;$(SolutionDir)..\..\..\ParMetis\METISLib;$(SolutionDir)..\..\..\ParMetis</AdditionalIncludeDirectories>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugSerial|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseSerial|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\ParMetis\ParMETISLib\defs.h" />
