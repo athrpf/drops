@@ -1742,7 +1742,7 @@ std::auto_ptr<ReparamCL> ReparamFactoryCL::GetReparam( MultiGridCL& mg,
             if (periodic) { // check for periodic directions and append them
                 if (perDirections) {
                     const int s= perDirections->size();
-                    reparam->data_.perDir.reserve( round( std::pow( 3., s)));
+                    reparam->data_.perDir.reserve( std::ceil( std::pow( 3., s)));
                     for (ReparamDataCL::perDirSetT::const_iterator it= perDirections->begin(), end= perDirections->end(); it!=end; ++it)
                         reparam->data_.AppendPeriodicDirection( *it);
                 }
