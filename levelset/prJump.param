@@ -115,7 +115,8 @@ Transp {
     Tol           = 0         # no effect
     DiffPos       = 0         # no effect
     DiffNeg       = 0         # no effect
-    H             = 0         # no effect
+    HPos          = 0         # no effect
+    HNeg          = 0         # no effect
     IniCPos       = 0         # no effect
     IniCNeg       = 0         # no effect
     NitschePenalty  =  0      # no effect

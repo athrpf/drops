@@ -106,7 +106,8 @@ Transp {
   Tol             = 1e-10
   DiffPos         = 5e-3      # diffusion coefficient (pos. part)
   DiffNeg         = 1e-2      # diffusion coefficient (neg. part)
-  H               = 0.5       # Henry number cneg(\infty) = H*cpos(\infty)
+  HPos            = 1         # Henry condition: Hneg * cneg = Hpos * cpos
+  HNeg            = 0.5       # Henry condition: Hneg * cneg = Hpos * cpos
   IniCPos         = 0.1       # initial concentration (pos. part)
   IniCNeg         = 5         # initial concentration (neg. part)
   NitschePenalty  = 0

@@ -1524,7 +1524,7 @@ RepairAfterRefineP2( const P2T& old_f, VecDesc& vecdesc)
             && sit->GetMidVertex()->Unknowns.Exist()
             && !sit->GetMidVertex()->Unknowns.Exist( old_idx)
             && sit->GetMidVertex()->Unknowns.Exist( idx)) {
-            f.SetDoF( *sit->GetMidVertex(), old_f.val( *sit));
+              f.SetDoF( *sit->GetMidVertex(), old_f.val( *sit));
         }
         else if (sit->Unknowns.Exist()
                  && sit->Unknowns.Exist( old_idx)

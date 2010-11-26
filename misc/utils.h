@@ -130,7 +130,9 @@ const double DoubleEpsC = 1.0e-9; // numeric_limits<double>::epsilon();
 /// error-reporting is activated.
 //#define DROPSDebugC 25  //(DROPS::DebugNumericC | DROPS::DebugUnknownsC | DROPS::DebugContainerC )
 //#define DROPSDebugC ~0  // all bits set
-#define DROPSDebugC 0
+#ifndef DROPSDebugC 
+  #define DROPSDebugC 0
+#endif  
 
 /// \brief Throws an error upon a failed assertion.
 ///

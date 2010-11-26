@@ -219,7 +219,8 @@ void ParamTransportCL::RegisterParams()
     rp_.RegDouble ( trp_Tol,             "Tol");
     rp_.RegDouble ( trp_DiffPos,         "DiffPos");
     rp_.RegDouble ( trp_DiffNeg,         "DiffNeg");
-    rp_.RegDouble ( trp_H,               "H");
+    rp_.RegDouble ( trp_HPos,            "HPos");
+    rp_.RegDouble ( trp_HNeg,            "HNeg");
     rp_.RegDouble ( trp_IniCPos,         "IniCPos");
     rp_.RegDouble ( trp_IniCNeg,         "IniCNeg");
     rp_.RegDouble ( trp_NitschePenalty,  "NitschePenalty");

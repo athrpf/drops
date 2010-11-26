@@ -109,7 +109,8 @@ Transp {
   Tol           =       1e-10   # no effect
   DiffPos       =       5e-3    # no effect
   DiffNeg       =       1e-2    # no effect
-  H             =       0.5     # no effect
+  HPos          =       1       # no effect
+  HNeg          =       0.5     # no effect
   IniCPos       =       0.1     # no effect
   IniCNeg       =       5       # no effect
   NitschePenalty  =       0     # no effect

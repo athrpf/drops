@@ -342,6 +342,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
         qsigmaPhPhte= qsigma*qPhPhte;
         for (int v= 0; v < 10; ++v)
         {
+            if (Numb[v]==NoIdx) continue;
             q1= dot (qsigmaPhPhte, Grad[v]);
             f[Numb[v]+i]-= q1.quad( det);
         }
@@ -368,30 +369,23 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     }
     for (int i =0; i<Quad5_2DDataCL::NumNodesC; i++) if (n[i].norm()>1e-8) n[i]/= n[i].norm();
 
-    Quad5_2DCL<> qsigma, // surface tension
-                 q1,                   // Term 1
-                 q2_3,                 // Term 2 minus Term 3
-                 qgradsigmaPhPhte_m_Phgradsigmae; // for Term 2 and 3
+    Quad5_2DCL<> qsigma, q1;
     Quad5_2DCL<Point3DCL> qPhPhte,                         // Common term in Term 1 and Term 2
                           qsigmaPhPhte,                    // for Term 1
                           qgradsigma;   // for Term 2
+/// CL: qgradsigma koennte prinzipiell weg!                        
     sf.ComputeSF(t, p, qsigma, qgradsigma);
-    Quad5_2DCL<Point3DCL> qPhgradsigma( qgradsigma);
-
-    qPhgradsigma.apply( triangle, &InterfaceTriangleCL::ApplyProj);
 
     for (int i= 0; i < 3; ++i)
     {
         qPhPhte= (e[i] - dot(e[i],n)*n);
         qPhPhte.apply( triangle, &InterfaceTriangleCL::ApplyProj);
-
         qsigmaPhPhte= qsigma*qPhPhte;
-        qgradsigmaPhPhte_m_Phgradsigmae= dot( qPhPhte, qgradsigma) - dot( qPhgradsigma, e[i]);
         for (int v= 0; v < 10; ++v)
         {
+            if (Numb[v]==NoIdx) continue;
             q1= dot (qsigmaPhPhte, Grad[v]);
-            q2_3= p2[v]*qgradsigmaPhPhte_m_Phgradsigmae;
-            f[Numb[v]+i]-= q1.quad( det) + q2_3.quad( det);
+            f[Numb[v]+i]-= q1.quad( det);
         }
     }
 }
@@ -402,7 +396,7 @@ void SF_ImprovedLaplBeltrami( const MultiGridCL& MG, const VecDescCL& SmPhi, con
 {
     const Uint idx_f= f.RowIdx->GetIdx();
     IdxT Numb[10];
-
+    
 // std::ofstream fil("surf.off");
 // fil << "appearance {\n-concave\nshading smooth\n}\nLIST\n{\n";
 

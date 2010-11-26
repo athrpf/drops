@@ -101,6 +101,26 @@ bool InterfacePatchCL::IntersectsChild( Uint ch) const
     return false;
 }
 
+// Init for SubtetraT
+// Wird nur von masstransport P1X verwendet
+void InterfacePatchCL::Init( const SubTetraT& st, const LocalP2CL<double>& ls, double translation)
+{
+    static Point3DCL zero;
+    st_ = st;
+    ch_= -1;
+
+    for (int v=0; v<10; ++v)
+    {
+    	BaryCoordCL tempBaryCoord_ = v<4 ? st[v] : BaryCenter(st[VertOfEdge(v-4,0)],st[VertOfEdge(v-4,1)]);
+    	PhiLoc_[v] =ls( tempBaryCoord_) + translation;
+    // collect data on all DoF
+        Coord_[v]= zero;
+        sign_[v]= Sign(PhiLoc_[v]);
+    }
+    barysubtetra_ = true;
+}
+
+
 int InterfacePatchCL::GetNumIntersectedSubTetras() const
 {
     int intersectedSubTetra= 0;

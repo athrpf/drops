@@ -382,7 +382,8 @@ class ParamTransportCL : public virtual ParamBaseCL
     double trp_Tol,
            trp_DiffPos,                      ///< diffusion coefficient (pos. part)
            trp_DiffNeg,                      ///< diffusion coefficient (neg. part)
-           trp_H,                            ///< Henry number cneg(\f$\infty\f$) = H*cpos(\f$\infty\f$)
+           trp_HPos,                         ///< Henry number Hneg cneg = Hpos cpos
+           trp_HNeg,                         ///< Henry number Hneg cneg = Hpos cpos
            trp_IniCPos,                      ///< initial concentration (pos. part)
            trp_IniCNeg,                      ///< initial concentration (neg. part)
            trp_NitschePenalty,

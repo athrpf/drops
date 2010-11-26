@@ -76,6 +76,8 @@ class InterfacePatchCL
       void Init( const TetraCL& t, const VecDescCL& ls, const BndDataCL<>& lsetbnd, double translation= 0.);
       void Init( const TetraCL& t, const LocalP2CL<double>& ls, double translation= 0.);
       void Init( const TetraCL& t, const SubTetraT& st, const LocalP2CL<double>& ls, double translation);
+      ///< Wird nur von masstransport P1X verwendet      
+      void Init( const SubTetraT& st, const LocalP2CL<double>& ls, double translation);
 
       /// \name Use after Init
       /// \remarks The following functions are only valid, if Init(...) was called before! They refer to T. If st_ was given to Init, they refer to the transformation of T.

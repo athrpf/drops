@@ -210,7 +210,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     double D[2] = {C.trp_DiffPos, C.trp_DiffNeg};
-    TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.trp_Theta, D, C.trp_H, &Stokes.v, lset, C.tm_StepSize, C.trp_Iter, C.trp_Tol);
+    TransportP1CL massTransp( MG, Bnd_c, Stokes.GetBndData().Vel, C.trp_Theta, D, C.trp_HNeg/C.trp_HPos, &Stokes.v, lset, C.tm_StepSize, C.trp_Iter, C.trp_Tol);
     TransportRepairCL transprepair(massTransp, MG);
     if (C.trp_DoTransp)
     {
