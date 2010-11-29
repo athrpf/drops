@@ -279,19 +279,19 @@ void SetupLocalOnePhaseSystem( double locM[4][4], double locA[4][4], double locC
     const double H, bool pPart)
 {
     const double d = pPart ? D[0] : D[1]/H;
-    const double h = pPart ? 1. : 1./H;
+    const double hw = pPart ? 1. : 1./H;
     for(int i= 0; i < 4; ++i) {
         for(int j= 0; j < i; ++j) {
-            locM[j][i]= h*P1DiscCL::GetMass( i, j)*absdet;
+            locM[j][i]= hw*P1DiscCL::GetMass( i, j)*absdet;
             locM[i][j]= locM[j][i];
             locA[j][i]= d*GTG( i, j)/6.0*absdet;
             locA[i][j]= locA[j][i];
-            locC[j][i]= h*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( j)))*p[i]).quad( absdet);
-            locC[i][j]= h*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*p[j]).quad( absdet);
+            locC[j][i]= hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( j)))*p[i]).quad( absdet);
+            locC[i][j]= hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*p[j]).quad( absdet);
         }
-        locM[i][i]= h*P1DiscCL::GetMass( i, i)*absdet;
+        locM[i][i]= hw*P1DiscCL::GetMass( i, i)*absdet;
         locA[i][i]= d*GTG( i, i)/6.0*absdet;
-        locC[i][i]= h*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*p[i]).quad( absdet);
+        locC[i][i]= hw*Quad3CL<>( dot( q3_u, Quad3CL<Point3DCL>( G.col( i)))*p[i]).quad( absdet);
     }
 }
 

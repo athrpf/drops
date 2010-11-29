@@ -485,7 +485,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
         IFInfo.Write(Stokes.v.t);
         
         if (C.surf_DoTransp) surfTransp.InitOld();
-        //timedisc->DoStep( C.cpl_Iter);
+        timedisc->DoStep( C.cpl_Iter);
         
 //         if (C.trp_DoTransp) massTransp.DoStep( step*C.tm_StepSize);
         if (C.surf_DoTransp) {
@@ -515,7 +515,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
             }
         }
         
-        //timedisc->Update(); 
+        timedisc->Update(); 
         
         //Update c from ct
 //        massTransp.TransformWithScaling(massTransp.ct, massTransp.c, 1.0/massTransp.GetHenry(true), 1.0/massTransp.GetHenry(false));
