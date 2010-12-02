@@ -505,41 +505,6 @@ class ConvDiffElementMatrices{
 
 
 
-class MixedMassElementMatrices{
-  public:
-    Elmat4x4 M_P1_P1;       ///< (   P1FEM,    P1FEM)
-    Elmat4x4 M_P1_XOLD_p;   ///< (   P1FEM, old XFEM) on positiv part
-    Elmat4x4 M_P1_XOLD_n;   ///< (   P1FEM, old XFEM) on negativ part
-    Elmat4x4 M_XNEW_P1_p;   ///< (new XFEM,    P1FEM) on positiv part
-    Elmat4x4 M_XNEW_P1_n;   ///< (new XFEM,    P1FEM) on negativ part
-    Elmat4x4 M_XNEW_P1;     ///< (new XFEM,    P1FEM)
-    Elmat4x4 M_XNEW_XOLD;   ///< (new XFEM, old XFEM)
-
-    void ResetUnsigned(){
-      std::memset( M_P1_P1,0, 4*4*sizeof(double));
-      std::memset( M_XNEW_P1,0, 4*4*sizeof(double));
-      std::memset( M_XNEW_XOLD,0, 4*4*sizeof(double));
-    }
-    
-    void ResetSigned(){
-      std::memset( M_P1_XOLD_p,0, 4*4*sizeof(double));
-      std::memset( M_P1_XOLD_n,0, 4*4*sizeof(double));
-      std::memset( M_XNEW_P1_p,0, 4*4*sizeof(double));
-      std::memset( M_XNEW_P1_n,0, 4*4*sizeof(double));
-    }
-
-    void ResetAll(){
-      ResetUnsigned();
-      ResetSigned();
-    }
-
-    MixedMassElementMatrices(){
-      ResetAll();
-    }
-};
-
-
-
 } // end of namespace DROPS
 
 #endif

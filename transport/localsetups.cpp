@@ -49,7 +49,8 @@ void SetupLocalTwoPhaseRhs(TransformedP1FiniteElement& transformedfel, Interface
     ConvDiffElementVectors& elvecs, LocalConvDiffCoefficients& local_coefs) 
 {
     cut.ComputeSubTets();
-    elvecs.ResetSigned();
+    
+    elvecs.ResetSigned();//CL <--- kann weg
            
     for (Uint k=0; k< cut.GetNumTetra(); ++k){
         const SArrayCL<BaryCoordCL,4>& T =cut.GetTetra(k);
@@ -247,15 +248,15 @@ void SetupLocalOneInterfaceSystem( TransformedP1FiniteElement& transformedfel, I
     }
 }
 
-void SetupLocalOnePhaseMassMatrix( MixedMassElementMatrices& mmelmats, TransformedP1FiniteElement & transfp1fel, const double H, bool pPart)
+void SetupLocalOnePhaseMassMatrix( double locM[4][4], TransformedP1FiniteElement & transfp1fel, const double H, bool pPart)
 {
     const double h = pPart ? 1. : 1./H;
     for(int i= 0; i < 4; ++i) {
         for(int j= 0; j < i; ++j) {
-            mmelmats.M_P1_P1[j][i]= h*P1DiscCL::GetMass( i, j)*transfp1fel.GetAbsDeterminant();
-            mmelmats.M_P1_P1[i][j]= mmelmats.M_P1_P1[j][i];
+            locM[j][i]= h*P1DiscCL::GetMass( i, j)*transfp1fel.GetAbsDeterminant();
+            locM[i][j]= locM[j][i];
         }
-        mmelmats.M_P1_P1[i][i]= h*P1DiscCL::GetMass( i, i)*transfp1fel.GetAbsDeterminant();
+        locM[i][i]= h*P1DiscCL::GetMass( i, i)*transfp1fel.GetAbsDeterminant();
     }
 }
 
@@ -266,15 +267,15 @@ void SetupLocalOnePhaseMassMatrix( MixedMassElementMatrices& mmelmats, Transform
 /// \f$ M_{1,2}[i,j] = \int h \phi_i^{new} \phi_j^{old} \f$ \n
 /// or
 /// \f$ M_{2,1}[i,j] = \int h \phi_i^{old} \phi_j^{new} \f$ \n
-void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, MixedMassElementMatrices& mmelmats, 
+void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, double M_n[4][4], double M_p[4][4], 
     TransformedP1FiniteElement & transfp1fel, const double H, bool sign[4], bool jumps, bool pPart)
 {
     cut.ComputeSubTets();
     Uint NumTets=cut.GetNumTetra(); /// # of subtetras
     // D, H are constant if T \cap Gamma_old is empty
     double h = pPart ? 1. : 1./H;
-    std::memset( mmelmats.M_XNEW_P1_n,0, 4*4*sizeof(double));
-    std::memset( mmelmats.M_XNEW_P1_p,0, 4*4*sizeof(double));
+    std::memset( M_n,0, 4*4*sizeof(double));
+    std::memset( M_p,0, 4*4*sizeof(double));
     
     for(int i= 0; i < 4; ++i) {
         sign[i]= (cut.GetSign(i) == 1);  
@@ -299,8 +300,8 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, MixedMassElementMa
                          
                 double iM = qM.quad(Vol);
                 if (isnan(iM)|| isinf(iM)) {
-                    std::memset( mmelmats.M_XNEW_P1_n,0, 4*4*sizeof(double));
-                    std::memset( mmelmats.M_XNEW_P1_p,0, 4*4*sizeof(double));
+                    std::memset( M_n,0, 4*4*sizeof(double));
+                    std::memset( M_p,0, 4*4*sizeof(double));
                     irreg=true;
                     break; //leave the j-loop 
                 }
@@ -311,17 +312,17 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, MixedMassElementMa
                 // basis functions (wrt old interface) -> (FEM function, old XFEM).
                 if(jumps){
                     if (k<cut.GetNumNegTetra())
-                        mmelmats.M_XNEW_P1_n[i][j]+= iM/H;
+                        M_n[i][j]+= iM/H;
                     else
-                        mmelmats.M_XNEW_P1_p[i][j]+= iM ;
+                        M_p[i][j]+= iM ;
                 }
                 // D and H are constant.
                 // Compute (new XFEM test function, FEM) at old time step. Tetra is cut by only new interface.
                 else{  
                     if (k<cut.GetNumNegTetra())
-                        mmelmats.M_XNEW_P1_n[i][j]+= iM*h;
+                        M_n[i][j]+= iM*h;
                     else
-                        mmelmats.M_XNEW_P1_p[i][j]+= iM*h;
+                        M_p[i][j]+= iM*h;
                 }
             }
             if (irreg) break;  //leave the i-loop
@@ -336,11 +337,11 @@ void SetupLocalOneInterfaceMassMatrix( InterfaceTetraCL& cut, MixedMassElementMa
 /// \f$ M_{2,1}[i,j] = \int h \phi_i^{old} \phi_j^{new} \f$ \n
 /// \f$ M_{2,2}[i,j] = \int h \phi_i^{old} \phi_j^{old} \f$ \n
 void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL& oldcut, 
-    MixedMassElementMatrices & mmelmats, TransformedP1FiniteElement & transfp1fel, const double H, LocalP2CL<>& lp2_oldlset)
+    double M22[4][4], double M21[4][4], TransformedP1FiniteElement & transfp1fel, const double H, LocalP2CL<>& lp2_oldlset)
 {
     bool sign[4], oldsign[4];
-    std::memset( mmelmats.M_XNEW_P1, 0, 4*4*sizeof(double));
-    std::memset( mmelmats.M_XNEW_XOLD, 0, 4*4*sizeof(double));
+    std::memset( M22, 0, 4*4*sizeof(double));
+    std::memset( M21, 0, 4*4*sizeof(double));
     
     for(int i= 0; i < 4; ++i) {
         sign[i]= (cut.GetSign(i) == 1);
@@ -377,15 +378,17 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
                     ///> TODO: If a local value in a child tetrahedron is irregular, ignore this tetra
                     ///> The contribution of other tetra must be preserved
                     ///> For example tmpM21[4][4]
+//                         std::memset( M21,0, 4*4*sizeof(double));
+//                         std::memset( M22,0, 4*4*sizeof(double));
                         irreg=true;
                         break; //leave the j-loop 
                     }
                     // int_(Phi_i_Gamma_new * Phi_j) in Tk
-                    mmelmats.M_XNEW_P1[i][j]+= sign[i]? -iM: iM;
+                    M21[i][j]+= sign[i]? -iM: iM;
 
                     if (pPart== oldsign[j]) continue; // supp(Phi_j^{Gamma_old}) \cap Tk is empty
 
-                    mmelmats.M_XNEW_XOLD[i][j]+= (sign[i]==oldsign[j]) ? iM : -iM ;
+                    M22[i][j]+= (sign[i]==oldsign[j]) ? iM : -iM ;
                 }
                 if (irreg) break;
             }
@@ -412,13 +415,15 @@ void SetupLocalTwoInterfacesMassMatrix( InterfaceTetraCL& cut, InterfaceTetraCL&
                         ///> TODO: If a local value in a child tetrahedron is irregular, ignore this tetra
                         ///> The contribution of other tetra must be preserved
                         ///> For example tmpM21[4][4]
+//                         std::memset( M21,0, 4*4*sizeof(double));
+//                         std::memset( M22,0, 4*4*sizeof(double));
                         irreg=true;
                         break; //leave the j-loop 
                     }
-                    mmelmats.M_XNEW_P1[i][j]+= sign[i]? -iM: iM;
+                    M21[i][j]+= sign[i]? -iM: iM;
                     if (Tkm == oldsign[j]) continue;// supp(Phi_j^{Gamma_old}) \cap Tkm is empty
 
-                    mmelmats.M_XNEW_XOLD[i][j]+= (sign[i]==oldsign[j]) ? iM : -iM ;
+                    M22[i][j]+= (sign[i]==oldsign[j]) ? iM : -iM ;
                 }
                 if (irreg) break;
             }
