@@ -353,7 +353,7 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
     const InterfaceTriangleCL&  triangle, const LocalP1CL<Point3DCL> Grad_f[10], const IdxT Numb[10],
     const Quad5_2DCL<Point3DCL> e[3], double det, VectorCL& f, SurfaceTensionCL& sf)
 {
-    if ((sf.GetGradSigma() == 0) && sf.GetInputMethod() == Sigma_X)
+    if (sf.GetInputMethod() == Sigma_X)
     {
         SF_ImprovedLaplBeltramiOnTriangle( t, p, triangle, Grad_f, Numb, sf.GetSigma(), e, det, f);
         return;
@@ -371,10 +371,8 @@ void SF_ImprovedLaplBeltramiOnTriangle( const TetraCL& t, const BaryCoordCL * co
 
     Quad5_2DCL<> qsigma, q1;
     Quad5_2DCL<Point3DCL> qPhPhte,                         // Common term in Term 1 and Term 2
-                          qsigmaPhPhte,                    // for Term 1
-                          qgradsigma;   // for Term 2
-/// CL: qgradsigma koennte prinzipiell weg!                        
-    sf.ComputeSF(t, p, qsigma, qgradsigma);
+                          qsigmaPhPhte;                    // for Term 1
+    sf.ComputeSF(t, p, qsigma);
 
     for (int i= 0; i < 3; ++i)
     {

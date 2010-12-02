@@ -188,16 +188,13 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
     //todo: weg oder fallunterscheidung einfuehren
     eps= C.sft_JumpWidth;    lambda= C.sft_RelPos;    sigma_dirt_fac= C.sft_DirtFactor;
     instat_scalar_fun_ptr sigmap  = 0;
-    instat_vector_fun_ptr gsigmap = 0;
     if (C.sft_VarTension)
     {
         sigmap  = &sigma_step;
-        gsigmap = &gsigma_step;
     }
     else
     {
         sigmap  = &sigmaf;
-        gsigmap = &gsigma;
     }
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     cBndDataCL Bnd_ct( 6, c_bc, c_bfun);
@@ -206,7 +203,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 //    coeffC[0]= 1.625; coeffC[1]= 0.0; coeffC[2]= 0.0; coeffC[3]= coeffC[4]= 0.;
     coeffC[0]= 1.625; coeffC[1]= -28.07768; coeffC[2]= 222.7858; coeffC[3]= coeffC[4]= 0.;
     
-    SurfaceTensionCL sf( sigmap, Bnd_c , gsigmap);
+    SurfaceTensionCL sf( sigmap, Bnd_c);
     sf.SetCoeff(coeffC, cp);
     LevelsetP2CL lset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff);
     // levelset wrt the previous time step:

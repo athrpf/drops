@@ -142,18 +142,15 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, LsetBndDataCL& lsetbnddat
     sigma= Stokes.GetCoeff().SurfTens;
     eps= C.sft_JumpWidth;    lambda= C.sft_RelPos;    sigma_dirt_fac= C.sft_DirtFactor;
     instat_scalar_fun_ptr sigmap  = 0;
-    instat_vector_fun_ptr gsigmap = 0;
     if (C.sft_VarTension)
     {
         sigmap  = &sigma_step;
-        gsigmap = &gsigma_step;
     }
     else
     {
         sigmap  = &sigmaf;
-        gsigmap = &gsigma;
     }
-    SurfaceTensionCL sf( sigmap, gsigmap);
+    SurfaceTensionCL sf( sigmap);
 
 
     LevelsetP2CL lset( MG, lsetbnddata, sf, C.lvs_SD, C.lvs_CurvDiff);
