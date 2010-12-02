@@ -254,6 +254,292 @@ class VelTranspRepairCL : public MGObserverCL
     const IdxDescCL* GetIdxDesc() const;
 };
 
+/// \todo: think about where to put this in a more systematical way
+
+class P1FEGridfunctions{
+  private:
+    LocalP1CL<> p1[4];
+    Quad3CL<> q3_p[4];
+    Quad5CL<> q5_p[4];
+    LocalP2CL<> pipj[4][4];
+  public:
+    static void SetupPiPj(LocalP2CL<>pipj[4][4])
+    {    
+        for(int i= 0; i < 4; ++i) {
+            for(int j= 0; j < i; ++j) {
+                pipj[j][i][EdgeByVert( i, j) + 4]= 0.25;
+                pipj[i][j][EdgeByVert( j, i) + 4]= 0.25;
+            }
+            pipj[i][i][i]= 1.;
+            for (int vert= 0; vert < 3; ++vert)
+                pipj[i][i][EdgeByVert( i, VertOfFace( i, vert)) + 4]= 0.25;
+        }
+    }
+
+    P1FEGridfunctions(){
+      for(int i= 0; i < 4; ++i) {
+          p1[i][i]=1.;
+          q3_p[i].assign(p1[i]);
+          q5_p[i].assign(p1[i]);
+       }
+      SetupPiPj(pipj);  
+    }
+    
+    LocalP1CL<>& GetShapeAsLocalP1(int i) {return p1[i];}
+    LocalP2CL<>& GetProductShapeAsLocalP2(int i, int j) {return pipj[i][j];}
+    Quad3CL<>& GetShapeAsQuad3(int i) {return q3_p[i];}
+    Quad5CL<>& GetShapeAsQuad5(int i) {return q5_p[i];}
+};
+
+class TransformedP1FiniteElement{
+  private:
+    TetraCL* tet;
+    
+    double det, absdet;
+
+    bool has_trafo_base;
+    SMatrixCL<3,4> G;
+  
+    bool has_Gram;
+    SMatrixCL<4,4> GTG;
+    
+    P1FEGridfunctions& p1fegfs;
+  public:
+    TransformedP1FiniteElement(P1FEGridfunctions& ap1fegfs, TetraCL* atet = NULL):tet(atet), p1fegfs(ap1fegfs){
+      has_trafo_base=false;    
+      has_Gram=false;    
+    }
+    
+    P1FEGridfunctions& GetGridfunctions(){
+      return p1fegfs;
+    }
+    
+    void SetTetra(TetraCL& atet){
+      tet = &atet;
+      has_trafo_base=false;    
+      has_Gram=false;    
+    }
+    
+    TetraCL& GetTetra(){
+      if(tet == NULL) throw DROPSErrCL("TransformedP1FiniteElement::GetTetra - Not TetraCL object given!");
+      return *tet;
+    }
+    
+    void CalcTrafoBase(){
+      P1DiscCL::GetGradients(G, det, GetTetra());
+      absdet = std::fabs( det);
+      has_trafo_base = true;
+    }
+    
+    double GetDeterminant(){
+      if (!has_trafo_base) CalcTrafoBase();
+      return det;
+    }
+
+    double GetAbsDeterminant(){
+      if (!has_trafo_base) CalcTrafoBase();
+      return absdet;
+    }
+
+    SMatrixCL<3,4> & GetDShape(){
+      if (!has_trafo_base) CalcTrafoBase();
+      return G;
+    }
+
+    SMatrixCL<4,4> & GetGramShape(){
+      if (!has_Gram){
+        if (!has_trafo_base) CalcTrafoBase();
+        GTG = GramMatrix(G);
+        has_Gram = true;
+      } 
+      return GTG;
+    }
+
+  
+};
+
+class GlobalConvDiffCoefficients{
+  friend class LocalConvDiffCoefficients;
+  private:
+    typedef BndDataCL<Point3DCL> VelBndDataT;
+    typedef P2EvalCL<SVectorCL<3>, const VelBndDataT, const VecDescCL> const_DiscVelSolCL;  
+    double D_[2];
+    double H_;
+    const_DiscVelSolCL& vel;
+    instat_scalar_fun_ptr source;
+  public:
+    GlobalConvDiffCoefficients(const double D[2], double H, const_DiscVelSolCL u, instat_scalar_fun_ptr f): H_(H),vel(u),source(f){
+      D_[0]=D[0];
+      D_[1]=D[1];
+    }
+    
+    double GetHenryWeighting(bool pospart){
+      if (pospart)
+        return 1.0;
+      else
+        return H_;
+    }
+
+    double GetDiffusionCoef(bool pospart){
+      if (pospart)
+        return D_[0];
+      else
+        return D_[1];
+    }
+	
+	instat_scalar_fun_ptr GetSourceAsFuntionPointer(){return source;}
+};
+
+class LocalConvDiffCoefficients{
+  private:
+    GlobalConvDiffCoefficients& gcdcoefs;  
+    double time;
+    Quad5CL<> q5_source;
+    Quad3CL<> q3_source;
+    Quad3CL<Point3DCL> q3_velocity;
+    LocalP2CL<Point3DCL> lp2_velocity;  
+  public:
+    LocalConvDiffCoefficients(GlobalConvDiffCoefficients& agcdcoefs, TetraCL& tet, double atime):gcdcoefs(agcdcoefs), time(atime),
+        q5_source(tet,gcdcoefs.source,time), q3_source(tet,gcdcoefs.source,time), q3_velocity(tet, gcdcoefs.vel), lp2_velocity(tet, gcdcoefs.vel)
+    {
+      
+    }
+    
+    double GetHenryWeighting(bool pospart){
+      return gcdcoefs.GetHenryWeighting(pospart);
+    }
+
+    double GetDiffusionCoef(bool pospart){
+      return gcdcoefs.GetDiffusionCoef(pospart);
+    }    
+	
+	instat_scalar_fun_ptr GetSourceAsFuntionPointer(){
+	  return gcdcoefs.GetSourceAsFuntionPointer();
+	}
+	double GetTime(){return time;}
+	Quad5CL<>& GetSourceAsQuad5(){return q5_source;}
+	Quad3CL<>& GetSourceAsQuad3(){return q3_source;}
+	Quad3CL<Point3DCL>& GetVelocityAsQuad3(){return q3_velocity;}
+	LocalP2CL<Point3DCL>& GetVelocityAsLocalP2(){return lp2_velocity;}
+
+};
+
+
+typedef double Elmat4x4[4][4];
+typedef double Elvec4[4];
+
+
+class ConvDiffElementVectors{
+  public:
+
+    Elvec4 f;
+    Elvec4 f_p;
+    Elvec4 f_n;
+
+    void ResetUnsigned(){
+      std::memset( f,0, 4*sizeof(double));
+    }
+    
+    void ResetSigned(){
+      std::memset( f_p,0, 4*sizeof(double));
+      std::memset( f_n,0, 4*sizeof(double));  
+    }
+
+    void ResetAll(){
+      ResetUnsigned();
+      ResetSigned();
+    }
+    
+    ConvDiffElementVectors(){
+      ResetAll();
+    }
+};
+
+
+class ConvDiffElementMatrices{
+  public:
+    Elmat4x4 A;
+    Elmat4x4 M;
+    Elmat4x4 C;
+    Elmat4x4 A_p;
+    Elmat4x4 M_p;
+    Elmat4x4 C_p;
+    Elmat4x4 A_n;
+    Elmat4x4 M_n;
+    Elmat4x4 C_n;
+
+    void ResetUnsigned(){
+      std::memset( A,0, 4*4*sizeof(double));
+      std::memset( M,0, 4*4*sizeof(double));
+      std::memset( C,0, 4*4*sizeof(double));
+    }
+    
+    void ResetSigned(){
+      std::memset( A_p,0, 4*4*sizeof(double));
+      std::memset( M_p,0, 4*4*sizeof(double));
+      std::memset( C_p,0, 4*4*sizeof(double));
+      std::memset( A_n,0, 4*4*sizeof(double));
+      std::memset( M_n,0, 4*4*sizeof(double));
+      std::memset( C_n,0, 4*4*sizeof(double));
+    }
+
+    void ResetAll(){
+      ResetUnsigned();
+      ResetSigned();
+    }
+    
+    void SetUnsignedAsSumOfSigned(){
+      for(int i= 0; i < 4; ++i){
+        for(int j= 0; j < 4; ++j){
+          M[i][j]= M_n[i][j] + M_p[i][j];
+          A[i][j]= A_n[i][j] + A_p[i][j];
+          C[i][j]= C_n[i][j] + C_p[i][j];
+        }
+      }
+    }
+    
+    ConvDiffElementMatrices(){
+      ResetAll();
+    }
+};
+
+
+
+class MixedMassElementMatrices{
+  public:
+    Elmat4x4 M_P1_P1;       ///< (   P1FEM,    P1FEM)
+    Elmat4x4 M_P1_XOLD_p;   ///< (   P1FEM, old XFEM) on positiv part
+    Elmat4x4 M_P1_XOLD_n;   ///< (   P1FEM, old XFEM) on negativ part
+    Elmat4x4 M_XNEW_P1_p;   ///< (new XFEM,    P1FEM) on positiv part
+    Elmat4x4 M_XNEW_P1_n;   ///< (new XFEM,    P1FEM) on negativ part
+    Elmat4x4 M_XNEW_P1;     ///< (new XFEM,    P1FEM)
+    Elmat4x4 M_XNEW_XOLD;   ///< (new XFEM, old XFEM)
+
+    void ResetUnsigned(){
+      std::memset( M_P1_P1,0, 4*4*sizeof(double));
+      std::memset( M_XNEW_P1,0, 4*4*sizeof(double));
+      std::memset( M_XNEW_XOLD,0, 4*4*sizeof(double));
+    }
+    
+    void ResetSigned(){
+      std::memset( M_P1_XOLD_p,0, 4*4*sizeof(double));
+      std::memset( M_P1_XOLD_n,0, 4*4*sizeof(double));
+      std::memset( M_XNEW_P1_p,0, 4*4*sizeof(double));
+      std::memset( M_XNEW_P1_n,0, 4*4*sizeof(double));
+    }
+
+    void ResetAll(){
+      ResetUnsigned();
+      ResetSigned();
+    }
+
+    MixedMassElementMatrices(){
+      ResetAll();
+    }
+};
+
+
+
 } // end of namespace DROPS
 
 #endif

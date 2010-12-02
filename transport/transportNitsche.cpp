@@ -248,8 +248,22 @@ void TransportP1XCL::CommitStep ()
     oldct.Data= ct.Data;
 }
 
+
+
+
 /// Setup of all volume integral - Bi- and Linearforms (not Nitsche yet, this is in SetupNitscheSystem)
-/// - For one  level only
+/**
+ * - For one  level only \n
+ * Profiling of SetupInstatSystem (made on 2011/12/02) on a typical example (CL): \n
+ *               LocalOneInterfaceSetup : 58.0 %   \n
+ * Local (on each element) Preparations : 13.0 %   \n
+ *                   LocalOnePhaseSetup : 13.0 %   \n
+ *                       Matrices Build : 11.5 %   \n
+ *  Add ElementMatricesToGlobalMatrices :  2.5 %   \n
+ *                   Local Rhs(P1 only) :  1.5 %   \n
+ *                  Global Preparations :  0.5 %   
+ **/
+
 void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
     MatrixCL& matM, VecDescCL *cplM, MatrixCL& matC, VecDescCL *cplC, VecDescCL *b,
     IdxDescCL& RowIdx, const double time) const
@@ -272,85 +286,65 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP1CL n;
     bool sign[4];
-    LocalP1CL<> p1[4];
-    Quad3CL<> q3_p[4];
-    Quad5CL<> q5_p[4];
-    for(int i= 0; i < 4; ++i) {
-        p1[i][i]=1.;
-        q3_p[i].assign(p1[i]);
-        q5_p[i].assign(p1[i]);
-     }
-    LocalP2CL<> pipj[4][4];
-    SetupPiPj(pipj);
-    const P2EvalCL<SVectorCL<3>, const VelBndDataT, VecDescCL> u( v_, &Bnd_v_, &MG_);
+    
+    P1FEGridfunctions p1feq;
+    TransformedP1FiniteElement transfp1fel(p1feq);
+    
+    GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
+	
+    ConvDiffElementMatrices elmats;
+    ConvDiffElementVectors elvecs;
 
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
+        
+        transfp1fel.SetTetra(*sit);
+        
         n.assign( *sit, RowIdx, Bndt_);
         InterfaceTetraCL cut;
         cut.Init( *sit, lset_,0.);
         bool nocut=!cut.Intersects();
-        double det, absdet;
-        SMatrixCL<3,4> G;
-        P1DiscCL::GetGradients( G, det, *sit);
-        absdet= std::fabs( det);
-        const SMatrixCL<4,4> GTG( GramMatrix( G));
-        Quad5CL<> rhs( *sit, f_, time);
-        Quad3CL<Point3DCL> q3_u( *sit, u);
-        LocalP2CL<Point3DCL> lp2_u( *sit, u);
         
-        double locA[4][4], locM[4][4], locC[4][4], A_p[4][4], M_p[4][4], C_p[4][4], 
-               A_n[4][4], M_n[4][4], C_n[4][4], locf[4], f_p[4], f_n[4];
-        std::memset( M_p,0, 4*4*sizeof(double));
-        std::memset( A_p,0, 4*4*sizeof(double));
-        std::memset( C_p,0, 4*4*sizeof(double));
-        std::memset( M_n,0, 4*4*sizeof(double));
-        std::memset( A_n,0, 4*4*sizeof(double));
-        std::memset( C_n,0, 4*4*sizeof(double));
-        std::memset( locM,0, 4*4*sizeof(double));
-        std::memset( locA,0, 4*4*sizeof(double));
-        std::memset( locC,0, 4*4*sizeof(double));
-        std::memset( locf,0, 4*sizeof(double));
-        std::memset( f_n,0, 4*sizeof(double));
-        std::memset( f_p,0, 4*sizeof(double));
+        LocalConvDiffCoefficients local_cdcoef(global_cdcoef,*sit,time);
         
-        SetupLocalRhs( locf, rhs, q5_p, absdet);
+        elmats.ResetAll();
+        elvecs.ResetAll();
+
+        SetupLocalRhs( elvecs.f, local_cdcoef.GetSourceAsQuad5(), transfp1fel); 
+        
         if (nocut) // tetra is not intersected by the interface
         {
             bool pPart= (cut.GetSign( 0) == 1);
             // couplings between standard basis functions
-            SetupLocalOnePhaseSystem ( locM, locA, locC, q3_u, q3_p, G, GTG, absdet, D_, H_, pPart);
+            SetupLocalOnePhaseSystem (transfp1fel, elmats, elvecs,  local_cdcoef, pPart);
         }
         else{
-        // compute element matrix for standard basis functions and XFEM basis functions 
-            SetupLocalOneInterfaceSystem( cut, M_n, M_p, A_n, A_p, C_n, C_p, absdet, D_, H_, lp2_u, pipj, p1, G, GTG, sign, true, 0);
-            SetupLocalTwoPhaseRhs(*sit, cut, p1,f_n, f_p, f_, absdet, time);
-            for(int i= 0; i < 4; ++i){
-                for(int j= 0; j < 4; ++j){
-                    locM[j][i]= M_n[j][i] + M_p[j][i];
-                    locA[j][i]= A_n[j][i] + A_p[j][i];
-                    locC[j][i]= C_n[j][i] + C_p[j][i];
-                }
-             }
+            // compute element matrix for standard basis functions and XFEM basis functions 
+            SetupLocalOneInterfaceSystem(transfp1fel, cut, elmats, local_cdcoef);
+            SetupLocalTwoPhaseRhs(transfp1fel, cut, elvecs, local_cdcoef);
+            elmats.SetUnsignedAsSumOfSigned(); 
         } 
+        
         // assemble couplings between standard basis functions
         for(int i= 0; i < 4; ++i)
             if (n.WithUnknowns( i)){
                 for(int j= 0; j < 4; ++j)
                     if (n.WithUnknowns( j)) {
-                        M( n.num[i], n.num[j])+= locM[j][i];
-                        A( n.num[i], n.num[j])+= locA[j][i];
-                        C( n.num[i], n.num[j])+= locC[j][i];
+                        M( n.num[i], n.num[j])+= elmats.M[i][j];
+                        A( n.num[i], n.num[j])+= elmats.A[i][j];
+                        C( n.num[i], n.num[j])+= elmats.C[i][j];
                     }
                      else if (cplM !=0) {
                         const double val= Bndt_.GetBndFun( n.bndnum[j])( sit->GetVertex( j)->GetCoord(), time);
-                        cplM->Data[n.num[i]]-= locM[j][i]*val;
-                        cplA->Data[n.num[i]]-= locA[j][i]*val;
-                        cplC->Data[n.num[i]]-= locC[j][i]*val;
+                        cplM->Data[n.num[i]]-= elmats.M[i][j]*val;
+                        cplA->Data[n.num[i]]-= elmats.A[i][j]*val;
+                        cplC->Data[n.num[i]]-= elmats.C[i][j]*val;
                     }
-                if (b!=0) b->Data[n.num[i]]+= locf[i];
+                if (b!=0) b->Data[n.num[i]]+= elvecs.f[i];
             }
         if (nocut) continue; // no XFEM basis functions
         // assemble couplings between standard basis functions and XFEM basis functions 
+        for(int i= 0; i < 4; ++i) 
+            sign[i]= (cut.GetSign(i) == 1);            
         for(int i= 0; i < 4; ++i)
             if(n.WithUnknowns(i)){
                 const IdxT xidx_i= Xidx[n.num[i]];
@@ -358,25 +352,27 @@ void TransportP1XCL::SetupInstatSystem(MatrixCL& matA, VecDescCL *cplA,
                     if(n.WithUnknowns(j)){
                         const IdxT xidx_j= Xidx[n.num[j]];
                         if (xidx_j!=NoIdx){
-                            M( n.num[i], xidx_j)+= sign[j]? -M_n[j][i]: M_p[j][i];
-                            A( n.num[i], xidx_j)+= sign[j]? -A_n[j][i]: A_p[j][i];
-                            C( n.num[i], xidx_j)+= sign[j]? -C_n[j][i]: C_p[j][i];
+                            M( n.num[i], xidx_j)+= sign[j]? -elmats.M_n[i][j]: elmats.M_p[i][j];
+                            A( n.num[i], xidx_j)+= sign[j]? -elmats.A_n[i][j]: elmats.A_p[i][j];
+                            C( n.num[i], xidx_j)+= sign[j]? -elmats.C_n[i][j]: elmats.C_p[i][j];
                         }
                         if (xidx_i!=NoIdx){
-                            M( xidx_i, n.num[j])+= sign[i]? -M_n[j][i]: M_p[j][i];
-                            A( xidx_i, n.num[j])+= sign[i]? -A_n[j][i]: A_p[j][i];
-                            C( xidx_i, n.num[j])+= sign[i]? -C_n[j][i]: C_p[j][i];
+                            M( xidx_i, n.num[j])+= sign[i]? -elmats.M_n[i][j]: elmats.M_p[i][j];
+                            A( xidx_i, n.num[j])+= sign[i]? -elmats.A_n[i][j]: elmats.A_p[i][j];
+                            C( xidx_i, n.num[j])+= sign[i]? -elmats.C_n[i][j]: elmats.C_p[i][j];
                         }
                         if ((xidx_i!=NoIdx) && (xidx_j!=NoIdx) && (sign[i]==sign[j])){
-                            M( xidx_i, xidx_j)+= sign[j]? M_n[j][i]: M_p[j][i];
-                            A( xidx_i, xidx_j)+= sign[j]? A_n[j][i]: A_p[j][i];
-                            C( xidx_i, xidx_j)+= sign[j]? C_n[j][i]: C_p[j][i];
+                            M( xidx_i, xidx_j)+= sign[j]? elmats.M_n[i][j]: elmats.M_p[i][j];
+                            A( xidx_i, xidx_j)+= sign[j]? elmats.A_n[i][j]: elmats.A_p[i][j];
+                            C( xidx_i, xidx_j)+= sign[j]? elmats.C_n[i][j]: elmats.C_p[i][j];
                         }
                     }  
                 if((xidx_i!=NoIdx) && (b!=0))
-                    b->Data[xidx_i] +=sign[i] ?  - f_n[i] :f_p[i];
+                    b->Data[xidx_i] +=sign[i] ?  - elvecs.f_n[i] :elvecs.f_p[i];
             }
+        
     }
+
     A.Build();
     M.Build();
     C.Build();
@@ -406,41 +402,36 @@ void TransportP1XCL::SetupInstatRhs( VecDescCL & b,  const double time) const
     const Uint lvl= RowIdx.TriangLevel();
     LocalNumbP1CL n;
     bool sign[4];
-    LocalP1CL<> p1[4];
-    Quad5CL<> q5_p[4];
-    for(int i= 0; i < 4; ++i) {
-        p1[i][i]=1.;
-        q5_p[i].assign(p1[i]);
-     }
     
+    P1FEGridfunctions p1feq;
+    TransformedP1FiniteElement transfp1fel(p1feq);
+	
+    GlobalConvDiffCoefficients global_cdcoef(D_,H_, GetVelocity() , f_ );
+	
+    ConvDiffElementVectors elvecs;
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) {
+        transfp1fel.SetTetra(*sit);    
         n.assign( *sit, RowIdx, Bndt_);
         InterfaceTetraCL cut;
         cut.Init( *sit, lset_,0.);
         bool nocut=!cut.Intersects();
-        double det, absdet;
-        double locf[4], f_p[4], f_n[4];
-        std::memset( locf,0, 4*sizeof(double));
-        std::memset( f_n,0, 4*sizeof(double));
-        std::memset( f_p,0, 4*sizeof(double));
-        SMatrixCL<3,4> G;
-        P1DiscCL::GetGradients( G, det, *sit);
-        absdet= std::fabs( det);
-        Quad5CL<> rhs( *sit, f_, time);
+        LocalConvDiffCoefficients local_cdcoef(global_cdcoef,*sit,time);	
+		
+        elvecs.ResetAll();
  
-        SetupLocalRhs( locf, rhs, q5_p, absdet);
+        SetupLocalRhs( elvecs.f, local_cdcoef.GetSourceAsQuad5(), transfp1fel);
         for(int i= 0; i < 4; ++i){
             if (n.WithUnknowns( i))
-                b.Data[n.num[i]]+= locf[i];
+                b.Data[n.num[i]]+= elvecs.f[i];
         }
         if (nocut) continue;
-        SetupLocalTwoPhaseRhs(*sit, cut, p1,f_n, f_p, f_,absdet, time);
+        SetupLocalTwoPhaseRhs(transfp1fel, cut, elvecs, local_cdcoef);
         for(int i= 0; i < 4; ++i)
             if(n.WithUnknowns(i)){
                 sign[i]= (cut.GetSign(i) == 1);
                 const IdxT xidx_i= Xidx[n.num[i]];
                 if (xidx_i!=NoIdx)
-                    b.Data[xidx_i] +=sign[i] ?  - f_n[i] :f_p[i];
+                    b.Data[xidx_i] +=sign[i] ?  - elvecs.f_n[i] :elvecs.f_p[i];
             }
     }  
 }
@@ -557,7 +548,7 @@ void TransportP1XCL::SetupNitscheSystem (MLMatDescCL& matA) const
 }
 
 /// Couplings between basis functions wrt old and new interfaces, s.t. Bilinearform-Applications
-/// A(uold,v) make sense also for the new time step (and the functions therein (like v))
+/// M(uold,v) make sense also for the new time step (and the functions therein (like v))
 void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM, IdxDescCL& RowIdx, IdxDescCL& ColIdx,
     const double time) const
 {
@@ -574,46 +565,39 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
     LocalNumbP1CL n;
     bool sign[4], oldsign[4], nocut, nocut1;
     // The 16 products of the P1-shape-functions
-    LocalP2CL<> pipj[4][4];
-    SetupPiPj(pipj);    
-
+    
+    P1FEGridfunctions p1feq;
+    TransformedP1FiniteElement transfp1fel(p1feq);
+    
+    MixedMassElementMatrices mmelmats;
+    
     DROPS_FOR_TRIANG_TETRA( MG_, lvl, sit) { 
+      
+        //set transformation information
+        transfp1fel.SetTetra(*sit);
+        
         n.assign( *sit, RowIdx, Bndt_);
         InterfaceTetraCL cut, oldcut;
         cut.Init( *sit, lset_,0.);
         oldcut.Init( *sit, oldlset_,0.);
         nocut=!cut.Intersects();
         nocut1=!oldcut.Intersects();
-        double det;
-        SMatrixCL<3,4> G;
-        P1DiscCL::GetGradients( G, det, *sit);
-        const double absdet= std::fabs( det);
-        double M11[4][4],                  ///< (FEM, FEM)
-               M12_n[4][4], M12_p[4][4],   ///< (test FEM, old XFEM)
-               M21_n[4][4], M21_p[4][4],   ///< (test new XFEM, FEM) with only new interface
-               M21[4][4],                  ///< (test new XFEM, FEM) two interfaces
-               M22[4][4];                  ///< (new XFEM, old XFEM) two interfaces
-        std::memset( M11,  0, 4*4*sizeof(double));
-        std::memset( M22,  0, 4*4*sizeof(double));
-        std::memset( M21,  0, 4*4*sizeof(double));
-        std::memset( M12_n,0, 4*4*sizeof(double));
-        std::memset( M21_n,0, 4*4*sizeof(double));
-        std::memset( M12_p,0, 4*4*sizeof(double));
-        std::memset( M21_p,0, 4*4*sizeof(double));
         
+        mmelmats.ResetAll();
+          
         // compute matrices
-	// the old interface doesn't cut the tetra 
+        // the old interface doesn't cut the tetra 
         if ( nocut1) {
             bool pPart= (oldcut.GetSign( 0) == 1);
             // couplings between standard basis functions
-            SetupLocalOnePhaseMassMatrix ( M11, absdet, H_, pPart);
+            SetupLocalOnePhaseMassMatrix ( mmelmats, transfp1fel, H_, pPart);
             // the new interface cuts the tetra
             if (!nocut){
 	        // couplings between standard basis functions and XFEM basis functions wrt new interface
-                SetupLocalOneInterfaceMassMatrix( cut, M21_n, M21_p, absdet, H_, pipj, sign, false, pPart);
+                SetupLocalOneInterfaceMassMatrix( cut, mmelmats, transfp1fel, H_, sign, false, pPart);
                 for(int i= 0; i < 4; ++i){
                     for(int j= 0; j < 4; ++j){
-                        M21[j][i]= sign[i]? -M21_n[j][i] : M21_p[j][i];
+                        mmelmats.M_XNEW_P1[i][j]= sign[i]? -mmelmats.M_XNEW_P1_n[i][j] : mmelmats.M_XNEW_P1_p[i][j];
                     }
                 }
             }
@@ -621,28 +605,28 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
         // the old interface cuts the tetra
         else {
             // couplings between standard basis functions and XFEM basis functions wrt old interface
-            SetupLocalOneInterfaceMassMatrix( oldcut, M12_n, M12_p, absdet, H_, pipj,oldsign, true, 0);
+            SetupLocalOneInterfaceMassMatrix( oldcut, mmelmats, transfp1fel, H_, oldsign, true, 0);
             for(int i= 0; i < 4; ++i){
                 for(int j= 0; j < 4; ++j){
-                    M11[j][i]= M12_n[j][i] + M12_p[j][i];
+                    mmelmats.M_P1_P1[i][j]= mmelmats.M_P1_XOLD_n[i][j] + mmelmats.M_P1_XOLD_p[i][j];
                 }
             }
             // both interfaces cut the tetra
             if (!nocut) {
                 LocalP2CL<> lp2_oldlset(*sit, oldlset_, Bndlset);
 		// couplings between XFEM basis functions wrt old and new interfaces
-                SetupLocalTwoInterfacesMassMatrix( cut, oldcut, M22, M21, absdet, H_, lp2_oldlset, pipj);
+                SetupLocalTwoInterfacesMassMatrix( cut, oldcut, mmelmats, transfp1fel, H_, lp2_oldlset);
             }
         }
         for(int i= 0; i < 4; ++i)
             if (n.WithUnknowns( i)){
                 for(int j= 0; j < 4; ++j)
                     if (n.WithUnknowns( j)) {
-                        M( n.num[i], n.num[j])+= M11[j][i];
+                        M( n.num[i], n.num[j])+= mmelmats.M_P1_P1[j][i];
                     }
                      else if (cplM!=0){
                         const double val= Bndt_.GetBndFun( n.bndnum[j])( sit->GetVertex( j)->GetCoord(), time);
-                        cplM->Data[n.num[i]]-= M11[j][i]*val;
+                        cplM->Data[n.num[i]]-= mmelmats.M_P1_P1[j][i]*val;
                     }
             }
         if (nocut && nocut1) continue;
@@ -653,11 +637,11 @@ void TransportP1XCL::SetupInstatMixedMassMatrix( MatrixCL& matM, VecDescCL* cplM
                     if(n.WithUnknowns(j)){
                         const IdxT xidx_j= oldXidx[n.num[j]];
                         if (xidx_j!=NoIdx)
-                            M( n.num[i], xidx_j)+= oldsign[j] ? - M12_n[j][i] :  M12_p[j][i];
+                            M( n.num[i], xidx_j)+= oldsign[j] ? - mmelmats.M_P1_XOLD_n[i][j] :  mmelmats.M_P1_XOLD_p[i][j];
                         if (xidx_i!=NoIdx)
-                            M( xidx_i, n.num[j])+= M21[j][i];
+                            M( xidx_i, n.num[j])+= mmelmats.M_XNEW_P1[i][j];
                         if (xidx_i!=NoIdx && xidx_j!=NoIdx)
-                            M( xidx_i, xidx_j)+= M22[j][i];
+                            M( xidx_i, xidx_j)+= mmelmats.M_XNEW_XOLD[i][j];
                      }
              }
     }
@@ -674,6 +658,9 @@ void TransportP1XCL::SetupInstatMixedMassMatrix(MLMatDescCL& matM, VecDescCL& cp
         SetupInstatMixedMassMatrix (*itM, 0, *it_row, *it_col, time);
 }
 
+
+
+/// compute \$f \left( \int_{\Gamma} [c_T]^2 dx \right)^{\frac12} \$f
 double TransportP1XCL::Interface_L2error() const
 {
     const IdxDescCL &RowIdx = idx.GetFinest(); 

@@ -335,7 +335,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 //        P1XtoP1 (*massTransp.c.RowIdx, massTransp.c.Data, p1idx, c_out.Data, c_in.Data, lset.Phi, MG);         
           
         double c_mean = massTransp.MeanDropConcentration();
-        std::cerr << "START:: Mean concentration in drop: " << c_mean <<"\n";        
+        std::cout << "START:: Mean concentration in drop: " << c_mean <<"\n";        
     }
     /// \todo rhs beruecksichtigen
     SurfactantcGP1CL surfTransp( MG, Stokes.GetBndData().Vel, C.surf_Theta, C.surf_Visc, &Stokes.v, lset.Phi, lset.GetBndData(), C.tm_StepSize, C.surf_Iter, C.surf_Tol, C.surf_OmitBound);
@@ -475,7 +475,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
         std::cout << "============================================================ step " << step << std::endl;
         double c_mean = massTransp.MeanDropConcentration();
         double t= Stokes.v.t;
-        std::cerr << "Mean concentration in drop: " << c_mean <<"\n";
+        std::cout << "Mean concentration in drop: " << c_mean <<"\n";
         
         IFInfo.Update( lset, Stokes.GetVelSolution());
 //         IFInfo.Write(Stokes.t, c_mean);
