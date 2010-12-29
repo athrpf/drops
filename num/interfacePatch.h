@@ -134,6 +134,7 @@ class InterfaceTetraCL : public InterfacePatchCL
     Uint  GetChildIdx         (Uint i)  const { return i < negChildIdx.size() ? negChildIdx[i] : posChildIdx[i-negChildIdx.size()];} ///< returns index of child containing sub tetra \a i
     Uint  GetNumTetra()         const {return negTetras.size() + posTetras.size();} ///< returns number of sub tetras
     Uint  GetNumNegTetra()      const {return negTetras.size();}                    ///< returns number of tetras with level set function < 0
+    Uint  GetNumPosTetra()      const {return posTetras.size();}                    ///< returns number of tetras with level set function > 0
     ///@}
 
     /// \name Use after ComputeCutForChild
