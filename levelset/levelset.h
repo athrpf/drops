@@ -32,6 +32,7 @@
 #include "num/fe.h"
 #include "levelset/mgobserve.h"
 #include "levelset/surfacetension.h"
+#include "num/interfacePatch.h"
 #include <vector>
 
 #ifdef _PAR

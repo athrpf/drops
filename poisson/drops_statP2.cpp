@@ -230,21 +230,21 @@ int main (int argc, char** argv)
     try
     {
         std::ifstream param;
-    	if (argc!=2)
-    	{
-    	   std::cout << "Using default parameter file: drops.param\n";
-    	   param.open( "drops.param");
-    	}
-    	else
-    	   param.open( argv[1]);
-    	if (!param)
-    	{
-    	   std::cerr << "error while opening parameter file\n";
-    	   return 1;
-    	}
-    	param >> DROPS::C;
-    	param.close();
-    	std::cout << DROPS::C << std::endl;
+        if (argc!=2)
+        {
+           std::cout << "Using default parameter file: drops.param\n";
+           param.open( "drops.param");
+        }
+        else
+           param.open( argv[1]);
+        if (!param)
+        {
+           std::cerr << "error while opening parameter file\n";
+           return 1;
+        }
+        param >> DROPS::C;
+        param.close();
+        std::cout << DROPS::C << std::endl;
 
         // time measurement
 #ifndef _PAR
@@ -268,9 +268,13 @@ int main (int argc, char** argv)
 
         // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
         DROPS::CreateGeomPoisson (mg, bdata, &PoissonCoeffCL<DROPS::Params>::Solution, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
-
+        timer.Stop();
+        std::cout << " o time " << timer.GetTime() << " s" << std::endl;
+        mg->SizeInfo(cout);
+        std::cout << line << "Set up load balancing ...\n";
         // Setup the problem
         DROPS::PoissonP2CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(DROPS::C), *bdata);
+        timer.Reset();
 #ifdef _PAR
         // Set parallel data structures
         DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();

@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include "levelset/levelset.h"
+#include "levelset/fastmarch.h"
 #include "levelset/adaptriang.h"
 #include "levelset/params.h"
 #include "levelset/surfacetension.h"
@@ -262,7 +263,7 @@ void CheckReparametrization( const LevelsetP2CL& lset, const VectorCL& phiEx)
 
 void Strategy( DROPS::AdapTriangCL& adap, DROPS::BndDataCL<>& lsbnd)
 {
-    SurfaceTensionCL sf( sigmaf, gsigma);   // dummy class
+    SurfaceTensionCL sf( sigmaf);   // dummy class
 
     LevelsetP2CL lset( adap.GetMG(), lsbnd, sf);
 
