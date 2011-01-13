@@ -146,7 +146,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lset
         sigmap  = &sigmaf;
         gsigmap = &gsigma;
     }
-    SurfaceTensionCL sf( sigmap, gsigmap);
+    SurfaceTensionCL sf( sigmap);
     LevelsetP2CL lset( MG, lsetbnd, sf, C.lvs_SD, C.lvs_CurvDiff);
 
     LevelsetRepairCL lsetrepair( lset);
