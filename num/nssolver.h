@@ -215,6 +215,7 @@ template<class NavStokesT>
     const bool useAccur=true;
 #endif
     VecDescCL v_omw( v.RowIdx);
+    v_omw.t = v.t;
     v_omw.Data= v.Data - omega_*w;
     ns.SetupNonlinear( ns.N.Data.GetFinest(), &v_omw, &cplN, ns.N.RowIdx->GetFinest());
 
@@ -295,8 +296,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
         _res= std::sqrt( ExVel.Norm_sq(d, false, useAccur, &d_acc) + ExPr.Norm_sq(e, false, useAccur, &e_acc) );
 #endif
         /// \todo(merge) Do we need this output? Or should/could we use the (*output_)?
-        IF_MASTER
-          std::cout << _iter << ": res = " << _res << " reltol: " << this->GetRelError() << std::endl;
+        std::cout << _iter << ": res = " << _res << " reltol: " << this->GetRelError() << std::endl;
         if (this->GetRelError() == true && _iter == 0)
             res0= _res;
         if (_res < _tol*res0 || _iter>=_maxiter) // if absolute errors are required, res0==1.
@@ -316,13 +316,10 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 
         // update solution:
         const double omega( relax.RelaxFactor());
-        IF_MASTER
-          std::cout << "omega = " << omega << std::endl;
+        std::cout << "omega = " << omega << std::endl;
         v.Data-= omega*w;
         p     -= omega*q;
     }
-    IF_MASTER
-
       std::cout << "overall iterations of Oseen solver:\t" << oseenIter << std::endl;
 }
 
@@ -358,8 +355,7 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 #else
         _res= std::sqrt( ExVel.Norm_sq(d, false, useAccur, &d_acc) + ExPr.Norm_sq(e, false, useAccur, &e_acc) );
 #endif
-        IF_MASTER
-          std::cout << _iter << ": res = " << _res << " reltol: " << this->GetRelError() << std::endl;
+        std::cout << _iter << ": res = " << _res << " reltol: " << this->GetRelError() << std::endl;
         if (this->GetRelError() == true && _iter == 0)
             res0= _res;
         if (_res < _tol*res0 || _iter>=_maxiter) // if absolute errors are required, res0==1.
@@ -379,13 +375,11 @@ AdaptFixedPtDefectCorrCL<NavStokesT, RelaxationPolicyT>::Solve(
 
         // update solution:
         const double omega( relax.RelaxFactor());
-        IF_MASTER
-          std::cout << "omega = " << omega << std::endl;
+        std::cout << "omega = " << omega << std::endl;
         v.Data-= omega*w;
         p     -= omega*q;
     }
-    IF_MASTER
-      std::cout << "overall iterations of Oseen solver:\t" << oseenIter << std::endl;
+    std::cout << "overall iterations of Oseen solver:\t" << oseenIter << std::endl;
 }
 
 }    // end of namespace DROPS
