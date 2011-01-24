@@ -522,10 +522,10 @@ class VecDescBaseCL
 
     /// \brief The default-constructor creates an empty vector and sets RowIdx to 0.
     VecDescBaseCL()
-        :RowIdx(0), t(0.0) {}
+        :RowIdx( 0), t( 0.0) {}
     /// \brief Initialize RowIdx with idx and contruct Data with the given size.
-    VecDescBaseCL( IdxDescCL* idx) { SetIdx( idx); }
-    VecDescBaseCL( MLIdxDescCL* idx) { SetIdx( &(idx->GetFinest()) ); }
+    VecDescBaseCL( IdxDescCL* idx) : t( 0.0) { SetIdx( idx); }
+    VecDescBaseCL( MLIdxDescCL* idx): t( 0.0) { SetIdx( &(idx->GetFinest()) ); }
 
 
     IdxDescCL* RowIdx; ///< Pointer to the index-description used for Data.
