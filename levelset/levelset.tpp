@@ -22,8 +22,6 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-#include "num/discretize.h"
-//#include "levelset/fastmarch.h"
 #include <fstream>
 
 namespace DROPS
