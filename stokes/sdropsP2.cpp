@@ -49,6 +49,7 @@
 #include <sstream>
 
 #include "out/ensightOut.h"
+#include "misc/bndmap.h"
 
 const char line[] ="----------------------------------------------------------------------------------\n";
 
@@ -968,7 +969,9 @@ void Strategy( StokesProblemT& Stokes)
     ens.Register( make_Ensight6Geom  ( MG, MG.GetLastLevel(), C.ens_GeomName,       filename + ".geo"));
     ens.Register( make_Ensight6Scalar( Stokes.GetPrSolution(),  "Pressure", filename + ".pr",  true));
     ens.Register( make_Ensight6Vector( Stokes.GetVelSolution(), "Velocity", filename + ".vel", true));
-    ens.Write();
+
+    if(C.ens_EnsightOut)
+       ens.Write();
 
     for ( int step = 1; step <= C.tm_NumSteps; ++step) {
         timer.Reset();
@@ -982,8 +985,8 @@ void Strategy( StokesProblemT& Stokes)
                   << "   - time          " << timer.GetTime()    << " s\n";
 
         // check the result
-
-        ens.Write( step*C.tm_StepSize);
+        if(C.ens_EnsightOut)
+          ens.Write( step*C.tm_StepSize);
     }
 
     if( StokesFlowCoeffCL::solution_known)
@@ -1020,6 +1023,9 @@ int main ( int argc, char** argv)
         param.close();
         std::cout << DROPS::C << std::endl;
 
+        //Schreibe LsgVel in Funktionen-Map
+        DROPS::InVecMap::getInstance().insert(std::make_pair("LsgVel",&StokesFlowCoeffCL::LsgVel));
+
         // time measurement
         DROPS::TimerCL timer;
 
@@ -1037,7 +1043,7 @@ int main ( int argc, char** argv)
         double r = 1;
         std::string serfile = "none";
 
-        DROPS::CreateGeom( mg, bdata, lsetbnddata, &StokesFlowCoeffCL::LsgVel, 0, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
+        DROPS::CreateGeom( mg, bdata, lsetbnddata, 0, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryFncs, DROPS::C.dmc_BoundaryType, serfile, r);
 
         // Setup the problem
         StokesOnBrickCL prob(*mg, StokesFlowCoeffCL( DROPS::C), *bdata);

@@ -52,6 +52,10 @@ struct NSDrCavCL
         return (.5-st<m) ? ((.5-m)/st)*ret : ret;
     }
 
+    static inline DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double)
+    {
+    	return DROPS::Point3DCL(0.);
+    }
 
     // q*u - nu*laplace u + (u*D)u + Dp = f
     //                           -div u = 0
@@ -556,7 +560,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &NSDrCavCL::Stroem};
+        { &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::ZeroVel, &NSDrCavCL::Stroem};
 
     StokesOnBrickCL stokesprob(brick, NSDrCavCL::StokesCoeffCL(), DROPS::StokesBndDataCL(6, IsNeumann, bnd_fun));
     DROPS::MultiGridCL& mg = stokesprob.GetMG();
@@ -638,7 +642,6 @@ int main (int argc, char** argv)
 
         StrategyNavSt(prob, num_ref, fp_tol, fp_maxiter, uzawa_red, poi_tol, poi_maxiter);
 
-        std::cout << "hallo" << std::endl;
         std::cout << DROPS::SanityMGOutCL(mg) << std::endl;
         std::ofstream fil("navstokespr.off");
         double min= prob.p.Data.min(),

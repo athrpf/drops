@@ -32,7 +32,7 @@ sdropsP2: \
     ../levelset/lsetparams.o ../stokes/stokesparams.o  ../out/ensightOut.o ../stokes/integrTime.o \
      ../out/vtkOut.o ../geom/geomselect.o ../poisson/poissonparams.o \
     ../stokes/instatstokes2phase.o ../levelset/levelset.o ../levelset/fastmarch.o\
-    ../levelset/surfacetension.o
+    ../levelset/surfacetension.o ../misc/bndmap.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:

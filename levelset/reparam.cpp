@@ -64,6 +64,8 @@ double Phi2( const DROPS::Point3DCL& p)
 
 double sigma (const DROPS::Point3DCL&, double) { return 0.; }
 
+DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double) { return DROPS::Point3DCL(0.); }
+
 namespace DROPS
 {  // for strategy
 
@@ -248,7 +250,7 @@ int main( int argc, char **argv)
     const bool IsNeumann[6]=
         {true, true, true, true, true, true};
     const DROPS::StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel };
+        { &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel };
 
     const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
     const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};

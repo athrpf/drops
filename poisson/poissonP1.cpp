@@ -28,8 +28,9 @@
 #include "geom/builder.h"               // construct the initial multigrid
 #include "out/output.h"
 #include "geom/geomselect.h"
+#include "misc/bndmap.h"
 
- // include numeric computing!
+// include numeric computing!
 #include "num/fe.h"
 #include "num/solver.h"
 #include "num/MGsolver.h"
@@ -215,8 +216,6 @@ namespace DROPS
 
 typedef ParamPoissonProblemCL Params;
 Params C;
-
-double Heat(const DROPS::Point3DCL&, double) { return C.exp_Heat/C.exp_Lambda*1e-3; }
 
 template<class CoeffCL, class SolverT, class ParamsT>
 void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& param)
@@ -511,7 +510,7 @@ int main (int argc, char** argv)
         std::string serfile = "none";
 
         // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
-        DROPS::CreateGeomPoisson (mg, bdata, (DROPS::C.dmc_BoundaryType == 4) ? &DROPS::Heat : &PoissonCoeffCL<DROPS::Params>::Solution, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
+        DROPS::CreateGeomPoisson (mg, bdata, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, DROPS::C.dmc_BoundaryFncs, serfile, r);
 
         // Setup the problem
         DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(DROPS::C), *bdata);

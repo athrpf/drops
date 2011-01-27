@@ -35,6 +35,7 @@
 #include "levelset/params.h"
 #include "levelset/mzelle_hdr.h"
 #include "levelset/surfacetension.h"
+#include "misc/bndmap.h"
 #include <fstream>
 
 
@@ -120,7 +121,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes, const LsetBndDataCL& lsbn
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
 
-    Stokes.InitVel( &Stokes.v, ZeroVel);
+    Stokes.InitVel( &Stokes.v, InVecMap::getInstance().find("ZeroVel")->second);
     Stokes.SetupPrMass(  &Stokes.prM, lset);
     Stokes.SetupPrStiff( &Stokes.prA, lset);
 
@@ -248,10 +249,12 @@ int main (int argc, char** argv)
     const int n= std::atoi( C.dmc_MeshFile.c_str());
     DROPS::BrickBuilderCL builder( orig, e1, e2, e3, n, n, n);
 
+    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = DROPS::InVecMap::getInstance().find("ZeroVel")->second;
+
     const DROPS::BndCondT bc[6]=
         { DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC, DROPS::WallBC};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel};
+        { ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel};
 
     const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };
     const DROPS::LsetBndDataCL::bnd_val_fun bfunls[6]= { 0,0,0,0,0,0};

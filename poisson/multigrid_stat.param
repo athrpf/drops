@@ -1,50 +1,50 @@
 #=============================================================
-#    DROPS parameter file for drops.cpp
+#    DROPS parameter file for drops_statP2.cpp
 #    simulation of poisson problem
 #=============================================================
 
 #poisson solver
 Poisson {
-	PcIter 			= 1
-	PcTol  			= 0.1
-	Iter   			= 200
+	PcIter 			= 0         # no effect in combination with MG
+	PcTol  			= 0.01      # no effect in combination with MG
+	Iter   			= 200       # maximum number of MG iterations
 	Restart			= 100		# only valid when using GMRES
 	RelativeErr		= 0			# 1 = true, 0 = false
 	Tol    			= 1.0e-10
-	Method 			= 302		# GMRES and Jacobi
-	SmoothingSteps 	= 1
-	NumLvl 			= -1
-	Relax 			= 1.0
-	SolutionIsKnown = 1		# 1 = true, 0 = false
+	Method 			= 106		# MG with SOR
+	SmoothingSteps 	= 1         # number of smoothing steps in one multigrid cycle
+	NumLvl 			= -1        # -1 = all level
+	Relax 			= 1.0       # relaxation parameter of the smoother
+	SolutionIsKnown = 1		    # 1 = true, 0 = false
 }
 
 # domain, bnd/ini conditions
 DomainCond {
- 	InitialCond   =       5						# initial refinement
+ 	InitialCond   =       4						# initial refinement
   	GeomType      =       1       				# specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder, 2=CavityBuilder, 3=LBuilder, 4=BBuilder)
   	InitialFile   =       none    				# file prefix when reading data for initial condition
-  	MeshFile      =       1x1x1@1x1x1           #1x1x1@3x3x3@1x1x1   # mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
-  	BoundaryType  =       0!0!0!0!0!0			# boundary type
-	BoundaryFncs =        Zero!Zero!Zero!Zero!Zero!Zero	#Heat!Heat!Heat!Heat!Heat!Heat
+  	MeshFile      =       1x1x1@1x1x1           # mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+  	BoundaryType  =       0!0!0!0!0!0       	# boundary type
+  	BoundaryFncs =        Zero!Zero!Zero!Zero!Zero!Zero
 }
 
 # time stepping
 Time {
 	StepSize 	= 0.1                           # time step size
 	NumSteps 	= 0                            	# number of timesteps
-	Theta 		= 1
+	Theta 		= 1                             # 1 = euler backward, 0.5 crank-nicolson
 	Scheme 		= 1                             # 1= theta scheme, 2=fractional step
-	Convection 	= 1
+	Convection 	= 1                             # add convection term
 	Nu 			= 0.20015
 }
 
 # experimental conditions
 Exp {
-	Heat 		= 5960
-	Rho 		= 866
-	Mu 			= 1.732e-3
-	Cp 			= 1500
-	Lambda 		= 0.26	 
+	Heat 		= 5960                          # valid only in combination with ipfilm.param
+	Rho 		= 866                           # valid only in combination with ipfilm.param
+	Mu 			= 1.732e-3                      # valid only in combination with ipfilm.param
+	Cp 			= 1500                          # valid only in combination with ipfilm.param
+	Lambda 		= 0.26	                        # valid only in combination with ipfilm.param
 }
 
 # Ensight settings
@@ -63,8 +63,8 @@ Err {
     MinRatio     		= 0.0
     Threshold    		= 0.6
     Meas         		= 0.875					
-    DoMark       		= 1					    # 1 = true, 0 = false	
-    DoErrorEstimate 	= 1						# 1 = true, 0 = false
+    DoMark       		= 0					    # 1 = true, 0 = false	
+    DoErrorEstimate 	= 0						# 1 = true, 0 = false
     NumRef       		= 6	
 }
 
@@ -75,3 +75,4 @@ VTK{
     VTKName       = brick     # name of vtk files
     Binary        = 0         # write out VTK files in binary format
 }
+

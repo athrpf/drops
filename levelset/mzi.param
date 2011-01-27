@@ -152,7 +152,8 @@ DomainCond {
   GeomType      =       0       # no effect
   InitialFile   =       xxx
   MeshFile      =       gambit/messzelle.msh
-  BoundaryType  =       0       # no effect
+  BoundaryType  = 0!0!0!2!2!2    # Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99 
+  BoundaryFncs  = InflowBrick!InflowBrick!InflowBrick!InflowCell!InflowCell!ZeroVel
 }
 
 # restart computation

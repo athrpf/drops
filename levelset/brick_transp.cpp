@@ -31,18 +31,10 @@
 #include "levelset/surfacetension.h"
 #include "num/bndData.h"
 #include "poisson/transport2phase.h"
+#include "misc/bndmap.h"
 #include <fstream>
 
 DROPS::ParamMesszelleNsCL C;
-
-DROPS::SVectorCL<3> Inflow (const DROPS::Point3DCL& p, double)
-{
-    DROPS::SVectorCL<3> ret(0.);
-    const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
-                 z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
-    ret[1]= x * z * C.exp_InflowVel;
-    return ret;
-}
 
 double Initialcneg (const DROPS::Point3DCL&, double)
 {
@@ -60,8 +52,7 @@ typedef DROPS::BndDataCL<> cBndDataCL;
 typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
 
 const DROPS::BndCondT v_bc[6]= { DROPS::Dir0BC, DROPS::Dir0BC, DROPS::DirBC, DROPS::DirBC, DROPS::Dir0BC, DROPS::Dir0BC };
-const vel_bnd_val_fun v_bfun[6]= { 0, 0, &Inflow, &Inflow, 0, 0 };
-
+const vel_bnd_val_fun v_bfun[6]= { 0, 0, DROPS::InVecMap::getInstance().find("InflowBrickTansp")->second, DROPS::InVecMap::getInstance().find("InflowBrickTansp")->second, 0, 0};
 const DROPS::BndCondT c_bc[6]= { DROPS::DirBC, DROPS::DirBC, DROPS::DirBC, DROPS::DirBC, DROPS::DirBC, DROPS::DirBC };
 const c_bnd_val_fun c_bfun[6]= { & Initialcpos,  & Initialcpos, & Initialcpos,& Initialcpos, & Initialcpos, & Initialcpos };
 
@@ -102,7 +93,7 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
     IdxDescCL  vidx( vecP2_FE, Bnd_v);
     vidx.CreateNumbering( MG.GetLastLevel(), MG);
     VecDescCL v( &vidx);
-    InitVel( MG, v, &Inflow);
+    InitVel( MG, v, DROPS::InVecMap::getInstance().find("InflowBrickTansp")->second);
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
     TransportP1CL c( MG, Bnd_c, Bnd_v, /*theta*/ 0.5, D, H, &v, lset,

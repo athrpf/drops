@@ -48,6 +48,7 @@ const int         FPsteps= -1;
 //            z=1 und x<0.5        Inflow Dirichlet  parabol.
 //            z=1 und x>0.5        Neumann   0   (aus Impl.gruenden: Dir.)
 
+DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double) { return DROPS::Point3DCL(0.); }
 
 // Tropfendaten:
 DROPS::Point3DCL Mitte(0.5);
@@ -254,7 +255,7 @@ int main (int argc, char** argv)
     const bool IsNeumann[6]=
         {false, false, false, false, false, false};
     const DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6]=
-        { &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel, &DROPS::ZeroVel,  &Parabol, &Parabol };
+        { &ZeroVel, &ZeroVel, &ZeroVel, &ZeroVel,  &Parabol, &Parabol };
     // parabol. Einstroembedingungen bei z=0 und z=1
 
     const DROPS::BndCondT bcls[6]= { DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC, DROPS::NoBC };

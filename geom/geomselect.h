@@ -55,7 +55,7 @@ void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomT
  * @param BC description of the boundary
  */
 void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-        instat_scalar_fun_ptr fun, int GeomType, int bnd_type, std::vector<BndCondT>& BC);
+        int GeomType, const string& bnd_type, const string& bnd_funcs, std::vector<BndCondT>& BC);
 
 /// \brief determines boundary conditions for some standard stokes problems
 /**
@@ -67,7 +67,7 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
  * @param BC description of the boundary
  */
 void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
-        instat_vector_fun_ptr inflow, int GeomType, int bnd_type, std::vector<BndCondT>& BC);
+         int GeomType, const string& bnd_funcs, const string& bnd_type, std::vector<BndCondT>& BC);
 
 /// \brief Create geometry of a Mzelle or a brick
 /**
@@ -84,9 +84,8 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
  * @param r_inlet inlet radius
  */
 void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata, LsetBndDataCL* &lsetbnddata,
-                 instat_vector_fun_ptr inflow, instat_scalar_fun_ptr lsetinflow,
-                 const std::string& meshfile_name,
-                 int GeomType, int bnd_type,
+                 instat_scalar_fun_ptr lsetinflow, const std::string& meshfile_name,
+                 int GeomType, const std::string& bnd_funcs, const std::string& bnd_type,
                  const std::string& deserialization_file, double& r_inlet);
 
 /// \brief Create geometry for a poisson problem
@@ -102,9 +101,8 @@ void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata, LsetBndDataCL* &l
  * @param r_inlet inlet radius
  */
 void CreateGeomPoisson (MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-                 instat_scalar_fun_ptr inflow,
                  const std::string& meshfile_name,
-                 int GeomType, int bnd_type,
+                 int GeomType, const std::string& bnd_type, const std::string& bnd_funcs,
                  const std::string& deserialization_file, double& r_inlet);
 
 } // end of namespace drops

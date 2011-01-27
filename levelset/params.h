@@ -432,8 +432,10 @@ class ParamDomainCondCL : public virtual ParamBaseCL
     int    dmc_InitialCond,                         ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
            dmc_GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
     string dmc_InitialFile,                         ///< file prefix when reading data for initial condition
-           dmc_MeshFile;                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
-    int    dmc_BoundaryType;                        ///< boundary type: 1= hom. Dirichlet, 2= inhom. Dirichlet bnd-data for in-/outflow, 3= tube/canal
+           dmc_MeshFile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+           dmc_BoundaryType;                         ///< boundary type: n!n!n!n!n!n with n=0: Dir0BC, n=2: DirBC, n=13: Per1BC, n=11: Per2BC
+                                                    ///< n=21: Nat0BC, n=23: NatBC, n=98: NoBC, n=99: UndefinedBC_
+    string dmc_BoundaryFncs;                        ///< boundary functions: n!n!n!n!n!n  with: n= InflowBrick, InflowCell, InflowChannel
   //@}
 
   public:

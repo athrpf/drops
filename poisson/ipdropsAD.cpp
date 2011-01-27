@@ -386,10 +386,10 @@ void Strategy(PoissonP1CL<Coeff>& Poisson, DROPS::VectorCL& sol2D, MatConnect& M
   M.SetIdx(&idx, &idx);
 
   // stationaerer Anteil
-  Poisson.SetupInstatSystem(A, M, Poisson.t);
+  Poisson.SetupInstatSystem(A, M, Poisson.x.t);
 
   // instationaere rechte Seite
-  Poisson.SetupInstatRhs(cplA, cplM, Poisson.t, b, Poisson.t);
+  Poisson.SetupInstatRhs(cplA, cplM, Poisson.x.t, b, Poisson.x.t);
 
   // PCG-Verfahren mit SSOR-Vorkonditionierer
   SSORPcCL pc(1.0);

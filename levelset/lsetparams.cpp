@@ -247,7 +247,8 @@ void ParamDomainCondCL::RegisterParams()
     rp_.RegString( dmc_InitialFile,   "InitialFile");
     rp_.RegString( dmc_MeshFile,      "MeshFile");
     rp_.RegInt(    dmc_GeomType,      "GeomType");
-    rp_.RegInt(    dmc_BoundaryType,  "BoundaryType");
+    rp_.RegString( dmc_BoundaryType,  "BoundaryType");
+    rp_.RegString( dmc_BoundaryFncs,  "BoundaryFncs");
     rp_.EndGroup();
 }
 

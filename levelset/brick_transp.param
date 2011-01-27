@@ -161,7 +161,8 @@ DomainCond {
   GeomType      =       1       # 0=ReadMeshBuilder, 1=BrickBuilder
   InitialFile   =       xxx
   MeshFile      =       4       # num subdivisions of cube
-  BoundaryType  =       1       # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet
+  BoundaryType  = 0!0!0!2!2!2    # Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99 
+  BoundaryFncs  = InflowBrick!InflowBrick!InflowBrick!InflowCell!InflowCell!ZeroVel
 }
 
 # restart computation

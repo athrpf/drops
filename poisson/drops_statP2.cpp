@@ -45,6 +45,7 @@
 #include "geom/multigrid.h"             // multigrid on each processor
 #include "geom/builder.h"               // construct the initial multigrid
 #include "geom/geomselect.h"
+#include "misc/bndmap.h"
 
  // include outputs
 #include "out/output.h"
@@ -265,9 +266,9 @@ int main (int argc, char** argv)
         //only for measuring cell, not used here
         double r = 1;
         std::string serfile = "none";
-
-        // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
-        DROPS::CreateGeomPoisson (mg, bdata, &PoissonCoeffCL<DROPS::Params>::Solution, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, serfile, r);
+        
+    	// DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
+        DROPS::CreateGeomPoisson (mg, bdata, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, DROPS::C.dmc_BoundaryFncs, serfile, r);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);

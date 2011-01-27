@@ -35,21 +35,11 @@
 #include "levelset/params.h"
 #include "levelset/mgobserve.h"
 #include "levelset/surfacetension.h"
+#include "misc/bndmap.h"
 #include <fstream>
 
 
 DROPS::ParamFilmCL C;
-
-
-DROPS::Point3DCL Inflow( const DROPS::Point3DCL& p, double t)
-{
-    DROPS::Point3DCL ret(0.);
-    const double d= p[1]/C.exp_Thickness;
-    static const double u= C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2;
-    ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.exp_PumpAmpl*std::sin(2*M_PI*t*C.exp_PumpFreq))
-                 : (C.mcl_MeshSize[1]-p[1])/(C.mcl_MeshSize[1]-C.exp_Thickness)*u;
-    return ret;
-}
 
 double DistanceFct( const DROPS::Point3DCL& p)
 {
@@ -143,6 +133,10 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
     Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
+
+    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = DROPS::InVecMap::getInstance().find("ZeroVel")->second;
+    DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = DROPS::InVecMap::getInstance().find("Inflow")->second;
+
     switch (C.mcl_InitialCond)
     {
       case 1: // stationary flow
@@ -374,23 +368,25 @@ int main (int argc, char** argv)
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6];
     bool is_periodic= false;
 
+    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = DROPS::InVecMap::getInstance().find("ZeroVel")->second;
+    DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = DROPS::InVecMap::getInstance().find("Inflow")->second;
     for (int i=0; i<6; ++i)
     {
         bc_ls[i]= DROPS::Nat0BC;
         switch(C.mcl_BndCond[i])
         {
             case 'w': case 'W':
-                bc[i]= DROPS::WallBC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
+                bc[i]= DROPS::WallBC;    bnd_fun[i]= ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case 'i': case 'I':
-                bc[i]= DROPS::DirBC;     bnd_fun[i]= &Inflow;         bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
+                bc[i]= DROPS::DirBC;     bnd_fun[i]= Inflow;         bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case 'o': case 'O':
-                bc[i]= DROPS::OutflowBC; bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
+                bc[i]= DROPS::OutflowBC; bnd_fun[i]= ZeroVel; bndType.push_back( DROPS::BoundaryCL::OtherBnd); break;
             case '1':
                 is_periodic= true;
-                bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per1Bnd); break;
+                bc_ls[i]= bc[i]= DROPS::Per1BC;    bnd_fun[i]= ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per1Bnd); break;
             case '2':
                 is_periodic= true;
-                bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= &DROPS::ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
+                bc_ls[i]= bc[i]= DROPS::Per2BC;    bnd_fun[i]= ZeroVel; bndType.push_back( DROPS::BoundaryCL::Per2Bnd); break;
             default:
                 std::cerr << "Unknown bnd condition \"" << C.mcl_BndCond[i] << "\"\n";
                 return 1;
