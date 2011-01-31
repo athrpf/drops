@@ -28,6 +28,7 @@ PAR_OBJ = $(if $(PAR_BUILD),$(PAR_OBJ_),)
 default: ClrScr dropsrep
 
 ipdropsAD: \
+    ../poisson/poissonCoeff.o \
     ../geom/boundary.o ../geom/builder.o ../poisson/ipdropsAD.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/interfacePatch.o \
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o \
@@ -35,6 +36,7 @@ ipdropsAD: \
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 poissonP1:\
+    ../poisson/poissonCoeff.o \
     ../poisson/poissonP1.o ../geom/boundary.o ../geom/builder.o ../out/ensightOut.o\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
@@ -46,6 +48,7 @@ poissonP1:\
 	$(CXX) -o $@ $^ $(LFLAGS)
 	
 drops_statP2:\
+    ../poisson/poissonCoeff.o \
     ../poisson/drops_statP2.o ../geom/boundary.o ../geom/builder.o\
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
@@ -56,12 +59,16 @@ drops_statP2:\
     ../num/hypre.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 
-matlab/ipdrops: ../geom/boundary.o ../geom/builder.o \
+matlab/ipdrops:\
+    ../poisson/poissonCoeff.o \
+    ../geom/boundary.o ../geom/builder.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o ../num/interfacePatch.o \
     ../poisson/poisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
 	$(CXX) $(CXXFLAGS) matlab/ipdrops.cpp -o $@ $^ $(LFLAGS)
 
-matlab/ipfilm: ../geom/boundary.o ../geom/builder.o ../num/interfacePatch.o \
+matlab/ipfilm:\
+    ../poisson/poissonCoeff.o \
+    ../geom/boundary.o ../geom/builder.o ../num/interfacePatch.o \
     ../geom/simplex.o ../geom/multigrid.o ../num/unknowns.o ../geom/topo.o \
     ../poisson/poisson.o ../misc/problem.o ../out/output.o ../misc/utils.o
 	$(CXX) $(CXXFLAGS) matlab/ipfilm.cpp -o $@ $^ $(LFLAGS)
