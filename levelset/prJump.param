@@ -167,4 +167,5 @@ DomainCond {
     InitialFile   = 0         # no effect
     MeshFile      = 4         # number of subdivisions
     BoundaryType  = 0         # no effect
+    BoundaryFncs  = 0         # no effect
 }
