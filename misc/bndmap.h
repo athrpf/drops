@@ -30,8 +30,8 @@ template<class T>
 class SingletonBaseCL : public std::map<std::string, T>
 {
   private:
-     SingletonBaseCL() {}                         // von außen keine Instanzen erzeugbar
-     SingletonBaseCL(const SingletonBaseCL&) {}  // nicht kopierbar
+     SingletonBaseCL() {}                         // von aussen keine Instanzen erzeugbar
+     SingletonBaseCL(const SingletonBaseCL&) : std::map<std::string, T>() { }  // nicht kopierbar
      ~SingletonBaseCL() {}
   public:
      static SingletonBaseCL& getInstance();

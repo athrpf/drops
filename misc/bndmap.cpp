@@ -41,5 +41,7 @@ template<class T>
   RegisterScalarFunction::RegisterScalarFunction(std::string name, instat_scalar_fun_ptr fptr){
 	InScaMap::getInstance().insert(std::make_pair(name,fptr));
   }
+  template class SingletonBaseCL<DROPS::instat_scalar_fun_ptr>;
+  template class SingletonBaseCL<DROPS::instat_vector_fun_ptr>;
 
 } //end of namespace DROPS
