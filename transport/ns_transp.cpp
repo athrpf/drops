@@ -38,6 +38,7 @@
 #include "transport/transportNitsche.h"
 #include "surfactant/ifacetransp.h"
 #include "levelset/twophaseutils.h"
+#include "misc/bndmap.h"
 
 #include "num/stokessolverfactory.h"
 #ifndef _PAR
@@ -62,49 +63,6 @@ DROPS::ParamMesszelleNsCL C;
 
 /// \name Inflow condition
 //@{
-///brickflow.cpp + brick_transp.cpp + brick_ns_adap.cpp
-DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
-{
-    DROPS::SVectorCL<3> ret(0.);
-    const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
-                 z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
-
-    ret[1]= x * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
-    return ret;
-}
-
-///microchannel (eindhoven)
-DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
-{
-    DROPS::SVectorCL<3> ret(0.);
-    const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
-                 z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
-
-    ret[0]= y * z * C.exp_InflowVel * (1-C.exp_InflowAmpl*std::cos(2*M_PI*C.exp_InflowFreq*t));
-    return ret;
-}
-
-///mzelle_ns_adap.cpp + mzelle_instat.cpp
-DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
-{
-    DROPS::SVectorCL<3> ret(0.);
-    const double s2= C.exp_RadInlet*C.exp_RadInlet,
-                 r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
-    ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
-    return ret;
-}
-
-///mzelle_ns_adap.cpp + mzelle_instat.cpp
-DROPS::SVectorCL<3> OneVel( const DROPS::Point3DCL& p, double)
-{
-    DROPS::SVectorCL<3> ret(0.);
-    const double s2= C.exp_RadInlet*C.exp_RadInlet,
-                 r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
-    ret[C.exp_FlowDir]= -(r2-s2)/s2*C.exp_InflowVel;
-    return ret;
-}
-
-
 double InflowLsetCell( const DROPS::Point3DCL& p, double)
 {
     return DROPS::EllipsoidCL::DistanceFct(p);
@@ -260,6 +218,7 @@ void Strategy( InstatNavierStokes2PhaseP2P1CL& Stokes,  LsetBndDataCL& lsetbndda
 //     Stokes.pr_idx.GetCoarsest(). CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
 //     Stokes.pr_idx.GetFinest().   CreateNumbering( MG.GetLastLevel(), MG, Stokes.GetBndData().Pr, 0, &lset.Phi);
 
+    StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
     Stokes.SetIdx();
     Stokes.v.SetIdx  ( vidx);
     Stokes.p.SetIdx  ( pidx);
@@ -579,8 +538,7 @@ int main (int argc, char** argv)
     DROPS::StokesBndDataCL* bnddata= 0;
     DROPS::LsetBndDataCL* lsetbnddata= 0;
 
-    CreateGeom(mg, bnddata, lsetbnddata, C.dmc_GeomType == 0 ? InflowCell : (C.dmc_BoundaryType == 4 ? InflowChannel : InflowBrick),
-               InflowLsetCell, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
+    DROPS::CreateGeom(mg, bnddata, lsetbnddata, InflowLsetCell, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryFncs, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
     DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
     DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_LoadBalStrategy : -C.ref_LoadBalStrategy), C.ref_Partitioner);
     // If we read the Multigrid, it shouldn't be modified;
