@@ -36,25 +36,30 @@ namespace DROPS
 
     template<class T>
     T SingletonBaseCL<T>::operator[](std::string s){
-      if (this->find(s) == this->end()){
-        std::ostringstream os;
-        os << "function with the name \"" << s << "\" not found in container!";
-        throw DROPSErrCL(os.str());
-      }
-      return this->find(s)->second;
+        if (this->find(s) == this->end()){
+            std::ostringstream os;
+            os << "function with the name \"" << s << "\" not found in container!";
+            throw DROPSErrCL(os.str());
+        }
+        return this->find(s)->second;
     }
 
     RegisterVelFunction::RegisterVelFunction(std::string name, instat_vector_fun_ptr fptr){
-      InVecMap::getInstance().insert(std::make_pair(name,fptr));
+        InVecMap::getInstance().insert(std::make_pair(name,fptr));
     }
 
     RegisterScalarFunction::RegisterScalarFunction(std::string name, instat_scalar_fun_ptr fptr){
-    InScaMap::getInstance().insert(std::make_pair(name,fptr));
+        InScaMap::getInstance().insert(std::make_pair(name,fptr));
+    }
+    
+    RegisterScalarFunction::RegisterScalarFunction(std::string name, scalar_fun_ptr fptr){
+        ScaMap::getInstance().insert(std::make_pair(name,fptr));
     }
 
 
 
     template class SingletonBaseCL<DROPS::instat_scalar_fun_ptr>;
     template class SingletonBaseCL<DROPS::instat_vector_fun_ptr>;
+    template class SingletonBaseCL<DROPS::scalar_fun_ptr>;
 
 } //end of namespace DROPS
