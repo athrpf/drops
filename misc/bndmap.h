@@ -21,9 +21,11 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
-#include<map>
-#include<string>
+#include <map>
+#include <string>
 #include "num/discretize.h"
+#include <sstream>
+
 namespace DROPS
 {
 template<class T>
@@ -35,6 +37,8 @@ class SingletonBaseCL : public std::map<std::string, T>
      ~SingletonBaseCL() {}
   public:
      static SingletonBaseCL& getInstance();
+     T operator[](std::string s);
+     
 };
 
 typedef SingletonBaseCL<DROPS::instat_vector_fun_ptr> InVecMap;
