@@ -108,12 +108,12 @@ class PoissonCoeffCL
     }
 };
 
+DROPS::ParamPoissonProblemCL C;
 
 namespace DROPS
 {
 
 typedef ParamPoissonProblemCL Params;
-Params C;
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
 template<class CoeffCL>
@@ -243,9 +243,9 @@ int main (int argc, char** argv)
            std::cerr << "error while opening parameter file\n";
            return 1;
         }
-        param >> DROPS::C;
+        param >> C;
         param.close();
-        std::cout << DROPS::C << std::endl;
+        std::cout << C << std::endl;
 
         // time measurement
 #ifndef _PAR
@@ -268,13 +268,13 @@ int main (int argc, char** argv)
         std::string serfile = "none";
         
     	// DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
-        DROPS::CreateGeomPoisson (mg, bdata, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryType, DROPS::C.dmc_BoundaryFncs, serfile, r);
+        DROPS::CreateGeomPoisson (mg, bdata, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.dmc_BoundaryFncs, serfile, r);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);
         std::cout << line << "Set up load balancing ...\n";
         // Setup the problem
-        DROPS::PoissonP2CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(DROPS::C), *bdata);
+        DROPS::PoissonP2CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(C), *bdata);
         timer.Reset();
 #ifdef _PAR
         // Set parallel data structures
@@ -289,11 +289,11 @@ int main (int argc, char** argv)
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << DROPS::C.dmc_InitialCond << " times regulary ...\n";
+        std::cout << "Refine the grid " << C.dmc_InitialCond << " times regulary ...\n";
         timer.Reset();
 
         // Create new tetrahedra
-        for ( int ref=1; ref<=DROPS::C.dmc_InitialCond; ++ref){
+        for ( int ref=1; ref<=C.dmc_InitialCond; ++ref){
             std::cout << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();

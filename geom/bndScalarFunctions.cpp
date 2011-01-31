@@ -21,7 +21,6 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 #include "misc/container.h"
-#include "poisson/params.h"
 #include "misc/bndmap.h"
 
 #ifndef BNDSCALARFUNCTIONS_H_
@@ -51,16 +50,6 @@ double NeuExp( const Point3DCL& p, double t){return std::pow(-1,sel)*std::exp(t)
 double NeuPoly( const Point3DCL& p, double ){return -64.0*p[0]*p[1]*(1.0-p[0])*(1.0-p[1]);}
 
 //========================================================================
-//                       Functions for poissonP1.cpp
-//========================================================================
-
-double Heat(const Point3DCL&, double)
-{
-	extern ParamPoissonProblemCL C;
-	return C.exp_Heat/C.exp_Lambda*1e-3;
-}
-
-//========================================================================
 //                   Registrierung der Funktionen
 //========================================================================
 static RegisterScalarFunction regscazero("Zero", Zero);
@@ -69,7 +58,6 @@ static RegisterScalarFunction regscaconstneg("NeuConstNeg", NeuConst<1>);
 static RegisterScalarFunction regscaexppos("NeuExpPos", DROPS::NeuExp<0>);
 static RegisterScalarFunction regscaexpneg("NeuExpNeg", DROPS::NeuExp<1>);
 static RegisterScalarFunction regscapoly("NeuPoly", NeuPoly);
-static RegisterScalarFunction regscaheat("Heat", Heat);
 
 
 }//end namespace DROPS
