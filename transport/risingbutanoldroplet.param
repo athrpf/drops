@@ -113,6 +113,7 @@ Transp {
   IniCNeg         = 0            # initial concentration (neg. part)
   NitschePenalty  = 100
   NitscheXFEMStab = 0.01
+#  SDStabilization = 0
 }
 
 # surfactant transport
@@ -158,5 +159,7 @@ DomainCond {
   GeomType      = 1	  # 0=ReadMeshBuilder, 1=BrickBuilder
   InitialFile   = none    #ensight/nsmzi
   MeshFile      = 20e-3x40e-3x20e-3@10x20x10   #8e-3x20e-3x8e-3@6x15x6 8e-3x4e-2x8e-3@4x20x4 #
-  BoundaryType  = 1   # boundary type: 0= meas. cell, 1= hom. Dirichlet, 2= inhom. Dirichlet, 3= tube
+  BoundaryType  = 2!2!2!2!2!2!    # Dir0BC= 0, DirBC= 2, Per1BC= 13, Per2BC= 11, Nat0BC= 21, NatBC= 23, NoBC= 98, UndefinedBC_= 99 
+  BoundaryFncs  = ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel!ZeroVel   #InflowBrick!InflowBrick!InflowBrick!InflowCell!InflowCell!ZeroVel
+
 }
