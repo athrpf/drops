@@ -696,6 +696,13 @@ std::vector<std::pair<T1,T2> > Map2Vec( const std::tr1::unordered_map<T1,T2>& Ma
 }
 #endif
 
+inline bool
+logical_xor (bool a, bool b)
+{
+    return ( a || b) && !(a && b);
+}
+
+
 } // end of namespace DROPS
 
 
