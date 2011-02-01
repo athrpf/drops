@@ -21,6 +21,9 @@
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
 
+#ifndef BNDMAP_H
+#define BNDMAP_H
+
 #include <map>
 #include <string>
 #include "num/discretize.h"
@@ -61,3 +64,5 @@ class RegisterScalarFunction
 };
 
 } //end of namespace DROPS
+
+#endif
