@@ -80,6 +80,9 @@ extern const Ubyte VertOfEdgeAr[NumAllEdgesC][2];
 /// Edge with given vertices
 extern const byte EdgeByVertAr[NumAllVertsC][NumAllVertsC];
 
+/// Vertex as intersection of two edges; -1, if the edges are opposites; only the upper triangular part is meaningful.
+extern const byte VertByEdgeAr[NumEdgesC][NumEdgesC];
+
 /// Edges of a given Face
 const Ubyte EdgeOfFaceAr[NumFacesC][3] = { {2,4,5}, {1,3,5}, {0,3,4}, {0,1,2} };
 
@@ -134,6 +137,12 @@ inline Ubyte VertOfEdge    (Ubyte edge, Ubyte num) { return VertOfEdgeAr[edge][n
 inline byte  EdgeByVert    (Ubyte v0, Ubyte v1) { return EdgeByVertAr[v0][v1]; }
 /// Edge opposing a given edge
 inline Ubyte OppEdge       (Ubyte edge) { return 5-edge; }
+/// Opposite vertex of edge
+inline Ubyte OppVertOfEdge (Ubyte edge, Ubyte vert)
+    { return vert == VertOfEdge( edge, 0) ? VertOfEdge( edge, 1) : VertOfEdge( edge, 0); }
+/// The intersection of two edges (-1 if the edges are opposites)
+inline byte VertByEdge (Ubyte e0, Ubyte e1)
+    { if (e0 > e1) std::swap( e0, e1); return VertByEdgeAr[e0][e1]; }
 /// Vertices of a given face
 inline Ubyte VertOfFace    (Ubyte face, Ubyte num) { return VertOfFaceAr[face][num]; }
 /// Face with given vertices

@@ -61,6 +61,14 @@ const byte EdgeByVertAr[NumAllVertsC][NumAllVertsC] = {
     {24, 14, 19, 15, 37, 42, 30, 38, -1, 32},
     {21, 18, 16, 17, 43, 34, 31, 35, 32, -1} };
 
+const byte VertByEdgeAr[NumEdgesC][NumEdgesC] = {
+    { -1,  0,  1,  0,  1, -1 },
+    { -1, -1,  2,  0, -1,  2 },
+    { -1, -1, -1, -1,  1,  2 },
+    { -1, -1, -1, -1,  3,  3},
+    { -1, -1, -1, -1, -1,  3 },
+    { -1, -1, -1, -1, -1, -1 } };
+
 
 
 const byte RefRuleAr[]= {
