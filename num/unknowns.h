@@ -52,7 +52,7 @@ class UnknownIdxCL
   private:
     std::vector<IdxT> _Idx;
 #ifdef _PAR
-    // This flag array is used for remebering if an unknowns has just been recieved
+    // This flag array is used for remembering if an unknowns has just been received
     // or if the unknown has been exist before the refinement and migration
     // algorithm has been performed. (sorry for the missleading name giving)
     mutable std::vector<bool> UnkRecieved_;
