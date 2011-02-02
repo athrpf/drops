@@ -42,8 +42,7 @@ poissonP1:\
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
     ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o\
-    ../stokes/instatstokes2phase.o ../levelset/levelset.o ../levelset/fastmarch.o\
-    ../levelset/surfacetension.o ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
+    ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
     $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 	
@@ -54,8 +53,7 @@ drops_statP2:\
     ../poisson/poisson.o ../misc/problem.o ../misc/utils.o ../out/output.o \
     ../num/fe.o ../num/discretize.o ../num/interfacePatch.o ../geom/geomselect.o\
     ../poisson/poissonparams.o ../misc/params.o ../levelset/lsetparams.o \
-    ../stokes/instatstokes2phase.o ../levelset/levelset.o ../levelset/fastmarch.o\
-    ../levelset/surfacetension.o ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
+    ../out/vtkOut.o ../misc/bndmap.o ../geom/bndScalarFunctions.o\
     ../num/hypre.o $(PAR_OBJ)
 	$(CXX) -o $@ $^ $(LFLAGS)
 

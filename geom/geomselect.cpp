@@ -24,29 +24,10 @@
 
 #include "geom/geomselect.h"
 #include <sstream>
-#include "misc/bndmap.h"
 
 namespace DROPS {
 
-
-template<typename T>
-void readBoundary (T& bndcond, const std::string& bnd_type, int size){
-
-	size_t idx;
-	std::string bndtype( bnd_type), delim("!");
-
-	while ((idx= bndtype.find_first_of( delim)) != std::string::npos )
-		bndtype[idx]= ' ';
-
-	std::istringstream bnd( bndtype);
-
-	for(int i=0; i<size;++i){
-		bnd >> bndcond[i];
-	}
-
-}
-
-void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomType, const std::string& deserialization_file, double& r_inlet, std::vector<BndCondT>& BC)
+void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomType, const std::string& deserialization_file, double& r_inlet)
 {
 #ifdef _PAR
     ParMultiGridCL::InstancePtr();
@@ -70,7 +51,6 @@ void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomT
             FileBuilderCL filebuilder( deserialization_file, mgb);
             mgp= new MultiGridCL( filebuilder);
         }
-        mgb->GetBC( BC);
         delete mgb;
     }
     if (GeomType == 1) {
@@ -193,186 +173,6 @@ void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomT
             delete mgb;
         }
 #endif
-}
-
-void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-        int GeomType, const std::string& bnd_type, const std::string& bnd_funcs, std::vector<BndCondT>& BC)
-{
-	instat_scalar_fun_ptr Zero = InScaMap::getInstance().find("Zero")->second;
-    if (GeomType == 0){
-        std::string bfunc[1];
-        readBoundary(bfunc, bnd_funcs, 1);
-        instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
-        const BoundaryCL& bnd= mgp->GetBnd();
-        const BndIdxT num_bnd= bnd.GetNumBndSeg();
-
-        BndCondT* bc = new BndCondT[num_bnd];
-        DROPS::BndDataCL<>::bnd_val_fun* bnd_fun = new DROPS::BndDataCL<>::bnd_val_fun[num_bnd];
-        for (BndIdxT i=0; i<num_bnd; ++i)
-        {
-            bnd_fun[i]= (bc[i]= BC[ i])==DirBC ? fun : InScaMap::getInstance()["Zero"];
-            std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
-        }
-        bnddata = new PoissonBndDataCL(num_bnd, bc, bnd_fun);
-        delete[] bc;
-        delete[] bnd_fun;
-    }
-    if (GeomType == 1) { //Boundary condition for BrickBuilder
-
-        BndCondT bc[6];
-        DROPS::BndDataCL<>::bnd_val_fun bfun[6];
-
-        int bcc[6];
-        std::string bfuncs[6];
-
-        readBoundary(bcc, bnd_type, 6);
-        readBoundary(bfuncs, bnd_funcs, 6);
-
-        for(int i=0; i<6;++i){
-            bc[i] = BndCondT(bcc[i]);
-            bfun[i] = InScaMap::getInstance()[bfuncs[i]];
-        }
-
-        bnddata = new PoissonBndDataCL(6, bc, bfun);
-    }
-    if (GeomType == 2) {
-        BndCondT bc[12]= { Nat0BC, Nat0BC, Nat0BC, Nat0BC, Nat0BC, Nat0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC };
-        DROPS::BndDataCL<>::bnd_val_fun bfun[12]=
-            { Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero };
-        bnddata = new PoissonBndDataCL(12, bc, bfun);
-    }
-    if (GeomType == 3) {
-
-        std::string bfunc[1];
-        readBoundary(bfunc, bnd_funcs, 1);
-        instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
-
-        BndCondT bc[14]= { DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC};
-        DROPS::BndDataCL<>::bnd_val_fun bfun[14]=
-            { fun, fun, fun, fun, fun, fun, fun, Zero, fun, fun, fun, fun, fun, fun};
-        bnddata = new PoissonBndDataCL(14, bc, bfun);
-    }
-    if (GeomType == 4) { //for BBuilder
-
-        std::string bfunc[1];
-        readBoundary(bfunc, bnd_funcs, 1);
-
-        instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
-
-        BndCondT bc[24]= { DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC,
-                           DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC};
-        DROPS::PoissonBndDataCL::bnd_val_fun bfun[24]=
-            { fun, fun, fun, fun, fun, fun, fun, fun,
-              fun, fun, fun, fun, fun, fun, fun, fun,
-              fun, fun, fun, fun, fun, fun, fun, fun };
-        bnddata = new PoissonBndDataCL(24, bc, bfun);
-    }
-}
-
-
-void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
-        int GeomType, const std::string& bnd_funcs, const std::string& bnd_type, std::vector<BndCondT>& BC)
-{
-    StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
-    if (GeomType == 0) {
-        std::string bfunc[1];
-        readBoundary(bfunc, bnd_funcs, 1);
-
-        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun;
-        bfun=InVecMap::getInstance().find(bfunc[0])->second;
-
-        const BoundaryCL& bnd= mgp->GetBnd();
-        const BndIdxT num_bnd= bnd.GetNumBndSeg();
-
-        BndCondT* bc = new BndCondT[num_bnd];
-        StokesVelBndDataCL::bnd_val_fun* bnd_fun = new StokesVelBndDataCL::bnd_val_fun[num_bnd];
-
-        for (BndIdxT i=0; i<num_bnd; ++i)
-        {
-            bnd_fun[i]= (bc[i]= BC[ i])==DirBC ? bfun : ZeroVel;
-            std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
-        }
-        bnddata = new StokesBndDataCL(num_bnd, bc, bnd_fun);
-        delete[] bc;
-        delete[] bnd_fun;
-    }
-    if (GeomType == 1) {
-        DROPS::BndCondT bc[6];
-        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[6];
-        int bcc[6];
-        std::string bfunc[6];
-
-        readBoundary(bcc, bnd_type, 6);
-        readBoundary(bfunc, bnd_funcs, 6);
-        for(int i=0; i<6;++i){
-            bc[i] = DROPS::BndCondT(bcc[i]);
-            bfun[i]=InVecMap::getInstance().find(bfunc[i])->second;
-        }
-
-        bnddata = new StokesBndDataCL(6, bc, bfun);
-    }
-    if (GeomType == 2) {
-        BndCondT bc[12]= { Nat0BC, Nat0BC, Nat0BC, Nat0BC, Nat0BC, Nat0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC, Dir0BC };
-        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[12]=
-            { ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel, ZeroVel };
-        bnddata = new StokesBndDataCL(12, bc, bfun);
-    }
-}
-
-void BuildLsetBoundaryData( MultiGridCL* &mgp, LsetBndDataCL* &bnddata,
-       __UNUSED__ instat_scalar_fun_ptr inflow, int GeomType, __UNUSED__ const std::string& bnd_type, __UNUSED__ std::vector<BndCondT>& BC)
-{
-    if (GeomType == 0) {
-        const BoundaryCL& bnd= mgp->GetBnd();
-        const BndIdxT num_bnd= bnd.GetNumBndSeg();
-
-        BndCondT* bc = new BndCondT[num_bnd];
-        LsetBndDataCL::bnd_val_fun* bnd_fun = new BndDataCL<>::bnd_val_fun[num_bnd];
-        for (BndIdxT i=0; i<num_bnd; ++i)
-        {
-            bc[i]= NoBC;
-            bnd_fun[i]= 0;
-            std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
-        }
-        bnddata = new LsetBndDataCL(num_bnd, bc, bnd_fun);
-        delete[] bc;
-        delete[] bnd_fun;
-    }
-    if (GeomType == 1) {
-        BndCondT bc[6]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
-        LsetBndDataCL::bnd_val_fun bfun[6]= {0,0,0,0,0,0};
-        bnddata = new LsetBndDataCL(6, bc, bfun);
-    }
-    if (GeomType == 2) {
-        BndCondT bc[12]= { NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC, NoBC };
-        LsetBndDataCL::bnd_val_fun bfun[12]= {0,0,0,0,0,0,0,0,0,0,0,0};
-        bnddata = new LsetBndDataCL(12, bc, bfun);
-    }
-}
-
-
-/// \brief Create geometry of a Mzelle or a brick
-void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata, LsetBndDataCL* &lsetbnddata,
-                  instat_scalar_fun_ptr lsetinflow, const std::string& meshfile_name,
-                  int GeomType,const std::string& bnd_funcs, const std::string& bnd_type,
-                  const std::string& deserialization_file, double& r_inlet)
-{
-    std::vector<BndCondT> BC;
-    BuildDomain( mgp, meshfile_name, GeomType, deserialization_file, r_inlet, BC);
-    BuildStokesBoundaryData( mgp, bnddata, GeomType, bnd_funcs, bnd_type, BC);
-    BuildLsetBoundaryData( mgp, lsetbnddata, lsetinflow, GeomType, bnd_type, BC);
-    std::cout << "Generated MG of " << mgp->GetLastLevel() << " levels." << std::endl;
-}
-
-void CreateGeomPoisson (MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-                          const std::string& meshfile_name, int GeomType,
-                          const std::string& bnd_type, const std::string& bnd_funcs,
-                          const std::string& deserialization_file, double& r_inlet)
-{
-    std::vector<BndCondT> BC;
-    BuildDomain( mgp, meshfile_name, GeomType, deserialization_file, r_inlet, BC);
-    BuildPoissonBoundaryData( mgp, bnddata, GeomType, bnd_type, bnd_funcs, BC);
-    std::cout << "Generated MG of " << mgp->GetLastLevel() << " levels." << std::endl;
 }
 
 } //end of namespace drops

@@ -30,9 +30,8 @@ sdropsP2: \
     ../num/unknowns.o ../geom/topo.o ../num/fe.o ../misc/problem.o ../num/interfacePatch.o \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../num/MGsolver.o ../misc/params.o \
     ../levelset/lsetparams.o ../stokes/stokesparams.o  ../out/ensightOut.o ../stokes/integrTime.o \
-     ../out/vtkOut.o ../geom/geomselect.o ../poisson/poissonparams.o \
-    ../stokes/instatstokes2phase.o ../levelset/levelset.o ../levelset/fastmarch.o\
-    ../levelset/surfacetension.o ../misc/bndmap.o 
+    ../out/vtkOut.o ../geom/geomselect.o ../poisson/poissonparams.o \
+    ../misc/bndmap.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:

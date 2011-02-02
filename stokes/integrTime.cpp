@@ -23,7 +23,6 @@
 */
 
 #include "stokes/integrTime.h"
-#include "stokes/instatstokes2phase.h"
 #include "num/stokessolver.h"
 
 namespace DROPS

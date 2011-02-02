@@ -387,7 +387,19 @@ int main (int argc, char** argv)
     DROPS::StokesBndDataCL* bnddata= 0;
     DROPS::LsetBndDataCL* lsetbnddata= 0;
 
-    CreateGeom(mg, bnddata, lsetbnddata, InflowLsetCell, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryFncs, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
+    DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, C.rst_Inputfile, C.exp_RadInlet);
+    DROPS::BuildBoundaryData( mg, bnddata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
+
+    // todo: reasonable implementation needed
+    std::string lsetbndtype = "98" /*NoBC*/, lsetbndfun = "Zero";
+    for( size_t i= 1; i<mg->GetBnd().GetNumBndSeg(); ++i) {
+        lsetbndtype += "!98";
+        lsetbndfun  += "!Zero";
+    }
+
+    DROPS::BuildBoundaryData( mg, lsetbnddata, lsetbndtype, lsetbndfun);
+
+    std::cout << "Generated MG of " << mg->GetLastLevel() << " levels." << std::endl;
 
     DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
     std::cout << "Taking Partitioner: " << C.ref_Partitioner << std::endl;

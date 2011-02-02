@@ -538,7 +538,20 @@ int main (int argc, char** argv)
     DROPS::StokesBndDataCL* bnddata= 0;
     DROPS::LsetBndDataCL* lsetbnddata= 0;
 
-    DROPS::CreateGeom(mg, bnddata, lsetbnddata, InflowLsetCell, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryFncs, C.dmc_BoundaryType, C.rst_Inputfile, C.exp_RadInlet);
+    DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, C.rst_Inputfile, C.exp_RadInlet);
+    DROPS::BuildBoundaryData( mg, bnddata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
+
+    // todo: reasonable implementation needed
+    std::string lsetbndtype = "98" /*NoBC*/, lsetbndfun = "Zero";
+    for( size_t i= 1; i<mg->GetBnd().GetNumBndSeg(); ++i) {
+        lsetbndtype += "!98";
+        lsetbndfun  += "!Zero";
+    }
+
+    DROPS::BuildBoundaryData( mg, lsetbnddata, lsetbndtype, lsetbndfun);
+
+    std::cout << "Generated MG of " << mg->GetLastLevel() << " levels." << std::endl;
+
     DROPS::EllipsoidCL::Init( C.exp_PosDrop, C.exp_RadDrop);
     DROPS::AdapTriangCL adap( *mg, C.ref_Width, C.ref_CoarsestLevel, C.ref_FinestLevel, ((C.rst_Inputfile == "none") ? C.ref_LoadBalStrategy : -C.ref_LoadBalStrategy), C.ref_Partitioner);
     // If we read the Multigrid, it shouldn't be modified;

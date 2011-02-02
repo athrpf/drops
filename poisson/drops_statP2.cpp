@@ -267,8 +267,8 @@ int main (int argc, char** argv)
         double r = 1;
         std::string serfile = "none";
 
-        // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
-        DROPS::CreateGeomPoisson (mg, bdata, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.dmc_BoundaryFncs, serfile, r);
+        DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, serfile, r);
+        DROPS::BuildBoundaryData( mg, bdata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
         mg->SizeInfo(cout);

@@ -1,6 +1,6 @@
 /// \file geomselect.h
 /// \brief offers build/create routines for some standard domains
-/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
+/// \author LNM RWTH Aachen: Patrick Esser, Joerg Grande, Sven Gross, Martin Horsky, Christoph Lehrenfeld, Yuanjun Zhang; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -26,8 +26,7 @@
 #define GEOMSELECT_H_
 
 #include "geom/multigrid.h"
-#include "stokes/instatstokes2phase.h"
-#include "poisson/poisson.h"
+#include "misc/bndmap.h"
 
 namespace DROPS
 {
@@ -39,72 +38,25 @@ namespace DROPS
  * @param GeomType type of the geometry: 0: GAMBIT mesh, 1: brick, 2: cavity, 3: l-brick, 4: b-brick
  * @param deserialization_file file that contains the (serialized) grid, "none": use standard builder
  * @param r_inlet inlet radius
- * @param BC description of the boundary
 */
 void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomType,
-        const std::string& deserialization_file, double& r_inlet, std::vector<BndCondT>& BC);
+        const std::string& deserialization_file, double& r_inlet);
 
 
-/// \brief determines boundary conditions for some standard poisson problems
+/// \brief determines boundary conditions
 /**
  * @param mgp a pointer of the MultiGridCL object
  * @param bnddata a pointer of the boundary data object
- * @param fun scalar function pointer which is used to construct the boundary description
- * @param GeomType type of the geometry: 0: GAMBIT mesh, 1: brick, 2: cavity, 3: l-brick, 4: b-brick
- * @param bnd_type type of the boundary: 0: measuring cell, 1: hom. Dirichlet, 2-5: different Neumann conditions, a.t.m. only valid for a brick domain
- * @param BC description of the boundary
+ * @param bnd_type function pointer which is used to construct the boundary description
+ * @param bnd_type specify boundary types, e.g. 0!0!0!2!0!0, Dir0BC= 0, DirBC= 2
+ * @param bnd_funcs specify boundary functions
  */
-void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-        int GeomType, const std::string& bnd_type, const std::string& bnd_funcs, std::vector<BndCondT>& BC);
-
-/// \brief determines boundary conditions for some standard stokes problems
-/**
- * @param mgp a pointer of the MultiGridCL object
- * @param bnddata a pointer of the boundary data object
- * @param inflow vector function pointer which is used to construct the boundary description, e.g. inflow velocity
- * @param GeomType type of the geometry: 0: GAMBIT mesh, 1: brick, 2: cavity, 3: l-brick, 4: b-brick
- * @param bnd_type type of the boundary: 0: measuring cell, 1: hom. Dirichlet, 2-5: different Neumann conditions, a.t.m. only valid for a brick domain
- * @param BC description of the boundary
- */
-void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
-         int GeomType, const std::string& bnd_funcs, const std::string& bnd_type, std::vector<BndCondT>& BC);
-
-/// \brief Create geometry of a Mzelle or a brick
-/**
- * @param mgp a pointer of the MultiGridCL object
- * @param bnddata a pointer to boundary data object (stokes)
- * @param lsetbnddata a pointer to the boundary data object (levelset)
- * @param inflow vector function pointer which is used to construct the boundary description, e.g. inflow velocity
- * @param lsetinflow scalar function pointer which is used to construct the boundary description for the levelset equation
- * @param meshfile_name name of the gambit-meshfile or list of integers/double which determine the L-/B-/Cavity-/Brick domain, e.g. 1x1x1@2x3x2
- * @param GeomType type of the geometry: 0: GAMBIT mesh, 1: brick, 2: cavity, 3: l-brick, 4: b-brick
- * @param bnd_type type of the boundary: 0: measuring cell, 1: hom. Dirichlet, 2-5: different Neumann conditions, a.t.m. only valid for a brick domain
- * @param deserialization_file file that contains the (serialized) grid, "none": use standard builder
- * @param BC description of the boundary
- * @param r_inlet inlet radius
- */
-void CreateGeom (MultiGridCL* &mgp, StokesBndDataCL* &bnddata, LsetBndDataCL* &lsetbnddata,
-                 instat_scalar_fun_ptr lsetinflow, const std::string& meshfile_name,
-                 int GeomType, const std::string& bnd_funcs, const std::string& bnd_type,
-                 const std::string& deserialization_file, double& r_inlet);
-
-/// \brief Create geometry for a poisson problem
-/**
- * @param mgp a pointer of the MultiGridCL object
- * @param bnddata a pointer of the boundary data object
- * @param inflow scalar function pointer which is used to construct the boundary description, e.g. known solution
- * @param meshfile_name name of the gambit-meshfile or list of integers/double which determine the L-/B-/Cavity-/Brick domain, e.g. 1x1x1@2x3x2
- * @param GeomType type of the geometry: 0: GAMBIT mesh, 1: brick, 2: cavity, 3: l-brick, 4: b-brick
- * @param bnd_type type of the boundary: 0: measuring cell, 1: hom. Dirichlet, 2-5: different Neumann conditions, a.t.m. only valid for a brick domain
- * @param deserialization_file file that contains the (serialized) grid, "none": use standard builder
- * @param BC description of the boundary
- * @param r_inlet inlet radius
- */
-void CreateGeomPoisson (MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-                 const std::string& meshfile_name,
-                 int GeomType, const std::string& bnd_type, const std::string& bnd_funcs,
-                 const std::string& deserialization_file, double& r_inlet);
+template< class BoundaryT>
+void BuildBoundaryData( MultiGridCL* &mgp, BoundaryT* &bnddata,
+        const std::string& bnd_type, const std::string& bnd_funcs);
 
 } // end of namespace drops
+
+#include "geom/geomselect.tpp"
 
 #endif /* GEOMSELECT_H_ */

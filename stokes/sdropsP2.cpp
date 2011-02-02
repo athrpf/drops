@@ -714,11 +714,11 @@ typedef DROPS::StokesP2P1CL<StokesFlowCoeffCL>
         StokesOnBrickCL;
 typedef StokesOnBrickCL MyStokesCL;
 
-namespace DROPS // for Strategy
-{
-
 typedef DROPS::ParamStokesProblemCL Params;
 Params C;
+
+namespace DROPS // for Strategy
+{
 
 using ::MyStokesCL;
 
@@ -1019,9 +1019,9 @@ int main ( int argc, char** argv)
             std::cerr << "error while opening parameter file\n";
             return 1;
         }
-        param >> DROPS::C;
+        param >> C;
         param.close();
-        std::cout << DROPS::C << std::endl;
+        std::cout << C << std::endl;
 
         //Schreibe LsgVel in Funktionen-Map
         DROPS::InVecMap::getInstance().insert(std::make_pair("LsgVel",&StokesFlowCoeffCL::LsgVel));
@@ -1037,27 +1037,27 @@ int main ( int argc, char** argv)
         //create geometry
         DROPS::MultiGridCL* mg= 0;
         DROPS::StokesBndDataCL* bdata = 0;
-        DROPS::LsetBndDataCL* lsetbnddata= 0;
 
         //only for measuring cell, not used here
         double r = 1;
         std::string serfile = "none";
 
-        DROPS::CreateGeom( mg, bdata, lsetbnddata, 0, DROPS::C.dmc_MeshFile, DROPS::C.dmc_GeomType, DROPS::C.dmc_BoundaryFncs, DROPS::C.dmc_BoundaryType, serfile, r);
+        DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, serfile, r);
+        DROPS::BuildBoundaryData( mg, bdata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
 
         // Setup the problem
-        StokesOnBrickCL prob(*mg, StokesFlowCoeffCL( DROPS::C), *bdata);
+        StokesOnBrickCL prob(*mg, StokesFlowCoeffCL( C), *bdata);
 
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
         // Refine the grid
         // ---------------------------------------------------------------------
-        std::cout << "Refine the grid " << DROPS::C.dmc_InitialCond << " times regulary ...\n";
+        std::cout << "Refine the grid " << C.dmc_InitialCond << " times regulary ...\n";
         timer.Reset();
 
         // Create new tetrahedra
-        for ( int ref=1; ref<=DROPS::C.dmc_InitialCond; ++ref){
+        for ( int ref=1; ref<=C.dmc_InitialCond; ++ref){
             std::cout << " refine (" << ref << ")\n";
             DROPS::MarkAll( *mg);
             mg->Refine();
@@ -1085,7 +1085,6 @@ int main ( int argc, char** argv)
 //      std::cout << DROPS::GeomMGOutCL(*mg, -1, true) << std::endl;
         delete mg;
         delete bdata;
-        delete lsetbnddata;
         return 0;
     }
     catch (DROPS::DROPSErrCL err) { err.handle(); }

@@ -35,7 +35,6 @@
 #include "num/solver.h"
 #include "num/MGsolver.h"
 #include "poisson/integrTime.h"
-#include "num/poissonsolverfactory.h"
 
  // include problem class
 #include "poisson/params.h"
@@ -64,6 +63,7 @@
 #include "num/parprecond.h"             // various parallel preconditioners
 #endif
 
+#include "num/poissonsolverfactory.h"
 
 using namespace std;
 
@@ -504,8 +504,8 @@ int main (int argc, char** argv)
         double r = 1;
         std::string serfile = "none";
 
-        // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
-        DROPS::CreateGeomPoisson (mg, bdata, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.dmc_BoundaryFncs, serfile, r);
+        DROPS::BuildDomain( mg, C.dmc_MeshFile, C.dmc_GeomType, serfile, r);
+        DROPS::BuildBoundaryData( mg, bdata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
 
         // Setup the problem
         DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(C), *bdata);

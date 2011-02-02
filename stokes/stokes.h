@@ -51,6 +51,7 @@ class StokesBndDataCL
 
     const PrBndDataCL  Pr;
     const VelBndDataCL Vel;
+    typedef VelBndDataCL::bnd_val_fun bnd_val_fun;
 };
 
 
