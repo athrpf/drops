@@ -1,6 +1,6 @@
 /// \file vtkOut.h
-/// \brief solution output in VTK legacy format
-/// \author LNM RWTH Aachen: Joerg Grande, Sven Gross, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
+/// \brief solution output in VTK XML format
+/// \author LNM RWTH Aachen: Jens Berger, Patrick Esser, Joerg Grande, Sven Gross, Martin Horsky, Volker Reichelt; SC RWTH Aachen: Oliver Fortmeier
 
 /*
  * This file is part of DROPS.
@@ -46,103 +46,70 @@ namespace DROPS
 
 class VTKVariableCL; //forward declaration
 
-/// \brief Class for writing out results of a simulation in VTK legacy format
+/// \brief Class for writing out results of a simulation in VTK XML format
 class VTKOutCL
-/** This class writes out data in VTK legacy format. Therefore all data are sent
-    to the master processor, that is responsible for the I/O. The user can write
+/** This class writes out data in VTK XML format. The user can write
     out the geometry, scalar and vector-valued finite element functions.
-
-    To use this class correct, the geometry has to be written out first. Then
-    the finite element functions can be put into the vtk files.
-
-    \todo binary output does not work correctly
 */
 {
   private:
-#ifndef _PAR
-    typedef std::map<const VertexCL*, Uint> vertexAddressMapT;
-    typedef std::map<const EdgeCL*, Uint>     edgeAddressMapT;
-    typedef VectorBaseCL<Uint>              TetraVecT;
-#else
-    typedef std::map < GIDT, Uint > GIDMapT;     // map GID to number
-    typedef std::vector< Uint >        ProcOffsetCT;// position in tetras_ where all tetras of a processor are lying
-    typedef VectorBaseCL<GIDT>      TetraVecT;
-#endif
 
-    const MultiGridCL& mg_;                         // reference to the multigrid
-    char               decDigits_;                  // number of digits for encoding time in filename
-    Uint               timestep_, numsteps_;        // actual timestep and number of timesteps
-    std::string        descstr_;                    // stores description info
-    std::string        filename_;                   // filenames
-    std::ofstream      file_;                       // actual file where to put data
-    std::map<std::string, VTKVariableCL*> vars_;    ///< The variables stored by varName.
-    const bool         binary_;                     // output in binary or ascii format
-    bool               geomwritten_;                // flag if geometry has been written
+    typedef std::map<const VertexCL*, Uint>     vertexAddressMapT;
+    typedef std::map<const EdgeCL*, Uint>         edgeAddressMapT;
+    typedef std::map<std::string, VTKVariableCL*> VTKvarMapT;
+    typedef VectorBaseCL<Uint>                    TetraVecT;
 
-#ifndef _PAR
-    vertexAddressMapT   vAddrMap_;                  // Map vertex adress to a unique (consecutive) number
-    edgeAddressMapT     eAddrMap_;                  // Map edge Adress to a unique (consecutive) number
-#else
-    size_t              mgVersion_;                 // version number of last written out multigrid (sequential version of DROPS do not provide a version-number for the MG)
-    const int           tag_;                       // tags used by this class (set to 3001)
-    GIDMapT             GIDAddrMap_;                // Map GID to unique (consecutive) number (index to a number)
-    ProcOffsetCT        procOffset_;                // index in tetras_, where tetras of a processor are lying
-#endif
+    const MultiGridCL& mg_;                         ///< reference to the multigrid
+    char               decDigits_;                  ///< number of digits for encoding time in filename
+    Uint               timestep_, numsteps_;        ///< actual timestep and number of timesteps
+    std::string        descstr_;                    ///< stores description info
+    std::string        filename_;                   ///< filenames
+    std::ofstream      file_;                       ///< actual file where to put data
+    VTKvarMapT         vars_;                       ///< The variables stored by varName.
+    const bool         binary_;                     ///< output in binary or ascii format
+    bool               geomwritten_;                ///< flag if geometry has been written
 
-    VectorBaseCL<float>   coords_;                  // Coordinates of the points
-    TetraVecT             tetras_;                  // Connectivities (tetras)
-    Uint                  numPoints_;               // number of points (only accessible by master process)
-    Uint                  numTetras_;               // number of tetras (only accessible by master process)
-    Uint                  numLocPoints_;            // number of local exclusive verts and edges
-    bool                  wrotePointDataLine_;      // flag if descibtionline for point data has been written
+    vertexAddressMapT   vAddrMap_;                  ///< Map vertex address to a unique (consecutive) number
+    edgeAddressMapT     eAddrMap_;                  ///< Map edge address to a unique (consecutive) number
 
-    /// Put timecode as postfix to a filename
+    VectorBaseCL<float>   coords_;                  ///< Coordinates of the points
+    TetraVecT             tetras_;                  ///< Connectivities (tetras)
+    Uint                  numPoints_;               ///< number of points (only accessible by master process)
+    Uint                  numTetras_;               ///< number of tetras (only accessible by master process)
+    Uint                  numLocPoints_;            ///< number of local exclusive verts and edges
+    bool                  wrotePointDataLine_;      ///< flag if description line for point data has been written
+
+    /// Puts time-code as a post-fix to the filename
     void AppendTimecode( std::string&) const;
-    /// Check if the file is open
+    /// Checks whether the file is open
     void CheckFile( const std::ofstream&) const;
-    /// Create new file
-    void NewFile( double time);
-    /// Put describtion header into file
-    void PutHeader( double time);
+    /// Creates new file
+    void NewFile( /*TODO double time */bool writeDistribution);
+    /// Puts the description header into the file
+    void PutHeader();
+    /// Puts the footer into the file
+    void PutFooter( );
+    /// Writes the variable names of the numerical data into the file
+    void WriteVarNames(std::ofstream&,bool masterfile=0);
 
-#ifdef _PAR
-    /// Check if the calling processor should gather information on the given simplex
-    template<typename SimplexT>
-    bool AmIResponsible(const SimplexT& s) const{
-        return s.IsExclusive(PrioHasUnk);
-    }
-#endif
-
-    /// \name Write out coordinates of vertices
+       /// \name Writes out coordinates of vertices
     //@{
-#ifndef _PAR
-    /// Gather coordinates and (g)ids
+    /// Gathers coordinates
     void GatherCoord();
-#else
-    /// Gather coordinates and (g)ids
-    void GatherCoord( VectorBaseCL<GIDT>&, VectorBaseCL<float>&);
-    /// Communicate coords to master
-    void CommunicateCoords(const VectorBaseCL<GIDT>&, const VectorBaseCL<float>&);
-#endif
-    /// Write coordinates into a vtk legacy file
+    /// Writes coordinates into a VTK file
     void WriteCoords();
     //@}
 
     /// \name Write out connectivities
     //@{
-#ifndef _PAR
     /// Gather tetras
     void GatherTetra();
-#else
-    /// Gather tetras
-    void GatherTetra( VectorBaseCL<GIDT>&) const;
-    /// Communicate tetras
-    void CommunicateTetra(const VectorBaseCL<GIDT>&);
-    /// Write out the distribution of tetrahedra as CELL_DATA
+
+    /// Writes out the distribution of the tetrahedra as CellData
     void WriteDistribution();
-#endif
+
     /// Write Tetras
-    void WriteTetra();
+    void WriteTetra( bool writeDistribution);
     //@}
 
     /// \name Write out FE functions
@@ -154,38 +121,37 @@ class VTKOutCL
     template <typename DiscVecT>
     void GatherVector(const DiscVecT&, VectorBaseCL<float>&) const;
     /// Write data
-    void WriteValues(const VectorBaseCL<float>&, const std::string&, int);
-#ifdef _PAR
-    /// Communicate data
-    void CommunicateValues(const VectorBaseCL<float>&, VectorBaseCL<float>&, int);
-#endif
+    void WriteValues(const VectorBaseCL<float>&, const std::string&, int, std::ofstream* masterFile= 0);
     //@}
+
+
 
   public:
     /// \brief Constructor of this class
     VTKOutCL(const MultiGridCL& mg, const std::string& dataname, Uint numsteps,
              const std::string& filename, bool binary);
     ~VTKOutCL();
-    
+
     /// \brief Register a variable or the geometry for output with Write().
     ///
     /// The class takes ownership of the objects, i. e. it destroys them with delete in its destructor.
-    void Register (VTKVariableCL& var);
-    /// Write out all registered objects.
-    void Write (double time, bool writeDistribution=false);
-    /// \brief Put geometry into the vtk file
-    void PutGeom( double time, bool writeDistribution=false);
+    void Register ( VTKVariableCL& var);
+    /// Writes out all registered objects.
+    void Write ( double time, bool writeDistribution=true);
+    /// \brief Puts geometry into the VTK file
+    void PutGeom( bool writeDistribution=true);
 
-    /// \brief Write scalar variable into file
+    /// \brief Writes scalar-valued variable into the file
     template <typename DiscScalT>
     void PutScalar( const DiscScalT&, const std::string&);
 
-    /// \brief Write vector-valued variable into file
+    /// \brief Writes vector-valued variable into the file
     template <typename DiscVecT>
     void PutVector( const DiscVecT&, const std::string&);
 
-    /// \brief End output of a file
+    /// \brief Ends output of a file
     void Commit(){
+    	PutFooter();
         file_.close();
         timestep_++;
     }
@@ -194,7 +160,7 @@ class VTKOutCL
     void Clear();
 };
 
-/// \brief Base-class for the output of a single function in Ensight6 Case format.
+/// \brief Base-class for the output of a single function in VTK format.
 ///
 /// 'put' is called for the output of the function at time t. The command objects are stored in VTKOutCL.
 class VTKVariableCL
@@ -211,6 +177,7 @@ class VTKVariableCL
 
     /// \brief Called by VTKOutCL::Write().
     virtual void put( VTKOutCL&) const= 0;
+    virtual Uint GetDim() const = 0;
 };
 
 ///\brief Represents a scalar Drops-function (P1 or P2, given as PXEvalCL) as VTK variable.
@@ -225,6 +192,7 @@ class VTKScalarCL : public VTKVariableCL
         : VTKVariableCL( varName), f_( f) {}
 
     void put( VTKOutCL& cf) const { cf.PutScalar( f_, varName()); }
+    Uint GetDim() const { return 1; }
 };
 
 ///\brief Create an VTKScalarCL<> with operator new.
@@ -249,6 +217,7 @@ class VTKVectorCL : public VTKVariableCL
         : VTKVariableCL( varName), f_( f) {}
 
     void put( VTKOutCL& cf) const { cf.PutVector( f_, varName()); }
+    Uint GetDim() const { return 3; }
 };
 
 ///\brief Create an VTKVectorCL<> with operator new.
@@ -305,7 +274,7 @@ class TwoPhaseTransportVTKCL : public TwoPhaseVTKCL<StokesCL, LevelsetCL>
                             const TransportCL& tr, Uint numsteps, const std::string& filename,
                             bool binary);
 
-    /// \brief Write alle information of a twophase problem with mass transport
+    /// \brief Write all information of a two-phase problem with mass transport
     void write();
 };
 
@@ -315,62 +284,42 @@ class TwoPhaseTransportVTKCL : public TwoPhaseVTKCL<StokesCL, LevelsetCL>
 
 template <typename DiscScalT>
   void VTKOutCL::PutScalar( const DiscScalT& f, const std::string& name)
-/** Write values of a scalar valued function into the vtk legacy file
+/** Writes the values of a scalar valued function into the VTK file
     \param name name of the function
     \param f    function*/
 {
     VectorBaseCL<float> allData;
-
-#ifndef _PAR
     GatherScalar( f, allData);
-#else
-    VectorBaseCL<float> locData;
-    GatherScalar( f, locData);
-    CommunicateValues( locData, allData, 1);
-#endif
-    WriteValues( allData, name, 1);
+    WriteValues(allData, name, 1);
 }
 
 template <typename  DiscVecT>
   void VTKOutCL::PutVector( const DiscVecT& f, const std::string& name)
-/** Write values of a scalar valued function into the vtk legacy file
+/** Writes the values of a vector valued function into the VTK file
     \param name name of the function
     \param f    function*/
 {
     VectorBaseCL<float> allData;
-
-#ifndef _PAR
     GatherVector( f, allData);
-#else
-    VectorBaseCL<float> locData;
-    GatherVector( f, locData);
-    CommunicateValues( locData, allData, 3);
-#endif
-    WriteValues( allData, name, 3);
+    WriteValues(allData, name, 3);
 }
 
 template <typename DiscScalT>
   void VTKOutCL::GatherScalar(const DiscScalT& f, VectorBaseCL<float>& locData) const
-/** Gather values of the function f on vertices and edges*/
+/** Gathers the values of the function f on vertices and edges*/
 {
-    // Allocate mem
+    // Allocate memory
     locData.resize(numLocPoints_);
 
-    // Get values of vertices
+    // Get values on vertices
     Uint pos= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
-#ifdef _PAR
-        if (AmIResponsible(*it))
-#endif
-            locData[pos++]= (float)f.val( *it);
+        locData[pos++]= (float)f.val( *it);
     }
 
     // Get values on edges
     for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
-#ifdef _PAR
-        if (AmIResponsible(*it))
-#endif
-            locData[pos++]= (float)f.val( *it, 0.5);
+        locData[pos++]= (float)f.val( *it, 0.5);
     }
 }
 
@@ -378,26 +327,22 @@ template <typename DiscVecT>
   void VTKOutCL::GatherVector(const DiscVecT& f, VectorBaseCL<float>& locData) const
 /** Gather values of the function f on vertices and edges*/
 {
-    // Allocate mem
+    // Allocate memory
     locData.resize(3*numLocPoints_);
 
     // Get values of vertices
     Uint pos= 0;
     for (MultiGridCL::const_TriangVertexIteratorCL it= mg_.GetTriangVertexBegin(); it!=mg_.GetTriangVertexEnd(); ++it){
-#ifdef _PAR
-        if (AmIResponsible(*it))
-#endif
-            for (int j=0; j<3; ++j)
-                locData[pos++]= (float)f.val( *it)[j];
+        const Point3DCL val= f.val( *it);
+        for (int j=0; j<3; ++j)
+            locData[pos++]= (float)val[j];
     }
 
     // Get values on edges
     for (MultiGridCL::const_TriangEdgeIteratorCL it= mg_.GetTriangEdgeBegin(); it!=mg_.GetTriangEdgeEnd(); ++it){
-#ifdef _PAR
-        if (AmIResponsible(*it))
-#endif
-            for (int j=0; j<3; ++j)
-                locData[pos++]= (float)f.val( *it, 0.5)[j];
+        const Point3DCL val= f.val( *it, 0.5);
+        for (int j=0; j<3; ++j)
+            locData[pos++]= (float)val[j];
     }
 }
 

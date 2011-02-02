@@ -312,6 +312,7 @@ class VTKIfaceScalarCL : public VTKVariableCL
         : VTKVariableCL( varName), u_( u), mg_( mg) {}
 
     void put      (VTKOutCL& cf) const;
+    Uint GetDim() const { return 1; }
 };
 
 ///\brief Create an VTKIfaceP1ScalarCL with operator new.
@@ -330,3 +331,4 @@ make_VTKIfaceScalar (MultiGridCL& mg, const VecDescCL& u,
 #include "surfactant/ifacetransp.tpp"
 
 #endif
+
