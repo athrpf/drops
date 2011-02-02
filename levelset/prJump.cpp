@@ -233,7 +233,7 @@ void PostProcessPr( const VecDescCL& p, VecDescCL& new_p, const MultiGridCL& mg)
     }
 }
 
-void PrintNorm( string name, const VectorCL& v)
+void PrintNorm( std::string name, const VectorCL& v)
 {
     std::cout << name << ":\t2-norm: "
         << norm( v) << "\tmax: " << supnorm( v) << std::endl;

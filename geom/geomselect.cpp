@@ -223,7 +223,7 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
         DROPS::BndDataCL<>::bnd_val_fun bfun[6];
 
         int bcc[6];
-        string bfuncs[6];
+        std::string bfuncs[6];
 
         readBoundary(bcc, bnd_type, 6);
         readBoundary(bfuncs, bnd_funcs, 6);
@@ -243,7 +243,7 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
     }
     if (GeomType == 3) {
 
-        string bfunc[1];
+        std::string bfunc[1];
         readBoundary(bfunc, bnd_funcs, 1);
         instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
 
@@ -254,7 +254,7 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
     }
     if (GeomType == 4) { //for BBuilder
 
-        string bfunc[1];
+        std::string bfunc[1];
         readBoundary(bfunc, bnd_funcs, 1);
 
         instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
@@ -275,7 +275,7 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
 {
     StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
     if (GeomType == 0) {
-        string bfunc[1];
+        std::string bfunc[1];
         readBoundary(bfunc, bnd_funcs, 1);
 
         StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun;

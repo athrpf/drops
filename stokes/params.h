@@ -48,8 +48,8 @@ class ParamStokesMaterialDataCL : public virtual ParamBaseCL
 
   //@}
   public:
-    ParamStokesMaterialDataCL()                        { RegisterParams(); }
-    ParamStokesMaterialDataCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamStokesMaterialDataCL()                             { RegisterParams(); }
+    ParamStokesMaterialDataCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the experimental data
@@ -69,8 +69,8 @@ class ParamStokesExperimentalDataCL : public virtual ParamBaseCL
               exp_InflowAmpl;                      ///< inflow amplitude
   //@}
   public:
-    ParamStokesExperimentalDataCL()                        { RegisterParams(); }
-    ParamStokesExperimentalDataCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamStokesExperimentalDataCL()                             { RegisterParams(); }
+    ParamStokesExperimentalDataCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for miscellaneous
@@ -88,8 +88,8 @@ class ParamMiscCL : public virtual ParamBaseCL
       //@}
 
   public:
-      ParamMiscCL()                        { RegisterParams(); }
-      ParamMiscCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+      ParamMiscCL()                             { RegisterParams(); }
+      ParamMiscCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 
 };
 
@@ -110,7 +110,7 @@ class ParamStokesProblemCL:
     void RegisterParams();
   public:
     ParamStokesProblemCL() { RegisterParams(); }
-    ParamStokesProblemCL( const string& filename) {
+    ParamStokesProblemCL( const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);

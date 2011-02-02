@@ -54,8 +54,8 @@ class ParamPoissonCL : public virtual ParamBaseCL
 
   //@}
   public:
-    ParamPoissonCL()                        { RegisterParams(); }
-    ParamPoissonCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamPoissonCL()                             { RegisterParams(); }
+    ParamPoissonCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 
 };
 
@@ -77,8 +77,8 @@ class ParamTimeDiscPoissonCL : public virtual ParamBaseCL
 
   //@}
   public:
-    ParamTimeDiscPoissonCL()                        { RegisterParams(); }
-    ParamTimeDiscPoissonCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamTimeDiscPoissonCL()                             { RegisterParams(); }
+    ParamTimeDiscPoissonCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the experimental data
@@ -97,8 +97,8 @@ class ParamExperimentalDataPoissonCL : public virtual ParamBaseCL
            exp_Lambda;
   //@}
   public:
-    ParamExperimentalDataPoissonCL()                        { RegisterParams(); }
-    ParamExperimentalDataPoissonCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamExperimentalDataPoissonCL()                             { RegisterParams(); }
+    ParamExperimentalDataPoissonCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for error estimator
@@ -120,8 +120,8 @@ class ParamErrCL : public virtual ParamBaseCL
   //@}
 
   public:
-      ParamErrCL()                        { RegisterParams(); }
-      ParamErrCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+      ParamErrCL()                             { RegisterParams(); }
+      ParamErrCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the poisson case
@@ -139,7 +139,7 @@ class ParamPoissonProblemCL:
     void RegisterParams();
   public:
     ParamPoissonProblemCL() { RegisterParams(); }
-    ParamPoissonProblemCL( const string& filename) {
+    ParamPoissonProblemCL( const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);

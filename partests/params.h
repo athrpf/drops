@@ -45,8 +45,8 @@ class ParamLoadBalCL : public virtual ParamBaseCL
   //@}
 
   public:
-    ParamLoadBalCL()                        { RegisterParams(); }
-    ParamLoadBalCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamLoadBalCL()                             { RegisterParams(); }
+    ParamLoadBalCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the problem case TestRefPar
@@ -89,11 +89,11 @@ class ParamParRefCL :
     int checkRef;               ///< Check parallel multigrid after every refine
     int checkMig;               ///< Check parallel multigrid after every migrate
     int checkDDD;               ///< do a DDD-GCC (Global Consistency Check)
-    string init_pre;            ///< prefix of files, where the serialized multigrid can be found
+    std::string init_pre;       ///< prefix of files, where the serialized multigrid can be found
   //@}
 
     ParamParRefCL()                        { RegisterParams(); }
-    ParamParRefCL( const string& filename) {
+    ParamParRefCL( const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);
@@ -132,7 +132,7 @@ class ParamParStokesCL :
   //@}
 
     ParamParStokesCL()                        { RegisterParams(); }
-    ParamParStokesCL( const string& filename) {
+    ParamParStokesCL( const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);
@@ -165,7 +165,7 @@ class ParamParInstatStokesCL : public virtual ParamParStokesCL
 
     ParamParInstatStokesCL() : ParamParStokesCL()
         { RegisterParams(); }
-    ParamParInstatStokesCL( const string& filename) : ParamParStokesCL()
+    ParamParInstatStokesCL( const std::string& filename) : ParamParStokesCL()
         { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
@@ -220,14 +220,14 @@ class ParamParPoissonCL : public ParamBrickCL
   /// \name Ensight
   //@{
     int ensight;
-    string EnsCase;             ///< name of Ensight Case
-    string EnsDir;              ///< local directory for Ensight files
-    string geomName;            ///< name for the geometry
-    string varName;             ///< name of the variable
+    std::string EnsCase;             ///< name of Ensight Case
+    std::string EnsDir;              ///< local directory for Ensight files
+    std::string geomName;            ///< name for the geometry
+    std::string varName;             ///< name of the variable
   //@}
 
     ParamParPoissonCL() : ParamBrickCL()       { RegisterParams(); }
-    ParamParPoissonCL( const string& filename) : ParamBrickCL() {
+    ParamParPoissonCL( const std::string& filename) : ParamBrickCL() {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);
@@ -262,7 +262,7 @@ class ParamParExchangeCL : public ParamBaseCL
     int migEveryTime;                           ///< Migration after every refinement
   //@}
     ParamParExchangeCL()                        { RegisterParams(); }
-    ParamParExchangeCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamParExchangeCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 
 };
 
@@ -284,7 +284,7 @@ class ParamParNavStokesCL : public virtual ParamParInstatStokesCL
     ParamParNavStokesCL() : ParamParInstatStokesCL()
         { RegisterParams(); }
 
-    ParamParNavStokesCL( const string& filename) : ParamParInstatStokesCL()
+    ParamParNavStokesCL( const std::string& filename) : ParamParInstatStokesCL()
         { RegisterParams();
           std::ifstream file(filename.c_str());
           ParamParInstatStokesCL::rp_.ReadParams( file);
@@ -307,7 +307,7 @@ class ParamParBrickFlowCL :
       : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamQuadCL(), ParamInfoCL()
       { RegisterParams(); }
 
-    ParamParBrickFlowCL( const string& filename) : ParamMesszelleNsCL()
+    ParamParBrickFlowCL( const std::string& filename) : ParamMesszelleNsCL()
        { RegisterParams();
          std::ifstream file(filename.c_str());
          ParamMesszelleNsCL::rp_.ReadParams( file);
@@ -332,7 +332,7 @@ class ParParamMesszelleNsCL :
       : ParamMesszelleNsCL(), ParamLoadBalCL(), ParamQuadCL()
         { RegisterParams(); }
 
-    ParParamMesszelleNsCL( const string& filename) : ParamMesszelleNsCL()
+    ParParamMesszelleNsCL( const std::string& filename) : ParamMesszelleNsCL()
        { RegisterParams();
          std::ifstream file(filename.c_str());
          rp_.ReadParams( file);
@@ -377,13 +377,13 @@ class ParamParFilmCL : public ParamBaseCL
   /// \name Ensight
   //@{
     int Ensight;                                ///< Ensight output
-    string EnsCase;                             ///< name of Ensight Case
-    string EnsDir;                              ///< local directory for Ensight files
-    string geomName;                            ///< name for the geometry
-    string varName;                             ///< name of the variable
+    std::string EnsCase;                        ///< name of Ensight Case
+    std::string EnsDir;                         ///< local directory for Ensight files
+    std::string geomName;                       ///< name for the geometry
+    std::string varName;                        ///< name of the variable
   //@}
-    ParamParFilmCL()                        { RegisterParams(); }
-    ParamParFilmCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamParFilmCL()                             { RegisterParams(); }
+    ParamParFilmCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the problem case TestMGSerPar
@@ -408,7 +408,7 @@ class ParamParSerCL :
     int unknowns;               ///< test with or without unknowns
 
     ParamParSerCL()                        { RegisterParams(); }
-    ParamParSerCL( const string& filename) {
+    ParamParSerCL( const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);

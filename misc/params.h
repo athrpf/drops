@@ -33,8 +33,6 @@
 namespace DROPS
 {
 
-using std::string;
-
 ///   \brief Parser for parameter files used by ParamBaseCL.
 ///
 ///   Usage:
@@ -44,20 +42,20 @@ using std::string;
 class ReadParamsCL
 {
   private:
-    typedef std::map<string,std::pair<char,bool> > InfoT; // (type,initialized)
+    typedef std::map<std::string,std::pair<char,bool> > InfoT; // (type,initialized)
 
-    string                      group_, name_;
-    InfoT                       info_;
+    std::string                        group_, name_;
+    InfoT                              info_;
 
-    std::map<string,int*>       iparam_;
-    std::map<string,double*>    dparam_;
-    std::map<string,Point3DCL*> cparam_;
-    std::map<string,string*>    sparam_;
+    std::map<std::string,int*>         iparam_;
+    std::map<std::string,double*>      dparam_;
+    std::map<std::string,Point3DCL*>   cparam_;
+    std::map<std::string,std::string*> sparam_;
 
-    bool IsKnown( const string& s) { return info_.find( s) != info_.end(); }
+    bool IsKnown( const std::string& s) { return info_.find( s) != info_.end(); }
     void ReadEntry( std::istream&);
     void ReadData ( std::istream&);
-    void SetInfo( string&, char);
+    void SetInfo( std::string&, char);
     void PrintWarning() const;
 
   public:
@@ -66,10 +64,10 @@ class ReadParamsCL
     /// \name Registration
     //@{
     /// Register parameters under a certain name.
-    void RegInt   ( int&,       string);
-    void RegDouble( double&,    string);
-    void RegCoord ( Point3DCL&, string);
-    void RegString( string&,    string);
+    void RegInt   ( int&,         std::string);
+    void RegDouble( double&,      std::string);
+    void RegCoord ( Point3DCL&,   std::string);
+    void RegString( std::string&, std::string);
     //@}
 
     /// \name Groups
@@ -77,7 +75,7 @@ class ReadParamsCL
     /// Parameters can be arranged in groups by enclosing Begin/EndGroup-calls
     /// during the registration. Recursive calls lead to nested groups.
     //@{
-    void BeginGroup( const string& group);
+    void BeginGroup( const std::string& group);
     void EndGroup();
     //@}
 

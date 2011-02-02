@@ -55,7 +55,7 @@ void BuildDomain( MultiGridCL* &mgp, const std::string& meshfile_name, int GeomT
  * @param BC description of the boundary
  */
 void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
-        int GeomType, const string& bnd_type, const string& bnd_funcs, std::vector<BndCondT>& BC);
+        int GeomType, const std::string& bnd_type, const std::string& bnd_funcs, std::vector<BndCondT>& BC);
 
 /// \brief determines boundary conditions for some standard stokes problems
 /**
@@ -67,7 +67,7 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
  * @param BC description of the boundary
  */
 void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
-         int GeomType, const string& bnd_funcs, const string& bnd_type, std::vector<BndCondT>& BC);
+         int GeomType, const std::string& bnd_funcs, const std::string& bnd_type, std::vector<BndCondT>& BC);
 
 /// \brief Create geometry of a Mzelle or a brick
 /**

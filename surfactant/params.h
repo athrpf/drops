@@ -83,11 +83,11 @@ class ParamSurfactantCL: public ParamBaseCL
     int    TestCase,                            ///< 0: Laplace-Beltrami on sphere, v=0
            cdiv;                                ///< \# divisions of initial cube
 
-    string EnsCase,                             ///< name of Ensight Case, "none"= no output
-           EnsDir;                              ///< local directory for Ensight files
+    std::string EnsCase,                        ///< name of Ensight Case, "none"= no output
+                EnsDir;                         ///< local directory for Ensight files
 
-    ParamSurfactantCL ()                       { RegisterParams(); }
-    ParamSurfactantCL (const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamSurfactantCL ()                            { RegisterParams(); }
+    ParamSurfactantCL (const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 } // end of namespace DROPS

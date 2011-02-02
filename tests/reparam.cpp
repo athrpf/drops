@@ -121,7 +121,7 @@ class MyParamCL: public ParamBrickCL,    public ParamReparamCL,
     void RegisterParams() {}
   public:
     MyParamCL() { RegisterParams(); }
-    MyParamCL( const string& filename) {
+    MyParamCL( const std::string& filename) {
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);
         ParamBrickCL::rp_.ReadParams( file);

@@ -40,16 +40,16 @@ class ParamEnsightCL : public virtual ParamBaseCL
   /// \name Ensight
   //@{
     int    ens_EnsightOut;                          ///< Ensight output
-    string ens_EnsCase;                             ///< name of Ensight Case
-    string ens_EnsDir;                              ///< local directory for Ensight files
-    string ens_GeomName;                            ///< name for the geometry
+    std::string ens_EnsCase;                        ///< name of Ensight Case
+    std::string ens_EnsDir;                         ///< local directory for Ensight files
+    std::string ens_GeomName;                       ///< name for the geometry
     int    ens_MasterOut;                           ///< only master writes out ensight files
     int    ens_Binary;                              ///< write out ensight files in binary format
   //@}
 
   public:
-    ParamEnsightCL()                        { RegisterParams(); }
-    ParamEnsightCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamEnsightCL()                             { RegisterParams(); }
+    ParamEnsightCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for VTK parameter
@@ -62,14 +62,14 @@ class ParamVTKCL : public virtual ParamBaseCL
   /// \name VTK
   //@{
     int    vtk_VTKOut;                           ///< VTK output
-    string vtk_VTKDir;                           ///< local directory for vtk files
-    string vtk_VTKName;                          ///< name of vtk files
+    std::string vtk_VTKDir;                      ///< local directory for vtk files
+    std::string vtk_VTKName;                     ///< name of vtk files
     int    vtk_Binary;                           ///< write out VTK files in binary format
   //@}
 
   public:
     ParamVTKCL()                        { RegisterParams(); }
-    ParamVTKCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamVTKCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for general information outputs
@@ -86,8 +86,8 @@ class ParamInfoCL : public virtual ParamBaseCL
     int inf_CheckMG;                ///< check multigrid for sanety
     //@}
   public:
-    ParamInfoCL()                        { RegisterParams(); }
-    ParamInfoCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamInfoCL()                             { RegisterParams(); }
+    ParamInfoCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for output on a quadrilateral grid
@@ -104,12 +104,12 @@ class ParamQuadCL : public virtual ParamBaseCL
     Point3DCL qlg_Stepsize;                         ///< Stepsize in each direction
     Point3DCL qlg_Barycenter;                       ///< Barycenter of the grid
     Point3DCL qlg_Rotation;                         ///< Rotation
-    string qlg_FileName;                            ///< name of the result-file
+    std::string qlg_FileName;                       ///< name of the result-file
   //@}
 
   public:
-    ParamQuadCL()                        { RegisterParams(); }
-    ParamQuadCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamQuadCL()                             { RegisterParams(); }
+    ParamQuadCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for (de-)serialization of a (parallel) multigrid
@@ -125,13 +125,13 @@ class ParamMGSerCL : public virtual ParamBaseCL
     int    rst_Overwrite;                     ///< Overwrite old output-files or create new for every step
     int    rst_Binary;                        ///< Binary or ASCII mode
 
-    string rst_Outputfile,                    ///< writes multigrid to serialisation files
-           rst_Inputfile;                     ///< reads multigrid from deserialization files, special value "none" to ignore
+    std::string rst_Outputfile,               ///< writes multigrid to serialisation files
+                rst_Inputfile;                ///< reads multigrid from deserialization files, special value "none" to ignore
   //@}
 
   public:
-    ParamMGSerCL()                        { RegisterParams(); }
-    ParamMGSerCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamMGSerCL()                             { RegisterParams(); }
+    ParamMGSerCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for creating a brick
@@ -151,8 +151,8 @@ class ParamBrickCL : public virtual ParamBaseCL
   //@}
 
   public:
-    ParamBrickCL()                        { RegisterParams(); }
-    ParamBrickCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamBrickCL()                             { RegisterParams(); }
+    ParamBrickCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for reparametrization
@@ -172,8 +172,8 @@ class ParamReparamCL : public virtual ParamBaseCL
   //@}
 
   public:
-    ParamReparamCL()                        { RegisterParams(); }
-    ParamReparamCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamReparamCL()                             { RegisterParams(); }
+    ParamReparamCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for Stokes equation
@@ -198,8 +198,8 @@ class ParamStokesCL : public virtual ParamBaseCL
 
   //@}
   public:
-    ParamStokesCL()                        { RegisterParams(); }
-    ParamStokesCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamStokesCL()                             { RegisterParams(); }
+    ParamStokesCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for adaptive refinement (with level-set function)
@@ -220,8 +220,8 @@ class ParamAdaptRefCL : public virtual ParamBaseCL
   //@}
 
   public:
-    ParamAdaptRefCL()                        { RegisterParams(); }
-    ParamAdaptRefCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamAdaptRefCL()                             { RegisterParams(); }
+    ParamAdaptRefCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for Navier-Stokes-Solver
@@ -239,8 +239,8 @@ class ParamNavStokesCL : public virtual ParamBaseCL
     int    ns_Iter;              ///< Maximal number of iterations of the solver
     //@}
   public:
-    ParamNavStokesCL()                        { RegisterParams(); }
-    ParamNavStokesCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamNavStokesCL()                             { RegisterParams(); }
+    ParamNavStokesCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for time discretisation
@@ -257,8 +257,8 @@ class ParamTimeDiscCL : public virtual ParamBaseCL
     int    tm_Scheme;                              ///< time integration scheme, see mzelle_hdr.h::CreateTimeDisc(...) for details
   //@}
   public:
-    ParamTimeDiscCL()                        { RegisterParams(); }
-    ParamTimeDiscCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamTimeDiscCL()                             { RegisterParams(); }
+    ParamTimeDiscCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for Level-Set
@@ -279,8 +279,8 @@ class ParamLevelSetCL : public virtual ParamBaseCL
 
   //@}
   public:
-    ParamLevelSetCL()                        { RegisterParams(); }
-    ParamLevelSetCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamLevelSetCL()                             { RegisterParams(); }
+    ParamLevelSetCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for coupling between level set function and Navier-Stokes equation
@@ -298,8 +298,8 @@ class ParamCouplingCL : public virtual ParamBaseCL
     double cpl_Projection;                      ///< 1 = perform a projection step before FP
   //@}
   public:
-    ParamCouplingCL()                        { RegisterParams(); }
-    ParamCouplingCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamCouplingCL()                             { RegisterParams(); }
+    ParamCouplingCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the material data
@@ -320,8 +320,8 @@ class ParamMaterialDataCL : public virtual ParamBaseCL
            mat_SmoothZone;                      ///< width of smooth transition zone for jumping coefficients
   //@}
   public:
-    ParamMaterialDataCL()                        { RegisterParams(); }
-    ParamMaterialDataCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamMaterialDataCL()                             { RegisterParams(); }
+    ParamMaterialDataCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the experimental data
@@ -343,8 +343,8 @@ class ParamExperimentalDataCL : public virtual ParamBaseCL
               exp_InflowAmpl;                      ///< inflow amplitude
   //@}
   public:
-    ParamExperimentalDataCL()                        { RegisterParams(); }
-    ParamExperimentalDataCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamExperimentalDataCL()                             { RegisterParams(); }
+    ParamExperimentalDataCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the surface tension
@@ -363,8 +363,8 @@ class ParamSurfaceTensionCL : public virtual ParamBaseCL
            sft_DirtFactor;                       ///< red. factor for surface tension (due to contamination) in lower droplet)
   //@}
   public:
-    ParamSurfaceTensionCL()                        { RegisterParams(); }
-    ParamSurfaceTensionCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamSurfaceTensionCL()                            { RegisterParams(); }
+    ParamSurfaceTensionCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the mass transport
@@ -390,8 +390,8 @@ class ParamTransportCL : public virtual ParamBaseCL
            trp_NitscheXFEMStab;              ///< threshold for discarding ext. dofs parameter, default 0.1
   //@}
   public:
-    ParamTransportCL()                        { RegisterParams(); }
-    ParamTransportCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamTransportCL()                             { RegisterParams(); }
+    ParamTransportCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for surfactant transport
@@ -413,7 +413,7 @@ class ParamSurfactantTransportCL : public virtual ParamBaseCL
 
   public:
     ParamSurfactantTransportCL () { RegisterParams(); }
-    ParamSurfactantTransportCL (const string& filename) {
+    ParamSurfactantTransportCL (const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams (file);
@@ -431,16 +431,16 @@ class ParamDomainCondCL : public virtual ParamBaseCL
   //@{
     int    dmc_InitialCond,                         ///< initial condition (0=Zero, 1/2= stat. flow with/without droplet, -1= read from file)
            dmc_GeomType;                            ///< specifies the used geometry (0=ReadMeshBuilder, 1=BrickBuilder)
-    string dmc_InitialFile,                         ///< file prefix when reading data for initial condition
-           dmc_MeshFile,                            ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
-           dmc_BoundaryType;                         ///< boundary type: n!n!n!n!n!n with n=0: Dir0BC, n=2: DirBC, n=13: Per1BC, n=11: Per2BC
+    std::string dmc_InitialFile,                    ///< file prefix when reading data for initial condition
+                dmc_MeshFile,                       ///< mesh file (created by GAMBIT, FLUENT/UNS format) or dimensions of a cuboid (e.g. 2x3x4\@5x6x7)
+                dmc_BoundaryType;                   ///< boundary type: n!n!n!n!n!n with n=0: Dir0BC, n=2: DirBC, n=13: Per1BC, n=11: Per2BC
                                                     ///< n=21: Nat0BC, n=23: NatBC, n=98: NoBC, n=99: UndefinedBC_
-    string dmc_BoundaryFncs;                        ///< boundary functions: n!n!n!n!n!n  with: n= InflowBrick, InflowCell, InflowChannel
+    std::string dmc_BoundaryFncs;                   ///< boundary functions: n!n!n!n!n!n  with: n= InflowBrick, InflowCell, InflowChannel
   //@}
 
   public:
-    ParamDomainCondCL()                        { RegisterParams(); }
-    ParamDomainCondCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamDomainCondCL()                             { RegisterParams(); }
+    ParamDomainCondCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 /// \brief Parameter class for the problem case
@@ -468,7 +468,7 @@ class ParamMesszelleNsCL:
     void RegisterParams();
   public:
     ParamMesszelleNsCL() { RegisterParams(); }
-    ParamMesszelleNsCL( const string& filename) {
+    ParamMesszelleNsCL( const std::string& filename) {
         RegisterParams();
         std::ifstream file(filename.c_str());
         rp_.ReadParams( file);
@@ -536,15 +536,15 @@ class ParamFilmCL: public ParamBaseCL
 
     int    rpm_Freq, rpm_Method;                    // Parameter fuer Reparametrisierung
 
-    string mcl_EnsightCase,                         // Ensight Case,
+    std::string mcl_EnsightCase,                    // Ensight Case,
            mcl_EnsightDir,                          // lok.Verzeichnis, in das die geom/vec/scl-files abgelegt werden
            mcl_InitialFile,
            mcl_BndCond,
            mcl_SerializationFile,                   ///< writes multigrid to serialisation files, special value "none" to ignore
            mcl_DeserializationFile;                 ///< reads multigrid from deserialization files, special value "none" to ignore
 
-    ParamFilmCL()                        { RegisterParams(); }
-    ParamFilmCL( const string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+    ParamFilmCL()                             { RegisterParams(); }
+    ParamFilmCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
 } // end of namespace DROPS

@@ -31,7 +31,7 @@ namespace DROPS
 //                    ReadParamsCL
 // =====================================================
 
-void ReadParamsCL::SetInfo( string& bez, char typ)
+void ReadParamsCL::SetInfo( std::string& bez, char typ)
 {
     bez= group_ + bez;
     if (!IsKnown(bez))
@@ -43,31 +43,31 @@ void ReadParamsCL::SetInfo( string& bez, char typ)
         throw DROPSErrCL( "ReadParamsCL: Parameter "+bez+" already registered");
 }
 
-void ReadParamsCL::RegInt( int& ref, string bez)
+void ReadParamsCL::RegInt( int& ref, std::string bez)
 {
     SetInfo( bez, 'i');
     iparam_[bez]= &ref;
 }
 
-void ReadParamsCL::RegDouble( double& ref, string bez)
+void ReadParamsCL::RegDouble( double& ref, std::string bez)
 {
     SetInfo( bez, 'd');
     dparam_[bez]= &ref;
 }
 
-void ReadParamsCL::RegCoord( Point3DCL& ref, string bez)
+void ReadParamsCL::RegCoord( Point3DCL& ref, std::string bez)
 {
     SetInfo( bez, 'c');
     cparam_[bez]= &ref;
 }
 
-void ReadParamsCL::RegString( string& ref, string bez)
+void ReadParamsCL::RegString( std::string& ref, std::string bez)
 {
     SetInfo( bez, 's');
     sparam_[bez]= &ref;
 }
 
-void ReadParamsCL::BeginGroup( const string& s)
+void ReadParamsCL::BeginGroup( const std::string& s)
 {
     group_+= s;
     group_+= ":";
@@ -126,7 +126,7 @@ void ReadParamsCL::ReadData( std::istream& is)
         is.ignore( 256, '\n');
         return;
     }
-    int i= 0; double d= 0; Point3DCL p(0.); string s;
+    int i= 0; double d= 0; Point3DCL p(0.); std::string s;
     char typ= info_[name_].first;
     switch (typ)
     {
@@ -188,7 +188,7 @@ void ReadParamsCL::WriteParams( std::ostream& os) const
     for (InfoT::const_iterator it= info_.begin(), end= info_.end();
         it!=end; ++it)
     {
-        string bez= it->first;
+        std::string bez= it->first;
         char typ= it->second.first;
         os << bez << "\t=\t";
         switch(typ)
