@@ -38,7 +38,7 @@ DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double) { return DROPS::Point
 /// \name inflow condition
 DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
 {
-	extern DROPS::ParamMesszelleNsCL C;
+    extern DROPS::ParamMesszelleNsCL C;
     DROPS::SVectorCL<3> ret(0.);
     const double x = p[0]*(2* C.exp_RadInlet -p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
                  z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
@@ -52,7 +52,7 @@ DROPS::SVectorCL<3> InflowBrick( const DROPS::Point3DCL& p, double t)
 ///microchannel (eindhoven)
 DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
 {
-	extern DROPS::ParamMesszelleNsCL C;
+    extern DROPS::ParamMesszelleNsCL C;
     DROPS::SVectorCL<3> ret(0.);
     const double y = p[1]*(2*25e-6-p[1]) / (25e-6*25e-6),
                  z = p[2]*(2*50e-6-p[2]) / (50e-6*50e-6);
@@ -65,7 +65,7 @@ DROPS::SVectorCL<3> InflowChannel( const DROPS::Point3DCL& p, double t)
 ///mzelle_ns_adap.cpp + mzelle_instat.cpp
 DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
 {
-	extern DROPS::ParamMesszelleNsCL C;
+    extern DROPS::ParamMesszelleNsCL C;
     DROPS::SVectorCL<3> ret(0.);
     const double s2= C.exp_RadInlet*C.exp_RadInlet,
                  r2= p.norm_sq() - p[C.exp_FlowDir]*p[C.exp_FlowDir];
@@ -80,7 +80,7 @@ DROPS::SVectorCL<3> InflowCell( const DROPS::Point3DCL& p, double)
 
 DROPS::SVectorCL<3> InflowBrickTransp (const DROPS::Point3DCL& p, double)
 {
-	extern DROPS::ParamMesszelleNsCL C;
+    extern DROPS::ParamMesszelleNsCL C;
     DROPS::SVectorCL<3> ret(0.);
     const double x = p[0]*(2*C.exp_RadInlet-p[0]) / (C.exp_RadInlet*C.exp_RadInlet),
                  z = p[2]*(2*C.exp_RadInlet-p[2]) / (C.exp_RadInlet*C.exp_RadInlet);
@@ -94,7 +94,7 @@ DROPS::SVectorCL<3> InflowBrickTransp (const DROPS::Point3DCL& p, double)
 
 DROPS::Point3DCL Inflow( const DROPS::Point3DCL& p, double t)
 {
-	extern DROPS::ParamFilmCL C;
+    extern DROPS::ParamFilmCL C;
     DROPS::Point3DCL ret(0.);
     const double d= p[1]/C.exp_Thickness;
     static const double u= C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2;
@@ -107,9 +107,9 @@ DROPS::Point3DCL Inflow( const DROPS::Point3DCL& p, double t)
 //                      Registrierung der Funktionen
 //========================================================================
 
-static DROPS::RegisterVelFunction regvelbrick("InflowBrick", InflowBrick);
-static DROPS::RegisterVelFunction regvelcell("InflowCell", InflowCell);
-static DROPS::RegisterVelFunction regvelchannel("InflowChannel", InflowChannel);
-static DROPS::RegisterVelFunction regvelzerovel("ZeroVel", ZeroVel);
-static DROPS::RegisterVelFunction regvelbricktransp("InflowBrickTransp", InflowBrickTransp);
+static DROPS::RegisterVectorFunction regvelbrick("InflowBrick", InflowBrick);
+static DROPS::RegisterVectorFunction regvelcell("InflowCell", InflowCell);
+static DROPS::RegisterVectorFunction regvelchannel("InflowChannel", InflowChannel);
+static DROPS::RegisterVectorFunction regvelzerovel("ZeroVel", ZeroVel);
+static DROPS::RegisterVectorFunction regvelbricktransp("InflowBrickTransp", InflowBrickTransp);
 

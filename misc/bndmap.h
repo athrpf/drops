@@ -32,35 +32,34 @@
 namespace DROPS
 {
 template<class T>
-class SingletonBaseCL : public std::map<std::string, T>
+class SingletonMapCL : public std::map<std::string, T>
 {
   private:
-     SingletonBaseCL() {}                         // von aussen keine Instanzen erzeugbar
-     SingletonBaseCL(const SingletonBaseCL&) : std::map<std::string, T>() { }  // nicht kopierbar
-     ~SingletonBaseCL() {}
+    SingletonMapCL() {}                         // von aussen keine Instanzen erzeugbar
+    SingletonMapCL(const SingletonMapCL&) : std::map<std::string, T>() { }  // nicht kopierbar
+    ~SingletonMapCL() {}
   public:
-     static SingletonBaseCL& getInstance();
-     T operator[](std::string s);
-     
+    static SingletonMapCL& getInstance();
+    T operator[](std::string s);
 };
 
-typedef SingletonBaseCL<DROPS::instat_vector_fun_ptr> InVecMap;
-typedef SingletonBaseCL<DROPS::instat_scalar_fun_ptr> InScaMap;
-typedef SingletonBaseCL<DROPS::scalar_fun_ptr> ScaMap;
+typedef SingletonMapCL<DROPS::instat_vector_fun_ptr> InVecMap;
+typedef SingletonMapCL<DROPS::instat_scalar_fun_ptr> InScaMap;
+typedef SingletonMapCL<DROPS::scalar_fun_ptr> ScaMap;
 
 Point3DCL TestFunction(const Point3DCL& , double);
 
-class RegisterVelFunction
+class RegisterVectorFunction
 {
-	public:
-	RegisterVelFunction(std::string, instat_vector_fun_ptr);
+  public:
+    RegisterVectorFunction(std::string, instat_vector_fun_ptr);
 };
 
 class RegisterScalarFunction
 {
-	public:
-	RegisterScalarFunction(std::string, instat_scalar_fun_ptr);
-	RegisterScalarFunction(std::string, scalar_fun_ptr);
+  public:
+    RegisterScalarFunction(std::string, instat_scalar_fun_ptr);
+    RegisterScalarFunction(std::string, scalar_fun_ptr);
 };
 
 } //end of namespace DROPS

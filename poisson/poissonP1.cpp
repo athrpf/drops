@@ -140,17 +140,17 @@ class PoissonCoeffCL
     static double dx_, dy_;
 
   public:
-	PoissonCoeffCL( ParamsT& params) {
-		C_ = params;
-		int nx_,ny_,nz_;
-		double dz_;
-		std::string mesh( C_.dmc_MeshFile), delim("x@");
-		size_t idx_;
-		while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
-		mesh[idx_]= ' ';
-		std::istringstream brick_info( mesh);
-		brick_info >> dx_ >> dy_ >> dz_ >> nx_ >> ny_ >> nz_;
-	}
+    PoissonCoeffCL( ParamsT& params) {
+    C_ = params;
+    int nx_,ny_,nz_;
+    double dz_;
+    std::string mesh( C_.dmc_MeshFile), delim("x@");
+    size_t idx_;
+    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
+        mesh[idx_]= ' ';
+        std::istringstream brick_info( mesh);
+        brick_info >> dx_ >> dy_ >> dz_ >> nx_ >> ny_ >> nz_;
+    }
     static double q(const DROPS::Point3DCL&, double) { return 0.0; }
     static double alpha(const DROPS::Point3DCL&, double)
       { return 1; }
@@ -230,7 +230,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
     ParTimerCL timer;
 #endif
 
-	if ( !doErrorEstimate) {
+    if ( !doErrorEstimate) {
         Poisson.SetupSystem( Poisson.A, Poisson.b);
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
@@ -244,24 +244,22 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
                   << "   - time          " << timer.GetTime()   << " s\n"
                   << "   - iterations    " << solver.GetIter()  << '\n'
                   << "   - residuum      " << solver.GetResid() << '\n'
-    			  << "   - real residuum " << realresid         << std::endl;
+                  << "   - real residuum " << realresid         << std::endl;
         if (C.pos_SolutionIsKnown) {
-        	std::cout << line << "Check result against known solution ...\n";
-        	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+            std::cout << line << "Check result against known solution ...\n";
+            Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
         }
-	}
-	else {
-	    MultiGridCL& MG= Poisson.GetMG();
-	    const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
+    }
+    else{
+        MultiGridCL& MG= Poisson.GetMG();
+        const typename PoissonP1CL<CoeffCL>::BndDataCL& BndData= Poisson.GetBndData();
 
-	    MLIdxDescCL  loc_idx;
-	    VecDescCL  loc_x;
-
-	    MLIdxDescCL* new_idx= &Poisson.idx;
-	    MLIdxDescCL* old_idx= &loc_idx;
-
-	    VecDescCL* new_x= &Poisson.x;
-	    VecDescCL* old_x= &loc_x;
+        MLIdxDescCL  loc_idx;
+        VecDescCL  loc_x;
+        MLIdxDescCL* new_idx= &Poisson.idx;
+        MLIdxDescCL* old_idx= &loc_idx;
+        VecDescCL* new_x= &Poisson.x;
+        VecDescCL* old_x= &loc_x;
 
         DoerflerMarkCL<typename PoissonP1CL<CoeffCL>::est_fun, typename PoissonP1CL<CoeffCL>::base_>
             Estimator( param.err_RelReduction, param.err_MinRatio, param.err_Threshold, param.err_Meas, param.err_DoMark,
@@ -309,12 +307,12 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
                       << "   - time          " << timer.GetTime()   << " s\n"
                       << "   - iterations    " << solver.GetIter()  << '\n'
                       << "   - residuum      " << solver.GetResid() << '\n'
-        			  << "   - real residuum " << realresid         << std::endl;
+                      << "   - real residuum " << realresid         << std::endl;
             Poisson.A.Reset();
             Poisson.b.Reset();
             if (C.pos_SolutionIsKnown) {
-            	std::cout << line << "Check result against known solution ...\n";
-            	Poisson.CheckSolution( *new_x, CoeffCL::Solution);
+                std::cout << line << "Check result against known solution ...\n";
+                Poisson.CheckSolution( *new_x, CoeffCL::Solution);
             }
             new_marks = Estimator.Estimate( typename PoissonP1CL<CoeffCL>::const_DiscSolCL( new_x, &BndData, &MG) );
 
@@ -330,7 +328,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
             Poisson.x.Data.resize( loc_x.Data.size());
             Poisson.x.Data = loc_x.Data;
         }
-	}
+    }
 }
 
 /// \brief Strategy to solve the Poisson problem on a given triangulation
@@ -391,7 +389,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     timer.Reset();
     if (C.tm_NumSteps != 0)
-    	Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0);
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0);
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -399,7 +397,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     // solve the linear equation system
     // -------------------------------------------------------------------------
     std::cout << line << "Solve the linear equation system ...\n";
-    
+
     // type of preconditioner and solver
     PoissonSolverFactoryCL< Params> factory( C, Poisson.idx);
     PoissonSolverBaseCL* solver = factory.CreatePoissonSolver();
@@ -414,7 +412,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
     ThetaScheme.SetTimeStep(C.tm_StepSize, C.tm_Nu);
 
     if (C.tm_NumSteps == 0) {
-    	SolveStatProblem( Poisson, *solver, C);
+        SolveStatProblem( Poisson, *solver, C);
     }
 
     Ensight6OutCL  ens(C.ens_EnsCase+".case", C.tm_NumSteps+1, C.ens_Binary, C.ens_MasterOut);
@@ -448,8 +446,8 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         // check the result
         // -------------------------------------------------------------------------
         if (C.pos_SolutionIsKnown) {
-        	std::cout << line << "Check result against known solution ...\n";
-        	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
+            std::cout << line << "Check result against known solution ...\n";
+            Poisson.CheckSolution( Poisson.x, CoeffCL::Solution, Poisson.x.t);
         }
 
         if ( C.vtk_VTKOut && step%C.vtk_VTKOut==0)
@@ -479,21 +477,19 @@ int main (int argc, char** argv)
 #endif
 
         std::ifstream param;
-    	if (argc!=2)
-    	{
-    	   std::cout << "Using default parameter file: drops.param\n";
-    	   param.open( "drops.param");
-    	}
-    	else
-    	   param.open( argv[1]);
-    	if (!param)
-    	{
-    	   std::cerr << "error while opening parameter file\n";
-    	   return 1;
-    	}
-    	param >> C;
-    	param.close();
-    	std::cout << C << std::endl;
+        if (argc!=2){
+            std::cout << "Using default parameter file: drops.param\n";
+            param.open( "drops.param");
+        }
+        else
+            param.open( argv[1]);
+        if (!param){
+            std::cerr << "error while opening parameter file\n";
+            return 1;
+        }
+        param >> C;
+        param.close();
+        std::cout << C << std::endl;
 
         // set up data structure to represent a poisson problem
         // ---------------------------------------------------------------------

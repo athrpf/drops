@@ -73,8 +73,8 @@ namespace DROPS // for Strategy
 class EnsightIdxRepairCL: public MGObserverCL
 {
   private:
-	MultiGridCL& mg_;
-	IdxDescCL&   idx_;
+    MultiGridCL& mg_;
+    IdxDescCL&   idx_;
 
   public:
     EnsightIdxRepairCL( MultiGridCL& mg, IdxDescCL& idx)

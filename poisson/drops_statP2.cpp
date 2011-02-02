@@ -205,10 +205,10 @@ void Strategy( PoissonP2CL<CoeffCL>& Poisson)
               << "   - time          " << timer.GetTime()   << " s\n"
               << "   - iterations    " << solver->GetIter()  << '\n'
               << "   - residuum      " << solver->GetResid() << '\n'
-			  << "   - real residuum " << realresid         << std::endl;
+              << "   - real residuum " << realresid         << std::endl;
     if (C.pos_SolutionIsKnown) {
-    	std::cout << line << "Check result against known solution ...\n";
-    	Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
+        std::cout << line << "Check result against known solution ...\n";
+        Poisson.CheckSolution( Poisson.x, CoeffCL::Solution);
     }
 
     if ( C.vtk_VTKOut){
@@ -266,8 +266,8 @@ int main (int argc, char** argv)
         //only for measuring cell, not used here
         double r = 1;
         std::string serfile = "none";
-        
-    	// DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
+
+        // DROPS::C.dmc_BoundaryType = 4: solving head transport problem (ipfilm.cpp)
         DROPS::CreateGeomPoisson (mg, bdata, C.dmc_MeshFile, C.dmc_GeomType, C.dmc_BoundaryType, C.dmc_BoundaryFncs, serfile, r);
         timer.Stop();
         std::cout << " o time " << timer.GetTime() << " s" << std::endl;

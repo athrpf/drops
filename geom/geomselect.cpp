@@ -199,19 +199,18 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
         int GeomType, const std::string& bnd_type, const std::string& bnd_funcs, std::vector<BndCondT>& BC)
 {
 	instat_scalar_fun_ptr Zero = InScaMap::getInstance().find("Zero")->second;
-    if (GeomType == 0) {
-
-    	string bfunc[1];
-    	readBoundary(bfunc, bnd_funcs, 1);
-    	instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
-    	const BoundaryCL& bnd= mgp->GetBnd();
+    if (GeomType == 0){
+        std::string bfunc[1];
+        readBoundary(bfunc, bnd_funcs, 1);
+        instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
+        const BoundaryCL& bnd= mgp->GetBnd();
         const BndIdxT num_bnd= bnd.GetNumBndSeg();
 
         BndCondT* bc = new BndCondT[num_bnd];
         DROPS::BndDataCL<>::bnd_val_fun* bnd_fun = new DROPS::BndDataCL<>::bnd_val_fun[num_bnd];
         for (BndIdxT i=0; i<num_bnd; ++i)
         {
-            bnd_fun[i]= (bc[i]= BC[ i])==DirBC ? fun : InScaMap::getInstance().find("Zero")->second;
+            bnd_fun[i]= (bc[i]= BC[ i])==DirBC ? fun : InScaMap::getInstance()["Zero"];
             std::cout << "Bnd " << i << ": "; BndCondInfo( bc[i], std::cout);
         }
         bnddata = new PoissonBndDataCL(num_bnd, bc, bnd_fun);
@@ -220,19 +219,19 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
     }
     if (GeomType == 1) { //Boundary condition for BrickBuilder
 
-    	BndCondT bc[6];
+        BndCondT bc[6];
         DROPS::BndDataCL<>::bnd_val_fun bfun[6];
 
-    	int bcc[6];
-    	string bfuncs[6];
+        int bcc[6];
+        string bfuncs[6];
 
-    	readBoundary(bcc, bnd_type, 6);
-    	readBoundary(bfuncs, bnd_funcs, 6);
+        readBoundary(bcc, bnd_type, 6);
+        readBoundary(bfuncs, bnd_funcs, 6);
 
-    	for(int i=0; i<6;++i){
-    	   	bc[i] = BndCondT(bcc[i]);
-    	   	bfun[i] = InScaMap::getInstance().find(bfuncs[i])->second;
-     	}
+        for(int i=0; i<6;++i){
+            bc[i] = BndCondT(bcc[i]);
+            bfun[i] = InScaMap::getInstance()[bfuncs[i]];
+        }
 
         bnddata = new PoissonBndDataCL(6, bc, bfun);
     }
@@ -244,9 +243,9 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
     }
     if (GeomType == 3) {
 
-    	string bfunc[1];
-    	readBoundary(bfunc, bnd_funcs, 1);
-    	instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
+        string bfunc[1];
+        readBoundary(bfunc, bnd_funcs, 1);
+        instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
 
         BndCondT bc[14]= { DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC};
         DROPS::BndDataCL<>::bnd_val_fun bfun[14]=
@@ -255,10 +254,10 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
     }
     if (GeomType == 4) { //for BBuilder
 
-     	string bfunc[1];
-    	readBoundary(bfunc, bnd_funcs, 1);
+        string bfunc[1];
+        readBoundary(bfunc, bnd_funcs, 1);
 
-    	instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
+        instat_scalar_fun_ptr fun= InScaMap::getInstance().find(bfunc[0])->second;
 
         BndCondT bc[24]= { DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC,
                            DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC, DirBC};
@@ -274,14 +273,13 @@ void BuildPoissonBoundaryData( MultiGridCL* &mgp, PoissonBndDataCL* &bnddata,
 void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
         int GeomType, const std::string& bnd_funcs, const std::string& bnd_type, std::vector<BndCondT>& BC)
 {
-	StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
+    StokesVelBndDataCL::bnd_val_fun ZeroVel = InVecMap::getInstance().find("ZeroVel")->second;
     if (GeomType == 0) {
+        string bfunc[1];
+        readBoundary(bfunc, bnd_funcs, 1);
 
-    	string bfunc[1];
-    	readBoundary(bfunc, bnd_funcs, 1);
-
-    	StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun;
-    	bfun=InVecMap::getInstance().find(bfunc[0])->second;
+        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun;
+        bfun=InVecMap::getInstance().find(bfunc[0])->second;
 
         const BoundaryCL& bnd= mgp->GetBnd();
         const BndIdxT num_bnd= bnd.GetNumBndSeg();
@@ -299,19 +297,17 @@ void BuildStokesBoundaryData( MultiGridCL* &mgp, StokesBndDataCL* &bnddata,
         delete[] bnd_fun;
     }
     if (GeomType == 1) {
+        DROPS::BndCondT bc[6];
+        StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[6];
+        int bcc[6];
+        std::string bfunc[6];
 
-    	DROPS::BndCondT bc[6];
-    	StokesBndDataCL::VelBndDataCL::bnd_val_fun bfun[6];
-
-  	    int bcc[6];
-   	    std::string bfunc[6];
-
-   	    readBoundary(bcc, bnd_type, 6);
-   	    readBoundary(bfunc, bnd_funcs, 6);
-   		for(int i=0; i<6;++i){
-   			bc[i] = DROPS::BndCondT(bcc[i]);
-   			bfun[i]=InVecMap::getInstance().find(bfunc[i])->second;
-   		}
+        readBoundary(bcc, bnd_type, 6);
+        readBoundary(bfunc, bnd_funcs, 6);
+        for(int i=0; i<6;++i){
+            bc[i] = DROPS::BndCondT(bcc[i]);
+            bfun[i]=InVecMap::getInstance().find(bfunc[i])->second;
+        }
 
         bnddata = new StokesBndDataCL(6, bc, bfun);
     }
