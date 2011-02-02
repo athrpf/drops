@@ -52,7 +52,7 @@ typedef DROPS::BndDataCL<> cBndDataCL;
 typedef cBndDataCL::bnd_val_fun  c_bnd_val_fun;
 
 const DROPS::BndCondT v_bc[6]= { DROPS::Dir0BC, DROPS::Dir0BC, DROPS::DirBC, DROPS::DirBC, DROPS::Dir0BC, DROPS::Dir0BC };
-const vel_bnd_val_fun v_bfun[6]= { 0, 0, DROPS::InVecMap::getInstance().find("InflowBrickTansp")->second, DROPS::InVecMap::getInstance().find("InflowBrickTansp")->second, 0, 0};
+const vel_bnd_val_fun v_bfun[6]= { 0, 0, DROPS::InVecMap::getInstance()["InflowBrickTransp"], DROPS::InVecMap::getInstance()["InflowBrickTransp"], 0, 0};
 const DROPS::BndCondT c_bc[6]= { DROPS::DirBC, DROPS::DirBC, DROPS::DirBC, DROPS::DirBC, DROPS::DirBC, DROPS::DirBC };
 const c_bnd_val_fun c_bfun[6]= { & Initialcpos,  & Initialcpos, & Initialcpos,& Initialcpos, & Initialcpos, & Initialcpos };
 
@@ -93,9 +93,10 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
     IdxDescCL  vidx( vecP2_FE, Bnd_v);
     vidx.CreateNumbering( MG.GetLastLevel(), MG);
     VecDescCL v( &vidx);
-    InitVel( MG, v, DROPS::InVecMap::getInstance().find("InflowBrickTansp")->second);
+    InitVel( MG, v, DROPS::InVecMap::getInstance()["InflowBrickTransp"]);
 
     cBndDataCL Bnd_c( 6, c_bc, c_bfun);
+
     TransportP1CL c( MG, Bnd_c, Bnd_v, /*theta*/ 0.5, D, H, &v, lset,
         C.tm_StepSize, C.stk_OuterIter, C.stk_OuterTol);
     MLIdxDescCL* cidx= &c.idx;
@@ -122,13 +123,15 @@ void Strategy (MultiGridCL& MG, const LsetBndDataCL& lsbnd)
     const double Vol= EllipsoidCL::GetVolume();
     std::cout << "rel. Volume: " << lset.GetVolume()/Vol << std::endl;
 
-    if (C.ens_EnsCase != "none") ensight.Write();
+    if (C.ens_EnsightOut)
+        ensight.Write();
 
     c.SetTimeStep( C.tm_StepSize);
     for (int step= 1; step <= C.tm_NumSteps; ++step) {
         std::cout << "======================================================== Schritt " << step << ":\n";
         c.DoStep( step*C.tm_StepSize);
-        if (C.ens_EnsCase != "none") ensight.Write( step*C.tm_StepSize);
+        if (C.ens_EnsightOut)
+            ensight.Write( step*C.tm_StepSize);
     }
     std::cout << std::endl;
 }
