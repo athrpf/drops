@@ -1,6 +1,7 @@
-/// \file bndVelFunctions.cpp
-/// \brief collections of general vector functions (like zero, one, etc..). No problem-specific functions!
-/// \author LNM RWTH Aachen: Martin Horsky; SC RWTH Aachen:
+/// \file filmCoeff.cpp
+/// \brief boundary and source functions for film-type problems
+/// \author LNM RWTH Aachen: Christoph Lehrenfeld
+
 /*
  * This file is part of DROPS.
  *
@@ -20,24 +21,29 @@
  *
  * Copyright 2009 LNM/SC RWTH Aachen, Germany
 */
-#include "misc/container.h"
+
 #include "misc/bndmap.h"
+#include "levelset/params.h"
 
 //========================================================================
-//                         General Functions
+//                        Functions for the film problem
 //========================================================================
-///brief returns vector of zero velocities
-DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double) { return DROPS::Point3DCL(0.); }
 
-template <int D>
-DROPS::Point3DCL UnitVel( const DROPS::Point3DCL&, double) { DROPS::Point3DCL p(0.); p[D]=1.0; return p; }
+DROPS::Point3DCL FilmInflow( const DROPS::Point3DCL& p, double t)
+{
+    extern DROPS::ParamFilmCL C;
+    DROPS::Point3DCL ret(0.);
+    const double d= p[1]/C.exp_Thickness;
+    static const double u= C.mat_DensFluid*C.exp_Gravity[0]*C.exp_Thickness*C.exp_Thickness/C.mat_ViscFluid/2;
+    ret[0]= d<=1 ? (2*d-d*d)*u * (1 + C.exp_PumpAmpl*std::sin(2*M_PI*t*C.exp_PumpFreq))
+                 : (C.mcl_MeshSize[1]-p[1])/(C.mcl_MeshSize[1]-C.exp_Thickness)*u;
+    return ret;
+}
 
 //========================================================================
-//            Registration of functions in the func-container
+//        Registration of the function(s) in the func-container
 //========================================================================
-static DROPS::RegisterVectorFunction regvelzerovel("ZeroVel", ZeroVel);
-static DROPS::RegisterVectorFunction regvelunitvelx("UnitVelx", UnitVel<0>);
-static DROPS::RegisterVectorFunction regvelunitvely("UnitVely", UnitVel<1>);
-static DROPS::RegisterVectorFunction regvelunitvelz("UnitVelz", UnitVel<2>);
+
+static DROPS::RegisterVectorFunction regvelfilminflow("FilmInflow", FilmInflow);
 
 

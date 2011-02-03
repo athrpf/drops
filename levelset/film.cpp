@@ -133,9 +133,11 @@ void Strategy( StokesProblemT& Stokes, LevelsetP2CL& lset, AdapTriangCL& adap, b
     Stokes.N.SetIdx(vidx, vidx);
     Stokes.prM.SetIdx( pidx, pidx);
     Stokes.prA.SetIdx( pidx, pidx);
-
-    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = DROPS::InVecMap::getInstance().find("ZeroVel")->second;
-    DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = DROPS::InVecMap::getInstance().find("Inflow")->second;
+    
+    
+    DROPS::InVecMap & vecmap =  DROPS::InVecMap::getInstance();
+    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = vecmap["ZeroVel"];
+    DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = vecmap["FilmInflow"];
 
     switch (C.mcl_InitialCond)
     {
@@ -368,8 +370,9 @@ int main (int argc, char** argv)
     DROPS::StokesVelBndDataCL::bnd_val_fun bnd_fun[6];
     bool is_periodic= false;
 
-    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = DROPS::InVecMap::getInstance().find("ZeroVel")->second;
-    DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = DROPS::InVecMap::getInstance().find("Inflow")->second;
+    DROPS::InVecMap & vecmap =  DROPS::InVecMap::getInstance();
+    DROPS::StokesVelBndDataCL::bnd_val_fun ZeroVel = vecmap["ZeroVel"]; 
+    DROPS::StokesVelBndDataCL::bnd_val_fun Inflow = vecmap["FilmInflow"];
     for (int i=0; i<6; ++i)
     {
         bc_ls[i]= DROPS::Nat0BC;
