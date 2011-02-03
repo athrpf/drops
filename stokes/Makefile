@@ -31,7 +31,7 @@ sdropsP2: \
     ../misc/utils.o ../out/output.o ../num/discretize.o ../num/MGsolver.o ../misc/params.o \
     ../levelset/lsetparams.o ../stokes/stokesparams.o  ../out/ensightOut.o ../stokes/integrTime.o \
     ../out/vtkOut.o ../geom/geomselect.o ../poisson/poissonparams.o \
-    ../misc/bndmap.o 
+    ../misc/bndmap.o ../geom/bndVelFunctions.o 
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 # include common rules:
