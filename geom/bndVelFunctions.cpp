@@ -24,7 +24,7 @@
 #include "misc/bndmap.h"
 
 //========================================================================
-//                         General Functions
+//                         General Functions
 //========================================================================
 ///brief returns vector of zero velocities
 DROPS::Point3DCL ZeroVel( const DROPS::Point3DCL&, double) { return DROPS::Point3DCL(0.); }
