@@ -800,11 +800,17 @@ inline void FaceQuad2CL::Quad(IteratorT beg, ValueT*const ret)
 class P1DiscCL
 // contains cubatur etc. for linear FE
 {
+  private:
+    template<class SVecT, Uint D>
+    static inline SVecT lin_comb (double a0, const SVecT& m0, double a1, const SVecT& m1, double a2, const SVecT& m2, double a3, const SVecT& m3, double a4, const SVecT& m4);
+
   public:
     // cubatur formula for int f(x) dx, exact up to degree 2
     static inline double Quad(const TetraCL&, scalar_fun_ptr);
     static inline double Quad(const TetraCL&, instat_scalar_fun_ptr, double= 0.0);
     static inline SVectorCL<3> Quad(const TetraCL&, instat_vector_fun_ptr, double= 0.0);
+    static inline SMatrixCL<3,3> Quad( const LocalP2CL< SMatrixCL<3,3> >& f, BaryCoordCL** bp);
+    static inline SVectorCL<3> Quad( const LocalP2CL< SVectorCL<3> >& f, BaryCoordCL** bp);
     template<class ValueT>
     static inline ValueT Quad( const LocalP2CL<ValueT>&, BaryCoordCL**);
     template<class ValueT>
@@ -1006,6 +1012,28 @@ inline double P1DiscCL::Quad( const TetraCL& s, instat_scalar_fun_ptr coeff, Uin
     for (Uint k=0; k<4; ++k)
         if (k!=i) f_Other+= coeff( s.GetVertex(k)->GetCoord(), t );
     return f_Vert_i/108. + f_Other/1080. + 4./135.*f_Bary;
+}
+
+template<class SVecT, Uint D>
+inline SVecT
+P1DiscCL::lin_comb (double a0, const SVecT& m0, double a1, const SVecT& m1, double a2, const SVecT& m2, double a3, const SVecT& m3, double a4, const SVecT& m4)
+{
+    SVecT ret( Uninitialized);
+    for (Uint i= 0; i < D; ++i)
+        ret[i]= a0*m0[i] + a1*m1[i] + a2*m2[i] + a3*m3[i] +a4*m4[i];
+    return ret;
+}
+
+inline SMatrixCL<3,3> P1DiscCL::Quad( const LocalP2CL< SMatrixCL<3,3> >& f, BaryCoordCL** bp)
+{
+    const BaryCoordCL bc= 0.25*(*bp[0]+*bp[1]+*bp[2]+*bp[3]);
+    return P1DiscCL::lin_comb<SMatrixCL<3,3>, 9>( 1./120, f(*bp[0]), 1./120, f(*bp[1]), 1./120, f(*bp[2]), 1./120, f(*bp[3]), 2./15, f(bc));
+}
+
+inline SVectorCL<3> P1DiscCL::Quad( const LocalP2CL< SVectorCL<3> >& f, BaryCoordCL** bp)
+{
+    const BaryCoordCL bc= 0.25*(*bp[0]+*bp[1]+*bp[2]+*bp[3]);
+    return P1DiscCL::lin_comb<SVectorCL<3>, 3>( 1./120, f(*bp[0]), 1./120, f(*bp[1]), 1./120, f(*bp[2]), 1./120, f(*bp[3]), 2./15, f(bc));
 }
 
 template<class ValueT>
