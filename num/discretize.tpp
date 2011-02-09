@@ -348,9 +348,9 @@ template<class T>
 
 template<class T>
   Quad2CL<T>::Quad2CL(const LocalP2CL<value_type>& f, const BaryCoordCL* const node)
+  : base_type( value_type(), NumNodesC)
 {
     this->assign( f, node);
-
 }
 
 template<class T>
