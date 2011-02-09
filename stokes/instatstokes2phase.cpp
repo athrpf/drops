@@ -1497,6 +1497,7 @@ void System1Accumulator_P2CL::update_global_system ()
 
 // For comparing old and new version via matlab or diff. There old and new A and b are equal up to some roundoff-error.
 // The new version is modular and 20 to 25 percent faster for the matrices created by twophasedrops with default parameters.
+// On rumpelstilzchen with g++ -W -Wall -pedantic -O3 -pg -ffast-math -funroll-loops -march=native -finline-limit=2000 -fopenmp
 // Old version, part of the output and top of the profile:
 // ============================================================ step 1
 // entering SetupSystem1: 825 vels. 42525 nonzeros in A, 14175 nonzeros in M!
