@@ -54,15 +54,15 @@ Quad3DataCL::Quad3DataCL()
     FE_P2CL::ApplyAll( NumNodesC, Node, P2_Val);
 }
 
-BaryCoordCL* Quad3DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M)
+BaryCoordCL* Quad3DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
 {
-    BaryCoordCL* tN = new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i< NumNodesC; ++i)
-        //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k=0; k<4; ++k)
-            tN[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                    + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return tN;
+    if (!p) p= new BaryCoordCL[NumNodesC];
+    for (Uint i=0; i < NumNodesC; ++i)
+        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+        for (Uint k= 0; k < 4; ++k)
+            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
+                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
+    return p;
 }
 
 namespace {
@@ -111,15 +111,16 @@ Quad5DataCL::Quad5DataCL()
     FE_P2CL::ApplyAll( NumNodesC, Node, P2_Val);
 }
 
-BaryCoordCL* Quad5DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M)
+BaryCoordCL*
+Quad5DataCL::TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p)
 {
-    BaryCoordCL* tN = new BaryCoordCL[NumNodesC];
-    for (Uint i=0; i< NumNodesC; ++i)
-        //tN[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
-        for (Uint k=0; k<4; ++k)
-            tN[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
-                    + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
-    return tN;
+    if (!p) p= new BaryCoordCL[NumNodesC];
+    for (Uint i=0; i < NumNodesC; ++i)
+        //p[i]=M*Node[i]; M (als Matrix) ist spaltenweise gespeichert!
+        for (Uint k= 0; k < 4; ++k)
+            p[i][k]= M[0][k]*Node[i][0] + M[1][k]*Node[i][1]
+                   + M[2][k]*Node[i][2] + M[3][k]*Node[i][3];
+    return p;
 }
 
 namespace {

@@ -224,6 +224,15 @@ inline void ExtractComponent( const GridFunctionCL<Point3DCL>& src, GridFunction
         target[i]= src[i][comp];
 }
 
+inline GridFunctionCL< SMatrixCL<3,3> >
+outer_product(const GridFunctionCL<Point3DCL>& a, const GridFunctionCL<Point3DCL>& b)
+{
+    GridFunctionCL< SMatrixCL<3,3> > ret( SMatrixCL<3,3>(), b.size());
+    for (size_t i= 0; i<b.size(); ++i)
+        ret[i]= outer_product( a[i], b[i]);
+    return ret;
+}
+
 //**************************************************************************
 // Class:   LocalP1CL                                                      *
 // Template Parameter:                                                     *
@@ -439,10 +448,11 @@ class Quad3DataCL
     static const double          Wght[2];         ///< quadrature weights
     static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
 
-    /// M contains the barycentric coordinates of a tetrahedron; the
-    /// return-value is a new[]-allocated array of the quadrature-points
-    /// for this tetrahedron.
-    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M);
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
 };
 
 
@@ -490,11 +500,12 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad3CL, T, base_type)
       inline self_&
       assign(const TetraCL&, const PFunT&);
 
-    /// M contains the barycentric coordinates of a tetrahedron; the
-    /// return-value is a new[]-allocated array of the quadrature-points
-    /// for this tetrahedron.
-    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M) {
-        return Quad3DataCL::TransformNodes( M);
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0) {
+        return Quad3DataCL::TransformNodes( M, p);
     }
 
     // Integration:
@@ -520,10 +531,11 @@ class Quad5DataCL
     static const double          Wght[4];         ///< quadrature weights
     static std::valarray<double> P2_Val[10];      ///< P2_Val[i] contains FE_P2CL::H_i( Node).
 
-    /// M contains the barycentric coordinates of a tetrahedron; the
-    /// return-value is a new[]-allocated array of the quadrature-points
-    /// for this tetrahedron.
-    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M);
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0);
 };
 
 
@@ -571,11 +583,12 @@ DROPS_DEFINE_VALARRAY_DERIVATIVE(Quad5CL, T, base_type)
       inline self_&
       assign(const TetraCL&, const PFunT&);
 
-    /// M contains the barycentric coordinates of a tetrahedron; the
-    /// return-value is a new[]-allocated array of the quadrature-points
-    /// for this tetrahedron.
-    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M) {
-        return Quad5DataCL::TransformNodes( M);
+    /// \param M contains the barycentric coordinates of a tetrahedron;
+    /// \param p array to be used for the quadrature points for this tetrahedron.
+    ///          If p == 0, the array is new[]-allocated
+    /// \return  adress of the array of quadrature points
+    static BaryCoordCL* TransformNodes (const SArrayCL<BaryCoordCL,4>& M, BaryCoordCL* p= 0) {
+        return Quad5DataCL::TransformNodes( M, p);
     }
 
     // Integration:
@@ -864,17 +877,17 @@ class P2DiscCL
     // p2[i] contains a Quad5_2DCL-object that is initialized with FE_P2CL::Hi
     static void GetP2Basis( Quad5_2DCL<> p2[10], const BaryCoordCL* const p);
     // compute gradients
-    static void GetGradients( LocalP1CL<Point3DCL> G[10], LocalP1CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    static void GetGradients( LocalP1CL<Point3DCL> G[10], LocalP1CL<Point3DCL> GRef[10], const SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<4; ++j) G[i][j]= T*GRef[i][j]; }
-    static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    static void GetGradients( Quad2CL<Point3DCL> G[10], Quad2CL<Point3DCL> GRef[10], const SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<5; ++j) G[i][j]= T*GRef[i][j]; }
-    static void GetGradients( Quad5CL<Point3DCL> G[10], Quad5CL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    static void GetGradients( Quad5CL<Point3DCL> G[10], Quad5CL<Point3DCL> GRef[10], const SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<Quad5DataCL::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
-    static void GetGradients( Quad5_2DCL<Point3DCL> G[10], Quad5_2DCL<Point3DCL> GRef[10], SMatrixCL<3,3> &T)
+    static void GetGradients( Quad5_2DCL<Point3DCL> G[10], Quad5_2DCL<Point3DCL> GRef[10], const SMatrixCL<3,3> &T)
     { for (int i=0; i<10; ++i) for (int j=0; j<Quad5_2DDataCL::NumNodesC; ++j) G[i][j]= T*GRef[i][j]; }
-    static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
+    static void GetGradient( Quad2CL<Point3DCL> &G, Quad2CL<Point3DCL> &GRef, const SMatrixCL<3,3> &T)
     { for (int j=0; j<5; ++j) G[j]= T*GRef[j]; }
-    static void GetGradient( Quad5CL<Point3DCL> &G, Quad5CL<Point3DCL> &GRef, SMatrixCL<3,3> &T)
+    static void GetGradient( Quad5CL<Point3DCL> &G, Quad5CL<Point3DCL> &GRef, const SMatrixCL<3,3> &T)
     { for (int j=0; j<Quad5DataCL::NumNodesC; ++j) G[j]= T*GRef[j]; }
     /// compute gradient of a function provided as LocalP2CL<double> object
     template<class GradT>
