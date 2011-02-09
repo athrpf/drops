@@ -37,6 +37,56 @@
 namespace DROPS
 {
 
+/// \brief These three classes provide a poor-man's expression template mechanism to evaluate P1/P2-functions efficiently.
+///
+/// For SVectorCL and SMatrixCL, profiling shows that the avoidance of temporaries is beneficial for speed.
+///@{
+template<class Cont, class ValueT>
+struct LinearCombinationCL
+{
+  static inline ValueT do_it(const Cont& c, double a0, double a1, double a2, double a3)
+  { return a0*c[0] + a1*c[1] + a2*c[2] + a3*c[3]; }
+  static inline ValueT do_it(const Cont& c, double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8, double a9)
+  { return a0*c[0] + a1*c[1] + a2*c[2] + a3*c[3] + a4*c[4] + a5*c[5] + a6*c[6] + a7*c[7] + a8*c[8] + a9*c[9]; }
+};
+
+template <Uint N>
+template<class Cont>
+struct LinearCombinationCL<Cont, SVectorCL<N> >
+{
+    static inline SVectorCL<N> do_it(const Cont& c, double a0, double a1, double a2, double a3) {
+        SVectorCL<N> ret( Uninitialized);
+        for (int i= 0; i < N; ++i)
+            ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i];
+        return ret;
+    }
+    static inline SVectorCL<N> do_it(const Cont& c, double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8, double a9) {
+        SVectorCL<N> ret( Uninitialized);
+        for (int i= 0; i < N; ++i)
+            ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i] + a4*c[4][i] + a5*c[5][i] + a6*c[6][i] + a7*c[7][i] + a8*c[8][i] + a9*c[9][i];
+        return ret;
+    }
+};
+
+template <Uint M, Uint N>
+template<class Cont>
+struct LinearCombinationCL<Cont, SMatrixCL<M,N> >
+{
+    static inline SMatrixCL<M,N> do_it(const Cont& c, double a0, double a1, double a2, double a3) {
+        SMatrixCL<M,N> ret( Uninitialized);
+        for (int i= 0; i < M*N; ++i)
+            ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i];
+        return ret;
+    }
+    static inline SMatrixCL<M,N> do_it(const Cont& c, double a0, double a1, double a2, double a3, double a4, double a5, double a6, double a7, double a8, double a9) {
+        SMatrixCL<M,N> ret( Uninitialized);
+        for (int i= 0; i < M*N; ++i)
+            ret[i]= a0*c[0][i] + a1*c[1][i] + a2*c[2][i] + a3*c[3][i] + a4*c[4][i] + a5*c[5][i] + a6*c[6][i] + a7*c[7][i] + a8*c[8][i] + a9*c[9][i];
+        return ret;
+    }
+};
+///@}
+
 /// \brief Piecewise linear, continuous FE.
 ///
 /// Shape functions and their gradients for piecewise linear,
@@ -88,7 +138,7 @@ class FE_P1CL
     template <class Cont>
       static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, const BaryCoordCL& p)
-          { return c[0]*p[0] + c[1]*p[1] + c[2]*p[2] + c[3]*p[3]; }
+          { return LinearCombinationCL<Cont, typename ValueHelperCL<Cont>::value_type>::do_it( c, p[0], p[1], p[2], p[3]); }
     template <class Cont>
       static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, double v1, double v2, double v3)
@@ -156,7 +206,7 @@ class FE_P1DCL
     template <class Cont>
       static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, const BaryCoordCL& p)
-          { return c[0] * H0( p) + c[1] * H1( p) + c[2] * H2( p) + c[3] * H3( p); }
+          { return LinearCombinationCL<Cont, typename ValueHelperCL<Cont>::value_type>::do_it( c, H0( p), H1( p), H2( p), H3( p)); }
     template <class Cont>
       static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, double v1, double v2, double v3)
@@ -238,9 +288,7 @@ class FE_P2CL
     template <class Cont>
       static inline typename ValueHelperCL<Cont>::value_type
       val(const Cont& c, const BaryCoordCL& p) {
-          return c[0] * H0( p) + c[1] * H1( p) + c[2] * H2( p) + c[3] * H3( p)
-               + c[4] * H4( p) + c[5] * H5( p) + c[6] * H6( p) + c[7] * H7( p)
-               + c[8] * H8( p) + c[9] * H9( p);
+          return LinearCombinationCL<Cont, typename ValueHelperCL<Cont>::value_type>::do_it( c, H0( p), H1( p), H2( p), H3( p), H4( p),  H5( p), H6( p), H7( p), H8( p), H9( p));
       }
     template <class Cont>
       static inline typename ValueHelperCL<Cont>::value_type
