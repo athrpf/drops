@@ -182,6 +182,16 @@ template <typename T>
         v[p[i]]= w[i];
 }
 
+/// \brief v[begin..(begin+2)]+= p[0..2]. A service function for the assembly of right-hand sides for vector-valued PDEs.
+/// \return The updated vector
+template <class T>
+inline VectorBaseCL<T>& add_to_global_vector (VectorBaseCL<T>& v, const Point3DCL& p, size_t begin)
+{
+    for (int i= 0; i < 3; ++i)
+        v[begin+i]+= p[i];
+    return v;
+}
+
 /// \brief Use Kahan's algorithm to sum up elements 
 /** This algorithm accumulates the error made by the floting point 
     arithmetics and addes this error to the sum.
