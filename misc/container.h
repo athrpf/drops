@@ -759,6 +759,17 @@ assign_transpose (SMatrixCL<_Rows, _Rows>& out, const SMatrixCL<_Rows,_Rows>& in
     return out;
 }
 
+/// \brief \f$full_local+= (scalar_local^T) \operatorname{kroneckerproduct} Id_{3\times 3}\f$
+///
+/// This is the operation that distributes a scalar-valued operator over the block-diagonal of a vector-valued operator.
+inline void
+add_transpose_kronecker_id (SMatrixCL<3,3> full_local[10][10], const double scalar_local[10][10])
+{
+    for(int i= 0; i < 10; ++i)
+        for(int j= 0; j < 10; ++j)
+            for (int k= 0; k < 3; ++k)
+                full_local[i][j]( k, k)+= scalar_local[j][i];
+}
 
 /// \brief A QR-factored, rectangular matrix, A=QR.
 ///
