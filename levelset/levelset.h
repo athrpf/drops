@@ -44,7 +44,7 @@
 
 namespace DROPS
 {
-    
+
 typedef BndDataCL<double>    LsetBndDataCL;
 
 enum SurfaceForceT
