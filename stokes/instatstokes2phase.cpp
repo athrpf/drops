@@ -23,6 +23,7 @@
 */
 
 #include "stokes/instatstokes2phase.h"
+#include "num/accumulator.h"
 
 namespace DROPS
 {
@@ -1212,10 +1213,404 @@ void InstatStokes2PhaseP2P1CL::InitVel(VelVecDescCL* vec, instat_vector_fun_ptr 
 }
 
 
+/// \brief Raw data for "system 1", both for one phase and two phases.
+///
+/// scalar-valued mass-matrix, scalar-valued mu-Laplacian, genuinely tensor-valued part of the deformation tensor and the integrals of \f$\rho\phi_i\f$ for the gravitation as load-vector
+/// \todo: Precise description
+struct LocalSystem1DataCL
+{
+    double         M [10][10];
+    double         A [10][10];
+    SMatrixCL<3,3> Ak[10][10];
+
+    double rho_phi[10];
+};
+
+/// \brief Setup of the local "system 1" on a tetra in a single phase.
+class LocalSystem1OnePhase_P2CL
+{
+  private:
+    double mu_;
+    double rho_;
+
+    Quad2CL<Point3DCL> Grad[10], GradRef[10];
+    Quad2CL<> Ones;
+
+  public:
+    LocalSystem1OnePhase_P2CL (double muarg= 0., double rhoarg= 0.)
+        : mu_( muarg), rho_( rhoarg), Ones( 1.)
+    { P2DiscCL::GetGradientsOnRef( GradRef); }
+
+    void   mu  (double new_mu)        { mu_= new_mu; }
+    double mu  ()               const { return mu_; }
+    void   rho (double new_rho)       { rho_= new_rho; }
+    double rho ()               const { return rho_; }
+
+    void setup (const SMatrixCL<3,3>& T, double absdet, LocalSystem1DataCL& loc);
+};
+
+void LocalSystem1OnePhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, LocalSystem1DataCL& loc)
+{
+    P2DiscCL::GetGradients( Grad, GradRef, T);
+    for (int i=0; i<10; ++i)
+    {
+        loc.rho_phi[i]= rho()*Ones.quadP2( i, absdet);
+        for (int j=0; j<=i; ++j)
+        {
+            // M: As we are not at the phase-boundary this is exact.
+            loc.M[j][i]= rho()*P2DiscCL::GetMass( j, i)*absdet;
+
+            // kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k) = \int mu *\nabla\phi_i \outerprod \nabla\phi_j
+            loc.Ak[j][i]= mu()*Quad2CL< SMatrixCL<3,3> >( outer_product( Grad[i], Grad[j])).quad( absdet);
+            // dot-product of the gradients
+            loc.A[j][i]= trace( loc.Ak[j][i]);
+            if (i!=j) { // The local matrices coupM, coupA, coupAk are symmetric.
+                loc.M[i][j]= loc.M[j][i];
+                loc.A[i][j]= loc.A[j][i];
+                assign_transpose( loc.Ak[i][j], loc.Ak[j][i]);
+            }
+        }
+    }
+}
+
+/// \brief Setup of the local "system 1" on a tetra intersected by the dividing surface.
+class LocalSystem1TwoPhase_P2CL
+{
+  private:
+    const double mu_p, mu_n;
+    const double rho_p, rho_n;
+
+    LocalP1CL<Point3DCL> GradRefLP1[10], GradLP1[10];
+    LocalP2CL<> p2;
+
+    BaryCoordCL nodes_q2[Quad2CL<>::NumNodesC];
+    BaryCoordCL nodes_q5[Quad5DataCL::NumNodesC];
+    double absdets[48]; //there exists maximally 8*6=48 SubTetras
+    Quad5CL<> q[48][10]; //there exists maximally 8*6=48 SubTetras
+    Quad2CL<Point3DCL> qA[48][10]; //there exists maximally 8*6=48 SubTetras
+
+    double intpos, intneg;
+    SMatrixCL<3,3> cAkp, cAkn;
+
+  public:
+    LocalSystem1TwoPhase_P2CL (double mup, double mun, double rhop, double rhon)
+        : mu_p( mup), mu_n( mun), rho_p( rhop), rho_n( rhon)
+    { P2DiscCL::GetGradientsOnRef( GradRefLP1); }
+
+    double mu  (int sign) const { return sign > 0 ? mu_p  : mu_n; }
+    double rho (int sign) const { return sign > 0 ? rho_p : rho_n; }
+
+    void setup (const SMatrixCL<3,3>& T, double absdet, InterfaceTetraCL& tetra, LocalSystem1DataCL& loc);
+};
+
+void LocalSystem1TwoPhase_P2CL::setup (const SMatrixCL<3,3>& T, double absdet, InterfaceTetraCL& tetra, LocalSystem1DataCL& loc)
+{
+    std::memset( loc.rho_phi, 0, 10*sizeof( double));
+    P2DiscCL::GetGradients( GradLP1, GradRefLP1, T);
+
+    tetra.ComputeSubTets();
+    for (Uint k=0; k<tetra.GetNumTetra(); ++k) {
+        absdets[k]= absdet*VolFrac( tetra.GetTetra( k));
+        Quad2CL<>::TransformNodes( tetra.GetTetra( k), nodes_q2);
+        Quad5CL<>::TransformNodes( tetra.GetTetra( k), nodes_q5);
+        for (int i= 0; i < 10; ++i) {
+            // For M
+            p2[i]= 1.; p2[i==0 ? 9 : i - 1]= 0.;
+            q[k][i].assign( p2, nodes_q5);
+            // For A
+            qA[k][i].assign( GradLP1[i], nodes_q2);
+            // \int rho*phi_i
+            loc.rho_phi[i]+= (k < tetra.GetNumNegTetra() ? rho_n : rho_p )*q[k][i].quad( absdets[k]);
+        }
+    }
+    for (int i= 0; i < 10; ++i) {
+        for (int j= 0; j <= i; ++j) {
+            intneg= intpos = 0.;
+            std::memset( &cAkn, 0, sizeof( SMatrixCL<3,3>));
+            std::memset( &cAkp, 0, sizeof( SMatrixCL<3,3>));
+            for (Uint k=0; k<tetra.GetNumTetra(); ++k) {
+                (k<tetra.GetNumNegTetra() ? intneg : intpos)+= Quad5CL<>( q[k][i]*q[k][j]).quad( absdets[k]);
+                // A: kreuzterm = \int mu * (dphi_i / dx_l) * (dphi_j / dx_k)
+                (k < tetra.GetNumNegTetra() ? cAkn : cAkp)+= Quad2CL< SMatrixCL<3,3> >( outer_product( qA[k][i], qA[k][j])).quad( absdets[k]);
+            }
+            loc.M[j][i]= rho_p*intpos + rho_n*intneg;
+            loc.Ak[j][i]= mu_p*cAkp + mu_n*cAkn;
+            // dot-product of the gradients
+            loc.A[j][i]= trace( loc.Ak[j][i]);
+            if (i != j) { // The local stiffness matrices coupM, coupA, coupAk are symmetric.
+                loc.M[i][j]= loc.M[j][i];
+                loc.A[i][j]= loc.A[j][i];
+                assign_transpose( loc.Ak[i][j], loc.Ak[j][i]);
+            }
+        }
+    }
+}
+
+/// \brief Accumulator to set up the matrices A, M and, if requested the right-hand side b and cplM, cplA for two-phase flow.
+class System1Accumulator_P2CL : public TetraAccumulatorCL
+{
+  private:
+    const TwoPhaseFlowCoeffCL& Coeff;
+    const StokesBndDataCL& BndData;
+    const LevelsetP2CL& lset;
+    double t;
+
+    IdxDescCL& RowIdx;
+    MatrixCL& A;
+    MatrixCL& M;
+    VecDescCL* cplA;
+    VecDescCL* cplM;
+    VecDescCL* b;
+
+    MatrixBuilderCL* mA_;
+    MatrixBuilderCL* mM_;
+
+    LocalSystem1OnePhase_P2CL local_onephase; ///< used on tetras in a single phase
+    LocalSystem1TwoPhase_P2CL local_twophase; ///< used on intersected tetras
+    LocalSystem1DataCL loc; ///< Contains the memory, in which the local operators are set up; former coupM, coupA, coupAk, rho_phi.
+
+    LocalNumbP2CL n; ///< global numbering of the P2-unknowns
+
+    SMatrixCL<3,3> T;
+    double det, absdet;
+    InterfaceTetraCL tetra;
+
+    Quad2CL<Point3DCL> rhs;
+    Point3DCL loc_b[10], dirichlet_val[10]; ///< Used to transfer boundary-values from local_setup() update_global_system().
+
+    ///\brief Computes the mapping from local to global data "n", the local matrices in loc and, if required, the Dirichlet-values needed to eliminate the boundary-dof from the global system.
+    void local_setup (const TetraCL& tet);
+    ///\brief Update the global system.
+    void update_global_system ();
+
+  public:
+    System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff, const StokesBndDataCL& BndData_,
+        const LevelsetP2CL& ls, IdxDescCL& RowIdx_, MatrixCL& A_, MatrixCL& M_,
+        VecDescCL* b_, VecDescCL* cplA_, VecDescCL* cplM_, double t);
+
+    ///\brief Initializes matrix-builders and load-vectors
+    void begin_accumulation ();
+    ///\brief Builds the matrices
+    void finalize_accumulation();
+
+    void visit (const TetraCL& sit);
+};
+
+System1Accumulator_P2CL::System1Accumulator_P2CL (const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_,
+    const LevelsetP2CL& lset_arg, IdxDescCL& RowIdx_, MatrixCL& A_, MatrixCL& M_,
+    VecDescCL* b_, VecDescCL* cplA_, VecDescCL* cplM_, double t_)
+    : Coeff( Coeff_), BndData( BndData_), lset( lset_arg), t( t_),
+      RowIdx( RowIdx_), A( A_), M( M_), cplA( cplA_), cplM( cplM_), b( b_),
+      local_twophase( Coeff.mu( 1.0), Coeff.mu( -1.0), Coeff.rho( 1.0), Coeff.rho( -1.0))
+{}
+
+void System1Accumulator_P2CL::begin_accumulation ()
+{
+    std::cout << "entering SetupSystem1_P2CL::begin_accumulation ()" << std::endl;
+    const size_t num_unks_vel= RowIdx.NumUnknowns();
+    mA_= new MatrixBuilderCL( &A, num_unks_vel, num_unks_vel);
+    mM_= new MatrixBuilderCL( &M, num_unks_vel, num_unks_vel);
+    if (b != 0) {
+        b->Clear( t);
+        cplM->Clear( t);
+        cplA->Clear( t);
+    }
+}
+
+void System1Accumulator_P2CL::finalize_accumulation ()
+{
+    mA_->Build();
+    delete mA_;
+    mM_->Build();
+    delete mM_;
+#ifndef _PAR
+    std::cout << A.num_nonzeros() << " nonzeros in A, "
+              << M.num_nonzeros() << " nonzeros in M! " << std::endl;
+#endif
+    std::cout << "leaving SetupSystem1_P2CL::finalize_accumulation ()" << std::endl;
+}
+
+void System1Accumulator_P2CL::visit (const TetraCL& tet)
+{
+    local_setup( tet);
+    update_global_system();
+}
+
+void System1Accumulator_P2CL::local_setup (const TetraCL& tet)
+{
+    GetTrafoTr( T, det, tet);
+    absdet= std::fabs( det);
+
+    rhs.assign( tet, Coeff.f, t);
+    n.assign( tet, RowIdx, BndData.Vel);
+
+    tetra.Init( tet, lset.Phi, lset.GetBndData());
+    if (tetra.Intersects())
+        local_twophase.setup( T, absdet, tetra, loc);
+    else {
+        local_onephase.mu(  local_twophase.mu(  tetra.GetSign( 0)));
+        local_onephase.rho( local_twophase.rho( tetra.GetSign( 0)));
+        local_onephase.setup( T, absdet, loc);
+    }
+    add_transpose_kronecker_id( loc.Ak, loc.A);
+
+    if (b != 0) {
+        for (int i= 0; i < 10; ++i) {
+            if (!n.WithUnknowns( i)) {
+                typedef StokesBndDataCL::VelBndDataCL::bnd_val_fun bnd_val_fun;
+                bnd_val_fun bf= BndData.Vel.GetBndSeg( n.bndnum[i]).GetBndFun();
+                dirichlet_val[i]= i<4 ? bf( tet.GetVertex( i)->GetCoord(), t)
+                    : bf( GetBaryCenter( *tet.GetEdge( i-4)), t);
+            }
+            else
+                loc_b[i]= rhs.quadP2( i, absdet) + loc.rho_phi[i]*Coeff.g;
+        }
+    }
+}
+
+void System1Accumulator_P2CL::update_global_system ()
+{
+    MatrixBuilderCL& mA= *mA_;
+    MatrixBuilderCL& mM= *mM_;
+
+    for(int i=0; i<10; ++i)    // assemble row Numb[i]
+        if (n.WithUnknowns( i)) { // dof i is not on a Dirichlet boundary
+            for(int j=0; j<10; ++j) {
+                if (n.WithUnknowns( j)) { // dof j is not on a Dirichlet boundary
+                    for (int k=0; k<3; ++k)
+                        for (int l=0; l<3; ++l)
+                            mA( n.num[i]+k, n.num[j]+l)+= loc.Ak[i][j](k,l);
+                    mM( n.num[i],   n.num[j]  )+= loc.M[j][i];
+                    mM( n.num[i]+1, n.num[j]+1)+= loc.M[j][i];
+                    mM( n.num[i]+2, n.num[j]+2)+= loc.M[j][i];
+                }
+                else if (b != 0) { // right-hand side for eliminated Dirichlet-values
+                    add_to_global_vector( cplA->Data, -loc.Ak[i][j]*dirichlet_val[j], n.num[i]);
+                    add_to_global_vector( cplM->Data, -loc.M[j][i] *dirichlet_val[j], n.num[i]);
+                }
+            }
+            if (b != 0) // assemble the right-hand side
+                add_to_global_vector( b->Data, loc_b[i], n.num[i]);
+       }
+}
+
+
+// For comparing old and new version via matlab or diff. There old and new A and b are equal up to some roundoff-error.
+// The new version is modular and 20 to 25 percent faster for the matrices created by twophasedrops with default parameters.
+// Old version, part of the output and top of the profile:
+// ============================================================ step 1
+// entering SetupSystem1: 825 vels. 42525 nonzeros in A, 14175 nonzeros in M!
+// old setup: 0.0971968
+// Writing to file "A.txt".    Description: A
+// Writing to file "M.txt".    Description: M
+// entering SetupSystem1: 4533 vels. 312651 nonzeros in A, 104217 nonzeros in M!
+// old setup: 0.564567
+// Writing to file "A.txt".    Description: A
+// Writing to file "M.txt".    Description: M
+// entering SetupSystem1: 18522 vels. 1468404 nonzeros in A, 489468 nonzeros in M!
+// old setup: 2.42287
+// Writing to file "A.txt".    Description: A
+// Writing to file "M.txt".    Description: M
+// Writing to file "b.txt".    Description: b
+// Writing to file "cplA.txt".    Description: cplA
+// Writing to file "cplM.txt".    Description: cplM
+// 
+// 
+// Each sample counts as 0.01 seconds.
+//   %   cumulative   self              self     total           
+//  time   seconds   seconds    calls   s/call   s/call  name    
+//  24.52      0.64     0.64  8854512     0.00     0.00  double DROPS::P1DiscCL::Quad<double>(DROPS::LocalP2CL<double> const&, DROPS::SVectorCL<4u>**)
+//  18.20      1.12     0.48 11219236     0.00     0.00  DROPS::SparseMatBuilderCL<double>::operator()(unsigned long, unsigned long)
+//  18.01      1.59     0.47       11     0.04     0.04  DROPS::SparseMatBuilderCL<double>::Build()
+//   7.66      1.79     0.20        3     0.07     0.09  DROPS::InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double) const
+//   7.66      1.99     0.20        3     0.07     0.54  DROPS::SetupSystem1_P2(DROPS::MultiGridCL const&, DROPS::TwoPhaseFlowCoeffCL const&, DROPS::StokesBndDataCL const&, DROPS::SparseMatBaseCL<double>&, DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double)
+//   3.45      2.08     0.09  4945920     0.00     0.00  void DROPS::InterfaceTetraCL::quadBothParts<double>(double&, double&, DROPS::LocalP2CL<double> const&, double)
+//   2.30      2.14     0.06        1     0.06     0.19  void DROPS::LevelsetP2CL::SetupSystem<DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> >(DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> const&, double)
+//   1.53      2.18     0.04  1024928     0.00     0.00  DROPS::InterfaceTetraCL::ComputeCutForChild(unsigned int)
+//   1.53      2.22     0.04   263760     0.00     0.00  DROPS::P1DiscCL::Quad(DROPS::LocalP2CL<DROPS::SVectorCL<3u> > const&, DROPS::SVectorCL<4u>**)
+//   1.15      2.25     0.03    50420     0.00     0.00  DROPS::GetTrafoTr(DROPS::SMatrixCL<3u, 3u>&, double&, DROPS::TetraCL const&)
+//   1.15      2.28     0.03        6     0.01     0.01  void DROPS::WriteToFile<DROPS::SparseMatBaseCL<double> >(DROPS::SparseMatBaseCL<double> const&, std::string, std::string)
+//   0.77      2.30     0.02   171474     0.00     0.00  std::tr1::_Hashtable<unsigned long, std::pair<unsigned long const, double>, std::allocator<std::pair<unsigned long const, double> >, std::_Select1st<std::pair<unsigned long const, double> >, std::equal_to<unsigned long>, std::tr1::hash<unsigned long>, std::tr1::__detail::_Mod_range_hashing, std::tr1::__detail::_Default_ranged_hash, std::tr1::__detail::_Prime_rehash_policy, false, false, true>::_M_allocate_buckets(unsigned long)
+//   0.77      2.32     0.02   143906     0.00     0.00  void std::__introsort_loop<__gnu_cxx::__normal_iterator<std::pair<unsigned long, double>*, std::vector<std::pair<unsigned long, double>, std::allocator<std::pair<unsigned long, double> > > >, long, DROPS::less1st<std::pair<unsigned long, double> > >(__gnu_cxx::__normal_iterator<std::pair<unsigned long, double>*, std::vector<std::pair<unsigned long, double>, std::allocator<std::pair<unsigned long, double> > > >, __gnu_cxx::__normal_iterator<std::pair<unsigned long, double>*, std::vector<std::pair<unsigned long, double>, std::allocator<std::pair<unsigned long, double> > > >, long, DROPS::less1st<std::pair<unsigned long, double> >)
+//   0.77      2.34     0.02    11428     0.00     0.00  void DROPS::LocalNumbP2CL::assign<DROPS::BndDataCL<DROPS::SVectorCL<3u> > >(DROPS::TetraCL const&, DROPS::IdxDescCL const&, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const&)
+//   0.77      2.36     0.02       68     0.00     0.00  T.13593
+// 
+// 
+// New version, part of the output and top of the profile:
+// ============================================================ step 1
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 42525 nonzeros in A, 14175 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// new setup: 0.078305
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 312651 nonzeros in A, 104217 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// new setup: 0.459048
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 1468404 nonzeros in A, 489468 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// new setup: 1.87092
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// Writing to file "bneu.txt".    Description: bneu
+// Writing to file "cplAneu.txt".    Description: cplAneu
+// Writing to file "cplMneu.txt".    Description: cplMneu
+// 
+// 
+// Each sample counts as 0.01 seconds.
+//   %   cumulative   self              self     total           
+//  time   seconds   seconds    calls   s/call   s/call  name    
+//  23.27      0.47     0.47       11     0.04     0.04  DROPS::SparseMatBuilderCL<double>::Build()
+//  19.31      0.86     0.39  9649540     0.00     0.00  DROPS::SparseMatBuilderCL<double>::operator()(unsigned long, unsigned long)
+//  17.33      1.21     0.35     1104     0.00     0.00  DROPS::LocalSystem1TwoPhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::InterfaceTetraCL&, DROPS::LocalSystem1DataCL&)
+//   9.41      1.40     0.19        3     0.06     0.09  DROPS::InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double) const
+//   5.45      1.51     0.11        1     0.11     0.24  void DROPS::LevelsetP2CL::SetupSystem<DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> >(DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> const&, double)
+//   3.47      1.58     0.07     5450     0.00     0.00  DROPS::LocalSystem1OnePhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::LocalSystem1DataCL&)
+//   1.98      1.62     0.04   263760     0.00     0.00  DROPS::P1DiscCL::Quad(DROPS::LocalP2CL<DROPS::SVectorCL<3u> > const&, DROPS::SVectorCL<4u>**)
+//   1.98      1.66     0.04    50420     0.00     0.00  DROPS::InterfacePatchCL::Init(DROPS::TetraCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double)
+//   1.98      1.70     0.04        6     0.01     0.01  void DROPS::WriteToFile<DROPS::SparseMatBaseCL<double> >(DROPS::SparseMatBaseCL<double> const&, std::string, std::string)
+//   1.49      1.73     0.03   171474     0.00     0.00  std::tr1::_Hashtable<unsigned long, std::pair<unsigned long const, double>, std::allocator<std::pair<unsigned long const, double> >, std::_Select1st<std::pair<unsigned long const, double> >, std::equal_to<unsigned long>, std::tr1::hash<unsigned long>, std::tr1::__detail::_Mod_range_hashing, std::tr1::__detail::_Default_ranged_hash, std::tr1::__detail::_Prime_rehash_policy, false, false, true>::_M_allocate_buckets(unsigned long)
+//   1.49      1.76     0.03      962     0.00     0.00  DROPS::CollectChildUnknownsP2(DROPS::TetraCL const&, unsigned int)
+//   1.49      1.79     0.03       68     0.00     0.00  T.13593
+//   0.99      1.81     0.02   530336     0.00     0.00  DROPS::InterfaceTetraCL::ComputeCutForChild(unsigned int)
+//   0.99      1.83     0.02    11428     0.00     0.00  void DROPS::LocalNumbP2CL::assign<DROPS::BndDataCL<DROPS::SVectorCL<3u> > >(DROPS::TetraCL const&, DROPS::IdxDescCL const&, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const&)
+//   0.99      1.85     0.02     6554     0.00     0.00  DROPS::System1Accumulator_P2CL::update_global_system()
 void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_, const StokesBndDataCL& BndData_, MatrixCL& A, MatrixCL& M,
                       VecDescCL* b, VecDescCL* cplA, VecDescCL* cplM, const LevelsetP2CL& lset, IdxDescCL& RowIdx, double t)
 /// Set up matrices A, M and rhs b (depending on phase bnd)
 {
+    TimerCL time;
+    time.Start();
+    System1Accumulator_P2CL accu( Coeff_, BndData_, lset, RowIdx, A, M, b, cplA, cplM, t);
+
+    TetraAccumulatorTupleCL accus;
+    accus.push_back( &accu);
+    accus( MG_.GetTriangTetraBegin( RowIdx.TriangLevel()), MG_.GetTriangTetraEnd( RowIdx.TriangLevel()));
+
+    // New Version without the extra class to treat several accumulators. (No speed is gained)
+    // accu.begin_accumulation();
+    // DROPS_FOR_TRIANG_CONST_TETRA( MG_, RowIdx.TriangLevel(), sit)
+    //     accu.visit( *sit);
+    // accu.finalize_accumulation();
+
+    time.Stop();
+    std::cout << "new setup: " << time.GetTime() << std::endl;
+
+    DROPS::WriteToFile( A, "Aneu.txt", "Aneu");
+    DROPS::WriteToFile( M, "Mneu.txt", "Mneu");
+    if (b != 0) {
+        DROPS::WriteToFile( b->Data, "bneu.txt", "bneu");
+        DROPS::WriteToFile( cplA->Data, "cplAneu.txt", "cplAneu");
+        DROPS::WriteToFile( cplM->Data, "cplMneu.txt", "cplMneu");
+        exit(0);
+    }
+#if 0
+    time.Reset();
+    time.Start();
     const IdxT num_unks_vel= RowIdx.NumUnknowns();
 
     MatrixBuilderCL mA( &A, num_unks_vel, num_unks_vel),
@@ -1434,6 +1829,18 @@ void SetupSystem1_P2( const MultiGridCL& MG_, const TwoPhaseFlowCoeffCL& Coeff_,
 #ifndef _PAR
     std::cout << A.num_nonzeros() << " nonzeros in A, "
               << M.num_nonzeros() << " nonzeros in M! " << std::endl;
+#endif
+    time.Stop();
+    std::cout << "old setup: " << time.GetTime() << std::endl;
+
+    DROPS::WriteToFile( A, "A.txt", "A");
+    DROPS::WriteToFile( M, "M.txt", "M");
+    if (b != 0) {
+        DROPS::WriteToFile( b->Data, "b.txt", "b");
+        DROPS::WriteToFile( cplA->Data, "cplA.txt", "cplA");
+        DROPS::WriteToFile( cplM->Data, "cplM.txt", "cplM");
+        exit( 0);
+    }
 #endif
 }
 
@@ -2694,6 +3101,5 @@ void SetupLumpedMass (const MultiGridCL& MG, VectorCL& M, const IdxDescCL& RowId
         throw DROPSErrCL("SetupLumpedMass not implemented for this FE type");
     }
 }
-
 
 } // end of namespace DROPS
