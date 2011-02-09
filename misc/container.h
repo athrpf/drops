@@ -724,7 +724,43 @@ std::ostream& operator << (std::ostream& os, const SMatrixCL<_Rows, _Cols>& m)
     return os;
 }
 
-/// \brief A QR-factored, quadratic matrix, A=QR.
+template <Uint _Rows>
+inline SMatrixCL<_Rows,_Rows>
+outer_product (const SVectorCL<_Rows>& a, const SVectorCL<_Rows>& b)
+{
+    SMatrixCL<_Rows,_Rows> ret( Uninitialized);
+    for (Uint i= 0; i < _Rows; ++i)
+        for (Uint j= 0; j < _Rows; ++j)
+            ret(i, j)= a[i]*b[j];
+    return ret;
+}
+
+template <Uint _Rows>
+inline double
+trace (const SMatrixCL<_Rows, _Rows>& a)
+{
+    double ret= 0.;
+    for (Uint i= 0; i < _Rows; ++i)
+            ret+= a( i, i);
+    return ret;
+}
+
+template <Uint _Rows>
+inline SMatrixCL<_Rows,_Rows>&
+assign_transpose (SMatrixCL<_Rows, _Rows>& out, const SMatrixCL<_Rows,_Rows>& in)
+{
+    for (Uint i= 0; i < _Rows; ++i) {
+        for (Uint j= 0; j < i; ++j) {
+            out( i, j)= in( j, i);
+            out( j, i)= in( i, j);
+        }
+        out( i, i)= in( i, i);
+    }
+    return out;
+}
+
+
+/// \brief A QR-factored, rectangular matrix, A=QR.
 ///
 /// This allows for fast application of A^{-1} and A.
 /// A can have more rows than columns. In this case, the least-squares-solution is computed.
@@ -785,7 +821,7 @@ template <Uint Rows_, Uint Cols_>
         for(Uint i= j; i < Rows_; ++i)
             sigma+= std::pow( a_(i, j), 2);
         if(sigma == 0.)
-            throw DROPSErrCL( "QRDecompCL::prepare_solve: singular matrix\n");
+            throw DROPSErrCL( "QRDecompCL::prepare_solve: rank-deficient matrix\n");
         d_[j]= (a_(j, j) < 0 ? 1. : -1.) * std::sqrt( sigma);
         beta_[j]= 1./(d_[j]*a_(j, j) - sigma);
         a_(j, j)-= d_[j];
