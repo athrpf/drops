@@ -1196,14 +1196,16 @@ class UpdateProlongationCL : public MGObserverCL
     void pre_refine_sequence  () {}
     void post_refine_sequence () {
         if (P_ != 0) {
-            if (ColIdx_->GetCoarsest().GetFE() == P1_FE) {
+            const FiniteElementT fe= ColIdx_->GetCoarsest().GetFE();
+            if (fe == P1_FE) {
                 P_->clear();
                 SetupP1ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
-            }
-            if (ColIdx_->GetCoarsest().GetFE() == vecP2_FE) {
+            } else if (fe == vecP2_FE) {
                 P_->clear();
                 SetupP2ProlongationMatrix( MG_, *P_, ColIdx_, RowIdx_);
             }
+            else
+                throw DROPSErrCL("UpdateProlongationCL: FE type not supported, yet");
         }
     }
     const IdxDescCL* GetIdxDesc() const { return (const IdxDescCL*)0; }
