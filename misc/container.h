@@ -771,6 +771,66 @@ add_transpose_kronecker_id (SMatrixCL<3,3> full_local[10][10], const double scal
                 full_local[i][j]( k, k)+= scalar_local[j][i];
 }
 
+///\brief A small diagonal matrix. It is needed as distinct type for SparseMatBuilderCL for block diagonal sparse matrices.
+template <Uint _Rows>
+class SDiagMatrixCL : public SVectorCL<_Rows>
+{
+  public:
+    typedef SVectorCL<_Rows> _vec_base;
+
+    SDiagMatrixCL()                                                             {}
+    explicit           SDiagMatrixCL(InitStateT i)      : _vec_base( i)         {}
+    explicit           SDiagMatrixCL(double val)        : _vec_base( val)       {}
+    template<class In> explicit SDiagMatrixCL(In start) : _vec_base( start)     {}
+    template<class In> SDiagMatrixCL(In start, In end)  : _vec_base( start,end) {}
+
+// Schreib- & Lesezugriff
+    double& operator() (int row)       { return (*this)[row]; }// Matrix(i,i)
+    double  operator() (int row) const { return (*this)[row]; }
+
+// Zuweisung & Co.
+    SDiagMatrixCL& operator+=(const SDiagMatrixCL&);                // Matrix=Matrix+Matrix'
+    SDiagMatrixCL& operator-=(const SDiagMatrixCL&);                // Matrix=Matrix-Matrix'
+    SDiagMatrixCL& operator*=(double s);                            // Matrix = c * Matrix
+    SDiagMatrixCL& operator/=(double s);                            // Matrix = Matrix'/c
+
+// Dimensionen feststellen
+    Uint num_rows() const { return _Rows; }                        // Zeilenzahl
+    Uint num_cols() const { return _Rows; }                        // Spaltenzahl
+};
+
+template<Uint _Rows>
+SDiagMatrixCL<_Rows>&
+SDiagMatrixCL<_Rows>::operator+=(const SDiagMatrixCL<_Rows>& m)
+{
+    *static_cast<_vec_base*>(this)+= *static_cast<const _vec_base*>(&m);
+    return *this;
+}
+
+template<Uint _Rows>
+SDiagMatrixCL<_Rows>&
+SDiagMatrixCL<_Rows>::operator-=(const SDiagMatrixCL<_Rows>& m)
+{
+    *static_cast<_vec_base*>(this)-= *static_cast<const _vec_base*>(&m);
+    return *this;
+}
+
+template<Uint _Rows>
+SDiagMatrixCL<_Rows>&
+SDiagMatrixCL<_Rows>::operator*=(double d)
+{
+    *static_cast<_vec_base*>(this)*= d;
+    return *this;
+}
+
+template<Uint _Rows>
+SDiagMatrixCL<_Rows>&
+SDiagMatrixCL<_Rows>::operator/=(double d)
+{
+    *static_cast<_vec_base*>(this)/= d;
+    return *this;
+}
+
 /// \brief A QR-factored, rectangular matrix, A=QR.
 ///
 /// This allows for fast application of A^{-1} and A.
