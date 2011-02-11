@@ -1362,8 +1362,8 @@ class System1Accumulator_P2CL : public TetraAccumulatorCL
     VecDescCL* cplM;
     VecDescCL* b;
 
-    MatrixBuilderCL* mA_;
-    MatrixBuilderCL* mM_;
+    SparseMatBuilderCL<double, SMatrixCL<3,3> >* mA_;
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >* mM_;
 
     LocalSystem1OnePhase_P2CL local_onephase; ///< used on tetras in a single phase
     LocalSystem1TwoPhase_P2CL local_twophase; ///< used on intersected tetras
@@ -1408,8 +1408,8 @@ void System1Accumulator_P2CL::begin_accumulation ()
 {
     std::cout << "entering SetupSystem1_P2CL::begin_accumulation ()" << std::endl;
     const size_t num_unks_vel= RowIdx.NumUnknowns();
-    mA_= new MatrixBuilderCL( &A, num_unks_vel, num_unks_vel);
-    mM_= new MatrixBuilderCL( &M, num_unks_vel, num_unks_vel);
+    mA_= new SparseMatBuilderCL<double, SMatrixCL<3,3> >( &A, num_unks_vel, num_unks_vel);
+    mM_= new SparseMatBuilderCL<double, SDiagMatrixCL<3> >( &M, num_unks_vel, num_unks_vel);
     if (b != 0) {
         b->Clear( t);
         cplM->Clear( t);
@@ -1470,19 +1470,15 @@ void System1Accumulator_P2CL::local_setup (const TetraCL& tet)
 
 void System1Accumulator_P2CL::update_global_system ()
 {
-    MatrixBuilderCL& mA= *mA_;
-    MatrixBuilderCL& mM= *mM_;
+    SparseMatBuilderCL<double, SMatrixCL<3,3> >& mA= *mA_;
+    SparseMatBuilderCL<double, SDiagMatrixCL<3> >& mM= *mM_;
 
     for(int i=0; i<10; ++i)    // assemble row Numb[i]
         if (n.WithUnknowns( i)) { // dof i is not on a Dirichlet boundary
             for(int j=0; j<10; ++j) {
                 if (n.WithUnknowns( j)) { // dof j is not on a Dirichlet boundary
-                    for (int k=0; k<3; ++k)
-                        for (int l=0; l<3; ++l)
-                            mA( n.num[i]+k, n.num[j]+l)+= loc.Ak[i][j](k,l);
-                    mM( n.num[i],   n.num[j]  )+= loc.M[j][i];
-                    mM( n.num[i]+1, n.num[j]+1)+= loc.M[j][i];
-                    mM( n.num[i]+2, n.num[j]+2)+= loc.M[j][i];
+                    mA( n.num[i],   n.num[j]  )+= loc.Ak[i][j];
+                    mM( n.num[i],   n.num[j]  )+= SDiagMatrixCL<3>( loc.M[j][i]);
                 }
                 else if (b != 0) { // right-hand side for eliminated Dirichlet-values
                     add_to_global_vector( cplA->Data, -loc.Ak[i][j]*dirichlet_val[j], n.num[i]);
