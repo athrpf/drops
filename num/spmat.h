@@ -25,13 +25,15 @@
 #ifndef DROPS_SPMAT_H
 #define DROPS_SPMAT_H
 
+#define DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP (__GNUC__ >= 4 && !defined(__INTEL_COMPILER))
+
 #include <iostream>
 #include <valarray>
 #include <vector>
 #include <deque>
 #include <numeric>
 #include <limits>
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
+#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
 #    include <tr1/unordered_map>
 #else
 #    include <map>
@@ -250,18 +252,246 @@ inline T KahanInnerProd( const Cont& a, const Cont&b, Iterator firstIdx, const I
 template <typename T>
 class SparseMatBaseCL;
 
+///\brief Traits for the SparseMatBuilderCL depending on the Blocks used in assembling the sparse matrix
+///
+/// SparseMatBaseCL<T> uses the compressed row storage format with entries of type T (e.g. T==double).
+/// For building matrices for the Stokes-equations, it is useful to set-up the matrices with block-elements. For example, the deformation-tensor is representable as block-matrix with 3x3-blocks. By storing these blocks in the builder instead of the individual doubles, a factor 9 of calls to SparseMatBuilderCL::operator() (i,j) is saved. Memory savings result from the fact that the ratio of hash-value to numerical data improves by the same factor 9. For Setupsystem1_P2, the improved version is nearly twice as fast as the old version.
+///
+/// The use of std::map is about 10% slower than std::unordered_map + sorting entries.
+///@{
+// To illustrate the improvement, consider Setupsystem1 of twophasedrops with default parameters.
+// On rumpelstilzchen with g++ -W -Wall -pedantic -O3 -pg -ffast-math -funroll-loops -march=native -finline-limit=2000 -fopenmp
+// Old version, part of the output and top of the profile:
+// ============================================================ step 1
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 42525 nonzeros in A, 14175 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// new setup: 0.078305
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 312651 nonzeros in A, 104217 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// new setup: 0.459048
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 1468404 nonzeros in A, 489468 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// new setup: 1.87092
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// Writing to file "bneu.txt".    Description: bneu
+// Writing to file "cplAneu.txt".    Description: cplAneu
+// Writing to file "cplMneu.txt".    Description: cplMneu
+// 
+// 
+// Each sample counts as 0.01 seconds.
+//   %   cumulative   self              self     total           
+//  time   seconds   seconds    calls   s/call   s/call  name    
+//  23.27      0.47     0.47       11     0.04     0.04  DROPS::SparseMatBuilderCL<double>::Build()
+//  19.31      0.86     0.39  9649540     0.00     0.00  DROPS::SparseMatBuilderCL<double>::operator()(unsigned long, unsigned long)
+//  17.33      1.21     0.35     1104     0.00     0.00  DROPS::LocalSystem1TwoPhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::InterfaceTetraCL&, DROPS::LocalSystem1DataCL&)
+//   9.41      1.40     0.19        3     0.06     0.09  DROPS::InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double) const
+//   5.45      1.51     0.11        1     0.11     0.24  void DROPS::LevelsetP2CL::SetupSystem<DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> >(DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> const&, double)
+//   3.47      1.58     0.07     5450     0.00     0.00  DROPS::LocalSystem1OnePhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::LocalSystem1DataCL&)
+//   1.98      1.62     0.04   263760     0.00     0.00  DROPS::P1DiscCL::Quad(DROPS::LocalP2CL<DROPS::SVectorCL<3u> > const&, DROPS::SVectorCL<4u>**)
+//   1.98      1.66     0.04    50420     0.00     0.00  DROPS::InterfacePatchCL::Init(DROPS::TetraCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double)
+//   1.98      1.70     0.04        6     0.01     0.01  void DROPS::WriteToFile<DROPS::SparseMatBaseCL<double> >(DROPS::SparseMatBaseCL<double> const&, std::string, std::string)
+//   1.49      1.73     0.03   171474     0.00     0.00  std::tr1::_Hashtable<unsigned long, std::pair<unsigned long const, double>, std::allocator<std::pair<unsigned long const, double> >, std::_Select1st<std::pair<unsigned long const, double> >, std::equal_to<unsigned long>, std::tr1::hash<unsigned long>, std::tr1::__detail::_Mod_range_hashing, std::tr1::__detail::_Default_ranged_hash, std::tr1::__detail::_Prime_rehash_policy, false, false, true>::_M_allocate_buckets(unsigned long)
+//   1.49      1.76     0.03      962     0.00     0.00  DROPS::CollectChildUnknownsP2(DROPS::TetraCL const&, unsigned int)
+//   1.49      1.79     0.03       68     0.00     0.00  T.13593
+//   0.99      1.81     0.02   530336     0.00     0.00  DROPS::InterfaceTetraCL::ComputeCutForChild(unsigned int)
+//   0.99      1.83     0.02    11428     0.00     0.00  void DROPS::LocalNumbP2CL::assign<DROPS::BndDataCL<DROPS::SVectorCL<3u> > >(DROPS::TetraCL const&, DROPS::IdxDescCL const&, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const&)
+//   0.99      1.85     0.02     6554     0.00     0.00  DROPS::System1Accumulator_P2CL::update_global_system()
+// 
+// New version, part of the output and top of the profile:
+// ============================================================ step 1
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 42525 nonzeros in A, 14175 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// setup: 0.0518552
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 312651 nonzeros in A, 104217 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// setup: 0.273868
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// entering SetupSystem1_P2CL::begin_accumulation ()
+// 1468404 nonzeros in A, 489468 nonzeros in M!
+// leaving SetupSystem1_P2CL::finalize_accumulation ()
+// setup: 1.0489
+// Writing to file "Aneu.txt".    Description: Aneu
+// Writing to file "Mneu.txt".    Description: Mneu
+// Writing to file "bneu.txt".    Description: bneu
+// Writing to file "cplAneu.txt".    Description: cplAneu
+// Writing to file "cplMneu.txt".    Description: cplMneu
+// 
+// 
+// Each sample counts as 0.01 seconds.
+//   %   cumulative   self              self     total           
+//  time   seconds   seconds    calls   s/call   s/call  name    
+//  22.22      0.38     0.38     1104     0.00     0.00  DROPS::LocalSystem1TwoPhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::InterfaceTetraCL&, DROPS::LocalSystem1DataCL&)
+//  12.87      0.60     0.22        3     0.07     0.07  DROPS::System1Accumulator_P2CL::finalize_accumulation()
+//  12.87      0.82     0.22        3     0.07     0.09  DROPS::InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double) const
+//  10.53      1.00     0.18        5     0.04     0.04  DROPS::SparseMatBuilderCL<double, double>::Build()
+//   7.02      1.12     0.12     6557     0.00     0.00  DROPS::System1Accumulator_P2CL::update_global_system()
+//   7.02      1.24     0.12        1     0.12     0.22  void DROPS::LevelsetP2CL::SetupSystem<DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> >(DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> const&, double)
+//   5.85      1.34     0.10  3370756     0.00     0.00  DROPS::SparseMatBuilderCL<double, double>::operator()(unsigned long, unsigned long)
+//   3.51      1.40     0.06   263760     0.00     0.00  DROPS::P1DiscCL::Quad(DROPS::LocalP2CL<DROPS::SVectorCL<3u> > const&, DROPS::SVectorCL<4u>**)
+//   2.34      1.44     0.04   530336     0.00     0.00  DROPS::InterfaceTetraCL::ComputeCutForChild(unsigned int)
+//   1.75      1.47     0.03   295784     0.00     0.00  DROPS::Write6Bits(std::ostream&, char*, unsigned int)
+//   1.75      1.50     0.03     5450     0.00     0.00  DROPS::LocalSystem1OnePhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::LocalSystem1DataCL&)
+//   1.17      1.52     0.02    50420     0.00     0.00  DROPS::InterfacePatchCL::Init(DROPS::TetraCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double)
+//   1.17      1.54     0.02    11428     0.00     0.00  void DROPS::LocalNumbP2CL::assign<DROPS::BndDataCL<DROPS::SVectorCL<3u> > >(DROPS::TetraCL const&, DROPS::IdxDescCL const&, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const&)
+//   1.17      1.56     0.02      962     0.00     0.00  DROPS::CollectChildUnknownsP2(DROPS::TetraCL const&, unsigned int)
+//   1.17      1.58     0.02        6     0.00     0.01  DROPS::SF_ImprovedLaplBeltrami(DROPS::MultiGridCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >&)
+//   1.17      1.60     0.02        1     0.02     0.15  DROPS::SetupSystem2_P2P1X(DROPS::MultiGridCL const&, DROPS::TwoPhaseFlowCoeffCL const&, DROPS::StokesBndDataCL const&, DROPS::SparseMatBaseCL<double>*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL*, DROPS::IdxDescCL*, double)
+
+/// \brief Generic traits for SparseMatbuilderCL. It must be specialized for individual block-types.
+template <class BlockT>
+struct BlockTraitsCL
+{
+    typedef BlockT block_type; ///< The data-blocks used in the builder (e.g. double, SMatrixCL<3,3>)
+    typedef std::pair<size_t, block_type*> sort_pair_type; ///< Type used for sorting the rows when using hash-maps
+
+    static const Uint num_rows= BlockT::num_rows; ///< Number of rows of one block
+    static const Uint num_cols= BlockT::num_cols; ///< Number of columns of one block
+    static const bool no_reuse= true; ///< False, if the sparsity-pattern can be reused with this block-type
+
+    ///\brief Computes the beginning of double-valued rows in the matrix for one block-row
+    template <class Iter>
+    static inline void row_begin ( size_t*, Iter, Iter); // not defined
+    ///\brief Inserts one block-row in the form of double-valued rows into the matrix
+    template <class Iter>
+    static inline void insert_block_row (Iter, Iter, const size_t*, size_t*, double*); // not defined
+    ///\brief Creates a pair for sorting the rows from a key-value pari stored in the hash-map.
+    static inline sort_pair_type pair_copy (const std::pair<size_t, double>& p); // not defined
+    ///\brief Return an entry, if the sparsity pattern is reused (only for block_type == double).
+    static inline block_type& get_entry_reuse (const size_t*, const size_t*, size_t, double*); // not defined
+};
+
+template <>
+struct BlockTraitsCL<double>
+{
+    typedef double block_type;
+    typedef std::pair<size_t, double> sort_pair_type;
+
+    static const Uint num_rows= 1;
+    static const Uint num_cols= 1;
+    static const bool no_reuse= false;
+
+    template <class Iter>
+    static inline void row_begin ( size_t* prev_row_end, Iter begin, Iter end)
+        { prev_row_end[1]= prev_row_end[0] + std::distance( begin, end); }
+    template <class Iter>
+    static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
+        for (size_t j= rb[0]; begin != end; ++begin, ++j) {
+            colind[j]= begin->first;
+            val[j]= begin->second;
+        }
+    }
+    static inline sort_pair_type pair_copy (const std::pair<size_t, double>& p)
+        { return p; }
+
+    static inline double& get_entry_reuse (const size_t* col_idx_begin, const size_t* col_idx_end, size_t j, double* val) {
+        const size_t* pos= std::lower_bound( col_idx_begin, col_idx_end, j);
+        Assert( pos != col_idx_end, "SparseMatBuilderCL (): no such index", DebugNumericC);
+        return val[pos - col_idx_begin];
+    }
+};
+
+template <Uint Rows, Uint Cols>
+struct BlockTraitsCL< SMatrixCL<Rows, Cols> >
+{
+    typedef SMatrixCL<Rows, Cols> block_type;
+    typedef std::pair<size_t, block_type*> sort_pair_type;
+
+    static const Uint num_rows= Rows;
+    static const Uint num_cols= Cols;
+    static const bool no_reuse= true;
+
+    template <class Iter>
+    static inline  void row_begin (size_t* prev_row_end, Iter begin, Iter end) {
+        const size_t num_blocks= std::distance( begin, end);
+        for (Uint k= 0; k < num_rows; ++k)
+            prev_row_end[k + 1]= prev_row_end[k] + num_cols*num_blocks;
+    }
+    template <class Iter>
+    static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
+        for (size_t l= 0 ; begin != end; ++begin, ++l)
+            for (size_t i= 0; i < num_rows; ++i)
+                for (size_t j= 0; j < num_cols; ++j) {
+                    colind[j + l*num_cols + rb[i]]= begin->first*num_cols + j;
+#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+                    val   [j + l*num_cols + rb[i]]= (*begin->second)( i, j);
+#else
+                    val   [j + l*num_cols + rb[i]]= ( begin->second)( i, j);
+#endif
+                }
+    }
+    static inline sort_pair_type pair_copy (std::pair<const size_t, block_type>& p)
+        { return std::make_pair( p.first, &p.second); }
+    static inline block_type& get_entry_reuse (const size_t*, const size_t*, size_t, double*)
+        { throw DROPSErrCL( "SparseMatBuilderCL: Cannot reuse the sparsity-pattern for SMatrixCL-blocks"); }
+};
+
+template <Uint Rows>
+struct BlockTraitsCL< SDiagMatrixCL<Rows> >
+{
+    typedef SDiagMatrixCL<Rows> block_type;
+    typedef std::pair<size_t, block_type*> sort_pair_type;
+
+    static const Uint num_rows= Rows;
+    static const Uint num_cols= Rows;
+    static const bool no_reuse= true;
+
+    template <class Iter>
+    static inline  void row_begin (size_t* prev_row_end, Iter begin, Iter end) {
+        const size_t num_blocks= std::distance( begin, end);
+        for (Uint k= 0; k < num_rows; ++k)
+            prev_row_end[k + 1]= prev_row_end[k] + num_blocks;
+    }
+    template <class Iter>
+    static inline void insert_block_row (Iter begin, Iter end, const size_t* rb, size_t* colind, double* val) {
+        for (size_t l= 0 ; begin != end; ++begin, ++l)
+            for (size_t i= 0; i < num_rows; ++i) {
+                colind[l + rb[i]]= begin->first*num_cols + i;
+#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+                val   [l + rb[i]]= (*begin->second)( i);
+#else
+                val   [l + rb[i]]= ( begin->second)( i);
+#endif
+            }
+    }
+    static inline sort_pair_type pair_copy (std::pair<const size_t, block_type>& p)
+        { return std::make_pair( p.first, &p.second); }
+    static inline block_type& get_entry_reuse (const size_t*, const size_t*, size_t, double*)
+        { throw DROPSErrCL( "SparseMatBuilderCL: Cannot reuse the sparsity-pattern for SDiagMatrixCL-blocks"); }
+};
+///@}
+
 /// \brief Building up sparse matrices
-template <typename T>
+///
+/// \param T is the type of the matrix-entries
+/// \param BlockT is a T-valued container-type used in the builder
+template <typename T= double, typename BlockT= T>
 class SparseMatBuilderCL
 {
+private:
+    typedef BlockTraitsCL<BlockT> BlockTraitT;
+    typedef typename BlockTraitT::block_type block_type;
+
 public:
     typedef T                        valueT;
     typedef SparseMatBaseCL<T>       spmatT;
-    typedef std::pair<size_t,valueT> entryT;
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
-    typedef std::tr1::unordered_map<size_t,valueT> couplT;
+    typedef std::pair<size_t, block_type> entryT;
+#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+    typedef std::tr1::unordered_map<size_t, block_type> couplT;
 #else
-    typedef std::map<size_t,valueT> couplT;
+    typedef std::map<size_t, block_type> couplT;
 #endif
 
 private:
@@ -272,14 +502,16 @@ private:
     couplT* _coupl;
 
 public:
-    SparseMatBuilderCL(spmatT* mat, size_t rows, size_t cols)
-        : _rows(rows), _cols(cols), _mat(mat),
-          _reuse(!(DROPSDebugC & DebugNoReuseSparseC) && mat->num_nonzeros()!=0
-                 && mat->num_rows()==rows && mat->num_cols()==cols)
+    SparseMatBuilderCL(spmatT* mat, size_t rows, size_t cols, bool reuse= false)
+        : _rows(rows), _cols(cols), _mat(mat), _reuse( reuse)
     {
+        Assert( _rows%BlockTrait::num_rows == 0, "SparseMatBuilderCL (): number of rows incompatible with block_type", DebugNumericC);
+        Assert( _cols%BlockTrait::num_cols == 0, "SparseMatBuilderCL (): number of columns incompatible with block_type", DebugNumericC);
         mat->IncrementVersion();
         if (_reuse)
         {
+            if (BlockTraitT::no_reuse)
+                throw DROPSErrCL( "SparseMatBuilderCL: Cannot reuse the pattern for block_type != double.");
             Comment("SparseMatBuilderCL: Reusing OLD matrix" << std::endl, DebugNumericC);
             _coupl=0;
             _mat->_val=T();
@@ -287,81 +519,55 @@ public:
         else
         {
             Comment("SparseMatBuilderCL: Creating NEW matrix" << std::endl, DebugNumericC);
-            _coupl=new couplT[_rows];
-            Assert( _coupl!=0, "SparseMatBuilderCL: out of memory", ~0);
+            _coupl= new couplT[_rows/BlockTraitT::num_rows];
         }
     }
 
     ~SparseMatBuilderCL() { if (_coupl) delete[] _coupl; }
 
-    T& operator() (size_t i, size_t j)
+    block_type& operator() (size_t i, size_t j)
     {
-        Assert(i<_rows && j<_cols, "SparseMatBuilderCL (): index out of bounds", DebugNumericC);
+        Assert( i < _rows/BlockTraitT::num_rows && j <_cols/BlockTraitT::num_cols,
+            "SparseMatBuilderCL (): index out of bounds", DebugNumericC);
 
-        if (_reuse)
-        {
-            // search row for the correct entry
-            const size_t rowend=_mat->_rowbeg[i+1]-1;
-
-            for (size_t k=_mat->_rowbeg[i]; k<rowend; ++k)
-                if (_mat->_colind[k]==j)
-                    return _mat->_val[k];
-
-            Assert(_mat->_colind[rowend]==j, "SparseMatBuilderCL (): no such index", ~0);
-            return _mat->_val[rowend];
-        }
+        if (!_reuse)
+            return _coupl[i/BlockTraitT::num_rows][j/BlockTraitT::num_cols];
         else
-            return _coupl[i][j];
+            return BlockTraitT::get_entry_reuse( _mat->GetFirstCol( i),  _mat->GetFirstCol( i + 1), j, _mat->GetFirstVal( i));
     }
 
     void Build();
 };
 
-template <typename T>
-void SparseMatBuilderCL<T>::Build()
+template <typename T, typename BlockT>
+void SparseMatBuilderCL<T, BlockT>::Build()
 {
     if (_reuse) return;
 
-    size_t nz= 0;
-    for (size_t i= 0; i<_rows; ++i)
-        nz+= _coupl[i].size();
+    const size_t block_rows= _rows/BlockTraitT::num_rows;
+    _mat->resize_rows( _rows);
+    size_t* rb= _mat->raw_row();
 
-    _mat->resize(_rows, _cols, nz);
+    rb[0]= 0;
+    for (size_t i= 0; i < block_rows; ++i)
+        BlockTraitT::row_begin( rb + i*BlockTraitT::num_rows, _coupl[i].begin(), _coupl[i].end());
 
-    nz= 0;
-#if __GNUC__ >= 4 && !defined(__INTEL_COMPILER)
-    typedef std::pair<size_t, T> PT;
-    std::vector<PT> pv;
-    for (size_t i= 0; i < _rows; ++i) {
+    _mat->resize_val( rb[_rows]);
+    _mat->resize_cols( _cols, rb[_rows]);
+
+#if DROPS_SPARSE_MAT_BUILDER_USES_HASH_MAP
+    std::vector<typename BlockTraitT::sort_pair_type> pv;
+    for (size_t i= 0; i < block_rows; ++i) {
         pv.resize( _coupl[i].size());
-        _mat->_rowbeg[i]= nz;
-        nz+= pv.size();
-        std::copy( _coupl[i].begin(), _coupl[i].end(), pv.begin());
-        // The col_ind-entries in each row are sorted.
-        std::sort( pv.begin(), pv.end(), less1st<PT>());
-        for (size_t k= _mat->_rowbeg[i], j= 0; k < nz; ++k, ++j) {
-            _mat->_colind[k]= pv[j].first;
-            _mat->_val[k]= pv[j].second;
+        std::transform( _coupl[i].begin(), _coupl[i].end(), pv.begin(), &BlockTraitT::pair_copy);
+        std::sort( pv.begin(), pv.end(), less1st<typename BlockTraitT::sort_pair_type>());
+        BlockTraitT::insert_block_row( pv.begin(), pv.end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
         // std::cout << _coupl[i].load_factor() << '\t' << std::setfill('0') << std::setw(3) <<_coupl[i].size() << '\n';
-        }
     }
 #else
-    for (size_t i=0; i<_rows; ++i)
-    {
-        _mat->_rowbeg[i]= nz;
-        for (typename couplT::const_iterator it= _coupl[i].begin(), end= _coupl[i].end(); it != end; ++it)
-        {
-            _mat->_colind[nz]= it->first;
-            _mat->_val[nz]=    it->second;
-            ++nz;
-        }
-        // the col_ind-entries in each row are sorted, as they were stored sorted in the map
-    }
+    for (size_t i= 0; i < block_rows; ++i)
+        BlockTraitT::insert_block_row( _coupl[i].begin(), _coupl[i].end(), rb + i*BlockTraitT::num_rows, _mat->raw_col(), _mat->raw_val());
 #endif
-    _mat->_rowbeg[_rows]= nz;
-
-    Assert( nz == _mat->num_nonzeros(), "SparseMatBuilderCL::Build: wrong count of nonzeros", ~0);
-
     delete[] _coupl;
     _coupl= 0;
 }
@@ -429,6 +635,7 @@ public:
 
     const size_t* GetFirstCol(size_t i) const { return Addr(_colind)+_rowbeg[i]; }
     const T*      GetFirstVal(size_t i) const { return Addr(_val)+_rowbeg[i]; }
+          T*      GetFirstVal(size_t i)       { return &_val[0]+_rowbeg[i]; }
 
     inline T  operator() (size_t i, size_t j) const;
 
@@ -458,7 +665,8 @@ public:
     void permute_rows (const PermutationT&);
     void permute_columns (const PermutationT&);
 
-    friend class SparseMatBuilderCL<T>;
+    template <class, class>
+      friend class SparseMatBuilderCL;
 };
 
 template <typename T>
@@ -1476,7 +1684,7 @@ std::ostream& operator << (std::ostream& os, const MLSparseMatBaseCL<T>& A)
 
 typedef VectorBaseCL<double>             VectorCL;
 typedef SparseMatBaseCL<double>          MatrixCL;
-typedef SparseMatBuilderCL<double>       MatrixBuilderCL;
+typedef SparseMatBuilderCL<>             MatrixBuilderCL;
 typedef VectorAsDiagMatrixBaseCL<double> VectorAsDiagMatrixCL;
 typedef MLSparseMatBaseCL<double>        MLMatrixCL;
 } // end of namespace DROPS
