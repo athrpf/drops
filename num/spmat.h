@@ -259,96 +259,6 @@ class SparseMatBaseCL;
 ///
 /// The use of std::map is about 10% slower than std::unordered_map + sorting entries.
 ///@{
-// To illustrate the improvement, consider Setupsystem1 of twophasedrops with default parameters.
-// On rumpelstilzchen with g++ -W -Wall -pedantic -O3 -pg -ffast-math -funroll-loops -march=native -finline-limit=2000 -fopenmp
-// Old version, part of the output and top of the profile:
-// ============================================================ step 1
-// entering SetupSystem1_P2CL::begin_accumulation ()
-// 42525 nonzeros in A, 14175 nonzeros in M!
-// leaving SetupSystem1_P2CL::finalize_accumulation ()
-// new setup: 0.078305
-// Writing to file "Aneu.txt".    Description: Aneu
-// Writing to file "Mneu.txt".    Description: Mneu
-// entering SetupSystem1_P2CL::begin_accumulation ()
-// 312651 nonzeros in A, 104217 nonzeros in M!
-// leaving SetupSystem1_P2CL::finalize_accumulation ()
-// new setup: 0.459048
-// Writing to file "Aneu.txt".    Description: Aneu
-// Writing to file "Mneu.txt".    Description: Mneu
-// entering SetupSystem1_P2CL::begin_accumulation ()
-// 1468404 nonzeros in A, 489468 nonzeros in M!
-// leaving SetupSystem1_P2CL::finalize_accumulation ()
-// new setup: 1.87092
-// Writing to file "Aneu.txt".    Description: Aneu
-// Writing to file "Mneu.txt".    Description: Mneu
-// Writing to file "bneu.txt".    Description: bneu
-// Writing to file "cplAneu.txt".    Description: cplAneu
-// Writing to file "cplMneu.txt".    Description: cplMneu
-// 
-// 
-// Each sample counts as 0.01 seconds.
-//   %   cumulative   self              self     total           
-//  time   seconds   seconds    calls   s/call   s/call  name    
-//  23.27      0.47     0.47       11     0.04     0.04  DROPS::SparseMatBuilderCL<double>::Build()
-//  19.31      0.86     0.39  9649540     0.00     0.00  DROPS::SparseMatBuilderCL<double>::operator()(unsigned long, unsigned long)
-//  17.33      1.21     0.35     1104     0.00     0.00  DROPS::LocalSystem1TwoPhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::InterfaceTetraCL&, DROPS::LocalSystem1DataCL&)
-//   9.41      1.40     0.19        3     0.06     0.09  DROPS::InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double) const
-//   5.45      1.51     0.11        1     0.11     0.24  void DROPS::LevelsetP2CL::SetupSystem<DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> >(DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> const&, double)
-//   3.47      1.58     0.07     5450     0.00     0.00  DROPS::LocalSystem1OnePhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::LocalSystem1DataCL&)
-//   1.98      1.62     0.04   263760     0.00     0.00  DROPS::P1DiscCL::Quad(DROPS::LocalP2CL<DROPS::SVectorCL<3u> > const&, DROPS::SVectorCL<4u>**)
-//   1.98      1.66     0.04    50420     0.00     0.00  DROPS::InterfacePatchCL::Init(DROPS::TetraCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double)
-//   1.98      1.70     0.04        6     0.01     0.01  void DROPS::WriteToFile<DROPS::SparseMatBaseCL<double> >(DROPS::SparseMatBaseCL<double> const&, std::string, std::string)
-//   1.49      1.73     0.03   171474     0.00     0.00  std::tr1::_Hashtable<unsigned long, std::pair<unsigned long const, double>, std::allocator<std::pair<unsigned long const, double> >, std::_Select1st<std::pair<unsigned long const, double> >, std::equal_to<unsigned long>, std::tr1::hash<unsigned long>, std::tr1::__detail::_Mod_range_hashing, std::tr1::__detail::_Default_ranged_hash, std::tr1::__detail::_Prime_rehash_policy, false, false, true>::_M_allocate_buckets(unsigned long)
-//   1.49      1.76     0.03      962     0.00     0.00  DROPS::CollectChildUnknownsP2(DROPS::TetraCL const&, unsigned int)
-//   1.49      1.79     0.03       68     0.00     0.00  T.13593
-//   0.99      1.81     0.02   530336     0.00     0.00  DROPS::InterfaceTetraCL::ComputeCutForChild(unsigned int)
-//   0.99      1.83     0.02    11428     0.00     0.00  void DROPS::LocalNumbP2CL::assign<DROPS::BndDataCL<DROPS::SVectorCL<3u> > >(DROPS::TetraCL const&, DROPS::IdxDescCL const&, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const&)
-//   0.99      1.85     0.02     6554     0.00     0.00  DROPS::System1Accumulator_P2CL::update_global_system()
-// 
-// New version, part of the output and top of the profile:
-// ============================================================ step 1
-// entering SetupSystem1_P2CL::begin_accumulation ()
-// 42525 nonzeros in A, 14175 nonzeros in M!
-// leaving SetupSystem1_P2CL::finalize_accumulation ()
-// setup: 0.0518552
-// Writing to file "Aneu.txt".    Description: Aneu
-// Writing to file "Mneu.txt".    Description: Mneu
-// entering SetupSystem1_P2CL::begin_accumulation ()
-// 312651 nonzeros in A, 104217 nonzeros in M!
-// leaving SetupSystem1_P2CL::finalize_accumulation ()
-// setup: 0.273868
-// Writing to file "Aneu.txt".    Description: Aneu
-// Writing to file "Mneu.txt".    Description: Mneu
-// entering SetupSystem1_P2CL::begin_accumulation ()
-// 1468404 nonzeros in A, 489468 nonzeros in M!
-// leaving SetupSystem1_P2CL::finalize_accumulation ()
-// setup: 1.0489
-// Writing to file "Aneu.txt".    Description: Aneu
-// Writing to file "Mneu.txt".    Description: Mneu
-// Writing to file "bneu.txt".    Description: bneu
-// Writing to file "cplAneu.txt".    Description: cplAneu
-// Writing to file "cplMneu.txt".    Description: cplMneu
-// 
-// 
-// Each sample counts as 0.01 seconds.
-//   %   cumulative   self              self     total           
-//  time   seconds   seconds    calls   s/call   s/call  name    
-//  22.22      0.38     0.38     1104     0.00     0.00  DROPS::LocalSystem1TwoPhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::InterfaceTetraCL&, DROPS::LocalSystem1DataCL&)
-//  12.87      0.60     0.22        3     0.07     0.07  DROPS::System1Accumulator_P2CL::finalize_accumulation()
-//  12.87      0.82     0.22        3     0.07     0.09  DROPS::InstatNavierStokes2PhaseP2P1CL::SetupNonlinear_P2(DROPS::SparseMatBaseCL<double>&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL&, double) const
-//  10.53      1.00     0.18        5     0.04     0.04  DROPS::SparseMatBuilderCL<double, double>::Build()
-//   7.02      1.12     0.12     6557     0.00     0.00  DROPS::System1Accumulator_P2CL::update_global_system()
-//   7.02      1.24     0.12        1     0.12     0.22  void DROPS::LevelsetP2CL::SetupSystem<DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> >(DROPS::P2EvalCL<DROPS::SVectorCL<3u>, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const> const&, double)
-//   5.85      1.34     0.10  3370756     0.00     0.00  DROPS::SparseMatBuilderCL<double, double>::operator()(unsigned long, unsigned long)
-//   3.51      1.40     0.06   263760     0.00     0.00  DROPS::P1DiscCL::Quad(DROPS::LocalP2CL<DROPS::SVectorCL<3u> > const&, DROPS::SVectorCL<4u>**)
-//   2.34      1.44     0.04   530336     0.00     0.00  DROPS::InterfaceTetraCL::ComputeCutForChild(unsigned int)
-//   1.75      1.47     0.03   295784     0.00     0.00  DROPS::Write6Bits(std::ostream&, char*, unsigned int)
-//   1.75      1.50     0.03     5450     0.00     0.00  DROPS::LocalSystem1OnePhase_P2CL::setup(DROPS::SMatrixCL<3u, 3u> const&, double, DROPS::LocalSystem1DataCL&)
-//   1.17      1.52     0.02    50420     0.00     0.00  DROPS::InterfacePatchCL::Init(DROPS::TetraCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double)
-//   1.17      1.54     0.02    11428     0.00     0.00  void DROPS::LocalNumbP2CL::assign<DROPS::BndDataCL<DROPS::SVectorCL<3u> > >(DROPS::TetraCL const&, DROPS::IdxDescCL const&, DROPS::BndDataCL<DROPS::SVectorCL<3u> > const&)
-//   1.17      1.56     0.02      962     0.00     0.00  DROPS::CollectChildUnknownsP2(DROPS::TetraCL const&, unsigned int)
-//   1.17      1.58     0.02        6     0.00     0.01  DROPS::SF_ImprovedLaplBeltrami(DROPS::MultiGridCL const&, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> > const&, DROPS::BndDataCL<double> const&, double, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >&)
-//   1.17      1.60     0.02        1     0.02     0.15  DROPS::SetupSystem2_P2P1X(DROPS::MultiGridCL const&, DROPS::TwoPhaseFlowCoeffCL const&, DROPS::StokesBndDataCL const&, DROPS::SparseMatBaseCL<double>*, DROPS::VecDescBaseCL<DROPS::VectorBaseCL<double> >*, DROPS::LevelsetP2CL const&, DROPS::IdxDescCL*, DROPS::IdxDescCL*, double)
 
 /// \brief Generic traits for SparseMatbuilderCL. It must be specialized for individual block-types.
 template <class BlockT>
@@ -473,7 +383,7 @@ struct BlockTraitsCL< SDiagMatrixCL<Rows> >
 };
 ///@}
 
-/// \brief Building up sparse matrices
+/// \brief Building sparse matrices
 ///
 /// \param T is the type of the matrix-entries
 /// \param BlockT is a T-valued container-type used in the builder
