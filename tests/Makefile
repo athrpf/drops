@@ -11,7 +11,7 @@ EXEC =  ip1test ip2test mattest prolongationp2test reftest testfe \
         p2local quadbase globallist triang quadCut bicgstab gcr blockmat \
         mass quad5 downwind quad5_2D interfaceP1FE serialization xfem \
         directsolver f_Gamma neq splitboundary reparam_init reparam \
-        extendP1onChild
+        extendP1onChild principallattice
 
 DELETE = $(EXEC) *.out *.diff *.off *.mg *.dat
 
@@ -224,6 +224,10 @@ reparam: \
     ../num/unknowns.o ../misc/utils.o ../misc/problem.o ../num/discretize.o \
     ../num/fe.o ../out/ensightOut.o ../num/interfacePatch.o ../levelset/surfacetension.o \
     ../levelset/params.o ../misc/params.o ../levelset/lsetparams.o ../out/vtkOut.o $(PAR_OBJ)
+	$(CXX) -o $@ $^ $(LFLAGS)
+
+principallattice: \
+    ../tests/principallattice.o ../misc/utils.o ../geom/principallattice.o
 	$(CXX) -o $@ $^ $(LFLAGS)
 
 ../tests/directsolver.o:
