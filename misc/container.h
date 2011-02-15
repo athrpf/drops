@@ -107,10 +107,6 @@ class SArrayCL
   private:
     T Array[_Size];
 
-  protected:
-    /*uninitialized memory; mainly for faster SVectorCL-math*/
-    explicit SArrayCL(InitStateT) {}
-
   public:
     typedef       T*       iterator;
     typedef const T* const_iterator;
@@ -120,6 +116,8 @@ class SArrayCL
 
 //    SArrayCL() {}
     explicit           SArrayCL(T val= T())        { std::fill_n(Array+0, _Size, val); }
+    /*uninitialized memory; mainly for faster SVectorCL-math*/
+    explicit SArrayCL(InitStateT) {}
     template<class In> explicit SArrayCL(In start) { std::copy(start, start+_Size, Array+0); }
     template<class In> SArrayCL(In start, In end)  { std::copy(start, end, Array+0); }
     // Default copy-ctor, assignment operator, dtor
