@@ -38,6 +38,7 @@
 
  // include problem class
 #include "poisson/params.h"
+#include "poisson/poissonCoeff.h"      // Coefficient-Function-Container poissonCoeffCL
 #include "poisson/poisson.h"      // setting up the Poisson problem
 #include "num/bndData.h"
 
@@ -63,153 +64,15 @@
 #include "num/parprecond.h"             // various parallel preconditioners
 #endif
 
+// include function container
+#include "misc/bndmap.h"
+
 #include "num/poissonsolverfactory.h"
 
 using namespace std;
 
 const char line[] ="----------------------------------------------------------------------------------\n";
 
-/// \brief Coefficients of the Poisson problem
-/** The coefficients of the Poisson problem are:
-    \f$ - \alpha \cdot \Delta u + Vel.(\nabla u) +q \cdot u = f \f$
-*/
-
-/// \brief stationary case + error estimator
-/*
-template<class ParamsT>
-class PoissonCoeffCL
-{
-  public:
-    PoissonCoeffCL(ParamsT&) {}
-    /// \brief Reaction
-    static double q(const DROPS::Point3DCL&, double){
-        return 0.0;
-    }
-    /// \brief Convection
-    static DROPS::Point3DCL Vel(const DROPS::Point3DCL, double){
-        DROPS::Point3DCL ret; //ret[0]=1.; ret[1]=1.; ret[2]=1.;
-        return ret;
-    }
-    /// \brief Right-hand side
-    static double f(const DROPS::Point3DCL& p, double= 0.0){
-        return 128*(p[1]*p[2]*(1.-p[1])*(1.-p[2])
-                + p[0]*p[2]*(1.-p[0])*(1.-p[2])
-                + p[0]*p[1]*(1.-p[0])*(1.-p[1]));
-    }
-    /// \brief Diffusion
-    static double alpha(const DROPS::Point3DCL&, double=0.0){
-        return 1.;
-    }
-
-    /// \brief Solution
-    static double Solution( const DROPS::Point3DCL& p, double=0.0){
-        return 64.*p[0]*p[1]*p[2]*(1.-p[0])*(1.-p[1])*(1.-p[2]);
-    }
-};
-*/
-
-// du/dt - nu*laplace u + Vel grad u + q*u = f
-
-/// \ instationary case
-/*
-template<class ParamsT>
-class PoissonCoeffCL
-{
-  public:
-    PoissonCoeffCL(ParamsT&) {}
-    static double q(const DROPS::Point3DCL&, double) { return 0.0; }
-    static double alpha(const DROPS::Point3DCL&, double)
-      { return 1; }
-    static double f(const DROPS::Point3DCL& p, double t)
-      { return (-2.0*std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
-    static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
-      { return DROPS::Point3DCL(0.); } // no convection
-
-    static double Solution(const DROPS::Point3DCL& p, double t)
-    { return (std::exp(t)*std::exp(p[0]+p[1]+p[2])); }
-};
-*/
-/// \brief instationary film heat transfer case
-// du/dt - nu*laplace u + Vel grad u + q*u = f
-
-template<class ParamsT>
-class PoissonCoeffCL
-{
-  private:
-    static ParamsT C_;
-    static double dx_, dy_;
-
-  public:
-    PoissonCoeffCL( ParamsT& params) {
-    C_ = params;
-    int nx_,ny_,nz_;
-    double dz_;
-    std::string mesh( C_.dmc_MeshFile), delim("x@");
-    size_t idx_;
-    while ((idx_= mesh.find_first_of( delim)) != std::string::npos )
-        mesh[idx_]= ' ';
-        std::istringstream brick_info( mesh);
-        brick_info >> dx_ >> dy_ >> dz_ >> nx_ >> ny_ >> nz_;
-    }
-    static double q(const DROPS::Point3DCL&, double) { return 0.0; }
-    static double alpha(const DROPS::Point3DCL&, double)
-      { return 1; }
-    static double f(const DROPS::Point3DCL& p, double t)
-    {
-        const double u= C_.exp_Rho*9.81*dy_*dy_/2/C_.exp_Mu*1e-3;
-        return std::cos((p[0] + t*u)/dx_*2*M_PI);
-    }
-    static DROPS::Point3DCL Vel(const DROPS::Point3DCL& p, double)
-    {
-        DROPS::Point3DCL ret;
-        const double d= p[1]/dy_,
-            u= C_.exp_Rho*9.81*dy_*dy_/2/C_.exp_Mu*1e-3;
-        ret[0]= u*(2-d)*d; // Nusselt
-        return ret;
-    }
-    static double Solution(const DROPS::Point3DCL& , double )
-    { return (0.0); }
-};
-
-template<class ParamsT>
-ParamsT PoissonCoeffCL<ParamsT>::C_;
-
-template<class ParamsT>
-double PoissonCoeffCL<ParamsT>::dx_;
-
-template<class ParamsT>
-double PoissonCoeffCL<ParamsT>::dy_;
-
-
-/*
-/// \brief drops.cpp
-// -laplace u + q*u = f
-template<class ParamsT>
-class PoissonCoeffCL
-{
-  public:
-    PoissonCoeffCL(ParamsT&) {}
-    /// \brief Reaction
-    static double q(const DROPS::Point3DCL&, double){
-        return 0.0;
-    }
-    /// \brief Convection
-    static DROPS::Point3DCL Vel(const DROPS::Point3DCL&, double)
-         { return DROPS::Point3DCL(0.); } // no convection
-    /// \brief Right-hand side
-    static double f(const DROPS::Point3DCL& p, double= 0.0)
-        { return 128.0*( p[0]*p[1]*(1-p[0])*(1-p[1]) + p[0]*p[2]*(1-p[0])*(1-p[2])
-                + p[1]*p[2]*(1-p[1])*(1-p[2]) ); }
-    /// \brief Diffusion
-    static double alpha(const DROPS::Point3DCL&, double=0.0){
-        return 1.;
-    }
-    /// \brief Solution
-    static double Solution( const DROPS::Point3DCL& p, double=0.0){
-        return 64.*p[0]*p[1]*p[2]*(1-p[0])*(1-p[1])*(1-p[2]);
-    }
-};
-*/
 DROPS::ParamPoissonProblemCL C;
 namespace DROPS
 {
@@ -231,6 +94,13 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
 #endif
 
     if ( !doErrorEstimate) {
+        if(C.tm_Convection)
+        {
+            Poisson.vU.SetIdx( &Poisson.idx);
+            Poisson.SetupConvection(Poisson.U, Poisson.vU, 0.0);
+            Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
+            Poisson.b.Data+=Poisson.vU.Data;
+        }
         Poisson.SetupSystem( Poisson.A, Poisson.b);
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
@@ -389,7 +259,7 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
 
     timer.Reset();
     if (C.tm_NumSteps != 0)
-        Poisson.SetupInstatSystem( Poisson.A, Poisson.M, 0.0);
+        Poisson.SetupInstatSystem( Poisson.A, Poisson.M);
     timer.Stop();
     std::cout << " o time " << timer.GetTime() << " s" << std::endl;
 
@@ -406,10 +276,10 @@ void Strategy( PoissonP1CL<CoeffCL>& Poisson)
         SetupP1ProlongationMatrix( mg, *(factory.GetProlongation()), &Poisson.idx, &Poisson.idx);
 
     // Solve the linear equation system
-    Poisson.Init( Poisson.x, CoeffCL::Solution, 0.0);
+    Poisson.Init( Poisson.x, CoeffCL::InitialCondition, 0.0);
     InstatPoissonThetaSchemeCL<PoissonP1CL<CoeffCL>, PoissonSolverBaseCL>
         ThetaScheme( Poisson, *solver, C.tm_Theta, C.tm_Convection);
-    ThetaScheme.SetTimeStep(C.tm_StepSize, C.tm_Nu);
+    ThetaScheme.SetTimeStep(C.tm_StepSize);
 
     if (C.tm_NumSteps == 0) {
         SolveStatProblem( Poisson, *solver, C);
@@ -508,7 +378,7 @@ int main (int argc, char** argv)
         DROPS::BuildBoundaryData( mg, bdata, C.dmc_BoundaryType, C.dmc_BoundaryFncs);
 
         // Setup the problem
-        DROPS::PoissonP1CL<PoissonCoeffCL<DROPS::Params> > prob( *mg, PoissonCoeffCL<DROPS::Params>(C), *bdata);
+        DROPS::PoissonP1CL<DROPS::PoissonCoeffCL<DROPS::Params> > prob( *mg, DROPS::PoissonCoeffCL<DROPS::Params>(C), *bdata);
 #ifdef _PAR
         // Set parallel data structures
         DROPS::ParMultiGridCL pmg= DROPS::ParMultiGridCL::Instance();

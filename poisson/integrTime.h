@@ -60,7 +60,7 @@ class InstatPoissonThetaSchemeCL
     VectorCL  _rhs;
     MLMatrixCL  _Lmat;                  // M + theta*dt*nu*A  = linear part
 
-    double _theta, _dt, _nu;
+    double _theta, _dt;
     bool   _Convection;
 
   public:
@@ -95,15 +95,13 @@ class InstatPoissonThetaSchemeCL
     }
 
     double GetTheta()    const { return _theta; }
-    double GetNu()       const { return _nu; }
     double GetTimeStep() const { return _dt; }
 
-    void SetTimeStep( double dt, double nu= 1.0)
+    void SetTimeStep( double dt)
     {
       _dt= dt;
-      _nu= nu;
       if (!_Convection)
-        _Lmat.LinComb( 1., _Poisson.M.Data, _theta*_dt*_nu, _Poisson.A.Data);
+        _Lmat.LinComb( 1., _Poisson.M.Data, _theta*_dt, _Poisson.A.Data);
     }
 
     void DoStep( VecDescCL& v);
@@ -124,10 +122,10 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
   _Poisson.SetupInstatRhs( *_cplA, *_cplM, _Poisson.x.t, *_b, _Poisson.x.t);
 
   _rhs = _Poisson.A.Data * v.Data;
-  _rhs*= -_dt*(1.0-_theta)*_nu;
+  _rhs*= -_dt*(1.0-_theta);
   _rhs+= _Poisson.M.Data*v.Data
          + _dt*( _theta*_b->Data + (1.0-_theta)*(_old_b->Data))
-         + (_dt*(1.0-_theta)*_nu) * _old_cplA->Data + (_dt*_theta*_nu) * _cplA->Data
+         + (_dt*(1.0-_theta)) * _old_cplA->Data + (_dt*_theta) * _cplA->Data
          - _old_cplM->Data + _cplM->Data;
 
   if (_Convection)
@@ -136,7 +134,7 @@ void InstatPoissonThetaSchemeCL<PoissonT,SolverT>::DoStep( VecDescCL& v)
       _Poisson.SetupConvection( _Poisson.U, *_cplU, _Poisson.x.t);
       _rhs+= (_dt*_theta) * _cplU->Data;
       MLMatrixCL AU;
-      AU.LinComb( _nu, _Poisson.A.Data, 1, _Poisson.U.Data);
+      AU.LinComb( 1, _Poisson.A.Data, 1, _Poisson.U.Data);
       _Lmat.LinComb( 1, _Poisson.M.Data, _dt*_theta, AU);
   }
   _solver.Solve( _Lmat, v.Data, _rhs);

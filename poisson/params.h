@@ -72,7 +72,6 @@ class ParamTimeDiscPoissonCL : public virtual ParamBaseCL
     int    tm_NumSteps;                            ///< number of timesteps
     int    tm_Scheme;                              ///< not used a.t.m.
     double tm_Theta;
-    double tm_Nu;
     int    tm_Convection;
 
   //@}
@@ -124,6 +123,28 @@ class ParamErrCL : public virtual ParamBaseCL
       ParamErrCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
 };
 
+/// \brief Parameter class for error estimator
+class ParamPoissonCoeffCL : public virtual ParamBaseCL
+{
+  protected:
+	void RegisterParams();
+
+  public:
+  /// \name error estimator
+  //@{
+    std::string    		poc_Reaction;
+    std::string    		poc_Solution;
+    std::string    		poc_Source;
+    double         		poc_Diffusion;
+    std::string    		poc_Flowfield;
+    std::string    		poc_InitialCond;
+  //@}
+
+  public:
+      ParamPoissonCoeffCL()                             { RegisterParams(); }
+      ParamPoissonCoeffCL( const std::string& filename) { RegisterParams(); std::ifstream file(filename.c_str()); rp_.ReadParams( file); }
+};
+
 /// \brief Parameter class for the poisson case
 class ParamPoissonProblemCL:
 	    public ParamPoissonCL,
@@ -132,6 +153,7 @@ class ParamPoissonProblemCL:
         public ParamExperimentalDataPoissonCL,
         public ParamDomainCondCL,
         public ParamErrCL,
+        public ParamPoissonCoeffCL,
         public ParamVTKCL
 
 {

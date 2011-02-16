@@ -82,6 +82,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     MLIdxDescCL idx;
     VecDescCL   x;
     VecDescCL   b;
+    VecDescCL   vU;
     MLMatDescCL A;
     MLMatDescCL M;
     MLMatDescCL U;
@@ -102,7 +103,7 @@ class PoissonP1CL : public ProblemCL<Coeff, PoissonBndDataCL>
     void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
 
     ///  \brief set up matrices (M is time independent)
-    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M, double tA) const;
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M) const;
     /// \brief set up matrix and couplings with bnd unknowns for convection term
     void SetupConvection( MLMatDescCL& U, VecDescCL& vU, double t) const;
 
@@ -159,6 +160,10 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
     VecDescCL   x;
     VecDescCL   b;
     MLMatDescCL A;
+    
+    MLMatDescCL U;  //Convection matrix
+    MLMatDescCL M;  //Mass matrix
+    VecDescCL   vU; //Coupling with convection matrix
 
     //create an element of the class
     PoissonP2CL(const MGBuilderCL& mgb, const CoeffCL& coeff,
@@ -174,10 +179,24 @@ class PoissonP2CL : public ProblemCL<Coeff, PoissonBndDataCL>
 
     // set up matrices and rhs
     void SetupSystem         ( MLMatDescCL&, VecDescCL&) const;
+    
+        ///  \brief set up matrices for instatProblem
+    void SetupInstatSystem( MLMatDescCL& A, MLMatDescCL& M) const;
+    
+    void SetupInstatRhs( VecDescCL& vA, VecDescCL& vM, double tA, VecDescCL& vf, double tf) const;
+    
+    //Set up convection
+    void SetupConvection( MLMatDescCL&, VecDescCL&, double) const; 
+    
+    //Set up initial value
+    void Init( VecDescCL&, instat_scalar_fun_ptr, double t0= 0.) const;
 
     // check computed solution, etc.
     double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr) const;
     double CheckSolution( instat_scalar_fun_ptr Lsg) const { return CheckSolution(x, Lsg); }
+    
+    double CheckSolution( const VecDescCL&, instat_scalar_fun_ptr, double) const;
+    double CheckSolution( instat_scalar_fun_ptr Lsg, double& t) const { return CheckSolution(x, Lsg, t); }
 
     DiscSolCL GetSolution()
         { return DiscSolCL(&x, &GetBndData(), &GetMG()); }

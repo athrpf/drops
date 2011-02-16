@@ -51,7 +51,6 @@ void ParamTimeDiscPoissonCL::RegisterParams()
     rp_.RegDouble( tm_StepSize,  "StepSize");
     rp_.RegInt(    tm_Scheme,    "Scheme");
     rp_.RegDouble( tm_Theta,	 "Theta");
-    rp_.RegDouble( tm_Nu,		 "Nu");
     rp_.RegInt( tm_Convection,   "Convection");
     rp_.EndGroup();
 }
@@ -75,10 +74,23 @@ void ParamErrCL::RegisterParams()
 	rp_.RegDouble( err_MinRatio,		"MinRatio");
 	rp_.RegDouble( err_Threshold,		"Threshold");
 	rp_.RegDouble( err_Meas,			"Meas");
-    rp_.RegInt( err_DoMark,				"DoMark");
-    rp_.RegInt( err_NumRef,				"NumRef");
+  rp_.RegInt( err_DoMark,				"DoMark");
+  rp_.RegInt( err_NumRef,				"NumRef");
 	rp_.EndGroup();
 }
+
+void ParamPoissonCoeffCL::RegisterParams()
+{
+    rp_.BeginGroup( "PoissonCoeff");
+    rp_.RegString(    poc_Reaction,			"Reaction");
+    rp_.RegString(    poc_Solution,			"Solution");
+    rp_.RegString(    poc_Source,			  "Source");
+    rp_.RegDouble(    poc_Diffusion,		"Diffusion");
+    rp_.RegString(    poc_Flowfield,		"Flowfield");
+    rp_.RegString(    poc_InitialCond,  "InitialVal");
+    rp_.EndGroup();
+}
+
 
 void ParamPoissonProblemCL::RegisterParams()
 {
