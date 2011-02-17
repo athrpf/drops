@@ -36,14 +36,25 @@
 #include "num/nssolver.h"
 #include "levelset/coupling.h"
 
+#include "misc/bndmap.h"
+
 namespace DROPS
 {
+
 
 /// The level set has two disjoint singular points on the p[1]-axis; contained in \f$(-0.3,0.3)\times(-1,1)\times(-0.3,0.3)\f$.
 double zitrus (const Point3DCL& p, double)
 {
     return 0.2*(std::pow( p[0], 2) + std::pow( p[2], 2)) + std::pow( p[1], 3)*std::pow( p[1] - 1., 3);
 }
+double tid_zitrus (const Point3DCL& p)
+{
+    return zitrus(p,0);
+}
+
+static DROPS::RegisterScalarFunction regsca_zitrus("zitrus", tid_zitrus);
+static DROPS::RegisterScalarFunction regsca_zitrus2("zitrus", zitrus);
+
 /// The level set is a torus, wrapped around p[2]-axis, that touches itself in the origin; contained in \f$(-1,1)\times(-1,1)\times(-0.5,0.5)\f$.
 double dullo (const Point3DCL& p, double)
 {
@@ -80,6 +91,8 @@ class EllipsoidCL
 
 Point3DCL EllipsoidCL::Mitte_;
 Point3DCL EllipsoidCL::Radius_;
+
+static DROPS::RegisterScalarFunction regsca_ellipsoid("Ellipsoid", DROPS::EllipsoidCL::DistanceFct);
 
 // collision setting (rising butanol droplet in water)
 //  RadDrop1 =  1.50e-3  1.500e-3  1.50e-3
