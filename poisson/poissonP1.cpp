@@ -94,6 +94,7 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
 #endif
 
     if ( !doErrorEstimate) {
+        Poisson.SetupSystem( Poisson.A, Poisson.b);
         if(C.tm_Convection)
         {
             Poisson.vU.SetIdx( &Poisson.idx);
@@ -101,7 +102,6 @@ void SolveStatProblem( PoissonP1CL<CoeffCL>& Poisson, SolverT& solver, ParamsT& 
             Poisson.A.Data.LinComb(1., Poisson.A.Data, 1., Poisson.U.Data);
             Poisson.b.Data+=Poisson.vU.Data;
         }
-        Poisson.SetupSystem( Poisson.A, Poisson.b);
         timer.Reset();
         solver.Solve( Poisson.A.Data, Poisson.x.Data, Poisson.b.Data);
         timer.Stop();
