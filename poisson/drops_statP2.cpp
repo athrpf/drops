@@ -271,8 +271,8 @@ int main (int argc, char** argv)
         std::ifstream param;
         if (argc!=2)
         {
-           std::cout << "Using default parameter file: drops.param\n";
-           param.open( "drops.param");
+           std::cout << "Using default parameter file: poissonex1.param\n";
+           param.open( "poissonex1.param");
         }
         else
            param.open( argv[1]);
