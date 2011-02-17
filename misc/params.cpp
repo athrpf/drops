@@ -67,6 +67,34 @@ void ReadParamsCL::RegString( std::string& ref, std::string bez)
     sparam_[bez]= &ref;
 }
 
+void ReadParamsCL::RegInt( int& ref, std::string bez, int defaultvalue)
+{
+    SetInfo( bez, 'i');
+    iparam_[bez]= &ref;
+    iparam_def_[bez]= defaultvalue;
+}
+
+void ReadParamsCL::RegDouble( double& ref, std::string bez, double defaultvalue)
+{
+    SetInfo( bez, 'd');
+    dparam_[bez]= &ref;
+    dparam_def_[bez]= defaultvalue;
+}
+
+void ReadParamsCL::RegCoord( Point3DCL& ref, std::string bez, Point3DCL defaultvalue)
+{
+    SetInfo( bez, 'c');
+    cparam_[bez]= &ref;
+    cparam_def_[bez]= defaultvalue;
+}
+
+void ReadParamsCL::RegString( std::string& ref, std::string bez, std::string defaultvalue)
+{
+    SetInfo( bez, 's');
+    sparam_[bez]= &ref;
+    sparam_def_[bez]= defaultvalue;
+}
+
 void ReadParamsCL::BeginGroup( const std::string& s)
 {
     group_+= s;
@@ -173,6 +201,7 @@ void ReadParamsCL::ReadParams( std::istream& is)
         if (!name_.empty())
             throw DROPSErrCL("ReadParamsCL: error while reading parameter "+name_);
     }
+    UseDefaults();
     PrintWarning();
     if (!group_.empty())
         throw DROPSErrCL("ReadParamCL: group "+group_+" not terminated properly");
@@ -200,6 +229,59 @@ void ReadParamsCL::WriteParams( std::ostream& os) const
         }
         os << '\n';
     }
+}
+
+void ReadParamsCL::UseDefaults()
+{
+    for (InfoT::const_iterator it= info_.begin(), end= info_.end(); it!=end; ++it)
+        if(!it->second.second) // parameter uninitialized
+        {
+            switch(it->second.first){
+                case 'i': 
+                {
+                    std::map<std::string,int>::iterator f = iparam_def_.find(it->first);
+                    if ( f != iparam_def_.end()){
+                     *iparam_[f->first]= f->second;
+                     info_[f->first].second= true;
+                     std::cout << "WARNING: Parameter " << f->first << " initialized by default value " << f->second << "!\n";
+                    }
+                    break;
+                }
+                case 'd':  
+                {
+                    std::map<std::string,double>::iterator f = dparam_def_.find(it->first);
+                    if ( f != dparam_def_.end()){
+                     *dparam_[f->first]= f->second;
+                     info_[f->first].second= true;
+                     std::cout << "WARNING: Parameter " << f->first << " initialized by default value " << f->second << "!\n";
+                    }
+                    break;
+                }
+                case 'c':  
+                {
+                    std::map<std::string,Point3DCL>::iterator f = cparam_def_.find(it->first);
+                    if ( f != cparam_def_.end()){
+                     *cparam_[f->first]= f->second;
+                     info_[f->first].second= true;
+                     std::cout << "WARNING: Parameter " << f->first << " initialized by default value " << f->second << "!\n";
+                    }
+                    break;
+                }
+                case 's':  
+                {
+                    std::map<std::string,std::string>::iterator f = sparam_def_.find(it->first);
+                    if ( f != sparam_def_.end()){
+                     *sparam_[f->first]= f->second;
+                     info_[f->first].second= true;
+                     std::cout << "WARNING: Parameter " << f->first << " initialized by default value " << f->second << "!\n";
+                    }
+                    break;
+                }
+                default:
+                    break;
+              
+            }
+        }
 }
 
 void ReadParamsCL::PrintWarning() const

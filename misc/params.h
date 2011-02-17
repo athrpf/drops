@@ -51,11 +51,20 @@ class ReadParamsCL
     std::map<std::string,double*>      dparam_;
     std::map<std::string,Point3DCL*>   cparam_;
     std::map<std::string,std::string*> sparam_;
+    
+    std::map<std::string,int>       iparam_def_;
+    std::map<std::string,double>    dparam_def_;
+    std::map<std::string,Point3DCL> cparam_def_;
+    std::map<std::string,std::string>    sparam_def_;
 
     bool IsKnown( const std::string& s) { return info_.find( s) != info_.end(); }
     void ReadEntry( std::istream&);
     void ReadData ( std::istream&);
+    
     void SetInfo( std::string&, char);
+    
+    void UseDefaults();
+    
     void PrintWarning() const;
 
   public:
@@ -68,6 +77,12 @@ class ReadParamsCL
     void RegDouble( double&,      std::string);
     void RegCoord ( Point3DCL&,   std::string);
     void RegString( std::string&, std::string);
+    /// Register parameters under a certain name and allow for 
+    /// a default initialization 
+    void RegInt   ( int&,         std::string,         int defaultvalue);
+    void RegDouble( double&,      std::string,      double defaultvalue);
+    void RegCoord ( Point3DCL&,   std::string,   Point3DCL defaultvalue);
+    void RegString( std::string&, std::string, std::string defaultvalue);
     //@}
 
     /// \name Groups
